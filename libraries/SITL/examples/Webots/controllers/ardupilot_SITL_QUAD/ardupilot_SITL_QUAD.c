@@ -67,99 +67,7 @@ static int timestep;
 FILE *fptr;
 #endif
 
-#ifdef DEBUG_USE_KB
-/*
-// Code used tp simulae motors using keys to make sure that sensors directions and motor torques and thrusts are all correct.
-// You can start this controller and use telnet instead of SITL to start the simulator.
-Then you can use Keyboard to emulate motor input.
-*/
-static float factor = 1.0f;
-static float offset = 0.0f;
-void process_keyboard ()
-{
-  switch (wb_keyboard_get_key()) 
-  {
-    case 'Q':  // Q key -> up & left
-      v[0] = 0.0;
-      v[1] = 0.0;
-      v[2] = 0.0;
-      v[3] = 0.0;
-      break;
-
-    case 'Y':
-      v[0] = v[0] + 0.01;
-      v[2] = v[2] - 0.01;
-      break;
-
-    case 'H':
-      v[0] = v[0] - 0.01;
-      v[2] = v[2] + 0.01;
-      break;
-
-    case 'G':
-      v[1] = v[1] + 0.01;
-      v[3] = v[3] - 0.01;
-      break;
-
-    case 'J':
-      v[1] = v[1] - 0.01;
-      v[3] = v[3] + 0.01;
-      break;
-
-    case 'E':
-      for (int i=0; i<MOTOR_NUM;++i)
-      {
-        v[i] += 0.00002;
-      }
-      break;
-
-    case 'W':
-      for (int i=0; i<MOTOR_NUM;++i)
-      {
-        v[i] += 0.0002;
-      }
-      break;
-
-    case 'S':
-      for (int i=0; i<MOTOR_NUM;++i)
-      {
-        v[i] -= 0.0002;
-      }
-      break;
-  
-    case 'A':
-      v[1] = v[1] + 0.001;
-      v[3] = v[3] + 0.001;
-      v[0] = v[0] - 0.001;
-      v[2] = v[2] - 0.001;
-      break;
-
-    case 'D':
-      v[1] = v[1] - 0.001;
-      v[3] = v[3] - 0.001;
-      v[0] = v[0] + 0.001;
-      v[2] = v[2] + 0.001;
-      break;
-
-    
-  }
-
-  for (int i=0; i< MOTOR_NUM; ++i)
-  {
-    
-    wb_motor_set_position(motors[i], INFINITY);
-    wb_motor_set_velocity(motors[i], factor* v[i] + offset); 
-
-    
-  }
-  
-  printf ("Motors Internal %f %f %f %f\n", v[0],v[1],v[2],v[3]);
-  
-}
-#endif
-
-
-/*
+/**
 // apply motor thrust.
 */
 void update_controls()
@@ -178,15 +86,9 @@ void update_controls()
       we also want throttle to be linear with thrust so we use sqrt to calculate omega from input.
       Check this doc: https://docs.google.com/spreadsheets/d/1eR4Fb6cgaTb-BHUKJbhAXPzyX0ZLtUcEE3EY-wQYvM8/edit?usp=sharing
    */
-#ifndef DEBUG_USE_KB
-  //static float factor = 2.1f;
-  //static float offset = 0.0f;
-  
-  
-  //static float factor = 1.0f;
   static float offset = 0.0f;
   
-  static float v[4];
+  static float motor_value[4];
   // pls check https://docs.google.com/spreadsheets/d/1eR4Fb6cgaTb-BHUKJbhAXPzyX0ZLtUcEE3EY-wQYvM8/edit?usp=sharing
   static float factorDyn[11] = {
             3.6f, // 0.0
@@ -204,33 +106,24 @@ void update_controls()
   //#define LINEAR_THRUST
 
 
+// SCALE SERVO SIGNALS from 1000-2000
+for (int i=0;i<4;++i) {
+  state.motors.v[i] = (state.motors.v[i] - 1000.0f) * 0.001f;
+}
 
-#ifdef LINEAR_THRUST
-  v[0] = sqrt(state.motors.w) * factor + offset;
-  v[1] = sqrt(state.motors.x) * factor + offset;
-  v[2] = sqrt(state.motors.y) * factor + offset;
-  v[3] = sqrt(state.motors.z) * factor + offset;
-#else  
-  v[0] = (state.motors.w ) * factorDyn[(int)(10 * state.motors.w)] + offset;
-  v[1] = (state.motors.x ) * factorDyn[(int)(10 * state.motors.x)]  + offset;
-  v[2] = (state.motors.y ) * factorDyn[(int)(10 * state.motors.y)]  + offset;
-  v[3] = (state.motors.z ) * factorDyn[(int)(10 * state.motors.z)]  + offset;
-#endif //LINEAR_THRUST
 
-  for ( int i=0; i<4; ++i)
-  {
-    wb_motor_set_position(motors[i], INFINITY);
-    wb_motor_set_velocity(motors[i], v[i]); 
-  }
+motor_value[0] = (state.motors.v[2]) * factorDyn[10 * (int)(state.motors.v[2])]  + offset;
+motor_value[1] = (state.motors.v[0]) * factorDyn[10 * (int)(state.motors.v[0])]  + offset;
+motor_value[2] = (state.motors.v[3]) * factorDyn[10 * (int)(state.motors.v[3])]  + offset;
+motor_value[3] = (state.motors.v[1]) * factorDyn[10 * (int)(state.motors.v[1])]  + offset;
 
-  #ifdef DEBUG_MOTORS
-  printf ("RAW    F:%f  R:%f  B:%f  L:%f\n", state.motors.w, state.motors.x, state.motors.y, state.motors.z);
-  printf ("Factors    F:%f  \n", factorDyn[(int)(10 * state.motors.w)]);
-  printf ("Motors F:%f  R:%f  B:%f  L:%f\n", v[0], v[1], v[2], v[3]);
+for (int i=0; i<4; ++i)
+{
+  wb_motor_set_position(motors[i], INFINITY);
+  wb_motor_set_velocity(motors[i], motor_value[i]); 
+}
+
   
-  #endif //DEBUG_MOTORS
-
-#endif //DEBUG_USE_KB
 
   #ifdef WIND_SIMULATION
   /*
@@ -277,7 +170,7 @@ bool parse_controls(const char *json)
         // look for section header 
         const char *p = strstr(json, key->section);
         if (!p) {
-            // we don't have this sensor
+            // we don't have this section
             continue;
         }
         p += strlen(key->section)+1;
@@ -308,20 +201,36 @@ bool parse_controls(const char *json)
               break;
 
           case DATA_VECTOR4F: {
-              VECTOR4F *v = (VECTOR4F *)key->ptr;
+             VECTOR4F *v = (VECTOR4F *)key->ptr;
               if (sscanf(p, "[%f, %f, %f, %f]", &(v->w), &(v->x), &(v->y), &(v->z)) != 4) {
                   fprintf(stderr,"Failed to parse Vector3f for %s %s/%s\n",p,  key->section, key->key);
                   return false;
               }
-              else
-              {
+              else {
                   #ifdef DEBUG_INPUT_DATA
                   printf("GOT  %s/%s\n[%f, %f, %f, %f]\n ", key->section, key->key,v->w,v->x,v->y,v->z);
                   #endif
               }
-              
-              break;
+            break;
+            }
+
+          case DATA_VECTOR16F: {
+              VECTOR16F *v = (VECTOR16F *)key->ptr;
+              if (sscanf(p, "[%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f]", &(v->v[0]), &(v->v[1]), &(v->v[2]), &(v->v[3])
+                  , &(v->v[4]), &(v->v[5]), &(v->v[6]), &(v->v[7])
+                  , &(v->v[8]), &(v->v[9]), &(v->v[10]), &(v->v[11])
+                  , &(v->v[12]), &(v->v[13]), &(v->v[14]), &(v->v[15])
+                ) != 16) {
+                  printf("Failed to parse DATA_VECTOR16F for %s %s/%s\n",p,  key->section, key->key);
+                  return false;
               }
+              else {
+                  #ifdef DEBUG_INPUT_DATA
+                  printf("GOT  %s/%s\n[%f, %f, %f, %f]\n ", key->section, key->key, (float)v->v[0], (float)v->v[1], (float)v->v[2],  (float)v->v[3]);
+                  #endif
+              }
+            break;
+            }
         }
     }
     return true;
@@ -329,9 +238,8 @@ bool parse_controls(const char *json)
 
 void run ()
 {
-
     char send_buf[1000]; 
-    char command_buffer[1000];
+    char command_buffer[2020];
     fd_set rfds;
     
     // calculate initial sensor values.
@@ -339,10 +247,6 @@ void run ()
     
     while (true) 
     {
-        #ifdef DEBUG_USE_KB
-        process_keyboard();
-        #endif
-
         if (fd == 0) 
         {
           // if no socket wait till you get a socket
@@ -418,14 +322,12 @@ void run ()
           
         }
     }
-    
     socket_cleanup();
 }
 
 
 bool initialize (int argc, char *argv[])
 {
-  
   fd_set rfds;
   #ifdef DEBUG_SENSORS
   fptr = fopen ("/tmp/log.txt","w");
@@ -468,12 +370,6 @@ bool initialize (int argc, char *argv[])
   printf("timestep_scale: %f \n", timestep_scale);
   
   
-  // keybaard
-  #ifdef DEBUG_USE_KB
-  wb_keyboard_enable(timestep);
-  #endif
-
-
   // inertialUnit
   inertialUnit = wb_robot_get_device("inertial_unit");
   wb_inertial_unit_enable(inertialUnit, timestep);

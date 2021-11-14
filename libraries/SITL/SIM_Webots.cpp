@@ -396,37 +396,7 @@ void Webots::output_tricopter(const struct sitl_input &input)
     sim_sock->send(buf, len);
 }
 
-/*
-  output control command assuming a 4 channel quad
-*/
-void Webots::output_quad(const struct sitl_input &input)
-{
-    const float max_thrust = 1.0;
-    float motors[4];
-    for (uint8_t i=0; i<4; i++) {
-        //return a filtered servo input as a value from 0 to 1
-        //servo is assumed to be 1000 to 2000
-        motors[i] = constrain_float(((input.servos[i]-1000)/1000.0f) * max_thrust, 0, max_thrust); 
-    }
-    const float &m_right = motors[0]; 
-    const float &m_left  = motors[1]; 
-    const float &m_front = motors[2]; 
-    const float &m_back  = motors[3]; 
 
-    // quad format in Webots is:
-    // m1: front
-    // m2: right
-    // m3: back
-    // m4: left
-
-    // construct a JSON packet for motors
-    char buf[200];
-    const int len = snprintf(buf, sizeof(buf)-1, "{\"eng\": [%.3f, %.3f, %.3f, %.3f], \"wnd\": [%f, %3.1f, %1.1f, %2.1f]}\n",
-             m_front, m_right, m_back, m_left,
-             input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
-    buf[len] = 0;
-    sim_sock->send(buf, len);
-}
 
 /*
   output all 16 channels as PWM values. This allows for general
@@ -454,7 +424,7 @@ void Webots::output (const struct sitl_input &input)
             output_rover(input);
             break;
         case OUTPUT_QUAD:
-            output_quad(input);
+            output_pwm(input);
             break;
         case OUTPUT_TRICOPTER:
             output_tricopter(input);
@@ -481,9 +451,6 @@ void Webots::update(const struct sitl_input &input)
         return ;
     }
 
-    //printf("%lf     %lf\n", state.timestamp, state.timestamp * 1.0e6f);
-    // printf("state.timestamp %lf\n", state.timestamp);
-    
     
     //time frame from simulator
     frame_time_us = ((state.timestamp - last_state.timestamp) * 1.0e6f); //HERE
@@ -495,7 +462,6 @@ void Webots::update(const struct sitl_input &input)
         return ;
     }
 
-    //printf ("state.timestamp %lf   last_state.timestamp %lf    frame_time_us %ld\n", state.timestamp, last_state.timestamp, frame_time_us);
     time_now_us += frame_time_us;
     
 
