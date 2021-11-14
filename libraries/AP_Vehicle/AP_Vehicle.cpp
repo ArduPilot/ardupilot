@@ -359,18 +359,6 @@ void AP_Vehicle::write_notch_log_messages() const
             notches[0], notches[1], notches[2], notches[3]);
 }
 
-// run notch update at either loop rate or 200Hz
-void AP_Vehicle::update_dynamic_notch_at_specified_rate()
-{
-    const uint32_t now = AP_HAL::millis();
-
-    if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::LoopRateUpdate)
-        || now - _last_notch_update_ms > 5) {
-        update_dynamic_notch();
-        _last_notch_update_ms = now;
-    }
-}
-
 void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
 {
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No such mode %u", mode_number);
