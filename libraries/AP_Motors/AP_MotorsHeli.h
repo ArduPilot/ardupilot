@@ -167,9 +167,6 @@ public:
     // use pilot desired throttle
     bool using_pilot_throttle() const { return heli_option(HeliOption::USE_PILOT_THROTTLE); }
     
-    // allow autorotation bailout in manual modes
-    bool enable_bailout() const { return heli_option(HeliOption::ENABLE_BAILOUT); }
-    
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
