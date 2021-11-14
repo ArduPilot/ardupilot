@@ -7500,6 +7500,18 @@ class AutoTestCopter(AutoTest):
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
 
+    def PerfInfo(self):
+        self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
+        content = self.fetch_file_via_ftp("@SYS/tasks.txt")
+        self.progress("Got content (%s)" % str(content))
+        if "fast_loop" not in content:
+            raise NotAchievedException("Did not find fast_loop in content")
+
+        lines = content.split("\n")
+
+        if not lines[0].startswith("TasksV1"):
+            raise NotAchievedException("Expected TasksV1 as first line first not (%s)" % lines[0])
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/common.py
@@ -7958,6 +7970,10 @@ class AutoTestCopter(AutoTest):
             Test("Callisto",
                  "Test Callisto",
                  self.test_callisto),
+
+            Test("PerfInfo",
+                 "Test Scheduler PerfInfo output",
+                 self.PerfInfo),
 
             Test("Replay",
                  "Test Replay",
