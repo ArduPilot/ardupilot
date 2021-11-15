@@ -516,7 +516,7 @@ public:
 
     AP_Int32 flight_options;
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
 
