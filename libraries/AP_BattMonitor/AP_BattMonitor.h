@@ -256,7 +256,6 @@ private:
     uint32_t    _log_battery_bit;
     uint8_t     _num_instances;                                     /// number of monitors
 
-    void convert_params(void);
     void convert_dynamic_param_groups(uint8_t instance);
 
     /// returns the failsafe state of the battery
