@@ -107,6 +107,12 @@ jobs:
           python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/master_bin -s $GITHUB_WORKSPACE/pr_bin
 
+      - name: Checksum compare with Master
+        shell: bash
+        run: |
+          cksum $GITHUB_WORKSPACE/master_bin/*
+          cksum $GITHUB_WORKSPACE/pr_bin/*
+
       - name: elf_diff compare with Master
         shell: bash
         run: |
