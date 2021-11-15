@@ -139,7 +139,7 @@ Rover::Rover(void) :
 {
 }
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 // set target location (for use by scripting)
 bool Rover::set_target_location(const Location& target_loc)
 {
