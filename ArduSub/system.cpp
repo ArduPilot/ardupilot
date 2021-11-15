@@ -151,9 +151,9 @@ void Sub::init_ardupilot()
 
     startup_INS_ground();
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     g2.scripting.init();
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     g2.airspeed.init();
 

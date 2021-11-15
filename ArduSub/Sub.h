@@ -106,7 +106,7 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #endif
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
