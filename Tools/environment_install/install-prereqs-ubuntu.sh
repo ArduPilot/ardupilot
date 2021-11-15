@@ -76,7 +76,10 @@ elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; 
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ] || [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
+         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+         [ ${RELEASE_CODENAME} == 'impish' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -187,10 +190,15 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
+if [ ${RELEASE_CODENAME} == 'focal' ] ||
+       [ ${RELEASE_CODENAME} == 'ulyssa' ];
+then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ] || [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
+         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+         [ ${RELEASE_CODENAME} == 'impish' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
@@ -201,16 +209,27 @@ fi
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
-  elif [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ] ||  [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
+  elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+           [ ${RELEASE_CODENAME} == 'hirsute' ] ||
+           [ ${RELEASE_CODENAME} == 'focal' ] ||
+           [ ${RELEASE_CODENAME} == 'ulyssa'  ]; then
     SITL_PKGS+=" libjpeg8-dev"
   elif apt-cache search python-wxgtk3.0 | grep wx; then
       SITL_PKGS+=" python-wxgtk3.0"
+  elif apt-cache search python3-wxgtk4.0 | grep wx; then
+      # see below
+      :
   else
       # we only support back to trusty:
       SITL_PKGS+=" python-wxgtk2.8"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
-  if [ ${RELEASE_CODENAME} == 'bullseye' ] ||  [ ${RELEASE_CODENAME} == 'groovy' ] || [ ${RELEASE_CODENAME} == 'hirsute' ] ||  [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
+  if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+         [ ${RELEASE_CODENAME} == 'groovy' ] ||
+         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
+         [ ${RELEASE_CODENAME} == 'focal' ] ||
+         [ ${RELEASE_CODENAME} == 'ulyssa' ] ||
+         [ ${RELEASE_CODENAME} == 'impish' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi

@@ -49,7 +49,7 @@ class Board:
         self.configure_env(cfg, env)
 
         env.DEFINES.update(
-            ENABLE_SCRIPTING = 0,
+            AP_SCRIPTING_ENABLED = 0,
         )
 
         # Setup scripting, had to defer this to allow checking board size
@@ -60,7 +60,7 @@ class Board:
              (cfg.env.BOARD_FLASH_SIZE > 1024))):
 
             env.DEFINES.update(
-                ENABLE_SCRIPTING = 1,
+                AP_SCRIPTING_ENABLED = 1,
                 LUA_32BITS = 1,
                 )
 
