@@ -4609,7 +4609,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi_sysid(packet);
     case MAV_CMD_DO_SET_HOME:
         return handle_command_int_do_set_home(packet);
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
         {
             AP_Scripting *scripting = AP_Scripting::get_singleton();
@@ -4618,7 +4618,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
             }
             return scripting->handle_command_int_packet(packet);
         }
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
     default:
         break;
     }
