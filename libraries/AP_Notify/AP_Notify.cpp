@@ -328,7 +328,7 @@ void AP_Notify::add_backends(void)
                 break;
 
             case Notify_LED_Scripting:
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
                 ADD_BACKEND(new ScriptingLED());
 #endif
                 break;
