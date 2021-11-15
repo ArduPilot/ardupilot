@@ -86,7 +86,7 @@ void ModeAuto::update()
         } else {
             plane.calc_throttle();
         }
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
     } else if (nav_cmd_id == MAV_CMD_NAV_SCRIPT_TIME) {
         // NAV_SCRIPTING has a desired roll and pitch rate and desired throttle
         plane.nav_roll_cd = plane.ahrs.roll_sensor;

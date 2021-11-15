@@ -517,7 +517,7 @@ private:
         float terrain_correction;
     } auto_state;
 
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
     // support for scripting nav commands, with verify
     struct {
         uint16_t id;
@@ -940,7 +940,7 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);

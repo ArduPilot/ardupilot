@@ -1,3 +1,4 @@
+
 #include "Plane.h"
 
 /********************************************************************************/
@@ -197,7 +198,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                             cmd.content.do_engine_control.height_delay_cm*0.01f);
         break;
 
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -298,7 +299,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
     case MAV_CMD_NAV_SCRIPT_TIME:
         return verify_nav_script_time(cmd);
 #endif
@@ -1118,7 +1119,7 @@ float Plane::get_wp_radius() const
     return g.waypoint_radius;
 }
 
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
 /*
   support for scripted navigation, with verify operation for completion
  */

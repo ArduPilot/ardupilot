@@ -501,7 +501,7 @@ void Plane::stabilize()
             plane.stabilize_pitch(speed_scaler);
         }
 #endif
-#if ENABLE_SCRIPTING
+#ifdef ENABLE_SCRIPTING
     } else if (control_mode == &mode_auto &&
                mission.get_current_nav_cmd().id == MAV_CMD_NAV_SCRIPT_TIME) {
         // scripting is in control of roll and pitch rates and throttle
