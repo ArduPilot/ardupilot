@@ -188,7 +188,7 @@ public:
     // returns true if the vehicle has crashed
     virtual bool is_crashed() const;
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     /*
       methods to control vehicle for use by scripting
     */
@@ -219,7 +219,7 @@ public:
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
 
     // control outputs enumeration
