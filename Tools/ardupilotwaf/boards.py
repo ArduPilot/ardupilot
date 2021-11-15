@@ -814,7 +814,6 @@ class chibios(Board):
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
             '-Wno-error=float-equal',
-            '-Wno-error=undef',
             '-Wno-error=cpp',
             ]
 
@@ -823,7 +822,8 @@ class chibios(Board):
             '-fno-threadsafe-statics',
         ]
         env.CFLAGS += [
-            '-std=c11'
+            '-std=c11',
+            '-Wno-error=undef',
         ]
 
         if Utils.unversioned_sys_platform() == 'cygwin':
