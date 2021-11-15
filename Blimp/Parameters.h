@@ -309,7 +309,7 @@ public:
     AP_Int16 land_alt_low;
 
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
 
