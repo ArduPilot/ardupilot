@@ -38,7 +38,7 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
     set_update_rate(_speed_hz);
 }
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 // dedicated init for lua scripting
 bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
 {
@@ -109,7 +109,7 @@ bool AP_MotorsMatrix::set_throttle_factor(int8_t motor_num, float throttle_facto
     return true;
 }
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
 // set update rate to motors - a value in hertz
 void AP_MotorsMatrix::set_update_rate(uint16_t speed_hz)
