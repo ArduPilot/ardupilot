@@ -887,7 +887,7 @@ bool AP_Arming::system_checks(bool report)
             return false;
         }
 #endif
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
         if ((scripting != nullptr) && scripting->enabled() && scripting->init_failed()) {
             check_failed(ARMING_CHECK_SYSTEM, report, "Scripting out of memory");
