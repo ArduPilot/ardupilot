@@ -177,7 +177,7 @@ void Copter::init_ardupilot()
 
     startup_INS_ground();
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
@@ -464,13 +464,13 @@ void Copter::allocate_motors(void)
             motors_var_info = AP_MotorsTailsitter::var_info;
             break;
         case AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING:
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
             motors = new AP_MotorsMatrix_6DoF_Scripting(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_6DoF_Scripting::var_info;
 #endif // ENABLE_SCRIPTING
             break;
 case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
             motors = new AP_MotorsMatrix_Scripting_Dynamic(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
 #endif // ENABLE_SCRIPTING
@@ -510,7 +510,7 @@ case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
 
 #if FRAME_CONFIG != HELI_FRAME
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
         attitude_control = new AC_AttitudeControl_Multi_6DoF(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
         ac_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
 #endif // ENABLE_SCRIPTING
