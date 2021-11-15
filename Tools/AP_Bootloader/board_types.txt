@@ -150,6 +150,7 @@ AP_HW_KakuteH7                       1048
 AP_HW_ICSI_Kestrel                   1049
 AP_HW_SierraL431                     1050
 AP_HW_NucleoL476                     1051
+AP_HW_SierraF405                     1052
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
