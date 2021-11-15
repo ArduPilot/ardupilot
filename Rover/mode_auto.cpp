@@ -53,8 +53,24 @@ void ModeAuto::update()
             // start/resume the mission (based on MIS_RESTART parameter)
             mission.start_or_resume();
             waiting_to_start = false;
+
+            // initialise mission change check
+            IGNORE_RETURN(mis_change_detector.check_for_mission_change());
         }
     } else {
+        // check for mission changes
+        if (mis_change_detector.check_for_mission_change()) {
+            // if mission is running restart the current command if it is a waypoint command
+            if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_submode == AutoSubMode::Auto_WP)) {
+                if (mission.restart_current_nav_cmd()) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
+                } else {
+                    // failed to restart mission for some reason
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed but failed to restart command");
+                }
+            }
+        }
+
         mission.update();
     }
 

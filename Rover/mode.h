@@ -5,6 +5,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Mission/AP_Mission_ChangeDetector.h>
 #include <AR_WPNav/AR_WPNav.h>
 
 #include "defines.h"
@@ -383,6 +384,9 @@ private:
         float arg2;         // 2nd argument provided by mission command
     } nav_scripting;
 #endif
+
+    // Mission change detector
+    AP_Mission_ChangeDetector mis_change_detector;
 };
 
 
