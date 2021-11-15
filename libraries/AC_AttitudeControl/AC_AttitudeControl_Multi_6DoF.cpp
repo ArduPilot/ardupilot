@@ -1,4 +1,4 @@
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 
 #include "AC_AttitudeControl_Multi_6DoF.h"
 #include <AP_HAL/AP_HAL.h>
