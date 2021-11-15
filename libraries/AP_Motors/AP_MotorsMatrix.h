@@ -32,7 +32,7 @@ public:
     // init
     virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     // Init to be called from scripting
     virtual bool        init(uint8_t expected_num_motors);
 
