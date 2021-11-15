@@ -1,5 +1,5 @@
 #pragma once
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include "AP_MotorsMatrix.h"
 
@@ -62,4 +62,4 @@ private:
     static AP_MotorsMatrix_Scripting_Dynamic *_singleton;
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

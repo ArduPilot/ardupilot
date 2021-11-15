@@ -32,14 +32,14 @@ public:
     // init
     virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // Init to be called from scripting
     virtual bool        init(uint8_t expected_num_motors);
 
     // Set throttle factor from scripting
     bool                set_throttle_factor(int8_t motor_num, float throttle_factor);
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override;
