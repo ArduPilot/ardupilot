@@ -83,7 +83,7 @@ void Blimp::init_ardupilot()
 
     startup_INS_ground();
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     g2.scripting.init();
 #endif // ENABLE_SCRIPTING
 
