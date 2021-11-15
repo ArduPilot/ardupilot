@@ -53,8 +53,9 @@ public:
     float read_receiver_link_quality();
     // Read the receiver RSSI value as an 8-bit integer
     // 0 represents weakest signal, 255 represents maximum signal.
-    uint8_t read_receiver_rssi_uint8();   
-
+    uint8_t read_receiver_rssi_uint8();
+    // get the scale factor
+    float get_rssi_scale() const { return rssi_scale_factor; };
     // parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -70,6 +71,7 @@ private:
     AP_Int8         rssi_channel;                           // allows rssi to be read from given channel as PWM value
     AP_Int16        rssi_channel_low_pwm_value;             // PWM value for weakest rssi signal
     AP_Int16        rssi_channel_high_pwm_value;            // PWM value for strongest rssi signal
+    AP_Float        rssi_scale_factor;                      // Scale factor for rssi signal
 
     // Analog Inputs
     // a pin for reading the receiver RSSI voltage. 
