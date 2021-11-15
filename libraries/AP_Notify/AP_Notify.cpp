@@ -123,6 +123,15 @@ AP_Notify *AP_Notify::_singleton;
 #define NOTIFY_LED_LEN_DEFAULT 1
 #endif
 
+#ifndef HAL_BUZZER_PIN
+#define HAL_BUZZER_PIN -1
+#endif
+
+#ifndef HAL_BUZZER_ON
+#define HAL_BUZZER_ON 1
+#define HAL_BUZZER_OFF 0
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Notify::var_info[] = {
 
@@ -165,14 +174,12 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     AP_GROUPINFO("OREO_THEME", 4, AP_Notify, _oreo_theme, 0),
 #endif
 
-#if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_PIN
     // @DisplayName: Buzzer pin
     // @Description: Enables to connect active buzzer to arbitrary pin. Requires 3-pin buzzer or additional MOSFET!
     // @Values: 0:Disabled
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_PIN", 5, AP_Notify, _buzzer_pin, 0),
-#endif
+    AP_GROUPINFO("BUZZ_PIN", 5, AP_Notify, _buzzer_pin, HAL_BUZZER_PIN),
 
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
@@ -181,14 +188,12 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 
-#if !defined(HAL_BUZZER_PIN)
     // @Param: BUZZ_ON_LVL
     // @DisplayName: Buzzer-on pin logic level
     // @Description: Specifies pin level that indicates buzzer should play
     // @Values: 0:LowIsOn,1:HighIsOn
     // @User: Advanced
-    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, 1),
-#endif
+    AP_GROUPINFO("BUZZ_ON_LVL", 7, AP_Notify, _buzzer_level, HAL_BUZZER_ON),
 
     // @Param: BUZZ_VOLUME
     // @DisplayName: Buzzer volume
