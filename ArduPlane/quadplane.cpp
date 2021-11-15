@@ -632,10 +632,10 @@ bool QuadPlane::setup(void)
         motors_var_info = AP_MotorsTailsitter::var_info;
         break;
     case AP_Motors::MOTOR_FRAME_DYNAMIC_SCRIPTING_MATRIX:
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
             motors = new AP_MotorsMatrix_Scripting_Dynamic(plane.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
             break;
     default:
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);

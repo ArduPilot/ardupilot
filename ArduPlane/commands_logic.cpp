@@ -197,7 +197,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                             cmd.content.do_engine_control.height_delay_cm*0.01f);
         break;
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         do_nav_script_time(cmd);
         break;
@@ -298,7 +298,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_CONDITION_DISTANCE:
         return verify_within_distance();
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
         return verify_nav_script_time(cmd);
 #endif
@@ -1118,7 +1118,7 @@ float Plane::get_wp_radius() const
     return g.waypoint_radius;
 }
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 /*
   support for scripted navigation, with verify operation for completion
  */
@@ -1191,4 +1191,4 @@ bool Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     nav_scripting.throttle_pct = throttle_pct;
     return true;
 }
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
