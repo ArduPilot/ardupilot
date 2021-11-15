@@ -48,6 +48,10 @@ class Board:
         env.SRCROOT = srcpath('')
         self.configure_env(cfg, env)
 
+        env.DEFINES.update(
+            ENABLE_SCRIPTING = 0,
+        )
+
         # Setup scripting, had to defer this to allow checking board size
         if ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
@@ -814,7 +818,6 @@ class chibios(Board):
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
             '-Wno-error=float-equal',
-            '-Wno-error=undef',
             '-Wno-error=cpp',
             ]
 
