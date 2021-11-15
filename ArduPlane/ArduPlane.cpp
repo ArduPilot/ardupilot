@@ -687,7 +687,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 // set target location (for use by scripting)
 bool Plane::set_target_location(const Location& target_loc)
 {
