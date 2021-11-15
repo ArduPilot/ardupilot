@@ -216,5 +216,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     hirsute.vm.boot_timeout = 1200
   end
 
+  # 21.10
+  config.vm.define "impish", autostart: false do |impish|
+    impish.vm.box = "ubuntu/impish64"
+    impish.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    impish.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (impish)"
+    end
+    impish.vm.boot_timeout = 1200
+  end
+
 end
 
