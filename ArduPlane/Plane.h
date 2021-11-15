@@ -104,7 +104,7 @@
 #include "defines.h"
 #include "mode.h"
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -1133,7 +1133,7 @@ private:
     float get_throttle_input(bool no_deadzone=false) const;
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     // support for NAV_SCRIPT_TIME mission command
     bool nav_scripting_active(void) const;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
@@ -1209,7 +1209,7 @@ private:
 
 public:
     void failsafe_check(void);
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
 #endif // ENABLE_SCRIPTING
