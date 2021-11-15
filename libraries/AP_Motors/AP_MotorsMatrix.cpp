@@ -38,7 +38,7 @@ void AP_MotorsMatrix::init(motor_frame_class frame_class, motor_frame_type frame
     set_update_rate(_speed_hz);
 }
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 // dedicated init for lua scripting
 bool AP_MotorsMatrix::init(uint8_t expected_num_motors)
 {
