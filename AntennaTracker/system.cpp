@@ -32,7 +32,7 @@ void Tracker::init_ardupilot()
     log_init();
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     scripting.init();
 #endif // ENABLE_SCRIPTING
 
