@@ -225,7 +225,7 @@ public:
     uint32_t get_vehicle_state() { return 0.0; }
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif
 
