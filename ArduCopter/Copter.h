@@ -157,7 +157,7 @@
  #include <AP_RPM/AP_RPM.h>
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -640,7 +640,7 @@ private:
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
     void fast_loop() override;
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     bool start_takeoff(float alt) override;
     bool set_target_location(const Location& target_loc) override;
     bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) override;
