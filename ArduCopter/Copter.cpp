@@ -269,7 +269,7 @@ void Copter::fast_loop()
     AP_Vehicle::fast_loop();
 }
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 // start takeoff to given altitude (for use by scripting)
 bool Copter::start_takeoff(float alt)
 {
