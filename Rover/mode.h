@@ -331,6 +331,7 @@ private:
         MIS_DONE_BEHAVE_MANUAL    = 3
     };
 
+    bool waiting_to_start;  // true if waiting for EKF origin before starting mission
     bool auto_triggered;        // true when auto has been triggered to start
 
     // HeadingAndSpeed sub mode variables

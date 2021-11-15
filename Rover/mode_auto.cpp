@@ -29,8 +29,9 @@ bool ModeAuto::_enter()
         start_stop();
     }
 
-    // restart mission processing
-    mission.start_or_resume();
+    // set flag to start mission
+    waiting_to_start = true;
+
     return true;
 }
 
@@ -44,6 +45,19 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
+    // start or update mission
+    if (waiting_to_start) {
+        // don't start the mission until we have an origin
+        Location loc;
+        if (ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_to_start = false;
+        }
+    } else {
+        mission.update();
+    }
+
     switch (_submode) {
         case Auto_WP:
         {
