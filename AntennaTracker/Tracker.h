@@ -54,7 +54,7 @@
 
 #include "AP_Arming.h"
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -116,7 +116,7 @@ private:
     ModeServoTest mode_servotest;
     ModeStop mode_stop;
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif
 
