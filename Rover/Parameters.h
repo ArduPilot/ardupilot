@@ -383,7 +383,7 @@ public:
     // stick mixing for auto modes
     AP_Int8     stick_mixing;
 
-#ifdef ENABLE_SCRIPTING
+#if ENABLE_SCRIPTING
     AP_Scripting scripting;
 #endif // ENABLE_SCRIPTING
 
