@@ -139,7 +139,7 @@ Rover::Rover(void) :
 {
 }
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 // set target location (for use by scripting)
 bool Rover::set_target_location(const Location& target_loc)
 {
@@ -218,7 +218,7 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
     }
     return false;
 }
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
 #if STATS_ENABLED == ENABLED
 /*
