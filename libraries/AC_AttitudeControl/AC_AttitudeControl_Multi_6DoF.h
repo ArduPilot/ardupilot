@@ -1,5 +1,5 @@
 #pragma once
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include "AC_AttitudeControl_Multi.h"
 
@@ -94,4 +94,4 @@ private:
 
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
