@@ -915,7 +915,7 @@ void QuadPlane::check_yaw_reset(void)
     if (new_ekfYawReset_ms != ekfYawReset_ms) {
         attitude_control->inertial_frame_reset();
         ekfYawReset_ms = new_ekfYawReset_ms;
-        gcs().send_text(MAV_SEVERITY_INFO, "EKF yaw reset %.2f", (double)degrees(yaw_angle_change_rad));
+        AP::logger().Write_Event(LogEvent::EKF_YAW_RESET);
     }
 }
 
