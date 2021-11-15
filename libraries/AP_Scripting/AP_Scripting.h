@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -112,4 +112,4 @@ namespace AP {
     AP_Scripting * scripting(void);
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
