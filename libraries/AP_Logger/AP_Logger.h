@@ -561,6 +561,7 @@ private:
     struct file_list {
         struct file_list *next;
         const char *filename;
+        char log_filename[16];
     };
     struct {
         struct file_list *head, *tail;
