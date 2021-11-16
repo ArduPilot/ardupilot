@@ -1,5 +1,5 @@
-Release 4.1.3beta1 9th November 2021
-------------------------------------
+Release 4.1.3 16th November 2021
+--------------------------------
 
 This is a minor release with some bug fixes and small number of new
 features.
@@ -32,8 +32,14 @@ features.
  - allow for interruption of quadplane guided takeoff with a new
    target location
 
-I plan on this being a short beta, with 4.1.3 final in a few days if
-no issues are found.
+ - fixed creation of APM/LOGS directory on some boards
+
+ - added RCn_OPTION switch for enabling fixed wing AUTOTUNE in any
+   stabilized flight mode (useful for LOITER and AUTO modes)
+
+ - support Durandal with alternative ICM-20602 IMU
+
+ - removed a spurious EKF yaw reset message
 
 Happy flying!
 
