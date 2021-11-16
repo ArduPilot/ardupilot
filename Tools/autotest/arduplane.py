@@ -3442,6 +3442,10 @@ class AutoTestPlane(AutoTest):
              "Test MegaSquirt EFI",
              self.MegaSquirt),
 
+            ("MSP_DJI",
+             "Test MSP DJI serial output",
+             self.test_msp_dji),
+
             ("LogUpload",
              "Log upload",
              self.log_upload),
