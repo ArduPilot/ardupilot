@@ -340,12 +340,17 @@ void AP_Vehicle::write_notch_log_messages() const
 // run notch update at either loop rate or 200Hz
 void AP_Vehicle::update_dynamic_notch_at_specified_rate()
 {
+    if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
+        update_dynamic_notch();
+        return;
+    }
+
+    // decimated update at 200Hz
     const uint32_t now = AP_HAL::millis();
 
-    if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::LoopRateUpdate)
-        || now - _last_notch_update_ms > 5) {
-        update_dynamic_notch();
+    if (now - _last_notch_update_ms > 5) {
         _last_notch_update_ms = now;
+        update_dynamic_notch();
     }
 }
 
