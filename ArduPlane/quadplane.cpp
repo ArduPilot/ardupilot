@@ -884,6 +884,9 @@ void QuadPlane::hold_stabilize(float throttle_in)
 // run the multicopter Z controller
 void QuadPlane::run_z_controller(void)
 {
+    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED ) {
+        return;
+    }
     const uint32_t now = AP_HAL::millis();
     if (tailsitter.in_vtol_transition(now)) {
         // never run Z controller in tailsitter transtion
