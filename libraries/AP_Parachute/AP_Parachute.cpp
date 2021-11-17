@@ -209,6 +209,10 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
             hal.util->snprintf(buffer, buflen, "Chute invalid relay %d", int(_release_type));
             return false;
         }
+        if (_release_initiated) {
+            hal.util->snprintf(buffer, buflen, "Chute is released");
+            return false;
+        }
     }
     return true;
 }
