@@ -1,0 +1,9 @@
+# settings for battery monitoring
+BATT_MONITOR 4
+BATT_AMP_PERVLT 37.2300
+BATT_VOLT_MULT 18.4615
+BATT_AMP_OFFSET 0.63
+
+# uart settings for mission computer
+SERIAL2_PROTOCOL 2
+SERIAL2_BAUD 921 
