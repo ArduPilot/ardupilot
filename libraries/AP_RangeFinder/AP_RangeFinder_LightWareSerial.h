@@ -19,6 +19,7 @@ protected:
 private:
     // get a reading
     bool get_reading(float &reading_m) override;
+    bool is_lost_signal_distance(int16_t distance_cm, int16_t distance_cm_max);
 
     char linebuf[10];           // legacy protocol buffer
     uint8_t linebuf_len;        // legacy protocol buffer length
