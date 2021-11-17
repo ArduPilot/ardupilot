@@ -311,7 +311,9 @@ case AUX_FUNC::ARSPD_CALIBRATE:
 
     case AUX_FUNC::PARACHUTE_RELEASE:
 #if PARACHUTE == ENABLED
-        plane.parachute_manual_release();
+        if (ch_flag == AuxSwitchPos::HIGH) {
+            plane.parachute_manual_release();
+        }
 #endif
         break;
 
