@@ -892,7 +892,7 @@ void QuadPlane::run_z_controller(void)
         // never run Z controller in tailsitter transtion
         return;
     }
-    if (!pos_control->is_active_z()) {
+    if ((now - last_pidz_active_ms) > 20) {
         // set vertical speed and acceleration limits
         pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
