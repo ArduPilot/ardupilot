@@ -88,6 +88,7 @@ void Copter::enable_motor_output()
 void Copter::read_radio()
 {
     const uint32_t tnow_ms = millis();
+    static bool is_change_flight_mode = false;
 
     if (rc().read_input()) {
         ap.new_radio_frame = true;
@@ -104,6 +105,11 @@ void Copter::read_radio()
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
         rc_throttle_control_in_filter.apply(channel_throttle->get_control_in(), dt);
         last_radio_update_ms = tnow_ms;
+
+        if (is_change_flight_mode) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Radio Fail has been released.");
+            is_change_flight_mode = false;
+        }
         return;
     }
 
@@ -129,6 +135,17 @@ void Copter::read_radio()
         return;
     }
 
+    if (timeout == FS_RADIO_TIMEOUT_MS) {
+        // RC Radio
+        if (!is_change_flight_mode) {
+            set_mode(Mode::Number::BRAKE, ModeReason::RADIO_FAILSAFE);
+            is_change_flight_mode = true;
+        }
+        if (elapsed < uint32_t(g.failsafe_radio_action_delay + FS_RADIO_TIMEOUT_MS)) {
+            return;
+        }
+    }
+    
     // Nobody ever talks to us.  Log an error and enter failsafe.
     AP::logger().Write_Error(LogErrorSubsystem::RADIO, LogErrorCode::RADIO_LATE_FRAME);
     set_failsafe_radio(true);
