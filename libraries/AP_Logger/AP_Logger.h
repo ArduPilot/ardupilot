@@ -11,11 +11,7 @@
 
 // set default for HAL_LOGGING_DATAFLASH_ENABLED
 #ifndef HAL_LOGGING_DATAFLASH_ENABLED
-    #ifdef HAL_LOGGING_DATAFLASH
-        #define HAL_LOGGING_DATAFLASH_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_DATAFLASH_ENABLED 0
-    #endif
+#define HAL_LOGGING_DATAFLASH_ENABLED HAL_LOGGING_ENABLED
 #endif
 
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
@@ -45,10 +41,6 @@
 #endif
 
 // sanity checks:
-#if defined(HAL_LOGGING_DATAFLASH) && !HAL_LOGGING_DATAFLASH_ENABLED
-#error Can not default to dataflash if it is not enabled
-#endif
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #if HAL_LOGGING_DATAFLASH_ENABLED
         #error DATAFLASH not supported on SITL; you probably mean SITL
