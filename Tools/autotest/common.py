@@ -359,22 +359,27 @@ class MSP_Generic(Telem):
 
     def update_read(self):
         for byte in self.do_read():
+            if sys.version_info[0] < 3:
+                c = byte[0]
+                byte = ord(c)
+            else:
+                c = chr(byte)
             # print("Got (0x%02x) (%s) (%s) state=%s" % (byte, chr(byte), str(type(byte)), self.state))
             if self.state == self.STATE_IDLE:
                 # reset state
                 self.set_state(self.STATE_WANT_HEADER_DOLLARS)
                 # deliberate fallthrough right here
             if self.state == self.STATE_WANT_HEADER_DOLLARS:
-                if chr(byte) == '$':
+                if c == '$':
                     self.set_state(self.STATE_WANT_HEADER_M)
                 continue
             if self.state == self.STATE_WANT_HEADER_M:
-                if chr(byte) != 'M':
+                if c != 'M':
                     raise Exception("Malformed packet")
                 self.set_state(self.STATE_WANT_HEADER_GT)
                 continue
             if self.state == self.STATE_WANT_HEADER_GT:
-                if chr(byte) != '>':
+                if c != '>':
                     raise Exception("Malformed packet")
                 self.set_state(self.STATE_WANT_DATA_SIZE)
                 continue
