@@ -47,6 +47,7 @@ private:
     uint32_t ICAO_address;
     bool initialised = false;
     ADSB_EMITTER_TYPE type;
+    uint64_t stationary_object_created_ms; // allows expiring of slow/stationary objects
 };
         
 class ADSB {
