@@ -5,6 +5,7 @@
 #include <APM_Control/AR_AttitudeControl.h>
 #include <APM_Control/AR_PosControl.h>
 #include <AC_Avoidance/AP_OAPathPlanner.h>
+#include "AR_PivotTurn.h"
 
 const float AR_WPNAV_HEADING_UNKNOWN = 99999.0f; // used to indicate to set_desired_location method that next leg's heading is unknown
 
@@ -84,7 +85,7 @@ public:
     // accessors for parameter values
     float get_default_speed() const { return _speed_max; }
     float get_radius() const { return _radius; }
-    float get_pivot_rate() const { return _pivot_rate; }
+    float get_pivot_rate() const { return _pivot.get_rate_max(); }
 
     // calculate stopping location using current position and attitude controller provided maximum deceleration
     // returns true on success, false on failure
@@ -107,14 +108,6 @@ private:
     // calculate steering and speed to drive along line from origin to destination waypoint
     void update_steering_and_speed(const Location &current_loc, float dt);
 
-    // returns true if vehicle should pivot turn at next waypoint
-    bool use_pivot_steering_at_next_WP(float yaw_error_cd) const;
-
-    // updates _pivot_active flag based on heading error to destination
-    // relies on update_distance_and_bearing_to_destination having been called first
-    // to update _oa_wp_bearing and _reversed variables
-    void update_pivot_active_flag();
-
     // adjust speed to ensure it does not fall below value held in SPEED_MIN
     // desired_speed should always be positive (or zero)
     void apply_speed_min(float &desired_speed) const;
@@ -126,9 +119,7 @@ private:
     AP_Float _speed_max;            // target speed between waypoints in m/s
     AP_Float _speed_min;            // target speed minimum in m/s.  Vehicle will not slow below this speed for corners
     AP_Float _radius;               // distance in meters from a waypoint when we consider the waypoint has been reached
-    AP_Int16 _pivot_angle;          // angle error that leads to pivot turn
-    AP_Int16 _pivot_rate;           // desired turn rate during pivot turns in deg/sec
-    AP_Float _pivot_delay;          // waiting time after pivot turn
+    AR_PivotTurn _pivot;            // pivot turn controller
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library
@@ -144,12 +135,9 @@ private:
 
     // variables held in vehicle code (for now)
     float _turn_radius;             // vehicle turn radius in meters
-    bool _pivot_possible;           // true if vehicle can pivot
-    bool _pivot_active;             // true if vehicle is currently pivoting
 
     // variables for navigation
     uint32_t _last_update_ms;       // system time of last call to update
-    uint32_t _pivot_start_ms;       // system time when pivot turn started
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set
