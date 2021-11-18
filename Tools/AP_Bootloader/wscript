@@ -31,7 +31,7 @@ def build(bld):
     bld(
         # build libcanard headers
         source=bld.path.ant_glob("modules/DroneCAN/DSDL/**/*.uavcan"),
-        rule="python3 ${SRCROOT}/modules/DroneCAN/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/DroneCAN/libcanard/dsdlc_generated ${SRCROOT}/modules/DroneCAN/DSDL/uavcan ${SRCROOT}/modules/DroneCAN/DSDL/ardupilot ${SRCROOT}/modules/DroneCAN/DSDL/com",
+        rule="python3 ${SRCROOT}/modules/DroneCAN/libcanard/dsdl_compiler/libcanard_dsdlc --header_only --outdir ${BUILDROOT}/modules/DroneCAN/libcanard/dsdlc_generated ${SRCROOT}/modules/DroneCAN/DSDL/uavcan ${SRCROOT}/modules/DroneCAN/DSDL/ardupilot ${SRCROOT}/modules/DroneCAN/DSDL/com ${SRCROOT}/modules/DroneCAN/DSDL/dronecan",
         group='dynamic_sources',
     )
         
