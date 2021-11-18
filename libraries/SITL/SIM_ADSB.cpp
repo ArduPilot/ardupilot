@@ -55,14 +55,19 @@ void ADSB_Vehicle::update(float delta_t)
         type = (ADSB_EMITTER_TYPE)(rand() % (ADSB_EMITTER_TYPE_POINT_OBSTACLE + 1));
         // don't allow surface emitters to move
         if (type == ADSB_EMITTER_TYPE_POINT_OBSTACLE) {
+            stationary_object_created_ms = AP_HAL::millis64();
             velocity_ef.zero();
         } else {
+            stationary_object_created_ms = 0;
             velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
             velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
             if (type < ADSB_EMITTER_TYPE_EMERGENCY_SURFACE) {
                 velocity_ef.z = Aircraft::rand_normal(-3, 3);
             }
         }
+    } else if (stationary_object_created_ms > 0 && AP_HAL::millis64() - stationary_object_created_ms > AP_MSEC_PER_HOUR) {
+        // regenerate stationary objects so we don't randomly fill up the screen with them over time
+        initialised = false;
     }
 
     position += velocity_ef * delta_t;
