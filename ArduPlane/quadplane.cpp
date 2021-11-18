@@ -2485,10 +2485,10 @@ void QuadPlane::vtol_position_controller(void)
                 }
             }
 #if AP_TERRAIN_AVAILABLE
-            float terrain_altitude_offset_cm;
-            if (plane.next_WP_loc.terrain_alt && plane.terrain.height_terrain_difference_home(terrain_altitude_offset_cm, true)) {
+            float terrain_altitude_offset;
+            if (plane.next_WP_loc.terrain_alt && plane.terrain.height_terrain_difference_home(terrain_altitude_offset, true)) {
                 // Climb if current terrain is above home, target_altitude_cm is reltive to home
-                target_altitude_cm += MAX(terrain_altitude_offset_cm*100,0);
+                target_altitude_cm += MAX(terrain_altitude_offset*100,0);
             }
 #endif
             float zero = 0;
