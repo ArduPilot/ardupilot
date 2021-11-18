@@ -587,6 +587,9 @@ AP_GPS_UBLOX::read(void)
             break;
         }
         const uint8_t data = rdata;
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&data, 1);
+#endif
 
 #if GPS_MOVING_BASELINE
         if (rtcm3_parser) {

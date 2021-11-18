@@ -22,6 +22,16 @@
 #include <AP_RTC/JitterCorrection.h>
 #include "AP_GPS.h"
 
+#ifndef AP_GPS_DEBUG_LOGGING_ENABLED
+// enable this to log all bytes from the GPS. Also needs a call to
+// log_data() in each backend
+#define AP_GPS_DEBUG_LOGGING_ENABLED 0
+#endif
+
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+#include <AP_HAL/utility/RingBuffer.h>
+#endif
+
 class AP_GPS_Backend
 {
 public:
@@ -140,6 +150,11 @@ protected:
         return gps.get_type(state.instance);
     }
 
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+    // log some data for debugging
+    void log_data(const uint8_t *data, uint16_t length);
+#endif
+
 private:
     // itow from previous message
     uint32_t _last_itow;
@@ -150,4 +165,13 @@ private:
     uint16_t _rate_counter;
 
     JitterCorrection jitter_correction;
+
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+    struct {
+        int fd = -1;
+        ByteBuffer buf{32768};
+        bool io_registered;
+    } logging;
+    void logging_update(void);
+#endif
 };
