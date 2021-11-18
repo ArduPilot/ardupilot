@@ -4769,6 +4769,39 @@ class AutoTestCopter(AutoTest):
                 "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
                 (peakdb2, peakdb1))
 
+        # Now do it again for an octacopter
+        self.context_push()
+        ex = None
+        try:
+            self.progress("Flying Octacopter with ESC telemetry driven dynamic notches")
+            self.set_parameter("INS_HNTCH_OPTS", 0)
+            self.customise_SITL_commandline(
+                [],
+                defaults_filepath=','.join(self.model_defaults_filepath("octa")),
+                model="octa"
+            )
+            freq, vfr_hud, peakdb1 = self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
+
+            # now add notch-per motor and check that the peak is squashed
+            self.set_parameter("INS_HNTCH_HMNCS", 1)
+            self.set_parameter("INS_HNTCH_OPTS", 2)
+            self.reboot_sitl()
+
+            freq, vfr_hud, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+            # notch-per-motor should do better, but check for within 5%
+            if peakdb2 * 1.05 > peakdb1:
+                raise NotAchievedException(
+                    "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
+                    (peakdb2, peakdb1))
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         # find a motor peak
         self.takeoff(10, mode="ALT_HOLD")
@@ -4940,7 +4973,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameters({
                 "INS_LOG_BAT_OPT": 2,
                 "INS_HNTCH_ENABLE": 1,
-                "INS_HNTCH_HMNCS": 3,
+                "INS_HNTCH_HMNCS": 1,
                 "INS_HNTCH_MODE": 4,
                 "INS_HNTCH_FREQ": freq,
                 "INS_HNTCH_REF": vfr_hud.throttle/100.0,
