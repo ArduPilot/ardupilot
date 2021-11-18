@@ -30,6 +30,10 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -398,3 +402,37 @@ bad_yaw:
     return false;
 }
 #endif // GPS_MOVING_BASELINE
+
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+
+// log some data for debugging
+void AP_GPS_Backend::log_data(const uint8_t *data, uint16_t length)
+{
+    logging.buf.write(data, length);
+    if (!logging.io_registered) {
+        logging.io_registered = true;
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_GPS_Backend::logging_update, void));
+    }
+}
+
+// IO thread update, writing to log file
+void AP_GPS_Backend::logging_update(void)
+{
+    if (logging.fd == -1) {
+        char fname[] = "gpsN.log";
+        fname[3] = '1' + state.instance;
+        logging.fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_APPEND);
+    }
+    if (logging.fd != -1) {
+        uint32_t n = 0;
+        const uint8_t *p = logging.buf.readptr(n);
+        if (p != nullptr && n != 0) {
+            int32_t written = AP::FS().write(logging.fd, p, n);
+            if (written > 0) {
+                logging.buf.advance(written);
+                AP::FS().fsync(logging.fd);
+            }
+        }
+    }
+}
+#endif // AP_GPS_DEBUG_LOGGING_ENABLED
