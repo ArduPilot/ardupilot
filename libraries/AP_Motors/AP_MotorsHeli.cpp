@@ -96,12 +96,12 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Path: AP_MotorsHeli_RSC.cpp
     AP_SUBGROUPINFO(_main_rotor, "RSC_", 25, AP_MotorsHeli, AP_MotorsHeli_RSC),
 
-    // @Param: COLL_HOVER
+    // @Param: COL_HOVER
     // @DisplayName: Collective Hover Value
     // @Description: Collective needed to hover expressed as a number from 0 to 1 where 0 is H_COL_MIN and 1 is H_COL_MAX
     // @Range: 0.3 0.8
     // @User: Advanced
-    AP_GROUPINFO("COLL_HOVER", 26, AP_MotorsHeli, _collective_hover, AP_MOTORS_HELI_COLLECTIVE_HOVER_DEFAULT),
+    AP_GROUPINFO("COL_HOVER", 26, AP_MotorsHeli, _collective_hover, AP_MOTORS_HELI_COLLECTIVE_HOVER_DEFAULT),
 
     // @Param: HOVER_LEARN
     // @DisplayName: Hover Value Learning
