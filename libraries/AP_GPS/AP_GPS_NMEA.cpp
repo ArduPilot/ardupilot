@@ -40,9 +40,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// optionally log all NMEA data for debug purposes
-// #define NMEA_LOG_PATH "nmea.log"
-
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
@@ -56,18 +53,12 @@ bool AP_GPS_NMEA::read(void)
     numc = port->available();
     while (numc--) {
         char c = port->read();
-#ifdef NMEA_LOG_PATH
-        static FILE *logf = nullptr;
-        if (logf == nullptr) {
-            logf = fopen(NMEA_LOG_PATH, "wb");
-        }
-        if (logf != nullptr) {
-            ::fwrite(&c, 1, 1, logf);
-        }
-#endif
         if (_decode(c)) {
             parsed = true;
         }
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data((const uint8_t *)&c, 1);
+#endif
     }
     return parsed;
 }
