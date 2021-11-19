@@ -110,8 +110,10 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
 
 // avoid building/linking LTM:
 void AP_LTM_Telem::init() {};
+#if AP_DEVO_TELEM_ENABLED
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
+#endif
 
 void ReplayVehicle::init_ardupilot(void)
 {

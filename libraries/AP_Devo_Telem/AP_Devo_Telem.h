@@ -18,6 +18,11 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+#ifndef AP_DEVO_TELEM_ENABLED
+    #define AP_DEVO_TELEM_ENABLED   0
+#endif
+
+#if AP_DEVO_TELEM_ENABLED
 class AP_DEVO_Telem {
 public:
     //constructor
@@ -43,3 +48,4 @@ private:
     uint32_t _last_frame_ms;
 
 };
+#endif
