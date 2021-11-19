@@ -67,6 +67,8 @@ enum Rotation : uint8_t {
     ROTATION_PITCH_315           = 39,
     ROTATION_ROLL_90_PITCH_315   = 40,
     ROTATION_PITCH_7             = 41,
+    ROTATION_ROLL_0_PITCH_69_YAW_270 = 42, // this is actually roll 0, pitch 68.9, yaw 270
+    ROTATION_ROLL_0_PITCH_111_YAW_270 = 43, // this is actually roll 0, pitch 111.1, yaw 270
     ///////////////////////////////////////////////////////////////////////
     // Do not add more rotations without checking that there is not a conflict
     // with the MAVLink spec. MAV_SENSOR_ORIENTATION is expected to match our
