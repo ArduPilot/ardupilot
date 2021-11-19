@@ -17,19 +17,21 @@
    DEVO Telemetry library
 */
 
-#define DEVOM_SYNC_BYTE        0xAA
 
-
-#define AP_SERIALMANAGER_DEVO_TELEM_BAUD        38400
-#define AP_SERIALMANAGER_DEVO_BUFSIZE_RX        0
-#define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
 
 #include "AP_Devo_Telem.h"
+
+#if AP_DEVO_TELEM_ENABLED
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <GCS_MAVLink/GCS.h>
+
+#define DEVOM_SYNC_BYTE        0xAA
+#define AP_SERIALMANAGER_DEVO_TELEM_BAUD        38400
+#define AP_SERIALMANAGER_DEVO_BUFSIZE_RX        0
+#define AP_SERIALMANAGER_DEVO_BUFSIZE_TX        32
 
 extern const AP_HAL::HAL& hal;
 
@@ -133,3 +135,4 @@ void AP_DEVO_Telem::tick(void)
         send_frames();
     }
 }
+#endif
