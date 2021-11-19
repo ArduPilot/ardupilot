@@ -16,6 +16,11 @@ protected:
         return MAV_DISTANCE_SENSOR_LASER;
     }
 
+    bool get_signal_quality_pct(uint8_t &quality_pct) const override {
+        quality_pct = no_signal ? 0 : 100;
+        return true;
+    }
+
 private:
     // get a reading
     bool get_reading(float &reading_m) override;
@@ -35,4 +40,6 @@ private:
     } protocol_state;
     uint8_t legacy_valid_count;
     uint8_t binary_valid_count;
+
+    bool no_signal = false;
 };
