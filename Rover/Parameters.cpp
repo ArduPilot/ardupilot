@@ -282,10 +282,6 @@ const AP_Param::Info Rover::var_info[] = {
     // @Path: ../libraries/AP_SerialManager/AP_SerialManager.cpp
     GOBJECT(serial_manager,         "SERIAL",   AP_SerialManager),
 
-    // @Group: NAVL1_
-    // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
-    GOBJECT(L1_controller,         "NAVL1_",   AP_L1_Control),
-
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
@@ -660,6 +656,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(ais, "AIS_",  50, ParametersG2, AP_AIS),
 #endif
 
+    // @Group: PSC
+    // @Path: ../libraries/APM_Control/AR_PosControl.cpp
+    AP_SUBGROUPINFO(pos_control, "PSC", 51, ParametersG2, AR_PosControl),
+
     AP_GROUPEND
 };
 
@@ -709,7 +709,8 @@ ParametersG2::ParametersG2(void)
     avoid(),
     follow(),
     windvane(),
-    wp_nav(attitude_control, rover.L1_controller),
+    pos_control(attitude_control),
+    wp_nav(attitude_control, pos_control),
     sailboat()
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -744,7 +745,6 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
     { Parameters::k_param_pivot_turn_angle_old,   0,  AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
     { Parameters::k_param_waypoint_radius_old,    0,  AP_PARAM_FLOAT,  "WP_RADIUS" },
-    { Parameters::k_param_waypoint_overshoot_old, 0,  AP_PARAM_FLOAT,  "WP_OVERSHOOT" },
     { Parameters::k_param_g2,                20,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
 
     { Parameters::k_param_g2,                32,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MIN" },
@@ -791,9 +791,6 @@ void Rover::load_parameters(void)
 
     SRV_Channels::upgrade_parameters();
     hal.console->printf("load_all took %uus\n", unsigned(micros() - before));
-
-    // set a more reasonable default NAVL1_PERIOD for rovers
-    L1_controller.set_default_period(NAVL1_PERIOD);
 
     // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
     const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
