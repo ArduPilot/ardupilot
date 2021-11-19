@@ -34,7 +34,6 @@
 #include <AP_Compass/AP_Compass.h>                  // ArduPilot Mega Magnetometer Library
 #include <AP_Declination/AP_Declination.h>          // Compass declination library
 #include <AP_InertialSensor/AP_InertialSensor.h>    // Inertial Sensor (uncalibated IMU) Library
-#include <AP_L1_Control/AP_L1_Control.h>
 #include <AP_Math/AP_Math.h>                        // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Mission/AP_Mission.h>                  // Mission command library
 #include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
@@ -52,6 +51,7 @@
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <APM_Control/AR_AttitudeControl.h>
+#include <APM_Control/AR_PosControl.h>
 #include <AR_WPNav/AR_WPNav.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -155,8 +155,6 @@ private:
 
     // Arming/Disarming management class
     AP_Arming_Rover arming;
-
-    AP_L1_Control L1_controller{ahrs, nullptr};
 
 #if AP_OPTICALFLOW_ENABLED
     OpticalFlow optflow;

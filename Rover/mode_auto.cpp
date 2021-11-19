@@ -61,17 +61,18 @@ void ModeAuto::update()
     switch (_submode) {
         case Auto_WP:
         {
-            if (!g2.wp_nav.reached_destination()) {
+            // check if we've reached the destination
+            if (!g2.wp_nav.reached_destination() || g2.wp_nav.is_fast_waypoint()) {
                 // update navigation controller
                 navigate_to_waypoint();
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
                     if (!start_loiter()) {
-                        stop_vehicle();
+                        start_stop();
                     }
                 } else {
-                    stop_vehicle();
+                    start_stop();
                 }
                 // update distance to destination
                 _distance_to_destination = rover.current_loc.get_distance(g2.wp_nav.get_destination());
@@ -187,10 +188,10 @@ bool ModeAuto::get_desired_location(Location& destination) const
 }
 
 // set desired location to drive to
-bool ModeAuto::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
+bool ModeAuto::set_desired_location(const Location &destination, Location next_destination)
 {
     // call parent
-    if (!Mode::set_desired_location(destination, next_leg_bearing_cd)) {
+    if (!Mode::set_desired_location(destination, next_destination)) {
         return false;
     }
 
@@ -602,28 +603,35 @@ void ModeAuto::do_RTL(void)
 
 bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_stop_at_destination)
 {
-    // get heading to following waypoint (auto mode reduces speed to allow corning without large overshoot)
-    // in case of non-zero loiter duration, we provide heading-unknown to signal we should stop at the point
-    float next_leg_bearing_cd = AR_WPNAV_HEADING_UNKNOWN;
-    if (!always_stop_at_destination && loiter_duration == 0) {
-        next_leg_bearing_cd = mission.get_next_ground_course_cd(AR_WPNAV_HEADING_UNKNOWN);
-    }
-
     // retrieve and sanitize target location
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(rover.current_loc);
-    if (!set_desired_location(cmdloc, next_leg_bearing_cd)) {
-        return false;
+
+    // delayed stored in p1 in seconds
+    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
+    loiter_start_time = 0;
+    if (loiter_duration > 0) {
+        always_stop_at_destination = true;
+    }
+
+    // do not add next wp if there are no more navigation commands
+    AP_Mission::Mission_Command next_cmd;
+    if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
+        // single destination
+        if (!set_desired_location(cmdloc)) {
+            return false;
+        }
+    } else {
+        // retrieve and sanitize next destination location
+        Location next_cmdloc = next_cmd.content.location;
+        next_cmdloc.sanitize(cmdloc);
+        if (!set_desired_location(cmdloc, next_cmdloc)) {
+            return false;
+        }
     }
 
     // just starting so we haven't previously reached the waypoint
     previously_reached_wp = false;
-
-    // this will be used to remember the time in millis after we reach or pass the WP.
-    loiter_start_time = 0;
-
-    // this is the delay, stored in seconds, checked such that commanded delays < 0 delay 0 seconds
-    loiter_duration = ((int16_t) cmd.p1 < 0) ? 0 : cmd.p1;
 
     return true;
 }
