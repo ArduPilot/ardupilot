@@ -403,6 +403,9 @@ private:
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
+    // flight mode before MAV_CMD_DO_PAUSE_CONTINUE
+    Mode::Number mode_before_pause_continue;
+
     // Motor Output
     MOTOR_CLASS *motors;
     const struct AP_Param::GroupInfo *motors_var_info;

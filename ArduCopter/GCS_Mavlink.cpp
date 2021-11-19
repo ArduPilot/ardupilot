@@ -701,31 +701,59 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
         // requested pause from GCS
         if ((int8_t)packet.param1 == CMD_PAUSE) {
+
+            // current flight mode is AUTO
             if (copter.flightmode->mode_number() == Mode::Number::AUTO){
                 copter.mode_auto.mission.stop();
                 if (!copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
                     return MAV_RESULT_FAILED;
                 }
-                gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
+                copter.mode_before_pause_continue = Mode::Number::AUTO;
+                gcs().send_text(MAV_SEVERITY_INFO, "Paused auto mission");
                 return MAV_RESULT_ACCEPTED;
+
+            // current flight mode is GUIDED
+            } else if (copter.flightmode->mode_number() == Mode::Number::GUIDED){
+                if (!copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
+                    return MAV_RESULT_FAILED;
+                }
+                copter.mode_before_pause_continue = Mode::Number::GUIDED;
+                gcs().send_text(MAV_SEVERITY_INFO, "Paused guided command");
+                return MAV_RESULT_ACCEPTED;
+
+            // pausing flight modes other than GUIDED and AUTO not supported
             } else {
                 return  MAV_RESULT_FAILED;
             }
 
-            // requested resume GCS
+        // requested resume GCS
         } else if ((int8_t) packet.param1 == CMD_CONTINUE) {
-            if (copter.flightmode->mode_number() == Mode::Number::BRAKE) {
+
+            // previous flight mode was AUTO
+            if (copter.mode_before_pause_continue == Mode::Number::AUTO) {
                 if (!copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
                     return MAV_RESULT_FAILED;
                 }
                 copter.mode_auto.mission.resume();
-                gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
+                copter.mode_before_pause_continue = Mode::Number::BRAKE;
+                gcs().send_text(MAV_SEVERITY_INFO, "Resumed auto mission");
                 return MAV_RESULT_ACCEPTED;
+
+            // previous flight mode was GUIDED
+            } else if (copter.mode_before_pause_continue == Mode::Number::GUIDED) {
+                if (!copter.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
+                    return MAV_RESULT_FAILED;
+                }
+                copter.mode_before_pause_continue = Mode::Number::BRAKE;
+                gcs().send_text(MAV_SEVERITY_INFO, "Resumed guided command");
+                return MAV_RESULT_ACCEPTED;
+            } else {
+                return MAV_RESULT_FAILED;
             }
         }
 
-        // accept pause or continue if reached so far
-        return MAV_RESULT_ACCEPTED;
+        // fail pause or continue
+        return MAV_RESULT_FAILED;
 
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
