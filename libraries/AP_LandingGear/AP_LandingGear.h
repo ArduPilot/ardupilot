@@ -91,6 +91,7 @@ public:
 
 private:
     // Parameters
+    AP_Int8     _enable;
     AP_Int8     _startup_behaviour;     // start-up behaviour (see LandingGearStartupBehaviour)
     
     AP_Int8     _pin_deployed;
