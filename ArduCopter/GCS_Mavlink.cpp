@@ -695,6 +695,38 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
+
+    // pause or resume an auto mission or guided mode
+    case MAV_CMD_DO_PAUSE_CONTINUE:
+
+        // requested pause from GCS
+        if ((int8_t)packet.param1 == CMD_PAUSE) {
+            if (copter.flightmode->mode_number() == Mode::Number::AUTO){
+                copter.mode_auto.mission.stop();
+                if (!copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
+                    return MAV_RESULT_FAILED;
+                }
+                gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
+                return MAV_RESULT_ACCEPTED;
+            } else {
+                return  MAV_RESULT_FAILED;
+            }
+
+            // requested resume GCS
+        } else if ((int8_t) packet.param1 == CMD_CONTINUE) {
+            if (copter.flightmode->mode_number() == Mode::Number::BRAKE) {
+                if (!copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
+                    return MAV_RESULT_FAILED;
+                }
+                copter.mode_auto.mission.resume();
+                gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
+                return MAV_RESULT_ACCEPTED;
+            }
+        }
+
+        // accept pause or continue if reached so far
+        return MAV_RESULT_ACCEPTED;
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
