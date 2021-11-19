@@ -253,6 +253,7 @@ singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
 singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
 singleton RC_Channels method has_valid_input boolean
+singleton RC_Channels method set_override void uint8_t 1 NUM_RC_CHANNELS int16_t 1000 uint32_t 0
 singleton RC_Channels method lua_rc_channel RC_Channel uint8_t 1 NUM_RC_CHANNELS
 singleton RC_Channels method lua_rc_channel alias get_channel
 
