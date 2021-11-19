@@ -64,6 +64,10 @@ public:
     // get temperature reading in C.  returns true on success and populates temp argument
     virtual bool get_temp(float &temp) const { return false; }
 
+    // 0 is no return value, 100 is perfect.  false means signal
+    // quality is not available
+    virtual bool get_signal_quality_pct(uint8_t &quality_pct) const { return false; }
+
 protected:
 
     // update status based on distance measurement
