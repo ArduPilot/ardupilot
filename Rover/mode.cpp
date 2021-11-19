@@ -246,9 +246,9 @@ float Mode::get_desired_lat_accel() const
 }
 
 // set desired location
-bool Mode::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
+bool Mode::set_desired_location(const Location &destination, Location next_destination )
 {
-    if (!g2.wp_nav.set_desired_location(destination, next_leg_bearing_cd)) {
+    if (!g2.wp_nav.set_desired_location(destination, next_destination)) {
         return false;
     }
 

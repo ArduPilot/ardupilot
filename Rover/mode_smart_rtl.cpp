@@ -49,20 +49,33 @@ void ModeSmartRTL::update()
         case SmartRTL_PathFollow:
             // load point if required
             if (_load_point) {
-                Vector3f next_point;
-                if (!g2.smart_rtl.pop_point(next_point)) {
+                Vector3f dest_NED;
+                if (!g2.smart_rtl.pop_point(dest_NED)) {
                     // if not more points, we have reached home
                     gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
                     smart_rtl_state = SmartRTL_StopAtHome;
                     break;
+                } else {
+                    // peek at the next point.  this can fail if the IO task currently has the path semaphore
+                    Vector3f next_dest_NED;
+                    if (g2.smart_rtl.peek_point(next_dest_NED)) {
+                        if (!g2.wp_nav.set_desired_location_NED(dest_NED, next_dest_NED)) {
+                            // this should never happen because the EKF origin should already be set
+                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            smart_rtl_state = SmartRTL_Failure;
+                            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                        }
+                    } else {
+                        // no next point so add only immediate point
+                        if (!g2.wp_nav.set_desired_location_NED(dest_NED)) {
+                            // this should never happen because the EKF origin should already be set
+                            gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
+                            smart_rtl_state = SmartRTL_Failure;
+                            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                        }
+                    }
                 }
                 _load_point = false;
-                // set target destination to new point
-                if (!g2.wp_nav.set_desired_location_NED(next_point)) {
-                    // this failure should never happen but we add it just in case
-                    gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
-                    smart_rtl_state = SmartRTL_Failure;
-                }
             }
             // update navigation controller
             navigate_to_waypoint();

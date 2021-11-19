@@ -206,7 +206,7 @@ public:
         k_param_ins,
         k_param_compass,
         k_param_rcmap,
-        k_param_L1_controller,
+        k_param_L1_controller,          // unused
         k_param_steerController_old,    // unused
         k_param_barometer,
         k_param_notify,
@@ -411,6 +411,9 @@ public:
     // Automatic Identification System - for tracking sea-going vehicles
     AP_AIS ais;
 #endif
+
+    // position controller
+    AR_PosControl pos_control;
 };
 
 extern const AP_Param::Info var_info[];
