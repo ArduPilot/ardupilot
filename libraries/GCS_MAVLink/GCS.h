@@ -1050,6 +1050,9 @@ public:
 #if !HAL_MINIMIZE_FEATURES
     // LTM backend
     AP_LTM_Telem ltm_telemetry;
+#endif
+
+#if AP_DEVO_TELEM_ENABLED
     // Devo backend
     AP_DEVO_Telem devo_telemetry;
 #endif

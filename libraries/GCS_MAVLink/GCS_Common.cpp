@@ -2232,6 +2232,9 @@ void GCS::setup_uarts()
     }
 #if !HAL_MINIMIZE_FEATURES
     ltm_telemetry.init();
+#endif
+
+#if AP_DEVO_TELEM_ENABLED
     devo_telemetry.init();
 #endif
 }
