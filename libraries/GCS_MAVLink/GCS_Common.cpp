@@ -341,6 +341,15 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         return;
     }
 
+    uint8_t quality_pct = 0;
+    uint8_t quality;
+    if (sensor->get_signal_quality_pct(quality_pct)) {
+        // mavlink defines this field as 0 is unknown, 1 is invalid, 100 is perfect
+        quality = MAX(quality_pct, 1);
+    } else {
+        quality = 0;
+    }
+
     mavlink_msg_distance_sensor_send(
         chan,
         AP_HAL::millis(),                        // time since system boot TODO: take time of measurement
@@ -354,7 +363,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
         0,                                       // horizontal FOV
         0,                                       // vertical FOV
         (const float *)nullptr,                  // quaternion of sensor orientation for MAV_SENSOR_ROTATION_CUSTOM
-        0);                                      // Signal quality of the sensor. 0 = unknown/unset signal quality, 1 = invalid signal, 100 = perfect signal.
+        quality);                                // Signal quality of the sensor. 0 = unknown/unset signal quality, 1 = invalid signal, 100 = perfect signal.
 }
 // send any and all distance_sensor messages.  This starts by sending
 // any distance sensors not used by a Proximity sensor, then sends the
