@@ -901,10 +901,10 @@ class AutoTestCopter(AutoTest):
         self.setGCSfailsafe(0)
         self.set_parameter('FS_OPTIONS', 0)
         self.progress("All GCS failsafe tests complete")
-        self.reboot_sitl()
 
     # Tests all actions and logic behind the battery failsafe
     def fly_battery_failsafe(self, timeout=300):
+        self.context_push()
         ex = None
         try:
             self.test_battery_failsafe(timeout=timeout)
@@ -912,14 +912,7 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
-
-        self.set_parameters({
-            'BATT_LOW_VOLT': 0,
-            'BATT_CRT_VOLT': 0,
-            'BATT_FS_LOW_ACT': 0,
-            'BATT_FS_CRT_ACT': 0,
-            'FS_OPTIONS': 0,
-        })
+        self.context_pop()
         self.reboot_sitl()
 
         if ex is not None:
