@@ -30,6 +30,10 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
         logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_z_pid().get_pid_info() );
     }
+    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_xy()) {
+        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_x());
+        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_xy_pid().get_pid_info_y());
+    }
 #endif
 
     logger.Write_PID(LOG_PIDR_MSG, rollController.get_pid_info());
