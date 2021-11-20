@@ -58,7 +58,6 @@ void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, Vector2
     Vector2f delta_vel = accel * dt;
     if (!is_zero(limit.length_squared())) {
         // zero delta_vel if it will increase the velocity error
-        limit.normalize();
         if (is_positive(delta_vel * limit)) {
             delta_vel.zero();
         }
@@ -75,7 +74,6 @@ void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel
 
     if (!is_zero(limit.length_squared())) {
         // zero delta_vel if it will increase the velocity error
-        limit.normalize();
         if (is_positive(delta_pos * limit)) {
             delta_pos.zero();
         }
