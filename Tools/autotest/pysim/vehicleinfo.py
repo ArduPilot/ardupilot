@@ -333,6 +333,11 @@ class VehicleInfo(object):
                                             "default_params/rover-skid.parm",
                                             "default_params/balancebot.parm"],
             },
+            "motorboat": {
+                "waf_target": "bin/ardurover",
+                "default_params_filename": ["default_params/rover.parm",
+                                            "default_params/motorboat.parm"],
+            },
             "sailboat": {
                 "waf_target": "bin/ardurover",
                 "default_params_filename": ["default_params/rover.parm",
