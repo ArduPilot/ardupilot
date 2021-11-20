@@ -10,6 +10,10 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
+// pause or continue a mission
+#define MISSION_CONTINUE ENABLE
+#define MISSION_PAUSE DISABLE
+
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {
     AUTO_YAW_HOLD =             0,  // pilot controls the heading
