@@ -406,6 +406,12 @@ public:
     // return if external control is allowed in this mode (Guided or Guided-within-Auto)
     bool in_guided_mode() const override { return true; }
 
+    // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    float wp_bearing() const override;
+    float nav_bearing() const override;
+    float crosstrack_error() const override;
+    float get_desired_lat_accel() const override;
+
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
 
@@ -452,7 +458,16 @@ protected:
         Guided_Stop
     };
 
+    // enum for GUID_OPTIONS parameter
+    enum class Options : int32_t {
+        SCurvesUsedForNavigation = (1U << 6)
+    };
+
     bool _enter() override;
+
+    // returns true if GUID_OPTIONS bit set to use scurve navigation instead of position controller input shaping
+    // scurves provide path planning and object avoidance but cannot handle fast updates to the destination (for fast updates use position controller input shaping)
+    bool use_scurves_for_navigation() const;
 
     GuidedMode _guided_mode;    // stores which GUIDED mode the vehicle is in
 

@@ -637,8 +637,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("LOIT_SPEED_GAIN", 47, ParametersG2, loiter_speed_gain, 0.5f),
 
     // @Param: FS_OPTIONS
-    // @DisplayName: Rover Failsafe Options
-    // @Description: Bitmask to enable Rover failsafe options
+    // @DisplayName: Failsafe Options
+    // @Description: Bitmask to enable failsafe options
     // @Values: 0:None,1:Failsafe enabled in Hold mode
     // @Bitmask: 0:Failsafe enabled in Hold mode
     // @User: Advanced
@@ -659,6 +659,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Group: PSC
     // @Path: ../libraries/APM_Control/AR_PosControl.cpp
     AP_SUBGROUPINFO(pos_control, "PSC", 51, ParametersG2, AR_PosControl),
+
+    // @Param: GUID_OPTIONS
+    // @DisplayName: Guided mode options
+    // @Description: Options that can be applied to change guided mode behaviour
+    // @Bitmask: 6:SCurves used for navigation
+    // @User: Advanced
+    AP_GROUPINFO("GUID_OPTIONS", 52, ParametersG2, guided_options, 0),
 
     AP_GROUPEND
 };

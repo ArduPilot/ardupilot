@@ -414,6 +414,9 @@ public:
 
     // position controller
     AR_PosControl pos_control;
+
+    // guided options bitmask
+    AP_Int32 guided_options;
 };
 
 extern const AP_Param::Info var_info[];
