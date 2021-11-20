@@ -710,7 +710,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
                 return MAV_RESULT_ACCEPTED;
             }
 
-            // requested resume GCS
+            // requested resume from GCS
             else if ((int8_t) packet.param1 == MISSION_CONTINUE) {
                 copter.mode_auto.mission.resume();
                 gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
