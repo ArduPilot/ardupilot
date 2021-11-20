@@ -10,9 +10,9 @@
 #define ENABLE ENABLED
 #define DISABLE DISABLED
 
-// pause or continue a command
-#define CMD_CONTINUE ENABLE
-#define CMD_PAUSE DISABLE
+// pause or continue a mission
+#define MISSION_CONTINUE ENABLE
+#define MISSION_PAUSE DISABLE
 
 // Autopilot Yaw Mode enumeration
 enum autopilot_yaw_mode {

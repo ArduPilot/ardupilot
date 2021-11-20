@@ -696,34 +696,26 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
 
-    // pause or resume an auto mission or guided mode
+    // pause or resume an auto mission
     case MAV_CMD_DO_PAUSE_CONTINUE:
 
-        // requested pause from GCS
-        if ((int8_t)packet.param1 == CMD_PAUSE) {
+        // current flight mode is AUTO
+        if (copter.flightmode->mode_number() == Mode::Number::AUTO) {
 
-            // current flight mode is AUTO
-            if (copter.flightmode->mode_number() == Mode::Number::AUTO){
+            // requested pause from GCS
+            if ((int8_t) packet.param1 == MISSION_PAUSE) {
                 copter.mode_auto.mission.stop();
-                if (!copter.set_mode(Mode::Number::BRAKE, ModeReason::GCS_COMMAND)) {
-                    return MAV_RESULT_FAILED;
-                }
-                copter.mode_before_pause_continue = Mode::Number::AUTO;
-                gcs().send_text(MAV_SEVERITY_INFO, "Paused auto mission");
+                copter.mode_auto.loiter_start();
+                gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
                 return MAV_RESULT_ACCEPTED;
+            }
 
-        // requested resume GCS
-        } else if ((int8_t) packet.param1 == CMD_CONTINUE) {
-
-            // previous flight mode was AUTO
-            if (copter.mode_before_pause_continue == Mode::Number::AUTO) {
-                if (!copter.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
-                    return MAV_RESULT_FAILED;
-                }
+            // requested resume GCS
+            else if ((int8_t) packet.param1 == MISSION_CONTINUE) {
                 copter.mode_auto.mission.resume();
-                copter.mode_before_pause_continue = Mode::Number::BRAKE;
-                gcs().send_text(MAV_SEVERITY_INFO, "Resumed auto mission");
+                gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
                 return MAV_RESULT_ACCEPTED;
+            }
         }
 
         // fail pause or continue
