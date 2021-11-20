@@ -2364,17 +2364,23 @@ void QuadPlane::vtol_position_controller(void)
         // run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
-        Vector2f target_speed_xy;
+        Vector2f target_speed_xy_cms;
         if (distance > 0.1) {
-            target_speed_xy = diff_wp.normalized() * target_speed;
+            target_speed_xy_cms = diff_wp.normalized() * target_speed * 100;
         }
-        pos_control->set_vel_desired_xy_cms(target_speed_xy * 100);
+        if (!tailsitter.enabled()) {
+            // this method ignores pos-control velocity/accel limtis
+            pos_control->set_vel_desired_xy_cms(target_speed_xy_cms);
 
-        // reset position controller xy target to current position
-        // because we only want velocity control (no position control)
-        const Vector2f& curr_pos = inertial_nav.get_position_xy_cm();
-        pos_control->set_pos_target_xy_cm(curr_pos.x, curr_pos.y);
-        pos_control->set_accel_desired_xy_cmss(Vector2f());
+            // reset position controller xy target to current position
+            // because we only want velocity control (no position control)
+            const Vector2f& curr_pos = inertial_nav.get_position_xy_cm();
+            pos_control->set_pos_target_xy_cm(curr_pos.x, curr_pos.y);
+            pos_control->set_accel_desired_xy_cmss(Vector2f());
+        } else {
+            // tailsitters use input shaping and abide by velocity limits
+            pos_control->input_vel_accel_xy(target_speed_xy_cms, Vector2f());
+        }
 
         // run horizontal velocity controller
         run_xy_controller();
