@@ -395,7 +395,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 120
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("ASSIST_ALT", 16, QuadPlane, assist_alt, 0),
+    AP_GROUPINFO("ASSIST_ALT", 16, QuadPlane, assist_alt.alt, 0),
 
     // 17: TAILSIT_GSCMSK
     // 18: TAILSIT_GSCMIN
@@ -436,6 +436,21 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 10000
     AP_GROUPINFO("BACKTRANS_MS", 28, QuadPlane, back_trans_pitch_limit_ms, 3000),
 
+    // @Param: ASSIST_ALT2
+    // @DisplayName: Quadplane assistance 2nd altitude
+    // @Description: This is a second latching altitude for quadplane assistance. If non-zero then this becomes active once the aircraft passes this altitude plus 2 meters for the first time after arming.
+    // @Units: m
+    // @Range: 0 120
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("ASSIST_ALT2", 29, QuadPlane, assist_alt.alt2, 0),
+
+    // @Param: ASSIST_ALT_ACT
+    // @DisplayName: Quadplane altitude assistance action
+    // @Description: Action to take on quadplane altitude assistance
+    // @Values: 0:None, 1:ClimbRTL, 2:ClimbGuided, 3:QHover, 4:QLoiter, 5:QLand, 6:QRTL
+    AP_GROUPINFO("ASSIST_ALT_ACT", 30, QuadPlane, assist_alt.action, 0),
+    
     AP_GROUPEND
 };
 
@@ -1284,6 +1299,47 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
 }
 
 /*
+  start altitude assistance
+*/
+void QuadPlane::start_alt_assist(float height_above_ground)
+{
+    assist_alt.in_assist = true;
+    gcs().send_text(MAV_SEVERITY_INFO, "Alt assist %.1fm", height_above_ground);
+    switch (AltAssistAction(assist_alt.action.get())) {
+    case AltAssistAction::None:
+        break;
+    case AltAssistAction::QHover:
+        if (plane.rc_failsafe_active()) {
+            plane.set_mode(plane.mode_qland, ModeReason::ALT_ASSIST);
+        } else {
+            plane.set_mode(plane.mode_qhover, ModeReason::ALT_ASSIST);
+        }
+        break;
+    case AltAssistAction::QLoiter:
+        if (plane.rc_failsafe_active()) {
+            plane.set_mode(plane.mode_qland, ModeReason::ALT_ASSIST);
+        } else {
+            plane.set_mode(plane.mode_qloiter, ModeReason::ALT_ASSIST);
+        }
+        break;
+    case AltAssistAction::QLand:
+        plane.set_mode(plane.mode_qland, ModeReason::ALT_ASSIST);
+        break;
+    case AltAssistAction::QRTL:
+        plane.set_mode(plane.mode_qrtl, ModeReason::ALT_ASSIST);
+        break;
+    case AltAssistAction::ClimbRTL:
+    case AltAssistAction::ClimbGuided: {
+        plane.set_mode(plane.mode_guided, ModeReason::ALT_ASSIST);
+        plane.guided_WP_loc.alt += assist_alt.pre_climb_alt*100;
+        plane.next_WP_loc.alt += assist_alt.pre_climb_alt*100;
+        assist_alt.reached_climb_alt = false;
+        break;
+    }
+    }
+}
+
+/*
   return true if the quadplane should provide stability assistance
  */
 bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
@@ -1292,6 +1348,8 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
         // disarmed or disabled by aux switch or because a control surface tailsitter
         in_angle_assist = false;
         angle_error_start_ms = 0;
+        assist_alt.in_assist = false;
+        assist_alt.reached_climb_alt = false;
         return false;
     }
 
@@ -1330,26 +1388,51 @@ bool QuadPlane::should_assist(float aspeed, bool have_airspeed)
 
     const uint32_t now = AP_HAL::millis();
 
+    const bool should_assist_alt = !in_vtol_land_sequence() && !in_vtol_mode();
+
     /*
       optional assistance when altitude is too close to the ground
      */
-    if (assist_alt > 0) {
+    if (should_assist_alt && assist_alt.alt > 0) {
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
-        if (height_above_ground < assist_alt) {
-            if (alt_error_start_ms == 0) {
-                alt_error_start_ms = now;
+        if (height_above_ground < assist_alt.alt) {
+            if (assist_alt.start_ms == 0) {
+                assist_alt.start_ms = now;
             }
-            if (now - alt_error_start_ms > assist_delay*1000) {
+            if (now - assist_alt.start_ms > assist_delay*1000) {
                 // we've been below assistant alt for Q_ASSIST_DELAY seconds
-                if (!in_alt_assist) {
-                    in_alt_assist = true;
-                    gcs().send_text(MAV_SEVERITY_INFO, "Alt assist %.1fm", height_above_ground);
+                if (!assist_alt.in_assist) {
+                    start_alt_assist(height_above_ground);
                 }
                 return true;
             }
         } else {
-            in_alt_assist = false;
-            alt_error_start_ms = 0;
+            assist_alt.in_assist = false;
+            assist_alt.start_ms = 0;
+        }
+    }
+    if (should_assist_alt && assist_alt.alt2 > 0) {
+        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        if (!assist_alt.alt2_enabled) {
+            if (height_above_ground > assist_alt.alt2+2) {
+                assist_alt.alt2_enabled = true;
+                assist_alt.in_assist = false;
+                assist_alt.start_ms = 0;
+            }
+        } else if (height_above_ground < assist_alt.alt2) {
+            if (assist_alt.start_ms == 0) {
+                assist_alt.start_ms = now;
+            }
+            if (now - assist_alt.start_ms > assist_delay*1000) {
+                // we've been below assistant alt for Q_ASSIST_DELAY seconds
+                if (!assist_alt.in_assist) {
+                    start_alt_assist(height_above_ground);
+                }
+                return true;
+            }
+        } else {
+            assist_alt.in_assist = false;
+            assist_alt.start_ms = 0;
         }
     }
 
@@ -3287,6 +3370,23 @@ bool QuadPlane::guided_mode_enabled(void)
         plane.mission.get_current_nav_cmd().id == MAV_CMD_NAV_LOITER_TURNS) {
         // loiter turns is a fixed wing only operation
         return false;
+    }
+    /*
+      check for special handling of altitude assistance climb
+     */
+    if (plane.control_mode == &plane.mode_guided &&
+        plane.control_mode_reason == ModeReason::ALT_ASSIST &&
+        !assist_alt.reached_climb_alt) {
+        if (plane.current_loc.alt + 50 > plane.next_WP_loc.alt) {
+            // within 0.5m of target alt
+            assist_alt.reached_climb_alt = true;
+            gcs().send_text(MAV_SEVERITY_INFO, "Alt assist reached alt");
+            if (assist_alt.action == AltAssistAction::ClimbRTL &&
+                AP_HAL::millis() - assist_alt.start_ms > 2000) {
+                plane.set_mode(plane.mode_rtl, ModeReason::ALT_ASSIST);
+            }
+        }
+        return true;
     }
     return guided_mode != 0;
 }
