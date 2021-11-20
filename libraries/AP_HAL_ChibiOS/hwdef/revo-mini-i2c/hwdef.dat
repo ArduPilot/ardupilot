@@ -142,6 +142,9 @@ define HAL_PROBE_EXTERNAL_I2C_BAROS
 # look for internal I2C compass
 COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
 
+# also allow for probing of external compasses
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
 # SPI devices
 SPIDEV mpu6000   SPI1 DEVID1 MPU_CS   MODE3 1*MHZ 8*MHZ 
 SPIDEV dataflash SPI3 DEVID1 FLASH_CS MODE3 32*MHZ 32*MHZ
