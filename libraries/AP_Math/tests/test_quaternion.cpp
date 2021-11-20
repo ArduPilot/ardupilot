@@ -2,6 +2,8 @@
 
 #include <AP_Math/AP_Math.h>
 
+const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
 // Tests that quaternion multiplication obeys Hamilton's quaternion multiplication convention
 // i*i == j*j == k*k == i*j*k == -1
 TEST(QuaternionTest, QuaternionMultiplicationOfBases) {
