@@ -36,7 +36,7 @@ public:
     bool ap_online;
 private:
     // Socket manager
-    SocketExample sock = SocketExample(true);
+    SocketExample sock = SocketExample();
 
     // The address for the flight dynamics model
     // const char *libAP_JSON::fdm_address;
