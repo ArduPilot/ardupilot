@@ -21,9 +21,7 @@ public:
 
     // update_all - set target and measured inputs to P controller and calculate outputs
     // target and measurement are filtered
-    // if measurement is further than error_min or error_max (see set_limits method)
-    //   the target is moved closer to the measurement and limit_min or limit_max will be set true
-    float update_all(float &target, float measurement, bool &limit_min, bool &limit_max) WARN_IF_UNUSED;
+    float update_all(float &target, float measurement) WARN_IF_UNUSED;
 
     // set_limits - sets the maximum error to limit output and first and second derivative of output
     void set_limits(float output_min, float output_max, float D_Out_max = 0.0f, float D2_Out_max = 0.0f);

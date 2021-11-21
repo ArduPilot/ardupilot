@@ -23,11 +23,8 @@ AC_P_2D::AC_P_2D(float initial_p, float dt) :
 }
 
 // update_all - set target and measured inputs to P controller and calculate outputs
-// limit is set true if the target has been moved to limit the maximum position error
-Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement, bool &limit)
+Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement)
 {
-    limit = false;
-
     // calculate distance _error
     _error = (Vector2p{target_x, target_y} - measurement.topostype()).tofloat();
 
@@ -36,7 +33,6 @@ Vector2f AC_P_2D::update_all(postype_t &target_x, postype_t &target_y, const Vec
     if (is_positive(_error_max) && _error.limit_length(_error_max)) {
         target_x = measurement.x + _error.x;
         target_y = measurement.y + _error.y;
-        limit = true;
     }
 
     // MIN(_Dmax, _D2max / _kp) limits the max accel to the point where max jerk is exceeded
