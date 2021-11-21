@@ -318,11 +318,6 @@ AC_PosControl::AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
     _jerk_max_z_cmsss(POSCONTROL_JERK_Z * 100.0)
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    // initialise flags
-    _limit.pos_xy = true;
-    _limit.pos_up = true;
-    _limit.pos_down = true;
 }
 
 
@@ -620,7 +615,7 @@ void AC_PosControl::update_xy_controller()
     // Position Controller
 
     const Vector3f &curr_pos = _inav.get_position();
-    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos, _limit.pos_xy);
+    Vector2f vel_target = _p_pos_xy.update_all(_pos_target.x, _pos_target.y, curr_pos);
 
     // add velocity feed-forward scaled to compensate for optical flow measurement induced EKF noise
     vel_target *= ahrsControlScaleXY;
@@ -958,7 +953,7 @@ void AC_PosControl::update_z_controller()
     // calculate the target velocity correction
     float pos_target_zf = _pos_target.z;
 
-    _vel_target.z = _p_pos_z.update_all(pos_target_zf, curr_alt, _limit.pos_down, _limit.pos_up);
+    _vel_target.z = _p_pos_z.update_all(pos_target_zf, curr_alt);
     _vel_target.z *= AP::ahrs().getControlScaleZ();
 
     _pos_target.z = pos_target_zf;
