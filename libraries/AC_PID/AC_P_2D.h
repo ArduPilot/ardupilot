@@ -20,12 +20,12 @@ public:
     void set_dt(float dt) { _dt = dt; }
 
     // set target and measured inputs to P controller and calculate outputs
-    Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement, bool &limit) WARN_IF_UNUSED;
+    Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector2f &measurement) WARN_IF_UNUSED;
 
     // set target and measured inputs to P controller and calculate outputs
     // measurement is provided as 3-axis vector but only x and y are used
-    Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector3f &measurement, bool &limit) WARN_IF_UNUSED {
-        return update_all(target_x, target_y, Vector2f{measurement.x, measurement.y}, limit);
+    Vector2f update_all(postype_t &target_x, postype_t &target_y, const Vector3f &measurement) WARN_IF_UNUSED {
+        return update_all(target_x, target_y, Vector2f{measurement.x, measurement.y});
     }
 
     // set_limits - sets the maximum error to limit output and first and second derivative of output

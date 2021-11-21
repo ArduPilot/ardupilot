@@ -24,24 +24,17 @@ AC_P_1D::AC_P_1D(float initial_p, float dt) :
 
 // update_all - set target and measured inputs to P controller and calculate outputs
 // target and measurement are filtered
-// if measurement is further than error_min or error_max (see set_limits method)
-//   the target is moved closer to the measurement and limit_min or limit_max will be set true
-float AC_P_1D::update_all(float &target, float measurement, bool &limit_min, bool &limit_max)
+float AC_P_1D::update_all(float &target, float measurement)
 {
-    limit_min = false;
-    limit_max = false;
-
     // calculate distance _error
     _error = target - measurement;
 
     if (is_negative(_error_min) && (_error < _error_min)) {
         _error = _error_min;
         target = measurement + _error;
-        limit_min = true;
     } else if (is_positive(_error_max) && (_error > _error_max)) {
         _error = _error_max;
         target = measurement + _error;
-        limit_max = true;
     }
 
     // MIN(_Dxy_max, _D2xy_max / _kxy_P) limits the max accel to the point where max jerk is exceeded
