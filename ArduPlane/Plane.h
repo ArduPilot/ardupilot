@@ -1201,6 +1201,7 @@ private:
     };
 
     FlareMode flare_mode;
+    bool throttle_at_zero(void) const;
 
     // expo handling
     float roll_in_expo(bool use_dz) const;
