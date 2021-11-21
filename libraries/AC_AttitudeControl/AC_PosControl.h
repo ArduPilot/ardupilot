@@ -390,13 +390,6 @@ protected:
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
     } _flags;
 
-    // limit flags structure
-    struct poscontrol_limit_flags {
-        bool pos_xy;        // true if we have hit a horizontal position limit
-        bool pos_up;        // true if we have hit a vertical position limit while going up
-        bool pos_down;      // true if we have hit a vertical position limit while going down
-    } _limit;
-
     /// init_xy - initialise the position controller to the current position, velocity and acceleration.
     ///     This function is private and contains all the shared xy axis initialisation functions
     void init_xy();
