@@ -326,6 +326,15 @@ bool RC_Channel::in_trim_dz() const
     return is_bounded_int32(radio_in, radio_trim - dead_zone, radio_trim + dead_zone);
 }
 
+
+/*
+   return trues if input is within deadzone of min
+*/
+bool RC_Channel::within_min_dz() const
+{
+    return radio_in < radio_min + dead_zone;
+}
+
 void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_ms)
 {
     if (!rc().gcs_overrides_enabled()) {
