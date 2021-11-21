@@ -190,11 +190,16 @@ float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
+    /* force landing pitch if:
+       - flare switch high
+       - throttle stick at zero thrust
+       - in fixed wing non auto-throttle mode
+    */
     if (!quadplane_in_transition &&
         !control_mode->is_vtol_mode() &&
-        channel_throttle->in_trim_dz() &&
         !control_mode->does_auto_throttle() &&
-        flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
+        flare_mode == FlareMode::ENABLED_PITCH_TARGET &&
+        throttle_at_zero()) {
         demanded_pitch = landing.get_pitch_cd();
     }
 
