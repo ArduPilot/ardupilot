@@ -492,6 +492,7 @@ private:
         uint32_t last_log_ms;
         bool reached_wp_speed;
         uint32_t last_run_ms;
+        float pos1_start_speed;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
