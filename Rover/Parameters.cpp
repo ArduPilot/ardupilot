@@ -609,7 +609,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Group: WP_
     // @Path: ../libraries/AR_WPNav/AR_WPNav.cpp
-    AP_SUBGROUPINFO(wp_nav, "WP_", 43, ParametersG2, AR_WPNav),
+    AP_SUBGROUPINFO(wp_nav, "WP_", 43, ParametersG2, AR_WPNav_OA),
 
     // @Group: SAIL_
     // @Path: sailboat.cpp
