@@ -57,6 +57,10 @@ public:
 
     bool is_vectored() const { return enabled() && _is_vectored; }
 
+    bool has_fw_motor() const { return _have_fw_motor; }
+
+    bool has_vtol_motor() const { return _have_vtol_motor; }
+
     bool motors_active() const { return enabled() && _motors_active; }
 
     AP_Int8 enable;
@@ -89,6 +93,12 @@ public:
 private:
 
     bool setup_complete;
+
+    // true if a fixed forward motor is setup
+    bool _have_fw_motor;
+
+    // true if all motors tilt with no fixed VTOL motor
+    bool _have_vtol_motor;
 
     // refences for convenience
     QuadPlane& quadplane;

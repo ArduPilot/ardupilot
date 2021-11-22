@@ -1477,6 +1477,7 @@ void SLT_Transition::update()
         transition_low_airspeed_ms = now;
         if (have_airspeed && aspeed > plane.aparm.airspeed_min && !quadplane.assisted_flight) {
             transition_state = TRANSITION_TIMER;
+            airspeed_reached_tilt = quadplane.tiltrotor.current_tilt;
             gcs().send_text(MAV_SEVERITY_INFO, "Transition airspeed reached %.1f", (double)aspeed);
         }
         quadplane.assisted_flight = true;
@@ -1501,6 +1502,11 @@ void SLT_Transition::update()
             // transitions
             quadplane.attitude_control->reset_yaw_target_and_rate();
             quadplane.attitude_control->rate_bf_yaw_target(quadplane.ahrs.get_gyro().z);
+        }
+        if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_fw_motor()) {
+            // tilt rotors without decidated fw motors do not have forward throttle output in this stage
+            // prevent throttle I wind up
+            plane.TECS_controller.reset_throttle_I();
         }
 
         last_throttle = motors->get_throttle();
@@ -1540,6 +1546,14 @@ void SLT_Transition::update()
             // ensure we don't drop all the way to zero or the motors
             // will stop stabilizing
             throttle_scaled = 0.01;
+        }
+        if (quadplane.tiltrotor.enabled() && !quadplane.tiltrotor.has_vtol_motor() && !quadplane.tiltrotor.has_fw_motor()) {
+            // All motors tilting, Use a combination of vertical and forward throttle based on curent tilt angle
+            // scale from all VTOL throttle at airspeed_reached_tilt to all forward throttle at fully forward tilt
+            // this removes a step change in throttle once assistance is stoped
+            const float ratio = (constrain_float(quadplane.tiltrotor.current_tilt, airspeed_reached_tilt, quadplane.tiltrotor.get_fully_forward_tilt()) - airspeed_reached_tilt) / (quadplane.tiltrotor.get_fully_forward_tilt() - airspeed_reached_tilt);
+            const float fw_throttle = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
+            throttle_scaled = constrain_float(throttle_scaled * (1.0-ratio) + fw_throttle * ratio, 0.0, 1.0);
         }
         quadplane.assisted_flight = true;
         quadplane.hold_stabilize(throttle_scaled);
