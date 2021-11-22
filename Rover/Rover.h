@@ -52,7 +52,7 @@
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
 #include <APM_Control/AR_AttitudeControl.h>
 #include <APM_Control/AR_PosControl.h>
-#include <AR_WPNav/AR_WPNav.h>
+#include <AR_WPNav/AR_WPNav_OA.h>
 #include <AP_SmartRTL/AP_SmartRTL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <Filter/AverageFilter.h>                   // Mode Filter from Filter library

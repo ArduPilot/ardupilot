@@ -385,7 +385,7 @@ public:
 #endif // AP_SCRIPTING_ENABLED
 
     // waypoint navigation
-    AR_WPNav wp_nav;
+    AR_WPNav_OA wp_nav;
 
     // Sailboat functions
     Sailboat sailboat;
