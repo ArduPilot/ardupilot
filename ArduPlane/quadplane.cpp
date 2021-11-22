@@ -2622,6 +2622,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
             qp.attitude_control->reset_yaw_target_and_rate();
+            pos1_start_speed = plane.ahrs.groundspeed_vector().length();
         } else if (s == QPOS_POSITION2) {
             // POSITION2 changes target speed, so we need to change it
             // back to normal
@@ -2845,6 +2846,9 @@ void QuadPlane::vtol_position_controller(void)
         const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
         const float current_speed_sq = plane.ahrs.groundspeed_vector().length_squared();
         const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
+
+        // limit target speed to initial pos1 speed, but at least twice the Q_WP_SPEED
+        target_speed = MIN(MAX(poscontrol.pos1_start_speed, 2*wp_speed), target_speed);
 
         if (poscontrol.reached_wp_speed ||
             current_speed_sq < sq(wp_speed) ||
