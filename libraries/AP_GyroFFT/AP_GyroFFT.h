@@ -175,7 +175,7 @@ private:
         return (_thread_state._center_bandwidth_hz_filtered[peak][axis] = _center_bandwidth_filter[peak].apply(axis, value));
     }
     // write single log mesages
-    void log_noise_peak(uint8_t id, FrequencyPeak peak, float notch_freq) const;
+    void log_noise_peak(uint8_t id, FrequencyPeak peak) const;
     // calculate the peak noise frequency
     void calculate_noise(bool calibrating, const EngineConfig& config);
     // calculate noise peaks based on energy and history
@@ -276,8 +276,8 @@ private:
     uint8_t _current_sample_mode : 3;
     // harmonic multiplier for two highest peaks
     float _harmonic_multiplier;
-    // searched harmonics - inferred from harmonic notch harmonics
-    uint8_t _harmonics;
+    // number of tracked peaks
+    uint8_t _tracked_peaks;
     // engine health in tracked peaks
     uint8_t _health;
     // engine health on roll/pitch/yaw

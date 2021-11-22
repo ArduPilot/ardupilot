@@ -249,20 +249,17 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
         return;
     }
 
-    // count the number of active harmonics
-    for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
-        if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
-            _harmonics++;
-        }
-    }
-    _harmonics = constrain_int16(_harmonics, 1, FrequencyPeak::MAX_TRACKED_PEAKS);
+    const uint8_t harmonics = _ins->get_gyro_harmonic_notch_harmonics();
+    // count the number of active harmonics or dynamic notchs
+    _tracked_peaks = constrain_int16(MAX(__builtin_popcount(harmonics),
+        _ins->get_num_gyro_dynamic_notches()), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
 
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
     if (_harmonic_fit > 0) {
         uint8_t first_harmonic = 0;
         for (uint8_t i = 0; i < HNF_MAX_HARMONICS; i++) {
-            if (_ins->get_gyro_harmonic_notch_harmonics() & (1<<i)) {
+            if (harmonics & (1<<i)) {
                 if (first_harmonic == 0) {
                     first_harmonic = i + 1;
                 } else {
@@ -271,10 +268,14 @@ void AP_GyroFFT::init(uint32_t target_looptime_us)
                 }
             }
         }
+        // if no harmonic specified then select a simple 2x multiple
+        if (is_zero(_harmonic_multiplier)) {
+            _harmonic_multiplier = 2.0f;
+        }
     }
 
     // initialise the HAL DSP subsystem
-    _state = hal.dsp->fft_init(_window_size, _fft_sampling_rate_hz, _harmonics);
+    _state = hal.dsp->fft_init(_window_size, _fft_sampling_rate_hz);
     if (_state == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Failed to initialize DSP engine");
         return;
@@ -374,7 +375,7 @@ void AP_GyroFFT::update()
     if (!_rpy_health.x && !_rpy_health.y) {
         _health = 0;
     } else {
-        _health = MIN(_global_state._health, _harmonics);
+        _health = MIN(_global_state._health, _ins->get_num_gyro_dynamic_notches());
     }
 }
 
@@ -765,7 +766,6 @@ float AP_GyroFFT::calculate_weighted_freq_hz(const Vector3f& energy, const Vecto
 // @Field: TimeUS: microseconds since system startup
 // @Field: PkAvg: peak noise frequency as an energy-weighted average of roll and pitch peak frequencies
 // @Field: BwAvg: bandwidth of weighted peak freqency where edges are determined by FFT_ATT_REF
-// @Field: DnF: dynamic harmonic notch centre frequency
 // @Field: SnX: signal-to-noise ratio on the roll axis
 // @Field: SnY: signal-to-noise ratio on the pitch axis
 // @Field: SnZ: signal-to-noise ratio on the yaw axis
@@ -778,22 +778,22 @@ float AP_GyroFFT::calculate_weighted_freq_hz(const Vector3f& energy, const Vecto
 // log gyro fft messages
 void AP_GyroFFT::write_log_messages()
 {
+    // still want to see the harmonic notch values
+    AP::vehicle()->write_notch_log_messages();
+
     if (!analysis_enabled()) {
-        // still want to see the harmonic notch values
-        AP::vehicle()->write_notch_log_messages();
         return;
     }
 
     AP::logger().WriteStreaming(
         "FTN1",
-        "TimeUS,PkAvg,BwAvg,DnF,SnX,SnY,SnZ,FtX,FtY,FtZ,FH,Tc",
-        "szzz---%%%-s",
-        "F----------F",
-        "QfffffffffBI",
+        "TimeUS,PkAvg,BwAvg,SnX,SnY,SnZ,FtX,FtY,FtZ,FH,Tc",
+        "szz---%%%-s",
+        "F---------F",
+        "QffffffffBI",
         AP_HAL::micros64(),
         get_weighted_noise_center_freq_hz(),
         get_weighted_noise_center_bandwidth_hz(),
-        _ins->get_gyro_dynamic_notch_center_freq_hz(),
         get_noise_signal_to_noise_db().x,
         get_noise_signal_to_noise_db().y,
         get_noise_signal_to_noise_db().z,
@@ -802,12 +802,10 @@ void AP_GyroFFT::write_log_messages()
         get_raw_noise_harmonic_fit().z,
         _health, _output_cycle_micros);
 
-    const float* notches = _ins->get_gyro_dynamic_notch_center_frequencies_hz();
-
-    log_noise_peak(0, FrequencyPeak::CENTER, notches[0]);
-    if (_harmonics > 1) {
-        log_noise_peak(1, FrequencyPeak::LOWER_SHOULDER, notches[1]);
-        log_noise_peak(2, FrequencyPeak::UPPER_SHOULDER, notches[2]);
+    log_noise_peak(0, FrequencyPeak::CENTER);
+    if (_tracked_peaks> 1) {
+        log_noise_peak(1, FrequencyPeak::LOWER_SHOULDER);
+        log_noise_peak(2, FrequencyPeak::UPPER_SHOULDER);
     }
 
 #if DEBUG_FFT
@@ -832,7 +830,6 @@ void AP_GyroFFT::write_log_messages()
 // @Field: PkX: noise frequency of the peak on roll
 // @Field: PkY: noise frequency of the peak on pitch
 // @Field: PkZ: noise frequency of the peak on yaw
-// @Field: DnF: dynamic harmonic notch centre frequency
 // @Field: BwX: bandwidth of the peak freqency on roll where edges are determined by FFT_ATT_REF
 // @Field: BwY: bandwidth of the peak freqency on pitch where edges are determined by FFT_ATT_REF
 // @Field: BwZ: bandwidth of the peak freqency on yaw where edges are determined by FFT_ATT_REF
@@ -841,15 +838,14 @@ void AP_GyroFFT::write_log_messages()
 // @Field: EnZ: power spectral density bin energy of the peak on roll
 
 // write a single log message
-void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak, float notch) const
+void AP_GyroFFT::log_noise_peak(uint8_t id, FrequencyPeak peak) const
 {
-    AP::logger().WriteStreaming("FTN2", "TimeUS,Id,PkX,PkY,PkZ,DnF,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzzz---", "F-----------", "QBffffffffff",
+    AP::logger().WriteStreaming("FTN2", "TimeUS,Id,PkX,PkY,PkZ,BwX,BwY,BwZ,EnX,EnY,EnZ", "s#zzzzzz---", "F----------", "QBfffffffff",
         AP_HAL::micros64(),
         id,
         get_noise_center_freq_hz(peak).x,
         get_noise_center_freq_hz(peak).y,
         get_noise_center_freq_hz(peak).z,
-        notch,
         get_noise_center_bandwidth_hz(peak).x,
         get_noise_center_bandwidth_hz(peak).y,
         get_noise_center_bandwidth_hz(peak).z,
@@ -894,7 +890,7 @@ void AP_GyroFFT::calculate_noise(bool calibrating, const EngineConfig& config)
     FrequencyPeak tracked_peak = FrequencyPeak::CENTER;
 
     // record the tracked peak for harmonic fit, but only if we have more than one noise peak
-    if (num_peaks > 1 && _harmonics > 1 && !is_zero(get_tl_noise_center_freq_hz(FrequencyPeak::CENTER, _update_axis))) {
+    if (num_peaks > 1 && _tracked_peaks > 1 && !is_zero(get_tl_noise_center_freq_hz(FrequencyPeak::CENTER, _update_axis))) {
         if (get_tl_noise_center_freq_hz(FrequencyPeak::CENTER, _update_axis) > get_tl_noise_center_freq_hz(FrequencyPeak::LOWER_SHOULDER, _update_axis)
             // ignore the fit if there is too big a discrepancy between the energies
             && get_tl_center_freq_energy(FrequencyPeak::CENTER, _update_axis) < get_tl_center_freq_energy(FrequencyPeak::LOWER_SHOULDER, _update_axis) * FFT_HARMONIC_FIT_MULT) {
@@ -1019,7 +1015,8 @@ bool AP_GyroFFT::calculate_filtered_noise(FrequencyPeak target_peak, FrequencyPe
     const uint16_t nb = peak_data->_bin;
 
     if (freqs.is_valid(FrequencyPeak(source_peak))) {
-        update_tl_center_freq_energy(target_peak, _update_axis, _state->_freq_bins[nb]);
+        // total peak energy requires an integration, as an approximation use amplitude * noise width * 5/6
+        update_tl_center_freq_energy(target_peak, _update_axis, _state->_freq_bins[nb] * peak_data->_noise_width_hz * 0.8333f);
         update_tl_noise_center_bandwidth_hz(target_peak, _update_axis, peak_data->_noise_width_hz);
         update_tl_noise_center_freq_hz(target_peak, _update_axis, freqs.get_weighted_frequency(FrequencyPeak(source_peak)));
         _missed_cycles[_update_axis][target_peak] = 0;
@@ -1032,7 +1029,7 @@ bool AP_GyroFFT::calculate_filtered_noise(FrequencyPeak target_peak, FrequencyPe
     }
 
     // we failed to find a signal for more than FFT_MAX_MISSED_UPDATES cycles
-    update_tl_center_freq_energy(target_peak, _update_axis, _state->_freq_bins[nb]);     // use the actual energy detected rather than 0
+    update_tl_center_freq_energy(target_peak, _update_axis, _state->_freq_bins[nb] * peak_data->_noise_width_hz * 0.8333f);     // use the actual energy detected rather than 0
     update_tl_noise_center_bandwidth_hz(target_peak, _update_axis, _bandwidth_hover_hz);
     update_tl_noise_center_freq_hz(target_peak, _update_axis, config._fft_min_hz);
 
