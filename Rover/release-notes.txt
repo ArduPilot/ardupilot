@@ -1,5 +1,15 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.1.2-rc1 22-Nov-2021
+Changes from 4.1.1
+1) CAN_Dn_UC_OPTION param added to help resolve DroneCAN DNA conflicts
+2) Durandal with alternative ICM-20602 IMU
+3) OBAL autopilot support (Open Board Architecture for Linux)
+4) FETtec One ESC protocol support
+5) Bug Fixes
+    a) APM/LOGS directory creation fixed on some boards
+    b) EKF3 fix to switch to non-zero primary core when disarmed
+------------------------------------------------------------------
 Rover 4.1.1 10-Nov-2021 / 4.1.1-rc1 16-Oct-2021
 Changes from 4.1.0 
 1) EK3_PRIMARY allows selection of which EKF core/IMU to use on startup
