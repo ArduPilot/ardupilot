@@ -57,28 +57,30 @@ void NavEKF2_core::controlMagYawReset()
     if (flightResetAllowed && !assume_zero_sideslip()) {
         // check that we have reached a height where ground magnetic interference effects are insignificant
         // and can perform a final reset of the yaw and field states
-        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -EKF2_MAG_FINAL_RESET_ALT;
+        finalResetRequest = (stateStruct.position.z  - posDownAtTakeoff) < -frontend->_mag_final_reset_height;
 
-        // check for increasing height
-        bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
-        ftype yawInnovIncrease = fabsF(innovYaw) - fabsF(yawInnovAtLastMagReset);
+        if(frontend->isInterimYawResetEnabled()) {
+            // check for increasing height
+            bool hgtIncreasing = (posDownAtLastMagReset-stateStruct.position.z) > 0.5f;
+            ftype yawInnovIncrease = fabsF(innovYaw) - fabsF(yawInnovAtLastMagReset);
 
-        // check for increasing yaw innovations
-        bool yawInnovIncreasing = yawInnovIncrease > 0.25f;
+            // check for increasing yaw innovations
+            bool yawInnovIncreasing = yawInnovIncrease > 0.25f;
 
-        // check that the yaw innovations haven't been caused by a large change in attitude
-        deltaQuatTemp = quatAtLastMagReset / stateStruct.quat;
-        deltaQuatTemp.to_axis_angle(deltaRotVecTemp);
-        bool largeAngleChange = deltaRotVecTemp.length() > yawInnovIncrease;
+            // check that the yaw innovations haven't been caused by a large change in attitude
+            deltaQuatTemp = quatAtLastMagReset / stateStruct.quat;
+            deltaQuatTemp.to_axis_angle(deltaRotVecTemp);
+            bool largeAngleChange = deltaRotVecTemp.length() > yawInnovIncrease;
 
-        // if yaw innovations and height have increased and we haven't rotated much
-        // then we are climbing away from a ground based magnetic anomaly and need to reset
-        interimResetRequest = !finalInflightYawInit
-                                && !finalResetRequest
-                                && (magYawAnomallyCount < MAG_ANOMALY_RESET_MAX)
-                                && hgtIncreasing
-                                && yawInnovIncreasing
-                                && !largeAngleChange;
+            // if yaw innovations and height have increased and we haven't rotated much
+            // then we are climbing away from a ground based magnetic anomaly and need to reset
+            interimResetRequest = !finalInflightYawInit
+                                    && !finalResetRequest
+                                    && (magYawAnomallyCount < MAG_ANOMALY_RESET_MAX)
+                                    && hgtIncreasing
+                                    && yawInnovIncreasing
+                                    && !largeAngleChange;
+        }
     }
 
     // an initial reset is required if we have not yet aligned the yaw angle

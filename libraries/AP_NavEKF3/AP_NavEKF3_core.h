@@ -59,9 +59,6 @@
 #define EKF_TARGET_DT_MS 12
 #define EKF_TARGET_DT    0.012f
 
-// mag fusion final reset altitude (using NED frame so altitude is negative)
-#define EKF3_MAG_FINAL_RESET_ALT 2.5f
-
 // learning rate for mag biases when using GPS yaw
 #define EK3_GPS_MAG_LEARN_RATE 0.005f
 
