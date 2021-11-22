@@ -6,7 +6,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Mission/AP_Mission_ChangeDetector.h>
-#include <AR_WPNav/AR_WPNav.h>
+#include <AR_WPNav/AR_WPNav_OA.h>
 
 #include "defines.h"
 
