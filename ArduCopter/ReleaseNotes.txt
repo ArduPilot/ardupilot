@@ -1,5 +1,20 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.2-rc1 22-Nov-2021
+Changes from 4.1.1
+1) CAN_Dn_UC_OPTION param added to help resolve DroneCAN DNA conflicts
+2) Durandal with alternative ICM-20602 IMU
+3) OBAL autopilot support (Open Board Architecture for Linux)
+4) FETtec One ESC protocol support
+5) Bug Fixes
+    a) ADSB vertical velocity reporting fix
+    b) APM/LOGS directory creation fixed on some boards
+    c) AutoTune fix to disable SMAX limits that could interfere with tune
+    d) EKF3 fix to switch to non-zero primary core when disarmed
+    e) Notch filter update rate fix
+    f) Surface tracking fix if rangefinder glitches
+    g) TradHeli rename of H_COLL_HOVER to H_COL_HOVER
+------------------------------------------------------------------
 Copter 4.1.1 10-Nov-2021 / 4.1.1-rc1 16-Oct-2021
 Changes from 4.1.0 
 1) EK3_PRIMARY allows selection of which EKF core/IMU to use on startup
