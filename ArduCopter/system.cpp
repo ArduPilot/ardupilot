@@ -264,7 +264,7 @@ void Copter::update_dynamic_notch()
             // set the harmonic notch filter frequency scaled on measured frequency
             if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
                 float notches[INS_MAX_NOTCHES];
-                const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(INS_MAX_NOTCHES, notches);
+                const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(ins.get_num_gyro_dynamic_notches(), notches);
 
                 for (uint8_t i = 0; i < num_notches; i++) {
                     notches[i] =  MAX(ref_freq, notches[i]);
@@ -284,7 +284,7 @@ void Copter::update_dynamic_notch()
             // set the harmonic notch filter frequency scaled on measured frequency
             if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
                 float notches[INS_MAX_NOTCHES];
-                const uint8_t peaks = gyro_fft.get_weighted_noise_center_frequencies_hz(INS_MAX_NOTCHES, notches);
+                const uint8_t peaks = gyro_fft.get_weighted_noise_center_frequencies_hz(ins.get_num_gyro_dynamic_notches(), notches);
 
                 ins.update_harmonic_notch_frequencies_hz(peaks, notches);
             } else {
