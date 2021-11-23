@@ -25,7 +25,7 @@
 #define BARO_DATA_CHANGE_TIMEOUT_MS     2000    // timeout in ms since last successful read that involved temperature of pressure changing
 
 #ifndef HAL_BARO_WIND_COMP_ENABLED
-#define HAL_BARO_WIND_COMP_ENABLED !HAL_MINIMIZE_FEATURES && !defined(HAL_BUILD_AP_PERIPH)
+#define HAL_BARO_WIND_COMP_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
 class AP_Baro_Backend;
