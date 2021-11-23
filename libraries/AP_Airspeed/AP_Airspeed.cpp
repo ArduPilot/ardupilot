@@ -337,6 +337,7 @@ void AP_Airspeed::init()
 
 #ifndef HAL_BUILD_AP_PERIPH
     // Switch to dedicated WIND_MAX param
+    // PARAMETER_CONVERSION - Added: Oct-2020
     const float ahrs_max_wind = AP::ahrs().get_max_wind();
     if (!_wind_max.configured() && is_positive(ahrs_max_wind)) {
         _wind_max.set_and_save(ahrs_max_wind);
