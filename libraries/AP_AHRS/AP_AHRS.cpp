@@ -821,7 +821,8 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
 {
     bool ret = false;
     if (airspeed_sensor_enabled()) {
-        airspeed_ret = AP::airspeed()->get_airspeed();
+        uint8_t idx = get_active_airspeed_index();
+        airspeed_ret = AP::airspeed()->get_airspeed(idx);
 
         if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
             // constrain the airspeed by the ground speed
@@ -2885,18 +2886,22 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
 //get the index of the active airspeed sensor, wrt the primary core
 uint8_t AP_AHRS::get_active_airspeed_index() const
 {
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr) {
+        return 0;
+    }
+
 // we only have affinity for EKF3 as of now
 #if HAL_NAVEKF3_AVAILABLE
     if (active_EKF_type() == EKFType::THREE) {
-        return EKF3.getActiveAirspeed(get_primary_core_index());   
+        uint8_t ret = EKF3.getActiveAirspeed(get_primary_core_index());
+        if (ret != 255 && airspeed->healthy(ret)) {
+            return ret;
+        }
     }
 #endif
     // for the rest, let the primary airspeed sensor be used
-    const AP_Airspeed * _airspeed = AP::airspeed();
-    if (_airspeed != nullptr) {
-        return _airspeed->get_primary();
-    }
-    return 0;
+    return airspeed->get_primary();
 }
 
 // get the index of the current primary IMU
