@@ -47,10 +47,11 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
+#endif // HAL_BUILD_AP_PERIPH
+
 #if AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
-#endif // HAL_BUILD_AP_PERIPH
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
@@ -250,13 +251,14 @@ SRV_Channels::SRV_Channels(void)
         channels[i].ch_num = i;
     }
 
+#if AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr = &fetteconwire;
+#endif
+
 #ifndef HAL_BUILD_AP_PERIPH
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
-#if AP_FETTEC_ONEWIRE_ENABLED
-    fetteconwire_ptr = &fetteconwire;
-#endif
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -374,15 +376,15 @@ void SRV_Channels::push()
     // give robotis library a chance to update
     robotis_ptr->update();
 
-#if AP_FETTEC_ONEWIRE_ENABLED
-    fetteconwire_ptr->update();
-#endif
-
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
 #endif // HAL_BUILD_AP_PERIPH
+
+#if AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr->update();
+#endif
 
 #if HAL_CANMANAGER_ENABLED
     // push outputs to CAN
