@@ -7499,6 +7499,9 @@ class AutoTestCopter(AutoTest):
 
     def PerfInfo(self):
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
+        # sometimes we need to trigger collection....
+        content = self.fetch_file_via_ftp("@SYS/tasks.txt")
+        self.delay_sim_time(5)
         content = self.fetch_file_via_ftp("@SYS/tasks.txt")
         self.progress("Got content (%s)" % str(content))
         if "fast_loop" not in content:
