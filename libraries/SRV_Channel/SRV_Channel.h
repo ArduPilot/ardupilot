@@ -568,10 +568,10 @@ private:
     static AP_BLHeli *blheli_ptr;
 #endif
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     AP_FETtecOneWire fetteconwire;
     static AP_FETtecOneWire *fetteconwire_ptr;
-#endif  // HAL_AP_FETTEC_ONEWIRE_ENABLED
+#endif  // AP_FETTEC_ONEWIRE_ENABLED
 #endif // HAL_BUILD_AP_PERIPH
 
     static uint16_t disabled_mask;
