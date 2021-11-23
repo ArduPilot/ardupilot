@@ -47,7 +47,7 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
 #endif // HAL_BUILD_AP_PERIPH
@@ -201,7 +201,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
@@ -254,7 +254,7 @@ SRV_Channels::SRV_Channels(void)
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr = &fetteconwire;
 #endif
 #if HAL_SUPPORT_RCOUT_SERIAL
@@ -374,7 +374,7 @@ void SRV_Channels::push()
     // give robotis library a chance to update
     robotis_ptr->update();
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr->update();
 #endif
 
