@@ -319,6 +319,7 @@ class Board:
                     '-Werror=implicit-fallthrough',
                     '-Wmaybe-uninitialized',
                     '-Wduplicated-cond',
+                    '-Werror=sizeof-pointer-div',
                 ]
 
         if cfg.options.Werror:
