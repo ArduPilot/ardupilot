@@ -2568,8 +2568,12 @@ def add_apperiph_defaults(f):
 #ifndef HAL_WATCHDOG_ENABLED_DEFAULT
 #define HAL_WATCHDOG_ENABLED_DEFAULT true
 #endif
+
+#ifndef AP_FETTEC_ONEWIRE_ENABLED
+#define AP_FETTEC_ONEWIRE_ENABLED 0
+#endif
 ''')
-            
+
 
 # process input file
 for fname in args.hwdef:
