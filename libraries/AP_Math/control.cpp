@@ -37,7 +37,7 @@ void update_vel_accel(float& vel, float accel, float dt, float limit)
     }
 }
 
-// update_pos_vel_accel - single axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
+// update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
 // the position and velocity is not moved in the direction of limit if limit is not set to zero
 void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, float limit)
 {
@@ -52,7 +52,7 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
 
 // update_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero
-void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit)
+void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
     Vector2f delta_vel = accel * dt;
@@ -67,7 +67,7 @@ void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, Vector2
 
 // update_pos_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
 // the position and velocity is not moved in the direction of limit if limit is not set to zero
-void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit)
+void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit)
 {
     // move position and velocity forward by dt.
     Vector2f delta_pos = vel * dt + accel * 0.5f * sq(dt);
