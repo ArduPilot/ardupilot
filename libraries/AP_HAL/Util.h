@@ -94,12 +94,12 @@ public:
     /*
       set HW RTC in UTC microseconds
      */
-    virtual void set_hw_rtc(uint64_t time_utc_usec);
+    virtual void set_hw_rtc(uint64_t time_utc_usec) = 0;
 
     /*
       get system clock in UTC microseconds
      */
-    virtual uint64_t get_hw_rtc() const;
+    virtual uint64_t get_hw_rtc() const = 0;
 
     enum class FlashBootloader {
         OK=0,
