@@ -595,7 +595,7 @@ void AC_PosControl::update_xy_controller()
     handle_ekf_xy_reset();
 
     // Check for position control time out
-    if ( !is_active_xy() ) {
+    if (!is_active_xy()) {
         init_xy_controller();
         if (has_good_timing()) {
             // call internal error because initialisation has not been done
