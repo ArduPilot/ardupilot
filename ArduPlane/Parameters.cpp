@@ -1223,6 +1223,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
     AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
     
+    // @Group: GNDEF_
+    // @Path: ../libraries/AP_GroundEffectControl/GroundEffectController.cpp
+    AP_SUBGROUPINFO(ground_effect_controller, "GNDEF", 33, ParametersG2, GroundEffectController),
+
     AP_GROUPEND
 };
 
@@ -1234,6 +1238,7 @@ ParametersG2::ParametersG2(void) :
 #if HAL_BUTTON_ENABLED
     ,button_ptr(&plane.button)
 #endif
+    ,ground_effect_controller{plane.ahrs, plane.rangefinder}
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

@@ -375,6 +375,12 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         plane.autotune_enable(ch_flag == AuxSwitchPos::HIGH);
         break;
 
+    case AUX_FUNC::GROUND_EFFECT:
+        if(!plane.g2.ground_effect_controller.user_request_enable(ch_flag == AuxSwitchPos::HIGH)){
+            gcs().send_text(MAV_SEVERITY_NOTICE, "GND EFFECT FAILED");
+        }
+        break;
+
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }

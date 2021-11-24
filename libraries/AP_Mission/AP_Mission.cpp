@@ -409,7 +409,8 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
     // NAV commands all have ids below MAV_CMD_NAV_LAST, plus some exceptions
     return (cmd.id <= MAV_CMD_NAV_LAST ||
             cmd.id == MAV_CMD_NAV_SET_YAW_SPEED ||
-            cmd.id == MAV_CMD_NAV_SCRIPT_TIME);
+            cmd.id == MAV_CMD_NAV_SCRIPT_TIME ||
+            cmd.id == MAV_CMD_NAV_WAYPOINT_GROUND_EFFECT);
 }
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -743,6 +744,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
 {
     switch (id) {
     case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_WAYPOINT_GROUND_EFFECT:
     case MAV_CMD_NAV_LOITER_UNLIM:
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_LOITER_TIME:
@@ -832,6 +834,7 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     uint8_t nan_mask;
     switch (packet.command) {
     case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_WAYPOINT_GROUND_EFFECT:
         nan_mask = ~(1 << 3); // param 4 can be nan
         break;
     case MAV_CMD_NAV_LAND:
@@ -891,7 +894,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         // this is reserved for storing 16 bit command IDs
         return MAV_MISSION_INVALID;
 
+    case MAV_CMD_NAV_WAYPOINT_GROUND_EFFECT:
     case MAV_CMD_NAV_WAYPOINT: {                        // MAV ID: 16
+    
         /*
           the 15 byte limit means we can't fit both delay and radius
           in the cmd structure. When we expand the mission structure
@@ -1360,6 +1365,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         return false;
 
     case MAV_CMD_NAV_WAYPOINT:                          // MAV ID: 16
+    case MAV_CMD_NAV_WAYPOINT_GROUND_EFFECT:
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         // acceptance radius in meters
 
@@ -2350,7 +2356,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "Go Around";
     case MAV_CMD_NAV_SCRIPT_TIME:
         return "NavScriptTime";
-
+    case MAV_CMD_NAV_WAYPOINT_GROUND_EFFECT:
+        return "GroundEffectWP";
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Mission command with ID %u has no string", id);
