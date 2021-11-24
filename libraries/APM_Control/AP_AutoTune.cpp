@@ -351,8 +351,16 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
                 action = Action::LOWER_D;
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);
                 done_count = 0;
-            } else if (now - P_set_ms > 2000) {
-                P *= 0.35;
+            } else if (now - P_set_ms > 2500) {
+                if (is_positive(P_limit)) {
+                    // if we've already got a P estimate then don't
+                    // reduce as quickly, stopping small spikes at the
+                    // later part of the tune from giving us a very
+                    // low P gain
+                    P *= 0.7;
+                } else {
+                    P *= 0.35;
+                }
                 P_limit = P;
                 P_set_ms = now;
                 action = Action::LOWER_P;
