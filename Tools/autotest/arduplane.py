@@ -2743,6 +2743,10 @@ function'''
         self.remove_message_hook(statustext_hook)
 
         self.context_pop()
+
+        # some parameters need reboot to take effect
+        self.reboot_sitl()
+
         if ex is not None:
             raise ex
 
