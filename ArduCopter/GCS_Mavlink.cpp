@@ -695,6 +695,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
+
+    // pause or resume an auto mission
+    case MAV_CMD_DO_PAUSE_CONTINUE:
+        return handle_command_pause_continue(packet);
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -963,9 +968,41 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
     }
 
+    // pause or resume an auto mission
+    case MAV_CMD_DO_PAUSE_CONTINUE: {
+        mavlink_command_int_t packet_int;
+        GCS_MAVLINK_Copter::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
+        return handle_command_pause_continue(packet_int);
+    }
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
+}
+
+MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_command_int_t &packet)
+{
+    if (copter.flightmode->mode_number() != Mode::Number::AUTO) {
+        // only supported in AUTO mode
+        return MAV_RESULT_FAILED;
+    }
+
+    // requested pause from GCS
+    if ((int8_t) packet.param1 == 0) {
+        copter.mode_auto.mission.stop();
+        copter.mode_auto.loiter_start();
+        gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // requested resume from GCS
+    if ((int8_t) packet.param1 == 1) {
+        copter.mode_auto.mission.resume();
+        gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // fail pause or continue
+    return MAV_RESULT_FAILED;
 }
 
 void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
