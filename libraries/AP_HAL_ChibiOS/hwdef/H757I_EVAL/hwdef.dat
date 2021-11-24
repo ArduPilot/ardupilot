@@ -65,7 +65,6 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 # avoid timer and RCIN threads to save memory
 define HAL_NO_RCIN_THREAD
 define HAL_NO_GPIO_IRQ
-define NO_DATAFLASH TRUE
 define DISABLE_SERIAL_ESC_COMM TRUE
 
 PB13 VBUS INPUT OPENDRAIN

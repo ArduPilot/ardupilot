@@ -1002,7 +1002,6 @@ def write_mcu_config(f):
 #define HAL_STORAGE_SIZE 16384
 #define HAL_USE_RTC FALSE
 #define DISABLE_SERIAL_ESC_COMM TRUE
-#define NO_DATAFLASH TRUE
 ''')
         if not env_vars['EXTERNAL_PROG_FLASH_MB']:
             f.write('''
