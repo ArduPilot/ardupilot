@@ -7396,6 +7396,41 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def PAUSE_CONTINUE(self):
+        self.load_mission("copter_mission.txt", strict=False)
+
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.wait_waypoint(4, 4)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     0, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+
+        self.wait_groundspeed(0, 1, minimum_duration=5)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     1, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+
+        self.wait_groundspeed(5, 100)
+
+        self.wait_disarmed()
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -7890,6 +7925,10 @@ class AutoTestCopter(AutoTest):
             ("AltTypes",
              "Test Different Altitude Types",
              self.test_altitude_types),
+
+            ("PAUSE_CONTINUE",
+             "Test MAV_CMD_PAUSE_CONTINUE",
+             self.PAUSE_CONTINUE),
 
             ("RichenPower",
              "Test RichenPower generator",
