@@ -1,3 +1,31 @@
+Release 4.1.4 25th November 2021
+--------------------------------
+
+This is a minor release with some important bug fixes and small number
+of new features.
+
+ - fixed RC parachute release to only trigger on RC input channel
+   above 1800, fixing an issue with trigger on power on
+
+ - added QRTL flight mode as an RCn_OPTION
+
+ - display VTOL position1 state change when landing approach and
+   airbrake logic is disabled using Q_OPTIONS
+
+ - limit Q_VFWD integrator to be below TRIM_THROTTLE to prevent very
+   high forward throttle building up in some landing approach
+   conditions
+
+ - fixed an issue with high position1 landing approach target speed
+   causing the nose to dip when going between VTOL approach and
+   position1 states
+
+ - allow for a wider range of Q_A_THR_MIX values to be configured, to
+   better support landing quadplanes in high wind
+
+Happy flying!
+
+
 Release 4.1.3 16th November 2021
 --------------------------------
 
