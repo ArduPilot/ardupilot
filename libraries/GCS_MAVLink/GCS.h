@@ -604,6 +604,8 @@ protected:
      */
     uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
 
+    static void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out);
+
 private:
 
     // last time we got a non-zero RSSI from RADIO_STATUS
@@ -624,7 +626,6 @@ private:
     MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
 
     static bool command_long_stores_location(const MAV_CMD command);
-    static void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out);
 
     bool calibrate_gyros();
 
