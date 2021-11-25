@@ -57,7 +57,7 @@ AP_AutoTune::AP_AutoTune(ATGains &_gains, ATType _type,
 #include <stdio.h>
 # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
- # define Debug(fmt, args ...)
+# define Debug(fmt, args ...)
 #endif
 
 /*
@@ -337,7 +337,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
             D_limit = D;
             D_set_ms = now;
             action = Action::LOWER_D;
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);            
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%sD: %.4f", type==AUTOTUNE_ROLL?"Roll":"Pitch", D_limit);
         }
     } else if (min_Dmod < 1.0) {
         // oscillation, with D_limit set
@@ -370,7 +370,7 @@ void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_e
         }
     } else if (ff_count < 4) {
         // we don't have a good FF estimate yet, keep going
-        
+
     } else if (!is_positive(D_limit)) {
         /* we haven't detected D oscillation yet, keep raising D */
         D *= 1.3;

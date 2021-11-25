@@ -3,12 +3,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,23 +25,23 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Param: 2SRV_TCONST
-	// @DisplayName: Roll Time Constant
-	// @Description: Time constant in seconds from demanded to achieved roll angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
-	// @Range: 0.4 1.0
-	// @Units: s
-	// @Increment: 0.1
-	// @User: Advanced
+    // @DisplayName: Roll Time Constant
+    // @Description: Time constant in seconds from demanded to achieved roll angle. Most models respond well to 0.5. May be reduced for faster responses, but setting lower than a model can achieve will not help.
+    // @Range: 0.4 1.0
+    // @Units: s
+    // @Increment: 0.1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_TCONST",      0, AP_RollController, gains.tau,       0.5f),
 
     // index 1 to 3 reserved for old PID values
 
     // @Param: 2SRV_RMAX
-	// @DisplayName: Maximum Roll Rate
-	// @Description: Maximum roll rate that the roll controller demands (degrees/sec) in ACRO mode.
-	// @Range: 0 180
-	// @Units: deg/s
-	// @Increment: 1
-	// @User: Advanced
+    // @DisplayName: Maximum Roll Rate
+    // @Description: Maximum roll rate that the roll controller demands (degrees/sec) in ACRO mode.
+    // @Range: 0 180
+    // @Units: deg/s
+    // @Increment: 1
+    // @User: Advanced
     AP_GROUPINFO("2SRV_RMAX",   4, AP_RollController, gains.rmax_pos,       0),
 
     // index 5, 6 reserved for old IMAX, FF
@@ -113,13 +113,13 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
-    
+
     AP_GROUPEND
 };
 
 // constructor
 AP_RollController::AP_RollController(const AP_Vehicle::FixedWing &parms)
-        : aparm(parms)
+    : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);
     rate_pid.set_slew_limit_scale(45);
@@ -161,7 +161,7 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
         // when underspeed we lock the integrator
         rate_pid.set_integrator(old_I);
     }
-    
+
     // FF should be scaled by scaler/eas2tas, but since we have scaled
     // the AC_PID target above by scaler*scaler we need to instead
     // divide by scaler*eas2tas to get the right scaling
@@ -196,10 +196,10 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
     _last_out = out;
 
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
-        // let autotune have a go at the values 
+        // let autotune have a go at the values
         autotune->update(pinfo, scaler, angle_err_deg);
     }
-    
+
     // output is scaled to notional centidegrees of deflection
     return constrain_float(out * 100, -4500, 4500);
 }
@@ -207,7 +207,7 @@ float AP_RollController::_get_rate_out(float desired_rate, float scaler, bool di
 /*
  Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
- Inputs are: 
+ Inputs are:
  1) desired roll rate in degrees/sec
  2) control gain scaler = scaling_speed / aspeed
 */
@@ -219,7 +219,7 @@ float AP_RollController::get_rate_out(float desired_rate, float scaler)
 /*
  Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
- Inputs are: 
+ Inputs are:
  1) demanded bank angle in centi-degrees
  2) control gain scaler = scaling_speed / aspeed
  3) boolean which is true when stabilise mode is active
@@ -230,7 +230,7 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     if (gains.tau < 0.05f) {
         gains.tau.set(0.05f);
     }
-	
+
     // Calculate the desired roll rate (deg/sec) from the angle error
     angle_err_deg = angle_err * 0.01;
     float desired_rate = angle_err_deg/ gains.tau;
@@ -247,7 +247,7 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
 
 void AP_RollController::reset_I()
 {
-	_pid_info.I = 0;
+    _pid_info.I = 0;
     rate_pid.reset_I();
 }
 
