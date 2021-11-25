@@ -1188,6 +1188,7 @@ bool Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     }
     nav_scripting.roll_rate_dps = roll_rate_dps;
     nav_scripting.pitch_rate_dps = pitch_rate_dps;
+    nav_scripting.yaw_rate_dps = yaw_rate_dps;
     nav_scripting.throttle_pct = throttle_pct;
     return true;
 }
