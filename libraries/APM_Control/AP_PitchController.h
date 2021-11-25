@@ -7,7 +7,8 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
 
-class AP_PitchController {
+class AP_PitchController
+{
 public:
     AP_PitchController(const AP_Vehicle::FixedWing &parms);
 
@@ -15,26 +16,30 @@ public:
     AP_PitchController(const AP_PitchController &other) = delete;
     AP_PitchController &operator=(const AP_PitchController&) = delete;
 
-	float get_rate_out(float desired_rate, float scaler);
+    float get_rate_out(float desired_rate, float scaler);
     float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);
 
-	void reset_I();
+    void reset_I();
 
     /*
       reduce the integrator, used when we have a low scale factor in a quadplane hover
     */
-    void decay_I() {
+    void decay_I()
+    {
         // this reduces integrator by 95% over 2s
         _pid_info.I *= 0.995f;
         rate_pid.set_integrator(rate_pid.get_i() * 0.995);
     }
-    
+
     void autotune_start(void);
     void autotune_restore(void);
 
-    const       AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const AP_Logger::PID_Info& get_pid_info(void) const
+    {
+        return _pid_info;
+    }
 
-	static const struct AP_Param::GroupInfo var_info[];
+    static const struct AP_Param::GroupInfo var_info[];
 
     AP_Float &kP(void) { return rate_pid.kP(); }
     AP_Float &kI(void) { return rate_pid.kI(); }
@@ -48,8 +53,8 @@ private:
     AP_AutoTune::ATGains gains;
     AP_AutoTune *autotune;
     bool failed_autotune_alloc;
-	AP_Int16 _max_rate_neg;
-	AP_Float _roll_ff;
+    AP_Int16 _max_rate_neg;
+    AP_Float _roll_ff;
     float _last_out;
     AC_PID rate_pid{0.04, 0.15, 0, 0.345, 0.666, 3, 0, 12, 0.02, 150, 1};
     float angle_err_deg;
@@ -57,5 +62,5 @@ private:
     AP_Logger::PID_Info _pid_info;
 
     float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed, bool ground_mode);
-    float   _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
+    float _get_coordination_rate_offset(float &aspeed, bool &inverted) const;
 };

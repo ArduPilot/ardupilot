@@ -6,7 +6,8 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AC_PID/AC_PID.h>
 
-class AP_AutoTune {
+class AP_AutoTune
+{
 public:
     struct ATGains {
         AP_Float tau;
@@ -56,7 +57,7 @@ public:
 
     // are we running?
     bool running;
-    
+
 private:
     // the current gains
     ATGains &current;
@@ -65,7 +66,7 @@ private:
     // what type of autotune is this
     ATType type;
 
-	const AP_Vehicle::FixedWing &aparm;
+    const AP_Vehicle::FixedWing &aparm;
 
     // values to restore if we leave autotune mode
     ATGains restore;
@@ -77,7 +78,8 @@ private:
     // the demanded/achieved state
     enum class ATState {IDLE,
                         DEMAND_POS,
-                        DEMAND_NEG};
+                        DEMAND_NEG
+                       };
     ATState state;
 
     // the demanded/achieved state
@@ -90,7 +92,8 @@ private:
                        RAISE_D,
                        RAISE_P,
                        LOWER_D,
-                       LOWER_P};
+                       LOWER_P
+                      };
     Action action;
 
     // when we entered the current state
