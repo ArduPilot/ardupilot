@@ -207,8 +207,8 @@ void Copter::heli_update_autorotation()
 {
 #if MODE_AUTOROTATE_ENABLED == ENABLED
     // check if flying and interlock disengaged
-    if (!ap.land_complete && !motors->get_interlock()) {
-        if (!flightmode->has_manual_throttle() && g2.arot.is_enable()) {
+    if (!ap.land_complete && !motors->get_interlock() && g2.arot.is_enable()) {
+        if (!flightmode->has_manual_throttle()) {
             // set autonomous autorotation flight mode
             set_mode(Mode::Number::AUTOROTATE, ModeReason::AUTOROTATION_START);
         }
@@ -220,7 +220,7 @@ void Copter::heli_update_autorotation()
 
     // sets autorotation flags through out libraries
     heli_set_autorotation(heli_flags.in_autorotation);
-    if (!ap.land_complete) {
+    if (!ap.land_complete && g2.arot.is_enable()) {
         motors->set_enable_bailout(true);
     } else {
         motors->set_enable_bailout(false);
