@@ -4,18 +4,12 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AC_PID/AC_PID.h>
+#include "AP_AutoTune.h"
 
 class AP_YawController
 {
 public:
-    AP_YawController(const AP_Vehicle::FixedWing &parms)
-        : aparm(parms)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-        _pid_info.target = 0;
-        _pid_info.FF = 0;
-        _pid_info.P = 0;
-    }
+    AP_YawController(const AP_Vehicle::FixedWing &parms);
 
     /* Do not allow copies */
     AP_YawController(const AP_YawController &other) = delete;
@@ -47,6 +41,10 @@ public:
         return _pid_info;
     }
 
+    // start/stop auto tuner
+    void autotune_start(void);
+    void autotune_restore(void);
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -67,5 +65,9 @@ private:
 
     float _integrator;
 
+    AP_AutoTune::ATGains gains;
+    AP_AutoTune *autotune;
+    bool failed_autotune_alloc;
+    
     AP_Logger::PID_Info _pid_info;
 };
