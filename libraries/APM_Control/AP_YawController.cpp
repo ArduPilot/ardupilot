@@ -25,51 +25,125 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_YawController::var_info[] = {
 
-    // @Param: SLIP
+    // @Param: 2SRV_SLIP
     // @DisplayName: Sideslip control gain
     // @Description: Gain from lateral acceleration to demanded yaw rate for aircraft with enough fuselage area to detect lateral acceleration and sideslips. Do not enable for flying wings and gliders. Actively coordinates flight more than just yaw damping. Set after YAW2SRV_DAMP and YAW2SRV_INT are tuned.
     // @Range: 0 4
     // @Increment: 0.25
     // @User: Advanced
-    AP_GROUPINFO("SLIP",    0, AP_YawController, _K_A,    0),
+    AP_GROUPINFO("2SRV_SLIP",    0, AP_YawController, _K_A,    0),
 
-    // @Param: INT
+    // @Param: 2SRV_INT
     // @DisplayName: Sideslip control integrator
     // @Description: Integral gain from lateral acceleration error. Effectively trims rudder to eliminate long-term sideslip.
     // @Range: 0 2
     // @Increment: 0.25
     // @User: Advanced
-    AP_GROUPINFO("INT",    1, AP_YawController, _K_I,    0),
+    AP_GROUPINFO("2SRV_INT",    1, AP_YawController, _K_I,    0),
 
-    // @Param: DAMP
+    // @Param: 2SRV_DAMP
     // @DisplayName: Yaw damping
     // @Description: Gain from yaw rate to rudder. Most effective at yaw damping and should be tuned after KFF_RDDRMIX. Also disables YAW2SRV_INT if set to 0.
     // @Range: 0 2
     // @Increment: 0.25
     // @User: Advanced
-    AP_GROUPINFO("DAMP",   2, AP_YawController, _K_D,    0),
+    AP_GROUPINFO("2SRV_DAMP",   2, AP_YawController, _K_D,    0),
 
-    // @Param: RLL
+    // @Param: 2SRV_RLL
     // @DisplayName: Yaw coordination gain
     // @Description: Gain to the yaw rate required to keep it consistent with the turn rate in a coordinated turn. Corrects for yaw tendencies after the turn is established. Increase yaw into the turn by raising. Increase yaw out of the turn by decreasing. Values outside of 0.9-1.1 range indicate airspeed calibration problems.
     // @Range: 0.8 1.2
     // @Increment: 0.05
     // @User: Advanced
-    AP_GROUPINFO("RLL",   3, AP_YawController, _K_FF,   1),
+    AP_GROUPINFO("2SRV_RLL",   3, AP_YawController, _K_FF,   1),
 
     /*
       Note: index 4 should not be used - it was used for an incorrect
       AP_Int8 version of the IMAX in the 2.74 release
      */
 
-
-    // @Param: IMAX
+    // @Param: 2SRV_IMAX
     // @DisplayName: Integrator limit
     // @Description: Limit of yaw integrator gain in centi-degrees of servo travel. Servos are assumed to have +/- 4500 centi-degrees of travel, so a value of 1500 allows trim of up to 1/3 of servo travel range.
     // @Range: 0 4500
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("IMAX",  5, AP_YawController, _imax,        1500),
+    AP_GROUPINFO("2SRV_IMAX",  5, AP_YawController, _imax,        1500),
+
+    // @Param: _RATE_ENABLE
+    // @DisplayName: Yaw rate enable
+    // @Description: Enable yaw rate controller for aerobatic flight
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_RATE_ENABLE",  6, AP_YawController, _rate_enable, 0, AP_PARAM_FLAG_ENABLE),
+
+    // @Param: _RATE_P
+    // @DisplayName: Yaw axis rate controller P gain
+    // @Description: Yaw axis rate controller P gain.  Converts the difference between desired yaw rate and actual yaw rate into a motor speed output
+    // @Range: 0.08 0.35
+    // @Increment: 0.005
+    // @User: Standard
+
+    // @Param: _RATE_I
+    // @DisplayName: Yaw axis rate controller I gain
+    // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
+    // @Range: 0.01 0.6
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: _RATE_IMAX
+    // @DisplayName: Yaw axis rate controller I gain maximum
+    // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
+    // @Range: 0 1
+    // @Increment: 0.01
+    // @User: Standard
+
+    // @Param: _RATE_D
+    // @DisplayName: Yaw axis rate controller D gain
+    // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
+    // @Range: 0.001 0.03
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _RATE_FF
+    // @DisplayName: Yaw axis rate controller feed forward
+    // @Description: Yaw axis rate controller feed forward
+    // @Range: 0 3.0
+    // @Increment: 0.001
+    // @User: Standard
+
+    // @Param: _RATE_FLTT
+    // @DisplayName: Yaw axis rate controller target frequency in Hz
+    // @Description: Yaw axis rate controller target frequency in Hz
+    // @Range: 2 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _RATE_FLTE
+    // @DisplayName: Yaw axis rate controller error frequency in Hz
+    // @Description: Yaw axis rate controller error frequency in Hz
+    // @Range: 2 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _RATE_FLTD
+    // @DisplayName: Yaw axis rate controller derivative frequency in Hz
+    // @Description: Yaw axis rate controller derivative frequency in Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @Units: Hz
+    // @User: Standard
+
+    // @Param: _RATE_SMAX
+    // @DisplayName: Yaw slew rate limit
+    // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Range: 0 200
+    // @Increment: 0.5
+    // @User: Advanced
+
+    AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_YawController, AC_PID),
 
     AP_GROUPEND
 };
@@ -175,6 +249,81 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 
     // Convert to centi-degrees and constrain
     return constrain_float(_last_out * 100, -4500, 4500);
+}
+
+// get actuator output for direct rate control
+// desired_rate is in deg/sec. scaler is the surface speed scaler
+float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disable_integrator)
+{
+    const AP_AHRS &_ahrs = AP::ahrs();
+
+    const float dt = AP::scheduler().get_loop_period_s();
+    const float eas2tas = _ahrs.get_EAS2TAS();
+    bool limit_I = fabsf(_last_out) >= 45;
+    float rate_z = _ahrs.get_gyro().z;
+    float aspeed;
+    float old_I = rate_pid.get_i();
+
+    rate_pid.set_dt(dt);
+
+    if (!_ahrs.airspeed_estimate(aspeed)) {
+        aspeed = 0;
+    }
+    bool underspeed = aspeed <= float(aparm.airspeed_min);
+    if (underspeed) {
+        limit_I = true;
+    }
+
+    // the P and I elements are scaled by sq(scaler). To use an
+    // unmodified AC_PID object we scale the inputs and calculate FF separately
+    //
+    // note that we run AC_PID in radians so that the normal scaling
+    // range for IMAX in AC_PID applies (usually an IMAX value less than 1.0)
+    rate_pid.update_all(radians(desired_rate) * scaler * scaler, rate_z * scaler * scaler, limit_I);
+
+    if (underspeed) {
+        // when underspeed we lock the integrator
+        rate_pid.set_integrator(old_I);
+    }
+
+    // FF should be scaled by scaler/eas2tas, but since we have scaled
+    // the AC_PID target above by scaler*scaler we need to instead
+    // divide by scaler*eas2tas to get the right scaling
+    const float ff = degrees(rate_pid.get_ff() / (scaler * eas2tas));
+
+    if (disable_integrator) {
+        rate_pid.reset_I();
+    }
+
+    // convert AC_PID info object to same scale as old controller
+    _pid_info = rate_pid.get_pid_info();
+    auto &pinfo = _pid_info;
+
+    const float deg_scale = degrees(1);
+    pinfo.FF = ff;
+    pinfo.P *= deg_scale;
+    pinfo.I *= deg_scale;
+    pinfo.D *= deg_scale;
+
+    // fix the logged target and actual values to not have the scalers applied
+    pinfo.target = desired_rate;
+    pinfo.actual = degrees(rate_z);
+
+    // sum components
+    float out = pinfo.FF + pinfo.P + pinfo.I + pinfo.D;
+
+    // remember the last output to trigger the I limit
+    _last_out = out;
+
+#if 0
+    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
+        // let autotune have a go at the values
+        autotune->update(pinfo, scaler, angle_err_deg);
+    }
+#endif
+
+    // output is scaled to notional centidegrees of deflection
+    return constrain_float(out * 100, -4500, 4500);
 }
 
 void AP_YawController::reset_I()
