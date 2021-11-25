@@ -18,14 +18,6 @@ assert(scr_user3_param:init('SCR_USER3'), 'could not find SCR_USER3 parameter')
 local last_roll_err = 0.0
 local last_id = 0
 
--- find our rudder channel
-local RUDDER_CHAN = SRV_Channels:find_channel(21)
-local RUDDER_TRIM = param:get("SERVO" .. RUDDER_CHAN + 1 .. "_TRIM")
-local RUDDER_REVERSED = param:get("SERVO" .. RUDDER_CHAN + 1 .. "_REVERSED")
-local RUDDER_MIN = param:get("SERVO" .. RUDDER_CHAN + 1 .. "_MIN")
-local RUDDER_MAX = param:get("SERVO" .. RUDDER_CHAN + 1 .. "_MAX")
-local RUDDER_THROW = (RUDDER_MAX - RUDDER_MIN) * 0.5
-
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
    if v < vmin then
@@ -63,9 +55,8 @@ function pitch_controller(target_pitch_deg, tconst)
    local roll_deg = math.deg(ahrs:get_roll())
    local pitch_deg = math.deg(ahrs:get_pitch())
    local pitch_rate = (target_pitch_deg - pitch_deg) * math.cos(math.rad(roll_deg)) / tconst
-   RUDDER_GAIN = scr_user1_param:get()
-   local rudder = pitch_deg * RUDDER_GAIN * math.sin(math.rad(roll_deg)) / tconst
-   return pitch_rate, rudder
+   local yaw_rate = -(target_pitch_deg - pitch_deg) * math.sin(math.rad(roll_deg)) / tconst
+   return pitch_rate, yaw_rate
 end
 
 -- a controller for throttle to account for pitch
@@ -103,14 +94,8 @@ function do_axial_roll(arg1, arg2)
    end
    if roll_stage < 2 then
       target_pitch = scr_user2_param:get()
-      pitch_rate, rudder = pitch_controller(target_pitch, PITCH_TCONST)
-      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, 0)
-      if RUDDER_REVERSED == 1 then
-         rudder = -rudder
-      end
-      local rudder_out = math.floor(RUDDER_TRIM + RUDDER_THROW * rudder)
-      rudder_out = constrain(rudder_out, RUDDER_MIN, RUDDER_MAX)
-      SRV_Channels:set_output_pwm_chan_timeout(RUDDER_CHAN, rudder_out, 50)
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, PITCH_TCONST)
+      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
    end
 end
 
