@@ -691,6 +691,8 @@ class DEVO(Telem):
 
         self.HEADER = 0xAA
         self.frame_length = 20
+
+        # frame is 'None' until we receive a frame with VALID header and checksum
         self.frame = None
         self.bad_chars = 0
 
@@ -11064,14 +11066,19 @@ switch value'''
 
         tstart = self.get_sim_time_cached()
         while True:
+            self.drain_mav()
             now = self.get_sim_time_cached()
             if now - tstart > 10:
-                raise AutoTestTimeoutException("Failed to get devo data")
+                if devo.frame is not None:
+                    # we received some frames but could not find correct values
+                    raise AutoTestTimeoutException("Failed to get correct data")
+                else:
+                    # No frames received. Devo telemetry is compiled out?
+                    break
 
             devo.update()
             frame = devo.frame
             if frame is None:
-                self.progress("No data received")
                 continue
 
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
