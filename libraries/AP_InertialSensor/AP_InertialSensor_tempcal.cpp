@@ -16,10 +16,11 @@
   IMU temperature calibration handling
  */
 
+#define AP_INLINE_VECTOR_OPS
+
 #include "AP_InertialSensor.h"
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Common/ExpandingString.h>
