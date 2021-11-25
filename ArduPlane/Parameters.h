@@ -556,6 +556,10 @@ public:
     AP_Int8         man_expo_rudder;
 
     AP_Int32        oneshot_mask;
+
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

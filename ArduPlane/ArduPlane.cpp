@@ -94,6 +94,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     SCHED_TASK(airspeed_ratio_update,   1,    100,  102),
 #endif // AP_AIRSPEED_AUTOCAL_ENABLE
+#if PRECISION_LANDING == ENABLED
+    SCHED_TASK(update_precland,       400,     50,  103),
+#endif
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount, &plane.camera_mount, update, 50, 100, 105),
 #endif // HAL_MOUNT_ENABLED

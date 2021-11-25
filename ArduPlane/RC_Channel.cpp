@@ -181,6 +181,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 #endif
     case AUX_FUNC::TER_DISABLE:
     case AUX_FUNC::CROW_SELECT:
+    case AUX_FUNC::PRECISION_LOITER:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
 
@@ -331,6 +332,21 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         }
 #endif
         break;
+
+    case AUX_FUNC::PRECISION_LOITER:
+#if PRECISION_LANDING == ENABLED
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.quadplane.set_precision_loiter_enabled(true);
+            break;
+        case AuxSwitchPos::MIDDLE:
+            // nothing
+            break;
+        case AuxSwitchPos::LOW:
+            plane.quadplane.set_precision_loiter_enabled(false);
+             break;
+         }
+ #endif
 
    case AUX_FUNC::LANDING_FLARE:
        do_aux_function_flare(ch_flag);

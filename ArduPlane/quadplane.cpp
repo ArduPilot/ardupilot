@@ -1112,6 +1112,15 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
                                    height_above_ground,
                                    land_final_alt, land_final_alt+6);
 
+#if PRECISION_LANDING == ENABLED
+    if (precland_active()) {
+        const float precland_acceptable_error = 15.0f;
+        const float precland_min_descent_speed = 10.0f;
+        float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy_cm()*(wp_nav->get_default_speed_down()/precland_acceptable_error));
+        ret = MAX(precland_min_descent_speed, ret - land_slowdown);
+    }
+#endif
+
     if ((options & OPTION_THR_LANDING_CONTROL) != 0) {
         // allow throttle control for landing speed
         const float thr_in = get_pilot_land_throttle();
@@ -1141,6 +1150,26 @@ float QuadPlane::landing_descent_rate_cms(float height_above_ground)
     }
 
     return ret;
+}
+
+// return true if precision landing is active
+bool QuadPlane::precland_active(void) const
+{
+#if PRECISION_LANDING == ENABLED
+    if (plane.control_mode != &plane.mode_qland &&
+        plane.control_mode != &plane.mode_qloiter &&
+        !in_vtol_land_descent()) {
+        return false;
+    }
+    if (plane.control_mode == &plane.mode_qloiter &&
+        !_precision_loiter_enabled) {
+        return false;
+    }
+    AC_PrecLand &precland = plane.g2.precland;
+    return pos_control->is_active_xy() && precland.target_acquired();
+#else
+    return false;
+#endif
 }
 
 /*
@@ -2350,7 +2379,7 @@ void QuadPlane::vtol_position_controller(void)
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                       plane.nav_pitch_cd,
                                                                       desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
-        if (plane.auto_state.wp_distance < position2_dist_threshold) {
+        if ((plane.auto_state.wp_distance < position2_dist_threshold) || precland_active()) {
             poscontrol.set_state(QPOS_POSITION2);
             poscontrol.pilot_correction_done = false;
             gcs().send_text(MAV_SEVERITY_INFO,"VTOL position2 started v=%.1f d=%.1f",
@@ -2418,6 +2447,22 @@ void QuadPlane::vtol_position_controller(void)
             Vector2f zero;
             pos_control->input_vel_accel_xy(poscontrol.target_vel_cms.xy(), zero);
         }
+
+#if PRECISION_LANDING == ENABLED
+        // run precision landing
+        if (precland_active()) {
+            Vector2f target_pos, target_vel_rel;
+            AC_PrecLand &precland = plane.g2.precland;
+            if (!precland.get_target_position_cm(target_pos)) {
+                target_pos = inertial_nav.get_position_xy_cm();
+            }
+            if (!precland.get_target_velocity_relative_cms(target_vel_rel)) {
+                target_vel_rel = -inertial_nav.get_velocity_xy_cms();
+            }
+            pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
+            pos_control->override_vehicle_velocity_xy(-target_vel_rel);
+        }
+#endif
 
         run_xy_controller();
 
