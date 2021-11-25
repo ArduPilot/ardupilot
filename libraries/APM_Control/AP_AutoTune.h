@@ -19,7 +19,8 @@ public:
 
     enum ATType {
         AUTOTUNE_ROLL  = 0,
-        AUTOTUNE_PITCH = 1
+        AUTOTUNE_PITCH = 1,
+        AUTOTUNE_YAW = 2,
     };
 
     struct PACKED log_ATRP {
@@ -105,6 +106,7 @@ private:
     void save_float_if_changed(AP_Float &v, float value);
     void save_int16_if_changed(AP_Int16 &v, int16_t value);
     void state_change(ATState newstate);
+    const char *axis_string(void) const;
 
     // get gains with PID components
     ATGains get_gains(void);

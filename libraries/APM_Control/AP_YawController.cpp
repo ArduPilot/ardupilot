@@ -148,6 +148,16 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     AP_GROUPEND
 };
 
+AP_YawController::AP_YawController(const AP_Vehicle::FixedWing &parms)
+    : aparm(parms)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    _pid_info.target = 0;
+    _pid_info.FF = 0;
+    _pid_info.P = 0;
+    rate_pid.set_slew_limit_scale(45);
+}
+
 int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
 {
     uint32_t tnow = AP_HAL::millis();
@@ -315,12 +325,12 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     // remember the last output to trigger the I limit
     _last_out = out;
 
-#if 0
     if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
+        // fake up an angular error based on a notional time constant of 0.5s
+        const float angle_err_deg = desired_rate * gains.tau;
         // let autotune have a go at the values
         autotune->update(pinfo, scaler, angle_err_deg);
     }
-#endif
 
     // output is scaled to notional centidegrees of deflection
     return constrain_float(out * 100, -4500, 4500);
@@ -329,4 +339,37 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
 void AP_YawController::reset_I()
 {
     _integrator = 0;
+}
+
+/*
+  start an autotune
+ */
+void AP_YawController::autotune_start(void)
+{
+    if (autotune == nullptr && rate_control_enabled()) {
+        // the autotuner needs a time constant. Use an assumed tconst of 0.5
+        gains.tau = 0.5;
+        gains.rmax_pos.set(90);
+
+        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_YAW, aparm, rate_pid);
+        if (autotune == nullptr) {
+            if (!failed_autotune_alloc) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed yaw allocation");
+            }
+            failed_autotune_alloc = true;
+        }
+    }
+    if (autotune != nullptr) {
+        autotune->start();
+    }
+}
+
+/*
+  restore autotune gains
+ */
+void AP_YawController::autotune_restore(void)
+{
+    if (autotune != nullptr) {
+        autotune->stop();
+    }
 }
