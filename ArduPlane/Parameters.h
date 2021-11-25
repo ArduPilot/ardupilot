@@ -351,6 +351,7 @@ public:
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence
+        k_param_acro_yaw_rate,
     };
 
     AP_Int16 format_version;
@@ -420,6 +421,7 @@ public:
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
     AP_Int16 acro_pitch_rate;
+    AP_Int16 acro_yaw_rate;
     AP_Int8  acro_locking;
 
     // Misc
