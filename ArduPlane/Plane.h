@@ -523,6 +523,7 @@ private:
         uint16_t id;
         float roll_rate_dps;
         float pitch_rate_dps;
+        float yaw_rate_dps;
         float throttle_pct;
         uint32_t start_ms;
         bool done;
