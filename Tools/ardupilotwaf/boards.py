@@ -319,6 +319,9 @@ class Board:
                     '-Werror=implicit-fallthrough',
                     '-Werror=maybe-uninitialized',
                     '-Werror=duplicated-cond',
+                ]
+            if self.cc_version_gte(cfg, 8, 4):
+                env.CXXFLAGS += [
                     '-Werror=sizeof-pointer-div',
                 ]
 
