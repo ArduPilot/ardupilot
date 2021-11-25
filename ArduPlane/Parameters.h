@@ -562,6 +562,10 @@ public:
 
     AP_Int32        oneshot_mask;
 
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
+
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
 };

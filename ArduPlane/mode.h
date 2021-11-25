@@ -134,6 +134,7 @@ protected:
     AC_PosControl*& pos_control;
     AC_AttitudeControl_Multi*& attitude_control;
     AC_Loiter*& loiter_nav;
+    AP_InertialNav& inertial_nav;
     QuadPlane& quadplane;
     QuadPlane::PosControlState &poscontrol;
 #endif

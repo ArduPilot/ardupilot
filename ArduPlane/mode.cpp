@@ -6,6 +6,7 @@ Mode::Mode()
     pos_control(plane.quadplane.pos_control),
     attitude_control(plane.quadplane.attitude_control),
     loiter_nav(plane.quadplane.loiter_nav),
+    inertial_nav(plane.quadplane.inertial_nav),
     poscontrol(plane.quadplane.poscontrol)
 #endif
 {

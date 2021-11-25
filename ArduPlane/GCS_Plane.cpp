@@ -8,6 +8,16 @@ uint8_t GCS_Plane::sysid_this_mav() const
 
 void GCS_Plane::update_vehicle_sensor_status_flags(void)
 {
+#if PRECISION_LANDING == ENABLED
+    if (plane.g2.precland.enabled()) {
+        control_sensors_present |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
+    if (plane.g2.precland.enabled() && plane.g2.precland.healthy()) {
+        control_sensors_health |= MAV_SYS_STATUS_SENSOR_VISION_POSITION;
+    }
+#endif
+
     // reverse thrust
     if (plane.have_reverse_thrust()) {
         control_sensors_present |= MAV_SYS_STATUS_REVERSE_MOTOR;

@@ -12,6 +12,7 @@ def build(bld):
             'AP_Avoidance',
             'AP_Arming',
             'AP_Camera',
+            'AP_IRLock',
             'AP_L1_Control',
             'AP_Navigation',
             'AP_RCMapper',
@@ -30,6 +31,7 @@ def build(bld):
             'AC_AutoTune',
             'AP_KDECAN',
             'AP_Follow',
+            'AC_PrecLand',
         ],
     )
 

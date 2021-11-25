@@ -69,6 +69,23 @@ void ModeQLoiter::run()
     }
     loiter_nav->update();
 
+#if PRECISION_LANDING == ENABLED
+    // run precision landing
+    if (quadplane.precland_active()) {
+        Vector2f target_pos, target_vel;
+        AC_PrecLand &precland = plane.g2.precland;
+        if (!precland.get_target_position_cm(target_pos)) {
+            target_pos = inertial_nav.get_position_xy_cm();
+        }
+        precland.get_target_velocity_cms(inertial_nav.get_velocity_xy_cms(), target_vel);
+
+        Vector2f zero;
+        Vector2p landing_pos = target_pos.topostype();
+        pos_control->input_pos_vel_accel_xy(landing_pos, target_vel, zero);
+        pos_control->update_xy_controller();
+    }
+#endif
+
     // nav roll and pitch are controller by loiter controller
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();

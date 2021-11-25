@@ -20,6 +20,7 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include "config.h"
 #include "qautotune.h"
 #include "defines.h"
 #include "tailsitter.h"
@@ -68,6 +69,10 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
 
     void control_auto(void);
     bool setup(void);
@@ -132,7 +137,7 @@ public:
 
     // return true if the user has set ENABLE
     bool enabled(void) const { return enable != 0; }
-    
+
     // is throttle controlled landing descent active?
     bool thr_ctrl_land;
 
@@ -284,6 +289,11 @@ private:
     float stopping_distance(float ground_speed_squared) const;
     float accel_needed(float stop_distance, float ground_speed_squared) const;
     float stopping_distance(void);
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+#endif
+    bool precland_active() const;
 
     // distance below which we don't do approach, based on stopping
     // distance for cruise speed
