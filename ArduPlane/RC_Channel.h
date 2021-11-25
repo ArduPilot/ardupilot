@@ -28,6 +28,8 @@ private:
 
     void do_aux_function_flare(AuxSwitchPos ch_flag);
 
+    void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
+
 };
 
 class RC_Channels_Plane : public RC_Channels

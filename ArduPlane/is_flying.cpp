@@ -177,6 +177,10 @@ void Plane::update_is_flying_5Hz(void)
 
     // conservative ground mode value for rate D suppression
     ground_mode = !is_flying() && !hal.util->get_soft_armed();
+
+    if (!is_flying()) {
+        arming.disarm_if_requested();
+    }
 }
 
 /*
