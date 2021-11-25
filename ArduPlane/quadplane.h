@@ -10,6 +10,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include "config.h"
 #include "qautotune.h"
 #include "defines.h"
 
@@ -50,6 +51,10 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
+
+#if PRECISION_LANDING == ENABLED
+    void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
+#endif
 
     void control_run(void);
     void control_auto(void);
@@ -306,6 +311,11 @@ private:
     // calculate a stopping distance for fixed-wing to vtol transitions
     float stopping_distance(float ground_speed_squared);
     float stopping_distance(void);
+
+#if PRECISION_LANDING == ENABLED
+    bool _precision_loiter_enabled;
+#endif
+    bool precland_active() const;
 
     // distance below which we don't do approach, based on stopping
     // distance for cruise speed
