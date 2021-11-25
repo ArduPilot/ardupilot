@@ -133,8 +133,8 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     }
 #if defined(HAL_CRASH_DUMP_FLASHPAGE)
     if (strcmp(fname, "crash_dump.bin") == 0) {
-        hal.util->last_crash_dump(*r.str);
-    }
+        r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
+    } else
 #endif
     if (strcmp(fname, "storage.bin") == 0) {
         // we don't want to store the contents of storage.bin
@@ -268,6 +268,8 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
     // read every file for a directory listing
     if (strcmp(pathname_noslash, "storage.bin") == 0) {
         stbuf->st_size = HAL_STORAGE_SIZE;
+    } else if (strcmp(pathname_noslash, "crash_dump.bin") == 0) {
+        stbuf->st_size = hal.util->last_crash_dump_size();
     } else {
         stbuf->st_size = 100000;
     }
