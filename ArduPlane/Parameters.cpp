@@ -546,7 +546,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ACRO_YAW_RATE
     // @DisplayName: ACRO mode yaw rate
-    // @Description: The maximum yaw rate at full stick deflection in ACRO mode. If this is zero then rudder is directly controlled by rudder stick input
+    // @Description: The maximum yaw rate at full stick deflection in ACRO mode. If this is zero then rudder is directly controlled by rudder stick input. This option is only available if you also set YAW_RATE_ENABLE to 1.
     // @Units: deg/s
     // @Range: 0 500
     // @Increment: 1
