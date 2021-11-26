@@ -186,6 +186,8 @@ void Tiltrotor::slew(float newtilt)
     float max_change = tilt_max_change(newtilt<current_tilt, newtilt > get_fully_forward_tilt());
     current_tilt = constrain_float(newtilt, current_tilt-max_change, current_tilt+max_change);
 
+    angle_achieved = is_equal(newtilt, current_tilt);
+
     // translate to 0..1000 range and output
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * current_tilt);
 }

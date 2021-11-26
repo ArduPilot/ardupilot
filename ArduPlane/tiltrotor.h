@@ -63,6 +63,10 @@ public:
 
     bool motors_active() const { return enabled() && _motors_active; }
 
+    // true if the tilts have completed slewing
+    // always return true if not enabled or not a continuous type
+    bool tilt_angle_achieved() const { return !enabled() || (type != TILT_TYPE_CONTINUOUS) || angle_achieved; }
+
     AP_Int8 enable;
     AP_Int16 tilt_mask;
     AP_Int16 max_rate_up_dps;
@@ -99,6 +103,10 @@ private:
 
     // true if all motors tilt with no fixed VTOL motor
     bool _have_vtol_motor;
+
+    // true if the current tilt angle is equal to the desired
+    // with slow tilt rates the tilt angle can lag
+    bool angle_achieved;
 
     // refences for convenience
     QuadPlane& quadplane;
