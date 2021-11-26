@@ -46,9 +46,7 @@ static const SysFileList sysfs_file_list[] = {
 #if !defined(HAL_BOOTLOADER_BUILD) && (defined(STM32F7) || defined(STM32H7))
     {"persistent.parm"},
 #endif
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
     {"crash_dump.bin"},
-#endif
     {"storage.bin"},
 };
 
@@ -131,11 +129,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "persistent.parm") == 0) {
         hal.util->load_persistent_params(*r.str);
     }
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
     if (strcmp(fname, "crash_dump.bin") == 0) {
         r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
     } else
-#endif
     if (strcmp(fname, "storage.bin") == 0) {
         // we don't want to store the contents of storage.bin
         // we read directly from the storage driver
