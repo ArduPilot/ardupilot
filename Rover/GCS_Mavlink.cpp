@@ -288,6 +288,40 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
             return;
         }
     }
+
+    // Position Controller Velocity North PID
+    if (g.gcs_pid_mask & 64) {
+        pid_info = &g2.pos_control.get_vel_pid().get_pid_info_x();
+        mavlink_msg_pid_tuning_send(chan, 10,
+                                    pid_info->target,
+                                    pid_info->actual,
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
+
+    // Position Controller Velocity East PID
+    if (g.gcs_pid_mask & 128) {
+        pid_info = &g2.pos_control.get_vel_pid().get_pid_info_y();
+        mavlink_msg_pid_tuning_send(chan, 11,
+                                    pid_info->target,
+                                    pid_info->actual,
+                                    pid_info->FF,
+                                    pid_info->P,
+                                    pid_info->I,
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
+        if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
+            return;
+        }
+    }
 }
 
 void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
