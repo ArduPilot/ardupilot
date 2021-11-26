@@ -555,7 +555,9 @@ public:
 
     AP_Int32        oneshot_mask;
 
+#if HAL_GROUND_EFFECT_ENABLED
     GroundEffectController ground_effect_controller;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

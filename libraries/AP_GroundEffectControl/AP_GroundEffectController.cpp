@@ -21,9 +21,18 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if HAL_GROUND_EFFECT_ENABLED
+
 constexpr uint32_t RESET_TIMEOUT_MICROS{1000000};
 
 const AP_Param::GroupInfo GroundEffectController::var_info[] = {
+    // @Param: ENABLE
+    // @DisplayName: Is the ground effect controller available or not
+    // @Description: Toggles the ground effect controller availability on and off
+    // @Values: 0:Disable,1:Enable
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_ENABLE", 1, GroundEffectController, _ACTIVE, 0, AP_PARAM_FLAG_ENABLE),
+
     // @Param: P
     // @DisplayName: P gain
     // @Description: P gain. A 1 meter error from desired alt changes throttle by this many percent.
@@ -44,7 +53,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
     // @DisplayName: IMax
     // @Description: Maximum integrator value
     // @User: Standard
-    AP_SUBGROUPINFO(_throttle_pid, "_THR_", 1, GroundEffectController, PID),
+    AP_SUBGROUPINFO(_throttle_pid, "_THR_", 2, GroundEffectController, PID),
 
     // @Param: P
     // @DisplayName: P gain
@@ -65,7 +74,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
     // @DisplayName: IMax
     // @Description: Maximum integrator value
     // @User: Standard
-    AP_SUBGROUPINFO(_pitch_pid, "_PITCH_", 2, GroundEffectController, PID),
+    AP_SUBGROUPINFO(_pitch_pid, "_PITCH_", 3, GroundEffectController, PID),
 
 	// @Param: THR_REF
 	// @DisplayName: Ground Effect desired throttle (percentage)
@@ -73,7 +82,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 	// @Range: 0.0 100.0
 	// @Increment: 0.01
     // @User: Standard
-	AP_GROUPINFO("_THR_REF",   3, GroundEffectController, _THR_REF,   35.0),
+	AP_GROUPINFO("_THR_REF",   4, GroundEffectController, _THR_REF,   35.0),
 
 	// @Param: THR_MIN
 	// @DisplayName: Ground Effect minimum throttle (percentage)
@@ -81,7 +90,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 	// @Range: 0.0 100.0
 	// @Increment: 0.01
     // @User: Standard
-	AP_GROUPINFO("_THR_MIN",   4, GroundEffectController, _THR_MIN,   20.0),
+	AP_GROUPINFO("_THR_MIN",   5, GroundEffectController, _THR_MIN,   20.0),
 
     // @Param: THR_MAX
 	// @DisplayName: Ground Effect maximum throttle (percentage)
@@ -89,7 +98,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 	// @Range: 0.0 100.0
 	// @Increment: 0.01
     // @User: Standard
-	AP_GROUPINFO("_THR_MAX",   5, GroundEffectController, _THR_MAX,   50.0),
+	AP_GROUPINFO("_THR_MAX",   6, GroundEffectController, _THR_MAX,   50.0),
 
 	// @Param: ALT_REF
 	// @DisplayName: Ground Effect desired altitude (meters)
@@ -97,7 +106,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 	// @Range: 0.0 1.0
 	// @Increment: 0.01
     // @User: Standard
-	AP_GROUPINFO("_ALT_REF",   6, GroundEffectController, _ALT_REF,   0.45),
+	AP_GROUPINFO("_ALT_REF",   7, GroundEffectController, _ALT_REF,   0.45),
 
 	// @Param: CUTOFF_FREQ
 	// @DisplayName: Rangefinder Complementary Filter Cutoff Frequency
@@ -105,7 +114,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 	// @Range: 0.0 2.0
 	// @Increment: 0.01
     // @User: Advanced
-	AP_GROUPINFO("_CUTOFF_FRQ",   7, GroundEffectController, _CUTOFF_FREQ,   0.1),
+	AP_GROUPINFO("_CUTOFF_FRQ",   8, GroundEffectController, _CUTOFF_FREQ,   0.1),
 
 	// @Param: LIM_ROLL
 	// @DisplayName: Max roll angle (degrees)
@@ -113,7 +122,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 	// @Range: 0.0 45.0
 	// @Increment: 0.01
     // @User: Advanced
-	AP_GROUPINFO("_LIM_ROLL",   8, GroundEffectController, _LIM_ROLL,   10.0), /* TODO gotta choose a good value here */
+	AP_GROUPINFO("_LIM_ROLL",   9, GroundEffectController, _LIM_ROLL,   10.0),
 
     AP_GROUPEND
 };
@@ -121,7 +130,7 @@ const AP_Param::GroupInfo GroundEffectController::var_info[] = {
 bool GroundEffectController::user_request_enable(bool enable)
 {
     if(enable){
-        if(!_rangefinder.has_orientation(ROTATION_PITCH_270)){
+        if(!_ACTIVE || !_rangefinder->has_orientation(ROTATION_PITCH_270)){
             _enabled = false;
             return false;
         }
@@ -157,13 +166,13 @@ void GroundEffectController::update()
     }
     _last_time_called = time;
 
-    if(_rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) {
-        _last_good_rangefinder_reading = _rangefinder.distance_orient(ROTATION_PITCH_270);
+    if(_rangefinder->status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) {
+        _last_good_rangefinder_reading = _rangefinder->distance_orient(ROTATION_PITCH_270);
     }
 
     // DCM altitude is not good. If EKF alt is not available, just use raw rangefinder data
     float alt_error, ahrs_negative_alt;
-    if(_ahrs.get_active_AHRS_type() > 0 && _ahrs.get_relative_position_D_origin(ahrs_negative_alt)){
+    if(_ahrs->get_active_AHRS_type() > 0 && _ahrs->get_relative_position_D_origin(ahrs_negative_alt)){
         _altFilter.apply(_last_good_rangefinder_reading, -ahrs_negative_alt, time);
         alt_error = _ALT_REF - _altFilter.get();
     } else {
@@ -176,3 +185,5 @@ void GroundEffectController::update()
 
     return;
 }
+
+#endif // HAL_GROUND_EFFECT_ENABLED

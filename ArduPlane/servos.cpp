@@ -556,7 +556,11 @@ void Plane::set_servos_controlled(void)
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
                control_mode == &mode_autotune ||
-               (control_mode == &mode_fbwa && !plane.g2.ground_effect_controller.enabled_by_user())) {
+               (control_mode == &mode_fbwa
+#if HAL_GROUND_EFFECT_ENABLED
+               && !plane.g2.ground_effect_controller.enabled_by_user()
+#endif               
+               )) {
         // a manual throttle mode
         if (failsafe.throttle_counter) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);

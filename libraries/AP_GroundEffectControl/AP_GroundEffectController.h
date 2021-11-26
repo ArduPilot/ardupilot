@@ -5,14 +5,20 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <Filter/ComplementaryFilter.h>
 
+#ifndef HAL_GROUND_EFFECT_ENABLED
+ #define HAL_GROUND_EFFECT_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#if HAL_GROUND_EFFECT_ENABLED
+
 class GroundEffectController {
 public:
-    GroundEffectController(AP_AHRS& ahrs, RangeFinder& rangefinder)
-        : _ahrs{ahrs}
-        , _rangefinder{rangefinder}
-        , _enabled{false}
+    GroundEffectController()
+        : _enabled{false}
         {
             AP_Param::setup_object_defaults(this, var_info);
+            _rangefinder = RangeFinder::get_singleton();
+            _ahrs = AP_AHRS::get_singleton();
         };
 
     /* Do not allow copies */
@@ -41,6 +47,7 @@ private:
     PID _pitch_pid{120.0, 0.0, 0.0, 1000};
     PID _throttle_pid{64, 0.0, 20.0, 1000};
 
+    AP_Int8 _ACTIVE;
 	AP_Float _THR_REF;
     AP_Float _THR_MIN;
     AP_Float _THR_MAX;
@@ -52,8 +59,8 @@ private:
 
     uint32_t _last_time_called;
 
-    AP_AHRS& _ahrs;
-    RangeFinder& _rangefinder;
+    AP_AHRS* _ahrs;
+    RangeFinder* _rangefinder;
     ComplementaryFilter _altFilter;
 
     float _last_good_rangefinder_reading;
@@ -62,3 +69,5 @@ private:
     int32_t _pitch;
     int16_t _throttle;
 };
+
+#endif // HAL_GROUND_EFFECT_ENABLED

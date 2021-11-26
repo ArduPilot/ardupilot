@@ -12,7 +12,8 @@ void ModeFBWA::update()
     } else {
         plane.nav_pitch_cd = -(pitch_input * plane.pitch_limit_min_cd);
     }
-    
+
+#if HAL_GROUND_EFFECT_ENABLED    
     if(plane.g2.ground_effect_controller.enabled_by_user()){
         plane.g2.ground_effect_controller.update();
         // If the rc throttle input is zero (within dead zone), supress throttle
@@ -24,8 +25,11 @@ void ModeFBWA::update()
         }
         plane.nav_pitch_cd += plane.g2.ground_effect_controller.get_pitch(); // Note that this stacks
     } else {
+#endif
         plane.adjust_nav_pitch_throttle();
+#if HAL_GROUND_EFFECT_ENABLED 
     }
+#endif
     
     plane.nav_pitch_cd = constrain_int32(plane.nav_pitch_cd, plane.pitch_limit_min_cd, plane.aparm.pitch_limit_max_cd.get());
 
