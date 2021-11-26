@@ -8,6 +8,9 @@ local ROLL_TCONST = param:get('RLL2SRV_TCONST') * 0.5
 local PITCH_TCONST = param:get('PTCH2SRV_TCONST') * 0.5
 local TRIM_THROTTLE = param:get('TRIM_THROTTLE') * 1.0
 
+DO_JUMP = 177
+NAV_WAYPOINT = 16
+
 local scr_user1_param = Parameter()
 local scr_user2_param = Parameter()
 local scr_user3_param = Parameter()
@@ -17,6 +20,8 @@ assert(scr_user3_param:init('SCR_USER3'), 'could not find SCR_USER3 parameter')
 
 local last_roll_err = 0.0
 local last_id = 0
+local initial_yaw_deg = 0
+local wp_yaw_deg = 0
 
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
@@ -49,14 +54,37 @@ function roll_zero_controller(tconst)
    return roll_err / tconst
 end
 
--- a controller to target a zero pitch angle
+
+function wrap_360(angle)
+   local res = math.fmod(angle, 360.0)
+    if res < 0 then
+        res = res + 360.0
+    end
+    return res
+end
+
+function wrap_180(angle)
+    local res = wrap_360(angle)
+    if res > 180 then
+       res = res - 360
+    end
+    return res
+end
+
+-- a controller to target a zero pitch angle and zero heading change, used in a roll
 -- output is a body frame pitch rate, with convergence over time tconst in seconds
-function pitch_controller(target_pitch_deg, tconst)
+function pitch_controller(target_pitch_deg, target_yaw_deg, tconst)
    local roll_deg = math.deg(ahrs:get_roll())
    local pitch_deg = math.deg(ahrs:get_pitch())
-   local pitch_rate = (target_pitch_deg - pitch_deg) * math.cos(math.rad(roll_deg)) / tconst
-   local yaw_rate = -(target_pitch_deg - pitch_deg) * math.sin(math.rad(roll_deg)) / tconst
-   return pitch_rate, yaw_rate
+   local yaw_deg = math.deg(ahrs:get_yaw())
+
+   -- get earth frame pitch and yaw rates
+   local ef_pitch_rate = (target_pitch_deg - pitch_deg) / tconst
+   local ef_yaw_rate = wrap_180(target_yaw_deg - yaw_deg) / tconst
+
+   local bf_pitch_rate = math.sin(math.rad(roll_deg)) * ef_yaw_rate + math.cos(math.rad(roll_deg)) * ef_pitch_rate
+   local bf_yaw_rate   = math.cos(math.rad(roll_deg)) * ef_yaw_rate - math.sin(math.rad(roll_deg)) * ef_pitch_rate
+   return bf_pitch_rate, bf_yaw_rate
 end
 
 -- a controller for throttle to account for pitch
@@ -94,7 +122,7 @@ function do_axial_roll(arg1, arg2)
    end
    if roll_stage < 2 then
       target_pitch = scr_user2_param:get()
-      pitch_rate, yaw_rate = pitch_controller(target_pitch, PITCH_TCONST)
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST)
       vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
    end
 end
@@ -132,6 +160,28 @@ function do_loop(arg1, arg2)
    end
 end
 
+--- get a location object for a given WP number
+function get_wp_location(i)
+   local m = mission:get_item(i)
+   local loc = Location()
+   loc:lat(m:x())
+   loc:lng(m:y())
+   loc:relative_alt(false)
+   loc:terrain_alt(false)
+   loc:origin_alt(false)
+   loc:alt(math.floor(m:z()*100))
+   return loc
+end
+
+function resolve_jump(i)
+   local m = mission:get_item(i)
+   while m:command() == DO_JUMP do
+      i = math.floor(m:param1())
+      m = mission:get_item(i)
+   end
+   return i
+end
+
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
    if id then
@@ -139,6 +189,13 @@ function update()
          -- we've started a new command
          running = false
          last_id = id
+         initial_yaw_deg = math.deg(ahrs:get_yaw())
+
+         -- work out yaw between previous WP and next WP
+         local cnum = mission:get_current_nav_index()
+         local loc_prev = get_wp_location(cnum-1)
+         local loc_next = get_wp_location(resolve_jump(cnum+1))
+         wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
       end
       if cmd == 1 then
          do_axial_roll(arg1, arg2)
