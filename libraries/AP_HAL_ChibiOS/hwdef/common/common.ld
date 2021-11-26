@@ -192,4 +192,13 @@ SECTIONS
         . = ORIGIN(HEAP_RAM) + LENGTH(HEAP_RAM);
         __heap_end__ = .;
     } > HEAP_RAM
+
+    /* The crash log uses the unused part of a flash section.*/
+    .crash_log (NOLOAD) :
+    {
+        . = ALIGN(32);
+        __crash_log_base__ = .;
+        . = ORIGIN(flash) + LENGTH(flash);
+        __crash_log_end__ = .;
+    } > flash
 }
