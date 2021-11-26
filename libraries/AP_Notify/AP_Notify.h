@@ -114,6 +114,7 @@ public:
         bool powering_off;        // true when the vehicle is powering off
         bool video_recording;     // true when the vehicle is recording video
         bool temp_cal_running;    // true if a temperature calibration is running
+        bool throttle_cut;        // true if the throttle has been cut by an attempt to disarm with aux channel while flying
     };
 
     /// notify_events_type - bitmask of active events.

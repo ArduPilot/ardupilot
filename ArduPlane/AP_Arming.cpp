@@ -254,7 +254,8 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
         if (throttle_cut_prev_mode && plane.control_mode == &plane.mode_fbwa) {
             plane.set_mode(*throttle_cut_prev_mode, ModeReason::RC_COMMAND);
         }
-        throttle_cut = false;
+        set_throttle_cut(false);
+        gcs().send_text(MAV_SEVERITY_INFO , "Rearmed");
         return true;
     }
 
@@ -272,6 +273,12 @@ bool AP_Arming_Plane::arm(const AP_Arming::Method method, const bool do_arming_c
     return true;
 }
 
+void AP_Arming_Plane::set_throttle_cut(bool status)
+{
+    throttle_cut = status;
+    AP_Notify::flags.throttle_cut = status;
+}
+
 /*
   disarm motors
  */
@@ -282,13 +289,14 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
         // don't allow disarming in flight, cut the throttle instead and change mode to FBWA if in auto throttle mode
         if (plane.is_flying()) {
             if (method == AP_Arming::Method::AUXSWITCH) {
-                throttle_cut = true;
+                set_throttle_cut(true);
                 if (plane.control_mode->does_auto_throttle()) {
                     throttle_cut_prev_mode = plane.control_mode;
                     plane.set_mode(plane.mode_fbwa, ModeReason::RC_COMMAND);
                 } else {
                     throttle_cut_prev_mode = NULL;
                 }
+                gcs().send_text(MAV_SEVERITY_INFO , "Throttle cut by arm switch");
             }
             // obviously this could happen in-flight so we can't warn about it
             return false;
@@ -322,7 +330,7 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
 
     //only log if disarming was successful
     change_arm_state();
-    throttle_cut = false;
+    set_throttle_cut(false);
 
 #if QAUTOTUNE_ENABLED
     //save qautotune gains if enabled and success

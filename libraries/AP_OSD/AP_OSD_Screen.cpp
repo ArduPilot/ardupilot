@@ -1361,13 +1361,14 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
 {
     AP_Notify * notify = AP_Notify::get_singleton();
     char arm;
-    if (AP_Notify::flags.armed) {
+    if (AP_Notify::flags.armed && !AP_Notify::flags.throttle_cut) {
         arm = SYMBOL(SYM_ARMED);
     } else {
         arm = SYMBOL(SYM_DISARMED);
     }
     if (notify) {
-        backend->write(x, y, false, "%s%c", notify->get_flight_mode_str(), arm);
+        backend->write(x, y, false, "%s", notify->get_flight_mode_str());
+        backend->write(x+4, y, AP_Notify::flags.throttle_cut, "%c", arm);
     }
 }
 
@@ -1585,7 +1586,7 @@ void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
 {
-    backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYMBOL(SYM_PCNT));
+    backend->write(x, y, AP_Notify::flags.throttle_cut, "%3d%c", gcs().get_hud_throttle(), SYMBOL(SYM_PCNT));
 }
 
 #if HAL_OSD_SIDEBAR_ENABLE

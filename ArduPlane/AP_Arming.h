@@ -31,6 +31,8 @@ public:
 
     void update_soft_armed();
     bool get_delay_arming() const { return delay_arming; };
+
+    void set_throttle_cut(bool status);
     bool get_throttle_cut() const { return throttle_cut; };
 
 protected:
