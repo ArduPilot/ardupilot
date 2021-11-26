@@ -90,6 +90,12 @@ public:
     // set_desired_speed - this requires input to be 0-1
     void        set_desired_speed(float desired_speed) { _desired_speed = desired_speed; }
 
+    // set_desired_throttle - this requires input to be 0-1
+    void        set_desired_throttle(float desired_throttle) { _desired_throttle = desired_throttle; }
+
+    // use desired pilot throttle
+    void        use_pilot_desired_throttle(bool enable) { _use_pilot_throttle = enable; }
+
     // get_control_speed
     float       get_control_output() const { return _control_output; }
 
@@ -163,6 +169,8 @@ private:
     bool            _use_bailout_ramp;            // true if allowing RSC to quickly ramp up engine
     bool            _in_autorotation;              // true if vehicle is currently in an autorotation
     int16_t         _rsc_arot_bailout_pct;        // the throttle percentage sent to the external governor to signal that autorotation bailout ramp should be used
+    float           _desired_throttle;               // latest desired throttle from pilot
+    bool            _use_pilot_throttle;            // true if allowing to pass through pilot desired throttle
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);

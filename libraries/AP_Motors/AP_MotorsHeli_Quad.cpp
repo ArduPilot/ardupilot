@@ -103,6 +103,17 @@ void AP_MotorsHeli_Quad::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 }
 
+// set_desired_throttle
+void AP_MotorsHeli_Quad::set_desired_throttle(float desired_throttle)
+{
+    // constrain and set desired throttle
+    // -1.0f is allowed because it indicates invalid pilot throttle or invalid flightmode
+    _main_rotor.set_desired_throttle(constrain_float(desired_throttle, -1.0f, 1.0f));
+
+    // indicates pilot desires using transmitter throttle in manual throttle modes
+    _main_rotor.use_pilot_desired_throttle(using_pilot_throttle());
+}
+
 // set_rotor_rpm - used for governor with speed sensor
 void AP_MotorsHeli_Quad::set_rpm(float rotor_rpm)
 {
@@ -128,11 +139,15 @@ void AP_MotorsHeli_Quad::calculate_armed_scalars()
         _heliflags.save_rsc_mode = false;
     }
 
-    // set bailout ramp time
-    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+    if (heli_option(HeliOption::ENABLE_BAILOUT)) {
+        // set bailout ramp time
+        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+    } else {
+        _main_rotor.use_bailout_ramp_time(false);
+    }
 
     // allow use of external governor autorotation bailout window on main rotor
-    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
+    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) && heli_option(HeliOption::ENABLE_BAILOUT)){
         // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
     }

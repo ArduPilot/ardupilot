@@ -151,6 +151,18 @@ float Copter::get_pilot_desired_rotor_speed() const
     return 0.0f;
 }
 
+// get throttle from transmitter
+// returns -1 if throttle hasn't been defined
+float Copter::get_pilot_desired_throttle() const
+{
+    RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK);
+    if (rc_ptr != nullptr) {
+        rc_ptr->set_range(1000);
+        return (float)rc_ptr->get_control_in() * 0.001f;
+    }
+    return -1.0f;
+}
+
 // heli_update_rotor_speed_targets - reads pilot input and passes new rotor speed targets to heli motors object
 void Copter::heli_update_rotor_speed_targets()
 {
@@ -159,6 +171,9 @@ void Copter::heli_update_rotor_speed_targets()
 
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
+
+    // always reset desired throttle to keep from accidentally using manual throttle
+    motors->set_desired_throttle(-1.0f);
 
     switch (rsc_control_mode) {
         case ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH:
@@ -173,6 +188,20 @@ void Copter::heli_update_rotor_speed_targets()
             break;
         case ROTOR_CONTROL_MODE_SPEED_SETPOINT:
         case ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT:
+            if (get_pilot_desired_throttle() >= 0.0f && flightmode->has_manual_throttle()) {
+                motors->set_desired_throttle(get_pilot_desired_throttle());
+            }
+            if (motors->get_interlock()) {
+#if RPM_ENABLED == ENABLED
+                float rpm = -1;
+                rpm_sensor.get_rpm(0, rpm);
+                motors->set_rpm(rpm);
+#endif
+                motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
+            }else{
+                motors->set_desired_rotor_speed(0.0f);
+            }
+            break;
         case ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT:
             // pass setpoint through as desired rotor speed. Needs work, this is pointless as it is
             // not used by closed loop control. Being used as a catch-all for other modes regardless
@@ -226,18 +255,29 @@ void Copter::heli_update_autorotation()
         motors->set_enable_bailout(false);
     }
 #else
-    heli_flags.in_autorotation = false;
-    motors->set_enable_bailout(false);
+    // check if flying and interlock disengaged
+    if (!ap.land_complete && !motors->get_interlock()) {
+        // set flag to facilitate both auto and manual autorotations
+        heli_flags.in_autorotation = true;
+    } else {
+        heli_flags.in_autorotation = false;
+    }
+
+    // sets autorotation flags through out libraries
+    heli_set_autorotation(heli_flags.in_autorotation);
+    if (!ap.land_complete) {
+        motors->set_enable_bailout(true);
+    } else {
+        motors->set_enable_bailout(false);
+    }
 #endif
 }
 
-#if MODE_AUTOROTATE_ENABLED == ENABLED
 // heli_set_autorotation - set the autorotation flag throughout libraries
 void Copter::heli_set_autorotation(bool autorotation)
 {
     motors->set_in_autorotation(autorotation);
 }
-#endif
 
 // update collective low flag.  Use a debounce time of 400 milliseconds.
 void Copter::update_collective_low_flag(int16_t throttle_control)
