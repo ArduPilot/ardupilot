@@ -2456,13 +2456,13 @@ class AutoTest(ABC):
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
-        self.start_SITL(wipe=True)
-        self.set_streamrate(self.sitl_streamrate())
-        self.apply_default_parameters()
         try:
             del self.valgrind_restart_customisations
         except Exception:
             pass
+        self.start_SITL(wipe=True)
+        self.set_streamrate(self.sitl_streamrate())
+        self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
 
     def stop_SITL(self):
