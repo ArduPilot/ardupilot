@@ -1437,14 +1437,10 @@ void AC_AutoTune::rate_ff_test_init()
 
 void AC_AutoTune::rate_ff_test_run(float max_angle_cd, float target_rate_cds, float dir_sign)
 {
-    float gyro_reading = 0.0f;
-    float command_reading = 0.0f;
-    float tgt_rate_reading = 0.0f;
+    float gyro_reading;
+    float command_reading;
+    float tgt_rate_reading;
     const uint32_t now = AP_HAL::millis();
-    static float trim_command_reading = 0.0f;
-    static float trim_heading = 0.0f;
-    static float rate_request_cds;
-    static float angle_request_cd;
 
     // TODO make filter leak dependent on dt
     const float filt_alpha = 0.0123f;
@@ -1667,22 +1663,15 @@ void AC_AutoTune::dwell_test_init(float filt_freq)
 
 void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase)
 {
-    float gyro_reading = 0.0f;
-    float command_reading = 0.0f;
-    float tgt_rate_reading = 0.0f;
+    float gyro_reading;
+    float command_reading;
+    float tgt_rate_reading;
     float tgt_attitude = 2.5f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_rate_cds;
-    static float trim_command;
-    static Vector3f trim_attitude_cd;
     float sweep_time_ms = 23000;
     const float att_hold_gain = 4.5f;
-    static Vector3f filt_attitude_cd;
-    static Vector2f filt_att_fdbk_from_velxy_cd;
     Vector3f attitude_cd;
-    static float filt_command_reading;
-    static float filt_gyro_reading;
-    static float filt_tgt_rate_reading;
 
     float dwell_freq = start_frq;
     float cycle_time_ms = 0;
@@ -1934,20 +1923,14 @@ void AC_AutoTune::angle_dwell_test_init(float filt_freq)
 
 void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase)
 {
-    float gyro_reading = 0.0f;
-    float command_reading = 0.0f;
-    float tgt_rate_reading = 0.0f;
+    float gyro_reading;
+    float command_reading;
+    float tgt_rate_reading;
     float tgt_attitude = 5.0f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd;
-    static float trim_yaw_tgt_reading = 0.0f;
-    static float trim_yaw_heading_reading = 0.0f;
     float sweep_time_ms = 23000;
     float dwell_freq = start_frq;
-    static float filt_command_reading;
-    static float filt_gyro_reading;
-    static float filt_tgt_rate_reading;
-    static Vector2f filt_att_fdbk_from_velxy_cd;
 
     const float alpha = calc_lowpass_alpha_dt(0.0025f, 0.2f * start_frq);
 
