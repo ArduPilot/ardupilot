@@ -138,6 +138,8 @@ void* get_addr_mem_region_end_addr(void *addr);
 
 // return the size of crash dump
 uint32_t stm32_crash_dump_size(void);
+uint32_t stm32_crash_dump_addr(void);
+uint32_t stm32_crash_dump_max_size(void);
 
 typedef enum  {
     Reset = 1,
