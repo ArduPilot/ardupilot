@@ -14,9 +14,11 @@ NAV_WAYPOINT = 16
 local scr_user1_param = Parameter()
 local scr_user2_param = Parameter()
 local scr_user3_param = Parameter()
+local scr_user4_param = Parameter()
 assert(scr_user1_param:init('SCR_USER1'), 'could not find SCR_USER1 parameter')
 assert(scr_user2_param:init('SCR_USER2'), 'could not find SCR_USER2 parameter')
 assert(scr_user3_param:init('SCR_USER3'), 'could not find SCR_USER3 parameter')
+assert(scr_user4_param:init('SCR_USER4'), 'could not find SCR_USER4 parameter')
 
 local last_roll_err = 0.0
 local last_id = 0
@@ -160,6 +162,58 @@ function do_loop(arg1, arg2)
    end
 end
 
+local rolling_circle_stage = 0
+local rolling_circle_yaw = 0
+local rolling_circle_last_ms = 0
+
+function do_rolling_circle(arg1, arg2)
+   -- constant roll rate circle roll
+   if not running then
+      running = true
+      rolling_circle_stage = 0
+      rolling_circle_yaw = initial_yaw_deg
+      rolling_circle_last_ms = millis()
+      gcs:send_text(0, string.format("Starting rolling circle"))
+   end
+   local roll_rate = arg1
+   local throttle = arg2
+   local pitch_deg = math.deg(ahrs:get_pitch())
+   local roll_deg = math.deg(ahrs:get_roll())
+   local yaw_deg = math.deg(ahrs:get_yaw())
+   local gspeed = ahrs:groundspeed_vector():length()
+   local radius = scr_user4_param:get()
+   if radius < 1 then
+      radius = 50.0
+   end
+   local circumference = math.pi * 2.0 * radius
+   local circle_time = circumference / gspeed
+   local yaw_rate_dps = 360.0 / circle_time
+   local now_ms = millis()
+   local dt = (now_ms - rolling_circle_last_ms):tofloat() * 0.001
+   rolling_circle_last_ms = now_ms
+
+   rolling_circle_yaw = rolling_circle_yaw + yaw_rate_dps * dt
+   if rolling_circle_stage == 0 then
+      if wrap_180(yaw_deg - initial_yaw_deg) > 45 then
+         rolling_circle_stage = 1
+      end
+   elseif rolling_circle_stage == 1 then
+      if math.abs(wrap_180(yaw_deg - initial_yaw_deg)) < 5 then
+         running = false
+         -- we're done
+         gcs:send_text(0, string.format("Finished rollcircle r=%.1f p=%.1f", roll_deg, pitch_deg))
+         vehicle:nav_script_time_done(last_id)
+         rolling_circle_stage = 2
+         return
+      end
+   end
+   if rolling_circle_stage < 2 then
+      target_pitch = scr_user2_param:get()
+      pitch_rate, yaw_rate = pitch_controller(target_pitch, rolling_circle_yaw, PITCH_TCONST)
+      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
+   end
+end
+
 --- get a location object for a given WP number
 function get_wp_location(i)
    local m = mission:get_item(i)
@@ -201,6 +255,8 @@ function update()
          do_axial_roll(arg1, arg2)
       elseif cmd == 2 then
          do_loop(arg1, arg2)
+      elseif cmd == 3 then
+         do_rolling_circle(arg1, arg2)
       end
    else
       running = false
