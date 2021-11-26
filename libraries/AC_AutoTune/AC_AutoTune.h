@@ -386,6 +386,29 @@ protected:
     float    trim_pff_out;  // trim output of the PID rate controller for P, I and FF terms
     float    trim_meas_rate;  // trim measured gyro rate
 
+    //variables from rate FF test
+    float trim_command_reading;
+    float trim_heading;
+    float rate_request_cds;
+    float angle_request_cd;
+
+    // variables from rate dwell test
+    Vector3f trim_attitude_cd;
+    Vector3f filt_attitude_cd;
+    Vector2f filt_att_fdbk_from_velxy_cd;
+    float filt_command_reading;
+    float filt_gyro_reading;
+    float filt_tgt_rate_reading;
+    float trim_command;
+
+    // variables from angle dwell test
+    float trim_yaw_tgt_reading;
+    float trim_yaw_heading_reading;
+//    Vector2f filt_att_fdbk_from_velxy_cd;
+//    float filt_command_reading;
+//    float filt_gyro_reading;
+//    float filt_tgt_rate_reading;
+
     LowPassFilterFloat  command_filt;               // filtered command
     LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
 
