@@ -59,7 +59,6 @@ void AP_Hygrometer::init(void)
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
         case Type::UAVCAN:
             sensor[i] = AP_Hygrometer_UAVCAN::probe(param[i]);
-            printf("sensor[%d] = 0x%x\n",i,sensor[i]);
             break;
 #endif
         }
