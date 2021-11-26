@@ -204,7 +204,7 @@ float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
         return copter.airspeed.get_airspeed();
     }
 #endif
-    
+
     Vector3f airspeed_vec_bf;
     if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
         // we are running the EKF3 wind estimation code which can give
@@ -991,30 +991,29 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_command_int_t &packet)
 {
-#if MODE_AUTO_ENABLED
-    if (copter.flightmode->mode_number() != Mode::Number::AUTO) {
-        // only supported in AUTO mode
+#if defined(MODE_AUTO_ENABLED) && defined(MODE_GUIDED_ENABLED)
+    // requested pause
+    if ((uint8_t) packet.param1 == 0) {
+        if (copter.flightmode->pause()) {
+            send_text(MAV_SEVERITY_INFO, "Paused");
+            return MAV_RESULT_ACCEPTED;
+        }
+        send_text(MAV_SEVERITY_INFO, "Failed to pause");
         return MAV_RESULT_FAILED;
     }
 
-    // requested pause from GCS
-    if ((int8_t) packet.param1 == 0) {
-        copter.mode_auto.mission.stop();
-        copter.mode_auto.loiter_start();
-        gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
-        return MAV_RESULT_ACCEPTED;
-    }
-
-    // requested resume from GCS
-    if ((int8_t) packet.param1 == 1) {
-        copter.mode_auto.mission.resume();
-        gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
-        return MAV_RESULT_ACCEPTED;
+    // requested resume
+    if ((uint8_t) packet.param1 == 1) {
+        if (copter.flightmode->resume()) {
+            send_text(MAV_SEVERITY_INFO, "Resumed");
+            return MAV_RESULT_ACCEPTED;
+        }
+        send_text(MAV_SEVERITY_INFO, "Failed to resume");
+        return MAV_RESULT_FAILED;
     }
 #endif
-
     // fail pause or continue
-    return MAV_RESULT_FAILED;
+    return MAV_RESULT_DENIED;
 }
 
 void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)

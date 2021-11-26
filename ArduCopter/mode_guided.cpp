@@ -32,6 +32,63 @@ struct Guided_Limit {
     Vector3f start_pos; // start position as a distance from home in cm.  used for checking horiz_max limit
 } guided_limit;
 
+// previous command types
+enum class PrevCmd : uint8_t {
+    DO_USER_TAKEOFF_START = 0,
+    SET_DESTINATION_VECTOR = 1,
+    SET_DESTINATION_LOCATION = 2,
+    SET_DESTINATION_POSVEL = 3,
+    SET_DESTINATION_POSVELACCEL = 4,
+};
+
+// current command information
+struct {
+    PrevCmd prev_cmd_type;
+    union DestInfo {
+        DestInfo() {};
+        struct {
+            float takeoff_alt_cm;
+        } takeoffstart;
+        struct {
+            Vector3f destination;
+            bool use_yaw;
+            float yaw_cd;
+            bool use_yaw_rate;
+            float yaw_rate_cds;
+            bool relative_yaw;
+            bool terrain_alt;
+        } destinationvector;
+        struct {
+            Location dest_loc;
+            bool use_yaw;
+            float yaw_cd;
+            bool use_yaw_rate;
+            float yaw_rate_cds;
+            bool relative_yaw;
+        } destinationlocation;
+        struct {
+            Vector3f destination;
+            Vector3f velocity;
+            bool use_yaw;
+            float yaw_cd;
+            bool use_yaw_rate;
+            float yaw_rate_cds;
+            bool relative_yaw;
+        } destinationposvel;
+        struct {
+            Vector3f destination;
+            Vector3f velocity;
+            Vector3f acceleration;
+            bool use_yaw;
+            float yaw_cd;
+            bool use_yaw_rate;
+            float yaw_rate_cds;
+            bool relative_yaw;
+        } destinationposvelaccel;
+    } u;
+    bool paused;
+} prev_cmd;
+
 // init - initialise guided controller
 bool ModeGuided::init(bool ignore_checks)
 {
@@ -101,6 +158,13 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
 // do_user_takeoff_start - initialises waypoint controller to implement take-off
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
+    // set previous command
+    prev_cmd.prev_cmd_type = PrevCmd::DO_USER_TAKEOFF_START;
+    prev_cmd.u.takeoffstart = {
+            takeoff_alt_cm
+    };
+    prev_cmd.paused = false;
+
     guided_mode = SubMode::TakeOff;
 
     // initialise wpnav destination
@@ -300,6 +364,19 @@ void ModeGuided::angle_control_start()
 // else return false if the waypoint is outside the fence
 bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool terrain_alt)
 {
+    // set previous command
+    prev_cmd.prev_cmd_type = PrevCmd::SET_DESTINATION_VECTOR;
+    prev_cmd.u.destinationvector = {
+            destination,
+            use_yaw,
+            yaw_cd,
+            use_yaw_rate,
+            yaw_rate_cds,
+            relative_yaw,
+            terrain_alt
+    };
+    prev_cmd.paused = false;
+
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
@@ -392,6 +469,18 @@ bool ModeGuided::get_wp(Location& destination) const
 // or if the fence is enabled and guided waypoint is outside the fence
 bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
+    // set previous command
+    prev_cmd.prev_cmd_type = PrevCmd::SET_DESTINATION_LOCATION;
+    prev_cmd.u.destinationlocation = {
+            dest_loc,
+            use_yaw,
+            yaw_cd,
+            use_yaw_rate,
+            yaw_rate_cds,
+            relative_yaw
+    };
+    prev_cmd.paused = false;
+
 #if AC_FENCE == ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
@@ -475,6 +564,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 // set_velaccel - sets guided mode's target velocity and acceleration
 void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
+    // set previous command
+    prev_cmd.paused = false;
+
     // check we are in velocity control mode
     if (guided_mode != SubMode::Accel) {
         accel_control_start();
@@ -499,12 +591,18 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
 // set_velocity - sets guided mode's target velocity
 void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
+    // set previous command
+    prev_cmd.paused = false;
+
     set_velaccel(velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw, log_request);
 }
 
 // set_velaccel - sets guided mode's target velocity and acceleration
 void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
+    // set previous command
+    prev_cmd.paused = false;
+
     // check we are in velocity control mode
     if (guided_mode != SubMode::VelAccel) {
         velaccel_control_start();
@@ -529,12 +627,39 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
 // set_destination_posvel - set guided mode position and velocity target
 bool ModeGuided::set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
+    // set previous command
+    prev_cmd.prev_cmd_type = PrevCmd::SET_DESTINATION_POSVEL;
+    prev_cmd.u.destinationposvel = {
+            destination,
+            velocity,
+            use_yaw,
+            yaw_cd,
+            use_yaw_rate,
+            yaw_rate_cds,
+            relative_yaw
+    };
+    prev_cmd.paused = false;
+
     return set_destination_posvelaccel(destination, velocity, Vector3f(), use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 }
 
 // set_destination_posvelaccel - set guided mode position, velocity and acceleration target
 bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
+    // set previous command
+    prev_cmd.prev_cmd_type = PrevCmd::SET_DESTINATION_POSVELACCEL;
+    prev_cmd.u.destinationposvelaccel = {
+            destination,
+            velocity,
+            acceleration,
+            use_yaw,
+            yaw_cd,
+            use_yaw_rate,
+            yaw_rate_cds,
+            relative_yaw
+    };
+    prev_cmd.paused = false;
+
 #if AC_FENCE == ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
@@ -597,6 +722,9 @@ bool ModeGuided::use_wpnav_for_position_control() const
 //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
 void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust)
 {
+    // set previous command
+    prev_cmd.paused = false;
+
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
         angle_control_start();
@@ -1157,6 +1285,82 @@ float ModeGuided::crosstrack_error() const
 uint32_t ModeGuided::get_timeout_ms() const
 {
     return MAX(copter.g2.guided_timeout, 0.1) * 1000;
+}
+
+/********************************************************************************/
+// Pause and continue guided mode
+/********************************************************************************/
+
+// pause guide mode
+bool ModeGuided::pause()
+{
+    if (init(true)) {
+        prev_cmd.paused = true;
+        return true;
+    }
+    prev_cmd.paused = false;
+    return false;
+}
+
+// resume guided mode
+bool ModeGuided::resume()
+{
+    // check if vehicle paused to not re-enter resume
+    if (!prev_cmd.paused) {
+        return false;
+    }
+    prev_cmd.paused = false;
+
+    // resume to previous command
+    switch (prev_cmd.prev_cmd_type) {
+        case PrevCmd::DO_USER_TAKEOFF_START: {
+            return do_user_takeoff_start(prev_cmd.u.takeoffstart.takeoff_alt_cm);
+        }
+        case PrevCmd::SET_DESTINATION_VECTOR: {
+            return set_destination(prev_cmd.u.destinationvector.destination,
+                                   prev_cmd.u.destinationvector.use_yaw,
+                                   prev_cmd.u.destinationvector.yaw_cd,
+                                   prev_cmd.u.destinationvector.use_yaw_rate,
+                                   prev_cmd.u.destinationvector.yaw_rate_cds,
+                                   prev_cmd.u.destinationvector.relative_yaw,
+                                   prev_cmd.u.destinationvector.terrain_alt);
+        }
+        case PrevCmd::SET_DESTINATION_LOCATION: {
+            return set_destination(prev_cmd.u.destinationlocation.dest_loc,
+                                   prev_cmd.u.destinationlocation.use_yaw,
+                                   prev_cmd.u.destinationlocation.yaw_cd,
+                                   prev_cmd.u.destinationlocation.use_yaw_rate,
+                                   prev_cmd.u.destinationlocation.yaw_rate_cds,
+                                   prev_cmd.u.destinationlocation.relative_yaw);
+        }
+        case PrevCmd::SET_DESTINATION_POSVEL: {
+            return set_destination_posvel(prev_cmd.u.destinationposvel.destination,
+                                          prev_cmd.u.destinationposvel.velocity,
+                                          prev_cmd.u.destinationposvel.use_yaw,
+                                          prev_cmd.u.destinationposvel.yaw_cd,
+                                          prev_cmd.u.destinationposvel.use_yaw_rate,
+                                          prev_cmd.u.destinationposvel.yaw_rate_cds,
+                                          prev_cmd.u.destinationposvel.relative_yaw);
+        }
+        case PrevCmd::SET_DESTINATION_POSVELACCEL: {
+            return set_destination_posvelaccel(prev_cmd.u.destinationposvelaccel.destination,
+                                               prev_cmd.u.destinationposvelaccel.velocity,
+                                               prev_cmd.u.destinationposvelaccel.acceleration,
+                                               prev_cmd.u.destinationposvelaccel.use_yaw,
+                                               prev_cmd.u.destinationposvelaccel.yaw_cd,
+                                               prev_cmd.u.destinationposvelaccel.use_yaw_rate,
+                                               prev_cmd.u.destinationposvelaccel.yaw_rate_cds,
+                                               prev_cmd.u.destinationposvelaccel.relative_yaw);
+        }
+    }
+    return false;
+}
+
+// exit guided mode
+void ModeGuided::exit()
+{
+    // reset pause continue on mode changes
+    prev_cmd.paused = false;
 }
 
 #endif

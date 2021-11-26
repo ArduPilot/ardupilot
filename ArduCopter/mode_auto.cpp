@@ -1970,4 +1970,23 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
     return false;
 }
 
+/********************************************************************************/
+// Pause and continue auto mode
+/********************************************************************************/
+
+bool ModeAuto::pause()
+{
+    if (!loiter_start()) {
+        return false;
+    }
+    mission.stop();
+    return true;
+}
+
+bool ModeAuto::resume()
+{
+    mission.resume();
+    return true;
+}
+
 #endif

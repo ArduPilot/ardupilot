@@ -109,6 +109,9 @@ public:
     // returns true if pilot's yaw input should be used to adjust vehicle's heading
     virtual bool use_pilot_yaw() const {return true; }
 
+    virtual bool pause() { return false; };
+    virtual bool resume() { return false; };
+
 protected:
 
     // helper functions
@@ -406,6 +409,10 @@ public:
 
     // Auto
     SubMode mode() const { return _mode; }
+
+    // pause continue
+    bool pause() override;
+    bool resume() override;
 
     bool loiter_start();
     void rtl_start();
@@ -861,6 +868,7 @@ public:
     Number mode_number() const override { return Number::GUIDED; }
 
     bool init(bool ignore_checks) override;
+    void exit() override;
     void run() override;
 
     bool requires_GPS() const override { return true; }
@@ -929,6 +937,10 @@ public:
     uint32_t get_timeout_ms() const;
 
     bool use_pilot_yaw() const override;
+
+    // pause continue
+    bool pause() override;
+    bool resume() override;
 
 protected:
 
