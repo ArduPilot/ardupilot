@@ -616,9 +616,27 @@ private:
     // The instantaneous desired pitch angle.  Hundredths of a degree
     int32_t nav_pitch_cd;
 
+    // The instantaneous desired body pitch rate in rad/s
+    float nav_body_pitch_rate_rps;
+
+    // filter applied to lateral body frame (Y) acceleration
+    LowPassFilterFloat lateral_accel_filt;
+
+    // 1 if pitch is past the upper limit, -1 if past the lower limit, 0 if between
+    int8_t nav_pitch_clip;
+
     // the aerodymamic load factor. This is calculated from the demanded
     // roll before the roll is clipped, using 1/sqrt(cos(nav_roll))
     float aerodynamic_load_factor = 1.0f;
+
+    // integral used by the normal acceleration control loop
+    float normal_accel_error_integral;
+
+    // last time the normal acceleration vector demand was updated
+    int32_t last_accel_vec_update_ms;
+
+    // true when normal acceleration vector nav is being used
+    bool using_accel_vector_nav;
 
     // a smoothed airspeed estimate, used for limiting roll angle
     float smoothed_airspeed;
@@ -726,6 +744,9 @@ private:
         // centimeters. Used for glide slope handling
         int32_t offset_cm;
 
+        // target rate in m/s used where lag free tracking of climbing or descending profiles is required
+        float hgt_rate_dem_ms;
+
 #if AP_TERRAIN_AVAILABLE
         // are we trying to follow terrain?
         bool terrain_following;
@@ -823,6 +844,7 @@ private:
     // Attitude.cpp
     void adjust_nav_pitch_throttle(void);
     void update_load_factor(void);
+    bool do_accel_vector_nav(void);
     void adjust_altitude_target();
     void setup_glide_slope(void);
     int32_t get_RTL_altitude_cm() const;

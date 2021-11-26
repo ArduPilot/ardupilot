@@ -529,7 +529,7 @@ void Plane::update_alt()
     }
 
     // low pass the sink rate to take some of the noise out
-    auto_state.sink_rate = 0.8f * auto_state.sink_rate + 0.2f*sink_rate;
+    auto_state.sink_rate = 0.96f * auto_state.sink_rate + 0.04f*sink_rate;
 #if PARACHUTE == ENABLED
     parachute.set_sink_rate(auto_state.sink_rate);
 #endif
@@ -561,6 +561,7 @@ void Plane::update_alt()
         }
 
         TECS_controller.update_pitch_throttle(tecs_target_alt_cm,
+                                                 target_altitude.hgt_rate_dem_ms,
                                                  target_airspeed_cm,
                                                  flight_stage,
                                                  distance_beyond_land_wp,

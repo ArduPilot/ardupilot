@@ -386,7 +386,8 @@ void Plane::update_fbwb_speed_height(void)
             elevator_input = -elevator_input;
         }
 
-        int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
+        target_altitude.hgt_rate_dem_ms = g.flybywire_climb_rate * elevator_input;
+        int32_t alt_change_cm = target_altitude.hgt_rate_dem_ms * dt * 100;
         change_target_altitude(alt_change_cm);
 
         if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
