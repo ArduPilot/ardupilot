@@ -9520,8 +9520,10 @@ switch value'''
         self.start_subtest("parameter download")
         target_system = self.sysid_thismav()
         target_component = 1
+        self.progress("First Download:")
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
         self.reboot_sitl()
+        self.progress("Second download:")
         (parameters2, seq2_id) = self.download_parameters(target_system, target_component)
 
         delta = self.dictdiff(parameters, parameters2)
