@@ -2720,6 +2720,8 @@ class AutoTest(ABC):
         self.set_parameter("ARSPD_TYPE", 7)
         self.reboot_sitl()
 
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True, verbose=True, timeout=30)
+
         # should not be getting HIGH_LATENCY2 by default
         m = self.mav.recv_match(type='HIGH_LATENCY2', blocking=True, timeout=2)
         if m is not None:
