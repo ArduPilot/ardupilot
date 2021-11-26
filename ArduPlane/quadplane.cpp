@@ -2200,7 +2200,8 @@ void QuadPlane::vtol_position_controller(void)
 
         const float stop_distance = stopping_distance();
 
-        if (poscontrol.get_state() == QPOS_AIRBRAKE) {
+        if (poscontrol.get_state() == QPOS_AIRBRAKE && !(tiltrotor.enabled() && !tiltrotor.has_vtol_motor() && (tiltrotor.current_tilt >= tiltrotor.get_fully_forward_tilt()))) {
+            // don't ouput VTOL throttle on tiltrotors if there are no fixed VTOL motors and the tilt is still forward
             hold_hover(0);
         }
 
