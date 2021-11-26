@@ -225,17 +225,16 @@ float AP_PitchController::_get_rate_out(float desired_rate, float scaler, bool d
  1) demanded pitch rate in degrees/second
  2) control gain scaler = scaling_speed / aspeed
  3) boolean which is true when stabilise mode is active
- 4) minimum FBW airspeed (metres/sec)
- 5) maximum FBW airspeed (metres/sec)
+ 4) boolean which is true when on ground and gains need to be supporessed to prevent ground resonance
 */
-float AP_PitchController::get_rate_out(float desired_rate, float scaler)
+float AP_PitchController::get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
 {
     float aspeed;
     if (!AP::ahrs().airspeed_estimate(aspeed)) {
         // If no airspeed available use average of min and max
         aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
-    }
-    return _get_rate_out(desired_rate, scaler, false, aspeed, false);
+	}
+    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
 }
 
 /*

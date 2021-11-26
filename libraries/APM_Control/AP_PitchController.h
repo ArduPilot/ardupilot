@@ -13,8 +13,11 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_PitchController);
 
-    float get_rate_out(float desired_rate, float scaler);
+	float get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
     float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);
+    float get_rate_demand();
+    float get_coordination_gain() { return _roll_ff; }
+    float get_angle_error_gain() { return 1.0f / MAX(gains.tau, 0.1f); }
 
     void reset_I();
 
