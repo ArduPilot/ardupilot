@@ -6,10 +6,6 @@
  * Init and run calls for guided flight mode
  */
 
-#ifndef GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM
- # define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
-#endif
-
 static Vector3p guided_pos_target_cm;       // position target (used by posvel controller only)
 bool guided_pos_terrain_alt;                // true if guided_pos_target_cm.z is an alt above terrain
 static Vector3f guided_vel_target_cms;      // velocity target (used by pos_vel_accel controller and vel_accel controller)
