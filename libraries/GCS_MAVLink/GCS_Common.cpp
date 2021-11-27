@@ -1789,7 +1789,7 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
         have_data = true;
     }
     Vector3f gyro{};
-    if (ins.get_accel_count() > instance) {
+    if (ins.get_gyro_count() > instance) {
         gyro = ins.get_gyro(instance);
         have_data = true;
     }
