@@ -69,7 +69,7 @@ public:
 
     // control optional features
     bool set_options(uint16_t options) override;
-    uint8_t get_options(void) const override;
+    uint16_t get_options(void) const override;
 
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded

@@ -1740,7 +1740,7 @@ bool UARTDriver::set_options(uint16_t options)
 }
 
 // get optional features
-uint8_t UARTDriver::get_options(void) const
+uint16_t UARTDriver::get_options(void) const
 {
     return _last_options;
 }
