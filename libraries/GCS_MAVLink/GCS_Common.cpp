@@ -3559,7 +3559,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_REQUEST_DATA_STREAM:
-        handle_request_data_stream(msg);
+        // only pass if override is not selected 
+        if (!(_port->get_options() & _port->OPTION_NOSTREAMOVERRIDE)) {
+            handle_request_data_stream(msg);
+        }
         break;
 
     case MAVLINK_MSG_ID_DATA96:
