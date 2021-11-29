@@ -296,6 +296,7 @@ def kill_mac_terminal():
 
 def start_SITL(binary,
                valgrind=False,
+               callgrind=False,
                gdb=False,
                gdb_no_tui=False,
                wipe=False,
@@ -317,7 +318,7 @@ def start_SITL(binary,
 
     """Launch a SITL instance."""
     cmd = []
-    if valgrind and os.path.exists('/usr/bin/valgrind'):
+    if (callgrind or valgrind) and os.path.exists('/usr/bin/valgrind'):
         # we specify a prefix for vgdb-pipe because on Vagrant virtual
         # machines the pipes are created on the mountpoint for the
         # shared directory with the host machine.  mmap's,
@@ -332,6 +333,8 @@ def start_SITL(binary,
             '--vgdb-prefix=%s' % vgdb_prefix,
             '-q',
             '--log-file=%s' % log_file])
+        if callgrind:
+            cmd.extend(["--tool=callgrind"])
     if gdbserver:
         cmd.extend(['gdbserver', 'localhost:3333'])
         if gdb:

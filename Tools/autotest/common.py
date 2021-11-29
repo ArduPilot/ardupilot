@@ -1445,6 +1445,7 @@ class AutoTest(ABC):
     def __init__(self,
                  binary,
                  valgrind=False,
+                 callgrind=False,
                  gdb=False,
                  gdb_no_tui=False,
                  speedup=None,
@@ -1473,6 +1474,7 @@ class AutoTest(ABC):
 
         self.binary = binary
         self.valgrind = valgrind
+        self.callgrind = callgrind
         self.gdb = gdb
         self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
@@ -1842,7 +1844,7 @@ class AutoTest(ABC):
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             self.reboot_check_valgrind_log()
             self.progress("Stopping and restarting SITL")
             if getattr(self, 'valgrind_restart_customisations', None) is not None:
@@ -2426,7 +2428,7 @@ class AutoTest(ABC):
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
             self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
@@ -6541,7 +6543,7 @@ Also, ignores heartbeats not from our target system'''
         # determine a good pexpect timeout for reading MAVProxy's
         # output; some regmes may require longer timeouts.
         pexpect_timeout = 60
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             pexpect_timeout *= 10
 
         mavproxy = util.start_MAVProxy_SITL(
@@ -6578,6 +6580,7 @@ Also, ignores heartbeats not from our target system'''
             "home": self.sitl_home(),
             "speedup": self.speedup,
             "valgrind": self.valgrind,
+            "callgrind": self.callgrind,
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
@@ -7712,7 +7715,7 @@ Also, ignores heartbeats not from our target system'''
                     rate = float(mavproxy.match.group(1))
                     self.progress("Rate: %f" % rate)
                     desired_rate = 50
-                    if self.valgrind:
+                    if self.valgrind or self.callgrind:
                         desired_rate /= 10
                     if rate < desired_rate:
                         raise NotAchievedException("Exceptionally low transfer rate (%u < %u)" % (rate, desired_rate))
@@ -10469,7 +10472,7 @@ switch value'''
             self.drain_mav(quiet=True)
             tnow = self.get_sim_time_cached()
             timeout = 30
-            if self.valgrind:
+            if self.valgrind or self.callgrind:
                 timeout *= 10
             if tnow - tstart > timeout:
                 raise NotAchievedException("Did not get parameter via mavlite")
