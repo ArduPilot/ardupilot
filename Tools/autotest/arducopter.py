@@ -7059,9 +7059,14 @@ class AutoTestCopter(AutoTest):
         self.progress("Building Replay")
         util.build_SITL('tool/Replay', clean=False, configure=False)
 
-        self.test_replay_bit(self.test_replay_gps_bit)
-        self.test_replay_bit(self.test_replay_beacon_bit)
-        self.test_replay_bit(self.test_replay_optical_flow_bit)
+        bits = [
+            ('GPS', self.test_replay_gps_bit),
+            ('Beacon', self.test_replay_beacon_bit),
+            ('OpticalFlow', self.test_replay_optical_flow_bit),
+        ]
+        for (name, func) in bits:
+            self.start_subtest("%s" % name)
+            self.test_replay_bit(func)
 
     def test_replay_bit(self, bit):
 
