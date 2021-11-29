@@ -1032,3 +1032,12 @@ public:
         return (eclass)_value;
     }
 };
+
+template<typename eclass>
+class AP_Enum16 : public AP_Int16
+{
+public:
+    operator const eclass () const {
+        return (eclass)_value;
+    }
+};
