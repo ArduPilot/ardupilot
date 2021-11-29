@@ -175,15 +175,15 @@ void SRV_Channels::update_aux_servo_function(void)
     }
     function_mask.clearall();
 
-    for (uint8_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
+    for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
         functions[i].channel_mask = 0;
     }
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        if ((uint8_t)channels[i].function.get() < SRV_Channel::k_nr_aux_servo_functions) {
+        if ((uint16_t)channels[i].function.get() < SRV_Channel::k_nr_aux_servo_functions) {
             channels[i].aux_servo_function_setup();
-            function_mask.set((uint8_t)channels[i].function.get());
+            function_mask.set((uint16_t)channels[i].function.get());
             functions[channels[i].function.get()].channel_mask |= 1U<<i;
         }
     }
@@ -204,7 +204,7 @@ void SRV_Channels::enable_aux_servos()
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // see if it is a valid function
-        if ((uint8_t)c.function.get() < SRV_Channel::k_nr_aux_servo_functions) {
+        if ((uint16_t)c.function.get() < SRV_Channel::k_nr_aux_servo_functions) {
             hal.rcout->enable_ch(c.ch_num);
         }
 
@@ -505,7 +505,7 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
     channels[channel].type_setup = false;
     channels[channel].function.set(function);
     channels[channel].aux_servo_function_setup();
-    function_mask.set((uint8_t)function);
+    function_mask.set((uint16_t)function);
     functions[function].channel_mask |= 1U<<channel;
     return true;
 }
@@ -598,9 +598,9 @@ void SRV_Channels::set_default_function(uint8_t chan, SRV_Channel::Aux_servo_fun
 {
     if (chan < NUM_SERVO_CHANNELS) {
         int8_t old = channels[chan].function;
-        channels[chan].function.set_default((uint8_t)function);
+        channels[chan].function.set_default((uint16_t)function);
         if (old != channels[chan].function && channels[chan].function == function) {
-            function_mask.set((uint8_t)function);
+            function_mask.set((uint16_t)function);
         }
     }
 }
