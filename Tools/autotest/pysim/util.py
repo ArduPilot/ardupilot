@@ -311,6 +311,7 @@ def start_SITL(binary,
                disable_breakpoints=False,
                customisations=[],
                lldb=False,
+               enable_fgview_output=False,
                supplementary=False):
 
     if model is None and not supplementary:
@@ -407,6 +408,8 @@ def start_SITL(binary,
             cmd.extend(['--unhide-groups'])
         # somewhere for MAVProxy to connect to:
         cmd.append('--uartC=tcp:2')
+        if not enable_fgview_output:
+            cmd.append("--disable-fgview");
 
     cmd.extend(customisations)
 
