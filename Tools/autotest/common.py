@@ -11352,7 +11352,15 @@ switch value'''
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp list\n")
-            mavproxy.expect(" D libraries")  # one line from the ftp list output
+            some_directory = None
+            for entry in sorted(os.listdir()):
+                if os.path.isdir(entry):
+                    some_directory = entry
+                    break
+            if some_directory is None:
+                raise NotAchievedException("No directories?!")
+            expected_line = " D %s" % some_directory
+            mavproxy.expect(expected_line)  # one line from the ftp list output
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
