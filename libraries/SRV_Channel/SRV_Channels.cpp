@@ -317,7 +317,8 @@ void SRV_Channels::calc_pwm(void)
             channels[i].set_override(true);
             override_counter[i]--;
         }
-        channels[i].calc_pwm(functions[channels[i].function].output_scaled);
+        const uint16_t function_num = channels[i].function.get();
+        channels[i].calc_pwm(functions[function_num].output_scaled);
     }
 }
 
