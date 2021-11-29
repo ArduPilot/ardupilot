@@ -1,5 +1,7 @@
 # hw definition file for processing by chibios_hwdef.py
 
+define HAL_CHIBIOS_ARCH_CUBE 1
+
 # USB setup
 USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
 USB_PRODUCT 0x1016
