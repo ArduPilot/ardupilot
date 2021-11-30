@@ -458,3 +458,18 @@ singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_CO
 singleton AP::motors() literal
 singleton AP::motors() alias motors
 singleton AP::motors() method set_frame_string void string
+
+include AP_Common/AP_FWVersion.h
+singleton AP::fwversion() literal
+singleton AP::fwversion() reference
+singleton AP::fwversion() alias FWVersion
+singleton AP::fwversion() field fw_short_string string read
+singleton AP::fwversion() field fw_short_string alias string
+singleton AP::fwversion() field vehicle_type uint8_t read
+singleton AP::fwversion() field vehicle_type alias type
+singleton AP::fwversion() field major uint8_t read
+singleton AP::fwversion() field minor uint8_t read
+singleton AP::fwversion() field patch uint8_t read
+singleton AP::fwversion() field fw_hash_str string read
+singleton AP::fwversion() field fw_hash_str alias hash
+
