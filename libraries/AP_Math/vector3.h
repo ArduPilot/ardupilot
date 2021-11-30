@@ -315,6 +315,83 @@ public:
     static bool segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point);
 };
 
+// The creation of temporary vector objects as return types creates a significant overhead in certain hot 
+// code paths. This allows callers to select the inline versions where profiling shows a significant benefit
+#if defined(AP_INLINE_VECTOR_OPS) && !defined(HAL_DEBUG_BUILD)
+
+// vector cross product
+template <typename T>
+inline Vector3<T> Vector3<T>::operator %(const Vector3<T> &v) const
+{
+    return Vector3<T>(y*v.z - z*v.y, z*v.x - x*v.z, x*v.y - y*v.x);
+}
+
+// dot product
+template <typename T>
+inline T Vector3<T>::operator *(const Vector3<T> &v) const
+{
+    return x*v.x + y*v.y + z*v.z;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator *=(const T num)
+{
+    x*=num; y*=num; z*=num;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator /=(const T num)
+{
+    x /= num; y /= num; z /= num;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator -=(const Vector3<T> &v)
+{
+    x -= v.x; y -= v.y; z -= v.z;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> &Vector3<T>::operator +=(const Vector3<T> &v)
+{
+    x+=v.x; y+=v.y; z+=v.z;
+    return *this;
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator /(const T num) const
+{
+    return Vector3<T>(x/num, y/num, z/num);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator *(const T num) const
+{
+    return Vector3<T>(x*num, y*num, z*num);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator -(const Vector3<T> &v) const
+{
+    return Vector3<T>(x-v.x, y-v.y, z-v.z);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator +(const Vector3<T> &v) const
+{
+    return Vector3<T>(x+v.x, y+v.y, z+v.z);
+}
+
+template <typename T>
+inline Vector3<T> Vector3<T>::operator -(void) const
+{
+    return Vector3<T>(-x,-y,-z);
+}
+#endif
+
 typedef Vector3<int16_t>                Vector3i;
 typedef Vector3<uint16_t>               Vector3ui;
 typedef Vector3<int32_t>                Vector3l;

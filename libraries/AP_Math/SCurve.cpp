@@ -545,7 +545,7 @@ void SCurve::move_to_pos_vel_accel(float dt, Vector3f &pos, Vector3f &vel, Vecto
 void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3f &pos, Vector3f &vel, Vector3f &accel)
 {
     float scurve_P1 = 0.0f;
-    float scurve_V1, scurve_A1, scurve_J1;
+    float scurve_V1 = 0.0f, scurve_A1 = 0.0f, scurve_J1 = 0.0f;
     get_jerk_accel_vel_pos_at_time(time_now, scurve_J1, scurve_A1, scurve_V1, scurve_P1);
     pos += delta_unit * scurve_P1;
     vel += delta_unit * scurve_V1;
