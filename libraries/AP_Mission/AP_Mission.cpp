@@ -2398,7 +2398,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
     uint16_t index = start_index;
     for (uint8_t i=0; i<255; i++) {
         // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
             if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 break;
             } else {
@@ -2409,7 +2409,6 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
         index = temp_cmd.index + 1;
 
         if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
-            ret = true;
             if (prev_loc.lat == 0 && prev_loc.lng == 0) {
                 // Need a valid previous location to do distance to leg calculation
                 prev_loc = temp_cmd.content.location;
@@ -2417,28 +2416,32 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, float &rejoin_dis
                 // single point dist calc
                 rejoin_distance = prev_loc.get_distance_NED_alt_frame(current_loc).length();
                 rejoin_index = temp_cmd.index;
+                ret = true;
 
             } else {
                 // Calculate the distance to rejoin
                 Vector3f mission_vector = prev_loc.get_distance_NED_alt_frame(temp_cmd.content.location);
-                Vector3f pos = prev_loc.get_distance_NED_alt_frame(current_loc);
+                if (!mission_vector.is_zero()) {
+                    Vector3f pos = prev_loc.get_distance_NED_alt_frame(current_loc);
 
-                // project pos vector on to mission vector
-                Vector3f p = pos.projected(mission_vector);
+                    // project pos vector on to mission vector
+                    Vector3f p = pos.projected(mission_vector);
 
-                // constrain to mission line
-                p.x = constrain_float(p.x, MIN(0,mission_vector.x), MAX(0,mission_vector.x));
-                p.y = constrain_float(p.y, MIN(0,mission_vector.y), MAX(0,mission_vector.y));
-                p.z = constrain_float(p.z, MIN(0,mission_vector.z), MAX(0,mission_vector.z));
+                    // constrain to mission line
+                    p.x = constrain_float(p.x, MIN(0,mission_vector.x), MAX(0,mission_vector.x));
+                    p.y = constrain_float(p.y, MIN(0,mission_vector.y), MAX(0,mission_vector.y));
+                    p.z = constrain_float(p.z, MIN(0,mission_vector.z), MAX(0,mission_vector.z));
 
-                float disttemp = (p - pos).length();
+                    float disttemp = (p - pos).length();
 
-                // store wp location as previous
-                prev_loc = temp_cmd.content.location;
+                    // store wp location as previous
+                    prev_loc = temp_cmd.content.location;
 
-                if (disttemp < rejoin_distance || is_negative(rejoin_distance)) {
-                    rejoin_distance = disttemp;
-                    rejoin_index = temp_cmd.index;
+                    if (disttemp < rejoin_distance || is_negative(rejoin_distance)) {
+                        rejoin_distance = disttemp;
+                        rejoin_index = temp_cmd.index;
+                    }
+                    ret = true;
                 }
             }
         }
