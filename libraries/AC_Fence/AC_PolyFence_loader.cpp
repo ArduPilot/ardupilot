@@ -1535,11 +1535,18 @@ void AC_PolyFence_loader::handle_msg_fence_point(GCS_MAVLINK &link, const mavlin
             return;
         }
     } else if (packet.idx == _total-1) {
-        // this is the fence closing point; don't store it, and don't
-        // check it against the first point in the fence as we may be
-        // receiving the fence points out of order.  Note that if the
-        // GCS attempts to read this back before sending the first
-        // point they will get 0s.
+        /* this is the fence closing point. We use this to set the vertex
+           count of the inclusion fence
+        */
+        const FenceIndex *inclusion_fence = get_or_create_include_fence();
+        if (inclusion_fence == nullptr) {
+            return;
+        }
+        // write type and length
+        fence_storage.write_uint8(inclusion_fence->storage_offset, uint8_t(AC_PolyFenceType::POLYGON_INCLUSION));
+        fence_storage.write_uint8(inclusion_fence->storage_offset+1, packet.idx-1);
+        // and write end of storage marker
+        fence_storage.write_uint8(inclusion_fence->storage_offset+2+(packet.idx-1)*8, uint8_t(AC_PolyFenceType::END_OF_STORAGE));
     } else {
         const FenceIndex *inclusion_fence = get_or_create_include_fence();
         if (inclusion_fence == nullptr) {
