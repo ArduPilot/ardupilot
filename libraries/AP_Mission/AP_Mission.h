@@ -532,29 +532,35 @@ public:
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
-    uint16_t get_landing_sequence_start();
+    uint16_t get_landing_sequence_start(struct Location start_loc);
 
     // find the shortest distance to landing via DO_LAND_START and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
     uint16_t get_shortest_landing_sequence_start();
+    uint16_t get_shortest_landing_sequence_start(struct Location start_loc);
 
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // switch to that mission item.  Returns false if no DO_LAND_START
     // available.
     bool jump_to_landing_sequence(void);
+    bool jump_to_landing_sequence(struct Location start_loc);
 
     // find the landing sequence starting point (DO_LAND_START) that will result in the shortest distance to a landing
     bool jump_to_shortest_landing_sequence(void);
+    bool jump_to_shortest_landing_sequence(struct Location start_loc);
 
     // find the closest point on the mission after a DO_LAND_START and before the final DO_LAND_START
     bool jump_to_closest_mission_leg(void);
+    bool jump_to_closest_mission_leg(struct Location start_loc);
 
     // pick the shortest distance to landing not the shortest distance to rejoin mission
     bool jump_to_shortest_mission_leg(void);
+    bool jump_to_shortest_mission_leg(struct Location start_loc);
 
     // jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
     bool jump_to_abort_landing_sequence(void);
+    bool jump_to_abort_landing_sequence(struct Location start_loc);
 
     // check which is the shortest route to landing an RTL via a DO_LAND_START or continuing on the current mission plan
     bool is_best_land_sequence(void);

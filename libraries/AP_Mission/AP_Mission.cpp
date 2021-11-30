@@ -1993,14 +1993,8 @@ uint16_t AP_Mission::num_commands_max(void) const
 // find the nearest landing sequence starting point (DO_LAND_START) and
 // return its index.  Returns 0 if no appropriate DO_LAND_START point can
 // be found.
-uint16_t AP_Mission::get_landing_sequence_start()
+uint16_t AP_Mission::get_landing_sequence_start(struct Location start_loc)
 {
-    struct Location current_loc;
-
-    if (!AP::ahrs().get_position(current_loc)) {
-        return 0;
-    }
-
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
@@ -2015,7 +2009,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
                 // command does not have a valid location and cannot get next valid
                 continue;
             }
-            float tmp_distance = tmp.content.location.get_distance(current_loc);
+            float tmp_distance = tmp.content.location.get_distance(start_loc);
             if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
                 landing_start_index = i;
@@ -2031,9 +2025,9 @@ uint16_t AP_Mission::get_landing_sequence_start()
    switch to that mission item.  Returns false if no DO_LAND_START
    available.
  */
-bool AP_Mission::jump_to_landing_sequence(void)
+bool AP_Mission::jump_to_landing_sequence(struct Location start_loc)
 {
-    uint16_t land_idx = get_landing_sequence_start();
+    uint16_t land_idx = get_landing_sequence_start(start_loc);
     if (land_idx != 0 && set_current_cmd(land_idx)) {
 
         //if the mission has ended it has to be restarted
@@ -2049,18 +2043,23 @@ bool AP_Mission::jump_to_landing_sequence(void)
     return false;
 }
 
+bool AP_Mission::jump_to_landing_sequence(void)
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start landing sequence");
+        return false;
+    }
+    return jump_to_landing_sequence(current_loc);
+}
+
 /*
    find the shortest distance to landing via DO_LAND_START and
    return its index.  Returns 0 if no appropriate DO_LAND_START point can
    be found.
 */
-uint16_t AP_Mission::get_shortest_landing_sequence_start()
+uint16_t AP_Mission::get_shortest_landing_sequence_start(struct Location start_loc)
 {
-    struct Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
-        return 0;
-    }
-
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
@@ -2072,7 +2071,7 @@ uint16_t AP_Mission::get_shortest_landing_sequence_start()
         }
         if (tmp.id == MAV_CMD_DO_LAND_START) {
             float tmp_distance;
-            if (!distance_to_landing(i, tmp_distance, current_loc)){
+            if (!distance_to_landing(i, tmp_distance, start_loc)){
                 continue;
             }
             if (min_distance < 0 || tmp_distance < min_distance) {
@@ -2084,14 +2083,23 @@ uint16_t AP_Mission::get_shortest_landing_sequence_start()
     return landing_start_index;
 }
 
+uint16_t AP_Mission::get_shortest_landing_sequence_start()
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return 0;
+    }
+    return get_shortest_landing_sequence_start(current_loc);
+}
+
 
 /*
    find the landing sequence starting point (DO_LAND_START) that will result in the shortest distance to a landing
    defaults to closest if distance to landing calculation fails
  */
-bool AP_Mission::jump_to_shortest_landing_sequence(void)
+bool AP_Mission::jump_to_shortest_landing_sequence(struct Location start_loc)
 {
-    uint16_t landing_start_index = get_shortest_landing_sequence_start();
+    uint16_t landing_start_index = get_shortest_landing_sequence_start(start_loc);
     if (landing_start_index != 0 && set_current_cmd(landing_start_index)) {
 
         // if the mission has ended it has to be restarted
@@ -2107,11 +2115,20 @@ bool AP_Mission::jump_to_shortest_landing_sequence(void)
     return jump_to_landing_sequence();
 }
 
+bool AP_Mission::jump_to_shortest_landing_sequence(void)
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return false;
+    }
+    return jump_to_shortest_landing_sequence(current_loc);
+}
+
 /*
    find the closest point on the mission after a DO_LAND_REJOIN and before the final DO_LAND_START
    defaults to closest if distance to mission calculation fails
  */
-bool AP_Mission::jump_to_closest_mission_leg(void)
+bool AP_Mission::jump_to_closest_mission_leg(struct Location start_loc)
 {
     if (_flags.state == MISSION_RUNNING) {
         // if mission is already running don't switch away from a active landing or rejoin
@@ -2124,11 +2141,6 @@ bool AP_Mission::jump_to_closest_mission_leg(void)
         }
     }
 
-    struct Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
-        return 0;
-    }
-
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
@@ -2138,7 +2150,7 @@ bool AP_Mission::jump_to_closest_mission_leg(void)
         if (read_cmd_from_storage(i, tmp) && (tmp.id == MAV_CMD_DO_LAND_REJOIN)) {
             uint16_t tmp_index;
             float tmp_distance;
-            if (distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)){
+            if (distance_to_mission_leg(i, tmp_distance, tmp_index, start_loc) && (min_distance < 0 || tmp_distance <= min_distance)){
                 min_distance = tmp_distance;
                 landing_start_index = tmp_index;
             }
@@ -2161,12 +2173,21 @@ bool AP_Mission::jump_to_closest_mission_leg(void)
     return jump_to_landing_sequence();
 }
 
+bool AP_Mission::jump_to_closest_mission_leg(void)
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return false;
+    }
+    return jump_to_closest_mission_leg(current_loc);
+}
+
 /*
    find the closest point on the mission after a DO_LAND_REJOIN and before the final DO_LAND_START
    pick the shortest distance to landing not the shortest distance to rejoin mission
    defaults to closest if distance to landing calculation fails
  */
-bool AP_Mission::jump_to_shortest_mission_leg(void)
+bool AP_Mission::jump_to_shortest_mission_leg(struct Location start_loc)
 {
     if (_flags.state == MISSION_RUNNING) {
         // if mission is already running don't switch away from a active landing or rejoin
@@ -2179,11 +2200,6 @@ bool AP_Mission::jump_to_shortest_mission_leg(void)
         }
     }
 
-    struct Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
-        return 0;
-    }
-
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
@@ -2193,7 +2209,7 @@ bool AP_Mission::jump_to_shortest_mission_leg(void)
         if (read_cmd_from_storage(i, tmp) && (tmp.id == MAV_CMD_DO_LAND_REJOIN)) {
             uint16_t tmp_index;
             float tmp_distance;
-            if (distance_to_mission_leg(i, tmp_distance, tmp_index, current_loc) && distance_to_landing(tmp_index, tmp_distance, current_loc) && (min_distance < 0 || tmp_distance <= min_distance)) {
+            if (distance_to_mission_leg(i, tmp_distance, tmp_index, start_loc) && distance_to_landing(tmp_index, tmp_distance, start_loc) && (min_distance < 0 || tmp_distance <= min_distance)) {
                 min_distance = tmp_distance;
                 landing_start_index = tmp_index;
             }
@@ -2216,27 +2232,31 @@ bool AP_Mission::jump_to_shortest_mission_leg(void)
     return jump_to_closest_mission_leg();
 }
 
-
-// jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
-bool AP_Mission::jump_to_abort_landing_sequence(void)
+bool AP_Mission::jump_to_shortest_mission_leg(void)
 {
     struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return false;
+    }
+    return jump_to_shortest_mission_leg(current_loc);
+}
 
-    uint16_t abort_index = 0;
-    if (AP::ahrs().get_position(current_loc)) {
-        float min_distance = FLT_MAX;
+// jumps the mission to the closest landing abort that is planned, returns false if unable to find a valid abort
+bool AP_Mission::jump_to_abort_landing_sequence(struct Location start_loc)
+{
+   uint16_t abort_index = 0;
+    float min_distance = FLT_MAX;
 
-        for (uint16_t i = 1; i < num_commands(); i++) {
-            Mission_Command tmp;
-            if (!read_cmd_from_storage(i, tmp)) {
-                continue;
-            }
-            if (tmp.id == MAV_CMD_DO_GO_AROUND) {
-                float tmp_distance = tmp.content.location.get_distance(current_loc);
-                if (tmp_distance < min_distance) {
-                    min_distance = tmp_distance;
-                    abort_index = i;
-                }
+    for (uint16_t i = 1; i < num_commands(); i++) {
+        Mission_Command tmp;
+        if (!read_cmd_from_storage(i, tmp)) {
+            continue;
+        }
+        if (tmp.id == MAV_CMD_DO_GO_AROUND) {
+            float tmp_distance = tmp.content.location.get_distance(start_loc);
+            if (tmp_distance < min_distance) {
+                min_distance = tmp_distance;
+                abort_index = i;
             }
         }
     }
@@ -2258,6 +2278,17 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
     gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
     return false;
 }
+
+bool AP_Mission::jump_to_abort_landing_sequence(void)
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Unable to start find a landing abort sequence");
+        return false;
+    }
+    return jump_to_abort_landing_sequence(current_loc);
+}
+
 
 // check which is the shortest route to landing an RTL via a DO_LAND_START or continuing on the current mission plan
 bool AP_Mission::is_best_land_sequence(void)
