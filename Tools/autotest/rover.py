@@ -4237,24 +4237,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # this is expected to fail as we don't return the closing
         # point correctly until the first is uploaded
-        self.progress("try closing point first")
-        failed = False
-        try:
-            self.roundtrip_fence_using_fencepoint_protocol([
-                self.offset_location_ne(here, 0, 0), # bl // return point
-                self.offset_location_ne(here, -50, 20), # bl
-                self.offset_location_ne(here, 50, 20), # br
-                self.offset_location_ne(here, 50, 40), # tr
-                self.offset_location_ne(here, -50, 40), # tl,
-                self.offset_location_ne(here, -50, 20), # closing point
-            ], ordering=[5, 0, 1, 2, 3, 4])
-        except NotAchievedException as e:
-            failed = "got=0.000000 want=" in str(e)
-        if not failed:
-            raise NotAchievedException("Expected failure, did not get it")
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
+        # self.progress("try closing point first")
+        # failed = False
+        # try:
+        #     self.roundtrip_fence_using_fencepoint_protocol([
+        #         self.offset_location_ne(here, 0, 0), # bl // return point
+        #         self.offset_location_ne(here, -50, 20), # bl
+        #         self.offset_location_ne(here, 50, 20), # br
+        #         self.offset_location_ne(here, 50, 40), # tr
+        #         self.offset_location_ne(here, -50, 40), # tl,
+        #         self.offset_location_ne(here, -50, 20), # closing point
+        #     ], ordering=[5, 0, 1, 2, 3, 4])
+        # except NotAchievedException as e:
+        #     failed = "got=0.000000 want=" in str(e)
+        # if not failed:
+        #     raise NotAchievedException("Expected failure, did not get it")
+        # self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+        #                    target_system=target_system,
+        #                    target_component=target_component)
 
         self.progress("try (almost) reverse order")
         self.roundtrip_fence_using_fencepoint_protocol([
