@@ -87,7 +87,12 @@ bool stm32_crash_dump_region_erased(void)
 }
 
 #define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
-extern uint32_t __ram0_start__, __ram0_end__;
+extern uint32_t __ram0_start__, __ram0_end__, __heap_base__, __heap_end__, __bss_base__, __bss_end__;
+#define REMAINDER_MEM_REGION_SIZE (15000) // remainder memory for crashcatcher internal regions
+static uint32_t dump_size = 0;
+static uint8_t dump_buffer[32]; // we need to maintain a dump buffer of 32bytes for H7
+static uint8_t buf_off = 0;
+
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void);
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
@@ -95,7 +100,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
     static CrashCatcherMemoryRegion regions[60] = {
     {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
     {(uint32_t)&ch, (uint32_t)&ch + sizeof(ch), CRASH_CATCHER_BYTE}};
-
+    uint32_t total_dump_size = dump_size + buf_off + REMAINDER_MEM_REGION_SIZE;
     // loop through chibios threads and add their stack info
     uint8_t curr_region = 2;
     for (thread_t *tp = chRegFirstThread(); tp && (curr_region < (ARRAY_SIZE(regions) - 1)); tp = chRegNextThread(tp)) {
@@ -122,8 +127,53 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
         regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
         regions[curr_region].startAddress = (uint32_t)(tp->wabase);
         regions[curr_region++].endAddress = (uint32_t)(tp->wabase) + total_stack;
-        
+
+        total_dump_size += total_stack;
+        if ((total_dump_size) >= stm32_crash_dump_max_size()) {
+            // we can't log anymore than this
+            goto finalise;
+        }
     }
+
+    // log statically alocated memory
+    int32_t bss_size = ((uint32_t)&__bss_end__) - ((uint32_t)&__bss_base__);
+    int32_t available_space = stm32_crash_dump_max_size() - total_dump_size;
+    if (available_space < 0) {
+        // we can't log anymore than this
+        goto finalise;
+    }
+    if (bss_size > available_space) { // dump however much we can
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__bss_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__bss_base__ + available_space;
+        total_dump_size += available_space;
+    } else { // dump the entire bss
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__bss_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__bss_end__;
+        total_dump_size += bss_size;
+    }
+
+    // dump the Heap as well as much as we can
+    int32_t heap_size = ((uint32_t)&__heap_end__) - ((uint32_t)&__heap_base__);
+    available_space = stm32_crash_dump_max_size() - total_dump_size;
+    if (available_space < 0) {
+        // we can't log anymore than this
+        goto finalise;
+    }
+    if (heap_size > available_space) { // dump however much we can
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__heap_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__heap_base__ + available_space;
+        total_dump_size += available_space;
+    } else { // dump the entire heap
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__heap_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__heap_end__;
+        total_dump_size += heap_size;
+    }
+
+finalise:
     // ensure that last is filled with 0xFFFFFFFF
     if (curr_region < ARRAY_SIZE(regions)) {
         regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
@@ -193,10 +243,6 @@ CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
 }
 
 // -------------- FlashDump Code --------------------
-static uint32_t dump_size;
-static uint8_t dump_buffer[32]; // we need to maintain a dump buffer of 32bytes for H7
-static uint8_t buf_off;
-
 static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo)
 {
     // initialise for dumping
