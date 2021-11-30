@@ -1547,6 +1547,7 @@ void AC_PolyFence_loader::handle_msg_fence_point(GCS_MAVLINK &link, const mavlin
         fence_storage.write_uint8(inclusion_fence->storage_offset+1, packet.idx-1);
         // and write end of storage marker
         fence_storage.write_uint8(inclusion_fence->storage_offset+2+(packet.idx-1)*8, uint8_t(AC_PolyFenceType::END_OF_STORAGE));
+        void_index();
     } else {
         const FenceIndex *inclusion_fence = get_or_create_include_fence();
         if (inclusion_fence == nullptr) {
