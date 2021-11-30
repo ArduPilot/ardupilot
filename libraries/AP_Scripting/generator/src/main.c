@@ -24,6 +24,7 @@ char keyword_singleton[]           = "singleton";
 char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
 char keyword_literal[]             = "literal";
+char keyword_reference[]           = "reference";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -356,6 +357,7 @@ enum userdata_flags {
   UD_FLAG_SCHEDULER_SEMAPHORE = (1U << 1),
   UD_FLAG_LITERAL = (1U << 2),
   UD_FLAG_SEMAPHORE_POINTER = (1U << 3),
+  UD_FLAG_REFERENCE = (1U << 4),
 };
 
 struct userdata_enum {
@@ -927,6 +929,8 @@ void handle_singleton(void) {
     string_copy(&(node->dependency), depends);
   } else if (strcmp(type, keyword_literal) == 0) {
     node->flags |= UD_FLAG_LITERAL;
+  } else if (strcmp(type, keyword_reference) == 0) {
+    node->flags |= UD_FLAG_REFERENCE;
   } else {
     error(ERROR_SINGLETON, "Singletons only support aliases, methods, semaphore, depends or literal keywords (got %s)", type);
   }
@@ -1559,11 +1563,12 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   }
 
   const char *ud_name = (data->flags & UD_FLAG_LITERAL)?data->name:"ud";
+  const char *ud_access = (data->flags & UD_FLAG_REFERENCE)?".":"->";
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
-    fprintf(source, "    %s->get_semaphore().take_blocking();\n", ud_name);
+    fprintf(source, "    %s%sget_semaphore().take_blocking();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
-    fprintf(source, "    %s->get_semaphore()->take_blocking();\n", ud_name);
+    fprintf(source, "    %s%sget_semaphore()->take_blocking();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
     fprintf(source, "    AP::scheduler().get_semaphore().take_blocking();\n");
   }
@@ -1572,23 +1577,23 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   switch (method->return_type.type) {
     case TYPE_STRING:
-      fprintf(source, "    const char * data = %s->%s(", ud_name, method->name);
+      fprintf(source, "    const char * data = %s%s%s(", ud_name, ud_access, method->name);
       static_cast = FALSE;
       break;
     case TYPE_ENUM:
-      fprintf(source, "    const %s &data = %s->%s(", method->return_type.data.enum_name, ud_name, method->name);
+      fprintf(source, "    const %s &data = %s%s%s(", method->return_type.data.enum_name, ud_name, ud_access, method->name);
       static_cast = FALSE;
       break;
     case TYPE_USERDATA:
-      fprintf(source, "    const %s &data = %s->%s(", method->return_type.data.ud.name, ud_name, method->name);
+      fprintf(source, "    const %s &data = %s%s%s(", method->return_type.data.ud.name, ud_name, ud_access, method->name);
       static_cast = FALSE;
       break;
     case TYPE_AP_OBJECT:
-      fprintf(source, "    %s *data = %s->%s(", method->return_type.data.ud.name, ud_name, method->name);
+      fprintf(source, "    %s *data = %s%s%s(", method->return_type.data.ud.name, ud_name, ud_access, method->name);
       static_cast = FALSE;
       break;
     case TYPE_NONE:
-      fprintf(source, "    %s->%s(", ud_name, method->name);
+      fprintf(source, "    %s%s%s(", ud_name, ud_access, method->name);
       static_cast = FALSE;
       break;
     case TYPE_LITERAL:
@@ -1641,7 +1646,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
         error(ERROR_USERDATA, "Unexpected type");
         break;
     }
-    fprintf(source, "    const %s data = static_cast<%s>(%s->%s(", var_type_name, var_type_name, ud_name, method->name);
+    fprintf(source, "    const %s data = static_cast<%s>(%s%s%s(", var_type_name, var_type_name, ud_name, ud_access, method->name);
   }
 
   if (arg_count != 2) {
@@ -1688,9 +1693,9 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   }
 
   if (data->flags & UD_FLAG_SEMAPHORE) {
-    fprintf(source, "    %s->get_semaphore().give();\n", ud_name);
+    fprintf(source, "    %s%sget_semaphore().give();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SEMAPHORE_POINTER) {
-    fprintf(source, "    %s->get_semaphore()->give();\n", ud_name);
+    fprintf(source, "    %s%sget_semaphore()->give();\n", ud_name, ud_access);
   } else if (data->flags & UD_FLAG_SCHEDULER_SEMAPHORE) {
     fprintf(source, "    AP::scheduler().get_semaphore().give();\n");
   }
