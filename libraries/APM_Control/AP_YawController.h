@@ -55,7 +55,7 @@ private:
     AP_Float _K_FF;
     AP_Int16 _imax;
     AP_Int8  _rate_enable;
-    AC_PID rate_pid{0.08, 0.3, 0, 0.3, 0.666, 3, 0, 12, 0.02, 150, 1};
+    AC_PID rate_pid{0.04, 0.15, 0, 0.15, 0.666, 3, 0, 12, 0.02, 150, 1};
 
     uint32_t _last_t;
     float _last_out;
