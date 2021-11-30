@@ -749,7 +749,7 @@ bool AC_PolyFence_loader::load_from_eeprom()
             boundary.points_lla = next_storage_point_lla;
             boundary.count = index.count;
             if (index.count < 3) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "AC_Fence: invalid polygon vertex count");
+                gcs().send_text(MAV_SEVERITY_WARNING, "AC_Fence: invalid polygon vertex count %u", index.count);
                 storage_valid = false;
                 break;
             }
@@ -768,7 +768,7 @@ bool AC_PolyFence_loader::load_from_eeprom()
             boundary.points_lla = next_storage_point_lla;
             boundary.count = index.count;
             if (index.count < 3) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "AC_Fence: invalid polygon vertex count");
+                gcs().send_text(MAV_SEVERITY_WARNING, "AC_Fence: invalid polygon vertex count %u", index.count);
                 storage_valid = false;
                 break;
             }
