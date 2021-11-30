@@ -655,6 +655,35 @@ function motors:set_frame_string(param1) end
 
 
 -- desc
+---@class FWVersion
+FWVersion = {}
+
+-- get field
+---@return string
+function FWVersion:hash() end
+
+-- get field
+---@return integer
+function FWVersion:patch() end
+
+-- get field
+---@return integer
+function FWVersion:minor() end
+
+-- get field
+---@return integer
+function FWVersion:major() end
+
+-- get field
+---@return integer
+function FWVersion:type() end
+
+-- get field
+---@return string
+function FWVersion:string() end
+
+
+-- desc
 ---@class periph
 periph = {}
 
