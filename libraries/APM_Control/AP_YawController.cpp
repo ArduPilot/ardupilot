@@ -269,7 +269,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
 
     const float dt = AP::scheduler().get_loop_period_s();
     const float eas2tas = _ahrs.get_EAS2TAS();
-    bool limit_I = fabsf(_last_out) >= 45;
+    bool limit_I = fabsf(_last_out) >= 45 || disable_integrator;
     float rate_z = _ahrs.get_gyro().z;
     float aspeed;
     float old_I = rate_pid.get_i();
@@ -314,6 +314,7 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     pinfo.P *= deg_scale;
     pinfo.I *= deg_scale;
     pinfo.D *= deg_scale;
+    pinfo.limit = limit_I;
 
     // fix the logged target and actual values to not have the scalers applied
     pinfo.target = desired_rate;
