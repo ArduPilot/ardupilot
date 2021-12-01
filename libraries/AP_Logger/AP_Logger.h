@@ -558,7 +558,7 @@ private:
     struct {
         struct file_list *head, *tail;
         int fd;
-        uint16_t offset;
+        uint32_t offset;
         HAL_Semaphore sem;
     } file_content;
     void file_content_update(void);
