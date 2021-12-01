@@ -690,8 +690,8 @@ struct PACKED log_STAK {
 struct PACKED log_File {
     LOG_PACKET_HEADER;
     char filename[16];
-    uint16_t offset;
-    uint16_t length;
+    uint32_t offset;
+    uint8_t length;
     char data[64];
 };
 
@@ -1344,7 +1344,7 @@ LOG_STRUCTURE_FROM_VISUALODOM \
     { LOG_STAK_MSG, sizeof(log_STAK), \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
     { LOG_FILE_MSG, sizeof(log_File), \
-      "FILE",   "NhhZ",       "FileName,Offset,Length,Data", "----", "----" }, \
+      "FILE",   "NIBZ",       "FileName,Offset,Length,Data", "----", "----" }, \
 LOG_STRUCTURE_FROM_AIS, \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
       "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s-sbb", "F-F--", true }
