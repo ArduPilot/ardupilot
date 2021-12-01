@@ -127,13 +127,13 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("_AUTODEC",5, Compass, _auto_declination, 1),
 
 #if COMPASS_MOT_ENABLED
-    // @Param: MOTCT
+    // @Param: _MOTCT
     // @DisplayName: Motor interference compensation type
     // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
     // @Values: 0:Disabled,1:Use Throttle,2:Use Current
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
+    AP_GROUPINFO("_MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
 #endif
 
     // @Param: _MOT_X
