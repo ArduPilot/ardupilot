@@ -7617,6 +7617,45 @@ class AutoTestCopter(AutoTest):
         ret.extend(self.tests1e())
         return ret
 
+    def ATTITUDE_FAST(self):
+        '''ensure that when ATTITDE_FAST is set we get many messages'''
+        self.context_push()
+        ex = None
+        try:
+            old = self.get_parameter('LOG_BITMASK')
+            new = int(old) | (1 << 0)  # see defines.h
+            self.set_parameters({
+                "LOG_BITMASK": new,
+                "LOG_DISARMED": 1,
+            })
+            path = self.generate_rate_sample_log()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+        self.delay_sim_time(10)  # NFI why this is required
+
+        self.check_dflog_message_rates(path, {
+            'ATT': 400,
+        })
+
+    def BaseLoggingRates(self):
+        '''ensure messages come out at specific rates'''
+        path = self.generate_rate_sample_log()
+        self.delay_sim_time(10)  # NFI why this is required
+        self.check_dflog_message_rates(path, {
+            "ATT": 10,
+            "IMU": 25,
+        })
+
     def FETtecESC_flight(self):
         '''fly with servo outputs from FETtec ESC'''
         self.start_subtest("FETtec ESC flight")
@@ -7999,6 +8038,14 @@ class AutoTestCopter(AutoTest):
             ("VisionPosition",
              "Fly Vision Position",
              self.fly_vision_position), # 24s
+
+            ("ATTITUDE_FAST",
+             "Ensure ATTITUTDE_FAST logging works",
+             self.ATTITUDE_FAST),
+
+            ("BaseLoggingRates",
+             "Ensure base logging rates as expected",
+             self.BaseLoggingRates),
 
             ("BodyFrameOdom",
              "Fly Body Frame Odometry Code",
