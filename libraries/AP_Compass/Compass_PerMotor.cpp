@@ -5,6 +5,7 @@
 #include "AP_Compass.h"
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -212,9 +213,12 @@ void Compass_PerMotor::calibration_end(void)
 /*
   calculate total offset for per-motor compensation
  */
-void Compass_PerMotor::compensate(Vector3f &offset)
+void Compass_PerMotor::compensate(Vector3f &offset, uint8_t batt_index)
 {
     offset.zero();
+
+    // simple low-pass on voltage
+    voltage = 0.9f * voltage + 0.1f * AP::battery().voltage(batt_index);
 
     if (running) {
         // don't compensate while calibrating

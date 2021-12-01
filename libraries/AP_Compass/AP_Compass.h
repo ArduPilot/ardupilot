@@ -282,13 +282,6 @@ public:
         }
     }
 
-#if COMPASS_MOT_ENABLED
-    /// Set the battery voltage for per-motor compensation
-    void set_voltage(float voltage) {
-        _per_motor.set_voltage(voltage);
-    }
-#endif
-    
     /// Returns True if the compasses have been configured (i.e. offsets saved)
     ///
     /// @returns                    True if compass has been configured
