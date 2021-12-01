@@ -65,7 +65,7 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
         float tgt_ampl = 0.0f;
         uint32_t meas_time = 0;
         uint32_t tgt_time = 0;
-        for (int i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
+        for (uint8_t i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
             meas_cnt=0;
             tgt_cnt=0;
             pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
@@ -245,7 +245,7 @@ void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float me
         float tgt_ampl = 0.0f;
         uint32_t meas_time = 0;
         uint32_t tgt_time = 0;
-        for (int i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
+        for (uint8_t i = 0;  i < AUTOTUNE_DWELL_CYCLES; i++) {
             meas_cnt=0;
             tgt_cnt=0;
             pull_from_meas_buffer(meas_cnt, meas_ampl, meas_time);
