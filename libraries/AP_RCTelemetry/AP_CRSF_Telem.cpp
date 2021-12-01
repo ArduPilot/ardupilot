@@ -914,11 +914,8 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.header.chunks_left = 0;
         _telem.ext.param_entry.payload[idx++] = 0; // parent folder
         _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
-        _telem.ext.param_entry.payload[idx++] = 'r'; // "root" name
-        _telem.ext.param_entry.payload[idx++] = 'o';
-        _telem.ext.param_entry.payload[idx++] = 'o';
-        _telem.ext.param_entry.payload[idx++] = 't';
-        _telem.ext.param_entry.payload[idx++] = 0; // null terminator
+        strncpy((char*)&_telem.ext.param_entry.payload[idx], "root", 5);
+        idx += 5;
 
         // write out all of the ids we are going to send
         for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
