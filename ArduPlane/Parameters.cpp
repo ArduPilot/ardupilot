@@ -647,7 +647,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TRIM_PITCH_CD
     // @DisplayName: Pitch angle offset
-    // @Description: Offset applied to AHRS pitch used for in-flight pitch trimming. Correct ground leveling is better than changing this parameter.
+    // @Description: Offset applied to target pitch in stabilized modes. Used to adjust attitude in pilot controlled stabilized modes to obtain desired level cruising speed/throttle trim.
     // @Units: cdeg
     // @Range: -4500 4500
     // @Increment: 10
