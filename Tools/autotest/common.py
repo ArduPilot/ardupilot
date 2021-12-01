@@ -3868,6 +3868,53 @@ class AutoTest(ABC):
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
             strict=strict)
 
+    def check_dflog_message_rates(self, log_filepath, message_rates):
+        reader = self.dfreader_for_path(log_filepath)
+
+        counts = {}
+        first = None
+        while True:
+            m = reader.recv_match()
+            if m is None:
+                break
+            if (m.fmt.instance_field is not None and
+                    getattr(m, m.fmt.instance_field) != 0):
+                continue
+
+            t = m.get_type()
+#            print("t=%s" % str(t))
+            if t not in counts:
+                counts[t] = 0
+            counts[t] += 1
+
+            if hasattr(m, 'TimeUS'):
+                if first is None:
+                    first = m
+                last = m
+
+        if first is None:
+            raise NotAchievedException("Did not get any messages")
+        delta_time_us = last.TimeUS - first.TimeUS
+
+        for (t, want_rate) in message_rates.items():
+            if t not in counts:
+                raise NotAchievedException("Wanted %s but got none" % t)
+            self.progress("Got (%u)" % counts[t])
+            got_rate = counts[t] / delta_time_us * 1000000
+
+            if abs(want_rate - got_rate) > 5:
+                raise NotAchievedException("Not getting %s data at wanted rate want=%f got=%f" %
+                                           (t, want_rate, got_rate))
+
+    def generate_rate_sample_log(self):
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(20)
+        path = self.current_onboard_log_filepath()
+        self.progress("Rate sample log (%s)" % path)
+        self.reboot_sitl()
+        return path
+
     def rc_defaults(self):
         return {
             1: 1500,
@@ -9405,9 +9452,12 @@ switch value'''
         latest = logs[-1]
         return latest
 
-    def dfreader_for_current_onboard_log(self):
-        return DFReader.DFReader_binary(self.current_onboard_log_filepath(),
+    def dfreader_for_path(self, path):
+        return DFReader.DFReader_binary(path,
                                         zero_time_base=True)
+
+    def dfreader_for_current_onboard_log(self):
+        return self.dfreader_for_path(self.current_onboard_log_filepath())
 
     def current_onboard_log_contains_message(self, messagetype):
         self.progress("Checking (%s) for (%s)" %
