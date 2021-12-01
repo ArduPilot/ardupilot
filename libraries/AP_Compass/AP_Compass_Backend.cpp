@@ -104,7 +104,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
         AP_BattMonitor &battery = AP::battery();
         float current;
-        if (battery.current_amps(current)) {
+        if (battery.current_amps(current, state.params.motor_comp_batt_index)) {
             state.motor_offset = mot * current;
         }
     }
