@@ -41,6 +41,8 @@
 
 #include "AP_RobotisServo.h"
 
+#if NUM_SERVO_CHANNELS
+
 extern const AP_HAL::HAL& hal;
 
 #define BROADCAST_ID 0xFE
@@ -457,3 +459,4 @@ void AP_RobotisServo::update()
         send_command(i+1, REG_GOAL_POSITION, value, 4);
     }
 }
+#endif //NUM_SERVO_CHANNELS

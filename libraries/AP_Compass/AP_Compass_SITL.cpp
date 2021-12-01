@@ -9,7 +9,6 @@ AP_Compass_SITL::AP_Compass_SITL()
     : _sitl(AP::sitl())
 {
     if (_sitl != nullptr) {
-        _compass._setup_earth_field();
         for (uint8_t i=0; i<MAX_CONNECTED_MAGS; i++) {
             uint32_t dev_id = _sitl->mag_devid[i];
             if (dev_id == 0) {
@@ -38,9 +37,9 @@ AP_Compass_SITL::AP_Compass_SITL()
 
         // we want to simulate a calibrated compass by default, so set
         // scale to 1
-        AP_Param::set_default_by_name("COMPASS_SCALE", 1);
-        AP_Param::set_default_by_name("COMPASS_SCALE2", 1);
-        AP_Param::set_default_by_name("COMPASS_SCALE3", 1);
+        AP_Param::set_default_by_name("COMPASS1_SCALE", 1);
+        AP_Param::set_default_by_name("COMPASS2_SCALE", 1);
+        AP_Param::set_default_by_name("COMPASS3_SCALE", 1);
 
         // make first compass external
         set_external(_compass_instance[0], true);

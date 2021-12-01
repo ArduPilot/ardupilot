@@ -18,6 +18,9 @@
  */
 
 #include "AP_Landing.h"
+
+#if HAL_LANDING_DEEPSTALL_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -655,3 +658,5 @@ float AP_Landing_Deepstall::update_steering()
 
     return ds_PID.get_pid(error);
 }
+
+#endif  // HAL_LANDING_DEEPSTALL_ENABLED

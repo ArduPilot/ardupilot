@@ -34,7 +34,7 @@ bool AP_RangeFinder_GYUS42v2::find_signature_in_buffer(uint8_t start)
 }
 
 // get_reading - read a value from the sensor
-bool AP_RangeFinder_GYUS42v2::get_reading(uint16_t &reading_cm)
+bool AP_RangeFinder_GYUS42v2::get_reading(float &reading_m)
 {
     if (uart == nullptr) {
         return false;
@@ -65,7 +65,7 @@ bool AP_RangeFinder_GYUS42v2::get_reading(uint16_t &reading_cm)
         return false;
     }
 
-    reading_cm = buffer[4] << 8 | buffer[5];
+    reading_m = (buffer[4] << 8 | buffer[5]) * 0.01f;
     buffer_used = 0;
 
     return true;

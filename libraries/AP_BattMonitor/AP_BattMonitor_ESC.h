@@ -43,9 +43,13 @@ public:
     // ESC_Telem provides temperature info
     bool has_temperature() const override { return have_temperature; };
 
+    // reset remaining percentage to given value
+    virtual bool reset_remaining(float percentage) override;
+
 private:
     bool have_current;
     bool have_temperature;
+    float delta_mah;
 };
 
 #endif

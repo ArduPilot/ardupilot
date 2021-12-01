@@ -8,8 +8,8 @@
 //  called at 100hz
 void Copter::update_throttle_hover()
 {
-    // if not armed or landed exit
-    if (!motors->armed() || ap.land_complete) {
+    // if not armed or landed or on standby then exit
+    if (!motors->armed() || ap.land_complete || standby_active) {
         return;
     }
 
@@ -19,7 +19,7 @@ void Copter::update_throttle_hover()
     }
 
     // do not update while climbing or descending
-    if (!is_zero(pos_control->get_desired_velocity().z)) {
+    if (!is_zero(pos_control->get_vel_desired_cms().z)) {
         return;
     }
 
@@ -27,7 +27,7 @@ void Copter::update_throttle_hover()
     float throttle = motors->get_throttle();
 
     // calc average throttle if we are in a level hover.  accounts for heli hover roll trim
-    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z()) < 60 &&
+    if (throttle > 0.0f && fabsf(inertial_nav.get_velocity_z_up_cms()) < 60 &&
         labs(ahrs.roll_sensor-attitude_control->get_roll_trim_cd()) < 500 && labs(ahrs.pitch_sensor) < 500) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);

@@ -16,8 +16,6 @@ FLASH_SIZE_KB 2048
 USB_VENDOR 0x2DAE # ONLY FOR USE BY ProfiCNC / HEX! NOBODY ELSE
 USB_PRODUCT 0x1002
 USB_STRING_MANUFACTURER "Hex/ProfiCNC"
-USB_STRING_PRODUCT "CubeYellow-BL"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 UART7
@@ -53,10 +51,6 @@ FLASH_RESERVE_START_KB 0
 
 # start on 4th sector (1st sector for bootloader, 2 for extra storage)
 FLASH_BOOTLOADER_LOAD_KB 96
-
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
-
 
 # Add CS pins to ensure they are high in bootloader
 PC1 MAG_CS CS

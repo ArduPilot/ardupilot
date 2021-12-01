@@ -29,7 +29,7 @@ public:
     // update state
     void update(void) override;
 private:
-    SITL::SITL *sitl;    
+    SITL::SIM *sitl;
     uint8_t instance;
 };
 

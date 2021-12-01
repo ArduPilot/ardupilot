@@ -68,18 +68,18 @@ bool AP_SmartAudio::init()
 
 void AP_SmartAudio::loop()
 {
+    AP_VideoTX &vtx = AP::vtx();
+
     while (!hal.scheduler->is_system_initialized()) {
         hal.scheduler->delay(100);
     }
 
-    uint8_t res_retries=0;
     // allocate response buffer
     uint8_t _response_buffer[AP_SMARTAUDIO_MAX_PACKET_SIZE];
 
     // initialise uart (this must be called from within tick b/c the UART begin must be called from the same thread as it is used from)
     _port->begin(_smartbaud, AP_SMARTAUDIO_UART_BUFSIZE_RX, AP_SMARTAUDIO_UART_BUFSIZE_TX);
 
-    //bool tried = false;
 
     while (true) {
         // now time to control loop switching
@@ -126,9 +126,6 @@ void AP_SmartAudio::loop()
             // setup sheduler delay to 50 ms again after response processes
             if (!read_response(_response_buffer)) {
                 hal.scheduler->delay(10);
-                res_retries++;
-            } else {
-                res_retries = 0;
             }
 
         } else if (_is_waiting_response) { // timeout
@@ -141,13 +138,15 @@ void AP_SmartAudio::loop()
             if (AP::vtx().have_params_changed() ||_vtx_power_change_pending
                 || _vtx_freq_change_pending || _vtx_options_change_pending) {
                 update_vtx_params();
-                _vtx_gcs_pending = true;
+                set_configuration_pending(true);
+                vtx.set_configuration_finished(false);
                 // we've tried to udpate something, re-request the settings so that they
                 // are reflected correctly
                 request_settings();
-            } else if (_vtx_gcs_pending) {
+            } else if (is_configuration_pending()) {
                 AP::vtx().announce_vtx_settings();
-                _vtx_gcs_pending = false;
+                set_configuration_pending(false);
+                vtx.set_configuration_finished(true);
             }
         }
     }
@@ -237,9 +236,10 @@ void AP_SmartAudio::update_vtx_params()
                 break;
             }
         }
+    } else {
+        vtx.set_configuration_finished(true);
     }
 }
-
 /**
  * Sends an SmartAudio Command to the vtx, waits response on the update event
  * @param frameBuffer frameBuffer to send over the wire
@@ -247,6 +247,8 @@ void AP_SmartAudio::update_vtx_params()
  */
 void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
 {
+    AP_VideoTX &vtx = AP::vtx();
+
     if (size <= 0 || _port == nullptr) {
         return;
     }
@@ -254,6 +256,9 @@ void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
     const uint8_t *request = reinterpret_cast<const uint8_t*>(&requestFrame);
 
     // write request
+    if (vtx.has_option(AP_VideoTX::VideoOptions::VTX_PULLDOWN)) {
+        _port->write((uint8_t)0x00);
+    }
     _port->write(request, size);
     _port->flush();
 

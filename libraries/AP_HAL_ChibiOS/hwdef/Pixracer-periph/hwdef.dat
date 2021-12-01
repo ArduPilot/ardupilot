@@ -16,7 +16,7 @@ STM32_ST_USE_TIMER 5
 FLASH_RESERVE_START_KB 64
 
 # store parameters in pages 2 and 3
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 16384
 
 # board ID for firmware load
@@ -25,29 +25,22 @@ APJ_BOARD_ID 1402
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-define PERIPH_FW TRUE
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_SUPPORT_RCOUT_SERIAL 0
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 
-define HAL_NO_GCS
-define HAL_NO_LOGGING
 define HAL_NO_MONITOR_THREAD
 
 define HAL_DISABLE_LOOP_DELAY
 
 define HAL_USE_RTC FALSE
 define DISABLE_SERIAL_ESC_COMM TRUE
-define NO_DATAFLASH TRUE
 
 define HAL_NO_RCIN_THREAD
 
@@ -57,12 +50,9 @@ define HAL_USE_ADC TRUE
 define STM32_ADC_USE_ADC1 TRUE
 define HAL_DISABLE_ADC_DRIVER FALSE
 
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.Pixracer_periph"
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 env DISABLE_SCRIPTING 1
 
@@ -231,5 +221,3 @@ PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
 PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
-
-define BOARD_PWM_COUNT_DEFAULT 6

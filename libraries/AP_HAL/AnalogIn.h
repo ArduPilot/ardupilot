@@ -3,12 +3,13 @@
 #include <inttypes.h>
 
 #include "AP_HAL_Namespace.h"
+#include "AP_HAL_Boards.h"
 
 class AP_HAL::AnalogSource {
 public:
     virtual float read_average() = 0;
     virtual float read_latest() = 0;
-    virtual void set_pin(uint8_t p) = 0;
+    virtual bool set_pin(uint8_t p) WARN_IF_UNUSED = 0;
 
     // return a voltage from 0.0 to 5.0V, scaled
     // against a reference voltage
@@ -40,6 +41,13 @@ public:
     // bitmask of all _power_flags bits ever set, so transient
     // failures can still be diagnosed
     virtual uint16_t accumulated_power_status_flags(void) const { return 0; }
+
+#if HAL_WITH_MCU_MONITORING
+    virtual float mcu_temperature(void) { return 0; }
+    virtual float mcu_voltage(void) { return 0; }
+    virtual float mcu_voltage_max(void) { return 0; }
+    virtual float mcu_voltage_min(void) { return 0; }
+#endif
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254

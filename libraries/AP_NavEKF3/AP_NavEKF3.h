@@ -27,6 +27,7 @@
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 
 class NavEKF3_core;
+class EKFGSF_yaw;
 
 class NavEKF3 {
     friend class NavEKF3_core;
@@ -174,11 +175,11 @@ public:
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // get a source's velocity innovations for the specified instance.  Set instance to -1 for the primary instance
     // returns true on success and results are placed in innovations and variances arguments
@@ -223,16 +224,6 @@ public:
     void writeWheelOdom(float delAng, float delTime, uint32_t timeStamp_ms, const Vector3f &posOffset, float radius);
 
     /*
-     * Return data for debugging body frame odometry fusion:
-     *
-     * velInnov are the XYZ body frame velocity innovations (m/s)
-     * velInnovVar are the XYZ body frame velocity innovation variances (m/s)**2
-     *
-     * Return the system time stamp of the last update (msec)
-     */
-    uint32_t getBodyFrameOdomDebug(int8_t instance, Vector3f &velInnov, Vector3f &velInnovVar) const;
-
-    /*
      * Writes the measurement from a yaw angle sensor
      *
      * yawAngle: Yaw angle of the vehicle relative to true north in radians where a positive angle is
@@ -270,15 +261,6 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
-    // called by vehicle code to specify that a takeoff is happening
-    // causes the EKF to compensate for expected barometer errors due to rotor wash ground interaction
-    // causes the EKF to start the EKF-GSF yaw estimator
-    void setTakeoffExpected(bool val);
-
-    // called by vehicle code to specify that a touchdown is expected to happen
-    // causes the EKF to compensate for expected barometer errors due to ground effect
-    void setTouchdownExpected(bool val);
-
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -298,12 +280,6 @@ public:
      7 = filter is not initialised
     */
     void getFilterFaults(int8_t instance, uint16_t &faults) const;
-
-    /*
-    return filter gps quality check status for the specified instance
-    An out of range instance (eg -1) returns data for the primary instance
-    */
-    void getFilterGpsStatus(int8_t instance, nav_gps_status &faults) const;
 
     /*
     return filter status flags for the specified instance
@@ -361,8 +337,11 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
-    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
-    bool using_external_yaw(void) const;
+    // are we using (aka fusing) a non-compass yaw?
+    bool using_noncompass_for_yaw() const;
+
+    // are we using (aka fusing) external nav for yaw?
+    bool using_extnav_for_yaw() const;
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
@@ -375,6 +354,13 @@ public:
 
     // returns true when the yaw angle has been aligned
     bool yawAlignmentComplete(void) const;
+
+    // returns true when the state estimates for the selected core are significantly degraded by vibration
+    // if instance < 0, the primary instance will be used
+    bool isVibrationAffected(int8_t instance) const;
+
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const;
 
 private:
     uint8_t num_cores; // number of allocated cores
@@ -438,7 +424,6 @@ private:
     AP_Int16 _mag_ef_limit;         // limit on difference between WMM tables and learned earth field.
     AP_Int8 _gsfRunMask;            // mask controlling which EKF3 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF3 instances will use EKF-GSF yaw estimator data to assit with yaw resets
-    AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF3 is allowed to reset it's yaw to the EKF-GSF estimate
     AP_Float _err_thresh;           // lanes have to be consistently better than the primary by at least this threshold to reduce their overall relativeCoreError
     AP_Int32 _affinity;             // bitmask of sensor affinity options
@@ -448,6 +433,8 @@ private:
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
+    AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
+    AP_Int8 _primary_core;          // initial core number
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -478,7 +465,6 @@ private:
     const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
     const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
     const uint32_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
-    const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec

@@ -38,10 +38,6 @@ MAV_MODE GCS_MAVLINK_Rover::base_mode() const
         _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
     }
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
-
     // we are armed if we are not initialising
     if (rover.control_mode != &rover.mode_initializing && rover.arming.is_armed()) {
         _base_mode |= MAV_MODE_FLAG_SAFETY_ARMED;
@@ -82,7 +78,7 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -121,10 +117,10 @@ void GCS_MAVLINK_Rover::send_nav_controller_output() const
         control_mode->crosstrack_error());
 }
 
-void Rover::send_servo_out(mavlink_channel_t chan)
+void GCS_MAVLINK_Rover::send_servo_out()
 {
     float motor1, motor3;
-    if (g2.motors.have_skid_steering()) {
+    if (rover.g2.motors.have_skid_steering()) {
         motor1 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft) / 1000.0f);
         motor3 = 10000 * (SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight) / 1000.0f);
     } else {
@@ -143,7 +139,7 @@ void Rover::send_servo_out(mavlink_channel_t chan)
         0,
         0,
         0,
-        rssi.read_receiver_rssi_uint8());
+        receiver_rssi());
 }
 
 int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
@@ -200,7 +196,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -215,7 +213,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -230,7 +230,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -245,7 +247,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -260,7 +264,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -275,7 +281,9 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -321,7 +329,7 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
 
     case MSG_SERVO_OUT:
         CHECK_PAYLOAD_SIZE(RC_CHANNELS_SCALED);
-        rover.send_servo_out(chan);
+        send_servo_out();
         break;
 
     case MSG_WHEEL_DISTANCE:
@@ -343,6 +351,13 @@ bool GCS_MAVLINK_Rover::try_send_message(enum ap_message id)
                 oadb->send_adsb_vehicle(chan, interval_ms);
             }
         }
+        break;
+    }
+
+    case MSG_AIS_VESSEL: {
+#if HAL_AIS_ENABLED
+        rover.g2.ais.send(chan);
+#endif
         break;
     }
 
@@ -463,11 +478,11 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT,
     MSG_GPS_RAW,
@@ -521,7 +536,8 @@ static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
 };
 static const ap_message STREAM_ADSB_msgs[] = {
-    MSG_ADSB_VEHICLE
+    MSG_ADSB_VEHICLE,
+    MSG_AIS_VESSEL,
 };
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
@@ -537,14 +553,6 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
-
-bool GCS_MAVLINK_Rover::in_hil_mode() const
-{
-#if HIL_MODE != HIL_MODE_DISABLED
-    return rover.g.hil_mode == 1;
-#endif
-    return false;
-}
 
 bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
@@ -564,13 +572,7 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param4, 1.0f)) {
-        if (rover.trim_radio()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
-    } else if (is_equal(packet.param6, 1.0f)) {
+    if (is_equal(packet.param6, 1.0f)) {
         if (rover.g2.windvane.start_direction_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
@@ -754,12 +756,6 @@ void GCS_MAVLINK_Rover::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:
         handle_set_position_target_global_int(msg);
         break;
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    case MAVLINK_MSG_ID_HIL_STATE:
-        handle_hil_state(msg);
-        break;
-#endif
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
@@ -999,21 +995,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
         // convert vector direction to target yaw
         target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
-
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
 
     // consume yaw heading
     if (!yaw_ignore) {
         target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
+
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {
@@ -1056,49 +1044,6 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
     }
 }
 
-#if HIL_MODE != HIL_MODE_DISABLED
-void GCS_MAVLINK_Rover::handle_hil_state(const mavlink_message_t &msg)
-{
-    mavlink_hil_state_t packet;
-    mavlink_msg_hil_state_decode(&msg, &packet);
-
-    // sanity check location
-    if (!check_latlng(packet.lat, packet.lon)) {
-        return;
-    }
-
-    // set gps hil sensor
-    Location loc;
-    loc.lat = packet.lat;
-    loc.lng = packet.lon;
-    loc.alt = packet.alt/10;
-    Vector3f vel(packet.vx, packet.vy, packet.vz);
-    vel *= 0.01f;
-
-    gps.setHIL(0, AP_GPS::GPS_OK_FIX_3D,
-               packet.time_usec/1000,
-               loc, vel, 10, 0);
-
-    // rad/sec
-    Vector3f gyros;
-    gyros.x = packet.rollspeed;
-    gyros.y = packet.pitchspeed;
-    gyros.z = packet.yawspeed;
-
-    // m/s/s
-    Vector3f accels;
-    accels.x = packet.xacc * (GRAVITY_MSS/1000.0f);
-    accels.y = packet.yacc * (GRAVITY_MSS/1000.0f);
-    accels.z = packet.zacc * (GRAVITY_MSS/1000.0f);
-
-    ins.set_gyro(0, gyros);
-
-    ins.set_accel(0, accels);
-    compass.setHIL(0, packet.roll, packet.pitch, packet.yaw);
-    compass.setHIL(1, packet.roll, packet.pitch, packet.yaw);
-}
-#endif  // HIL_MODE
-
 void GCS_MAVLINK_Rover::handle_radio(const mavlink_message_t &msg)
 {
     handle_radio_status(msg, rover.should_log(MASK_LOG_PM));
@@ -1115,3 +1060,53 @@ uint64_t GCS_MAVLINK_Rover::capabilities() const
             MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET |
             GCS_MAVLINK::capabilities());
 }
+
+#if HAL_HIGH_LATENCY2_ENABLED
+uint8_t GCS_MAVLINK_Rover::high_latency_tgt_heading() const
+{
+    const Mode *control_mode = rover.control_mode;
+    if (rover.control_mode->is_autopilot_mode()) {
+        // need to convert -180->180 to 0->360/2
+        return wrap_360(control_mode->wp_bearing()) / 2;
+    }
+    return 0;      
+}
+    
+uint16_t GCS_MAVLINK_Rover::high_latency_tgt_dist() const
+{
+    const Mode *control_mode = rover.control_mode;
+    if (rover.control_mode->is_autopilot_mode()) {
+        // return units are dm
+        return MIN((control_mode->get_distance_to_destination()) / 10, UINT16_MAX);
+    }
+    return 0;  
+}
+
+uint8_t GCS_MAVLINK_Rover::high_latency_tgt_airspeed() const
+{
+    const Mode *control_mode = rover.control_mode;
+    if (rover.control_mode->is_autopilot_mode()) {
+        // return units are m/s*5
+        return MIN((vfr_hud_airspeed() - control_mode->speed_error()) * 5, UINT8_MAX);
+    }
+    return 0;
+}
+
+uint8_t GCS_MAVLINK_Rover::high_latency_wind_speed() const
+{
+    if (rover.g2.windvane.enabled()) {
+        // return units are m/s*5
+        return MIN(rover.g2.windvane.get_true_wind_speed() * 5, UINT8_MAX);
+    }
+    return 0; 
+}
+
+uint8_t GCS_MAVLINK_Rover::high_latency_wind_direction() const
+{
+    if (rover.g2.windvane.enabled()) {
+        // return units are deg/2
+        return wrap_360(degrees(rover.g2.windvane.get_true_wind_direction_rad())) / 2;
+    }
+    return 0; 
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED

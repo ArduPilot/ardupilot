@@ -5,7 +5,7 @@
 Waf tool for ChibiOS build
 """
 
-from waflib import Errors, Logs, Task, Utils
+from waflib import Errors, Logs, Task, Utils, Context
 from waflib.TaskGen import after_method, before_method, feature
 
 import os
@@ -56,7 +56,11 @@ class upload_fw(Task.Task):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         upload_port = self.generator.bld.options.upload_port
         src = self.inputs[0]
-        cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src)
+        # Refer Tools/scripts/macos_remote_upload.sh for details
+        if 'AP_OVERRIDE_UPLOAD_CMD' in os.environ:
+            cmd = "{} '{}'".format(os.environ['AP_OVERRIDE_UPLOAD_CMD'], src.abspath())
+        else:
+            cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src.abspath())
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
         return self.exec_command(cmd)
@@ -87,10 +91,80 @@ class set_default_parameters(Task.Task):
 
 class generate_bin(Task.Task):
     color='CYAN'
-    run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
+    # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
     always_run = True
+    EXTF_MEMORY_START = 0x90000000
+    EXTF_MEMORY_END  = 0x90FFFFFF
+    INTF_MEMORY_START = 0x08000000
+    INTF_MEMORY_END = 0x08FFFFFF
     def keyword(self):
         return "Generating"
+    def run(self):
+        if self.env.HAS_EXTERNAL_FLASH_SECTIONS:
+            ret = self.split_sections()
+            if (ret < 0):
+                return ret
+            return ret
+        else:
+            cmd = [self.env.get_flat('OBJCOPY'), '-O', 'binary', self.inputs[0].relpath(),  self.outputs[0].relpath()]
+            self.exec_command(cmd)
+
+    '''list sections and split into two binaries based on section's location in internal, external or in ram'''
+    def split_sections(self):
+        # get a list of sections
+        cmd = "'{}' -A -x {}".format(self.env.get_flat('SIZE'), self.inputs[0].relpath())
+        out = self.generator.bld.cmd_and_log(cmd, quiet=Context.BOTH, cwd=self.env.get_flat('BUILDROOT'))
+        extf_sections = []
+        intf_sections = []
+        is_text_in_extf = False
+        found_text_section = False
+        ramsections = []
+        for line in out.splitlines():
+            section_line = line.split()
+            if (len(section_line) < 3):
+                continue
+            try:
+                if int(section_line[2], 0) == 0:
+                    continue
+                else:
+                    addr = int(section_line[2], 0)
+            except ValueError:
+                continue
+            if (addr >= self.EXTF_MEMORY_START) and (addr <= self.EXTF_MEMORY_END):
+                extf_sections.append("--only-section=%s" % section_line[0])
+                if section_line[0] == '.text':
+                    is_text_in_extf = True
+                    found_text_section = True
+            elif (addr >= self.INTF_MEMORY_START) and (addr <= self.INTF_MEMORY_END):
+                intf_sections.append("--only-section=%s" % section_line[0])
+                if section_line[0] == '.text':
+                    is_text_in_extf = False
+                    found_text_section = True
+            else:   # most likely RAM data, we place it in the same bin as text
+                ramsections.append(section_line[0])
+
+        if found_text_section:
+            for section in ramsections:
+                if is_text_in_extf:
+                    extf_sections.append("--only-section=%s" % section)
+                else:
+                    intf_sections.append("--only-section=%s" % section)
+        else:
+            Logs.error("Couldn't find .text section")
+        # create intf binary
+        if len(intf_sections):
+            cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+                                                ' '.join(intf_sections), self.inputs[0].relpath(), self.outputs[0].relpath())
+        else:
+            cmd = "cp /dev/null {}".format(self.outputs[0].relpath())
+        ret = self.exec_command(cmd)
+        if (ret < 0):
+            return ret
+        # create extf binary
+        cmd = "'{}' {} -O binary {} {}".format(self.env.get_flat('OBJCOPY'),
+                                                ' '.join(extf_sections), self.inputs[0].relpath(), self.outputs[1].relpath())
+        return self.exec_command(cmd)
+
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
@@ -145,17 +219,26 @@ class generate_apj(Task.Task):
         return "apj_gen"
     def run(self):
         import json, time, base64, zlib
-        img = open(self.inputs[0].abspath(),'rb').read()
+        intf_img = open(self.inputs[0].abspath(),'rb').read()
+        if self.env.HAS_EXTERNAL_FLASH_SECTIONS:
+            extf_img = open(self.inputs[1].abspath(),'rb').read()
+        else:
+            extf_img = b""
         d = {
             "board_id": int(self.env.APJ_BOARD_ID),
             "magic": "APJFWv1",
             "description": "Firmware for a %s board" % self.env.APJ_BOARD_TYPE,
-            "image": base64.b64encode(zlib.compress(img,9)).decode('utf-8'),
+            "image": base64.b64encode(zlib.compress(intf_img,9)).decode('utf-8'),
+            "extf_image": base64.b64encode(zlib.compress(extf_img,9)).decode('utf-8'),
             "summary": self.env.BOARD,
             "version": "0.1",
-            "image_size": len(img),
+            "image_size": len(intf_img),
+            "extf_image_size": len(extf_img),
             "flash_total": int(self.env.FLASH_TOTAL),
-            "flash_free": int(self.env.FLASH_TOTAL) - len(img),
+            "image_maxsize": int(self.env.FLASH_TOTAL),
+            "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
+            "extflash_total": int(self.env.EXTERNAL_PROG_FLASH_MB * 1024 * 1024),
+            "extflash_free": int(self.env.EXTERNAL_PROG_FLASH_MB * 1024 * 1024) - len(extf_img),
             "git_identity": self.generator.bld.git_head_hash(short=True),
             "board_revision": 0,
             "USBID": self.env.USBID
@@ -197,7 +280,11 @@ def chibios_firmware(self):
     link_output = self.link_task.outputs[0]
     hex_task = None
 
-    bin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)
+    if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
+        bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name),
+                      self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_extf.bin').name)]
+    else:
+        bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)]
     apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
     generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
@@ -215,7 +302,7 @@ def chibios_firmware(self):
     if self.bld.env.HAVE_INTEL_HEX:
         if os.path.exists(bootloader_bin.abspath()):
             hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
-            hex_task = self.create_task('build_intel_hex', src=[bin_target, bootloader_bin], tgt=hex_target)
+            hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
             hex_task.set_run_after(generate_bin_task)
         else:
             print("Not embedding bootloader; %s does not exist" % bootloader_bin)
@@ -247,10 +334,6 @@ def setup_canmgr_build(cfg):
         ]
 
     env.CFLAGS += ['-DHAL_CAN_IFACES=2']
-
-    env.CXXFLAGS += [
-        '-Wno-error=cast-align',
-        ]
 
     env.DEFINES += [
         'UAVCAN_CPP_VERSION=UAVCAN_CPP03',
@@ -327,6 +410,7 @@ def configure(cfg):
     kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
 
     env.CH_ROOT = srcpath('modules/ChibiOS')
+    env.CC_ROOT = srcpath('modules/CrashDebug/CrashCatcher')
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
     env.BUILDDIR = bldpath('modules/ChibiOS')
     env.BUILDROOT = bldpath('')
@@ -341,6 +425,7 @@ def configure(cfg):
 
     # relative paths to pass to make, relative to directory that make is run from
     env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
+    env.CC_ROOT_REL = os.path.relpath(env.CC_ROOT, env.BUILDROOT)
     env.AP_HAL_REL = os.path.relpath(env.AP_HAL_ROOT, env.BUILDROOT)
     env.BUILDDIR_REL = os.path.relpath(env.BUILDDIR, env.BUILDROOT)
 
@@ -382,7 +467,11 @@ def generate_hwdef_h(env):
     if not os.path.exists(hwdef_out):
         os.mkdir(hwdef_out)
     python = sys.executable
-    cmd = "{0} '{1}' -D '{2}' '{3}' {4} --params '{5}'".format(python, hwdef_script, hwdef_out, env.HWDEF, env.BOOTLOADER_OPTION, env.DEFAULT_PARAMETERS)
+    cmd = "{0} '{1}' -D '{2}' --params '{3}' '{4}'".format(python, hwdef_script, hwdef_out, env.DEFAULT_PARAMETERS, env.HWDEF)
+    if env.HWDEF_EXTRA:
+        cmd += " '{0}'".format(env.HWDEF_EXTRA)
+    if env.BOOTLOADER_OPTION:
+        cmd += " " + env.BOOTLOADER_OPTION
     return subprocess.call(cmd, shell=True)
 
 def pre_build(bld):
@@ -403,11 +492,21 @@ def pre_build(bld):
 
 def build(bld):
 
+
+    hwdef_rule="%s '%s/hwdef/scripts/chibios_hwdef.py' -D '%s' --params '%s' '%s'" % (
+            bld.env.get_flat('PYTHON'),
+            bld.env.AP_HAL_ROOT,
+            bld.env.BUILDROOT,
+            bld.env.default_parameters,
+            bld.env.HWDEF)
+    if bld.env.HWDEF_EXTRA:
+        hwdef_rule += " " + bld.env.HWDEF_EXTRA
+    if bld.env.BOOTLOADER_OPTION:
+        hwdef_rule += " " + bld.env.BOOTLOADER_OPTION
     bld(
         # build hwdef.h from hwdef.dat. This is needed after a waf clean
         source=bld.path.ant_glob(bld.env.HWDEF),
-        rule="%s '${AP_HAL_ROOT}/hwdef/scripts/chibios_hwdef.py' -D '${BUILDROOT}' '%s' %s --params '%s'" % (
-            bld.env.get_flat('PYTHON'), bld.env.HWDEF, bld.env.BOOTLOADER_OPTION, bld.env.default_parameters),
+        rule=hwdef_rule,
         group='dynamic_sources',
         target=[bld.bldnode.find_or_declare('hwdef.h'),
                 bld.bldnode.find_or_declare('ldscript.ld'),
@@ -416,7 +515,7 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} CRASHCATCHER=${CC_ROOT_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
@@ -430,13 +529,23 @@ def build(bld):
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
-    ch_task = bld(
-        # build libch.a from ChibiOS sources and hwdef.h
-        rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
-        group='dynamic_sources',
-        source=common_src,
-        target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
-    )
+
+    if bld.env.ENABLE_CRASHDUMP:
+        ch_task = bld(
+            # build libch.a from ChibiOS sources and hwdef.h
+            rule="BUILDDIR='${BUILDDIR_REL}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            group='dynamic_sources',
+            source=common_src,
+            target=[bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'), bld.bldnode.find_or_declare('modules/ChibiOS/libcc.a')]
+        )
+    else:
+        ch_task = bld(
+            # build libch.a from ChibiOS sources and hwdef.h
+            rule="BUILDDIR='${BUILDDIR_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            group='dynamic_sources',
+            source=common_src,
+            target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
+        )
     ch_task.name = "ChibiOS_lib"
     DSP_LIBS = {
         'cortex-m4' : 'libarm_cortexM4lf_math.a',
@@ -450,6 +559,8 @@ def build(bld):
         bld.env.LIB += ['DSP']
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
+    if bld.env.ENABLE_CRASHDUMP:
+        bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
     # list of functions that will be wrapped to move them out of libc into our
     # own code note that we also include functions that we deliberately don't
     # implement anywhere (the FILE* functions). This allows us to get link

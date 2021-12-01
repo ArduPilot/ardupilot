@@ -73,6 +73,7 @@ public:
         MAV =           13,  // mavlite
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
         TERRAIN =       14, // 0x500B terrain data
+        WIND =          15, // 0x500C wind data
         WFQ_LAST_ITEM       // must be last
     };
 
@@ -108,6 +109,7 @@ private:
     uint32_t calc_attiandrng(void);
     uint32_t calc_rpm(void);
     uint32_t calc_terrain(void);
+    uint32_t calc_wind(void);
 
     // use_external_data is set when this library will
     // be providing data to another transport, such as FPort
@@ -124,6 +126,8 @@ private:
         uint8_t char_index; // index of which character to get in the message
     } _msg_chunk;
 
+    // passthrough default sensor id
+    uint8_t downlink_sensor_id = 0x1B;
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
     // bidirectional sport telemetry

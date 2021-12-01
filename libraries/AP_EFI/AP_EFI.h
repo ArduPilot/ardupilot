@@ -21,9 +21,11 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define EFI_ENABLED !HAL_MINIMIZE_FEATURES
+#ifndef HAL_EFI_ENABLED
+#define HAL_EFI_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+#endif
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
 #include "AP_EFI_Backend.h"
 #include "AP_EFI_State.h"
 
@@ -105,4 +107,4 @@ namespace AP {
     AP_EFI *EFI();
 };
 
-#endif // EFI_ENABLED
+#endif // HAL_EFI_ENABLED

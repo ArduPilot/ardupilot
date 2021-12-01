@@ -36,7 +36,7 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
     _frontend.set_mode(_instance, MAV_MOUNT_MODE_SYSID_TARGET);
 }
 
-// process MOUNT_CONFIGURE messages received from GCS.  deprecated.
+// process MOUNT_CONFIGURE messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &packet)
 {
     set_mode((MAV_MOUNT_MODE)packet.mount_mode);
@@ -96,6 +96,22 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
             // do nothing
             break;
     }
+}
+
+// handle a GLOBAL_POSITION_INT message
+bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet)
+{
+    if (_state._target_sysid != msg_sysid) {
+        return false;
+    }
+
+    _state._target_sysid_location.lat = packet.lat;
+    _state._target_sysid_location.lng = packet.lon;
+    // global_position_int.alt is *UP*, so is location.
+    _state._target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
+    _state._target_sysid_location_set = true;
+
+    return true;
 }
 
 void AP_Mount_Backend::rate_input_rad(float &out, const RC_Channel *chan, float min, float max) const
@@ -185,7 +201,7 @@ bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
     if (!AP::ahrs().get_position(current_loc)) {
         return false;
     }
-    const float GPS_vector_x = (target.lng-current_loc.lng)*cosf(ToRad((current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
+    const float GPS_vector_x = Location::diff_longitude(target.lng,current_loc.lng)*cosf(ToRad((current_loc.lat+target.lat)*0.00000005f))*0.01113195f;
     const float GPS_vector_y = (target.lat-current_loc.lat)*0.01113195f;
     int32_t target_alt_cm = 0;
     if (!target.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm)) {

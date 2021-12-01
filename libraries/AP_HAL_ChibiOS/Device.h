@@ -16,10 +16,14 @@
 
 #include <inttypes.h>
 #include <AP_HAL/HAL.h>
+#if !defined(HAL_BOOTLOADER_BUILD)
 #include "Semaphores.h"
+#else
+#include <AP_HAL_Empty/Semaphores.h>
+#endif
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE
+#if HAL_USE_I2C == TRUE || HAL_USE_SPI == TRUE || HAL_USE_WSPI == TRUE
 
 #include "Scheduler.h"
 #include "shared_dma.h"
@@ -30,9 +34,15 @@ namespace ChibiOS {
 class DeviceBus {
 public:
     DeviceBus(uint8_t _thread_priority = APM_I2C_PRIORITY);
+    
+    DeviceBus(uint8_t _thread_priority, bool axi_sram);
 
     struct DeviceBus *next;
+#if defined(HAL_BOOTLOADER_BUILD)
+    Empty::Semaphore semaphore;
+#else
     Semaphore semaphore;
+#endif
     Shared_DMA *dma_handle;
 
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb, AP_HAL::Device *hal_device);

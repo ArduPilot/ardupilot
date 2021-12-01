@@ -173,7 +173,7 @@ struct PACKED log_XKF3 {
 
 
 // @LoggerMessage: XKF4
-// @Description: EKF3 variances
+// @Description: EKF3 variances.  SV, SP, SH and SM are probably best described as 'Squared Innovation Test Ratios' where values <1 tells us the measurement was accepted and >1 tells us it was rejected. They represent the square of the (innovation / maximum allowed innovation) where the innovation is the difference between predicted and measured value and the maximum allowed innovation is determined from the uncertainty of the measurement, uncertainty of the prediction and scaled using the number of standard deviations set by the innovation gate parameter for that measurement, eg EK3_MAG_I_GATE, EK3_HGT_I_GATE, etc
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
 // @Field: SV: Square root of the velocity variance
@@ -343,6 +343,7 @@ struct PACKED log_XKQ {
 // @Field: BI: barometer selection index
 // @Field: GI: GPS selection index
 // @Field: AI: airspeed selection index
+// @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
 struct PACKED log_XKFS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -351,6 +352,7 @@ struct PACKED log_XKFS {
     uint8_t baro_index;
     uint8_t gps_index;
     uint8_t airspeed_index;
+    uint8_t source_set;
 };
 
 // @LoggerMessage: XKTV
@@ -420,29 +422,29 @@ struct PACKED log_XKV {
 
 #define LOG_STRUCTURE_FROM_NAVEKF3        \
     { LOG_XKF0_MSG, sizeof(log_XKF0), \
-      "XKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" }, \
+      "XKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" , true }, \
     { LOG_XKF1_MSG, sizeof(log_XKF1), \
-      "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" }, \
+      "XKF1","QBccCfffffffccce","TimeUS,C,Roll,Pitch,Yaw,VN,VE,VD,dPD,PN,PE,PD,GX,GY,GZ,OH", "s#ddhnnnnmmmkkkm", "F-BBB0000000BBBB" , true }, \
     { LOG_XKF2_MSG, sizeof(log_XKF2), \
-      "XKF2","QBccccchhhhhhfff","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,IDX,IDY,IS", "s#---nnGGGGGGoor", "F----BBCCCCCC000" }, \
+      "XKF2","QBccccchhhhhhfff","TimeUS,C,AX,AY,AZ,VWN,VWE,MN,ME,MD,MX,MY,MZ,IDX,IDY,IS", "s#---nnGGGGGGoor", "F----BBCCCCCC000" , true }, \
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
-      "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGG??--", "F-BBBBBBCCCBB00" }, \
+      "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGGd?--", "F-BBBBBBCCCBB00" , true }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
-      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" }, \
+      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
-      "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" }, \
+      "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" , true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
-      "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" }, \
+      "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
-      "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------"}, \
+      "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBB","TimeUS,C,MI,BI,GI,AI", "s#----", "F-----" }, \
-    { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" }, \
+      "XKFS","QBBBBBB","TimeUS,C,MI,BI,GI,AI,SS", "s#-----", "F------" , true }, \
+    { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
-      "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000"}, \
+      "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \
     { LOG_XKTV_MSG, sizeof(log_XKTV),                         \
-      "XKTV", "QBff", "TimeUS,C,TVS,TVD", "s#rr", "F-00"}, \
+      "XKTV", "QBff", "TimeUS,C,TVS,TVD", "s#rr", "F-00", true }, \
     { LOG_XKV1_MSG, sizeof(log_XKV), \
-      "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" }, \
+      "XKV1","QBffffffffffff","TimeUS,C,V00,V01,V02,V03,V04,V05,V06,V07,V08,V09,V10,V11", "s#------------", "F-------------" , true }, \
     { LOG_XKV2_MSG, sizeof(log_XKV), \
-      "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" },
+      "XKV2","QBffffffffffff","TimeUS,C,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23", "s#------------", "F-------------" , true },

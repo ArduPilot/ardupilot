@@ -15,12 +15,6 @@
 
 #include "AP_WindVane_RPM.h"
 
-// constructor
-AP_WindVane_RPM::AP_WindVane_RPM(AP_WindVane &frontend) :
-    AP_WindVane_Backend(frontend)
-{
-}
-
 void AP_WindVane_RPM::update_speed()
 {
     const AP_RPM* rpm = AP_RPM::get_singleton();

@@ -36,7 +36,10 @@ class AP_MSP
     friend class AP_MSP_Telem_Generic;
     friend class AP_MSP_Telem_DJI;
     friend class AP_MSP_Telem_Backend;
-
+#if HAL_WITH_MSP_DISPLAYPORT
+    friend class AP_MSP_Telem_DisplayPort;
+    friend class AP_OSD_MSP_DisplayPort;
+#endif
 public:
     AP_MSP();
 
@@ -50,17 +53,20 @@ public:
     // init - perform required initialisation
     void init();
 
+    enum class Option : uint8_t {
+        TELEMETRY_MODE = 1U<<0,
+        TELEMETRY_DISABLE_DJI_WORKAROUNDS = 1U<<1,
+        DISPLAYPORT_BTFL_SYMBOLS = 1U<<2,
+    };
+
+    bool is_option_enabled(const Option option) const;
+
     static AP_MSP *get_singleton(void)
     {
         return _singleton;
     }
 
 private:
-
-    enum msp_option_e : uint8_t {
-        OPTION_TELEMETRY_MODE = 1U<<0,
-    };
-
     AP_MSP_Telem_Backend *_backends[MSP_MAX_INSTANCES];
 
     AP_Int8 _options;
@@ -71,18 +77,20 @@ private:
     MSP::osd_config_t _osd_config;
 
     struct {
-        bool flashing_on;                                       // OSD item flashing support
+        bool flashing_on;                                       // OSD item flashing support @1.4Hz
+        bool slow_flashing_on;                                  // OSD item flashing support @0.5H
         uint8_t last_flight_mode = 255;
         uint32_t last_flight_mode_change_ms;
         bool flight_mode_focus;                                 // do we need to steal focus from text messages
         bool osd_initialized;                                   // for one time osd initialization
         uint8_t backend_count;                                  // actual count of active bacends
+        uint8_t current_screen;                                 // defaults to screen 0
     } _msp_status;
 
     bool init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_SerialManager::SerialProtocol protocol);
-    void init_osd();
+    void update_osd_item_settings();
     void loop(void);
-    bool check_option(const msp_option_e option);
+    AP_MSP_Telem_Backend* find_protocol(const AP_SerialManager::SerialProtocol protocol) const;
 
     static AP_MSP *_singleton;
 };

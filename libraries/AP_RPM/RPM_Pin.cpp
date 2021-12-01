@@ -80,15 +80,15 @@ void AP_RPM_Pin::update(void)
         irq_state[state.instance].dt_sum = 0;
         hal.scheduler->restore_interrupts(irqstate);
 
-        const float scaling = ap_rpm._scaling[state.instance];
-        float maximum = ap_rpm._maximum[state.instance];
-        float minimum = ap_rpm._minimum[state.instance];
+        const float scaling = ap_rpm._params[state.instance].scaling;
+        float maximum = ap_rpm._params[state.instance].maximum;
+        float minimum = ap_rpm._params[state.instance].minimum;
         float quality = 0;
         float rpm = scaling * (1.0e6 / dt_avg) * 60;
         float filter_value = signal_quality_filter.get();
 
         state.rate_rpm = signal_quality_filter.apply(rpm);
-        
+
         if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
             if (is_zero(filter_value)){
                 quality = 0;
@@ -102,7 +102,7 @@ void AP_RPM_Pin::update(void)
         }
         state.signal_quality = (0.1 * quality) + (0.9 * state.signal_quality);
     }
-    
+
     // assume we get readings at at least 1Hz, otherwise reset quality to zero
     if (AP_HAL::millis() - state.last_reading_ms > 1000) {
         state.signal_quality = 0;

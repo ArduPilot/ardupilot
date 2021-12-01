@@ -79,10 +79,10 @@ struct PACKED log_KY1 {
 
 #define LOG_STRUCTURE_FROM_NAVEKF                                       \
     { LOG_XKY0_MSG, sizeof(log_KY0),                                    \
-            "XKY0", KY0_FMT, KY0_LABELS, KY0_UNITS, KY0_MULTS},      \
+            "XKY0", KY0_FMT, KY0_LABELS, KY0_UNITS, KY0_MULTS, true },      \
     { LOG_XKY1_MSG, sizeof(log_KY1),                                    \
-            "XKY1", KY1_FMT, KY1_LABELS, KY1_UNITS, KY1_MULTS },     \
+            "XKY1", KY1_FMT, KY1_LABELS, KY1_UNITS, KY1_MULTS , true },     \
     { LOG_NKY0_MSG, sizeof(log_KY0),                                    \
-            "NKY0", KY0_FMT, KY0_LABELS, KY0_UNITS, KY0_MULTS},      \
+            "NKY0", KY0_FMT, KY0_LABELS, KY0_UNITS, KY0_MULTS, true },      \
     { LOG_NKY1_MSG, sizeof(log_KY1),                                    \
-            "NKY1", KY1_FMT, KY1_LABELS, KY1_UNITS, KY1_MULTS },
+            "NKY1", KY1_FMT, KY1_LABELS, KY1_UNITS, KY1_MULTS , true },

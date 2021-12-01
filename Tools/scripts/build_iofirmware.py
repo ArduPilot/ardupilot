@@ -2,6 +2,8 @@
 
 """
 script to build iofirmware and copy to Tools/IO_Firmware
+
+AP_FLAKE8_CLEAN
 """
 
 import os
@@ -11,12 +13,14 @@ import sys
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
+
 def run_program(cmd_list):
     print("Running (%s)" % " ".join(cmd_list))
     retcode = subprocess.call(cmd_list)
     if retcode != 0:
         print("Build failed: %s" % ' '.join(cmd_list))
         sys.exit(1)
+
 
 print("Building iofirmware")
 run_program(["./waf", "configure", "--board", 'iomcu'])

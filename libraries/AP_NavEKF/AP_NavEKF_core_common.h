@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
+#include "AP_Nav_Common.h"
 
 /*
   this declares a common parent class for AP_NavEKF2 and
@@ -32,7 +33,6 @@
  */
 class NavEKF_core_common {
 public:
-    typedef float ftype;
 #if MATH_CHECK_INDEXES
     typedef VectorN<ftype,28> Vector28;
     typedef VectorN<VectorN<ftype,24>,24> Matrix24;
@@ -49,4 +49,19 @@ protected:
 
     // fill all the common scratch variables with NaN on SITL
     void fill_scratch_variables(void);
+
+    // zero part of an array for index range [n1,n2]
+    static void zero_range(ftype *v, uint8_t n1, uint8_t n2) {
+        memset(&v[n1], 0, sizeof(ftype)*(1+(n2-n1)));
+    }
 };
+
+#if HAL_WITH_EKF_DOUBLE
+// stack frames are larger with double EKF
+#if MATH_CHECK_INDEXES
+#pragma GCC diagnostic error "-Wframe-larger-than=4000"
+#else
+#pragma GCC diagnostic error "-Wframe-larger-than=2500"
+#endif
+#endif
+

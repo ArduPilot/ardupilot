@@ -19,7 +19,7 @@ class CodeGenerator:
     def write_subexpressions(self,subexpressions):
         write_string = ""
         for item in subexpressions:
-            write_string = write_string + "const float " + str(item[0]) + " = " + self.get_ccode(item[1]) + ";\n"
+            write_string = write_string + "const ftype " + str(item[0]) + " = " + self.get_ccode(item[1]) + ";\n"
 
         write_string = write_string + "\n\n"
         self.file.write(write_string)

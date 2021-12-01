@@ -27,11 +27,20 @@ public:
     // get an individual ESC's raw rpm if available
     bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
 
+    // return the average motor RPM
+    float get_average_motor_rpm(uint32_t servo_channel_mask) const;
+
+    // return the average motor RPM
+    float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
+
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
 
     // get an individual motor's temperature in centi-degrees if available, returns true on success
     bool get_motor_temperature(uint8_t esc_index, int16_t& temp) const;
+
+    // get the highest ESC temperature in centi-degrees if available, returns true if there is valid data for at least one ESC
+    bool get_highest_motor_temperature(int16_t& temp) const;
 
     // get an individual ESC's current in Ampere if available, returns true on success
     bool get_current(uint8_t esc_index, float& amps) const;
@@ -46,17 +55,24 @@ public:
     bool get_consumption_mah(uint8_t esc_index, float& consumption_mah) const;
 
     // return the average motor frequency in Hz for dynamic filtering
-    float get_average_motor_frequency_hz() const;
+    float get_average_motor_frequency_hz(uint32_t servo_channel_mask) const { return get_average_motor_rpm(servo_channel_mask) * (1.0f / 60.0f); };
+
+    // return the average motor frequency in Hz for dynamic filtering
+    float get_average_motor_frequency_hz() const { return get_average_motor_frequency_hz(0xFFFFFFFF); }
 
     // return all of the motor frequencies in Hz for dynamic filtering
     uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
 
-    // get the number of valid ESCs
+    // get the number of ESCs that sent valid telemetry data in the last ESC_TELEM_DATA_TIMEOUT_MS
     uint8_t get_num_active_escs() const;
+
+    // get mask of ESCs that sent valid telemetry data in the last
+    // ESC_TELEM_DATA_TIMEOUT_MS
+    uint16_t get_active_esc_mask() const;
 
     // return the last time telemetry data was received in ms for the given ESC or 0 if never
     uint32_t get_last_telem_data_ms(uint8_t esc_index) const {
-        if (esc_index > ESC_TELEM_MAX_ESCS) return 0;
+        if (esc_index >= ESC_TELEM_MAX_ESCS) {return 0;}
         return _telem_data[esc_index].last_update_ms;
     }
 
@@ -79,6 +95,8 @@ private:
 
     uint32_t _last_telem_log_ms[ESC_TELEM_MAX_ESCS];
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
+
+    bool _have_data;
 
     static AP_ESC_Telem *_singleton;
 };

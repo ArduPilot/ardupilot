@@ -55,6 +55,10 @@ private:
         TUNING_AZ_I =                         22,
         TUNING_AZ_D  =                        23,
 
+        TUNING_RATE_PITCH_FF =         24,
+        TUNING_RATE_ROLL_FF =         25,
+        TUNING_RATE_YAW_FF =         26,
+
         // fixed wing tuning
         TUNING_FIXED_WING_BASE =              50,
         TUNING_RLL_P =                        50,

@@ -3,7 +3,7 @@
 // update terrain data
 void Sub::terrain_update()
 {
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     terrain.update();
 
     // tell the rangefinder our height, so it can go into power saving
@@ -20,7 +20,7 @@ void Sub::terrain_update()
 // log terrain data - should be called at 1hz
 void Sub::terrain_logging()
 {
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     if (should_log(MASK_LOG_GPS)) {
         terrain.log_terrain_data();
     }

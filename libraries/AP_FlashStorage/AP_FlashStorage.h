@@ -1,5 +1,5 @@
 /*
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@
   STM32H7 can only write in 32 byte chunks, and must only write when all bits are 1
  */
 #define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_H7
-#elif defined(STM32G4)
+#elif defined(STM32G4) || defined(STM32L4)
 /*
   STM32G4 can only write in 8 byte chunks, and must only write when all bits are 1
  */

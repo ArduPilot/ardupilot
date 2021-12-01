@@ -106,16 +106,6 @@ static uint8_t hex2nibble(char c)
     return out;
 }
 
-int SLCAN::CANIface::set_port(AP_HAL::UARTDriver* port)
-{
-    if (port == nullptr) {
-        return -1;
-    }
-    _port = port;
-    return 0;
-}
-
-
 bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
 {
     AP_HAL::CANIface::CanRxItem frm;
@@ -255,7 +245,9 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
     _can_iface = hal.can[i];
     _iface_num = _slcan_can_port - 1;
     _prev_ser_port = -1;
+#if HAL_CANMANAGER_ENABLED
     AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
+#endif
     return true;
 }
 
@@ -338,8 +330,7 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
     *p++ = '\r';
     const auto frame_size = unsigned(p - &buffer[0]);
 
-    if (_port->txspace() < _pending_frame_size) {
-        _pending_frame_size = frame_size;
+    if (_port->txspace() < frame_size) {
         return 0;
     }
     //Write to Serial
@@ -493,7 +484,7 @@ void SLCAN::CANIface::update_slcan_port()
         }
         _port->lock_port(_serial_lock_key, _serial_lock_key);
         _prev_ser_port = _slcan_ser_port;
-        gcs().send_text(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
         _last_had_activity = AP_HAL::native_millis();
     }
     if (_port == nullptr) {

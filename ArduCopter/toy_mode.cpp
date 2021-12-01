@@ -846,7 +846,7 @@ void ToyMode::throttle_adjust(float &throttle_control)
     }
 
     // limit descent rate close to the ground
-    float height = copter.inertial_nav.get_altitude() * 0.01 - copter.arming_altitude_m;
+    float height = copter.inertial_nav.get_position_z_up_cm() * 0.01 - copter.arming_altitude_m;
     if (throttle_control < 500 &&
         height < TOY_DESCENT_SLOW_HEIGHT + TOY_DESCENT_SLOW_RAMP &&
         copter.motors->armed() && !copter.ap.land_complete) {
@@ -1002,7 +1002,7 @@ void ToyMode::thrust_limiting(float *thrust, uint8_t num_motors)
 // @Field: M4: Motor 4 pwm output
 
     if (motor_log_counter++ % 10 == 0) {
-        AP::logger().Write("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
+        AP::logger().WriteStreaming("THST", "TimeUS,Vol,Mul,M1,M2,M3,M4", "QffHHHH",
                                                AP_HAL::micros64(),
                                                (double)filtered_voltage,
                                                (double)thrust_mul,

@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 
 #include "AP_RangeFinder_UAVCAN.h"
 
@@ -15,13 +15,6 @@ extern const AP_HAL::HAL& hal;
 
 //UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(MeasurementCb, uavcan::equipment::range_sensor::Measurement);
-
-/*
-  constructor - registers instance at top RangeFinder driver
- */
-AP_RangeFinder_UAVCAN::AP_RangeFinder_UAVCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    AP_RangeFinder_Backend(_state, _params)
-{}
 
 //links the rangefinder uavcan message to this backend
 void AP_RangeFinder_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
@@ -108,7 +101,7 @@ void AP_RangeFinder_UAVCAN::update()
         set_status(RangeFinder::Status::NoData);
     } else if (_status == RangeFinder::Status::Good && new_data) {
         //copy over states
-        state.distance_cm = _distance_cm;
+        state.distance_m = _distance_cm * 0.01f;
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;
@@ -180,5 +173,5 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
     }
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_CANMANAGER_ENABLED
 

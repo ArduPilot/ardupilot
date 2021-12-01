@@ -13,6 +13,7 @@
 #include "Scheduler.h"
 #include "Semaphores.h"
 #include "SPIDevice.h"
+#include "QSPIDevice.h"
 #include "Storage.h"
 #include "UARTDriver.h"
 #include "Util.h"

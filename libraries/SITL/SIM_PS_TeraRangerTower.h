@@ -43,6 +43,12 @@ rc 2 1450
 
 #include "SIM_SerialProximitySensor.h"
 
+#ifndef HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#define HAL_SIM_PS_TERARANGERTOWER_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+#endif
+
+#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+
 #include <stdio.h>
 
 namespace SITL {
@@ -65,3 +71,5 @@ private:
 };
 
 };
+
+#endif  // HAL_SIM_PS_TERARANGERTOWER_ENABLED

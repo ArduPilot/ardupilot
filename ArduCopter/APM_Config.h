@@ -13,7 +13,6 @@
 //#define AC_RALLY              DISABLED            // disable rally points library (must also disable terrain which relies on rally)
 //#define AC_AVOID_ENABLED      DISABLED            // disable stop-at-fence library
 //#define AC_OAPATHPLANNER_ENABLED DISABLED         // disable path planning around obstacles
-//#define AC_TERRAIN            DISABLED            // disable terrain library
 //#define PARACHUTE             DISABLED            // disable parachute release to save 1k of flash
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define OPTFLOW               DISABLED            // disable optical flow sensor to save 5K of flash space
@@ -43,7 +42,6 @@
 //#define MODE_THROW_ENABLED    DISABLED            // disable throw mode support
 //#define MODE_ZIGZAG_ENABLED   DISABLED            // disable zigzag mode support
 //#define OSD_ENABLED           DISABLED            // disable on-screen-display support
-//#define BUTTON_ENABLED        DISABLED            // disable button support
 //#define LANDING_GEAR_ENABLED  DISABLED            // disable landing gear support
 
 // features below are disabled by default on all boards
@@ -53,8 +51,6 @@
 
 // other settings
 //#define THROTTLE_IN_DEADBAND   100                // redefine size of throttle deadband in pwm (0 ~ 1000)
-
-//#define HIL_MODE              HIL_MODE_SENSORS    // build for hardware-in-the-loop simulation
 
 // User Hooks : For User Developed code that you wish to run
 // Put your variable definitions into the UserVariables.h file (or another file name and then change the #define below).

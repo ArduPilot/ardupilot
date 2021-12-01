@@ -25,8 +25,8 @@
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
-// enough for uartA to uartI, plus IOMCU
-#define UART_MAX_DRIVERS 10
+// enough for uartA to uartJ, plus IOMCU
+#define UART_MAX_DRIVERS 11
 
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
@@ -37,14 +37,18 @@ public:
     UARTDriver &operator=(const UARTDriver&) = delete;
 
     void begin(uint32_t b) override;
+    void begin_locked(uint32_t b, uint32_t write_key) override;
     void begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
     void end() override;
     void flush() override;
     bool is_initialized() override;
     void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
+    uint32_t get_usb_baud() const override;
 
-
+    // disable TX/RX pins for unusued uart
+    void disable_rxtx(void) const override;
+    
     uint32_t available() override;
     uint32_t available_locked(uint32_t key) override;
 
@@ -91,6 +95,7 @@ public:
         uint8_t rxinv_polarity;
         int8_t txinv_gpio;
         uint8_t txinv_polarity;
+        uint8_t endpoint_id;
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
@@ -106,6 +111,13 @@ public:
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
+
+    /*
+      software control of the CTS/RTS pins if available. Return false if
+      not available
+     */
+    bool set_RTS_pin(bool high) override;
+    bool set_CTS_pin(bool high) override;
 
     /*
       return timestamp estimate in microseconds for when the start of
@@ -128,8 +140,9 @@ public:
         }
         return _baudrate/(9*1024);
     }
-    // request information on uart I/O
-    static void uart_info(ExpandingString &str);
+
+    // request information on uart I/O for one uart
+    void uart_info(ExpandingString &str) override;
 
     /*
       return true if this UART has DMA enabled on both RX and TX
@@ -142,10 +155,12 @@ private:
     bool tx_dma_enabled;
 
     /*
-      copy of rx_line and tx_line with alternative configs resolved
+      copy of rx_line, tx_line, rts_line and cts_line with alternative configs resolved
      */
     ioline_t atx_line;
     ioline_t arx_line;
+    ioline_t arts_line;
+    ioline_t acts_line;
 
     // thread used for all UARTs
     static thread_t* volatile uart_rx_thread_ctx;
@@ -217,7 +232,7 @@ private:
     // statistics
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
-    static uint32_t _last_stats_ms;
+    uint32_t _last_stats_ms;
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;

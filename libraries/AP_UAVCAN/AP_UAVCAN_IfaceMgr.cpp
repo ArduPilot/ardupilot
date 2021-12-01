@@ -166,7 +166,7 @@ bool CanIfaceMgr::add_interface(AP_HAL::CANIface *can_iface)
         AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "UAVCANIfaceMgr: Setting event handle failed\n");
         return false;
     }
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "UAVCANIfaceMgr: Successfully added interface %d\n");
+    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "UAVCANIfaceMgr: Successfully added interface %d\n", int(num_ifaces));
     num_ifaces++;
     return true;
 }

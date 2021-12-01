@@ -213,6 +213,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
     // @Units: cdeg
+    // @Increment: 10
     // @Range: 1000 8000
     // @User: Advanced
     ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
@@ -418,9 +419,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Relay/AP_Relay.cpp
     GOBJECT(relay,                  "RELAY_", AP_Relay),
 
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,        "COMPASS_", Compass),
+    GOBJECT(compass,        "COMPASS", Compass),
 
     // @Group: INS_
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
@@ -521,7 +522,7 @@ const AP_Param::Info Sub::var_info[] = {
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    GOBJECT(sitl, "SIM_", SITL::SITL),
+    GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
     // @Group: BARO
@@ -592,7 +593,7 @@ const AP_Param::Info Sub::var_info[] = {
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
 #endif
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     // @Group: TERRAIN_
     // @Path: ../libraries/AP_Terrain/AP_Terrain.cpp
     GOBJECT(terrain,                "TERRAIN_", AP_Terrain),
@@ -650,7 +651,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../libraries/RC_Channel/RC_Channels_VarInfo.h
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 18, ParametersG2, AP_Scripting),
@@ -687,8 +688,6 @@ void Sub::load_parameters()
         AP_HAL::panic("Bad var table");
     }
 
-    // disable centrifugal force correction, it will be enabled as part of the arming process
-    ahrs.set_correct_centrifugal(false);
     hal.util->set_soft_armed(false);
 
     if (!g.format_version.load() ||
@@ -724,6 +723,7 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("RC3_TRIM", 1100);
     AP_Param::set_default_by_name("COMPASS_OFFS_MAX", 1000);
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
+    AP_Param::set_default_by_name("MNT_TYPE", 1);
     AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
     AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
     AP_Param::set_by_name("MNT_RC_IN_PAN", 7);

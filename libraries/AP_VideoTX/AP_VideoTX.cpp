@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @DisplayName: Video Transmitter Options
     // @Description: Video Transmitter Options. Pitmode puts the VTX in a low power state. Unlocked enables certain restricted frequencies and power levels. Do not enable the Unlocked option unless you have appropriate permissions in your jurisdiction to transmit at high power levels.
     // @User: Advanced
-    // @Bitmask: 0:Pitmode,1:Pitmode until armed,2:Pitmode when disarmed,3:Unlocked
+    // @Bitmask: 0:Pitmode,1:Pitmode until armed,2:Pitmode when disarmed,3:Unlocked,4:Add leading zero byte to requests
     AP_GROUPINFO("OPTIONS",  6, AP_VideoTX, _options, 0),
 
     // @Param: MAX_POWER
@@ -74,6 +74,8 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 };
 
 extern const AP_HAL::HAL& hal;
+
+const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L"};
 
 const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
 {
@@ -350,9 +352,9 @@ bool AP_VideoTX::set_defaults()
 void AP_VideoTX::announce_vtx_settings() const
 {
     // Output a friendly message so the user knows the VTX has been detected
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: Freq: %dMHz, Power: %dmw, Band: %d, Chan: %d",
-        _frequency_mhz.get(), has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get(),
-        _band.get() + 1, _channel.get() + 1);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %s%d %dMHz, PWR: %dmW",
+        band_names[_band.get()], _channel.get() + 1, _frequency_mhz.get(),
+        has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get());
 }
 
 // change the video power based on switch input

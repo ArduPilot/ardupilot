@@ -146,7 +146,7 @@ protected:
 
     virtual bool ins_checks(bool report);
 
-    virtual bool compass_checks(bool report);
+    bool compass_checks(bool report);
 
     virtual bool gps_checks(bool report);
 
@@ -158,6 +158,8 @@ protected:
 
     virtual bool rc_calibration_checks(bool report);
 
+    bool rc_in_calibration_check(bool report);
+
     bool rc_arm_checks(AP_Arming::Method method);
 
     bool manual_transmitter_checks(bool report);
@@ -167,6 +169,10 @@ protected:
     bool rangefinder_checks(bool report);
 
     bool fence_checks(bool report);
+
+#if HAL_HAVE_IMU_HEATER
+    bool heater_min_temperature_checks(bool report);
+#endif
 
     bool camera_checks(bool display_failure);
 
@@ -180,6 +186,8 @@ protected:
 
     bool can_checks(bool report);
 
+    bool fettec_checks(bool display_failure) const;
+
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;
@@ -189,7 +197,7 @@ protected:
     bool disarm_switch_checks(bool report) const;
 
     // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
-    virtual bool mandatory_checks(bool report) { return true; }
+    virtual bool mandatory_checks(bool report);
 
     // returns true if a particular check is enabled
     bool check_enabled(const enum AP_Arming::ArmingChecks check) const;
@@ -200,7 +208,7 @@ protected:
     void check_failed(bool report, const char *fmt, ...) const FMT_PRINTF(3, 4);
 
     void Log_Write_Arm(bool forced, AP_Arming::Method method);
-    void Log_Write_Disarm(AP_Arming::Method method);
+    void Log_Write_Disarm(bool forced, AP_Arming::Method method);
 
 private:
 
@@ -208,6 +216,9 @@ private:
 
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
+
+    // check if we should keep logging after disarming
+    void check_forced_logging(const AP_Arming::Method method);
 
     enum MIS_ITEM_CHECK {
         MIS_ITEM_CHECK_LAND          = (1 << 0),

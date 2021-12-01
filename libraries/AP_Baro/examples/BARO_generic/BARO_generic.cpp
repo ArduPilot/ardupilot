@@ -38,7 +38,7 @@ static AP_BoardConfig board_config;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
-SITL::SITL sitl;
+SITL::SIM sitl;
 #endif
 
 void setup();

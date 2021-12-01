@@ -33,4 +33,4 @@ struct PACKED log_BARO {
 
 #define LOG_STRUCTURE_FROM_BARO \
     { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "QBffcfIffB", "TimeUS,I,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health", "s#mPOnsmO-", "F-00B0C?0-" },
+      "BARO",  "QBffcfIffB", "TimeUS,I,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health", "s#mPOnsmO-", "F-00B0C?0-" , true },

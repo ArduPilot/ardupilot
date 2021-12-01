@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_Tuning_Plane::var_info[] = {
     // @Param: PARAM
     // @DisplayName: Transmitter tuning parameter or set of parameters
     // @Description: This sets which parameter or set of parameters will be tuned. Values greater than 100 indicate a set of parameters rather than a single parameter. Parameters less than 50 are for QuadPlane vertical lift motors only.
-    // @Values: 0:None,1:RateRollPI,2:RateRollP,3:RateRollI,4:RateRollD,5:RatePitchPI,6:RatePitchP,7:RatePitchI,8:RatePitchD,9:RateYawPI,10:RateYawP,11:RateYawI,12:RateYawD,13:AngleRollP,14:AnglePitchP,15:AngleYawP,16:PosXYP,17:PosZP,18:VelXYP,19:VelXYI,20:VelZP,21:AccelZP,22:AccelZI,23:AccelZD,50:FixedWingRollP,51:FixedWingRollI,52:FixedWingRollD,53:FixedWingRollFF,54:FixedWingPitchP,55:FixedWingPitchI,56:FixedWingPitchD,57:FixedWingPitchFF,101:Set_RateRollPitch,102:Set_RateRoll,103:Set_RatePitch,104:Set_RateYaw,105:Set_AngleRollPitch,106:Set_VelXY,107:Set_AccelZ
+    // @Values: 0:None,1:RateRollPI,2:RateRollP,3:RateRollI,4:RateRollD,5:RatePitchPI,6:RatePitchP,7:RatePitchI,8:RatePitchD,9:RateYawPI,10:RateYawP,11:RateYawI,12:RateYawD,13:AngleRollP,14:AnglePitchP,15:AngleYawP,16:PosXYP,17:PosZP,18:VelXYP,19:VelXYI,20:VelZP,21:AccelZP,22:AccelZI,23:AccelZD,24:RatePitchFF,25:RateRollFF,26:RateYawFF,50:FixedWingRollP,51:FixedWingRollI,52:FixedWingRollD,53:FixedWingRollFF,54:FixedWingPitchP,55:FixedWingPitchI,56:FixedWingPitchD,57:FixedWingPitchFF,101:Set_RateRollPitch,102:Set_RateRoll,103:Set_RatePitch,104:Set_RateYaw,105:Set_AngleRollPitch,106:Set_VelXY,107:Set_AccelZ
     // @User: Standard
     AP_GROUPINFO("PARAM", 1, AP_Tuning_Plane, parmset, 0),
 
@@ -65,6 +65,9 @@ const AP_Tuning_Plane::tuning_name AP_Tuning_Plane::tuning_names[] = {
     { TUNING_ANG_ROLL_P,   "AngRollP" },
     { TUNING_ANG_PITCH_P,  "AngPitchP" },
     { TUNING_ANG_YAW_P,    "AngYawP" },
+    { TUNING_RATE_PITCH_FF, "RatePitchFF" },
+    { TUNING_RATE_ROLL_FF, "RateRollFF" },
+    { TUNING_RATE_YAW_FF, "RateYawFF" },
     { TUNING_PXY_P,        "PXY_P" },
     { TUNING_PZ_P,         "PZ_P" },
     { TUNING_VXY_P,        "VXY_P" },
@@ -89,13 +92,16 @@ const AP_Tuning_Plane::tuning_name AP_Tuning_Plane::tuning_names[] = {
  */
 AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 {
+#if HAL_QUADPLANE_ENABLED
     if (parm < TUNING_FIXED_WING_BASE && !plane.quadplane.available()) {
         // quadplane tuning options not available
         return nullptr;
     }
-    
+#endif
+
     switch(parm) {
 
+#if HAL_QUADPLANE_ENABLED
     case TUNING_RATE_ROLL_PI:
         // use P for initial value when tuning PI
         return &plane.quadplane.attitude_control->get_rate_roll_pid().kP();
@@ -165,6 +171,16 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 
     case TUNING_AZ_D:
         return &plane.quadplane.pos_control->get_accel_z_pid().kD();
+
+    case TUNING_RATE_PITCH_FF:
+        return &plane.quadplane.attitude_control->get_rate_pitch_pid().ff();
+
+    case TUNING_RATE_ROLL_FF:
+        return &plane.quadplane.attitude_control->get_rate_roll_pid().ff();
+
+    case TUNING_RATE_YAW_FF:
+        return &plane.quadplane.attitude_control->get_rate_yaw_pid().ff();
+#endif // HAL_QUADPLANE_ENABLED
 
     // fixed wing tuning parameters
     case TUNING_RLL_P:
@@ -288,6 +304,7 @@ void AP_Tuning_Plane::reload_value(uint8_t parm)
  */
 float AP_Tuning_Plane::controller_error(uint8_t parm)
 {
+#if HAL_QUADPLANE_ENABLED
     if (!plane.quadplane.available()) {
         return 0;
     }
@@ -307,6 +324,7 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
     case TUNING_RATE_ROLL_PI:
     case TUNING_RATE_ROLL_P:
     case TUNING_RATE_ROLL_I:
+   case TUNING_RATE_ROLL_FF:
         return plane.quadplane.attitude_control->control_monitor_rms_output_roll();
 
     case TUNING_RATE_ROLL_D: {
@@ -323,6 +341,7 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
     case TUNING_RATE_PITCH_PI:
     case TUNING_RATE_PITCH_P:
     case TUNING_RATE_PITCH_I:
+    case TUNING_RATE_PITCH_FF:
         return plane.quadplane.attitude_control->control_monitor_rms_output_pitch();
 
     case TUNING_RATE_PITCH_D: {
@@ -339,10 +358,15 @@ float AP_Tuning_Plane::controller_error(uint8_t parm)
     case TUNING_RATE_YAW_P:
     case TUNING_RATE_YAW_I:
     case TUNING_RATE_YAW_D:
+    case TUNING_RATE_YAW_FF:
         return plane.quadplane.attitude_control->control_monitor_rms_output_yaw();
 
     default:
         // no special handler
         return 0;
     }
+#else
+    // no special handler
+    return 0;
+#endif  // HAL_QUADPLANE_ENABLED
 }

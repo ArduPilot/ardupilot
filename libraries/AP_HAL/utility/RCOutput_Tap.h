@@ -85,8 +85,6 @@ private:
     bool _uart_set_speed(int speed);
     void _uart_close();
 
-    AP_HAL::Util::perf_counter_t _perf_rcout;
-
     uint8_t _enabled_channels;
     bool _corking;
     bool _led_on;

@@ -90,10 +90,12 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CD
     if (!dev) {
         return nullptr;
     }
+#if HAL_INS_ENABLED
     AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     /* Allow MPU9250 to shortcut auxiliary bus and host bus */
     ins.detect_backends();
+#endif
 
     return probe(std::move(dev), rotation);
 }
@@ -101,6 +103,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CD
 AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
                                                      enum Rotation rotation)
 {
+#if HAL_INS_ENABLED
     AP_InertialSensor &ins = *AP_InertialSensor::get_singleton();
 
     AP_AK8963_BusDriver *bus =
@@ -116,6 +119,10 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
     }
 
     return sensor;
+#else
+    return nullptr;
+#endif
+
 }
 
 bool AP_Compass_AK8963::init()
@@ -305,12 +312,14 @@ AP_AK8963_BusDriver_Auxiliary::AP_AK8963_BusDriver_Auxiliary(AP_InertialSensor &
      * Only initialize members. Fails are handled by configure or while
      * getting the semaphore
      */
+#if HAL_INS_ENABLED
     _bus = ins.get_auxiliary_bus(backend_id, backend_instance);
     if (!_bus) {
         return;
     }
 
     _slave = _bus->request_next_slave(addr);
+#endif
 }
 
 AP_AK8963_BusDriver_Auxiliary::~AP_AK8963_BusDriver_Auxiliary()

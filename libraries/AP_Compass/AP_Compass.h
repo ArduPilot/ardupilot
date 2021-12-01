@@ -14,6 +14,7 @@
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
 #include <AP_Common/TSIndex.h>
+#include "AP_Compass_Params.h"
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
@@ -33,7 +34,9 @@
 #endif
 #endif
 
+#ifndef COMPASS_CAL_ENABLED
 #define COMPASS_CAL_ENABLED !defined(HAL_BUILD_AP_PERIPH)
+#endif
 #define COMPASS_MOT_ENABLED !defined(HAL_BUILD_AP_PERIPH)
 #define COMPASS_LEARN_ENABLED !defined(HAL_BUILD_AP_PERIPH)
 
@@ -51,7 +54,11 @@
 #ifndef HAL_COMPASS_MAX_SENSORS
 #define HAL_COMPASS_MAX_SENSORS 3
 #endif
+#if HAL_COMPASS_MAX_SENSORS > 1
 #define COMPASS_MAX_UNREG_DEV 5
+#else
+#define COMPASS_MAX_UNREG_DEV 0
+#endif
 #else
 #ifndef HAL_COMPASS_MAX_SENSORS
 #define HAL_COMPASS_MAX_SENSORS 1
@@ -96,7 +103,9 @@ public:
     ///
     bool read();
 
-    bool enabled() const { return _enabled; }
+    // available returns true if the compass is both enabled and has
+    // been initialised
+    bool available() const { return _enabled && init_done; }
 
     /// Calculate the tilt-compensated heading_ variables.
     ///
@@ -105,7 +114,7 @@ public:
     /// @returns heading in radians
     ///
     float calculate_heading(const Matrix3f &dcm_matrix) const {
-        return calculate_heading(dcm_matrix, 0);
+        return calculate_heading(dcm_matrix, _first_usable);
     }
     float calculate_heading(const Matrix3f &dcm_matrix, uint8_t i) const;
 
@@ -145,7 +154,7 @@ public:
     
     /// Return the current field as a Vector3f in milligauss
     const Vector3f &get_field(uint8_t i) const { return _get_state(Priority(i)).field; }
-    const Vector3f &get_field(void) const { return get_field(0); }
+    const Vector3f &get_field(void) const { return get_field(_first_usable); }
 
     /// Return true if we have set a scale factor for a compass
     bool have_scale_factor(uint8_t i) const;
@@ -165,13 +174,15 @@ public:
         _per_motor.calibration_end();
     }
 #endif
-    
-    void start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
+
+    // start_calibration_all will only return false if there are no
+    // compasses to calibrate.
+    bool start_calibration_all(bool retry=false, bool autosave=false, float delay_sec=0.0f, bool autoreboot = false);
 
     void cancel_calibration_all();
 
     bool compass_cal_requires_reboot() const { return _cal_requires_reboot; }
-    bool is_calibrating();
+    bool is_calibrating() const;
 
     // indicate which bit in LOG_BITMASK indicates we should log compass readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
@@ -189,21 +200,21 @@ public:
 
     /// Return the health of a compass
     bool healthy(uint8_t i) const { return _get_state(Priority(i)).healthy; }
-    bool healthy(void) const { return healthy(0); }
+    bool healthy(void) const { return healthy(_first_usable); }
     uint8_t get_healthy_mask() const;
 
     /// Returns the current offset values
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _get_state(Priority(i)).offset; }
-    const Vector3f &get_offsets(void) const { return get_offsets(0); }
+    const Vector3f &get_offsets(uint8_t i) const { return _get_state(Priority(i)).params.offset; }
+    const Vector3f &get_offsets(void) const { return get_offsets(_first_usable); }
 
-    const Vector3f &get_diagonals(uint8_t i) const { return _get_state(Priority(i)).diagonals; }
-    const Vector3f &get_diagonals(void) const { return get_diagonals(0); }
+    const Vector3f &get_diagonals(uint8_t i) const { return _get_state(Priority(i)).params.diagonals; }
+    const Vector3f &get_diagonals(void) const { return get_diagonals(_first_usable); }
 
-    const Vector3f &get_offdiagonals(uint8_t i) const { return _get_state(Priority(i)).offdiagonals; }
-    const Vector3f &get_offdiagonals(void) const { return get_offdiagonals(0); }
+    const Vector3f &get_offdiagonals(uint8_t i) const { return _get_state(Priority(i)).params.offdiagonals; }
+    const Vector3f &get_offdiagonals(void) const { return get_offdiagonals(_first_usable); }
 
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
@@ -247,8 +258,8 @@ public:
     void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation(uint8_t i) const { return _get_state(Priority(i)).motor_compensation; }
-    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(0); }
+    const Vector3f& get_motor_compensation(uint8_t i) const { return _get_state(Priority(i)).params.motor_compensation; }
+    const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(_first_usable); }
 
     /// Saves the current motor compensation x/y/z values.
     ///
@@ -261,7 +272,7 @@ public:
     /// @returns                    The current compass offsets in milligauss.
     ///
     const Vector3f &get_motor_offsets(uint8_t i) const { return _get_state(Priority(i)).motor_offset; }
-    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(0); }
+    const Vector3f &get_motor_offsets(void) const { return get_motor_offsets(_first_usable); }
 
     /// Set the throttle as a percentage from 0.0 to 1.0
     /// @param thr_pct              throttle expressed as a percentage from 0 to 1.0
@@ -285,31 +296,14 @@ public:
     bool configured(uint8_t i);
     bool configured(char *failure_msg, uint8_t failure_msg_len);
 
-    // HIL methods
-    void        setHIL(uint8_t instance, float roll, float pitch, float yaw);
-    void        setHIL(uint8_t instance, const Vector3f &mag, uint32_t last_update_usec);
-    const Vector3f&   getHIL(uint8_t instance) const;
-    void        _setup_earth_field();
-
-    // enable HIL mode
-    void        set_hil_mode(void) { _hil_mode = true; }
-
     // return last update time in microseconds
-    uint32_t last_update_usec(void) const { return last_update_usec(0); }
+    uint32_t last_update_usec(void) const { return last_update_usec(_first_usable); }
     uint32_t last_update_usec(uint8_t i) const { return _get_state(Priority(i)).last_update_usec; }
 
-    uint32_t last_update_ms(void) const { return last_update_ms(0); }
+    uint32_t last_update_ms(void) const { return last_update_ms(_first_usable); }
     uint32_t last_update_ms(uint8_t i) const { return _get_state(Priority(i)).last_update_ms; }
 
     static const struct AP_Param::GroupInfo var_info[];
-
-    // HIL variables
-    struct {
-        Vector3f Bearth;
-        float last_declination;
-        bool healthy[COMPASS_MAX_INSTANCES];
-        Vector3f field[COMPASS_MAX_INSTANCES];
-    } _hil;
 
     enum LearnType {
         LEARN_NONE=0,
@@ -343,7 +337,8 @@ public:
       fast compass calibration given vehicle position and yaw
      */
     MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
-                                 float lat_deg, float lon_deg);
+                                 float lat_deg, float lon_deg,
+                                 bool force_use=false);
 
 #if HAL_MSP_COMPASS_ENABLED
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);
@@ -355,6 +350,9 @@ public:
 
     // force save of current calibration as valid
     void force_save_calibration(void);
+
+    // get the first compass marked for use by COMPASSx_USE
+    uint8_t get_first_usable(void) const { return _first_usable; }
 
 private:
     static Compass *_singleton;
@@ -467,9 +465,6 @@ private:
     // enable automatic declination code
     AP_Int8     _auto_declination;
 
-    // first-time-around flag used by offset nulling
-    bool        _null_init_done;
-
     // stores which bit is used to indicate we should log compass readings
     uint32_t _log_bit = -1;
 
@@ -489,27 +484,14 @@ private:
     float       _thr;
 
     struct mag_state {
-        AP_Int8     external;
         bool        healthy;
         bool        registered;
         Compass::Priority priority;
-        AP_Int8     orientation;
-        AP_Vector3f offset;
-        AP_Vector3f diagonals;
-        AP_Vector3f offdiagonals;
-        AP_Float    scale_factor;
 
-        // device id detected at init.
-        // saved to eeprom when offsets are saved allowing ram &
-        // eeprom values to be compared as consistency check
-        AP_Int32    dev_id;
         // Initialised when compass is detected
         int32_t detected_dev_id;
         // Initialised at boot from saved devid
         int32_t expected_dev_id;
-
-        // factors multiplied by throttle and added to compass outputs
-        AP_Vector3f motor_compensation;
 
         // latest compensation added to compass
         Vector3f    motor_offset;
@@ -529,6 +511,8 @@ private:
         uint32_t accum_count;
         // We only copy persistent params
         void copy_from(const mag_state& state);
+
+        AP_Compass_Params params;
     };
 
     //Create an Array of mag_state to be accessible by StateIndex only
@@ -560,7 +544,6 @@ private:
 
     void _reset_compass_id();
     //Create Arrays to be accessible by Priority only
-    RestrictIDTypeArray<AP_Int8, COMPASS_MAX_INSTANCES, Priority> _use_for_yaw;
 #if COMPASS_MAX_INSTANCES > 1
     RestrictIDTypeArray<AP_Int32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
     RestrictIDTypeArray<int32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
@@ -583,9 +566,6 @@ private:
     Compass_PerMotor _per_motor{*this};
 #endif
     
-    // if we want HIL only
-    bool _hil_mode:1;
-
     AP_Float _calibration_threshold;
 
     // mask of driver types to not load. Bit positions match DEVTYPE_ in backend
@@ -616,6 +596,11 @@ private:
     uint8_t msp_instance_mask;
 #endif
     bool init_done;
+
+    uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
+
+    // convet params to per instance param table
+    void convert_per_instance();
 };
 
 namespace AP {

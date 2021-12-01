@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 '''
 decode an stm32 ICSR register value
+
+AP_FLAKE8_CLEAN
 '''
 
 import sys
@@ -12,7 +14,9 @@ class DecodeICSR(object):
     # page 225
 
     def __init__(self):
-        # this ICSR-bit-assignment-table table also looks valid for M7 - page 195 of dm00237416-stm32f7-series-and-stm32h7-series-cortexm7-processor-programming-manual-stmicroelectronics.pdf
+        # this ICSR-bit-assignment-table table also looks valid for M7
+        # - page 195 of
+        # dm00237416-stm32f7-series-and-stm32h7-series-cortexm7-processor-programming-manual-stmicroelectronics.pdf
         self.M4_BITS = [
             ("0-8", "VECTACTIVE", self.decoder_m4_vectactive),
             ("9-10", "RESERVED1", None),

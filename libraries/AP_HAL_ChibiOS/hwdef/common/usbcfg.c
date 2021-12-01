@@ -39,6 +39,11 @@
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
 
+static cdc_linecoding_t linecoding = {
+  {0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
+  LC_STOP_1, LC_PARITY_NONE, 8
+};
+
 /*
  * Endpoints to be used for USBD1.
  */
@@ -233,6 +238,20 @@ static const USBDescriptor *get_descriptor(USBDriver *usbp,
   return NULL;
 }
 
+/*
+    get the requested usb baudrate - 0 = none
+*/
+#if HAL_USE_SERIAL_USB
+uint32_t get_usb_baud(uint16_t endpoint_id)
+{
+    if (endpoint_id == 0) {
+        uint32_t rate;
+        memcpy(&rate, &linecoding.dwDTERate[0], sizeof(rate));
+        return rate;
+    }
+    return 0;
+}
+#endif
 /**
  * @brief   IN EP1 state.
  */
@@ -330,6 +349,33 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
 }
 
 /*
+ * Handling messages not implemented in the default handler nor in the
+ * SerialUSB handler.
+ */
+static bool requests_hook(USBDriver *usbp) {
+  if (((usbp->setup[0] & USB_RTYPE_RECIPIENT_MASK) == USB_RTYPE_RECIPIENT_INTERFACE) &&
+      (usbp->setup[1] == USB_REQ_SET_INTERFACE)) {
+    usbSetupTransfer(usbp, NULL, 0, NULL);
+    return true;
+  }
+  if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS && usbp->setup[4] == 0x00 && usbp->setup[5] == 0x00) {
+    switch (usbp->setup[1]) {
+    case CDC_GET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_LINE_CODING:
+      usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_CONTROL_LINE_STATE:
+      /* Nothing to do, there are no control lines.*/
+      usbSetupTransfer(usbp, NULL, 0, NULL);
+      return true;
+    }
+  }
+  return sduRequestsHook(usbp);
+}
+
+/*
  * Handles the USB driver global events.
  */
 static void sof_handler(USBDriver *usbp) {
@@ -347,7 +393,7 @@ static void sof_handler(USBDriver *usbp) {
 const USBConfig usbcfg = {
   usb_event,
   get_descriptor,
-  sduRequestsHook,
+  requests_hook,
   sof_handler
 };
 

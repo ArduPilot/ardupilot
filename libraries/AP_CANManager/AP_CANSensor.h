@@ -24,8 +24,8 @@
 
 class CANSensor : public AP_CANDriver {
 public:
-    CANSensor(const char *driver_name, AP_CANManager::Driver_Type dtype, uint16_t stack_size=2048);
-    
+    CANSensor(const char *driver_name, uint16_t stack_size=2048);
+
     /* Do not allow copies */
     CANSensor(const CANSensor &other) = delete;
     CANSensor &operator=(const CANSensor&) = delete;
@@ -39,6 +39,18 @@ public:
     // handler for outgoing frames
     bool write_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us);
 
+#ifdef HAL_BUILD_AP_PERIPH
+    static void set_periph(const uint8_t i, const AP_CANManager::Driver_Type protocol, AP_HAL::CANIface* iface) {
+        if (i < HAL_NUM_CAN_IFACES) {
+            _periph[i].protocol = protocol;
+            _periph[i].iface = iface;
+        }
+    }
+#endif
+
+protected:
+    void register_driver(AP_CANManager::Driver_Type dtype);
+
 private:
     void loop();
 
@@ -49,6 +61,15 @@ private:
     AP_CANDriver *_can_driver;
     HAL_EventHandle _event_handle;
     AP_HAL::CANIface* _can_iface;
+
+#ifdef HAL_BUILD_AP_PERIPH
+    void register_driver_periph(const AP_CANManager::Driver_Type dtype);
+    
+    struct CANSensor_Periph {
+        AP_HAL::CANIface* iface;
+        AP_CANManager::Driver_Type protocol;
+    } static _periph[HAL_NUM_CAN_IFACES];
+#endif
 };
 
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS

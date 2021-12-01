@@ -116,11 +116,11 @@ void IntelligentEnergy24::update_send()
     hal.util->snprintf(message, ARRAY_SIZE(message), "<%i,%.1f,%i,%u,%i,%u,%u>\n",
              tank_bar,
              battery_voltage,
-             pwr_out,
-             spm_pwr,
-             battery_pwr,
-             state,
-             (uint32_t)err_code);
+             (signed)pwr_out,
+             (unsigned)spm_pwr,
+             (signed)battery_pwr,
+             (unsigned)state,
+             (unsigned)err_code);
 
     if ((unsigned)write_to_autopilot(message, strlen(message)) != strlen(message)) {
         AP_HAL::panic("Failed to write to autopilot: %s", strerror(errno));

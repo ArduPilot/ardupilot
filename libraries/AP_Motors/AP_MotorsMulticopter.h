@@ -44,9 +44,8 @@ public:
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
 
-    // set_throttle_range - sets the minimum throttle that will be sent to the engines when they're not off (i.e. to prevents issues with some motors spinning and some not at very low throttle)
-    // also sets minimum and maximum pwm values that will be sent to the motors
-    void                set_throttle_range(int16_t radio_min, int16_t radio_max);
+    // update_throttle_range - update throttle endpoints
+    void                update_throttle_range();
 
     // update estimated throttle required to hover
     void                update_throttle_hover(float dt);
@@ -81,14 +80,17 @@ public:
     virtual uint16_t    get_motor_mask() override;
 
     // get minimum or maximum pwm value that can be output to motors
-    int16_t             get_pwm_output_min() const;
-    int16_t             get_pwm_output_max() const;
+    int16_t             get_pwm_output_min() const { return _pwm_min; }
+    int16_t             get_pwm_output_max() const { return _pwm_max; }
     
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
 
     // converts desired thrust to linearized actuator output in a range of 0~1
-    float               thrust_to_actuator(float thrust_in);
+    float               thrust_to_actuator(float thrust_in) const;
+
+    // inverse of above
+    float               actuator_to_thrust(float actuator) const;
 
     // set thrust compensation callback
     FUNCTOR_TYPEDEF(thrust_compensation_fn_t, void, float *, uint8_t);
@@ -99,6 +101,12 @@ public:
     // disable the use of motor torque to control yaw. Used when an external mechanism such
     // as vectoring is used for yaw control
     virtual void        disable_yaw_torque(void) {}
+
+    // return whether a motor is enabled or not
+    bool                is_motor_enabled(uint8_t i) override { return motor_enabled[i]; }
+
+    // convert values to PWM min and max if not configured
+    void                convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
@@ -119,6 +127,8 @@ protected:
 
     // apply_thrust_curve_and_volt_scaling - returns throttle in the range 0 ~ 1
     float               apply_thrust_curve_and_volt_scaling(float thrust) const;
+    // inverse of above
+    float               remove_thrust_curve_and_volt_scaling(float throttle) const;
 
     // update_lift_max_from_batt_voltage - used for voltage compensation
     void                update_lift_max_from_batt_voltage();
@@ -185,9 +195,6 @@ protected:
 
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled
-    int16_t             _throttle_radio_min;        // minimum PWM from RC input's throttle channel (i.e. minimum PWM input from receiver, RC3_MIN)
-    int16_t             _throttle_radio_max;        // maximum PWM from RC input's throttle channel (i.e. maximum PWM input from receiver, RC3_MAX)
-    // spool variables
 
     // spool variables
     float               _spin_up_ratio;      // throttle percentage (0 ~ 1) between zero and throttle_min

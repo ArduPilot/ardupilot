@@ -347,8 +347,6 @@ bool RCOutput_Tap::_uart_open()
 
 void RCOutput_Tap::init()
 {
-    _perf_rcout = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "APM_rcout");
-
     if (!_uart_open()) {
         AP_HAL::panic("Unable to open " HAL_RCOUTPUT_TAP_DEVICE);
         return;
@@ -498,8 +496,6 @@ void RCOutput_Tap::push()
 {
     _corking = false;
 
-    hal.util->perf_begin(_perf_rcout);
-
     uint16_t out[TAP_ESC_MAX_MOTOR_NUM];
     uint8_t motor_cnt = _channels_count;
 
@@ -573,8 +569,6 @@ void RCOutput_Tap::push()
     if (ret < 1) {
         debug("TX ERROR: ret: %d, errno: %d", ret, errno);
     }
-
-    hal.util->perf_end(_perf_rcout);
 }
 
 #endif

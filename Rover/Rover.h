@@ -68,17 +68,15 @@
 #include <AP_Follow/AP_Follow.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_WindVane/AP_WindVane.h>
+#include <AR_Motors/AP_MotorsUGV.h>
+#include <AP_Torqeedo/AP_Torqeedo.h>
+#include <AP_AIS/AP_AIS.h>
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
-#endif
-
 // Local modules
-#include "AP_MotorsUGV.h"
 #include "mode.h"
 #include "AP_Arming.h"
 #include "sailboat.h"
@@ -161,16 +159,10 @@ private:
 
     AP_L1_Control L1_controller{ahrs, nullptr};
 
-#if AP_AHRS_NAVEKF_AVAILABLE
     OpticalFlow optflow;
-#endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
 #endif
 
     // GCS handling
@@ -185,7 +177,7 @@ private:
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera{MASK_LOG_CAMERA, current_loc};
+    AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
@@ -216,8 +208,8 @@ private:
     // true if we have a position estimate from AHRS
     bool have_position;
 
-    // range finder last update (used for DPTH logging)
-    uint32_t rangefinder_last_reading_ms;
+    // range finder last update for each instance (used for DPTH logging)
+    uint32_t rangefinder_last_reading_ms[RANGEFINDER_MAX_INSTANCES];
 
     // Ground speed
     // The amount current ground speed is below min ground speed.  meters per second
@@ -264,8 +256,8 @@ private:
 
     // cruise throttle and speed learning
     typedef struct {
-        LowPassFilterFloat speed_filt = LowPassFilterFloat(2.0f);
-        LowPassFilterFloat throttle_filt = LowPassFilterFloat(2.0f);
+        LowPassFilterFloat speed_filt{2.0f};
+        LowPassFilterFloat throttle_filt{2.0f};
         uint32_t learn_start_ms;
         uint32_t log_count;
     } cruise_learn_t;
@@ -274,10 +266,12 @@ private:
 private:
 
     // Rover.cpp
+#if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
     bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
+#endif // AP_SCRIPTING_ENABLED
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
@@ -285,7 +279,6 @@ private:
     void update_logging2(void);
     void one_second_loop(void);
     void update_current_mode(void);
-    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);
@@ -323,7 +316,6 @@ private:
     void fence_check();
 
     // GCS_Mavlink.cpp
-    void send_servo_out(mavlink_channel_t chan);
     void send_wheel_encoder_distance(mavlink_channel_t chan);
 
     // Log.cpp
@@ -352,13 +344,11 @@ private:
     void rudder_arm_disarm_check();
     void read_radio();
     void radio_failsafe_check(uint16_t pwm);
-    bool trim_radio();
 
     // sensors.cpp
     void update_compass(void);
     void compass_save(void);
     void update_wheel_encoder();
-    void accel_cal_update(void);
     void read_rangefinders(void);
     void read_airspeed();
     void rpm_update(void);
@@ -378,7 +368,6 @@ private:
     bool set_mode(Mode &new_mode, ModeReason reason);
     bool set_mode(const uint8_t new_mode, ModeReason reason) override;
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
-    bool mavlink_set_mode(uint8_t mode);
     void startup_INS_ground(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);

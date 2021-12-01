@@ -72,13 +72,16 @@
 // use.
 #define AP_PARAM_FLAG_INTERNAL_USE_ONLY (1<<5)
 
+// hide parameter from param download
+#define AP_PARAM_FLAG_HIDDEN (1<<6)
+
 // keep all flags before the FRAME tags
 
 // vehicle and frame type flags, used to hide parameters when not
 // relevent to a vehicle type. Use AP_Param::set_frame_type_flags() to
 // enable parameters flagged in this way. frame type flags are stored
 // in flags field, shifted by AP_PARAM_FRAME_TYPE_SHIFT.
-#define AP_PARAM_FRAME_TYPE_SHIFT   6
+#define AP_PARAM_FRAME_TYPE_SHIFT   7
 
 // supported frame types for parameters
 #define AP_PARAM_FRAME_COPTER       (1<<0)
@@ -437,9 +440,11 @@ public:
     };
     static void         convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags=0);
 
-    // move old class variables for a class that was sub-classed to one that isn't
-    static void         convert_parent_class(uint8_t param_key, void *object_pointer,
-                                             const struct AP_Param::GroupInfo *group_info);
+    // move all parameters from a class to a new location
+    // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
+    static void         convert_class(uint16_t param_key, void *object_pointer,
+                                        const struct AP_Param::GroupInfo *group_info,
+                                        uint16_t old_index, uint16_t old_top_element, bool is_top_level);
 
     /*
       fetch a parameter value based on the index within a group. This

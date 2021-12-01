@@ -16,7 +16,7 @@ void ModeStabilize::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     if (!motors->armed()) {
         // Motors should be Stopped
@@ -31,13 +31,13 @@ void ModeStabilize::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms_smoothly();
         break;
 

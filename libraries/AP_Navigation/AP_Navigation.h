@@ -44,7 +44,7 @@ public:
     // return the crosstrack error in meters. This is the distance in
     // the X-Y plane that we are off the desired track
     virtual float crosstrack_error(void) const = 0;
-    virtual float crosstrack_error_integrator(void) const { return 0; }
+    virtual float crosstrack_error_integrator(void) const = 0;
 
     // return the distance in meters at which a turn should commence
     // to allow the vehicle to neatly move to the next track in the

@@ -51,12 +51,20 @@ class AP_MSP_Telem_DJI : public AP_MSP_Telem_Backend
 public:
     bool init_uart() override;
     // implementation specific helpers
-    bool is_scheduler_enabled() override;
+    bool is_scheduler_enabled() const override;
+    AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_DJI_FPV; };
     uint32_t get_osd_flight_mode_bitmask(void) override;
     void hide_osd_items(void) override;
-    MSP::MSPCommandResult msp_process_out_api_version(MSP::sbuf_t *dst) override;
-    MSP::MSPCommandResult msp_process_out_fc_version(MSP::sbuf_t *dst) override;
+
+    bool get_rssi(float &rssi) const override;
+    void update_home_pos(home_state_t &home_state) override;
+    void update_battery_state(battery_state_t &_battery_state) override;
+    void update_gps_state(gps_state_t &gps_state) override;
+    void update_airspeed(airspeed_state_t &airspeed_state) override;
+    void update_flight_mode_str(char *flight_mode_str, uint8_t size, bool wind_enabled) override;
+
     MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
+    MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst) override;
 
     enum : uint8_t {
         DJI_FLAG_ARM = 0,

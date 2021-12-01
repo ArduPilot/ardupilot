@@ -81,6 +81,9 @@ public:
         saved_argv = argv;
     }
 
+    // fills data with random values of requested size
+    bool get_random_vals(uint8_t* data, size_t size) override;
+
 private:
     SITL_State *sitlState;
 

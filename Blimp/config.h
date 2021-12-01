@@ -22,13 +22,6 @@
 # define ADVANCED_FAILSAFE DISABLED
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
-#define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
 #ifndef ARMING_DELAY_SEC
 # define ARMING_DELAY_SEC 2.0f
 #endif
@@ -159,13 +152,6 @@
 
 #ifndef EKF_ORIGIN_MAX_DIST_M
 # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
-#endif
-
-#ifndef COMPASS_CAL_STICK_GESTURE_TIME
-#define COMPASS_CAL_STICK_GESTURE_TIME 2.0f // 2 seconds
-#endif
-#ifndef COMPASS_CAL_STICK_DELAY
-#define COMPASS_CAL_STICK_DELAY 5.0f
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -304,12 +290,6 @@
 // System ID - conduct system identification tests on vehicle
 #ifndef MODE_SYSTEMID_ENABLED
 # define MODE_SYSTEMID_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Button - Enable the button connected to AUX1-6
-#ifndef BUTTON_ENABLED
-# define BUTTON_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -474,10 +454,6 @@
 # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
-#ifndef AUTO_YAW_SLEW_RATE
-# define AUTO_YAW_SLEW_RATE    60              // degrees/sec
-#endif
-
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
 # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before blimp is aimed at ground course
 #endif
@@ -490,9 +466,6 @@
 #endif
 #ifndef DEFAULT_ANGLE_MAX
 # define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
-#endif
-#ifndef ANGLE_RATE_MAX
-# define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -529,15 +502,6 @@
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
 # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
-#endif
-
-// max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
-#ifndef ALT_HOLD_INIT_MAX_OVERSHOOT
-# define ALT_HOLD_INIT_MAX_OVERSHOOT 200
-#endif
-// the acceleration used to define the distance-velocity curve
-#ifndef ALT_HOLD_ACCEL_MAX
-# define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
 #endif
 
 #ifndef AUTO_DISARMING_DELAY

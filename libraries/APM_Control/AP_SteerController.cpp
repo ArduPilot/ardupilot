@@ -17,6 +17,7 @@
 //  Based upon the roll controller by Paul Riseborough and Jon Challinger
 //
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_SteerController.h"
@@ -61,7 +62,7 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
 	// @DisplayName: Integrator limit
 	// @Description: This limits the number of degrees of steering in centi-degrees over which the integrator will operate. At the default setting of 1500 centi-degrees, the integrator will be limited to +- 15 degrees of servo travel. The maximum servo deflection is +- 45 centi-degrees, so the default value represents a 1/3rd of the total control throw which is adequate unless the vehicle is severely out of trim.
 	// @Range: 0 4500
-	// @Increment: 1
+	// @Increment: 10
 	// @Units: cdeg
 	// @User: Advanced
 	AP_GROUPINFO("IMAX",     5, AP_SteerController, _imax,        1500),
@@ -106,8 +107,8 @@ const AP_Param::GroupInfo AP_SteerController::var_info[] = {
     // @Param: DRTMIN
     // @DisplayName: Minimum angle of wheel
     // @Description: The angle that limits smallest angle of steering wheel at maximum speed. Even if it should derate below, it will stop derating at this angle.
-    // @Range: 0.0 4500.0
-    // @Increment: 0.1
+    // @Range: 0 4500
+    // @Increment: 10
     // @Units: cdeg
     // @User: Advanced
     AP_GROUPINFO("DRTMIN", 10, AP_SteerController, _mindegree,        4500),
@@ -128,6 +129,8 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 		dt = 0;
 	}
 	_last_t = tnow;
+
+    AP_AHRS &_ahrs = AP::ahrs();
 
     float speed = _ahrs.groundspeed();
     if (speed < _minspeed) {
@@ -211,7 +214,7 @@ int32_t AP_SteerController::get_steering_out_rate(float desired_rate)
 */
 int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 {
-    float speed = _ahrs.groundspeed();
+    float speed = AP::ahrs().groundspeed();
     if (speed < _minspeed) {
         // assume a minimum speed. This reduces osciallations when first starting to move
         speed = _minspeed;

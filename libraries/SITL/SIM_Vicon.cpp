@@ -24,6 +24,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+extern const AP_HAL::HAL& hal;
+
 using namespace SITL;
 
 Vicon::Vicon() :
@@ -68,7 +70,7 @@ bool Vicon::get_free_msg_buf_index(uint8_t &index)
 }
 
 void Vicon::update_vicon_position_estimate(const Location &loc,
-                                           const Vector3f &position,
+                                           const Vector3d &position,
                                            const Vector3f &velocity,
                                            const Quaternion &attitude)
 {
@@ -88,8 +90,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             uint8_t buf[300];
             uint16_t buf_len = mavlink_msg_to_send_buffer(buf, &msg_buf[i].obs_msg);
 
-            if (::write(fd_my_end, (void*)&buf, buf_len) != buf_len) {
-                ::fprintf(stderr, "Vicon: write failure\n");
+            if (write_to_autopilot((char*)&buf, buf_len) != buf_len) {
+                hal.console->printf("Vicon: write failure\n");
             }
             msg_buf[i].time_send_us = 0;
         }
@@ -122,7 +124,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     Vector3f pos_offset_ef = rot * pos_offset;
 
     // add earth frame sensor offset and glitch to position
-    Vector3f pos_corrected = position + pos_offset_ef + _sitl->vicon_glitch.get();
+    Vector3d pos_corrected = position + (pos_offset_ef + _sitl->vicon_glitch.get()).todouble();
 
     // calculate a velocity offset due to the antenna position offset and body rotation rate
     // note: % operator is overloaded for cross product
@@ -140,10 +142,10 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     if (vicon_yaw_deg != 0) {
         const float vicon_yaw_rad = radians(vicon_yaw_deg);
         yaw = wrap_PI(yaw - vicon_yaw_rad);
-        Matrix3f vicon_yaw_rot;
+        Matrix3d vicon_yaw_rot;
         vicon_yaw_rot.from_euler(0, 0, -vicon_yaw_rad);
         pos_corrected = vicon_yaw_rot * pos_corrected;
-        vel_corrected = vicon_yaw_rot * vel_corrected;
+        vel_corrected = vicon_yaw_rot.tofloat() * vel_corrected;
     }
 
     // add yaw error reported to vehicle
@@ -220,7 +222,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
     Matrix3f body_ned_m;
     attitude_curr.rotation_matrix(body_ned_m);
 
-    Vector3f pos_delta = body_ned_m * (pos_corrected - _position_prev);
+    Vector3f pos_delta = body_ned_m * (pos_corrected - _position_prev).tofloat();
     float postion_delta[3] = {pos_delta.x, pos_delta.y, pos_delta.z};
 
     // send vision position delta
@@ -252,7 +254,7 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
 /*
   update vicon sensor state
  */
-void Vicon::update(const Location &loc, const Vector3f &position, const Vector3f &velocity, const Quaternion &attitude)
+void Vicon::update(const Location &loc, const Vector3d &position, const Vector3f &velocity, const Quaternion &attitude)
 {
     if (!init_sitl_pointer()) {
         return;

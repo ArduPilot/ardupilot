@@ -7,13 +7,21 @@
 
 #define AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT 1
 
+// CIRCLE_INCLUSION_INT stores the radius an a 32-bit integer in
+// metres.  This was a bug, and CIRCLE_INCLUSION was created to store
+// as a 32-bit float instead.  We save as _INT in the case that the
+// radius looks like an integer as a backwards-compatability measure.
+// For 4.2 we might consider only loading _INT and always saving as
+// float, and in 4.3 considering _INT invalid
 enum class AC_PolyFenceType {
-    END_OF_STORAGE    = 99,
-    POLYGON_INCLUSION = 98,
-    POLYGON_EXCLUSION = 97,
-    CIRCLE_EXCLUSION  = 96,
-    RETURN_POINT      = 95,
-    CIRCLE_INCLUSION  = 94,
+    END_OF_STORAGE        = 99,
+    POLYGON_INCLUSION     = 98,
+    POLYGON_EXCLUSION     = 97,
+    CIRCLE_EXCLUSION_INT  = 96,
+    RETURN_POINT          = 95,
+    CIRCLE_INCLUSION_INT  = 94,
+    CIRCLE_EXCLUSION      = 93,
+    CIRCLE_INCLUSION      = 92,
 };
 
 // a FenceItem is just a means of passing data about an item into

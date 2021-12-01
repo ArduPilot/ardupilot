@@ -17,7 +17,7 @@
 
 #include "RPM_EFI.h"
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
 extern const AP_HAL::HAL& hal;
 
 /* 
@@ -36,9 +36,9 @@ void AP_RPM_EFI::update(void)
         return;
     }
     state.rate_rpm = efi->get_rpm();
-    state.rate_rpm *= ap_rpm._scaling[state.instance];
+    state.rate_rpm *= ap_rpm._params[state.instance].scaling;
     state.signal_quality = 0.5f;
     state.last_reading_ms = AP_HAL::millis();
 }
 
-#endif // EFI_ENABLED
+#endif // HAL_EFI_ENABLED

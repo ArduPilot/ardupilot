@@ -32,9 +32,8 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#ifndef BOARD_SAFETY_ENABLE_DEFAULT
 # define BOARD_SAFETY_ENABLE_DEFAULT 1
-#ifndef BOARD_PWM_COUNT_DEFAULT
-# define BOARD_PWM_COUNT_DEFAULT 6
 #endif
 #ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
@@ -48,15 +47,15 @@
 #define HAL_IMU_TEMP_DEFAULT       -1 // disabled
 #endif
 
+#ifndef HAL_IMU_TEMP_MARGIN_LOW_DEFAULT
+#define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 0 // disabled
+#endif
+
 #ifndef BOARD_SAFETY_OPTION_DEFAULT
 #  define BOARD_SAFETY_OPTION_DEFAULT (BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON)
 #endif
 #ifndef BOARD_SAFETY_ENABLE
 #  define BOARD_SAFETY_ENABLE 1
-#endif
-
-#ifndef BOARD_PWM_COUNT_DEFAULT
-#define BOARD_PWM_COUNT_DEFAULT 8
 #endif
 
 #ifndef BOARD_CONFIG_BOARD_VOLTAGE_MIN
@@ -80,19 +79,14 @@ AP_BoardConfig *AP_BoardConfig::_singleton;
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
-    // @Param: PWM_COUNT
-    // @DisplayName: Auxiliary pin config
-    // @Description: Controls number of FMU outputs which are setup for PWM. All unassigned pins can be used for GPIO
-    // @Values: 0:No PWMs,1:One PWMs,2:Two PWMs,3:Three PWMs,4:Four PWMs,5:Five PWMs,6:Six PWMs,7:Seven PWMs,8:Eight PWMs
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("PWM_COUNT",    0, AP_BoardConfig, pwm_count, BOARD_PWM_COUNT_DEFAULT),
+
+    // index 0 was used by PWM_COUNT
 
 #if AP_FEATURE_RTSCTS
 #ifdef HAL_HAVE_RTSCTS_SERIAL1
     // @Param: SER1_RTSCTS
     // @DisplayName: Serial 1 flow control
-    // @Description: Enable flow control on serial 1 (telemetry 1) on Pixhawk. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
+    // @Description: Enable flow control on serial 1 (telemetry 1). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup. Note that the PX4v1 does not have hardware flow control pins on this port, so you should leave this disabled.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
@@ -102,7 +96,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #ifdef HAL_HAVE_RTSCTS_SERIAL2
     // @Param: SER2_RTSCTS
     // @DisplayName: Serial 2 flow control
-    // @Description: Enable flow control on serial 2 (telemetry 2) on Pixhawk and STATE. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
+    // @Description: Enable flow control on serial 2 (telemetry 2). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
     // @Values: 0:Disabled,1:Enabled,2:Auto
     // @RebootRequired: True
     // @User: Advanced
@@ -171,7 +165,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SAFETY_MASK
     // @DisplayName: Outputs which ignore the safety switch state
     // @Description: A bitmask which controls what outputs can move while the safety switch has not been pressed
-    // @Values: 0:Disabled,1:Enabled
     // @Bitmask: 0:Output1,1:Output2,2:Output3,3:Output4,4:Output5,5:Output6,6:Output7,7:Output8,8:Output9,9:Output10,10:Output11,11:Output12,12:Output13,13:Output14
     // @RebootRequired: True
     // @User: Advanced
@@ -179,13 +172,13 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 
 #if HAL_HAVE_IMU_HEATER
-    // @Param: IMU_TARGTEMP
-    // @DisplayName: Target IMU temperature
-    // @Description: This sets the target IMU temperature for boards with controllable IMU heating units. DO NOT SET -1 on The Cube. A value of -1 sets PH1 behaviour 
+    // @Param: HEAT_TARG
+    // @DisplayName: Board heater temperature target
+    // @Description: Board heater target temperature for boards with controllable heating units. DO NOT SET to -1 on the Cube. Set to -1 to disable the heater, please reboot after setting to -1.
     // @Range: -1 80
     // @Units: degC
     // @User: Advanced
-    AP_GROUPINFO("IMU_TARGTEMP", 8, AP_BoardConfig, heater.imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
+    AP_GROUPINFO("HEAT_TARG", 8, AP_BoardConfig, heater.imu_target_temperature, HAL_IMU_TEMP_DEFAULT),
 #endif
 
 #if AP_FEATURE_BOARD_DETECT
@@ -283,29 +276,30 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("BOOT_DELAY", 20, AP_BoardConfig, _boot_delay_ms, HAL_DEFAULT_BOOT_DELAY),
 
 #if HAL_HAVE_IMU_HEATER
-    // @Param: IMUHEAT_P
-    // @DisplayName: IMU Heater P gain
-    // @Description: IMU Heater P gain
+    // @Param: HEAT_P
+    // @DisplayName: Board Heater P gain
+    // @Description: Board Heater P gain
     // @Range: 1 500
     // @Increment: 1
     // @User: Advanced
 
-    // @Param: IMUHEAT_I
-    // @DisplayName: IMU Heater I gain
-    // @Description: IMU Heater integrator gain
+    // @Param: HEAT_I
+    // @DisplayName: Board Heater I gain
+    // @Description: Board Heater integrator gain
     // @Range: 0 1
     // @Increment: 0.1
     // @User: Advanced
 
-    // @Param: IMUHEAT_IMAX
-    // @DisplayName: IMU Heater IMAX
-    // @Description: IMU Heater integrator maximum
+    // @Param: HEAT_IMAX
+    // @DisplayName: Board Heater IMAX
+    // @Description: Board Heater integrator maximum
     // @Range: 0 100
     // @Increment: 1
     // @User: Advanced
-    AP_SUBGROUPINFO(heater.pi_controller, "IMUHEAT_",  21, AP_BoardConfig, AC_PI),
+    AP_SUBGROUPINFO(heater.pi_controller, "HEAT_",  21, AP_BoardConfig, AC_PI),
 #endif
 
+#ifdef HAL_PIN_ALT_CONFIG
     // @Param: ALT_CONFIG
     // @DisplayName: Alternative HW config
     // @Description: Select an alternative hardware configuration. A value of zero selects the default configuration for this board. Other values are board specific. Please see the documentation for your board for details on any alternative configuration values that may be available.
@@ -314,7 +308,18 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("ALT_CONFIG", 22, AP_BoardConfig, _alt_config, 0),
-    
+#endif // HAL_PIN_ALT_CONFIG
+
+#if HAL_HAVE_IMU_HEATER
+    // @Param: HEAT_LOWMGN
+    // @DisplayName: Board heater temp lower margin
+    // @Description: Arming check will fail if temp is lower than this margin below BRD_HEAT_TARG. 0 disables the low temperature check
+    // @Range: 0 20
+    // @Units: degC
+    // @User: Advanced
+    AP_GROUPINFO("HEAT_LOWMGN", 23, AP_BoardConfig, heater.imu_arming_temperature_margin_low, HAL_IMU_TEMP_MARGIN_LOW_DEFAULT),
+#endif
+
     AP_GROUPEND
 };
 
@@ -368,11 +373,11 @@ void AP_BoardConfig::init_safety()
 /*
   notify user of a fatal startup error related to available sensors. 
 */
-bool AP_BoardConfig::_in_sensor_config_error;
+bool AP_BoardConfig::_in_error_loop;
 
-void AP_BoardConfig::config_error(const char *fmt, ...)
+void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list arg)
 {
-    _in_sensor_config_error = true;
+    _in_error_loop = true;
     /*
       to give the user the opportunity to connect to USB we keep
       repeating the error.  The mavlink delay callback is initialised
@@ -384,18 +389,22 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 5000) {
             last_print_ms = now;
-            va_list arg_list;
             char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
-            hal.util->snprintf(printfmt, sizeof(printfmt), "Config error: %s\n", fmt);
-            va_start(arg_list, fmt);
-            vprintf(printfmt, arg_list);
-            va_end(arg_list);
+            hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s\n", err_type, fmt);
+            {
+                va_list arg_copy;
+                va_copy(arg_copy, arg);
+                vprintf(printfmt, arg_copy);
+                va_end(arg_copy);
+            }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
-            char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-            hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "Config error: %s", fmt);
-            va_start(arg_list, fmt);
-            gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
-            va_end(arg_list);
+            hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s", err_type, fmt);
+            {
+                va_list arg_copy;
+                va_copy(arg_copy, arg);
+                gcs().send_textv(MAV_SEVERITY_CRITICAL, printfmt, arg_copy);
+                va_end(arg_copy);
+            }
 #endif
         }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
@@ -405,6 +414,24 @@ void AP_BoardConfig::config_error(const char *fmt, ...)
         EXPECT_DELAY_MS(10);
         hal.scheduler->delay(5);
     }
+}
+
+void AP_BoardConfig::allocation_error(const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    char newfmt[64] {};
+    snprintf(newfmt, sizeof(newfmt), "Unable to allocate %s", fmt);
+    throw_error("Allocation Error", newfmt, arg_list);
+    va_end(arg_list);
+}
+
+void AP_BoardConfig::config_error(const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    throw_error("Config Error", fmt, arg_list);
+    va_end(arg_list);
 }
 
 /*

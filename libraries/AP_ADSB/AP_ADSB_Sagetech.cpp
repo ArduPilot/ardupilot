@@ -185,16 +185,12 @@ void AP_ADSB_Sagetech::handle_ack(const Packet_XP &msg)
     const uint8_t system_state = msg.payload[2];
     transponder_type = (Transponder_Type)msg.payload[6];
 
-    const char* rfmode = "RF mode: ";
     const uint8_t prev_transponder_mode = last_ack_transponder_mode;
     last_ack_transponder_mode = (system_state >> 6) & 0x03;
     if (prev_transponder_mode != last_ack_transponder_mode) {
-        switch (last_ack_transponder_mode) {
-        case 0: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sOFF",   rfmode); break;
-        case 1: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sSTBY",  rfmode); break;
-        case 2: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sON",    rfmode); break;
-        case 3: gcs().send_text(MAV_SEVERITY_INFO, "ADSB: %sON-ALT",rfmode); break;
-        default:  break;
+        static const char *mode_names[] = {"OFF", "STBY", "ON", "ON-ALT"};
+        if (last_ack_transponder_mode < ARRAY_SIZE(mode_names)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "ADSB: RF Mode: %s", mode_names[last_ack_transponder_mode]);
         }
     }
 }
@@ -500,7 +496,7 @@ void AP_ADSB_Sagetech::send_msg_GPS()
 
     // ground speed
     const Vector2f speed = AP::ahrs().groundspeed_vector();
-    float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
+    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     snprintf((char*)&pkt.payload[21], 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
 
     // heading

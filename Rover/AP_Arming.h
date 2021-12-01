@@ -31,5 +31,7 @@ protected:
     bool oa_check(bool report);
     bool parameter_checks(bool report);
     bool mode_checks(bool report);
+    bool motor_checks(bool report);
+    bool pilot_throttle_checks(bool report);
 
 };

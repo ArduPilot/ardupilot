@@ -60,4 +60,12 @@ private:
     AP_ESC_Telem* _frontend;
 };
 
+#else
+
+// dummy empty class
+class AP_ESC_Telem_Backend {
+public:
+    AP_ESC_Telem_Backend(){};
+};
+
 #endif

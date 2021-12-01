@@ -14,13 +14,14 @@
  */
 #pragma once
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/I2CDevice.h>
+#include "AP_Scripting_CANSensor.h"
 
 #ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
   #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
@@ -39,6 +40,7 @@ public:
     bool init_failed(void) const { return _init_failed; }
 
     bool enabled(void) const { return _enable != 0; };
+    bool should_run(void) const { return enabled() && !_stop; }
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
@@ -67,6 +69,11 @@ public:
     uint8_t num_i2c_devices;
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> *_i2c_dev[SCRIPTING_MAX_NUM_I2C_DEVICE];
 
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    // Scripting CAN sensor
+    ScriptingCANSensor *_CAN_dev;
+#endif
+
     // mission item buffer
     static const int mission_cmd_queue_size = 5;
     struct scripting_mission_cmd {
@@ -90,10 +97,12 @@ private:
     AP_Int8 _enable;
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
-    AP_Int8 _debug_level;
+    AP_Int8 _debug_options;
     AP_Int16 _dir_disable;
 
     bool _init_failed;  // true if memory allocation failed
+    bool _restart; // true if scripts should be restarted
+    bool _stop; // true if scripts should be stopped
 
     static AP_Scripting *_singleton;
 
@@ -103,4 +112,4 @@ namespace AP {
     AP_Scripting * scripting(void);
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

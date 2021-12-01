@@ -44,7 +44,8 @@ const AP_Param::GroupInfo ModeTakeoff::var_info[] = {
     AP_GROUPEND
 };
 
-ModeTakeoff::ModeTakeoff()
+ModeTakeoff::ModeTakeoff() :
+    Mode()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -119,7 +120,7 @@ void ModeTakeoff::update()
     }
 
     if (plane.flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF) {
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100.0);
         plane.takeoff_calc_roll();
         plane.takeoff_calc_pitch();
     } else {

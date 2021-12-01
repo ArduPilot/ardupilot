@@ -41,7 +41,7 @@ SoloGimbalEKF::SoloGimbalEKF() :
 // complete reset
 void SoloGimbalEKF::reset()
 {
-    memset(&states,0,sizeof(states));
+    ZERO_FARRAY(states);
     memset((void *)&gSense,0,sizeof(gSense));
     memset(&Cov,0,sizeof(Cov));
     TiltCorrectionSquared = 0;
@@ -76,7 +76,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         bool main_ekf_healthy = false;
         nav_filter_status main_ekf_status;
 
-        const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+        const auto &_ahrs = AP::ahrs();
 
         if (_ahrs.get_filter_status(main_ekf_status)) {
             if (main_ekf_status.flags.attitude) {
@@ -597,7 +597,7 @@ void SoloGimbalEKF::predictCovariance()
 // Fuse the SoloGimbalEKF velocity estimates - this enables alevel reference to be maintained during constant turns
 void SoloGimbalEKF::fuseVelocity()
 {
-    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+    const auto &_ahrs = AP::ahrs();
 
     if (!_ahrs.have_inertial_nav()) {
         return;
@@ -668,16 +668,15 @@ void SoloGimbalEKF::fuseVelocity()
 // check for new magnetometer data and update store measurements if available
 void SoloGimbalEKF::readMagData()
 {
-    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+    Compass &compass = AP::compass();
 
-    if (_ahrs.get_compass() &&
-        _ahrs.get_compass()->use_for_yaw() &&
-        _ahrs.get_compass()->last_update_usec() != lastMagUpdate) {
+    if (compass.use_for_yaw() &&
+        compass.last_update_usec() != lastMagUpdate) {
         // store time of last measurement update
-        lastMagUpdate = _ahrs.get_compass()->last_update_usec();
+        lastMagUpdate = compass.last_update_usec();
 
         // read compass data and scale to improve numerical conditioning
-        magData = _ahrs.get_compass()->get_field();
+        magData = compass.get_field();
 
         // let other processes know that new compass data has arrived
         newDataMag = true;
@@ -867,7 +866,7 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     Tms[1][2] = sinPhi;
     Tms[2][2] = cosTheta*cosPhi;
 
-    const AP_AHRS_NavEKF &_ahrs = AP::ahrs_navekf();
+    const auto &_ahrs = AP::ahrs();
 
     // get earth magnetic field estimate from main ekf if available to take advantage of main ekf magnetic field learning
     Vector3f earth_magfield = Vector3f(0,0,0);
@@ -877,7 +876,7 @@ float SoloGimbalEKF::calcMagHeadingInnov()
     if (!earth_magfield.is_zero()) {
         declination = atan2f(earth_magfield.y,earth_magfield.x);
     } else {
-        declination = _ahrs.get_compass()->get_declination();
+        declination = AP::compass().get_declination();
     }
 
     Vector3f body_magfield = Vector3f(0,0,0);

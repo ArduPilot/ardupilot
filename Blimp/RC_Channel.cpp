@@ -106,6 +106,10 @@ bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
         }
         break;
 
+    case AUX_FUNC::LOITER:
+        do_aux_function_change_mode(Mode::Number::LOITER, ch_flag);
+        break;
+
     case AUX_FUNC::MANUAL:
         do_aux_function_change_mode(Mode::Number::MANUAL, ch_flag);
         break;
@@ -113,7 +117,6 @@ bool RC_Channel_Blimp::do_aux_function(const aux_func_t ch_option, const AuxSwit
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }
-
     return true;
 }
 

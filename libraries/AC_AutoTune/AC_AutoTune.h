@@ -158,16 +158,16 @@ private:
     };
     void load_gains(enum GainType gain_type);
 
-    TuneMode mode                : 2;    // see TuneMode for what modes are allowed
-    bool     pilot_override      : 1;    // true = pilot is overriding controls so we suspend tuning temporarily
-    AxisType axis                : 2;    // see AxisType for which things can be tuned
-    bool     positive_direction  : 1;    // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
-    StepType step                : 2;    // see StepType for what steps are performed
-    TuneType tune_type           : 3;    // see TuneType
-    bool     ignore_next         : 1;    // true = ignore the next test
-    bool     twitch_first_iter   : 1;    // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
-    bool     use_poshold         : 1;    // true = enable position hold
-    bool     have_position       : 1;    // true = start_position is value
+    TuneMode mode;                       // see TuneMode for what modes are allowed
+    bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
+    AxisType axis;                       // see AxisType for which things can be tuned
+    bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
+    StepType step;                       // see StepType for what steps are performed
+    TuneType tune_type;                  // see TuneType
+    bool     ignore_next;                // true = ignore the next test
+    bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
+    bool     use_poshold;                // true = enable position hold
+    bool     have_position;              // true = start_position is value
     Vector3f start_position;
     uint8_t  axes_completed;             // bitmask of completed axes
 
@@ -192,9 +192,9 @@ private:
     LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
 
     // backup of currently being tuned parameter values
-    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_fltt, orig_roll_sp, orig_roll_accel;
-    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_fltt, orig_pitch_sp, orig_pitch_accel;
-    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_fltt, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel;
+    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_fltt, orig_roll_smax, orig_roll_sp, orig_roll_accel;
+    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_fltt, orig_pitch_smax, orig_pitch_sp, orig_pitch_accel;
+    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_fltt, orig_yaw_smax, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel;
     bool     orig_bf_feedforward;
 
     // currently being tuned parameter values

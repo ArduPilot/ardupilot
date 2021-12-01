@@ -60,7 +60,7 @@ public:
     
     // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
     // used in GPS based Simple Avoidance
-    float distance_to_obstacle(const uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const { return boundary.distance_to_obstacle(obstacle_num , seg_start, seg_end, closest_point); } 
+    bool closest_point_from_segment_to_obstacle(const uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const { return boundary.closest_point_from_segment_to_obstacle(obstacle_num , seg_start, seg_end, closest_point); }
 
     // get distance and angle to closest object (used for pre-arm check)
     //   returns true on success, false if no valid readings

@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+# encoding: utf-8
+'''
+build generated bindings from bindings.desc for AP_Scripting
+'''
+
+from waflib.TaskGen import after_method, before_method, feature
+import os
+
+def configure(cfg):
+    """
+    setup environment for mavlink header generator
+    """
+    cfg.find_program('soapcpp2')
+    env = cfg.env
+    env.SOAP_DIR = cfg.srcnode.make_node('libraries/AP_ONVIF/soap').abspath()
+    env.SOAP_IMPORT = cfg.srcnode.make_node('modules/gsoap/gsoap/import').abspath()
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'] = []
+
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'] += ['onvifDeviceBindingProxy.cpp',
+                                                 'onvifMediaBindingProxy.cpp',
+                                                 'onvifPTZBindingProxy.cpp']
+    name = 'onvif'
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'] += ['{}C.cpp'.format(name)]
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'].append(cfg.srcnode.make_node('modules/gsoap/gsoap/stdsoap2.cpp').abspath())
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'].append(cfg.srcnode.make_node('modules/gsoap/gsoap/dom.cpp').abspath())
+    # cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'].append(cfg.srcnode.make_node('modules/gsoap/gsoap/plugin/smdevp.c').abspath())
+    # cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'].append(cfg.srcnode.make_node('modules/gsoap/gsoap/plugin/mecevp.c').abspath())
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'].append(cfg.srcnode.make_node('modules/gsoap/gsoap/plugin/wsseapi-lite.cpp').abspath())
+    cfg.env.AP_LIB_EXTRA_SOURCES['AP_ONVIF'].append(cfg.srcnode.make_node('modules/gsoap/gsoap/custom/struct_timeval.cpp').abspath())
+    cfg.env.INCLUDES += [cfg.srcnode.make_node('modules/gsoap/gsoap/').abspath()]
+    cfg.env.DEFINES += [
+        'SOAP_H_FILE=AP_ONVIF/onvifH.h',
+    ]
+    env.append_value('GIT_SUBMODULES', 'gsoap')
+
+
+def relpath(bld, node):
+    '''make a build relative path. This is needed for CI to pass on azure'''
+    blddir = bld.bldnode.make_node(".").abspath()
+    return os.path.relpath(node.abspath(), blddir)
+
+
+def build(bld):
+    output_dir = bld.bldnode.make_node('libraries/AP_ONVIF').abspath()
+    gsoap_dir = bld.srcnode.make_node('modules/gsoap/gsoap').abspath()
+    import_dir = bld.srcnode.make_node('modules/gsoap/gsoap/import').abspath()
+    src = bld.srcnode.ant_glob('libraries/AP_ONVIF/soap/onvif.h')
+    name = 'onvif'
+    generated_cpp = [bld.bldnode.find_or_declare('libraries/AP_ONVIF/{}C.cpp'.format(name))]
+    generated_h = [bld.bldnode.find_or_declare('libraries/AP_ONVIF/{}H.h'.format(name))]
+    bld(
+        source=src,
+        rule="$(cd %s;%s -2 -Cp onvif -I%s:%s -j -x ../../${SRC})" % (output_dir,
+                                                                      bld.env.get_flat('SOAPCPP2'),
+                                                                      import_dir, gsoap_dir),
+        target=generated_cpp + generated_h,
+        group='dynamic_sources'
+    )

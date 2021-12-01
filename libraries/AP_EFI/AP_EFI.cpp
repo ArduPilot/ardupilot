@@ -15,7 +15,7 @@
 
 #include "AP_EFI.h"
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
 
 #include "AP_EFI_Serial_MS.h"
 #include "AP_EFI_NWPMU.h"
@@ -42,7 +42,6 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Description: Used to calibrate fuel flow for MS protocol (Slope)
     // @Range: 0 1
     // @User: Advanced
-    // @RebootRequired: False
     AP_GROUPINFO("_COEF1", 2, AP_EFI, coef1, 0),
 
     // @Param: _COEF2
@@ -50,7 +49,6 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Description: Used to calibrate fuel flow for MS protocol (Offset)
     // @Range: 0 10
     // @User: Advanced
-    // @RebootRequired: False
     AP_GROUPINFO("_COEF2", 3, AP_EFI, coef2, 0),
 
     AP_GROUPEND
@@ -125,7 +123,7 @@ void AP_EFI::log_status(void)
 // @Field: CFV: Consumed fueld volume
 // @Field: TPS: Throttle Position
 // @Field: IDX: Index of the publishing ECU
-    AP::logger().Write("EFI",
+    AP::logger().WriteStreaming("EFI",
                        "TimeUS,LP,Rpm,SDT,ATM,IMP,IMT,ECT,OilP,OilT,FP,FCR,CFV,TPS,IDX",
                        "s%qsPPOOPOP--%-",
                        "F00C--00-0-0000",
@@ -161,7 +159,7 @@ void AP_EFI::log_status(void)
 // @Field: DebS: Debris status
 // @Field: SPU: Spark plug usage
 // @Field: IDX: Index of the publishing ECU
-    AP::logger().Write("EFI2",
+    AP::logger().WriteStreaming("EFI2",
                        "TimeUS,Healthy,ES,GE,CSE,TS,FPS,OPS,DS,MS,DebS,SPU,IDX",
                        "s------------",
                        "F------------",
@@ -191,7 +189,7 @@ void AP_EFI::log_status(void)
 // @Field: EGT: Exhaust gas temperature
 // @Field: Lambda: Estimated lambda coefficient (dimensionless ratio)
 // @Field: IDX: Index of the publishing ECU
-        AP::logger().Write("ECYL",
+        AP::logger().WriteStreaming("ECYL",
                            "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,IDX",
                            "s#dsOO--",
                            "F-0C0000",
@@ -241,5 +239,5 @@ AP_EFI *EFI()
 }
 }
 
-#endif // EFI_ENABLED
+#endif // HAL_EFI_ENABLED
 

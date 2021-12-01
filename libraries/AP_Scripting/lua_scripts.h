@@ -21,6 +21,7 @@
 #include <AP_Filesystem/posix_compat.h>
 #include "lua_bindings.h"
 #include <AP_Scripting/AP_Scripting.h>
+#include <GCS_MAVLink/GCS.h>
 
 #ifndef REPL_DIRECTORY
   #if HAL_OS_FATFS_IO
@@ -49,7 +50,7 @@
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_level, struct AP_Scripting::terminal_s &_terminal);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal);
 
     /* Do not allow copies */
     lua_scripts(const lua_scripts &other) = delete;
@@ -62,6 +63,14 @@ public:
     void run(void);
 
     static bool overtime; // script exceeded it's execution slot, and we are bailing out
+
+    enum class DebugLevel {
+        NO_SCRIPTS_TO_RUN = 1U << 0,
+        RUNTIME_MSG = 1U << 1,
+        SUPPRESS_SCRIPT_LOG = 1U << 2,
+        LOG_RUNTIME = 1U << 3,
+    };
+
 private:
 
     void create_sandbox(lua_State *L);
@@ -115,9 +124,16 @@ private:
     lua_State *lua_state;
 
     const AP_Int32 & _vm_steps;
-    const AP_Int8 & _debug_level;
+    const AP_Int8 & _debug_options;
 
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 
     static void *_heap;
+
+    // must be static for use in atpanic
+    static void print_error(MAV_SEVERITY severity);
+    static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
+    static char *error_msg_buf;
+    static uint8_t print_error_count;
+    static uint32_t last_print_ms;
 };

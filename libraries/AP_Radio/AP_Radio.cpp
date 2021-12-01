@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AP_Radio::var_info[] = {
     // @Values: 0:None,1:CYRF6936,2:CC2500,3:BK2425
 
     // @User: Advanced
-    AP_GROUPINFO("_TYPE",  1, AP_Radio, radio_type, 0),
+    AP_GROUPINFO_FLAGS("_TYPE",  1, AP_Radio, radio_type, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: _PROT
     // @DisplayName: protocol

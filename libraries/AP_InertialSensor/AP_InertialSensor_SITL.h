@@ -30,7 +30,7 @@ private:
     void generate_gyro();
     float get_temperature(void);
 
-    SITL::SITL *sitl;
+    SITL::SIM *sitl;
 
     const uint16_t gyro_sample_hz;
     const uint16_t accel_sample_hz;

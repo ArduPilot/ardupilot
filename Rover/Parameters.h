@@ -6,6 +6,7 @@
 #include "AC_Sprayer/AC_Sprayer.h"
 #include "AP_Gripper/AP_Gripper.h"
 #include "AP_Rally.h"
+#include "AP_Torqeedo/AP_Torqeedo.h"
 
 // Global parameter class.
 //
@@ -382,9 +383,9 @@ public:
     // stick mixing for auto modes
     AP_Int8     stick_mixing;
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     // waypoint navigation
     AR_WPNav wp_nav;
@@ -403,6 +404,16 @@ public:
 
     // FS options
     AP_Int32 fs_options;
+
+#if HAL_TORQEEDO_ENABLED
+    // torqeedo motor driver
+    AP_Torqeedo torqeedo;
+#endif
+
+#if HAL_AIS_ENABLED
+    // Automatic Identification System - for tracking sea-going vehicles
+    AP_AIS ais;
+#endif
 };
 
 extern const AP_Param::Info var_info[];

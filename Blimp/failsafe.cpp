@@ -56,6 +56,7 @@ void Blimp::failsafe_check()
         // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
         if (motors->armed()) {
             motors->output_min();
+            //TODO: this may not work correctly.
         }
 
         AP::logger().Write_Error(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);

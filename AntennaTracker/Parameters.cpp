@@ -218,9 +218,9 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Path: ../libraries/AP_Baro/AP_Baro.cpp
     GOBJECT(barometer, "BARO", AP_Baro),
 
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,                "COMPASS_",     Compass),
+    GOBJECT(compass,                "COMPASS",     Compass),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -269,7 +269,6 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: 4 byte bitmap of log types to enable
-    // @Values: 127:Default,0:Disabled
     // @Bitmask: 0:ATTITUDE,1:GPS,2:RCIN,3:IMU,4:RCOUT,5:COMPASS,6:Battery
     // @User: Standard
     GSCALAR(log_bitmask, "LOG_BITMASK", DEFAULT_LOG_BITMASK),
@@ -285,7 +284,7 @@ const AP_Param::Info Tracker::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL::SITL),
+    GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
     // @Group: BRD_
@@ -457,7 +456,7 @@ const AP_Param::Info Tracker::var_info[] = {
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),

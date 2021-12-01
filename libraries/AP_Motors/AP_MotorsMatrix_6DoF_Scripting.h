@@ -1,5 +1,5 @@
 #pragma once
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
@@ -46,7 +46,6 @@ protected:
     // nothing to do for setup, scripting will mark as initalized when done
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override {};
 
-    float _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS];     // each motors contribution to up thrust
     float _forward_factor[AP_MOTORS_MAX_NUM_MOTORS];      // each motors contribution to forward thrust
     float _right_factor[AP_MOTORS_MAX_NUM_MOTORS];        // each motors contribution to right thrust
 
@@ -65,4 +64,4 @@ private:
 
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

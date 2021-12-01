@@ -34,11 +34,22 @@ public:
         BUS_TYPE_SITL    = 4,
         BUS_TYPE_MSP     = 5,
         BUS_TYPE_SERIAL  = 6,
+        BUS_TYPE_QSPI    = 7,
     };
 
     enum Speed {
         SPEED_HIGH,
         SPEED_LOW,
+    };
+
+    // Used for comms with devices that support wide SPI
+    // like quad spi
+    struct CommandHeader {
+        uint32_t  cmd; //Command phase data.
+        uint32_t  cfg; //Transfer configuration field.
+        uint32_t  addr; //Address phase data.
+        uint32_t  alt; // Alternate phase data.
+        uint32_t  dummy; // Number of dummy cycles to be inserted.
     };
 
     FUNCTOR_TYPEDEF(PeriodicCb, void);
@@ -104,6 +115,21 @@ public:
      */
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
+
+
+    /*
+     * Sets the required flags before transaction starts
+     * this is to be used by Wide SPI communication interfaces like
+     * Dual/Quad/Octo SPI
+     */
+    virtual void set_cmd_header(const CommandHeader& cmd_hdr) {}
+
+    /*
+     * Sets up peripheral for execution in place mode
+     * Only relevant for Wide SPI setup.
+     */
+    virtual bool enter_xip_mode(void** map_ptr) { return false; }
+    virtual bool exit_xip_mode() { return false; }
 
     /**
      * Wrapper function over #transfer() to read recv_len registers, starting

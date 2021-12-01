@@ -10,7 +10,6 @@ set -ex
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
-unset CXX CC
 
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
@@ -19,9 +18,9 @@ export CHIBIOS_GIT_VERSION="ci_test"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 autotest_args=""
 
-# If CI_BUILD_TARGET is not set, build 3 different ones
+# If CI_BUILD_TARGET is not set, build 4 different ones
 if [ -z "$CI_BUILD_TARGET" ]; then
-    CI_BUILD_TARGET="sitl linux fmuv3"
+    CI_BUILD_TARGET="sitl linux fmuv3 omnibusf4pro-one"
 fi
 
 waf=modules/waf/waf-light
@@ -43,7 +42,7 @@ function run_autotest() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
-          git clone --recursive https://github.com/ardupilot/MAVProxy
+          git clone https://github.com/ardupilot/MAVProxy
           pushd MAVProxy
             python setup.py build install --user --force
           popd
@@ -194,12 +193,32 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board f303-Universal
         $waf clean
         $waf AP_Periph
-        echo "Building CubeOrange peripheral fw"
+        echo "Building HerePro peripheral fw"
+        $waf configure --board HerePro
+        $waf clean
+        $waf AP_Periph
+        echo "Building CubeOrange-periph peripheral fw"
         $waf configure --board CubeOrange-periph
         $waf clean
         $waf AP_Periph
+        echo "Building HerePro bootloader"
+        $waf configure --board HerePro --bootloader
+        $waf clean
+        $waf bootloader
         echo "Building G4-ESC peripheral fw"
         $waf configure --board G4-ESC
+        $waf clean
+        $waf AP_Periph
+        echo "Building Nucleo-L496 peripheral fw"
+        $waf configure --board Nucleo-L496
+        $waf clean
+        $waf AP_Periph
+        echo "Building Nucleo-L496 peripheral fw"
+        $waf configure --board Nucleo-L476
+        $waf clean
+        $waf AP_Periph
+        echo "Building Sierra-L431 peripheral fw"
+        $waf configure --board Sierra-L431
         $waf clean
         $waf AP_Periph
         echo "Building FreeflyRTK peripheral fw"
@@ -243,6 +262,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "stm32h7-debug" ]; then
+        echo "Building Durandal"
+        $waf configure --board Durandal --debug
+        $waf clean
+        $waf copter
+        continue
+    fi
+
     if [ "$t" == "fmuv2-plane" ]; then
         echo "Building fmuv2 plane"
         $waf configure --board fmuv2
@@ -272,7 +299,7 @@ for t in $CI_BUILD_TARGET; do
         $waf replay
         echo "Building AP_DAL standalone test"
         $waf configure --board sitl --debug --disable-scripting --no-gcs
-        $waf --target tools/AP_DAL_Standalone
+        $waf --target tool/AP_DAL_Standalone
         $waf clean
         continue
     fi
@@ -312,6 +339,7 @@ python Tools/autotest/param_metadata/param_parse.py --vehicle AntennaTracker
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduSub
+python Tools/autotest/param_metadata/param_parse.py --vehicle Blimp
 
 echo build OK
 exit 0

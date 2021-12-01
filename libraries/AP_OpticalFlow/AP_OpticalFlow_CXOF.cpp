@@ -98,7 +98,7 @@ void AP_OpticalFlow_CXOF::update(void)
     // record gyro values as long as they are being used
     // the sanity check of dt below ensures old gyro values are not used
     if (gyro_sum_count < 1000) {
-        const Vector3f& gyro = AP::ahrs_navekf().get_gyro();
+        const Vector3f& gyro = AP::ahrs().get_gyro();
         gyro_sum.x += gyro.x;
         gyro_sum.y += gyro.y;
         gyro_sum_count++;

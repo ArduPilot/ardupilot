@@ -38,16 +38,19 @@
 #define IS_DMA_SAFE(addr) ((((uint32_t)(addr)) & 0xF0000001) == 0x20000000)
 #endif
 
+// Enable when trying to check if you are not just listening yourself
+#define ENABLE_ECHO_SAFE 0
+
 /*
   initialise a bouncebuffer
  */
-void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool sdcard)
+void bouncebuffer_init(struct bouncebuffer_t **bouncebuffer, uint32_t prealloc_bytes, bool axi_sram)
 {
     (*bouncebuffer) = calloc(1, sizeof(struct bouncebuffer_t));
     osalDbgAssert(((*bouncebuffer) != NULL), "bouncebuffer init");
-    (*bouncebuffer)->is_sdcard = sdcard;
+    (*bouncebuffer)->on_axi_sram = axi_sram;
     if (prealloc_bytes) {
-        (*bouncebuffer)->dma_buf = sdcard?malloc_sdcard_dma(prealloc_bytes):malloc_dma(prealloc_bytes);
+        (*bouncebuffer)->dma_buf = axi_sram?malloc_axi_sram(prealloc_bytes):malloc_dma(prealloc_bytes);
         if ((*bouncebuffer)->dma_buf) {
             (*bouncebuffer)->size = prealloc_bytes;
         }
@@ -71,7 +74,7 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = bouncebuffer->is_sdcard?malloc_sdcard_dma(size):malloc_dma(size);
+        bouncebuffer->dma_buf = bouncebuffer->on_axi_sram?malloc_axi_sram(size):malloc_dma(size);
         if (!bouncebuffer->dma_buf) {
             bouncebuffer->size = 0;
             return false;
@@ -79,6 +82,9 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
         bouncebuffer->size = size;
     }
     *buf = bouncebuffer->dma_buf;
+#if ENABLE_ECHO_SAFE
+    memset(bouncebuffer->dma_buf, 0xBB, bouncebuffer->size);
+#endif
 #if defined(STM32H7)
     osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
     stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
@@ -116,7 +122,7 @@ bool bouncebuffer_setup_write(struct bouncebuffer_t *bouncebuffer, const uint8_t
         if (bouncebuffer->size > 0) {
             free(bouncebuffer->dma_buf);
         }
-        bouncebuffer->dma_buf = bouncebuffer->is_sdcard?malloc_sdcard_dma(size):malloc_dma(size);
+        bouncebuffer->dma_buf = bouncebuffer->on_axi_sram?malloc_axi_sram(size):malloc_dma(size);
         if (!bouncebuffer->dma_buf) {
             bouncebuffer->size = 0;
             return false;

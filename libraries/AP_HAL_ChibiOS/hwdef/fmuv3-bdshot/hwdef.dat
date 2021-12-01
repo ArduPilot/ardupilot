@@ -112,7 +112,6 @@ FLASH_SIZE_KB 2048
 
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
-USB_STRING_PRODUCT "%BOARD%"
 
 # Now define the order that I2C buses are presented in the hal.i2c API
 # in ArduPilot. For historical reasons inherited from HAL_PX4 the
@@ -337,12 +336,6 @@ PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52) BIDIR
 PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
 PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) NODMA
 PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) NODMA
-
-define BOARD_PWM_COUNT_DEFAULT 4
-
-# Relays default to use GPIO pins 54 and 55.
-define RELAY1_PIN_DEFAULT 54
-define RELAY2_PIN_DEFAULT 55
 
 # This is the invensense data-ready pin. We don't use it in the
 # default driver.

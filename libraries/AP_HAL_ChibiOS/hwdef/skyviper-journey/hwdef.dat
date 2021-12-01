@@ -107,7 +107,7 @@ IMU Invensense I2C:1:0x68 ROTATION_NONE
 define HAL_GPIO_RADIO_IRQ 100
 
 define HAL_RCINPUT_WITH_AP_RADIO 1
-define STORAGE_FLASH_PAGE	 1
+STORAGE_FLASH_PAGE	 1
 define HAL_STORAGE_SIZE 15360
 
 # setup defines for ArduCopter config
@@ -116,8 +116,6 @@ define ARMING_DELAY_SEC 0
 define LAND_START_ALT 700
 define LAND_DETECTOR_ACCEL_MAX 2.0f
 define ALLOW_ARM_NO_COMPASS
-
-define CHIBIOS_ADC_MAVLINK_DEBUG 1
 
 COMPASS BMM150 I2C:0:0x10 false ROTATION_NONE
 
@@ -136,3 +134,7 @@ env BUILD_ABIN True
 
 # need more space for default parameters
 define AP_PARAM_MAX_EMBEDDED_PARAM 8192
+
+# Disable un-needed hardware drivers
+define HAL_WITH_ESC_TELEM 0
+define AP_FETTEC_ONEWIRE_ENABLED 0

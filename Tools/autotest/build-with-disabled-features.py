@@ -19,7 +19,7 @@ lckfile='/home/pbarker/rc/buildlogs/autotest.lck'
 >>>> PASSED STEP: build.ArduCopter at Thu Feb 22 09:46:43 2018
 check step:  build.ArduCopter
 BWFD: ADVANCED_FAILSAFE OK
-BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AC_FENCE', 'CAMERA', 'RANGEFINDER_ENABLED', 'PROXIMITY_ENABLED', 'AC_RALLY', 'AC_AVOID_ENABLED', 'AC_TERRAIN', 'PARACHUTE', 'NAV_GUIDED', 'OPTFLOW', 'VISUAL_ODOMETRY_ENABLED', 'FRSKY_TELEM_ENABLED', 'ADSB_ENABLED', 'PRECISION_LANDING', 'SPRAYER', 'WINCH_ENABLED', 'ADVANCED_FAILSAFE']
+BWFD: Successes: ['MOUNT', 'AUTOTUNE_ENABLED', 'AC_FENCE', 'CAMERA', 'RANGEFINDER_ENABLED', 'PROXIMITY_ENABLED', 'AC_RALLY', 'AC_AVOID_ENABLED', 'PARACHUTE', 'NAV_GUIDED', 'OPTFLOW', 'VISUAL_ODOMETRY_ENABLED', 'FRSKY_TELEM_ENABLED', 'ADSB_ENABLED', 'PRECISION_LANDING', 'SPRAYER', 'WINCH_ENABLED', 'ADVANCED_FAILSAFE']
 BWFD: Failures: ['LOGGING_ENABLED']
 pbarker@bluebottle:~/rc/ardupilot(build-with-disabled-features)$ q
 
@@ -194,8 +194,8 @@ class BuilderCopter(Builder):
         return ret
 
 
-# read reverse dep "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED"] thusly:
-# "if mode-auto is disabled then you must also disable terrain and guided mode"
+# read reverse dep "MODE_AUTO_ENABLED": ["MODE_GUIDED"] thusly:
+# "if mode-auto is disabled then you must also disable guided mode"
 
 specs = [
     {
@@ -205,13 +205,11 @@ specs = [
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "AC_RALLY": ["AC_TERRAIN"],
-            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED", "ADVANCED_FAILSAFE"],
-            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
+            "MODE_AUTO_ENABLED": ["MODE_GUIDED", "ADVANCED_FAILSAFE"],
+            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AP_TERRAIN_AVAILABLE"],
             "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED",
-                                    "AC_TERRAIN",
                                     "ADSB_ENABLED",
                                     "MODE_FOLLOW_ENABLED",
                                     "MODE_GUIDED_NOGPS_ENABLED"],
@@ -228,13 +226,11 @@ specs = [
         "reverse-deps": {
             "AC_FENCE": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
             "PROXIMITY_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "AC_RALLY": ["AC_TERRAIN"],
-            "MODE_AUTO_ENABLED": ["AC_TERRAIN", "MODE_GUIDED", "ADVANCED_FAILSAFE"],
-            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN", "MODE_SMARTRTL_ENABLED"],
+            "MODE_AUTO_ENABLED": ["MODE_GUIDED", "ADVANCED_FAILSAFE"],
+            "MODE_RTL_ENABLED": ["MODE_AUTO_ENABLED", "MODE_SMARTRTL_ENABLED"],
             "BEACON_ENABLED": ["AC_AVOID_ENABLED", "MODE_FOLLOW_ENABLED"],
-            "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED", "AC_TERRAIN"],
+            "MODE_CIRCLE_ENABLED": ["MODE_AUTO_ENABLED"],
             "MODE_GUIDED_ENABLED": ["MODE_AUTO_ENABLED",
-                                    "AC_TERRAIN",
                                     "ADSB_ENABLED",
                                     "MODE_FOLLOW_ENABLED",
                                     "MODE_GUIDED_NOGPS_ENABLED"],
@@ -260,7 +256,6 @@ specs = [
         "reverse-deps": {
             "AC_FENCE": ["AVOIDANCE_ENABLED"],
             "PROXIMITY_ENABLED": ["AVOIDANCE_ENABLED"],
-            "AC_RALLY": ["AC_TERRAIN"],
         },
     }, {
         "config": 'AntennaTracker/config.h',

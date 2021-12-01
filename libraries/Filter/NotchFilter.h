@@ -66,5 +66,6 @@ protected:
 };
 
 typedef NotchFilter<float> NotchFilterFloat;
+typedef NotchFilter<Vector2f> NotchFilterVector2f;
 typedef NotchFilter<Vector3f> NotchFilterVector3f;
 

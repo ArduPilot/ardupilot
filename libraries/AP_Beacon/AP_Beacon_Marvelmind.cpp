@@ -39,23 +39,6 @@ extern const AP_HAL::HAL& hal;
   #define Debug(level, fmt, args ...)
 #endif
 
-AP_Beacon_Marvelmind::AP_Beacon_Marvelmind(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
-    AP_Beacon_Backend(frontend)
-{
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
-    if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
-        last_update_ms = 0;
-        parse_state = RECV_HDR; // current state of receive data
-        num_bytes_in_block_received = 0; // bytes received
-        data_id = 0;
-        hedge._have_new_values = false;
-        hedge.positions_beacons.num_beacons = 0;
-        hedge.positions_beacons.updated = false;
-
-    }
-}
-
 void AP_Beacon_Marvelmind::process_position_datagram()
 {
     hedge.cur_position.address = input_buffer[16];

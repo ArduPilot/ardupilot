@@ -8,7 +8,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_Volz_Protocol.h"
-
+#if NUM_SERVO_CHANNELS
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
@@ -155,3 +155,4 @@ void AP_Volz_Protocol::update_volz_bitmask(uint32_t new_bitmask)
 
     volz_time_frame_micros = channels_micros;
 }
+#endif //NUM_SERVO_CHANNELS

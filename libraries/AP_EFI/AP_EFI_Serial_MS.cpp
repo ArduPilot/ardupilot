@@ -16,7 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_EFI_Serial_MS.h"
 
-#if EFI_ENABLED
+#if HAL_EFI_ENABLED
 #include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
@@ -229,4 +229,4 @@ uint32_t AP_EFI_Serial_MS::CRC32_compute_byte(uint32_t crc, uint8_t data)
     return crc;
 }
 
-#endif // EFI_ENABLED
+#endif // HAL_EFI_ENABLED

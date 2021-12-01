@@ -24,6 +24,8 @@ public:
     AC_PID(float initial_p, float initial_i, float initial_d, float initial_ff, float initial_imax, float initial_filt_T_hz, float initial_filt_E_hz, float initial_filt_D_hz,
            float dt, float initial_srmax=0, float initial_srtau=1.0);
 
+    CLASS_NO_COPY(AC_PID);
+
     // set_dt - set time step in seconds
     void set_dt(float dt);
 
@@ -99,6 +101,7 @@ public:
     void filt_T_hz(const float v);
     void filt_E_hz(const float v);
     void filt_D_hz(const float v);
+    void slew_limit(const float v);
 
     // set the desired and actual rates (for logging purposes)
     void set_target_rate(float target) { _pid_info.target = target; }

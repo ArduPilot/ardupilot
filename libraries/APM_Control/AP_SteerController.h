@@ -1,14 +1,12 @@
 #pragma once
 
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Logger/AP_Logger.h>
 
 class AP_SteerController {
 public:
-    AP_SteerController(AP_AHRS &ahrs)
-        : _ahrs(ahrs)
+    AP_SteerController()
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -68,8 +66,6 @@ private:
 	AP_Float _mindegree;
 
     AP_Logger::PID_Info _pid_info {};
-
-	AP_AHRS &_ahrs;
 
     bool _reverse;
 };

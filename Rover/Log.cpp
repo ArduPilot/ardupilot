@@ -12,10 +12,9 @@ void Rover::Log_Write_Attitude()
 
     ahrs.Write_Attitude(targets);
 
-#if AP_AHRS_NAVEKF_AVAILABLE
-    AP::ahrs_navekf().Log_Write();
+    AP::ahrs().Log_Write();
     ahrs.Write_AHRS2();
-#endif
+
     ahrs.Write_POS();
 
     // log steering rate controller
@@ -39,8 +38,8 @@ void Rover::Log_Write_Attitude()
 // Write a range finder depth message
 void Rover::Log_Write_Depth()
 {
-    // only log depth on boats with working downward facing range finders
-    if (!rover.is_boat() || !rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+    // only log depth on boats
+    if (!rover.is_boat() || !rangefinder.has_orientation(ROTATION_PITCH_270)) {
         return;
     }
 
@@ -48,34 +47,45 @@ void Rover::Log_Write_Depth()
     Location loc;
     IGNORE_RETURN(ahrs.get_position(loc));
 
-    // check if new sensor reading has arrived
-    uint32_t reading_ms = rangefinder.last_reading_ms(ROTATION_PITCH_270);
-    if (reading_ms == rangefinder_last_reading_ms) {
-        return;
+    for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
+        const AP_RangeFinder_Backend *s = rangefinder.get_backend(i);
+        
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
+
+        // check if new sensor reading has arrived
+        const uint32_t reading_ms = s->last_reading_ms();
+        if (reading_ms == rangefinder_last_reading_ms[i]) {
+            continue;
+        }
+        rangefinder_last_reading_ms[i] = reading_ms;
+
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            temp_C = 0.0f;
+        }
+
+        // @LoggerMessage: DPTH
+        // @Description: Depth messages on boats with downwards facing range finder
+        // @Field: TimeUS: Time since system startup
+        // @Field: Inst: Instance
+        // @Field: Lat: Latitude 
+        // @Field: Lng: Longitude   
+        // @Field: Depth: Depth as detected by the sensor
+        // @Field: Temp: Temperature
+
+        logger.Write("DPTH", "TimeUS,Inst,Lat,Lng,Depth,Temp",
+                            "s#DUmO", "F-GG00", "QBLLff",
+                            AP_HAL::micros64(),
+                            i,
+                            loc.lat,
+                            loc.lng,
+                            (double)(s->distance()),
+                            temp_C);
     }
-    rangefinder_last_reading_ms = reading_ms;
-
-    // get temperature
-    float temp_C;
-    if (!rangefinder.get_temp(ROTATION_PITCH_270, temp_C)) {
-        temp_C = 0.0f;
-    }
-
-// @LoggerMessage: DPTH
-// @Description: Depth messages on boats with downwards facing range finder
-// @Field: TimeUS: Time since system startup
-// @Field: Lat: Latitude 
-// @Field: Lng: Longitude   
-// @Field: Depth: Depth as detected by the sensor
-// @Field: Temp: Temperature
-
-    logger.Write("DPTH", "TimeUS,Lat,Lng,Depth,Temp",
-                        "sDUmO", "FGG00", "QLLff",
-                        AP_HAL::micros64(),
-                        loc.lat,
-                        loc.lng,
-                        (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f),
-                        temp_C);
+    // send water depth and temp to ground station
+    gcs().send_message(MSG_WATER_DEPTH);
 }
 
 // guided mode logging
@@ -222,7 +232,7 @@ struct PACKED log_Throttle {
     float throttle_out;
     float desired_speed;
     float speed;
-    float accel_y;
+    float accel_x;
 };
 
 // Write a throttle control packet
@@ -238,7 +248,7 @@ void Rover::Log_Write_Throttle()
         throttle_out    : g2.motors.get_throttle(),
         desired_speed   : g2.attitude_control.get_desired_speed(),
         speed           : speed,
-        accel_y         : accel.y
+        accel_x         : accel.x
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -284,10 +294,10 @@ const LogStructure Rover::log_structure[] = {
 // @Field: ThrOut: Throttle Output 
 // @Field: DesSpeed: Desired speed 
 // @Field: Speed: Actual speed
-// @Field: AccY: Vehicle's acceleration in Y-Axis
+// @Field: AccX: Acceleration
 
     { LOG_THR_MSG, sizeof(log_Throttle),
-      "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccY", "s--nno", "F--000" },
+      "THR", "Qhffff", "TimeUS,ThrIn,ThrOut,DesSpeed,Speed,AccX", "s--nno", "F--000" },
 
 // @LoggerMessage: NTUN
 // @Description: Navigation Tuning information - e.g. vehicle destination
@@ -300,7 +310,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: XTrack: the vehicle's current distance from the current travel segment
 
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
-      "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhdm", "F000B0" },
+      "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhhm", "F000B0" },
     
 // @LoggerMessage: STER
 // @Description: Steering related messages

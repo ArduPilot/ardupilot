@@ -3,4 +3,10 @@
 # This breaks Vagrant for some users.
 *.sh text eol=lf
 
+*.bin -diff
+*.elf -diff
+*.hex -diff
 
+*.bin binary linguist-generated
+*.elf binary linguist-generated
+*.hex binary linguist-generated

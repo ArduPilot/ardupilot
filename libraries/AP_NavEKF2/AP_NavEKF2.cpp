@@ -11,7 +11,7 @@
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 // copter defaults
 #define VELNE_M_NSE_DEFAULT     0.3f
 #define VELD_M_NSE_DEFAULT      0.5f
@@ -116,6 +116,11 @@
 #define FLOW_USE_DEFAULT        1
 
 #endif // APM_BUILD_DIRECTORY
+
+// This allows boards to default to using a specified number of IMUs and EKF lanes
+#ifndef HAL_EKF_IMU_MASK_DEFAULT
+#define HAL_EKF_IMU_MASK_DEFAULT 3       // Default to using two IMUs
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -243,7 +248,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: MAG_CAL
     // @DisplayName: Magnetometer default fusion mode
-    // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states, when it will use a simpler magnetic heading fusion model that does not use magnetic field states and when it will use an alternative method of yaw determination to the magnetometer. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK2_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK2_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK2_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK2_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK2_MAG_CAL = 4 uses 3-axis fusion at all times. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK2_MAG_MASK parameter. NOTE: limited operation without a magnetometer or any other yaw sensor is possible by setting all COMPASS_USE, COMPASS_USE2, COMPASS_USE3, etc parameters to 0 with COMPASS_ENABLE set to 1. If this is done, the EK2_GSF_RUN and EK2_GSF_USE masks must be set to the same as EK2_IMU_MASK.
+    // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states, when it will use a simpler magnetic heading fusion model that does not use magnetic field states and when it will use an alternative method of yaw determination to the magnetometer. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK2_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK2_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK2_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK2_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK2_MAG_CAL = 4 uses 3-axis fusion at all times. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK2_MAG_MASK parameter. NOTE: limited operation without a magnetometer or any other yaw sensor is possible by setting all COMPASS1_USE, COMPASS2_USE, COMPASS3_USE, etc parameters to 0 with COMPASS_ENABLE set to 1. If this is done, the EK2_GSF_RUN and EK2_GSF_USE masks must be set to the same as EK2_IMU_MASK.
     // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always
     // @User: Advanced
     AP_GROUPINFO("MAG_CAL", 14, NavEKF2, _magCal, MAG_CAL_DEFAULT),
@@ -408,7 +413,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, 3),
+    AP_GROUPINFO("IMU_MASK",     33, NavEKF2, _imuMask, HAL_EKF_IMU_MASK_DEFAULT),
     
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
@@ -565,7 +570,6 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @Description: Specifies the crossover frequency of the complementary filter used to calculate the output predictor height rate derivative.
     // @Range: 0.1 30.0
     // @Units: Hz
-    // @RebootRequired: False
     AP_GROUPINFO("HRT_FILT", 53, NavEKF2, _hrt_filt_freq, 2.0f),
 
     // @Param: GSF_RUN_MASK
@@ -584,15 +588,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GSF_USE_MASK", 55, NavEKF2, _gsfUseMask, 3),
 
-    // @Param: GSF_DELAY
-    // @DisplayName: Delay from loss of navigation to yaw reset
-    // @Description: If the inertial navigation calculation stops following the GPS and other positioning sensors for longer than EK2_GSF_DELAY milli-seconds, then the EKF2 code will generate a reset request internally and reset the yaw to the estimate from the EKF-GSF filter and reset the horizontal velocity and position to the GPS. This reset will not be performed unless the use of the EKF-GSF yaw estimate is enabled via the EK2_GSF_USE parameter.
-    // @Range: 500 5000
-    // @Increment: 100
-    // @Units: ms
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("GSF_DELAY", 56, NavEKF2, _gsfResetDelay, 1000),
+    // 56 was GSF_DELAY which was never released in a stable version
 
     // @Param: GSF_RST_MAX
     // @DisplayName: Maximum number of resets to the EKF-GSF yaw estimate allowed
@@ -1125,10 +1121,11 @@ bool NavEKF2::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (_fusionModeGPS != 3) {
-        // we don't allow setting of the EKF origin unless we are
-        // flying in non-GPS mode. This is to prevent accidental set
-        // of EKF origin with invalid position or height
+    if (_fusionModeGPS != 3 || common_origin_valid) {
+        // we don't allow setting of the EKF origin if using GPS
+        // or if the EKF origin has already been set.
+        // This is to prevent accidental setting of EKF origin with an
+        // invalid position or height or causing upsets from a shifting origin.
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 refusing set origin");
         return false;
     }
@@ -1188,21 +1185,26 @@ void NavEKF2::getQuaternion(int8_t instance, Quaternion &quat) const
 }
 
 // return the innovations for the specified instance
-void NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    if (core == nullptr) {
+        return false;
     }
+
+    if (instance < 0 || instance >= num_cores) instance = primary;
+
+    return core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-void NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    if (core == nullptr) {
+        return false;
     }
+    if (instance < 0 || instance >= num_cores) instance = primary;
+
+    return core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
 // should we use the compass? This is public so it can be used for
@@ -1229,40 +1231,6 @@ void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &raw
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
             core[i].writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
-        }
-    }
-}
-
-// called by vehicle code to specify that a takeoff is happening
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF2::setTakeoffExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event2(AP_DAL::Event::setTakeoffExpected);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetTakeoffExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTakeoffExpected(val);
-        }
-    }
-}
-
-// called by vehicle code to specify that a touchdown is expected to happen
-// causes the EKF to compensate for expected barometer errors due to ground effect
-void NavEKF2::setTouchdownExpected(bool val)
-{
-    if (val) {
-        AP::dal().log_event2(AP_DAL::Event::setTouchdownExpected);
-    } else {
-        AP::dal().log_event2(AP_DAL::Event::unsetTouchdownExpected);
-    }
-
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            core[i].setTouchdownExpected(val);
         }
     }
 }
@@ -1631,4 +1599,13 @@ void NavEKF2::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
             core[i].writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
         }
     }
+}
+
+// get a yaw estimator instance
+const EKFGSF_yaw *NavEKF2::get_yawEstimator(void) const
+{
+    if (core) {
+        return core[primary].get_yawEstimator();
+    }
+    return nullptr;
 }

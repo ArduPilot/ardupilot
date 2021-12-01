@@ -26,7 +26,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Roll axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: %
     // @User: Standard
 
     // @Param: RAT_RLL_D
@@ -95,7 +94,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Pitch axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: %
     // @User: Standard
 
     // @Param: RAT_PIT_D
@@ -164,7 +162,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Description: Yaw axis rate controller I gain maximum.  Constrains the maximum motor output that the I gain will output
     // @Range: 0 1
     // @Increment: 0.01
-    // @Units: %
     // @User: Standard
 
     // @Param: RAT_YAW_D
@@ -298,8 +295,9 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
     // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
 
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
-    float inverted_factor = constrain_float(2.0f * cos_tilt, 0.0f, 1.0f);
-    float boost_factor = 1.0f / constrain_float(cos_tilt, 0.5f, 1.0f);
+    float inverted_factor = constrain_float(10.0f * cos_tilt, 0.0f, 1.0f);
+    float cos_tilt_target = cosf(_thrust_angle);
+    float boost_factor = 1.0f / constrain_float(cos_tilt_target, 0.1f, 1.0f);
 
     float throttle_out = throttle_in * inverted_factor * boost_factor;
     _angle_boost = constrain_float(throttle_out - throttle_in, -1.0f, 1.0f);
@@ -356,18 +354,18 @@ void AC_AttitudeControl_Multi::rate_controller_run()
 void AC_AttitudeControl_Multi::parameter_sanity_check()
 {
     // sanity check throttle mix parameters
-    if (_thr_mix_man < 0.1f || _thr_mix_man > 4.0f) {
+    if (_thr_mix_man < 0.1f || _thr_mix_man > AC_ATTITUDE_CONTROL_MAN_LIMIT) {
         // parameter description recommends thr-mix-man be no higher than 0.9 but we allow up to 4.0
         // which can be useful for very high powered copters with very low hover throttle
-        _thr_mix_man.set_and_save(AC_ATTITUDE_CONTROL_MAN_DEFAULT);
+        _thr_mix_man.set_and_save(constrain_float(_thr_mix_man, 0.1, AC_ATTITUDE_CONTROL_MAN_LIMIT));
     }
-    if (_thr_mix_min < 0.1f || _thr_mix_min > 0.25f) {
-        _thr_mix_min.set_and_save(AC_ATTITUDE_CONTROL_MIN_DEFAULT);
+    if (_thr_mix_min < 0.1f || _thr_mix_min > AC_ATTITUDE_CONTROL_MIN_LIMIT) {
+        _thr_mix_min.set_and_save(constrain_float(_thr_mix_min, 0.1, AC_ATTITUDE_CONTROL_MIN_LIMIT));
     }
     if (_thr_mix_max < 0.5f || _thr_mix_max > AC_ATTITUDE_CONTROL_MAX) {
         // parameter description recommends thr-mix-max be no higher than 0.9 but we allow up to 5.0
         // which can be useful for very high powered copters with very low hover throttle
-        _thr_mix_max.set_and_save(AC_ATTITUDE_CONTROL_MAX_DEFAULT);
+        _thr_mix_max.set_and_save(constrain_float(_thr_mix_max, 0.5, AC_ATTITUDE_CONTROL_MAX));
     }
     if (_thr_mix_min > _thr_mix_max) {
         _thr_mix_min.set_and_save(AC_ATTITUDE_CONTROL_MIN_DEFAULT);

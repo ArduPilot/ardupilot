@@ -8,6 +8,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include "packetise.h"
 
+#if HAL_GCS_ENABLED
+
 /*
   return the number of bytes to send for a packetised connection
  */
@@ -68,3 +70,5 @@ uint16_t mavlink_packetise(ByteBuffer &writebuf, uint16_t n)
     return n;
 }
 #endif // HAL_BOOTLOADER_BUILD
+
+#endif // HAL_GCS_ENABLED

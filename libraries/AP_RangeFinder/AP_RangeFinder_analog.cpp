@@ -63,12 +63,11 @@ bool AP_RangeFinder_analog::detect(AP_RangeFinder_Params &_params)
  */
 void AP_RangeFinder_analog::update_voltage(void)
 {
-   if (source == nullptr) {
+   if (source == nullptr || !source->set_pin(params.pin)) {
        state.voltage_mv = 0;
+       set_status(RangeFinder::Status::NotConnected);
        return;
    }
-   // cope with changed settings
-   source->set_pin(params.pin);
    if (params.ratiometric) {
        state.voltage_mv = source->voltage_average_ratiometric() * 1000U;
    } else {
@@ -112,7 +111,7 @@ void AP_RangeFinder_analog::update(void)
     if (dist_m < 0) {
         dist_m = 0;
     }
-    state.distance_cm = dist_m * 100.0f;
+    state.distance_m = dist_m;
     state.last_reading_ms = AP_HAL::millis();
 
     // update range_valid state based on distance measured

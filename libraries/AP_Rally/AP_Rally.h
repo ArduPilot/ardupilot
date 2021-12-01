@@ -14,6 +14,12 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
+#ifndef HAL_RALLY_ENABLED
+#define HAL_RALLY_ENABLED 1
+#endif
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>

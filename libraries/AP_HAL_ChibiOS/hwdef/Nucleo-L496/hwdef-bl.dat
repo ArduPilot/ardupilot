@@ -1,0 +1,81 @@
+# hw definition file for processing by chibios_pins.py
+
+# MCU class and specific type
+MCU STM32L496 STM32L496xx
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 36
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# board ID for firmware load
+APJ_BOARD_ID 1047
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency, no crystal for now
+OSCILLATOR_HZ 0
+
+# assume 256k flash part
+FLASH_SIZE_KB 256
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+# order of UARTs
+SERIAL_ORDER OTG1 USART1
+
+# a fault LED
+PB7 LED_BOOTLOADER OUTPUT LOW # blue
+define HAL_LED_ON 1
+
+PB14 LED_RED OUTPUT LOW GPIO(1)
+
+# USART1
+PA9  USART1_TX USART1 SPEED_HIGH NODMA
+PA10 USART1_RX USART1 SPEED_HIGH NODMA
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+define HAL_USE_SERIAL TRUE
+
+define STM32_SERIAL_USE_USART1 TRUE
+
+define HAL_NO_GPIO_IRQ
+
+define SERIAL_BUFFERS_SIZE 32
+define HAL_USE_EMPTY_IO TRUE
+define PORT_INT_REQUIRED_STACK 64
+
+
+define DMA_RESERVE_SIZE 0
+
+
+MAIN_STACK 0x800
+PROCESS_STACK 0x800
+
+define HAL_DISABLE_LOOP_DELAY
+
+# enable CAN support
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+CAN_ORDER 1
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+
+
+define CAN_APP_NODE_NAME "org.ardupilot.Nucleo-L496"

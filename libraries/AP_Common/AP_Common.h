@@ -45,6 +45,9 @@
 #define FMT_PRINTF(a,b) __attribute__((format(printf, a, b)))
 #define FMT_SCANF(a,b) __attribute__((format(scanf, a, b)))
 
+// used to forbid copy of objects
+#define CLASS_NO_COPY(c) c(const c &other) = delete; c &operator=(const c&) = delete
+
 #ifdef __has_cpp_attribute
 #  if __has_cpp_attribute(fallthrough)
 #    define FALLTHROUGH [[fallthrough]]
@@ -145,6 +148,9 @@ bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an asc
   strncpy without the warning for not leaving room for nul termination
  */
 void strncpy_noterm(char *dest, const char *src, size_t n);
+
+// return the numeric value of an ascii hex character
+int16_t char_to_hex(char a);
 
 /*
   Bit manipulation

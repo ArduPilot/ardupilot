@@ -236,6 +236,7 @@ class PyMSP:
         MSP_MOTOR_PINS: MSPItem("MOTOR_PINS", "8H","MP"),
         MSP_ANALOG:    MSPItem("ANALOG", "BHHHH", "dV,consumed_mah,rssi,current,volt"),
         MSP_STATUS:    MSPItem("STATUS", "HHHIBHHBBIB", "task_delta,i2c_err_count,sensor_status,mode_flags,nop_1,system_load,gyro_time,nop_2,nop_3,armed,extra"),
+        MSP_ESC_SENSOR_DATA:    MSPItem('ESC', "BH", "temp1,rpm1"),
         }
 
     def __init__(self):

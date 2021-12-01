@@ -22,7 +22,6 @@
 
 #include "SIM_Sailboat.h"
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -46,6 +45,7 @@ Sailboat::Sailboat(const char *frame_str) :
     sail_area(1.0)
 {
     motor_connected = (strcmp(frame_str, "sailboat-motor") == 0);
+    lock_step_scheduled = true;
 }
 
 // calculate the lift and drag as values from 0 to 1
@@ -188,7 +188,10 @@ void Sailboat::update(const struct sitl_input &input)
     const float wind_apparent_dir_ef = degrees(atan2f(wind_apparent_ef.y, wind_apparent_ef.x));
     const float wind_apparent_speed = safe_sqrt(sq(wind_apparent_ef.x)+sq(wind_apparent_ef.y));
 
-    const float wind_apparent_dir_bf = wrap_180(wind_apparent_dir_ef - degrees(AP::ahrs().yaw));
+    float roll, pitch, yaw;
+    dcm.to_euler(&roll, &pitch, &yaw);
+
+    const float wind_apparent_dir_bf = wrap_180(wind_apparent_dir_ef - degrees(yaw));
 
     // set RPM and airspeed from wind speed, allows to test RPM and Airspeed wind vane back end in SITL
     rpm[0] = wind_apparent_speed;
@@ -293,7 +296,7 @@ void Sailboat::update(const struct sitl_input &input)
     velocity_ef = velocity_ef_water + tide_velocity_ef;
 
     // new position vector
-    position += velocity_ef * delta_time;
+    position += (velocity_ef * delta_time).todouble();
 
     // update lat/lon/altitude
     update_position();

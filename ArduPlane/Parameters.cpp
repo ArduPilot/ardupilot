@@ -108,14 +108,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing.
     // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing,3:VTOL Yaw only
     // @User: Advanced
-    GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
-
-    // @Param: AUTO_FBW_STEER
-    // @DisplayName: Use FBWA steering in AUTO
-    // @Description: When enabled this option gives FBWA navigation and steering in AUTO mode. This can be used to allow manual stabilised piloting with waypoint logic for triggering payloads. With this enabled the pilot has the same control over the plane as in FBWA mode, and the normal AUTO navigation is completely disabled. THIS OPTION IS NOT RECOMMENDED FOR NORMAL USE.
-    // @Values: 0:Disabled,42:Enabled
-    // @User: Advanced
-    GSCALAR(auto_fbw_steer,          "AUTO_FBW_STEER",   0),
+    GSCALAR(stick_mixing,           "STICK_MIXING",   uint8_t(StickMixing::FBW)),
 
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
@@ -194,6 +187,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The amount of flaps (as a percentage) to apply in automatic takeoff
     // @Range: 0 100
     // @Units: %
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
@@ -208,25 +202,11 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: USE_REV_THRUST
     // @DisplayName: Bitmask for when to allow negative reverse thrust
-    // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. Note that reverse thrust is only ever auto-enabled in auto-throttle modes. In modes where throttle control is pilot controlled the ability to do reverse thrust is controlled by throttle stick input. The most commonly used value for USE_REV_THRUST is 2, which means AUTO_LAND only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages.
-    // @Values: 0:Never,1:AutoAlways,2:AutoLanding
-    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED,11:AUTO_LANDING_PATTERN
+    // @Description: This controls when to use reverse thrust. If set to zero then reverse thrust is never used. If set to a non-zero value then the bits correspond to flight stages where reverse thrust may be used. The most commonly used value for USE_REV_THRUST is 2, which means AUTO_LAND only. That enables reverse thrust in the landing stage of AUTO mode. Another common choice is 1, which means to use reverse thrust in all auto flight stages. Reverse thrust is always used in MANUAL mode if enabled with THR_MIN < 0. In non-autothrottle controlled modes, if reverse thrust is not used, then THR_MIN is effectively set to 0 for that mode.
+    // @Values: 0:MANUAL ONLY,1:AutoAlways,2:AutoLanding
+    // @Bitmask: 0:AUTO_ALWAYS,1:AUTO_LAND,2:AUTO_LOITER_TO_ALT,3:AUTO_LOITER_ALL,4:AUTO_WAYPOINTS,5:LOITER,6:RTL,7:CIRCLE,8:CRUISE,9:FBWB,10:GUIDED,11:AUTO_LANDING_PATTERN,12:FBWA,13:ACRO,14:STABILIZE,15:THERMAL
     // @User: Advanced
     GSCALAR(use_reverse_thrust,     "USE_REV_THRUST",  USE_REVERSE_THRUST_AUTO_LAND_APPROACH),
-
-    // @Param: NAV_CONTROLLER
-    // @DisplayName: Navigation controller selection
-    // @Description: Which navigation controller to enable. Currently the only navigation controller available is L1. From time to time other experimental controllers will be added which are selected using this parameter.
-    // @Values: 0:Default,1:L1Controller
-    // @User: Standard
-    GSCALAR(nav_controller,          "NAV_CONTROLLER",   AP_Navigation::CONTROLLER_L1),
-
-    // @Param: ALT_CTRL_ALG
-    // @DisplayName: Altitude control algorithm
-    // @Description: This sets what algorithm will be used for altitude control. The default is zero, which selects the most appropriate algorithm for your airframe. Currently the default is to use TECS (total energy control system). From time to time we will add other experimental altitude control algorithms which will be selected using this parameter.
-    // @Values: 0:Automatic
-    // @User: Advanced
-    GSCALAR(alt_control_algorithm, "ALT_CTRL_ALG",    ALT_CONTROL_DEFAULT),
 
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
@@ -425,8 +405,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe event can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause a change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, and a change to FBWA mode if FS_SHORT_ACTN is 2. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1 and will change to FBWA mode if set to 2. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
-    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA,3:Disable
+    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe event can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause a change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, a change to FBWA mode with zero throttle if FS_SHORT_ACTN is 2, and a change to FBWB mode if FS_SHORT_ACTN is 4. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1, will change to FBWA mode with zero throttle if set to 2, or will change to FBWB if set to 4. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
+    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA at zero throttle,3:Disable,4:FBWB
     // @User: Standard
     GSCALAR(fs_action_short,        "FS_SHORT_ACTN",  FS_ACTION_SHORT_BESTGUESS),
 
@@ -465,55 +445,57 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
     // @Description: RC Channel to use for flight mode control
+    // @Range: 1 16
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(flight_mode_channel,    "FLTMODE_CH",     FLIGHT_MODE_CHANNEL),
 
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Standard
     GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @DisplayName: FlightMode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Standard
     GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @DisplayName: FlightMode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Standard
     GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @DisplayName: FlightMode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Standard
     GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @DisplayName: FlightMode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Standard
     GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @DisplayName: FlightMode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Standard
     GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
     // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
-    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL
+    // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     Mode::Number::MANUAL),
 
@@ -522,7 +504,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum bank angle commanded in modes with stabilized limits. Increase this value for sharper turns, but decrease to prevent accelerated stalls.
     // @Units: cdeg
     // @Range: 0 9000
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     ASCALAR(roll_limit_cd,          "LIM_ROLL_CD",    HEAD_MAX_CENTIDEGREE),
 
@@ -531,7 +513,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum pitch up angle commanded in modes with stabilized limits.
     // @Units: cdeg
     // @Range: 0 9000
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     ASCALAR(pitch_limit_max_cd,     "LIM_PITCH_MAX",  PITCH_MAX_CENTIDEGREE),
 
@@ -540,7 +522,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Maximum pitch down angle commanded in modes with stabilized limits
     // @Units: cdeg
     // @Range: -9000 0
-    // @Increment: 1
+    // @Increment: 10
     // @User: Standard
     ASCALAR(pitch_limit_min_cd,     "LIM_PITCH_MIN",  PITCH_MIN_CENTIDEGREE),
 
@@ -562,6 +544,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(acro_pitch_rate,          "ACRO_PITCH_RATE",  180),
 
+    // @Param: ACRO_YAW_RATE
+    // @DisplayName: ACRO mode yaw rate
+    // @Description: The maximum yaw rate at full stick deflection in ACRO mode. If this is zero then rudder is directly controlled by rudder stick input. This option is only available if you also set YAW_RATE_ENABLE to 1.
+    // @Units: deg/s
+    // @Range: 0 500
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(acro_yaw_rate,            "ACRO_YAW_RATE",    0),
+    
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
     // @Description: Enable attitude locking when sticks are released
@@ -586,13 +577,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     GSCALAR(ground_steer_dps,         "GROUND_STEER_DPS",  90),
-
-    // @Param: TRIM_AUTO
-    // @DisplayName: Automatic trim adjustment
-    // @Description: Enables the setting SERVOn_TRIM values to current levels when switching out of MANUAL mode. Should not be left on as mode switches while the plane is rolling or pitching can cause invalid trim values and subsequent unstable behavior. See newer and safer SERVO_AUTO_TRIM parameter for automated results.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    GSCALAR(auto_trim,              "TRIM_AUTO",      AUTO_TRIM),
 
     // @Param: MIXING_GAIN
     // @DisplayName: Mixing Gain
@@ -634,8 +618,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what on-board log types to enable. This value is made up of the sum of each of the log types you want to be saved. It is usually best just to enable all log types by setting this to 65535. The individual bits are ATTITUDE_FAST=1, ATTITUDE_MEDIUM=2, GPS=4, PerformanceMonitoring=8, ControlTuning=16, NavigationTuning=32, Mode=64, IMU=128, Commands=256, Battery=512, Compass=1024, TECS=2048, Camera=4096, RCandServo=8192, Sonar=16384, Arming=32768, FullLogs=65535
-    // @Values: 0:Disabled,65535:All-Default
-    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:SONAR,15:ARM/DISARM,19:IMU_RAW
+    // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:MODE,7:IMU,8:CMD,9:CURRENT,10:COMPASS,11:TECS,12:CAMERA,13:RC,14:SONAR,15:ARM/DISARM,19:IMU_RAW,20:ATTITUDE_FULLRATE
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",    DEFAULT_LOG_BITMASK),
 
@@ -650,6 +633,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: speed used for speed scaling calculations
     // @Description: Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values
     // @Units: m/s
+    // @Range: 0 50
+    // @Increment: 0.1
     // @User: Advanced
     GSCALAR(scaling_speed,        "SCALING_SPEED",    SCALING_SPEED),
 
@@ -664,6 +649,8 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Pitch angle offset
     // @Description: Offset applied to AHRS pitch used for in-flight pitch trimming. Correct ground leveling is better than changing this parameter.
     // @Units: cdeg
+    // @Range: -4500 4500
+    // @Increment: 10
     // @User: Advanced
     GSCALAR(pitch_trim_cd,        "TRIM_PITCH_CD",  0),
 
@@ -685,6 +672,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Flap 1 percentage
     // @Description: The percentage change in flap position when FLAP_1_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
+    // @Increment: 1
     // @Units: %
     // @User: Advanced
     GSCALAR(flap_1_percent,         "FLAP_1_PERCNT",  FLAP_1_PERCENT),
@@ -703,6 +691,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: The percentage change in flap position when FLAP_2_SPEED is reached. Use zero to disable flaps
     // @Range: 0 100
 	// @Units: %
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(flap_2_percent,         "FLAP_2_PERCNT",  FLAP_2_PERCENT),
 
@@ -718,42 +707,12 @@ const AP_Param::Info Plane::var_info[] = {
 #if HAL_WITH_IO_MCU
     // @Param: OVERRIDE_CHAN
     // @DisplayName: IO override channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving IO manual control in case the main FMU microcontroller on a board with a IO co-processor fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the IO microcontroller will directly control the servos. Note that IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Please also see the docs on OVERRIDE_SAFETY. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on Pixhawk will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels.
+    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving IO manual control in case the main FMU microcontroller on a board with a IO co-processor fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the IO microcontroller will directly control the servos. Note that IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on the FMU will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels on boards with an IOMCU.
+    // @Range: 0 16
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
-
-    // @Param: OVERRIDE_SAFETY
-    // @DisplayName: IO override safety switch
-    // @Description: This controls whether the safety switch is turned off when you activate override with OVERRIDE_CHAN. When set to 1 the safety switch is de-activated (activating the servos) then a IO override is triggered. In that case the safety remains de-activated after override is disabled. If OVERRIDE_SAFETTY is set to 0 then the safety switch state does not change. Note that regardless of the value of this parameter the servos will be active while override is active.
-    // @User: Advanced
-    GSCALAR(override_safety,      "OVERRIDE_SAFETY",  1),
 #endif
-
-#if HIL_SUPPORT
-    // @Param: HIL_MODE
-    // @DisplayName: HIL mode enable
-    // @Description: This enables and disables hardware in the loop mode. If HIL_MODE is 1 then on the next reboot all sensors are replaced with HIL sensors which come from the GCS.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    // @RebootRequired: True
-    GSCALAR(hil_mode,               "HIL_MODE",      0),
-#endif
-
-    // @Param: HIL_SERVOS
-    // @DisplayName: HIL Servos enable
-    // @Description: This controls whether real servo controls are used in HIL mode. If you enable this then the APM will control the real servos in HIL mode. If disabled it will report servo values, but will not output to the real servos. Be careful that your motor and propeller are not connected if you enable this option.
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    GSCALAR(hil_servos,            "HIL_SERVOS",      0),
-
-    // @Param: HIL_ERR_LIMIT
-    // @DisplayName: Limit of error in HIL attitude before reset
-    // @Description: This controls the maximum error in degrees on any axis before HIL will reset the DCM attitude to match the HIL_STATE attitude. This limit will prevent poor timing on HIL from causing a major attitude error. If the value is zero then no limit applies.
-    // @Units: deg
-    // @Range: 0 90
-    // @Increment: 0.1
-    // @User: Advanced
-    GSCALAR(hil_err_limit,         "HIL_ERR_LIMIT",   5),
 
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land
@@ -767,6 +726,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensative (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
     // @Units: m/s/s
     // @Range: 10 127
+    // @Increment: 1
     // @User: Advanced
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
 
@@ -834,20 +794,24 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Plane),
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     // @Group: Q_
     // @Path: quadplane.cpp
     GOBJECT(quadplane,           "Q_", QuadPlane),
+#endif
 
     // @Group: TUNE_
     // @Path: tuning.cpp,../libraries/AP_Tuning/AP_Tuning.cpp
     GOBJECT(tuning,           "TUNE_", AP_Tuning_Plane),
-    
+
+#if HAL_QUADPLANE_ENABLED
     // @Group: Q_A_
     // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
     { AP_PARAM_GROUP, "Q_A_", Parameters::k_param_q_attitude_control,
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
-    
+#endif
+
     // @Group: RLL
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
     GOBJECT(rollController,         "RLL",   AP_RollController),
@@ -856,9 +820,9 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
     GOBJECT(pitchController,        "PTCH",  AP_PitchController),
 
-    // @Group: YAW2SRV_
+    // @Group: YAW
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
+    GOBJECT(yawController,          "YAW",   AP_YawController),
 
     // @Group: STEER2SRV_
     // @Path: ../libraries/APM_Control/AP_SteerController.cpp
@@ -866,9 +830,9 @@ const AP_Param::Info Plane::var_info[] = {
 
 	// variables not in the g class which contain EEPROM saved variables
 
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,                "COMPASS_",     Compass),
+    GOBJECT(compass,                "COMPASS",     Compass),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -965,7 +929,7 @@ const AP_Param::Info Plane::var_info[] = {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
-    GOBJECT(sitl, "SIM_", SITL::SITL),
+    GOBJECT(sitl, "SIM_", SITL::SIM),
 #endif
 
 #if ADVANCED_FAILSAFE == ENABLED
@@ -994,7 +958,6 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(fence, "FENCE_",        AC_Fence),
 #endif
 
-#if AP_AHRS_NAVEKF_AVAILABLE
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -1005,7 +968,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
-#endif
 #endif
 
     // @Group: RPM
@@ -1050,9 +1012,11 @@ const AP_Param::Info Plane::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
+#if HAL_BUTTON_ENABLED
     // @Group: BTN_
     // @Path: ../libraries/AP_Button/AP_Button.cpp
     AP_SUBGROUPPTR(button_ptr, "BTN_", 1, ParametersG2, AP_Button),
+#endif
 
     // @Group: ICE_
     // @Path: ../libraries/AP_ICEngine/AP_ICEngine.cpp
@@ -1120,11 +1084,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor.
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor., 7:EnableDefaultAirspeed for takeoff, 8: Remove the TRIM_PITCH_CD on the GCS horizon, 9: Remove the TRIM_PITCH_CD on the OSD horizon, 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL, 11:Disable suppression of fixed wing rate gains in ground mode
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 14, ParametersG2, AP_Scripting),
@@ -1187,17 +1151,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
-#if EFI_ENABLED
-    // @Group: EFI
-    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
-    AP_SUBGROUPINFO(efi, "EFI", 22, ParametersG2, AP_EFI),
-#endif
+
+    // 22 was EFI
 
     // @Param: FWD_BAT_VOLT_MAX
     // @DisplayName: Forward throttle battery voltage compensation maximum voltage
     // @Description: Forward throttle battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust). Recommend 4.2 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
     // @Range: 6 35
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("FWD_BAT_VOLT_MAX", 23, ParametersG2, fwd_thr_batt_voltage_max, 0.0f),
 
@@ -1206,6 +1168,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Description: Forward throttle battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
     // @Range: 6 35
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("FWD_BAT_VOLT_MIN", 24, ParametersG2, fwd_thr_batt_voltage_min, 0.0f),
 
@@ -1238,6 +1201,37 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(guidedHeading, "GUIDED_", 28, ParametersG2, AC_PID),
 #endif // OFFBOARD_GUIDED == ENABLED
 
+    // @Param: MAN_EXPO_ROLL
+    // @DisplayName: Manual control expo for roll
+    // @Description: Percentage exponential for roll input in MANUAL, ACRO and TRAINING modes
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAN_EXPO_ROLL", 29, ParametersG2, man_expo_roll, 0),
+
+    // @Param: MAN_EXPO_PITCH
+    // @DisplayName: Manual input expo for pitch
+    // @Description: Percentage exponential for pitch input in MANUAL, ACRO and TRAINING modes
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAN_EXPO_PITCH", 30, ParametersG2, man_expo_pitch, 0),
+
+    // @Param: MAN_EXPO_RUDDER
+    // @DisplayName: Manual input expo for rudder
+    // @Description: Percentage exponential for rudder input in MANUAL, ACRO and TRAINING modes
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("MAN_EXPO_RUDDER", 31, ParametersG2, man_expo_rudder, 0),
+
+    // @Param: ONESHOT_MASK
+    // @DisplayName: Oneshot output mask
+    // @Description: Mask of output channels to use oneshot on
+    // @User: Advanced
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
+    AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
+    
     AP_GROUPEND
 };
 
@@ -1246,7 +1240,9 @@ ParametersG2::ParametersG2(void) :
 #if HAL_SOARING_ENABLED
     ,soaring_controller(plane.TECS_controller, plane.aparm)
 #endif
+#if HAL_BUTTON_ENABLED
     ,button_ptr(&plane.button)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -1366,11 +1362,13 @@ void Plane::load_parameters(void)
 
     // possibly convert elevon and vtail mixers
     convert_mixers();
-    
+
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.enable) {
         // quadplanes needs a higher loop rate
         AP_Param::set_default_by_name("SCHED_LOOP_RATE", 300);
     }
+#endif
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
@@ -1473,6 +1471,24 @@ void Plane::load_parameters(void)
 
 #if AP_TERRAIN_AVAILABLE
     g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
+#endif
+
+    g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
+
+
+    // PARAMETER_CONVERSION - Added: Oct-2021
+#if HAL_EFI_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 22;       // Old parameter index in g2
+        const uint16_t old_top_element = 86; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &efi, efi.var_info, old_index, old_top_element, false);
+    }
 #endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));

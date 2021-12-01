@@ -13,18 +13,18 @@ public:
     AP_RangeFinder_Params(const AP_RangeFinder_Params &other) = delete;
     AP_RangeFinder_Params &operator=(const AP_RangeFinder_Params&) = delete;
 
+    AP_Vector3f pos_offset; // position offset in body frame
+    AP_Float scaling;
+    AP_Float offset;
+    AP_Int16 powersave_range;
+    AP_Int16 min_distance_cm;
+    AP_Int16 max_distance_cm;
     AP_Int8  type;
     AP_Int8  pin;
     AP_Int8  ratiometric;
-    AP_Int16 powersave_range;
     AP_Int8  stop_pin;
-    AP_Float scaling;
-    AP_Float offset;
     AP_Int8  function;
-    AP_Int16 min_distance_cm;
-    AP_Int16 max_distance_cm;
     AP_Int8  ground_clearance_cm;
     AP_Int8  address;
-    AP_Vector3f pos_offset; // position offset in body frame
     AP_Int8  orientation;
 };

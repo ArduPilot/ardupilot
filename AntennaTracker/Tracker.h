@@ -1,7 +1,7 @@
 /*
    Lead developers: Matthew Ridley and Andrew Tridgell
 
-   Please contribute your ideas! See https://dev.ardupilot.org for details
+   Please contribute your ideas! See https://ardupilot.org/dev for details
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,12 +54,8 @@
 
 #include "AP_Arming.h"
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
 #endif
 
 #include "mode.h"
@@ -85,10 +81,6 @@ private:
 
     AP_Logger logger;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SITL sitl;
-#endif
-    
     /**
        antenna control channels
     */
@@ -124,7 +116,7 @@ private:
     ModeServoTest mode_servotest;
     ModeStop mode_stop;
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
 #endif
 
@@ -194,7 +186,6 @@ private:
     void update_ahrs();
     void compass_save();
     void update_compass(void);
-    void accel_cal_update(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 
@@ -232,6 +223,7 @@ private:
     void tracking_update_pressure(const mavlink_scaled_pressure_t &msg);
     void tracking_manual_control(const mavlink_manual_control_t &msg);
     void update_armed_disarmed() const;
+    bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const override;
 
     // Arming/Disarming management class
     AP_Arming_Tracker arming;

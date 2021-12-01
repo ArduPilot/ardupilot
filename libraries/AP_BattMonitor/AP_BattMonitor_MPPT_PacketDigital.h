@@ -5,7 +5,7 @@
 #include <AP_CANManager/AP_CANSensor.h>
 
 #ifndef HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
-    #define HAL_MPPT_PACKETDIGITAL_CAN_ENABLE HAL_MAX_CAN_PROTOCOL_DRIVERS && BOARD_FLASH_SIZE > 1024
+    #define HAL_MPPT_PACKETDIGITAL_CAN_ENABLE (!defined(HAL_BUILD_AP_PERIPH) && HAL_MAX_CAN_PROTOCOL_DRIVERS && BOARD_FLASH_SIZE > 1024) || (defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PERIPH_ENABLE_BATTERY_MPPT_PACKETDIGITAL))
 #endif
 
 #if HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
@@ -20,8 +20,10 @@ public:
     // construct the CAN Sensor
     AP_BattMonitor_MPPT_PacketDigital(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
         AP_BattMonitor_Backend(mon, mon_state, params),
-        CANSensor("MPPT", AP_CANManager::Driver_Type_MPPT_PacketDigital)
-    { };
+        CANSensor("MPPT")
+    {
+        register_driver(AP_CANManager::Driver_Type_MPPT_PacketDigital);
+    }
 
     /// Read the battery voltage and current.  Should be called at 10hz
     void read() override;

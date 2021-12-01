@@ -15,7 +15,10 @@ Vector3f Sub::pv_location_to_vector(const Location& loc)
         origin.zero();
     }
     float alt_above_origin = pv_alt_above_origin(loc.alt);  // convert alt-relative-to-home to alt-relative-to-origin
-    return Vector3f((loc.lat-origin.lat) * LATLON_TO_CM, (loc.lng-origin.lng) * LATLON_TO_CM * scaleLongDown, alt_above_origin);
+    Vector3f vec = origin.get_distance_NED(loc);
+    vec.xy() *= 100;
+    vec.z = alt_above_origin;
+    return vec;
 }
 
 // pv_alt_above_origin - convert altitude above home to altitude above EKF origin

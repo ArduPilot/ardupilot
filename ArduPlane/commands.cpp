@@ -55,10 +55,6 @@ void Plane::set_next_WP(const struct Location &loc)
         prev_WP_loc = current_loc;
     }
 
-    // used to control FBW and limit the rate of climb
-    // -----------------------------------------------
-    set_target_altitude_location(next_WP_loc);
-
     // zero out our loiter vals to watch for missed waypoints
     loiter_angle_reset();
 
@@ -99,6 +95,11 @@ void Plane::set_guided_WP(void)
     auto_state.vtol_loiter = false;
     
     loiter_angle_reset();
+
+#if HAL_QUADPLANE_ENABLED
+    // cancel pending takeoff
+    quadplane.guided_takeoff = false;
+#endif
 }
 
 /*

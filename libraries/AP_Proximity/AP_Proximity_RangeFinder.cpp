@@ -47,13 +47,13 @@ void AP_Proximity_RangeFinder::update(void)
                 const float angle = sector * 45;
                 const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle);
                 // distance in meters
-                const float distance_m = sensor->distance_cm() * 0.01f;
+                const float distance = sensor->distance();
                 _distance_min = sensor->min_distance_cm() * 0.01f;
                 _distance_max = sensor->max_distance_cm() * 0.01f;
-                if ((distance_m <= _distance_max) && (distance_m >= _distance_min) && !check_obstacle_near_ground(angle, distance_m)) {
-                    boundary.set_face_attributes(face, angle, distance_m);
+                if ((distance <= _distance_max) && (distance >= _distance_min) && !check_obstacle_near_ground(angle, distance)) {
+                    boundary.set_face_attributes(face, angle, distance);
                     // update OA database
-                    database_push(angle, distance_m);
+                    database_push(angle, distance);
                 } else {
                     boundary.reset_face(face);
                 }
@@ -75,7 +75,8 @@ void AP_Proximity_RangeFinder::update(void)
     }
 
     // check for timeout and set health status
-    if ((_last_update_ms == 0) || (now - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) {
+    if ((_last_update_ms == 0 || (now - _last_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS)) &&
+        (_last_upward_update_ms == 0 || (now - _last_upward_update_ms > PROXIMITY_RANGEFIDER_TIMEOUT_MS))) {
         set_status(AP_Proximity::Status::NoData);
     } else {
         set_status(AP_Proximity::Status::Good);

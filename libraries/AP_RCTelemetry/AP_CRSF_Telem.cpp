@@ -32,7 +32,7 @@
 
 #if HAL_CRSF_TELEM_ENABLED
 
-// #define CRSF_DEBUG
+//#define CRSF_DEBUG
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
 #else
@@ -74,7 +74,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
 
     // CSRF telemetry rate is 150Hz (4ms) max, so these rates must fit
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
-    add_scheduler_entry(50, 50);    // parameters       20Hz (generally not active unless requested by the TX)
+    add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -82,6 +82,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(550, 500);  // flight mode       2Hz
     add_scheduler_entry(5000, 100); // passthrough       max 10Hz
     add_scheduler_entry(5000, 500); // status text       max 2Hz
+    add_scheduler_entry(5, 20);     // command          50Hz (generally not active unless requested by the TX)
 }
 
 void AP_CRSF_Telem::setup_custom_telemetry()
@@ -92,6 +93,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
 
     if (!rc().crsf_custom_telemetry()) {
         return;
+    }
+
+    // check if passthru already assigned
+    const int8_t frsky_port = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_FrSky_SPort_Passthrough,0);
+    if (frsky_port != -1) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "CRSF: passthrough telemetry conflict on SERIAL%d",frsky_port);
+       _custom_telem.init_done = true;
+       return;
     }
 
     // we need crossfire firmware version
@@ -165,7 +174,10 @@ void AP_CRSF_Telem::process_rf_mode_changes()
     // report a change in RF mode or a chnage of more than 10Hz if we haven't done so in the last 5s
     if ((now - _telem_last_report_ms > 5000) &&
         (_telem_rf_mode != current_rf_mode || abs(int16_t(_telem_last_avg_rate) - int16_t(_scheduler.avg_packet_rate)) > 25)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "CRSF: RF mode %d, rate is %dHz", (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
+        if (!rc().suppress_crsf_message()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "CRSFv%d: RF mode %d, rate is %dHz", uint8_t(2 + AP::crsf()->is_crsf_v3_active()),
+                (uint8_t)current_rf_mode, _scheduler.avg_packet_rate);
+        }
         update_custom_telemetry_rates(current_rf_mode);
         _telem_rf_mode = current_rf_mode;
         _telem_last_avg_rate = _scheduler.avg_packet_rate;
@@ -232,24 +244,27 @@ void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
 
 void AP_CRSF_Telem::enter_scheduler_params_mode()
 {
-    set_scheduler_entry(HEARTBEAT, 50, 100);            // heartbeat        10Hz
-    set_scheduler_entry(ATTITUDE, 50, 120);             // Attitude and compass 8Hz
-    set_scheduler_entry(BATTERY, 1300, 500);            // battery           2Hz
-    set_scheduler_entry(GPS, 550, 280);                 // GPS               3Hz
-    set_scheduler_entry(FLIGHT_MODE, 550, 500);         // flight mode       2Hz
+    debug("parameter passthrough enabled");
+    set_scheduler_entry(HEARTBEAT, 50, 200);            // heartbeat        5Hz
 
+    disable_scheduler_entry(ATTITUDE);
+    disable_scheduler_entry(BATTERY);
+    disable_scheduler_entry(GPS);
+    disable_scheduler_entry(FLIGHT_MODE);
     disable_scheduler_entry(PASSTHROUGH);
     disable_scheduler_entry(STATUS_TEXT);
 }
 
 void AP_CRSF_Telem::exit_scheduler_params_mode()
 {
+    debug("parameter passthrough disabled");
     // setup the crossfire scheduler for custom telemetry
-    set_scheduler_entry(BATTERY, 1000, 1000);       // 1Hz
-    set_scheduler_entry(ATTITUDE, 1000, 1000);      // 1Hz
-    set_scheduler_entry(FLIGHT_MODE, 1200, 2000);   // 0.5Hz
     set_scheduler_entry(HEARTBEAT, 2000, 5000);     // 0.2Hz
 
+    enable_scheduler_entry(ATTITUDE);
+    enable_scheduler_entry(BATTERY);
+    enable_scheduler_entry(GPS);
+    enable_scheduler_entry(FLIGHT_MODE);
     enable_scheduler_entry(PASSTHROUGH);
     enable_scheduler_entry(STATUS_TEXT);
 
@@ -267,7 +282,10 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
      We start a "fast parameter window" that we close after 5sec
     */
     bool expired = (now_ms - _custom_telem.params_mode_start_ms) > 5000;
-    if (!_custom_telem.params_mode_active && _pending_request.frame_type > 0) {
+    if (!_custom_telem.params_mode_active
+        && _pending_request.frame_type > 0
+        && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO
+        && !hal.util->get_soft_armed()) {
         // fast window start
         _custom_telem.params_mode_start_ms = now_ms;
         _custom_telem.params_mode_active = true;
@@ -296,7 +314,7 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
                 gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: RX device ping failed");
             } else {
                 _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
-                _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
+                _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
                 gcs().send_text(MAV_SEVERITY_DEBUG,"CRSF: requesting RX device info");
             }
         }
@@ -307,6 +325,8 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
         return rc().crsf_custom_telemetry();
     case STATUS_TEXT:
         return rc().crsf_custom_telemetry() && !queue_empty;
+    case GENERAL_COMMAND:
+        return _baud_rate_request.pending;
     default:
         return _enable_telemetry;
     }
@@ -352,6 +372,9 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
         case STATUS_TEXT:
             calc_status_text();
             break;
+        case GENERAL_COMMAND:
+            calc_command_response();
+            break;
         default:
             break;
     }
@@ -391,6 +414,10 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
         process_device_info_frame((ParameterDeviceInfoFrame*)data);
         break;
 
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND:
+        process_command_frame((CommandFrame*)data);
+        break;
+
     default:
         break;
     }
@@ -425,10 +452,10 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
             apvtx.set_power_mw(25);
             break;
         case 1:
-            apvtx.set_power_mw(200);
+            apvtx.set_power_mw(100);
             break;
         case 2:
-            apvtx.set_power_mw(500);
+            apvtx.set_power_mw(400);
             break;
         case 3:
             apvtx.set_power_mw(800);
@@ -491,7 +518,7 @@ void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
     }
 
     _param_request.origin = ping->origin;
-    _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
+    _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
 }
 
 // request for device info
@@ -535,10 +562,38 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     _crsf_version.pending = false;
 }
 
+// request for a general command
+void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
+{
+    debug("process_command_frame: 0x%x -> 0x%x: 0x%x", command->origin, command->destination, command->payload[0]);
+    if (command->destination != 0 && command->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+        return; // request was not for us
+    }
+
+    // we are only interested in commands from the RX
+    if (command->origin != 0 && command->origin != AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER) {
+        return;
+    }
+
+    switch (command->payload[0]) {
+        case AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL_CRSF_SPEED_PROPOSAL: {
+            uint32_t baud_rate = command->payload[2] << 24 | command->payload[3] << 16
+                | command->payload[4] << 8 | command->payload[5];
+            _baud_rate_request.port_id = command->payload[1];
+            _baud_rate_request.valid = AP::crsf()->change_baud_rate(baud_rate);
+            _baud_rate_request.pending = true;
+            debug("requested baud rate change %lu", baud_rate);
+            break;
+        }
+        default:
+            break; // do nothing
+    }
+}
+
 void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_frame)
 {
-    //debug("process_param_read_frame: %d -> %d for %d[%d]", read_frame->origin, read_frame->destination,
-    //    read_frame->param_number, read_frame->param_chunk);
+    debug("process_param_read_frame: %d -> %d for %d[%d]", read_frame->origin, read_frame->destination,
+        read_frame->param_num, read_frame->param_chunk);
     if (read_frame->destination != 0 && read_frame->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
@@ -556,14 +611,19 @@ void AP_CRSF_Telem::update_params()
 {
     // handle general parameter requests
     switch (_pending_request.frame_type) {
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
+    // construct a response to a ping frame
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+        _custom_telem.params_mode_start_ms = AP_HAL::millis();
         calc_device_info();
         break;
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
-        calc_parameter();
-        break;
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+    // construct a ping frame originating here
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
         calc_device_ping();
+        break;
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
+        // reset parameter passthrough timeout
+        _custom_telem.params_mode_start_ms = AP_HAL::millis();
+        calc_parameter();
         break;
     default:
         break;
@@ -700,7 +760,10 @@ void AP_CRSF_Telem::calc_battery()
         used_mah = 0;
     }
 
-    _telem.bcast.battery.remaining = _battery.capacity_remaining_pct(0);
+    uint8_t percentage = 0;
+    IGNORE_RETURN(_battery.capacity_remaining_pct(percentage, 0));
+
+    _telem.bcast.battery.remaining = percentage;
 
     const int32_t capacity = used_mah;
     _telem.bcast.battery.capacity[0] = (capacity & 0xFF0000) >> 16;
@@ -754,9 +817,10 @@ void AP_CRSF_Telem::calc_flight_mode()
 {
     AP_Notify * notify = AP_Notify::get_singleton();
     if (notify) {
-        hal.util->snprintf(_telem.bcast.flightmode.flight_mode, 16, "%s", notify->get_flight_mode_str());
-
-        _telem_size = sizeof(AP_CRSF_Telem::FlightModeFrame);
+        // Note: snprintf() always terminates the string
+        hal.util->snprintf(_telem.bcast.flightmode.flight_mode, sizeof(AP_CRSF_Telem::FlightModeFrame), "%s", notify->get_flight_mode_str());
+        // Note: strlen(_telem.bcast.flightmode.flight_mode) is safe because called on a guaranteed null terminated string
+        _telem_size = strlen(_telem.bcast.flightmode.flight_mode) + 1; //send the terminator as well
         _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_FLIGHT_MODE;
         _telem_pending = true;
     }
@@ -770,8 +834,8 @@ void AP_CRSF_Telem::calc_device_info() {
 
     const AP_FWVersion &fwver = AP::fwversion();
     // write out the name with version, max width is 60 - 18 = the meaning of life
-    int32_t n = strlen(fwver.fw_string);
-    strncpy((char*)_telem.ext.info.payload, fwver.fw_string, 41);
+    int32_t n = strlen(fwver.fw_short_string);
+    strncpy((char*)_telem.ext.info.payload, fwver.fw_short_string, 41);
     n = MIN(n + 1, 42);
 
     put_be32_ptr(&_telem.ext.info.payload[n], // serial number
@@ -810,17 +874,70 @@ void AP_CRSF_Telem::calc_device_ping() {
     _telem_pending = true;
 }
 
+// send a command response
+void AP_CRSF_Telem::calc_command_response() {
+    _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
+    _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL;
+    _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL_CRSF_SPEED_RESPONSE;
+    _telem.ext.command.payload[1] = _baud_rate_request.port_id;
+    _telem.ext.command.payload[2] = _baud_rate_request.valid;
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
+
+    // calculate command crc
+    uint8_t len = 6;
+    uint8_t* crcptr = &_telem.ext.command.destination;
+    uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
+    for (uint8_t i = 0; i < len; i++) {
+        crc = crc8_dvb(crc, crcptr[i], 0xBA);
+    }
+    crcptr[len] = crc;
+    _telem_size = len + 1;
+
+    _pending_request.frame_type = 0;
+    _baud_rate_request.pending = false;
+
+    debug("sent baud rate response: %u", _baud_rate_request.valid);
+    _telem_pending = true;
+}
+
 // return parameter information
 void AP_CRSF_Telem::calc_parameter() {
 #if OSD_PARAM_ENABLED
+    _telem.ext.param_entry.header.destination = _param_request.origin;
+    _telem.ext.param_entry.header.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    size_t idx = 0;
+
+    // root folder request
+    if (_param_request.param_num == 0) {
+        _telem.ext.param_entry.header.param_num = 0;
+        _telem.ext.param_entry.header.chunks_left = 0;
+        _telem.ext.param_entry.payload[idx++] = 0; // parent folder
+        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
+        _telem.ext.param_entry.payload[idx++] = 'r'; // "root" name
+        _telem.ext.param_entry.payload[idx++] = 'o';
+        _telem.ext.param_entry.payload[idx++] = 'o';
+        _telem.ext.param_entry.payload[idx++] = 't';
+        _telem.ext.param_entry.payload[idx++] = 0; // null terminator
+
+        // write out all of the ids we are going to send
+        for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
+            _telem.ext.param_entry.payload[idx++] = i + 1;
+        }
+        _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
+        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        _pending_request.frame_type = 0;
+        _telem_pending = true;
+        return;
+    }
+
     AP_OSD* osd = AP::osd();
 
     if (osd == nullptr) {
         return;
     }
-
-    _telem.ext.param_entry.header.destination = _param_request.origin;
-    _telem.ext.param_entry.header.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
 
     AP_OSD_ParamSetting* param = osd->get_setting((_param_request.param_num - 1) / AP_OSD_ParamScreen::NUM_PARAMS,
         (_param_request.param_num - 1) % AP_OSD_ParamScreen::NUM_PARAMS);
@@ -836,7 +953,6 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 #endif
-    size_t idx = 0;
     _telem.ext.param_entry.header.chunks_left = 0;
     _telem.ext.param_entry.payload[idx++] = 0; // parent folder
     idx++;  // leave a gap for the type
@@ -1163,10 +1279,11 @@ void AP_CRSF_Telem::calc_status_text()
     _telem_type = get_custom_telem_frame_id();
     _telem.bcast.custom_telem.status_text.sub_type = AP_RCProtocol_CRSF::CustomTelemSubTypeID::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT;
     _telem.bcast.custom_telem.status_text.severity = _statustext.next.severity;
-    strncpy_noterm(_telem.bcast.custom_telem.status_text.text, _statustext.next.text, PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE);
-    // add a potentially missing terminator
-    _telem.bcast.custom_telem.status_text.text[PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE-1] = 0;
-    _telem_size = 2 + PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE; // sub_type(1) + severity(1) + text(50)
+    // Note: snprintf() always terminates the string
+    hal.util->snprintf(_telem.bcast.custom_telem.status_text.text, AP_CRSF_Telem::PASSTHROUGH_STATUS_TEXT_FRAME_MAX_SIZE, "%s", _statustext.next.text);
+    // frame size = sub_type(1) + severity(1) + strlen(text) + terminator
+    // Note: strlen(_telem.bcast.custom_telem.status_text.text) is safe because called on a guaranteed null terminated string
+    _telem_size = 2 + strlen(_telem.bcast.custom_telem.status_text.text) + 1;
     _telem_pending = true;
     _statustext.available = false;
 }

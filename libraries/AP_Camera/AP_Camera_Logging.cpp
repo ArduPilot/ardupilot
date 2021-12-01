@@ -6,6 +6,11 @@ void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
 {
     const AP_AHRS &ahrs = AP::ahrs();
 
+    Location current_loc;
+    if (!ahrs.get_position(current_loc)) {
+        // completely ignore this failure!  AHRS will provide its best guess.
+    }
+
     int32_t altitude, altitude_rel, altitude_gps;
     if (current_loc.relative_alt) {
         altitude = current_loc.alt+ahrs.get_home().alt;

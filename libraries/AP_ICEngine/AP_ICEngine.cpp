@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: START_CHAN
     // @DisplayName: Input channel for engine start
-    // @Description: This is an RC input channel for requesting engine start. Engine will try to start when channel is at or above 1700. Engine will stop when channel is at or below 1300. Between 1301 and 1699 the engine will not change state unless a MAVLink command or mission item commands a state change, or the vehicle is disamed. See ICE_STARTCHN_MIN parameter to change engine stop PWM value and/or to enable debouncing of the START_CH to avoid accidental engine kills due to noise on channel.
+    // @Description: This is an RC input channel for requesting engine start. Engine will try to start when channel is at or above 1700. Engine will stop when channel is at or below 1300. Between 1301 and 1699 the engine will not change state unless a MAVLink command or mission item commands a state change, or the vehicle is disarmed. See ICE_STARTCHN_MIN parameter to change engine stop PWM value and/or to enable debouncing of the START_CH to avoid accidental engine kills due to noise on channel.
     // @User: Standard
     // @Values: 0:None,1:Chan1,2:Chan2,3:Chan3,4:Chan4,5:Chan5,6:Chan6,7:Chan7,8:Chan8,9:Chan9,10:Chan10,11:Chan11,12:Chan12,13:Chan13,14:Chan14,15:Chan15,16:Chan16
     AP_GROUPINFO("START_CHAN", 1, AP_ICEngine, start_chan, 0),
@@ -417,7 +417,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
     // Override
     min_throttle = roundf(idle_governor_integrator);
 
-    // Caclulate Error in system
+    // Calculate Error in system
     int32_t error = idle_rpm - rpmv;
 
     bool underspeed = error > 0;
@@ -434,7 +434,7 @@ void AP_ICEngine::update_idle_governor(int8_t &min_throttle)
         return;
     }
 
-    // Calculate the change per loop to acheieve the desired slew rate of 1 percent per second
+    // Calculate the change per loop to achieve the desired slew rate of 1 percent per second
     static const float idle_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
 
     // Update Integrator 

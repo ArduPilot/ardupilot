@@ -3,7 +3,7 @@
 
 class AP_OSD_MSP : public AP_OSD_Backend
 {
-
+    using AP_OSD_Backend::AP_OSD_Backend;
 public:
     static AP_OSD_Backend *probe(AP_OSD &osd);
 
@@ -20,8 +20,5 @@ public:
     void clear() override {};
 
 private:
-    //constructor
-    AP_OSD_MSP(AP_OSD &osd);
-
     void setup_defaults(void);
 };

@@ -49,7 +49,9 @@ extern const AP_HAL::HAL &hal;
 
 #define ICM_WHOAMI_VAL      0xEA
 
+#define AK09915_Device_ID   0x10
 #define AK09916_Device_ID   0x09
+#define AK09918_Device_ID   0x0c
 #define AK09916_MILLIGAUSS_SCALE 10.0f
 
 extern const AP_HAL::HAL &hal;
@@ -167,13 +169,44 @@ fail:
     return nullptr;
 }
 
+// un-named, assume SPI for compat
 AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(uint8_t inv2_instance,
+                                                     enum Rotation rotation)
+{  
+    return probe_ICM20948_SPI(inv2_instance,rotation);
+}
+
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_SPI(uint8_t inv2_instance,
+                                                     enum Rotation rotation)
+{
+#if HAL_INS_ENABLED
+    AP_InertialSensor &ins = AP::ins();
+
+    AP_AK09916_BusDriver *bus =
+        new AP_AK09916_BusDriver_Auxiliary(ins, HAL_INS_INV2_SPI, inv2_instance, HAL_COMPASS_AK09916_I2C_ADDR);
+    if (!bus) {
+        return nullptr;
+    }
+
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(bus, false, rotation);
+    if (!sensor || !sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
+#else
+    return nullptr;
+#endif
+}
+
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_I2C(uint8_t inv2_instance,
                                                      enum Rotation rotation)
 {
     AP_InertialSensor &ins = AP::ins();
 
     AP_AK09916_BusDriver *bus =
-        new AP_AK09916_BusDriver_Auxiliary(ins, HAL_INS_INV2_SPI, inv2_instance, HAL_COMPASS_AK09916_I2C_ADDR);
+        new AP_AK09916_BusDriver_Auxiliary(ins, HAL_INS_INV2_I2C, inv2_instance, HAL_COMPASS_AK09916_I2C_ADDR);
     if (!bus) {
         return nullptr;
     }
@@ -223,7 +256,7 @@ bool AP_Compass_AK09916::init()
     _initialized = true;
 
     /* register the compass instance in the frontend */
-    _bus->set_device_type(DEVTYPE_AK09916);
+    _bus->set_device_type(_devtype);
     if (!register_compass(_bus->get_bus_id(), _compass_instance)) {
         goto fail;
     }
@@ -311,9 +344,18 @@ bool AP_Compass_AK09916::_check_id()
         uint8_t deviceid = 0;
 
         /* Read AK09916's id */
-        if (_bus->register_read(REG_DEVICE_ID, &deviceid) &&
-            deviceid == AK09916_Device_ID) {
-            return true;
+        if (_bus->register_read(REG_DEVICE_ID, &deviceid)) {
+            switch (deviceid) {
+            case AK09915_Device_ID:
+                _devtype = DEVTYPE_AK09915;
+                return true;
+            case AK09916_Device_ID:
+                _devtype = DEVTYPE_AK09916;
+                return true;
+            case AK09918_Device_ID:
+                _devtype = DEVTYPE_AK09918;
+                return true;
+            }
         }
     }
 
@@ -368,12 +410,14 @@ AP_AK09916_BusDriver_Auxiliary::AP_AK09916_BusDriver_Auxiliary(AP_InertialSensor
      * Only initialize members. Fails are handled by configure or while
      * getting the semaphore
      */
+#if HAL_INS_ENABLED
     _bus = ins.get_auxiliary_bus(backend_id, backend_instance);
     if (!_bus) {
         return;
     }
 
     _slave = _bus->request_next_slave(addr);
+#endif
 }
 
 AP_AK09916_BusDriver_Auxiliary::~AP_AK09916_BusDriver_Auxiliary()

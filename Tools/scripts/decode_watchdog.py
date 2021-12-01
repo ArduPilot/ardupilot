@@ -4,6 +4,7 @@ decode an watchdog message
 
 /Tools/scripts/decode_watchdog.py "WDOG, 2641424, -3, 0, 0, 0, 0, 0, 0, 122, 3, 0, 181, 4196355, 135203219, SPI1"
 
+AP_FLAKE8_CLEAN
 '''
 
 import re
@@ -256,15 +257,15 @@ class DecodeWatchDog(object):
                 self.df_components[name](value).print_decoded()
             return
 
-
         # not a statustext message and not a mavlogdump dump of a WDOG
         # dataflash message.  See if it is a .log-style CSV line
-        log_re = re.compile("WDOG, (\d+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), (\w+)")
+        log_re = re.compile(r"WDOG, (\d+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), "
+                            r"([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), ([-\d]+), (\w+)")
         column_names = "TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN"
         cols = column_names.split(",")
         m = log_re.match(text)
         if m is not None:
-            for i in range(0,len(cols)):
+            for i in range(0, len(cols)):
                 name = cols[i]
                 if name == 'TimeUS':
                     continue
@@ -281,12 +282,13 @@ class DecodeWatchDog(object):
 
         raise ValueError("Text not recognised")
 
-# 2020-06-10 17:20:08.45: WDOG {TimeUS : 949568, Task : -2, IErr : 0, IErrCnt : 0, MavMsg : 0, MavCmd : 0, SemLine : 0, FL : 100, FT : 3, FA : 404947019, FP : 183, ICSR : 4196355}
+    # 2020-06-10 17:20:08.45: WDOG {TimeUS : 949568, Task : -2, IErr : 0, IErrCnt : 0, MavMsg : 0, MavCmd : 0, SemLine : 0, FL : 100, FT : 3, FA : 404947019, FP : 183, ICSR : 4196355}  # NOQA
 
-# APM: WDG: T-3 SL0 FL122 FT3 FA0 FTP177 FLR80CBB35 FICSR4196355 MM0 MC0 IE67108864 IEC12353 TN:rcin
+    # APM: WDG: T-3 SL0 FL122 FT3 FA0 FTP177 FLR80CBB35 FICSR4196355 MM0 MC0 IE67108864 IEC12353 TN:rcin
 
-# FMT, 254, 47, WDOG, QbIHHHHHHHIBIIn, TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN
-# WDOG, 2641424, -3, 0, 0, 0, 0, 0, 0, 122, 3, 0, 181, 4196355, 135203219, SPI1
+    # FMT, 254, 47, WDOG, QbIHHHHHHHIBIIn, TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN
+    # WDOG, 2641424, -3, 0, 0, 0, 0, 0, 0, 122, 3, 0, 181, 4196355, 135203219, SPI1
+
 
 if __name__ == '__main__':
 

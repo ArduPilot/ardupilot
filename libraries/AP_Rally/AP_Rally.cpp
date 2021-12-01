@@ -6,12 +6,13 @@
 #include <AP_Logger/AP_Logger.h>
 #include <StorageManager/StorageManager.h>
 
+#if HAL_RALLY_ENABLED
 // storage object
 StorageAccess AP_Rally::_storage(StorageManager::StorageRally);
 
 assert_storage_size<RallyLocation, 15> _assert_storage_size_RallyLocation;
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_COPTER_OR_HELI
   #define RALLY_LIMIT_KM_DEFAULT 0.3f
   #define RALLY_INCLUDE_HOME_DEFAULT 1
 #elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
@@ -199,3 +200,4 @@ AP_Rally *rally()
 }
 
 }
+#endif //HAL_RALLY_ENABLED

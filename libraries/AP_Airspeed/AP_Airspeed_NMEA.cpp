@@ -42,6 +42,8 @@ bool AP_Airspeed_NMEA::init()
         return false;
     }
 
+    set_bus_id(AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL,0,0,0));
+
     _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_AirSpeed, 0));
 
     // make sure this sensor cannot be used in the EKF

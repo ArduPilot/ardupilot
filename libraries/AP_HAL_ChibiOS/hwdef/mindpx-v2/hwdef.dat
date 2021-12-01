@@ -205,6 +205,3 @@ define HAL_BATT_VOLT_PIN 12
 define HAL_BATT_CURR_PIN 10
 define HAL_BATT_VOLT_SCALE 10.1
 define HAL_BATT_CURR_SCALE 17.0
-
-# 12 PWM available by default
-define BOARD_PWM_COUNT_DEFAULT 12

@@ -34,7 +34,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // check compass is enabled
-    if (!AP::compass().enabled()) {
+    if (!AP::compass().available()) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Compass disabled");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -85,7 +85,8 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // send back initial ACK
-    mavlink_msg_command_ack_send(gcs_chan.get_chan(), MAV_CMD_PREFLIGHT_CALIBRATION,0);
+    mavlink_msg_command_ack_send(gcs_chan.get_chan(), MAV_CMD_PREFLIGHT_CALIBRATION,0,
+                                 0, 0, 0, 0);
 
     // flash leds
     AP_Notify::flags.esc_calibration = true;
@@ -224,6 +225,10 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
                                                motor_compensation[0].x,
                                                motor_compensation[0].y,
                                                motor_compensation[0].z);
+#if HAL_WITH_ESC_TELEM
+            // send ESC telemetry to monitor ESC and motor temperatures
+            AP::esc_telem().send_esc_telemetry_mavlink(gcs_chan.get_chan());
+#endif
         }
     }
 

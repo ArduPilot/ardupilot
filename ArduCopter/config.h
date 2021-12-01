@@ -39,13 +39,6 @@
 #error CONFIG_HAL_BOARD must be defined to build ArduCopter
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// HIL_MODE                                 OPTIONAL
-
-#ifndef HIL_MODE
- #define HIL_MODE        HIL_MODE_DISABLED
-#endif
-
 #ifndef ARMING_DELAY_SEC
     # define ARMING_DELAY_SEC 2.0f
 #endif
@@ -88,8 +81,8 @@
 # define RANGEFINDER_TIMEOUT_MS 1000        // rangefinder filter reset if no updates from sensor in 1 second
 #endif
 
-#ifndef RANGEFINDER_GAIN_DEFAULT
- # define RANGEFINDER_GAIN_DEFAULT 0.8f     // gain for controlling how quickly rangefinder range adjusts target altitude (lower means slower reaction)
+#ifndef RANGEFINDER_FILT_DEFAULT
+ # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
 #ifndef SURFACE_TRACKING_VELZ_MAX
@@ -98,10 +91,6 @@
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
-#endif
-
-#ifndef RANGEFINDER_WPNAV_FILT_HZ
- # define RANGEFINDER_WPNAV_FILT_HZ   0.5f // filter frequency for rangefinder altitude provided to waypoint navigation class
 #endif
 
 #ifndef RANGEFINDER_TILT_CORRECTION         // by disable tilt correction for use of range finder data by EKF
@@ -175,15 +164,8 @@
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
 #endif
 
-#ifndef EKF_ORIGIN_MAX_DIST_M
- # define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
-#endif
-
-#ifndef COMPASS_CAL_STICK_GESTURE_TIME
- #define COMPASS_CAL_STICK_GESTURE_TIME 2.0f // 2 seconds
-#endif
-#ifndef COMPASS_CAL_STICK_DELAY
- #define COMPASS_CAL_STICK_DELAY 5.0f
+#ifndef EKF_ORIGIN_MAX_ALT_KM
+ # define EKF_ORIGIN_MAX_ALT_KM         50   // EKF origin and home must be within 50km vertically
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -343,6 +325,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Turtle - allow vehicle to be flipped over after a crash
+#ifndef MODE_TURTLE_ENABLED
+# define MODE_TURTLE_ENABLED !HAL_MINIMIZE_FEATURES && !defined(DISABLE_DSHOT) && FRAME_CONFIG != HELI_FRAME
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
@@ -362,12 +350,6 @@
 // Beacon support - support for local positioning systems
 #ifndef BEACON_ENABLED
 # define BEACON_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// Button - Enable the button connected to AUX1-6
-#ifndef BUTTON_ENABLED
- # define BUTTON_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -468,16 +450,12 @@
 //
 
 // Acro Mode
-#ifndef ACRO_RP_P
- # define ACRO_RP_P                 4.5f
-#endif
-
-#ifndef ACRO_YAW_P
- # define ACRO_YAW_P                4.5f
-#endif
-
 #ifndef ACRO_LEVEL_MAX_ANGLE
- # define ACRO_LEVEL_MAX_ANGLE      3000
+ # define ACRO_LEVEL_MAX_ANGLE      3000 // maximum lean angle in trainer mode measured in centidegrees
+#endif
+
+#ifndef ACRO_LEVEL_MAX_OVERSHOOT
+ # define ACRO_LEVEL_MAX_OVERSHOOT  1000 // maximum overshoot angle in trainer mode when full roll or pitch stick is held in centidegrees
 #endif
 
 #ifndef ACRO_BALANCE_ROLL
@@ -489,20 +467,28 @@
 #endif
 
 #ifndef ACRO_RP_EXPO_DEFAULT
- #define ACRO_RP_EXPO_DEFAULT       0.3f
+ #define ACRO_RP_EXPO_DEFAULT       0.3f    // ACRO roll and pitch expo parameter default
 #endif
 
 #ifndef ACRO_Y_EXPO_DEFAULT
- #define ACRO_Y_EXPO_DEFAULT        0.0f
+ #define ACRO_Y_EXPO_DEFAULT        0.0f    // ACRO yaw expo parameter default
 #endif
 
 #ifndef ACRO_THR_MID_DEFAULT
  #define ACRO_THR_MID_DEFAULT       0.0f
 #endif
 
+#ifndef ACRO_RP_RATE_DEFAULT
+ #define ACRO_RP_RATE_DEFAULT      360      // ACRO roll and pitch rotation rate parameter default in deg/s
+#endif
+
+#ifndef ACRO_Y_RATE_DEFAULT
+ #define ACRO_Y_RATE_DEFAULT       202.5    // ACRO yaw rotation rate parameter default in deg/s
+#endif
+
 // RTL Mode
 #ifndef RTL_ALT_FINAL
- # define RTL_ALT_FINAL             0       // the altitude the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+ # define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
 #ifndef RTL_ALT
@@ -538,10 +524,6 @@
  # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
-#ifndef AUTO_YAW_SLEW_RATE
- # define AUTO_YAW_SLEW_RATE    60              // degrees/sec
-#endif
-
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED
  # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before copter is aimed at ground course
 #endif
@@ -559,9 +541,6 @@
 #endif
 #ifndef DEFAULT_ANGLE_MAX
  # define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
-#endif
-#ifndef ANGLE_RATE_MAX
- # define ANGLE_RATE_MAX            18000           // default maximum rotation rate in roll/pitch axis requested by angle controller used in stabilize, loiter, rtl, auto flight modes
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -585,7 +564,7 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// Throttle control defaults
+// Pilot control defaults
 //
 
 #ifndef THR_DZ_DEFAULT
@@ -600,13 +579,11 @@
  # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
 #endif
 
-// max distance in cm above or below current location that will be used for the alt target when transitioning to alt-hold mode
-#ifndef ALT_HOLD_INIT_MAX_OVERSHOOT
- # define ALT_HOLD_INIT_MAX_OVERSHOOT 200
+#ifndef PILOT_Y_RATE_DEFAULT
+ # define PILOT_Y_RATE_DEFAULT  202.5   // yaw rotation rate parameter default in deg/s for all mode except ACRO
 #endif
-// the acceleration used to define the distance-velocity curve
-#ifndef ALT_HOLD_ACCEL_MAX
- # define ALT_HOLD_ACCEL_MAX 250    // if you change this you must also update the duplicate declaration in AC_WPNav.h
+#ifndef PILOT_Y_EXPO_DEFAULT
+ # define PILOT_Y_EXPO_DEFAULT  0.0     // yaw expo parameter default for all mode except ACRO
 #endif
 
 #ifndef AUTO_DISARMING_DELAY
@@ -662,11 +639,7 @@
  #define AC_RALLY   ENABLED
 #endif
 
-#ifndef AC_TERRAIN
- #define AC_TERRAIN ENABLED
-#endif
-
-#if AC_TERRAIN && !AC_RALLY
+#if AP_TERRAIN_AVAILABLE && !AC_RALLY
  #error Terrain relies on Rally which is disabled
 #endif
 
@@ -698,7 +671,7 @@
   #error ModeAuto requires ModeRTL which is disabled
 #endif
 
-#if AC_TERRAIN && !MODE_AUTO_ENABLED
+#if AP_TERRAIN_AVAILABLE && !MODE_AUTO_ENABLED
   #error Terrain requires ModeAuto which is disabled
 #endif
 

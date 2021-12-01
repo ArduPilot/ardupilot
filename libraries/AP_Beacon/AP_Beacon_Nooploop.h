@@ -8,7 +8,8 @@ class AP_Beacon_Nooploop : public AP_Beacon_Backend
 {
 
 public:
-    AP_Beacon_Nooploop(AP_Beacon &frontend, AP_SerialManager &serial_manager);
+    // constructor
+    using AP_Beacon_Backend::AP_Beacon_Backend;
 
     // return true if sensor is basically healthy (we are receiving data)
     bool healthy() override;
@@ -47,7 +48,6 @@ private:
     } _state = ParseState::HEADER;
 
     // members
-    AP_HAL::UARTDriver *_uart;                  // pointer to uart configured for use with nooploop
     uint8_t _msgbuf[NOOPLOOP_MSG_BUF_MAX];      // buffer to hold most recent message from tag
     uint16_t _msg_len;                          // number of bytes received from the current message (may be larger than size of _msgbuf)
     uint16_t _frame_len;                        // message supplied frame length

@@ -1,5 +1,7 @@
 #include "SIM_ToshibaLED.h"
 
+#if AP_SIM_TOSHIBALED_ENABLED
+
 #include <stdio.h>
 
 void SITL::ToshibaLED::update(const class Aircraft &aircraft)
@@ -17,3 +19,5 @@ void SITL::ToshibaLED::update(const class Aircraft &aircraft)
     last_print_enable = get_register(ToshibaLEDDevReg::ENABLE);
     // gcs().send_text(MAV_SEVERITY_INFO, "SIM_ToshibaLED: PWM0=%u PWM1=%u PWM2=%u ENABLE=%u", last_print_pwm0, last_print_pwm1, last_print_pwm2, last_print_enable);
 }
+
+#endif

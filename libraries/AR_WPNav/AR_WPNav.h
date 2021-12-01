@@ -61,7 +61,7 @@ public:
     // get object avoidance adjusted destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_oa_destination() { return _oa_destination; }
 
-    // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    // return heading (in centi-degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing_cd() const { return _wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }
     float crosstrack_error() const { return _cross_track_error; }
@@ -123,6 +123,7 @@ private:
     AP_Float _overshoot;            // maximum horizontal overshoot in meters
     AP_Int16 _pivot_angle;          // angle error that leads to pivot turn
     AP_Int16 _pivot_rate;           // desired turn rate during pivot turns in deg/sec
+    AP_Float _pivot_delay;          // waiting time after pivot turn
 
     // references
     AR_AttitudeControl& _atc;       // rover attitude control library
@@ -135,6 +136,7 @@ private:
 
     // variables for navigation
     uint32_t _last_update_ms;       // system time of last call to update
+    uint32_t _pivot_start_ms;       // system time when pivot turn started
     Location _origin;               // origin Location (vehicle will travel from the origin to the destination)
     Location _destination;          // destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set

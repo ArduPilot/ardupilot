@@ -65,7 +65,7 @@ public:
         LWSER  = 8,
         BEBOP  = 9,
         MAVLink = 10,
-        ULANDING= 11,
+        USD1_Serial = 11,
         LEDDARONE = 12,
         MBSER  = 13,
         TRI2C  = 14,
@@ -88,7 +88,8 @@ public:
         GYUS42v2 = 31,
         MSP = 32,
         USD1_CAN = 33,
-        SITL = 100,
+        Benewake_CAN = 34,
+        SIM = 100,
     };
 
     enum class Function {
@@ -107,7 +108,7 @@ public:
 
     // The RangeFinder_State structure is filled in by the backend driver
     struct RangeFinder_State {
-        uint16_t distance_cm;           // distance: in cm
+        float distance_m;               // distance in meters
         uint16_t voltage_mv;            // voltage in millivolts, if applicable, otherwise 0
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
@@ -170,6 +171,7 @@ public:
     
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
+    float distance_orient(enum Rotation orientation) const;
     uint16_t distance_cm_orient(enum Rotation orientation) const;
     int16_t max_distance_cm_orient(enum Rotation orientation) const;
     int16_t min_distance_cm_orient(enum Rotation orientation) const;
@@ -182,7 +184,7 @@ public:
     uint32_t last_reading_ms(enum Rotation orientation) const;
 
     // get temperature reading in C.  returns true on success and populates temp argument
-    bool get_temp(enum Rotation orientation, float &temp);
+    bool get_temp(enum Rotation orientation, float &temp) const;
 
     /*
       set an externally estimated terrain height. Used to enable power
@@ -212,7 +214,7 @@ private:
 
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
-    bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance);
+    bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
 
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND() const;

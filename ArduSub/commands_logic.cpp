@@ -299,7 +299,7 @@ void Sub::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
     if (target_loc.lat == 0 && target_loc.lng == 0) {
         // To-Do: make this simpler
         Vector3f temp_pos;
-        wp_nav.get_wp_stopping_point_xy(temp_pos);
+        wp_nav.get_wp_stopping_point_xy(temp_pos.xy());
         const Location temp_loc(temp_pos, Location::AltFrame::ABOVE_ORIGIN);
         target_loc.lat = temp_loc.lat;
         target_loc.lng = temp_loc.lng;
@@ -509,18 +509,16 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     // check if we've reached the edge
     if (auto_mode == Auto_CircleMoveToEdge) {
         if (wp_nav.reached_wp_destination()) {
-            Vector3f curr_pos = inertial_nav.get_position();
             Vector3f circle_center = pv_location_to_vector(cmd.content.location);
 
             // set target altitude if not provided
             if (is_zero(circle_center.z)) {
-                circle_center.z = curr_pos.z;
+                circle_center.z = inertial_nav.get_position_z_up_cm();
             }
 
             // set lat/lon position if not provided
             if (cmd.content.location.lat == 0 && cmd.content.location.lng == 0) {
-                circle_center.x = curr_pos.x;
-                circle_center.y = curr_pos.y;
+                circle_center.xy() = inertial_nav.get_position_xy_cm();
             }
 
             // start circling

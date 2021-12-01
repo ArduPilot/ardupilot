@@ -76,8 +76,6 @@ STDOUT_BAUDRATE 57600
 
 # USB setup
 USB_STRING_MANUFACTURER "mRo"
-USB_STRING_PRODUCT "mRoX21-777"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # this board only has a single I2C bus so make it external
 define HAL_I2C_INTERNAL_MASK 0
@@ -428,7 +426,7 @@ DMA_PRIORITY USART6*
 FLASH_RESERVE_START_KB 96
 
 # fallback storage in case FRAM is not populated
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

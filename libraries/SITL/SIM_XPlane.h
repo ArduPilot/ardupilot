@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SIM_XPLANE_ENABLED
+#define HAL_SIM_XPLANE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if HAL_SIM_XPLANE_ENABLED
+
 #include <AP_HAL/utility/Socket.h>
 
 #include "SIM_Aircraft.h"
@@ -54,7 +62,7 @@ private:
 
     uint64_t time_base_us;
     uint32_t last_data_time_ms;
-    Vector3f position_zero;
+    Vector3d position_zero;
     Vector3f accel_earth;
     float throttle_sent = -1;
     bool connected = false;
@@ -112,3 +120,6 @@ private:
 
 
 } // namespace SITL
+
+
+#endif  // HAL_SIM_XPLANE_ENABLED

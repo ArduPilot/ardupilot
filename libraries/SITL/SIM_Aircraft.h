@@ -22,17 +22,18 @@
 
 #include "SITL.h"
 #include "SITL_Input.h"
-#include <AP_Terrain/AP_Terrain.h>
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Parachute.h"
 #include "SIM_Precland.h"
 #include "SIM_RichenPower.h"
+#include "SIM_FETtecOneWireESC.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
+#include "SIM_JSON_Master.h"
 
 namespace SITL {
 
@@ -127,7 +128,8 @@ public:
 
     const Location &get_location() const { return location; }
 
-    const Vector3f &get_position() const { return position; }
+    // get position relative to home
+    Vector3d get_position_relhome() const;
 
     // distance the rangefinder is perceiving
     float rangefinder_range() const;
@@ -143,14 +145,20 @@ public:
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
+    void set_fetteconewireesc(FETtecOneWireESC *_fetteconewireesc) { fetteconewireesc = _fetteconewireesc; }
     void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
     void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
     void set_i2c(class I2C *_i2c) { i2c = _i2c; }
 
+    float get_battery_voltage() const { return battery_voltage; }
+
 protected:
-    SITL *sitl;
+    SIM *sitl;
+    // origin of position vector
+    Location origin;
+    // home location
     Location home;
     bool home_is_set;
     Location location;
@@ -164,7 +172,7 @@ protected:
     Vector3f wind_ef;                    // m/s, earth frame
     Vector3f velocity_air_ef;            // velocity relative to airmass, earth frame
     Vector3f velocity_air_bf;            // velocity relative to airmass, body frame
-    Vector3f position;                   // meters, NED from origin
+    Vector3d position;                   // meters, NED from origin
     float mass;                          // kg
     float external_payload_mass;         // kg
     Vector3f accel_body{0.0f, 0.0f, -GRAVITY_MSS}; // m/s/s NED, body frame
@@ -173,6 +181,8 @@ protected:
     float battery_voltage = -1.0f;
     float battery_current;
     float local_ground_level;            // ground level at local position
+    bool lock_step_scheduled;
+    uint32_t last_one_hz_ms;
 
     // battery model
     Battery battery;
@@ -240,7 +250,6 @@ protected:
 
     bool use_smoothing;
 
-    AP_Terrain *terrain;
     float ground_height_difference() const;
 
     virtual bool on_ground() const;
@@ -294,7 +303,7 @@ protected:
     void add_twist_forces(Vector3f &rot_accel);
 
     // get local thermal updraft
-    float get_local_updraft(Vector3f currentPos);
+    float get_local_updraft(const Vector3d &currentPos);
 
 private:
     uint64_t last_time_us;
@@ -310,13 +319,13 @@ private:
         Vector3f accel_body;
         Vector3f gyro;
         Matrix3f rotation_b2e;
-        Vector3f position;
+        Vector3d position;
         Vector3f velocity_ef;
         uint64_t last_update_us;
         Location location;
     } smoothing;
 
-    LowPassFilterFloat servo_filter[4];
+    LowPassFilterFloat servo_filter[5];
 
     Buzzer *buzzer;
     Sprayer *sprayer;
@@ -324,6 +333,8 @@ private:
     Gripper_EPM *gripper_epm;
     Parachute *parachute;
     RichenPower *richenpower;
+    FETtecOneWireESC *fetteconewireesc;
+
     IntelligentEnergy24 *ie24;
     SIM_Precland *precland;
     class I2C *i2c;

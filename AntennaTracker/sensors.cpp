@@ -13,31 +13,15 @@ void Tracker::update_ahrs()
  */
 void Tracker::update_compass(void)
 {
-    if (AP::compass().enabled() && compass.read()) {
-        ahrs.set_compass(&compass);
-    }
+    compass.read();
 }
 
 // Save compass offsets
 void Tracker::compass_save() {
-    if (AP::compass().enabled() &&
+    if (AP::compass().available() &&
         compass.get_learn_type() >= Compass::LEARN_INTERNAL &&
         !hal.util->get_soft_armed()) {
         compass.save_offsets();
-    }
-}
-
-/*
-    Accel calibration
-*/
-void Tracker::accel_cal_update() {
-    if (hal.util->get_soft_armed()) {
-        return;
-    }
-    ins.acal_update();
-    float trim_roll, trim_pitch;
-    if (ins.get_new_trim(trim_roll, trim_pitch)) {
-        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
     }
 }
 

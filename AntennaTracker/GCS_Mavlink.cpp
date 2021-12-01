@@ -1,16 +1,6 @@
 #include "GCS_Mavlink.h"
 #include "Tracker.h"
 
-/*
- *  !!NOTE!!
- *
- *  the use of NOINLINE separate functions for each message type avoids
- *  a compiler bug in gcc that would cause it to use far more stack
- *  space than is needed. Without the NOINLINE we use the sum of the
- *  stack needed for each message type. Please be careful to follow the
- *  pattern below when adding any new messages
- */
-
 MAV_TYPE GCS_Tracker::frame_type() const
 {
     return MAV_TYPE_ANTENNA_TRACKER;
@@ -146,7 +136,9 @@ void GCS_MAVLINK_Tracker::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -162,7 +154,9 @@ void GCS_MAVLINK_Tracker::send_pid_tuning()
                                     pid_info->FF,
                                     pid_info->P,
                                     pid_info->I,
-                                    pid_info->D);
+                                    pid_info->D,
+                                    pid_info->slew_rate,
+                                    pid_info->Dmod);
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
@@ -274,11 +268,11 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_GPS_RAW,

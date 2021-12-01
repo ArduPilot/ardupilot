@@ -19,7 +19,7 @@ parser.add_argument(
 parser.add_argument(
     '--bootloader', action='store_true', default=False, help='configure for bootloader')
 parser.add_argument(
-    'hwdef', type=str, default=None, help='hardware definition file')
+    'hwdef', type=str, nargs='+', default=None, help='hardware definition file')
 parser.add_argument(
     '--params', type=str, default=None, help='user default params path')
 
@@ -30,7 +30,7 @@ f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
 f1_vtypes = ['CRL', 'CRH', 'ODR']
 f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
-af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN']
+af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI']
 
 default_gpio = ['INPUT', 'FLOATING']
 
@@ -80,11 +80,17 @@ altlabel = {}
 # list of SPI devices
 spidev = []
 
+# list of QSPI devices
+qspidev = []
+
 # dictionary of ROMFS files
 romfs = {}
 
 # SPI bus list
 spi_list = []
+
+# list of QSPI devices
+qspi_list = []
 
 # all config lines in order
 alllines = []
@@ -99,8 +105,11 @@ build_flags = []
 imu_list = []
 compass_list = []
 baro_list = []
+airspeed_list = []
 
 all_lines = []
+
+dma_exclude_pattern = []
 
 # map from uart names to SERIALn numbers
 uart_serial_num = {}
@@ -539,6 +548,7 @@ class generic_pin(object):
             'UART*TX' : 'PERIPH_TYPE::UART_TX',
             'I2C*SDA' : 'PERIPH_TYPE::I2C_SDA',
             'I2C*SCL' : 'PERIPH_TYPE::I2C_SCL',
+            'EXTERN_GPIO*' : 'PERIPH_TYPE::GPIO',
         }
         for k in patterns.keys():
             if fnmatch.fnmatch(self.label, k):
@@ -547,7 +557,10 @@ class generic_pin(object):
 
     def periph_instance(self):
         '''return peripheral instance'''
-        result = re.match(r'[A-Z]*([0-9]*)', self.type)
+        if self.periph_type() == 'PERIPH_TYPE::GPIO':
+            result = re.match(r'[A-Z_]*([0-9]+)', self.label)
+        else:
+            result = re.match(r'[A-Z_]*([0-9]+)', self.type)
         if result:
             return int(result.group(1))
         return 0
@@ -608,6 +621,14 @@ def get_mcu_config(name, required=False):
     return lib.mcu[name]
 
 
+def get_ram_reserve_start():
+    '''get amount of memory to reserve for bootloader comms'''
+    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    if ram_reserve_start == 0 and int(env_vars.get('AP_PERIPH',0)) == 1:
+        ram_reserve_start = 256
+    return ram_reserve_start
+
+
 def make_line(label):
     '''return a line for a label'''
     if label in bylabel:
@@ -665,6 +686,43 @@ def has_sdcard_spi():
     return False
 
 
+def get_ram_map():
+    '''get RAM_MAP. May be different for bootloader'''
+    if args.bootloader:
+        ram_map = get_mcu_config('RAM_MAP_BOOTLOADER', False)
+        if ram_map is not None:
+            return ram_map
+    return get_mcu_config('RAM_MAP', True)
+
+
+def get_flash_npages():
+    global mcu_series
+    if mcu_series.startswith('STM32F4'):
+        if get_config('FLASH_SIZE_KB', type=int) == 512:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 1024:
+            return 12
+        elif get_config('FLASH_SIZE_KB', type=int) == 2048:
+            return 24
+        else:
+            raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
+    elif mcu_series.startswith('STM32F7'):
+        if get_config('FLASH_SIZE_KB', type=int) == 512:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 1024:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 2048:
+            return 12
+        else:
+            raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
+    elif mcu_series.startswith('STM32H7'):
+        return get_config('FLASH_SIZE_KB', type=int)//128
+    elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
+        return get_config('FLASH_SIZE_KB', type=int)
+    else:
+        return get_config('FLASH_SIZE_KB', type=int)//2
+
+
 def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
@@ -684,6 +742,13 @@ def write_mcu_config(f):
         f.write('// SDIO available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
+        build_flags.append('USE_FATFS=yes')
+        env_vars['WITH_FATFS'] = "1"
+    elif have_type_prefix('SDMMC2'):
+        f.write('// SDMMC2 available, enable POSIX filesystem support\n')
+        f.write('#define USE_POSIX\n\n')
+        f.write('#define HAL_USE_SDC TRUE\n')
+        f.write('#define STM32_SDC_USE_SDMMC2 TRUE\n')
         build_flags.append('USE_FATFS=yes')
         env_vars['WITH_FATFS'] = "1"
     elif have_type_prefix('SDMMC'):
@@ -712,11 +777,25 @@ def write_mcu_config(f):
     if 'OTG2' in bytype:
         f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
+    defines = get_mcu_config('DEFINES', False)
+    if defines is not None:
+        for d in defines.keys():
+            v = defines[d]
+            f.write("#ifndef %s\n#define %s %s\n#endif\n" % (d, d, v))
+    else:
+        defines = {}
+    # enable RNG for all H7 chips
+    if mcu_series.startswith("STM32H7") and 'HAL_USE_HW_RNG' not in defines.keys():
+        f.write("#define HAL_USE_HW_RNG TRUE\n")
+    elif 'HAL_USE_HW_RNG' not in defines.keys():
+        f.write("#define HAL_USE_HW_RNG FALSE\n")
+
     if get_config('PROCESS_STACK', required=False):
         env_vars['PROCESS_STACK'] = get_config('PROCESS_STACK')
     else:
         env_vars['PROCESS_STACK'] = "0x1C00"
 
+    f.write('#define HAL_PROCESS_STACK_SIZE %s\n' % env_vars['PROCESS_STACK'])
     # MAIN_STACK is location of initial stack on startup and is also the stack
     # used for slow interrupts. It needs to be big enough for maximum interrupt
     # nesting
@@ -756,25 +835,55 @@ def write_mcu_config(f):
         'FLASH_RESERVE_START_KB', default=16, type=int)
     f.write('\n// location of loaded firmware\n')
     f.write('#define FLASH_LOAD_ADDRESS 0x%08x\n' % (0x08000000 + flash_reserve_start*1024))
+    f.write('#define EXTERNAL_PROG_FLASH_MB %u\n' % get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int))
+
+    env_vars['EXTERNAL_PROG_FLASH_MB'] = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
+
+    if env_vars['EXTERNAL_PROG_FLASH_MB'] and not args.bootloader:
+        f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
+        f.write('#define __RAMFUNC__ __attribute__ ((long_call, __section__(".ramfunc")))\n')
+        f.write('#define PORT_IRQ_ATTRIBUTES __RAMFUNC__')
+    else:
+        f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
+
+    storage_flash_page = None
+    if not args.bootloader:
+        if get_config('STORAGE_FLASH_PAGE', default=0, type=int):
+            storage_flash_page = get_config('STORAGE_FLASH_PAGE', type=int)
+            f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
+
+    if flash_size >= 2048 and not args.bootloader:
+        # lets pick a flash sector for Crash log
+        f.write('#define HAL_CRASHDUMP_ENABLE 1\n')
+        env_vars['ENABLE_CRASHDUMP'] = 1
+    else:
+        f.write('#define HAL_CRASHDUMP_ENABLE 0\n')
+        env_vars['ENABLE_CRASHDUMP'] = 0
+
     if args.bootloader:
+        if env_vars['EXTERNAL_PROG_FLASH_MB']:
+            f.write('#define APP_START_ADDRESS 0x90000000\n')
+            f.write('#define BOOT_FROM_EXT_FLASH 1\n')
         f.write('#define FLASH_BOOTLOADER_LOAD_KB %u\n' % get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
         f.write('#define FLASH_RESERVE_END_KB %u\n' % get_config('FLASH_RESERVE_END_KB', default=0, type=int))
         f.write('#define APP_START_OFFSET_KB %u\n' % get_config('APP_START_OFFSET_KB', default=0, type=int))
-
     f.write('\n')
 
-    ram_map = get_mcu_config('RAM_MAP', True)
+    ram_map = get_ram_map()
     f.write('// memory regions\n')
     regions = []
+    cc_regions = []
     total_memory = 0
     for (address, size, flags) in ram_map:
         regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
+        cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size*1024))
         total_memory += size
     f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
+    f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
     f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
 
     f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_ram_reserve_start()
     if ram_reserve_start > 0:
         f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
 
@@ -812,6 +921,12 @@ def write_mcu_config(f):
         env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
         build_info['MCU'] = cortex
 
+    f.write('''
+#ifndef HAL_HAVE_HARDWARE_DOUBLE
+#define HAL_HAVE_HARDWARE_DOUBLE 0
+#endif
+''')
+
     if get_mcu_config('EXPECTED_CLOCK'):
         f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
 
@@ -833,32 +948,55 @@ def write_mcu_config(f):
 
     # setup for bootloader build
     if args.bootloader:
-        f.write('''
+        if get_config('FULL_CHIBIOS_BOOTLOADER', required=False, default=False):
+            # we got enough space to fit everything so we enable almost everything
+            f.write('''
+#define HAL_BOOTLOADER_BUILD TRUE
+#define HAL_USE_ADC FALSE
+#define HAL_USE_EXT FALSE
+#define HAL_USE_I2C FALSE
+#define HAL_USE_PWM FALSE
+#define HAL_NO_UARTDRIVER
+#define CH_CFG_USE_DYNAMIC FALSE
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 16384
+''')
+        else:
+            f.write('''
 #define HAL_BOOTLOADER_BUILD TRUE
 #define HAL_USE_ADC FALSE
 #define HAL_USE_EXT FALSE
 #define HAL_NO_UARTDRIVER
 #define HAL_NO_PRINTF
 #define HAL_NO_CCM
-#define CH_CFG_USE_TM FALSE
-#define CH_CFG_USE_REGISTRY FALSE
-#define CH_CFG_USE_WAITEXIT FALSE
-#define CH_CFG_USE_DYNAMIC FALSE
-#define CH_CFG_USE_MEMPOOLS FALSE
-#define CH_DBG_FILL_THREADS FALSE
-#define CH_CFG_USE_SEMAPHORES FALSE
-#define CH_CFG_USE_HEAP FALSE
-#define CH_CFG_USE_MUTEXES FALSE
-#define CH_CFG_USE_EVENTS FALSE
-#define CH_CFG_USE_EVENTS_TIMEOUT FALSE
-#define CH_CFG_USE_MEMCORE FALSE
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
+#define CH_CFG_USE_DYNAMIC FALSE
 // avoid timer and RCIN threads to save memory
 #define HAL_NO_TIMER_THREAD
 #define HAL_NO_RCOUT_THREAD
 #define HAL_NO_RCIN_THREAD
+#define HAL_NO_SHARED_DMA FALSE
+#define HAL_NO_ROMFS_SUPPORT TRUE
+#define CH_CFG_USE_TM FALSE
+#define CH_CFG_USE_REGISTRY FALSE
+#define CH_CFG_USE_WAITEXIT FALSE
+#define CH_CFG_USE_MEMPOOLS FALSE
+#define CH_DBG_FILL_THREADS FALSE
+#define CH_CFG_USE_MUTEXES FALSE
+#define CH_CFG_USE_EVENTS FALSE
+#define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 16384
+#define HAL_USE_RTC FALSE
+#define DISABLE_SERIAL_ESC_COMM TRUE
+''')
+        if not env_vars['EXTERNAL_PROG_FLASH_MB']:
+            f.write('''
+#define CH_CFG_USE_HEAP FALSE
+#define CH_CFG_USE_SEMAPHORES FALSE
+#define CH_CFG_USE_MEMCORE FALSE
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
@@ -882,9 +1020,14 @@ def write_ldscript(fname):
     flash_reserve_end = get_config('FLASH_RESERVE_END_KB', default=0, type=int)
 
     # ram layout
-    ram_map = get_mcu_config('RAM_MAP', True)
+    ram_map = get_ram_map()
+    instruction_ram = get_mcu_config('INSTRUCTION_RAM', False)
 
     flash_base = 0x08000000 + flash_reserve_start * 1024
+    ext_flash_base = 0x90000000
+    if instruction_ram is not None:
+        instruction_ram_base = instruction_ram[0]
+        instruction_ram_length = instruction_ram[1]
 
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
@@ -899,11 +1042,13 @@ def write_ldscript(fname):
     ram0_len = ram_map[0][1] * 1024
 
     # possibly reserve some memory for app/bootloader comms
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_ram_reserve_start()
     ram0_start += ram_reserve_start
     ram0_len -= ram_reserve_start
-
-    f.write('''/* generated ldscript.ld */
+    ext_flash_length = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
+    if ext_flash_length == 0 or args.bootloader:
+        env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 0
+        f.write('''/* generated ldscript.ld */
 MEMORY
 {
     flash : org = 0x%08x, len = %uK
@@ -912,12 +1057,31 @@ MEMORY
 
 INCLUDE common.ld
 ''' % (flash_base, flash_length, ram0_start, ram0_len))
+    else:
+        if ext_flash_length > 32:
+            error("We only support 24bit addressing over external flash")
+        env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 1
+        f.write('''/* generated ldscript.ld */
+MEMORY
+{
+    default_flash : org = 0x%08x, len = %uM
+    instram : org = 0x%08x, len = %uK
+    ram0  : org = 0x%08x, len = %u
+}
 
+INCLUDE common_extf.ld
+''' % (ext_flash_base, ext_flash_length,
+       instruction_ram_base, instruction_ram_length,
+       ram0_start, ram0_len))
 
 def copy_common_linkerscript(outdir, hwdef):
     dirpath = os.path.dirname(hwdef)
-    shutil.copy(os.path.join(dirpath, "../common/common.ld"),
-                os.path.join(outdir, "common.ld"))
+    if not get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int) or args.bootloader:
+        shutil.copy(os.path.join(dirpath, "../common/common.ld"),
+                    os.path.join(outdir, "common.ld"))
+    else:
+        shutil.copy(os.path.join(dirpath, "../common/common_extf.ld"),
+                    os.path.join(outdir, "common_extf.ld"))
 
 def get_USB_IDs():
     '''return tuple of USB VID/PID'''
@@ -990,6 +1154,7 @@ def write_SPI_table(f):
         f.write("#define HAL_WITH_SPI_%s 1\n" % dev[0].upper().replace("-","_"))
     f.write("\n")
 
+
 def write_SPI_config(f):
     '''write SPI config defines'''
     global spi_list
@@ -1009,6 +1174,62 @@ def write_SPI_config(f):
             % (n, n, n, n))
     f.write('#define HAL_SPI_BUS_LIST %s\n\n' % ','.join(devlist))
     write_SPI_table(f)
+
+
+def write_QSPI_table(f):
+    '''write SPI device table'''
+    f.write('\n// QSPI device table\n')
+    devlist = []
+    for dev in qspidev:
+        if len(dev) != 6:
+            print("Badly formed QSPIDEV line %s" % dev)
+        name = '"' + dev[0] + '"'
+        bus = dev[1]
+        mode = dev[2]
+        speed = dev[3]
+        size_pow2 = dev[4]
+        ncs_clk_delay = dev[5]
+        if not bus.startswith('QUADSPI') or bus not in qspi_list:
+            error("Bad QUADSPI bus in QSPIDEV line %s" % dev)
+        if mode not in ['MODE1', 'MODE3']:
+            error("Bad MODE in QSPIDEV line %s" % dev)
+        if not speed.endswith('*MHZ') and not speed.endswith('*KHZ'):
+            error("Bad speed value %s in SPIDEV line %s" % (speed, dev))
+
+        devidx = len(devlist)
+        f.write(
+            '#define HAL_QSPI_DEVICE%-2u QSPIDesc(%-17s, %2u, QSPIDEV_%s, %7s, %2u, %2u)\n'
+            % (devidx, name, qspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
+        devlist.append('HAL_QSPI_DEVICE%u' % devidx)
+    f.write('#define HAL_QSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+    for dev in qspidev:
+        f.write("#define HAL_HAS_WSPI_%s 1\n" % dev[0].upper().replace("-", "_"))
+        f.write("#define HAL_QSPI%d_CLK (%s)" % (int(bus[7:]), speed))
+    f.write("\n")
+
+
+def write_QSPI_config(f):
+    '''write SPI config defines'''
+    global qspi_list
+    if len(qspidev) == 0:
+        # nothing to do
+        return
+    for t in list(bytype.keys()) + list(alttype.keys()):
+        if t.startswith('QUADSPI'):
+            qspi_list.append(t)
+    qspi_list = sorted(qspi_list)
+    if len(qspi_list) == 0:
+        return
+    f.write('#define HAL_USE_WSPI TRUE\n')
+    devlist = []
+    for dev in qspi_list:
+        n = int(dev[7:])
+        devlist.append('HAL_QSPI%u_CONFIG' % n)
+        f.write(
+            '#define HAL_QSPI%u_CONFIG { &WSPID%u, %u}\n'
+            % (n, n, n))
+    f.write('#define HAL_QSPI_BUS_LIST %s\n\n' % ','.join(devlist))
+    write_QSPI_table(f)
 
 
 def parse_spi_device(dev):
@@ -1129,6 +1350,37 @@ def write_BARO_config(f):
     if len(devlist) > 0:
         f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
+def write_AIRSPEED_config(f):
+    '''write airspeed config defines'''
+    global airspeed_list
+    devlist = []
+    seen = set()
+    idx = 0
+    for dev in airspeed_list:
+        if seen_str(dev) in seen:
+            error("Duplicate AIRSPEED: %s" % seen_str(dev))
+        seen.add(seen_str(dev))
+        driver = dev[0]
+        wrapper = ''
+        a = driver.split(':')
+        driver = a[0]
+        for i in range(1, len(dev)):
+            if dev[i].startswith("SPI:"):
+                dev[i] = parse_spi_device(dev[i])
+            elif dev[i].startswith("I2C:"):
+                (wrapper, dev[i]) = parse_i2c_device(dev[i])
+                if dev[i].startswith('hal.i2c_mgr'):
+                    dev[i] = 'std::move(%s)' % dev[i]
+        n = len(devlist)+1
+        devlist.append('HAL_AIRSPEED_PROBE%u' % n)
+        args = ['*this', str(idx)] + dev[1:]
+        f.write(
+            '#define HAL_AIRSPEED_PROBE%u %s ADD_BACKEND(AP_Airspeed_%s::probe(%s))\n'
+            % (n, wrapper, driver, ','.join(args)))
+        idx += 1
+    if len(devlist) > 0:
+        f.write('#define HAL_AIRSPEED_PROBE_LIST %s\n\n' % ';'.join(devlist))
+        
 def write_board_validate_macro(f):
     '''write board validation macro'''
     global config
@@ -1196,15 +1448,14 @@ def write_UART_config(f):
     f.write('\n// UART configuration\n')
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
-    devnames = "ABCDEFGHI"
+    devnames = "ABCDEFGHIJ"
     sdev = 0
     idx = 0
-    num_empty_uarts = 0
     for dev in uart_list:
         if dev == 'EMPTY':
             f.write('#define HAL_UART%s_DRIVER Empty::UARTDriver uart%sDriver\n' %
                     (devnames[idx], devnames[idx]))
-            num_empty_uarts += 1
+            sdev += 1
         else:
             f.write(
                 '#define HAL_UART%s_DRIVER ChibiOS::UARTDriver uart%sDriver(%u)\n'
@@ -1216,6 +1467,9 @@ def write_UART_config(f):
                 (devnames[idx], devnames[idx]))
 
     if 'IOMCU_UART' in config:
+        if not 'io_firmware.bin' in romfs:
+            error("Need io_firmware.bin in ROMFS for IOMCU")
+
         f.write('#define HAL_WITH_IO_MCU 1\n')
         idx = len(uart_list)
         f.write('#define HAL_UART_IOMCU_IDX %u\n' % idx)
@@ -1234,6 +1488,19 @@ def write_UART_config(f):
     OTG2_index = None
     devlist = []
     have_rts_cts = False
+    crash_uart = None
+
+    # write config for CrashCatcher UART
+    if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
+        crash_uart = uart_list[0]
+    elif not uart_list[2].startswith('OTG') and not uart_list[2].startswith('EMPTY'):
+        crash_uart = uart_list[2]
+
+    if crash_uart is not None and get_config('FLASH_SIZE_KB', type=int) >= 2048:
+        f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
+        f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
+        f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
+        f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
     for dev in uart_list:
         if dev.startswith('UART'):
             n = int(dev[4:])
@@ -1242,6 +1509,7 @@ def write_UART_config(f):
         elif dev.startswith('OTG'):
             n = int(dev[3:])
         elif dev.startswith('EMPTY'):
+            devlist.append('{}')
             continue
         else:
             error("Invalid element %s in UART_ORDER" % dev)
@@ -1256,13 +1524,13 @@ def write_UART_config(f):
 
         if dev.startswith('OTG2'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU2, 2, true, false, 0, 0, false, 0, 0, 2}\n'
                 % dev)
             OTG2_index = uart_list.index(dev)
             dual_USB_enabled = True
         elif dev.startswith('OTG'):
             f.write(
-                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0}\n'
+                '#define HAL_%s_CONFIG {(BaseSequentialStream*) &SDU1, 1, true, false, 0, 0, false, 0, 0, 0}\n'
                 % dev)
         else:
             need_uart_driver = True
@@ -1279,13 +1547,15 @@ def write_UART_config(f):
             f.write("%d, " % get_gpio_bylabel(dev + "_RXINV"))
             f.write("%s, " % get_extra_bylabel(dev + "_RXINV", "POL", "0"))
             f.write("%d, " % get_gpio_bylabel(dev + "_TXINV"))
-            f.write("%s}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
+            f.write("%s, 0}\n" % get_extra_bylabel(dev + "_TXINV", "POL", "0"))
     if have_rts_cts:
         f.write('#define AP_FEATURE_RTSCTS 1\n')
     if OTG2_index is not None:
         f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
-        f.write('''
-#if HAL_NUM_CAN_IFACES
+        f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
+        if env_vars.get('AP_PERIPH', 0) == 0:
+            f.write('''
+#if defined(HAL_NUM_CAN_IFACES) && HAL_NUM_CAN_IFACES
 #ifndef HAL_OTG2_PROTOCOL
 #define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
 #endif
@@ -1293,7 +1563,6 @@ def write_UART_config(f):
 #define HAL_SERIAL%d_BAUD 115200
 #endif
 ''' % (OTG2_index, OTG2_index))
-        f.write('#define HAL_HAVE_DUAL_USB_CDC 1\n')
 
     f.write('#define HAL_UART_DEVICE_LIST %s\n\n' % ','.join(devlist))
     if not need_uart_driver and not args.bootloader:
@@ -1305,9 +1574,9 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
-    if num_uarts > 9:
-        error("Exceeded max num UARTs of 9 (%u)" % num_uarts)
-    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % (num_uarts+num_empty_uarts))
+    if num_uarts > 10:
+        error("Exceeded max num UARTs of 10 (%u)" % num_uarts)
+    f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
 
 
 def write_UART_config_bootloader(f):
@@ -1535,7 +1804,7 @@ def write_PWM_config(f, ordered_timers):
             else:
                 chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             alt_functions[chan - 1] = p.af
-            pal_lines[chan - 1] = 'PAL_LINE(GPIO%s, %uU)' % (p.port, p.pin)
+            pal_lines[chan - 1] = 'PAL_LINE(GPIO%s,%uU)' % (p.port, p.pin)
         groups.append('HAL_PWM_GROUP%u' % group)
         if n in [1, 8]:
             # only the advanced timers do 8MHz clocks
@@ -1643,14 +1912,36 @@ def write_GPIO_config(f):
         pwm = p.extra_value('PWM', type=int, default=0)
         port = p.port
         pin = p.pin
-        gpios.append((gpio, pwm, port, pin, p))
+        # default config always enabled
+        gpios.append((gpio, pwm, port, pin, p, 'true'))
+    for alt in altmap.keys():
+        for pp in altmap[alt].keys():
+            p = altmap[alt][pp]
+            gpio = p.extra_value('GPIO', type=int)
+            if gpio is None:
+                continue
+            if gpio in gpioset:
+                # check existing entry
+                existing_gpio = [item for item in gpios if item[0] == gpio]
+                if (existing_gpio[0][4].label == p.label) and (existing_gpio[0][3] == p.pin) and (existing_gpio[0][2] == p.port):
+                    # alt item is identical to exiting, do not add again
+                    continue
+                error("Duplicate GPIO value %u, %s != %s" % (gpio, p, existing_gpio[0][4]))
+            pwm = p.extra_value('PWM', type=int, default=0)
+            if pwm != 0:
+                error("PWM not supported for alt config: %s" % p)
+            gpioset.add(gpio)
+            port = p.port
+            pin = p.pin
+            # aux config disabled by defualt
+            gpios.append((gpio, pwm, port, pin, p, 'false'))
     gpios = sorted(gpios)
-    for (gpio, pwm, port, pin, p) in gpios:
-        f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s, %2uU)\n' % (gpio, port, pin))
+    for (gpio, pwm, port, pin, p, enabled) in gpios:
+        f.write('#define HAL_GPIO_LINE_GPIO%u PAL_LINE(GPIO%s,%uU)\n' % (gpio, port, pin))
     f.write('#define HAL_GPIO_PINS { \\\n')
-    for (gpio, pwm, port, pin, p) in gpios:
-        f.write('{ %3u, true, %2u, PAL_LINE(GPIO%s, %2uU)}, /* %s */ \\\n' %
-                (gpio, pwm, port, pin, p))
+    for (gpio, pwm, port, pin, p, enabled) in gpios:
+        f.write('{ %3u, %s, %2u, PAL_LINE(GPIO%s,%uU)}, /* %s */ \\\n' %
+                (gpio, enabled, pwm, port, pin, p))
     # and write #defines for use by config code
     f.write('}\n\n')
     f.write('// full pin define list\n')
@@ -1671,7 +1962,7 @@ def bootloader_path():
     # always embed a bootloader if it is available
     this_dir = os.path.realpath(__file__)
     rootdir = os.path.relpath(os.path.join(this_dir, "../../../../.."))
-    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef))
+    hwdef_dirname = os.path.basename(os.path.dirname(args.hwdef[0]))
     bootloader_filename = "%s_bl.bin" % (hwdef_dirname,)
     bootloader_path = os.path.join(rootdir,
                                    "Tools",
@@ -1686,8 +1977,12 @@ def bootloader_path():
 def add_bootloader():
     '''added bootloader to ROMFS'''
     bp = bootloader_path()
-    if bp is not None:
+    if bp is not None and int(get_config('BOOTLOADER_EMBED', required=False, default='1')):
         romfs["bootloader.bin"] = bp
+        env_vars['BOOTLOADER_EMBED'] = 1
+    else:
+        env_vars['BOOTLOADER_EMBED'] = 0
+
 
 
 def write_ROMFS(outdir):
@@ -1721,21 +2016,28 @@ def write_peripheral_enable(f):
             f.write('#define STM32_USB_USE_%s                  TRUE\n' % type)
         if type.startswith('I2C'):
             f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
+        if type.startswith('QUADSPI'):
+            f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
 
 
 def get_dma_exclude(periph_list):
     '''return list of DMA devices to exclude from DMA'''
-    dma_exclude = []
+    dma_exclude = set()
+    for p in dma_exclude_pattern:
+        for periph in periph_list:
+            if fnmatch.fnmatch(periph, p):
+                dma_exclude.add(periph)
+
     for periph in periph_list:
         if periph in bylabel:
             p = bylabel[periph]
             if p.has_extra('NODMA'):
-                dma_exclude.append(periph)
+                dma_exclude.add(periph)
         if periph in altlabel:
             p = altlabel[periph]
             if p.has_extra('NODMA'):
-                dma_exclude.append(periph)
-    return dma_exclude
+                dma_exclude.add(periph)
+    return list(dma_exclude)
 
 
 def write_alt_config(f):
@@ -1782,20 +2084,30 @@ def write_hwdef_header(outfilename):
 #define FALSE 0
 #endif
 
+#define MHZ (1000U*1000U)
+#define KHZ (1000U)
+
 ''')
 
     dma_noshare.extend(get_config('DMA_NOSHARE', default='', aslist=True))
 
     write_mcu_config(f)
     write_SPI_config(f)
+    write_QSPI_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
     write_IMU_config(f)
     write_MAG_config(f)
     write_BARO_config(f)
+    write_AIRSPEED_config(f)
     write_board_validate_macro(f)
+    add_apperiph_defaults(f)
 
     write_peripheral_enable(f)
+
+    if mcu_series.startswith("STM32H7"):
+        # add in ADC3 on H7 to get MCU temperature and reference voltage
+        periph_list.append('ADC3')
 
     dma_unassigned, ordered_timers = dma_resolver.write_dma_header(f, periph_list, mcu_type,
                                                    dma_exclude=get_dma_exclude(periph_list),
@@ -1972,8 +2284,8 @@ def write_env_py(filename):
     '''write out env.py for environment variables to control the build process'''
 
     # see if board has a defaults.parm file or a --default-parameters file was specified
-    defaults_filename = os.path.join(os.path.dirname(args.hwdef), 'defaults.parm')
-    defaults_path = os.path.join(os.path.dirname(args.hwdef), args.params)
+    defaults_filename = os.path.join(os.path.dirname(args.hwdef[0]), 'defaults.parm')
+    defaults_path = os.path.join(os.path.dirname(args.hwdef[0]), args.params)
 
     if not args.bootloader:
         if os.path.exists(defaults_path):
@@ -2006,7 +2318,7 @@ def romfs_wildcard(pattern):
 def romfs_add_dir(subdirs):
     '''add a filesystem directory to ROMFS'''
     for dirname in subdirs:
-        romfs_dir = os.path.join(os.path.dirname(args.hwdef), dirname)
+        romfs_dir = os.path.join(os.path.dirname(args.hwdef[0]), dirname)
         if not args.bootloader and os.path.exists(romfs_dir):
             for root, d, files in os.walk(romfs_dir):
                 for f in files:
@@ -2017,9 +2329,46 @@ def romfs_add_dir(subdirs):
                     relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
                     romfs[relpath] = fullpath
 
+def valid_type(ptype, label):
+    '''check type of a pin line is valid'''
+    patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
+                'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
+                'SDMMC\d+', 'SDIO', 'QUADSPI\d' ]
+    matches = False
+    for p in patterns:
+        if re.match(p, ptype):
+            matches = True
+            break
+    if not matches:
+        return False
+    # special checks for common errors
+    m1 = re.match('TIM(\d+)', ptype)
+    m2 = re.match('TIM(\d+)_CH\d+', label)
+    if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
+        '''timer numbers need to match'''
+        return False
+    m1 = re.match('CAN(\d+)', ptype)
+    m2 = re.match('CAN(\d+)_(RX|TX)', label)
+    if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
+        '''CAN numbers need to match'''
+        return False
+    if ptype == 'OUTPUT' and re.match('US?ART\d+_(TXINV|RXINV)', label):
+        return True
+    m1 = re.match('USART(\d+)', ptype)
+    m2 = re.match('USART(\d+)_(RX|TX|CTS|RTS)', label)
+    if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
+        '''usart numbers need to match'''
+        return False
+    m1 = re.match('UART(\d+)', ptype)
+    m2 = re.match('UART(\d+)_(RX|TX|CTS|RTS)', label)
+    if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
+        '''uart numbers need to match'''
+        return False
+    return True
+
 def process_line(line):
     '''process one line of pin definition file'''
-    global allpins, imu_list, compass_list, baro_list
+    global allpins, imu_list, compass_list, baro_list, airspeed_list
     global mcu_type, mcu_series, default_gpio
     all_lines.append(line)
     a = shlex.split(line, posix=False)
@@ -2038,6 +2387,9 @@ def process_line(line):
         except Exception:
             error("Bad pin line: %s" % a)
             return
+
+        if not valid_type(type, label):
+            error("bad type on line: %s" % a)
 
         p = generic_pin(port, pin, label, type, extra)
         af = get_alt_function(mcu_type, a[0], label)
@@ -2070,6 +2422,10 @@ def process_line(line):
         default_gpio = a[1:]
         return
 
+    if a[0] == 'NODMA':
+        dma_exclude_pattern.extend(a[1:])
+        return
+    
     config[a[0]] = a[1:]
     if p is not None:
         # add to set of pins for primary config
@@ -2085,12 +2441,16 @@ def process_line(line):
         setup_mcu_type_defaults()
     elif a[0] == 'SPIDEV':
         spidev.append(a[1:])
+    elif a[0] == 'QSPIDEV':
+        qspidev.append(a[1:])
     elif a[0] == 'IMU':
         imu_list.append(a[1:])
     elif a[0] == 'COMPASS':
         compass_list.append(a[1:])
     elif a[0] == 'BARO':
         baro_list.append(a[1:])
+    elif a[0] == 'AIRSPEED':
+        airspeed_list.append(a[1:])
     elif a[0] == 'ROMFS':
         romfs_add(a[1], a[2])
     elif a[0] == 'ROMFS_WILDCARD':
@@ -2120,6 +2480,8 @@ def process_line(line):
                 compass_list = []
             if u == 'BARO':
                 baro_list = []
+            if u == 'AIRSPEED':
+                airspeed_list = []
     elif a[0] == 'env':
         print("Adding environment %s" % ' '.join(a[1:]))
         if len(a[1:]) < 2:
@@ -2150,9 +2512,60 @@ def process_file(filename):
         else:
             process_line(line)
 
+def add_apperiph_defaults(f):
+    '''add default defines for peripherals'''
+    if env_vars.get('AP_PERIPH',0) == 0:
+        # not AP_Periph
+        return
+
+    if not args.bootloader:
+        # use the app descriptor needed by MissionPlanner for CAN upload
+        env_vars['APP_DESCRIPTOR'] = 'MissionPlanner'
+
+    print("Setting up as AP_Periph")
+    f.write('''
+#ifndef HAL_SCHEDULER_ENABLED
+#define HAL_SCHEDULER_ENABLED 0
+#endif
+#ifndef HAL_LOGGING_ENABLED
+#define HAL_LOGGING_ENABLED 0
+#endif
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
+// default to no protocols, AP_Periph enables with params
+#define HAL_SERIAL1_PROTOCOL -1
+#define HAL_SERIAL2_PROTOCOL -1
+#define HAL_SERIAL3_PROTOCOL -1
+#define HAL_SERIAL4_PROTOCOL -1
+
+#ifndef HAL_LOGGING_MAVLINK_ENABLED
+#define HAL_LOGGING_MAVLINK_ENABLED 0
+#endif
+#ifndef HAL_MISSION_ENABLED
+#define HAL_MISSION_ENABLED 0
+#endif
+#ifndef HAL_RALLY_ENABLED
+#define HAL_RALLY_ENABLED 0
+#endif
+#ifndef HAL_CAN_DEFAULT_NODE_ID
+#define HAL_CAN_DEFAULT_NODE_ID 0
+#endif
+#define PERIPH_FW TRUE
+#define HAL_BUILD_AP_PERIPH
+#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
+#define HAL_WATCHDOG_ENABLED_DEFAULT true
+#endif
+
+#ifndef AP_FETTEC_ONEWIRE_ENABLED
+#define AP_FETTEC_ONEWIRE_ENABLED 0
+#endif
+''')
+
 
 # process input file
-process_file(args.hwdef)
+for fname in args.hwdef:
+    process_file(fname)
 
 outdir = args.outdir
 if outdir is None:
@@ -2182,6 +2595,6 @@ write_ROMFS(outdir)
 
 # copy the shared linker script into the build directory; it must
 # exist in the same directory as the ldscript.ld file we generate.
-copy_common_linkerscript(outdir, args.hwdef)
+copy_common_linkerscript(outdir, args.hwdef[0])
 
 write_env_py(os.path.join(outdir, "env.py"))

@@ -169,6 +169,12 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             break;
 #endif
 
+#if MODE_TURTLE_ENABLED == ENABLED
+        case Mode::Number::TURTLE:
+            ret = &mode_turtle;
+            break;
+#endif
+
         default:
             break;
     }
@@ -182,6 +188,10 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to %s failed: %s", mode->name(), reason);
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode->mode_number()));
+    // make sad noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change_failed = 1;
+    }
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
@@ -190,17 +200,30 @@ void Copter::mode_change_failed(const Mode *mode, const char *reason)
 // ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
+    // update last reason
+    const ModeReason last_reason = _last_reason;
+    _last_reason = reason;
 
     // return immediately if we are already in the desired mode
     if (mode == flightmode->mode_number()) {
         control_mode_reason = reason;
+        // make happy noise
+        if (copter.ap.initialised && (reason != last_reason)) {
+            AP_Notify::events.user_mode_change = 1;
+        }
         return true;
     }
 
-    Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
+#if MODE_AUTO_ENABLED == ENABLED
+    if (mode == Mode::Number::AUTO_RTL) {
+        // Special case for AUTO RTL, not a true mode, just AUTO in disguise
+        return mode_auto.jump_to_landing_sequence_auto_RTL(reason);
+    }
+#endif
+
+    Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
+        notify_no_such_mode((uint8_t)mode);
         return false;
     }
 
@@ -298,6 +321,11 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // update notify object
     notify_flight_mode();
+
+    // make happy noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change = 1;
+    }
 
     // return success
     return true;
@@ -448,17 +476,30 @@ void Mode::zero_throttle_and_hold_attitude()
     attitude_control->set_throttle_out(0.0f, false, copter.g.throttle_filt);
 }
 
-void Mode::make_safe_spool_down()
+// handle situations where the vehicle is on the ground waiting for takeoff
+// force_throttle_unlimited should be true in cases where we want to keep the motors spooled up
+// (instead of spooling down to ground idle).  This is required for tradheli's in Guided and Auto
+// where we always want the motor spooled up in Guided or Auto mode.  Tradheli's main rotor stops 
+// when spooled down to ground idle.
+// ultimately it forces the motor interlock to be obeyed in auto and guided modes when on the ground.
+void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
 {
-    // command aircraft to initiate the shutdown process
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    if (force_throttle_unlimited) {
+        // keep rotors turning 
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+    } else {
+        // spool down to ground idle
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+    }
+
+
     switch (motors->get_spool_state()) {
 
     case AP_Motors::SpoolState::SHUT_DOWN:
     case AP_Motors::SpoolState::GROUND_IDLE:
         // relax controllers during idle states
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         break;
 
     case AP_Motors::SpoolState::SPOOLING_UP:
@@ -468,7 +509,7 @@ void Mode::make_safe_spool_down()
         break;
     }
 
-    pos_control->relax_alt_hold_controllers(0.0f);   // forces throttle output to go to zero
+    pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_z_controller();
     // we may need to move this out
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(0.0f, 0.0f, 0.0f);
@@ -497,19 +538,24 @@ int32_t Mode::get_alt_above_ground_cm(void)
 void Mode::land_run_vertical_control(bool pause_descent)
 {
     float cmb_rate = 0;
+    bool ignore_descent_limit = false;
     if (!pause_descent) {
+
+        // do not ignore limits until we have slowed down for landing
+        ignore_descent_limit = (MAX(g2.land_alt_low,100) > get_alt_above_ground_cm()) || copter.ap.land_complete_maybe;
+
         float max_land_descent_velocity;
         if (g.land_speed_high > 0) {
             max_land_descent_velocity = -g.land_speed_high;
         } else {
-            max_land_descent_velocity = pos_control->get_max_speed_down();
+            max_land_descent_velocity = pos_control->get_max_speed_down_cms();
         }
 
         // Don't speed up for landing.
         max_land_descent_velocity = MIN(max_land_descent_velocity, -abs(g.land_speed));
 
         // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low.
-        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), G_Dt);
+        cmb_rate = sqrt_controller(MAX(g2.land_alt_low,100)-get_alt_above_ground_cm(), pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
@@ -518,20 +564,36 @@ void Mode::land_run_vertical_control(bool pause_descent)
         const bool navigating = pos_control->is_active_xy();
         bool doing_precision_landing = !copter.ap.land_repo_active && copter.precland.target_acquired() && navigating;
 
-        if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
-            // compute desired velocity
-            const float precland_acceptable_error = 15.0f;
-            const float precland_min_descent_speed = 10.0f;
-
-            float max_descent_speed = abs(g.land_speed)*0.5f;
-            float land_slowdown = MAX(0.0f, pos_control->get_pos_error_xy()*(max_descent_speed/precland_acceptable_error));
-            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+        if (doing_precision_landing) {
+            // prec landing is active
+            Vector2f target_pos;
+            float target_error_cm = 0.0f;
+            if (copter.precland.get_target_position_cm(target_pos)) {
+                const Vector2f current_pos = inertial_nav.get_position_xy_cm();
+                // target is this many cm away from the vehicle
+                target_error_cm = (target_pos - current_pos).length();
+            }
+            // check if we should descend or not
+            const float max_horiz_pos_error_cm = copter.precland.get_max_xy_error_before_descending_cm();
+            if (target_error_cm > max_horiz_pos_error_cm && !is_zero(max_horiz_pos_error_cm)) {
+                // doing precland but too far away from the obstacle
+                // do not descend
+                cmb_rate = 0.0f;
+            } else if (copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
+                // very close to the ground and doing prec land, lets slow down to make sure we land on target
+                // compute desired descent velocity
+                const float precland_acceptable_error_cm = 15.0f;
+                const float precland_min_descent_speed_cms = 10.0f;
+                const float max_descent_speed_cms = abs(g.land_speed)*0.5f;
+                const float land_slowdown = MAX(0.0f, target_error_cm*(max_descent_speed_cms/precland_acceptable_error_cm));
+                cmb_rate = MIN(-precland_min_descent_speed_cms, -max_descent_speed_cms+land_slowdown);
+            }
         }
 #endif
     }
 
     // update altitude target and call position controller
-    pos_control->set_alt_target_from_climb_rate_ff(cmb_rate, G_Dt, true);
+    pos_control->land_at_climb_rate_cm(cmb_rate, ignore_descent_limit);
     pos_control->update_z_controller();
 }
 
@@ -561,7 +623,7 @@ void Mode::land_run_horizontal_control()
             update_simple_mode();
 
             // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
             // record if pilot has overridden roll or pitch
             if (!is_zero(target_roll) || !is_zero(target_pitch)) {
@@ -573,7 +635,7 @@ void Mode::land_run_horizontal_control()
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -585,20 +647,18 @@ void Mode::land_run_horizontal_control()
     if (doing_precision_landing) {
         Vector2f target_pos, target_vel_rel;
         if (!copter.precland.get_target_position_cm(target_pos)) {
-            target_pos.x = inertial_nav.get_position().x;
-            target_pos.y = inertial_nav.get_position().y;
+            target_pos = inertial_nav.get_position_xy_cm();
         }
         if (!copter.precland.get_target_velocity_relative_cms(target_vel_rel)) {
-            target_vel_rel.x = -inertial_nav.get_velocity().x;
-            target_vel_rel.y = -inertial_nav.get_velocity().y;
+            target_vel_rel = -inertial_nav.get_velocity_xy_cms();
         }
-        pos_control->set_xy_target(target_pos.x, target_pos.y);
+        pos_control->set_pos_target_xy_cm(target_pos.x, target_pos.y);
         pos_control->override_vehicle_velocity_xy(-target_vel_rel);
     }
 #endif
 
     // process roll, pitch inputs
-    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
+    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
 
     // run loiter controller
     loiter_nav->update();
@@ -612,17 +672,17 @@ void Mode::land_run_horizontal_control()
         // there is any position estimate drift after touchdown. We
         // limit attitude to 7 degrees below this limit and linearly
         // interpolate for 1m above that
-        float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
+        const float attitude_limit_cd = linear_interpolate(700, copter.aparm.angle_max, get_alt_above_ground_cm(),
                                                      g2.wp_navalt_min*100U, (g2.wp_navalt_min+1)*100U);
-        float thrust_vector_max = sinf(radians(attitude_limit_cd / 100.0f)) * GRAVITY_MSS * 100.0f;
-        float thrust_vector_mag = norm(thrust_vector.x, thrust_vector.y);
+        const float thrust_vector_max = sinf(radians(attitude_limit_cd / 100.0f)) * GRAVITY_MSS * 100.0f;
+        const float thrust_vector_mag = thrust_vector.xy().length();
         if (thrust_vector_mag > thrust_vector_max) {
             float ratio = thrust_vector_max / thrust_vector_mag;
             thrust_vector.x *= ratio;
             thrust_vector.y *= ratio;
 
             // tell position controller we are applying an external limit
-            pos_control->set_limit_accel_xy();
+            pos_control->set_externally_limited_xy();
         }
     }
 
@@ -635,6 +695,119 @@ void Mode::land_run_horizontal_control()
         attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
     }
 }
+
+// run normal or precision landing (if enabled)
+// pause_descent is true if vehicle should not descend
+void Mode::land_run_normal_or_precland(bool pause_descent)
+{
+#if PRECISION_LANDING == ENABLED
+    if (pause_descent || !copter.precland.enabled()) {
+        // we don't want to start descending immediately or prec land is disabled
+        // in both cases just run simple land controllers
+        land_run_horiz_and_vert_control(pause_descent);
+    } else {
+        // prec land is enabled and we have not paused descent
+        // the state machine takes care of the entire prec landing procedure
+        precland_run();
+    }
+#else
+    land_run_horiz_and_vert_control(pause_descent);
+#endif
+}
+
+#if PRECISION_LANDING == ENABLED
+// Go towards a position commanded by prec land state machine in order to retry landing
+// The passed in location is expected to be NED and in m
+void Mode::precland_retry_position(const Vector3f &retry_pos)
+{
+    if (!copter.failsafe.radio) {
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+            AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
+            // exit land if throttle is high
+            if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+                set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+            }
+        }
+
+        // allow user to take control during repositioning. Note: copied from land_run_horizontal_control()
+        // To-Do: this code exists at several different places in slightly diffrent forms and that should be fixed
+        if (g.land_repositioning) {
+            float target_roll = 0.0f;
+            float target_pitch = 0.0f;
+            // convert pilot input to lean angles
+            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+
+            // record if pilot has overridden roll or pitch
+            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+                if (!copter.ap.land_repo_active) {
+                    AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
+                }
+                // this flag will be checked by prec land state machine later and any further landing retires will be cancelled
+                copter.ap.land_repo_active = true;
+            }
+        }
+    }
+
+    Vector3p retry_pos_NEU{retry_pos.x, retry_pos.y, retry_pos.z * -1.0f};
+    //pos contoller expects input in NEU cm's
+    retry_pos_NEU = retry_pos_NEU * 100.0f;
+    pos_control->input_pos_xyz(retry_pos_NEU, 0.0f, 1000.0f);
+
+    // run position controllers
+    pos_control->update_xy_controller();
+    pos_control->update_z_controller();
+
+    const Vector3f thrust_vector{pos_control->get_thrust_vector()};
+
+    // roll, pitch from position controller, yaw heading from auto_heading()
+    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
+}
+
+// Run precland statemachine. This function should be called from any mode that wants to do precision landing.
+// This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
+void Mode::precland_run()
+{
+    // if user is taking control, we will not run the statemachine, and simply land (may or may not be on target)
+    if (!copter.ap.land_repo_active) {
+        // This will get updated later to a retry pos if needed
+        Vector3f retry_pos;
+
+        switch (copter.precland_statemachine.update(retry_pos)) {
+        case AC_PrecLand_StateMachine::Status::RETRYING:
+            // we want to retry landing by going to another position
+            precland_retry_position(retry_pos);
+            break;
+
+        case AC_PrecLand_StateMachine::Status::FAILSAFE: {
+            // we have hit a failsafe. Failsafe can only mean two things, we either want to stop permanently till user takes over or land
+            switch (copter.precland_statemachine.get_failsafe_actions()) {
+            case AC_PrecLand_StateMachine::FailSafeAction::DESCEND:
+                // descend normally, prec land target is definitely not in sight
+                land_run_horiz_and_vert_control();
+                break;
+            case AC_PrecLand_StateMachine::FailSafeAction::HOLD_POS:
+                // sending "true" in this argument will stop the descend
+                land_run_horiz_and_vert_control(true);
+                break;
+            }
+            break;
+        }
+        case AC_PrecLand_StateMachine::Status::ERROR:
+            // should never happen, is certainly a bug. Report then descend
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            FALLTHROUGH;
+        case AC_PrecLand_StateMachine::Status::DESCEND:
+            // run land controller. This will descend towards the target if prec land target is in sight
+            // else it will just descend vertically
+            land_run_horiz_and_vert_control();
+            break;
+        }
+    } else {
+        // just land, since user has taken over controls, it does not make sense to run any retries or failsafe measures
+        land_run_horiz_and_vert_control();
+    }
+}
+#endif
 
 float Mode::throttle_hover() const
 {
@@ -676,11 +849,17 @@ float Mode::get_pilot_desired_throttle() const
 float Mode::get_avoidance_adjusted_climbrate(float target_rate)
 {
 #if AC_AVOID_ENABLED == ENABLED
-    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z(), target_rate, G_Dt);
+    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), target_rate, G_Dt);
     return target_rate;
 #else
     return target_rate;
 #endif
+}
+
+// send output to the motors, can be overridden by subclasses
+void Mode::output_to_motors()
+{
+    motors->output();
 }
 
 Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
@@ -737,32 +916,15 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 
 // transform pilot's yaw input into a desired yaw rate
 // returns desired yaw rate in centi-degrees per second
-float Mode::get_pilot_desired_yaw_rate(int16_t stick_angle)
+float Mode::get_pilot_desired_yaw_rate(float yaw_in)
 {
     // throttle failsafe check
     if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
         return 0.0f;
     }
 
-    // range check expo
-    g2.acro_y_expo = constrain_float(g2.acro_y_expo, 0.0f, 1.0f);
-
-    // calculate yaw rate request
-    float yaw_request;
-    if (is_zero(g2.acro_y_expo)) {
-        yaw_request = stick_angle * g.acro_yaw_p;
-    } else {
-        // expo variables
-        float y_in, y_in3, y_out;
-
-        // yaw expo
-        y_in = float(stick_angle)/ROLL_PITCH_YAW_INPUT_MAX;
-        y_in3 = y_in*y_in*y_in;
-        y_out = (g2.acro_y_expo * y_in3) + ((1.0f - g2.acro_y_expo) * y_in);
-        yaw_request = ROLL_PITCH_YAW_INPUT_MAX * y_out * g.acro_yaw_p;
-    }
     // convert pilot input to the desired yaw rate
-    return yaw_request;
+    return g2.pilot_y_rate * 100.0 * input_expo(yaw_in, g2.pilot_y_expo);
 }
 
 // pass-through functions to reduce code churn on conversion;
@@ -801,8 +963,8 @@ GCS_Copter &Mode::gcs()
 // are taking off so I terms can be cleared
 void Mode::set_throttle_takeoff()
 {
-    // tell position controller to reset alt target and reset I terms
-    pos_control->init_takeoff();
+    // initialise the vertical position controller
+    pos_control->init_z_controller();
 }
 
 uint16_t Mode::get_pilot_speed_dn()

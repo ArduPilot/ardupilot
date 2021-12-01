@@ -86,10 +86,11 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     }
 
     return (AP_Arming::pre_arm_checks(report)
-            & rover.g2.motors.pre_arm_check(report)
+            & motor_checks(report)
             & oa_check(report)
             & parameter_checks(report)
-            & mode_checks(report));
+            & mode_checks(report)
+            & pilot_throttle_checks(report));
 }
 
 bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
@@ -188,6 +189,19 @@ bool AP_Arming_Rover::parameter_checks(bool report)
     return true;
 }
 
+// check throttle is above failsafe throttle
+bool AP_Arming_Rover::pilot_throttle_checks(bool report)
+{
+    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
+        if (rover.g.fs_throttle_enabled != FS_THR_DISABLED && rover.channel_throttle->get_radio_in() < rover.g.fs_throttle_value) {
+            check_failed(ARMING_CHECK_RC, report, "Throttle below failsafe");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // check if arming allowed from this mode
 bool AP_Arming_Rover::mode_checks(bool report)
 {
@@ -197,4 +211,23 @@ bool AP_Arming_Rover::mode_checks(bool report)
         return false;
     }
     return true;
+}
+
+// check motors are ready
+bool AP_Arming_Rover::motor_checks(bool report)
+{
+    bool ret = rover.g2.motors.pre_arm_check(report);
+
+#if HAL_TORQEEDO_ENABLED
+    char failure_msg[50];
+    AP_Torqeedo *torqeedo = AP_Torqeedo::get_singleton();
+    if (torqeedo != nullptr) {
+        if (!torqeedo->pre_arm_checks(failure_msg, ARRAY_SIZE(failure_msg))) {
+            check_failed(report, "Torqeedo: %s", failure_msg);
+            ret = false;
+        }
+    }
+#endif
+
+    return ret;
 }

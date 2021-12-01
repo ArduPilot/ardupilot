@@ -53,6 +53,14 @@ Shared_DMA::Shared_DMA(uint8_t _stream_id1,
     deallocate = _deallocate;
 }
 
+/*
+  return true if a stream ID is shared between two peripherals
+*/
+bool Shared_DMA::is_shared(uint8_t stream_id)
+{
+    return (stream_id < SHARED_DMA_MAX_STREAM_ID) && ((1U<<stream_id) & SHARED_DMA_MASK) != 0;
+}
+
 //remove any assigned deallocator or allocator
 void Shared_DMA::unregister()
 {
@@ -235,7 +243,7 @@ void Shared_DMA::dma_info(ExpandingString &str)
     // no buffer allocated, start counting
     if (_contention_stats == nullptr) {
         _contention_stats = new dma_stats[SHARED_DMA_MAX_STREAM_ID+1];
-        return;
+        // return zeros on first fetch
     }
 
     // a header to allow for machine parsers to determine format

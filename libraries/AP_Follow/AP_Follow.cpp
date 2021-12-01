@@ -334,7 +334,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 // @Field: LatE: Vehicle latitude
 // @Field: LonE: Vehicle longitude
 // @Field: AltE: Vehicle absolute altitude
-        AP::logger().Write("FOLL",
+        AP::logger().WriteStreaming("FOLL",
                                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE",  // labels
                                                "sDUmnnnDUm",    // units
                                                "F--B000--B",    // mults

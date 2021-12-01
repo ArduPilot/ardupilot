@@ -101,7 +101,11 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     }
 #endif
 
-    if (!_imu._calibrating_accel && (_imu._acal == nullptr || !_imu._acal->running())) {
+    if (!_imu._calibrating_accel && (_imu._acal == nullptr
+#if HAL_INS_ACCELCAL_ENABLED
+        || !_imu._acal->running()
+#endif
+    )) {
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections
@@ -171,6 +175,9 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle[instance] = _imu._delta_angle_acc[instance];
     _imu._delta_angle_dt[instance] = _imu._delta_angle_acc_dt[instance];
     _imu._delta_angle_valid[instance] = true;
+
+    _imu._delta_angle_acc[instance].zero();
+    _imu._delta_angle_acc_dt[instance] = 0;
 }
 
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
@@ -330,6 +337,8 @@ void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f 
     _imu._delta_velocity_dt[instance] = _imu._delta_velocity_acc_dt[instance];
     _imu._delta_velocity_valid[instance] = true;
 
+    _imu._delta_velocity_acc[instance].zero();
+    _imu._delta_velocity_acc_dt[instance] = 0;
 
     if (_imu._accel_calibrator != nullptr && _imu._accel_calibrator[instance].get_status() == ACCEL_CAL_COLLECTING_SAMPLE) {
         Vector3f cal_sample = _imu._delta_velocity[instance];

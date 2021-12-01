@@ -15,7 +15,7 @@
 
 #include "AP_BattMonitor_Generator.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>

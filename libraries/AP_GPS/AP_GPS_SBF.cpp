@@ -21,6 +21,7 @@
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <stdio.h>
 #include <ctype.h>
 

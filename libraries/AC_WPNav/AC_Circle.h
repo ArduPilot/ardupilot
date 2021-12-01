@@ -22,7 +22,7 @@ public:
     /// init - initialise circle controller setting center specifically
     ///     set terrain_alt to true if center.z should be interpreted as an alt-above-terrain
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
-    void init(const Vector3f& center, bool terrain_alt);
+    void init(const Vector3p& center, bool terrain_alt);
 
     /// init - initialise circle controller setting center using stopping point and projecting out based on the copter's heading
     ///     caller should set the position controller's x,y and z speeds and accelerations before calling this
@@ -33,10 +33,10 @@ public:
 
     /// set_circle_center as a vector from ekf origin
     ///     terrain_alt should be true if center.z is alt is above terrain
-    void set_center(const Vector3f& center, bool terrain_alt) { _center = center; _terrain_alt = terrain_alt; }
+    void set_center(const Vector3f& center, bool terrain_alt) { _center = center.topostype(); _terrain_alt = terrain_alt; }
 
     /// get_circle_center in cm from home
-    const Vector3f& get_center() const { return _center; }
+    const Vector3p& get_center() const { return _center; }
 
     /// returns true if using terrain altitudes
     bool center_is_terrain_alt() const { return _terrain_alt; }
@@ -61,7 +61,7 @@ public:
 
     /// update - update circle controller
     ///     returns false on failure which indicates a terrain failsafe
-    bool update() WARN_IF_UNUSED;
+    bool update(float climb_rate_cms = 0.0f) WARN_IF_UNUSED;
 
     /// get desired roll, pitch which should be fed into stabilize controllers
     float get_roll() const { return _pos_control.get_roll_cd(); }
@@ -81,10 +81,10 @@ public:
     void get_closest_point_on_circle(Vector3f &result) const;
 
     /// get horizontal distance to loiter target in cm
-    float get_distance_to_target() const { return _pos_control.get_pos_error_xy(); }
+    float get_distance_to_target() const { return _pos_control.get_pos_error_xy_cm(); }
 
     /// get bearing to target in centi-degrees
-    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target(); }
+    int32_t get_bearing_to_target() const { return _pos_control.get_bearing_to_target_cd(); }
 
     /// true if pilot control of radius and turn rate is enabled
     bool pilot_control_enabled() const { return (_options.get() & CircleOptions::MANUAL_CONTROL) != 0; }
@@ -143,7 +143,7 @@ private:
     AP_Int16    _options;       // stick control enable/disable
 
     // internal variables
-    Vector3f    _center;        // center of circle in cm from home
+    Vector3p    _center;        // center of circle in cm from home
     float       _radius;        // radius of circle in cm
     float       _yaw;           // yaw heading (normally towards circle center)
     float       _angle;         // current angular position around circle in radians (0=directly north of the center of the circle)

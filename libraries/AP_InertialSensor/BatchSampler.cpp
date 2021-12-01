@@ -1,4 +1,6 @@
 #include "AP_InertialSensor.h"
+
+#if HAL_INS_ENABLED
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -16,7 +18,6 @@ const AP_Param::GroupInfo AP_InertialSensor::BatchSampler::var_info[] = {
     // @DisplayName: Sensor Bitmask
     // @Description: Bitmap of which IMUs to log batch data for. This option takes effect on the next reboot.
     // @User: Advanced
-    // @Values: 0:None,1:First IMU,255:All
     // @Bitmask: 0:IMU1,1:IMU2,2:IMU3
     // @RebootRequired: True
     AP_GROUPINFO("BAT_MASK",  2, AP_InertialSensor::BatchSampler, _sensor_mask,   DEFAULT_IMU_LOG_BAT_MASK),
@@ -58,7 +59,7 @@ void AP_InertialSensor::BatchSampler::init()
     _required_count -= _required_count % 32; // round down to nearest multiple of 32
 
     const uint32_t total_allocation = 3*_required_count*sizeof(uint16_t);
-    gcs().send_text(MAV_SEVERITY_DEBUG, "INS: alloc %u bytes for ISB (free=%u)", (unsigned int)total_allocation, (unsigned int)hal.util->available_memory());
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: alloc %u bytes for ISB (free=%u)", (unsigned int)total_allocation, (unsigned int)hal.util->available_memory());
 
     data_x = (int16_t*)calloc(_required_count, sizeof(int16_t));
     data_y = (int16_t*)calloc(_required_count, sizeof(int16_t));
@@ -70,7 +71,7 @@ void AP_InertialSensor::BatchSampler::init()
         data_x = nullptr;
         data_y = nullptr;
         data_z = nullptr;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for IMU batch sampling", (unsigned int)total_allocation);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for IMU batch sampling", (unsigned int)total_allocation);
         return;
     }
 
@@ -277,3 +278,4 @@ void AP_InertialSensor::BatchSampler::sample(uint8_t _instance, AP_InertialSenso
 
     data_write_offset++; // may unblock the reading process
 }
+#endif //#if HAL_INS_ENABLED

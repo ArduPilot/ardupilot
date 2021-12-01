@@ -73,7 +73,15 @@ public:
         Notify_LED_ProfiLED                 = (1 << 9), // ProfiLED
         Notify_LED_Scripting                = (1 << 10),// Colour accessor for scripting
         Notify_LED_DShot                    = (1 << 11),// Use dshot commands to set ESC LEDs
+        Notify_LED_ProfiLED_SPI             = (1 << 12), // ProfiLED
         Notify_LED_MAX
+    };
+
+    enum Notify_Buzz_Type {
+        Notify_Buzz_None                    = 0,
+        Notify_Buzz_Builtin                 = (1 << 0), // Built in default Alarm Out
+        Notify_Buzz_DShot                   = (1 << 1), // DShot Alarm
+        Notify_Buzz_UAVCAN                  = (1 << 2), // UAVCAN Alarm
     };
 
     /// notify_flags_type - bitmask of notification flags
@@ -149,6 +157,9 @@ public:
 
     // handle RGB from Scripting or AP_Periph
     static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
+
+    // handle RGB from Scripting
+    static void handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id);
 
     // handle a PLAY_TUNE message
     static void handle_play_tune(const mavlink_message_t &msg);

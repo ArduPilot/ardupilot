@@ -33,6 +33,10 @@ namespace AP_HAL {
     class OpticalFlow;
     class DSP;
 
+    class QSPIDevice;
+    class QSPIDeviceDriver;
+    class QSPIDeviceManager;
+
     class CANIface;
     class CANFrame;
 

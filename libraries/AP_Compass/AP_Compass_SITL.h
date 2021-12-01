@@ -20,7 +20,7 @@ public:
 private:
     uint8_t _compass_instance[MAX_SITL_COMPASSES];
     uint8_t _num_compass;
-    SITL::SITL *_sitl;
+    SITL::SIM *_sitl;
 
     // delay buffer variables
     struct readings_compass {

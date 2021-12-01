@@ -2,16 +2,6 @@
 
 #include "GCS_Mavlink.h"
 
-/*
- *  !!NOTE!!
- *
- *  the use of NOINLINE separate functions for each message type avoids
- *  a compiler bug in gcc that would cause it to use far more stack
- *  space than is needed. Without the NOINLINE we use the sum of the
- *  stack needed for each message type. Please be careful to follow the
- *  pattern below when adding any new messages
- */
-
 MAV_TYPE GCS_Blimp::frame_type() const
 {
     return blimp.get_frame_mav_type();
@@ -20,42 +10,7 @@ MAV_TYPE GCS_Blimp::frame_type() const
 MAV_MODE GCS_MAVLINK_Blimp::base_mode() const
 {
     uint8_t _base_mode = MAV_MODE_FLAG_STABILIZE_ENABLED;
-    // work out the base_mode. This value is not very useful
-    // for APM, but we calculate it as best we can so a generic
-    // MAVLink enabled ground station can work out something about
-    // what the MAV is up to. The actual bit values are highly
-    // ambiguous for most of the APM flight modes. In practice, you
-    // only get useful information from the custom_mode, which maps to
-    // the APM flight mode and has a well defined meaning in the
-    // ArduPlane documentation
-
-    // switch (blimp.control_mode) {
-    // case Mode::Number::AUTO:
-    // case Mode::Number::RTL:
-    // case Mode::Number::LOITER:
-    // case Mode::Number::AVOID_ADSB:
-    // case Mode::Number::FOLLOW:
-    // case Mode::Number::GUIDED:
-    // case Mode::Number::CIRCLE:
-    // case Mode::Number::POSHOLD:
-    // case Mode::Number::BRAKE:
-    // case Mode::Number::SMART_RTL:
-    //     _base_mode |= MAV_MODE_FLAG_GUIDED_ENABLED;
-    //     // note that MAV_MODE_FLAG_AUTO_ENABLED does not match what
-    //     // APM does in any mode, as that is defined as "system finds its own goal
-    //     // positions", which APM does not currently do
-    //     break;
-    // default:
-    //     break;
-    // }
-
-    // all modes except INITIALISING have some form of manual
-    // override if stick mixing is enabled
     _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
-
-#if HIL_MODE != HIL_MODE_DISABLED
-    _base_mode |= MAV_MODE_FLAG_HIL_ENABLED;
-#endif
 
     // we are armed if we are not initialising
     if (blimp.motors != nullptr && blimp.motors->armed()) {
@@ -97,7 +52,7 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
             POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-            POSITION_TARGET_TYPEMASK_FORCE_SET | POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+            POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
 
     mavlink_msg_position_target_global_int_send(
         chan,
@@ -116,49 +71,6 @@ void GCS_MAVLINK_Blimp::send_position_target_global_int()
         0.0f, // yaw
         0.0f); // yaw_rate
 }
-
-// void GCS_MAVLINK_Blimp::send_position_target_local_ned()
-// {
-// #if MODE_GUIDED_ENABLED == ENABLED
-//     if (!blimp.flightmode->in_guided_mode()) {
-//         return;
-//     }
-
-//     const GuidedMode guided_mode = blimp.mode_guided.mode();
-//     Vector3f target_pos;
-//     Vector3f target_vel;
-//     uint16_t type_mask;
-
-//     if (guided_mode == Guided_WP) {
-//         type_mask = 0x0FF8; // ignore everything except position
-//         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f; // convert to metres
-//     } else if (guided_mode == Guided_Velocity) {
-//         type_mask = 0x0FC7; // ignore everything except velocity
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f; // convert to m/s
-//     } else {
-//         type_mask = 0x0FC0; // ignore everything except position & velocity
-//         target_pos = blimp.wp_nav->get_wp_destination() * 0.01f;
-//         target_vel = blimp.flightmode->get_desired_velocity() * 0.01f;
-//     }
-
-//     mavlink_msg_position_target_local_ned_send(
-//         chan,
-//         AP_HAL::millis(), // time boot ms
-//         MAV_FRAME_LOCAL_NED,
-//         type_mask,
-//         target_pos.x, // x in metres
-//         target_pos.y, // y in metres
-//         -target_pos.z, // z in metres NED frame
-//         target_vel.x, // vx in m/s
-//         target_vel.y, // vy in m/s
-//         -target_vel.z, // vz in m/s NED frame
-//         0.0f, // afx
-//         0.0f, // afy
-//         0.0f, // afz
-//         0.0f, // yaw
-//         0.0f); // yaw_rate
-// #endif
-// }
 
 void GCS_MAVLINK_Blimp::send_nav_controller_output() const
 {
@@ -189,11 +101,20 @@ int16_t GCS_MAVLINK_Blimp::vfr_hud_throttle() const
  */
 void GCS_MAVLINK_Blimp::send_pid_tuning()
 {
-    static const PID_TUNING_AXIS axes[] = {
-        PID_TUNING_ROLL,
-        PID_TUNING_PITCH,
-        PID_TUNING_YAW,
-        PID_TUNING_ACCZ
+    if(blimp.control_mode == Mode::Number::MANUAL || blimp.control_mode == Mode::Number::LAND) {
+        //No PIDs are used in Manual or Land mode.
+        return;
+    }
+    
+    static const int8_t axes[] = {
+        PID_SEND::VELX,
+        PID_SEND::VELY,
+        PID_SEND::VELZ,
+        PID_SEND::VELYAW,
+        PID_SEND::POSX,
+        PID_SEND::POSY,
+        PID_SEND::POSZ,
+        PID_SEND::POSYAW
     };
     for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
         if (!(blimp.g.gcs_pid_mask & (1<<(axes[i]-1)))) {
@@ -203,19 +124,31 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
             return;
         }
         const AP_Logger::PID_Info *pid_info = nullptr;
-        switch (axes[i]) { //TODO This should probably become an acceleration controller?
-        // case PID_TUNING_ROLL:
-        //     pid_info = &blimp.attitude_control->get_rate_roll_pid().get_pid_info();
-        //     break;
-        // case PID_TUNING_PITCH:
-        //     pid_info = &blimp.attitude_control->get_rate_pitch_pid().get_pid_info();
-        //     break;
-        // case PID_TUNING_YAW:
-        //     pid_info = &blimp.attitude_control->get_rate_yaw_pid().get_pid_info();
-        //     break;
-        // case PID_TUNING_ACCZ:
-        //     pid_info = &blimp.pos_control->get_accel_z_pid().get_pid_info();
-        //     break;
+        switch (axes[i]) {
+        case PID_SEND::VELX:
+            pid_info = &blimp.pid_vel_xy.get_pid_info_x();
+            break;
+        case PID_SEND::VELY:
+            pid_info = &blimp.pid_vel_xy.get_pid_info_y();
+            break;
+        case PID_SEND::VELZ:
+            pid_info = &blimp.pid_vel_z.get_pid_info();
+            break;
+        case PID_SEND::VELYAW:
+            pid_info = &blimp.pid_vel_yaw.get_pid_info();
+            break;
+        case PID_SEND::POSX:
+            pid_info = &blimp.pid_pos_xy.get_pid_info_x();
+            break;
+        case PID_SEND::POSY:
+            pid_info = &blimp.pid_pos_xy.get_pid_info_y();
+            break;
+        case PID_SEND::POSZ:
+            pid_info = &blimp.pid_pos_z.get_pid_info();
+            break;
+        case PID_SEND::POSYAW:
+            pid_info = &blimp.pid_pos_yaw.get_pid_info();
+            break;
         default:
             continue;
         }
@@ -227,7 +160,9 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
                                         pid_info->FF,
                                         pid_info->P,
                                         pid_info->I,
-                                        pid_info->D);
+                                        pid_info->D,
+                                        pid_info->slew_rate,
+                                        pid_info->Dmod);
         }
     }
 }
@@ -287,7 +222,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
 
     // @Param: EXT_STAT
     // @DisplayName: Extended status stream rate to ground station
-    // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, and FENCE_STATUS to ground station
+    // @Description: Stream rate of SYS_STATUS, POWER_STATUS, MCU_STATUS, MEMINFO, CURRENT_WAYPOINT, GPS_RAW_INT, GPS_RTK (if available), GPS2_RAW (if available), GPS2_RTK (if available), NAV_CONTROLLER_OUTPUT, and FENCE_STATUS to ground station
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -304,8 +239,8 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     AP_GROUPINFO("RC_CHAN",  2, GCS_MAVLINK_Parameters, streamRates[2],  0),
 
     // @Param: RAW_CTRL
-    // @DisplayName: Raw Control stream rate to ground station
-    // @Description: Stream rate of RC_CHANNELS_SCALED (HIL only) to ground station
+    // @DisplayName: Unused
+    // @Description: Unused
     // @Units: Hz
     // @Range: 0 10
     // @Increment: 1
@@ -366,11 +301,11 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
-    MSG_SENSOR_OFFSETS
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
     MSG_POWER_STATUS,
+    MSG_MCU_STATUS,
     MSG_MEMINFO,
     MSG_CURRENT_WAYPOINT, // MISSION_CURRENT
     MSG_GPS_RAW,
@@ -454,8 +389,6 @@ void GCS_MAVLINK_Blimp::handle_change_alt_request(AP_Mission::Mission_Command &c
     if (cmd.content.location.relative_alt) {
         cmd.content.location.alt += blimp.ahrs.get_home().alt;
     }
-
-    // To-Do: update target altitude for loiter or waypoint controller depending upon nav mode
 }
 
 void GCS_MAVLINK_Blimp::packetReceived(const mavlink_status_t &status,
@@ -574,41 +507,8 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_l
     switch (packet.command) {
 
     case MAV_CMD_NAV_TAKEOFF: {
-        // param3 : horizontal navigation by pilot acceptable
-        // param4 : yaw angle   (not supported)
-        // param5 : latitude    (not supported)
-        // param6 : longitude   (not supported)
-        // param7 : altitude [metres]
-
-        // float takeoff_alt = packet.param7 * 100;      // Convert m to cm
-
-        // if (!blimp.flightmode->do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
-        //     return MAV_RESULT_FAILED;
-        //MIR Do I need this?
-        // }
         return MAV_RESULT_ACCEPTED;
     }
-
-    // #if MODE_AUTO_ENABLED == ENABLED
-    //     case MAV_CMD_DO_LAND_START:
-    //         if (blimp.mode_auto.mission.jump_to_landing_sequence() && blimp.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
-    //             return MAV_RESULT_ACCEPTED;
-    //         }
-    //         return MAV_RESULT_FAILED;
-    // #endif
-
-    // case MAV_CMD_NAV_LOITER_UNLIM:
-    //     if (!blimp.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
-    //         return MAV_RESULT_FAILED;
-    //     }
-    //     return MAV_RESULT_ACCEPTED;
-
-    // case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-    //     if (!blimp.set_mode(Mode::Number::RTL, ModeReason::GCS_COMMAND)) {
-    //         return MAV_RESULT_FAILED;
-    //     }
-    //     return MAV_RESULT_ACCEPTED;
-
 
     case MAV_CMD_CONDITION_YAW:
         // param1 : target angle [0-360]
@@ -635,211 +535,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_long_packet(const mavlink_command_l
 void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-
-    // #if MODE_GUIDED_ENABLED == ENABLED
-    //     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:   // MAV ID: 82
-    //     {
-    //         // decode packet
-    //         mavlink_set_attitude_target_t packet;
-    //         mavlink_msg_set_attitude_target_decode(&msg, &packet);
-
-    //         // exit if vehicle is not in Guided mode or Auto-Guided mode
-    //         if (!blimp.flightmode->in_guided_mode()) {
-    //             break;
-    //         }
-
-    //         // ensure type_mask specifies to use attitude and thrust
-    //         if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
-    //             break;
-    //         }
-
-    //         // check if the message's thrust field should be interpreted as a climb rate or as thrust
-    //         const bool use_thrust = blimp.g2.dev_options.get() & DevOptionSetAttitudeTarget_ThrustAsThrust;
-
-    //         float climb_rate_or_thrust;
-    //         if (use_thrust) {
-    //             // interpret thrust as thrust
-    //             climb_rate_or_thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
-    //         } else {
-    //             // convert thrust to climb rate
-    //             packet.thrust = constrain_float(packet.thrust, 0.0f, 1.0f);
-    //             if (is_equal(packet.thrust, 0.5f)) {
-    //                 climb_rate_or_thrust = 0.0f;
-    //             } else if (packet.thrust > 0.5f) {
-    //                 // climb at up to WPNAV_SPEED_UP
-    //                 climb_rate_or_thrust = (packet.thrust - 0.5f) * 2.0f * blimp.wp_nav->get_default_speed_up();
-    //             } else {
-    //                 // descend at up to WPNAV_SPEED_DN
-    //                 climb_rate_or_thrust = (0.5f - packet.thrust) * 2.0f * -fabsf(blimp.wp_nav->get_default_speed_down());
-    //             }
-    //         }
-
-    //         // if the body_yaw_rate field is ignored, use the commanded yaw position
-    //         // otherwise use the commanded yaw rate
-    //         bool use_yaw_rate = false;
-    //         if ((packet.type_mask & (1<<2)) == 0) {
-    //             use_yaw_rate = true;
-    //         }
-
-    //         blimp.mode_guided.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
-    //                 climb_rate_or_thrust, use_yaw_rate, packet.body_yaw_rate, use_thrust);
-
-    //         break;
-    //     }
-
-    //     case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:     // MAV ID: 84
-    //     {
-    //         // decode packet
-    //         mavlink_set_position_target_local_ned_t packet;
-    //         mavlink_msg_set_position_target_local_ned_decode(&msg, &packet);
-
-    //         // exit if vehicle is not in Guided mode or Auto-Guided mode
-    //         if (!blimp.flightmode->in_guided_mode()) {
-    //             break;
-    //         }
-
-    //         // check for supported coordinate frames
-    //         if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
-    //             packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
-    //             packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-    //             packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
-    //             break;
-    //         }
-
-    //         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
-    //         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
-    //         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
-    //         bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
-    //         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
-
-    //         // exit immediately if acceleration provided
-    //         if (!acc_ignore) {
-    //             break;
-    //         }
-
-    //         // prepare position
-    //         Vector3f pos_vector;
-    //         if (!pos_ignore) {
-    //             // convert to cm
-    //             pos_vector = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
-    //             // rotate to body-frame if necessary
-    //             if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-    //                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-    //                 blimp.rotate_body_frame_to_NE(pos_vector.x, pos_vector.y);
-    //             }
-    //             // add body offset if necessary
-    //             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
-    //                 packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-    //                 packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-    //                 pos_vector += blimp.inertial_nav.get_position();
-    //             }
-    //         }
-
-    //         // prepare velocity
-    //         Vector3f vel_vector;
-    //         if (!vel_ignore) {
-    //             // convert to cm
-    //             vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
-    //             // rotate to body-frame if necessary
-    //             if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-    //                 blimp.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
-    //             }
-    //         }
-
-    //         // prepare yaw
-    //         float yaw_cd = 0.0f;
-    //         bool yaw_relative = false;
-    //         float yaw_rate_cds = 0.0f;
-    //         if (!yaw_ignore) {
-    //             yaw_cd = ToDeg(packet.yaw) * 100.0f;
-    //             yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
-    //         }
-    //         if (!yaw_rate_ignore) {
-    //             yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
-    //         }
-
-    //         // send request
-    //         if (!pos_ignore && !vel_ignore) {
-    //             blimp.mode_guided.set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-    //         } else if (pos_ignore && !vel_ignore) {
-    //             blimp.mode_guided.set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-    //         } else if (!pos_ignore && vel_ignore) {
-    //             blimp.mode_guided.set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-    //         }
-
-    //         break;
-    //     }
-
-    //     case MAVLINK_MSG_ID_SET_POSITION_TARGET_GLOBAL_INT:    // MAV ID: 86
-    //     {
-    //         // decode packet
-    //         mavlink_set_position_target_global_int_t packet;
-    //         mavlink_msg_set_position_target_global_int_decode(&msg, &packet);
-
-    //         // exit if vehicle is not in Guided mode or Auto-Guided mode
-    //         if (!blimp.flightmode->in_guided_mode()) {
-    //             break;
-    //         }
-
-    //         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
-    //         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
-    //         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
-    //         bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
-    //         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
-
-    //         // exit immediately if acceleration provided
-    //         if (!acc_ignore) {
-    //             break;
-    //         }
-
-    //         // extract location from message
-    //         Location loc;
-    //         if (!pos_ignore) {
-    //             // sanity check location
-    //             if (!check_latlng(packet.lat_int, packet.lon_int)) {
-    //                 break;
-    //             }
-    //             Location::AltFrame frame;
-    //             if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.coordinate_frame, frame)) {
-    //                 // unknown coordinate frame
-    //                 break;
-    //             }
-    //             loc = {packet.lat_int, packet.lon_int, int32_t(packet.alt*100), frame};
-    //         }
-
-    //         // prepare yaw
-    //         float yaw_cd = 0.0f;
-    //         bool yaw_relative = false;
-    //         float yaw_rate_cds = 0.0f;
-    //         if (!yaw_ignore) {
-    //             yaw_cd = ToDeg(packet.yaw) * 100.0f;
-    //             yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
-    //         }
-    //         if (!yaw_rate_ignore) {
-    //             yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
-    //         }
-
-    //         // send targets to the appropriate guided mode controller
-    //         if (!pos_ignore && !vel_ignore) {
-    //             // convert Location to vector from ekf origin for posvel controller
-    //             if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
-    //                 // posvel controller does not support alt-above-terrain
-    //                 break;
-    //             }
-    //             Vector3f pos_neu_cm;
-    //             if (!loc.get_vector_from_origin_NEU(pos_neu_cm)) {
-    //                 break;
-    //             }
-    //             blimp.mode_guided.set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-    //         } else if (pos_ignore && !vel_ignore) {
-    //             blimp.mode_guided.set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f), !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-    //         } else if (!pos_ignore && vel_ignore) {
-    //             blimp.mode_guided.set_destination(loc, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
-    //         }
-
-    //         break;
-    //     }
-    // #endif
 
     case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS: {     // MAV ID: 109
@@ -869,12 +564,6 @@ void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
         }
         break;
     }
-
-    case MAVLINK_MSG_ID_ADSB_VEHICLE:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_CFG:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_DYNAMIC:
-    case MAVLINK_MSG_ID_UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT:
-        break;
 
     default:
         handle_common_message(msg);
@@ -944,3 +633,31 @@ void GCS_MAVLINK_Blimp::send_wind() const
         wind.length(),
         wind.z);
 }
+
+#if HAL_HIGH_LATENCY2_ENABLED
+uint8_t GCS_MAVLINK_Blimp::high_latency_wind_speed() const
+{
+    Vector3f airspeed_vec_bf;
+    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        // if we don't have an airspeed estimate then we don't have a
+        // valid wind estimate on blimps
+        return 0;
+    }
+    // return units are m/s*5
+    const Vector3f wind = AP::ahrs().wind_estimate();
+    return wind.length() * 5;
+}
+
+uint8_t GCS_MAVLINK_Blimp::high_latency_wind_direction() const
+{
+    Vector3f airspeed_vec_bf;
+    if (!AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        // if we don't have an airspeed estimate then we don't have a
+        // valid wind estimate on blimps
+        return 0;
+    }
+    const Vector3f wind = AP::ahrs().wind_estimate();
+    // need to convert -180->180 to 0->360/2
+    return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+}
+#endif // HAL_HIGH_LATENCY2_ENABLED

@@ -67,7 +67,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
     }
 #endif
 
-#if AP_TERRAIN_AVAILABLE && AC_TERRAIN
+#if AP_TERRAIN_AVAILABLE
     switch (sub.terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
         break;
@@ -98,5 +98,7 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
 
 // avoid building/linking LTM:
 void AP_LTM_Telem::init() {};
+#if AP_DEVO_TELEM_ENABLED
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
+#endif

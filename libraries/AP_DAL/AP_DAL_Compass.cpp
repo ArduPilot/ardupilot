@@ -17,11 +17,13 @@ void AP_DAL_Compass::start_frame()
     const auto &compass = AP::compass();
 
     const log_RMGH old = _RMGH;
+    _RMGH.available = compass.available();
     _RMGH.count = compass.get_count();
     _RMGH.auto_declination_enabled = compass.auto_declination_enabled();
     _RMGH.declination = compass.get_declination();
     _RMGH.num_enabled = compass.get_num_enabled();
     _RMGH.consistent = compass.consistent();
+    _RMGH.first_usable = compass.get_first_usable();
 
     WRITE_REPLAY_BLOCK_IFCHANGED(RMGH, _RMGH, old);
 

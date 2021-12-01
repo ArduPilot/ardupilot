@@ -31,6 +31,10 @@
 # define HAL_COMPASS_ICM20948_I2C_ADDR 0x69
 #endif
 
+#ifndef HAL_COMPASS_ICM20948_I2C_ADDR2
+# define HAL_COMPASS_ICM20948_I2C_ADDR2 0x68
+#endif
+
 class AuxiliaryBus;
 class AuxiliaryBusSlave;
 class AP_InertialSensor;
@@ -50,8 +54,13 @@ public:
                                              bool force_external,
                                              enum Rotation rotation);
 
-    /* Probe for AK09916 on auxiliary bus of ICM20948, connected through SPI */
-    static AP_Compass_Backend *probe_ICM20948(uint8_t mpu9250_instance,
+    /* Probe for AK09916 on auxiliary bus of ICM20948, connected through SPI by default */
+    static AP_Compass_Backend *probe_ICM20948(uint8_t mpu9250_instance, enum Rotation rotation);
+    static AP_Compass_Backend *probe_ICM20948_SPI(uint8_t mpu9250_instance,
+                                             enum Rotation rotation);
+
+	/* Probe for AK09916 on auxiliary bus of ICM20948, connected through I2C */
+    static AP_Compass_Backend *probe_ICM20948_I2C(uint8_t mpu9250_instance,
                                              enum Rotation rotation);
 
     static constexpr const char *name = "AK09916";
@@ -82,6 +91,7 @@ private:
     uint8_t _compass_instance;
     bool _initialized;
     enum Rotation _rotation;
+    enum AP_Compass_Backend::DevTypes _devtype;
 };
 
 

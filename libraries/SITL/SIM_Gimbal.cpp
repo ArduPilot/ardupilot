@@ -18,6 +18,8 @@
 
 #include "SIM_Gimbal.h"
 
+#if HAL_SIM_GIMBAL_ENABLED
+
 #include <stdio.h>
 
 #include "SIM_Aircraft.h"
@@ -413,3 +415,5 @@ void Gimbal::send_report(void)
 }
 
 } // namespace SITL
+
+#endif  // HAL_SIM_GIMBAL_ENABLED

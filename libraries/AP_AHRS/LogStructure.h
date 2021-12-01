@@ -142,14 +142,14 @@ struct PACKED log_Rate {
 
 #define LOG_STRUCTURE_FROM_AHRS \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
-        "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" }, \
+        "AHR2","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4","sddhmDU????", "FBBB0GG????" , true }, \
     { LOG_AOA_SSA_MSG, sizeof(log_AOA_SSA), \
-        "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" }, \
+        "AOA", "Qff", "TimeUS,AOA,SSA", "sdd", "F00" , true }, \
     { LOG_ATTITUDE_MSG, sizeof(log_Attitude),\
-        "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" }, \
+        "ATT", "QccccCCCCB", "TimeUS,DesRoll,Roll,DesPitch,Pitch,DesYaw,Yaw,ErrRP,ErrYaw,AEKF", "sddddhhdh-", "FBBBBBBBB-" , true }, \
     { LOG_ORGN_MSG, sizeof(log_ORGN), \
         "ORGN","QBLLe","TimeUS,Type,Lat,Lng,Alt", "s-DUm", "F-GGB" }, \
     { LOG_POS_MSG, sizeof(log_POS), \
-        "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" }, \
+        "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" },
+        "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" , true },

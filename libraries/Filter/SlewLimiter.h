@@ -17,6 +17,8 @@ class SlewLimiter {
 public:
     SlewLimiter(const float &slew_rate_max, const float &slew_rate_tau);
 
+    CLASS_NO_COPY(SlewLimiter);
+
     /*
       apply filter to sample, returning multiplier between 0 and 1 to keep
       output within slew rate

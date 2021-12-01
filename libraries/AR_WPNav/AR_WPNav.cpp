@@ -24,7 +24,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
 #define AR_WPNAV_OVERSHOOT_DEFAULT      2.0f
 #define AR_WPNAV_PIVOT_ANGLE_DEFAULT    60
-#define AR_WPNAV_PIVOT_ANGLE_ACCURACY   10      // vehicle will pivot to within this many degrees of destination
+#define AR_WPNAV_PIVOT_ANGLE_ACCURACY   5   // vehicle will pivot to within this many degrees of destination
 #define AR_WPNAV_PIVOT_RATE_DEFAULT     90
 
 const AP_Param::GroupInfo AR_WPNav::var_info[] = {
@@ -83,6 +83,15 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SPEED_MIN", 6, AR_WPNav, _speed_min, 0),
 
+    // @Param: PIVOT_DELAY
+    // @DisplayName: Delay after pivot turn
+    // @Description: Waiting time after pivot turn
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("PIVOT_DELAY", 7, AR_WPNav, _pivot_delay, 0),
+
     AP_GROUPEND
 };
 
@@ -119,7 +128,8 @@ void AR_WPNav::update(float dt)
 
     AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
     if (oa != nullptr) {
-        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination);
+        AP_OAPathPlanner::OAPathPlannerUsed path_planner_used;
+        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination, path_planner_used);
         switch (oa_retstate) {
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             _oa_active = false;
@@ -315,10 +325,17 @@ void AR_WPNav::update_pivot_active_flag()
         return;
     }
 
-    // if within 10 degrees of the target heading, exit pivot steering
-    if (yaw_error < AR_WPNAV_PIVOT_ANGLE_ACCURACY) {
+    uint32_t now = AP_HAL::millis();
+
+    // if within 5 degrees of the target heading, set start time of pivot steering
+    if (_pivot_active && yaw_error < AR_WPNAV_PIVOT_ANGLE_ACCURACY && _pivot_start_ms == 0) {
+        _pivot_start_ms = now;
+    }
+
+    // exit pivot steering after the time set by pivot_delay has elapsed
+    if (_pivot_start_ms > 0 && now - _pivot_start_ms >= constrain_float(_pivot_delay.get(), 0.0f, 60.0f) * 1000.0f) {
         _pivot_active = false;
-        return;
+        _pivot_start_ms = 0;
     }
 }
 

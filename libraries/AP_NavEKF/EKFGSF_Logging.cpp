@@ -2,6 +2,8 @@
 
 #include <AP_Logger/AP_Logger.h>
 
+#pragma GCC diagnostic ignored "-Wnarrowing"
+
 void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, uint8_t core_index)
 {
     if (!vel_fuse_running) {
@@ -15,7 +17,7 @@ void EKFGSF_yaw::Log_Write(uint64_t time_us, LogMessages id0, LogMessages id1, u
         time_us                 : time_us,
         core                    : core_index,
         yaw_composite           : GSF.yaw,
-        yaw_composite_variance  : sqrtf(MAX(GSF.yaw_variance, 0.0f)),
+        yaw_composite_variance  : sqrtF(MAX(GSF.yaw_variance, 0.0f)),
         yaw0                    : EKF[0].X[2],
         yaw1                    : EKF[1].X[2],
         yaw2                    : EKF[2].X[2],

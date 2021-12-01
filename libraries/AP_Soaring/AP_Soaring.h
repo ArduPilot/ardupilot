@@ -14,7 +14,7 @@
 #include <AP_Math/AP_Math.h>
 #include "ExtendedKalmanFilter.h"
 #include "Variometer.h"
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_TECS/AP_TECS.h>
 
 #ifndef HAL_SOARING_ENABLED
  #define HAL_SOARING_ENABLED !HAL_MINIMIZE_FEATURES
@@ -22,7 +22,6 @@
 
 #if HAL_SOARING_ENABLED
 
-#define INITIAL_THERMAL_STRENGTH 2.0
 #define INITIAL_THERMAL_RADIUS 80.0
 #define INITIAL_STRENGTH_COVARIANCE 0.0049
 #define INITIAL_RADIUS_COVARIANCE 400.0
@@ -31,7 +30,7 @@
 
 class SoaringController {
     ExtendedKalmanFilter _ekf{};
-    AP_SpdHgtControl &_spdHgt;
+    AP_TECS &_tecs;
     Variometer _vario;
     const AP_Vehicle::FixedWing &_aparm;
 
@@ -56,8 +55,8 @@ class SoaringController {
 
     float _thermalability;
 
-    LowPassFilter<float> _position_x_filter;
-    LowPassFilter<float> _position_y_filter;
+    LowPassFilter<float> _position_x_filter{1/60.0};
+    LowPassFilter<float> _position_y_filter{1/60.0};
 
 protected:
     AP_Int8 soar_active;
@@ -78,7 +77,7 @@ protected:
     AP_Float thermal_bank;
 
 public:
-    SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms);
+    SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms);
 
     enum class LoiterStatus {
         DISABLED,
@@ -118,14 +117,14 @@ public:
 
     float get_vario_reading() const
     {
-        return _vario.displayed_reading;
+        return _vario.get_displayed_value();
     }
 
     void update_vario();
 
     bool check_drift(Vector2f prev_wp, Vector2f next_wp);
 
-    void update_active_state();
+    void update_active_state(bool override_disable);
 
     bool is_active() const {return _last_update_status>=SoaringController::ActiveStatus::MANUAL_MODE_CHANGE;};
 
@@ -138,14 +137,12 @@ public:
     float get_thermalling_radius() const;
 
 private:
-    // slow down messages if they are the same. During loiter we could smap the same message. Only show new messages during loiters
-    LoiterStatus _cruise_criteria_msg_last;
 
     ActiveStatus _last_update_status;
 
     ActiveStatus _pilot_desired_state = ActiveStatus::AUTO_MODE_CHANGE;
 
-    ActiveStatus active_state() const;
+    ActiveStatus active_state(bool override_disable) const;
 
     bool _exit_commanded;
 };

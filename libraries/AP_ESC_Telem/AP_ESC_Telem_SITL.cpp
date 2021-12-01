@@ -30,7 +30,7 @@ AP_ESC_Telem_SITL::AP_ESC_Telem_SITL()
 
 void AP_ESC_Telem_SITL::update()
 {
-    SITL::SITL* sitl = AP::sitl();
+    SITL::SIM* sitl = AP::sitl();
 
     if (!sitl) {
         return;
@@ -40,9 +40,12 @@ void AP_ESC_Telem_SITL::update()
         return;
     }
 
+#if HAL_WITH_ESC_TELEM
     for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
         update_rpm(i, sitl->state.rpm[sitl->state.vtol_motor_start+i]);
     }
+#endif
+
 }
 
 #endif

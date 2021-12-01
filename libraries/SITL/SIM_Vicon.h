@@ -34,7 +34,7 @@ public:
     Vicon();
 
     // update state
-    void update(const Location &loc, const Vector3f &position, const Vector3f &velocity, const Quaternion &attitude);
+    void update(const Location &loc, const Vector3d &position, const Vector3f &velocity, const Quaternion &attitude);
 
 private:
 
@@ -70,7 +70,7 @@ private:
     bool get_free_msg_buf_index(uint8_t &index);
 
     void update_vicon_position_estimate(const Location &loc,
-                                        const Vector3f &position,
+                                        const Vector3d &position,
                                         const Vector3f &velocity,
                                         const Quaternion &attitude);
 
@@ -79,7 +79,7 @@ private:
 
     // position delta message 
     Quaternion _attitude_prev; // Rotation to previous MAV_FRAME_BODY_FRD from MAV_FRAME_LOCAL_NED
-    Vector3f _position_prev;  // previous position from origin (m) MAV_FRAME_LOCAL_NED
+    Vector3d _position_prev;  // previous position from origin (m) MAV_FRAME_LOCAL_NED
 };
 
 }

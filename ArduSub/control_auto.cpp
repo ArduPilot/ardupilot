@@ -116,6 +116,7 @@ void Sub::auto_wp_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+        wp_nav.wp_and_spline_init();                                                // Reset xy target
         return;
     }
 
@@ -148,7 +149,8 @@ void Sub::auto_wp_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     ////////////////////////////
@@ -184,7 +186,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
     circle_nav.get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -204,9 +206,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const Vector3f &circle_center_neu = circle_nav.get_center();
-        const Vector3f &curr_pos = inertial_nav.get_position();
-        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), circle_nav.get_center().xy());
         if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
@@ -242,7 +242,8 @@ void Sub::auto_circle_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
@@ -305,6 +306,7 @@ void Sub::auto_loiter_run()
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
 
+        wp_nav.wp_and_spline_init();                                                // Reset xy target
         return;
     }
 
@@ -329,7 +331,8 @@ void Sub::auto_loiter_run()
     motors.set_lateral(lateral_out);
     motors.set_forward(forward_out);
 
-    // call z-axis position controller (wpnav should have already updated it's alt target)
+    // WP_Nav has set the vertical position control targets
+    // run the vertical position controller and set output throttle
     pos_control.update_z_controller();
 
     // get pilot desired lean angles
@@ -511,12 +514,12 @@ float Sub::get_auto_heading()
     case AUTO_YAW_CORRECT_XTRACK: {
         // TODO return current yaw if not in appropriate mode
         // Bearing of current track (centidegrees)
-        float track_bearing = get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
+        float track_bearing = get_bearing_cd(wp_nav.get_wp_origin().xy(), wp_nav.get_wp_destination().xy());
 
         // Bearing from current position towards intermediate position target (centidegrees)
-        const Vector2f target_vel_xy{pos_control.get_vel_target().x, pos_control.get_vel_target().y};
+        const Vector2f target_vel_xy{pos_control.get_vel_target_cms().x, pos_control.get_vel_target_cms().y};
         float angle_error = 0.0f;
-        if (target_vel_xy.length() >= pos_control.get_max_speed_xy() * 0.1f) {
+        if (target_vel_xy.length() >= pos_control.get_max_speed_xy_cms() * 0.1f) {
             const float desired_angle_cd = degrees(target_vel_xy.angle()) * 100.0f;
             angle_error = wrap_180_cd(desired_angle_cd - track_bearing);
         }
@@ -565,15 +568,11 @@ bool Sub::auto_terrain_recover_start()
     loiter_nav.init_target();
 
     // Reset z axis controller
-    pos_control.relax_alt_hold_controllers(motors.get_throttle_hover());
+    pos_control.relax_z_controller(motors.get_throttle_hover());
 
-    // initialize vertical speeds and leash lengths
-    pos_control.set_max_speed_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
-    pos_control.set_max_accel_z(wp_nav.get_accel_z());
-
-    // Reset vertical position and velocity targets
-    pos_control.set_alt_target(inertial_nav.get_altitude());
-    pos_control.set_desired_velocity_z(inertial_nav.get_velocity_z());
+    // initialize vertical maximum speeds and acceleration
+    pos_control.set_max_speed_accel_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up(), wp_nav.get_accel_z());
+    pos_control.set_correction_speed_accel_z(wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up(), wp_nav.get_accel_z());
 
     gcs().send_text(MAV_SEVERITY_WARNING, "Attempting auto failsafe recovery");
     return true;
@@ -592,6 +591,9 @@ void Sub::auto_terrain_recover_run()
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+
+        loiter_nav.init_target();                                                   // Reset xy target
+        pos_control.relax_z_controller(motors.get_throttle_hover());                // Reset z axis controller
         return;
     }
 
@@ -616,7 +618,7 @@ void Sub::auto_terrain_recover_run()
             // Start timer as soon as rangefinder is healthy
             if (rangefinder_recovery_ms == 0) {
                 rangefinder_recovery_ms = AP_HAL::millis();
-                pos_control.relax_alt_hold_controllers(motors.get_throttle_hover()); // Reset alt hold targets
+                pos_control.relax_z_controller(motors.get_throttle_hover()); // Reset alt hold targets
             }
 
             // 1.5 seconds of healthy rangefinder means we can resume mission with terrain enabled
@@ -663,7 +665,7 @@ void Sub::auto_terrain_recover_run()
 
     /////////////////////
     // update z target //
-    pos_control.set_alt_target_from_climb_rate_ff(target_climb_rate, G_Dt, true);
+    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate);
     pos_control.update_z_controller();
 
     ////////////////////////////

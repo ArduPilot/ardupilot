@@ -29,6 +29,7 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 
 class NavEKF2_core;
+class EKFGSF_yaw;
 
 class NavEKF2 {
     friend class NavEKF2_core;
@@ -173,11 +174,11 @@ public:
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void  getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool getInnovations(int8_t index, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
 
     // return the innovation consistency test ratios for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    void  getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+    bool getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
     // should we use the compass? This is public so it can be used for
     // reporting via ahrs.use_compass()
@@ -191,14 +192,6 @@ public:
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
     void  writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
-
-    // called by vehicle code to specify that a takeoff is happening
-    // causes the EKF to compensate for expected barometer errors due to ground effect
-    void setTakeoffExpected(bool val);
-
-    // called by vehicle code to specify that a touchdown is expected to happen
-    // causes the EKF to compensate for expected barometer errors due to ground effect
-    void setTouchdownExpected(bool val);
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
@@ -313,6 +306,9 @@ public:
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const;
+    
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
@@ -375,7 +371,6 @@ private:
     AP_Float _hrt_filt_freq;        // frequency of output observer height rate complementary filter in Hz
     AP_Int8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
-    AP_Int16 _gsfResetDelay;        // number of mSec from loss of navigation to requesting a reset using EKF-GSF yaw estimator data
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
 
 // Possible values for _flowUse
@@ -407,7 +402,6 @@ private:
     const float fScaleFactorPnoise = 1e-10f;       // Process noise added to focal length scale factor state variance at each time step
     const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
     const uint8_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
-    const uint16_t gndEffectTimeout_ms = 1000;     // time in msec that ground effect mode is active after being activated
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
     const uint8_t fusionTimeStep_ms = 10;          // The minimum time interval between covariance predictions and measurement fusions in msec
     const float maxYawEstVelInnov = 2.0f;          // Maximum acceptable length of the velocity innovation returned by the EKF-GSF yaw estimator (m/s)

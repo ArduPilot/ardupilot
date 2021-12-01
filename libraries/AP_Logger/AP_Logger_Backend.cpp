@@ -3,6 +3,7 @@
 #include "LoggerMessageWriter.h"
 
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -208,7 +209,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
     return true;
 }
 
-bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_critical)
+bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_critical, bool is_streaming)
 {
     // stack-allocate a buffer so we can WriteBlock(); this could be
     // 255 bytes!  If we were willing to lose the WriteBlock
@@ -230,6 +231,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
     if (bufferspace_available() < msg_len) {
         return false;
     }
+
     uint8_t buffer[msg_len];
     uint8_t offset = 0;
     buffer[offset++] = HEAD_BYTE1;
@@ -330,7 +332,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
     }
 
-    return WritePrioritisedBlock(buffer, msg_len, is_critical);
+    return WritePrioritisedBlock(buffer, msg_len, is_critical, is_streaming);
 }
 
 bool AP_Logger_Backend::StartNewLogOK() const
@@ -397,7 +399,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
 }
 #endif
 
-bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !APM_BUILD_TYPE(APM_BUILD_Replay)
     validate_WritePrioritisedBlock(pBuffer, size);
@@ -411,6 +413,14 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     if (!WritesOK()) {
         return false;
     }
+
+    if (!is_critical && rate_limiter != nullptr) {
+        const uint8_t *msgbuf = (const uint8_t *)pBuffer;
+        if (!rate_limiter->should_log(msgbuf[2], writev_streaming)) {
+            return false;
+        }
+    }
+
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }
 
@@ -468,7 +478,7 @@ void AP_Logger_Backend::PrepForArming()
     if (logging_started()) {
         return;
     }
-    start_new_log();
+    PrepForArming_start_logging();
 }
 
 bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)
@@ -483,6 +493,7 @@ bool AP_Logger_Backend::Write_MessageF(const char *fmt, ...)
     return Write_Message(msg);
 }
 
+#if HAL_RALLY_ENABLED
 // Write rally points
 bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
                                          uint8_t sequence,
@@ -506,6 +517,7 @@ bool AP_Logger_Backend::Write_Rally()
     // kick off asynchronous write:
     return _startup_messagewriter->writeallrallypoints();
 }
+#endif
 
 /*
   convert a list entry number back into a log number (which can then
@@ -603,4 +615,73 @@ void AP_Logger_Backend::df_stats_clear() {
 void AP_Logger_Backend::df_stats_log() {
     Write_AP_Logger_Stats_File(stats);
     df_stats_clear();
+}
+
+
+// class to handle rate limiting of log messages
+AP_Logger_RateLimiter::AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz)
+    : front(_front), rate_limit_hz(_limit_hz)
+{
+}
+
+/*
+  return false if a streaming message should not be sent yet
+ */
+bool AP_Logger_RateLimiter::should_log_streaming(uint8_t msgid)
+{
+    if (rate_limit_hz <= 0) {
+        // no limiting (user changed the parameter)
+        return true;
+    }
+    const uint16_t now = AP_HAL::millis16();
+    uint16_t delta_ms = now - last_send_ms[msgid];
+    if (delta_ms < 1000.0 / rate_limit_hz.get()) {
+        // too soon
+        return false;
+    }
+    last_send_ms[msgid] = now;
+    return true;
+}
+
+/*
+  return true if the message is not a streaming message or the gap
+  from the last message is more than the message rate
+ */
+bool AP_Logger_RateLimiter::should_log(uint8_t msgid, bool writev_streaming)
+{
+    if (rate_limit_hz <= 0) {
+        // no limiting (user changed the parameter)
+        return true;
+    }
+    if (last_send_ms[msgid] == 0 && !writev_streaming) {
+        // might be non streaming. check the not_streaming bitmask
+        // cache
+        if (not_streaming.get(msgid)) {
+            return true;
+        }
+        const auto *mtype = front.structure_for_msg_type(msgid);
+        if (mtype == nullptr ||
+            mtype->streaming == false) {
+            not_streaming.set(msgid);
+            return true;
+        }
+    }
+
+#if !defined(HAL_BUILD_AP_PERIPH)
+    // if we've already decided on sending this msgid in this tick then use the
+    // same decision again
+    const uint16_t sched_ticks = AP::scheduler().ticks();
+    if (sched_ticks == last_sched_count[msgid]) {
+        return last_return.get(msgid);
+    }
+    last_sched_count[msgid] = sched_ticks;
+#endif
+
+    bool ret = should_log_streaming(msgid);
+    if (ret) {
+        last_return.set(msgid);
+    } else {
+        last_return.clear(msgid);
+    }
+    return ret;
 }

@@ -18,6 +18,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include "AP_RPM_Params.h"
 
 // Maximum number of RPM measurement instances available on this platform
 #define RPM_MAX_INSTANCES 2
@@ -42,6 +43,7 @@ public:
         RPM_TYPE_PIN     = 2,
         RPM_TYPE_EFI     = 3,
         RPM_TYPE_HNTCH   = 4,
+        RPM_TYPE_ESC_TELEM  = 5,
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         RPM_TYPE_SITL   = 10,
 #endif
@@ -56,12 +58,7 @@ public:
     };
 
     // parameters for each instance
-    AP_Int8  _type[RPM_MAX_INSTANCES];
-    AP_Int8  _pin[RPM_MAX_INSTANCES];
-    AP_Float _scaling[RPM_MAX_INSTANCES];
-    AP_Float _maximum[RPM_MAX_INSTANCES];
-    AP_Float _minimum[RPM_MAX_INSTANCES];
-    AP_Float _quality_min[RPM_MAX_INSTANCES];
+    AP_RPM_Params _params[RPM_MAX_INSTANCES];
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -94,12 +91,17 @@ public:
 
     static AP_RPM *get_singleton() { return _singleton; }
 
+    // check settings are valid
+    bool arming_checks(size_t buflen, char *buffer) const;
+
 private:
+    void convert_params(void);
+
     static AP_RPM *_singleton;
 
     RPM_State state[RPM_MAX_INSTANCES];
     AP_RPM_Backend *drivers[RPM_MAX_INSTANCES];
-    uint8_t num_instances:2;
+    uint8_t num_instances;
 
     void detect_instance(uint8_t instance);
 };

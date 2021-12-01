@@ -1,7 +1,7 @@
 #pragma once
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <uavcan/uavcan.hpp>
 #include <AP_Common/Bitmask.h>
 #include <StorageManager/StorageManager.h>
@@ -88,6 +88,7 @@ class AP_UAVCAN_DNA_Server
     bool isValidNodeDataAvailable(uint8_t node_id);
 
     HAL_Semaphore sem;
+    AP_UAVCAN *_ap_uavcan;
 
 public:
     AP_UAVCAN_DNA_Server(StorageAccess _storage) : storage(_storage) {}

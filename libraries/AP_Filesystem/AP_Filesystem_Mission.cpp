@@ -23,6 +23,8 @@
 #include <GCS_MAVLink/MissionItemProtocol_Rally.h>
 #include <GCS_MAVLink/MissionItemProtocol_Fence.h>
 
+#if HAL_MISSION_ENABLED
+
 extern const AP_HAL::HAL& hal;
 extern int errno;
 
@@ -397,3 +399,5 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
     }
     return true;
 }
+
+#endif

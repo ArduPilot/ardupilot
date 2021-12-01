@@ -48,6 +48,7 @@ void Blimp::init_ardupilot()
     allocate_motors();
 
     // initialise rc channels including setting mode
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // sets up motors and output to escs
@@ -72,18 +73,6 @@ void Blimp::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if HIL_MODE != HIL_MODE_DISABLED
-    while (barometer.get_last_update() == 0) {
-        // the barometer begins updating when we get the first
-        // HIL_STATE message
-        gcs().send_text(MAV_SEVERITY_WARNING, "Waiting for first HIL_STATE message");
-        delay(1000);
-    }
-
-    // set INS to HIL mode
-    ins.set_hil_mode();
-#endif
-
     // read Baro pressure at ground
     //-----------------------------
     barometer.set_log_baro_bit(MASK_LOG_IMU);
@@ -94,9 +83,9 @@ void Blimp::init_ardupilot()
 
     startup_INS_ground();
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     g2.scripting.init();
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -112,6 +101,11 @@ void Blimp::init_ardupilot()
     if (arming.rc_calibration_checks(true)) {
         enable_motor_output();
     }
+
+    //Initialise fin filters
+    vel_xy_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f);
+    vel_z_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 1.0f, 15.0f);
+    vel_yaw_filter.init(scheduler.get_loop_rate_hz(),motors->freq_hz, 5.0f, 15.0f);
 
     // attempt to switch to MANUAL, if this fails then switch to Land
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
@@ -134,7 +128,7 @@ void Blimp::startup_INS_ground()
 {
     // initialise ahrs (may push imu calibration into the mpu6000 if using that device).
     ahrs.init();
-    ahrs.set_vehicle_class(AHRS_VEHICLE_COPTER);
+    ahrs.set_vehicle_class(AP_AHRS::VehicleClass::COPTER);
 
     // Warm up and calibrate gyro offsets
     ins.init(scheduler.get_loop_rate_hz());
@@ -225,13 +219,8 @@ void Blimp::update_auto_armed()
             set_auto_armed(false);
             return;
         }
-        // if in stabilize or acro flight mode and throttle is zero, auto-armed should become false
+        // if in a manual flight mode and throttle is zero, auto-armed should become false
         if (flightmode->has_manual_throttle() && ap.throttle_zero && !failsafe.radio) {
-            set_auto_armed(false);
-        }
-        // if heliblimps are on the ground, and the motor is switched off, auto-armed should be false
-        // so that rotor runup is checked again before attempting to take-off
-        if (ap.land_complete && motors->get_spool_state() != Fins::SpoolState::THROTTLE_UNLIMITED && ap.using_interlock) {
             set_auto_armed(false);
         }
     }
@@ -253,7 +242,7 @@ bool Blimp::should_log(uint32_t mask)
 // return MAV_TYPE corresponding to frame class
 MAV_TYPE Blimp::get_frame_mav_type()
 {
-    return MAV_TYPE_QUADROTOR; //TODO: Mavlink changes to allow type to be correct
+    return MAV_TYPE_AIRSHIP;
 }
 
 // return string corresponding to frame_class
@@ -274,7 +263,7 @@ void Blimp::allocate_motors(void)
         break;
     }
     if (motors == nullptr) {
-        AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
+        AP_BoardConfig::allocation_error("FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
     AP_Param::load_object_from_eeprom(motors, Fins::var_info);
 

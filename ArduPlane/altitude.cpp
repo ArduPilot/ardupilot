@@ -52,7 +52,9 @@ void Plane::adjust_altitude_target()
         set_target_altitude_location(temp);
     } else 
 #endif // OFFBOARD_GUIDED == ENABLED
-      if (landing.is_flaring()) {
+      if (control_mode->update_target_altitude()) {
+          // handled in mode specific code
+    } else if (landing.is_flaring()) {
         // during a landing flare, use TECS_LAND_SINK as a target sink
         // rate, and ignores the target altitude
         set_target_altitude_location(next_WP_loc);
@@ -94,7 +96,7 @@ void Plane::setup_glide_slope(void)
     // for calculating out rate of change of altitude
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
-    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
+    TECS_controller.set_path_proportion(auto_state.wp_proportion);
     update_flight_stage();
 
     /*
@@ -135,9 +137,9 @@ void Plane::setup_glide_slope(void)
 }
 
 /*
-  return RTL altitude as AMSL altitude
+  return RTL altitude as AMSL cm
  */
-int32_t Plane::get_RTL_altitude() const
+int32_t Plane::get_RTL_altitude_cm() const
 {
     if (g.RTL_altitude_cm < 0) {
         return current_loc.alt;
@@ -155,12 +157,14 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return rangefinder_state.height_estimate;
    }
 
+#if HAL_QUADPLANE_ENABLED
    if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
        rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
        // below minimum. Consider our height above ground to be zero
        return 0;
    }
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
@@ -171,6 +175,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
     }
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() &&
         !(quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)) {
         // when doing a VTOL landing we can use the waypoint height as
@@ -179,6 +184,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         // height
         return height_above_target();
     }
+#endif
 
     return relative_altitude;
 }
@@ -564,7 +570,7 @@ float Plane::lookahead_adjustment(void)
     // we need to know the climb ratio. We use 50% of the maximum
     // climb rate so we are not constantly at 100% throttle and to
     // give a bit more margin on terrain
-    float climb_ratio = 0.5f * SpdHgt_Controller->get_max_climbrate() / groundspeed;
+    float climb_ratio = 0.5f * TECS_controller.get_max_climbrate() / groundspeed;
 
     if (climb_ratio <= 0) {
         // lookahead makes no sense for negative climb rates
@@ -637,7 +643,7 @@ void Plane::rangefinder_terrain_correction(float &height)
  */
 void Plane::rangefinder_height_update(void)
 {
-    float distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270)*0.01f;
+    float distance = rangefinder.distance_orient(ROTATION_PITCH_270);
     
     if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
@@ -666,11 +672,19 @@ void Plane::rangefinder_height_update(void)
             }
         } else {
             rangefinder_state.in_range = true;
+            bool flightstage_good_for_rangefinder_landing = false;
+            if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+                flightstage_good_for_rangefinder_landing = true;
+            }
+#if HAL_QUADPLANE_ENABLED
+            if (control_mode == &mode_qland ||
+                control_mode == &mode_qrtl ||
+                (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
+                flightstage_good_for_rangefinder_landing = true;
+            }
+#endif
             if (!rangefinder_state.in_use &&
-                (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
-                 control_mode == &mode_qland ||
-                 control_mode == &mode_qrtl ||
-                 (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
+                flightstage_good_for_rangefinder_landing &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
@@ -685,7 +699,7 @@ void Plane::rangefinder_height_update(void)
     if (rangefinder_state.in_range) {
         // base correction is the difference between baro altitude and
         // rangefinder estimate
-        float correction = relative_altitude - rangefinder_state.height_estimate;
+        float correction = adjusted_relative_altitude_cm()*0.01 - rangefinder_state.height_estimate;
 
 #if AP_TERRAIN_AVAILABLE
         // if we are terrain following then correction is based on terrain data
@@ -743,12 +757,19 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::GUIDED, terrain_bitmask::GUIDED},
     {Mode::Number::LOITER, terrain_bitmask::LOITER},
     {Mode::Number::CIRCLE, terrain_bitmask::CIRCLE},
+#if HAL_QUADPLANE_ENABLED
     {Mode::Number::QRTL, terrain_bitmask::QRTL},
     {Mode::Number::QLAND, terrain_bitmask::QLAND},
     {Mode::Number::QLOITER, terrain_bitmask::QLOITER},
+#endif
 };
 
 bool Plane::terrain_enabled_in_current_mode() const
+{
+    return terrain_enabled_in_mode(control_mode->mode_number());
+}
+
+bool Plane::terrain_enabled_in_mode(Mode::Number num) const
 {
     // Global enable
     if ((g.terrain_follow.get() & int32_t(terrain_bitmask::ALL)) != 0) {
@@ -757,7 +778,7 @@ bool Plane::terrain_enabled_in_current_mode() const
 
     // Specific enable
     for (const struct TerrainLookupTable entry : Terrain_lookup) {
-        if (entry.mode_num == control_mode->mode_number()) {
+        if (entry.mode_num == num) {
             if ((g.terrain_follow.get() & int32_t(entry.bitmask)) != 0) {
                 return true;
             }

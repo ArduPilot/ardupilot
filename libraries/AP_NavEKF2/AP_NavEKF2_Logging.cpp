@@ -129,7 +129,7 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
     nav_filter_status solutionStatus {};
     nav_gps_status gpsStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    float tempVar = fmaxf(fmaxf(magVar.x,magVar.y),magVar.z);
+    ftype tempVar = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
     getFilterGpsStatus(gpsStatus);
@@ -142,7 +142,7 @@ void NavEKF2_core::Log_Write_NKF4(uint64_t time_us) const
         sqrtvarH : (int16_t)(100*hgtVar),
         sqrtvarM : (int16_t)(100*tempVar),
         sqrtvarVT : (int16_t)(100*tasVar),
-        tiltErr : tiltErrFilt,  // tilt error convergence metric
+        tiltErr : float(tiltErrFilt),  // tilt error convergence metric
         offsetNorth : offset.x,
         offsetEast : offset.y,
         faults : _faultStatus,
@@ -169,15 +169,15 @@ void NavEKF2_core::Log_Write_NKF5(uint64_t time_us) const
         normInnov : (uint8_t)(MIN(100*MAX(flowTestRatio[0],flowTestRatio[1]),255)),  // normalised innovation variance ratio for optical flow observations fused by the main nav filter
         FIX : (int16_t)(1000*innovOptFlow[0]),  // optical flow LOS rate vector innovations from the main nav filter
         FIY : (int16_t)(1000*innovOptFlow[1]),  // optical flow LOS rate vector innovations from the main nav filter
-        AFI : (int16_t)(1000*norm(auxFlowObsInnov.x,auxFlowObsInnov.y)),  // optical flow LOS rate innovation from terrain offset estimator
+        AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
         HAGL : (int16_t)(100*(terrainState - stateStruct.position.z)),  // height above ground level
         offset : (int16_t)(100*terrainState),  // // estimated vertical position of the terrain relative to the nav filter zero datum
         RI : (int16_t)(100*innovRng),  // range finder innovations
         meaRng : (uint16_t)(100*rangeDataDelayed.rng),  // measured range
-        errHAGL : (uint16_t)(100*sqrtf(Popt)),  // filter ground offset state error
-        angErr : outputTrackError.x,
-        velErr : outputTrackError.y,
-        posErr : outputTrackError.z
+        errHAGL : (uint16_t)(100*sqrtF(Popt)),  // filter ground offset state error
+        angErr : float(outputTrackError.x),
+        velErr : float(outputTrackError.y),
+        posErr : float(outputTrackError.z)
     };
     AP::logger().WriteBlock(&pkt5, sizeof(pkt5));
 }
@@ -235,7 +235,7 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
         rng : (int16_t)(100*report.rng),
         innov : (int16_t)(100*report.innov),
         sqrtInnovVar : (uint16_t)(100*safe_sqrt(report.innovVar)),
-        testRatio : (uint16_t)(100*constrain_float(report.testRatio,0.0f,650.0f)),
+        testRatio : (uint16_t)(100*constrain_ftype(report.testRatio,0.0f,650.0f)),
         beaconPosN : (int16_t)(100*report.beaconPosNED.x),
         beaconPosE : (int16_t)(100*report.beaconPosNED.y),
         beaconPosD : (int16_t)(100*report.beaconPosNED.z),

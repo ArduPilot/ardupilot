@@ -141,7 +141,7 @@ void AP_GPS_Backend::_detection_message(char *buffer, const uint8_t buflen) cons
                  "GPS %d: detected as %s at %d baud",
                  instance + 1,
                  name(),
-                 gps._baudrates[dstate.current_baud]);
+                 int(gps._baudrates[dstate.current_baud]));
     } else {
         hal.util->snprintf(buffer, buflen,
                  "GPS %d: specified as %s",
@@ -160,7 +160,7 @@ void AP_GPS_Backend::broadcast_gps_type() const
 
 void AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages() const
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     _detection_message(buffer, sizeof(buffer));
     AP::logger().Write_Message(buffer);
@@ -175,7 +175,7 @@ bool AP_GPS_Backend::should_log() const
 
 void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 {
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     const uint8_t instance = state.instance;
     // send status
     switch (instance) {
@@ -302,20 +302,23 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 }
 
 #if GPS_MOVING_BASELINE
-bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D)
-{
+bool AP_GPS_Backend::calculate_moving_base_yaw(float reported_heading_deg, const float reported_distance, const float reported_D) {
+    return calculate_moving_base_yaw(state, reported_heading_deg, reported_distance, reported_D);
+}
+
+bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state, const float reported_heading_deg, const float reported_distance, const float reported_D) {
     constexpr float minimum_antenna_seperation = 0.05; // meters
     constexpr float permitted_error_length_pct = 0.2;  // percentage
 
     bool selectedOffset = false;
     Vector3f offset;
-    switch (MovingBase::Type(gps.mb_params[state.instance].type.get())) {
+    switch (MovingBase::Type(gps.mb_params[interim_state.instance].type.get())) {
         case MovingBase::Type::RelativeToAlternateInstance:
-            offset = gps._antenna_offset[state.instance^1].get() - gps._antenna_offset[state.instance].get();
+            offset = gps._antenna_offset[interim_state.instance^1].get() - gps._antenna_offset[interim_state.instance].get();
             selectedOffset = true;
             break;
         case MovingBase::Type::RelativeToCustomBase:
-            offset = gps.mb_params[state.instance].base_offset.get();
+            offset = gps.mb_params[interim_state.instance].base_offset.get();
             selectedOffset = true;
             break;
     }
@@ -382,15 +385,16 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(const float reported_heading_deg,
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
             const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
-            state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
-            state.have_gps_yaw = true;
+            interim_state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
+            interim_state.have_gps_yaw = true;
+            interim_state.gps_yaw_time_ms = AP_HAL::millis();
         }
     }
 
     return true;
 
 bad_yaw:
-    state.have_gps_yaw = false;
+    interim_state.have_gps_yaw = false;
     return false;
 }
 #endif // GPS_MOVING_BASELINE

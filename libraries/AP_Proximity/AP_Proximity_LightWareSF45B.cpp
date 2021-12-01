@@ -29,7 +29,7 @@ static const uint32_t PROXIMITY_SF45B_TIMEOUT_MS = 200;
 static const uint32_t PROXIMITY_SF45B_REINIT_INTERVAL_MS = 5000;    // re-initialise sensor after this many milliseconds
 static const float PROXIMITY_SF45B_COMBINE_READINGS_DEG = 5.0f;     // combine readings from within this many degrees to improve efficiency
 static const uint32_t PROXIMITY_SF45B_STREAM_DISTANCE_DATA_CM = 5;
-static const uint8_t PROXIMITY_SF45B_DESIRED_UPDATE_RATE = 8;       // 1:48hz, 2:55hz, 3:64hz, 4:77hz, 5:97hz, 6:129hz, 7:194hz, 8:388hz
+static const uint8_t PROXIMITY_SF45B_DESIRED_UPDATE_RATE = 6;       // 1:48hz, 2:55hz, 3:64hz, 4:77hz, 5:97hz, 6:129hz, 7:194hz, 8:388hz
 static const uint32_t PROXIMITY_SF45B_DESIRED_FIELDS = ((uint32_t)1 << 0 | (uint32_t)1 << 8);   // first return (unfiltered), yaw angle
 static const uint16_t PROXIMITY_SF45B_DESIRED_FIELD_COUNT = 2;      // DISTANCE_DATA_CM message should contain two fields
 

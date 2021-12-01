@@ -18,7 +18,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #ifndef HAL_VISUALODOM_ENABLED
-#define HAL_VISUALODOM_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_VISUALODOM_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
 #endif
 
 #if HAL_VISUALODOM_ENABLED
@@ -27,6 +27,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Math/AP_Math.h>
 
 class AP_VisualOdom_Backend;
 
@@ -80,8 +81,10 @@ public:
     // return yaw measurement noise in rad
     float get_yaw_noise() const { return _yaw_noise; }
 
+#if HAL_GCS_ENABLED
     // consume vision_position_delta mavlink messages
     void handle_vision_position_delta_msg(const mavlink_message_t &msg);
+#endif
 
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians

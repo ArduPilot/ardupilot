@@ -25,7 +25,6 @@ FLASH_RESERVE_START_KB 0
 
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
-USB_STRING_SERIAL  "%SERIAL%"
 
 # baudrate to run bootloader at on uarts
 define BOOTLOADER_BAUDRATE 115200
@@ -73,7 +72,6 @@ define HAL_CHIBIOS_ARCH_FMUV3 1
 
 # we need to tell HAL_ChibiOS/Storage.cpp how much storage is
 # available (in bytes)
-define HAL_STORAGE_SIZE 16384
 
 # Add CS pins to ensure they are high in bootloader
 PC1 MAG_CS CS

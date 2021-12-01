@@ -57,6 +57,7 @@ private:
         BIND_STATE4,
     } bind_state;
     uint32_t bind_last_ms;
+    uint32_t bind_mode_saved;
 
     uint16_t last_values[AP_DSM_MAX_CHANNELS];
 

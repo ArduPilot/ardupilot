@@ -37,7 +37,8 @@ Plane::Plane(const char *frame_str) :
     num_motors = 1;
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
-    
+    lock_step_scheduled = true;
+
     if (strstr(frame_str, "-heavy")) {
         mass = 8;
     }

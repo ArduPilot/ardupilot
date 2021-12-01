@@ -87,12 +87,6 @@ public:
      */
     void force_safety_off(void) override;
 
-    /*
-      set PWM to send to a set of channels when the safety switch is
-      in the safe state
-     */
-    void set_safety_pwm(uint32_t chmask, uint16_t period_us) override;
-
     bool enable_px4io_sbus_out(uint16_t rate_hz) override;
 
     /*
@@ -148,6 +142,7 @@ public:
     /*
       enable telemetry request for a mask of channels. This is used
       with Dshot to get telemetry feedback
+      The mask uses servo channel numbering
      */
     void set_telem_request_mask(uint16_t mask) override { telem_request_mask = (mask >> chan_offset); }
 
@@ -155,6 +150,7 @@ public:
     /*
       enable bi-directional telemetry request for a mask of channels. This is used
       with Dshot to get telemetry feedback
+      The mask uses servo channel numbering
      */
     void set_bidir_dshot_mask(uint16_t mask) override;
 
@@ -193,21 +189,24 @@ public:
 #ifndef DISABLE_DSHOT
     /*
      * mark the channels in chanmask as reversible. This is needed for some ESC types (such as Dshot)
-     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     void set_reversible_mask(uint16_t chanmask) override;
 
     /*
-     * mark the channels in chanmask as reversed. The chanmask passed is added (ORed) into
-     * any existing mask.
+     * mark the channels in chanmask as reversed.
+     * The chanmask passed is added (ORed) into any existing mask.
+     * The mask uses servo channel numbering
      */
     void set_reversed_mask(uint16_t chanmask) override;
+    uint16_t get_reversed_mask() override { return _reversed_mask; }
 
     /*
       mark escs as active for the purpose of sending dshot commands
+      The mask uses servo channel numbering
      */
-    void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= chanmask; }
+    void set_active_escs_mask(uint16_t chanmask) override { _active_escs_mask |= (chanmask >> chan_offset); }
 
     /*
       Send a dshot command, if command timout is 0 then 10 commands are sent
@@ -215,12 +214,17 @@ public:
      */
     void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms = 0, uint16_t repeat_count = 10, bool priority = false) override;
 
-#endif
+    /*
+     * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
+     */
+    void update_channel_masks() override;
 
     /*
-      If not already done flush any dshot commands still pending
+     * Allow channel mask updates to be temporarily suspended
      */
-    bool prepare_for_arming() override;
+    void disable_channel_mask_updates() override { _disable_channel_mask_updates = true; }
+    void enable_channel_mask_updates() override { _disable_channel_mask_updates = false; }
+#endif
 
     /*
       setup serial LED output for a given channel number, with
@@ -294,7 +298,10 @@ private:
         // below this line is not initialised by hwdef.h
         enum output_mode current_mode;
         uint16_t frequency_hz;
+        // mask of channels that are able to be enabled
         uint16_t ch_mask;
+        // mask of channels that are enabled and active
+        uint16_t en_mask;
         const stm32_dma_stream_t *dma;
         Shared_DMA *dma_handle;
         uint32_t *dma_buffer;
@@ -325,7 +332,7 @@ private:
         // serial output
         struct {
             // expected time per bit
-            uint32_t bit_time_us;
+            uint16_t bit_time_us;
 
             // channel to output to within group (0 to 3)
             uint8_t chan;
@@ -388,7 +395,7 @@ private:
 
         // return whether the group channel is both enabled in the group and for output
         bool is_chan_enabled(uint8_t c) const {
-          return chan[c] != CHAN_DISABLED && (ch_mask & (1U << chan[c]));
+          return chan[c] != CHAN_DISABLED && (en_mask & (1U << chan[c]));
         }
     };
     /*
@@ -404,7 +411,7 @@ private:
         ioline_t line;
 
         // time the current byte started
-        uint32_t byte_start_tick;
+        uint16_t byte_start_tick;
 
         // number of bits we have read in this byte
         uint8_t nbits;
@@ -416,7 +423,7 @@ private:
         uint16_t byteval;
 
         // expected time per bit in micros
-        uint32_t bit_time_tick;
+        uint16_t bit_time_tick;
 
         // the bit value of the last bit received
         uint8_t last_bit;
@@ -493,12 +500,14 @@ private:
 
     DshotEscType _dshot_esc_type;
 
+    // control updates to channel masks
+    bool _disable_channel_mask_updates;
+
     bool dshot_command_is_active(const pwm_group& group) const {
       return (_dshot_current_command.chan == RCOutput::ALL_CHANNELS || (group.ch_mask & (1UL << _dshot_current_command.chan)))
                 && _dshot_current_command.cycle > 0;
     }
 #endif
-    uint16_t safe_pwm[max_channels]; // pwm to use when safety is on
     bool corked;
     // mask of channels that are running in high speed
     uint16_t fast_channel_mask;
@@ -531,7 +540,7 @@ private:
 
     // are all the ESCs returning data
     bool group_escs_active(const pwm_group& group) const {
-      return group.ch_mask > 0 && (group.ch_mask & _active_escs_mask) == group.ch_mask;
+      return group.en_mask > 0 && (group.en_mask & _active_escs_mask) == group.en_mask;
     }
 
     // find a channel group given a channel number
@@ -591,7 +600,6 @@ private:
     const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
-    static bool is_dshot_protocol(const enum output_mode mode);
     static uint32_t protocol_bitrate(const enum output_mode mode);
     void print_group_setup_error(pwm_group &group, const char* error_string);
 

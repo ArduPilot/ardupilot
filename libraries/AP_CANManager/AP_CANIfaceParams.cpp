@@ -15,7 +15,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_CANMANAGER_ENABLED
 #include "AP_CANManager.h"
 
 // table of user settable CAN bus parameters
@@ -23,7 +23,7 @@ const AP_Param::GroupInfo AP_CANManager::CANIface_Params::var_info[] = {
     // @Param: DRIVER
     // @DisplayName: Index of virtual driver to be used with physical CAN interface
     // @Description: Enabling this option enables use of CAN buses.
-    // @Values: 0:Disabled,1:First driver,2:Second driver
+    // @Values: 0:Disabled,1:First driver,2:Second driver,3:Third driver
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("DRIVER", 1, AP_CANManager::CANIface_Params, _driver_number, HAL_CAN_DRIVER_DEFAULT, AP_PARAM_FLAG_ENABLE),

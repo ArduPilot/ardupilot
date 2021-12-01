@@ -39,6 +39,8 @@
 #define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix default
 #define AC_ATTITUDE_CONTROL_MAN_DEFAULT                 0.1f    // manual throttle mix default
 #define AC_ATTITUDE_CONTROL_MAX_DEFAULT                 0.5f    // maximum throttle mix default
+#define AC_ATTITUDE_CONTROL_MIN_LIMIT                   0.5f    // min throttle mix upper limit
+#define AC_ATTITUDE_CONTROL_MAN_LIMIT                   4.0f    // man throttle mix upper limit
 #define AC_ATTITUDE_CONTROL_MAX                         5.0f    // maximum throttle mix default
 
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
@@ -76,40 +78,43 @@ public:
     virtual AC_PID& get_rate_yaw_pid() = 0;
 
     // get the roll acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_roll_max() const { return _accel_roll_max; }
+    float get_accel_roll_max_cdss() const { return _accel_roll_max; }
     float get_accel_roll_max_radss() const { return radians(_accel_roll_max * 0.01f); }
 
     // Sets the roll acceleration limit in centidegrees/s/s
-    void set_accel_roll_max(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
+    void set_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max = accel_roll_max; }
 
     // Sets and saves the roll acceleration limit in centidegrees/s/s
-    void save_accel_roll_max(float accel_roll_max) { _accel_roll_max.set_and_save(accel_roll_max); }
+    void save_accel_roll_max_cdss(float accel_roll_max) { _accel_roll_max.set_and_save(accel_roll_max); }
 
     // get the pitch acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_pitch_max() const { return _accel_pitch_max; }
+    float get_accel_pitch_max_cdss() const { return _accel_pitch_max; }
     float get_accel_pitch_max_radss() const { return radians(_accel_pitch_max * 0.01f); }
 
     // Sets the pitch acceleration limit in centidegrees/s/s
-    void set_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
+    void set_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max = accel_pitch_max; }
 
     // Sets and saves the pitch acceleration limit in centidegrees/s/s
-    void save_accel_pitch_max(float accel_pitch_max) { _accel_pitch_max.set_and_save(accel_pitch_max); }
+    void save_accel_pitch_max_cdss(float accel_pitch_max) { _accel_pitch_max.set_and_save(accel_pitch_max); }
 
     // get the yaw acceleration limit in centidegrees/s/s or radians/s/s
-    float get_accel_yaw_max() const { return _accel_yaw_max; }
+    float get_accel_yaw_max_cdss() const { return _accel_yaw_max; }
     float get_accel_yaw_max_radss() const { return radians(_accel_yaw_max * 0.01f); }
 
     // Sets the yaw acceleration limit in centidegrees/s/s
-    void set_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; }
+    void set_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max = accel_yaw_max; }
 
     // Sets and saves the yaw acceleration limit in centidegrees/s/s
-    void save_accel_yaw_max(float accel_yaw_max) { _accel_yaw_max.set_and_save(accel_yaw_max); }
+    void save_accel_yaw_max_cdss(float accel_yaw_max) { _accel_yaw_max.set_and_save(accel_yaw_max); }
 
     // get the roll angular velocity limit in radians/s
-    float get_ang_vel_roll_max_radss() const { return _ang_vel_roll_max; }
+    float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max); }
 
     // get the pitch angular velocity limit in radians/s
-    float get_ang_vel_pitch_max_radss() const { return _ang_vel_pitch_max; }
+    float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max); }
+
+    // get the yaw slew limit
+    float get_slew_yaw_cds() const { return _slew_yaw; }
 
     // get the rate control input smoothing time constant
     float get_input_tc() const { return _input_tc; }
@@ -120,7 +125,7 @@ public:
     // Ensure attitude controller have zero errors to relax rate controller output
     void relax_attitude_controllers();
 
-    // Used by child class AC_AttitudeControl_TS to change behavior for tailsitter quadplanes
+    // Used by child class AC_AttitudeControl_TS to change behaviour for tailsitter quadplanes
     virtual void relax_attitude_controllers(bool exclude_pitch) { relax_attitude_controllers(); }
 
     // reset rate controller I terms
@@ -129,14 +134,13 @@ public:
     // reset rate controller I terms smoothly to zero in 0.5 seconds
     void reset_rate_controller_I_terms_smoothly();
 
-    // Sets attitude target to vehicle attitude
-    void set_attitude_target_to_current_attitude() { _ahrs.get_quat_body_to_ned(_attitude_target); }
+    // Sets attitude target to vehicle attitude and sets all rates to zero
+    // If reset_rate is false rates are not reset to allow the rate controllers to run
+    void reset_target_and_rate(bool reset_rate = true);
 
-    // Sets yaw target to vehicle heading
-    void set_yaw_target_to_current_heading() { shift_ef_yaw_target(degrees(_ahrs.yaw - _euler_angle_target.z) * 100.0f); }
-
-    // Shifts earth frame yaw target by yaw_shift_cd. yaw_shift_cd should be in centidegrees and is added to the current target heading
-    void shift_ef_yaw_target(float yaw_shift_cd);
+    // Sets yaw target to vehicle heading and sets yaw rate to zero
+    // If reset_rate is false rates are not reset to allow the rate controllers to run
+    void reset_yaw_target_and_rate(bool reset_rate = true);
 
     // handle reset of attitude from EKF since the last iteration
     void inertial_frame_reset();
@@ -170,8 +174,8 @@ public:
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
-    void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
-    void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
+    virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
+    virtual void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
     void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading(thrust_vector, heading_cd, 0.0f);}
 
     // Converts thrust vector and heading angle to quaternion rotation in the earth frame
@@ -277,13 +281,13 @@ public:
     float angle_boost() const { return _angle_boost; }
 
     // Return tilt angle limit for pilot input that prioritises altitude hold over lean angle
-    virtual float get_althold_lean_angle_max() const;
+    virtual float get_althold_lean_angle_max_cd() const;
 
     // Return configured tilt angle limit in centidegrees
-    float lean_angle_max() const { return _aparm.angle_max; }
+    float lean_angle_max_cd() const { return _aparm.angle_max; }
 
     // Return tilt angle in degrees
-    float lean_angle() const { return degrees(_thrust_angle); }
+    float lean_angle_deg() const { return degrees(_thrust_angle); }
 
     // calculates the velocity correction from an angle error. The angular velocity has acceleration and
     // deceleration limits including basic jerk limiting using smoothing_gain

@@ -62,11 +62,13 @@ struct log_RFRN {
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
-    uint8_t get_compass_is_null:1;
+    uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
     uint8_t opticalflow_enabled:1;
     uint8_t wheelencoder_enabled:1;
+    uint8_t takeoff_expected:1;
+    uint8_t touchdown_expected:1;
     uint8_t _end;
 };
 
@@ -206,6 +208,7 @@ struct log_RGPJ {
     float sacc;
     float yaw_deg;
     float yaw_accuracy_deg;
+    uint32_t yaw_deg_time_ms;
     int32_t lat;
     int32_t lng;
     int32_t alt;
@@ -237,11 +240,13 @@ struct log_RASI {
 // @Description: Replay Data Magnetometer Header
 struct log_RMGH {
     float declination;
+    bool available;
     uint8_t count;
     bool auto_declination_enabled;
     uint8_t num_enabled;
     bool learn_offsets_enabled;
     bool consistent;
+    uint8_t first_usable;
     uint8_t _end;
 };
 
@@ -396,9 +401,9 @@ struct log_RBOH {
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \
       "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
-      "RGPJ", "IffffffiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,Lat,Lon,Alt,HA,VA,HD,I", "-------------#", "--------------" }, \
+      "RGPJ", "IffffffIiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,YT,Lat,Lon,Alt,HA,VA,HD,I", "--------------#", "---------------" }, \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
-      "RMGH", "BBfBBB", "Dec,NumInst,AutoDec,NumEna,LOE,C", "------", "------" },  \
+      "RMGH", "fBBBBBBB", "Dec,Avail,NumInst,AutoDec,NumEna,LOE,C,FUsable", "--------", "--------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
       "RMGI", "IffffffBBBB", "LU,OX,OY,OZ,FX,FY,FZ,UFY,H,HSF,I", "----------#", "-----------" },                                        \
     { LOG_RBCH_MSG, RLOG_SIZE(RBCH),                                   \

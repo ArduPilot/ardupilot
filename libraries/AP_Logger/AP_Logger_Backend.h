@@ -6,6 +6,36 @@ class LoggerMessageWriter_DFLogStart;
 
 #define MAX_LOG_FILES 500
 
+// class to handle rate limiting of log messages
+class AP_Logger_RateLimiter
+{
+public:
+    AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz);
+
+    // return true if message passes the rate limit test
+    bool should_log(uint8_t msgid, bool writev_streaming);
+    bool should_log_streaming(uint8_t msgid);
+
+private:
+    const AP_Logger &front;
+    const AP_Float &rate_limit_hz;
+
+    // time in ms we last sent this message
+    uint16_t last_send_ms[256];
+
+    // the last scheduler counter when we sent a msg.  this allows us
+    // to detect when we are sending a multi-instance message
+    uint16_t last_sched_count[256];
+
+    // mask of message types that are not streaming. This is a cache
+    // to avoid costly calls to structure_for_msg_type
+    Bitmask<256> not_streaming;
+
+    // result of last decision for a message. Used for multi-instance
+    // handling
+    Bitmask<256> last_return;
+};
+
 class AP_Logger_Backend
 {
 
@@ -31,7 +61,7 @@ public:
         return WritePrioritisedBlock(pBuffer, size, true);
     }
 
-    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical);
+    bool WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical, bool writev_streaming=false);
 
     // high level interface, indexed by the position in the list of logs
     virtual uint16_t find_last_log() = 0;
@@ -114,7 +144,7 @@ public:
 
     // write a log message out to the log of msg_type type, with
     // values contained in arg_list:
-    bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false);
+    bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
     // these methods are used when reporting system status over mavlink
     virtual bool logging_enabled() const;
@@ -143,6 +173,11 @@ protected:
     bool ShouldLog(bool is_critical);
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
+
+    // called by PrepForArming to actually start logging
+    virtual void PrepForArming_start_logging(void) {
+        start_new_log();
+    }
 
     /*
       read a block
@@ -194,6 +229,8 @@ protected:
     void df_stats_gather(uint16_t bytes_written, uint32_t space_remaining);
     void df_stats_log();
     void df_stats_clear();
+
+    AP_Logger_RateLimiter *rate_limiter;
 
 private:
     // statistics support

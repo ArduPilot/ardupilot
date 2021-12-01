@@ -60,7 +60,6 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: AP_Logger Backend Storage type
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
-    // @Values: 0:None,1:File,2:MAVLink,3:File and MAVLink,4:Block,6:Block and MAVLink
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
@@ -92,12 +91,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_DSRMROT",  4, AP_Logger, _params.file_disarm_rot,       0),
 
+#if HAL_LOGGING_MAVLINK_ENABLED
     // @Param: _MAV_BUFSIZE
     // @DisplayName: Maximum AP_Logger MAVLink Backend buffer size
     // @Description: Maximum amount of memory to allocate to AP_Logger-over-mavlink
     // @User: Advanced
     // @Units: kB
     AP_GROUPINFO("_MAV_BUFSIZE",  5, AP_Logger, _params.mav_bufsize,       HAL_LOGGING_MAV_BUFSIZE),
+#endif
 
     // @Param: _FILE_TIMEOUT
     // @DisplayName: Timeout before giving up on file writes
@@ -114,6 +115,34 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
 
+    // @Param: _FILE_RATEMAX
+    // @DisplayName: Maximum logging rate for file backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the file backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_FILE_RATEMAX",  8, AP_Logger, _params.file_ratemax, 0),
+
+#if HAL_LOGGING_MAVLINK_ENABLED
+    // @Param: _MAV_RATEMAX
+    // @DisplayName: Maximum logging rate for mavlink backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+#endif
+
+#if HAL_LOGGING_BLOCK_ENABLED
+    // @Param: _BLK_RATEMAX
+    // @DisplayName: Maximum logging rate for block backend
+    // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Standard
+    AP_GROUPINFO("_BLK_RATEMAX", 10, AP_Logger, _params.blk_ratemax, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -136,102 +165,55 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
     if (hal.util->was_watchdog_armed()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(1);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     validate_structures(structures, num_types);
     dump_structures(structures, num_types);
 #endif
-    if (_next_backend == LOGGER_MAX_BACKENDS) {
-        AP_HAL::panic("Too many backends");
-        return;
-    }
     _num_types = num_types;
     _structures = structures;
 
+    // the "main" logging type needs to come before mavlink so that
+    // index 0 is correct
+    static const struct {
+        Backend_Type type;
+        AP_Logger_Backend* (*probe_fn)(AP_Logger&, LoggerMessageWriter_DFLogStart*);
+    } backend_configs[] {
 #if HAL_LOGGING_FILESYSTEM_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::FILESYSTEM)) {
-        LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_File(*this,
-                                                         message_writer,
-                                                         HAL_BOARD_LOG_DIRECTORY);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_File");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
-        }
-    }
-#endif // HAL_LOGGING_FILESYSTEM_ENABLED
-
+        { Backend_Type::FILESYSTEM, AP_Logger_File::probe },
+#endif
 #if HAL_LOGGING_DATAFLASH_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
-        if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
-            return;
-        }
-        LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_DataFlash(*this, message_writer);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_DataFlash");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
-        }
-    }
+        { Backend_Type::BLOCK, AP_Logger_DataFlash::probe },
 #endif
-
 #if HAL_LOGGING_SITL_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
-        if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
-            return;
-        }
-        LoggerMessageWriter_DFLogStart *message_writer =
-            new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_SITL(*this, message_writer);
-        }
-        if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_SITL");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
-        }
-    }
+        { Backend_Type::BLOCK, AP_Logger_SITL::probe },
 #endif
-    // the "main" logging type needs to come before mavlink so that index 0 is correct
 #if HAL_LOGGING_MAVLINK_ENABLED
-    if (_params.backend_types & uint8_t(Backend_Type::MAVLINK)) {
+        { Backend_Type::MAVLINK, AP_Logger_MAVLink::probe },
+#endif
+};
+
+    for (const auto &backend_config : backend_configs) {
+        if ((_params.backend_types & uint8_t(backend_config.type)) == 0) {
+            continue;
+        }
         if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_HAL::panic("Too many backends");
+            AP_BoardConfig::config_error("Too many backends");
             return;
         }
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
-        if (message_writer != nullptr)  {
-            backends[_next_backend] = new AP_Logger_MAVLink(*this,
-                                                            message_writer);
+        if (message_writer == nullptr)  {
+            AP_BoardConfig::allocation_error("mesage writer");
         }
+        backends[_next_backend] = backend_config.probe_fn(*this, message_writer);
         if (backends[_next_backend] == nullptr) {
-            hal.console->printf("Unable to open AP_Logger_MAVLink");
-            // note that message_writer is leaked here; costs several
-            // hundred bytes to fix for marginal utility
-        } else {
-            _next_backend++;
+            AP_BoardConfig::allocation_error("logger backend");
         }
+        _next_backend++;
     }
-#endif
 
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
@@ -833,7 +815,9 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 }
 
 void AP_Logger::periodic_tasks() {
+#ifndef HAL_BUILD_AP_PERIPH
     handle_log_send();
+#endif
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
@@ -871,6 +855,7 @@ void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
     FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd));
 }
 
+#if HAL_RALLY_ENABLED
 void AP_Logger::Write_RallyPoint(uint8_t total,
                                  uint8_t sequence,
                                  const RallyLocation &rally_point)
@@ -882,6 +867,7 @@ void AP_Logger::Write_Rally()
 {
     FOR_EACH_BACKEND(Write_Rally());
 }
+#endif
 
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
@@ -926,6 +912,24 @@ void AP_Logger::Write(const char *name, const char *labels, const char *units, c
     va_end(arg_list);
 }
 
+void AP_Logger::WriteStreaming(const char *name, const char *labels, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, nullptr, nullptr, fmt, arg_list, false, true);
+    va_end(arg_list);
+}
+
+void AP_Logger::WriteStreaming(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...)
+{
+    va_list arg_list;
+
+    va_start(arg_list, fmt);
+    WriteV(name, labels, units, mults, fmt, arg_list, false, true);
+    va_end(arg_list);
+}
+
 void AP_Logger::WriteCritical(const char *name, const char *labels, const char *fmt, ...)
 {
     va_list arg_list;
@@ -944,7 +948,8 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
     va_end(arg_list);
 }
 
-void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical)
+void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list,
+                       bool is_critical, bool is_streaming)
 {
     // WriteV is not safe in replay as we can re-use IDs
     const bool direct_comp = APM_BUILD_TYPE(APM_BUILD_Replay);
@@ -967,7 +972,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
         }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
-        backends[i]->Write(f->msg_type, arg_copy, is_critical);
+        backends[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
         va_end(arg_copy);
     }
 }
@@ -1169,7 +1174,7 @@ const struct AP_Logger::log_write_fmt *AP_Logger::log_write_fmt_for_msg_type(con
 // returns true if the msg_type is already taken
 bool AP_Logger::msg_type_in_use(const uint8_t msg_type) const
 {
-    // check static list of messages (e.g. from LOG_BASE_STRUCTURES)
+    // check static list of messages (e.g. from LOG_COMMON_STRUCTURES)
     // check the write format types to see if we've used this one
     for (uint16_t i=0; i<_num_types;i++) {
         if (structure(i)->msg_type == msg_type) {
@@ -1288,6 +1293,7 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 void AP_Logger::io_thread(void)
 {
     uint32_t last_run_us = AP_HAL::micros();
+    uint8_t counter = 0;
 
     while (true) {
         uint32_t now = AP_HAL::micros();
@@ -1301,6 +1307,15 @@ void AP_Logger::io_thread(void)
         last_run_us = AP_HAL::micros();
 
         FOR_EACH_BACKEND(io_timer());
+
+        if (++counter % 4 == 0) {
+            hal.util->log_stack_info();
+        }
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        if (counter % 100 == 0) {
+            file_content_update();
+        }
+#endif
     }
 }
 
@@ -1363,6 +1378,10 @@ bool AP_Logger::log_while_disarmed(void) const
 
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
+    if (_force_long_log_persist) {
+        // log for 10x longer than default
+        persist_ms *= 10U;
+    }
 
     // keep logging for HAL_LOGGER_ARM_PERSIST seconds after disarming
     const uint32_t arm_change_ms = hal.util->get_last_armed_change();
@@ -1377,6 +1396,95 @@ bool AP_Logger::log_while_disarmed(void) const
 
     return false;
 }
+
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+/*
+  log the content of a file in FILE log messages
+ */
+void AP_Logger::log_file_content(const char *filename)
+{
+    WITH_SEMAPHORE(file_content.sem);
+    auto *file = new file_list;
+    if (file == nullptr) {
+        return;
+    }
+    // make copy to allow original to go out of scope
+    const size_t len = strlen(filename)+1;
+    char * tmp_filename = new char[len];
+    if (tmp_filename == nullptr) {
+        return;
+    }
+    strncpy(tmp_filename, filename, len);
+    file->filename = tmp_filename;
+    // Remove directory if whole file name will not fit
+    const char * name = strrchr(file->filename, '/');
+    if ((len-1 > sizeof(file->log_filename)) && (name != nullptr)) {
+        strncpy_noterm(file->log_filename, name+1, sizeof(file->log_filename));
+    } else {
+        strncpy_noterm(file->log_filename, file->filename, sizeof(file->log_filename));
+    }
+    if (file_content.head == nullptr) {
+        file_content.tail = file_content.head = file;
+        file_content.fd = -1;
+    } else {
+        file_content.tail->next = file;
+        file_content.tail = file;
+    }
+}
+
+/*
+  periodic call to log file content
+ */
+void AP_Logger::file_content_update(void)
+{
+    auto *file = file_content.head;
+    if (file == nullptr) {
+        return;
+    }
+
+    // remove a file structure from the linked list
+    auto remove_from_list = [this,file]()
+    { 
+        WITH_SEMAPHORE(file_content.sem);
+        file_content.head = file->next;
+        if (file_content.tail == file) {
+            file_content.tail = file_content.head;
+        }
+        delete [] file->filename;
+        delete file;
+        file_content.fd = -1;
+    };
+
+    if (file_content.fd == -1) {
+        // open a new file
+        file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
+        if (file_content.fd == -1) {
+            remove_from_list();
+            return;
+        }
+        file_content.offset = 0;
+    }
+
+    struct log_File pkt {
+        LOG_PACKET_HEADER_INIT(LOG_FILE_MSG),
+    };
+    memcpy(pkt.filename, file->log_filename, sizeof(pkt.filename));
+    const auto length = AP::FS().read(file_content.fd, pkt.data, sizeof(pkt.data));
+    if (length <= 0) {
+        AP::FS().close(file_content.fd);
+        remove_from_list();
+        return;
+    }
+    pkt.offset = file_content.offset;
+    pkt.length = length;
+    if (WriteBlock_first_succeed(&pkt, sizeof(pkt))) {
+        file_content.offset += length;
+    } else {
+        // seek back ready for another try
+        AP::FS().lseek(file_content.fd, file_content.offset, SEEK_SET);
+    }
+}
+#endif // HAL_LOGGER_FILE_CONTENTS_ENABLED
 
 namespace AP {
 

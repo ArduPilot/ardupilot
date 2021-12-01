@@ -108,10 +108,13 @@ DMA_NOSHARE SPI1* SPI3* TIM1* TIM3* TIM4_UP USART1_TX
 define HAL_STORAGE_SIZE 16384
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
-define STORAGE_FLASH_PAGE 14
+STORAGE_FLASH_PAGE 14
+
+# reserve space for flash storage in last 2 sectors
+FLASH_RESERVE_END_KB 256
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # spi devices
 SPIDEV mpu6000   SPI1 DEVID1 MPU6000_CS MODE3  1*MHZ  4*MHZ
@@ -136,5 +139,4 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define BOARD_PWM_COUNT_DEFAULT 5
 define STM32_PWM_USE_ADVANCED TRUE

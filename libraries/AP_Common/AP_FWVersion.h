@@ -28,6 +28,7 @@ public:
     const uint32_t os_sw_version;
     const char *fw_string;
     const char *fw_hash_str;
+    const char *fw_short_string;
     const char *middleware_name;
     const char *middleware_hash_str;
     const char *os_name;

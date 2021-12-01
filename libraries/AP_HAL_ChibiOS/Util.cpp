@@ -29,9 +29,14 @@
 #include "sdcard.h"
 #include "shared_dma.h"
 #include <AP_Common/ExpandingString.h>
-
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED
+#include <AP_Notify/AP_Notify.h>
+#endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#endif
+#ifndef HAL_BOOTLOADER_BUILD
+#include <AP_Logger/AP_Logger.h>
 #endif
 
 #if HAL_WITH_IO_MCU
@@ -155,7 +160,6 @@ Util::safety_state Util::safety_switch_state(void)
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
 #endif
 
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM
 uint8_t  Util::_toneAlarm_types = 0;
 
 bool Util::toneAlarm_init(uint8_t types)
@@ -165,7 +169,13 @@ bool Util::toneAlarm_init(uint8_t types)
     pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
 #endif
     _toneAlarm_types = types;
+
+#if !defined(HAL_PWM_ALARM) && !HAL_DSHOT_ALARM && !HAL_CANMANAGER_ENABLED
+    // Nothing to do
+    return false;
+#else
     return true;
+#endif
 }
 
 void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
@@ -179,10 +189,10 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
 
         pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
     }
-#endif
+#endif // HAL_PWM_ALARM
 #if HAL_DSHOT_ALARM
     // don't play the motors while flying
-    if (!(_toneAlarm_types & ALARM_DSHOT) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
+    if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
         return;
     }
 
@@ -199,9 +209,8 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
     } else {  // G+
         hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP5, RCOutput::ALL_CHANNELS, duration_ms);
     }
-#endif // HAL_PWM_ALARM
+#endif // HAL_DSHOT_ALARM
 }
-#endif
 
 /*
   set HW RTC in UTC microseconds
@@ -221,11 +230,15 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-#if defined(HAL_NO_GCS) || defined(HAL_BOOTLOADER_BUILD)
-#define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
-#else
+#ifndef HAL_BOOTLOADER_BUILD
 #include <GCS_MAVLink/GCS.h>
+#if HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } while (0)
+#endif // HAL_GCS_ENABLED
+#endif // ifndef HAL_BOOT_LOADER_BUILD
+
+#ifndef Debug
+#define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
 #endif
 
 Util::FlashBootloader Util::flash_bootloader()
@@ -360,7 +373,7 @@ bool Util::was_watchdog_reset() const
     return stm32_was_watchdog_reset();
 }
 
-#if CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
@@ -525,7 +538,7 @@ void Util::apply_persistent_params(void) const
         if (eq) {
             *eq = 0;
             const char *pname = p;
-            const float value = atof(eq+1);
+            const float value = strtof(eq+1, NULL);
             if (AP_Param::set_default_by_name(pname, value)) {
                 count++;
                 /*
@@ -570,10 +583,162 @@ void Util::apply_persistent_params(void) const
 }
 #endif // HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 
+#if HAL_WITH_IO_MCU
+extern ChibiOS::UARTDriver uart_io;
+#endif
+
 // request information on uart I/O
 void Util::uart_info(ExpandingString &str)
 {
 #if !defined(HAL_NO_UARTDRIVER)    
-    ChibiOS::UARTDriver::uart_info(str);
+    // a header to allow for machine parsers to determine format
+    str.printf("UARTV1\n");
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        auto *uart = hal.serial(i);
+        if (uart) {
+            str.printf("SERIAL%u ", i);
+            uart->uart_info(str);
+        }
+    }
+#if HAL_WITH_IO_MCU
+    str.printf("IOMCU   ");
+    uart_io.uart_info(str);
+#endif
+#endif // HAL_NO_UARTDRIVER
+}
+
+/**
+ * This method will generate random values with set size. It will fall back to AP_Math's get_random16()
+ * if True RNG fails or enough entropy is not present.
+ */
+bool Util::get_random_vals(uint8_t* data, size_t size)
+{
+#if HAL_USE_HW_RNG && defined(RNG)
+    size_t true_random_vals = stm32_rand_generate_nonblocking(data, size);
+    if (true_random_vals == size) {
+        return true;
+    } else {
+        if (!(true_random_vals % 2)) {
+            data[true_random_vals] = (uint8_t)(get_random16() & 0xFF);
+            true_random_vals++;
+        }
+        while(true_random_vals < size) {
+            uint16_t val = get_random16();
+            memcpy(&data[true_random_vals], &val, sizeof(uint16_t));
+            true_random_vals+=sizeof(uint16_t);
+        }
+    }
+    return true;
+#else
+    return false;
 #endif
 }
+
+/**
+ * This method will generate true random values with set size. This method will block for set amount
+ * of true random numbers to be generated, the timeout specifies the maximum amount of time to wait
+ * for the call to finish.
+ */
+bool Util::get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us)
+{
+#if HAL_USE_HW_RNG && defined(RNG)
+    if (stm32_rand_generate_blocking(data, size, timeout_us)) {
+        return true;
+    } else {
+        return false;
+    }
+#else
+    return false;
+#endif
+}
+
+/*
+  log info on stack usage. Called at 1Hz by logging thread, logs next
+  thread on each call
+*/
+void Util::log_stack_info(void)
+{
+#if !defined(HAL_BOOTLOADER_BUILD) && HAL_LOGGING_ENABLED
+    static thread_t *last_tp;
+    static uint8_t thread_id;
+    thread_t *tp = last_tp;
+    if (tp == nullptr) {
+        tp = chRegFirstThread();
+        thread_id = 0;
+    } else {
+        tp = chRegNextThread(last_tp);
+        thread_id++;
+    }
+    struct log_STAK pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_STAK_MSG),
+        time_us         : AP_HAL::micros64(),
+    };
+    if (tp == nullptr) {
+        pkt.thread_id = 255;
+        pkt.priority = 255;
+        const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+        pkt.stack_total = isr_stack_size;
+        pkt.stack_free = stack_free(&__main_stack_base__);
+        strncpy_noterm(pkt.name, "ISR", sizeof(pkt.name));
+    } else {
+        if (tp->wabase == (void*)&__main_thread_stack_base__) {
+            // main thread has its stack separated from the thread context
+            pkt.stack_total = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+        } else {
+            // all other threads have their thread context pointer
+            // above the stack top
+            pkt.stack_total = uint32_t(tp) - uint32_t(tp->wabase);
+        }
+        pkt.thread_id = thread_id;
+        pkt.priority = tp->realprio,
+        pkt.stack_free = stack_free(tp->wabase);
+        strncpy_noterm(pkt.name, tp->name, sizeof(pkt.name));
+    }
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    last_tp = tp;
+#endif
+}
+
+#if !defined(HAL_BOOTLOADER_BUILD)
+size_t Util::last_crash_dump_size() const
+{
+#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
+    // get dump size
+    uint32_t size = stm32_crash_dump_size();
+    char* dump_start = (char*)stm32_crash_dump_addr();
+    if (!(dump_start[0] == 0x63 && dump_start[1] == 0x43)) {
+        // there's no valid Crash Dump
+        return 0;
+    }
+    if (size == 0xFFFFFFFF) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Crash Dump incomplete, dumping what we got!");
+        size = stm32_crash_dump_max_size();
+    }
+    return size;
+#endif
+    return 0;
+}
+
+void* Util::last_crash_dump_ptr() const
+{
+#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
+    if (last_crash_dump_size() == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No Crash Detected!");
+        return nullptr;
+    }
+    return (void*)stm32_crash_dump_addr();
+#else
+    return nullptr;
+#endif
+}
+#endif // HAL_BOOTLOADER_BUILD
+
+// set armed state
+void Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+#ifdef HAL_GPIO_PIN_nARMED
+    palWriteLine(HAL_GPIO_PIN_nARMED, !b);
+#endif
+}
+

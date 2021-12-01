@@ -79,13 +79,15 @@ private:
     float torque_mpog;
     float hover_coll = 5.0f;
     bool motor_interlock;
-    uint8_t _time_delay = 30;
+    uint8_t _time_delay;
     enum frame_types {
         HELI_FRAME_CONVENTIONAL,
         HELI_FRAME_DUAL,
-        HELI_FRAME_COMPOUND
+        HELI_FRAME_COMPOUND,
+        HELI_FRAME_BLADE360,
     } frame_type = HELI_FRAME_CONVENTIONAL;
     bool gas_heli = false;
+    float nominal_rpm;
 };
 
 } // namespace SITL

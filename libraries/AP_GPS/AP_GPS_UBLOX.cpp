@@ -36,7 +36,9 @@
 
 #define UBLOX_DEBUGGING 0
 #define UBLOX_FAKE_3DLOCK 0
+#ifndef CONFIGURE_PPS_PIN
 #define CONFIGURE_PPS_PIN 0
+#endif
 
 // this is number of epochs per output. A higher value will reduce
 // the uart bandwidth needed and allow for higher latency
@@ -48,13 +50,27 @@
 extern const AP_HAL::HAL& hal;
 
 #if UBLOX_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
 #else
  # define Debug(fmt, args ...)
 #endif
 
 #if UBLOX_MB_DEBUGGING
+#if defined(HAL_BUILD_AP_PERIPH)
+ extern "C" {
+   void can_printf(const char *fmt, ...);
+ }
+ # define MB_Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
+#else
  # define MB_Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+#endif
 #else
  # define MB_Debug(fmt, args ...)
 #endif
@@ -534,8 +550,6 @@ AP_GPS_UBLOX::_request_port(void)
 bool
 AP_GPS_UBLOX::read(void)
 {
-    uint8_t data;
-    int16_t numc;
     bool parsed = false;
     uint32_t millis_now = AP_HAL::millis();
 
@@ -564,11 +578,15 @@ AP_GPS_UBLOX::read(void)
         }
     }
 
-    numc = port->available();
-    for (int16_t i = 0; i < numc; i++) {        // Process bytes received
+    const uint16_t numc = MIN(port->available(), 8192U);
+    for (uint16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
-        data = port->read();
+        const int16_t rdata = port->read();
+        if (rdata < 0) {
+            break;
+        }
+        const uint8_t data = rdata;
 
 #if GPS_MOVING_BASELINE
         if (rtcm3_parser) {
@@ -698,7 +716,7 @@ AP_GPS_UBLOX::read(void)
 // Private Methods /////////////////////////////////////////////////////////////
 void AP_GPS_UBLOX::log_mon_hw(void)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -724,7 +742,7 @@ void AP_GPS_UBLOX::log_mon_hw(void)
 
 void AP_GPS_UBLOX::log_mon_hw2(void)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -745,7 +763,7 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -773,7 +791,7 @@ void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
 
 void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -1351,15 +1369,21 @@ AP_GPS_UBLOX::_parse_gps(void)
                 MB_Debug("RELPOSNED ITOW %u %u\n", unsigned(_buffer.relposned.iTOW), unsigned(_last_relposned_itow));
             }
             _last_relposned_itow = _buffer.relposned.iTOW;
-
+            MB_Debug("RELPOSNED flags: %lx valid: %lx invalid: %lx\n", _buffer.relposned.flags, valid_mask, invalid_mask);
             if (((_buffer.relposned.flags & valid_mask) == valid_mask) &&
-                ((_buffer.relposned.flags & invalid_mask) == 0) &&
-                calculate_moving_base_yaw(_buffer.relposned.relPosHeading * 1e-5,
+                ((_buffer.relposned.flags & invalid_mask) == 0)) {
+                if (calculate_moving_base_yaw(_buffer.relposned.relPosHeading * 1e-5,
                                           _buffer.relposned.relPosLength * 0.01,
                                           _buffer.relposned.relPosD*0.01)) {
-                state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
-                state.have_gps_yaw_accuracy = true;
-                _last_relposned_ms = AP_HAL::millis();
+                    state.have_gps_yaw_accuracy = true;
+                    state.gps_yaw_accuracy = _buffer.relposned.accHeading * 1e-5;
+                    _last_relposned_ms = AP_HAL::millis();
+                }
+                state.relPosHeading = _buffer.relposned.relPosHeading * 1e-5;
+                state.relPosLength  = _buffer.relposned.relPosLength * 0.01;
+                state.relPosD       = _buffer.relposned.relPosD * 0.01;
+                state.accHeading    = _buffer.relposned.accHeading * 1e-5;
+                state.relposheading_ts = AP_HAL::millis();
             } else {
                 state.have_gps_yaw_accuracy = false;
             }
@@ -1477,7 +1501,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.velocity.y = _buffer.velned.ned_east * 0.01f;
         state.velocity.z = _buffer.velned.ned_down * 0.01f;
         state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
-        state.ground_speed = norm(state.velocity.y, state.velocity.x);
+        state.ground_speed = state.velocity.xy().length();
         state.have_speed_accuracy = true;
         state.speed_accuracy = _buffer.velned.speed_accuracy*0.01f;
 #if UBLOX_FAKE_3DLOCK
@@ -1844,7 +1868,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
         // always bail out in this case, it's used to indicate we have yet to receive a valid
         // hardware generation, however the user may have inhibited us detecting the generation
         // so if we aren't allowed to do configuration, we will accept this as the default delay
-        return gps._auto_config != AP_GPS::GPS_AUTO_CONFIG_ENABLE;
+        return gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE;
     case UBLOX_5:
     case UBLOX_6:
     default:
@@ -1876,7 +1900,7 @@ bool AP_GPS_UBLOX::get_lag(float &lag_sec) const
 
 void AP_GPS_UBLOX::Write_AP_Logger_Log_Startup_messages() const
 {
-#ifndef HAL_NO_LOGGING
+#if HAL_LOGGING_ENABLED
     AP_GPS_Backend::Write_AP_Logger_Log_Startup_messages();
 
     if (_have_version) {

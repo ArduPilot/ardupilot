@@ -14,7 +14,6 @@
 
 // Yaw imbalance check
 #define YAW_IMBALANCE_IMAX_THRESHOLD 0.75f
-#define YAW_IMBALANCE_I_THERSHOLD 0.1f
 #define YAW_IMBALANCE_WARN_MS 10000
 
 // crash_check - disarms motors if a crash has been detected
@@ -84,8 +83,6 @@ void Copter::crash_check()
     // check if crashing for 2 seconds
     if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
         AP::logger().Write_Error(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
-        // keep logging even if disarmed:
-        AP::logger().set_force_log_disarmed(true);
         // send message to gcs
         gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", angle_error, CRASH_CHECK_ANGLE_DEVIATION_DEG, filtered_acc, CRASH_CHECK_ACCEL_MAX);
         // disarm motors
@@ -140,7 +137,7 @@ void Copter::thrust_loss_check()
     }
 
     // check for descent
-    if (!is_negative(inertial_nav.get_velocity_z())) {
+    if (!is_negative(inertial_nav.get_velocity_z_up_cms())) {
         thrust_loss_counter = 0;
         return;
     }
@@ -209,8 +206,7 @@ void Copter::yaw_imbalance_check()
     }
 
     const float I_max = attitude_control->get_rate_yaw_pid().imax();
-    if ((is_positive(I_max) && ((I > YAW_IMBALANCE_IMAX_THRESHOLD * I_max) || (is_equal(I_term,I_max)))) ||
-        (I >YAW_IMBALANCE_I_THERSHOLD)) {
+    if ((is_positive(I_max) && ((I > YAW_IMBALANCE_IMAX_THRESHOLD * I_max) || (is_equal(I_term,I_max))))) {
         // filtered using over precentage of I max or unfiltered = I max
         // I makes up more than precentage of total available control power
         const uint32_t now = millis();
@@ -244,7 +240,7 @@ void Copter::parachute_check()
     parachute.set_is_flying(!ap.land_complete);
 
     // pass sink rate to parachute library
-    parachute.set_sink_rate(-inertial_nav.get_velocity_z() * 0.01f);
+    parachute.set_sink_rate(-inertial_nav.get_velocity_z_up_cms() * 0.01f);
 
     // exit immediately if in standby
     if (standby_active) {

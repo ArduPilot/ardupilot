@@ -6,4 +6,13 @@ include ../fmuv5/hwdef.dat
 USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
 USB_PRODUCT 0x004E
 USB_STRING_MANUFACTURER "Holybro"
-USB_STRING_PRODUCT "pix32v5"
+
+# this board has a heater, set default target as 45
+define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_DEFAULT 45
+define HAL_IMUHEAT_P_DEFAULT 50
+define HAL_IMUHEAT_I_DEFAULT 0.07
+
+# offset the internal compass for EM impact of the IMU heater
+# this is in sensor frame mGauss
+define HAL_IST8310_I2C_HEATER_OFFSET Vector3f(-3,14,-6)

@@ -38,14 +38,15 @@ private:
         SONAR_UNKNOWN = 0,
         SONAR_DBT,
         SONAR_DPT,
-        SONAR_MTW   // mean water temperature
+        SONAR_MTW,  // mean water temperature
+        SONAR_HDED, // hondex custom sonar message
     };
 
     // get a distance reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     // get temperature reading in C.  returns true on success and populates temp argument
-    bool get_temp(float &temp) override;
+    bool get_temp(float &temp) const override;
 
     uint16_t read_timeout_ms() const override { return 3000; }
 

@@ -117,7 +117,11 @@
 #define STM32_LPTIM1SEL                     STM32_LPTIM1SEL_PCLK1
 #define STM32_SAI1SEL                       STM32_SAI1SEL_SYSCLK
 #define STM32_I2S23SEL                      STM32_I2S23SEL_SYSCLK
-#define STM32_FDCANSEL                      STM32_FDCANSEL_HSE // STM32_FDCANSEL_PLLQCLK
+#if STM32_HSECLK == 0U
+#define STM32_FDCANSEL                      STM32_FDCANSEL_PLLQCLK
+#else
+#define STM32_FDCANSEL                      STM32_FDCANSEL_HSE
+#endif
 #define STM32_CLK48SEL                      STM32_CLK48SEL_HSI48
 #define STM32_ADC12SEL                      STM32_ADC12SEL_PLLPCLK
 #define STM32_ADC345SEL                     STM32_ADC345SEL_PLLPCLK

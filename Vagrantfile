@@ -44,6 +44,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # removing this line causes "A box must be specified." error
   # and this is the default box that will be booted if no name is specified
   config.vm.box = "ubuntu/bionic64"
+  config.vm.boot_timeout = 1500
 
   # LTS, EOL April, 2019:
   config.vm.define "trusty32", autostart: false do |trusty32|
@@ -122,7 +123,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # 18.04 LTS EOL April 2023
-  config.vm.define "bionic64-desktop", primary: true do |bionic64|
+  config.vm.define "bionic64-desktop", autostart: false do |bionic64|
     bionic64.vm.box = "ubuntu/bionic64"
     bionic64.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
     bionic64.vm.provider "virtualbox" do |vb|
@@ -214,6 +215,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.gui = true
     end
     hirsute.vm.boot_timeout = 1200
+  end
+
+  # 21.10
+  config.vm.define "impish", autostart: false do |impish|
+    impish.vm.box = "ubuntu/impish64"
+    impish.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    impish.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (impish)"
+    end
+    impish.vm.boot_timeout = 1200
   end
 
 end

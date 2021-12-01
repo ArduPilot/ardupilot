@@ -22,7 +22,7 @@ your black magic probe, or install the provided udev rules file so
 that the probe will be loaded as /dev/ttyBmpGdb
 
 Now make sure you have the right version of arm-none-eabi-gdb
-installed. We recommend version 6-2017-q2-update, which is available
+installed. We recommend version 10-2020-q4-major, which is available
 here: https://firmware.ardupilot.org/Tools/STM32-tools/
 
 Now build ArduPilot with the --debug configure option. You may also
@@ -96,3 +96,44 @@ arm-none-eabi-gdb in the same manner.
 
 To see ChibiOS threads use the "info threads" command. See the gdb
 documentation for more information.
+
+# Debugging Hardfaults
+
+## Getting fault dump via Serial
+All one needs to do is connect the First USART(not OTG) in the SERIAL_ORDER of the board via FTDI. In the case of CubeOrange that is Telem1 and for most boards that should be the case as well. Once connected run following command:
+
+`./Tools/debug/crash_debugger.py /path/to/elf --ser-debug --ser-port /dev/ttyxxx path/to/elf/file --dump-filename logfile.txt`
+
+Additionally the logfile.txt contains a memory dump, which can be shared along with elf file. And devs can then just start up gdb using following command, and do all the analysis that needs done.
+
+`arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | modules/CrashDebug/bins/lin64/CrashDebug --elf path/to/elf/file --dump logfile.txt"`
+
+## Getting fault dump via Flash
+If a fault happens the information gets recorded in flash sector defined in hwdef define HAL_CRASH_DUMP_FLASHPAGE xx .
+
+Only one crash will be recorded per flash cycle. At every new firmware update the flash will be ready again to record the crash log. Maybe we can erase the crash flash page via a parameter or maybe right after we fetch the crash_dump.bin.
+To fetch the crash dump @SYS/crash_dump.bin can be fetched via MAVFTP.
+
+Once fetched one can either use the following command to immediately dump backtrace with locals:
+
+`./Tools/debug/crash_debugger.py  /path/to/elf --dump-debug --dump-filein crash_dump.bin`
+
+or to open in gdb for further postmortem do the following:
+
+`arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | modules/CrashDebug/bins/lin64/CrashDebug --elf path/to/elf/file --dump crash_dump.bin"`
+
+## Debugging faults using GDB:
+* Connect hardware over SWD
+* Place breakpoint at hardfault using `b *&HardFault_Handler`
+* If one is lucky process stack remained untouched they can do `set $sp = $psp`
+* Now you can simply run `backtrace` and potentially reach the fault
+* If fault happens at startup one can run and then wait for breakpoint hit at HardFault_Handler
+and then `set $sp = $psp` and do `backtrace`
+* One can also log the RAM, refer crash_debugger app and Tools/debug/crash_dump.scr for the same.
+
+### References:
+https://interrupt.memfault.com/blog/cortex-m-fault-debug
+
+https://github.com/adamgreen/CrashCatcher/tree/c8e801225bfa12da70c01ea25b58090b2b7a2e0a
+
+http://www.cyrilfougeray.com/2020/07/27/firmware-logs-with-stack-trace.html

@@ -10,8 +10,7 @@ class AP_RangeFinder_Wasp : public AP_RangeFinder_Backend_Serial {
 
 public:
     AP_RangeFinder_Wasp(RangeFinder::RangeFinder_State &_state,
-                        AP_RangeFinder_Params &_params,
-                        uint8_t serial_instance);
+                        AP_RangeFinder_Params &_params);
 
     void update(void) override;
 
@@ -47,7 +46,7 @@ private:
 
     wasp_configuration_stage configuration_state = WASP_CFG_PROTOCOL;
 
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     void parse_response(void);
 

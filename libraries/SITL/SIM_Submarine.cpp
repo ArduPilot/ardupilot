@@ -62,6 +62,7 @@ Submarine::Submarine(const char *frame_str) :
         thrusters = vectored_6dof_thrusters;
         n_thrusters = 8;
     }
+    lock_step_scheduled = true;
 }
 
 // calculate rotational and linear accelerations
@@ -137,7 +138,7 @@ void Submarine::calculate_buoyancy_torque(Vector3f &torque)
  * @param position
  * @return float
  */
-float Submarine::calculate_sea_floor_depth(const Vector3f &/*position*/)
+float Submarine::calculate_sea_floor_depth(const Vector3d &/*position*/)
 {
     return 50;
 }

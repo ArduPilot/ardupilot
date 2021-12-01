@@ -85,6 +85,14 @@ void RCOutput::push(void)
         memcpy(_sitlState->pwm_output, _pending, SITL_NUM_CHANNELS * sizeof(uint16_t));
         _corked = false;
     }
+
+    // do not overwrite FETTec simulation's ESC telemetry data:
+    SITL::SIM *sitl = AP::sitl();
+    if (sitl != nullptr &&
+        sitl->fetteconewireesc_sim.enabled()) {
+        return;
+    }
+
     if (esc_telem == nullptr) {
         esc_telem = new AP_ESC_Telem_SITL;
     }
@@ -101,7 +109,7 @@ bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, ou
     if (chan > 15 || num_leds > 64) {
         return false;
     }
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl) {
         sitl->led.num_leds[chan] = num_leds;
         return true;
@@ -114,7 +122,7 @@ void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
     if (chan > 15) {
         return;
     }
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (led == -1) {
         for (uint8_t i=0; i < sitl->led.num_leds[chan]; i++) {
             set_serial_led_rgb_data(chan, i, red, green, blue);
@@ -133,7 +141,7 @@ void RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t 
 
 void RCOutput::serial_led_send(const uint16_t chan)
 {
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl) {
         sitl->led.send_counter++;
     }
@@ -143,7 +151,7 @@ void RCOutput::serial_led_send(const uint16_t chan)
 
 void RCOutput::force_safety_off(void)
 {
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
     }
@@ -152,7 +160,7 @@ void RCOutput::force_safety_off(void)
 
 bool RCOutput::force_safety_on(void)
 {
-    SITL::SITL *sitl = AP::sitl();
+    SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return false;
     }

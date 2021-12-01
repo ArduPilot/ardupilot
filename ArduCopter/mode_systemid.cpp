@@ -114,7 +114,7 @@ void ModeSystemId::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
 
     if (!motors->armed()) {
         // Motors should be Stopped
@@ -131,7 +131,7 @@ void ModeSystemId::run()
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
-        attitude_control->set_yaw_target_to_current_heading();
+        attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
         break;
 
@@ -140,7 +140,7 @@ void ModeSystemId::run()
         // Tradheli initializes targets when going from disarmed to armed state. 
         // init_targets_on_arming is always set true for multicopter.
         if (motors->init_targets_on_arming()) {
-            attitude_control->set_yaw_target_to_current_heading();
+            attitude_control->reset_yaw_target_and_rate();
             attitude_control->reset_rate_controller_I_terms_smoothly();
         }
         break;
@@ -185,9 +185,9 @@ void ModeSystemId::run()
                 gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: Landed");
                 break;
             }
-            if (attitude_control->lean_angle()*100 > attitude_control->lean_angle_max()) {
+            if (attitude_control->lean_angle_deg()*100 > attitude_control->lean_angle_max_cd()) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
-                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle(), (double)attitude_control->lean_angle_max());
+                gcs().send_text(MAV_SEVERITY_INFO, "SystemID Stopped: lean=%f max=%f", (double)attitude_control->lean_angle_deg(), (double)attitude_control->lean_angle_max_cd());
                 break;
             }
             if (waveform_time > SYSTEM_ID_DELAY + time_fade_in + time_const_freq + time_record + time_fade_out) {

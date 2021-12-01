@@ -15,7 +15,7 @@
 
 #include "AP_Generator_RichenPower.h"
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -298,7 +298,7 @@ void AP_Generator_RichenPower::Log_Write()
     }
     last_logged_reading_ms = last_reading_ms;
 
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "GEN",
         "TimeUS,runTime,maintTime,errors,rpm,ovolt,ocurr,mode",
         "s-------",
