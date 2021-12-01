@@ -116,6 +116,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+
     // index 4
 
     // @Param: _AUTODEC
@@ -160,6 +161,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
+
     // index 7
 
     // @Param: _ORIENT
@@ -167,6 +169,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
+
     // index 8
 
     // @Param: _EXTERNAL
@@ -174,6 +177,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Configure compass so it is attached externally. This is auto-detected on most boards. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
+
     // index 9
 
     // @Param: _OFS2_X
@@ -201,6 +205,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
+
     // index 10
 
     // @Param: _MOT2_X
@@ -228,6 +233,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
+
     // index 11
 
     // @Param: _OFS3_X
@@ -255,6 +261,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
+
     // index 13
 
     // @Param: _MOT3_X
@@ -282,6 +289,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
+
     // index 14
 
     // @Param: _DEV_ID
@@ -289,6 +297,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Compass device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
+
     // index  15
 
     // @Param: _DEV_ID2
@@ -296,6 +305,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
+
     // index 16
 
     // @Param: _DEV_ID3
@@ -303,6 +313,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
+
     // index 17
 
     // @Param: _USE2
@@ -310,6 +321,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Enable or disable the secondary compass for determining heading.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+
     // index 18
 
     // @Param: _ORIENT2
@@ -317,6 +329,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: The orientation of a second external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
+
     // index 19
 
     // @Param: _EXTERN2
@@ -324,6 +337,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Configure second compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
+
     // index 20
 
     // @Param: _USE3
@@ -331,6 +345,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Enable or disable the tertiary compass for determining heading.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+
     // index 21
 
     // @Param: _ORIENT3
@@ -338,6 +353,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: The orientation of a third external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
+
     // index 22
 
     // @Param: _EXTERN3
@@ -345,6 +361,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Configure third compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
+
     // index 23
 
     // @Param: _DIA_X
@@ -363,6 +380,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass soft-iron diagonal Z component
     // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+
     // index 24
 
     // @Param: _ODI_X
@@ -381,6 +399,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+
     // index 25
 
     // @Param: _DIA2_X
@@ -399,6 +418,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass2 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+
     // index 26
 
     // @Param: _ODI2_X
@@ -417,6 +437,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass2 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+
     // index 27
 
     // @Param: _DIA3_X
@@ -435,6 +456,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass3 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+
     // index 28
 
     // @Param: _ODI3_X
@@ -453,6 +475,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass3 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+
     // index 29
 
 #if COMPASS_CAL_ENABLED
@@ -537,6 +560,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Scaling factor for first compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
     // @User: Standard
     // @Range: 0 1.3
+
     // index 40
 
     // @Param: _SCALE2
@@ -544,6 +568,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Scaling factor for 2nd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
     // @User: Standard
     // @Range: 0 1.3
+
     // index 41
 
     // @Param: _SCALE3
@@ -551,6 +576,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Description: Scaling factor for 3rd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
     // @User: Standard
     // @Range: 0 1.3
+
     // index 42
 
     // @Param: _OPTIONS
