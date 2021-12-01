@@ -29,9 +29,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
         AP_Mission::Mission_Command next_nav_cmd;
         const uint16_t next_index = mission.get_current_nav_index() + 1;
-        auto_state.wp_is_land_approach = mission.get_next_nav_cmd(next_index, next_nav_cmd) && (next_nav_cmd.id == MAV_CMD_NAV_LAND);
+        const bool have_next_cmd = mission.get_next_nav_cmd(next_index, next_nav_cmd);
+        auto_state.wp_is_land_approach = have_next_cmd && (next_nav_cmd.id == MAV_CMD_NAV_LAND);
 #if HAL_QUADPLANE_ENABLED
-        if (quadplane.is_vtol_land(next_nav_cmd.id)) {
+        if (have_next_cmd && quadplane.is_vtol_land(next_nav_cmd.id)) {
             auto_state.wp_is_land_approach = false;
         }
 #endif
