@@ -106,9 +106,6 @@ SPIBus *SPIDeviceManager::buses;
 
 SPIDeviceManager::SPIDeviceManager()
 {
-    for (uint8_t i=0; i<ARRAY_SIZE(buses); i++) {
-        buses[i].bus = i;
-    }
 }
 
 static const struct SPIDriverInfo {

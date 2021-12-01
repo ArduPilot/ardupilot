@@ -53,9 +53,14 @@ def _vehicle_index(vehicle):
 
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
 _vehicle_macros = ['SKETCHNAME', 'SKETCH', 'APM_BUILD_DIRECTORY',
-                   'APM_BUILD_TYPE',
-                   'AP_NavEKF3_core.h']
+                   'APM_BUILD_TYPE', 'APM_BUILD_COPTER_OR_HELI',
+                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
+
+# some cpp files are not available at the time we run this check so need to be
+# unilaterally added
+_vehicle_cpp_need_macros = ['lua_generated_bindings.cpp']
+_macros_cpp_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_cpp_need_macros))
 
 def _remove_comments(s):
     return c_preproc.re_cpp.sub(c_preproc.repl, s)
@@ -66,14 +71,9 @@ def _depends_on_vehicle(bld, source_node):
 
     if not bld.env.BUILDROOT:
         bld.env.BUILDROOT = bld.bldnode.make_node('').abspath()
-    if path.startswith(bld.env.BUILDROOT) or path.startswith("build.tmp.binaries/"):
-        _depends_on_vehicle_cache[path] = False
 
-    if path.startswith("build/") or path.startswith(bld.env.BUILDROOT):
-        # allow vehicle dependend #if in cpp generated in build/
-        # only scripting bindings currently
+    if _macros_cpp_re.search(path) is not None:
         _depends_on_vehicle_cache[path] = True
-
 
     if path not in _depends_on_vehicle_cache:
         try:

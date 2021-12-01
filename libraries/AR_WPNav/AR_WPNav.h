@@ -61,7 +61,7 @@ public:
     // get object avoidance adjusted destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_oa_destination() { return _oa_destination; }
 
-    // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    // return heading (in centi-degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing_cd() const { return _wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }
     float crosstrack_error() const { return _cross_track_error; }

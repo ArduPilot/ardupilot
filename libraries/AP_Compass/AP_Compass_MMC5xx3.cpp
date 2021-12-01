@@ -22,24 +22,25 @@ extern const AP_HAL::HAL &hal;
 
 #define REG_PRODUCT_ID      0x2F
 #define REG_XOUT_L          0x00
-#define REG_STATUS          0x07
-#define REG_CONTROL0        0x08
-#define REG_CONTROL1        0x09
-#define REG_CONTROL2        0x0A
+#define REG_STATUS          0x08
+#define REG_CONTROL0        0x09
+#define REG_CONTROL1        0x0A
+#define REG_CONTROL2        0x0B
 
 // bits in REG_CONTROL0
-#define REG_CONTROL0_RESET  0x10
-#define REG_CONTROL0_SET    0x08
-#define REG_CONTROL0_TM     0x01
+#define REG_CONTROL0_RESET  0x10 // Set coil for measuring offset
+#define REG_CONTROL0_SET    0x08 // Reset coil for measuring offset
+#define REG_CONTROL0_TMM    0x01 // Take Measurement for Magnetic field
+#define REG_CONTROL0_TMT    0x02 // Take Measurement for Temperature
 
 // bits in REG_CONTROL1
-#define REG_CONTROL1_SW_RST 0x80
+#define REG_CONTROL1_SW_RST 0x80 // Software reset
 #define REG_CONTROL1_BW0    0x01
 #define REG_CONTROL1_BW1    0x02
 
-#define MMC5883_ID 0x0C
+#define MMC5983_ID 0x30
 
-AP_Compass_Backend *AP_Compass_MMC5XX3::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_MMC5XX3::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -61,6 +62,7 @@ AP_Compass_MMC5XX3::AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
     : dev(std::move(_dev))
     , force_external(_force_external)
     , rotation(_rotation)
+    , have_initial_offset(false)
 {
 }
 
@@ -71,32 +73,38 @@ bool AP_Compass_MMC5XX3::init()
 
     dev->set_retries(10);
 
+    // setup to allow reads on SPI
+    if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        dev->set_read_flag(0x80);
+    }
+
     uint8_t whoami;
     if (!dev->read_registers(REG_PRODUCT_ID, &whoami, 1) ||
-        whoami != MMC5883_ID) {
-        // not a MMC5883
+        whoami != MMC5983_ID) {
+        // not a MMC5983
         return false;
     }
 
     // reset sensor
     dev->write_register(REG_CONTROL1, REG_CONTROL1_SW_RST);
 
-    // 5ms minimum startup time
-    hal.scheduler->delay(10);
+    // 10ms minimum startup time
+    hal.scheduler->delay(15);
 
     if (!dev->write_register(REG_CONTROL1, REG_CONTROL1_BW0 | REG_CONTROL1_BW1)) {
         return false;
-    } // 16 bit operation, 1.6ms measurement time
+    } //  // This BW config sets the sensor measurement time to 0.5ms and filter bandwidth to 800Hz
+
 
     /* register the compass instance in the frontend */
-    dev->set_device_type(DEVTYPE_MMC5883);
+    dev->set_device_type(DEVTYPE_MMC5983);
     if (!register_compass(dev->get_bus_id(), compass_instance)) {
         return false;
     }
 
     set_dev_id(compass_instance, dev->get_bus_id());
 
-    printf("Found a MMC5883 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
+    printf("Found a MMC5983 on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
 
     set_rotation(compass_instance, rotation);
 
@@ -142,7 +150,7 @@ void AP_Compass_MMC5XX3::timer()
 
     // request a measurement for field and offset calculation after set operation
     case MMCState::STATE_SET_MEASURE: {
-        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
+        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TMM)) {
             break;
         }
         state = MMCState::STATE_SET_WAIT;
@@ -181,7 +189,7 @@ void AP_Compass_MMC5XX3::timer()
     // request a measurement for field and offset calculation after reset operation
     case MMCState::STATE_RESET_MEASURE: {
         // take measurement request
-        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
+        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TMM)) {
             state = MMCState::STATE_SET;
             break;
         }
@@ -199,13 +207,12 @@ void AP_Compass_MMC5XX3::timer()
             state = MMCState::STATE_SET;
             break;
         }
-
         // check if measurement is ready
         if (!(status & 1)) {
             break;
         }
 
-        uint16_t data1[3];
+        uint8_t data1[6];
         if (!dev->read_registers(REG_XOUT_L, (uint8_t *)&data1[0], 6)) {
             state = MMCState::STATE_SET;
             break;
@@ -214,14 +221,14 @@ void AP_Compass_MMC5XX3::timer()
         /*
           calculate field and offset
          */
-        Vector3f f1 {float(data0[0]) - zero_offset,
-                    float(data0[1]) - zero_offset,
-                    float(data0[2]) - zero_offset};
-        Vector3f f2 {float(data1[0]) - zero_offset,
-                    float(data1[1]) - zero_offset,
-                    float(data1[2]) - zero_offset};
+        Vector3f f1 {float((data0[0] << 8) + data0[1]) - zero_offset,
+                    float((data0[2] << 8) + data0[3]) - zero_offset,
+                    float((data0[4] << 8) + data0[5]) - zero_offset};
+        Vector3f f2 {float((data1[0] << 8) + data1[1]) - zero_offset,
+                    float((data1[2] << 8) + data1[3]) - zero_offset,
+                    float((data1[4] << 8) + data1[5]) - zero_offset};
 
-        Vector3f field {(f1 - f2) * counts_to_milliGauss * 0.5f};
+        Vector3f field {(f2 - f1) * counts_to_milliGauss * 0.5f};
         Vector3f new_offset {(f1 + f2) * counts_to_milliGauss * 0.5f};
 
         if (!have_initial_offset) {
@@ -234,7 +241,7 @@ void AP_Compass_MMC5XX3::timer()
 
         accumulate_sample(field, compass_instance);
 
-        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) {
+        if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TMM)) {
             printf("failed to initiate measurement\n");
             state = MMCState::STATE_SET;
         } else {
@@ -258,18 +265,18 @@ void AP_Compass_MMC5XX3::timer()
             break;
         }
 
-        uint16_t data1[3];
+        uint8_t data1[6];
         if (!dev->read_registers(REG_XOUT_L, (uint8_t *)&data1[0], 6)) {
             printf("cant read data\n");
             state = MMCState::STATE_SET;
             break;
         }
 
-        Vector3f field {float(data1[0]) - zero_offset,
-                       float(data1[1]) - zero_offset,
-                       float(data1[2]) - zero_offset};
+        Vector3f field {float((data1[0] << 8) + data1[1]) - zero_offset,
+                       float((data1[2] << 8) + data1[3]) - zero_offset,
+                       float((data1[4] << 8) + data1[5]) - zero_offset};
         field *= counts_to_milliGauss;
-        field += offset;
+        field -= offset;
         accumulate_sample(field, compass_instance);
 
         // we stay in STATE_MEASURE for measure_count_limit cycles
@@ -277,7 +284,7 @@ void AP_Compass_MMC5XX3::timer()
             measure_count = 0;
             state = MMCState::STATE_SET;
         } else {
-            if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TM)) { // Take Measurement
+            if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TMM)) { // Take Measurement
                 state = MMCState::STATE_SET;
             }
         }

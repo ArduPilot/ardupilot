@@ -24,6 +24,7 @@ import numpy
 import socket
 import struct
 import random
+import tempfile
 import threading
 import enum
 
@@ -319,6 +320,170 @@ class Telem(object):
         self.update_read()
 
 
+class MSP_Generic(Telem):
+    def __init__(self, destination_address):
+        super(MSP_Generic, self).__init__(destination_address)
+
+        self.callback = None
+
+        self.STATE_IDLE = "IDLE"
+        self.STATE_WANT_HEADER_DOLLARS = "WANT_DOLLARS"
+        self.STATE_WANT_HEADER_M = "WANT_M"
+        self.STATE_WANT_HEADER_GT = "WANT_GT"
+        self.STATE_WANT_DATA_SIZE = "WANT_DATA_SIZE"
+        self.STATE_WANT_COMMAND = "WANT_COMMAND"
+        self.STATE_WANT_DATA = "WANT_DATA"
+        self.STATE_WANT_CHECKSUM = "WANT_CHECKSUM"
+
+        self.state = self.STATE_IDLE
+
+    def progress(self, message):
+        print("MSP: %s" % message)
+
+    def set_state(self, state):
+        # self.progress("Moving to state (%s)" % state)
+        self.state = state
+
+    def init_checksum(self, b):
+        self.checksum = 0
+        self.add_to_checksum(b)
+
+    def add_to_checksum(self, b):
+        self.checksum ^= (b & 0xFF)
+
+    def process_command(self, cmd, data):
+        if self.callback is not None:
+            self.callback(cmd, data)
+        else:
+            print("cmd=%s" % str(cmd))
+
+    def update_read(self):
+        for byte in self.do_read():
+            if sys.version_info[0] < 3:
+                c = byte[0]
+                byte = ord(c)
+            else:
+                c = chr(byte)
+            # print("Got (0x%02x) (%s) (%s) state=%s" % (byte, chr(byte), str(type(byte)), self.state))
+            if self.state == self.STATE_IDLE:
+                # reset state
+                self.set_state(self.STATE_WANT_HEADER_DOLLARS)
+                # deliberate fallthrough right here
+            if self.state == self.STATE_WANT_HEADER_DOLLARS:
+                if c == '$':
+                    self.set_state(self.STATE_WANT_HEADER_M)
+                continue
+            if self.state == self.STATE_WANT_HEADER_M:
+                if c != 'M':
+                    raise Exception("Malformed packet")
+                self.set_state(self.STATE_WANT_HEADER_GT)
+                continue
+            if self.state == self.STATE_WANT_HEADER_GT:
+                if c != '>':
+                    raise Exception("Malformed packet")
+                self.set_state(self.STATE_WANT_DATA_SIZE)
+                continue
+            if self.state == self.STATE_WANT_DATA_SIZE:
+                self.data_size = byte
+                self.set_state(self.STATE_WANT_COMMAND)
+                self.data = bytearray()
+                self.checksum = 0
+                self.add_to_checksum(byte)
+                continue
+            if self.state == self.STATE_WANT_COMMAND:
+                self.command = byte
+                self.add_to_checksum(byte)
+                if self.data_size != 0:
+                    self.set_state(self.STATE_WANT_DATA)
+                else:
+                    self.set_state(self.STATE_WANT_CHECKSUM)
+                continue
+            if self.state == self.STATE_WANT_DATA:
+                self.add_to_checksum(byte)
+                self.data.append(byte)
+                if len(self.data) == self.data_size:
+                    self.set_state(self.STATE_WANT_CHECKSUM)
+                continue
+            if self.state == self.STATE_WANT_CHECKSUM:
+                if self.checksum != byte:
+                    raise Exception("Checksum fail (want=0x%02x calced=0x%02x" %
+                                    (byte, self.checksum))
+                self.process_command(self.command, self.data)
+                self.set_state(self.STATE_IDLE)
+
+
+class MSP_DJI(MSP_Generic):
+    FRAME_GPS_RAW  = 106
+    FRAME_ATTITUDE = 108
+
+    def __init__(self, destination_address):
+        super(MSP_DJI, self).__init__(destination_address)
+        self.callback = self.command_callback
+        self.frames = {}
+
+    class Frame(object):
+        def __init__(self, data):
+            self.data = data
+
+        def intn(self, offset, count):
+            ret = 0
+            for i in range(offset, offset+count):
+                ret = ret | (ord(self.data[i]) << ((i-offset)*8))
+            return ret
+
+        def int32(self, offset):
+            t = struct.unpack("<i", self.data[offset:offset+4])
+            return t[0]
+
+        def int16(self, offset):
+            t = struct.unpack("<h", self.data[offset:offset+2])
+            return t[0]
+
+    class FrameATTITUDE(Frame):
+        def roll(self):
+            '''roll in degrees'''
+            return self.int16(0) * 10
+
+        def pitch(self):
+            '''pitch in degrees'''
+            return self.int16(2) * 10
+
+        def yaw(self):
+            '''yaw in degrees'''
+            return self.int16(4)
+
+    class FrameGPS_RAW(Frame):
+        '''see gps_state_s'''
+        def fix_type(self):
+            return self.uint8(0)
+
+        def num_sats(self):
+            return self.uint8(1)
+
+        def lat(self):
+            return self.int32(2) / 1e7
+
+        def lon(self):
+            return self.int32(6) / 1e7
+
+        def LocationInt(self):
+            # other fields are available, I'm just lazy
+            return LocationInt(self.int32(2), self.int32(6), 0, 0)
+
+    def command_callback(self, frametype, data):
+        # print("X: %s %s" % (str(frametype), str(data)))
+        if frametype == MSP_DJI.FRAME_ATTITUDE:
+            frame = MSP_DJI.FrameATTITUDE(data)
+        elif frametype == MSP_DJI.FRAME_GPS_RAW:
+            frame = MSP_DJI.FrameGPS_RAW(data)
+        else:
+            return
+        self.frames[frametype] = frame
+
+    def get_frame(self, frametype):
+        return self.frames[frametype]
+
+
 class LTM(Telem):
     def __init__(self, destination_address):
         super(LTM, self).__init__(destination_address)
@@ -518,6 +683,84 @@ class CRSF(Telem):
 
     def progress_tag(self):
         return "CRSF"
+
+
+class DEVO(Telem):
+    def __init__(self, destination_address):
+        super(DEVO, self).__init__(destination_address)
+
+        self.HEADER = 0xAA
+        self.frame_length = 20
+
+        # frame is 'None' until we receive a frame with VALID header and checksum
+        self.frame = None
+        self.bad_chars = 0
+
+    def progress_tag(self):
+        return "DEVO"
+
+    def consume_frame(self):
+        # check frame checksum
+        checksum = 0
+        for c in self.buffer[:self.frame_length-1]:
+            if sys.version_info.major < 3:
+                c = ord(c)
+            checksum += c
+        checksum &= 0xff    # since we receive 8 bit checksum
+        buffer_checksum = self.buffer[self.frame_length-1]
+        if sys.version_info.major < 3:
+            buffer_checksum = ord(buffer_checksum)
+        if checksum != buffer_checksum:
+            raise NotAchievedException("Invalid checksum")
+
+        class FRAME(object):
+            def __init__(self, buffer):
+                self.buffer = buffer
+
+            def int32(self, offset):
+                t = struct.unpack("<i", self.buffer[offset:offset+4])
+                return t[0]
+
+            def int16(self, offset):
+                t = struct.unpack("<h", self.buffer[offset:offset+2])
+                return t[0]
+
+            def lon(self):
+                return self.int32(1)
+
+            def lat(self):
+                return self.int32(5)
+
+            def alt(self):
+                return self.int32(9)
+
+            def speed(self):
+                return self.int16(13)
+
+            def temp(self):
+                return self.int16(15)
+
+            def volt(self):
+                return self.int16(17)
+
+        self.frame = FRAME(self.buffer[0:self.frame_length-1])
+        self.buffer = self.buffer[self.frame_length:]
+
+    def update_read(self):
+        self.buffer += self.do_read()
+        while len(self.buffer):
+            if len(self.buffer) == 0:
+                break
+            b0 = self.buffer[0]
+            if sys.version_info.major < 3:
+                b0 = ord(b0)
+            if b0 != self.HEADER:
+                self.bad_chars += 1
+                self.buffer = self.buffer[1:]
+                continue
+            if len(self.buffer) < self.frame_length:
+                continue
+            self.consume_frame()
 
 
 class FRSky(Telem):
@@ -1204,6 +1447,7 @@ class AutoTest(ABC):
     def __init__(self,
                  binary,
                  valgrind=False,
+                 callgrind=False,
                  gdb=False,
                  gdb_no_tui=False,
                  speedup=None,
@@ -1232,6 +1476,7 @@ class AutoTest(ABC):
 
         self.binary = binary
         self.valgrind = valgrind
+        self.callgrind = callgrind
         self.gdb = gdb
         self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
@@ -1285,6 +1530,9 @@ class AutoTest(ABC):
         self.expect_list = []
 
         self.start_mavproxy_count = 0
+
+        self.last_sim_time_cached = 0
+        self.last_sim_time_cached_wallclock = 0
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -1592,13 +1840,13 @@ class AutoTest(ABC):
         while True:
             if time.time() - tstart > 30:
                 raise NotAchievedException("STAT_RESET did not go non-zero")
-            if self.get_parameter('STAT_RESET') != 0:
+            if self.get_parameter('STAT_RESET', timeout_in_wallclock=True) != 0:
                 break
 
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             self.reboot_check_valgrind_log()
             self.progress("Stopping and restarting SITL")
             if getattr(self, 'valgrind_restart_customisations', None) is not None:
@@ -2182,7 +2430,7 @@ class AutoTest(ABC):
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
             self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
@@ -2212,13 +2460,13 @@ class AutoTest(ABC):
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
-        self.start_SITL(wipe=True)
-        self.set_streamrate(self.sitl_streamrate())
-        self.apply_default_parameters()
         try:
             del self.valgrind_restart_customisations
         except Exception:
             pass
+        self.start_SITL(wipe=True)
+        self.set_streamrate(self.sitl_streamrate())
+        self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
 
     def stop_SITL(self):
@@ -2401,6 +2649,7 @@ class AutoTest(ABC):
         while mav.recv_match(blocking=False) is not None:
             count += 1
         if quiet:
+            self.in_drain_mav = False
             return
         tdelta = time.time() - tstart
         if tdelta == 0:
@@ -2474,6 +2723,8 @@ class AutoTest(ABC):
         self.set_parameter("ARSPD_BUS", 2)
         self.set_parameter("ARSPD_TYPE", 7)
         self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True, verbose=True, timeout=30)
 
         # should not be getting HIGH_LATENCY2 by default
         m = self.mav.recv_match(type='HIGH_LATENCY2', blocking=True, timeout=2)
@@ -2758,17 +3009,31 @@ class AutoTest(ABC):
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds."""
         self.drain_mav()
-        m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=timeout)
-        if m is None:
-            raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
-        return m.time_boot_ms * 1.0e-3
+        tstart = time.time()
+        while True:
+            self.drain_all_pexpects()
+            if time.time() - tstart > timeout:
+                raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
+
+            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+            if m is None:
+                continue
+
+            return m.time_boot_ms * 1.0e-3
 
     def get_sim_time_cached(self):
         """Get SITL time in seconds."""
         x = self.mav.messages.get("SYSTEM_TIME", None)
         if x is None:
             raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        return x.time_boot_ms * 1.0e-3
+        ret = x.time_boot_ms * 1.0e-3
+        if ret != self.last_sim_time_cached:
+            self.last_sim_time_cached = ret
+            self.last_sim_time_cached_wallclock = time.time()
+        else:
+            if time.time() - self.last_sim_time_cached_wallclock > 30:
+                raise AutoTestTimeoutException("sim_time_cached is not updating!")
+        return ret
 
     def sim_location(self):
         """Return current simulator location."""
@@ -3156,6 +3421,7 @@ class AutoTest(ABC):
             mavutil.mavlink.MAV_CMD_DO_JUMP,
             mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
             mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+            mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
         ]
 
     def assert_mission_files_same(self, file1, file2, match_comments=False):
@@ -4947,6 +5213,51 @@ class AutoTest(ABC):
             return msg.relative_alt / 1000.0  # mm -> m
         return msg.alt / 1000.0  # mm -> m
 
+    def assert_rangefinder_distance_between(self, dist_min, dist_max):
+        m = self.assert_receive_message('RANGEFINDER')
+
+        if m.distance < dist_min:
+            raise NotAchievedException("below min height (%f < %f)" %
+                                       (m.distance, dist_min))
+
+        if m.distance > dist_max:
+            raise NotAchievedException("above max height (%f > %f)" %
+                                       (m.distance, dist_max))
+
+    def assert_distance_sensor_quality(self, quality):
+        m = self.assert_receive_message('DISTANCE_SENSOR')
+
+        if m.signal_quality != quality:
+            raise NotAchievedException("Unexpected quality; want=%f got=%f" %
+                                       (quality, m.signal_quality))
+
+    def get_rangefinder_distance(self):
+        m = self.mav.recv_match(type='RANGEFINDER',
+                                blocking=True,
+                                timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not get RANGEFINDER message")
+
+        return m.distance
+
+    def wait_rangefinder_distance(self, dist_min, dist_max, timeout=30, **kwargs):
+        '''wait for RANGEFINDER distance'''
+        def validator(value2, target2=None):
+            if dist_min <= value2 <= dist_max:
+                return True
+            else:
+                return False
+
+        self.wait_and_maintain(
+            value_name="RageFinderDistance",
+            target=dist_min,
+            current_value_getter=lambda: self.get_rangefinder_distance(),
+            accuracy=(dist_max - dist_min),
+            validator=lambda value2, target2: validator(value2, target2),
+            timeout=timeout,
+            **kwargs
+        )
+
     def get_esc_rpm(self, esc):
         if esc > 4:
             raise ValueError("Only does 1-4")
@@ -5983,6 +6294,9 @@ Also, ignores heartbeats not from our target system'''
             text = text.encode('ascii')
         self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text)
 
+    def get_stacktrace(self):
+        return ''.join(traceback.format_stack())
+
     def get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
             ret = "%s\n" % e
@@ -6047,6 +6361,11 @@ Also, ignores heartbeats not from our target system'''
             pass
         self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
+    def progress_file_content(self, filepath):
+        with open(filepath) as f:
+            for line in f:
+                self.progress(line.rstrip())
+
     def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
@@ -6102,7 +6421,7 @@ Also, ignores heartbeats not from our target system'''
             ardupilot_alive = True
         except Exception:
             # process is dead
-            self.progress("Not alive after test", send_statustext=False)
+            self.progress("No heartbeat after test", send_statustext=False)
             if self.sitl.isalive():
                 self.progress("pexpect says it is alive")
                 for tool in "dumpstack.sh", "dumpcore.sh":
@@ -6112,6 +6431,15 @@ Also, ignores heartbeats not from our target system'''
                         return False
             else:
                 self.progress("pexpect says it is dead")
+
+            # try dumping the process status file for more information:
+            status_filepath = "/proc/%u/status" % self.sitl.pid
+            self.progress("Checking for status filepath (%s)" % status_filepath)
+            if os.path.exists(status_filepath):
+                self.progress_file_content(status_filepath)
+            else:
+                self.progress("... does not exist")
+
             passed = False
             reset_needed = True
 
@@ -6217,7 +6545,7 @@ Also, ignores heartbeats not from our target system'''
         # determine a good pexpect timeout for reading MAVProxy's
         # output; some regmes may require longer timeouts.
         pexpect_timeout = 60
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             pexpect_timeout *= 10
 
         mavproxy = util.start_MAVProxy_SITL(
@@ -6254,6 +6582,7 @@ Also, ignores heartbeats not from our target system'''
             "home": self.sitl_home(),
             "speedup": self.speedup,
             "valgrind": self.valgrind,
+            "callgrind": self.callgrind,
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
@@ -6709,16 +7038,12 @@ Also, ignores heartbeats not from our target system'''
                      0 # param7
                      )
         self.progress("zeroed mag parameters")
-        params = [
-            [("SIM_MAG_OFS_X", "COMPASS_OFS_X", 0),
-             ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", 0),
-             ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", 0), ],
-        ]
-        for count in range(2, compass_count + 1):
+        params = []
+        for count in range(1, compass_count + 1):
             params += [
-                [("SIM_MAG%d_OFS_X" % count, "COMPASS_OFS%d_X" % count, 0),
-                 ("SIM_MAG%d_OFS_Y" % count, "COMPASS_OFS%d_Y" % count, 0),
-                 ("SIM_MAG%d_OFS_Z" % count, "COMPASS_OFS%d_Z" % count, 0), ],
+                [("SIM_MAG%d_OFS_X" % count, "COMPASS%d_OFS_X" % count, 0),
+                 ("SIM_MAG%d_OFS_Y" % count, "COMPASS%d_OFS_Y" % count, 0),
+                 ("SIM_MAG%d_OFS_Z" % count, "COMPASS%d_OFS_Z" % count, 0), ],
             ]
         self.check_zero_mag_parameters(params)
 
@@ -6726,22 +7051,15 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Forty twoing Mag DIA and ODI parameters")
         self.drain_mav()
         self.get_sim_time()
-        params = [
-            [("SIM_MAG_DIA_X", "COMPASS_DIA_X", 42.0),
-             ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", 42.0),
-             ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", 42.0),
-             ("SIM_MAG_ODI_X", "COMPASS_ODI_X", 42.0),
-             ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", 42.0),
-             ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", 42.0), ],
-        ]
-        for count in range(2, compass_count + 1):
+        params = []
+        for count in range(1, compass_count + 1):
             params += [
-                [("SIM_MAG%d_DIA_X" % count, "COMPASS_DIA%d_X" % count, 42.0),
-                 ("SIM_MAG%d_DIA_Y" % count, "COMPASS_DIA%d_Y" % count, 42.0),
-                 ("SIM_MAG%d_DIA_Z" % count, "COMPASS_DIA%d_Z" % count, 42.0),
-                 ("SIM_MAG%d_ODI_X" % count, "COMPASS_ODI%d_X" % count, 42.0),
-                 ("SIM_MAG%d_ODI_Y" % count, "COMPASS_ODI%d_Y" % count, 42.0),
-                 ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, 42.0), ],
+                [("SIM_MAG%d_DIA_X" % count, "COMPASS%d_DIA_X" % count, 42.0),
+                 ("SIM_MAG%d_DIA_Y" % count, "COMPASS%d_DIA_Y" % count, 42.0),
+                 ("SIM_MAG%d_DIA_Z" % count, "COMPASS%d_DIA_Z" % count, 42.0),
+                 ("SIM_MAG%d_ODI_X" % count, "COMPASS%d_ODI_X" % count, 42.0),
+                 ("SIM_MAG%d_ODI_Y" % count, "COMPASS%d_ODI_Y" % count, 42.0),
+                 ("SIM_MAG%d_ODI_Z" % count, "COMPASS%d_ODI_Z" % count, 42.0), ],
             ]
         self.wait_heartbeat()
         to_set = {}
@@ -6777,9 +7095,8 @@ Also, ignores heartbeats not from our target system'''
 
     def check_zeros_mag_orient(self, compass_count=3):
         self.progress("zeroed mag parameters")
-        self.verify_parameter_values({"COMPASS_ORIENT": 0})
-        for count in range(2, compass_count + 1):
-            self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
+        for count in range(1, compass_count + 1):
+            self.verify_parameter_values({"COMPASS%d_ORIENT" % count: 0})
 
     def test_mag_calibration(self, compass_count=3, timeout=1000):
         def reset_pos_and_start_magcal(mavproxy, tmask):
@@ -6806,27 +7123,27 @@ Also, ignores heartbeats not from our target system'''
             MAG_DIA = 1.0
             MAG_ODI = 0.004
             params += [
-                [("SIM_MAG_OFS_X", "COMPASS_OFS_X", MAG_OFS),
-                 ("SIM_MAG_OFS_Y", "COMPASS_OFS_Y", MAG_OFS + 100),
-                 ("SIM_MAG_OFS_Z", "COMPASS_OFS_Z", MAG_OFS + 200),
-                 ("SIM_MAG_DIA_X", "COMPASS_DIA_X", MAG_DIA),
-                 ("SIM_MAG_DIA_Y", "COMPASS_DIA_Y", MAG_DIA + 0.1),
-                 ("SIM_MAG_DIA_Z", "COMPASS_DIA_Z", MAG_DIA + 0.2),
-                 ("SIM_MAG_ODI_X", "COMPASS_ODI_X", MAG_ODI),
-                 ("SIM_MAG_ODI_Y", "COMPASS_ODI_Y", MAG_ODI + 0.001),
-                 ("SIM_MAG_ODI_Z", "COMPASS_ODI_Z", MAG_ODI + 0.001), ],
+                [("SIM_MAG_OFS_X", "COMPASS1_OFS_X", MAG_OFS),
+                 ("SIM_MAG_OFS_Y", "COMPASS1_OFS_Y", MAG_OFS + 100),
+                 ("SIM_MAG_OFS_Z", "COMPASS1_OFS_Z", MAG_OFS + 200),
+                 ("SIM_MAG_DIA_X", "COMPASS1_DIA_X", MAG_DIA),
+                 ("SIM_MAG_DIA_Y", "COMPASS1_DIA_Y", MAG_DIA + 0.1),
+                 ("SIM_MAG_DIA_Z", "COMPASS1_DIA_Z", MAG_DIA + 0.2),
+                 ("SIM_MAG_ODI_X", "COMPASS1_ODI_X", MAG_ODI),
+                 ("SIM_MAG_ODI_Y", "COMPASS1_ODI_Y", MAG_ODI + 0.001),
+                 ("SIM_MAG_ODI_Z", "COMPASS1_ODI_Z", MAG_ODI + 0.001), ],
             ]
             for count in range(2, compass_count + 1):
                 params += [
-                    [("SIM_MAG%d_OFS_X" % count, "COMPASS_OFS%d_X" % count, MAG_OFS + 100 * ((count+2) % compass_count)),
-                     ("SIM_MAG%d_OFS_Y" % count, "COMPASS_OFS%d_Y" % count, MAG_OFS + 100 * ((count+3) % compass_count)),
-                     ("SIM_MAG%d_OFS_Z" % count, "COMPASS_OFS%d_Z" % count, MAG_OFS + 100 * ((count+1) % compass_count)),
-                     ("SIM_MAG%d_DIA_X" % count, "COMPASS_DIA%d_X" % count, MAG_DIA + 0.1 * ((count+2) % compass_count)),
-                     ("SIM_MAG%d_DIA_Y" % count, "COMPASS_DIA%d_Y" % count, MAG_DIA + 0.1 * ((count+3) % compass_count)),
-                     ("SIM_MAG%d_DIA_Z" % count, "COMPASS_DIA%d_Z" % count, MAG_DIA + 0.1 * ((count+1) % compass_count)),
-                     ("SIM_MAG%d_ODI_X" % count, "COMPASS_ODI%d_X" % count, MAG_ODI + 0.001 * ((count+2) % compass_count)),
-                     ("SIM_MAG%d_ODI_Y" % count, "COMPASS_ODI%d_Y" % count, MAG_ODI + 0.001 * ((count+3) % compass_count)),
-                     ("SIM_MAG%d_ODI_Z" % count, "COMPASS_ODI%d_Z" % count, MAG_ODI + 0.001 * ((count+1) % compass_count)), ],
+                    [("SIM_MAG%d_OFS_X" % count, "COMPASS%d_OFS_X" % count, MAG_OFS + 100 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_OFS_Y" % count, "COMPASS%d_OFS_Y" % count, MAG_OFS + 100 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_OFS_Z" % count, "COMPASS%d_OFS_Z" % count, MAG_OFS + 100 * ((count+1) % compass_count)),
+                     ("SIM_MAG%d_DIA_X" % count, "COMPASS%d_DIA_X" % count, MAG_DIA + 0.1 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_DIA_Y" % count, "COMPASS%d_DIA_Y" % count, MAG_DIA + 0.1 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_DIA_Z" % count, "COMPASS%d_DIA_Z" % count, MAG_DIA + 0.1 * ((count+1) % compass_count)),
+                     ("SIM_MAG%d_ODI_X" % count, "COMPASS%d_ODI_X" % count, MAG_ODI + 0.001 * ((count+2) % compass_count)),
+                     ("SIM_MAG%d_ODI_Y" % count, "COMPASS%d_ODI_Y" % count, MAG_ODI + 0.001 * ((count+3) % compass_count)),
+                     ("SIM_MAG%d_ODI_Z" % count, "COMPASS%d_ODI_Z" % count, MAG_ODI + 0.001 * ((count+1) % compass_count)), ],
                 ]
             self.progress("Setting calibration mode")
             self.wait_heartbeat()
@@ -6850,7 +7167,7 @@ Also, ignores heartbeats not from our target system'''
             # for count in range(2, compass_count + 1):
             #     self.set_parameter("SIM_MAG%d_ORIENT" % count, MAG_ORIENT * (count % 41))
             #     # set compass external to check that orientation is found and auto set
-            #     self.set_parameter("COMPASS_EXTERN%d" % count, 1)
+            #     self.set_parameter("COMPASS%d_EXTERN" % count, 1)
             to_set = {}
             for param_set in params:
                 for param in param_set:
@@ -6864,9 +7181,8 @@ Also, ignores heartbeats not from our target system'''
             # Change the default value to unexpected 42
             self.forty_two_mag_dia_odi_parameters()
             self.progress("Zeroing Mags orientations")
-            self.set_parameter("COMPASS_ORIENT", 0)
-            for count in range(2, compass_count + 1):
-                self.set_parameter("COMPASS_ORIENT%d" % count, 0)
+            for count in range(1, compass_count + 1):
+                self.set_parameter("COMPASS%d_ORIENT" % count, 0)
 
             # Only care about compass prearm
             self.set_parameter("ARMING_CHECK", 4)
@@ -7034,9 +7350,9 @@ Also, ignores heartbeats not from our target system'''
                          timeout=20,
                          )
             self.check_mag_parameters(params, compass_tnumber)
-            self.verify_parameter_values({"COMPASS_ORIENT": self.get_parameter("SIM_MAG_ORIENT")})
+            self.verify_parameter_values({"COMPASS1_ORIENT": self.get_parameter("SIM_MAG_ORIENT")})
             for count in range(2, compass_tnumber + 1):
-                self.verify_parameter_values({"COMPASS_ORIENT%d" % count: self.get_parameter("SIM_MAG%d_ORIENT" % count)})
+                self.verify_parameter_values({"COMPASS%d_ORIENT" % count: self.get_parameter("SIM_MAG%d_ORIENT" % count)})
             self.try_arm(False, "Compass calibrated requires reboot")
 
             # test buzzer/notify ?
@@ -7051,7 +7367,7 @@ Also, ignores heartbeats not from our target system'''
                     (_in, _out, value) = param
                     self.set_parameter(_out, value)
             for count in range(compass_tnumber + 1, compass_count + 1):
-                self.set_parameter("COMPASS_ORIENT%d" % count, self.get_parameter("SIM_MAG%d_ORIENT" % count))
+                self.set_parameter("COMPASS%d_ORIENT" % count, self.get_parameter("SIM_MAG%d_ORIENT" % count))
             self.arm_vehicle()
             self.progress("Test calibration rejection when armed")
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
@@ -7120,35 +7436,25 @@ Also, ignores heartbeats not from our target system'''
             parameter_mappings[key] = key
         for (old_compass_num, new_compass_num) in transforms:
             old_key_compass_bit = str(old_compass_num)
-            if old_key_compass_bit == "1":
-                old_key_compass_bit = ""
             new_key_compass_bit = str(new_compass_num)
-            if new_key_compass_bit == "1":
-                new_key_compass_bit = ""
             # vectors first:
             for key_vector_bit in ["OFS", "DIA", "ODI", "MOT"]:
                 for axis in "X", "Y", "Z":
-                    old_key = "COMPASS_%s%s_%s" % (key_vector_bit,
-                                                   old_key_compass_bit,
+                    old_key = "COMPASS%s_%s_%s" % (old_key_compass_bit,
+                                                   key_vector_bit,
                                                    axis)
-                    new_key = "COMPASS_%s%s_%s" % (key_vector_bit,
-                                                   new_key_compass_bit,
+                    new_key = "COMPASS%s_%s_%s" % (new_key_compass_bit,
+                                                   key_vector_bit,
                                                    axis)
                     parameter_mappings[old_key] = new_key
             # then non-vectorey bits:
             for key_bit in "SCALE", "ORIENT":
-                old_key = "COMPASS_%s%s" % (key_bit, old_key_compass_bit)
-                new_key = "COMPASS_%s%s" % (key_bit, new_key_compass_bit)
+                old_key = "COMPASS%s_%s" % (old_key_compass_bit, key_bit)
+                new_key = "COMPASS%s_%s" % (new_key_compass_bit, key_bit)
                 parameter_mappings[old_key] = new_key
             # then a sore thumb:
-            if old_key_compass_bit == "":
-                old_key = "COMPASS_EXTERNAL"
-            else:
-                old_key = "COMPASS_EXTERN%s" % old_key_compass_bit
-            if new_key_compass_bit == "":
-                new_key = "COMPASS_EXTERNAL"
-            else:
-                new_key = "COMPASS_EXTERN%s" % new_key_compass_bit
+            old_key = "COMPASS%s_EXTERN" % old_key_compass_bit
+            new_key = "COMPASS%s_EXTERN" % new_key_compass_bit
             parameter_mappings[old_key] = new_key
 
         for key in values.keys():
@@ -7164,53 +7470,53 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             originals = {
-                "COMPASS_OFS_X": 1.1,
-                "COMPASS_OFS_Y": 1.2,
-                "COMPASS_OFS_Z": 1.3,
-                "COMPASS_DIA_X": 1.4,
-                "COMPASS_DIA_Y": 1.5,
-                "COMPASS_DIA_Z": 1.6,
-                "COMPASS_ODI_X": 1.7,
-                "COMPASS_ODI_Y": 1.8,
-                "COMPASS_ODI_Z": 1.9,
-                "COMPASS_MOT_X": 1.91,
-                "COMPASS_MOT_Y": 1.92,
-                "COMPASS_MOT_Z": 1.93,
-                "COMPASS_SCALE": 1.94,
-                "COMPASS_ORIENT": 1,
-                "COMPASS_EXTERNAL": 2,
+                "COMPASS1_OFS_X": 1.1,
+                "COMPASS1_OFS_Y": 1.2,
+                "COMPASS1_OFS_Z": 1.3,
+                "COMPASS1_DIA_X": 1.4,
+                "COMPASS1_DIA_Y": 1.5,
+                "COMPASS1_DIA_Z": 1.6,
+                "COMPASS1_ODI_X": 1.7,
+                "COMPASS1_ODI_Y": 1.8,
+                "COMPASS1_ODI_Z": 1.9,
+                "COMPASS1_MOT_X": 1.91,
+                "COMPASS1_MOT_Y": 1.92,
+                "COMPASS1_MOT_Z": 1.93,
+                "COMPASS1_SCALE": 1.94,
+                "COMPASS1_ORIENT": 1,
+                "COMPASS1_EXTERN": 2,
 
-                "COMPASS_OFS2_X": 2.1,
-                "COMPASS_OFS2_Y": 2.2,
-                "COMPASS_OFS2_Z": 2.3,
-                "COMPASS_DIA2_X": 2.4,
-                "COMPASS_DIA2_Y": 2.5,
-                "COMPASS_DIA2_Z": 2.6,
-                "COMPASS_ODI2_X": 2.7,
-                "COMPASS_ODI2_Y": 2.8,
-                "COMPASS_ODI2_Z": 2.9,
-                "COMPASS_MOT2_X": 2.91,
-                "COMPASS_MOT2_Y": 2.92,
-                "COMPASS_MOT2_Z": 2.93,
-                "COMPASS_SCALE2": 2.94,
-                "COMPASS_ORIENT2": 3,
-                "COMPASS_EXTERN2": 4,
+                "COMPASS2_OFS_X": 2.1,
+                "COMPASS2_OFS_Y": 2.2,
+                "COMPASS2_OFS_Z": 2.3,
+                "COMPASS2_DIA_X": 2.4,
+                "COMPASS2_DIA_Y": 2.5,
+                "COMPASS2_DIA_Z": 2.6,
+                "COMPASS2_ODI_X": 2.7,
+                "COMPASS2_ODI_Y": 2.8,
+                "COMPASS2_ODI_Z": 2.9,
+                "COMPASS2_MOT_X": 2.91,
+                "COMPASS2_MOT_Y": 2.92,
+                "COMPASS2_MOT_Z": 2.93,
+                "COMPASS2_SCALE": 2.94,
+                "COMPASS2_ORIENT": 3,
+                "COMPASS2_EXTERN": 4,
 
-                "COMPASS_OFS3_X": 3.1,
-                "COMPASS_OFS3_Y": 3.2,
-                "COMPASS_OFS3_Z": 3.3,
-                "COMPASS_DIA3_X": 3.4,
-                "COMPASS_DIA3_Y": 3.5,
-                "COMPASS_DIA3_Z": 3.6,
-                "COMPASS_ODI3_X": 3.7,
-                "COMPASS_ODI3_Y": 3.8,
-                "COMPASS_ODI3_Z": 3.9,
-                "COMPASS_MOT3_X": 3.91,
-                "COMPASS_MOT3_Y": 3.92,
-                "COMPASS_MOT3_Z": 3.93,
-                "COMPASS_SCALE3": 3.94,
-                "COMPASS_ORIENT3": 5,
-                "COMPASS_EXTERN3": 6,
+                "COMPASS3_OFS_X": 3.1,
+                "COMPASS3_OFS_Y": 3.2,
+                "COMPASS3_OFS_Z": 3.3,
+                "COMPASS3_DIA_X": 3.4,
+                "COMPASS3_DIA_Y": 3.5,
+                "COMPASS3_DIA_Z": 3.6,
+                "COMPASS3_ODI_X": 3.7,
+                "COMPASS3_ODI_Y": 3.8,
+                "COMPASS3_ODI_Z": 3.9,
+                "COMPASS3_MOT_X": 3.91,
+                "COMPASS3_MOT_Y": 3.92,
+                "COMPASS3_MOT_Z": 3.93,
+                "COMPASS3_SCALE": 3.94,
+                "COMPASS3_ORIENT": 5,
+                "COMPASS3_EXTERN": 6,
             }
 
             # quick sanity check to ensure all values are unique:
@@ -7269,35 +7575,35 @@ Also, ignores heartbeats not from our target system'''
             MAG_OFS_Y = 200
             MAG_OFS_Z = 300
             wanted = {
-                "COMPASS_OFS_X": (MAG_OFS_X, 3.0),
-                "COMPASS_OFS_Y": (MAG_OFS_Y, 3.0),
-                "COMPASS_OFS_Z": (MAG_OFS_Z, 3.0),
-                "COMPASS_DIA_X": 1,
-                "COMPASS_DIA_Y": 1,
-                "COMPASS_DIA_Z": 1,
-                "COMPASS_ODI_X": 0,
-                "COMPASS_ODI_Y": 0,
-                "COMPASS_ODI_Z": 0,
+                "COMPASS1_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS1_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS1_OFS_Z": (MAG_OFS_Z, 3.0),
+                "COMPASS1_DIA_X": 1,
+                "COMPASS1_DIA_Y": 1,
+                "COMPASS1_DIA_Z": 1,
+                "COMPASS1_ODI_X": 0,
+                "COMPASS1_ODI_Y": 0,
+                "COMPASS1_ODI_Z": 0,
 
-                "COMPASS_OFS2_X": (MAG_OFS_X, 3.0),
-                "COMPASS_OFS2_Y": (MAG_OFS_Y, 3.0),
-                "COMPASS_OFS2_Z": (MAG_OFS_Z, 3.0),
-                "COMPASS_DIA2_X": 1,
-                "COMPASS_DIA2_Y": 1,
-                "COMPASS_DIA2_Z": 1,
-                "COMPASS_ODI2_X": 0,
-                "COMPASS_ODI2_Y": 0,
-                "COMPASS_ODI2_Z": 0,
+                "COMPASS2_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS2_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS2_OFS_Z": (MAG_OFS_Z, 3.0),
+                "COMPASS2_DIA_X": 1,
+                "COMPASS2_DIA_Y": 1,
+                "COMPASS2_DIA_Z": 1,
+                "COMPASS2_ODI_X": 0,
+                "COMPASS2_ODI_Y": 0,
+                "COMPASS2_ODI_Z": 0,
 
-                "COMPASS_OFS3_X": (MAG_OFS_X, 3.0),
-                "COMPASS_OFS3_Y": (MAG_OFS_Y, 3.0),
-                "COMPASS_OFS3_Z": (MAG_OFS_Z, 3.0),
-                "COMPASS_DIA3_X": 1,
-                "COMPASS_DIA3_Y": 1,
-                "COMPASS_DIA3_Z": 1,
-                "COMPASS_ODI3_X": 0,
-                "COMPASS_ODI3_Y": 0,
-                "COMPASS_ODI3_Z": 0,
+                "COMPASS3_OFS_X": (MAG_OFS_X, 3.0),
+                "COMPASS3_OFS_Y": (MAG_OFS_Y, 3.0),
+                "COMPASS3_OFS_Z": (MAG_OFS_Z, 3.0),
+                "COMPASS3_DIA_X": 1,
+                "COMPASS3_DIA_Y": 1,
+                "COMPASS3_DIA_Z": 1,
+                "COMPASS3_ODI_X": 0,
+                "COMPASS3_ODI_Y": 0,
+                "COMPASS3_ODI_Z": 0,
             }
             self.set_parameters({
                 "SIM_MAG_OFS_X": MAG_OFS_X,
@@ -7388,7 +7694,7 @@ Also, ignores heartbeats not from our target system'''
                     rate = float(mavproxy.match.group(1))
                     self.progress("Rate: %f" % rate)
                     desired_rate = 50
-                    if self.valgrind:
+                    if self.valgrind or self.callgrind:
                         desired_rate /= 10
                     if rate < desired_rate:
                         raise NotAchievedException("Exceptionally low transfer rate (%u < %u)" % (rate, desired_rate))
@@ -9196,8 +9502,10 @@ switch value'''
         self.start_subtest("parameter download")
         target_system = self.sysid_thismav()
         target_component = 1
+        self.progress("First Download:")
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
         self.reboot_sitl()
+        self.progress("Second download:")
         (parameters2, seq2_id) = self.download_parameters(target_system, target_component)
 
         delta = self.dictdiff(parameters, parameters2)
@@ -10143,7 +10451,7 @@ switch value'''
             self.drain_mav(quiet=True)
             tnow = self.get_sim_time_cached()
             timeout = 30
-            if self.valgrind:
+            if self.valgrind or self.callgrind:
                 timeout *= 10
             if tnow - tstart > timeout:
                 raise NotAchievedException("Did not get parameter via mavlite")
@@ -10736,6 +11044,113 @@ switch value'''
                     self.progress("  Fulfilled")
                     del wants[want]
 
+    def convertDmsToDdFormat(self, dms):
+        deg = math.trunc(dms * 1e-7)
+        dd = deg + (((dms * 1.0e-7) - deg) * 100.0 / 60.0)
+        if dd < -180.0 or dd > 180.0:
+            dd = 0.0
+        return math.trunc(dd * 1.0e7)
+
+    def DEVO(self):
+        self.context_push()
+        self.set_parameter("SERIAL5_PROTOCOL", 17) # serial5 is DEVO output
+        self.customise_SITL_commandline([
+            "--uartF=tcp:6735" # serial5 spews to localhost:6735
+        ])
+        devo = DEVO(("127.0.0.1", 6735))
+        self.wait_ready_to_arm()
+        self.drain_mav_unparsed()
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+        if m is None:
+            raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
+
+        tstart = self.get_sim_time_cached()
+        while True:
+            self.drain_mav()
+            now = self.get_sim_time_cached()
+            if now - tstart > 10:
+                if devo.frame is not None:
+                    # we received some frames but could not find correct values
+                    raise AutoTestTimeoutException("Failed to get correct data")
+                else:
+                    # No frames received. Devo telemetry is compiled out?
+                    break
+
+            devo.update()
+            frame = devo.frame
+            if frame is None:
+                continue
+
+            m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+
+            loc = LocationInt(self.convertDmsToDdFormat(frame.lat()), self.convertDmsToDdFormat(frame.lon()), 0, 0)
+
+            print("received lat:%s expected lat:%s" % (str(loc.lat), str(m.lat)))
+            print("received lon:%s expected lon:%s" % (str(loc.lon), str(m.lon)))
+            dist_diff = self.get_distance_int(loc, m)
+            print("Distance:%s" % str(dist_diff))
+            if abs(dist_diff) > 2:
+                continue
+
+            gpi_rel_alt = int(m.relative_alt / 10) # mm -> cm, since driver send alt in cm
+            print("received alt:%s expected alt:%s" % (str(frame.alt()), str(gpi_rel_alt)))
+            if abs(gpi_rel_alt - frame.alt()) > 10:
+                continue
+
+            print("received gndspeed: %s" % str(frame.speed()))
+            if frame.speed() != 0:
+                # FIXME if we start the vehicle moving.... check against VFR_HUD?
+                continue
+
+            print("received temp:%s expected temp:%s" % (str(frame.temp()), str(self.mav.messages['HEARTBEAT'].custom_mode)))
+            if frame.temp() != self.mav.messages['HEARTBEAT'].custom_mode:
+                # currently we receive mode as temp. This should be fixed when driver is updated
+                continue
+
+            # we match the received voltage with the voltage of primary instance
+            batt = self.mav.recv_match(
+                type='BATTERY_STATUS',
+                blocking=True,
+                timeout=5,
+                condition="BATTERY_STATUS.id==0"
+            )
+            if batt is None:
+                raise NotAchievedException("Did not get BATTERY_STATUS message")
+            volt = batt.voltages[0]*0.001
+            print("received voltage:%s expected voltage:%s" % (str(frame.volt()*0.1), str(volt)))
+            if abs(frame.volt()*0.1 - volt) > 0.1:
+                continue
+            # if we reach here, exit
+            break
+        self.context_pop()
+        self.reboot_sitl()
+
+    def test_msp_dji(self):
+        self.set_parameter("SERIAL5_PROTOCOL", 33) # serial5 is MSP DJI output
+        self.set_parameter("MSP_OPTIONS", 1) # telemetry (unpolled) mode
+        self.customise_SITL_commandline([
+            "--uartF=tcp:6735" # serial5 spews to localhost:6735
+        ])
+        msp = MSP_DJI(("127.0.0.1", 6735))
+        self.wait_ready_to_arm()
+        self.drain_mav_unparsed()
+
+        tstart = self.get_sim_time_cached()
+        while True:
+            self.drain_mav()
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not get location")
+            msp.update()
+            self.drain_mav_unparsed(quiet=True)
+            try:
+                f = msp.get_frame(msp.FRAME_GPS_RAW)
+            except KeyError:
+                continue
+            dist = self.get_distance_int(f.LocationInt(), self.sim_location_int())
+            print("lat=%f lon=%f dist=%f" % (f.lat(), f.lon(), dist))
+            if dist < 1:
+                break
+
     def test_crsf(self):
         self.context_push()
         ex = None
@@ -10892,6 +11307,30 @@ switch value'''
         if abs(new_gpi_alt2 - m.alt) > 100:
             raise NotAchievedException("Failover not detected")
 
+    def fetch_file_via_ftp(self, path):
+        '''returns the content of the FTP'able file at path'''
+        mavproxy = self.start_mavproxy()
+        ex = None
+        tmpfile = tempfile.NamedTemporaryFile(mode='r', delete=False)
+        try:
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
+            mavproxy.expect("Getting")
+            self.delay_sim_time(2)
+            mavproxy.send("ftp status\n")
+            mavproxy.expect("No transfer in progress")
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is not None:
+            raise ex
+
+        return tmpfile.read()
+
     def MAVFTP(self):
         '''ensure MAVProxy can do MAVFTP to ardupilot'''
         mavproxy = self.start_mavproxy()
@@ -10900,7 +11339,15 @@ switch value'''
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp list\n")
-            mavproxy.expect(" D libraries")  # one line from the ftp list output
+            some_directory = None
+            for entry in sorted(os.listdir()):
+                if os.path.isdir(entry):
+                    some_directory = entry
+                    break
+            if some_directory is None:
+                raise NotAchievedException("No directories?!")
+            expected_line = " D %s" % some_directory
+            mavproxy.expect(expected_line)  # one line from the ftp list output
         except Exception as e:
             self.print_exception_caught(e)
             ex = e

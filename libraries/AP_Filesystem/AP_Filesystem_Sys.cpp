@@ -46,6 +46,8 @@ static const SysFileList sysfs_file_list[] = {
 #if !defined(HAL_BOOTLOADER_BUILD) && (defined(STM32F7) || defined(STM32H7))
     {"persistent.parm"},
 #endif
+    {"crash_dump.bin"},
+    {"storage.bin"},
 };
 
 int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
@@ -127,6 +129,19 @@ int AP_Filesystem_Sys::open(const char *fname, int flags)
     if (strcmp(fname, "persistent.parm") == 0) {
         hal.util->load_persistent_params(*r.str);
     }
+    if (strcmp(fname, "crash_dump.bin") == 0) {
+        r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
+    } else
+    if (strcmp(fname, "storage.bin") == 0) {
+        // we don't want to store the contents of storage.bin
+        // we read directly from the storage driver
+        void *ptr = nullptr;
+        size_t size = 0;
+        if (hal.storage->get_storage_ptr(ptr, size)) {
+            r.str->set_buffer((char*)ptr, size, size);
+        }
+    }
+    
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
@@ -160,6 +175,7 @@ int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
     struct rfile &r = file[fd];
     count = MIN(count, r.str->get_length() - r.file_ofs);
     memcpy(buf, &r.str->get_string()[r.file_ofs], count);
+
     r.file_ofs += count;
     return count;
 }
@@ -246,6 +262,12 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
     }
     // give a fixed size for stat. It is too expensive to
     // read every file for a directory listing
-    stbuf->st_size = 100000;
+    if (strcmp(pathname_noslash, "storage.bin") == 0) {
+        stbuf->st_size = HAL_STORAGE_SIZE;
+    } else if (strcmp(pathname_noslash, "crash_dump.bin") == 0) {
+        stbuf->st_size = hal.util->last_crash_dump_size();
+    } else {
+        stbuf->st_size = 100000;
+    }
     return 0;
 }

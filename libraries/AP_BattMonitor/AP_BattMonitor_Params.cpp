@@ -3,17 +3,17 @@
 #include "AP_BattMonitor_Params.h"
 #include "AP_BattMonitor.h"
 
-#if APM_BUILD_COPTER_OR_HELI()
+#if APM_BUILD_COPTER_OR_HELI
   #define DEFAULT_LOW_BATTERY_VOLTAGE 10.5f
 #else
   #define DEFAULT_LOW_BATTERY_VOLTAGE 0.0f
-#endif // APM_BUILD_COPTER_OR_HELI()
+#endif // APM_BUILD_COPTER_OR_HELI
 
 const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: MONITOR
     // @DisplayName: Battery monitoring
     // @Description: Controls enabling monitoring of the battery's voltage and current
-    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Generic,8:UAVCAN-BatteryInfo,9:ESC,10:SumOfFollowing,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign,16:SMBus-Maxell,17:Generator-Elec,18:Generator-Fuel,19:Rotoye,20:MPPT,21:INA231,22:LTC2946,23:Torqeedo
+    // @Values: 0:Disabled,3:Analog Voltage Only,4:Analog Voltage and Current,5:Solo,6:Bebop,7:SMBus-Generic,8:UAVCAN-BatteryInfo,9:ESC,10:SumOfFollowing,11:FuelFlow,12:FuelLevelPWM,13:SMBUS-SUI3,14:SMBUS-SUI6,15:NeoDesign,16:SMBus-Maxell,17:Generator-Elec,18:Generator-Fuel,19:Rotoye,20:MPPT,21:INA2XX,22:LTC2946,23:Torqeedo
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),

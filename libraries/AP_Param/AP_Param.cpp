@@ -1895,22 +1895,21 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
     flush();
 }
 
-/*
-  move old class variables for a class that was sub-classed to one that isn't
-  For example, used when the AP_MotorsTri class changed from having its own parameter table
-  plus a subgroup for AP_MotorsMulticopter to just inheriting the AP_MotorsMulticopter var_info
-
-  This does not handle nesting beyond the single level shift
-*/
-void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
-                                    const struct AP_Param::GroupInfo *group_info)
+// move all parameters from a class to a new location
+// is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
+void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
+                                    const struct AP_Param::GroupInfo *group_info,
+                                    uint16_t old_index, uint16_t old_top_element, bool is_top_level)
 {
+    const uint8_t group_shift = is_top_level ? 0 : 6;
+
     for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         struct ConversionInfo info;
         info.old_key = param_key;
         info.type = (ap_var_type)group_info[i].type;
         info.new_name = nullptr;
-        info.old_group_element = uint16_t(group_info[i].idx)<<6;
+        info.old_group_element = (uint16_t(group_info[i].idx)<<group_shift) + old_index;
+
         uint8_t old_value[type_size(info.type)];
         AP_Param *ap = (AP_Param *)&old_value[0];
         
@@ -1919,9 +1918,15 @@ void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
             continue;
         }
 
-        uint8_t *new_value = group_info[i].offset + (uint8_t *)object_pointer;
-        memcpy(new_value, old_value, sizeof(old_value));
+        AP_Param *ap2 = (AP_Param *)(group_info[i].offset + (uint8_t *)object_pointer);
+        memcpy(ap2, ap, sizeof(old_value));
+        // and save
+        ap2->save();
     }
+
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
 }
 
 /*
@@ -2481,10 +2486,7 @@ void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table
 {
     for (uint8_t i=0; i<count; i++) {
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
-            char *buf = nullptr;
-            if (asprintf(&buf, "param deflt fail:%s", table[i].name) > 0) {
-                AP_BoardConfig::config_error("%s", buf);
-            }
+            AP_BoardConfig::config_error("param deflt fail:%s", table[i].name);
         }
     }
 }

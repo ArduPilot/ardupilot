@@ -42,9 +42,6 @@ private:
     // decode each term
     bool decode_latest_term();
 
-    // convert from char to hex value for checksum
-    int16_t char_to_hex(char a);
-
     // latest values read in
     float _speed_ms;
     float _wind_dir_deg;

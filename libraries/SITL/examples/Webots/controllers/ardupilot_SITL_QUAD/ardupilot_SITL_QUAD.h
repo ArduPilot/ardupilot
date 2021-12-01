@@ -1,7 +1,7 @@
-//#define DEBUG_MOTORS 
+// #define DEBUG_MOTORS 
 // #define DEBUG_WIND    
 // #define DEBUG_SENSORS   
-//#define DEBUG_USE_KB 
+// #define DEBUG_USE_KB 
 // #define DEBUG_INPUT_DATA
 // #define LINEAR_THRUST
 // #define DEBUG_SOCKETS
@@ -21,6 +21,7 @@ enum data_type {
         DATA_FLOAT,
         DATA_DOUBLE,
         DATA_VECTOR4F,
+        DATA_VECTOR16F,
     };
 
 struct vector4f 
@@ -30,9 +31,16 @@ struct vector4f
 
 typedef struct vector4f VECTOR4F;
 
+struct vector16f 
+{
+    float v[16];
+};
+
+typedef struct vector16f VECTOR16F;
+
 struct {
         double timestamp;
-        VECTOR4F motors;
+        VECTOR16F motors;
         VECTOR4F wind; 
         /*
          struct {
@@ -54,9 +62,9 @@ struct keytable {
         enum data_type type;
 
 } keytable[2] = {
-        //{ "", "timestamp", &state.timestamp, DATA_DOUBLE },
-        { "", "eng",    &state.motors, DATA_VECTOR4F },
+        { "", "pwm",    &state.motors, DATA_VECTOR16F },
         { "", "wnd",    &state.wind, DATA_VECTOR4F }
+        
 };
 
 /*

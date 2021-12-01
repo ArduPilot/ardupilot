@@ -86,47 +86,29 @@ void AP_MSP::init()
     const AP_SerialManager &serial_manager = AP::serialmanager();
     AP_HAL::UARTDriver *uart = nullptr;
     uint8_t backends_using_msp_thread = 0;
-    // DJI FPV backends
-    for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES; protocol_instance++) {
-        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_DJI_FPV, protocol_instance);
-        if (uart != nullptr) {
-            if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_DJI_FPV)) {
-                break;
-            }
-            if (_backends[_msp_status.backend_count]->use_msp_thread()) {
-                backends_using_msp_thread++;
-            }
-            _msp_status.backend_count++;
-        }
-    }
-    // generic MSP backends
-    for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES-_msp_status.backend_count; protocol_instance++) {
-        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MSP, protocol_instance);
-        if (uart != nullptr) {
-            if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_MSP)) {
-                break;
-            }
-            if (_backends[_msp_status.backend_count]->use_msp_thread()) {
-                backends_using_msp_thread++;
-            }
-            _msp_status.backend_count++;
-        }
-    }
+    static const AP_SerialManager::SerialProtocol msp_protocols[] {
+        AP_SerialManager::SerialProtocol_DJI_FPV,
+        AP_SerialManager::SerialProtocol_MSP,
 #if HAL_WITH_MSP_DISPLAYPORT
-    // MSP DisplayPort backends
-    for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES-_msp_status.backend_count; protocol_instance++) {
-        uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_MSP_DisplayPort, protocol_instance);
-        if (uart != nullptr) {
-            if (!init_backend(_msp_status.backend_count, uart, AP_SerialManager::SerialProtocol_MSP_DisplayPort)) {
-                break;
+        AP_SerialManager::SerialProtocol_MSP_DisplayPort,
+#endif
+    };
+
+    for (const auto msp_protocol: msp_protocols) {
+        for (uint8_t protocol_instance=0; protocol_instance<MSP_MAX_INSTANCES-_msp_status.backend_count; protocol_instance++) {
+            uart = serial_manager.find_serial(msp_protocol, protocol_instance);
+            if (uart != nullptr) {
+                if (!init_backend(_msp_status.backend_count, uart, msp_protocol)) {
+                    break;
+                }
+                if (_backends[_msp_status.backend_count]->use_msp_thread()) {
+                    backends_using_msp_thread++;
+                }
+                _msp_status.backend_count++;
             }
-            if (_backends[_msp_status.backend_count]->use_msp_thread()) {
-                backends_using_msp_thread++;
-            }
-            _msp_status.backend_count++;
         }
     }
-#endif
+
     if (backends_using_msp_thread > 0) {
         // we've found at least 1 msp backend, start protocol handler
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_MSP::loop, void),

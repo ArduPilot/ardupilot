@@ -187,6 +187,10 @@ private:
     // return point from final path as an offset (in cm) from the ekf origin
     bool get_shortest_path_point(uint8_t point_num, Vector2f& pos);
 
+    // find the position of a node as an offset (in cm) from the ekf origin
+    // returns true if successful and pos is updated
+    bool convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vector2f& pos) const;
+
     AP_OADijkstra_Error _error_last_id;                 // last error id sent to GCS
     uint32_t _error_last_report_ms;                     // last time an error message was sent to GCS
 

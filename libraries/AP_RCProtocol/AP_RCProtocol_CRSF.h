@@ -239,6 +239,7 @@ private:
     struct Frame _frame;
     struct Frame _telemetry_frame;
     uint8_t _frame_ofs;
+    uint8_t _frame_crc;
 
     const uint8_t MAX_CHANNELS = MIN((uint8_t)CRSF_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 

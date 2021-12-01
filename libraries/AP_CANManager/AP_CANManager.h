@@ -62,6 +62,7 @@ public:
         Driver_Type_KDECAN = 8,
         Driver_Type_MPPT_PacketDigital = 9,
         Driver_Type_Scripting = 10,
+        Driver_Type_Benewake = 11,
     };
 
     void init(void);

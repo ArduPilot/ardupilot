@@ -131,7 +131,7 @@ void AC_Loiter::init_target()
 /// reduce response for landing
 void AC_Loiter::soften_for_landing()
 {
-    const Vector3f& curr_pos = _inav.get_position();
+    const Vector3f& curr_pos = _inav.get_position_neu_cm();
 
     // set target position to current position
     _pos_control.set_pos_target_xy_cm(curr_pos.x, curr_pos.y);

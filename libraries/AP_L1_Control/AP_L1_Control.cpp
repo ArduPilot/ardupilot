@@ -142,10 +142,10 @@ float AP_L1_Control::loiter_radius(const float radius) const
     float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
 
     float nominal_velocity_sea_level;
-    if(_spdHgtControl == nullptr) {
+    if(_tecs == nullptr) {
         nominal_velocity_sea_level = 0.0f;
     } else {
-        nominal_velocity_sea_level =  _spdHgtControl->get_target_airspeed();
+        nominal_velocity_sea_level =  _tecs->get_target_airspeed();
     }
 
     float eas2tas_sq = sq(_ahrs.get_EAS2TAS());

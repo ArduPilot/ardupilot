@@ -76,9 +76,10 @@
 #endif
 
 // constructor
-AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted) :
+AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted, uint32_t configured_baud) :
     AP_RCProtocol_Backend(_frontend),
-    inverted(_inverted)
+    inverted(_inverted),
+    ss{configured_baud, SoftSerial::SERIAL_CONFIG_8E2I}
 {}
 
 // decode a full SBUS frame
@@ -211,7 +212,9 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 // support byte input
 void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate)
 {
-    if (baudrate != 100000) {
+    // note that if we're here we're not actually using SoftSerial,
+    // but it does record our configured baud rate:
+    if (baudrate != ss.baud()) {
         return;
     }
     _process_byte(AP_HAL::micros(), b);

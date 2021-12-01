@@ -109,6 +109,8 @@ airspeed_list = []
 
 all_lines = []
 
+dma_exclude_pattern = []
+
 # map from uart names to SERIALn numbers
 uart_serial_num = {}
 
@@ -556,9 +558,9 @@ class generic_pin(object):
     def periph_instance(self):
         '''return peripheral instance'''
         if self.periph_type() == 'PERIPH_TYPE::GPIO':
-            result = re.match(r'[A-Z_]*([0-9]*)', self.label)
+            result = re.match(r'[A-Z_]*([0-9]+)', self.label)
         else:
-            result = re.match(r'[A-Z_]*([0-9]*)', self.type)
+            result = re.match(r'[A-Z_]*([0-9]+)', self.type)
         if result:
             return int(result.group(1))
         return 0
@@ -617,6 +619,14 @@ def get_mcu_config(name, required=False):
             error("Missing required mcu config %s for %s" % (name, mcu_type))
         return None
     return lib.mcu[name]
+
+
+def get_ram_reserve_start():
+    '''get amount of memory to reserve for bootloader comms'''
+    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    if ram_reserve_start == 0 and int(env_vars.get('AP_PERIPH',0)) == 1:
+        ram_reserve_start = 256
+    return ram_reserve_start
 
 
 def make_line(label):
@@ -683,6 +693,34 @@ def get_ram_map():
         if ram_map is not None:
             return ram_map
     return get_mcu_config('RAM_MAP', True)
+
+
+def get_flash_npages():
+    global mcu_series
+    if mcu_series.startswith('STM32F4'):
+        if get_config('FLASH_SIZE_KB', type=int) == 512:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 1024:
+            return 12
+        elif get_config('FLASH_SIZE_KB', type=int) == 2048:
+            return 24
+        else:
+            raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
+    elif mcu_series.startswith('STM32F7'):
+        if get_config('FLASH_SIZE_KB', type=int) == 512:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 1024:
+            return 8
+        elif get_config('FLASH_SIZE_KB', type=int) == 2048:
+            return 12
+        else:
+            raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
+    elif mcu_series.startswith('STM32H7'):
+        return get_config('FLASH_SIZE_KB', type=int)//128
+    elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
+        return get_config('FLASH_SIZE_KB', type=int)
+    else:
+        return get_config('FLASH_SIZE_KB', type=int)//2
 
 
 def write_mcu_config(f):
@@ -757,6 +795,7 @@ def write_mcu_config(f):
     else:
         env_vars['PROCESS_STACK'] = "0x1C00"
 
+    f.write('#define HAL_PROCESS_STACK_SIZE %s\n' % env_vars['PROCESS_STACK'])
     # MAIN_STACK is location of initial stack on startup and is also the stack
     # used for slow interrupts. It needs to be big enough for maximum interrupt
     # nesting
@@ -807,6 +846,20 @@ def write_mcu_config(f):
     else:
         f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
 
+    storage_flash_page = None
+    if not args.bootloader:
+        if get_config('STORAGE_FLASH_PAGE', default=0, type=int):
+            storage_flash_page = get_config('STORAGE_FLASH_PAGE', type=int)
+            f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
+
+    if flash_size >= 2048 and not args.bootloader:
+        # lets pick a flash sector for Crash log
+        f.write('#define HAL_CRASHDUMP_ENABLE 1\n')
+        env_vars['ENABLE_CRASHDUMP'] = 1
+    else:
+        f.write('#define HAL_CRASHDUMP_ENABLE 0\n')
+        env_vars['ENABLE_CRASHDUMP'] = 0
+
     if args.bootloader:
         if env_vars['EXTERNAL_PROG_FLASH_MB']:
             f.write('#define APP_START_ADDRESS 0x90000000\n')
@@ -819,15 +872,18 @@ def write_mcu_config(f):
     ram_map = get_ram_map()
     f.write('// memory regions\n')
     regions = []
+    cc_regions = []
     total_memory = 0
     for (address, size, flags) in ram_map:
         regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
+        cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size*1024))
         total_memory += size
     f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
+    f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
     f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
 
     f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_ram_reserve_start()
     if ram_reserve_start > 0:
         f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
 
@@ -902,6 +958,8 @@ def write_mcu_config(f):
 #define HAL_USE_PWM FALSE
 #define HAL_NO_UARTDRIVER
 #define CH_CFG_USE_DYNAMIC FALSE
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 16384
 ''')
         else:
             f.write('''
@@ -929,6 +987,10 @@ def write_mcu_config(f):
 #define CH_CFG_USE_MUTEXES FALSE
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
+#define HAL_USE_EMPTY_STORAGE 1
+#define HAL_STORAGE_SIZE 16384
+#define HAL_USE_RTC FALSE
+#define DISABLE_SERIAL_ESC_COMM TRUE
 ''')
         if not env_vars['EXTERNAL_PROG_FLASH_MB']:
             f.write('''
@@ -980,7 +1042,7 @@ def write_ldscript(fname):
     ram0_len = ram_map[0][1] * 1024
 
     # possibly reserve some memory for app/bootloader comms
-    ram_reserve_start = get_config('RAM_RESERVE_START', default=0, type=int)
+    ram_reserve_start = get_ram_reserve_start()
     ram0_start += ram_reserve_start
     ram0_len -= ram_reserve_start
     ext_flash_length = get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int)
@@ -1386,7 +1448,7 @@ def write_UART_config(f):
     f.write('\n// UART configuration\n')
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
-    devnames = "ABCDEFGHI"
+    devnames = "ABCDEFGHIJ"
     sdev = 0
     idx = 0
     for dev in uart_list:
@@ -1426,6 +1488,19 @@ def write_UART_config(f):
     OTG2_index = None
     devlist = []
     have_rts_cts = False
+    crash_uart = None
+
+    # write config for CrashCatcher UART
+    if not uart_list[0].startswith('OTG') and not uart_list[0].startswith('EMPTY'):
+        crash_uart = uart_list[0]
+    elif not uart_list[2].startswith('OTG') and not uart_list[2].startswith('EMPTY'):
+        crash_uart = uart_list[2]
+
+    if crash_uart is not None and get_config('FLASH_SIZE_KB', type=int) >= 2048:
+        f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
+        f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
+        f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
+        f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
     for dev in uart_list:
         if dev.startswith('UART'):
             n = int(dev[4:])
@@ -1499,8 +1574,8 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
-    if num_uarts > 9:
-        error("Exceeded max num UARTs of 9 (%u)" % num_uarts)
+    if num_uarts > 10:
+        error("Exceeded max num UARTs of 10 (%u)" % num_uarts)
     f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
 
 
@@ -1846,7 +1921,12 @@ def write_GPIO_config(f):
             if gpio is None:
                 continue
             if gpio in gpioset:
-                error("Duplicate GPIO value %u" % gpio)
+                # check existing entry
+                existing_gpio = [item for item in gpios if item[0] == gpio]
+                if (existing_gpio[0][4].label == p.label) and (existing_gpio[0][3] == p.pin) and (existing_gpio[0][2] == p.port):
+                    # alt item is identical to exiting, do not add again
+                    continue
+                error("Duplicate GPIO value %u, %s != %s" % (gpio, p, existing_gpio[0][4]))
             pwm = p.extra_value('PWM', type=int, default=0)
             if pwm != 0:
                 error("PWM not supported for alt config: %s" % p)
@@ -1942,17 +2022,22 @@ def write_peripheral_enable(f):
 
 def get_dma_exclude(periph_list):
     '''return list of DMA devices to exclude from DMA'''
-    dma_exclude = []
+    dma_exclude = set()
+    for p in dma_exclude_pattern:
+        for periph in periph_list:
+            if fnmatch.fnmatch(periph, p):
+                dma_exclude.add(periph)
+
     for periph in periph_list:
         if periph in bylabel:
             p = bylabel[periph]
             if p.has_extra('NODMA'):
-                dma_exclude.append(periph)
+                dma_exclude.add(periph)
         if periph in altlabel:
             p = altlabel[periph]
             if p.has_extra('NODMA'):
-                dma_exclude.append(periph)
-    return dma_exclude
+                dma_exclude.add(periph)
+    return list(dma_exclude)
 
 
 def write_alt_config(f):
@@ -2337,6 +2422,10 @@ def process_line(line):
         default_gpio = a[1:]
         return
 
+    if a[0] == 'NODMA':
+        dma_exclude_pattern.extend(a[1:])
+        return
+    
     config[a[0]] = a[1:]
     if p is not None:
         # add to set of pins for primary config
@@ -2428,6 +2517,11 @@ def add_apperiph_defaults(f):
     if env_vars.get('AP_PERIPH',0) == 0:
         # not AP_Periph
         return
+
+    if not args.bootloader:
+        # use the app descriptor needed by MissionPlanner for CAN upload
+        env_vars['APP_DESCRIPTOR'] = 'MissionPlanner'
+
     print("Setting up as AP_Periph")
     f.write('''
 #ifndef HAL_SCHEDULER_ENABLED
@@ -2454,8 +2548,20 @@ def add_apperiph_defaults(f):
 #ifndef HAL_RALLY_ENABLED
 #define HAL_RALLY_ENABLED 0
 #endif
+#ifndef HAL_CAN_DEFAULT_NODE_ID
+#define HAL_CAN_DEFAULT_NODE_ID 0
+#endif
+#define PERIPH_FW TRUE
+#define HAL_BUILD_AP_PERIPH
+#ifndef HAL_WATCHDOG_ENABLED_DEFAULT
+#define HAL_WATCHDOG_ENABLED_DEFAULT true
+#endif
+
+#ifndef AP_FETTEC_ONEWIRE_ENABLED
+#define AP_FETTEC_ONEWIRE_ENABLED 0
+#endif
 ''')
-            
+
 
 # process input file
 for fname in args.hwdef:

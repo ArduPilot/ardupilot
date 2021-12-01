@@ -53,14 +53,14 @@ bool AP_Beacon_Nooploop::healthy()
 void AP_Beacon_Nooploop::update(void)
 {
     // return immediately if not serial port
-    if (_uart == nullptr) {
+    if (uart == nullptr) {
         return;
     }
 
     // check uart for any incoming messages
-    uint32_t nbytes = MIN(_uart->available(), 1024U);
+    uint32_t nbytes = MIN(uart->available(), 1024U);
     while (nbytes-- > 0) {
-        int16_t b = _uart->read();
+        int16_t b = uart->read();
         if (b >= 0 ) {
             MsgType type = parse_byte((uint8_t)b);
             if (type == MsgType::NODE_FRAME2) {
@@ -80,13 +80,13 @@ void AP_Beacon_Nooploop::update(void)
 void AP_Beacon_Nooploop::request_setting()
 {
     //send setting_frame0 to tag, tag will fill anchor position and ack
-    _uart->write((uint8_t)0x54);
-    _uart->write((uint8_t)0);
-    _uart->write((uint8_t)1);
+    uart->write((uint8_t)0x54);
+    uart->write((uint8_t)0);
+    uart->write((uint8_t)1);
     for (uint8_t i = 0; i < 124; i++) {
-        _uart->write((uint8_t)0); //manual states filled with any char, but in fact only 0 works
+        uart->write((uint8_t)0); //manual states filled with any char, but in fact only 0 works
     }
-    _uart->write((uint8_t)0x55);
+    uart->write((uint8_t)0x55);
 }
 
 // process one byte received on serial port

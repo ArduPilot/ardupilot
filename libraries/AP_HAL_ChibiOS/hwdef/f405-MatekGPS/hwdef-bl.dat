@@ -16,9 +16,6 @@ FLASH_RESERVE_START_KB 0
 FLASH_SIZE_KB 1024
 FLASH_BOOTLOADER_LOAD_KB 64
 
-define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 1
-
 PA14 LED_BOOTLOADER OUTPUT LOW GPIO(0)  # blue
 define HAL_LED_ON 0
 
@@ -50,11 +47,8 @@ PB9 CAN1_TX CAN1
 define HAL_USE_CAN1 TRUE
 define STM32_CAN_USE_CAN1 TRUE
 
-# define HAL_CAN_DEFAULT_NODE_ID 0
 define CAN_APP_NODE_NAME "org.ardupilot.f405_MatekGPS"
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # Add CS pins to ensure they are high in bootloader
 PA4 MPU_CS CS

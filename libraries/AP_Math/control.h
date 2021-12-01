@@ -29,15 +29,15 @@ typedef Vector3f Vector3p;
 // update_vel_accel - single axis projection.
 void update_vel_accel(float& vel, float accel, float dt, float limit);
 
-// update_vel_accel projects the velocity, vel, forward in time based on a time step of dt and acceleration of accel.
-// update_vel_accel - single axis projection.
+// update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
+// the position and velocity is not moved in the direction of limit if limit is not set to zero
 void update_pos_vel_accel(postype_t & pos, float& vel, float accel, float dt, float limit);
 
 // update_pos_vel_accel_xy - dual axis projection operating on the x, y axis of Vector2f or Vector3f inputs.
-void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit);
+void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit);
 
 // update_pos_vel_accel_xy - dual axis projection operating on the x, y axis of Vector2f or Vector3f inputs.
-void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, Vector2f limit);
+void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit);
 
 /* shape_accel calculates a jerk limited path from the current acceleration to an input acceleration.
  The function takes the current acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <unistd.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 namespace SITL {
 
@@ -27,12 +28,12 @@ public:
 
     SerialDevice();
 
-    // return fd on which data from the device can be read
-    // to the device can be written
-    int fd() const { return fd_their_end; }
-    // return fd on which data to the device can be written
-    int write_fd() const { return read_fd_their_end; }
 
+    // methods for autopilot to use to talk to device:
+    ssize_t read_from_device(char *buffer, size_t size) const;
+    ssize_t write_to_device(const char *buffer, size_t size) const;
+
+    // methods for simulated device to use:
     ssize_t read_from_autopilot(char *buffer, size_t size) const;
     virtual ssize_t write_to_autopilot(const char *buffer, size_t size) const;
 
@@ -40,11 +41,8 @@ protected:
 
     class SIM *_sitl;
 
-    int fd_their_end;
-    int fd_my_end;
-
-    int read_fd_their_end;
-    int read_fd_my_end;
+    ByteBuffer *to_autopilot;
+    ByteBuffer *from_autopilot;
 
     bool init_sitl_pointer();
 };

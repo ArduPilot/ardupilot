@@ -27,6 +27,7 @@
 #include "AP_InertialSensor_ADIS1647x.h"
 #include "AP_InertialSensor_ExternalAHRS.h"
 #include "AP_InertialSensor_Invensensev3.h"
+#include "AP_InertialSensor_NONE.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -45,7 +46,7 @@ extern const AP_HAL::HAL& hal;
 
 
 
-#if APM_BUILD_COPTER_OR_HELI()
+#if APM_BUILD_COPTER_OR_HELI
 #define DEFAULT_GYRO_FILTER  20
 #define DEFAULT_ACCEL_FILTER 20
 #define DEFAULT_STILL_THRESH 2.5f
@@ -911,8 +912,8 @@ AP_InertialSensor::detect_backends(void)
 
     _backends_detected = true;
 
-#if defined(HAL_CHIBIOS_ARCH_CUBEBLACK)
-    // special case for CubeBlack, where the IMUs on the isolated
+#if defined(HAL_CHIBIOS_ARCH_CUBE)
+    // special case for Cubes, where the IMUs on the isolated
     // board could fail on some boards. If the user has INS_USE=1,
     // INS_USE2=1 and INS_USE3=0 then force INS_USE3 to 1. This is
     // done as users loading past parameter files may end up with
@@ -1087,7 +1088,15 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
     if (_backend_count == 0) {
+
+        // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
+        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+        ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
+        #else
+        hal.console->printf("INS: unable to initialise driver\n");
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
         AP_BoardConfig::config_error("INS: unable to initialise driver");
+        #endif
     }
 }
 

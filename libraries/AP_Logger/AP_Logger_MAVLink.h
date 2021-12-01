@@ -27,6 +27,11 @@ public:
             // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
         }
 
+    static AP_Logger_Backend  *probe(AP_Logger &front,
+                                     LoggerMessageWriter_DFLogStart *ls) {
+        return new AP_Logger_MAVLink(front, ls);
+    }
+
     // initialisation
     void Init() override;
 

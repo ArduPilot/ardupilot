@@ -321,6 +321,7 @@ public:
 #if HAL_HIGH_LATENCY2_ENABLED
     void send_high_latency2() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+    void send_uavionix_adsb_out_status() const;
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
@@ -603,6 +604,8 @@ protected:
      */
     uint32_t correct_offboard_timestamp_usec_to_ms(uint64_t offboard_usec, uint16_t payload_size);
 
+    static void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out);
+
 private:
 
     // last time we got a non-zero RSSI from RADIO_STATUS
@@ -623,7 +626,6 @@ private:
     MAV_RESULT handle_servorelay_message(const mavlink_command_long_t &packet);
 
     static bool command_long_stores_location(const MAV_CMD command);
-    static void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out);
 
     bool calibrate_gyros();
 
@@ -1048,6 +1050,9 @@ public:
 #if !HAL_MINIMIZE_FEATURES
     // LTM backend
     AP_LTM_Telem ltm_telemetry;
+#endif
+
+#if AP_DEVO_TELEM_ENABLED
     // Devo backend
     AP_DEVO_Telem devo_telemetry;
 #endif

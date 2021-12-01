@@ -221,6 +221,14 @@ public:
         float p3;
     };
 
+    // Scripting NAV command (with verify)
+    struct PACKED nav_script_time_Command {
+        uint8_t command;
+        uint8_t timeout_s;
+        float arg1;
+        float arg2;
+    };
+    
     union Content {
         // jump structure
         Jump_Command jump;
@@ -291,6 +299,9 @@ public:
         // do scripting
         scripting_Command scripting;
 
+        // nav scripting
+        nav_script_time_Command nav_script_time;
+        
         // location
         Location location{};      // Waypoint location
     };

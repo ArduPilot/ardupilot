@@ -217,7 +217,8 @@ def all_vehicles():
             'ArduCopter',
             'Rover',
             'AntennaTracker',
-            'ArduSub')
+            'ArduSub',
+            'Blimp')
 
 
 def build_parameters():
@@ -314,6 +315,7 @@ __bin_names = {
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
+    "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
@@ -453,6 +455,9 @@ def run_step(step):
     if step == 'build.Copter':
         vehicle_binary = 'bin/arducopter'
 
+    if step == 'build.Blimp':
+        vehicle_binary = 'bin/blimp'
+
     if step == 'build.Tracker':
         vehicle_binary = 'bin/antennatracker'
 
@@ -505,6 +510,7 @@ def run_step(step):
         "viewerip": opts.viewerip,
         "use_map": opts.map,
         "valgrind": opts.valgrind,
+        "callgrind": opts.callgrind,
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
@@ -957,6 +963,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under valgrind')
+    group_sim.add_option("", "--callgrind",
+                         action='store_true',
+                         default=False,
+                         help="enable valgrind for performance analysis (slow!!)")
     group_sim.add_option("--gdb",
                          default=False,
                          action='store_true',
@@ -1027,6 +1037,8 @@ if __name__ == "__main__":
         # adjust if we're running in a regime which may slow us down e.g. Valgrind
         if opts.valgrind:
             opts.timeout *= 10
+        elif opts.callgrind:
+            opts.timeout *= 10
         elif opts.gdb:
             opts.timeout = None
 
@@ -1068,6 +1080,9 @@ if __name__ == "__main__":
         'build.Sub',
         'defaults.Sub',
         'test.Sub',
+
+        'build.Blimp',
+        'defaults.Blimp',
 
         'build.SITLPeriphGPS',
         'test.CAN',

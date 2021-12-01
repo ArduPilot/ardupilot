@@ -4,10 +4,6 @@
  * Init and run calls for guided flight mode
  */
 
-#ifndef GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM
-# define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
-#endif
-
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
@@ -528,7 +524,7 @@ void Sub::guided_limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position();
+    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -541,7 +537,7 @@ bool Sub::guided_limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position();
+    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
@@ -555,7 +551,7 @@ bool Sub::guided_limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }

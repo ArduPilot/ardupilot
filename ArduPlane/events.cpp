@@ -33,8 +33,14 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::TRAINING:
         failsafe.saved_mode_number = control_mode->mode_number();
         failsafe.saved_mode_set = true;
+        if(plane.emergency_landing) {
+            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            break;
+        }
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(mode_fbwa, reason);
+        } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
+            set_mode(mode_fbwb, reason);
         } else {
             set_mode(mode_circle, reason);
         }
@@ -68,9 +74,6 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
     case Mode::Number::LOITER:
-#if HAL_QUADPLANE_ENABLED
-    case Mode::Number::LOITER_ALT_QLAND:
-#endif
     case Mode::Number::THERMAL:
         if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
             failsafe.saved_mode_number = control_mode->mode_number();
@@ -89,6 +92,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
+    case Mode::Number::LOITER_ALT_QLAND:
 #endif
     case Mode::Number::INITIALISING:
         break;
@@ -115,10 +119,11 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::TRAINING:
     case Mode::Number::CIRCLE:
     case Mode::Number::LOITER:
-#if HAL_QUADPLANE_ENABLED
-    case Mode::Number::LOITER_ALT_QLAND:
-#endif
     case Mode::Number::THERMAL:
+        if(plane.emergency_landing) {
+            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            break;
+        }
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
@@ -170,6 +175,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLAND:
     case Mode::Number::QRTL:
+    case Mode::Number::LOITER_ALT_QLAND:
 #endif
     case Mode::Number::TAKEOFF:
     case Mode::Number::INITIALISING:
@@ -183,12 +189,13 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     // We're back in radio contact
     gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
     failsafe.state = FAILSAFE_NONE;
-
-    // re-read the switch so we can return to our preferred mode
-    // --------------------------------------------------------
-    if (control_mode == &mode_circle && failsafe.saved_mode_set) {
-        failsafe.saved_mode_set = false;
-        set_mode_by_number(failsafe.saved_mode_number, reason);
+    if(failsafe.saved_mode_set) { //we saved an entry mode..check that our fs mode has not been changed by GCS
+        if((control_mode == &mode_circle && g.fs_action_short == FS_ACTION_SHORT_CIRCLE) ||
+           (control_mode == &mode_fbwa && g.fs_action_short == FS_ACTION_SHORT_FBWA) ||
+           (control_mode == &mode_fbwb && g.fs_action_short == FS_ACTION_SHORT_FBWB)) {
+              failsafe.saved_mode_set = false;
+              set_mode_by_number(failsafe.saved_mode_number, reason); //mode has not been changed while in FS, return to entry mode
+        }
     }
 }
 
@@ -220,7 +227,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_Land: {
             bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
 #if HAL_QUADPLANE_ENABLED
-            if (control_mode == &mode_qland) {
+            if (control_mode == &mode_qland || control_mode == &mode_lotier_qland) {
                 already_landing = true;
             }
 #endif
@@ -241,7 +248,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_RTL: {
             bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
 #if HAL_QUADPLANE_ENABLED
-            if (control_mode == &mode_qland ||
+            if (control_mode == &mode_qland || control_mode == &mode_lotier_qland ||
                 quadplane.in_vtol_land_sequence()) {
                 already_landing = true;
             }

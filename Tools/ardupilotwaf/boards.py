@@ -48,6 +48,10 @@ class Board:
         env.SRCROOT = srcpath('')
         self.configure_env(cfg, env)
 
+        env.DEFINES.update(
+            AP_SCRIPTING_ENABLED = 0,
+        )
+
         # Setup scripting, had to defer this to allow checking board size
         if ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
@@ -56,7 +60,7 @@ class Board:
              (cfg.env.BOARD_FLASH_SIZE > 1024))):
 
             env.DEFINES.update(
-                ENABLE_SCRIPTING = 1,
+                AP_SCRIPTING_ENABLED = 1,
                 LUA_32BITS = 1,
                 )
 
@@ -313,8 +317,12 @@ class Board:
             if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
                     '-Werror=implicit-fallthrough',
-                    '-Wmaybe-uninitialized',
-                    '-Wduplicated-cond',
+                    '-Werror=maybe-uninitialized',
+                    '-Werror=duplicated-cond',
+                ]
+            if self.cc_version_gte(cfg, 8, 4):
+                env.CXXFLAGS += [
+                    '-Werror=sizeof-pointer-div',
                 ]
 
         if cfg.options.Werror:
@@ -421,7 +429,7 @@ class Board:
 
 Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
 
-def add_dynamic_boards():
+def add_dynamic_boards_chibios():
     '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
     for d in dirlist:
@@ -431,8 +439,19 @@ def add_dynamic_boards():
         if os.path.exists(hwdef):
             newclass = type(d, (chibios,), {'name': d})
 
+def add_dynamic_boards_esp32():
+    '''add boards based on existance of hwdef.dat in subdirectories for ESP32'''
+    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ESP32/hwdef'))
+    for d in dirlist:
+        if d in _board_classes.keys():
+            continue
+        hwdef = os.path.join(dirname, d, 'hwdef.dat')
+        if os.path.exists(hwdef):
+            newclass = type(d, (esp32,), {'name': d})
+
 def get_boards_names():
-    add_dynamic_boards()
+    add_dynamic_boards_chibios()
+    add_dynamic_boards_esp32()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
 
@@ -658,6 +677,83 @@ class sitl_periph_gps(sitl):
         ]
 
 
+
+class esp32(Board):
+    abstract = True
+    toolchain = 'xtensa-esp32-elf'
+    def configure_env(self, cfg, env):
+        def expand_path(p):
+            print("USING EXPRESSIF IDF:"+str(env.idf))
+            return cfg.root.find_dir(env.IDF+p).abspath()
+        try:
+            env.IDF = os.environ['IDF_PATH'] 
+        except:
+            env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
+
+        super(esp32, self).configure_env(cfg, env)
+        cfg.load('esp32')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32'
+        )
+
+        tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
+        
+        # this makes sure we get the correct subtype
+        env.DEFINES.update(
+            ENABLE_HEAP = 0,
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
+            ALLOW_DOUBLE_MATH_FUNCTIONS = '1',
+        )
+
+        env.AP_LIBRARIES += [
+            'AP_HAL_ESP32',
+        ]
+
+        env.CFLAGS += [
+            '-fno-inline-functions',
+            '-mlongcalls',
+        ]
+        env.CFLAGS.remove('-Werror=undef')
+
+        env.CXXFLAGS += ['-mlongcalls',
+                         '-Os',
+                         '-g',
+                         '-ffunction-sections',
+                         '-fdata-sections',
+                         '-fno-exceptions',
+                         '-fno-rtti',
+                         '-nostdlib',
+                         '-fstrict-volatile-bitfields',
+                         '-Wno-sign-compare',
+                         '-fno-inline-functions',
+                         '-mlongcalls',
+                         '-DCYGWIN_BUILD']
+        env.CXXFLAGS.remove('-Werror=undef')
+        env.CXXFLAGS.remove('-Werror=shadow')
+
+
+        env.INCLUDES += [
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
+            ]
+        env.AP_PROGRAM_AS_STLIB = True
+        #if cfg.options.enable_profile:
+        #    env.CXXFLAGS += ['-pg',
+        #                     '-DENABLE_PROFILE=1']
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        from waflib.Context import load_tool
+        module = load_tool('esp32', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
+        super(esp32, self).pre_build(bld)
+
+
+    def build(self, bld):
+        super(esp32, self).build(bld)
+        bld.load('esp32')
+
+
 class chibios(Board):
     abstract = True
     toolchain = 'arm-none-eabi'
@@ -680,6 +776,7 @@ class chibios(Board):
 
         # make board name available for USB IDs
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
+        env.HAL_MAX_STACK_FRAME_SIZE = 'HAL_MAX_STACK_FRAME_SIZE=%d' % 1300 # set per Wframe-larger-than, ensure its same
         env.CFLAGS += cfg.env.CPU_FLAGS + [
             '-Wlogical-op',
             '-Wframe-larger-than=1300',
@@ -725,7 +822,6 @@ class chibios(Board):
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
             '-Wno-error=float-equal',
-            '-Wno-error=undef',
             '-Wno-error=cpp',
             ]
 

@@ -17,7 +17,7 @@
 #include "RGBLed.h"
 #include <AP_Common/AP_Common.h>
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 class ScriptingLED: public RGBLed {
 public:

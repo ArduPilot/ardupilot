@@ -86,7 +86,7 @@ bool AP_Airspeed_MS4525::init()
         }
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "MS4525[%u]: no sensor found", get_instance());
+    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "MS4525[%u]: no sensor found", get_instance());
     return false;
 
 found_sensor:

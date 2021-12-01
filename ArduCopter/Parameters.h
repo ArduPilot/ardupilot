@@ -594,9 +594,9 @@ public:
     void *autotune_ptr;
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     AP_Float tuning_min;
     AP_Float tuning_max;
@@ -666,6 +666,7 @@ public:
 
     AP_Float                pilot_y_rate;
     AP_Float                pilot_y_expo;
+    AP_Int8                 surftrak_mode;
 };
 
 extern const AP_Param::Info        var_info[];

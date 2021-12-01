@@ -626,9 +626,12 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
         // get speed of ground movement (for ship takeoff/landing)
         float yaw_rate = 0;
+#if AP_SIM_SHIP_ENABLED
         const Vector2f ship_movement = sitl->shipsim.get_ground_speed_adjustment(location, yaw_rate);
         const Vector3f gnd_movement(ship_movement.x, ship_movement.y, 0);
-
+#else
+        const Vector3f gnd_movement;
+#endif
         switch (ground_behavior) {
         case GROUND_BEHAVIOR_NONE:
             break;
@@ -690,15 +693,24 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             break;
         }
         case GROUND_BEHAVIOR_TAILSITTER: {
-            // point straight up
+            // rotate normal refernce frame to get yaw angle, then rotate back
+            Matrix3f rot;
+            rot.from_rotation(ROTATION_PITCH_270);
             float r, p, y;
-            dcm.to_euler(&r, &p, &y);
+            (dcm * rot).to_euler(&r, &p, &y);
             y = y + yaw_rate * delta_time;
-            dcm.from_euler(0.0f, radians(90), y);
+            dcm.from_euler(0.0, 0.0, y);
+            rot.from_rotation(ROTATION_PITCH_90);
+            dcm *= rot;
             // X, Y movement tracks ground movement
             velocity_ef.x = gnd_movement.x;
             velocity_ef.y = gnd_movement.y;
+            if (velocity_ef.z > 0.0f) {
+                velocity_ef.z = 0.0f;
+            }
             gyro.zero();
+            gyro.x = yaw_rate;
+            use_smoothing = true;
             break;
         }
         }
@@ -946,7 +958,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         fetteconewireesc->update(*this);
     }
 
+#if AP_SIM_SHIP_ENABLED
     sitl->shipsim.update();
+#endif
 
     // update IntelligentEnergy 2.4kW generator
     if (ie24) {

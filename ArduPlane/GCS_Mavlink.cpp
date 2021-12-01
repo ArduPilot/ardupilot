@@ -79,8 +79,8 @@ MAV_MODE GCS_MAVLINK_Plane::base_mode() const
         _base_mode |= MAV_MODE_FLAG_STABILIZE_ENABLED;
     }
 
-    if (plane.g.stick_mixing != STICK_MIXING_DISABLED && plane.control_mode != &plane.mode_initializing) {
-        if ((plane.g.stick_mixing != STICK_MIXING_VTOL_YAW) || (plane.control_mode == &plane.mode_auto)) {
+    if (plane.g.stick_mixing != StickMixing::NONE && plane.control_mode != &plane.mode_initializing) {
+        if ((plane.g.stick_mixing != StickMixing::VTOL_YAW) || (plane.control_mode == &plane.mode_auto)) {
             // all modes except INITIALISING have some form of manual
             // override if stick mixing is enabled
             _base_mode |= MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
@@ -1417,3 +1417,27 @@ int8_t GCS_MAVLINK_Plane::high_latency_air_temperature() const
     return INT8_MIN;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+MAV_VTOL_STATE GCS_MAVLINK_Plane::vtol_state() const
+{
+#if !HAL_QUADPLANE_ENABLED
+    return MAV_VTOL_STATE_UNDEFINED;
+#else
+    if (!plane.quadplane.available()) {
+        return MAV_VTOL_STATE_UNDEFINED;
+    }
+
+    return plane.quadplane.transition->get_mav_vtol_state();
+#endif
+};
+
+MAV_LANDED_STATE GCS_MAVLINK_Plane::landed_state() const
+{
+    if (plane.is_flying()) {
+        // note that Q-modes almost always consider themselves as flying
+        return MAV_LANDED_STATE_IN_AIR;
+    }
+
+    return MAV_LANDED_STATE_ON_GROUND;
+}
+

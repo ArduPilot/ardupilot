@@ -8,6 +8,9 @@
 // stabilize_init - initialise stabilize controller
 bool ModeStabilize_Heli::init(bool ignore_checks)
 {
+    // be aware that when adding code to this function that it is *NOT
+    // RUN* at vehicle startup!
+
     // set stab collective true to use stabilize scaled collective pitch range
     copter.input_manager.set_use_stab_col(true);
 

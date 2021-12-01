@@ -99,7 +99,7 @@ void Plane::navigate()
     // ----------------------------
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
-    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
+    TECS_controller.set_path_proportion(auto_state.wp_proportion);
 
     // update total loiter angle
     loiter_angle_update();
@@ -116,7 +116,7 @@ float Plane::mode_auto_target_airspeed_cm()
     if ((quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH) &&
         ((vtol_approach_s.approach_stage == Landing_ApproachStage::APPROACH_LINE) ||
          (vtol_approach_s.approach_stage == Landing_ApproachStage::VTOL_LANDING))) {
-        const float land_airspeed = SpdHgt_Controller->get_land_airspeed();
+        const float land_airspeed = TECS_controller.get_land_airspeed();
         if (is_positive(land_airspeed)) {
             return land_airspeed * 100;
         }
@@ -239,7 +239,7 @@ void Plane::calc_airspeed_errors()
 
     // use the TECS view of the target airspeed for reporting, to take
     // account of the landing speed
-    airspeed_error = SpdHgt_Controller->get_target_airspeed() - airspeed_measured;
+    airspeed_error = TECS_controller.get_target_airspeed() - airspeed_measured;
 }
 
 void Plane::calc_gndspeed_undershoot()

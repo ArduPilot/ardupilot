@@ -128,6 +128,12 @@ CSRC += $(HWDEF)/common/stubs.c \
 
 #	   $(TESTSRC) \
 #	   test.c
+ifneq ($(CRASHCATCHER),)
+LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c \
+             $(HWDEF)/common/crashdump.c
+
+LIBCC_ASMXSRC = $(CRASHCATCHER)/Core/src/CrashCatcher_armv7m.S
+endif
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -160,6 +166,9 @@ ASMXSRC = $(ALLXASMSRC)
 INCDIR = $(CHIBIOS)/os/license \
          $(ALLINC) $(HWDEF)/common
 
+ifneq ($(CRASHCATCHER),)
+INCDIR += $(CRASHCATCHER)/include
+endif
 #
 # Project, sources and paths
 ##############################################################################
@@ -206,7 +215,8 @@ CPPWARN = -Wall -Wextra -Wundef -Werror
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\"
+UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\" \
+        -DHAL_MAX_STACK_FRAME_SIZE=$(HAL_MAX_STACK_FRAME_SIZE)
 
 ifeq ($(ENABLE_ASSERTS),yes)
  UDEFS += -DHAL_CHIBIOS_ENABLE_ASSERTS

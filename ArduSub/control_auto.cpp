@@ -186,7 +186,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
     circle_nav.get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -206,9 +206,7 @@ void Sub::auto_circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const Vector3p &circle_center_neu = circle_nav.get_center();
-        const Vector3f &curr_pos = inertial_nav.get_position();
-        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), circle_nav.get_center().xy());
         if (dist_to_center > circle_nav.get_radius() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
@@ -516,7 +514,7 @@ float Sub::get_auto_heading()
     case AUTO_YAW_CORRECT_XTRACK: {
         // TODO return current yaw if not in appropriate mode
         // Bearing of current track (centidegrees)
-        float track_bearing = get_bearing_cd(wp_nav.get_wp_origin(), wp_nav.get_wp_destination());
+        float track_bearing = get_bearing_cd(wp_nav.get_wp_origin().xy(), wp_nav.get_wp_destination().xy());
 
         // Bearing from current position towards intermediate position target (centidegrees)
         const Vector2f target_vel_xy{pos_control.get_vel_target_cms().x, pos_control.get_vel_target_cms().y};

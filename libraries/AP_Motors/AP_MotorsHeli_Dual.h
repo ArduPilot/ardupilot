@@ -31,7 +31,6 @@
 // default collective min, max and midpoints for the rear swashplate
 #define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN 1250
 #define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX 1750
-#define AP_MOTORS_HELI_DUAL_COLLECTIVE2_MID 1500
 
 /// @class AP_MotorsHeli_Dual
 class AP_MotorsHeli_Dual : public AP_MotorsHeli {
@@ -130,7 +129,6 @@ protected:
     // parameters
     AP_Int16        _collective2_min;               // Lowest possible servo position for the rear swashplate
     AP_Int16        _collective2_max;               // Highest possible servo position for the rear swashplate
-    AP_Int16        _collective2_mid;               // Swash servo position corresponding to zero collective pitch for the rear swashplate (or zero lift for Asymmetrical blades)
     AP_Int8         _dual_mode;                     // which dual mode the heli is
     AP_Float        _dcp_scaler;                    // scaling factor applied to the differential-collective-pitch
     AP_Float        _dcp_yaw_effect;                // feed-forward compensation to automatically add yaw input when differential collective pitch is applied.
@@ -139,5 +137,5 @@ protected:
     AP_Float        _yaw_rev_expo;                  // yaw reverser smoothing exponent, for intermeshing mode only.
 
     // internal variables
-    float           _collective2_mid_pct = 0.0f;      // collective mid parameter value for rear swashplate converted to 0 ~ 1 range
+    float _collective2_zero_thrst_pct;
 };

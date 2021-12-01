@@ -52,6 +52,9 @@ public:
     // ignores trim and deadzone
     float       norm_input_ignore_trim() const;
 
+    // returns true if input is within deadzone of min
+    bool        within_min_dz() const;
+
     uint8_t     percent_input() const;
     int16_t     pwm_to_range() const;
     int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
@@ -210,6 +213,7 @@ public:
         EKF_YAW_RESET =      104, // trigger yaw reset attempt
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
         DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
+        FW_AUTOTUNE =          107, // fixed wing auto tune
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
@@ -221,6 +225,7 @@ public:
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
+        EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -546,6 +551,10 @@ public:
     // flight_mode_channel_number must be overridden in vehicle specific code
     virtual int8_t flight_mode_channel_number() const = 0;
 
+    // set and get calibrating flag, stops arming if true
+    void calibrating(bool b) { gcs_is_calibrating = b; }
+    bool calibrating() { return gcs_is_calibrating; }
+
 protected:
 
     enum class Option {
@@ -583,6 +592,9 @@ private:
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
+
+    // true if GCS is performing a RC calibration
+    bool gcs_is_calibrating;
 };
 
 RC_Channels &rc();

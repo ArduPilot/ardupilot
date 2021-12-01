@@ -8,7 +8,7 @@ MCU STM32F7xx STM32F732xx
 FLASH_RESERVE_START_KB 64
 
 # store parameters in pages 2 and 3
-define STORAGE_FLASH_PAGE 2
+STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 8192
 
 # board ID for firmware load
@@ -18,9 +18,6 @@ APJ_BOARD_ID 1028
 env AP_PERIPH 1
 
 STM32_ST_USE_TIMER 5
-
-# enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -110,13 +107,7 @@ define HAL_NO_GPIO_IRQ
 # avoid RCIN thread to save memory
 define HAL_NO_RCIN_THREAD
 
-define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
-define NO_DATAFLASH TRUE
-
 define DMA_RESERVE_SIZE 0
-
-define PERIPH_FW TRUE
 
 define HAL_DISABLE_LOOP_DELAY
 
@@ -124,16 +115,12 @@ define HAL_DISABLE_LOOP_DELAY
 PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "org.ardupilot.FreeflyRTK"
 
 define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
-
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 768
 
@@ -158,12 +145,6 @@ define BUILD_DEFAULT_LED_TYPE 128
 define BARO_MAX_INSTANCES 1
 
 define HAL_PERIPH_GPS_PORT_DEFAULT 2
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
-
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # listen for reboot command from uploader.py script
 # undefine to disable. Use -1 to allow on all ports, otherwise serial number index defined in SERIAL_ORDER starting at 0

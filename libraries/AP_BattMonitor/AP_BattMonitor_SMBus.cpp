@@ -6,13 +6,15 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
 
+    // Param indexes must be between 10 and 19 to avoid conflict with other battery monitor param tables loaded by pointer
+
     // @Param: I2C_BUS
     // @DisplayName: Battery monitor I2C bus number
     // @Description: Battery monitor I2C bus number
     // @Range: 0 3
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_BUS", 1, AP_BattMonitor_SMBus, _bus, 0),
+    AP_GROUPINFO("I2C_BUS", 10, AP_BattMonitor_SMBus, _bus, 0),
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
@@ -20,7 +22,9 @@ const AP_Param::GroupInfo AP_BattMonitor_SMBus::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("I2C_ADDR", 2, AP_BattMonitor_SMBus, _address, AP_BATTMONITOR_SMBUS_I2C_ADDR),
+    AP_GROUPINFO("I2C_ADDR", 11, AP_BattMonitor_SMBus, _address, AP_BATTMONITOR_SMBUS_I2C_ADDR),
+
+    // Param indexes must be between 10 and 19 to avoid conflict with other battery monitor param tables loaded by pointer
 
     AP_GROUPEND
 };

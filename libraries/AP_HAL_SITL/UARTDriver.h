@@ -9,6 +9,8 @@
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
+#include <SITL/SIM_SerialDevice.h>
+
 class HALSITL::UARTDriver : public AP_HAL::UARTDriver {
 public:
     friend class HALSITL::SITL_State;
@@ -56,12 +58,6 @@ public:
     size_t write(uint8_t c) override;
     size_t write(const uint8_t *buffer, size_t size) override;
 
-    // file descriptor, exposed so SITL_State::loop_hook() can use it
-    int _fd;
-
-    // file descriptor for reading multicast packets
-    int _mc_fd;
-
     bool _unbuffered_writes;
 
     enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
@@ -88,6 +84,12 @@ public:
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
     
 private:
+
+    int _fd;
+
+    // file descriptor for reading multicast packets
+    int _mc_fd;
+
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
@@ -127,10 +129,7 @@ private:
     uint16_t _mc_myport;
     uint32_t last_tick_us;
 
-    // if this is not -1 then data should be written here instead of
-    // _fd.  This is to support simulated serial devices, which use a
-    // pipe for read and a pipe for write
-    int _fd_write = -1;
+    SITL::SerialDevice *_sim_serial_device;
 };
 
 #endif

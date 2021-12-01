@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <AP_Common/AP_Common.h> // for FMT_PRINTF
 #include "AP_HAL_Namespace.h"
 
 class ExpandingString;
@@ -13,7 +14,7 @@ public:
     int vsnprintf(char* str, size_t size,
                   const char *format, va_list ap);
 
-    void set_soft_armed(const bool b);
+    virtual void set_soft_armed(const bool b);
     bool get_soft_armed() const { return soft_armed; }
 
     // return the time that the armed state last changed
@@ -190,7 +191,9 @@ public:
 
     // log info on stack usage
     virtual void log_stack_info(void) {}
-    
+
+    virtual size_t last_crash_dump_size() const { return 0; }
+    virtual void* last_crash_dump_ptr() const { return nullptr; }
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

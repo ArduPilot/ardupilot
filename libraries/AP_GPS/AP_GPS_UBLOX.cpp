@@ -550,8 +550,6 @@ AP_GPS_UBLOX::_request_port(void)
 bool
 AP_GPS_UBLOX::read(void)
 {
-    uint8_t data;
-    int16_t numc;
     bool parsed = false;
     uint32_t millis_now = AP_HAL::millis();
 
@@ -580,11 +578,15 @@ AP_GPS_UBLOX::read(void)
         }
     }
 
-    numc = port->available();
-    for (int16_t i = 0; i < numc; i++) {        // Process bytes received
+    const uint16_t numc = MIN(port->available(), 8192U);
+    for (uint16_t i = 0; i < numc; i++) {        // Process bytes received
 
         // read the next byte
-        data = port->read();
+        const int16_t rdata = port->read();
+        if (rdata < 0) {
+            break;
+        }
+        const uint8_t data = rdata;
 
 #if GPS_MOVING_BASELINE
         if (rtcm3_parser) {

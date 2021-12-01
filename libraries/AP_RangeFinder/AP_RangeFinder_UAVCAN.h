@@ -9,7 +9,8 @@ class MeasurementCb;
 
 class AP_RangeFinder_UAVCAN : public AP_RangeFinder_Backend {
 public:
-    AP_RangeFinder_UAVCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
+    //constructor - registers instance at top RangeFinder driver
+    using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
 
     void update() override;
 

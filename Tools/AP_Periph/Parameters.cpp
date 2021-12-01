@@ -181,9 +181,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MAG
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,         "COMPASS_",     Compass),
+    GOBJECT(compass,         "COMPASS",     Compass),
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BARO
@@ -347,7 +347,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(serial_manager, "SERIAL",   AP_SerialManager),
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),

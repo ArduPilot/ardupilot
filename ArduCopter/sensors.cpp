@@ -55,7 +55,7 @@ void Copter::read_rangefinder(void)
         rf_state.alt_cm = tilt_correction * rangefinder.distance_cm_orient(rf_orient);
 
         // remember inertial alt to allow us to interpolate rangefinder
-        rf_state.inertial_alt_cm = inertial_nav.get_altitude();
+        rf_state.inertial_alt_cm = inertial_nav.get_position_z_up_cm();
 
         // glitch handling.  rangefinder readings more than RANGEFINDER_GLITCH_ALT_CM from the last good reading
         // are considered a glitch and glitch_count becomes non-zero
@@ -141,7 +141,7 @@ bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret)
         return false;
     }
     ret = rangefinder_state.alt_cm_filt.get();
-    float inertial_alt_cm = inertial_nav.get_altitude();
+    float inertial_alt_cm = inertial_nav.get_position_z_up_cm();
     ret += inertial_alt_cm - rangefinder_state.inertial_alt_cm;
     return true;
 }

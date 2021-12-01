@@ -29,6 +29,7 @@
 #include <AP_NavEKF/AP_Nav_Common.h>
 
 class NavEKF2_core;
+class EKFGSF_yaw;
 
 class NavEKF2 {
     friend class NavEKF2_core;
@@ -305,6 +306,9 @@ public:
     // Writes the default equivalent airspeed in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed);
 
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const;
+    
 private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core

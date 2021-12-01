@@ -11,11 +11,7 @@
 
 // set default for HAL_LOGGING_DATAFLASH_ENABLED
 #ifndef HAL_LOGGING_DATAFLASH_ENABLED
-    #ifdef HAL_LOGGING_DATAFLASH
-        #define HAL_LOGGING_DATAFLASH_ENABLED HAL_LOGGING_ENABLED
-    #else
-        #define HAL_LOGGING_DATAFLASH_ENABLED 0
-    #endif
+#define HAL_LOGGING_DATAFLASH_ENABLED 0
 #endif
 
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
@@ -45,10 +41,6 @@
 #endif
 
 // sanity checks:
-#if defined(HAL_LOGGING_DATAFLASH) && !HAL_LOGGING_DATAFLASH_ENABLED
-#error Can not default to dataflash if it is not enabled
-#endif
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #if HAL_LOGGING_DATAFLASH_ENABLED
         #error DATAFLASH not supported on SITL; you probably mean SITL
@@ -65,6 +57,10 @@
 #error Need HAVE_FILESYSTEM_SUPPORT for filesystem backend support
 #endif
 
+#endif
+
+#ifndef HAL_LOGGER_FILE_CONTENTS_ENABLED
+#define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED
 #endif
 
 #include <AP_HAL/AP_HAL.h>
@@ -84,7 +80,6 @@
 #include <stdint.h>
 
 #include "LoggerMessageWriter.h"
-
 
 class AP_Logger_Backend;
 class AP_AHRS;
@@ -464,6 +459,9 @@ public:
         return _log_start_count;
     }
 
+    // add a filename to list of files to log. The name must be a constant string, not allocated
+    void log_file_content(const char *name);
+
 protected:
 
     const struct LogStructure *_structures;
@@ -550,6 +548,22 @@ private:
     void start_io_thread(void);
     void io_thread();
 
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+    // support for logging file content
+    struct file_list {
+        struct file_list *next;
+        const char *filename;
+        char log_filename[16];
+    };
+    struct {
+        struct file_list *head, *tail;
+        int fd;
+        uint16_t offset;
+        HAL_Semaphore sem;
+    } file_content;
+    void file_content_update(void);
+#endif
+    
     /* support for retrieving logs via mavlink: */
 
     enum class TransferActivity {

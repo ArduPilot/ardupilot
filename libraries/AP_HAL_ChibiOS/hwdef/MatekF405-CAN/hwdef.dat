@@ -8,7 +8,7 @@ FLASH_RESERVE_START_KB 64
 FLASH_SIZE_KB 1024
 
 # store parameters in pages 11 and 12
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load

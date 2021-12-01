@@ -439,26 +439,28 @@ unsigned int parse_access_flags(struct type * type) {
       flags |= ACCESS_FLAG_READ;
     } else if (strcmp(state.token, keyword_write) == 0) {
       flags |= ACCESS_FLAG_WRITE;
-      switch (type->type) {
-        case TYPE_FLOAT:
-        case TYPE_INT8_T:
-        case TYPE_INT16_T:
-        case TYPE_INT32_T:
-        case TYPE_UINT8_T:
-        case TYPE_UINT16_T:
-        case TYPE_UINT32_T:
-        case TYPE_ENUM:
-          type->range = parse_range_check(type->type);
-          break;
-        case TYPE_AP_OBJECT:
-        case TYPE_USERDATA:
-        case TYPE_BOOLEAN:
-        case TYPE_STRING:
-        case TYPE_LITERAL:
-          // a range check is illogical
-          break;
-        case TYPE_NONE:
-          error(ERROR_INTERNAL, "Can't access a NONE type");
+      if ((type->flags & TYPE_FLAGS_NO_RANGE_CHECK) == 0) {
+        switch (type->type) {
+          case TYPE_FLOAT:
+          case TYPE_INT8_T:
+          case TYPE_INT16_T:
+          case TYPE_INT32_T:
+          case TYPE_UINT8_T:
+          case TYPE_UINT16_T:
+          case TYPE_UINT32_T:
+          case TYPE_ENUM:
+            type->range = parse_range_check(type->type);
+            break;
+          case TYPE_AP_OBJECT:
+          case TYPE_USERDATA:
+          case TYPE_BOOLEAN:
+          case TYPE_STRING:
+          case TYPE_LITERAL:
+            // a range check is illogical
+            break;
+          case TYPE_NONE:
+            error(ERROR_INTERNAL, "Can't access a NONE type");
+        }
       }
     } else {
       break;
@@ -2097,7 +2099,7 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
       fprintf(docs, "%s string%s", prefix, suffix);
       break;
     case TYPE_UINT32_T:
-      fprintf(docs, "%s uint32_t%s", prefix, suffix);
+      fprintf(docs, "%s uint32_t_ud%s", prefix, suffix);
       break;
     case TYPE_USERDATA: {
       // userdata may have alias
@@ -2113,11 +2115,11 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
       if (found == 0) {
         error(ERROR_GENERAL, "Could not find userdata %s", type.data.ud.sanatized_name);
       }
-      fprintf(docs, "%s %s%s", prefix, data->alias ? data->alias : data->sanatized_name, suffix);
+      fprintf(docs, "%s %s_ud%s", prefix, data->alias ? data->alias : data->sanatized_name, suffix);
       break;
     }
     case TYPE_AP_OBJECT:
-      fprintf(docs, "%s %s%s", prefix, type.data.ud.sanatized_name, suffix);
+      fprintf(docs, "%s %s_ud%s", prefix, type.data.ud.sanatized_name, suffix);
       break;
     case TYPE_NONE:
     case TYPE_LITERAL:
@@ -2125,10 +2127,18 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
   }
 }
 
-void emit_docs(struct userdata *node, int emit_creation) {
+void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
   while(node) {
+    char *name = (char *)allocate(strlen(node->alias ? node->alias : node->sanatized_name) + 5);
+    if (is_userdata) {
+      sprintf(name, "%s_ud", node->alias ? node->alias : node->sanatized_name);
+    } else {
+      sprintf(name, "%s", node->alias ? node->alias : node->sanatized_name);
+    }
+
+
     fprintf(docs, "-- desc\n");
-    fprintf(docs, "---@class %s\n", node->alias ? node->alias : node->sanatized_name);
+    fprintf(docs, "---@class %s\n", name);
 
     // enums
     if (node->enums != NULL) {
@@ -2139,13 +2149,18 @@ void emit_docs(struct userdata *node, int emit_creation) {
       }
     }
 
-    if (emit_creation) {
-      // creation function
-      fprintf(docs, "---@return %s\n", node->alias ? node->alias : node->sanatized_name);
-      fprintf(docs, "function %s() end\n\n", node->alias ? node->alias : node->sanatized_name);
+    if (is_userdata) {
+      // local userdata
+      fprintf(docs, "local %s = {}\n\n", name);
+
+      if (emit_creation) {
+        // creation function
+        fprintf(docs, "---@return %s\n", name);
+        fprintf(docs, "function %s() end\n\n", node->alias ? node->alias : node->sanatized_name);
+      }
     } else {
       // global
-      fprintf(docs, "%s = {}\n\n", node->alias ? node->alias : node->sanatized_name);
+      fprintf(docs, "%s = {}\n\n", name);
     }
 
 
@@ -2158,12 +2173,12 @@ void emit_docs(struct userdata *node, int emit_creation) {
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get field\n");
               emit_docs_type(field->type, "---@return", "\n");
-              fprintf(docs, "function %s:%s() end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+              fprintf(docs, "function %s:%s() end\n\n", name, field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set field\n");
               emit_docs_type(field->type, "---@param value", "\n");
-              fprintf(docs, "function %s:%s(value) end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+              fprintf(docs, "function %s:%s(value) end\n\n", name, field->name);
             }
           } else {
             // array feild
@@ -2171,13 +2186,13 @@ void emit_docs(struct userdata *node, int emit_creation) {
               fprintf(docs, "-- get array field\n");
               fprintf(docs, "---@param index integer\n");
               emit_docs_type(field->type, "---@return", "\n");
-              fprintf(docs, "function %s:%s(index) end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+              fprintf(docs, "function %s:%s(index) end\n\n", name, field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set array field\n");
               fprintf(docs, "---@param index integer\n");
               emit_docs_type(field->type, "---@param value", "\n");
-              fprintf(docs, "function %s:%s(index, value) end\n\n", node->alias ? node->alias : node->sanatized_name, field->name);
+              fprintf(docs, "function %s:%s(index, value) end\n\n", name, field->name);
             }
           }
         field = field->next;
@@ -2222,7 +2237,7 @@ void emit_docs(struct userdata *node, int emit_creation) {
       }
 
       // function name
-      fprintf(docs, "function %s:%s(", node->alias ? node->alias : node->sanatized_name, method->alias ? method->alias : method->name);
+      fprintf(docs, "function %s:%s(", name, method->alias ? method->alias : method->name);
       for (int i = 1; i < count; ++i) {
         fprintf(docs, "param%i", i);
         if (i < count-1) {
@@ -2233,6 +2248,7 @@ void emit_docs(struct userdata *node, int emit_creation) {
       method = method->next;
     }
     fprintf(docs, "\n");
+    free(name);
     node = node->next;
   }
 }
@@ -2401,11 +2417,11 @@ int main(int argc, char **argv) {
   fprintf(docs, "-- generate with --scripting-docs, eg  ./waf copter --scripting-docs\n");
   fprintf(docs, "-- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations\n\n");
 
-  emit_docs(parsed_userdata, TRUE);
+  emit_docs(parsed_userdata, TRUE, TRUE);
 
-  emit_docs(parsed_ap_objects, FALSE);
+  emit_docs(parsed_ap_objects, TRUE, FALSE);
 
-  emit_docs(parsed_singletons, FALSE);
+  emit_docs(parsed_singletons, FALSE, FALSE);
 
   fclose(docs);
 

@@ -298,7 +298,7 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 */
 void peripheral_power_enable(void)
 {
-#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN) || defined(HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN)
+#if defined(HAL_GPIO_PIN_nVDD_5V_PERIPH_EN) || defined(HAL_GPIO_PIN_nVDD_5V_HIPOWER_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN)|| defined(HAL_GPIO_PIN_VDD_3V3_SENSORS2_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS3_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SENSORS4_EN) || defined(HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN) || defined(HAL_GPIO_PIN_VDD_3V3_SD_CARD_EN)
     // we don't know what state the bootloader had the CTS pin in, so
     // wait here with it pulled up from the PAL table for enough time
     // for the radio to be definately powered down
@@ -319,6 +319,15 @@ void peripheral_power_enable(void)
 #ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS_EN
     // the TBS-Colibri-F7 needs PE3 low at power on
     palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS_EN, 1);
+#endif
+#ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS2_EN
+    palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS2_EN, 1);
+#endif
+#ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS3_EN
+    palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS3_EN, 1);
+#endif
+#ifdef HAL_GPIO_PIN_VDD_3V3_SENSORS4_EN
+    palWriteLine(HAL_GPIO_PIN_VDD_3V3_SENSORS4_EN, 1);
 #endif
 #ifdef HAL_GPIO_PIN_nVDD_3V3_SD_CARD_EN
     // the TBS-Colibri-F7 needs PG7 low for SD card

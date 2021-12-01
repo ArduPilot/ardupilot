@@ -47,9 +47,6 @@ PA14 JTCK-SWCLK SWD
 # pullup buzzer for no sound in bootloader
 PE5 BUZZER OUTPUT LOW PULLDOWN
 
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
-
 # Add CS pins to ensure they are high in bootloader
 PF10 MS5611_CS CS
 PF2  ICM20689_CS CS SPEED_VERYLOW

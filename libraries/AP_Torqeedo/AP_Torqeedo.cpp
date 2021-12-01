@@ -25,7 +25,9 @@
 
 #define TORQEEDO_SERIAL_BAUD        19200   // communication is always at 19200
 #define TORQEEDO_PACKET_HEADER      0xAC    // communication packet header
-#define TORQEEDO_PACKET_FOOTER      0xAD    // communication packer footer
+#define TORQEEDO_PACKET_FOOTER      0xAD    // communication packet footer
+#define TORQEEDO_PACKET_ESCAPE      0xAE    // escape character for handling occurrences of header, footer and this escape bytes in original message
+#define TORQEEDO_PACKET_ESCAPE_MASK 0x80    // byte after ESCAPE character should be XOR'd with this value
 #define TORQEEDO_LOG_TRQD_INTERVAL_MS                   5000// log TRQD message at this interval in milliseconds
 #define TORQEEDO_SEND_MOTOR_SPEED_INTERVAL_MS           100 // motor speed sent at 10hz if connected to motor
 #define TORQEEDO_SEND_MOTOR_STATUS_REQUEST_INTERVAL_MS  400 // motor status requested every 0.4sec if connected to motor
@@ -404,6 +406,7 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
             _parse_state = ParseState::WAITING_FOR_FOOTER;
         }
         _received_buff_len = 0;
+        _parse_escape_received = false;
         break;
     case ParseState::WAITING_FOR_FOOTER:
         if (b == TORQEEDO_PACKET_FOOTER) {
@@ -429,6 +432,15 @@ bool AP_Torqeedo::parse_byte(uint8_t b)
             }
             complete_msg_received = true;
         } else {
+            // escape character handling
+            if (_parse_escape_received) {
+                b ^= TORQEEDO_PACKET_ESCAPE_MASK;
+                _parse_escape_received = false;
+            } else if (b == TORQEEDO_PACKET_ESCAPE) {
+                // escape character received, record this and ignore this byte
+                _parse_escape_received = true;
+                break;
+            }
             // add to buffer
             _received_buff[_received_buff_len] = b;
             _received_buff_len++;
@@ -778,6 +790,79 @@ void AP_Torqeedo::set_reply_received()
     _reply_wait_start_ms = 0;
 }
 
+// send a message to the motor with the specified message contents
+// msg_contents should not include the header, footer or CRC
+// returns true on success
+bool AP_Torqeedo::send_message(const uint8_t msg_contents[], uint8_t num_bytes)
+{
+    // buffer for outgoing message
+    uint8_t send_buff[TORQEEDO_MESSAGE_LEN_MAX];
+    uint8_t send_buff_num_bytes = 0;
+
+    // calculate crc
+    const uint8_t crc = crc8_maxim(msg_contents, num_bytes);
+
+    // add header
+    send_buff[send_buff_num_bytes++] = TORQEEDO_PACKET_HEADER;
+
+    // add contents
+    for (uint8_t i=0; i<num_bytes; i++) {
+        if (!add_byte_to_message(msg_contents[i], send_buff, ARRAY_SIZE(send_buff), send_buff_num_bytes)) {
+            _parse_error_count++;
+            return false;
+        }
+    }
+
+    // add crc
+    if (!add_byte_to_message(crc, send_buff, ARRAY_SIZE(send_buff), send_buff_num_bytes)) {
+        _parse_error_count++;
+        return false;
+    }
+
+    // add footer
+    if (send_buff_num_bytes >= ARRAY_SIZE(send_buff)) {
+        _parse_error_count++;
+        return false;
+    }
+    send_buff[send_buff_num_bytes++] = TORQEEDO_PACKET_FOOTER;
+
+    // set send pin
+    send_start();
+
+    // write message
+    _uart->write(send_buff, send_buff_num_bytes);
+
+    // record start and expected delay to send message
+    _send_start_us = AP_HAL::micros();
+    _send_delay_us = calc_send_delay_us(send_buff_num_bytes);
+
+    return true;
+}
+
+// add a byte to a message buffer including adding the escape character (0xAE) if necessary
+// this should only be used when adding the contents to the buffer, not the header and footer
+// num_bytes is updated to the next free byte
+bool AP_Torqeedo::add_byte_to_message(uint8_t byte_to_add, uint8_t msg_buff[], uint8_t msg_buff_size, uint8_t &num_bytes) const
+{
+    bool escape_required = (byte_to_add == TORQEEDO_PACKET_HEADER ||
+                            byte_to_add == TORQEEDO_PACKET_FOOTER ||
+                            byte_to_add == TORQEEDO_PACKET_ESCAPE);
+
+    // check if we have enough space
+    if (num_bytes + (escape_required ? 2 : 1) >= msg_buff_size) {
+        return false;
+    }
+
+    // add byte
+    if (escape_required) {
+        msg_buff[num_bytes++] = TORQEEDO_PACKET_ESCAPE;
+        msg_buff[num_bytes++] = byte_to_add ^ TORQEEDO_PACKET_ESCAPE_MASK;
+    } else {
+        msg_buff[num_bytes++] = byte_to_add;
+    }
+    return true;
+}
+
 // Example "Remote (0x01)" reply message to allow tiller to control motor speed
 // Byte     Field Definition    Example Value   Comments
 // ---------------------------------------------------------------------------------
@@ -812,20 +897,16 @@ void AP_Torqeedo::send_motor_speed_cmd()
     // updated limited motor speed
     int16_t mot_speed_limited = calc_motor_speed_limited(_motor_speed_desired);
 
-    // set send pin
-    send_start();
-
     // by default use tiller connection command
-    uint8_t mot_speed_cmd_buff[] = {TORQEEDO_PACKET_HEADER, (uint8_t)MsgAddress::BUS_MASTER, 0x0, 0x5, 0x0, HIGHBYTE(mot_speed_limited), LOWBYTE(mot_speed_limited), 0x0, TORQEEDO_PACKET_FOOTER};
-    uint8_t buff_size = ARRAY_SIZE(mot_speed_cmd_buff);
+    uint8_t mot_speed_cmd_buff[] = {(uint8_t)MsgAddress::BUS_MASTER, 0x0, 0x5, 0x0, HIGHBYTE(mot_speed_limited), LOWBYTE(mot_speed_limited)};
 
     // update message if using motor connection
     if (_type == ConnectionType::TYPE_MOTOR) {
         const uint8_t motor_power = (uint8_t)constrain_int16(_motor_power, 0, 100);
-        mot_speed_cmd_buff[1] = (uint8_t)MsgAddress::MOTOR;
-        mot_speed_cmd_buff[2] = (uint8_t)MotorMsgId::DRIVE;
-        mot_speed_cmd_buff[3] = (mot_speed_limited == 0 ? 0 : 0x01) | (_motor_clear_error ? 0x04 : 0);  // 1:enable motor, 2:fast off, 4:clear error
-        mot_speed_cmd_buff[4] = mot_speed_limited == 0 ? 0 : motor_power;   // motor power from 0 to 100
+        mot_speed_cmd_buff[0] = (uint8_t)MsgAddress::MOTOR;
+        mot_speed_cmd_buff[1] = (uint8_t)MotorMsgId::DRIVE;
+        mot_speed_cmd_buff[2] = (mot_speed_limited == 0 ? 0 : 0x01) | (_motor_clear_error ? 0x04 : 0);  // 1:enable motor, 2:fast off, 4:clear error
+        mot_speed_cmd_buff[3] = mot_speed_limited == 0 ? 0 : motor_power;   // motor power from 0 to 100
 
         // set expected reply message id
         set_expected_reply_msgid((uint8_t)MotorMsgId::DRIVE);
@@ -834,18 +915,8 @@ void AP_Torqeedo::send_motor_speed_cmd()
         _motor_clear_error = false;
     }
 
-    // calculate crc and add to buffer
-    const uint8_t crc = crc8_maxim(&mot_speed_cmd_buff[1], buff_size-3);
-    mot_speed_cmd_buff[buff_size-2] = crc;
-
-    // write message
-    _uart->write(mot_speed_cmd_buff, buff_size);
-
-    // record start and expected delay to send message
-    _send_start_us = AP_HAL::micros();
-    _send_delay_us = calc_send_delay_us(buff_size);
-
-    {
+    // send a message
+    if (send_message(mot_speed_cmd_buff, ARRAY_SIZE(mot_speed_cmd_buff))) {
         // record time of send for health reporting
         WITH_SEMAPHORE(_last_healthy_sem);
         _last_send_motor_ms = AP_HAL::millis();
@@ -856,26 +927,14 @@ void AP_Torqeedo::send_motor_speed_cmd()
 // msg_id can be INFO, STATUS or PARAM
 void AP_Torqeedo::send_motor_msg_request(MotorMsgId msg_id)
 {
-    // set send pin
-    send_start();
-
     // prepare message
-    uint8_t mot_status_request_buff[] = {TORQEEDO_PACKET_HEADER, (uint8_t)MsgAddress::MOTOR, (uint8_t)msg_id, 0x0, TORQEEDO_PACKET_FOOTER};
-    uint8_t buff_size = ARRAY_SIZE(mot_status_request_buff);
+    uint8_t mot_status_request_buff[] = {(uint8_t)MsgAddress::MOTOR, (uint8_t)msg_id};
 
-    // calculate crc and add to buffer
-    const uint8_t crc = crc8_maxim(&mot_status_request_buff[1], buff_size-3);
-    mot_status_request_buff[buff_size-2] = crc;
-
-    // write message
-    _uart->write(mot_status_request_buff, buff_size);
-
-    // record start and expected delay to send message
-    _send_start_us = AP_HAL::micros();
-    _send_delay_us = calc_send_delay_us(buff_size);
-
-    // record waiting for reply
-    set_expected_reply_msgid((uint8_t)msg_id);
+    // send a message
+    if (send_message(mot_status_request_buff, ARRAY_SIZE(mot_status_request_buff))) {
+        // record waiting for reply
+        set_expected_reply_msgid((uint8_t)msg_id);
+    }
 }
 
 // calculate the limited motor speed that is sent to the motors

@@ -152,7 +152,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # available storage
 define HAL_STORAGE_SIZE 15360
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # defaults for battery monitoring
 define HAL_BATT_MONITOR_DEFAULT 4

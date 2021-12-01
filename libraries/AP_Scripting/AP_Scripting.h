@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -40,6 +40,7 @@ public:
     bool init_failed(void) const { return _init_failed; }
 
     bool enabled(void) const { return _enable != 0; };
+    bool should_run(void) const { return enabled() && !_stop; }
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
 
@@ -96,10 +97,12 @@ private:
     AP_Int8 _enable;
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
-    AP_Int8 _debug_level;
+    AP_Int8 _debug_options;
     AP_Int16 _dir_disable;
 
     bool _init_failed;  // true if memory allocation failed
+    bool _restart; // true if scripts should be restarted
+    bool _stop; // true if scripts should be stopped
 
     static AP_Scripting *_singleton;
 
@@ -109,4 +112,4 @@ namespace AP {
     AP_Scripting * scripting(void);
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

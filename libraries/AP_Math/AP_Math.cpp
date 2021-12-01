@@ -399,23 +399,58 @@ float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
     return constrain_float(dt/(dt+rc), 0.0f, 1.0f);
 }
 
+#ifndef AP_MATH_FILL_NANF_USE_MEMCPY
+#define AP_MATH_FILL_NANF_USE_MEMCPY (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 // fill an array of float with NaN, used to invalidate memory in SITL
 void fill_nanf(float *f, uint16_t count)
 {
+#if AP_MATH_FILL_NANF_USE_MEMCPY
+    static bool created;
+    static float many_nanfs[2048];
+    if (!created) {
+        for (uint16_t i=0; i<ARRAY_SIZE(many_nanfs); i++) {
+            created = true;
+            many_nanfs[i] = std::numeric_limits<float>::signaling_NaN();
+        }
+    }
+    if (count > ARRAY_SIZE(many_nanfs)) {
+        AP_HAL::panic("Too big an area to fill");
+    }
+    memcpy(f, many_nanfs, count*sizeof(many_nanfs[0]));
+#else
     const float n = std::numeric_limits<float>::signaling_NaN();
     while (count--) {
         *f++ = n;
     }
+#endif
 }
 
 void fill_nanf(double *f, uint16_t count)
 {
+#if AP_MATH_FILL_NANF_USE_MEMCPY
+    static bool created;
+    static double many_nanfs[2048];
+    if (!created) {
+        for (uint16_t i=0; i<ARRAY_SIZE(many_nanfs); i++) {
+            created = true;
+            many_nanfs[i] = std::numeric_limits<double>::signaling_NaN();
+        }
+    }
+    if (count > ARRAY_SIZE(many_nanfs)) {
+        AP_HAL::panic("Too big an area to fill");
+    }
+    memcpy(f, many_nanfs, count*sizeof(many_nanfs[0]));
+#else
     while (count--) {
         *f++ = std::numeric_limits<double>::signaling_NaN();
     }
-}
 #endif
+}
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 // Convert 16-bit fixed-point to float
 float fixed2float(const uint16_t input, const uint8_t fractional_bits)

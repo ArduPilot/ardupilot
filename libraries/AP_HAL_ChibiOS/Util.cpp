@@ -698,3 +698,47 @@ void Util::log_stack_info(void)
     last_tp = tp;
 #endif
 }
+
+#if !defined(HAL_BOOTLOADER_BUILD)
+size_t Util::last_crash_dump_size() const
+{
+#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
+    // get dump size
+    uint32_t size = stm32_crash_dump_size();
+    char* dump_start = (char*)stm32_crash_dump_addr();
+    if (!(dump_start[0] == 0x63 && dump_start[1] == 0x43)) {
+        // there's no valid Crash Dump
+        return 0;
+    }
+    if (size == 0xFFFFFFFF) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Crash Dump incomplete, dumping what we got!");
+        size = stm32_crash_dump_max_size();
+    }
+    return size;
+#endif
+    return 0;
+}
+
+void* Util::last_crash_dump_ptr() const
+{
+#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
+    if (last_crash_dump_size() == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No Crash Detected!");
+        return nullptr;
+    }
+    return (void*)stm32_crash_dump_addr();
+#else
+    return nullptr;
+#endif
+}
+#endif // HAL_BOOTLOADER_BUILD
+
+// set armed state
+void Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+#ifdef HAL_GPIO_PIN_nARMED
+    palWriteLine(HAL_GPIO_PIN_nARMED, !b);
+#endif
+}
+

@@ -28,7 +28,9 @@ QuadPlane::QuadPlane(const char *frame_str) :
     // default to X frame
     const char *frame_type = "x";
     uint8_t motor_offset = 4;
-    
+
+    ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
+
     if (strstr(frame_str, "-octa-quad")) {
         frame_type = "octa-quad";
     } else if (strstr(frame_str, "-octaquad")) {
@@ -67,6 +69,11 @@ QuadPlane::QuadPlane(const char *frame_str) :
         frame_type = "tilttri";
         // fwd motor gives zero thrust
         thrust_scale = 0;
+    } else if (strstr(frame_str, "-copter_tailsitter")) {
+        frame_type = "+";
+        copter_tailsitter = true;
+        ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
+        thrust_scale *= 1.5;
     }
     frame = Frame::find_frame(frame_type);
     if (frame == nullptr) {
@@ -94,7 +101,6 @@ QuadPlane::QuadPlane(const char *frame_str) :
     mass = frame->get_mass() * 1.5;
     frame->set_mass(mass);
 
-    ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
     lock_step_scheduled = true;
 }
 
@@ -115,6 +121,12 @@ void QuadPlane::update(const struct sitl_input &input)
     Vector3f quad_accel_body;
 
     frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, &rpm[1], false);
+
+    // rotate frames for copter tailsitters
+    if (copter_tailsitter) {
+        quad_rot_accel.rotate(ROTATION_PITCH_270);
+        quad_accel_body.rotate(ROTATION_PITCH_270);
+    }
 
     // estimate voltage and current
     frame->current_and_voltage(battery_voltage, battery_current);

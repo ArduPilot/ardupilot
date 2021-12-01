@@ -166,7 +166,7 @@ void Tracker::update_yaw_position_servo()
     // (in fact, any alignment is permissible), and that the alignment may change (possibly rapidly) over time
     // (as when the antenna is mounted on a moving, turning vehicle)
     //
-    // With my antenna mount, large pwm output drives the antenna anticlockise, so need:
+    // With my antenna mount, large pwm output drives the antenna anticlockwise, so need:
     // param set RC1_REV -1
     // to reverse the servo. Yours may be different
     //

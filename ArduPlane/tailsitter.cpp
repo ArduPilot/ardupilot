@@ -180,7 +180,7 @@ void Tailsitter::setup()
         enable.set_and_save(1);
     }
 
-    if (!enabled()) {
+    if (enable <= 0) {
         return;
     }
 
@@ -211,6 +211,13 @@ void Tailsitter::setup()
         quadplane.options.set(quadplane.options.get() | QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO);
     }
 
+    transition = new Tailsitter_Transition(quadplane, motors, *this);
+    if (!transition) {
+        AP_BoardConfig::allocation_error("tailsitter transition");
+    }
+    quadplane.transition = transition;
+
+    setup_complete = true;
 }
 
 /*
@@ -234,7 +241,7 @@ bool Tailsitter::active(void)
         return true;
     }
     // check if we are in ANGLE_WAIT fixed wing transition
-    if (quadplane.transition_state == QuadPlane::TRANSITION_ANGLE_WAIT_FW) {
+    if (transition->transition_state == Tailsitter_Transition::TRANSITION_ANGLE_WAIT_FW) {
         return true;
     }
     return false;
@@ -317,7 +324,7 @@ void Tailsitter::output(void)
     // the MultiCopter rate controller has already been run in an earlier call
     // to motors_output() from quadplane.update(), unless we are in assisted flight
     // tailsitter in TRANSITION_ANGLE_WAIT_FW is not really in assisted flight, its still in a VTOL mode
-    if (quadplane.assisted_flight && (quadplane.transition_state != QuadPlane::TRANSITION_ANGLE_WAIT_FW)) {
+    if (quadplane.assisted_flight && (transition->transition_state != Tailsitter_Transition::TRANSITION_ANGLE_WAIT_FW)) {
         quadplane.hold_stabilize(throttle);
         quadplane.motors_output(true);
 
@@ -426,7 +433,7 @@ bool Tailsitter::transition_fw_complete(void)
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, roll error");
         return true;
     }
-    if (AP_HAL::millis() - quadplane.transition_start_ms > ((transition_angle_fw+(quadplane.transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
+    if (AP_HAL::millis() - transition->fw_transition_start_ms > ((transition_angle_fw+(transition->fw_transition_initial_pitch*0.01f))/transition_rate_fw)*1500) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition FW done, timeout");
         return true;
     }
@@ -466,7 +473,7 @@ bool Tailsitter::transition_vtol_complete(void) const
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, roll error");
         return true;
     }
-    if (AP_HAL::millis() - quadplane.transition_start_ms >  ((trans_angle-(quadplane.transition_initial_pitch*0.01f))/transition_rate_vtol)*1500) {
+    if (AP_HAL::millis() - transition->vtol_transition_start_ms >  ((trans_angle-(transition->vtol_transition_initial_pitch*0.01f))/transition_rate_vtol)*1500) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Transition VTOL done, timeout");
         return true;
     }
@@ -496,10 +503,10 @@ bool Tailsitter::in_vtol_transition(uint32_t now) const
     if (!enabled() || !quadplane.in_vtol_mode()) {
         return false;
     }
-    if (quadplane.transition_state == QuadPlane::TRANSITION_ANGLE_WAIT_VTOL) {
+    if (transition->transition_state == Tailsitter_Transition::TRANSITION_ANGLE_WAIT_VTOL) {
         return true;
     }
-    if ((now != 0) && ((now - quadplane.last_vtol_mode_ms) > 1000)) {
+    if ((now != 0) && ((now - transition->last_vtol_mode_ms) > 1000)) {
         // only just come out of forward flight
         return true;
     }
@@ -511,7 +518,7 @@ bool Tailsitter::in_vtol_transition(uint32_t now) const
  */
 bool Tailsitter::is_in_fw_flight(void) const
 {
-    return enabled() && !quadplane.in_vtol_mode() && quadplane.transition_state == QuadPlane::TRANSITION_DONE;
+    return enabled() && !quadplane.in_vtol_mode() && transition->transition_state == Tailsitter_Transition::TRANSITION_DONE;
 }
 
 /*
@@ -658,6 +665,154 @@ void Tailsitter::speed_scaling(void)
         v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
         SRV_Channels::set_output_scaled(functions[i], v);
     }
+}
+
+/*
+  update for transition from quadplane to fixed wing mode
+ */
+void Tailsitter_Transition::update()
+{
+    const uint32_t now = millis();
+
+    float aspeed;
+    bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+    quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+
+    if (transition_state < TRANSITION_DONE) {
+        // during transition we ask TECS to use a synthetic
+        // airspeed. Otherwise the pitch limits will throw off the
+        // throttle calculation which is driven by pitch
+        plane.TECS_controller.use_synthetic_airspeed();
+    }
+
+    switch (transition_state) {
+
+    case TRANSITION_ANGLE_WAIT_FW: {
+        if (tailsitter.transition_fw_complete()) {
+            transition_state = TRANSITION_DONE;
+            break;
+        }
+        quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        quadplane.assisted_flight = true;
+        uint32_t dt = now - fw_transition_start_ms;
+        // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
+        plane.nav_pitch_cd = constrain_float(fw_transition_initial_pitch - (quadplane.tailsitter.transition_rate_fw * dt) * 0.1f * (plane.fly_inverted()?-1.0f:1.0f), -8500, 8500);
+        plane.nav_roll_cd = 0;
+        quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                      plane.nav_pitch_cd,
+                                                                      0);
+        // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
+        quadplane.attitude_control->set_throttle_out(MAX(motors->get_throttle_hover(),quadplane.attitude_control->get_throttle_in()), true, 0);
+        quadplane.motors_output();
+        break;
+    }
+
+    case TRANSITION_ANGLE_WAIT_VTOL:
+        // nothing to do, this is handled in the fixed wing attitude controller
+        break;
+
+    case TRANSITION_DONE:
+        break;
+    }
+}
+
+void Tailsitter_Transition::VTOL_update()
+{
+    const uint32_t now = AP_HAL::millis();
+
+    if ((now - last_vtol_mode_ms) > 1000) {
+        /*
+          we are just entering a VTOL mode as a tailsitter, set
+          our transition state so the fixed wing controller brings
+          the nose up before we start trying to fly as a
+          multicopter
+         */
+        transition_state = TRANSITION_ANGLE_WAIT_VTOL;
+    }
+    last_vtol_mode_ms = now;
+
+    if (transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
+        float aspeed;
+        bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
+        // provide assistance in forward flight portion of tailsitter transistion
+        quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
+        if (!quadplane.tailsitter.transition_vtol_complete()) {
+            return;
+        }
+    }
+    restart();
+}
+
+// return true if we should show VTOL view
+bool Tailsitter_Transition::show_vtol_view() const
+{
+    bool show_vtol = quadplane.in_vtol_mode();
+
+    if (show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_VTOL)) {
+        // in a vtol mode but still transitioning from forward flight
+        return false;
+    }
+    if (!show_vtol && (transition_state == TRANSITION_ANGLE_WAIT_FW)) {
+        // not in VTOL mode but still transitioning from VTOL
+        return true;
+    }
+    return show_vtol;
+}
+
+void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing)
+{
+    uint32_t now = AP_HAL::millis();
+    if (tailsitter.in_vtol_transition(now)) {
+        /*
+          during transition to vtol in a tailsitter try to raise the
+          nose while keeping the wings level
+         */
+        uint32_t dt = now - vtol_transition_start_ms;
+        // multiply by 0.1 to convert (degrees/second * milliseconds) to centi degrees
+        nav_pitch_cd = constrain_float(vtol_transition_initial_pitch + (tailsitter.transition_rate_vtol * dt) * 0.1f, -8500, 8500);
+        nav_roll_cd = 0;
+        allow_stick_mixing = false;
+
+    } else if (transition_state == TRANSITION_DONE) {
+        // still in FW, reset transition starting point
+        force_transistion_complete();
+    }
+}
+
+// setup for the transition back to fixed wing
+void Tailsitter_Transition::restart()
+{
+    transition_state = TRANSITION_ANGLE_WAIT_FW;
+    fw_transition_start_ms = AP_HAL::millis();
+    fw_transition_initial_pitch = constrain_float(quadplane.attitude_control->get_attitude_target_quat().get_euler_pitch() * degrees(100.0),-8500,8500);
+}
+
+// force state to FW and setup for the transition back to VTOL
+void Tailsitter_Transition::force_transistion_complete()
+{
+    transition_state = TRANSITION_DONE;
+    vtol_transition_start_ms = AP_HAL::millis();
+    vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
+}
+
+MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const
+{
+    switch (transition_state) {
+        case TRANSITION_ANGLE_WAIT_VTOL:
+            return MAV_VTOL_STATE_TRANSITION_TO_MC;
+
+        case TRANSITION_DONE:
+            return MAV_VTOL_STATE_FW;
+
+        case TRANSITION_ANGLE_WAIT_FW: {
+            if (quadplane.in_vtol_mode()) {
+                return MAV_VTOL_STATE_MC;
+            }
+            return MAV_VTOL_STATE_TRANSITION_TO_FW;
+        }
+    }
+
+    return MAV_VTOL_STATE_UNDEFINED;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

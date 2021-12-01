@@ -1387,7 +1387,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             if (chan_mask & (_reversible_mask>>chan_offset)) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
                 if (value < 1000) {
-                    value = 2000 - value;
+                    value = 1999 - value;
                 } else if (value > 1000) {
                     value = value - 1000;
                 } else {

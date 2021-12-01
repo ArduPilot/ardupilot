@@ -117,7 +117,7 @@ IMU Invensense SPI:icm20789 ROTATION_NONE
 define HAL_GPIO_RADIO_IRQ 100
 
 define HAL_RCINPUT_WITH_AP_RADIO 1
-define STORAGE_FLASH_PAGE	 1
+STORAGE_FLASH_PAGE	 1
 define HAL_STORAGE_SIZE 15360
 
 # setup defines for ArduCopter config
@@ -134,4 +134,4 @@ define HAL_BARO_20789_I2C_ADDR_PRESS 0x63
 
 # Disable un-needed hardware drivers
 define HAL_WITH_ESC_TELEM 0
-define HAL_AP_FETTEC_ONEWIRE_ENABLED 0
+define AP_FETTEC_ONEWIRE_ENABLED 0

@@ -36,8 +36,8 @@
 #include <SITL/SIM_RF_Lanbao.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_LeddarOne.h>
-#include <SITL/SIM_RF_uLanding_v0.h>
-#include <SITL/SIM_RF_uLanding_v1.h>
+#include <SITL/SIM_RF_USD1_v0.h>
+#include <SITL/SIM_RF_USD1_v1.h>
 #include <SITL/SIM_RF_MaxsonarSerialLV.h>
 #include <SITL/SIM_RF_Wasp.h>
 #include <SITL/SIM_RF_NMEA.h>
@@ -77,7 +77,6 @@ public:
         Blimp
     };
 
-    ssize_t gps_read(int fd, void *buf, size_t count);
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     uint16_t pwm_input[SITL_RC_INPUT_CHANNELS];
     bool output_ready = false;
@@ -87,11 +86,9 @@ public:
         return _base_port;
     }
 
-    // create a file descriptor attached to a virtual device; type of
-    // device is given by name parameter
-    int sim_fd(const char *name, const char *arg);
-    // returns a write file descriptor for a created virtual device
-    int sim_fd_write(const char *name);
+    // create a simulated serial device; type of device is given by
+    // name parameter
+    SITL::SerialDevice *create_serial_sim(const char *name, const char *arg);
 
     bool use_rtscts(void) const {
         return _use_rtscts;
@@ -162,10 +159,7 @@ private:
     pid_t _parent_pid;
     uint32_t _update_count;
 
-    AP_Baro *_barometer;
-    AP_InertialSensor *_ins;
     Scheduler *_scheduler;
-    Compass *_compass;
 
     SocketAPM _sitl_rc_in{true};
     SITL::SIM *_sitl;
@@ -239,10 +233,10 @@ private:
     SITL::RF_BLping *blping;
     // simulated LeddarOne rangefinder:
     SITL::RF_LeddarOne *leddarone;
-    // simulated uLanding v0 rangefinder:
-    SITL::RF_uLanding_v0 *ulanding_v0;
-    // simulated uLanding v1 rangefinder:
-    SITL::RF_uLanding_v1 *ulanding_v1;
+    // simulated USD1 v0 rangefinder:
+    SITL::RF_USD1_v0 *USD1_v0;
+    // simulated USD1 v1 rangefinder:
+    SITL::RF_USD1_v1 *USD1_v1;
     // simulated MaxsonarSerialLV rangefinder:
     SITL::RF_MaxsonarSerialLV *maxsonarseriallv;
     // simulated Wasp rangefinder:

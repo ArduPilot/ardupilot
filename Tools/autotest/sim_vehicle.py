@@ -694,10 +694,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
     if path is not None:
         cmd.extend(["--defaults", path])
-    if opts.mcast:
-        cmd.extend(["--uartA mcast:"])
-    elif opts.udp:
-        cmd.extend(["--uartA udpclient:127.0.0.1:" + str(5760+cmd_opts.instance*10)])
 
     if cmd_opts.start_time is not None:
         # Parse start_time into a double precision number specifying seconds since 1900.
@@ -714,6 +710,19 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         c = ["-I" + str(i)]
         if spawns is not None:
             c.extend(["--home", spawns[i]])
+        if opts.mcast:
+            c.extend(["--uartA", "mcast:"])
+        elif opts.udp:
+            c.extend(["--uartA", "udpclient:127.0.0.1:" + str(5760+i*10)])
+        if opts.auto_sysid:
+            if opts.sysid is not None:
+                raise ValueError("Can't use auto-sysid and sysid together")
+            sysid = i + 1
+            # Take 0-based logging into account
+            if sysid < 1 or sysid > 255:
+                raise ValueError("Invalid system id %d" % sysid)
+            c.extend(["--sysid", str(sysid)])
+
         os.chdir(i_dir)
         run_in_terminal_window(cmd_name, cmd + c)
     os.chdir(old_dir)
@@ -732,6 +741,28 @@ def start_mavproxy(opts, stuff):
         cmd.append("mavproxy.exe")
     else:
         cmd.append("mavproxy.py")
+
+    if opts.mcast:
+        cmd.extend(["--master", "mcast:"])
+
+    for i in instances:
+        if not opts.no_extra_ports:
+            ports = [p + 10 * i for p in [14550, 14551]]
+            for port in ports:
+                if os.path.isfile("/ardupilot.vagrant"):
+                    # We're running inside of a vagrant guest; forward our
+                    # mavlink out to the containing host OS
+                    cmd.extend(["--out", "10.0.2.2:" + str(port)])
+                else:
+                    cmd.extend(["--out", "127.0.0.1:" + str(port)])
+
+        if not opts.mcast:
+            if opts.udp:
+                cmd.extend(["--master", ":" + str(5760 + 10 * i)])
+            else:
+                cmd.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
+        if stuff["sitl-port"] and not opts.no_rcin:
+            cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -813,36 +844,8 @@ def start_mavproxy(opts, stuff):
     if old is not None:
         env['PYTHONPATH'] += os.path.pathsep + old
 
-    old_dir = os.getcwd()
-    for i, i_dir in zip(instances, instance_dir):
-        c = []
-
-        if not opts.no_extra_ports:
-            ports = [p + 10 * i for p in [14550, 14551]]
-            for port in ports:
-                if os.path.isfile("/ardupilot.vagrant"):
-                    # We're running inside of a vagrant guest; forward our
-                    # mavlink out to the containing host OS
-                    c.extend(["--out", "10.0.2.2:" + str(port)])
-                else:
-                    c.extend(["--out", "127.0.0.1:" + str(port)])
-
-        if True:
-            if opts.mcast:
-                c.extend(["--master", "mcast:"])
-            elif opts.udp:
-                c.extend(["--master", ":" + str(5760 + 10 * i)])
-            else:
-                c.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
-            if stuff["sitl-port"] and not opts.no_rcin:
-                c.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
-
-        os.chdir(i_dir)
-        if i == instances[-1]:
-            run_cmd_blocking("Run MavProxy", cmd + c, env=env)
-        else:
-            run_in_terminal_window("Run MavProxy", cmd + c, env=env)
-    os.chdir(old_dir)
+    run_cmd_blocking("Run MavProxy", cmd, env=env)
+    progress("MAVProxy exited")
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -1106,6 +1109,11 @@ group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,
                      help="Specify path of swarminit.txt for shifting spawn location")
+group_sim.add_option("", "--auto-offset-line",
+                     type="string",
+                     default=None,
+                     help="Argument of form  BEARING,DISTANCE.  When running multiple instances, form a line along bearing with an interval of DISTANCE",  # NOQA
+                     )
 group_sim.add_option("--flash-storage",
                      action='store_true',
                      help="use flash storage emulation")
@@ -1139,6 +1147,10 @@ group_sim.add_option("", "--slave",
                      type='int',
                      default=0,
                      help="Set the number of JSON slave")
+group_sim.add_option("", "--auto-sysid",
+                     default=False,
+                     action='store_true',
+                     help="Set SYSID_THISMAV based upon instance number")
 parser.add_option_group(group_sim)
 
 
@@ -1232,6 +1244,10 @@ if cmd_opts.strace and cmd_opts.valgrind:
 if cmd_opts.strace and cmd_opts.callgrind:
     print("callgrind and strace almost certainly not a good idea")
 
+if cmd_opts.sysid and cmd_opts.auto_sysid:
+    print("Cannot use auto-sysid together with sysid")
+    sys.exit(1)
+
 # magically determine vehicle type (if required):
 if cmd_opts.vehicle is None:
     cwd = os.getcwd()
@@ -1313,6 +1329,17 @@ else:
     location = None
 if cmd_opts.swarm is not None:
     offsets = find_offsets(instances, cmd_opts.swarm)
+elif cmd_opts.auto_offset_line is not None:
+    if location is None:
+        raise ValueError("location needed for auto-offset-line")
+    (bearing, metres) = cmd_opts.auto_offset_line.split(",")
+    bearing = float(bearing)
+    metres = float(metres)
+    dist = 0
+    offsets = {}
+    for x in instances:
+        offsets[x] = [dist*math.sin(math.radians(bearing)), dist*math.cos(math.radians(bearing)), 0, 0]
+        dist += metres
 else:
     offsets = {x: [0.0, 0.0, 0.0, None] for x in instances}
 if location is not None:

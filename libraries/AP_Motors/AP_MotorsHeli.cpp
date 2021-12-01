@@ -44,19 +44,12 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("COL_MAX", 4, AP_MotorsHeli, _collective_max, AP_MOTORS_HELI_COLLECTIVE_MAX),
 
-    // @Param: COL_MID
-    // @DisplayName: Zero-Thrust Collective Pitch 
-    // @Description: Swash servo position in PWM microseconds corresponding to zero collective pitch (or zero lift for Asymmetrical blades)
-    // @Range: 1000 2000
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("COL_MID", 5, AP_MotorsHeli, _collective_mid, AP_MOTORS_HELI_COLLECTIVE_MID),
+    // index 5 was COL_MID. Do not use this index in the future.
 
     // @Param: SV_MAN
     // @DisplayName: Manual Servo Mode
     // @Description: Manual servo override for swash set-up. Must be 0 (Disabled) for flight!
-    // @Values: 0:Disabled,1:Passthrough,2:Max collective,3:Mid collective,4:Min collective
+    // @Values: 0:Disabled,1:Passthrough,2:Max collective,3:Zero thrust collective,4:Min collective
     // @User: Standard
     AP_GROUPINFO("SV_MAN",  6, AP_MotorsHeli, _servo_mode, SERVO_CONTROL_MODE_AUTOMATED),
 
@@ -96,12 +89,12 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Path: AP_MotorsHeli_RSC.cpp
     AP_SUBGROUPINFO(_main_rotor, "RSC_", 25, AP_MotorsHeli, AP_MotorsHeli_RSC),
 
-    // @Param: COLL_HOVER
+    // @Param: COL_HOVER
     // @DisplayName: Collective Hover Value
     // @Description: Collective needed to hover expressed as a number from 0 to 1 where 0 is H_COL_MIN and 1 is H_COL_MAX
     // @Range: 0.3 0.8
     // @User: Advanced
-    AP_GROUPINFO("COLL_HOVER", 26, AP_MotorsHeli, _collective_hover, AP_MOTORS_HELI_COLLECTIVE_HOVER_DEFAULT),
+    AP_GROUPINFO("COL_HOVER", 26, AP_MotorsHeli, _collective_hover, AP_MOTORS_HELI_COLLECTIVE_HOVER_DEFAULT),
 
     // @Param: HOVER_LEARN
     // @DisplayName: Hover Value Learning
@@ -116,6 +109,42 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Bitmask: 0:Use Leaky I
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 28, AP_MotorsHeli, _heli_options, (uint8_t)HeliOption::USE_LEAKY_I),
+
+    // @Param: COL_ANG_MIN
+    // @DisplayName: Collective Blade Pitch Angle Minimum
+    // @Description: Minimum collective blade pitch angle in deg that corresponds to the PWM set for minimum collective pitch (H_COL_MIN).
+    // @Range: -20 0
+    // @Units: deg
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("COL_ANG_MIN", 29, AP_MotorsHeli, _collective_min_deg, AP_MOTORS_HELI_COLLECTIVE_MIN_DEG),
+
+    // @Param: COL_ANG_MAX
+    // @DisplayName: Collective Blade Pitch Angle Maximum
+    // @Description: Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX).
+    // @Range: 5 20
+    // @Units: deg
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("COL_ANG_MAX", 30, AP_MotorsHeli, _collective_max_deg, AP_MOTORS_HELI_COLLECTIVE_MAX_DEG),
+
+    // @Param: COL_ZERO_THRST
+    // @DisplayName: Collective Blade Pitch at Zero Thrust
+    // @Description: Collective blade pitch angle at zero thrust in degrees. For symetric airfoil blades this value is zero deg. For chambered airfoil blades this value is typically negative.
+    // @Range: -5 0
+    // @Units: deg
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("COL_ZERO_THRST", 31, AP_MotorsHeli, _collective_zero_thrust_deg, 0.0f),
+
+    // @Param: COL_LAND_MIN
+    // @DisplayName: Collective Blade Pitch Minimum when Landed
+    // @Description: Minimum collective blade pitch angle when landed in degrees for non-manual collective modes (i.e. modes that use altitude hold).
+    // @Range: -5 0
+    // @Units: deg
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("COL_LAND_MIN", 32, AP_MotorsHeli, _collective_land_min_deg, AP_MOTORS_HELI_COLLECTIVE_LAND_MIN),
 
     AP_GROUPEND
 };
@@ -253,7 +282,7 @@ void AP_MotorsHeli::output_disarmed()
                 // fixate mid collective
                 _roll_in = 0.0f;
                 _pitch_in = 0.0f;
-                _throttle_filter.reset(_collective_mid_pct);
+                _throttle_filter.reset(_collective_zero_thrust_pct);
                 _yaw_in = 0.0f;
                 break;
             case SERVO_CONTROL_MODE_MANUAL_MAX:
@@ -464,6 +493,22 @@ bool AP_MotorsHeli::parameter_check(bool display_msg) const
         return false;
     }
 
+    // returns false if _collective_min_deg is not default value which indicates users set parameter
+    if (is_equal((float)_collective_min_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MIN_DEG)) {
+        if (display_msg) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MIN to measured min blade pitch in deg");
+        }
+        return false;
+    }
+
+    // returns false if _collective_max_deg is not default value which indicates users set parameter
+    if (is_equal((float)_collective_max_deg, (float)AP_MOTORS_HELI_COLLECTIVE_MAX_DEG)) {
+        if (display_msg) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PreArm: Set H_COL_ANG_MAX to measured max blade pitch in deg");
+        }
+        return false;
+    }
+
     // all other cases parameters are OK
     return true;
 }
@@ -516,10 +561,10 @@ void AP_MotorsHeli::update_throttle_hover(float dt)
 {
     if (_collective_hover_learn != HOVER_LEARN_DISABLED) {
 
-        // Don't let _collective_hover go below H_COLL_MID
+        // Don't let _collective_hover go below H_COLL_ZERO_THRST
         float curr_collective = get_throttle();
-        if (curr_collective < _collective_mid_pct) {
-            curr_collective = _collective_mid_pct;
+        if (curr_collective < _collective_zero_thrust_pct) {
+            curr_collective = _collective_zero_thrust_pct;
         }
 
         // we have chosen to constrain the hover collective to be within the range reachable by the third order expo polynomial.
@@ -539,7 +584,7 @@ void AP_MotorsHeli::save_params_on_disarm()
 // updates the takeoff collective flag
 void AP_MotorsHeli::update_takeoff_collective_flag(float coll_out)
 {
-    if (coll_out > _collective_mid_pct + 0.5f * (_collective_hover - _collective_mid_pct)) {
+    if (coll_out > _collective_zero_thrust_pct + 0.5f * (_collective_hover - _collective_zero_thrust_pct)) {
         _heliflags.takeoff_collective = true;
     } else {
         _heliflags.takeoff_collective = false;

@@ -327,6 +327,9 @@ public:
 
     void Log_Write(uint64_t time_us);
 
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
+    
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;

@@ -161,8 +161,10 @@ void Plane::reset_control_switch()
  */
 void Plane::autotune_start(void)
 {
+    gcs().send_text(MAV_SEVERITY_INFO, "Started autotune");
     rollController.autotune_start();
     pitchController.autotune_start();
+    yawController.autotune_start();
 }
 
 /*
@@ -172,6 +174,8 @@ void Plane::autotune_restore(void)
 {
     rollController.autotune_restore();
     pitchController.autotune_restore();
+    yawController.autotune_restore();
+    gcs().send_text(MAV_SEVERITY_INFO, "Stopped autotune");
 }
 
 /*

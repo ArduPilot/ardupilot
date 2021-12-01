@@ -27,7 +27,7 @@
   #include <AP_UAVCAN/AP_UAVCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
@@ -47,10 +47,11 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#endif // HAL_BUILD_AP_PERIPH
+
+#if AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
-#endif // HAL_BUILD_AP_PERIPH
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
@@ -201,7 +202,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
@@ -250,13 +251,14 @@ SRV_Channels::SRV_Channels(void)
         channels[i].ch_num = i;
     }
 
+#if AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr = &fetteconwire;
+#endif
+
 #ifndef HAL_BUILD_AP_PERIPH
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
-    fetteconwire_ptr = &fetteconwire;
-#endif
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -374,15 +376,15 @@ void SRV_Channels::push()
     // give robotis library a chance to update
     robotis_ptr->update();
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
-    fetteconwire_ptr->update();
-#endif
-
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
 #endif // HAL_BUILD_AP_PERIPH
+
+#if AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr->update();
+#endif
 
 #if HAL_CANMANAGER_ENABLED
     // push outputs to CAN
@@ -399,7 +401,7 @@ void SRV_Channels::push()
             }
             case AP_CANManager::Driver_Type_KDECAN: {
 // To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                 AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
                 if (ap_kdecan == nullptr) {
                     continue;

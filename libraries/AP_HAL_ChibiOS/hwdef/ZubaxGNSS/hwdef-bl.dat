@@ -18,8 +18,6 @@ define HAL_BOARD_AP_PERIPH_ZUBAXGNSS
 
 define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ZubaxGNSS"
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 # crystal frequency
 OSCILLATOR_HZ 16000000
@@ -31,8 +29,6 @@ FLASH_SIZE_KB 256
 # reserve space for params
 FLASH_RESERVE_END_KB 2
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # USART3 for debug
 #STDOUT_SERIAL SD3
@@ -84,18 +80,12 @@ define HAL_NO_RCIN_THREAD
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
 
-define HAL_USE_RTC FALSE
-define DISABLE_SERIAL_ESC_COMM TRUE
-define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
-define PERIPH_FW TRUE
 MAIN_STACK 0x100
 PROCESS_STACK 0x600
 define HAL_DISABLE_LOOP_DELAY
-
-define HAL_NO_ROMFS_SUPPORT
 
 define HAL_UART_MIN_TX_SIZE 256
 define HAL_UART_MIN_RX_SIZE 128
@@ -107,9 +97,6 @@ define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
-define HAL_USE_EMPTY_STORAGE 1
-
 define HAL_DEVICE_THREAD_STACK 768
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 0
@@ -119,8 +106,6 @@ PA2 USART2_TX USART2 SPEED_HIGH NODMA
 PA3 USART2_RX USART2 SPEED_HIGH NODMA
 
 SERIAL_ORDER
-
-define HAL_STORAGE_SIZE 800
 
 # Add CS pins to ensure they are high in bootloader
 PA15 BARO_CS CS

@@ -351,6 +351,7 @@ public:
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence
+        k_param_acro_yaw_rate,
     };
 
     AP_Int16 format_version;
@@ -420,6 +421,7 @@ public:
     AP_Int16 alt_offset;
     AP_Int16 acro_roll_rate;
     AP_Int16 acro_pitch_rate;
+    AP_Int16 acro_yaw_rate;
     AP_Int8  acro_locking;
 
     // Misc
@@ -439,7 +441,7 @@ public:
     AP_Int8 flap_2_percent;
     AP_Int8 flap_2_speed;
     AP_Int8 takeoff_flap_percent;  
-    AP_Int8 stick_mixing;
+    AP_Enum<StickMixing> stick_mixing;
     AP_Float takeoff_throttle_min_speed;
     AP_Float takeoff_throttle_min_accel;
     AP_Int8 takeoff_throttle_delay;
@@ -516,9 +518,9 @@ public:
 
     AP_Int32 flight_options;
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     AP_Int8 takeoff_throttle_accel_count;
     AP_Int8 takeoff_timeout;
@@ -537,11 +539,6 @@ public:
     AP_Float fwd_thr_batt_voltage_max;
     AP_Float fwd_thr_batt_voltage_min;
     AP_Int8  fwd_thr_batt_idx;
-
-#if HAL_EFI_ENABLED
-    // EFI Engine Monitor
-    AP_EFI efi;
-#endif
 
 #if OFFBOARD_GUIDED == ENABLED
     // guided yaw heading PID

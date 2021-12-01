@@ -142,8 +142,8 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     AP_GROUPEND
 };
 
-SoaringController::SoaringController(AP_SpdHgtControl &spdHgt, const AP_Vehicle::FixedWing &parms) :
-    _spdHgt(spdHgt),
+SoaringController::SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms) :
+    _tecs(tecs),
     _vario(parms),
     _aparm(parms),
     _throttle_suppressed(true)
@@ -169,7 +169,7 @@ bool SoaringController::suppress_throttle()
         set_throttle_suppressed(true);
 
         // Zero the pitch integrator - the nose is currently raised to climb, we need to go back to glide.
-        _spdHgt.reset_pitch_I();
+        _tecs.reset_pitch_I();
 
         _cruise_start_time_us = AP_HAL::micros64();
 
@@ -411,7 +411,7 @@ void SoaringController::set_throttle_suppressed(bool suppressed)
     _throttle_suppressed = suppressed;
 
     // Let the TECS know.
-    _spdHgt.set_gliding_requested_flag(suppressed);
+    _tecs.set_gliding_requested_flag(suppressed);
 }
 
 bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
@@ -463,7 +463,7 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
 float SoaringController::get_thermalling_radius() const
 {
     // Thermalling radius is controlled by parameter SOAR_THML_BANK and true target airspeed.
-    const float target_aspd = _spdHgt.get_target_airspeed() * AP::ahrs().get_EAS2TAS();
+    const float target_aspd = _tecs.get_target_airspeed() * AP::ahrs().get_EAS2TAS();
     const float radius = (target_aspd*target_aspd) / (GRAVITY_MSS * tanf(thermal_bank*DEG_TO_RAD));
 
     return radius;

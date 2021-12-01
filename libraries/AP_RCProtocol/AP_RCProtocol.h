@@ -21,6 +21,14 @@
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
 
+#ifndef AP_RCPROTOCOL_FASTSBUS_ENABLED
+  #ifdef IOMCU_FW
+    #define AP_RCPROTOCOL_FASTSBUS_ENABLED 0
+  #else
+    #define AP_RCPROTOCOL_FASTSBUS_ENABLED 1
+  #endif
+#endif
+
 class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
@@ -30,18 +38,21 @@ public:
     friend class AP_RCProtocol_Backend;
 
     enum rcprotocol_t {
-        PPM = 0,
-        IBUS,
-        SBUS,
-        SBUS_NI,
-        DSM,
-        SUMD,
-        SRXL,
-        SRXL2,
-        CRSF,
-        ST24,
-        FPORT,
-        FPORT2,
+        PPM        =  0,
+        IBUS       =  1,
+        SBUS       =  2,
+        SBUS_NI    =  3,
+        DSM        =  4,
+        SUMD       =  5,
+        SRXL       =  6,
+        SRXL2      =  7,
+        CRSF       =  8,
+        ST24       =  9,
+        FPORT      = 10,
+        FPORT2     = 11,
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+        FASTSBUS   = 12,
+#endif
         NONE    //last enum always is None
     };
     void init();
@@ -62,7 +73,27 @@ public:
 
     // for protocols without strong CRCs we require 3 good frames to lock on
     bool requires_3_frames(enum rcprotocol_t p) {
-        return (p == DSM || p == SBUS || p == SBUS_NI || p == PPM || p == FPORT || p == FPORT2);
+        switch (p) {
+        case DSM:
+#if AP_RCPROTOCOL_FASTSBUS_ENABLED
+        case FASTSBUS:
+#endif
+        case SBUS:
+        case SBUS_NI:
+        case PPM:
+        case FPORT:
+        case FPORT2:
+            return true;
+        case IBUS:
+        case SUMD:
+        case SRXL:
+        case SRXL2:
+        case CRSF:
+        case ST24:
+        case NONE:
+            return false;
+        }
+        return false;
     }
 
     uint8_t num_channels();
@@ -94,6 +125,16 @@ public:
     }
 #endif
 
+    class SerialConfig {
+    public:
+        void apply_to_uart(AP_HAL::UARTDriver *uart) const;
+
+        uint32_t baud;
+        uint8_t parity;
+        uint8_t stop_bits;
+        bool invert_rx;
+    };
+
 private:
     void check_added_uart(void);
 
@@ -108,20 +149,12 @@ private:
     uint32_t _last_input_ms;
     bool _valid_serial_prot;
 
-    enum config_phase {
-        CONFIG_115200_8N1 = 0,
-        CONFIG_115200_8N1I = 1,
-        CONFIG_100000_8E2I = 2,
-        CONFIG_420000_8N1 = 3,
-    };
-
     // optional additional uart
     struct {
         AP_HAL::UARTDriver *uart;
-        uint32_t baudrate;
         bool opened;
-        uint32_t last_baud_change_ms;
-        enum config_phase phase;
+        uint32_t last_config_change_ms;
+        uint8_t config_num;
     } added;
 
     // allowed RC protocols mask (first bit means "all")

@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Landing/AP_Landing.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -517,6 +518,18 @@ void AP_TECS::_update_height_demand(void)
         _flare_counter = 0;
     }
 
+    // Don't allow height demand to get too far ahead of the vehicles current height
+    // if vehicle is unable to follow the demanded climb or descent
+    const bool max_climb_condition = (_pitch_dem_unc > _PITCHmaxf || _thr_clip_status == ThrClipStatus::MAX) &&
+                                     !(_flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF || _flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
+    const bool max_descent_condition = _pitch_dem_unc < _PITCHminf || _thr_clip_status == ThrClipStatus::MIN;
+    if (max_climb_condition && _hgt_dem > _hgt_dem_prev) {
+        _hgt_dem = _hgt_dem_prev;
+    } else if (max_descent_condition && _hgt_dem < _hgt_dem_prev) {
+        _hgt_dem = _hgt_dem_prev;
+    }
+    _hgt_dem_prev = _hgt_dem;
+
     // for landing approach we will predict ahead by the time constant
     // plus the lag produced by the first order filter. This avoids a
     // lagged height demand while constantly descending which causes
@@ -669,8 +682,16 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         }
         _throttle_dem = (_STE_error + STEdot_error * throttle_damp) * K_STE2Thr + ff_throttle;
 
-        // Constrain throttle demand
-        _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
+        // Constrain throttle demand and record clipping
+        if (_throttle_dem > _THRmaxf) {
+            _thr_clip_status = ThrClipStatus::MAX;
+            _throttle_dem = _THRmaxf;
+        } else if (_throttle_dem < _THRminf) {
+            _thr_clip_status = ThrClipStatus::MIN;
+            _throttle_dem = _THRminf;
+        } else {
+            _thr_clip_status = ThrClipStatus::NONE;
+        }
 
         float THRminf_clipped_to_zero = constrain_float(_THRminf, 0, _THRmaxf);
 
@@ -720,8 +741,14 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _throttle_dem = _throttle_dem + _integTHR_state;
     }
 
-    // Constrain throttle demand
-    _throttle_dem = constrain_float(_throttle_dem, _THRminf, _THRmaxf);
+    // Constrain throttle demand and record clip status
+    if (_throttle_dem > _THRmaxf) {
+        _thr_clip_status = ThrClipStatus::MAX;
+        _throttle_dem = _THRmaxf;
+    } else if (_throttle_dem < _THRminf) {
+        _thr_clip_status = ThrClipStatus::MIN;
+        _throttle_dem = _THRminf;
+    }
 }
 
 float AP_TECS::_get_i_gain(void)
@@ -1221,15 +1248,19 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // @Field: PErr: difference between estimated potential energy and desired potential energy
     // @Field: EDelta: current error in speed/balance weighting
     // @Field: LF: aerodynamic load factor
-    AP::logger().WriteStreaming("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF",
-                       "s------",
-                       "F------",
-                       "Qffffff",
+    // @Field: hdem1: demanded height input
+    // @Field: hdem2: rate-limited height demand
+    AP::logger().WriteStreaming("TEC2", "TimeUS,pmax,pmin,KErr,PErr,EDelta,LF,hdem1,hdem2",
+                       "s------mm",
+                       "F--------",
+                       "Qffffffff",
                        now,
                        (double)degrees(_PITCHmaxf),
                        (double)degrees(_PITCHminf),
                        (double)logging.SKE_error,
                        (double)logging.SPE_error,
                        (double)logging.SEB_delta,
-                       (double)load_factor);
+                       (double)load_factor,
+                       (double)hgt_dem_cm*0.01,
+                       (double)_hgt_dem);
 }

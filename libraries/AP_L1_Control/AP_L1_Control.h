@@ -17,14 +17,14 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
+#include <AP_TECS/AP_TECS.h>
 #include <AP_Common/Location.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_SpdHgtControl *spdHgtControl)
+    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs)
         : _ahrs(ahrs)
-        , _spdHgtControl(spdHgtControl)
+        , _tecs(tecs)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -81,7 +81,7 @@ private:
     AP_AHRS &_ahrs;
 
     // pointer to the SpdHgtControl object
-    const AP_SpdHgtControl *_spdHgtControl;
+    const AP_TECS *_tecs;
 
     // lateral acceration in m/s required to fly to the
     // L1 reference point (+ve to right)

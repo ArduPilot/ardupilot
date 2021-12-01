@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: DIR_V_MIN
     // @DisplayName: Wind vane voltage minimum
-    // @Description: Minimum voltage supplied by analog wind vane
+    // @Description: Minimum voltage supplied by analog wind vane. When using pin 103, the maximum value of the parameter is 3.3V.
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0
@@ -55,7 +55,7 @@ const AP_Param::GroupInfo AP_WindVane::var_info[] = {
 
     // @Param: DIR_V_MAX
     // @DisplayName: Wind vane voltage maximum
-    // @Description: Maximum voltage supplied by analog wind vane
+    // @Description: Maximum voltage supplied by analog wind vane. When using pin 103, the maximum value of the parameter is 3.3V.
     // @Units: V
     // @Increment: 0.01
     // @Range: 0 5.0

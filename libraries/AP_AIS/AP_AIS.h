@@ -123,9 +123,6 @@ private:
     // decode each term
     bool decode_latest_term() WARN_IF_UNUSED;
 
-    // convert from char to hex value for checksum
-    int16_t char_to_hex(char a);
-
     // varables for decoding NMEA sentence
     char _term[AIVDM_PAYLOAD_SIZE]; // buffer for the current term within the current sentence
     uint8_t _term_offset;           // offset within the _term buffer where the next character should be placed

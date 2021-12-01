@@ -36,6 +36,7 @@ enum failsafe_action_short {
     FS_ACTION_SHORT_CIRCLE = 1,
     FS_ACTION_SHORT_FBWA = 2,
     FS_ACTION_SHORT_DISABLED = 3,
+    FS_ACTION_SHORT_FBWB = 4,
 };
 
 enum failsafe_action_long {
@@ -46,11 +47,11 @@ enum failsafe_action_long {
 };
 
 // type of stick mixing enabled
-enum StickMixing {
-    STICK_MIXING_DISABLED = 0,
-    STICK_MIXING_FBW      = 1,
-    STICK_MIXING_DIRECT   = 2,
-    STICK_MIXING_VTOL_YAW = 3,
+enum class StickMixing {
+    NONE     = 0,
+    FBW      = 1,
+    DIRECT   = 2,
+    VTOL_YAW = 3,
 };
 
 enum ChannelMixing {
@@ -164,6 +165,7 @@ enum FlightOptions {
     GCS_REMOVE_TRIM_PITCH_CD = (1 << 8),
     OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
     CENTER_THROTTLE_TRIM = (1<<10),
+    DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
 };
 
 enum CrowFlapOptions {

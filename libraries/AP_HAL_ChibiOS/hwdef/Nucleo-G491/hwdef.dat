@@ -7,7 +7,7 @@ MCU STM32G491 STM32G491xx
 FLASH_RESERVE_START_KB 30
 
 # store parameters in pages 13 and 14
-define STORAGE_FLASH_PAGE 13
+STORAGE_FLASH_PAGE 13
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
@@ -51,8 +51,6 @@ IMU Invensense I2C:0:0x69 ROTATION_NONE
 
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
-
-define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 2048
 

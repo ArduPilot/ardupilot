@@ -33,10 +33,7 @@
 #define APM_BUILD_Blimp      12
 #define APM_BUILD_Heli       13
 
-#ifndef APM_BUILD_DIRECTORY
-#define APM_BUILD_DIRECTORY APM_BUILD_UNKNOWN
-#endif
-
+#ifdef APM_BUILD_DIRECTORY
 /*
   using this macro catches cases where we try to check vehicle type on
   build systems that don't support it
@@ -46,4 +43,9 @@
 /*
   Copter and heli share a lot of code. This macro makes it easier to check for both
 */
-#define APM_BUILD_COPTER_OR_HELI() (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Heli))
+#define APM_BUILD_COPTER_OR_HELI (APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Heli))
+
+#else 
+#define APM_BUILD_TYPE(type) @Invalid_use_of_APM_BUILD_TYPE
+#define APM_BUILD_COPTER_OR_HELI @Invalid_use_of_APM_BUILD_COPTER_OR_HELI
+#endif

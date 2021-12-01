@@ -804,15 +804,4 @@ bool AP_AIS::decode_latest_term()
     return false;
 }
 
-// return the numeric value of an ascii hex character
-int16_t AP_AIS::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
-}
-
 #endif  // HAL_AIS_ENABLED

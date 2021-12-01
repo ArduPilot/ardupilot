@@ -62,7 +62,6 @@
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_SpdHgtControl/AP_SpdHgtControl.h>
 #include <AP_TECS/AP_TECS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
@@ -81,7 +80,6 @@
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_ICEngine/AP_ICEngine.h>
-#include <AP_EFI/AP_EFI.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
@@ -106,7 +104,7 @@
 #include "defines.h"
 #include "mode.h"
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -136,6 +134,8 @@ public:
     friend class RC_Channels_Plane;
     friend class Tailsitter;
     friend class Tiltrotor;
+    friend class SLT_Transition;
+    friend class Tailsitter_Transition;
 
     friend class Mode;
     friend class ModeCircle;
@@ -235,9 +235,6 @@ private:
 
     // selected navigation controller
     AP_Navigation *nav_controller = &L1_controller;
-
-    // selected navigation controller
-    AP_SpdHgtControl *SpdHgt_Controller = &TECS_controller;
 
     // Camera
 #if CAMERA == ENABLED
@@ -520,6 +517,19 @@ private:
         float terrain_correction;
     } auto_state;
 
+#if AP_SCRIPTING_ENABLED
+    // support for scripting nav commands, with verify
+    struct {
+        uint16_t id;
+        float roll_rate_dps;
+        float pitch_rate_dps;
+        float yaw_rate_dps;
+        float throttle_pct;
+        uint32_t start_ms;
+        bool done;
+    } nav_scripting;
+#endif
+
     struct {
         // roll pitch yaw commanded from external controller in centidegrees
         Vector3l forced_rpy_cd;
@@ -601,6 +611,9 @@ private:
     // time since started flying in any mode in milliseconds
     uint32_t started_flying_ms;
 
+    // ground mode is true when disarmed and not flying
+    bool ground_mode;
+
     // Navigation control variables
     // The instantaneous desired bank angle.  Hundredths of a degree
     int32_t nav_roll_cd;
@@ -631,7 +644,7 @@ private:
     AP_Terrain terrain{mission};
 #endif
 
-    AP_Landing landing{mission,ahrs,SpdHgt_Controller,nav_controller,aparm,
+    AP_Landing landing{mission,ahrs,&TECS_controller,nav_controller,aparm,
             FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
             FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
             FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),
@@ -683,7 +696,6 @@ private:
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
     } loiter;
-
 
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
@@ -929,6 +941,12 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
+#if AP_SCRIPTING_ENABLED
+    // nav scripting support
+    void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
+    bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
+#endif
+
     // commands.cpp
     void set_guided_WP(void);
     void update_home();
@@ -1100,6 +1118,9 @@ private:
     void update_soaring();
 #endif
 
+    // RC_Channel.cpp
+    bool emergency_landing;
+
     // vehicle specific waypoint info helpers
     bool get_wp_distance_m(float &distance) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
@@ -1112,6 +1133,17 @@ private:
     bool have_reverse_thrust(void) const;
     float get_throttle_input(bool no_deadzone=false) const;
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
+
+#if AP_SCRIPTING_ENABLED
+    // support for NAV_SCRIPT_TIME mission command
+    bool nav_scripting_active(void) const;
+    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
+    void nav_script_time_done(uint16_t id) override;
+
+    // command throttle percentage and roll, pitch, yaw target
+    // rates. For use with scripting controllers
+    bool set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) override;
+#endif
 
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,
@@ -1170,6 +1202,7 @@ private:
     };
 
     FlareMode flare_mode;
+    bool throttle_at_zero(void) const;
 
     // expo handling
     float roll_in_expo(bool use_dz) const;
@@ -1178,10 +1211,10 @@ private:
 
 public:
     void failsafe_check(void);
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
 };
 

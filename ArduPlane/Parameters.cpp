@@ -108,7 +108,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: When enabled, this adds user stick input to the control surfaces in auto modes, allowing the user to have some degree of flight control without changing modes.  There are two types of stick mixing available. If you set STICK_MIXING to 1 then it will use "fly by wire" mixing, which controls the roll and pitch in the same way that the FBWA mode does. This is the safest option if you usually fly ArduPlane in FBWA or FBWB mode. If you set STICK_MIXING to 2 then it will enable direct mixing mode, which is what the STABILIZE mode uses. That will allow for much more extreme maneuvers while in AUTO mode. If you set STICK_MIXING to 3 then it will apply to the yaw while in quadplane modes only, such as while doing an automatic VTOL takeoff or landing.
     // @Values: 0:Disabled,1:FBWMixing,2:DirectMixing,3:VTOL Yaw only
     // @User: Advanced
-    GSCALAR(stick_mixing,           "STICK_MIXING",   STICK_MIXING_FBW),
+    GSCALAR(stick_mixing,           "STICK_MIXING",   uint8_t(StickMixing::FBW)),
 
     // @Param: TKOFF_THR_MINSPD
     // @DisplayName: Takeoff throttle min speed
@@ -405,8 +405,8 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: FS_SHORT_ACTN
     // @DisplayName: Short failsafe action
-    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe event can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause a change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, and a change to FBWA mode if FS_SHORT_ACTN is 2. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1 and will change to FBWA mode if set to 2. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
-    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA,3:Disable
+    // @Description: The action to take on a short (FS_SHORT_TIMEOUT) failsafe event. A short failsafe event can be triggered either by loss of RC control (see THR_FS_VALUE) or by loss of GCS control (see FS_GCS_ENABL). If in CIRCLE or RTL mode this parameter is ignored. A short failsafe event in stabilization and manual modes will cause a change to CIRCLE mode if FS_SHORT_ACTN is 0 or 1, a change to FBWA mode with zero throttle if FS_SHORT_ACTN is 2, and a change to FBWB mode if FS_SHORT_ACTN is 4. In all other modes (AUTO, GUIDED and LOITER) a short failsafe event will cause no mode change if FS_SHORT_ACTN is set to 0, will cause a change to CIRCLE mode if set to 1, will change to FBWA mode with zero throttle if set to 2, or will change to FBWB if set to 4. Please see the documentation for FS_LONG_ACTN for the behaviour after FS_LONG_TIMEOUT seconds of failsafe.
+    // @Values: 0:CIRCLE/no change(if already in AUTO|GUIDED|LOITER),1:CIRCLE,2:FBWA at zero throttle,3:Disable,4:FBWB
     // @User: Standard
     GSCALAR(fs_action_short,        "FS_SHORT_ACTN",  FS_ACTION_SHORT_BESTGUESS),
 
@@ -544,6 +544,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(acro_pitch_rate,          "ACRO_PITCH_RATE",  180),
 
+    // @Param: ACRO_YAW_RATE
+    // @DisplayName: ACRO mode yaw rate
+    // @Description: The maximum yaw rate at full stick deflection in ACRO mode. If this is zero then rudder is directly controlled by rudder stick input. This option is only available if you also set YAW_RATE_ENABLE to 1.
+    // @Units: deg/s
+    // @Range: 0 500
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(acro_yaw_rate,            "ACRO_YAW_RATE",    0),
+    
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
     // @Description: Enable attitude locking when sticks are released
@@ -811,9 +820,9 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
     GOBJECT(pitchController,        "PTCH",  AP_PitchController),
 
-    // @Group: YAW2SRV_
+    // @Group: YAW
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
+    GOBJECT(yawController,          "YAW",   AP_YawController),
 
     // @Group: STEER2SRV_
     // @Path: ../libraries/APM_Control/AP_SteerController.cpp
@@ -821,9 +830,9 @@ const AP_Param::Info Plane::var_info[] = {
 
 	// variables not in the g class which contain EEPROM saved variables
 
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,                "COMPASS_",     Compass),
+    GOBJECT(compass,                "COMPASS",     Compass),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -1075,11 +1084,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor., 7:EnableDefaultAirspeed for takeoff, 8: Remove the TRIM_PITCH_CD on the GCS horizon, 9: Remove the TRIM_PITCH_CD on the OSD horizon, 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor., 7:EnableDefaultAirspeed for takeoff, 8: Remove the TRIM_PITCH_CD on the GCS horizon, 9: Remove the TRIM_PITCH_CD on the OSD horizon, 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL, 11:Disable suppression of fixed wing rate gains in ground mode
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // @Group: SCR_
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     AP_SUBGROUPINFO(scripting, "SCR_", 14, ParametersG2, AP_Scripting),
@@ -1142,11 +1151,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DSPOILER_AILMTCH", 21, ParametersG2, crow_flap_aileron_matching, 100),
 
-#if HAL_EFI_ENABLED
-    // @Group: EFI
-    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
-    AP_SUBGROUPINFO(efi, "EFI", 22, ParametersG2, AP_EFI),
-#endif
+
+    // 22 was EFI
 
     // @Param: FWD_BAT_VOLT_MAX
     // @DisplayName: Forward throttle battery voltage compensation maximum voltage
@@ -1468,6 +1474,22 @@ void Plane::load_parameters(void)
 #endif
 
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
+
+
+    // PARAMETER_CONVERSION - Added: Oct-2021
+#if HAL_EFI_ENABLED
+    {
+        // Find G2's Top Level Key
+        AP_Param::ConversionInfo info;
+        if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+            return;
+        }
+
+        const uint16_t old_index = 22;       // Old parameter index in g2
+        const uint16_t old_top_element = 86; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(info.old_key, &efi, efi.var_info, old_index, old_top_element, false);
+    }
+#endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

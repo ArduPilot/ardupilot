@@ -178,6 +178,16 @@ private:
     // mark reply received. should be called whenever a message is received regardless of whether we are actually waiting for a reply
     void set_reply_received();
 
+    // send a message to the motor with the specified message contents
+    // msg_contents should not include the header, footer or CRC
+    // returns true on success
+    bool send_message(const uint8_t msg_contents[], uint8_t num_bytes);
+
+    // add a byte to a message buffer including adding the escape character (0xAE) if necessary
+    // this should only be used when adding the contents to the buffer, not the header and footer
+    // num_bytes is updated to the next free byte
+    bool add_byte_to_message(uint8_t byte_to_add, uint8_t msg_buff[], uint8_t msg_buff_size, uint8_t &num_bytes) const;
+
     // send a motor speed command as a value from -1000 to +1000
     // value is taken directly from SRV_Channel
     void send_motor_speed_cmd();
@@ -229,6 +239,7 @@ private:
 
     // message parsing members
     ParseState _parse_state;        // current state of parsing
+    bool _parse_escape_received;    // true if the escape character has been received so we must XOR the next byte
     uint32_t _parse_error_count;    // total number of parsing errors (for reporting)
     uint32_t _parse_success_count;  // number of messages successfully parsed (for reporting)
     uint8_t _received_buff[TORQEEDO_MESSAGE_LEN_MAX];   // characters received

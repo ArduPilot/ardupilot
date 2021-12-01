@@ -9,13 +9,9 @@ define SMPS_PWR
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
-define PERIPH_FW TRUE
-define HAL_BUILD_AP_PERIPH
 
 FLASH_SIZE_KB 2048
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
@@ -80,5 +76,4 @@ define HAL_USE_ADC FALSE
 define STM32_ADC_USE_ADC1 FALSE
 define HAL_DISABLE_ADC_DRIVER TRUE
 
-define HAL_CAN_DEFAULT_NODE_ID 0
 define HAL_GCS_ENABLED 0

@@ -119,16 +119,28 @@ PB8 UART5_RX UART5 NODMA
 PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
 PC6 USART6_TX USART6 NODMA
 
-# as an alternative config setup the RX6 pin as a uart. This allows
+# as an alternative config setup the RX6 pin as an uart. This allows
 # for bi-directional UART based receiver protocols such as FPort
 # without any extra hardware
 PC7 USART6_RX USART6 NODMA ALT(1)
+PC7 USART6_RX USART6 NODMA ALT(3)
 
 # UART7 (telem1)
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
 PE10 UART7_CTS UART7
 PE9  UART7_RTS UART7
+
+# telem1-UART7 RTS and CTS as GPIO in alternative configs
+PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(2) # Cts7 pin as GPIO 1 (set RELAY_PINx = 1 to use it)
+PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(2) # Rts7 pin as GPIO 2 (set RELAY_PINx = 2 to use it)
+PE10 EXTERN_GPIO1 OUTPUT GPIO(1) ALT(3) # Cts7 pin as GPIO 1 (set RELAY_PINx = 1 to use it)
+PE9  EXTERN_GPIO2 OUTPUT GPIO(2) ALT(3) # Rts7 pin as GPIO 2 (set RELAY_PINx = 2 to use it)
+
+# alternative configs:
+# 1: bidirectional receiver protocol on RX6 pin
+# 2: extra GPIOs instead of Cts/Rts on UART7_CTS
+# 3: both 1 and 2 combined, GPIO numbers differ to avoid "Duplicate GPIO value" error while generating hwdef.h
 
 # UART8 (spare)
 PE0 UART8_RX UART8 NODMA
@@ -168,7 +180,7 @@ PE15 PINIO2 OUTPUT GPIO(82) LOW
 DMA_PRIORITY S*
 
 define HAL_STORAGE_SIZE 16384
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # spi devices
 SPIDEV mpu6000  SPI1 DEVID1 IMU1_CS MODE3  1*MHZ  4*MHZ

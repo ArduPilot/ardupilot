@@ -1,5 +1,5 @@
 # setup the heater temperature to 45 degree
-BRD_IMU_TARGTEMP 45
+BRD_HEAT_TARG 45
 
 # setup serial2 port defaults for ESP8266
 define HAL_SERIAL2_PROTOCOL SerialProtocol_MAVLink2

@@ -186,7 +186,7 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     // load default values from var_info table
     AP_Param::setup_object_defaults(this, var_info);
 
-#if APM_BUILD_COPTER_OR_HELI() || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // Copter and Sub force the use of EKF
     _ekf_flags |= AP_AHRS::FLAG_ALWAYS_USE_EKF;
 #endif
@@ -821,7 +821,8 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
 {
     bool ret = false;
     if (airspeed_sensor_enabled()) {
-        airspeed_ret = AP::airspeed()->get_airspeed();
+        uint8_t idx = get_active_airspeed_index();
+        airspeed_ret = AP::airspeed()->get_airspeed(idx);
 
         if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
             // constrain the airspeed by the ground speed
@@ -2324,52 +2325,56 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 #if HAL_NAVEKF2_AVAILABLE
     // check primary vs ekf2
-    for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
-        Quaternion ekf2_quat;
-        EKF2.getQuaternionBodyToNED(i, ekf2_quat);
+    if (ekf_type() == EKFType::TWO || active_EKF_type() == EKFType::TWO) {
+        for (uint8_t i = 0; i < EKF2.activeCores(); i++) {
+            Quaternion ekf2_quat;
+            EKF2.getQuaternionBodyToNED(i, ekf2_quat);
 
-        // check roll and pitch difference
-        const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf2_quat);
-        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
-            return false;
-        }
+            // check roll and pitch difference
+            const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf2_quat);
+            if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+                return false;
+            }
 
-        // check yaw difference
-        Vector3f angle_diff;
-        primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
-        const float yaw_diff = fabsf(angle_diff.z);
-        if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
-            return false;
+            // check yaw difference
+            Vector3f angle_diff;
+            primary_quat.angular_difference(ekf2_quat).to_axis_angle(angle_diff);
+            const float yaw_diff = fabsf(angle_diff.z);
+            if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF2 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                return false;
+            }
         }
+        total_ekf_cores = EKF2.activeCores();
     }
-    total_ekf_cores = EKF2.activeCores();
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     // check primary vs ekf3
-    for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
-        Quaternion ekf3_quat;
-        EKF3.getQuaternionBodyToNED(i, ekf3_quat);
+    if (ekf_type() == EKFType::THREE || active_EKF_type() == EKFType::THREE) {
+        for (uint8_t i = 0; i < EKF3.activeCores(); i++) {
+            Quaternion ekf3_quat;
+            EKF3.getQuaternionBodyToNED(i, ekf3_quat);
 
-        // check roll and pitch difference
-        const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf3_quat);
-        if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
-            return false;
-        }
+            // check roll and pitch difference
+            const float rp_diff_rad = primary_quat.roll_pitch_difference(ekf3_quat);
+            if (rp_diff_rad > ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Roll/Pitch inconsistent by %d deg", (int)degrees(rp_diff_rad));
+                return false;
+            }
 
-        // check yaw difference
-        Vector3f angle_diff;
-        primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
-        const float yaw_diff = fabsf(angle_diff.z);
-        if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
-            return false;
+            // check yaw difference
+            Vector3f angle_diff;
+            primary_quat.angular_difference(ekf3_quat).to_axis_angle(angle_diff);
+            const float yaw_diff = fabsf(angle_diff.z);
+            if (check_yaw && (yaw_diff > ATTITUDE_CHECK_THRESH_YAW_RAD)) {
+                hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 Yaw inconsistent by %d deg", (int)degrees(yaw_diff));
+                return false;
+            }
         }
+        total_ekf_cores += EKF3.activeCores();
     }
-    total_ekf_cores += EKF3.activeCores();
 #endif
 
     // check primary vs dcm
@@ -2881,18 +2886,22 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
 //get the index of the active airspeed sensor, wrt the primary core
 uint8_t AP_AHRS::get_active_airspeed_index() const
 {
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr) {
+        return 0;
+    }
+
 // we only have affinity for EKF3 as of now
 #if HAL_NAVEKF3_AVAILABLE
     if (active_EKF_type() == EKFType::THREE) {
-        return EKF3.getActiveAirspeed(get_primary_core_index());   
+        uint8_t ret = EKF3.getActiveAirspeed(get_primary_core_index());
+        if (ret != 255 && airspeed->healthy(ret)) {
+            return ret;
+        }
     }
 #endif
     // for the rest, let the primary airspeed sensor be used
-    const AP_Airspeed * _airspeed = AP::airspeed();
-    if (_airspeed != nullptr) {
-        return _airspeed->get_primary();
-    }
-    return 0;
+    return airspeed->get_primary();
 }
 
 // get the index of the current primary IMU
@@ -3130,6 +3139,31 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 enum Rotation AP_AHRS::get_view_rotation(void) const
 {
     return _view?_view->get_rotation():ROTATION_NONE;
+}
+
+// check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
+const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.get_yawEstimator();
+#endif
+    case EKFType::NONE:
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.get_yawEstimator();
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    case EKFType::SIM:
+#endif
+#if HAL_EXTERNAL_AHRS_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        return nullptr;
+    }
+    // since there is no default case above, this is unreachable
+    return nullptr;
 }
 
 // singleton instance
