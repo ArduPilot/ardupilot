@@ -559,6 +559,8 @@ private:
         struct file_list *head, *tail;
         int fd;
         uint32_t offset;
+        bool fast;
+        uint8_t counter;
         HAL_Semaphore sem;
     } file_content;
     void file_content_update(void);
