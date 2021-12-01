@@ -245,11 +245,6 @@ public:
     ///
     void motor_compensation_type(const uint8_t comp_type);
 
-    /// get the motor compensation value.
-    uint8_t get_motor_compensation_type() const {
-        return _motor_comp_type;
-    }
-
     /// Set the motor compensation factor x/y/z values.
     ///
     /// @param  i                   instance of compass
