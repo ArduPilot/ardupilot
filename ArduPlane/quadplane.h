@@ -195,6 +195,7 @@ private:
 
     // check for quadplane assistance needed
     bool should_assist(float aspeed, bool have_airspeed);
+    void start_alt_assist(float height_above_ground);
 
     // update transition handling
     void update_transition(void);
@@ -298,10 +299,27 @@ private:
     uint32_t angle_error_start_ms;
     AP_Float assist_delay;
 
-    // altitude to trigger assistance
-    AP_Int16 assist_alt;
-    uint32_t alt_error_start_ms;
-    bool in_alt_assist;
+    enum class AltAssistAction {
+        None = 0,
+        ClimbRTL = 1,
+        ClimbGuided = 2,
+        QHover = 3,
+        QLoiter = 4,
+        QLand = 5,
+        QRTL = 6,
+    };
+
+    struct {
+        // altitude to trigger assistance
+        AP_Int16 alt;
+        AP_Int16 alt2;
+        AP_Enum<AltAssistAction> action;
+        uint32_t start_ms;
+        bool in_assist;
+        bool alt2_enabled;
+        bool reached_climb_alt;
+        const float pre_climb_alt = 35;
+    } assist_alt;
 
     // maximum yaw rate in degrees/second
     AP_Float yaw_rate_max;
