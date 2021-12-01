@@ -17,6 +17,7 @@
 #include "hwing_esc.h"
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <canard.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CANIface.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -50,7 +51,7 @@
 #error "Battery MPPT PacketDigital driver requires at least two CAN Ports"
 #endif
 
-
+#include "APM_Config.h"
 #include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -94,6 +95,22 @@ public:
 
     void load_parameters();
     void prepare_reboot();
+    
+    // UserCode.cpp
+    void userhook_init();
+    bool userhook_shouldAcceptTransfer(const CanardInstance* ins,
+                                       uint64_t* out_data_type_signature,
+                                       uint16_t data_type_id,
+                                       CanardTransferType transfer_type,
+                                       uint8_t source_node_id);
+    void userhook_onTransferReceived(CanardInstance* ins,
+                                     CanardRxTransfer* transfer);
+    void userhook_Update();
+    
+    // User variables
+#ifdef USERHOOK_VARIABLES
+#include USERHOOK_VARIABLES
+#endif
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
     void check_for_serial_reboot_cmd(const int8_t serial_index);

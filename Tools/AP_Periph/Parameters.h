@@ -50,6 +50,10 @@ public:
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
         k_param_scripting,
+// User parameters
+#ifdef USERHOOK_PARAMS_ENUM
+#include USERHOOK_PARAMS_ENUM
+#endif
     };
 
     AP_Int16 format_version;
@@ -117,6 +121,11 @@ public:
 
 #if HAL_GCS_ENABLED
     AP_Int16 sysid_this_mav;
+#endif
+
+// User parameters
+#ifdef USERHOOK_PARAMS_VAR
+#include USERHOOK_PARAMS_VAR
 #endif
 
     Parameters() {}

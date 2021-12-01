@@ -117,6 +117,10 @@ void AP_Periph_FW::init()
 
     stm32_watchdog_pat();
 
+#ifdef USERHOOK_INIT
+    USERHOOK_INIT
+#endif
+
 #ifdef HAL_BOARD_AP_PERIPH_ZUBAXGNSS
     // setup remapping register for ZubaxGNSS
     uint32_t mapr = AFIO->MAPR;
@@ -399,6 +403,10 @@ void AP_Periph_FW::update()
 #endif
 
     can_update();
+
+#ifdef USERHOOK_UPDATE
+    USERHOOK_UPDATE
+#endif
 
 #if (defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) && HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY == 8) || defined(HAL_PERIPH_ENABLE_NOTIFY)
     update_rainbow();

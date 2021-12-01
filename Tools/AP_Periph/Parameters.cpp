@@ -352,6 +352,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
+
+
+// User parameters
+#ifdef USERHOOK_PARAMS
+#include USERHOOK_PARAMS
+#endif
     AP_VAREND
 };
 

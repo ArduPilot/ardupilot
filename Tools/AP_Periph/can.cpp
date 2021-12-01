@@ -966,6 +966,10 @@ static void onTransferReceived(CanardInstance* ins,
         break;
 #endif
     }
+    
+#ifdef USERHOOK_TRANSFERRECEIVED
+    periph.userhook_onTransferReceived(ins, transfer);
+#endif
 }
 
 
@@ -1061,7 +1065,15 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
         break;
     }
 
+#ifdef USERHOOK_ACCEPTTRANSFER
+    return periph.userhook_shouldAcceptTransfer(ins, 
+                                                out_data_type_signature,
+                                                data_type_id,
+                                                transfer_type,
+                                                source_node_id);
+#else
     return false;
+#endif
 }
 
 static void cleanup_stale_transactions(uint64_t &timestamp_usec)
