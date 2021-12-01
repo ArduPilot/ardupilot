@@ -5,7 +5,12 @@
 
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AR_Motors/AP_MotorsUGV.h>
+#endif
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#include <AP_Motors/AP_Motors_Class.h>
+#endif
 extern const AP_HAL::HAL& hal;
 
 AP_Compass_Backend::AP_Compass_Backend()
@@ -100,7 +105,16 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
         // per-motor correction is only valid for first compass
         _compass._per_motor.compensate(state.motor_offset, state.params.motor_comp_batt_index);
     } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_THROTTLE) {
-        state.motor_offset = mot * _compass._thr;
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+        AP_MotorsUGV *motors = AP::motors_ugv();
+#else
+        AP_Motors *motors = AP::motors();
+#endif
+        if (motors) {
+            state.motor_offset = mot * fabsf(motors->get_throttle());
+        }
+#endif
     } else if (_compass._motor_comp_type == AP_COMPASS_MOT_COMP_CURRENT) {
         AP_BattMonitor &battery = AP::battery();
         float current;
