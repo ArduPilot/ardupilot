@@ -7,12 +7,15 @@
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Common/AP_Common.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include <uavcan/equipment/power/BatteryInfo.hpp>
 #include <ardupilot/equipment/power/BatteryInfoAux.hpp>
+#include <mppt/Stream.hpp>
+#include <mppt/OutputEnable.hpp>
 
 #define LOG_TAG "BattMon"
 
@@ -20,6 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 UC_REGISTRY_BINDER(BattInfoCb, uavcan::equipment::power::BatteryInfo);
 UC_REGISTRY_BINDER(BattInfoAuxCb, ardupilot::equipment::power::BatteryInfoAux);
+UC_REGISTRY_BINDER(MpptStreamCb, mppt::Stream);
 
 /// Constructor
 AP_BattMonitor_UAVCAN::AP_BattMonitor_UAVCAN(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, BattMonitor_UAVCAN_Type type, AP_BattMonitor_Params &params) :
@@ -55,6 +59,15 @@ void AP_BattMonitor_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
         AP_BoardConfig::allocation_error("UAVCAN BatteryInfoAux subscriber start problem");
         return;
     }
+    
+    uavcan::Subscriber<mppt::Stream, MpptStreamCb> *mppt_stream_listener;
+    mppt_stream_listener = new uavcan::Subscriber<mppt::Stream, MpptStreamCb>(*node);
+    // Backend Msg Handler
+    const int mppt_stream_listener_res = mppt_stream_listener->start(MpptStreamCb(ap_uavcan, &handle_mppt_stream_trampoline));
+    if (mppt_stream_listener_res < 0) {
+        AP_BoardConfig::allocation_error("UAVCAN Mppt::Stream subscriber start problem");
+        return;
+    }
 }
 
 AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t battery_id)
@@ -84,6 +97,8 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
             }
             batmon->_ap_uavcan = ap_uavcan;
             batmon->_node_id = node_id;
+            batmon->_instance = i;
+            batmon->_node = ap_uavcan->get_node();
             batmon->init();
             AP::can().log_text(AP_CANManager::LOG_INFO,
                             LOG_TAG,
@@ -98,22 +113,30 @@ AP_BattMonitor_UAVCAN* AP_BattMonitor_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_u
 
 void AP_BattMonitor_UAVCAN::handle_battery_info(const BattInfoCb &cb)
 {
+    update_interim_state(cb.msg->voltage, cb.msg->current, cb.msg->temperature, cb.msg->state_of_charge_pct); 
+
     WITH_SEMAPHORE(_sem_battmon);
-    _interim_state.voltage = cb.msg->voltage;
-    _interim_state.current_amps = cb.msg->current;
-    _soc = cb.msg->state_of_charge_pct;
     _remaining_capacity_wh = cb.msg->remaining_capacity_wh;
     _full_charge_capacity_wh = cb.msg->full_charge_capacity_wh;
+}
 
-    if (!isnanf(cb.msg->temperature) && cb.msg->temperature > 0) {
+void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const float current, const float temperature_K, const uint8_t soc)
+{
+    WITH_SEMAPHORE(_sem_battmon);
+
+    _interim_state.voltage = voltage;
+    _interim_state.current_amps = current;
+    _soc = soc;
+
+    if (!isnanf(temperature_K) && temperature_K > 0) {
         // Temperature reported from battery in kelvin and stored internally in Celsius.
-        _interim_state.temperature = cb.msg->temperature - C_TO_KELVIN;
+        _interim_state.temperature = temperature_K - C_TO_KELVIN;
         _interim_state.temperature_time = AP_HAL::millis();
     }
 
-    uint32_t tnow = AP_HAL::micros();
+    const uint32_t tnow = AP_HAL::micros();
 
-    if (!_has_battery_info_aux) {
+    if (!_has_battery_info_aux || _mppt.is_detected) {
         uint32_t dt = tnow - _interim_state.last_time_micros;
 
         // update total current drawn since startup
@@ -153,6 +176,30 @@ void AP_BattMonitor_UAVCAN::handle_battery_info_aux(const BattInfoAuxCb &cb)
     _has_battery_info_aux = true;
 }
 
+void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
+{
+    const bool use_input_value = (uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::MPPT_Use_Input_Value)) != 0;
+    const float voltage = use_input_value ? cb.msg->input_voltage : cb.msg->output_voltage;
+    const float current = use_input_value ? cb.msg->input_current : cb.msg->output_current;
+
+    // use an invalid soc so we use the library calculated one
+    const uint8_t soc = 101;
+
+    // convert C to Kelvin
+    const float temperature_K = isnanf(cb.msg->temperature) ? 0 : cb.msg->temperature + C_TO_KELVIN;
+
+    update_interim_state(voltage, current, temperature_K, soc); 
+
+    if (!_mppt.is_detected) {
+        // this is the first time the mppt message has been received
+        // so set powered up state
+        _mppt.is_detected = true;
+        mppt_set_bootup_powered_state();
+    }
+
+    mppt_check_and_report_faults(cb.msg->fault_flags);
+}
+
 void AP_BattMonitor_UAVCAN::handle_battery_info_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BattInfoCb &cb)
 {
     AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, cb.msg->battery_id);
@@ -169,6 +216,15 @@ void AP_BattMonitor_UAVCAN::handle_battery_info_aux_trampoline(AP_UAVCAN* ap_uav
         return;
     }
     driver->handle_battery_info_aux(cb);
+}
+
+void AP_BattMonitor_UAVCAN::handle_mppt_stream_trampoline(AP_UAVCAN* ap_uavcan, uint8_t node_id, const MpptStreamCb &cb)
+{
+    AP_BattMonitor_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id, node_id);
+    if (driver == nullptr) {
+        return;
+    }
+    driver->handle_mppt_stream(cb);
 }
 
 // read - read the voltage and current
@@ -196,12 +252,18 @@ void AP_BattMonitor_UAVCAN::read()
     memcpy(_state.cell_voltages.cells, _interim_state.cell_voltages.cells, sizeof(_state.cell_voltages));
 
     _has_temperature = (AP_HAL::millis() - _state.temperature_time) <= AP_BATT_MONITOR_TIMEOUT;
+
+    // check if MPPT should be powered on/off depending upon arming state
+    if (_mppt.is_detected) {
+        mppt_set_armed_powered_state();
+    }
 }
 
 /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
 bool AP_BattMonitor_UAVCAN::capacity_remaining_pct(uint8_t &percentage) const
 {
     if ((uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::Ignore_UAVCAN_SoC)) ||
+        _mppt.is_detected ||
         _soc > 100) {
         // a UAVCAN battery monitor may not be able to supply a state of charge. If it can't then
         // the user can set the option to use current integration in the backend instead.
@@ -225,6 +287,123 @@ bool AP_BattMonitor_UAVCAN::get_cycle_count(uint16_t &cycles) const
         return true;
     }
     return false;
+}
+
+// request MPPT board to power on/off at boot as specified by BATT_OPTIONS
+void AP_BattMonitor_UAVCAN::mppt_set_bootup_powered_state()
+{
+    const uint32_t options = uint32_t(_params._options.get());
+    const bool on_at_boot = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) != 0;
+    const bool off_at_boot = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) != 0;
+
+    if (on_at_boot) {
+        mppt_set_powered_state(true, true);
+    } else if (off_at_boot) {
+        mppt_set_powered_state(false, true);
+    }
+}
+
+// request MPPT board to power on/off depending upon vehicle arming state as specified by BATT_OPTIONS
+void AP_BattMonitor_UAVCAN::mppt_set_armed_powered_state()
+{
+    // check if vehicle armed state has changed
+    const bool vehicle_armed = hal.util->get_soft_armed();
+    if (vehicle_armed == _mppt.vehicle_armed_last) {
+        return;
+    }
+    _mppt.vehicle_armed_last = vehicle_armed;
+
+    // check options for arming state change events
+    const uint32_t options = uint32_t(_params._options.get());
+    const bool power_on_at_arm = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) != 0;
+    const bool power_off_at_disarm = (options & uint32_t(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) != 0;
+
+    if (vehicle_armed && power_on_at_arm) {
+        mppt_set_powered_state(true, false);
+    } else if (!vehicle_armed && power_off_at_disarm) {
+        mppt_set_powered_state(false, false);
+    }
+}
+
+// request MPPT board to power on or off
+// power_on should be true to power on the MPPT, false to power off
+// force should be true to force sending the state change request to the MPPT
+void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
+{
+    if (_ap_uavcan == nullptr || _node == nullptr || !_mppt.is_detected) {
+        return;
+    }
+
+    // return immediately if already desired state and not forced
+    if ((_mppt.powered_state == power_on) && !force) {
+        return;
+    }
+    _mppt.powered_state = power_on;
+    _mppt.powered_state_changed = true;
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: powering %s", (unsigned)_instance+1, _mppt.powered_state ? "ON" : "OFF");
+
+    mppt::OutputEnable::Request request;
+    request.enable = _mppt.powered_state;
+    request.disable = !request.enable;
+
+    uavcan::ServiceClient<mppt::OutputEnable> client(*_node);
+    client.setCallback([](const uavcan::ServiceCallResult<mppt::OutputEnable>& handle_mppt_enable_output_response){});
+    client.call(_node_id, request);
+}
+
+// report changes in MPPT faults
+void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(const uint8_t flags)
+{
+    if (_mppt.fault_flags == flags) {
+        // only report flags when they change
+        return;
+    }
+    _mppt.fault_flags = flags;
+
+    for (uint8_t fault_bit=0x01; fault_bit <= 0x08; fault_bit <<= 1) {
+        // this loop is to generate multiple messages if there are multiple concurrent faults, but also run once if there are no faults
+        if ((fault_bit & flags) != 0 || flags == 0) {
+            const MPPT_FaultFlags err = (flags == 0) ? MPPT_FaultFlags::NONE : (MPPT_FaultFlags)fault_bit;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: Fault: %s", (unsigned)_instance+1, mppt_fault_string(err));
+        }
+        if (flags == 0) {
+            return;
+        }
+    }
+}
+
+// returns string description of MPPT fault bit. Only handles single bit faults
+const char* AP_BattMonitor_UAVCAN::mppt_fault_string(const MPPT_FaultFlags fault)
+{
+    switch (fault) {
+        case MPPT_FaultFlags::NONE:             return "None";
+        case MPPT_FaultFlags::OVER_VOLTAGE:     return "Over-Voltage";
+        case MPPT_FaultFlags::UNDER_VOLTAGE:    return "Under-Voltage";
+        case MPPT_FaultFlags::OVER_CURRENT:     return "Over-Current";
+        case MPPT_FaultFlags::OVER_TEMPERATURE: return "Over-Temp";
+    }
+    return "Unknown";
+}
+
+// return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
+uint32_t AP_BattMonitor_UAVCAN::get_mavlink_fault_bitmask() const
+{
+    // return immediately if not mppt or no faults
+    if (!_mppt.is_detected || (_mppt.fault_flags == 0)) {
+        return 0;
+    }
+
+    // convert mppt fault bitmask to mavlink fault bitmask
+    uint32_t mav_fault_bitmask = 0;
+    if ((_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_VOLTAGE) || (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::UNDER_VOLTAGE)) {
+        mav_fault_bitmask |= MAV_BATTERY_FAULT_INCOMPATIBLE_VOLTAGE;
+    }
+    if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_CURRENT) {
+        mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_CURRENT;
+    }
+    if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_TEMPERATURE) {
+        mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
 }
 
 #endif
