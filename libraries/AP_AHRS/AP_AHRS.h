@@ -425,6 +425,11 @@ public:
     void Log_Write_Home_And_Origin();
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
+
+    enum class LogOriginType {
+        ekf_origin = 0,
+        ahrs_home = 1
+    };
     void Write_Origin(uint8_t origin_type, const Location &loc) const; 
     void Write_POS(void) const;
 
