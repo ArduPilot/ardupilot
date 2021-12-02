@@ -407,6 +407,9 @@ public:
     // vehicle start loiter
     bool start_loiter();
 
+    // start stopping
+    void start_stop();
+
     // guided limits
     void limit_set(uint32_t timeout_ms, float horiz_max);
     void limit_clear();
@@ -420,7 +423,8 @@ protected:
         Guided_HeadingAndSpeed,
         Guided_TurnRateAndSpeed,
         Guided_Loiter,
-        Guided_SteeringAndThrottle
+        Guided_SteeringAndThrottle,
+        Guided_Stop
     };
 
     bool _enter() override;
