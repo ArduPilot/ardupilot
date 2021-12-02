@@ -430,7 +430,7 @@ public:
         ekf_origin = 0,
         ahrs_home = 1
     };
-    void Write_Origin(uint8_t origin_type, const Location &loc) const; 
+    void Write_Origin(LogOriginType origin_type, const Location &loc) const; 
     void Write_POS(void) const;
 
     // return a smoothed and corrected gyro vector in radians/second
