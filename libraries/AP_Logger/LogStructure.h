@@ -695,6 +695,15 @@ struct PACKED log_File {
     char data[64];
 };
 
+struct PACKED log_Scripting {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    char name[16];
+    uint32_t run_time;
+    int32_t total_mem;
+    int32_t run_mem;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1211,6 +1220,14 @@ struct PACKED log_File {
 // @Field: Free: free stack
 // @Field: Name: thread name
 
+// @LoggerMessage: SCR
+// @Description: Scripting runtime stats
+// @Field: TimeUS: Time since system startup
+// @Field: Name: script name
+// @Field: Runtime: run time
+// @Field: Total_mem: total memory useage
+// @Field: Run_mem: run memory usage
+
 // messages for all boards
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -1328,7 +1345,9 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "STAK", "QBBHHN", "TimeUS,Id,Pri,Total,Free,Name", "s#----", "F-----", true }, \
     { LOG_FILE_MSG, sizeof(log_File), \
       "FILE",   "NhhZ",       "FileName,Offset,Length,Data", "----", "----" }, \
-LOG_STRUCTURE_FROM_AIS \
+LOG_STRUCTURE_FROM_AIS, \
+    { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
+      "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s-sbb", "F-F--", true }
 
 // message types 0 to 63 reserved for vehicle specific use
 
@@ -1407,6 +1426,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_AIS,
     LOG_STAK_MSG,
     LOG_FILE_MSG,
+    LOG_SCRIPTING_MSG,
 
     _LOG_LAST_MSG_
 };

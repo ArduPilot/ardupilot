@@ -192,7 +192,8 @@ public:
     // log info on stack usage
     virtual void log_stack_info(void) {}
 
-    virtual void last_crash_dump(ExpandingString &str) const {}
+    virtual size_t last_crash_dump_size() const { return 0; }
+    virtual void* last_crash_dump_ptr() const { return nullptr; }
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started

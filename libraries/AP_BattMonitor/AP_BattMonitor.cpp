@@ -195,13 +195,8 @@ AP_BattMonitor::init()
 
     _highest_failsafe_priority = INT8_MAX;
 
-    convert_params();
-
 #ifdef HAL_BATT_MONITOR_DEFAULT
-    if (_params[0]._type == 0) {
-        // we can't use set_default() as the type is used as a flag for parameter conversion
-        _params[0]._type.set(int8_t(HAL_BATT_MONITOR_DEFAULT));
-    }
+    _params[0]._type.set_default(int8_t(HAL_BATT_MONITOR_DEFAULT));
 #endif
 
     // create each instance
@@ -373,78 +368,6 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
         hal.util->snprintf(param_name, sizeof(param_name), "%s_%s", param_prefix, elem.new_name);
         AP_Param::convert_old_parameter(&info, 1.0f, 0);
     }
-}
-
-void AP_BattMonitor::convert_params(void) {
-    if (_params[0]._type.configured_in_storage()) {
-        // _params[0]._type will always be configured in storage after conversion is done the first time
-        return;
-    }
-
-    #define SECOND_BATT_CONVERT_MASK 0x80
-    const struct ConversionTable {
-        uint8_t old_element;
-        uint8_t new_index; // upper bit used to indicate if its the first or second instance
-    }conversionTable[22] = {
-        { 0,                             0 }, // _MONITOR
-        { 1,                             1 }, // _VOLT_PIN
-        { 2,                             2 }, // _CURR_PIN
-        { 3,                             3 }, // _VOLT_MULT
-        { 4,                             4 }, // _AMP_PERVOLT
-        { 5,                             5 }, // _AMP_OFFSET
-        { 6,                             6 }, // _CAPACITY
-        { 9,                             7 }, // _WATT_MAX
-        {10,                             8 }, // _SERIAL_NUM
-        {11, (SECOND_BATT_CONVERT_MASK | 0)}, // 2_MONITOR
-        {12, (SECOND_BATT_CONVERT_MASK | 1)}, // 2_VOLT_PIN
-        {13, (SECOND_BATT_CONVERT_MASK | 2)}, // 2_CURR_PIN
-        {14, (SECOND_BATT_CONVERT_MASK | 3)}, // 2_VOLT_MULT
-        {15, (SECOND_BATT_CONVERT_MASK | 4)}, // 2_AMP_PERVOLT
-        {16, (SECOND_BATT_CONVERT_MASK | 5)}, // 2_AMP_OFFSET
-        {17, (SECOND_BATT_CONVERT_MASK | 6)}, // 2_CAPACITY
-        {18, (SECOND_BATT_CONVERT_MASK | 7)}, // 2_WATT_MAX
-        {20, (SECOND_BATT_CONVERT_MASK | 8)}, // 2_SERIAL_NUM
-        {21,                             9 }, // _LOW_TIMER
-        {22,                            10 }, // _LOW_TYPE
-        {21, (SECOND_BATT_CONVERT_MASK | 9)}, // 2_LOW_TIMER
-        {22, (SECOND_BATT_CONVERT_MASK |10)}, // 2_LOW_TYPE
-    };
-
-
-    char param_name[17];
-    AP_Param::ConversionInfo info;
-    info.new_name = param_name;
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    info.old_key = 166;
-#elif APM_BUILD_COPTER_OR_HELI
-    info.old_key = 36;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    info.old_key = 33;
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
-    info.old_key = 145;
-#else
-    _params[0]._type.save(true);
-    return; // no conversion is supported on this platform
-#endif
-
-    for (uint8_t i = 0; i < ARRAY_SIZE(conversionTable); i++) {
-        uint8_t param_instance = conversionTable[i].new_index >> 7;
-        uint8_t destination_index = 0x7F & conversionTable[i].new_index;
-
-        info.old_group_element = conversionTable[i].old_element;
-        info.type = (ap_var_type)AP_BattMonitor_Params::var_info[destination_index].type;
-        if (param_instance) {
-            hal.util->snprintf(param_name, sizeof(param_name), "BATT2_%s", AP_BattMonitor_Params::var_info[destination_index].name);
-        } else {
-            hal.util->snprintf(param_name, sizeof(param_name), "BATT_%s", AP_BattMonitor_Params::var_info[destination_index].name);
-        }
-
-        AP_Param::convert_old_parameter(&info, 1.0f, 0);
-    }
-
-    // force _params[0]._type into storage to flag that conversion has been done
-    _params[0]._type.save(true);
 }
 
 // read - For all active instances read voltage & current; log BAT, BCL, POWR

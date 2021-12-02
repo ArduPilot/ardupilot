@@ -104,7 +104,7 @@
 #include "defines.h"
 #include "mode.h"
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -517,12 +517,13 @@ private:
         float terrain_correction;
     } auto_state;
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // support for scripting nav commands, with verify
     struct {
         uint16_t id;
         float roll_rate_dps;
         float pitch_rate_dps;
+        float yaw_rate_dps;
         float throttle_pct;
         uint32_t start_ms;
         bool done;
@@ -940,7 +941,7 @@ private:
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
 
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // nav scripting support
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_script_time(const AP_Mission::Mission_Command& cmd);
@@ -1133,7 +1134,7 @@ private:
     float get_throttle_input(bool no_deadzone=false) const;
     float get_adjusted_throttle_input(bool no_deadzone=false) const;
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     // support for NAV_SCRIPT_TIME mission command
     bool nav_scripting_active(void) const;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
@@ -1201,6 +1202,7 @@ private:
     };
 
     FlareMode flare_mode;
+    bool throttle_at_zero(void) const;
 
     // expo handling
     float roll_in_expo(bool use_dz) const;
@@ -1209,10 +1211,10 @@ private:
 
 public:
     void failsafe_check(void);
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool get_target_location(Location& target_loc) override;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
 };
 

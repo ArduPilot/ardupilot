@@ -273,6 +273,7 @@ private:
     float transition_threshold(void);
 
     AP_Int16 transition_time_ms;
+    AP_Int16 back_trans_pitch_limit_ms;
 
     // transition deceleration, m/s/s
     AP_Float transition_decel;
@@ -435,6 +436,7 @@ private:
         uint32_t last_log_ms;
         bool reached_wp_speed;
         uint32_t last_run_ms;
+        float pos1_start_speed;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;

@@ -468,7 +468,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_param(void)
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
         BIT_SET(param_value,PassthroughFeatures::BIDIR);
 #endif
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
         BIT_SET(param_value,PassthroughFeatures::SCRIPTING);
 #endif
         _paramID = FRAME_TYPE;

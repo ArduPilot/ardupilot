@@ -32,6 +32,7 @@ protected:
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_pause_continue(const mavlink_command_int_t &packet);
 
     void handle_mount_message(const mavlink_message_t &msg) override;
 

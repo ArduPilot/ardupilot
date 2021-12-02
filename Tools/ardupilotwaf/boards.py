@@ -48,6 +48,10 @@ class Board:
         env.SRCROOT = srcpath('')
         self.configure_env(cfg, env)
 
+        env.DEFINES.update(
+            AP_SCRIPTING_ENABLED = 0,
+        )
+
         # Setup scripting, had to defer this to allow checking board size
         if ((not cfg.options.disable_scripting) and
             (not cfg.env.DISABLE_SCRIPTING) and
@@ -56,7 +60,7 @@ class Board:
              (cfg.env.BOARD_FLASH_SIZE > 1024))):
 
             env.DEFINES.update(
-                ENABLE_SCRIPTING = 1,
+                AP_SCRIPTING_ENABLED = 1,
                 LUA_32BITS = 1,
                 )
 
@@ -313,8 +317,12 @@ class Board:
             if self.cc_version_gte(cfg, 7, 4):
                 env.CXXFLAGS += [
                     '-Werror=implicit-fallthrough',
-                    '-Wmaybe-uninitialized',
-                    '-Wduplicated-cond',
+                    '-Werror=maybe-uninitialized',
+                    '-Werror=duplicated-cond',
+                ]
+            if self.cc_version_gte(cfg, 8, 4):
+                env.CXXFLAGS += [
+                    '-Werror=sizeof-pointer-div',
                 ]
 
         if cfg.options.Werror:
@@ -814,7 +822,6 @@ class chibios(Board):
             '-Wno-error=double-promotion',
             '-Wno-error=missing-declarations',
             '-Wno-error=float-equal',
-            '-Wno-error=undef',
             '-Wno-error=cpp',
             ]
 

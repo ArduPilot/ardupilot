@@ -40,11 +40,12 @@
 /*
   useful macro for creating scheduler task table
  */
-#define SCHED_TASK_CLASS(classname, classptr, func, _rate_hz, _max_time_micros) { \
+#define SCHED_TASK_CLASS(classname, classptr, func, _rate_hz, _max_time_micros, _priority) { \
     .function = FUNCTOR_BIND(classptr, &classname::func, void),\
     AP_SCHEDULER_NAME_INITIALIZER(classname, func)\
     .rate_hz = _rate_hz,\
-    .max_time_micros = _max_time_micros\
+    .max_time_micros = _max_time_micros,        \
+    .priority = _priority \
 }
 
 /*
@@ -81,6 +82,7 @@ public:
         const char *name;
         float rate_hz;
         uint16_t max_time_micros;
+        uint8_t priority; // task priority
     };
 
     enum class Options : uint8_t {
@@ -189,17 +191,16 @@ private:
     // calculated loop period in seconds
     float _loop_period_s;
     
-    // progmem list of tasks to run
-    const struct Task *_tasks;
+    // list of tasks to run
+    const struct Task *_vehicle_tasks;
+    uint8_t _num_vehicle_tasks;
 
-    // progmem list of common tasks to run
+    // list of common tasks to run
     const struct Task *_common_tasks;
+    uint8_t _num_common_tasks;
 
     // total number of tasks in _tasks and _common_tasks list
     uint8_t _num_tasks;
-
-    // number of tasks in _tasks list
-    uint8_t _num_unshared_tasks;
 
     // number of 'ticks' that have passed (number of times that
     // tick() has been called

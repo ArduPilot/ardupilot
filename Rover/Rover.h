@@ -72,7 +72,7 @@
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_AIS/AP_AIS.h>
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -266,12 +266,12 @@ private:
 private:
 
     // Rover.cpp
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     bool set_target_location(const Location& target_loc) override;
     bool set_target_velocity_NED(const Vector3f& vel_ned) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
     bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
     void stats_update();
     void ahrs_update();
     void gcs_failsafe_check(void);
@@ -279,7 +279,6 @@ private:
     void update_logging2(void);
     void one_second_loop(void);
     void update_current_mode(void);
-    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);

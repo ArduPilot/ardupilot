@@ -190,11 +190,16 @@ float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;
     }
+    /* force landing pitch if:
+       - flare switch high
+       - throttle stick at zero thrust
+       - in fixed wing non auto-throttle mode
+    */
     if (!quadplane_in_transition &&
         !control_mode->is_vtol_mode() &&
-        channel_throttle->in_trim_dz() &&
         !control_mode->does_auto_throttle() &&
-        flare_mode == FlareMode::ENABLED_PITCH_TARGET) {
+        flare_mode == FlareMode::ENABLED_PITCH_TARGET &&
+        throttle_at_zero()) {
         demanded_pitch = landing.get_pitch_cd();
     }
 
@@ -439,7 +444,12 @@ void Plane::stabilize_acro(float speed_scaler)
 
     steering_control.steering = rudder_input();
 
-    if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+    if (g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
+        // user has asked for yaw rate control with yaw rate scaled by ACRO_YAW_RATE
+        const float rudd_expo = rudder_in_expo(true);
+        const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
+        steering_control.steering = steering_control.rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
+    } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
         // use yaw controller
         calc_nav_yaw_coordinated(speed_scaler);
     } else {
@@ -501,7 +511,7 @@ void Plane::stabilize()
             plane.stabilize_pitch(speed_scaler);
         }
 #endif
-#if ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     } else if (control_mode == &mode_auto &&
                mission.get_current_nav_cmd().id == MAV_CMD_NAV_SCRIPT_TIME) {
         // scripting is in control of roll and pitch rates and throttle
@@ -509,6 +519,10 @@ void Plane::stabilize()
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+        if (yawController.rate_control_enabled()) {
+            const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            steering_control.rudder = rudder;
+        }
 #endif
     } else {
         if (allow_stick_mixing && g.stick_mixing == StickMixing::FBW && control_mode != &mode_stabilize) {
@@ -585,6 +599,11 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
+    } else if (control_mode == &mode_autotune && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
+        // user is doing an AUTOTUNE with yaw rate control
+        const float rudd_expo = rudder_in_expo(true);
+        const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
+        commanded_rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
     } else {
         if (control_mode == &mode_stabilize && rudder_in != 0) {
             disable_integrator = true;

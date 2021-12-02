@@ -1408,7 +1408,21 @@ void AP_Logger::log_file_content(const char *filename)
     if (file == nullptr) {
         return;
     }
-    file->filename = filename;
+    // make copy to allow original to go out of scope
+    const size_t len = strlen(filename)+1;
+    char * tmp_filename = new char[len];
+    if (tmp_filename == nullptr) {
+        return;
+    }
+    strncpy(tmp_filename, filename, len);
+    file->filename = tmp_filename;
+    // Remove directory if whole file name will not fit
+    const char * name = strrchr(file->filename, '/');
+    if ((len-1 > sizeof(file->log_filename)) && (name != nullptr)) {
+        strncpy_noterm(file->log_filename, name+1, sizeof(file->log_filename));
+    } else {
+        strncpy_noterm(file->log_filename, file->filename, sizeof(file->log_filename));
+    }
     if (file_content.head == nullptr) {
         file_content.tail = file_content.head = file;
         file_content.fd = -1;
@@ -1436,6 +1450,7 @@ void AP_Logger::file_content_update(void)
         if (file_content.tail == file) {
             file_content.tail = file_content.head;
         }
+        delete [] file->filename;
         delete file;
         file_content.fd = -1;
     };
@@ -1453,7 +1468,7 @@ void AP_Logger::file_content_update(void)
     struct log_File pkt {
         LOG_PACKET_HEADER_INIT(LOG_FILE_MSG),
     };
-    strncpy_noterm(pkt.filename, file->filename, sizeof(pkt.filename));
+    memcpy(pkt.filename, file->log_filename, sizeof(pkt.filename));
     const auto length = AP::FS().read(file_content.fd, pkt.data, sizeof(pkt.data));
     if (length <= 0) {
         AP::FS().close(file_content.fd);

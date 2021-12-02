@@ -764,23 +764,25 @@ void Plane::servos_twin_engine_mix(void)
 void Plane::force_flare(void)
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_transition()) {
+    if (quadplane.in_transition() && plane.arming.is_armed()) { //allows for ground checking of flare tilts
         return;
     }
     if (control_mode->is_vtol_mode()) {
         return;
     }
-#endif
-    if (!control_mode->does_auto_throttle() && channel_throttle->in_trim_dz() && flare_mode != FlareMode::FLARE_DISABLED) {
-        int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor
-#if HAL_QUADPLANE_ENABLED
+    /* to be active must be:
+       -manual throttle mode
+       -in an enabled flare mode (RC switch active)
+       -at zero thrust: in throttle trim dz except for sprung throttle option where trim is at hover stick
+    */
+    if (!control_mode->does_auto_throttle() && flare_mode != FlareMode::FLARE_DISABLED && throttle_at_zero()) {
+        int32_t tilt = -SERVO_MAX;  //this is tilts up for a normal tiltrotor if at zero thrust throttle stick      
         if (quadplane.tiltrotor.enabled() && (quadplane.tiltrotor.type == Tiltrotor::TILT_TYPE_BICOPTER)) {
             tilt = 0; // this is tilts up for a Bicopter
         }
         if (quadplane.tailsitter.enabled()) {
             tilt = SERVO_MAX; //this is tilts up for a tailsitter
         }
-#endif
         SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, tilt);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt);
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt);
@@ -793,7 +795,8 @@ void Plane::force_flare(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_min);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_min);
         }
-     }
+    }
+#endif
 }
 
 /* Set the flight control servos based on the current calculated values

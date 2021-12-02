@@ -310,7 +310,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: XTrack: the vehicle's current distance from the current travel segment
 
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
-      "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhdm", "F000B0" },
+      "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhhm", "F000B0" },
     
 // @LoggerMessage: STER
 // @Description: Steering related messages

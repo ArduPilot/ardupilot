@@ -112,7 +112,7 @@ STORAGE_FLASH_PAGE 1
 define HAL_STORAGE_SIZE 15360
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # define default battery setup
 define HAL_BATT_VOLT_PIN 12

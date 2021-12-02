@@ -461,6 +461,9 @@ is bob we will attempt to checkout bob-AVR'''
                 except subprocess.CalledProcessError:
                     self.progress("waf configure failed")
                     continue
+
+                time_taken_to_configure = time.time() - t0
+
                 try:
                     target = os.path.join("bin",
                                           "".join([binaryname, framesuffix]))
@@ -476,10 +479,11 @@ is bob we will attempt to checkout bob-AVR'''
                     self.history.record_build(githash, tag, vehicle, board, frame, None, t0, time_taken_to_build)
                     continue
 
-                t1 = time.time()
-                time_taken_to_build = t1-t0
-                self.progress("Building %s %s %s %s took %u seconds" %
-                              (vehicle, tag, board, frame, time_taken_to_build))
+                time_taken_to_build = (time.time()-t0) - time_taken_to_configure
+
+                time_taken = time.time()-t0
+                self.progress("Making %s %s %s %s took %u seconds (configure=%u build=%u)" %
+                              (vehicle, tag, board, frame, time_taken, time_taken_to_configure, time_taken_to_build))
 
                 bare_path = os.path.join(self.buildroot,
                                          board,

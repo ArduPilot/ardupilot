@@ -856,17 +856,6 @@ def write_mcu_config(f):
         # lets pick a flash sector for Crash log
         f.write('#define HAL_CRASHDUMP_ENABLE 1\n')
         env_vars['ENABLE_CRASHDUMP'] = 1
-        num_flash_pages = get_flash_npages()
-        crash_dump_flash_page = get_config('CRASH_DUMP_FLASHPAGE', default=num_flash_pages-1, type=int)
-        if crash_dump_flash_page >= num_flash_pages:
-            raise Exception("CRASH_DUMP_FLASHPAGE cannot exceed number of available flash pages: %u" % num_flash_pages)
-        if storage_flash_page is not None:
-            while crash_dump_flash_page == storage_flash_page or crash_dump_flash_page == storage_flash_page+1:
-                if crash_dump_flash_page > 0:
-                    crash_dump_flash_page -= 1
-                else:
-                    raise Exception('Unable to find a Crash log flash page')
-        f.write('#define HAL_CRASH_DUMP_FLASHPAGE %u\n' % crash_dump_flash_page)
     else:
         f.write('#define HAL_CRASHDUMP_ENABLE 0\n')
         env_vars['ENABLE_CRASHDUMP'] = 0
@@ -1002,7 +991,6 @@ def write_mcu_config(f):
 #define HAL_STORAGE_SIZE 16384
 #define HAL_USE_RTC FALSE
 #define DISABLE_SERIAL_ESC_COMM TRUE
-#define NO_DATAFLASH TRUE
 ''')
         if not env_vars['EXTERNAL_PROG_FLASH_MB']:
             f.write('''
@@ -1460,7 +1448,7 @@ def write_UART_config(f):
     f.write('\n// UART configuration\n')
 
     # write out driver declarations for HAL_ChibOS_Class.cpp
-    devnames = "ABCDEFGHI"
+    devnames = "ABCDEFGHIJ"
     sdev = 0
     idx = 0
     for dev in uart_list:
@@ -1586,8 +1574,8 @@ def write_UART_config(f):
     num_uarts = len(devlist)
     if 'IOMCU_UART' in config:
         num_uarts -= 1
-    if num_uarts > 9:
-        error("Exceeded max num UARTs of 9 (%u)" % num_uarts)
+    if num_uarts > 10:
+        error("Exceeded max num UARTs of 10 (%u)" % num_uarts)
     f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_uarts)
 
 
@@ -2568,8 +2556,12 @@ def add_apperiph_defaults(f):
 #ifndef HAL_WATCHDOG_ENABLED_DEFAULT
 #define HAL_WATCHDOG_ENABLED_DEFAULT true
 #endif
+
+#ifndef AP_FETTEC_ONEWIRE_ENABLED
+#define AP_FETTEC_ONEWIRE_ENABLED 0
+#endif
 ''')
-            
+
 
 # process input file
 for fname in args.hwdef:

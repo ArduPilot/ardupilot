@@ -309,9 +309,9 @@ public:
     AP_Int16 land_alt_low;
 
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     AP_Float tuning_min;
     AP_Float tuning_max;

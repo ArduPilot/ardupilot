@@ -260,13 +260,13 @@ public:
     void get_stopping_point_z_cm(postype_t &stopping_point) const;
 
     /// get_pos_error_cm - get position error vector between the current and target position
-    const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position().topostype()).tofloat(); }
+    const Vector3f get_pos_error_cm() const { return (_pos_target - _inav.get_position_neu_cm().topostype()).tofloat(); }
 
     /// get_pos_error_xy_cm - get the length of the position error vector in the xy plane
-    float get_pos_error_xy_cm() const { return norm(_pos_target.x - _inav.get_position().x, _pos_target.y - _inav.get_position().y); }
+    float get_pos_error_xy_cm() const { return get_horizontal_distance_cm(_inav.get_position_xy_cm().topostype(), _pos_target.xy()); }
 
     /// get_pos_error_z_cm - returns altitude error in cm
-    float get_pos_error_z_cm() const { return (_pos_target.z - _inav.get_position().z); }
+    float get_pos_error_z_cm() const { return (_pos_target.z - _inav.get_position_z_up_cm()); }
 
 
     /// Velocity
@@ -389,13 +389,6 @@ protected:
     struct poscontrol_flags {
             uint16_t vehicle_horiz_vel_override : 1; // 1 if we should use _vehicle_horiz_vel as our velocity process variable for one timestep
     } _flags;
-
-    // limit flags structure
-    struct poscontrol_limit_flags {
-        bool pos_xy;        // true if we have hit a horizontal position limit
-        bool pos_up;        // true if we have hit a vertical position limit while going up
-        bool pos_down;      // true if we have hit a vertical position limit while going down
-    } _limit;
 
     /// init_xy - initialise the position controller to the current position, velocity and acceleration.
     ///     This function is private and contains all the shared xy axis initialisation functions

@@ -4,7 +4,7 @@
 
 #include <AP_Gripper/AP_Gripper.h>
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
@@ -335,9 +335,9 @@ public:
     // control over servo output ranges
     SRV_Channels servo_channels;
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     // Airspeed
     AP_Airspeed airspeed;

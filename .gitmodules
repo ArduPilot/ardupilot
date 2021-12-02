@@ -16,21 +16,21 @@
 [submodule "modules/ChibiOS"]
 	path = modules/ChibiOS
 	url = https://github.com/ArduPilot/ChibiOS.git
-[submodule "modules/libcanard"]
-	path = modules/libcanard
-	url = https://github.com/ArduPilot/libcanard.git
 [submodule "modules/gsoap"]
 	path = modules/gsoap
 	url = https://github.com/ArduPilot/gsoap
-[submodule "modules/pyuavcan"]
-	path = modules/pyuavcan
-	url = https://github.com/ArduPilot/pyuavcan
-[submodule "modules/canard_dsdlc"]
-	path = modules/canard_dsdlc
-	url =  https://github.com/ardupilot/canard_dsdlc
 [submodule "modules/DroneCAN/DSDL"]
 	path = modules/DroneCAN/DSDL
 	url = https://github.com/DroneCAN/DSDL.git
 [submodule "modules/CrashDebug"]
 	path = modules/CrashDebug
-	url = https://github.com/adamgreen/CrashDebug
+	url = https://github.com/ardupilot/CrashDebug
+[submodule "modules/DroneCAN/pydronecan"]
+	path = modules/DroneCAN/pydronecan
+	url = https://github.com/DroneCAN/pydronecan
+[submodule "modules/DroneCAN/dronecan_dsdlc"]
+	path = modules/DroneCAN/dronecan_dsdlc
+	url = https://github.com/DroneCAN/dronecan_dsdlc
+[submodule "modules/DroneCAN/libcanard"]
+	path = modules/DroneCAN/libcanard
+	url = https://github.com/DroneCAN/libcanard

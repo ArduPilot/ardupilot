@@ -52,6 +52,9 @@ public:
     // ignores trim and deadzone
     float       norm_input_ignore_trim() const;
 
+    // returns true if input is within deadzone of min
+    bool        within_min_dz() const;
+
     uint8_t     percent_input() const;
     int16_t     pwm_to_range() const;
     int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
@@ -211,6 +214,7 @@ public:
         GPS_DISABLE_YAW =    105, // disable GPS yaw for testing
         DISABLE_AIRSPEED_USE = 106, // equivalent to AIRSPEED_USE 0
         FW_AUTOTUNE =          107, // fixed wing auto tune
+        QRTL =               108, // QRTL mode
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 

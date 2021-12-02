@@ -50,6 +50,8 @@ public:
 
     virtual MAV_VTOL_STATE get_mav_vtol_state() const = 0;
 
+    virtual bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) { return false; }
+
 protected:
 
     // refences for convenience
@@ -69,11 +71,7 @@ public:
 
     void VTOL_update() override;
 
-    void force_transistion_complete() override {
-        transition_state = TRANSITION_DONE; 
-        transition_start_ms = 0;
-        transition_low_airspeed_ms = 0;
-    };
+    void force_transistion_complete() override;
 
     bool complete() const override { return transition_state == TRANSITION_DONE; }
 
@@ -91,6 +89,8 @@ public:
 
     MAV_VTOL_STATE get_mav_vtol_state() const override;
 
+    bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) override;
+
 protected:
 
     enum {
@@ -105,6 +105,10 @@ protected:
 
     // last throttle value when active
     float last_throttle;
+
+    // time and pitch angle whe last in a vtol or FW control mode
+    uint32_t last_fw_mode_ms;
+    int32_t last_fw_nav_pitch_cd;
 
 };
 

@@ -139,9 +139,10 @@ private:
     // log info on stack usage
     void log_stack_info(void) override;
 
-#if defined(HAL_CRASH_DUMP_FLASHPAGE) && !defined(HAL_BOOTLOADER_BUILD)
+#if !defined(HAL_BOOTLOADER_BUILD)
     // get last crash dump
-    void last_crash_dump(ExpandingString &str) const override;
+    size_t last_crash_dump_size() const override;
+    void* last_crash_dump_ptr() const override;
 #endif
 
 };

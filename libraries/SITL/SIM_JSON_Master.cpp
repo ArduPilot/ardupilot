@@ -136,8 +136,7 @@ void JSON_Master::receive(struct sitl_input &input)
 // @Field: C12: channel 12 output
 // @Field: C13: channel 13 output
 // @Field: C14: channel 14 output
-// @Field: C15: channel 15 output
-        AP::logger().WriteStreaming("SLV2", "TimeUS,Instance,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15",
+        AP::logger().WriteStreaming("SLV2", "TimeUS,Instance,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14",
                        "s#YYYYYYYYYYYYYY",
                        "F?--------------",
                        "QBHHHHHHHHHHHHHH",
@@ -156,8 +155,7 @@ void JSON_Master::receive(struct sitl_input &input)
                        buffer.pwm[10],
                        buffer.pwm[11],
                        buffer.pwm[12],
-                       buffer.pwm[13],
-                       buffer.pwm[14]);
+                       buffer.pwm[13]);
 
         if (list->instance == master_instance) {
             // Use the servo outs from this instance
