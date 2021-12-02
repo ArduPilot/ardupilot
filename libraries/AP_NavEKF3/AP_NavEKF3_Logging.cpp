@@ -153,7 +153,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float tempVar = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
-    const struct log_NKF4 pkt4{
+    const struct log_XKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -182,7 +182,7 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         return;
     }
 
-    const struct log_NKF5 pkt5{
+    const struct log_XKF5 pkt5{
         LOG_PACKET_HEADER_INIT(LOG_XKF5_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
