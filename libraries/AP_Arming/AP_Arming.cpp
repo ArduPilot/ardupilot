@@ -1377,6 +1377,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         "@SYS/memory.txt",
         "@SYS/threads.txt",
         "@ROMFS/hwdef.dat",
+        "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
     };
     for (const auto *name : log_content_filenames) {
