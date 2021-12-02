@@ -18,7 +18,12 @@ public:
         BattMonitor_LowVoltageSource_SagCompensated = 1
     };
     enum class Options : uint8_t {
-        Ignore_UAVCAN_SoC = (1U<<0),
+        Ignore_UAVCAN_SoC                   = (1U<<0),  // Ignore UAVCAN State-of-Charge (charge %) supplied value from the device and use the internally calculated one
+        MPPT_Use_Input_Value                = (1U<<1),  // MPPT reports voltage and current from Input (usually solar panel) instead of the output
+        MPPT_Power_Off_At_Disarm            = (1U<<2),  // MPPT Disabled when vehicle is disarmed, if HW supports it
+        MPPT_Power_On_At_Arm                = (1U<<3),  // MPPT Enabled when vehicle is armed, if HW supports it
+        MPPT_Power_Off_At_Boot              = (1U<<4),  // MPPT Disabled at startup (aka boot), if HW supports it
+        MPPT_Power_On_At_Boot               = (1U<<5),  // MPPT Enabled at startup (aka boot), if HW supports it. If Power_Off_at_Boot is also set, the behavior is Power_Off_at_Boot
     };
 
     BattMonitor_LowVoltage_Source failsafe_voltage_source(void) const { return (enum BattMonitor_LowVoltage_Source)_failsafe_voltage_source.get(); }
