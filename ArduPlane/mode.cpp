@@ -23,6 +23,7 @@ bool Mode::enter()
 
     // zero locked course
     plane.steer_state.locked_course_err = 0;
+    plane.steer_state.locked_course = false;
 
     // reset crash detection
     plane.crash_state.is_crashed = false;
