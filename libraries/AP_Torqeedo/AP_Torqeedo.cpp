@@ -310,7 +310,62 @@ void AP_Torqeedo::report_error_codes()
         gcs().send_text(MAV_SEVERITY_CRITICAL, "%s batt nearly empty", msg_prefix);
     }
     if (_display_system_state.master_error_code > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s err:%u", msg_prefix, _display_system_state.master_error_code);
+        char master_err_str_buff[22] = {};
+        switch (_display_system_state.master_error_code) {
+        case 2:
+            strncpy(master_err_str_buff, "stator high temp", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 5:
+            strncpy(master_err_str_buff, "propeller blocked", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 6:
+            strncpy(master_err_str_buff, "motor low voltage", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 7:
+            strncpy(master_err_str_buff, "motor high current", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 8:
+            strncpy(master_err_str_buff, "pcb temp high", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 21:
+            strncpy(master_err_str_buff, "tiller cal bad", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 22:
+            strncpy(master_err_str_buff, "mag bad", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 23:
+            strncpy(master_err_str_buff, "range incorrect", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 30:
+            strncpy(master_err_str_buff, "motor comm error", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 32:
+            strncpy(master_err_str_buff, "tiller comm error", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 33:
+            strncpy(master_err_str_buff, "general comm error", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 41:
+        case 42:
+            strncpy(master_err_str_buff, "charge voltage bad", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 43:
+            strncpy(master_err_str_buff, "battery flat", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 45:
+            strncpy(master_err_str_buff, "battery high current", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 46:
+            strncpy(master_err_str_buff, "battery temp error", ARRAY_SIZE(master_err_str_buff));
+            break;
+        case 48:
+            strncpy(master_err_str_buff, "charging temp error", ARRAY_SIZE(master_err_str_buff));
+            break;
+        default:
+            // unknown error code
+            break;
+        }
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s err:%u %s", msg_prefix, _display_system_state.master_error_code, master_err_str_buff);
     }
 
     // report motor status errors
