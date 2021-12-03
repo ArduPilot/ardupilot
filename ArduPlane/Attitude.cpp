@@ -592,6 +592,13 @@ void Plane::calc_nav_yaw_ground(void)
         return;
     }
 
+    // if we haven't been steering for 1s then clear locked course
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - steer_state.last_steer_ms > 1000) {
+        steer_state.locked_course = false;
+    }
+    steer_state.last_steer_ms = now_ms;
+
     float steer_rate = (rudder_input()/4500.0f) * g.ground_steer_dps;
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
         flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
@@ -608,6 +615,7 @@ void Plane::calc_nav_yaw_ground(void)
             steer_state.locked_course_err = 0;
         }
     }
+
     if (!steer_state.locked_course) {
         // use a rate controller at the pilot specified rate
         steering_control.steering = steerController.get_steering_out_rate(steer_rate);
