@@ -7532,6 +7532,46 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def AP_Avoidance(self):
+        self.set_parameters({
+            "AVD_ENABLE": 1,
+            "ADSB_TYPE": 1,  # mavlink
+            "AVD_F_ACTION": 2,  # climb or descend
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+
+        here = self.mav.location()
+
+        self.context_push()
+
+        self.start_subtest("F_ALT_MIN zero - disabled, can't arm in face of threat")
+        self.set_parameters({
+            "AVD_F_ALT_MIN": 0,
+        })
+        self.wait_ready_to_arm()
+        self.test_adsb_send_threatening_adsb_message(here)
+        self.delay_sim_time(1)
+        self.try_arm(result=False,
+                     expect_msg="ADSB threat detected")
+
+        self.wait_ready_to_arm(timeout=60)
+
+        self.context_pop()
+
+        self.start_subtest("F_ALT_MIN 16m relative - arm in face of threat")
+        self.context_push()
+        self.set_parameters({
+            "AVD_F_ALT_MIN": int(16 + here.alt),
+        })
+        self.wait_ready_to_arm()
+        self.test_adsb_send_threatening_adsb_message(here)
+#        self.delay_sim_time(1)
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.context_pop()
+
     def PAUSE_CONTINUE(self):
         self.load_mission("copter_mission.txt", strict=False)
 
@@ -8162,6 +8202,10 @@ class AutoTestCopter(AutoTest):
             Test("GSF",
                  "Check GSF",
                  self.test_gsf),
+
+            Test("AP_Avoidance",
+                 "ADSB-based avoidance",
+                 self.AP_Avoidance),
 
             Test("SMART_RTL",
                  "Check SMART_RTL",
