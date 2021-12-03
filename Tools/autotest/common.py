@@ -6474,6 +6474,11 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def assert_current_waypoint(self, wpnum):
+        seq = self.mav.waypoint_current()
+        if seq != wpnum:
+            raise NotAchievedException("Incorrect current wp")
+
     def wait_current_waypoint(self, wpnum, timeout=60):
         tstart = self.get_sim_time()
         while True:

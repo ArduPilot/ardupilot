@@ -705,6 +705,28 @@ class AutoTestQuadPlane(AutoTest):
             "ConfigErrorLoop": "failing because RC values not settable",
         }
 
+    def BootInAUTO(self):
+        self.load_mission("mission.txt")
+        self.set_parameters({
+        })
+        self.set_rc(5, 1000)
+        self.wait_mode('AUTO')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(20)
+        self.assert_current_waypoint(1)
+        self.arm_vehicle()
+        self.wait_altitude(9, 11, relative=True)  # value from mission file is 10
+        distance = self.distance_to_home()
+        # this distance check is very, very loose.  At time of writing
+        # the vehicle actually pitches ~6 degrees on trakeoff,
+        # wandering over 1m.
+        if distance > 2:
+            raise NotAchievedException("wandered from home (distance=%f)" %
+                                       (distance,))
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=60)
+
     def test_pilot_yaw(self):
         self.takeoff(10, mode="QLOITER")
         self.set_parameter("STICK_MIXING", 0)
@@ -977,6 +999,10 @@ class AutoTestQuadPlane(AutoTest):
             ("MidAirDisarmDisallowed",
              "Check disarm behaviour in Q-mode",
              self.MidAirDisarmDisallowed),
+
+            ("BootInAUTO",
+             "Test behaviour when booting in auto",
+             self.BootInAUTO),
 
             ("LogUpload",
              "Log upload",
