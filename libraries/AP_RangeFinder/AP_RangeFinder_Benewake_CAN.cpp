@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RangeFinder_Benewake_CAN.h"
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -22,16 +23,30 @@ const AP_Param::GroupInfo AP_RangeFinder_Benewake_CAN::var_info[] = {
     AP_GROUPEND
 };
 
+Benewake_MultiCAN *AP_RangeFinder_Benewake_CAN::multican;
 
 /*
   constructor
  */
 AP_RangeFinder_Benewake_CAN::AP_RangeFinder_Benewake_CAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
-    CANSensor("Benewake"),
     AP_RangeFinder_Backend(_state, _params)
 {
+    if (multican == nullptr) {
+        multican = new Benewake_MultiCAN();
+        if (multican == nullptr) {
+            AP_BoardConfig::allocation_error("Benewake_CAN");
+        }
+    }
+
+    {
+        // add to linked list of drivers
+        WITH_SEMAPHORE(multican->sem);
+        auto *prev = multican->drivers;
+        next = prev;
+        multican->drivers = this;
+    }
+
     AP_Param::setup_object_defaults(this, var_info);
-    register_driver(AP_CANManager::Driver_Type_Benewake);
     state.var_info = var_info;
 }
 
@@ -53,27 +68,40 @@ void AP_RangeFinder_Benewake_CAN::update(void)
 }
 
 // handler for incoming frames. These come in at 100Hz
-void AP_RangeFinder_Benewake_CAN::handle_frame(AP_HAL::CANFrame &frame)
+bool AP_RangeFinder_Benewake_CAN::handle_frame(AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(_sem);
     const uint16_t id = frame.id & AP_HAL::CANFrame::MaskStdID;
     if (receive_id != 0 && id != uint16_t(receive_id.get())) {
         // incorrect receive ID
-        return;
+        return false;
     }
     if (last_recv_id != -1 && id != last_recv_id) {
         // changing ID
-        return;
+        return false;
     }
     last_recv_id = id;
+
     const uint16_t dist_cm = (frame.data[1]<<8) | frame.data[0];
     const uint16_t snr = (frame.data[3]<<8) | frame.data[2];
     if (snr_min != 0 && snr < uint16_t(snr_min.get())) {
         // too low signal strength
-        return;
+        return true;
     }
     _distance_sum_cm += dist_cm;
     _distance_count++;
+    return true;
+}
+
+// handle frames from CANSensor, passing to the drivers
+void Benewake_MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
+{
+    WITH_SEMAPHORE(sem);
+    for (auto *d = drivers; d; d=d->next) {
+        if (d->handle_frame(frame)) {
+            break;
+        }
+    }
 }
 
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
