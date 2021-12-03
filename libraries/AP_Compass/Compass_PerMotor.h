@@ -19,15 +19,10 @@ public:
         return enable.get() != 0;
     }
     
-    void set_voltage(float _voltage) {
-        // simple low-pass on voltage
-        voltage = 0.9f * voltage + 0.1f * _voltage;
-    }
-
     void calibration_start(void);
     void calibration_update(void);
     void calibration_end(void);
-    void compensate(Vector3f &offset);
+    void compensate(Vector3f &offset, uint8_t batt_index);
     
 private:
     Compass &compass;

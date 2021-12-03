@@ -153,8 +153,6 @@ void Blimp::update_batt_compass(void)
     battery.read();
 
     if (AP::compass().available()) {
-        // update compass with throttle value - used for compassmot
-        compass.set_voltage(battery.voltage());
         compass.read();
     }
 }

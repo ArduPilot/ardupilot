@@ -55,7 +55,6 @@ void Copter::motor_test_output()
         switch (motor_test_throttle_type) {
 
             case MOTOR_TEST_COMPASS_CAL:
-                compass.set_voltage(battery.voltage());
                 compass.per_motor_calibration_update();
                 FALLTHROUGH;
 

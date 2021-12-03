@@ -130,6 +130,13 @@ const AP_Param::GroupInfo AP_Compass_Params::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("MOT",    9, AP_Compass_Params, motor_compensation, 0),
+
+    // @Param: BAT_IDX
+    // @DisplayName: Motor interference compensation battry moniter index
+    // @Description: Motor interference compensation source battry moniter index
+    // @Values: 0:First battery, 1:Second battery
+    // @User: Advanced
+    AP_GROUPINFO("BAT_IDX", 10, AP_Compass_Params, motor_comp_batt_index, 0),
 #endif
 
     AP_GROUPEND

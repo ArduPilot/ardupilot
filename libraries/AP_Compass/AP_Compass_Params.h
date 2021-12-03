@@ -29,6 +29,7 @@ public:
 
     // factors multiplied by throttle and added to compass outputs
     AP_Vector3f motor_compensation;
+    AP_Int8 motor_comp_batt_index;
 
 };
 

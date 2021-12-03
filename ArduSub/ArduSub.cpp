@@ -185,8 +185,6 @@ void Sub::update_batt_compass()
     battery.read();
 
     if (AP::compass().available()) {
-        // update compass with throttle value - used for compassmot
-        compass.set_throttle(motors.get_throttle());
         compass.read();
     }
 }
