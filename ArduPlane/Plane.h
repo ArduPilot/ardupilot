@@ -431,6 +431,7 @@ private:
         // when ground steering is active, and for steering in auto-takeoff
         bool locked_course;
         float locked_course_err;
+        uint32_t last_steer_ms;
     } steer_state;
 
     // flight mode specific
