@@ -3421,9 +3421,10 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 
     const uint32_t now = millis();
 
-    // reset takeoff start time if we aren't armed, as we won't have made any progress
+    // reset takeoff if we aren't armed
     if (!hal.util->get_soft_armed()) {
-        takeoff_start_time_ms = now;
+        do_vtol_takeoff(cmd);
+        return false;
     }
 
     if (now - takeoff_start_time_ms < 3000 &&
