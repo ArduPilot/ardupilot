@@ -1437,9 +1437,9 @@ void AC_AutoTune::rate_ff_test_init()
 
 void AC_AutoTune::rate_ff_test_run(float max_angle_cd, float target_rate_cds, float dir_sign)
 {
-    float gyro_reading;
-    float command_reading;
-    float tgt_rate_reading;
+    float gyro_reading = 0.0f;
+    float command_reading =0.0f;
+    float tgt_rate_reading = 0.0f;
     const uint32_t now = AP_HAL::millis();
 
     // TODO make filter leak dependent on dt
@@ -1663,9 +1663,9 @@ void AC_AutoTune::dwell_test_init(float filt_freq)
 
 void AC_AutoTune::dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase)
 {
-    float gyro_reading;
-    float command_reading;
-    float tgt_rate_reading;
+    float gyro_reading = 0.0f;
+    float command_reading = 0.0f;
+    float tgt_rate_reading = 0.0f;
     float tgt_attitude = 2.5f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_rate_cds;
@@ -1923,9 +1923,9 @@ void AC_AutoTune::angle_dwell_test_init(float filt_freq)
 
 void AC_AutoTune::angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase)
 {
-    float gyro_reading;
-    float command_reading;
-    float tgt_rate_reading;
+    float gyro_reading = 0.0f;
+    float command_reading = 0.0f;
+    float tgt_rate_reading = 0.0f;
     float tgt_attitude = 5.0f * 0.01745f;
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd;
