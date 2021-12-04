@@ -1934,24 +1934,6 @@ class AutoTestPlane(AutoTest):
                 continue
             last_collision = now
 
-    def test_adsb_send_threatening_adsb_message(self, here):
-        self.progress("Sending ABSD_VEHICLE message")
-        self.mav.mav.adsb_vehicle_send(
-            37, # ICAO address
-            int(here.lat * 1e7),
-            int(here.lng * 1e7),
-            mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
-            int(here.alt*1000 + 10000), # 10m up
-            0, # heading in cdeg
-            0, # horizontal velocity cm/s
-            0, # vertical velocity cm/s
-            "bob".encode("ascii"), # callsign
-            mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,
-            1, # time since last communication
-            65535, # flags
-            17 # squawk
-        )
-
     def SimADSB(self):
         '''trivial tests to ensure simulated ADSB sensor continues to
 function'''
