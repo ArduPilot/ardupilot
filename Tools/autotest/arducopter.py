@@ -8245,6 +8245,31 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle()
         self.context_pop()
 
+        self.start_subtest("Resetting F_ALT_MIN allows arming")
+        self.context_push()
+        self.set_parameters({
+            "AVD_F_ALT_MIN": 0,
+        })
+        self.delay_sim_time(1)
+        self.wait_ready_to_arm()
+        self.test_adsb_send_threatening_adsb_message(here)
+        self.try_arm(result=False,
+                     expect_msg="ADSB threat detected")
+        self.set_parameters({
+            "AVD_F_ALT_MIN": int(16 + here.alt),
+        })
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not become armable after AVD_F_ALT_MIN was set")
+            if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
+                self.progress("Became armable once AVD_F_ALT_MIN was set")
+                break
+            self.test_adsb_send_threatening_adsb_message(here)
+            self.delay_sim_time(1)
+
+        self.context_pop()
+
     def PAUSE_CONTINUE(self):
         self.load_mission(filename="copter_mission.txt", strict=False)
         self.set_parameter(name="AUTO_OPTIONS", value=3)
