@@ -58,15 +58,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo Compass::var_info[] = {
     // index 0 was used for the old orientation matrix
 
-    // @Param: _ENABLE
-    // @DisplayName: Enable Compass
-    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASSx_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASSx_USE to 1.
-    // @User: Standard
-    // @RebootRequired: True
-    // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO_FLAGS("_ENABLE", 39, Compass, _enabled, 1, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: _OFS_X
+    // @Param: OFS_X
     // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
     // @Range: -400 400
@@ -75,7 +67,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _OFS_Y
+    // @Param: OFS_Y
     // @DisplayName: Compass offsets in milligauss on the Y axis
     // @Description: Offset to be added to the compass y-axis values to compensate for metal in the frame
     // @Range: -400 400
@@ -84,59 +76,57 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _OFS_Z
+    // @Param: OFS_Z
     // @DisplayName: Compass offsets in milligauss on the Z axis
     // @Description: Offset to be added to the compass z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
-    // index 1
+    AP_GROUPINFO("OFS",    1, Compass, _state._priv_instance[0].offset, 0),
 
-    // @Param: _DEC
+    // @Param: DEC
     // @DisplayName: Compass declination
     // @Description: An angle to compensate between the true north and magnetic north
     // @Range: -3.142 3.142
     // @Units: rad
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("_DEC",    2, Compass, _declination, 0),
+    AP_GROUPINFO("DEC",    2, Compass, _declination, 0),
 
 #if COMPASS_LEARN_ENABLED
-    // @Param: _LEARN
+    // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
     // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
     // @Values: 0:Disabled,1:Internal-Learning,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
-    AP_GROUPINFO("_LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
+    AP_GROUPINFO("LEARN",  3, Compass, _learn, COMPASS_LEARN_DEFAULT),
 #endif
 
-    // @Param: _USE
+    // @Param: USE
     // @DisplayName: Use compass for yaw
     // @Description: Enable or disable the use of the compass (instead of the GPS) for determining heading
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+    AP_GROUPINFO("USE",    4, Compass, _use_for_yaw._priv_instance[0], 1), // true if used for DCM yaw
 
-    // index 4
-
-    // @Param: _AUTODEC
+    // @Param: AUTODEC
     // @DisplayName: Auto Declination
     // @Description: Enable or disable the automatic calculation of the declination based on gps location
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("_AUTODEC",5, Compass, _auto_declination, 1),
+    AP_GROUPINFO("AUTODEC",5, Compass, _auto_declination, 1),
 
 #if COMPASS_MOT_ENABLED
-    // @Param: _MOTCT
+    // @Param: MOTCT
     // @DisplayName: Motor interference compensation type
     // @Description: Set motor interference compensation type to disabled, throttle or current.  Do not change manually.
     // @Values: 0:Disabled,1:Use Throttle,2:Use Current
     // @User: Advanced
     // @Calibration: 1
-    AP_GROUPINFO("_MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
-#endif
+    AP_GROUPINFO("MOTCT",    6, Compass, _motor_comp_type, AP_COMPASS_MOT_COMP_DISABLED),
 
-    // @Param: _MOT_X
+    // @Param: MOT_X
     // @DisplayName: Motor interference compensation for body frame X axis
     // @Description: Multiplied by the current throttle and added to the compass's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
@@ -145,7 +135,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _MOT_Y
+    // @Param: MOT_Y
     // @DisplayName: Motor interference compensation for body frame Y axis
     // @Description: Multiplied by the current throttle and added to the compass's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
@@ -154,33 +144,32 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _MOT_Z
+    // @Param: MOT_Z
     // @DisplayName: Motor interference compensation for body frame Z axis
     // @Description: Multiplied by the current throttle and added to the compass's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
     // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
+    AP_GROUPINFO("MOT",    7, Compass, _state._priv_instance[0].motor_compensation, 0),
+#endif
 
-    // index 7
-
-    // @Param: _ORIENT
+    // @Param: ORIENT
     // @DisplayName: Compass orientation
     // @Description: The orientation of the first external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used. The label for each option is specified in the order of rotations for that orientation.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
+    AP_GROUPINFO("ORIENT", 8, Compass, _state._priv_instance[0].orientation, ROTATION_NONE),
 
-    // index 8
-
-    // @Param: _EXTERNAL
+    // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
     // @Description: Configure compass so it is attached externally. This is auto-detected on most boards. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
+    AP_GROUPINFO("EXTERNAL", 9, Compass, _state._priv_instance[0].external, 0),
 
-    // index 9
-
-    // @Param: _OFS2_X
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: OFS2_X
     // @DisplayName: Compass2 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass2's x-axis values to compensate for metal in the frame
     // @Range: -400 400
@@ -189,7 +178,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _OFS2_Y
+    // @Param: OFS2_Y
     // @DisplayName: Compass2 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass2's y-axis values to compensate for metal in the frame
     // @Range: -400 400
@@ -198,17 +187,16 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _OFS2_Z
+    // @Param: OFS2_Z
     // @DisplayName: Compass2 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass2's z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
+    AP_GROUPINFO("OFS2",    10, Compass, _state._priv_instance[1].offset, 0),
 
-    // index 10
-
-    // @Param: _MOT2_X
+    // @Param: MOT2_X
     // @DisplayName: Motor interference compensation to compass2 for body frame X axis
     // @Description: Multiplied by the current throttle and added to compass2's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
@@ -217,7 +205,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _MOT2_Y
+    // @Param: MOT2_Y
     // @DisplayName: Motor interference compensation to compass2 for body frame Y axis
     // @Description: Multiplied by the current throttle and added to compass2's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
@@ -226,17 +214,19 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _MOT2_Z
+    // @Param: MOT2_Z
     // @DisplayName: Motor interference compensation to compass2 for body frame Z axis
     // @Description: Multiplied by the current throttle and added to compass2's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
     // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
+    AP_GROUPINFO("MOT2",    11, Compass, _state._priv_instance[1].motor_compensation, 0),
 
-    // index 11
+#endif // COMPASS_MAX_INSTANCES
 
-    // @Param: _OFS3_X
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: OFS3_X
     // @DisplayName: Compass3 offsets in milligauss on the X axis
     // @Description: Offset to be added to compass3's x-axis values to compensate for metal in the frame
     // @Range: -400 400
@@ -245,7 +235,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _OFS3_Y
+    // @Param: OFS3_Y
     // @DisplayName: Compass3 offsets in milligauss on the Y axis
     // @Description: Offset to be added to compass3's y-axis values to compensate for metal in the frame
     // @Range: -400 400
@@ -254,17 +244,16 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _OFS3_Z
+    // @Param: OFS3_Z
     // @DisplayName: Compass3 offsets in milligauss on the Z axis
     // @Description: Offset to be added to compass3's z-axis values to compensate for metal in the frame
     // @Range: -400 400
     // @Units: mGauss
     // @Increment: 1
     // @User: Advanced
+    AP_GROUPINFO("OFS3",    13, Compass, _state._priv_instance[2].offset, 0),
 
-    // index 13
-
-    // @Param: _MOT3_X
+    // @Param: MOT3_X
     // @DisplayName: Motor interference compensation to compass3 for body frame X axis
     // @Description: Multiplied by the current throttle and added to compass3's x-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
@@ -273,7 +262,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _MOT3_Y
+    // @Param: MOT3_Y
     // @DisplayName: Motor interference compensation to compass3 for body frame Y axis
     // @Description: Multiplied by the current throttle and added to compass3's y-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
@@ -282,403 +271,394 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _MOT3_Z
+    // @Param: MOT3_Z
     // @DisplayName: Motor interference compensation to compass3 for body frame Z axis
     // @Description: Multiplied by the current throttle and added to compass3's z-axis values to compensate for motor interference (Offset per Amp or at Full Throttle)
     // @Range: -1000 1000
     // @Units: mGauss/A
     // @Increment: 1
     // @User: Advanced
+    AP_GROUPINFO("MOT3",    14, Compass, _state._priv_instance[2].motor_compensation, 0),
+#endif // COMPASS_MAX_INSTANCES
 
-    // index 14
-
-    // @Param: _DEV_ID
+    // @Param: DEV_ID
     // @DisplayName: Compass device id
     // @Description: Compass device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
+    AP_GROUPINFO("DEV_ID",  15, Compass, _state._priv_instance[0].dev_id, 0),
 
-    // index  15
-
-    // @Param: _DEV_ID2
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: DEV_ID2
     // @DisplayName: Compass2 device id
     // @Description: Second compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
+    AP_GROUPINFO("DEV_ID2", 16, Compass, _state._priv_instance[1].dev_id, 0),
+#endif // COMPASS_MAX_INSTANCES
 
-    // index 16
-
-    // @Param: _DEV_ID3
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: DEV_ID3
     // @DisplayName: Compass3 device id
     // @Description: Third compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
+    AP_GROUPINFO("DEV_ID3", 17, Compass, _state._priv_instance[2].dev_id, 0),
+#endif // COMPASS_MAX_INSTANCES
 
-    // index 17
-
-    // @Param: _USE2
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: USE2
     // @DisplayName: Compass2 used for yaw
     // @Description: Enable or disable the secondary compass for determining heading.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+    AP_GROUPINFO("USE2",    18, Compass, _use_for_yaw._priv_instance[1], 1),
 
-    // index 18
-
-    // @Param: _ORIENT2
+    // @Param: ORIENT2
     // @DisplayName: Compass2 orientation
     // @Description: The orientation of a second external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
+    AP_GROUPINFO("ORIENT2", 19, Compass, _state._priv_instance[1].orientation, ROTATION_NONE),
 
-    // index 19
-
-    // @Param: _EXTERN2
+    // @Param: EXTERN2
     // @DisplayName: Compass2 is attached via an external cable
     // @Description: Configure second compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
+    AP_GROUPINFO("EXTERN2",20, Compass, _state._priv_instance[1].external, 0),
+#endif // COMPASS_MAX_INSTANCES
 
-    // index 20
-
-    // @Param: _USE3
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: USE3
     // @DisplayName: Compass3 used for yaw
     // @Description: Enable or disable the tertiary compass for determining heading.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
+    AP_GROUPINFO("USE3",    21, Compass, _use_for_yaw._priv_instance[2], 1),
 
-    // index 21
-
-    // @Param: _ORIENT3
+    // @Param: ORIENT3
     // @DisplayName: Compass3 orientation
     // @Description: The orientation of a third external compass relative to the vehicle frame. This value will be ignored unless this compass is set as an external compass. When set correctly in the northern hemisphere, pointing the nose and right side down should increase the MagX and MagY values respectively. Rolling the vehicle upside down should decrease the MagZ value. For southern hemisphere, switch increase and decrease. NOTE: For internal compasses, AHRS_ORIENT is used.
     // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Roll180Yaw45,10:Roll180Yaw90,11:Roll180Yaw135,12:Pitch180,13:Roll180Yaw225,14:Roll180Yaw270,15:Roll180Yaw315,16:Roll90,17:Roll90Yaw45,18:Roll90Yaw90,19:Roll90Yaw135,20:Roll270,21:Roll270Yaw45,22:Roll270Yaw90,23:Roll270Yaw135,24:Pitch90,25:Pitch270,26:Pitch180Yaw90,27:Pitch180Yaw270,28:Roll90Pitch90,29:Roll180Pitch90,30:Roll270Pitch90,31:Roll90Pitch180,32:Roll270Pitch180,33:Roll90Pitch270,34:Roll180Pitch270,35:Roll270Pitch270,36:Roll90Pitch180Yaw90,37:Roll90Yaw270,38:Yaw293Pitch68Roll180,39:Pitch315,40:Roll90Pitch315,42:Roll45,43:Roll315,100:Custom
     // @User: Advanced
+    AP_GROUPINFO("ORIENT3", 22, Compass, _state._priv_instance[2].orientation, ROTATION_NONE),
 
-    // index 22
-
-    // @Param: _EXTERN3
+    // @Param: EXTERN3
     // @DisplayName: Compass3 is attached via an external cable
     // @Description: Configure third compass so it is attached externally. This is auto-detected on most boards. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
+    AP_GROUPINFO("EXTERN3",23, Compass, _state._priv_instance[2].external, 0),
+#endif // COMPASS_MAX_INSTANCES
 
-    // index 23
-
-    // @Param: _DIA_X
+#ifndef HAL_BUILD_AP_PERIPH
+    // @Param: DIA_X
     // @DisplayName: Compass soft-iron diagonal X component
     // @Description: DIA_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _DIA_Y
+    // @Param: DIA_Y
     // @DisplayName: Compass soft-iron diagonal Y component
     // @Description: DIA_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _DIA_Z
+    // @Param: DIA_Z
     // @DisplayName: Compass soft-iron diagonal Z component
     // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+    AP_GROUPINFO("DIA",    24, Compass, _state._priv_instance[0].diagonals, 0),
 
-    // index 24
-
-    // @Param: _ODI_X
+    // @Param: ODI_X
     // @DisplayName: Compass soft-iron off-diagonal X component
     // @Description: ODI_X in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _ODI_Y
+    // @Param: ODI_Y
     // @DisplayName: Compass soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _ODI_Z
+    // @Param: ODI_Z
     // @DisplayName: Compass soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+    AP_GROUPINFO("ODI",    25, Compass, _state._priv_instance[0].offdiagonals, 0),
+#endif // HAL_BUILD_AP_PERIPH
 
-    // index 25
-
-    // @Param: _DIA2_X
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: DIA2_X
     // @DisplayName: Compass2 soft-iron diagonal X component
     // @Description: DIA_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _DIA2_Y
+    // @Param: DIA2_Y
     // @DisplayName: Compass2 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _DIA2_Z
+    // @Param: DIA2_Z
     // @DisplayName: Compass2 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+    AP_GROUPINFO("DIA2",    26, Compass, _state._priv_instance[1].diagonals, 0),
 
-    // index 26
-
-    // @Param: _ODI2_X
+    // @Param: ODI2_X
     // @DisplayName: Compass2 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _ODI2_Y
+    // @Param: ODI2_Y
     // @DisplayName: Compass2 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _ODI2_Z
+    // @Param: ODI2_Z
     // @DisplayName: Compass2 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+    AP_GROUPINFO("ODI2",    27, Compass, _state._priv_instance[1].offdiagonals, 0),
+#endif // COMPASS_MAX_INSTANCES
 
-    // index 27
-
-    // @Param: _DIA3_X
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: DIA3_X
     // @DisplayName: Compass3 soft-iron diagonal X component
     // @Description: DIA_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _DIA3_Y
+    // @Param: DIA3_Y
     // @DisplayName: Compass3 soft-iron diagonal Y component
     // @Description: DIA_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _DIA3_Z
+    // @Param: DIA3_Z
     // @DisplayName: Compass3 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
+    AP_GROUPINFO("DIA3",    28, Compass, _state._priv_instance[2].diagonals, 0),
 
-    // index 28
-
-    // @Param: _ODI3_X
+    // @Param: ODI3_X
     // @DisplayName: Compass3 soft-iron off-diagonal X component
     // @Description: ODI_X in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _ODI3_Y
+    // @Param: ODI3_Y
     // @DisplayName: Compass3 soft-iron off-diagonal Y component
     // @Description: ODI_Y in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
     // @Calibration: 1
 
-    // @Param: _ODI3_Z
+    // @Param: ODI3_Z
     // @DisplayName: Compass3 soft-iron off-diagonal Z component
     // @Description: ODI_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
-
-    // index 29
+    AP_GROUPINFO("ODI3",    29, Compass, _state._priv_instance[2].offdiagonals, 0),
+#endif // COMPASS_MAX_INSTANCES
 
 #if COMPASS_CAL_ENABLED
-    // @Param: _CAL_FIT
+    // @Param: CAL_FIT
     // @DisplayName: Compass calibration fitness
     // @Description: This controls the fitness level required for a successful compass calibration. A lower value makes for a stricter fit (less likely to pass). This is the value used for the primary magnetometer. Other magnetometers get double the value.
     // @Range: 4 32
     // @Values: 4:Very Strict,8:Strict,16:Default,32:Relaxed
     // @Increment: 0.1
     // @User: Advanced
-    AP_GROUPINFO("_CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
+    AP_GROUPINFO("CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
-    // @Param: _OFFS_MAX
+    // @Param: OFFS_MAX
     // @DisplayName: Compass maximum offset
     // @Description: This sets the maximum allowed compass offset in calibration and arming checks
     // @Range: 500 3000
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
+    AP_GROUPINFO("OFFS_MAX", 31, Compass, _offset_max, AP_COMPASS_OFFSETS_MAX_DEFAULT),
 #endif
 
 #if COMPASS_MOT_ENABLED
-    // @Group: _PMOT
+    // @Group: PMOT
     // @Path: Compass_PerMotor.cpp
-    AP_SUBGROUPINFO(_per_motor, "_PMOT", 32, Compass, Compass_PerMotor),
+    AP_SUBGROUPINFO(_per_motor, "PMOT", 32, Compass, Compass_PerMotor),
 #endif
 
-    // @Param: _TYPEMASK
+    // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
     // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:UAVCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS
     // @User: Advanced
-    AP_GROUPINFO("_TYPEMASK", 33, Compass, _driver_type_mask, 0),
+    AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
 
-    // @Param: _FLTR_RNG
+    // @Param: FLTR_RNG
     // @DisplayName: Range in which sample is accepted
     // @Description: This sets the range around the average value that new samples must be within to be accepted. This can help reduce the impact of noise on sensors that are on long I2C cables. The value is a percentage from the average value. A value of zero disables this filter.
     // @Units: %
     // @Range: 0 100
     // @Increment: 1
-    AP_GROUPINFO("_FLTR_RNG", 34, Compass, _filter_range, HAL_COMPASS_FILTER_DEFAULT),
+    AP_GROUPINFO("FLTR_RNG", 34, Compass, _filter_range, HAL_COMPASS_FILTER_DEFAULT),
 
 #if COMPASS_CAL_ENABLED
-    // @Param: _AUTO_ROT
+    // @Param: AUTO_ROT
     // @DisplayName: Automatically check orientation
     // @Description: When enabled this will automatically check the orientation of compasses on successful completion of compass calibration. If set to 2 then external compasses will have their orientation automatically corrected.
     // @Values: 0:Disabled,1:CheckOnly,2:CheckAndFix,3:use same tolerance to auto rotate 45 deg rotations
-    AP_GROUPINFO("_AUTO_ROT", 35, Compass, _rotate_auto, HAL_COMPASS_AUTO_ROT_DEFAULT),
+    AP_GROUPINFO("AUTO_ROT", 35, Compass, _rotate_auto, HAL_COMPASS_AUTO_ROT_DEFAULT),
 #endif
 
 #if COMPASS_MAX_INSTANCES > 1
-    // @Param: _PRIO1_ID
+    // @Param: PRIO1_ID
     // @DisplayName: Compass device id with 1st order priority
     // @Description: Compass device id with 1st order priority, set automatically if 0. Reboot required after change.
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_PRIO1_ID",  36, Compass, _priority_did_stored_list._priv_instance[0], 0),
+    AP_GROUPINFO("PRIO1_ID",  36, Compass, _priority_did_stored_list._priv_instance[0], 0),
 
-    // @Param: _PRIO2_ID
+    // @Param: PRIO2_ID
     // @DisplayName: Compass device id with 2nd order priority
     // @Description: Compass device id with 2nd order priority, set automatically if 0. Reboot required after change.
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_PRIO2_ID", 37, Compass, _priority_did_stored_list._priv_instance[1], 0),
+    AP_GROUPINFO("PRIO2_ID", 37, Compass, _priority_did_stored_list._priv_instance[1], 0),
 #endif // COMPASS_MAX_INSTANCES
 
 #if COMPASS_MAX_INSTANCES > 2
-    // @Param: _PRIO3_ID
+    // @Param: PRIO3_ID
     // @DisplayName: Compass device id with 3rd order priority
     // @Description: Compass device id with 3rd order priority, set automatically if 0. Reboot required after change.
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_PRIO3_ID", 38, Compass, _priority_did_stored_list._priv_instance[2], 0),
+    AP_GROUPINFO("PRIO3_ID", 38, Compass, _priority_did_stored_list._priv_instance[2], 0),
 #endif // COMPASS_MAX_INSTANCES
 
-    // index 39 is ENABLE, placed at top of table
+    // @Param: ENABLE
+    // @DisplayName: Enable Compass
+    // @Description: Setting this to Enabled(1) will enable the compass. Setting this to Disabled(0) will disable the compass. Note that this is separate from COMPASS_USE. This will enable the low level senor, and will enable logging of magnetometer data. To use the compass for navigation you must also set COMPASS_USE to 1.
+    // @User: Standard
+    // @RebootRequired: True
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO("ENABLE", 39, Compass, _enabled, 1),
 
-    // @Param: _SCALE
+#ifndef HAL_BUILD_AP_PERIPH
+    // @Param: SCALE
     // @DisplayName: Compass1 scale factor
     // @Description: Scaling factor for first compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
     // @User: Standard
     // @Range: 0 1.3
+    AP_GROUPINFO("SCALE", 40, Compass, _state._priv_instance[0].scale_factor, 0),
 
-    // index 40
-
-    // @Param: _SCALE2
+#if COMPASS_MAX_INSTANCES > 1
+    // @Param: SCALE2
     // @DisplayName: Compass2 scale factor
     // @Description: Scaling factor for 2nd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
     // @User: Standard
     // @Range: 0 1.3
+    AP_GROUPINFO("SCALE2", 41, Compass, _state._priv_instance[1].scale_factor, 0),
+#endif
 
-    // index 41
-
-    // @Param: _SCALE3
+#if COMPASS_MAX_INSTANCES > 2
+    // @Param: SCALE3
     // @DisplayName: Compass3 scale factor
     // @Description: Scaling factor for 3rd compass to compensate for sensor scaling errors. If this is 0 then no scaling is done
     // @User: Standard
     // @Range: 0 1.3
+    AP_GROUPINFO("SCALE3", 42, Compass, _state._priv_instance[2].scale_factor, 0),
+#endif
+#endif // HAL_BUILD_AP_PERIPH
 
-    // index 42
-
-    // @Param: _OPTIONS
+    // @Param: OPTIONS
     // @DisplayName: Compass options
     // @Description: This sets options to change the behaviour of the compass
     // @Bitmask: 0:CalRequireGPS
     // @User: Advanced
-    AP_GROUPINFO("_OPTIONS", 43, Compass, _options, 0),
+    AP_GROUPINFO("OPTIONS", 43, Compass, _options, 0),
 
 #if COMPASS_MAX_UNREG_DEV > 0
-    // @Param: _DEV_ID4
+    // @Param: DEV_ID4
     // @DisplayName: Compass4 device id
     // @Description: Extra 4th compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("_DEV_ID4", 44, Compass, extra_dev_id[0], 0),
+    AP_GROUPINFO("DEV_ID4", 44, Compass, extra_dev_id[0], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
 #if COMPASS_MAX_UNREG_DEV > 1
-    // @Param: _DEV_ID5
+    // @Param: DEV_ID5
     // @DisplayName: Compass5 device id
     // @Description: Extra 5th compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("_DEV_ID5", 45, Compass, extra_dev_id[1], 0),
+    AP_GROUPINFO("DEV_ID5", 45, Compass, extra_dev_id[1], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
 #if COMPASS_MAX_UNREG_DEV > 2
-    // @Param: _DEV_ID6
+    // @Param: DEV_ID6
     // @DisplayName: Compass6 device id
     // @Description: Extra 6th compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("_DEV_ID6", 46, Compass, extra_dev_id[2], 0),
+    AP_GROUPINFO("DEV_ID6", 46, Compass, extra_dev_id[2], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
 #if COMPASS_MAX_UNREG_DEV > 3
-    // @Param: _DEV_ID7
+    // @Param: DEV_ID7
     // @DisplayName: Compass7 device id
     // @Description: Extra 7th compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("_DEV_ID7", 47, Compass, extra_dev_id[3], 0),
+    AP_GROUPINFO("DEV_ID7", 47, Compass, extra_dev_id[3], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
 #if COMPASS_MAX_UNREG_DEV > 4
-    // @Param: _DEV_ID8
+    // @Param: DEV_ID8
     // @DisplayName: Compass8 device id
     // @Description: Extra 8th compass's device id.  Automatically detected, do not set manually
     // @ReadOnly: True
     // @User: Advanced
-    AP_GROUPINFO("_DEV_ID8", 48, Compass, extra_dev_id[4], 0),
+    AP_GROUPINFO("DEV_ID8", 48, Compass, extra_dev_id[4], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
 #if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
-    // @Param: _CUS_ROLL
+    // @Param: CUS_ROLL
     // @DisplayName: Custom orientation roll offset
-    // @Description: Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASSx_ORIENT is set to CUSTOM.
+    // @Description: Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
     // @Range: -180 180
     // @Units: deg
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_CUS_ROLL", 49, Compass, _custom_roll, 0),
+    AP_GROUPINFO("CUS_ROLL", 49, Compass, _custom_roll, 0),
 
-    // @Param: _CUS_PIT
+    // @Param: CUS_PIT
     // @DisplayName: Custom orientation pitch offset
-    // @Description: Compass mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when COMPASSx_ORIENT is set to CUSTOM.
+    // @Description: Compass mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
     // @Range: -180 180
     // @Units: deg
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_CUS_PIT", 50, Compass, _custom_pitch, 0),
+    AP_GROUPINFO("CUS_PIT", 50, Compass, _custom_pitch, 0),
 
-    // @Param: _CUS_YAW
+    // @Param: CUS_YAW
     // @DisplayName: Custom orientation yaw offset
-    // @Description: Compass mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when COMPASSx_ORIENT is set to CUSTOM.
+    // @Description: Compass mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
     // @Range: -180 180
     // @Units: deg
     // @Increment: 1
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("_CUS_YAW", 51, Compass, _custom_yaw, 0),
+    AP_GROUPINFO("CUS_YAW", 51, Compass, _custom_yaw, 0),
 #endif
-
-    // @Group: 1_
-    // @Path: AP_Compass_Params.cpp
-    AP_SUBGROUPINFO(_state._priv_instance[0].params, "1_", 52, Compass, AP_Compass_Params),
-
-#if COMPASS_MAX_INSTANCES > 1
-    // @Group: 2_
-    // @Path: AP_Compass_Params.cpp
-    AP_SUBGROUPINFO(_state._priv_instance[1].params, "2_", 53, Compass, AP_Compass_Params),
-#endif
-
-#if COMPASS_MAX_INSTANCES > 2
-    // @Group: 3_
-    // @Path: AP_Compass_Params.cpp
-    AP_SUBGROUPINFO(_state._priv_instance[2].params, "3_", 54, Compass, AP_Compass_Params),
-#endif
-
     AP_GROUPEND
 };
 
@@ -719,7 +699,7 @@ void Compass::init()
             bool primary_param_exists = AP_Param::find_old_parameter(&primary_compass_old_param, &value);
             int8_t oldvalue = value.get();
             if ((oldvalue!=0) && (oldvalue<COMPASS_MAX_INSTANCES) && primary_param_exists) {
-                _priority_did_stored_list[Priority(0)].set_and_save_ifchanged(_state[StateIndex(oldvalue)].params.dev_id);
+                _priority_did_stored_list[Priority(0)].set_and_save_ifchanged(_state[StateIndex(oldvalue)].dev_id);
             }
         }
     }
@@ -749,11 +729,9 @@ void Compass::init()
     }
 #endif // COMPASS_MAX_INSTANCES
 
-    convert_per_instance();
-
     // cache expected dev ids for use during runtime detection
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        _state[i].expected_dev_id = _state[i].params.dev_id;
+        _state[i].expected_dev_id = _state[i].dev_id;
     }
 
 #if COMPASS_MAX_UNREG_DEV
@@ -803,7 +781,7 @@ void Compass::init()
     // back in again
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (!_state[i].registered) {
-            _state[i].params.dev_id.set(0);
+            _state[i].dev_id.set(0);
         }
     }
 
@@ -813,47 +791,6 @@ void Compass::init()
 #endif
 
     init_done = true;
-}
-
-// convet params to per instance param table
-// PARAMETER_CONVERSION - Added: Nov-2021
-void Compass::convert_per_instance()
-{
-    AP_Param::ConversionInfo info;
-    if (!AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
-        return;
-    }
-
-    const struct convert_table {
-        uint8_t element[3];
-        ap_var_type type;
-        const char* name;
-    }  conversion_table[] = {
-        { {8,19,22}, AP_PARAM_INT8, "ORIENT" },   // COMPASS_ORIENT, COMPASS_ORIENT2, COMPASS_ORIENT3
-        { {4,18,21}, AP_PARAM_INT8, "USE" },      // COMPASS_USE, COMPASS_USE2, COMPASS_USE3
-        { {9,20,23}, AP_PARAM_INT8, "EXTERN" },   // COMPASS_EXTERNAL, COMPASS_EXTERN2, COMPASS_EXTERN3
-        { {40,41,42}, AP_PARAM_FLOAT, "SCALE" },  // COMPASS_SCALE, COMPASS_SCALE2, COMPASS_SCALE3
-        { {1,10,13}, AP_PARAM_VECTOR3F, "OFS" },  // COMPASS_OFS_X/Y/Z, COMPASS_OFS2_X/Y/Z, COMPASS_OFS3_X/Y/Z
-#ifndef HAL_BUILD_AP_PERIPH
-        { {24,26,28}, AP_PARAM_VECTOR3F, "DIA" }, // COMPASS_DIA_X/Y/Z, COMPASS_DIA2_X/Y/Z, COMPASS_DIA3_X/Y/Z
-        { {25,27,29}, AP_PARAM_VECTOR3F, "ODI" }, // COMPASS_ODI_X/Y/Z, COMPASS_ODI2_X/Y/Z, COMPASS_ODI3_X/Y/Z
-#endif
-#if COMPASS_MOT_ENABLED
-        { {7,11,14}, AP_PARAM_VECTOR3F, "MOT" },  // COMPASS_MOT_X/Y/Z, COMPASS_MOT2_X/Y/Z, COMPASS_MOT3_X/Y/Z
-#endif
-    };
-
-    char param_name[17] {};
-    info.new_name = param_name;
-
-    for (const auto & elem : conversion_table) {
-        info.type = elem.type;
-        for (uint8_t i=0; i < MIN(COMPASS_MAX_INSTANCES,3); i++) {
-            info.old_group_element = elem.element[i];
-            hal.util->snprintf(param_name, sizeof(param_name), "COMPASS%i_%s", i+1,  elem.name);
-            AP_Param::convert_old_parameter(&info, 1.0f, 0);
-        }
-    }
 }
 
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
@@ -900,7 +837,7 @@ void Compass::_reorder_compass_params()
         }
         curr_state_id = COMPASS_MAX_INSTANCES;
         for (StateIndex j(0); j<COMPASS_MAX_INSTANCES; j++) {
-            if (_priority_did_list[i] == _state[j].params.dev_id) {
+            if (_priority_did_list[i] == _state[j].dev_id) {
                 curr_state_id = j;
                 break;
             }
@@ -917,14 +854,14 @@ void Compass::_reorder_compass_params()
 
 void Compass::mag_state::copy_from(const Compass::mag_state& state)
 {
-    params.external.set_and_save_ifchanged(state.params.external);
-    params.orientation.set_and_save_ifchanged(state.params.orientation);
-    params.offset.set_and_save_ifchanged(state.params.offset);
-    params.diagonals.set_and_save_ifchanged(state.params.diagonals);
-    params.offdiagonals.set_and_save_ifchanged(state.params.offdiagonals);
-    params.scale_factor.set_and_save_ifchanged(state.params.scale_factor);
-    params.dev_id.set_and_save_ifchanged(state.params.dev_id);
-    params.motor_compensation.set_and_save_ifchanged(state.params.motor_compensation);
+    external.set_and_save_ifchanged(state.external);
+    orientation.set_and_save_ifchanged(state.orientation);
+    offset.set_and_save_ifchanged(state.offset);
+    diagonals.set_and_save_ifchanged(state.diagonals);
+    offdiagonals.set_and_save_ifchanged(state.offdiagonals);
+    scale_factor.set_and_save_ifchanged(state.scale_factor);
+    dev_id.set_and_save_ifchanged(state.dev_id);
+    motor_compensation.set_and_save_ifchanged(state.motor_compensation);
     expected_dev_id = state.expected_dev_id;
     detected_dev_id = state.detected_dev_id;
 }
@@ -961,7 +898,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
     // This is an unregistered compass, check if any free slot is available
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         priority = _update_priority_list(dev_id);
-        if (_state[i].params.dev_id == 0 && priority < COMPASS_MAX_INSTANCES) {
+        if (_state[i].dev_id == 0 && priority < COMPASS_MAX_INSTANCES) {
             _state[i].registered = true;
             _state[i].priority = priority;
             instance = uint8_t(i);
@@ -1059,7 +996,7 @@ bool Compass::_have_i2c_driver(uint8_t bus, uint8_t address) const
             continue;
         }
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(_state[i].params.dev_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(uint32_t(_state[i].dev_id.get()), 0)) {
             // we are already using this device
             return true;
         }
@@ -1470,7 +1407,7 @@ void Compass::_detect_backends(void)
                     // let's begin the replacement
                     bool found_replacement = false;
                     for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
-                        if ((uint32_t)_state[k].params.dev_id == detected_devid) {
+                        if ((uint32_t)_state[k].dev_id == detected_devid) {
                             if (_state[k].priority <= uint8_t(i)) {
                                 // we are already on higher priority
                                 // nothing to do
@@ -1571,9 +1508,9 @@ void Compass::_reset_compass_id()
     // Check if any of the old registered devs are not registered
     // and hence can be removed
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state[i].params.dev_id == 0 && _state[i].expected_dev_id != 0) {
+        if (_state[i].dev_id == 0 && _state[i].expected_dev_id != 0) {
             // also hard reset dev_ids that are not detected
-            _state[i].params.dev_id.save();
+            _state[i].dev_id.save();
         }
     }
 #endif
@@ -1652,8 +1589,7 @@ Compass::read(void)
 
     // Set _first_usable parameter
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        StateIndex id = _get_state_id(i);
-        if ((id < COMPASS_MAX_INSTANCES) && _state[id].params.use_for_yaw) {
+        if (_use_for_yaw[i]) {
             _first_usable = uint8_t(i);
             break;
         }
@@ -1679,7 +1615,7 @@ Compass::set_offsets(uint8_t i, const Vector3f &offsets)
     // sanity check compass instance provided
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.offset.set(offsets);
+        _state[id].offset.set(offsets);
     }
 }
 
@@ -1689,7 +1625,7 @@ Compass::set_and_save_offsets(uint8_t i, const Vector3f &offsets)
     // sanity check compass instance provided
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.offset.set(offsets);
+        _state[id].offset.set(offsets);
         save_offsets(i);
     }
 }
@@ -1700,7 +1636,7 @@ Compass::set_and_save_diagonals(uint8_t i, const Vector3f &diagonals)
     // sanity check compass instance provided
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.diagonals.set_and_save(diagonals);
+        _state[id].diagonals.set_and_save(diagonals);
     }
 }
 
@@ -1710,7 +1646,7 @@ Compass::set_and_save_offdiagonals(uint8_t i, const Vector3f &offdiagonals)
     // sanity check compass instance provided
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.offdiagonals.set_and_save(offdiagonals);
+        _state[id].offdiagonals.set_and_save(offdiagonals);
     }
 }
 
@@ -1719,7 +1655,7 @@ Compass::set_and_save_scale_factor(uint8_t i, float scale_factor)
 {
     StateIndex id = _get_state_id(Priority(i));
     if (i < COMPASS_MAX_INSTANCES) {
-        _state[id].params.scale_factor.set_and_save(scale_factor);
+        _state[id].scale_factor.set_and_save(scale_factor);
     }
 }
 
@@ -1728,8 +1664,8 @@ Compass::save_offsets(uint8_t i)
 {
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.offset.save();  // save offsets
-        _state[id].params.dev_id.set_and_save(_state[id].detected_dev_id);
+        _state[id].offset.save();  // save offsets
+        _state[id].dev_id.set_and_save(_state[id].detected_dev_id);
     }
 }
 
@@ -1738,7 +1674,7 @@ Compass::set_and_save_orientation(uint8_t i, Rotation orientation)
 {
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.orientation.set_and_save_ifchanged(orientation);
+        _state[id].orientation.set_and_save_ifchanged(orientation);
     }
 }
 
@@ -1755,7 +1691,7 @@ Compass::set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor)
 {
     StateIndex id = _get_state_id(Priority(i));
     if (id < COMPASS_MAX_INSTANCES) {
-        _state[id].params.motor_compensation.set(motor_comp_factor);
+        _state[id].motor_compensation.set(motor_comp_factor);
     }
 }
 
@@ -1767,7 +1703,7 @@ Compass::save_motor_compensation()
     for (Priority k(0); k<COMPASS_MAX_INSTANCES; k++) {
         id = _get_state_id(k);
         if (id<COMPASS_MAX_INSTANCES) {
-            _state[id].params.motor_compensation.save();
+            _state[id].motor_compensation.save();
         }
     }
 }
@@ -1810,14 +1746,10 @@ Compass::use_for_yaw(uint8_t i) const
     if (!available()) {
         return false;
     }
-    StateIndex id = _get_state_id(Priority(i));
-    if (id >= COMPASS_MAX_INSTANCES) {
-        return false;
-    }
     // when we are doing in-flight compass learning the state
     // estimator must not use the compass. The learning code turns off
     // inflight learning when it has converged
-    return _state[id].params.use_for_yaw && _learn.get() != LEARN_INFLIGHT;
+    return _use_for_yaw[Priority(i)] && _learn.get() != LEARN_INFLIGHT;
 }
 
 /*
@@ -1911,15 +1843,15 @@ bool Compass::configured(uint8_t i)
     }
 
     // back up cached value of dev_id
-    int32_t dev_id_cache_value = _state[id].params.dev_id;
+    int32_t dev_id_cache_value = _state[id].dev_id;
 
     // load dev_id from eeprom
-    _state[id].params.dev_id.load();
+    _state[id].dev_id.load();
 
     // if dev_id loaded from eeprom is different from detected dev id or dev_id loaded from eeprom is different from cached dev_id, compass is unconfigured
-    if (_state[id].params.dev_id != _state[id].detected_dev_id || _state[id].params.dev_id != dev_id_cache_value) {
+    if (_state[id].dev_id != _state[id].detected_dev_id || _state[id].dev_id != dev_id_cache_value) {
         // restore cached value
-        _state[id].params.dev_id = dev_id_cache_value;
+        _state[id].dev_id = dev_id_cache_value;
         // return failure
         return false;
     }
@@ -2040,8 +1972,8 @@ bool Compass::have_scale_factor(uint8_t i) const
     }
     StateIndex id = _get_state_id(Priority(i));
     if (id >= COMPASS_MAX_INSTANCES ||
-        _state[id].params.scale_factor < COMPASS_MIN_SCALE_FACTOR ||
-        _state[id].params.scale_factor > COMPASS_MAX_SCALE_FACTOR) {
+        _state[id].scale_factor < COMPASS_MIN_SCALE_FACTOR ||
+        _state[id].scale_factor > COMPASS_MAX_SCALE_FACTOR) {
         return false;
     }
     return true;
@@ -2081,8 +2013,8 @@ void Compass::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
 void Compass::force_save_calibration(void)
 {
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state[i].params.dev_id != 0) {
-            _state[i].params.dev_id.save();
+        if (_state[i].dev_id != 0) {
+            _state[i].dev_id.save();
         }
     }
 }
