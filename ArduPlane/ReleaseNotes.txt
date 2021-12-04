@@ -1,3 +1,26 @@
+Release 4.1.5beta1 4th December 2021
+------------------------------------
+
+This is a minor release with some important bug fixes and small number
+of new features.
+
+ - fixed switching airspeed sensors based on EKF3 affinity
+ - added servo voltage pin on CUAV-X7
+ - make 2nd reduction of P gain in AUTOTUNE smaller
+ - fixed a bug causing the wrong max throttle to be used in takeoff
+ - fixed fence count on upload from old fence protocol
+ - fixed reset of ground steering lock for landing
+ - reset VTOL takeoff if not armed
+ - fixed 16 bit timer bug on MatekH743
+ - added FETTec onewire ESC support
+ - set slew rate to zero while in QUATOTUNE twitch
+ - fixed rate of notch filter to follow configured rate
+
+I expect this beta to be out for about 1 week
+
+Happy flying!
+
+
 Release 4.1.4 25th November 2021
 --------------------------------
 
