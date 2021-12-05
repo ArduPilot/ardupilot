@@ -25,41 +25,52 @@
 #include <AP_InternalError/AP_InternalError.h>
 
 // control default definitions
-#define CONTROL_TIME_CONSTANT_RATIO 4.0   // time constant to ensure stable kinematic path generation
+#define CONTROL_TIME_CONSTANT_RATIO 4.0             // time constant to ensure stable kinematic path generation
+#define CORNER_ACCELERATION_RATIO   1.0/safe_sqrt(2.0)   // acceleration reduction to enable zero overshoot corners
 
 // update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero
-void update_vel_accel(float& vel, float accel, float dt, float limit)
+// limit - specifies if the system is unable to continue to accelerate
+// vel_error - specifies the direction of the velocity error useded in limit handling
+void update_vel_accel(float& vel, float accel, float dt, float limit, float vel_error)
 {
     const float delta_vel = accel * dt;
-    if (!is_positive(delta_vel * limit)){
+    // do not add delta_vel if it will increase the velocity error in the direction of limit
+    if (!(is_positive(delta_vel * limit) && is_positive(vel_error * limit))){
         vel += delta_vel;
     }
 }
 
 // update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
 // the position and velocity is not moved in the direction of limit if limit is not set to zero
-void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, float limit)
+// limit - specifies if the system is unable to continue to accelerate
+// pos_error and vel_error - specifies the direction of the velocity error useded in limit handling
+void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, float limit, float pos_error, float vel_error)
 {
     // move position and velocity forward by dt if it does not increase error when limited.
     float delta_pos = vel * dt + accel * 0.5f * sq(dt);
-    if (!is_positive(delta_pos * limit)){
+    // do not add delta_pos if it will increase the velocity error in the direction of limit
+    if (!(is_positive(delta_pos * limit) && is_positive(pos_error * limit))){
         pos += delta_pos;
     }
 
-    update_vel_accel(vel, accel, dt, limit);
+    update_vel_accel(vel, accel, dt, limit, vel_error);
 }
 
 // update_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero
-void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit)
+// limit - specifies if the system is unable to continue to accelerate
+// pos_error and vel_error - specifies the direction of the velocity error useded in limit handling
+void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& vel_error)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
     Vector2f delta_vel = accel * dt;
-    if (!is_zero(limit.length_squared())) {
-        // zero delta_vel if it will increase the velocity error
-        if (is_positive(delta_vel * limit)) {
-            delta_vel.zero();
+    if (!limit.is_zero() && !delta_vel.is_zero()) {
+        // check if delta_vel will increase the velocity error in the direction of limit
+        if (is_positive(delta_vel * limit) && is_positive(vel_error * limit)) {
+            // remove component of delta_vel in direction of limit
+            Vector2f limit_unit = limit.normalized();
+            delta_vel -= limit_unit * (limit_unit * delta_vel);
         }
     }
     vel += delta_vel;
@@ -67,21 +78,23 @@ void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const V
 
 // update_pos_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
 // the position and velocity is not moved in the direction of limit if limit is not set to zero
-void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit)
+// limit - specifies if the system is unable to continue to accelerate
+// pos_error and vel_error - specifies the direction of the velocity error useded in limit handling
+void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& pos_error, const Vector2f& vel_error)
 {
     // move position and velocity forward by dt.
     Vector2f delta_pos = vel * dt + accel * 0.5f * sq(dt);
 
     if (!is_zero(limit.length_squared())) {
-        // zero delta_vel if it will increase the velocity error
-        if (is_positive(delta_pos * limit)) {
+        // zero delta_pos if it will increase the velocity error in the direction of limit
+        if (is_positive(delta_pos * limit) && is_positive(pos_error * limit)) {
             delta_pos.zero();
         }
     }
 
     pos += delta_pos.topostype();
 
-    update_vel_accel_xy(vel, accel, dt, limit);
+    update_vel_accel_xy(vel, accel, dt, limit, vel_error);
 }
 
 /* shape_accel calculates a jerk limited path from the current acceleration to an input acceleration.
@@ -176,7 +189,7 @@ void shape_vel_accel(float vel_input, float accel_input,
 }
 
 // 2D version
-void shape_vel_accel_xy(const Vector2f &vel_input1, const Vector2f& accel_input,
+void shape_vel_accel_xy(const Vector2f &vel_input, const Vector2f& accel_input,
                         const Vector2f& vel, Vector2f& accel,
                         float accel_max, float jerk_max, float dt, bool limit_total_accel)
 {
@@ -185,8 +198,6 @@ void shape_vel_accel_xy(const Vector2f &vel_input1, const Vector2f& accel_input,
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
-
-    Vector2f vel_input = vel_input1;
 
     // Calculate time constants and limits to ensure stable operation
     const float KPa = jerk_max / accel_max;
@@ -198,7 +209,29 @@ void shape_vel_accel_xy(const Vector2f &vel_input1, const Vector2f& accel_input,
     Vector2f accel_target = vel_error * KPa;
 
     // limit correction acceleration to accel_max
-    accel_target.limit_length(accel_max);
+    if (vel_input.is_zero()) {
+        accel_target.limit_length(accel_max);
+    } else {
+        // calculate acceleration in the direction of and perpendicular to the velocity input
+        const Vector2f vel_input_unit = vel_input.normalized();
+        float accel_dir = vel_input_unit * accel_target;
+        Vector2f accel_cross =  accel_target - (vel_input_unit * accel_dir);
+
+        // ensure 1/sqrt(2) of maximum acceleration is availible to correct cross component 
+        // relative to vel_input
+        if (sq(accel_dir) <= accel_cross.length_squared()) {
+            // accel_target can be simply limited in magnitude
+            accel_target.limit_length(accel_max);
+        } else {
+            // limiting the length of the vector will reduce the lateral acceleration below 1/sqrt(2)
+            // limit the lateral acceleration to 1/sqrt(2) and retain as much of the remaining
+            // acceleration as possible.
+            accel_cross.limit_length(CORNER_ACCELERATION_RATIO * accel_max);
+            float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
+            accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
+            accel_target = accel_cross + vel_input_unit * accel_dir;
+        }
+    }
 
     accel_target += accel_input;
 
@@ -269,7 +302,8 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
 
     // Calculate time constants and limits to ensure stable operation
     const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * accel_max);
-    const float accel_tc_max = accel_max * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
+    // reduce breaking acceleration to support cornering without overshooting the stopping point
+    const float accel_tc_max = CORNER_ACCELERATION_RATIO * accel_max * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
 
     // position error to be corrected
     Vector2f pos_error = (pos_input - pos).tofloat();
