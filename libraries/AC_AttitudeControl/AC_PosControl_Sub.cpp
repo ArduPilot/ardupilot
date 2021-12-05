@@ -26,7 +26,7 @@ void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool fo
     }
 
     // adjust desired alt if motors have not hit their limits
-    update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z);
+    update_pos_vel_accel(_pos_target.z, _vel_desired.z, _accel_desired.z, _dt, _limit_vector.z, _p_pos_z.get_error(), _pid_vel_z.get_error());
 
     // prevent altitude target from breeching altitude limits
     if (is_negative(_alt_min) && _alt_min < _alt_max && _alt_max < 100 && _pos_target.z < _alt_min) {
@@ -38,5 +38,5 @@ void AC_PosControl_Sub::input_vel_accel_z(float &vel, const float accel, bool fo
         -accel_z_cms, accel_z_cms,
         _jerk_max_xy_cmsss, _dt, limit_output);
 
-    update_vel_accel(vel, accel, _dt, _limit_vector.z);
+    update_vel_accel(vel, accel, _dt, 0.0, 0.0);
 }
