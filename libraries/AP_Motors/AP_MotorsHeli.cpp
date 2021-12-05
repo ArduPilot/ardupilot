@@ -414,7 +414,7 @@ void AP_MotorsHeli::output_logic()
                 _spool_state = SpoolState::SPOOLING_UP;
                 break;
             }
-            if (!rotor_speed_above_critical()){
+            if (_heliflags.rotor_spooldown_complete){
                 _spool_state = SpoolState::GROUND_IDLE;
             }
             break;
