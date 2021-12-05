@@ -301,6 +301,8 @@
     // Define Notify
     #define OBAL_NOTIFY_LED
     
+    //Enable PPM - uncomment below line
+    //#define OBAL_RCINPUT_PPM
 
     // GY-91 SPI Connection
     #ifdef HAL_BOARD_SUBTYPE_LINUX_OBAL_V1_MPU_9250_SPI

@@ -54,11 +54,17 @@ static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
 #elif (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1) 
 #define RCIN_RPI_SIG_HIGH        0
 #define RCIN_RPI_SIG_LOW         1
+#ifdef OBAL_RCINPUT_PPM
+static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
+    RPI_GPIO_<5>()
+};
+#else
 static uint16_t RcChnGpioTbl[RCIN_RPI_CHN_NUM] = {
     RPI_GPIO_<5>(),  RPI_GPIO_<6>(),  RPI_GPIO_<13>(),
     RPI_GPIO_<19>(), RPI_GPIO_<26>(), RPI_GPIO_<21>(), 
     RPI_GPIO_<20>(), RPI_GPIO_<16>()
 };
+#endif
 #else
 #define RCIN_RPI_SIG_HIGH        1
 #define RCIN_RPI_SIG_LOW         0
