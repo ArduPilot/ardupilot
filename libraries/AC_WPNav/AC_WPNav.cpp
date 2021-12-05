@@ -475,7 +475,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     float vel_time_scalar = 1.0;
     if (is_positive(_wp_desired_speed_xy_cms)) {
-        update_vel_accel(_terrain_vel, _terrain_accel, dt, false);
+        update_vel_accel(_terrain_vel, _terrain_accel, dt, 0.0, 0.0);
         shape_vel_accel( _wp_desired_speed_xy_cms * offset_z_scaler, 0.0,
             _terrain_vel, _terrain_accel,
             -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
