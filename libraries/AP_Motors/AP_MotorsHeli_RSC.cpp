@@ -382,6 +382,8 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     if (_runup_complete && (get_rotor_speed() <= get_critical_speed())) {
         _runup_complete = false;
     }
+    // if rotor estimated speed is zero, then spooldown has been completed
+    if (get_rotor_speed() <= 0.0f) { _spooldown_complete = true; } else { _spooldown_complete = false; }
 }
 
 // get_rotor_speed - gets rotor speed either as an estimate, or (ToDO) a measured value
