@@ -455,13 +455,18 @@ def configure(cfg):
 def generate_hwdef_h(env):
     '''run chibios_hwdef.py'''
     import subprocess
-
     if env.BOOTLOADER:
-        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        if len(env.HWDEF) == 0:
+            env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef-bl.dat' % env.BOARD)
+        else:
+            # update to using hwdef-bl.dat
+            env.HWDEF = env.HWDEF.replace('hwdef.dat', 'hwdef-bl.dat')
         env.BOOTLOADER_OPTION="--bootloader"
     else:
-        env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
+        if len(env.HWDEF) == 0:
+            env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
         env.BOOTLOADER_OPTION=""
+
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):

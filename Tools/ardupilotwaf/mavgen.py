@@ -77,7 +77,7 @@ def process_mavgen(self):
     if not hasattr(self, 'output_dir'):
         self.bld.fatal('mavgen: missing option output_dir')
 
-    inputs = self.to_nodes(self.source)
+    inputs = self.to_nodes(self.bld.srcnode.find_node(self.source))
     outputs = []
 
     self.source = []
