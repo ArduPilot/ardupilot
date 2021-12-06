@@ -553,6 +553,7 @@ void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, fl
     }
 }
 
+// updating_rate_p_up - uses maximum allowable gain determined from max_gain test to determine rate p gain that does not exceed exceed max response gain
 void AC_AutoTune_Heli::updating_rate_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p)
 {
     float test_freq_incr = 0.25f * 3.14159f * 2.0f;
@@ -631,6 +632,7 @@ void AC_AutoTune_Heli::updating_rate_p_up(float &tune_p, float *freq, float *gai
     }
 }
 
+// updating_rate_d_up - uses maximum allowable gain determined from max_gain test to determine rate d gain where the response gain is at a minimum
 void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_d)
 {
     float test_freq_incr = 0.25f * 3.14159f * 2.0f;
@@ -727,6 +729,7 @@ void AC_AutoTune_Heli::updating_rate_d_up(float &tune_d, float *freq, float *gai
     }
 }
 
+// updating_angle_p_up - determines maximum angle p gain for pitch and roll
 void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
 {
     float test_freq_incr = 0.5f * 3.14159f * 2.0f;
@@ -829,6 +832,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
     }
 }
 
+// updating_angle_p_up_yaw - determines maximum angle p gain for yaw
 void AC_AutoTune_Heli::updating_angle_p_up_yaw(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt)
 {
     float test_freq_incr = 0.5f * 3.14159f * 2.0f;
@@ -1002,6 +1006,7 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
     }
 }
 
+// log autotune summary data
 void AC_AutoTune_Heli::Log_AutoTune()
 {
         switch (axis) {
@@ -1018,6 +1023,7 @@ void AC_AutoTune_Heli::Log_AutoTune()
 //    }
 }
 
+// log autotune time history results for command, angular rate, and attitude
 void AC_AutoTune_Heli::Log_AutoTuneDetails()
 {
     if (tune_type == SP_UP) {
@@ -1027,6 +1033,7 @@ void AC_AutoTune_Heli::Log_AutoTuneDetails()
     }
 }
 
+// log autotune frequency response data
 void AC_AutoTune_Heli::Log_AutoTuneSweep()
 {
     Log_Write_AutoTuneSweep(curr_test_freq, curr_test_gain, curr_test_phase);
@@ -1047,7 +1054,7 @@ void AC_AutoTune_Heli::Log_AutoTuneSweep()
 // @Field: SP: new angle P term
 // @Field: ACC: new max accel term
 
-// Write an Autotune data packet
+// Write an Autotune summary data packet
 void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel)
 {
     AP::logger().Write(
@@ -1069,7 +1076,7 @@ void AC_AutoTune_Heli::Log_Write_AutoTune(uint8_t _axis, uint8_t tune_step, floa
         max_accel);
 }
 
-// Write an Autotune data packet
+// Write an Autotune detailed data packet
 void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate_rads, float rate_rads, float tgt_ang_rad, float ang_rad)
 {
     // @LoggerMessage: ATDH
@@ -1095,7 +1102,7 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneDetails(float motor_cmd, float tgt_rate
         ang_rad*57.3f);
 }
 
-// Write an Autotune data packet
+// Write an Autotune frequency response data packet
 void AC_AutoTune_Heli::Log_Write_AutoTuneSweep(float freq, float gain, float phase)
 {
     // @LoggerMessage: ATSH
@@ -1171,6 +1178,7 @@ float AC_AutoTune_Heli::get_yaw_rate_filt_min() const
     return AUTOTUNE_RLPF_MIN;
 }
 
+// set the tuning test sequence
 void AC_AutoTune_Heli::set_tune_sequence()
 {
     uint8_t seq_cnt = 0;
