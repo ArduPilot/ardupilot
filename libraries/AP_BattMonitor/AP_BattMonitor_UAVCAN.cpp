@@ -353,37 +353,44 @@ void AP_BattMonitor_UAVCAN::mppt_set_powered_state(bool power_on, bool force)
 }
 
 // report changes in MPPT faults
-void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(const uint8_t flags)
+void AP_BattMonitor_UAVCAN::mppt_check_and_report_faults(uint8_t fault_flags)
 {
-    if (_mppt.fault_flags == flags) {
-        // only report flags when they change
+    // return immediately if no changes
+    if (_mppt.fault_flags == fault_flags) {
         return;
     }
-    _mppt.fault_flags = flags;
+    _mppt.fault_flags = fault_flags;
 
+    // handle recovery
+    if (_mppt.fault_flags == 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: OK", (unsigned)_instance+1);
+        return;
+    }
+
+    // send battery faults via text messages
     for (uint8_t fault_bit=0x01; fault_bit <= 0x08; fault_bit <<= 1) {
         // this loop is to generate multiple messages if there are multiple concurrent faults, but also run once if there are no faults
-        if ((fault_bit & flags) != 0 || flags == 0) {
-            const MPPT_FaultFlags err = (flags == 0) ? MPPT_FaultFlags::NONE : (MPPT_FaultFlags)fault_bit;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: Fault: %s", (unsigned)_instance+1, mppt_fault_string(err));
-        }
-        if (flags == 0) {
-            return;
+        if ((fault_bit & fault_flags) != 0) {
+            const MPPT_FaultFlags err = (MPPT_FaultFlags)fault_bit;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: %s", (unsigned)_instance+1, mppt_fault_string(err));
         }
     }
 }
 
 // returns string description of MPPT fault bit. Only handles single bit faults
-const char* AP_BattMonitor_UAVCAN::mppt_fault_string(const MPPT_FaultFlags fault)
+const char* AP_BattMonitor_UAVCAN::mppt_fault_string(MPPT_FaultFlags fault)
 {
     switch (fault) {
-        case MPPT_FaultFlags::NONE:             return "None";
-        case MPPT_FaultFlags::OVER_VOLTAGE:     return "Over-Voltage";
-        case MPPT_FaultFlags::UNDER_VOLTAGE:    return "Under-Voltage";
-        case MPPT_FaultFlags::OVER_CURRENT:     return "Over-Current";
-        case MPPT_FaultFlags::OVER_TEMPERATURE: return "Over-Temp";
+        case MPPT_FaultFlags::OVER_VOLTAGE:
+            return "over voltage";
+        case MPPT_FaultFlags::UNDER_VOLTAGE:
+            return "under voltage";
+        case MPPT_FaultFlags::OVER_CURRENT:
+            return "over current";
+        case MPPT_FaultFlags::OVER_TEMPERATURE:
+            return "over temp";
     }
-    return "Unknown";
+    return "unknown";
 }
 
 // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
@@ -404,6 +411,8 @@ uint32_t AP_BattMonitor_UAVCAN::get_mavlink_fault_bitmask() const
     }
     if (_mppt.fault_flags & (uint8_t)MPPT_FaultFlags::OVER_TEMPERATURE) {
         mav_fault_bitmask |= MAV_BATTERY_FAULT_OVER_TEMPERATURE;
+    }
+    return mav_fault_bitmask;
 }
 
 #endif
