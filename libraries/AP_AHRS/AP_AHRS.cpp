@@ -411,6 +411,7 @@ void AP_AHRS::copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estim
         _accel_ef_ekf[i] = results.accel_ef[i];
     }
     _accel_ef_ekf_blended = results.accel_ef_blended;
+    _accel_bias = results.accel_bias;
 
     update_cd_values();
     update_trig();
@@ -494,7 +495,7 @@ void AP_AHRS::update_EKF2(void)
             }
 
             // get z accel bias estimate from active EKF (this is usually for the primary IMU)
-            float abias = 0;
+            float &abias = _accel_bias.z;
             EKF2.getAccelZBias(-1,abias);
 
             // This EKF is currently using primary_imu, and abias applies to only that IMU
@@ -571,7 +572,7 @@ void AP_AHRS::update_EKF3(void)
             }
 
             // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
-            Vector3f abias;
+            Vector3f &abias = _accel_bias;
             EKF3.getAccelBias(-1,abias);
 
             // This EKF uses the primary IMU
