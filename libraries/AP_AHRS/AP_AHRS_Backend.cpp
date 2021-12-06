@@ -298,23 +298,6 @@ Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
 
-// log ahrs home and EKF origin
-void AP_AHRS::Log_Write_Home_And_Origin()
-{
-    AP_Logger *logger = AP_Logger::get_singleton();
-    if (logger == nullptr) {
-        return;
-    }
-    Location ekf_orig;
-    if (get_origin(ekf_orig)) {
-        Write_Origin(LogOriginType::ekf_origin, ekf_orig);
-    }
-
-    if (home_is_set()) {
-        Write_Origin(LogOriginType::ahrs_home, _home);
-    }
-}
-
 // get apparent to true airspeed ratio
 float AP_AHRS_Backend::get_EAS2TAS(void) const {
     return AP::baro().get_EAS2TAS();

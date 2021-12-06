@@ -422,7 +422,6 @@ public:
     const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
 
     // Logging functions
-    void Log_Write_Home_And_Origin();
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
     void Write_Origin(uint8_t origin_type, const Location &loc) const; 

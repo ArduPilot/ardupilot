@@ -1127,7 +1127,7 @@ bool AP_AHRS::set_home(const Location &loc)
     _home = tmp;
     _home_is_set = true;
 
-    Log_Write_Home_And_Origin();
+    Write_Origin(LogOriginType::ahrs_home, _home);
 
     // send new home and ekf origin to GCS
     gcs().send_message(MSG_HOME);
