@@ -3114,8 +3114,6 @@ void GCS_MAVLINK::set_ekf_origin(const Location& loc)
         return;
     }
 
-    ahrs.Log_Write_Home_And_Origin();
-
     // send ekf origin to GCS
     if (!try_send_message(MSG_ORIGIN)) {
         // try again later
