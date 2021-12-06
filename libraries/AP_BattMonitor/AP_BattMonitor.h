@@ -241,6 +241,9 @@ public:
     // Returns mavlink charge state
     MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;
 
+    // Returns mavlink fault state
+    uint32_t get_mavlink_fault_bitmask(const uint8_t instance) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
