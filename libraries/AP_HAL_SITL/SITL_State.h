@@ -287,7 +287,6 @@ private:
     
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
-    const char *_home_str;
     char *_gps_fifo[2];
 
     // simulated GPS devices
