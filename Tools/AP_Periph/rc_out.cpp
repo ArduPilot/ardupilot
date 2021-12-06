@@ -88,11 +88,6 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
 void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
-    if ((actuator_id == 0) || (actuator_id > HAL_PWM_COUNT)) {
-        // not supported or out of range
-        return;
-    }
-
     const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
 
