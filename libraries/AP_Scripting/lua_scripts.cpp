@@ -205,9 +205,11 @@ void lua_scripts::load_all_scripts_in_dir(lua_State *L, const char *dirname) {
         }
         reschedule_script(script);
 
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
         if ((_debug_options.get() & uint8_t(DebugLevel::SUPPRESS_SCRIPT_LOG)) == 0) {
             AP::logger().log_file_content(filename);
         }
+#endif
     }
     AP::FS().closedir(d);
 }
