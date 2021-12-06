@@ -439,6 +439,15 @@ def add_dynamic_boards_chibios():
         if os.path.exists(hwdef):
             newclass = type(d, (chibios,), {'name': d})
 
+@conf
+def get_chibios_board_cls(ctx, name, hwdef):
+    if name in _board_classes.keys():
+        _board_classes[name].hwdef = hwdef
+        return _board_classes[name]
+    newclass = type(name, (chibios,), {'name': name})
+    newclass.hwdef = hwdef
+    return newclass
+
 def add_dynamic_boards_esp32():
     '''add boards based on existance of hwdef.dat in subdirectories for ESP32'''
     dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ESP32/hwdef'))
@@ -759,6 +768,8 @@ class chibios(Board):
     toolchain = 'arm-none-eabi'
 
     def configure_env(self, cfg, env):
+        if hasattr(self, 'hwdef'):
+            cfg.env.HWDEF = self.hwdef
         super(chibios, self).configure_env(cfg, env)
 
         cfg.load('chibios')
