@@ -552,6 +552,13 @@ public:
         return AP::ins().get_accel();
     }
 
+    // return primary accel bias. This should be subtracted from
+    // get_accel() vector to get best current body frame accel
+    // estimate
+    const Vector3f &get_accel_bias(void) const {
+        return _accel_bias;
+    }
+    
     /*
      * AHRS is used as a transport for vehicle-takeoff-expected and
      * vehicle-landing-expected:
@@ -713,6 +720,8 @@ private:
     Vector3f _gyro_estimate;
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
+    Vector3f _accel_bias;
+
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
