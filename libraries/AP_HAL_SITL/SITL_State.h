@@ -176,19 +176,7 @@ private:
     const char *_fg_address;
 
     // delay buffer variables
-    static const uint8_t mag_buffer_length = 250;
     static const uint8_t wind_buffer_length = 50;
-
-    // magnetometer delay buffer variables
-    struct readings_mag {
-        uint32_t time;
-        Vector3f data;
-    };
-    uint8_t store_index_mag;
-    uint32_t last_store_time_mag;
-    VectorN<readings_mag,mag_buffer_length> buffer_mag;
-    uint32_t time_delta_mag;
-    uint32_t delayed_time_mag;
 
     // airspeed sensor delay buffer variables
     struct readings_wind {
