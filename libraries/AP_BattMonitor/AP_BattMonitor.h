@@ -45,7 +45,6 @@ class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
 class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
-class AP_BattMonitor_MPPT_PacketDigital;
 class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
@@ -64,7 +63,6 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
-    friend class AP_BattMonitor_MPPT_PacketDigital;
     friend class AP_BattMonitor_INA2XX;
     friend class AP_BattMonitor_LTC2946;
 
