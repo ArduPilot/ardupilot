@@ -41,7 +41,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug(fmt, args ...) do { if (debug_level) { gcs().send_text(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
+#define debug(fmt, args ...) do { if (debug_level) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
 
 // key for locking UART for exclusive use. This prevents any other writes from corrupting
 // the MSP protocol on hal.console
@@ -1193,11 +1193,11 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
     debug_uart = hal.console;
     uint8_t saved_chan = blheli.chan;
     if (chan >= num_motors) {
-        gcs().send_text(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
         return;
     }
     blheli.chan = chan;
-    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
     bool passed = false;
     for (uint8_t tries=0; tries<5; tries++) {
         EXPECT_DELAY_MS(3000);
@@ -1229,7 +1229,7 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
     motors_disabled = false;
     serial_start_ms = 0;
     blheli.chan = saved_chan;
-    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
     debug_uart = nullptr;
 }
 
@@ -1288,6 +1288,7 @@ void AP_BLHeli::init(void)
 
     run_test.set_and_notify(0);
 
+#if HAL_GCS_ENABLED
     // only install pass-thru protocol handler if either auto or the motor mask are set
     if (channel_mask.get() != 0 || channel_auto.get() != 0) {
         if (last_control_port > 0 && last_control_port != control_port) {
@@ -1301,6 +1302,7 @@ void AP_BLHeli::init(void)
             last_control_port = control_port;
         }
     }
+#endif // HAL_GCS_ENABLED
 
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
