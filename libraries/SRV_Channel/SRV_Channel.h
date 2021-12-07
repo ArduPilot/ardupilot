@@ -561,14 +561,13 @@ private:
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
     static AP_RobotisServo *robotis_ptr;
-    
+#endif // HAL_BUILD_AP_PERIPH
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
-
-#endif // HAL_BUILD_AP_PERIPH
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     AP_FETtecOneWire fetteconwire;
