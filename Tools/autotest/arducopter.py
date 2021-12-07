@@ -7664,14 +7664,20 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
 
     def PAUSE_CONTINUE(self):
+
+        # load auto mission
         self.load_mission("copter_mission.txt", strict=False)
 
+        # start mission
         self.set_parameter("AUTO_OPTIONS", 3)
-        self.change_mode('AUTO')
+        self.change_mode("AUTO")
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.wait_waypoint(4, 4)
+        # wait for the waypoint
+        self.wait_current_waypoint(4, 500)
+
+        # send pause command
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
                      0, # param1
                      0, # param2
@@ -7679,11 +7685,12 @@ class AutoTestCopter(AutoTest):
                      0, # param4
                      0, # param5
                      0, # param6
-                     0 # param7
-                     )
+                     0) # param7
 
+        # wait vehicle to pause
         self.wait_groundspeed(0, 1, minimum_duration=5)
 
+        # send resume command
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
                      1, # param1
                      0, # param2
@@ -7691,12 +7698,275 @@ class AutoTestCopter(AutoTest):
                      0, # param4
                      0, # param5
                      0, # param6
-                     0 # param7
-                     )
+                     0) # param7
 
-        self.wait_groundspeed(5, 100)
+        # wait for mission to end
+        self.wait_disarmed(timeout=500)
 
-        self.wait_disarmed()
+    # test pause/continue in guided mode
+    def PAUSE_CONTINUE_GUIDED(self):
+
+        # start pause/continue subtest with location only
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with LOCATION!")
+
+        # get ready for takeoff
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # takeoff
+        self.user_takeoff(alt_min=30)
+
+        # location to test
+        location = self.home_relative_loc_ne(300, -300)
+        location = mavutil.location(location.lat, location.lng, 30, 0)
+
+        # target typemask as pos only
+        target_typemask = MAV_POS_TARGET_TYPE_MASK.POS_ONLY
+
+        # move to a location
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, # relative altitude frame
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # target typemask as pos only
+            int(location.lat * 1e7), # lat
+            int(location.lng * 1e7), # lon
+            location.alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0) # yawrate
+
+        # wait vehicle to move away from home
+        self.delay_sim_time(seconds_to_wait=10)
+
+        # pause guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     0, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to pause
+        self.wait_groundspeed(0, 1, minimum_duration=5)
+
+        # continue guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     1, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to reach destination
+        self.wait_location(loc=location, timeout=120)
+
+        # end pause/continue subtest with location only
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with LOCATION!")
+
+        # start pause/continue subtest with destination only
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with DESTINATION!")
+
+        # point to south
+        self.guided_achieve_heading(180)
+
+        # location to test
+        location = self.offset_location_ne(self.mav.location(), -300, 0)
+
+        # move vehicle on x direction
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # system time in milliseconds
+            1, # target system
+            1, # target component
+            mavutil.mavlink.MAV_FRAME_BODY_NED, # coordinate frame MAV_FRAME_BODY_NED
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # type mask (pos only)
+            300, # position x
+            0, # position y
+            0, # position z
+            0, # velocity x
+            0, # velocity y
+            0, # velocity z
+            0, # accel x
+            0, # accel y
+            0, # accel z
+            0, # yaw
+            0) # yaw rate
+
+        # wait vehicle to move away from home
+        self.delay_sim_time(seconds_to_wait=10)
+
+        # pause guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     0, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to pause
+        self.wait_groundspeed(0, 1, minimum_duration=5)
+
+        # continue guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     1, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to reach destination
+        self.wait_location(loc=location, timeout=120)
+
+        # end pause/continue subtest with destination only
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with DESTINATION!")
+
+        # start pause/continue subtest with destination and velocity
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with DESTINATION, VELOCITY!")
+
+        # point to east
+        self.guided_achieve_heading(90)
+
+        # location to test
+        location = self.offset_location_ne(self.mav.location(), 0, 300)
+        location = mavutil.location(location.lat, location.lng, 30, 0)
+
+        # target typemask as pos and vel only
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+
+        # move to a location todo: it is target_global_int since posvel not supported with target_local_ned yet
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, # relative altitude frame
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # target typemask as pos and vel only
+            int(location.lat * 1e7), # lat
+            int(location.lng * 1e7), # lon
+            location.alt, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0) # yawrate
+
+        # wait vehicle to move away from home
+        self.delay_sim_time(seconds_to_wait=10)
+
+        # pause guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     0, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to pause
+        self.wait_groundspeed(0, 1, minimum_duration=5)
+
+        # continue guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     1, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to reach destination
+        self.wait_location(loc=location, timeout=120)
+
+        # end pause/continue subtest with destination and velocity
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with DESTINATION, VELOCITY!")
+
+        # start pause/continue subtest with destination, velocity and acceleration
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with DESTINATION, VELOCITY, ACCELERATION!")
+
+        # point to north
+        self.guided_achieve_heading(0)
+
+        # location to test
+        location = self.offset_location_ne(self.mav.location(), 300, 0)
+
+        # target typemask as pos, vel and acc only
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+
+        # move vehicle on x direction
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # system time in milliseconds
+            1, # target system
+            1, # target component
+            mavutil.mavlink.MAV_FRAME_BODY_NED, # coordinate frame MAV_FRAME_BODY_NED
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # target typemask as pos, vel and acc only
+            300, # position x
+            0, # position y
+            0, # position z
+            0, # velocity x
+            0, # velocity y
+            0, # velocity z
+            0, # accel x
+            0, # accel y
+            0, # accel z
+            0, # yaw
+            0) # yaw rate
+
+        # wait vehicle to move away from home
+        self.delay_sim_time(seconds_to_wait=10)
+
+        # pause guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     0, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to pause
+        self.wait_groundspeed(0, 1, minimum_duration=5)
+
+        # continue guided flight
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     1, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+        # wait vehicle to reach destination
+        self.wait_location(loc=location, timeout=120)
+
+        # end pause/continue subtest with destination, velocity and acceleration
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with DESTINATION, VELOCITY, ACCELERATION!")
+
+        # land and disarm to finish the test
+        self.land_and_disarm()
 
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
