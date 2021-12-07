@@ -191,6 +191,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
@@ -198,6 +199,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
