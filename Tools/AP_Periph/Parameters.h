@@ -50,6 +50,7 @@ public:
         k_param_serial_manager,
         k_param_gps_mb_only_can_port,
         k_param_scripting,
+        k_param_esc_telem_port,
     };
 
     AP_Int16 format_version;
@@ -105,6 +106,9 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     AP_Int8 esc_pwm_type;
+#if HAL_WITH_ESC_TELEM
+    AP_Int8 esc_telem_port;
+#endif
 #endif
 
     AP_Int8 debug;
