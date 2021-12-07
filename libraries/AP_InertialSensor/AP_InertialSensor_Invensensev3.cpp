@@ -3,28 +3,25 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
    (at your option) any later version.
-
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
   driver for Invensensev3 IMUs
-
   Supported:
    ICM-40609
    ICM-42688
    ICM-42605
+   ICM-40605
 
   Note that this sensor includes 32kHz internal sampling and an
   anti-aliasing filter, which means this driver can be a lot simpler
   than the Invensense and Invensensev2 drivers which need to handle
   8kHz sample rates to achieve decent aliasing protection
-
   The sensor is a multi-bank design (4 banks) but as this driver only
   needs access to the first bank and the default bank is the first
   bank we can treat it as a single bank design
@@ -42,7 +39,7 @@ extern const AP_HAL::HAL& hal;
 static const float GYRO_SCALE = (0.0174532f / 16.4f);
 
 // set bit 0x80 in register ID for read on SPI
-#define BIT_READ_FLAG                           0x80
+#define BIT_READ_FLAG         0x80
 
 // registers we use
 #define INV3REG_WHOAMI        0x75
@@ -62,9 +59,12 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 #define INV3REG_BANK_SEL      0x76
 
 // WHOAMI values
+#define INV3_ID_ICM40605      0x33
 #define INV3_ID_ICM40609      0x3b
 #define INV3_ID_ICM42605      0x42
 #define INV3_ID_ICM42688      0x47
+
+
 
 // run output data at 2kHz
 #define INV3_ODR 2000
@@ -122,12 +122,12 @@ AP_InertialSensor_Backend *AP_InertialSensor_Invensensev3::probe(AP_InertialSens
     return sensor;
 }
 
-void AP_InertialSensor_Invensensev3::fifo_reset()
+void AP_InertialSensor_Invensensev3::fifo_reset(uint8_t fifo_config)
 {
     // FIFO_MODE stop-on-full
     register_write(INV3REG_FIFO_CONFIG, 0x80);
     // FIFO partial disable, enable accel, gyro, temperature
-    register_write(INV3REG_FIFO_CONFIG1, 0x07);
+    register_write(INV3REG_FIFO_CONFIG1, fifo_config);
     // little-endian, fifo count in records, last data hold for ODR mismatch
     register_write(INV3REG_INTF_CONFIG0, 0xC0);
     register_write(INV3REG_SIGNAL_PATH_RESET, 2);
@@ -142,24 +142,34 @@ void AP_InertialSensor_Invensensev3::start()
 
     // initially run the bus at low speed
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
-
-    // always use FIFO
-    fifo_reset();
-
     // grab the used instances
     enum DevTypes devtype;
     switch (inv3_type) {
     case Invensensev3_Type::ICM42688:
         devtype = DEVTYPE_INS_ICM42688;
+        fifo_config1 = 0x07;
+        temp_sensitivity = 1.0f/2.07;
         break;
     case Invensensev3_Type::ICM42605:
         devtype = DEVTYPE_INS_ICM42605;
+        fifo_config1 = 0x07;
+        temp_sensitivity = 1.0f/2.07;
+        break;
+    case Invensensev3_Type::ICM40605:
+        devtype = DEVTYPE_INS_ICM40605;
+        fifo_config1 = 0x0f;
+        temp_sensitivity = 1.0f*128/115.49;
         break;
     case Invensensev3_Type::ICM40609:
     default:
         devtype = DEVTYPE_INS_ICM40609;
+        temp_sensitivity = 1.0f/2.07;
+        fifo_config1 = 0x07;
         break;
     }
+
+    // always use FIFO
+    fifo_reset(fifo_config1);
 
     if (!_imu.register_gyro(gyro_instance, INV3_ODR, dev->get_bus_id_devtype(devtype)) ||
         !_imu.register_accel(accel_instance, INV3_ODR, dev->get_bus_id_devtype(devtype))) {
@@ -276,7 +286,7 @@ void AP_InertialSensor_Invensensev3::read_fifo()
     }
 
     if (need_reset) {
-        fifo_reset();
+        fifo_reset(fifo_config1);
     }
     
 check_registers:
@@ -343,6 +353,10 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
         inv3_type = Invensensev3_Type::ICM42605;
         accel_scale = (GRAVITY_MSS / 2048);
         return true;
+    case INV3_ID_ICM40605:
+        inv3_type = Invensensev3_Type::ICM40605;
+        accel_scale = (GRAVITY_MSS / 2048);
+        return true;
     }
     // not a value WHOAMI result
     return false;
@@ -369,6 +383,9 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         break;
     case Invensensev3_Type::ICM42688:
     case Invensensev3_Type::ICM42605:
+        _clip_limit = 15.5f * GRAVITY_MSS;
+        break;
+    case Invensensev3_Type::ICM40605:
         _clip_limit = 15.5f * GRAVITY_MSS;
         break;
     }
