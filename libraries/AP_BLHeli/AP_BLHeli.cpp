@@ -1260,9 +1260,11 @@ void AP_BLHeli::update(void)
             motors_disabled = false;
             SRV_Channels::set_disabled_channel_mask(0);
         }
-        debug("Unlocked UART");
-        uart->lock_port(0, 0);
-        uart_locked = false;
+        if (uart != nullptr) {
+            debug("Unlocked UART");
+            uart->lock_port(0, 0);
+            uart_locked = false;
+        }
         if (motor_control_active) {
             for (uint8_t i = 0; i < num_motors; i++) {
                 bool reversed = ((1U<<motor_map[i]) & channel_reversible_mask.get()) != 0;
