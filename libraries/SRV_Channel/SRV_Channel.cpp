@@ -277,3 +277,19 @@ bool SRV_Channel::is_control_surface(SRV_Channel::Aux_servo_function_t function)
 
     return false;
 }
+
+// return the motor number of a channel, or -1 if not a motor
+// return 0 for first motor
+int8_t SRV_Channel::get_motor_num(void) const
+{
+    const auto k_function = get_function();
+    switch (k_function) {
+    case k_motor1 ... k_motor8:
+        return int8_t(uint16_t(k_function) - k_motor1);
+    case k_motor9 ... k_motor12:
+        return 8 + int8_t(uint16_t(k_function) - k_motor9);
+    default:
+        break;
+    }
+    return -1;
+}
