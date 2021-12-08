@@ -407,7 +407,7 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
             // but moves us to no roll control as the angle increases
             thrust[i] = current_tilt * avg_tilt_thrust + thrust[i] * (1-current_tilt);
             // add in differential thrust for yaw control, scaled by tilt angle
-            const float diff_thrust = motors->get_roll_factor(i) * motors->get_yaw() * sin_tilt * yaw_gain;
+            const float diff_thrust = motors->get_roll_factor(i) * (motors->get_yaw()+motors->get_yaw_ff()) * sin_tilt * yaw_gain;
             thrust[i] += diff_thrust;
             largest_tilted = MAX(largest_tilted, thrust[i]);
         }
@@ -528,8 +528,8 @@ void Tiltrotor::vectoring(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight,1000 * constrain_float(base_output + right,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output + mid,0,1));
     } else {
-        const float yaw_out = motors->get_yaw();
-        const float roll_out = motors->get_roll();
+        const float yaw_out = motors->get_yaw()+motors->get_yaw_ff();
+        const float roll_out = motors->get_roll()+motors->get_roll_ff();
         float yaw_range = zero_out;
 
         // now apply vectored thrust for yaw and roll.
