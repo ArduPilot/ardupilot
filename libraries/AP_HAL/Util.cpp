@@ -68,34 +68,6 @@ int AP_HAL::Util::vsnprintf(char* str, size_t size, const char *format, va_list 
     return int(ret);
 }
 
-uint64_t AP_HAL::Util::get_hw_rtc() const
-{
-#if defined(__APPLE__) && defined(__MACH__)
-    struct timeval ts;
-    gettimeofday(&ts, nullptr);
-    return ((long long)((ts.tv_sec * 1000000) + ts.tv_usec));
-#elif HAL_HAVE_GETTIME_SETTIME
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-    const uint64_t seconds = ts.tv_sec;
-    const uint64_t nanoseconds = ts.tv_nsec;
-    return (seconds * 1000000ULL + nanoseconds/1000ULL);
-#endif
-
-    // no HW clock (or not one worth bothering with)
-    return 0;
-}
-
-void AP_HAL::Util::set_hw_rtc(uint64_t time_utc_usec)
-{
-#if HAL_HAVE_GETTIME_SETTIME
-    timespec ts;
-    ts.tv_sec = time_utc_usec/1000000ULL;
-    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
-    clock_settime(CLOCK_REALTIME, &ts);
-#endif
-}
-
 void AP_HAL::Util::set_soft_armed(const bool b)
 {
     if (b != soft_armed) {

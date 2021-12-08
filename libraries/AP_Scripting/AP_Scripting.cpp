@@ -106,6 +106,18 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("USER4", 8, AP_Scripting, _user[3], 0.0),
 
+    // @Param: USER5
+    // @DisplayName: Scripting User Parameter5
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER5", 10, AP_Scripting, _user[4], 0.0),
+
+    // @Param: USER6
+    // @DisplayName: Scripting User Parameter6
+    // @Description: General purpose user variable input for scripts
+    // @User: Standard
+    AP_GROUPINFO("USER6", 11, AP_Scripting, _user[5], 0.0),
+    
     // @Param: DIR_DISABLE
     // @DisplayName: Directory disable
     // @Description: This will stop scripts being loaded from the given locations

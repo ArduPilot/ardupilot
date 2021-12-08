@@ -784,7 +784,7 @@ void AP_UAVCAN::safety_state_send()
 
     { // handle ArmingStatus
         uavcan::equipment::safety::ArmingStatus arming_msg;
-        arming_msg.status = AP::arming().is_armed() ? uavcan::equipment::safety::ArmingStatus::STATUS_FULLY_ARMED :
+        arming_msg.status = hal.util->get_soft_armed() ? uavcan::equipment::safety::ArmingStatus::STATUS_FULLY_ARMED :
                                                       uavcan::equipment::safety::ArmingStatus::STATUS_DISARMED;
         arming_status[_driver_index]->broadcast(arming_msg);
     }

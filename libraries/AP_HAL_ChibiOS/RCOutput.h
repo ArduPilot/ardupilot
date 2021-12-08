@@ -26,7 +26,7 @@
 
 #if HAL_USE_PWM == TRUE
 
-#if !STM32_DMA_ADVANCED && !defined(STM32G4)
+#if !STM32_DMA_ADVANCED && !defined(STM32G4) && !defined(STM32L4)
 #define DISABLE_DSHOT
 #endif
 

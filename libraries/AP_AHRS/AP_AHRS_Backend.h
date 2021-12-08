@@ -61,6 +61,7 @@ public:
         Vector3f gyro_drift;
         Vector3f accel_ef[INS_MAX_INSTANCES];  // must be INS_MAX_INSTANCES
         Vector3f accel_ef_blended;
+        Vector3f accel_bias;
     };
 
     // init sets up INS board orientation
