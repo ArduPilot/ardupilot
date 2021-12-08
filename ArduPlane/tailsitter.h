@@ -103,6 +103,9 @@ public:
     AP_Float scaling_speed_max;
     AP_Int16 gain_scaling_mask;
     AP_Float disk_loading;
+    AP_Float VTOL_roll_scale;
+    AP_Float VTOL_pitch_scale;
+    AP_Float VTOL_yaw_scale;
 
 private:
 
