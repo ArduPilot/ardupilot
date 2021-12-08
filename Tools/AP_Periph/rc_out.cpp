@@ -124,9 +124,9 @@ void AP_Periph_FW::rcout_update()
     SRV_Channels::push();
 #if HAL_WITH_ESC_TELEM
     uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_esc_telem_update_ms >= 100) {
+    if (now_ms - last_esc_telem_update_ms >= 20) {
         last_esc_telem_update_ms = now_ms;
-        esc_telem.update();
+        esc_telem_update();
     }
 #endif
 }
