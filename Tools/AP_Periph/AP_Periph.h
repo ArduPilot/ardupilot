@@ -197,6 +197,7 @@ public:
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
     uint32_t last_esc_telem_update_ms;
+    void esc_telem_update();
 #endif
 
     SRV_Channels servo_channels;
