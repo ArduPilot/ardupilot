@@ -74,7 +74,6 @@ void SITL_State::_sitl_setup(const char *home_str)
     if (_sitl != nullptr) {
         // setup some initial values
         _update_airspeed(0);
-        _update_rangefinder(0);
         if (enable_gimbal) {
             gimbal = new SITL::Gimbal(_sitl->state);
         }
@@ -165,7 +164,7 @@ void SITL_State::_fdm_input_step(void)
 
     if (_sitl != nullptr) {
         _update_airspeed(_sitl->state.airspeed);
-        _update_rangefinder(_sitl->state.range);
+        _update_rangefinder();
     }
 
     // trigger all APM timers.
