@@ -492,6 +492,7 @@ void Tiltrotor::vectoring(void)
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output,0,1));
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,  1000 * constrain_float(base_output + yaw_out * yaw_range,0,1));
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, 1000 * constrain_float(base_output - yaw_out * yaw_range,0,1));
+                SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, yaw_out*SERVO_MAX);
             } else {
                 // fixed wing tilt
                 const float gain = fixed_gain * fixed_tilt_limit;
@@ -507,6 +508,7 @@ void Tiltrotor::vectoring(void)
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,1000 * constrain_float(base_output + left,0,1));
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight,1000 * constrain_float(base_output + right,0,1));
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output + mid,0,1));
+                SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, 0.0);
             }
         }
         return;
@@ -527,6 +529,7 @@ void Tiltrotor::vectoring(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,1000 * constrain_float(base_output + left,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight,1000 * constrain_float(base_output + right,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output + mid,0,1));
+        SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, 0.0);
     } else {
         const float yaw_out = motors->get_yaw();
         const float roll_out = motors->get_roll();
@@ -547,6 +550,7 @@ void Tiltrotor::vectoring(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,  1000 * constrain_float(base_output + tilt_offset * yaw_range,0,1));
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, 1000 * constrain_float(base_output - tilt_offset * yaw_range,0,1));
+        SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, yaw_out*SERVO_MAX);
     }
 }
 

@@ -305,6 +305,7 @@ void Tailsitter::output(void)
             motors->output_motor_mask(throttle, motor_mask, plane.rudder_dt);
 
             // in forward flight: set motor tilt servos and throttles using FW controller
+            float tilt_yaw = 0.0;
             if (vectored_forward_gain > 0) {
                 // remove scaling from surface speed scaling and apply throttle scaling
                 const float scaler = plane.control_mode == &plane.mode_manual?1:(quadplane.FW_vector_throttle_scaling() / plane.get_speed_scaler());
@@ -313,9 +314,11 @@ void Tailsitter::output(void)
                 float elevator = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
                 tilt_left  = (elevator + aileron) * vectored_forward_gain * scaler;
                 tilt_right = (elevator - aileron) * vectored_forward_gain * scaler;
+                tilt_yaw = aileron * vectored_forward_gain * scaler;
             }
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
+            SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, tilt_yaw);
             return;
         }
     }
@@ -336,6 +339,7 @@ void Tailsitter::output(void)
             // output tilt motors
             tilt_left = 0.0f;
             tilt_right = 0.0f;
+            float tilt_yaw = 0.0;
             if (vectored_hover_gain > 0) {
                 const float hover_throttle = motors->get_throttle_hover();
                 const float output_throttle = motors->get_throttle();
@@ -345,10 +349,11 @@ void Tailsitter::output(void)
                 }
                 tilt_left = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorLeft) * vectored_hover_gain * throttle_scaler;
                 tilt_right = SRV_Channels::get_output_scaled(SRV_Channel::k_tiltMotorRight) * vectored_hover_gain * throttle_scaler;
+                tilt_yaw = (motors->get_pitch()+motors->get_pitch_ff()) * SERVO_MAX * vectored_hover_gain * throttle_scaler;
             }
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft, tilt_left);
             SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRight, tilt_right);
-
+            SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, tilt_yaw);
 
             // skip remainder of the function that overwrites plane control surface outputs with copter
             return;
@@ -366,6 +371,9 @@ void Tailsitter::output(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, (motors->get_yaw()+motors->get_yaw_ff())*-SERVO_MAX);
     SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, (motors->get_pitch()+motors->get_pitch_ff())*SERVO_MAX);
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, (motors->get_roll()+motors->get_roll_ff())*SERVO_MAX);
+
+    // output direct yaw servo
+    SRV_Channels::set_output_scaled(SRV_Channel::K_tilt_yaw, (motors->get_pitch()+motors->get_pitch_ff()) * SERVO_MAX * vectored_hover_gain);
 
     if (hal.util->get_soft_armed()) {
         // scale surfaces for throttle
@@ -653,16 +661,17 @@ void Tailsitter::speed_scaling(void)
         SRV_Channel::Aux_servo_function_t::k_elevator,
         SRV_Channel::Aux_servo_function_t::k_rudder,
         SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft,
-        SRV_Channel::Aux_servo_function_t::k_tiltMotorRight};
+        SRV_Channel::Aux_servo_function_t::k_tiltMotorRight,
+        SRV_Channel::Aux_servo_function_t::K_tilt_yaw};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
         float v = SRV_Channels::get_output_scaled(functions[i]);
-        if ((functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft) || (functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)) {
+        if ((functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorLeft) || (functions[i] == SRV_Channel::Aux_servo_function_t::k_tiltMotorRight)  || (functions[i] == SRV_Channel::Aux_servo_function_t::K_tilt_yaw)) {
             // always apply throttle scaling to tilts
             v *= throttle_scaler;
         } else {
             v *= spd_scaler;
         }
-        v = constrain_int32(v, -SERVO_MAX, SERVO_MAX);
+        v = constrain_float(v, -SERVO_MAX, SERVO_MAX);
         SRV_Channels::set_output_scaled(functions[i], v);
     }
 }
