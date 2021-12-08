@@ -507,16 +507,17 @@ float Aircraft::rangefinder_range() const
         altitude -= relPosSensorEF.z;
     }
 
-    // If the attidude is non reversed for SITL OR we are using rangefinder from external simulator,
-    // We adjust the reading with noise, glitch and scaler as the reading is on analog port.
-    if ((fabs(sitl->state.rollDeg) < 90.0 && fabs(sitl->state.pitchDeg) < 90.0) || !is_equal(range, -1.0f)) {
-        if (is_equal(range, -1.0f)) {  // disable for external reading that already handle this
-            // adjust for apparent altitude with roll
-            altitude /= cosf(radians(sitl->state.rollDeg)) * cosf(radians(sitl->state.pitchDeg));
+    if (is_equal(range, -1.0f)) {  // disable for external reading that already handle this
+        if (fabs(sitl->state.rollDeg) >= 90.0 || fabs(sitl->state.pitchDeg) >= 90.0) {
+            // not going to hit the ground....
+            return INFINITY;
         }
-        // Add some noise on reading
-        altitude += sitl->sonar_noise * rand_float();
+
+        // adjust for apparent altitude with roll
+        altitude /= cosf(radians(sitl->state.rollDeg)) * cosf(radians(sitl->state.pitchDeg));
     }
+    // Add some noise on reading
+    altitude += sitl->sonar_noise * rand_float();
 
     return altitude;
 }
