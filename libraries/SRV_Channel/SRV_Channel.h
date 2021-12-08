@@ -240,6 +240,9 @@ public:
         return (SRV_Channel::Aux_servo_function_t)function.get();
     }
 
+    // return the motor number of a channel, or -1 if not a motor
+    int8_t get_motor_num(void) const;
+
     // set and save function for channel. Used in upgrade of parameters in plane
     void function_set_and_save(SRV_Channel::Aux_servo_function_t f) {
         function.set_and_save(int8_t(f));
