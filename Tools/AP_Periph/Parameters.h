@@ -106,7 +106,7 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
     AP_Int8 esc_pwm_type;
-#if HAL_WITH_ESC_TELEM
+#if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     AP_Int8 esc_telem_port;
 #endif
 #endif

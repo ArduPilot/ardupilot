@@ -31,9 +31,11 @@ void AP_Periph_FW::rcout_init()
     // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
     hal.rcout->force_safety_on();
 
+#if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     if (g.esc_telem_port >= 0) {
         serial_manager.set_protocol_and_baud(g.esc_telem_port, AP_SerialManager::SerialProtocol_ESCTelemetry, 115200);
     }
+#endif
 
     SRV_Channels::init();
 
