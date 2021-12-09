@@ -4,7 +4,7 @@
 
 include ../fmuv3/hwdef.dat
 
-define HAL_CHIBIOS_ARCH_CUBEBLACK 1
+define HAL_CHIBIOS_ARCH_CUBE 1
 
 env OPTIMIZE -O2
 

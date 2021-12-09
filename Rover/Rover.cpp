@@ -85,7 +85,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AC_Fence,            &rover.g2.fence,         update,         10,  100,  33),
     SCHED_TASK(update_wheel_encoder,   50,    200,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
-    SCHED_TASK(update_mission,         50,    200,  42),
     SCHED_TASK(update_logging1,        10,    200,  45),
     SCHED_TASK(update_logging2,        10,    200,  48),
     SCHED_TASK_CLASS(GCS,                 (GCS*)&rover._gcs,       update_receive,                    400,    500,  51),
@@ -406,16 +405,6 @@ void Rover::update_current_mode(void)
     }
 
     control_mode->update();
-}
-
-// update mission including starting or stopping commands. called by scheduler at 10Hz
-void Rover::update_mission(void)
-{
-    if (control_mode == &mode_auto) {
-        if (ahrs.home_is_set() && mode_auto.mission.num_commands() > 1) {
-            mode_auto.mission.update();
-        }
-    }
 }
 
 // vehicle specific waypoint info helpers

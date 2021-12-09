@@ -60,6 +60,7 @@ public:
         SITL    = 10,
         AirSimSITL = 12,
 #endif
+        CYGBOT_D1 = 13,
     };
 
     enum class Status {

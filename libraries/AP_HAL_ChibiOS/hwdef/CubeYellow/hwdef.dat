@@ -1,6 +1,8 @@
 # The CUBE Yellow is a variant of The CUBE Black from ProfiCNC/Hex
 # with a STM32F777 MCU
 
+define HAL_CHIBIOS_ARCH_CUBE 1
+
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
 
@@ -442,6 +444,9 @@ define HAL_WITH_RAMTRON 1
 # an IMU header
 define HAL_HAVE_IMU_HEATER 1
 define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# Enable all IMUs to be used and therefore three active EKF Lanes
+define HAL_EKF_IMU_MASK_DEFAULT 7
 
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1

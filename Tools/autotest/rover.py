@@ -4238,24 +4238,24 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # this is expected to fail as we don't return the closing
         # point correctly until the first is uploaded
-        self.progress("try closing point first")
-        failed = False
-        try:
-            self.roundtrip_fence_using_fencepoint_protocol([
-                self.offset_location_ne(here, 0, 0), # bl // return point
-                self.offset_location_ne(here, -50, 20), # bl
-                self.offset_location_ne(here, 50, 20), # br
-                self.offset_location_ne(here, 50, 40), # tr
-                self.offset_location_ne(here, -50, 40), # tl,
-                self.offset_location_ne(here, -50, 20), # closing point
-            ], ordering=[5, 0, 1, 2, 3, 4])
-        except NotAchievedException as e:
-            failed = "got=0.000000 want=" in str(e)
-        if not failed:
-            raise NotAchievedException("Expected failure, did not get it")
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
+        # self.progress("try closing point first")
+        # failed = False
+        # try:
+        #     self.roundtrip_fence_using_fencepoint_protocol([
+        #         self.offset_location_ne(here, 0, 0), # bl // return point
+        #         self.offset_location_ne(here, -50, 20), # bl
+        #         self.offset_location_ne(here, 50, 20), # br
+        #         self.offset_location_ne(here, 50, 40), # tr
+        #         self.offset_location_ne(here, -50, 40), # tl,
+        #         self.offset_location_ne(here, -50, 20), # closing point
+        #     ], ordering=[5, 0, 1, 2, 3, 4])
+        # except NotAchievedException as e:
+        #     failed = "got=0.000000 want=" in str(e)
+        # if not failed:
+        #     raise NotAchievedException("Expected failure, did not get it")
+        # self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+        #                    target_system=target_system,
+        #                    target_component=target_component)
 
         self.progress("try (almost) reverse order")
         self.roundtrip_fence_using_fencepoint_protocol([
@@ -4269,6 +4269,42 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                            target_system=target_system,
                            target_component=target_component)
+
+    def test_poly_fence_big_then_small(self, target_system=1, target_component=1):
+        here = self.mav.location()
+
+        self.roundtrip_fence_using_fencepoint_protocol([
+            self.offset_location_ne(here, 0, 0), # bl // return point
+            self.offset_location_ne(here, -50, 20), # bl
+            self.offset_location_ne(here, 50, 20), # br
+            self.offset_location_ne(here, 50, 40), # tr
+            self.offset_location_ne(here, -50, 40), # tl,
+            self.offset_location_ne(here, -50, 20), # closing point
+        ], ordering=[1, 2, 3, 4, 5, 0])
+        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if len(downloaded_items) != 5:
+            # that's one return point and then bl, br, tr, then tl
+            raise NotAchievedException("Bad number of downloaded items in original download")
+
+        self.roundtrip_fence_using_fencepoint_protocol([
+            self.offset_location_ne(here, 0, 0), # bl // return point
+            self.offset_location_ne(here, -50, 20), # bl
+            self.offset_location_ne(here, 50, 40), # tr
+            self.offset_location_ne(here, -50, 40), # tl,
+            self.offset_location_ne(here, -50, 20), # closing point
+        ], ordering=[1, 2, 3, 4, 0])
+
+        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        want_count = 4
+        if len(downloaded_items) != want_count:
+            # that's one return point and then bl, tr, then tl
+            raise NotAchievedException("Bad number of downloaded items in second download got=%u wanted=%u" %
+                                       (len(downloaded_items), want_count))
+        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+        if len(downloaded_items) != 4:
+            # that's one return point and then bl, tr, then tl
+            raise NotAchievedException("Bad number of downloaded items in second download (second time) got=%u want=%u" %
+                                       (len(downloaded_items), want_count))
 
     def test_poly_fence_compatability(self, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
@@ -4346,6 +4382,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("AVOID_ENABLE", 0)
 
 #        self.set_parameter("SIM_SPEEDUP", 1)
+
+        self.test_poly_fence_big_then_small()
 
         self.test_poly_fence_compatability()
 

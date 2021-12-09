@@ -12,6 +12,13 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // 0 and 1 used by previous retract and deploy pwm, now replaced with SERVOn_MIN/MAX/REVERSED
 
+    // @Param: ENABLE
+    // @DisplayName: Enable landing gear
+    // @Description: Enable landing gear control
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Standard
+    AP_GROUPINFO_FLAGS("ENABLE", 10, AP_LandingGear, _enable, 0, AP_PARAM_FLAG_ENABLE),
+
     // @Param: STARTUP
     // @DisplayName: Landing Gear Startup position
     // @Description: Landing Gear Startup behaviour control
@@ -74,6 +81,8 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 9, AP_LandingGear, _options, 3),
 
+    // index 10 is enable, placed at the top of the table
+
     AP_GROUPEND
 };
 
@@ -82,6 +91,12 @@ AP_LandingGear *AP_LandingGear::_singleton;
 /// initialise state of landing gear
 void AP_LandingGear::init()
 {
+    if (!_enable.configured() && (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control) || 
+            (_pin_deployed > 0) || (_pin_weight_on_wheels > 0))) {
+        // if not configured set enable param if output servo or sense pins are defined
+        _enable.set_and_save(1);
+    }
+
     if (_pin_deployed != -1) {
         hal.gpio->pinMode(_pin_deployed, HAL_GPIO_INPUT);
         // set pullup/pulldown to default to non-deployed state
@@ -126,6 +141,10 @@ void AP_LandingGear::set_position(LandingGearCommand cmd)
 /// deploy - deploy landing gear
 void AP_LandingGear::deploy()
 {
+    if (!_enable) {
+        return;
+    }
+
     // set servo PWM to deployed position
     SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
 
@@ -144,6 +163,10 @@ void AP_LandingGear::deploy()
 /// retract - retract landing gear
 void AP_LandingGear::retract()
 {
+    if (!_enable) {
+        return;
+    }
+
     // set servo PWM to retracted position
     SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
 

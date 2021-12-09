@@ -544,6 +544,15 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(acro_pitch_rate,          "ACRO_PITCH_RATE",  180),
 
+    // @Param: ACRO_YAW_RATE
+    // @DisplayName: ACRO mode yaw rate
+    // @Description: The maximum yaw rate at full stick deflection in ACRO mode. If this is zero then rudder is directly controlled by rudder stick input. This option is only available if you also set YAW_RATE_ENABLE to 1.
+    // @Units: deg/s
+    // @Range: 0 500
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(acro_yaw_rate,            "ACRO_YAW_RATE",    0),
+    
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
     // @Description: Enable attitude locking when sticks are released
@@ -811,9 +820,9 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/APM_Control/AP_PitchController.cpp
     GOBJECT(pitchController,        "PTCH",  AP_PitchController),
 
-    // @Group: YAW2SRV_
+    // @Group: YAW
     // @Path: ../libraries/APM_Control/AP_YawController.cpp
-	GOBJECT(yawController,          "YAW2SRV_",   AP_YawController),
+    GOBJECT(yawController,          "YAW",   AP_YawController),
 
     // @Group: STEER2SRV_
     // @Path: ../libraries/APM_Control/AP_SteerController.cpp

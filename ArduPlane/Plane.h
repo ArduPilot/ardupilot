@@ -317,9 +317,6 @@ private:
         // RC receiver should be set up to output a low throttle value when signal is lost
         bool rc_failsafe;
 
-        // has the saved mode for failsafe been set?
-        bool saved_mode_set;
-
         // true if an adsb related failsafe has occurred
         bool adsb;
 
@@ -432,6 +429,7 @@ private:
         // when ground steering is active, and for steering in auto-takeoff
         bool locked_course;
         float locked_course_err;
+        uint32_t last_steer_ms;
     } steer_state;
 
     // flight mode specific
@@ -523,6 +521,7 @@ private:
         uint16_t id;
         float roll_rate_dps;
         float pitch_rate_dps;
+        float yaw_rate_dps;
         float throttle_pct;
         uint32_t start_ms;
         bool done;

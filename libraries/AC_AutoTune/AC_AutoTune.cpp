@@ -1671,7 +1671,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
 
     if (!have_position) {
         have_position = true;
-        start_position = inertial_nav->get_position();
+        start_position = inertial_nav->get_position_neu_cm();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -1684,7 +1684,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_cm = 500;
 
-    Vector3f pdiff = inertial_nav->get_position() - start_position;
+    Vector3f pdiff = inertial_nav->get_position_neu_cm() - start_position;
     pdiff.z = 0;
     float dist_cm = pdiff.length();
     if (dist_cm < 10) {

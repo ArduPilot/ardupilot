@@ -250,6 +250,7 @@ protected:
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
+        uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
     } _heliflags;
 
     // parameters

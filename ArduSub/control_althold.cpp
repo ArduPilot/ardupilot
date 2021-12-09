@@ -111,19 +111,19 @@ void Sub::control_depth() {
         // reset z targets to current values
         pos_control.relax_z_controller(channel_throttle->norm_input());
         engageStopZ = true;
-        lastVelocityZWasNegative = is_negative(inertial_nav.get_velocity_z());
+        lastVelocityZWasNegative = is_negative(inertial_nav.get_velocity_z_up_cms());
     } else { // hold z
 
         if (ap.at_bottom) {
             pos_control.init_z_controller();
-            pos_control.set_pos_target_z_cm(inertial_nav.get_altitude() + 10.0f); // set target to 10 cm above bottom
+            pos_control.set_pos_target_z_cm(inertial_nav.get_position_z_up_cm() + 10.0); // set target to 10 cm above bottom
         }
 
         // Detects a zero derivative
         // When detected, move the altitude set point to the actual position
         // This will avoid any problem related to joystick delays
         // or smaller input signals
-        if(engageStopZ && (lastVelocityZWasNegative ^ is_negative(inertial_nav.get_velocity_z()))) {
+        if(engageStopZ && (lastVelocityZWasNegative ^ is_negative(inertial_nav.get_velocity_z_up_cms()))) {
             engageStopZ = false;
             pos_control.init_z_controller();
         }

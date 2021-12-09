@@ -391,10 +391,20 @@ void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list 
             last_print_ms = now;
             char printfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+2];
             hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s\n", err_type, fmt);
-            vprintf(printfmt, arg);
+            {
+                va_list arg_copy;
+                va_copy(arg_copy, arg);
+                vprintf(printfmt, arg_copy);
+                va_end(arg_copy);
+            }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
             hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s", err_type, fmt);
-            gcs().send_textv(MAV_SEVERITY_CRITICAL, printfmt, arg);
+            {
+                va_list arg_copy;
+                va_copy(arg_copy, arg);
+                gcs().send_textv(MAV_SEVERITY_CRITICAL, printfmt, arg_copy);
+                va_end(arg_copy);
+            }
 #endif
         }
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)

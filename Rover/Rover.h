@@ -279,7 +279,6 @@ private:
     void update_logging2(void);
     void one_second_loop(void);
     void update_current_mode(void);
-    void update_mission(void);
 
     // balance_bot.cpp
     void balancebot_pitch_control(float &throttle);

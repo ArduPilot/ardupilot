@@ -691,6 +691,8 @@ class DEVO(Telem):
 
         self.HEADER = 0xAA
         self.frame_length = 20
+
+        # frame is 'None' until we receive a frame with VALID header and checksum
         self.frame = None
         self.bad_chars = 0
 
@@ -1445,6 +1447,7 @@ class AutoTest(ABC):
     def __init__(self,
                  binary,
                  valgrind=False,
+                 callgrind=False,
                  gdb=False,
                  gdb_no_tui=False,
                  speedup=None,
@@ -1473,6 +1476,7 @@ class AutoTest(ABC):
 
         self.binary = binary
         self.valgrind = valgrind
+        self.callgrind = callgrind
         self.gdb = gdb
         self.gdb_no_tui = gdb_no_tui
         self.lldb = lldb
@@ -1842,7 +1846,7 @@ class AutoTest(ABC):
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             self.reboot_check_valgrind_log()
             self.progress("Stopping and restarting SITL")
             if getattr(self, 'valgrind_restart_customisations', None) is not None:
@@ -1990,6 +1994,24 @@ class AutoTest(ABC):
                 n = p.get('name')
                 htree[n] = p
         return htree
+
+    def test_adsb_send_threatening_adsb_message(self, here):
+        self.progress("Sending ABSD_VEHICLE message")
+        self.mav.mav.adsb_vehicle_send(
+            37, # ICAO address
+            int(here.lat * 1e7),
+            int(here.lng * 1e7),
+            mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+            int(here.alt*1000 + 10000), # 10m up
+            0, # heading in cdeg
+            0, # horizontal velocity cm/s
+            0, # vertical velocity cm/s
+            "bob".encode("ascii"), # callsign
+            mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,
+            1, # time since last communication
+            65535, # flags
+            17 # squawk
+        )
 
     def test_parameter_documentation_get_all_parameters(self):
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
@@ -2426,7 +2448,7 @@ class AutoTest(ABC):
 
         # stash our arguments in case we need to preserve them in
         # reboot_sitl with Valgrind active:
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
             self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
@@ -2456,13 +2478,13 @@ class AutoTest(ABC):
     def reset_SITL_commandline(self):
         self.progress("Resetting SITL commandline to default")
         self.stop_SITL()
-        self.start_SITL(wipe=True)
-        self.set_streamrate(self.sitl_streamrate())
-        self.apply_default_parameters()
         try:
             del self.valgrind_restart_customisations
         except Exception:
             pass
+        self.start_SITL(wipe=True)
+        self.set_streamrate(self.sitl_streamrate())
+        self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
 
     def stop_SITL(self):
@@ -2719,6 +2741,8 @@ class AutoTest(ABC):
         self.set_parameter("ARSPD_BUS", 2)
         self.set_parameter("ARSPD_TYPE", 7)
         self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True, verbose=True, timeout=30)
 
         # should not be getting HIGH_LATENCY2 by default
         m = self.mav.recv_match(type='HIGH_LATENCY2', blocking=True, timeout=2)
@@ -3415,6 +3439,7 @@ class AutoTest(ABC):
             mavutil.mavlink.MAV_CMD_DO_JUMP,
             mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
             mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+            mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
         ]
 
     def assert_mission_files_same(self, file1, file2, match_comments=False):
@@ -3842,6 +3867,53 @@ class AutoTest(ABC):
             "waypoints",
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
             strict=strict)
+
+    def check_dflog_message_rates(self, log_filepath, message_rates):
+        reader = self.dfreader_for_path(log_filepath)
+
+        counts = {}
+        first = None
+        while True:
+            m = reader.recv_match()
+            if m is None:
+                break
+            if (m.fmt.instance_field is not None and
+                    getattr(m, m.fmt.instance_field) != 0):
+                continue
+
+            t = m.get_type()
+#            print("t=%s" % str(t))
+            if t not in counts:
+                counts[t] = 0
+            counts[t] += 1
+
+            if hasattr(m, 'TimeUS'):
+                if first is None:
+                    first = m
+                last = m
+
+        if first is None:
+            raise NotAchievedException("Did not get any messages")
+        delta_time_us = last.TimeUS - first.TimeUS
+
+        for (t, want_rate) in message_rates.items():
+            if t not in counts:
+                raise NotAchievedException("Wanted %s but got none" % t)
+            self.progress("Got (%u)" % counts[t])
+            got_rate = counts[t] / delta_time_us * 1000000
+
+            if abs(want_rate - got_rate) > 5:
+                raise NotAchievedException("Not getting %s data at wanted rate want=%f got=%f" %
+                                           (t, want_rate, got_rate))
+
+    def generate_rate_sample_log(self):
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(20)
+        path = self.current_onboard_log_filepath()
+        self.progress("Rate sample log (%s)" % path)
+        self.reboot_sitl()
+        return path
 
     def rc_defaults(self):
         return {
@@ -5206,6 +5278,51 @@ class AutoTest(ABC):
             return msg.relative_alt / 1000.0  # mm -> m
         return msg.alt / 1000.0  # mm -> m
 
+    def assert_rangefinder_distance_between(self, dist_min, dist_max):
+        m = self.assert_receive_message('RANGEFINDER')
+
+        if m.distance < dist_min:
+            raise NotAchievedException("below min height (%f < %f)" %
+                                       (m.distance, dist_min))
+
+        if m.distance > dist_max:
+            raise NotAchievedException("above max height (%f > %f)" %
+                                       (m.distance, dist_max))
+
+    def assert_distance_sensor_quality(self, quality):
+        m = self.assert_receive_message('DISTANCE_SENSOR')
+
+        if m.signal_quality != quality:
+            raise NotAchievedException("Unexpected quality; want=%f got=%f" %
+                                       (quality, m.signal_quality))
+
+    def get_rangefinder_distance(self):
+        m = self.mav.recv_match(type='RANGEFINDER',
+                                blocking=True,
+                                timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not get RANGEFINDER message")
+
+        return m.distance
+
+    def wait_rangefinder_distance(self, dist_min, dist_max, timeout=30, **kwargs):
+        '''wait for RANGEFINDER distance'''
+        def validator(value2, target2=None):
+            if dist_min <= value2 <= dist_max:
+                return True
+            else:
+                return False
+
+        self.wait_and_maintain(
+            value_name="RageFinderDistance",
+            target=dist_min,
+            current_value_getter=lambda: self.get_rangefinder_distance(),
+            accuracy=(dist_max - dist_min),
+            validator=lambda value2, target2: validator(value2, target2),
+            timeout=timeout,
+            **kwargs
+        )
+
     def get_esc_rpm(self, esc):
         if esc > 4:
             raise ValueError("Only does 1-4")
@@ -6493,7 +6610,7 @@ Also, ignores heartbeats not from our target system'''
         # determine a good pexpect timeout for reading MAVProxy's
         # output; some regmes may require longer timeouts.
         pexpect_timeout = 60
-        if self.valgrind:
+        if self.valgrind or self.callgrind:
             pexpect_timeout *= 10
 
         mavproxy = util.start_MAVProxy_SITL(
@@ -6530,6 +6647,7 @@ Also, ignores heartbeats not from our target system'''
             "home": self.sitl_home(),
             "speedup": self.speedup,
             "valgrind": self.valgrind,
+            "callgrind": self.callgrind,
             "wipe": True,
         }
         start_sitl_args.update(**sitl_args)
@@ -7664,7 +7782,7 @@ Also, ignores heartbeats not from our target system'''
                     rate = float(mavproxy.match.group(1))
                     self.progress("Rate: %f" % rate)
                     desired_rate = 50
-                    if self.valgrind:
+                    if self.valgrind or self.callgrind:
                         desired_rate /= 10
                     if rate < desired_rate:
                         raise NotAchievedException("Exceptionally low transfer rate (%u < %u)" % (rate, desired_rate))
@@ -9334,9 +9452,12 @@ switch value'''
         latest = logs[-1]
         return latest
 
-    def dfreader_for_current_onboard_log(self):
-        return DFReader.DFReader_binary(self.current_onboard_log_filepath(),
+    def dfreader_for_path(self, path):
+        return DFReader.DFReader_binary(path,
                                         zero_time_base=True)
+
+    def dfreader_for_current_onboard_log(self):
+        return self.dfreader_for_path(self.current_onboard_log_filepath())
 
     def current_onboard_log_contains_message(self, messagetype):
         self.progress("Checking (%s) for (%s)" %
@@ -9472,8 +9593,10 @@ switch value'''
         self.start_subtest("parameter download")
         target_system = self.sysid_thismav()
         target_component = 1
+        self.progress("First Download:")
         (parameters, seq_id) = self.download_parameters(target_system, target_component)
         self.reboot_sitl()
+        self.progress("Second download:")
         (parameters2, seq2_id) = self.download_parameters(target_system, target_component)
 
         delta = self.dictdiff(parameters, parameters2)
@@ -10419,7 +10542,7 @@ switch value'''
             self.drain_mav(quiet=True)
             tnow = self.get_sim_time_cached()
             timeout = 30
-            if self.valgrind:
+            if self.valgrind or self.callgrind:
                 timeout *= 10
             if tnow - tstart > timeout:
                 raise NotAchievedException("Did not get parameter via mavlite")
@@ -11034,14 +11157,19 @@ switch value'''
 
         tstart = self.get_sim_time_cached()
         while True:
+            self.drain_mav()
             now = self.get_sim_time_cached()
             if now - tstart > 10:
-                raise AutoTestTimeoutException("Failed to get devo data")
+                if devo.frame is not None:
+                    # we received some frames but could not find correct values
+                    raise AutoTestTimeoutException("Failed to get correct data")
+                else:
+                    # No frames received. Devo telemetry is compiled out?
+                    break
 
             devo.update()
             frame = devo.frame
             if frame is None:
-                self.progress("No data received")
                 continue
 
             m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
@@ -11302,7 +11430,15 @@ switch value'''
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp list\n")
-            mavproxy.expect(" D libraries")  # one line from the ftp list output
+            some_directory = None
+            for entry in sorted(os.listdir()):
+                if os.path.isdir(entry):
+                    some_directory = entry
+                    break
+            if some_directory is None:
+                raise NotAchievedException("No directories?!")
+            expected_line = " D %s" % some_directory
+            mavproxy.expect(expected_line)  # one line from the ftp list output
         except Exception as e:
             self.print_exception_caught(e)
             ex = e

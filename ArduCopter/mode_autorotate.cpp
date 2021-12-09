@@ -86,7 +86,7 @@ void ModeAutorotate::run()
     uint32_t now = millis(); //milliseconds
 
     // Initialise internal variables
-    float curr_vel_z = inertial_nav.get_velocity().z;   // Current vertical descent
+    float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent
 
     //----------------------------------------------------------------
     //                  State machine logic

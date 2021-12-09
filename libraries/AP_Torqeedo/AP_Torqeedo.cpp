@@ -283,6 +283,50 @@ bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
+// returns a human-readable string corresponding the the passed-in
+// master error code (see page 93 of https://media.torqeedo.com/downloads/manuals/torqeedo-Travel-manual-DE-EN.pdf)
+// If no conversion is available then nullptr is returned
+const char * AP_Torqeedo::map_master_error_code_to_string(uint8_t code) const
+{
+    switch (code) {
+    case 2:
+        return "stator high temp";
+    case 5:
+        return "propeller blocked";
+    case 6:
+        return "motor low voltage";
+    case 7:
+        return "motor high current";
+    case 8:
+        return "pcb temp high";
+    case 21:
+        return "tiller cal bad";
+    case 22:
+        return "mag bad";
+    case 23:
+        return "range incorrect";
+    case 30:
+        return "motor comm error";
+    case 32:
+        return "tiller comm error";
+    case 33:
+        return "general comm error";
+    case 41:
+    case 42:
+        return "charge voltage bad";
+    case 43:
+        return "battery flat";
+    case 45:
+        return "battery high current";
+    case 46:
+        return "battery temp error";
+    case 48:
+        return "charging temp error";
+    }
+
+    return nullptr;
+}
+
 // report changes in error codes to user
 void AP_Torqeedo::report_error_codes()
 {
@@ -310,7 +354,19 @@ void AP_Torqeedo::report_error_codes()
         gcs().send_text(MAV_SEVERITY_CRITICAL, "%s batt nearly empty", msg_prefix);
     }
     if (_display_system_state.master_error_code > 0) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "%s err:%u", msg_prefix, _display_system_state.master_error_code);
+        const char *error_string = map_master_error_code_to_string(_display_system_state.master_error_code);
+        if (error_string != nullptr) {
+            gcs().send_text(
+                MAV_SEVERITY_CRITICAL, "%s err:%u %s",
+                msg_prefix,
+                _display_system_state.master_error_code,
+                error_string);
+        } else {
+            gcs().send_text(
+                MAV_SEVERITY_CRITICAL, "%s err:%u",
+                msg_prefix,
+                _display_system_state.master_error_code);
+        }
     }
 
     // report motor status errors

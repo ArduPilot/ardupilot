@@ -425,7 +425,12 @@ public:
     void Log_Write_Home_And_Origin();
     void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
-    void Write_Origin(uint8_t origin_type, const Location &loc) const; 
+
+    enum class LogOriginType {
+        ekf_origin = 0,
+        ahrs_home = 1
+    };
+    void Write_Origin(LogOriginType origin_type, const Location &loc) const; 
     void Write_POS(void) const;
 
     // return a smoothed and corrected gyro vector in radians/second
@@ -547,6 +552,13 @@ public:
         return AP::ins().get_accel();
     }
 
+    // return primary accel bias. This should be subtracted from
+    // get_accel() vector to get best current body frame accel
+    // estimate
+    const Vector3f &get_accel_bias(void) const {
+        return _accel_bias;
+    }
+    
     /*
      * AHRS is used as a transport for vehicle-takeoff-expected and
      * vehicle-landing-expected:
@@ -708,6 +720,8 @@ private:
     Vector3f _gyro_estimate;
     Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
     Vector3f _accel_ef_ekf_blended;
+    Vector3f _accel_bias;
+
     const uint16_t startup_delay_ms = 1000;
     uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration

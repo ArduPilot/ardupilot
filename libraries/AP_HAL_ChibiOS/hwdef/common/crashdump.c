@@ -23,12 +23,9 @@
 #include "stm32_util.h"
 #include "flash.h"
 
-#if defined(HAL_CRASH_DUMP_FLASHPAGE) || defined(HAL_CRASH_SERIAL_PORT)
 CRASH_CATCHER_TEST_WRITEABLE CrashCatcherReturnCodes g_crashCatcherDumpEndReturn = CRASH_CATCHER_TRY_AGAIN;
 static                       CrashCatcherInfo        g_info;
-#endif
 
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
 static bool do_flash_crash_dump = true;
 static void* dump_start_address;
 static void* dump_end_address;
@@ -36,7 +33,6 @@ static void* dump_end_address;
 static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo);
 static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void);
 static void CrashCatcher_DumpMemoryFlash(const void* pvMemory, CrashCatcherElementSizes elementSize, size_t elementCount);
-#endif  // HAL_CRASH_DUMP_FLASHPAGE
 
 #if defined(HAL_CRASH_SERIAL_PORT)
 static bool uart_initialised = false;
@@ -61,33 +57,139 @@ static CrashCatcherReturnCodes CrashCatcher_DumpEndHex(void);
 static void CrashCatcher_DumpMemoryHex(const void* pvMemory, CrashCatcherElementSizes elementSize, size_t elementCount);
 #endif // HAL_CRASH_SERIAL_PORT
 
+extern uint32_t __crash_log_base__, __crash_log_end__;
+
 uint32_t stm32_crash_dump_size(void)
 {
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
-    uint32_t* page_addr = (uint32_t*)stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE);
-    uint32_t page_size = stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE);
+    uint32_t* page_addr = (uint32_t*)&__crash_log_base__;
+    uint32_t page_size = stm32_crash_dump_max_size();
     return page_addr[(page_size / sizeof(uint32_t)) - 1];
-#else
-    return 0;
-#endif
 }
 
-extern uint32_t __ram0_start__, __ram0_end__;
+uint32_t stm32_crash_dump_max_size(void)
+{
+    return (uint32_t)&__crash_log_end__ - (uint32_t)&__crash_log_base__;
+}
+
+uint32_t stm32_crash_dump_addr(void)
+{
+    return (uint32_t)&__crash_log_base__;
+}
+
+bool stm32_crash_dump_region_erased(void)
+{
+    for (uint32_t i = 0; i < stm32_crash_dump_max_size(); i += 4) {
+        if (((uint32_t*)stm32_crash_dump_addr())[i / 4] != 0xFFFFFFFF) {
+            return false;
+        }
+    }
+    return true;
+}
+
+#define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
+extern uint32_t __ram0_start__, __ram0_end__, __heap_base__, __heap_end__, __bss_base__, __bss_end__;
+#define REMAINDER_MEM_REGION_SIZE (15000) // remainder memory for crashcatcher internal regions
+static uint32_t dump_size = 0;
+static uint8_t dump_buffer[32]; // we need to maintain a dump buffer of 32bytes for H7
+static uint8_t buf_off = 0;
+
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void);
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
     // do a full dump if on serial
-    static CrashCatcherMemoryRegion regions[] = {
-        {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
-        {0xFFFFFFFF, 0xFFFFFFFF, CRASH_CATCHER_BYTE}
-    };
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
+    static CrashCatcherMemoryRegion regions[60] = {
+    {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
+    {(uint32_t)&ch, (uint32_t)&ch + sizeof(ch), CRASH_CATCHER_BYTE}};
+    uint32_t total_dump_size = dump_size + buf_off + REMAINDER_MEM_REGION_SIZE;
+    // loop through chibios threads and add their stack info
+    uint8_t curr_region = 2;
+    for (thread_t *tp = chRegFirstThread(); tp && (curr_region < (ARRAY_SIZE(regions) - 1)); tp = chRegNextThread(tp)) {
+        uint32_t total_stack;
+        if (tp->wabase == (void*)&__main_thread_stack_base__) {
+            // main thread has its stack separated from the thread context
+            total_stack = (uint32_t)((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+        } else {
+            // all other threads have their thread context pointer
+            // above the stack top
+            total_stack = (uint32_t)(tp) - (uint32_t)(tp->wabase);
+        }
+        // log names if in RAM
+        if (tp->name != NULL && is_address_in_memory((void*)tp->name)) {
+            regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+            regions[curr_region].startAddress = (uint32_t)(tp->name);
+            regions[curr_region++].endAddress = (uint32_t)(tp->name) + 13;
+        }
+        // log thread info
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)(tp);
+        regions[curr_region++].endAddress = (uint32_t)(tp) + sizeof(thread_t);
+        // log thread stacks
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)(tp->wabase);
+        regions[curr_region++].endAddress = (uint32_t)(tp->wabase) + total_stack;
+
+        total_dump_size += total_stack;
+        if ((total_dump_size) >= stm32_crash_dump_max_size()) {
+            // we can't log anymore than this
+            goto finalise;
+        }
+    }
+
+    // log statically alocated memory
+    int32_t bss_size = ((uint32_t)&__bss_end__) - ((uint32_t)&__bss_base__);
+    int32_t available_space = stm32_crash_dump_max_size() - total_dump_size;
+    if (available_space < 0) {
+        // we can't log anymore than this
+        goto finalise;
+    }
+    if (bss_size > available_space) { // dump however much we can
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__bss_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__bss_base__ + available_space;
+        total_dump_size += available_space;
+    } else { // dump the entire bss
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__bss_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__bss_end__;
+        total_dump_size += bss_size;
+    }
+
+    // dump the Heap as well as much as we can
+    int32_t heap_size = ((uint32_t)&__heap_end__) - ((uint32_t)&__heap_base__);
+    available_space = stm32_crash_dump_max_size() - total_dump_size;
+    if (available_space < 0) {
+        // we can't log anymore than this
+        goto finalise;
+    }
+    if (heap_size > available_space) { // dump however much we can
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__heap_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__heap_base__ + available_space;
+        total_dump_size += available_space;
+    } else { // dump the entire heap
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = (uint32_t)&__heap_base__;
+        regions[curr_region++].endAddress = (uint32_t)&__heap_end__;
+        total_dump_size += heap_size;
+    }
+
+finalise:
+    // ensure that last is filled with 0xFFFFFFFF
+    if (curr_region < ARRAY_SIZE(regions)) {
+        regions[curr_region].elementSize = CRASH_CATCHER_BYTE;
+        regions[curr_region].startAddress = 0xFFFFFFFF;
+        regions[curr_region].endAddress = 0xFFFFFFFF;
+    } else {
+        regions[ARRAY_SIZE(regions) - 1].elementSize = CRASH_CATCHER_BYTE;
+        regions[ARRAY_SIZE(regions) - 1].startAddress = 0xFFFFFFFF;
+        regions[ARRAY_SIZE(regions) - 1].endAddress = 0xFFFFFFFF;
+    }
+
     if (do_flash_crash_dump) {
         // smaller dump if on flash
         regions[0].startAddress = (uint32_t)dump_start_address;
         regions[0].endAddress = (uint32_t)dump_end_address;
     }
-#endif
     return regions;
 }
 
@@ -101,11 +203,9 @@ void CrashCatcher_DumpMemory(const void* pvMemory, CrashCatcherElementSizes elem
         CrashCatcher_DumpMemoryHex(pvMemory, elementSize, elementCount);
     }
 #endif
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
     if (do_flash_crash_dump) {
         CrashCatcher_DumpMemoryFlash(pvMemory, elementSize, elementCount);
     }
-#endif
 }
 
 
@@ -115,19 +215,14 @@ void CrashCatcher_DumpStart(const CrashCatcherInfo* pInfo)
     struct port_extctx* ctx = (struct port_extctx*)pInfo->sp;
     FaultType faultType = (FaultType)__get_IPSR();
     save_fault_watchdog(__LINE__, faultType, pInfo->sp, ctx->lr_thd);
-#if !defined(HAL_CRASH_SERIAL_PORT) && !defined(HAL_CRASH_DUMP_FLASHPAGE)
-    while(true) {} // Nothing to do
-#endif
 #if defined(HAL_CRASH_SERIAL_PORT)
     if (do_serial_crash_dump) {
         CrashCatcher_DumpStartHex(pInfo);
     }
 #endif
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
     if (do_flash_crash_dump) {
         CrashCatcher_DumpStartFlash(pInfo);
     }
-#endif
 }
 
 CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
@@ -137,12 +232,10 @@ CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
         return CrashCatcher_DumpEndHex();
     }
 #endif
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
     if (do_flash_crash_dump) {
         return CrashCatcher_DumpEndFlash();
     }
     do_flash_crash_dump = false;
-#endif
 #if defined(HAL_CRASH_SERIAL_PORT)
     do_serial_crash_dump = true;
 #endif
@@ -150,12 +243,6 @@ CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
 }
 
 // -------------- FlashDump Code --------------------
-#if defined(HAL_CRASH_DUMP_FLASHPAGE)
-
-static uint32_t dump_size;
-static uint8_t dump_buffer[32]; // we need to maintain a dump buffer of 32bytes for H7
-static uint8_t buf_off;
-
 static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo)
 {
     // initialise for dumping
@@ -184,7 +271,7 @@ static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo)
     dump_size = 0;
     buf_off = 0;
     // we expect crash dump flash page to already be empty
-    if (!stm32_flash_ispageerased(HAL_CRASH_DUMP_FLASHPAGE)) {
+    if (!stm32_crash_dump_region_erased()) {
         // stuff is already there, maybe last dump
         // so just do nothing
         do_flash_crash_dump = false;
@@ -198,7 +285,7 @@ static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo)
 static void flush_dump_buffer(void)
 {
     if (buf_off == sizeof(dump_buffer)) {
-        uint32_t page_start = stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE);
+        uint32_t page_start = (uint32_t)stm32_crash_dump_addr();
         // write dump buffer to flash
         stm32_flash_write(page_start + dump_size, dump_buffer, sizeof(dump_buffer));
         dump_size += sizeof(dump_buffer);
@@ -214,7 +301,7 @@ static void CrashCatcher_DumpMemoryFlash(const void* pvMemory, CrashCatcherEleme
     const uint8_t* pv = (const uint8_t*)pvMemory;
     size_t cnt = 0;
     while (cnt < elementCount) {
-        if (dump_size + buf_off + sizeof(dump_size) >= stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE)) {
+        if (dump_size + buf_off + sizeof(dump_size) >= stm32_crash_dump_max_size()) {
             // when this happens, buf_off will be sizeof(buffer)-sizeof(dump_size)
             // 0xFF will be used to detect that we were in the middle of taking a dump
             memset(&dump_buffer[sizeof(dump_buffer)-sizeof(dump_size)], 0xFF, sizeof(dump_size));
@@ -249,20 +336,20 @@ static void CrashCatcher_DumpMemoryFlash(const void* pvMemory, CrashCatcherEleme
 static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
 {
     // flush the buffer
-    if (dump_size + buf_off + sizeof(dump_size) >= stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE)) {
+    if (dump_size + buf_off + sizeof(dump_size) >= stm32_crash_dump_max_size()) {
         // when this happens, buf_off will be sizeof(buffer)-sizeof(dump_size)
         // 0xFF will be used to detect that we were in the middle of taking a dump
         memset(&dump_buffer[sizeof(dump_buffer)-sizeof(dump_size)], 0xFF, sizeof(dump_size));
         buf_off = sizeof(dump_buffer);
     }
     if (buf_off > 0) {
-        if (dump_size + sizeof(dump_buffer) >= stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE) && buf_off < sizeof(dump_buffer)) {
+        if (dump_size + sizeof(dump_buffer) >= stm32_crash_dump_max_size() && buf_off < sizeof(dump_buffer)) {
             // we have a partially full buffer towards the end, so we need to write the buffer
             // and then write the size of the buffer
             memcpy(&dump_buffer[sizeof(dump_buffer)-sizeof(dump_size)], &dump_size, sizeof(dump_size));
             buf_off = 32;
         }
-        stm32_flash_write(stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE) + dump_size, dump_buffer, buf_off);
+        stm32_flash_write(stm32_crash_dump_addr() + dump_size, dump_buffer, 32);
         dump_size += buf_off;
         buf_off = 0;
         memset(dump_buffer, 0, sizeof(dump_buffer));
@@ -270,9 +357,9 @@ static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
     }
 
     // write size to buffer if not already written
-    if (dump_size < stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE)) {
+    if (dump_size < stm32_crash_dump_max_size()) {
         memcpy(&dump_buffer[sizeof(dump_buffer)-sizeof(dump_size)], &dump_size, sizeof(dump_size));
-        stm32_flash_write(stm32_flash_getpageaddr(HAL_CRASH_DUMP_FLASHPAGE) + stm32_flash_getpagesize(HAL_CRASH_DUMP_FLASHPAGE) - sizeof(dump_buffer), dump_buffer, sizeof(dump_buffer));
+        stm32_flash_write(stm32_crash_dump_addr() + stm32_crash_dump_max_size() - sizeof(dump_buffer), dump_buffer, sizeof(dump_buffer));
         stm32_watchdog_pat();
     }
 
@@ -283,8 +370,6 @@ static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
     else
         return g_crashCatcherDumpEndReturn;
 }
-
-#endif // HAL_USE_CRASH_CATCHER
 
 // -------------- HexDump Code --------------------
 /* Copyright (C) 2018  Adam Green (https://github.com/adamgreen)

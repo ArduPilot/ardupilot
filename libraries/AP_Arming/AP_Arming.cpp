@@ -1027,6 +1027,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_MPPT_PacketDigital:
                 case AP_CANManager::Driver_Type_None:
                 case AP_CANManager::Driver_Type_Scripting:
+                case AP_CANManager::Driver_Type_Benewake:
                     break;
             }
         }
@@ -1100,7 +1101,7 @@ bool AP_Arming::osd_checks(bool display_failure) const
 
 bool AP_Arming::fettec_checks(bool display_failure) const
 {
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     const AP_FETtecOneWire *f = AP_FETtecOneWire::get_singleton();
     if (f == nullptr) {
         return true;

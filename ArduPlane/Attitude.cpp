@@ -444,7 +444,12 @@ void Plane::stabilize_acro(float speed_scaler)
 
     steering_control.steering = rudder_input();
 
-    if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
+    if (g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
+        // user has asked for yaw rate control with yaw rate scaled by ACRO_YAW_RATE
+        const float rudd_expo = rudder_in_expo(true);
+        const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
+        steering_control.steering = steering_control.rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
+    } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
         // use yaw controller
         calc_nav_yaw_coordinated(speed_scaler);
     } else {
@@ -514,6 +519,10 @@ void Plane::stabilize()
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
+        if (yawController.rate_control_enabled()) {
+            const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
+            steering_control.rudder = rudder;
+        }
 #endif
     } else {
         if (allow_stick_mixing && g.stick_mixing == StickMixing::FBW && control_mode != &mode_stabilize) {
@@ -590,6 +599,11 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
             plane.guided_state.last_forced_rpy_ms.z > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.z < 3000) {
         commanded_rudder = plane.guided_state.forced_rpy_cd.z;
+    } else if (control_mode == &mode_autotune && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
+        // user is doing an AUTOTUNE with yaw rate control
+        const float rudd_expo = rudder_in_expo(true);
+        const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
+        commanded_rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
     } else {
         if (control_mode == &mode_stabilize && rudder_in != 0) {
             disable_integrator = true;
@@ -636,6 +650,13 @@ void Plane::calc_nav_yaw_ground(void)
         return;
     }
 
+    // if we haven't been steering for 1s then clear locked course
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - steer_state.last_steer_ms > 1000) {
+        steer_state.locked_course = false;
+    }
+    steer_state.last_steer_ms = now_ms;
+
     float steer_rate = (rudder_input()/4500.0f) * g.ground_steer_dps;
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_TAKEOFF ||
         flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
@@ -652,6 +673,7 @@ void Plane::calc_nav_yaw_ground(void)
             steer_state.locked_course_err = 0;
         }
     }
+
     if (!steer_state.locked_course) {
         // use a rate controller at the pilot specified rate
         steering_control.steering = steerController.get_steering_out_rate(steer_rate);

@@ -51,13 +51,8 @@ void Plane::set_next_WP(const struct Location &loc)
     // location as the previous waypoint, to prevent immediately
     // considering the waypoint complete
     if (current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
-        gcs().send_text(MAV_SEVERITY_NOTICE, "Resetting previous waypoint");
         prev_WP_loc = current_loc;
     }
-
-    // used to control FBW and limit the rate of climb
-    // -----------------------------------------------
-    set_target_altitude_location(next_WP_loc);
 
     // zero out our loiter vals to watch for missed waypoints
     loiter_angle_reset();

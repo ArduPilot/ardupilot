@@ -1433,8 +1433,3 @@ enum LogMessages : uint8_t {
 
 static_assert(_LOG_LAST_MSG_ <= 255, "Too many message formats");
 static_assert(LOG_MODE_MSG < 128, "Duplicate message format IDs");
-
-enum LogOriginType {
-    ekf_origin = 0,
-    ahrs_home = 1
-};

@@ -49,7 +49,7 @@ public:
     // the original frame or desired frame is above-terrain
     bool change_alt_frame(AltFrame desired_frame);
 
-    // get position as a vector from origin (x,y only or x,y,z)
+    // get position as a vector (in cm) from origin (x,y only or x,y,z)
     // return false on failure to get the vector which can only
     // happen if the EKF origin has not been set yet
     // x, y and z are in centimetres

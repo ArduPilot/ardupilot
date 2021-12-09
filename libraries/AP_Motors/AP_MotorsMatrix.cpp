@@ -1192,8 +1192,9 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motors(motors, ARRAY_SIZE(motors));
                     break;
                 }
-                case MOTOR_FRAME_TYPE_X: {
-                    _frame_type_string = "X";
+                case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_CW_X: {
+                    _frame_type_string = "X/CW_X";
                     static const AP_MotorsMatrix::MotorDef motors[] {
                         {   18, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1 },
                         {   54, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2 },

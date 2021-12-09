@@ -64,7 +64,7 @@ float Sub::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position(), roi_WP);
+        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position_xy_cm(), roi_WP.xy());
     }
 
     return yaw_look_at_WP_bearing;
@@ -72,10 +72,10 @@ float Sub::get_roi_yaw()
 
 float Sub::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity();
-    const float speed = vel.xy().length();
+    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
-    if (position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
+    if (position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
         yaw_look_ahead_bearing = degrees(atan2f(vel.y,vel.x))*100.0f;
     }
     return yaw_look_ahead_bearing;
@@ -131,7 +131,7 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
     static uint32_t last_call_ms = 0;
     float distance_error;
     float velocity_correction;
-    float current_alt = inertial_nav.get_altitude();
+    float current_alt = inertial_nav.get_position_z_up_cm();
 
     uint32_t now = AP_HAL::millis();
 

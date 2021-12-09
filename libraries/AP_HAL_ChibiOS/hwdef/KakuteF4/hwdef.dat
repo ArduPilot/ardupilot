@@ -142,7 +142,7 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_180
 BARO BMP280 I2C:0:0x76
 
 # enable logging to dataflash
-define HAL_LOGGING_DATAFLASH
+define HAL_LOGGING_DATAFLASH_ENABLED 1
 
 # setup for OSD
 define OSD_ENABLED 1

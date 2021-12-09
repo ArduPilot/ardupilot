@@ -119,12 +119,14 @@ bool AP_RangeFinder_LightWareSerial::get_reading(float &reading_m)
     // return average of all valid readings
     if (valid_count > 0) {
         reading_m = sum / valid_count;
+        no_signal = false;
         return true;
     }
 
     // all readings were invalid so return out-of-range-high value
     if (invalid_count > 0) {
         reading_m = MIN(MAX(LIGHTWARE_DIST_MAX_CM, distance_cm_max + LIGHTWARE_OUT_OF_RANGE_ADD_CM), UINT16_MAX) * 0.01f;
+        no_signal = true;
         return true;
     }
 

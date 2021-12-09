@@ -96,6 +96,7 @@ void SITL_State::_usage(void)
            "\t--uartG device           set device string for UARTG\n"
            "\t--uartH device           set device string for UARTH\n"
            "\t--uartI device           set device string for UARTI\n"
+           "\t--uartJ device           set device string for UARTJ\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -105,6 +106,7 @@ void SITL_State::_usage(void)
            "\t--serial6 device         set device string for SERIAL6\n"
            "\t--serial7 device         set device string for SERIAL7\n"
            "\t--serial8 device         set device string for SERIAL8\n"
+           "\t--serial9 device         set device string for SERIAL9\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -245,6 +247,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_UARTG,
         CMDLINE_UARTH,
         CMDLINE_UARTI,
+        CMDLINE_UARTJ,
         CMDLINE_SERIAL0,
         CMDLINE_SERIAL1,
         CMDLINE_SERIAL2,
@@ -254,6 +257,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SERIAL6,
         CMDLINE_SERIAL7,
         CMDLINE_SERIAL8,
+        CMDLINE_SERIAL9,
         CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
@@ -302,6 +306,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartG",           true,   0, CMDLINE_UARTG},
         {"uartH",           true,   0, CMDLINE_UARTH},
         {"uartI",           true,   0, CMDLINE_UARTI},
+        {"uartJ",           true,   0, CMDLINE_UARTJ},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
@@ -311,6 +316,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"serial6",         true,   0, CMDLINE_SERIAL6},
         {"serial7",         true,   0, CMDLINE_SERIAL7},
         {"serial8",         true,   0, CMDLINE_SERIAL8},
+        {"serial9",         true,   0, CMDLINE_SERIAL9},
         {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
@@ -434,6 +440,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_UARTG:
         case CMDLINE_UARTH:
         case CMDLINE_UARTI:
+        case CMDLINE_UARTJ:
             _uart_path[opt - CMDLINE_UARTA] = gopt.optarg;
             break;
         case CMDLINE_SERIAL0:
@@ -445,6 +452,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL6:
         case CMDLINE_SERIAL7:
         case CMDLINE_SERIAL8:
+        case CMDLINE_SERIAL9:
             _uart_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
             break;
         case CMDLINE_RTSCTS:
