@@ -37,7 +37,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    uint16_t            get_motor_mask() override;
+    uint32_t            get_motor_mask() override;
 
     // output a thrust to all motors that match a given motor
     // mask. This is used to control tiltrotor motors in forward
