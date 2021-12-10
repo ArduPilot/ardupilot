@@ -777,7 +777,7 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsMulticopter::get_motor_mask()
+uint32_t AP_MotorsMulticopter::get_motor_mask()
 {
     return SRV_Channels::get_output_channel_mask(SRV_Channel::k_boost_throttle);
 }
