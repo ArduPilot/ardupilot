@@ -1160,8 +1160,9 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
         bool force_set       = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE_SET;
 
-        // force_set true, do not accept command
-        if (force_set) {
+        // Force inputs are not supported
+        // Do not accept command if force_set is true and acc_ignore is false
+        if (force_set && !acc_ignore) {
             break;
         }
 
@@ -1254,8 +1255,9 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
         bool force_set       = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE_SET;
 
-        // force_set true, do not accept command
-        if (force_set) {
+        // Force inputs are not supported
+        // Do not accept command if force_set is true and acc_ignore is false
+        if (force_set && !acc_ignore) {
             break;
         }
 
