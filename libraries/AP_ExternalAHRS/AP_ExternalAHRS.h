@@ -56,6 +56,9 @@ public:
         // 7 reserved for MicroStrain7
         // 8 reserved for SBG
         // 9 reserved for EulerNav
+#if AP_EXTERNAL_AHRS_MTI630_ENABLED
+        MTI630 = 10,
+#endif
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
