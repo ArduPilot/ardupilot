@@ -132,7 +132,7 @@ protected:
     // get tuned yaw rate d gain
     virtual float get_tuned_yaw_rd() = 0;
 
-    // test init and run methods that should be overridden for each vehicle
+    // test initialization and run methods that should be overridden for each vehicle
     virtual void test_init() = 0;
     virtual void test_run(AxisType test_axis, const float dir_sign) = 0;
 
@@ -144,6 +144,8 @@ protected:
     void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
     void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
     void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
+
+    // measure acceleration during twitch test
     void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
 
     // twitch test functions for multicopter
@@ -152,9 +154,6 @@ protected:
 
     // update gains for the rate p up tune type
     virtual void updating_rate_p_up_all(AxisType test_axis)=0;
-
-    // update gains for the rate p down tune type
-    virtual void updating_rate_p_down_all(AxisType test_axis)=0;
 
     // update gains for the rate d up tune type
     virtual void updating_rate_d_up_all(AxisType test_axis)=0;
@@ -255,6 +254,7 @@ protected:
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
 
+    // Sets customizable tune sequence for the vehicle
     virtual void set_tune_sequence() = 0;
 
     // type of gains to load
@@ -316,6 +316,7 @@ protected:
     float rotation_rate;
     float roll_cd, pitch_cd;
 
+    // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
 
     struct {
@@ -325,10 +326,10 @@ protected:
     } level_problem;
 
     // parameters
-    AP_Int8  axis_bitmask;
-    AP_Float aggressiveness;
-    AP_Float min_d;
-    AP_Float vel_hold_gain;
+    AP_Int8  axis_bitmask;        // axes to be tuned
+    AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
+    AP_Float min_d;               // minimum rate d gain allowed during tuning
+    AP_Float vel_hold_gain;       // gain for velocity hold
 
     // copies of object pointers to make code a bit clearer
     AC_AttitudeControl *attitude_control;
@@ -342,8 +343,7 @@ protected:
     // Add additional updating gain functions specific to heli
     // generic method used by subclasses to update gains for the rate ff up tune type
     virtual void updating_rate_ff_up_all(AxisType test_axis)=0;
-    // generic method used by subclasses to update gains for the rate ff down tune type
-    virtual void updating_rate_ff_down_all(AxisType test_axis)=0;
+
     // generic method used by subclasses to update gains for the max gain tune type
     virtual void updating_max_gains_all(AxisType test_axis)=0;
 
@@ -359,32 +359,33 @@ protected:
     void angle_dwell_test_init(float filt_freq);
     void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
+    // generates waveform for frequency sweep excitations
     float waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax);
 
     uint8_t  ff_test_phase;                         // phase of feedforward test
-    float    test_command_filt;                     // filtered commanded output
-    float    test_rate_filt;                        // filtered rate output
-    float    command_out;
-    float    test_tgt_rate_filt;                    // filtered target rate
-    float    filt_target_rate;
-    bool     ff_up_first_iter;                      //true on first iteration of ff up testing
-    float    test_gain[20];                             // gain of output to input
-    float    test_freq[20];
-    float    test_phase[20];
-    float    dwell_start_time_ms;
-    uint8_t  freq_cnt;
-    uint8_t  freq_cnt_max;
-    float    curr_test_freq;
-    float    curr_test_gain;
-    float    curr_test_phase;
-    Vector3f start_angles;
-    uint32_t settle_time;
-    uint32_t phase_out_time;
-    float    waveform_freq_rads;  //current frequency for chirp waveform
-    float    start_freq;  //start freq for dwell test
-    float    stop_freq;   //ending freq for dwell test
-    float    trim_pff_out;  // trim output of the PID rate controller for P, I and FF terms
-    float    trim_meas_rate;  // trim measured gyro rate
+    float    test_command_filt;                     // filtered commanded output for FF test analysis
+    float    test_rate_filt;                        // filtered rate output for FF test analysis
+    float    command_out;                           // test axis command output
+    float    test_tgt_rate_filt;                    // filtered target rate for FF test analysis
+    float    filt_target_rate;                      // filtered target rate
+    bool     ff_up_first_iter;                      // true on first iteration of ff up testing
+    float    test_gain[20];                         // frequency response gain for each dwell test iteration
+    float    test_freq[20];                         // frequency of each dwell test iteration
+    float    test_phase[20];                        // frequency response phase for each dwell test iteration
+    float    dwell_start_time_ms;                   // start time in ms of dwell test
+    uint8_t  freq_cnt;                              // dwell test iteration counter
+    uint8_t  freq_cnt_max;                          // counter number for frequency that produced max gain response
+    float    curr_test_freq;                        // current test frequency
+    float    curr_test_gain;                        // current test frequency response gain
+    float    curr_test_phase;                       // current test frequency response phase
+    Vector3f start_angles;                          // aircraft attitude at the start of test
+    uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
+    uint32_t phase_out_time;                        // time in ms to phase out response
+    float    waveform_freq_rads;                    //current frequency for chirp waveform
+    float    start_freq;                            //start freq for dwell test
+    float    stop_freq;                             //ending freq for dwell test
+    float    trim_pff_out;                          // trim output of the PID rate controller for P, I and FF terms
+    float    trim_meas_rate;                        // trim measured gyro rate
 
     //variables from rate FF test
     float trim_command_reading;
@@ -427,6 +428,7 @@ protected:
     };
     sweep_data sweep;
 
+    // max_gain_data type stores information from the max gain test
     struct max_gain_data {
         float freq;
         float phase;
@@ -434,10 +436,14 @@ protected:
         float max_allowed;
     };
 
+    // max gain data for rate p tuning
     max_gain_data max_rate_p;
+    // max gain data for rate d tuning
     max_gain_data max_rate_d;
 
-AC_AutoTune_FreqResp freqresp_rate;
-AC_AutoTune_FreqResp freqresp_angle;
+    // freqresp object for the rate frequency response tests
+    AC_AutoTune_FreqResp freqresp_rate;
+    // freqresp object for the angle frequency response tests
+    AC_AutoTune_FreqResp freqresp_angle;
 
 };

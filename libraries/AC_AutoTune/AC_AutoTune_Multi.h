@@ -53,9 +53,6 @@ protected:
     // update gains for the rate P up tune type
     void updating_rate_p_up_all(AxisType test_axis) override;
 
-    // update gains for the rate P down tune type
-    void updating_rate_p_down_all(AxisType test_axis) override {};
-
     // update gains for the rate D up tune type
     void updating_rate_d_up_all(AxisType test_axis) override;
 
@@ -64,9 +61,6 @@ protected:
 
     // update gains for the rate ff up tune type
     void updating_rate_ff_up_all(AxisType test_axis) override {};
-
-    // update gains for the rate ff down tune type
-    void updating_rate_ff_down_all(AxisType test_axis) override {};
 
     // update gains for the angle P up tune type
     void updating_angle_p_up_all(AxisType test_axis) override;
