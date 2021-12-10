@@ -183,7 +183,7 @@ void AP_BattMonitor_UAVCAN::handle_mppt_stream(const MpptStreamCb &cb)
     const float current = use_input_value ? cb.msg->input_current : cb.msg->output_current;
 
     // use an invalid soc so we use the library calculated one
-    const uint8_t soc = 101;
+    const uint8_t soc = 127;
 
     // convert C to Kelvin
     const float temperature_K = isnanf(cb.msg->temperature) ? 0 : cb.msg->temperature + C_TO_KELVIN;
@@ -264,9 +264,10 @@ bool AP_BattMonitor_UAVCAN::capacity_remaining_pct(uint8_t &percentage) const
 {
     if ((uint32_t(_params._options.get()) & uint32_t(AP_BattMonitor_Params::Options::Ignore_UAVCAN_SoC)) ||
         _mppt.is_detected ||
-        _soc > 100) {
+        _soc == 127) {
         // a UAVCAN battery monitor may not be able to supply a state of charge. If it can't then
         // the user can set the option to use current integration in the backend instead.
+        // SOC of 127 is used as an invalid SOC flag ie system configuration errors or SOC estimation unavailable
         return AP_BattMonitor_Backend::capacity_remaining_pct(percentage);
     }
 
