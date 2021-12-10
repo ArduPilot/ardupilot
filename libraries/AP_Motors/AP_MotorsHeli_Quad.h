@@ -57,7 +57,7 @@ public:
     void calculate_armed_scalars() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
-    uint16_t get_motor_mask() override;
+    uint32_t get_motor_mask() override;
 
     // has_flybar - returns true if we have a mechanical flybar
     bool has_flybar() const  override { return AP_MOTORS_HELI_NOFLYBAR; }
