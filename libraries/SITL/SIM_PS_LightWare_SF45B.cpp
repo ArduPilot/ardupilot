@@ -53,7 +53,7 @@ void PS_LightWare_SF45B::send(const char *data, uint32_t len)
 {
     const ssize_t ret = write_to_autopilot(data, len);
     if (ret < 0 || (uint32_t)ret != len) {
-        abort();
+        // abort();
     }
 }
 
