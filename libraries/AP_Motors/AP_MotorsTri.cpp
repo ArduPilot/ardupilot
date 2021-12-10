@@ -127,13 +127,13 @@ void AP_MotorsTri::output_to_motors()
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsTri::get_motor_mask()
+uint32_t AP_MotorsTri::get_motor_mask()
 {
     // tri copter uses channels 1,2,4 and 7
-    uint16_t motor_mask = (1U << AP_MOTORS_MOT_1) |
+    uint32_t motor_mask = (1U << AP_MOTORS_MOT_1) |
                           (1U << AP_MOTORS_MOT_2) |
                           (1U << AP_MOTORS_MOT_4);
-    uint16_t mask = motor_mask_to_srv_channel_mask(motor_mask);
+    uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
 
     // add parent's mask
     mask |= AP_MotorsMulticopter::get_motor_mask();
