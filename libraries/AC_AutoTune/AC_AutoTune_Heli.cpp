@@ -99,6 +99,7 @@ AC_AutoTune_Heli::AC_AutoTune_Heli()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+// initialize tests for each tune type
 void AC_AutoTune_Heli::test_init()
 {
     if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
@@ -180,6 +181,7 @@ void AC_AutoTune_Heli::test_init()
     start_angles = Vector3f(roll_cd, pitch_cd, desired_yaw_cd);  // heli specific
 }
 
+// run tests for each tune type
 void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 {
     
@@ -198,6 +200,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
     }
 }
 
+// heli specific gcs announcements
 void AC_AutoTune_Heli::do_gcs_announcements()
 {
     const uint32_t now = AP_HAL::millis();

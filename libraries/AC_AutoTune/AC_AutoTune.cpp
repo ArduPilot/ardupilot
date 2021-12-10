@@ -1617,9 +1617,6 @@ void AC_AutoTune::dwell_test_init(float filt_freq)
     command_filt.set_cutoff_frequency(filt_freq);
     target_rate_filt.reset(0);
     target_rate_filt.set_cutoff_frequency(filt_freq);
-    test_command_filt = 0.0f;
-    test_rate_filt = 0.0f;
-    test_tgt_rate_filt = 0.0f;
     filt_target_rate = 0.0f;
     dwell_start_time_ms = 0.0f;
     settle_time = 200;
