@@ -422,8 +422,6 @@ void AP_SerialManager::init_console()
 #endif
 }
 
-extern bool g_nsh_should_exit;
-
 // init - // init - initialise serial ports
 void AP_SerialManager::init()
 {
