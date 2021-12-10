@@ -242,7 +242,7 @@ private:
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
-    uint16_t motor_mask;
+    uint32_t motor_mask;
 
     // convert between servo number and FMU channel number for ESC telemetry
     uint8_t chan_offset;
