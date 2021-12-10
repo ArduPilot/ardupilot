@@ -346,6 +346,7 @@ struct method {
 struct userdata_field {
   struct userdata_field * next;
   char * name;
+  char * alias;
   struct type type; // field type, points to a string
   int line; // line declared on
   unsigned int access_flags;
@@ -669,7 +670,13 @@ void handle_userdata_field(struct userdata *data) {
     field = field-> next;
   }
   if (field != NULL) {
-    error(ERROR_USERDATA, "Field %s already exists in userdata %s (declared on %d)", field_name, data->name, field->line);
+    char *token = next_token();
+    if (strcmp(token, keyword_alias) != 0) {
+      error(ERROR_USERDATA, "Field %s already exists in userdata %s (declared on %d)", field_name, data->name, field->line);
+    }
+    char *alias = next_token();
+    string_copy(&(field->alias), alias);
+    return;
   }
 
   trace(TRACE_USERDATA, "Adding field %s", field_name);
@@ -1957,7 +1964,7 @@ void emit_userdata_metatables(void) {
 
     struct userdata_field *field = node->fields;
     while(field) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", field->name, node->sanatized_name, field->name);
+      fprintf(source, "    {\"%s\", %s_%s},\n", field->alias ? field->alias : field->name, node->sanatized_name, field->name);
       field = field->next;
     }
 
@@ -1997,7 +2004,7 @@ void emit_singleton_metatables(struct userdata *head) {
 
     struct userdata_field *field = node->fields;
     while(field) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", field->name, node->sanatized_name, field->name);
+      fprintf(source, "    {\"%s\", %s_%s},\n", field->alias ? field->alias : field->name, node->sanatized_name, field->name);
       field = field->next;
     }
 
@@ -2286,12 +2293,12 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get field\n");
               emit_docs_type(field->type, "---@return", "\n");
-              fprintf(docs, "function %s:%s() end\n\n", name, field->name);
+              fprintf(docs, "function %s:%s() end\n\n", name, field->alias ? field->alias : field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set field\n");
               emit_docs_type(field->type, "---@param value", "\n");
-              fprintf(docs, "function %s:%s(value) end\n\n", name, field->name);
+              fprintf(docs, "function %s:%s(value) end\n\n", name, field->alias ? field->alias : field->name);
             }
           } else {
             // array feild
@@ -2299,13 +2306,13 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
               fprintf(docs, "-- get array field\n");
               fprintf(docs, "---@param index integer\n");
               emit_docs_type(field->type, "---@return", "\n");
-              fprintf(docs, "function %s:%s(index) end\n\n", name, field->name);
+              fprintf(docs, "function %s:%s(index) end\n\n", name, field->alias ? field->alias : field->name);
             }
             if (field->access_flags & ACCESS_FLAG_WRITE) {
               fprintf(docs, "-- set array field\n");
               fprintf(docs, "---@param index integer\n");
               emit_docs_type(field->type, "---@param value", "\n");
-              fprintf(docs, "function %s:%s(index, value) end\n\n", name, field->name);
+              fprintf(docs, "function %s:%s(index, value) end\n\n", name, field->alias ? field->alias : field->name);
             }
           }
         field = field->next;
