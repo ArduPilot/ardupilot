@@ -81,13 +81,13 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
 
     if (_rotate_auto) {
-        enum Rotation r = _get_state(prio).external?(enum Rotation)_get_state(prio).orientation.get():ROTATION_NONE;
+        enum Rotation r = _get_state(prio).params.external?(enum Rotation)_get_state(prio).params.orientation.get():ROTATION_NONE;
         if (r < ROTATION_MAX) {
-            _calibrator[prio]->set_orientation(r, _get_state(prio).external, _rotate_auto>=2, _rotate_auto>=3);
+            _calibrator[prio]->set_orientation(r, _get_state(prio).params.external, _rotate_auto>=2, _rotate_auto>=3);
         }
     }
     _cal_saved[prio] = false;
-    if (i == 0 && _get_state(prio).external != 0) {
+    if (i == 0 && _get_state(prio).params.external != 0) {
         _calibrator[prio]->start(retry, delay, get_offsets_max(), i, _calibration_threshold);
     } else {
         // internal compasses or secondary compasses get twice the
@@ -207,7 +207,7 @@ bool Compass::_accept_calibration(uint8_t i)
         set_and_save_offdiagonals(i,offdiag);
         set_and_save_scale_factor(i,scale_factor);
 
-        if (cal_report.check_orientation && _get_state(prio).external && _rotate_auto >= 2) {
+        if (cal_report.check_orientation && _get_state(prio).params.external && _rotate_auto >= 2) {
             set_and_save_orientation(i, cal_report.orientation);
         }
 
@@ -526,7 +526,7 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             // skip this compass
             continue;
         }
-        if (_use_for_yaw[Priority(i)] == 0 || (!force_use && !use_for_yaw(i))) {
+        if (_get_state(Priority(i)).params.use_for_yaw == 0 || (!force_use && !use_for_yaw(i))) {
             continue;
         }
         if (!healthy(i)) {
