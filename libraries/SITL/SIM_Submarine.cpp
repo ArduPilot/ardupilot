@@ -65,6 +65,12 @@ Submarine::Submarine(const char *frame_str) :
     lock_step_scheduled = true;
 }
 
+float Submarine::perpendicular_distance_to_rangefinder_surface() const
+{
+    const float floor_depth = calculate_sea_floor_depth(position);
+    return floor_depth - position.z;
+}
+
 // calculate rotational and linear accelerations
 void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
@@ -88,9 +94,8 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         rot_accel += t.rotational * thrust * frame_property.thruster_mount_radius / frame_property.moment_of_inertia;
     }
 
-    float floor_depth = calculate_sea_floor_depth(position);
-    range = floor_depth - position.z;
     // Limit movement at the sea floor
+    const float floor_depth = calculate_sea_floor_depth(position);
     if (position.z > floor_depth && body_accel.z > -GRAVITY_MSS) {
     	body_accel.z = -GRAVITY_MSS;
     }
@@ -138,7 +143,7 @@ void Submarine::calculate_buoyancy_torque(Vector3f &torque)
  * @param position
  * @return float
  */
-float Submarine::calculate_sea_floor_depth(const Vector3d &/*position*/)
+float Submarine::calculate_sea_floor_depth(const Vector3d &/*position*/) const
 {
     return 50;
 }

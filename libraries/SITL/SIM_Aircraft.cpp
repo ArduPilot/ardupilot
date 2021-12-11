@@ -384,7 +384,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.vtol_motor_start = vtol_motor_start;
     memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
     fdm.rcin_chan_count = rcin_chan_count;
-    fdm.range = range;
+    fdm.range = rangefinder_range();
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
@@ -484,14 +484,47 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     }
 }
 
+// returns perpendicular height to surface downward-facing rangefinder
+// is bouncing off:
+float Aircraft::perpendicular_distance_to_rangefinder_surface() const
+{
+    return sitl->height_agl;
+}
+
 float Aircraft::rangefinder_range() const
 {
-    // swiped from sitl_rangefinder.cpp - we should unify them at some stage
+    float roll = sitl->state.rollDeg;
+    float pitch = sitl->state.pitchDeg;
 
-    float altitude = range;  // only sub appears to set this
-    if (is_equal(altitude, -1.0f)) {  // Use SITL altitude as reading by default
-        altitude = sitl->height_agl;
+    if (roll > 0) {
+        roll -= rangefinder_beam_width();
+        if (roll < 0) {
+            roll = 0;
+        }
+    } else {
+        roll += rangefinder_beam_width();
+        if (roll > 0) {
+            roll = 0;
+        }
     }
+    if (pitch > 0) {
+        pitch -= rangefinder_beam_width();
+        if (pitch < 0) {
+            pitch = 0;
+        }
+    } else {
+        pitch += rangefinder_beam_width();
+        if (pitch > 0) {
+            pitch = 0;
+        }
+    }
+
+    if (fabs(roll) >= 90.0 || fabs(pitch) >= 90.0) {
+        // not going to hit the ground....
+        return INFINITY;
+    }
+
+    float altitude = perpendicular_distance_to_rangefinder_surface();
 
     // sensor position offset in body frame
     const Vector3f relPosSensorBF = sitl->rngfnd_pos_offset;
@@ -507,15 +540,9 @@ float Aircraft::rangefinder_range() const
         altitude -= relPosSensorEF.z;
     }
 
-    if (is_equal(range, -1.0f)) {  // disable for external reading that already handle this
-        if (fabs(sitl->state.rollDeg) >= 90.0 || fabs(sitl->state.pitchDeg) >= 90.0) {
-            // not going to hit the ground....
-            return INFINITY;
-        }
+    // adjust for apparent altitude with roll
+    altitude /= cosf(radians(roll)) * cosf(radians(pitch));
 
-        // adjust for apparent altitude with roll
-        altitude /= cosf(radians(sitl->state.rollDeg)) * cosf(radians(sitl->state.pitchDeg));
-    }
     // Add some noise on reading
     altitude += sitl->sonar_noise * rand_float();
 
