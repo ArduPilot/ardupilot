@@ -1842,6 +1842,14 @@ bool Compass::configured(uint8_t i)
         return false;
     }
 
+#ifdef HAL_USE_EMPTY_STORAGE
+    // the load() call below returns zeroes on empty storage, so the
+    // check-stored-value check here will always fail.  Since nobody
+    // really cares about the empty-storage case, shortcut out here
+    // for simplicity.
+    return true;
+#endif
+
     // back up cached value of dev_id
     int32_t dev_id_cache_value = _state[id].dev_id;
 
