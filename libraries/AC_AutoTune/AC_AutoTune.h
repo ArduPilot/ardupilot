@@ -50,7 +50,7 @@ public:
     virtual void run();
 
     // save gained, called on disarm
-    virtual void save_tuning_gains();
+    virtual void save_tuning_gains() = 0;
 
     // stop tune, reverting gains
     void stop();
@@ -121,7 +121,7 @@ protected:
     void load_intra_test_gains();
 
     // load gains for next test.  relies on axis variable being set
-    virtual void load_test_gains();
+    virtual void load_test_gains() = 0;
 
     // get intra test rate I gain for the specified axis
     virtual float get_intra_test_ri(AxisType test_axis) = 0;
