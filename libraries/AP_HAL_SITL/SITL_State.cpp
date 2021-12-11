@@ -59,7 +59,7 @@ void SITL_State::_set_param_default(const char *parm)
 /*
   setup for SITL handling
  */
-void SITL_State::_sitl_setup(const char *home_str)
+void SITL_State::_sitl_setup()
 {
 #if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
     _parent_pid = getppid();
