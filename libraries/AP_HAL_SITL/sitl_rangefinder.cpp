@@ -32,9 +32,12 @@ float SITL_State::_sonar_pin_voltage() const
     }
 
     const float altitude = sitl_model->rangefinder_range();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
     if (altitude == INFINITY) {
         return 5.0f;
     }
+#pragma GCC diagnostic pop
 
     // Altitude in in m, scaler in meters/volt
     const float voltage = altitude / _sitl->sonar_scale;
