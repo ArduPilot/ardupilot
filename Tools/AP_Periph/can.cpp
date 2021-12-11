@@ -1530,6 +1530,61 @@ void AP_Periph_FW::hwesc_telem_update()
 }
 #endif // HAL_PERIPH_ENABLE_HWESC
 
+#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if HAL_WITH_ESC_TELEM
+/*
+  send ESC status packets based on AP_ESC_Telem
+ */
+void AP_Periph_FW::esc_telem_update()
+{
+    const uint8_t mask = esc_telem.get_active_esc_mask();
+    const uint8_t num_escs = esc_telem.get_num_active_escs();
+    for (uint8_t i=0; i<num_escs; i++) {
+        if (((1U<<i) & mask) == 0) {
+            continue;
+        }
+        const float nan = nanf("");
+        uavcan_equipment_esc_Status pkt {};
+        const auto *channel = SRV_Channels::srv_channel(i);
+        // try to map the ESC number to a motor number. This is needed
+        // for when we have multiple CAN nodes, one for each ESC
+        if (channel == nullptr) {
+            pkt.esc_index = i;
+        } else {
+            const int8_t motor_num = channel->get_motor_num();
+            pkt.esc_index = motor_num==-1? i:motor_num;
+        }
+        if (!esc_telem.get_voltage(i, pkt.voltage)) {
+            pkt.voltage = nan;
+        }
+        if (!esc_telem.get_current(i, pkt.current)) {
+            pkt.current = nan;
+        }
+        int16_t temperature;
+        if (esc_telem.get_motor_temperature(i, temperature)) {
+            pkt.temperature = temperature*0.01 + C_TO_KELVIN;
+        } else {
+            pkt.temperature = nan;
+        }
+        float rpm;
+        if (esc_telem.get_raw_rpm(i, rpm)) {
+            pkt.rpm = rpm;
+        }
+        pkt.power_rating_pct = 0;
+        pkt.error_count = 0;
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+        uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer);
+        canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                         UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                         CANARD_TRANSFER_PRIORITY_LOW,
+                         &buffer[0],
+                         total_size);
+    }
+}
+#endif // HAL_WITH_ESC_TELEM
+#endif // HAL_PERIPH_ENABLE_RC_OUT
+
 
 void AP_Periph_FW::can_update()
 {

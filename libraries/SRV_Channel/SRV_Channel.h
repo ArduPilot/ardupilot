@@ -240,6 +240,9 @@ public:
         return (SRV_Channel::Aux_servo_function_t)function.get();
     }
 
+    // return the motor number of a channel, or -1 if not a motor
+    int8_t get_motor_num(void) const;
+
     // set and save function for channel. Used in upgrade of parameters in plane
     void function_set_and_save(SRV_Channel::Aux_servo_function_t f) {
         function.set_and_save(int8_t(f));
@@ -561,14 +564,13 @@ private:
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
     static AP_RobotisServo *robotis_ptr;
-    
+#endif // HAL_BUILD_AP_PERIPH
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
     AP_BLHeli blheli;
     static AP_BLHeli *blheli_ptr;
 #endif
-
-#endif // HAL_BUILD_AP_PERIPH
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     AP_FETtecOneWire fetteconwire;

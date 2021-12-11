@@ -191,6 +191,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
@@ -198,6 +199,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
@@ -259,10 +261,10 @@ SRV_Channels::SRV_Channels(void)
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
+#endif // HAL_BUILD_AP_PERIPH
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
-#endif // HAL_BUILD_AP_PERIPH
 }
 
 // SRV_Channels initialization
@@ -272,7 +274,9 @@ void SRV_Channels::init(void)
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr->init();
 #endif
+#ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
+#endif
 }
 
 /*
@@ -376,11 +380,12 @@ void SRV_Channels::push()
     // give robotis library a chance to update
     robotis_ptr->update();
 
+#endif // HAL_BUILD_AP_PERIPH
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
-#endif // HAL_BUILD_AP_PERIPH
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr->update();
