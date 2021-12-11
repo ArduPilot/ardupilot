@@ -133,7 +133,7 @@ private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
     void _usage(void);
-    void _sitl_setup(const char *home_str);
+    void _sitl_setup();
     void _setup_fdm(void);
     void _setup_timer(void);
     void _setup_adc(void);
