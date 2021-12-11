@@ -32,7 +32,7 @@ float SITL_State::_sonar_pin_voltage() const
     }
 
     const float altitude = sitl_model->rangefinder_range();
-    if (altitude == INFINITY) {
+    if (is_equal(altitude, INFINITY)) {
         return 5.0f;
     }
 
