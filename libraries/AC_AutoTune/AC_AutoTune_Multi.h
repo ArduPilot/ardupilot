@@ -96,6 +96,17 @@ protected:
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 
 private:
+    // twitch test functions for multicopter
+    void twitch_test_init();
+    void twitch_test_run(AxisType test_axis, const float dir_sign);
+
+    void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
+    void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
+    void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
+
+    // measure acceleration during twitch test
+    void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
+
     // updating_rate_d_up - increase D and adjust P to optimize the D term for a little bounce back
     // optimize D term while keeping the maximum just below the target by adjusting P
     void updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max);
