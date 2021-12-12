@@ -61,9 +61,9 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Video Transmitter Options
-    // @Description: Video Transmitter Options. Pitmode puts the VTX in a low power state. Unlocked enables certain restricted frequencies and power levels. Do not enable the Unlocked option unless you have appropriate permissions in your jurisdiction to transmit at high power levels.
+    // @Description: Video Transmitter Options. Pitmode puts the VTX in a low power state. Unlocked enables certain restricted frequencies and power levels. Do not enable the Unlocked option unless you have appropriate permissions in your jurisdiction to transmit at high power levels. One stop-bit may be required for VTXs that erroneously mimic iNav behaviour.
     // @User: Advanced
-    // @Bitmask: 0:Pitmode,1:Pitmode until armed,2:Pitmode when disarmed,3:Unlocked,4:Add leading zero byte to requests
+    // @Bitmask: 0:Pitmode,1:Pitmode until armed,2:Pitmode when disarmed,3:Unlocked,4:Add leading zero byte to requests,5:Use 1 stop-bit in SmartAudio,6:Ignore CRC in SmartAudio,7:Ignore status updates in CRSF and blindly set VTX options
     AP_GROUPINFO("OPTIONS",  6, AP_VideoTX, _options, 0),
 
     // @Param: MAX_POWER
@@ -74,6 +74,13 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
     AP_GROUPEND
 };
+
+//#define VTX_DEBUG
+#ifdef VTX_DEBUG
+# define debug(fmt, args...)	hal.console->printf("VTX: " fmt "\n", ##args)
+#else
+# define debug(fmt, args...)	do {} while(0)
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -87,6 +94,23 @@ const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNEL
     { 5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880}, /* Airwave */
     { 5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917}, /* Race */
     { 5621, 5584, 5547, 5510, 5473, 5436, 5399, 5362}  /* LO Race */
+};
+
+// mapping of power level to milliwatt to dbm
+// valid power levels from SmartAudio spec, the adjacent levels might be the actual values
+// so these are marked as level + 0x10 and will be switched if a dbm message proves it
+AP_VideoTX::PowerLevel AP_VideoTX::_power_levels[VTX_MAX_POWER_LEVELS] = {
+    // level, mw, dbm, dac
+    { 0xFF,  0,    0, 0    }, // only in SA 2.1
+    { 0,    25,   14, 7    },
+    { 0x11, 100,  20, 0xFF }, // only in SA 2.1
+    { 1,    200,  23, 16   },
+    { 0x12, 400,  26, 0xFF }, // only in SA 2.1
+    { 2,    500,  27, 25   },
+    //{ 0x13, 600,  28, 0xFF },
+    { 3,    800,  29, 40   },
+    { 0x13, 1000, 30, 0xFF }, // only in SA 2.1
+    { 0xFF, 0,    0,  0XFF, PowerActive::Inactive }  // slot reserved for a custom power level
 };
 
 AP_VideoTX::AP_VideoTX()
@@ -111,7 +135,23 @@ bool AP_VideoTX::init(void)
         return false;
     }
 
-    _current_power = _power_mw;
+    // PARAMETER_CONVERSION - Added: Sept-2022
+    _options.convert_parameter_width(AP_PARAM_INT16);
+
+    // find the index into the power table
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_mw <= _power_levels[i].mw) {
+            if (_power_mw != _power_levels[i].mw) {
+                if (i > 0) {
+                    _current_power = i - 1;
+                }
+                _power_mw.set_and_save(get_power_mw());
+            } else {
+                _current_power = i;
+            }
+            break;
+        }
+    }
     _current_band = _band;
     _current_channel = _channel;
     _current_frequency = _frequency_mhz;
@@ -137,89 +177,156 @@ bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& c
 }
 
 // set the current power
-void AP_VideoTX::set_configured_power_mw(uint16_t power) {
+void AP_VideoTX::set_configured_power_mw(uint16_t power)
+{
     _power_mw.set_and_save_ifchanged(power);
 }
 
+uint8_t AP_VideoTX::find_current_power() const
+{
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_mw == _power_levels[i].mw) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 // set the power in dbm, rounding appropriately
-void AP_VideoTX::set_power_dbm(uint8_t power) {
-    switch (power) {
-    case 14:
-        _current_power = 25;
-        break;
-    case 20:
-        _current_power = 100;
-        break;
-    case 23:
-        _current_power = 200;
-        break;
-    case 26:
-        _current_power = 400;
-        break;
-    case 27:
-        _current_power = 500;
-        break;
-    case 29:
-        _current_power = 800;
-        break;
-    default:
-        _current_power = uint16_t(roundf(powf(10, power * 0.1f)));
-        break;
+void AP_VideoTX::set_power_dbm(uint8_t power, PowerActive active)
+{
+    if (power == _power_levels[_current_power].dbm
+        && _power_levels[_current_power].active == active) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (power == _power_levels[i].dbm) {
+            _current_power = i;
+            _power_levels[i].active = active;
+            debug("learned power %ddbm", power);
+            // now unlearn the "other" power level since we have no other way of guessing
+            // the supported levels
+            if ((_power_levels[i].level & 0xF0) == 0x10) {
+                _power_levels[i].level = _power_levels[i].level & 0xF;
+            }
+            if (i > 0 && _power_levels[i-1].level == _power_levels[i].level) {
+                debug("invalidated power %dwm, level %d is now %dmw", _power_levels[i-1].mw, _power_levels[i].level, _power_levels[i].mw);
+                _power_levels[i-1].level = 0xFF;
+                _power_levels[i-1].active = PowerActive::Inactive;
+            } else if (i < VTX_MAX_POWER_LEVELS-1 && _power_levels[i+1].level == _power_levels[i].level) {
+                debug("invalidated power %dwm, level %d is now %dmw", _power_levels[i+1].mw, _power_levels[i].level, _power_levels[i].mw);
+                _power_levels[i+1].level = 0xFF;
+                _power_levels[i+1].active = PowerActive::Inactive;
+            }
+            return;
+        }
+    }
+    // learn the non-standard power
+    _current_power = update_power_dbm(power, active);
+}
+
+// add an active power setting in dbm
+uint8_t AP_VideoTX::update_power_dbm(uint8_t power, PowerActive active)
+{
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (power == _power_levels[i].dbm) {
+            if (_power_levels[i].active != active) {
+                _power_levels[i].active = active;
+                debug("%s power %ddbm", active == PowerActive::Active ? "learned" : "invalidated", power);
+            }
+            return i;
+        }
+    }
+    // handed a non-standard value, use the last slot
+    _power_levels[VTX_MAX_POWER_LEVELS-1].dbm = power;
+    _power_levels[VTX_MAX_POWER_LEVELS-1].level = 255;
+    _power_levels[VTX_MAX_POWER_LEVELS-1].dac = 255;
+    _power_levels[VTX_MAX_POWER_LEVELS-1].mw = uint16_t(roundf(powf(10, power / 10.0f)));
+    _power_levels[VTX_MAX_POWER_LEVELS-1].active = active;
+    debug("non-standard power %ddbm -> %dmw", power, _power_levels[VTX_MAX_POWER_LEVELS-1].mw);
+    return VTX_MAX_POWER_LEVELS-1;
+}
+
+// add all active power setting in dbm
+void AP_VideoTX::update_all_power_dbm(uint8_t nlevels, const uint8_t power[])
+{
+    for (uint8_t i = 0; i < nlevels; i++) {
+        update_power_dbm(power[i], PowerActive::Active);
+    }
+    // invalidate the remaining ones
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_levels[i].active == PowerActive::Unknown) {
+            _power_levels[i].active = PowerActive::Inactive;
+        }
     }
 }
 
-// get the power in dbm, rounding appropriately
-uint8_t AP_VideoTX::get_configured_power_dbm() const {
-    switch (_power_mw.get()) {
-    case 25:    return 14;
-    case 100:   return 20;
-    case 200:   return 23;
-    case 400:   return 26;
-    case 500:   return 27;
-    case 800:   return 29;
-    default:
-        return uint8_t(roundf(10.0f * log10f(_power_mw)));
-    }
-}
-
-// get the power "level"
-uint8_t AP_VideoTX::get_configured_power_level() const {
-    if (_power_mw < 26) {
-        return 0;
-    } else if (_power_mw < 201) {
-        return 1;
-    } else if (_power_mw < 501) {
-        return 2;
-    } else {    // 800
-        return 3;
+// set the power in mw
+void AP_VideoTX::set_power_mw(uint16_t power)
+{
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (power == _power_levels[i].mw) {
+            _current_power = i;
+            break;
+        }
     }
 }
 
 // set the power "level"
-void AP_VideoTX::set_power_level(uint8_t level) {
-    switch (level) {
-    case 1:
-        _current_power = 200;
-        break;
-    case 2:
-        _current_power = 500;
-        break;
-    case 3:
-        _current_power = 800;
-        break;
-    case 0:
-    default:
-        _current_power = 25;
-        break;
+void AP_VideoTX::set_power_level(uint8_t level, PowerActive active)
+{
+    if (level == _power_levels[_current_power].level
+        && _power_levels[_current_power].active == active) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (level == _power_levels[i].level) {
+            _current_power = i;
+            _power_levels[i].active = active;
+            debug("learned power level %d: %dmw", level, get_power_mw());
+            break;
+        }
+    }
+}
+
+// set the power dac
+void AP_VideoTX::set_power_dac(uint16_t power, PowerActive active)
+{
+    if (power == _power_levels[_current_power].dac
+        && _power_levels[_current_power].active == active) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (power == _power_levels[i].dac) {
+            _current_power = i;
+            _power_levels[i].active = active;
+            debug("learned power %dmw", get_power_mw());
+        }
     }
 }
 
 // set the current channel
-void AP_VideoTX::set_enabled(bool enabled) {
+void AP_VideoTX::set_enabled(bool enabled)
+{
     _current_enabled = enabled;
     if (!_enabled.configured()) {
         _enabled.set_and_save(enabled);
     }
+}
+
+void AP_VideoTX::set_power_is_current()
+{
+    set_power_dbm(get_configured_power_dbm());
+}
+
+void AP_VideoTX::set_freq_is_current()
+{
+    _current_frequency = _frequency_mhz;
+    _current_band = _band;
+    _current_channel = _channel;
 }
 
 // periodic update
@@ -241,6 +348,15 @@ void AP_VideoTX::update(void)
             _options.set(_options | uint8_t(VideoOptions::VTX_PITMODE));
         }
     }
+    // check that the requested power is actually allowed
+    // reset if not
+    if (_power_mw != get_power_mw()) {
+        if (_power_levels[find_current_power()].active == PowerActive::Inactive) {
+            // reset to something we know works
+            debug("power reset to %dmw from %dmw", get_power_mw(), _power_mw.get());
+            _power_mw.set_and_save(get_power_mw());
+        }
+    }
 }
 
 bool AP_VideoTX::update_options() const
@@ -254,6 +370,12 @@ bool AP_VideoTX::update_options() const
         return true;
     }
 
+#if HAL_CRSF_TELEM_ENABLED
+    // using CRSF so unlock is not an option
+    if (AP::crsf_telem() != nullptr) {
+        return false;
+    }
+#endif
     // check unlock only
     if ((_options & uint8_t(VideoOptions::VTX_UNLOCKED)) != 0
         && (_current_options & uint8_t(VideoOptions::VTX_UNLOCKED)) == 0) {
@@ -261,6 +383,21 @@ bool AP_VideoTX::update_options() const
     }
 
     // ignore everything else
+    return false;
+}
+
+bool AP_VideoTX::update_power() const {
+    if (!_defaults_set || _power_mw == get_power_mw() || get_pitmode()) {
+        return false;
+    }
+    // check that the requested power is actually allowed
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_mw == _power_levels[i].mw
+            && _power_levels[i].active != PowerActive::Inactive) {
+            return true;
+        }
+    }
+    // asked for something unsupported - only SA2.1 allows this and will have already provided a list
     return false;
 }
 
@@ -301,7 +438,7 @@ bool AP_VideoTX::set_defaults()
         return false;
     }
 
-    // check that our current view of freqency matches band/channel
+    // check that our current view of frequency matches band/channel
     // if not then force one to be correct
     uint16_t calced_freq = get_frequency_mhz(_current_band, _current_channel);
     if (_current_frequency != calced_freq) {
@@ -326,10 +463,10 @@ bool AP_VideoTX::set_defaults()
         _channel.set_and_save(_current_channel);
     }
     if (!_band.configured()) {
-        _frequency_mhz.set_and_save(_current_band);
+        _band.set_and_save(_current_band);
     }
     if (!_power_mw.configured()) {
-        _power_mw.set_and_save(_current_power);
+        _power_mw.set_and_save(get_power_mw());
     }
     if (!_frequency_mhz.configured()) {
         _frequency_mhz.set_and_save(_current_frequency);
@@ -366,96 +503,25 @@ void AP_VideoTX::change_power(int8_t position)
     if (position < 0 || position > 5) {
         return;
     }
-
+    // first find out how many possible levels there are
+    uint8_t num_active_levels = 0;
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_levels[i].active != PowerActive::Inactive) {
+            num_active_levels++;
+        }
+    }
+    // iterate through to find the level
+    uint16_t level = constrain_int16(roundf((num_active_levels * (position + 1)/ 6.0f) - 1), 0, num_active_levels - 1);
+    debug("looking for pos %d power level %d from %d", position, level, num_active_levels);
     uint16_t power = 0;
-    // 0 or 25
-    if (_max_power_mw < 100) {
-        switch (position) {
-            case 3:
-            case 4:
-            case 5:
-                power = 25;
-                break;
-            default:
-                power = 0;
-                break;
+    for (uint8_t i = 0, j = 0; i < num_active_levels; i++, j++) {
+        while (_power_levels[j].active == PowerActive::Inactive && j < VTX_MAX_POWER_LEVELS-1) {
+            j++;
         }
-    }
-    // 0, 25 or 100
-    else if (_max_power_mw < 200) {
-        switch (position) {
-            case 0:
-                power = 0;
-                break;
-            case 5:
-                power = 100;
-                break;
-            default:
-                power = 25;
-                break;
-        }
-    }
-    // 0, 25, 100 or 200
-    else if (_max_power_mw < 500) {
-        switch (position) {
-            case 1:
-            case 2:
-                power = 25;
-                break;
-            case 3:
-            case 4:
-                power = 100;
-                break;
-            case 5:
-                power = 200;
-                break;
-            default:
-                power = 0;
-                break;
-        }
-    }
-    // 0, 25, 100, 200 or 500
-    else if (_max_power_mw < 800) {
-        switch (position) {
-            case 1:
-            case 2:
-                power = 25;
-                break;
-            case 3:
-                power = 100;
-                break;
-            case 4:
-                power = 200;
-                break;
-            case 5:
-                power = 500;
-                break;
-            default:
-                power = 0;
-                break;
-        }
-    }
-    // full range
-    else {
-        switch (position) {
-            case 1:
-                power = 25;
-                break;
-            case 2:
-                power = 100;
-                break;
-            case 3:
-                power = 200;
-                break;
-            case 4:
-                power = 500;
-                break;
-            case 5:
-                power = _max_power_mw; // some VTX's support 1000mw
-                break;
-            default:
-                power = 0;
-                break;
+        if (i == level) {
+            power = _power_levels[j].mw;
+            debug("selected power %dmw", power);
+            break;
         }
     }
 
