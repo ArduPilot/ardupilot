@@ -12,6 +12,7 @@ import shlex
 import pickle
 import re
 import shutil
+import filecmp
 
 parser = argparse.ArgumentParser("chibios_pins.py")
 parser.add_argument(
@@ -2068,7 +2069,8 @@ def write_all_lines(hwdat):
 def write_hwdef_header(outfilename):
     '''write hwdef header file'''
     print("Writing hwdef setup in %s" % outfilename)
-    f = open(outfilename, 'w')
+    tmpfile = outfilename + ".tmp"
+    f = open(tmpfile, 'w')
 
     f.write('''/*
  generated hardware definitions from hwdef.dat - DO NOT EDIT
@@ -2221,6 +2223,21 @@ def write_hwdef_header(outfilename):
             for r in dma_required:
                 if fnmatch.fnmatch(d, r):
                     error("Missing required DMA for %s" % d)
+
+    f.close()
+    # see if we ended up with the same file, on an unnecessary reconfigure
+    try:
+        if filecmp.cmp(outfilename, tmpfile):
+            print("No change in hwdef.h")
+            os.unlink(tmpfile)
+            return
+    except Exception:
+        pass
+    try:
+        os.unlink(outfilename)
+    except Exception:
+        pass
+    os.rename(tmpfile, outfilename)
 
 
 def build_peripheral_list():
