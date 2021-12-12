@@ -51,7 +51,7 @@ bool AP_SmartAudio::init()
     _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SmartAudio, 0);
     if (_port!=nullptr) {
         _port->configure_parity(0);
-        _port->set_stop_bits(2);
+        _port->set_stop_bits(AP::vtx().has_option(AP_VideoTX::VideoOptions::VTX_SA_ONE_STOP_BIT) ? 1 : 2);
         _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         _port->set_options((_port->get_options() & ~AP_HAL::UARTDriver::OPTION_RXINV)
             | AP_HAL::UARTDriver::OPTION_HDPLEX | AP_HAL::UARTDriver::OPTION_PULLDOWN_TX | AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
@@ -123,9 +123,13 @@ void AP_SmartAudio::loop()
         // and the initial response is 40ms long so we should wait at least 140ms before giving up
         if (now - _last_request_sent_ms < 200 && _is_waiting_response) {
 
-            // setup sheduler delay to 50 ms again after response processes
+            // setup scheduler delay to 50 ms again after response processes
             if (!read_response(_response_buffer)) {
                 hal.scheduler->delay(10);
+            } else {
+                // successful response, wait another 100ms to give the VTX a chance to recover
+                // before sending another command. This is needed on the Atlatl v1.
+                hal.scheduler->delay(100);
             }
 
         } else if (_is_waiting_response) { // timeout
@@ -134,13 +138,14 @@ void AP_SmartAudio::loop()
             _port->discard_input();
             _inline_buffer_length = 0;
             _is_waiting_response = false;
-        } else {
+            debug("response timeout");
+        } else if (_initialised) {
             if (AP::vtx().have_params_changed() ||_vtx_power_change_pending
                 || _vtx_freq_change_pending || _vtx_options_change_pending) {
                 update_vtx_params();
                 set_configuration_pending(true);
                 vtx.set_configuration_finished(false);
-                // we've tried to udpate something, re-request the settings so that they
+                // we've tried to update something, re-request the settings so that they
                 // are reflected correctly
                 request_settings();
             } else if (is_configuration_pending()) {
@@ -176,22 +181,20 @@ void AP_SmartAudio::update_vtx_params()
             vtx.get_channel(), vtx.get_configured_channel(),
             vtx.get_band(), vtx.get_configured_band(),
             vtx.get_power_mw(), vtx.get_configured_power_mw(),
-            vtx.get_options(), vtx.get_configured_options());
+            vtx.get_options() & 0xF, vtx.get_configured_options() & 0xF);
 
         uint8_t opts = vtx.get_configured_options();
-        uint8_t pitModeRunning = (vtx.get_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-        uint8_t pitMode = opts & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE);
+        uint8_t pitMode = vtx.get_configured_pitmode();
         uint8_t mode;
-        // check if we are turning pitmode on or off, but only on SA 2.1 as older versions
-        // appear not to work properly
-        if (pitMode != pitModeRunning && _protocol_version >= SMARTAUDIO_SPEC_PROTOCOL_v21) {
-            if (pitModeRunning) {
+        // check if we are turning pitmode on or off, but only on SA 2.0+
+        if (pitMode != vtx.get_pitmode() && _protocol_version >= SMARTAUDIO_SPEC_PROTOCOL_v2) {
+            if (vtx.get_pitmode()) {
                 debug("Turning OFF pitmode");
                 // turn it off
                 mode = 0x04 | ((opts & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED)) << 2);
             } else {
                 debug("Turning ON pitmode");
-                // turn it on
+                // turn it on (in range pitmode flag)
                 mode = 0x01 | ((opts & uint8_t(AP_VideoTX::VideoOptions::VTX_UNLOCKED)) << 2);
             }
         } else {
@@ -218,7 +221,7 @@ void AP_SmartAudio::update_vtx_params()
                 set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
             }
         } else if (_vtx_power_change_pending) {
-            debug("update power");
+            debug("update power (ver %u)", _protocol_version);
             switch (_protocol_version) {
             case SMARTAUDIO_SPEC_PROTOCOL_v21:
                 set_power(vtx.get_configured_power_dbm() | 0x80);
@@ -264,7 +267,7 @@ void AP_SmartAudio::send_request(const Frame& requestFrame, uint8_t size)
 
     _packets_sent++;
 #ifdef SA_DEBUG
-    print_bytes_to_hex_string("send_request():", request, size,0);
+    print_bytes_to_hex_string("send_request():", request, size);
 #endif
 }
 
@@ -316,6 +319,10 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
         FrameHeader* header = (FrameHeader*)response_buffer;
         incoming_bytes_count -= response_header_size;
 
+        // implementations that ignore the CRC also appear to not account for it in the frame length
+        if (ignore_crc()) {
+            header->length++;
+        }
         _packet_size = header->length;
     }
 
@@ -339,12 +346,12 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
     }
 
 #ifdef SA_DEBUG
-    print_bytes_to_hex_string("read_response():", response_buffer, incoming_bytes_count,(_inline_buffer_length-incoming_bytes_count)>=0?(_inline_buffer_length-incoming_bytes_count):0);
+    print_bytes_to_hex_string("read_response():", response_buffer, _inline_buffer_length);
 #endif
-    _is_waiting_response=false;
+    _is_waiting_response = false;
 
     bool correct_parse = parse_response_buffer(response_buffer);
-    response_buffer=nullptr;
+    response_buffer = nullptr;
     _inline_buffer_length=0;
     _packet_size = 0;
     _packets_rcvd++;
@@ -357,6 +364,8 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
 void AP_SmartAudio::push_command_only_frame(uint8_t cmd_id)
 {
     Packet command;
+    // according to the spec the length should include the CRC, but no implementation appears to
+    // do this
     command.frame.header.init(cmd_id, 0);
     command.frame_size = SMARTAUDIO_COMMAND_FRAME_SIZE;
     command.frame.payload[0] = crc8_dvb_s2_update(0, &command.frame, SMARTAUDIO_COMMAND_FRAME_SIZE - 1);
@@ -451,31 +460,32 @@ void AP_SmartAudio::unpack_frequency(AP_SmartAudio::Settings *settings, const ui
     }
 }
 
+// SmartAudio v1/v2
 void AP_SmartAudio::unpack_settings(Settings *settings, const SettingsResponseFrame *frame)
 {
     settings->channel = frame->channel % VTX_MAX_CHANNELS;
     settings->band = frame->channel / VTX_MAX_CHANNELS;
     settings->power = frame->power;
     settings->mode = frame->operationMode;
+    settings->num_power_levels = 0;
     unpack_frequency(settings, be16toh(frame->frequency));
 }
 
+// SmartAudio v2.1
 void AP_SmartAudio::unpack_settings(Settings *settings, const SettingsExtendedResponseFrame *frame)
 {
-    settings->channel = frame->channel % VTX_MAX_CHANNELS;
-    settings->band = frame->channel / VTX_MAX_CHANNELS;
-    settings->power = frame->power;
-    settings->power_in_dbm=frame->power_dbm;
-    settings->mode = frame->operationMode;
-    unpack_frequency(settings, be16toh(frame->frequency));
+    unpack_settings(settings, &frame->settings);
+    settings->power_in_dbm = frame->power_dbm;
+    settings->num_power_levels = frame->num_power_levels + 1;
+    memcpy(settings->power_levels, frame->power_levels, frame->num_power_levels + 1);
 }
 
 #ifdef SA_DEBUG
-void AP_SmartAudio::print_bytes_to_hex_string(const char* msg, const uint8_t buf[], uint8_t len,uint8_t offset)
+void AP_SmartAudio::print_bytes_to_hex_string(const char* msg, const uint8_t buf[], uint8_t len)
 {
     hal.console->printf("SA: %s ", msg);
     for (uint8_t i = 0; i < len; i++) {
-        hal.console->printf("0x%02X ", buf[i+offset]);
+        hal.console->printf("0x%02X ", buf[i]);
     }
     hal.console->printf("\n");
 }
@@ -485,11 +495,11 @@ void AP_SmartAudio::print_settings(const Settings* settings)
 {
     debug("SETTINGS: VER: %u, MD: '%c%c%c%c%c', CH: %u, PWR: %u, DBM: %u FREQ: %u, BND: %u",
             settings->version,
-            (settings->mode & 0x10) ? 'U' : 'L',
-            (settings->mode & 0x8) ? 'O' : ' ',
-            (settings->mode & 0x4) ? 'I' : ' ',
-            (settings->mode & 0x2) ? 'P' : ' ',
-            (settings->mode & 0x1) ? 'F' : 'C',
+            (settings->mode & 0x10) ? 'U' : 'L',// (L)ocked or (U)nlocked
+            (settings->mode & 0x8) ? 'O' : ' ', // (O)ut-range pitmode
+            (settings->mode & 0x4) ? 'I' : ' ', // (I)n-range pitmode
+            (settings->mode & 0x2) ? 'P' : ' ', // (P)itmode running
+            (settings->mode & 0x1) ? 'F' : 'C', // Set (F)requency or (C)hannel
             settings->channel, settings->power, settings->power_in_dbm, settings->frequency, settings->band);
 }
 
@@ -501,10 +511,13 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     vtx.set_frequency_mhz(settings.frequency);
     vtx.set_band(settings.band);
     vtx.set_channel(settings.channel);
+    // SA21 sends us a complete packet with the supported power levels
     if (settings.version == SMARTAUDIO_SPEC_PROTOCOL_v21) {
         vtx.set_power_dbm(settings.power_in_dbm);
+        // learn them all
+        vtx.update_all_power_dbm(settings.num_power_levels, settings.power_levels);
     } else {
-        vtx.set_power_level(settings.power);
+        vtx.set_power_level(settings.power, AP_VideoTX::PowerActive::Active);
     }
     // it seems like the spec is wrong, on a unify pro32 this setting is inverted
     _vtx_use_set_freq = !(settings.mode & 1);
@@ -530,9 +543,10 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
     const uint8_t *startPtr = buffer + 2;
     const uint8_t *endPtr = buffer + headerPayloadLength;
 
-    if (crc8_dvb_s2_update(0x00, startPtr, headerPayloadLength-2)!=*(endPtr)
+    if ((crc8_dvb_s2_update(0x00, startPtr, headerPayloadLength-2)!=*(endPtr) && !ignore_crc())
         || header->headerByte != SMARTAUDIO_HEADER_BYTE
-        || header->syncByte!=SMARTAUDIO_SYNC_BYTE) {
+        || header->syncByte != SMARTAUDIO_SYNC_BYTE) {
+        debug("parse_response_buffer() failed - invalid CRC or header");
         return false;
     }
     // SEND TO GCS A MESSAGE TO UNDERSTAND WHATS HAPPENING
@@ -590,20 +604,24 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         const uint8_t power = resp->payload & 0xFF;
         switch (_protocol_version) {
         case SMARTAUDIO_SPEC_PROTOCOL_v21:
+            if (vtx.get_configured_power_dbm() != power) {
+                vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
+            }
             vtx.set_power_dbm(power);
             vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         case SMARTAUDIO_SPEC_PROTOCOL_v2:
+            if (vtx.get_configured_power_level() != power) {
+                vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
+            }
             vtx.set_power_level(power);
             vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         default:
-            switch(power) {
-                case 16: vtx.set_power_level(1); break; // 200mw
-                case 25: vtx.set_power_level(2); break; // 500mw
-                case 40: vtx.set_power_level(3); break; // 800mw
-                default: vtx.set_power_level(0); break; // 25mw
+            if (vtx.get_configured_power_dac() != power) {
+                vtx.update_power_dbm(vtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
             }
+            vtx.set_power_dac(power);
             vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         }
