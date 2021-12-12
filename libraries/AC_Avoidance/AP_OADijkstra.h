@@ -20,7 +20,7 @@ public:
     AP_OADijkstra &operator=(const AP_OADijkstra&) = delete;
 
     // set fence margin (in meters) used when creating "safe positions" within the polygon fence
-    void set_fence_margin(float margin) { _polyfence_margin = MAX(margin, 0.0f); }
+    void set_config(float margin) { _polyfence_margin = MAX(margin, 0.0f); }
 
     // trigger Dijkstra's to recalculate shortest path based on current location 
     void recalculate_path() { _shortest_path_ok = false; }
