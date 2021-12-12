@@ -40,6 +40,16 @@
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
+//#if APM_BUILD_TYPE(APM_BUILD_Heli)
+// #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U     // timeout for tuning mode's testing step
+//#else
+ #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U     // timeout for tuning mode's testing step
+//#endif
+
+#define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD 1000    // minimum target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_ANGLE_YAW_CD        3000    // target angle during TESTING_RATE step that will cause us to move to next step
+
 class AC_AutoTune
 {
 public:
@@ -140,17 +150,6 @@ protected:
     bool roll_enabled() const;
     bool pitch_enabled() const;
     bool yaw_enabled() const;
-
-    void twitching_test_rate(float rate, float rate_target, float &meas_rate_min, float &meas_rate_max);
-    void twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min);
-    void twitching_test_angle(float angle, float rate, float angle_target, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max);
-
-    // measure acceleration during twitch test
-    void twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const;
-
-    // twitch test functions for multicopter
-    void twitch_test_init();
-    void twitch_test_run(AxisType test_axis, const float dir_sign);
 
     // update gains for the rate p up tune type
     virtual void updating_rate_p_up_all(AxisType test_axis)=0;

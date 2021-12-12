@@ -31,6 +31,12 @@
 #define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
+#define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_RATE_RLLPIT_CDS     18000   // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_RATE_YAW_CDS        9000    // target yaw rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD     500    // minimum target angle during TESTING_RATE step that will cause us to move to next step
+#define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
 
 #include "AC_AutoTune_Multi.h"
 
@@ -280,6 +286,129 @@ void AC_AutoTune_Multi::save_tuning_gains()
     AP::logger().Write_Event(LogEvent::AUTOTUNE_SAVEDGAINS);
 
     reset();
+}
+
+// twitching_test_rate - twitching tests
+// update min and max and test for end conditions
+void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, float &meas_rate_min, float &meas_rate_max)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    // capture maximum rate
+    if (rate > meas_rate_max) {
+        // the measurement is continuing to increase without stopping
+        meas_rate_max = rate;
+        meas_rate_min = rate;
+    }
+
+    // capture minimum measurement after the measurement has peaked (aka "bounce back")
+    if ((rate < meas_rate_min) && (meas_rate_max > rate_target_max * 0.5f)) {
+        // the measurement is bouncing back
+        meas_rate_min = rate;
+    }
+
+    // calculate early stopping time based on the time it takes to get to 75%
+    if (meas_rate_max < rate_target_max * 0.75f) {
+        // the measurement not reached the 75% threshold yet
+        step_time_limit_ms = (now - step_start_time_ms) * 3;
+        step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
+    }
+
+    if (meas_rate_max > rate_target_max) {
+        // the measured rate has passed the maximum target rate
+        step = UPDATE_GAINS;
+    }
+
+    if (meas_rate_max-meas_rate_min > meas_rate_max*aggressiveness) {
+        // the measurement has passed 50% of the maximum rate and bounce back is larger than the threshold
+        step = UPDATE_GAINS;
+    }
+
+    if (now - step_start_time_ms >= step_time_limit_ms) {
+        // we have passed the maximum stop time
+        step = UPDATE_GAINS;
+    }
+}
+
+// twitching_test_rate - twitching tests
+// update min and max and test for end conditions
+void AC_AutoTune_Multi::twitching_abort_rate(float angle, float rate, float angle_max, float meas_rate_min)
+{
+    if (angle >= angle_max) {
+        if (is_equal(rate, meas_rate_min) && step_scaler > 0.5f) {
+            // we have reached the angle limit before completing the measurement of maximum and minimum
+            // reduce the maximum target rate
+            step_scaler *= 0.9f;
+            // ignore result and start test again
+            step = WAITING_FOR_LEVEL;
+        } else {
+            step = UPDATE_GAINS;
+        }
+    }
+}
+
+// twitching_test_angle - twitching tests
+// update min and max and test for end conditions
+void AC_AutoTune_Multi::twitching_test_angle(float angle, float rate, float angle_target_max, float &meas_angle_min, float &meas_angle_max, float &meas_rate_min, float &meas_rate_max)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    // capture maximum angle
+    if (angle > meas_angle_max) {
+        // the angle still increasing
+        meas_angle_max = angle;
+        meas_angle_min = angle;
+    }
+
+    // capture minimum angle after we have reached a reasonable maximum angle
+    if ((angle < meas_angle_min) && (meas_angle_max > angle_target_max * 0.5f)) {
+        // the measurement is bouncing back
+        meas_angle_min = angle;
+    }
+
+    // capture maximum rate
+    if (rate > meas_rate_max) {
+        // the measurement is still increasing
+        meas_rate_max = rate;
+        meas_rate_min = rate;
+    }
+
+    // capture minimum rate after we have reached maximum rate
+    if (rate < meas_rate_min) {
+        // the measurement is still decreasing
+        meas_rate_min = rate;
+    }
+
+    // calculate early stopping time based on the time it takes to get to 75%
+    if (meas_angle_max < angle_target_max * 0.75f) {
+        // the measurement not reached the 75% threshold yet
+        step_time_limit_ms = (now - step_start_time_ms) * 3;
+        step_time_limit_ms = MIN(step_time_limit_ms, AUTOTUNE_TESTING_STEP_TIMEOUT_MS);
+    }
+
+    if (meas_angle_max > angle_target_max) {
+        // the measurement has passed the maximum angle
+        step = UPDATE_GAINS;
+    }
+
+    if (meas_angle_max-meas_angle_min > meas_angle_max*aggressiveness) {
+        // the measurement has passed 50% of the maximum angle and bounce back is larger than the threshold
+        step = UPDATE_GAINS;
+    }
+
+    if (now - step_start_time_ms >= step_time_limit_ms) {
+        // we have passed the maximum stop time
+        step = UPDATE_GAINS;
+    }
+}
+
+// twitching_measure_acceleration - measure rate of change of measurement
+void AC_AutoTune_Multi::twitching_measure_acceleration(float &rate_of_change, float rate_measurement, float &rate_measurement_max) const
+{
+    if (rate_measurement_max < rate_measurement) {
+        rate_measurement_max = rate_measurement;
+        rate_of_change = (1000.0f*rate_measurement_max)/(AP_HAL::millis() - step_start_time_ms);
+    }
 }
 
 // update gains for the rate p up tune type
@@ -668,6 +797,142 @@ void AC_AutoTune_Multi::Log_Write_AutoTuneDetails(float angle_cd, float rate_cds
         AP_HAL::micros64(),
         angle_cd*0.01f,
         rate_cds*0.01f);
+}
+
+void AC_AutoTune_Multi::twitch_test_init()
+{
+    float target_max_rate;
+    switch (axis) {
+    case ROLL: {
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_roll_pid().filt_D_hz()*2.0f);
+        break;
+    }
+    case PITCH: {
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
+        rotation_rate_filt.set_cutoff_frequency(attitude_control->get_rate_pitch_pid().filt_D_hz()*2.0f);
+        break;
+    }
+    case YAW: {
+        target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
+        target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
+        target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
+        rotation_rate_filt.set_cutoff_frequency(AUTOTUNE_Y_FILT_FREQ);
+        break;
+    }
+    }
+
+    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+        rotation_rate_filt.reset(start_rate);
+    } else {
+        rotation_rate_filt.reset(0);
+    }
+
+}
+
+//run twitch test
+void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign)
+{
+    // disable rate limits
+    attitude_control->use_sqrt_controller(false);
+    // hold current attitude
+    attitude_control->input_rate_bf_roll_pitch_yaw(0.0f, 0.0f, 0.0f);
+
+    if ((tune_type == SP_DOWN) || (tune_type == SP_UP)) {
+        // step angle targets on first iteration
+        if (twitch_first_iter) {
+            twitch_first_iter = false;
+            // Testing increasing stabilize P gain so will set lean angle target
+            switch (test_axis) {
+            case ROLL:
+                // request roll to 20deg
+                attitude_control->input_angle_step_bf_roll_pitch_yaw(dir_sign * target_angle, 0.0f, 0.0f);
+                break;
+            case PITCH:
+                // request pitch to 20deg
+                attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, dir_sign * target_angle, 0.0f);
+                break;
+            case YAW:
+                // request pitch to 20deg
+                attitude_control->input_angle_step_bf_roll_pitch_yaw(0.0f, 0.0f, dir_sign * target_angle);
+                break;
+            }
+        }
+    } else {
+        // Testing rate P and D gains so will set body-frame rate targets.
+        // Rate controller will use existing body-frame rates and convert to motor outputs
+        // for all axes except the one we override here.
+        switch (test_axis) {
+        case ROLL:
+            // override body-frame roll rate
+            attitude_control->rate_bf_roll_target(dir_sign * target_rate + start_rate);
+            break;
+        case PITCH:
+            // override body-frame pitch rate
+            attitude_control->rate_bf_pitch_target(dir_sign * target_rate + start_rate);
+            break;
+        case YAW:
+            // override body-frame yaw rate
+            attitude_control->rate_bf_yaw_target(dir_sign * target_rate + start_rate);
+            break;
+        }
+    }
+
+    // capture this iteration's rotation rate and lean angle
+    float gyro_reading = 0;
+    switch (test_axis) {
+    case ROLL:
+        gyro_reading = ahrs_view->get_gyro().x;
+        lean_angle = dir_sign * (ahrs_view->roll_sensor - (int32_t)start_angle);
+        break;
+    case PITCH:
+        gyro_reading = ahrs_view->get_gyro().y;
+        lean_angle = dir_sign * (ahrs_view->pitch_sensor - (int32_t)start_angle);
+        break;
+    case YAW:
+        gyro_reading = ahrs_view->get_gyro().z;
+        lean_angle = dir_sign * wrap_180_cd(ahrs_view->yaw_sensor-(int32_t)start_angle);
+        break;
+    }
+
+    // Add filter to measurements
+    float filter_value;
+    switch (tune_type) {
+    case SP_DOWN:
+    case SP_UP:
+        filter_value = dir_sign * (ToDeg(gyro_reading) * 100.0f);
+        break;
+    default:
+        filter_value = dir_sign * (ToDeg(gyro_reading) * 100.0f - start_rate);
+        break;
+    }
+    rotation_rate = rotation_rate_filt.apply(filter_value,
+                    AP::scheduler().get_loop_period_s());
+
+    switch (tune_type) {
+    case RD_UP:
+    case RD_DOWN:
+        twitching_test_rate(rotation_rate, target_rate, test_rate_min, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
+        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
+        break;
+    case RP_UP:
+        twitching_test_rate(rotation_rate, target_rate*(1+0.5f*aggressiveness), test_rate_min, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate, rate_max);
+        twitching_abort_rate(lean_angle, rotation_rate, abort_angle, test_rate_min);
+        break;
+    case SP_DOWN:
+    case SP_UP:
+        twitching_test_angle(lean_angle, rotation_rate, target_angle*(1+0.5f*aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
+        twitching_measure_acceleration(test_accel_max, rotation_rate - dir_sign * start_rate, rate_max);
+        break;
+    default:
+        break;
+    }
 }
 
 // get intra test rate I gain for the specified axis
