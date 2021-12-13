@@ -160,22 +160,11 @@ bool GCS_MAVLINK::init(uint8_t instance)
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
         // load signing key
         load_signing_key();
-
-        if (status->signing == nullptr) {
-            // if signing is off start by sending MAVLink1.
-            status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-        }
     } else if (status) {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
-
-    if (chan == MAVLINK_COMM_0) {
-        // Always start with MAVLink1 on first port for now, to allow for recovery
-        // after experiments with MAVLink2
-        status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
-    }
-
+    
     return true;
 }
 
