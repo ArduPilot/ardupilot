@@ -753,6 +753,13 @@ def write_mcu_config(f):
 
     if have_type_prefix('CAN') and not using_chibios_can:
         enable_can(f)
+
+    f.write('''
+#ifndef HAL_NUM_CAN_IFACES
+#define HAL_NUM_CAN_IFACES 0
+#endif
+''')
+
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     env_vars['BOARD_FLASH_SIZE'] = flash_size
