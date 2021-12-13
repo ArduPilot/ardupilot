@@ -2072,6 +2072,7 @@ bool QuadPlane::in_vtol_auto(void) const
     case MAV_CMD_NAV_LOITER_TIME:
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_LOITER_TO_ALT:
+    case MAV_CMD_NAV_DELAY:
         return plane.auto_state.vtol_loiter;
     case MAV_CMD_NAV_TAKEOFF:
         return is_vtol_takeoff(id);

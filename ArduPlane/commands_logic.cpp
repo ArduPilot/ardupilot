@@ -54,6 +54,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_wp(cmd);
         break;
 
+    case MAV_CMD_NAV_DELAY:
+        do_nav_delay(cmd);
+        break;
+
     case MAV_CMD_NAV_LAND:              // LAND to Waypoint
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_land(cmd.id)) {
@@ -238,6 +242,11 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
 
+#if HAL_QUADPLANE_ENABLED
+    case MAV_CMD_NAV_DELAY:
+        return verify_nav_delay(cmd);
+#endif
+
     case MAV_CMD_NAV_LAND:
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_land(cmd.id)) {
@@ -331,6 +340,43 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         return true;
     }
 }
+
+#if HAL_QUADPLANE_ENABLED
+// do_nav_delay - Delay the next navigation command
+void Plane::do_nav_delay(const AP_Mission::Mission_Command& cmd)
+{
+    nav_delay_time_max_ms = 0;
+
+    nav_delay_time_start_ms = millis();
+
+    if (cmd.content.nav_delay.seconds > 0) {
+        // relative delay
+        nav_delay_time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
+    } else {
+        // absolute delay to utc time
+        nav_delay_time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
+
+    plane.auto_state.vtol_loiter = true;
+}
+
+// verify_nav_delay - check if we have waited long enough
+bool Plane::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
+{
+    if (nav_delay_time_max_ms == 0) {
+        return true;
+    }
+    if (!quadplane.in_vtol_auto()) {
+        return true;
+    }
+    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+        nav_delay_time_max_ms = 0;
+        return true;
+    }
+    return false;
+}
+#endif
 
 /********************************************************************************/
 //  Nav (Must) commands
