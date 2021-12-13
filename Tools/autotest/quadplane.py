@@ -388,20 +388,20 @@ class AutoTestQuadPlane(AutoTest):
             break
         self.wait_disarmed()
 
-    def takeoff(self, height, mode):
+    def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
         self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         if mode == 'GUIDED':
-            self.user_takeoff(alt_min=height)
+            self.user_takeoff(alt_min=height, timeout=timeout)
             return
         self.set_rc(3, 1800)
         self.wait_altitude(height,
                            height+5,
                            relative=True,
-                           timeout=30)
+                           timeout=timeout)
         self.set_rc(3, 1500)
 
     def do_RTL(self):
