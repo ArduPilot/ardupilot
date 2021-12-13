@@ -897,6 +897,19 @@ class AutoTestQuadPlane(AutoTest):
         self.reset_SITL_commandline()
         self.context_pop()
 
+    def GUIDEDToAUTO(self):
+        '''Test using GUIDED mode for takeoff before shifting to auto'''
+        self.load_mission("mission.txt")
+        self.takeoff(30, mode='GUIDED')
+
+        # extra checks would go here
+        self.assert_not_receiving_message('CAMERA_FEEDBACK')
+
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(3)
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=240)
+
     def Tailsitter(self):
         '''tailsitter test'''
         self.set_parameter('Q_FRAME_CLASS', 10)
@@ -1230,6 +1243,7 @@ class AutoTestQuadPlane(AutoTest):
             self.ICEngine,
             self.ICEngineMission,
             self.MidAirDisarmDisallowed,
+            self.GUIDEDToAUTO,
             self.BootInAUTO,
             self.Ship,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
