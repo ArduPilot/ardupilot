@@ -79,7 +79,7 @@ void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const V
 // update_pos_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
 // the position and velocity is not moved in the direction of limit if limit is not set to zero
 // limit - specifies if the system is unable to continue to accelerate
-// pos_error and vel_error - specifies the direction of the velocity error useded in limit handling
+// pos_error and vel_error - specifies the direction of the velocity error used in limit handling
 void update_pos_vel_accel_xy(Vector2p& pos, Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& pos_error, const Vector2f& vel_error)
 {
     // move position and velocity forward by dt.
