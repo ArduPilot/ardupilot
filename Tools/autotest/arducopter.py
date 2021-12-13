@@ -123,14 +123,6 @@ class AutoTestCopter(AutoTest):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("DISARM_DELAY", delay)
 
-    def user_takeoff(self, alt_min=30, timeout=30, max_err=5):
-        '''takeoff using mavlink takeoff command'''
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            p7=alt_min,
-        )
-        self.wait_altitude(alt_min-1, alt_min+max_err, relative=True, timeout=timeout)
-
     def takeoff(self,
                 alt_min=30,
                 takeoff_throttle=1700,
