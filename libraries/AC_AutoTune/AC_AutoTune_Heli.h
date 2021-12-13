@@ -121,6 +121,34 @@ protected:
     AP_Float max_resp_gain;
 
 private:
+    // max_gain_data type stores information from the max gain test
+    struct max_gain_data {
+        float freq;
+        float phase;
+        float gain;
+        float max_allowed;
+    };
+
+    // max gain data for rate p tuning
+    max_gain_data max_rate_p;
+    // max gain data for rate d tuning
+    max_gain_data max_rate_d;
+
+    // Feedforward test used to determine Rate FF gain
+    void rate_ff_test_init();
+    void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);
+
+    // dwell test used to perform frequency dwells for rate gains
+    void dwell_test_init(float filt_freq);
+    void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
+
+    // dwell test used to perform frequency dwells for angle gains
+    void angle_dwell_test_init(float filt_freq);
+    void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
+
+    // generates waveform for frequency sweep excitations
+    float waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax);
+
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is acheived
     void updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command);
@@ -179,5 +207,72 @@ private:
     uint8_t rd_prev_good_frq_cnt;
     // previous gain
     float rd_prev_gain;
+
+    uint8_t  ff_test_phase;                         // phase of feedforward test
+    float    test_command_filt;                     // filtered commanded output for FF test analysis
+    float    test_rate_filt;                        // filtered rate output for FF test analysis
+    float    command_out;                           // test axis command output
+    float    test_tgt_rate_filt;                    // filtered target rate for FF test analysis
+    float    filt_target_rate;                      // filtered target rate
+    float    test_gain[20];                         // frequency response gain for each dwell test iteration
+    float    test_freq[20];                         // frequency of each dwell test iteration
+    float    test_phase[20];                        // frequency response phase for each dwell test iteration
+    float    dwell_start_time_ms;                   // start time in ms of dwell test
+    uint8_t  freq_cnt_max;                          // counter number for frequency that produced max gain response
+    float    curr_test_freq;                        // current test frequency
+    float    curr_test_gain;                        // current test frequency response gain
+    float    curr_test_phase;                       // current test frequency response phase
+    Vector3f start_angles;                          // aircraft attitude at the start of test
+    uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
+    uint32_t phase_out_time;                        // time in ms to phase out response
+    float    waveform_freq_rads;                    //current frequency for chirp waveform
+    float    trim_pff_out;                          // trim output of the PID rate controller for P, I and FF terms
+    float    trim_meas_rate;                        // trim measured gyro rate
+
+    //variables from rate FF test
+    float trim_command_reading;
+    float trim_heading;
+    float rate_request_cds;
+    float angle_request_cd;
+
+    // variables from rate dwell test
+    Vector3f trim_attitude_cd;
+    Vector3f filt_attitude_cd;
+    Vector2f filt_att_fdbk_from_velxy_cd;
+    float filt_command_reading;
+    float filt_gyro_reading;
+    float filt_tgt_rate_reading;
+    float trim_command;
+
+    // variables from angle dwell test
+    float trim_yaw_tgt_reading;
+    float trim_yaw_heading_reading;
+//    Vector2f filt_att_fdbk_from_velxy_cd;
+//    float filt_command_reading;
+//    float filt_gyro_reading;
+//    float filt_tgt_rate_reading;
+
+    LowPassFilterFloat  command_filt;               // filtered command
+    LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
+
+    // sweep_data tracks the overall characteristics in the response to the frequency sweep
+    struct sweep_data {
+        float    maxgain_freq;
+        float    maxgain_gain;
+        float    maxgain_phase;
+        float    ph180_freq;
+        float    ph180_gain;
+        float    ph180_phase;
+        float    ph270_freq;
+        float    ph270_gain;
+        float    ph270_phase;
+        uint8_t  progress;  // set based on phase of frequency response.  0 - start; 1 - reached 180 deg; 2 - reached 270 deg;
+    };
+    sweep_data sweep;
+
+    // freqresp object for the rate frequency response tests
+    AC_AutoTune_FreqResp freqresp_rate;
+    // freqresp object for the angle frequency response tests
+    AC_AutoTune_FreqResp freqresp_angle;
 
 };
