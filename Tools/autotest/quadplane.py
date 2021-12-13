@@ -394,6 +394,9 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        if mode == 'GUIDED':
+            self.user_takeoff(alt_min=height)
+            return
         self.set_rc(3, 1800)
         self.wait_altitude(height,
                            height+5,
