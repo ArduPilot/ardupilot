@@ -58,12 +58,12 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @Units: s
     AP_GROUPINFO("REGRAB",  5, AP_Gripper, config.regrab_interval, GRIPPER_REGRAB_DEFAULT),
 
-    // @Param: UAVCAN_ID
+    // @Param: CAN_ID
     // @DisplayName: EPM UAVCAN Hardpoint ID
     // @Description: Refer to https://docs.zubax.com/opengrab_epm_v3#UAVCAN_interface
     // @User: Standard
     // @Range: 0 255
-    AP_GROUPINFO("UAVCAN_ID", 6, AP_Gripper, config.uavcan_hardpoint_id, 0),
+    AP_GROUPINFO("CAN_ID", 6, AP_Gripper, config.uavcan_hardpoint_id, 0),
 
     AP_GROUPEND
 };
