@@ -658,7 +658,9 @@ void AP_GPS::detect_instance(uint8_t instance)
             } else if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
                 static const char blob[] = UBLOX_SET_BINARY_115200;
                 send_blob_start(instance, blob, sizeof(blob));
-            } else {
+            } else if(_type[instance] == GPS_TYPE_UM482_NMEA){
+                send_blob_start(instance, AP_GPS_NMEA_UM482_INIT_STRING, strlen(AP_GPS_NMEA_UM482_INIT_STRING));
+            }else {
                 send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
             }
         }
@@ -721,7 +723,8 @@ void AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
         } else if ((_type[instance] == GPS_TYPE_NMEA ||
                     _type[instance] == GPS_TYPE_HEMI ||
-                    _type[instance] == GPS_TYPE_ALLYSTAR) &&
+                    _type[instance] == GPS_TYPE_ALLYSTAR ||
+                     _type[instance] == GPS_TYPE_UM482_NMEA) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
             new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }

@@ -187,3 +187,12 @@ private:
         "$JASC,GPVTG,5\r\n" /* VTG at 5Hz */                            \
         "$JASC,GPHDT,5\r\n" /* HDT at 5Hz */                            \
         "$JMODE,SBASR,YES\r\n" /* Enable SBAS */
+
+/// Unicorecomm GNSS UM482(Optional Dual Antenna) Auto configuration command
+/// Ardupilot connection UM482 serial port 1
+#define AP_GPS_NMEA_UM482_INIT_STRING \
+        "gpgga com1 0.2\r\n"   /* GGA at 5Hz */             \
+        "gpvtg com1 0.2\r\n"   /* VTG at 5Hz */             \
+        "gprmc com1 0.2\r\n"   /* RMC at 5Hz */             \
+        "gphdt com1 0.2\r\n"   /* HDT at 5Hz */             \
+        "saveconfig\r\n"       /* save configuration */

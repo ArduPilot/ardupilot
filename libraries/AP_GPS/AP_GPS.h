@@ -128,6 +128,7 @@ public:
         GPS_TYPE_EXTERNAL_AHRS = 21,
         GPS_TYPE_UAVCAN_RTK_BASE = 22,
         GPS_TYPE_UAVCAN_RTK_ROVER = 23,
+        GPS_TYPE_UM482_NMEA = 24,    //UM482 NMEA
     };
 
     /// GPS status codes
