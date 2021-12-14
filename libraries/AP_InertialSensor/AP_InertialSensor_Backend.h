@@ -149,6 +149,9 @@ protected:
     // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_gyro_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0);
 
+    // alternative interface using delta-angles. Rotation and correction is handled inside this function
+    void _notify_new_delta_angle(uint8_t instance, const Vector3f &dangle);
+    
     // rotate accel vector, scale, offset and publish
     void _publish_accel(uint8_t instance, const Vector3f &accel);
 
@@ -160,6 +163,9 @@ protected:
     // sensors, and should be set to zero for FIFO based sensors
     void _notify_new_accel_raw_sample(uint8_t instance, const Vector3f &accel, uint64_t sample_us=0, bool fsync_set=false);
 
+    // alternative interface using delta-velocities. Rotation and correction is handled inside this function
+    void _notify_new_delta_velocity(uint8_t instance, const Vector3f &dvelocity);
+    
     // set the amount of oversamping a accel is doing
     void _set_accel_oversampling(uint8_t instance, uint8_t n);
 
