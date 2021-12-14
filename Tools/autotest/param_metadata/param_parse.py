@@ -252,6 +252,8 @@ def process_library(vehicle, library, pathprefix=None):
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[1])
                     setattr(p, field[0], value)
+                elif field[0] == "CopyValuesFrom":
+                    setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
             debug("matching %s" % field_text)
@@ -371,6 +373,30 @@ def clean_param(param):
         param.Values = ",".join(new_valueList)
 
 
+def do_copy_values(vehicle_params, libraries, param):
+    if not hasattr(param, "CopyValuesFrom"):
+        return
+
+    # so go and find the values...
+    wanted_name = param.CopyValuesFrom
+    del param.CopyValuesFrom
+    for x in vehicle_params:
+        if x.name != wanted_name:
+            continue
+        param.Values = x.Values
+        return
+
+    for lib in libraries:
+        for x in lib.params:
+            if x.name != wanted_name:
+                continue
+            param.Values = x.Values
+            return
+
+    error("Did not find value to copy (%s wants %s)" %
+          (param.name, wanted_name))
+
+
 def validate(param):
     """
     Validates the parameter meta data.
@@ -447,6 +473,13 @@ for library in libraries:
 for library in libraries:
     for param in library.params:
         validate(param)
+
+# handle CopyValuesFrom:
+for param in vehicle.params:
+    do_copy_values(vehicle.params, libraries, param)
+for library in libraries:
+    for param in library.params:
+        do_copy_values(vehicle.params, libraries, param)
 
 if not args.emit_params:
     sys.exit(error_count)
