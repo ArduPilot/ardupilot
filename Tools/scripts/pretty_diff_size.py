@@ -48,16 +48,18 @@ def print_table(summary_data_list_second, summary_data_list_master):
                 for key in ["text", "data", "bss", "total"]:
                     bvalue = summary_data_list_second[0][name].get(key)
                     mvalue = summary_data_list_master[0][name].get(key)
+
+                    # Total Flash Cost = Data + Text
                     if key == "total" and mvalue is None:
-                        mvalue = summary_data_list_master[0][name].get("text") + summary_data_list_master[0][name].get(
-                            "data") + summary_data_list_master[0][name].get("bss")
+                        mvalue = (summary_data_list_master[0][name].get("text") +
+                                  summary_data_list_master[0][name].get("data"))
                     diff = (bvalue - mvalue) * 100.0 / mvalue
                     signum = "+" if diff > 0.0 else ""
                     print_diff = str(bvalue - mvalue)
                     print_diff += " (" + signum + "%0.4f%%" % diff + ")"
                     col_data.append(print_diff)
                 print_data.append(col_data)
-    print(tabulate(print_data, headers=["Binary", "text", "data", "bss", "total"]))
+    print(tabulate(print_data, headers=["Binary Name", "Text [B]", "Data [B]", "BSS (B)", "Total Flash Change [B] (%)"]))
 
 
 def extract_binaries_size(path):
