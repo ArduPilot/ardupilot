@@ -72,7 +72,6 @@ public:
     }
 
 protected:
-
     // axis that can be tuned
     enum AxisType {
         ROLL = 0,                 // roll axis is being tuned (either angle or rate)
@@ -96,39 +95,6 @@ protected:
 
     // log PIDs at full rate for during twitch
     virtual void log_pids() = 0;
-
-    // return true if we have a good position estimate
-    virtual bool position_ok();
-
-    // internal init function, should be called from init()
-    bool init_internals(bool use_poshold,
-                        AC_AttitudeControl *attitude_control,
-                        AC_PosControl *pos_control,
-                        AP_AHRS_View *ahrs_view,
-                        AP_InertialNav *inertial_nav);
-
-    // initialise position controller
-    bool init_position_controller();
-
-    // main state machine to level vehicle, perform a test and update gains
-    // directly updates attitude controller with targets
-    void control_attitude();
-
-    //
-    // methods to load and save gains
-    //
-
-    // backup original gains and prepare for start of tuning
-    void backup_gains_and_initialise();
-
-    // switch to use original gains
-    void load_orig_gains();
-
-    // switch to gains found by last successful autotune
-    void load_tuned_gains();
-
-    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
-    void load_intra_test_gains();
 
     // load gains for next test.  relies on axis variable being set
     virtual void load_test_gains() = 0;
@@ -184,12 +150,19 @@ protected:
     // reverse direction for twitch test
     virtual bool twitch_reverse_direction() = 0;
 
-    // get attitude for slow position hold in autotune mode
-    void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
-
     virtual void Log_AutoTune() = 0;
     virtual void Log_AutoTuneDetails() = 0;
     virtual void Log_AutoTuneSweep() = 0;
+
+    // internal init function, should be called from init()
+    bool init_internals(bool use_poshold,
+                        AC_AttitudeControl *attitude_control,
+                        AC_PosControl *pos_control,
+                        AP_AHRS_View *ahrs_view,
+                        AP_InertialNav *inertial_nav);
+
+    // send intermittant updates to user on status of tune
+    virtual void do_gcs_announcements() = 0;
 
     // send message with high level status (e.g. Started, Stopped)
     void update_gcs(uint8_t message_id) const;
@@ -197,14 +170,135 @@ protected:
     // send lower level step status (e.g. Pilot overrides Active)
     void send_step_string();
 
-    // convert latest level issue to string for reporting
-    const char *level_issue_string() const;
-
     // convert tune type to string for reporting
     const char *type_string() const;
 
-    // send intermittant updates to user on status of tune
-    virtual void do_gcs_announcements() = 0;
+    // Functions added for heli autotune
+
+    // Add additional updating gain functions specific to heli
+    // generic method used by subclasses to update gains for the rate ff up tune type
+    virtual void updating_rate_ff_up_all(AxisType test_axis)=0;
+
+    // generic method used by subclasses to update gains for the max gain tune type
+    virtual void updating_max_gains_all(AxisType test_axis)=0;
+
+    // steps performed while in the tuning mode
+    enum StepType {
+        WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
+        TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
+        UPDATE_GAINS      = 2     // autotune has completed a test and is updating the gains based on the results
+    };
+
+    // mini steps performed while in Tuning mode, Testing step
+    enum TuneType {
+        RD_UP = 0,                // rate D is being tuned up
+        RD_DOWN = 1,              // rate D is being tuned down
+        RP_UP = 2,                // rate P is being tuned up
+        RP_DOWN = 3,              // rate P is being tuned down
+        RFF_UP = 4,               // rate FF is being tuned up
+        RFF_DOWN = 5,             // rate FF is being tuned down
+        SP_UP = 6,                // angle P is being tuned up
+        SP_DOWN = 7,              // angle P is being tuned down
+        MAX_GAINS = 8,            // max allowable stable gains are determined
+        TUNE_COMPLETE = 9         // Reached end of tuning
+    };
+    TuneType tune_seq[6];         // holds sequence of tune_types to be performed
+    uint8_t tune_seq_curr;        // current tune sequence step
+
+    // parameters
+    AP_Int8  axis_bitmask;        // axes to be tuned
+    AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
+    AP_Float min_d;               // minimum rate d gain allowed during tuning
+    AP_Float vel_hold_gain;       // gain for velocity hold
+
+    // copies of object pointers to make code a bit clearer
+    AC_AttitudeControl *attitude_control;
+    AC_PosControl *pos_control;
+    AP_AHRS_View *ahrs_view;
+    AP_InertialNav *inertial_nav;
+    AP_Motors *motors;
+
+    AxisType axis;                       // current axis being tuned. see AxisType enum
+    bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
+    StepType step;                       // see StepType for what steps are performed
+    TuneType tune_type;                  // see TuneType
+    bool     ignore_next;                // true = ignore the next test
+    bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
+    uint8_t  axes_completed;             // bitmask of completed axes
+    float    test_rate_min;                         // the minimum angular rate achieved during TESTING_RATE step-multi only
+    float    test_rate_max;                         // the maximum angular rate achieved during TESTING_RATE step-multi only
+    float    test_angle_min;                        // the minimum angle achieved during TESTING_ANGLE step-multi only
+    float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step-multi only
+    uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
+    uint32_t step_time_limit_ms;                    // time limit of current autotune process
+    int8_t   counter;                               // counter for tuning gains
+    float    target_rate;                           // target rate-multi only
+    float    target_angle;                          // target angle-multi only
+    float    start_rate;                            // start rate - parent and multi
+    float    start_angle;                           // start angle
+    float    rate_max;                              // maximum rate variable - parent and multi
+    float    test_accel_max;                        // maximum acceleration variable
+    float    step_scaler;                           // scaler to reduce maximum target step - parent and multi
+    float    abort_angle;                           // Angle that test is aborted- parent and multi
+    float    desired_yaw_cd;                        // yaw heading during tune - parent and Tradheli
+
+    LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
+
+    // backup of currently being tuned parameter values
+    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_fltt, orig_roll_smax, orig_roll_sp, orig_roll_accel;
+    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_fltt, orig_pitch_smax, orig_pitch_sp, orig_pitch_accel;
+    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_fltt, orig_yaw_smax, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel;
+    bool     orig_bf_feedforward;
+
+    // currently being tuned parameter values
+    float    tune_roll_rp, tune_roll_rd, tune_roll_sp, tune_roll_accel;
+    float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel;
+    float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
+    float    tune_roll_rff, tune_pitch_rff, tune_yaw_rd, tune_yaw_rff;
+
+    uint32_t announce_time;
+    float lean_angle;
+    float rotation_rate;
+    float roll_cd, pitch_cd;
+
+    // heli specific variables
+    uint8_t  freq_cnt;                              // dwell test iteration counter
+    float    start_freq;                            //start freq for dwell test
+    float    stop_freq;                             //ending freq for dwell test
+    bool     ff_up_first_iter;                      // true on first iteration of ff up testing
+
+private:
+    // return true if we have a good position estimate
+    virtual bool position_ok();
+
+    // initialise position controller
+    bool init_position_controller();
+
+    // main state machine to level vehicle, perform a test and update gains
+    // directly updates attitude controller with targets
+    void control_attitude();
+
+    //
+    // methods to load and save gains
+    //
+
+    // backup original gains and prepare for start of tuning
+    void backup_gains_and_initialise();
+
+    // switch to use original gains
+    void load_orig_gains();
+
+    // switch to gains found by last successful autotune
+    void load_tuned_gains();
+
+    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
+    void load_intra_test_gains();
+
+    // get attitude for slow position hold in autotune mode
+    void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
+
+    // convert latest level issue to string for reporting
+    const char *level_issue_string() const;
 
     enum struct LevelIssue {
         NONE,
@@ -230,29 +324,6 @@ protected:
         FAILED = 3,               // tuning has failed, user is flying on original gains
     };
 
-    // steps performed while in the tuning mode
-    enum StepType {
-        WAITING_FOR_LEVEL = 0,    // autotune is waiting for vehicle to return to level before beginning the next twitch
-        TESTING           = 1,    // autotune has begun a test and is watching the resulting vehicle movement
-        UPDATE_GAINS      = 2     // autotune has completed a test and is updating the gains based on the results
-    };
-
-    // mini steps performed while in Tuning mode, Testing step
-    enum TuneType {
-        RD_UP = 0,                // rate D is being tuned up
-        RD_DOWN = 1,              // rate D is being tuned down
-        RP_UP = 2,                // rate P is being tuned up
-        RP_DOWN = 3,              // rate P is being tuned down
-        RFF_UP = 4,               // rate FF is being tuned up
-        RFF_DOWN = 5,             // rate FF is being tuned down
-        SP_UP = 6,                // angle P is being tuned up
-        SP_DOWN = 7,              // angle P is being tuned down
-        MAX_GAINS = 8,            // max allowable stable gains are determined
-        TUNE_COMPLETE = 9         // Reached end of tuning
-    };
-    TuneType tune_seq[6];         // holds sequence of tune_types to be performed
-    uint8_t tune_seq_curr;        // current tune sequence step
-
     // Sets customizable tune sequence for the vehicle
     virtual void set_tune_sequence() = 0;
 
@@ -267,53 +338,14 @@ protected:
 
     TuneMode mode;                       // see TuneMode for what modes are allowed
     bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
-    AxisType axis;                       // current axis being tuned. see AxisType enum
-    bool     positive_direction;         // false = tuning in negative direction (i.e. left for roll), true = positive direction (i.e. right for roll)
-    StepType step;                       // see StepType for what steps are performed
-    TuneType tune_type;                  // see TuneType
-    bool     ignore_next;                // true = ignore the next test
-    bool     twitch_first_iter;          // true on first iteration of a twitch (used to signal we must step the attitude or rate target)
     bool     use_poshold;                // true = enable position hold
     bool     have_position;              // true = start_position is value
     Vector3f start_position;             // target when holding position as an offset from EKF origin in cm in NEU frame
-    uint8_t  axes_completed;             // bitmask of completed axes
 
     // variables
     uint32_t override_time;                         // the last time the pilot overrode the controls
-    float    test_rate_min;                         // the minimum angular rate achieved during TESTING_RATE step
-    float    test_rate_max;                         // the maximum angular rate achieved during TESTING_RATE step
-    float    test_angle_min;                        // the minimum angle achieved during TESTING_ANGLE step
-    float    test_angle_max;                        // the maximum angle achieved during TESTING_ANGLE step
-    uint32_t step_start_time_ms;                    // start time of current tuning step (used for timeout checks)
     uint32_t level_start_time_ms;                   // start time of waiting for level
     uint32_t level_fail_warning_time_ms;            // last time level failure warning message was sent to GCS
-    uint32_t step_time_limit_ms;                    // time limit of current autotune process
-    int8_t   counter;                               // counter for tuning gains
-    float    target_rate, start_rate;               // target and start rate
-    float    target_angle, start_angle;             // target and start angles
-    float    desired_yaw_cd;                        // yaw heading during tune
-    float    rate_max, test_accel_max;              // maximum acceleration variables
-    float    step_scaler;                           // scaler to reduce maximum target step
-    float    abort_angle;                           // Angle that test is aborted
-
-    LowPassFilterFloat  rotation_rate_filt;         // filtered rotation rate in radians/second
-
-    // backup of currently being tuned parameter values
-    float    orig_roll_rp, orig_roll_ri, orig_roll_rd, orig_roll_rff, orig_roll_fltt, orig_roll_smax, orig_roll_sp, orig_roll_accel;
-    float    orig_pitch_rp, orig_pitch_ri, orig_pitch_rd, orig_pitch_rff, orig_pitch_fltt, orig_pitch_smax, orig_pitch_sp, orig_pitch_accel;
-    float    orig_yaw_rp, orig_yaw_ri, orig_yaw_rd, orig_yaw_rff, orig_yaw_fltt, orig_yaw_smax, orig_yaw_rLPF, orig_yaw_sp, orig_yaw_accel;
-    bool     orig_bf_feedforward;
-
-    // currently being tuned parameter values
-    float    tune_roll_rp, tune_roll_rd, tune_roll_sp, tune_roll_accel;
-    float    tune_pitch_rp, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel;
-    float    tune_yaw_rp, tune_yaw_rLPF, tune_yaw_sp, tune_yaw_accel;
-    float    tune_roll_rff, tune_pitch_rff, tune_yaw_rd, tune_yaw_rff;
-
-    uint32_t announce_time;
-    float lean_angle;
-    float rotation_rate;
-    float roll_cd, pitch_cd;
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
@@ -324,30 +356,4 @@ protected:
         float current;
     } level_problem;
 
-    // parameters
-    AP_Int8  axis_bitmask;        // axes to be tuned
-    AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
-    AP_Float min_d;               // minimum rate d gain allowed during tuning
-    AP_Float vel_hold_gain;       // gain for velocity hold
-
-    // copies of object pointers to make code a bit clearer
-    AC_AttitudeControl *attitude_control;
-    AC_PosControl *pos_control;
-    AP_AHRS_View *ahrs_view;
-    AP_InertialNav *inertial_nav;
-    AP_Motors *motors;
-
-    // Functions added for heli autotune
-
-    // Add additional updating gain functions specific to heli
-    // generic method used by subclasses to update gains for the rate ff up tune type
-    virtual void updating_rate_ff_up_all(AxisType test_axis)=0;
-
-    // generic method used by subclasses to update gains for the max gain tune type
-    virtual void updating_max_gains_all(AxisType test_axis)=0;
-
-    uint8_t  freq_cnt;                              // dwell test iteration counter
-    float    start_freq;                            //start freq for dwell test
-    float    stop_freq;                             //ending freq for dwell test
-    bool     ff_up_first_iter;                      // true on first iteration of ff up testing
 };

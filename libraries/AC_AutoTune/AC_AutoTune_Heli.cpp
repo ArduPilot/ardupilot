@@ -1549,7 +1549,7 @@ void AC_AutoTune_Heli::updating_angle_p_up(float &tune_p, float *freq, float *ga
             curr_test_freq = freq[freq_cnt];
             sp_prev_gain = gain[freq_cnt];
         } else if (gain[freq_cnt] > 1.1f * max_resp_gain && tune_p > AUTOTUNE_SP_MIN && !find_peak) {
-                tune_p -= gain_incr;
+            tune_p -= gain_incr;
         } else if (find_peak) {
             // find the frequency where the response gain is maximum
             if (gain[freq_cnt] > sp_prev_gain) {
