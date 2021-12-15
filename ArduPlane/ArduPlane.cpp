@@ -189,6 +189,10 @@ void Plane::ahrs_update()
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update();
 #endif
+
+    if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
+        ahrs.write_video_stabilisation();
+    }
 }
 
 /*
