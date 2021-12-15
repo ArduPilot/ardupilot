@@ -36,10 +36,19 @@ int UtilRPI::_check_rpi_version()
     char buffer[MAX_SIZE_LINE];
     int hw;
 
+    memset(buffer, 0, MAX_SIZE_LINE);
     FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
     if (f != nullptr && fgets(buffer, MAX_SIZE_LINE, f) != nullptr) {
-        int ret = sscanf(buffer + 12, "%d", &_rpi_version);
         fclose(f);
+        
+        int ret = strncmp(buffer, "Raspberry Pi Compute Module 4", 28);
+        if (ret == 0) {
+             _rpi_version = 4; // compute module 4 e.g. Raspberry Pi Compute Module 4 Rev 1.0.
+             printf("%s. (intern: %d)\n", buffer, _rpi_version);
+             return _rpi_version;
+        }
+        
+        ret = sscanf(buffer + 12, "%d", &_rpi_version);
         if (ret != EOF) {
             if (_rpi_version > 3)  {
                 _rpi_version = 4;
