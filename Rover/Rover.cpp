@@ -289,6 +289,10 @@ void Rover::ahrs_update()
     if (should_log(MASK_LOG_IMU)) {
         AP::ins().Write_IMU();
     }
+
+    if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
+        ahrs.write_video_stabilisation();
+    }
 }
 
 /*
