@@ -118,6 +118,7 @@ enum log_messages {
 // #define MASK_LOG_ARM_DISARM             (1<<15)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ATTITUDE_FULLRATE      (1U<<20)
+#define MASK_LOG_VIDEO_STABILISATION    (1UL<<21)
 
 // altitude control algorithms
 enum {
