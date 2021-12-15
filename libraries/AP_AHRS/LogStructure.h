@@ -153,7 +153,7 @@ struct PACKED log_Rate {
 // @Field: Q3: Estimated attitude quaternion component 3
 // @Field: Q4: Estimated attitude quaternion component 4
 
-struct PACKED log_Gyroflow {
+struct PACKED log_Video_Stabilisation {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     float gyro_x;
@@ -182,6 +182,6 @@ struct PACKED log_Gyroflow {
         "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
         "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" , true }, \
-    { LOG_GYROFLOW_MSG, sizeof(log_Gyroflow), \
+    { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo????", "F000000????" },
 

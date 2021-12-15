@@ -97,6 +97,29 @@ void AP_AHRS::Write_POS() const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Write a packet for video stabilisation
+void AP_AHRS::write_video_stabilisation() const
+{
+    Quaternion current_attitude;
+    get_quat_body_to_ned(current_attitude);
+    Vector3f accel = get_accel() - get_accel_bias();
+    const struct log_Video_Stabilisation pkt {
+        LOG_PACKET_HEADER_INIT(LOG_VIDEO_STABILISATION_MSG),
+        time_us         : AP_HAL::micros64(),
+        gyro_x          : _gyro_estimate.x,
+        gyro_y          : _gyro_estimate.y,
+        gyro_z          : _gyro_estimate.z,
+        accel_x         : accel.x,
+        accel_y         : accel.y,
+        accel_z         : accel.z,
+        Q1              : current_attitude.q1,
+        Q2              : current_attitude.q2,
+        Q3              : current_attitude.q3,
+        Q4              : current_attitude.q4,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
 // Write an attitude view packet
 void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
 {
