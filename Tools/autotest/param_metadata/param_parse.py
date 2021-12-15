@@ -183,6 +183,8 @@ def process_vehicle(vehicle):
             if field[0] in known_param_fields:
                 value = re.sub('@PREFIX@', "", field[1]).rstrip()
                 setattr(p, field[0], value)
+            elif field[0] == "CopyValuesFrom":
+                setattr(p, field[0], field[1])
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
@@ -320,6 +322,8 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 if field[0] in known_group_fields:
                     setattr(lib, field[0], field[1])
+                elif field[0] == "CopyValuesFrom":
+                    setattr(p, field[0], field[1])
                 else:
                     error("unknown parameter metadata field '%s'" % field[0])
             if not any(lib.name == parsed_l.name for parsed_l in libraries):
@@ -381,7 +385,9 @@ def do_copy_values(vehicle_params, libraries, param):
     wanted_name = param.CopyValuesFrom
     del param.CopyValuesFrom
     for x in vehicle_params:
-        if x.name != wanted_name:
+        name = x.name
+        (v, name) = name.split(":")
+        if name != wanted_name:
             continue
         param.Values = x.Values
         return
