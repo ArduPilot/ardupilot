@@ -181,14 +181,13 @@ void SRV_Channels::update_aux_servo_function(void)
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-        const uint16_t function_num = channels[i].function.get();
-        if (function_num >= SRV_Channel::k_nr_aux_servo_functions) {
-            // invalid function number
+        if (!channels[i].valid_function()) {
             continue;
         }
+        const uint16_t function = channels[i].function.get();
         channels[i].aux_servo_function_setup();
-        function_mask.set(function_num);
-        functions[function_num].channel_mask |= 1U<<i;
+        function_mask.set(function);
+        functions[function].channel_mask |= 1U<<i;
     }
     initialised = true;
 }
@@ -207,7 +206,7 @@ void SRV_Channels::enable_aux_servos()
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // see if it is a valid function
-        if (c.function < SRV_Channel::k_nr_aux_servo_functions) {
+        if (c.valid_function()) {
             hal.rcout->enable_ch(c.ch_num);
         }
 
@@ -491,7 +490,9 @@ bool SRV_Channels::set_aux_channel_default(SRV_Channel::Aux_servo_function_t fun
     channels[channel].function.set(function);
     channels[channel].aux_servo_function_setup();
     function_mask.set((uint16_t)function);
-    functions[function].channel_mask |= 1U<<channel;
+    if (SRV_Channel::valid_function(function)) {
+        functions[function].channel_mask |= 1U<<channel;
+    }
     return true;
 }
 
@@ -527,7 +528,7 @@ SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t fun
 
 void SRV_Channels::set_output_scaled(SRV_Channel::Aux_servo_function_t function, float value)
 {
-    if (function < SRV_Channel::k_nr_aux_servo_functions) {
+    if (SRV_Channel::valid_function(function)) {
         functions[function].output_scaled = value;
         SRV_Channel::have_pwm_mask &= ~functions[function].channel_mask;
     }
@@ -535,7 +536,7 @@ void SRV_Channels::set_output_scaled(SRV_Channel::Aux_servo_function_t function,
 
 float SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t function)
 {
-    if (function < SRV_Channel::k_nr_aux_servo_functions) {
+    if (SRV_Channel::valid_function(function)) {
         return functions[function].output_scaled;
     }
     return 0;
@@ -549,7 +550,7 @@ uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t
     if (!initialised) {
         update_aux_servo_function();
     }
-    if (function < SRV_Channel::k_nr_aux_servo_functions) {
+    if (SRV_Channel::valid_function(function)) {
         return functions[function].channel_mask;
     }
     return 0;
@@ -638,6 +639,9 @@ bool SRV_Channels::get_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
     if (!find_channel(function, chan)) {
         return false;
     }
+    if (!SRV_Channel::valid_function(function)) {
+        return false;
+    }
     channels[chan].calc_pwm(functions[function].output_scaled);
     value = channels[chan].get_output_pwm();
     return true;
@@ -663,7 +667,9 @@ float SRV_Channels::get_output_norm(SRV_Channel::Aux_servo_function_t function)
     if (!find_channel(function, chan)) {
         return 0;
     }
-    channels[chan].calc_pwm(functions[function].output_scaled);
+    if (SRV_Channel::valid_function(function)) {
+        channels[chan].calc_pwm(functions[function].output_scaled);
+    }
     return channels[chan].get_output_norm();
 }
 
@@ -689,6 +695,9 @@ void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, f
 {
     if (slew_rate <= 0) {
         // nothing to do
+        return;
+    }
+    if (!SRV_Channel::valid_function(function)) {
         return;
     }
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {

@@ -179,6 +179,14 @@ public:
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
+    // check if a function is valid for indexing into functions
+    static bool valid_function(Aux_servo_function_t fn) {
+        return fn >= 0 && fn < k_nr_aux_servo_functions;
+    }
+    bool valid_function(void) const {
+        return valid_function(function);
+    }
+    
     // used to get min/max/trim limit value based on reverse
     enum class Limit {
         TRIM,
