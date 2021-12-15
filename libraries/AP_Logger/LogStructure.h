@@ -1427,6 +1427,7 @@ enum LogMessages : uint8_t {
     LOG_STAK_MSG,
     LOG_FILE_MSG,
     LOG_SCRIPTING_MSG,
+    LOG_VIDEO_STABILISATION_MSG,
 
     _LOG_LAST_MSG_
 };
