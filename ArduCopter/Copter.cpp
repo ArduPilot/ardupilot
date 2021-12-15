@@ -287,6 +287,10 @@ void Copter::fast_loop()
     }
 
     AP_Vehicle::fast_loop();
+
+    if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
+        ahrs.write_video_stabilisation();
+    }
 }
 
 #if AP_SCRIPTING_ENABLED
