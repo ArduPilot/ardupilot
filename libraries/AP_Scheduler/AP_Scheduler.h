@@ -58,8 +58,6 @@
   the scheduler is allowed to use before it must return
  */
 
-#include <AP_HAL/AP_HAL.h>
-
 class AP_Scheduler
 {
 public:
