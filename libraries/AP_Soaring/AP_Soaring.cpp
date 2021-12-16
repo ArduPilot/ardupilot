@@ -74,14 +74,14 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Description: Zero lift drag coefficient
     // @Range: 0.005 0.5
     // @User: Advanced
-    AP_GROUPINFO("POLAR_CD0", 9, SoaringController, polar_CD0, 0.027),
+    AP_GROUPINFO("POLAR_CD0", 9, SoaringController, _polarParams.CD0, 0.027),
 
     // @Param: POLAR_B
     // @DisplayName: Induced drag coeffient
     // @Description: Induced drag coeffient
     // @Range: 0.005 0.05
     // @User: Advanced
-    AP_GROUPINFO("POLAR_B", 10, SoaringController, polar_B, 0.031),
+    AP_GROUPINFO("POLAR_B", 10, SoaringController, _polarParams.B, 0.031),
 
     // @Param: POLAR_K
     // @DisplayName: Cl factor
@@ -89,7 +89,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units: m.m/s/s
     // @Range: 20 400
     // @User: Advanced
-    AP_GROUPINFO("POLAR_K", 11, SoaringController, polar_K, 25.6),
+    AP_GROUPINFO("POLAR_K", 11, SoaringController, _polarParams.K, 25.6),
 
     // @Param: ALT_MAX
     // @DisplayName: Maximum soaring altitude, relative to the home location
@@ -139,12 +139,36 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Units: deg
     AP_GROUPINFO("THML_BANK", 18, SoaringController, thermal_bank, 30.0),
 
+    // 19 reserved for POLAR_LEARN.
+
+    // @Param: THML_ARSPD
+    // @DisplayName: Specific setting for airspeed when thermalling.
+    // @Description: If non-zero this airspeed will be used when thermalling.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("THML_ARSPD", 20, SoaringController, soar_thermal_airspeed, 0),
+
+    // @Param: CRSE_ARSPD
+    // @DisplayName: Specific setting for airspeed when cruising.
+    // @Description: If non-zero this airspeed will be used when cruising. If set to -1, airspeed will be selected based on speed-to-fly theory.
+    // @Range: 5 50
+    // @User: Advanced
+    AP_GROUPINFO("CRSE_ARSPD", 21, SoaringController, soar_cruise_airspeed, 0),
+
+    // @Param: THML_FLAP
+    // @DisplayName: Flap percent to be used during thermalling flight.
+    // @Description: This sets the flap when in LOITER with soaring active. Overrides the usual auto flap behaviour.
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("THML_FLAP", 22, SoaringController, soar_thermal_flap, 0),
+
     AP_GROUPEND
 };
 
 SoaringController::SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms) :
     _tecs(tecs),
-    _vario(parms),
+    _vario(parms,_polarParams),
+    _speedToFly(_polarParams),
     _aparm(parms),
     _throttle_suppressed(true)
 {
@@ -346,13 +370,36 @@ void SoaringController::update_thermalling()
 
 void SoaringController::update_cruising()
 {
-    // Reserved for future tasks that need to run continuously while in FBWB or AUTO mode,
-    // for example, calculation of optimal airspeed and flap angle.
+    // Calculate the optimal airspeed for the current conditions of wind along current direction,
+    // expected lift in next thermal and filtered sink rate.
+
+    Vector3f wind    = AP::ahrs().wind_estimate();
+    Vector3f wind_bf = AP::ahrs().earth_to_body(wind);
+
+    const float wx = wind_bf.x;
+
+    const float wz = _vario.get_stf_value();
+
+    // Constraints on the airspeed calculation.
+    const float CLmin = _polarParams.K/(_aparm.airspeed_max*_aparm.airspeed_max);
+    const float CLmax = _polarParams.K/(_aparm.airspeed_min*_aparm.airspeed_min);
+
+    // Update the calculation.
+    _speedToFly.update(wx, wz, thermal_vspeed, CLmin, CLmax);
+
+    AP::logger().WriteStreaming("SORC", "TimeUS,wx,wz,wexp,CLmin,CLmax,Vopt", "Qffffff",
+                                       AP_HAL::micros64(),
+                                       (double)wx,
+                                       (double)wz,
+                                       (double)thermal_vspeed,
+                                       (double)CLmin,
+                                       (double)CLmax,
+                                       (double)_speedToFly.speed_to_fly());
 }
 
 void SoaringController::update_vario()
 {
-    _vario.update(thermal_bank, polar_K, polar_CD0, polar_B);
+    _vario.update(thermal_bank);
 }
 
 
@@ -467,6 +514,19 @@ float SoaringController::get_thermalling_radius() const
     const float radius = (target_aspd*target_aspd) / (GRAVITY_MSS * tanf(thermal_bank*DEG_TO_RAD));
 
     return radius;
+}
+
+float SoaringController::get_thermalling_target_airspeed()
+{
+    return soar_thermal_airspeed;
+}
+
+float SoaringController::get_cruising_target_airspeed()
+{
+    if (soar_cruise_airspeed<0) {
+        return _speedToFly.speed_to_fly();
+    }
+    return soar_cruise_airspeed;
 }
 
 #endif // HAL_SOARING_ENABLED

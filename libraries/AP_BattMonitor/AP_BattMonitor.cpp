@@ -13,7 +13,6 @@
 #include "AP_BattMonitor_FuelFlow.h"
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include "AP_BattMonitor_Generator.h"
-#include "AP_BattMonitor_MPPT_PacketDigital.h"
 #include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
@@ -266,11 +265,6 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Generator_FuelLevel(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_GENERATOR_ENABLED
-#if HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
-            case Type::MPPT_PacketDigital:
-                drivers[instance] = new AP_BattMonitor_MPPT_PacketDigital(*this, state[instance], _params[instance]);
-                break;
-#endif // HAL_MPPT_PACKETDIGITAL_CAN_ENABLE
 #if HAL_BATTMON_INA2XX_ENABLED
             case Type::INA2XX:
                 drivers[instance] = new AP_BattMonitor_INA2XX(*this, state[instance], _params[instance]);
@@ -373,7 +367,7 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
 // read - For all active instances read voltage & current; log BAT, BCL, POWR
 void AP_BattMonitor::read()
 {
-#ifndef HAL_BUILD_AP_PERIPH
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger != nullptr && logger->should_log(_log_battery_bit)) {
         logger->Write_Power();
@@ -384,8 +378,8 @@ void AP_BattMonitor::read()
         if (drivers[i] != nullptr && get_type(i) != Type::NONE) {
             drivers[i]->read();
             drivers[i]->update_resistance_estimate();
-            
-#ifndef HAL_BUILD_AP_PERIPH
+
+#if HAL_LOGGING_ENABLED
             if (logger != nullptr && logger->should_log(_log_battery_bit)) {
                 const uint64_t time_us = AP_HAL::micros64();
                 drivers[i]->Log_Write_BAT(i, time_us);

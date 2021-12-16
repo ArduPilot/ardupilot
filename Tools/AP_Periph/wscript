@@ -60,6 +60,8 @@ def build(bld):
                      'AP_AccelCal',
                      'AP_Logger',
                      'AC_PID',
+                     'AP_BLHeli',
+                     'AP_ESC_Telem',
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',

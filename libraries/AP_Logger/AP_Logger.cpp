@@ -1312,9 +1312,7 @@ void AP_Logger::io_thread(void)
             hal.util->log_stack_info();
         }
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
-        if (counter % 100 == 0) {
-            file_content_update();
-        }
+        file_content_update();
 #endif
     }
 }
@@ -1442,6 +1440,18 @@ void AP_Logger::file_content_update(void)
         return;
     }
 
+    /* this function is called at max 1kHz. We don't want to saturate
+       the logging with file data, so we reduce the frequency of 64
+       byte file writes by a factor of 100. For the file
+       crash_dump.bin we dump 10x faster so we get it in a reasonable
+       time (full dump of 450k in about 1 minute)
+    */
+    file_content.counter++;
+    const uint8_t frequency = file_content.fast?10:100;
+    if (file_content.counter % frequency != 0) {
+        return;
+    }
+
     // remove a file structure from the linked list
     auto remove_from_list = [this,file]()
     { 
@@ -1458,11 +1468,15 @@ void AP_Logger::file_content_update(void)
     if (file_content.fd == -1) {
         // open a new file
         file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
+        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0;
         if (file_content.fd == -1) {
             remove_from_list();
             return;
         }
         file_content.offset = 0;
+        if (file_content.fast) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Logging %s", file->filename);
+        }
     }
 
     struct log_File pkt {

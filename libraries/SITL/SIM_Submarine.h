@@ -89,8 +89,12 @@ protected:
 
     bool on_ground() const override;
 
+    float rangefinder_beam_width() const override { return 10; }
+
+    float perpendicular_distance_to_rangefinder_surface() const override;
+
     // calculate sea floor depth based for terrain follow
-    float calculate_sea_floor_depth(const Vector3d &/*position*/);
+    float calculate_sea_floor_depth(const Vector3d &/*position*/) const;
     // calculate rotational and linear accelerations
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     // calculate buoyancy

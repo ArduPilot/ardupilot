@@ -133,16 +133,14 @@ void AC_PID_2D::update_i(const Vector2f &limit)
     _pid_info_y.limit = false;
 
     Vector2f delta_integrator = (_error * _ki) * _dt;
-    if (!is_zero(limit.length_squared())) {
-        // zero delta_vel if it will increase the velocity error
-        if (is_positive(delta_integrator * limit)) {
-            delta_integrator.zero();
-            _pid_info_x.limit = true;
-            _pid_info_y.limit = true;
-        }
+    float integrator_length = _integrator.length();
+    _integrator += delta_integrator;
+    // do not let integrator increase in length if delta_integrator is in the direction of limit
+    if (is_positive(delta_integrator * limit) && _integrator.limit_length(integrator_length)) {
+        _pid_info_x.limit = true;
+        _pid_info_y.limit = true;
     }
 
-    _integrator += delta_integrator;
     _integrator.limit_length(_kimax);
 }
 

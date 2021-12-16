@@ -610,7 +610,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         _vehicle = ArduPlane;
     }
 
-    _sitl_setup(home_str);
+    _sitl_setup();
 }
 
 /*

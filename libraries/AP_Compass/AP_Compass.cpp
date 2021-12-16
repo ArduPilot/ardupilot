@@ -496,7 +496,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: TYPEMASK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:UAVCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK09916,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS
     // @User: Advanced
     AP_GROUPINFO("TYPEMASK", 33, Compass, _driver_type_mask, 0),
 
@@ -1841,6 +1841,14 @@ bool Compass::configured(uint8_t i)
         id == COMPASS_MAX_INSTANCES) {
         return false;
     }
+
+#ifdef HAL_USE_EMPTY_STORAGE
+    // the load() call below returns zeroes on empty storage, so the
+    // check-stored-value check here will always fail.  Since nobody
+    // really cares about the empty-storage case, shortcut out here
+    // for simplicity.
+    return true;
+#endif
 
     // back up cached value of dev_id
     int32_t dev_id_cache_value = _state[id].dev_id;

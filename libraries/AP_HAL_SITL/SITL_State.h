@@ -133,13 +133,13 @@ private:
     void _parse_command_line(int argc, char * const argv[]);
     void _set_param_default(const char *parm);
     void _usage(void);
-    void _sitl_setup(const char *home_str);
+    void _sitl_setup();
     void _setup_fdm(void);
     void _setup_timer(void);
     void _setup_adc(void);
 
     void set_height_agl(void);
-    void _update_rangefinder(float range_value);
+    void _update_rangefinder();
     void _set_signal_handlers(void) const;
 
     void _update_airspeed(float airspeed);
@@ -279,6 +279,11 @@ private:
 
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
+
+    // returns a voltage between 0V to 5V which should appear as the
+    // voltage from the sensor
+    float _sonar_pin_voltage() const;
+
 };
 
 #endif // defined(HAL_BUILD_AP_PERIPH)
