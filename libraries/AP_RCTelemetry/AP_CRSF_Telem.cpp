@@ -24,7 +24,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Common/AP_FWVersion.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_Frsky_Telem/AP_Frsky_SPort_Passthrough.h>
 #include <math.h>

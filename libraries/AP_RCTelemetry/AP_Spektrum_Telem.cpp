@@ -31,8 +31,6 @@
 #include <AP_Common/Location.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
-#include <AP_GPS/AP_GPS.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_RTC/AP_RTC.h>
 #ifdef HAVE_AP_BLHELI_SUPPORT
 #include <AP_BLheli/AP_BLHeli.h>
