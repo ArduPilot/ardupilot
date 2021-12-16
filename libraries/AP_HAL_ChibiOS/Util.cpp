@@ -28,7 +28,6 @@
 #include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
 #include "shared_dma.h"
-#include <AP_Common/ExpandingString.h>
 #if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED
 #include <AP_Notify/AP_Notify.h>
 #endif
