@@ -33,7 +33,6 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
-#include "esp_system.h"
 
 
 extern const AP_HAL::HAL& hal;
