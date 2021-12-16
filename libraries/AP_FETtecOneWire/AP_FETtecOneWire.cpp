@@ -20,7 +20,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
-#include <AP_Math/AP_Math.h>
 
 #include "AP_FETtecOneWire.h"
 #if AP_FETTEC_ONEWIRE_ENABLED
