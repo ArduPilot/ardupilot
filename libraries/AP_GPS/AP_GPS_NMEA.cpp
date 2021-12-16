@@ -43,10 +43,6 @@ extern const AP_HAL::HAL& hal;
 // optionally log all NMEA data for debug purposes
 // #define NMEA_LOG_PATH "nmea.log"
 
-#ifdef NMEA_LOG_PATH
-#include <stdio.h>
-#endif
-
 // Convenience macros //////////////////////////////////////////////////////////
 //
 #define DIGIT_TO_VAL(_x)        (_x - '0')
