@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include <signal.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
