@@ -723,7 +723,6 @@ void* Util::last_crash_dump_ptr() const
 {
 #if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
     if (last_crash_dump_size() == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "No Crash Detected!");
         return nullptr;
     }
     return (void*)stm32_crash_dump_addr();
