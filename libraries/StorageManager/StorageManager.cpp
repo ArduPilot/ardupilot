@@ -164,7 +164,7 @@ bool StorageAccess::read_block(void *data, uint16_t addr, size_t n) const
 
 
 /*
-  base read function. The addr offset is within the bytes allocated
+  base write function. The addr offset is within the bytes allocated
   for the storage type of this StorageAccess object
 */
 bool StorageAccess::write_block(uint16_t addr, const void *data, size_t n) const
