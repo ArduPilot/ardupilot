@@ -23,7 +23,6 @@
 #include "AP_UAVCAN_DNA_Server.h"
 #include "AP_UAVCAN.h"
 #include <StorageManager/StorageManager.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <uavcan/protocol/dynamic_node_id/Allocation.hpp>
 #include <GCS_MAVLink/GCS.h>
