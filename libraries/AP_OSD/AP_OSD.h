@@ -21,7 +21,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_OLC/AP_OLC.h>
 #include <AP_MSP/msp.h>
