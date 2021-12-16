@@ -183,6 +183,11 @@ protected:
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
     AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
+    AP_Int8             _yaw_servo_pin;         // Tricopter Yaw Servo analogue feedback pin
+    AP_Float            _yaw_servo_min_voltage; // Tricopter Yaw Servo analogue feedback min voltage
+    AP_Float            _yaw_servo_mid_voltage; // Tricopter Yaw Servo analogue feedback trim voltage
+    AP_Float            _yaw_servo_max_voltage; // Tricopter Yaw Servo analogue feedback max voltage
+    AP_Int16            _yaw_servo_speed;       // Tricopter Yaw Servo speed
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;

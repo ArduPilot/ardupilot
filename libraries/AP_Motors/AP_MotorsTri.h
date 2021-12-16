@@ -62,14 +62,41 @@ protected:
 
     // call vehicle supplied thrust compensation if set
     void                thrust_compensation(void) override;
-    
-    // parameters
 
-    float           _pivot_angle;                       // Angle of yaw pivot
+    // parameters
+    float           _desired_pivot_angle;   // the desired angle of yaw pivot
     float           _thrust_right;
     float           _thrust_rear;
     float           _thrust_left;
 
     // reverse pitch
     bool _pitch_reversed;
+
+    // servo feedback and speed tracking
+    float calculate_new_pivot(float desired_pivot_angle);
+    float measure_pivot_angle();
+    float calibrate_yaw();
+    float _last_pivot_angle;
+    AP_HAL::AnalogSource *_yaw_feedback;
+
+private:
+
+    // varables for yaw servo paramiter calibration
+    enum Calibration_state{
+        CAL_NONE = 0,
+        CAL_MIN = 1,
+        CAL_MID = 2,
+        CAL_MAX = 3,
+        CAL_SPEED = 4,
+        CAL_FAILED = 5,
+    };
+    Calibration_state _cal_state;
+    uint32_t _cal_start_ms;
+    uint16_t _count;
+    float _reading_sum;
+    float _voltage_min_temp;
+    float _voltage_mid_temp;
+    float _voltage_max_temp;
+    float _cal_last_angle;
+
 };
