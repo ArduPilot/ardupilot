@@ -141,8 +141,7 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
 
         // update total current drawn since startup
         if (_interim_state.last_time_micros != 0 && dt < 2000000) {
-            // .0002778 is 1/3600 (conversion to hours)
-            float mah = (float) ((double) _interim_state.current_amps * (double) dt * (double) 0.0000002778f);
+            float mah = calculate_mah(_interim_state.current_amps, dt);
             _interim_state.consumed_mah += mah;
             _interim_state.consumed_wh  += 0.001f * mah * _interim_state.voltage;
         }
