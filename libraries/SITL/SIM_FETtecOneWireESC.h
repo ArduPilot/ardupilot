@@ -39,15 +39,15 @@ param fetch
 
 #include "SIM_SerialDevice.h"
 
+#include <stdio.h>
+
 #define SIM_FTW_DEBUGGING 0
 #if SIM_FTW_DEBUGGING
-#include <stdio.h>
 #define simfet_debug(fmt, args ...)  do {::fprintf(stderr,"SIMFET: %s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 #define simfet_debug(fmt, args ...)
 #endif
 
-#include <stdio.h>
 
 namespace SITL {
 
