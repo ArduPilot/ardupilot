@@ -20,7 +20,6 @@
 #include "AP_RCProtocol_FPort2.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
