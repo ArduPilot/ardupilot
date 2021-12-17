@@ -97,7 +97,7 @@ public:
         GENERATOR_ELEC             = 17,
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
-        MPPT_PacketDigital         = 20,
+        // 20 was MPPT_PacketDigital
         INA2XX                     = 21,
         LTC2946                    = 22,
         Torqeedo                   = 23,
