@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.3-rc1 18-Dec-2021
+Changes from 4.1.2
+1) Enhancements:
+    a) CUAV-X7 servo voltage detection support
+2) Bug fixes
+    a) Main loop delay fix for boards with 16 bit timers (affects KakuteF4, MatekH743, MatekF405, MatekF765, SpeedybeeF4)
+    b) MOT_MIX_MAX constrained between 0.1 and 4.0 (would previously reset to 0.5 if set too high or low)
+    c) Polygon Fence upload fix when replacing fence with one that has fewer points
+    d) TradHeli fix for missions which continue after a Land command
+------------------------------------------------------------------
 Copter 4.1.2 07-Dec-2021 / 4.1.2-rc1 22-Nov-2021
 Changes from 4.1.1
 1) CAN_Dn_UC_OPTION param added to help resolve DroneCAN DNA conflicts
