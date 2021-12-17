@@ -87,7 +87,9 @@ public:
 #if AP_EFI_SERIAL_LUTAN_ENABLED
         Lutan      = 3,
 #endif
-        // LOWEHEISER = 4,
+#if AP_EFI_LOWEHEISER_ENABLED
+        LOWEHEISER = 4,
+#endif
 #if AP_EFI_DRONECAN_ENABLED
         DroneCAN = 5,
 #endif
