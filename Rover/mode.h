@@ -131,6 +131,10 @@ public:
     // handle tacking request (from auxiliary switch) in sailboats
     virtual void handle_tack_request();
 
+    // pause or resume a mode
+    virtual bool pause() { return false; };
+    virtual bool resume() { return false; };
+
 protected:
 
     // subclasses override this to perform checks before entering the mode
@@ -283,6 +287,10 @@ public:
         MIS_DONE_BEHAVE_MANUAL    = 3
     };
 
+    // pause continue
+    bool pause() override;
+    bool resume() override;
+
 protected:
 
     bool _enter() override;
@@ -375,6 +383,9 @@ public:
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
+    // do clean up on exit
+    void exit();
+
     // attributes of the mode
     bool is_autopilot_mode() const override { return true; }
 
@@ -415,6 +426,10 @@ public:
     void limit_clear();
     void limit_init_time_and_location();
     bool limit_breached() const;
+
+    // pause continue
+    bool pause() override;
+    bool resume() override;
 
 protected:
 

@@ -617,6 +617,10 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_packet(const mavlink_command_in
         rover.control_mode->set_reversed(is_equal(packet.param1,1.0f));
         return MAV_RESULT_ACCEPTED;
 
+    // pause or resume an auto mission
+    case MAV_CMD_DO_PAUSE_CONTINUE:
+        return handle_command_pause_continue(packet);
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -684,9 +688,42 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_long_packet(const mavlink_command_l
                                               static_cast<int16_t>(packet.param3),
                                               packet.param4);
 
+    // pause or resume an auto mission
+    case MAV_CMD_DO_PAUSE_CONTINUE: {
+        mavlink_command_int_t packet_int;
+        GCS_MAVLINK_Rover::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
+        return handle_command_pause_continue(packet_int);
+    }
+
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
+}
+
+MAV_RESULT GCS_MAVLINK_Rover::handle_command_pause_continue(const mavlink_command_int_t &packet)
+{
+    // requested pause
+    if ((uint8_t) packet.param1 == 0) {
+        if (rover.control_mode->pause()) {
+            send_text(MAV_SEVERITY_INFO, "Paused");
+            return MAV_RESULT_ACCEPTED;
+        }
+        send_text(MAV_SEVERITY_INFO, "Failed to pause");
+        return MAV_RESULT_FAILED;
+    }
+
+    // requested resume
+    if ((uint8_t) packet.param1 == 1) {
+        if (rover.control_mode->resume()) {
+            send_text(MAV_SEVERITY_INFO, "Resumed");
+            return MAV_RESULT_ACCEPTED;
+        }
+        send_text(MAV_SEVERITY_INFO, "Failed to resume");
+        return MAV_RESULT_FAILED;
+    }
+
+    // fail pause or continue
+    return MAV_RESULT_DENIED;
 }
 
 MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_command_int_t &packet)

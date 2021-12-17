@@ -812,3 +812,30 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
         cmd.p1 * 1000, // convert seconds to ms
         cmd.content.guided_limits.horiz_max);
 }
+
+/********************************************************************************/
+// Pause and continue auto mode
+/********************************************************************************/
+
+// pause auto mode
+bool ModeAuto::pause()
+{
+    // stop the vehicle
+    if (rover.is_boat()) {
+        if (!start_loiter()) {
+            start_stop();
+        }
+    } else {
+        start_stop();
+    }
+
+    mission.stop();
+    return true;
+}
+
+// resume auto mode
+bool ModeAuto::resume()
+{
+    mission.resume();
+    return true;
+}

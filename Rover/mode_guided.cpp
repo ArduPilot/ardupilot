@@ -1,6 +1,24 @@
 #include "mode.h"
 #include "Rover.h"
 
+// previous command types
+enum class PrevCmd : uint8_t {
+    SET_DESIRED_LOCATION = 0
+};
+
+// current command information
+struct {
+    PrevCmd prev_cmd_type;
+    union DestInfo {
+        DestInfo() {};
+        struct {
+            Location destination;
+            float next_leg_bearing_cd;
+        } set_desired_location;
+    } u;
+    bool paused;
+} prev_cmd;
+
 bool ModeGuided::_enter()
 {
     // initialise submode to stop or loiter
@@ -235,6 +253,14 @@ bool ModeGuided::get_desired_location(Location& destination) const
 bool ModeGuided::set_desired_location(const struct Location& destination,
                                       float next_leg_bearing_cd)
 {
+    // set previous command
+    prev_cmd.prev_cmd_type = PrevCmd::SET_DESIRED_LOCATION;
+    prev_cmd.u.set_desired_location = {
+            destination,
+            next_leg_bearing_cd
+    };
+    prev_cmd.paused = false;
+
     if (g2.wp_nav.set_desired_location(destination, next_leg_bearing_cd)) {
 
         // handle guided specific initialisation and logging
@@ -353,4 +379,53 @@ bool ModeGuided::limit_breached() const
 
     // if we got this far we must be within limits
     return false;
+}
+
+/********************************************************************************/
+// Pause and continue guided mode
+/********************************************************************************/
+
+// pause guide mode
+bool ModeGuided::pause()
+{
+    // stop the vehicle
+    if (rover.is_boat()) {
+        if (!start_loiter()) {
+            start_stop();
+        }
+    } else {
+        start_stop();
+    }
+
+    // set paused because vehicle stopped
+    prev_cmd.paused = true;
+
+    return true;
+}
+
+// resume guided mode
+bool ModeGuided::resume()
+{
+    // check if vehicle paused to not re-enter resume
+    if (!prev_cmd.paused) {
+        return false;
+    }
+    prev_cmd.paused = false;
+
+    // resume to previous command
+    switch (prev_cmd.prev_cmd_type) {
+        case PrevCmd::SET_DESIRED_LOCATION: {
+            return set_desired_location(prev_cmd.u.set_desired_location.destination,
+                                        prev_cmd.u.set_desired_location.next_leg_bearing_cd);
+        }
+    }
+
+    return false;
+}
+
+// exit guided mode
+void ModeGuided::exit()
+{
+    // reset pause continue on mode changes
+    prev_cmd.paused = false;
 }
