@@ -5836,6 +5836,142 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.assert_prearm_failure("Motors Emergency Stopped")
         self.context_pop()
 
+    def pause_continue(self):
+        self.context_push()
+        ex = None
+        try:
+
+            # start auto mission
+            self.reboot_sitl()
+            self.load_mission("rover_mission.txt")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode("AUTO")
+
+            # wait until getting closer to first waypoint
+            self.wait_distance_to_waypoint(1, distance_min=0, distance_max=60, timeout=240)
+
+            # pause AUTO mode
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                         0, # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+                         0, # param5
+                         0, # param6
+                         0 # param7
+                         )
+
+            # wait vehicle to pause
+            self.wait_groundspeed(0, 1, minimum_duration=10, timeout=30)
+
+            # resume AUTO mode
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                         1, # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+                         0, # param5
+                         0, # param6
+                         0 # param7
+                         )
+
+            # wait until last waypoint
+            self.wait_distance_to_waypoint(4, distance_min=0, distance_max=20, timeout=240)
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex:
+            raise ex
+
+    def pause_continue_guided(self):
+        self.context_push()
+        ex = None
+        try:
+
+            # create destination location
+            destination = mavutil.location(40.07153193, -105.23479752, 0, 0)
+
+            # typemask for move command
+            type_mask = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE +
+                         mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
+
+            # start auto mission
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode("GUIDED")
+
+            # move to a location
+            self.mav.mav.set_position_target_global_int_send(
+                0, # timestamp
+                1, # target system_id
+                1, # target component id
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                type_mask, # mask specifying use-only-lat-lon-alt
+                int(destination.lat * 1e7), # lat
+                int(destination.lng * 1e7), # lon
+                destination.alt, # alt
+                0, # vx
+                0, # vy
+                0, # vz
+                0, # afx
+                0, # afy
+                0, # afz
+                0, # yaw
+                0, # yawrate
+            )
+
+            # wait some time to move away from home
+            self.wait_distance_to_location(destination, distance_min=0, distance_max=300, timeout=240)
+
+            # pause GUIDED mode
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                         0, # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+                         0, # param5
+                         0, # param6
+                         0 # param7
+                         )
+
+            # wait vehicle to pause
+            self.wait_groundspeed(0, 1, minimum_duration=10, timeout=30)
+
+            # resume GUIDED mode
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                         1, # param1
+                         0, # param2
+                         0, # param3
+                         0, # param4
+                         0, # param5
+                         0, # param6
+                         0 # param7
+                         )
+
+            # wait until waypoint is reached
+            self.wait_distance_to_location(destination, distance_min=0, distance_max=10, timeout=240)
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+        if ex:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6078,6 +6214,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
              "Ensure EStop prevents arming when asserted at boot time",
              self.EStopAtBoot),
 
+            ("PauseContinue",
+             "Test pause/continue command in AUTO mode",
+             self.pause_continue),
+
+            ("PauseContinueGuided",
+             "Test pause/continue command in GUIDED mode",
+             self.pause_continue_guided),
         ])
         return ret
 
