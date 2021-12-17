@@ -860,7 +860,7 @@ void AC_PosControl::set_pos_target_z_from_climb_rate_cm(float vel)
 
 /// land_at_climb_rate_cm - adjusts target up or down using a commanded climb rate in cm/s
 ///     using the default position control kinematic path.
-///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be true unless landing.
+///     ignore_descent_limit turns off output saturation handling to aid in landing detection. ignore_descent_limit should be false unless landing.
 void AC_PosControl::land_at_climb_rate_cm(float vel, bool ignore_descent_limit)
 {
     input_vel_accel_z(vel, 0, ignore_descent_limit);
