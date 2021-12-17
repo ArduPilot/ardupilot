@@ -64,7 +64,16 @@ private:
     } _accum;
 
     uint8_t _instance;
-    
+
+    enum class SensorMode {
+        PR_MODE = 0,    // Vented gauge
+        PA_MODE = 1,    // Sealed gauge
+        PAA_MODE = 2,   // Absolute
+        UNDEFINED = 3,  
+    };
+
+    // to store sensor mode
+    SensorMode _p_mode;
     // Model-specific offset/calibration values stored in device ROM
     //  pressure offset used in pressure calculation
     float _p_mode_offset;

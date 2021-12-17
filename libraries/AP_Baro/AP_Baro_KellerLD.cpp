@@ -90,18 +90,30 @@ bool AP_Baro_KellerLD::_init()
     cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
     hal.scheduler->delay(1);
     
-    switch (data[2] & 0b11) {
-        case 0:
-            // PR-mode Vented Gauge sensor (zero at 1 atm)
-            _p_mode_offset = 1.01325;
+    _p_mode = (SensorMode)(data[2] & 0b11);
+    
+    // update pressure offset based on P-Mode
+    switch (_p_mode) {
+        case SensorMode::PR_MODE:
+            // PR-Mode vented gauge sensor
+            // pressure reads zero when the pressure outside is equal to the pressure inside the enclosure
+            _p_mode_offset = _frontend.get_pressure(0);
             break;
-        case 1:
-            // PA-mode Sealed Gauge sensor (zero at 1 bar)
+        case SensorMode::PA_MODE:
+            // PA-Mode sealed gauge sensor
+            // pressure reads zero when the pressure outside is equal to 1.0 bar
+            // i.e., the pressure at which the vent is sealed
             _p_mode_offset = 1.0;
             break;
-        default:
-            // PAA-mode Absolute sensor (zero at vacuum), or undefined mode
+        case SensorMode::PAA_MODE:
+            // PAA-mode Absolute sensor (zero at vacuum)
             _p_mode_offset = 0.0;
+            break;
+        case SensorMode::UNDEFINED:
+            // we should give an error here
+            printf("KellerLD Device Mode UNDEFINED\n");
+            _dev->get_semaphore()->give();
+            return false;
     }
 
     // Read out pressure measurement range
@@ -252,6 +264,12 @@ void AP_Baro_KellerLD::update()
 {
     float sum_pressure, sum_temperature;
     float num_samples;
+
+    // update _p_mode_offset if vented guage 
+    if (_p_mode == SensorMode::PR_MODE) {
+        // we need to get the pressure from on-board barometer
+        _p_mode_offset = _frontend.get_pressure(0);
+    }
 
     {
         WITH_SEMAPHORE(_sem);

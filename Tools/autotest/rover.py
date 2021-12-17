@@ -5825,6 +5825,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # self.context_pop()
 
+    def EStopAtBoot(self):
+        self.context_push()
+        self.set_parameters({
+            "RC9_OPTION": 31,
+        })
+        self.set_rc(9, 2000)
+        self.reboot_sitl()
+        self.delay_sim_time(10)
+        self.assert_prearm_failure("Motors Emergency Stopped")
+        self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6062,6 +6073,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("DepthFinder",
              "Test mulitple depthfinders for boats",
              self.test_depthfinder),
+
+            ("EStopAtBoot",
+             "Ensure EStop prevents arming when asserted at boot time",
+             self.EStopAtBoot),
+
         ])
         return ret
 
