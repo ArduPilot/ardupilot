@@ -57,6 +57,7 @@ private:
         uint16_t failsafe_battery      : 1;    // 1 if battery failsafe
         uint16_t parachute_release     : 1;    // 1 if parachute is being released
         uint16_t pre_arm_check         : 1;    // 0 = failing checks, 1 = passed
+        uint16_t gps_fusion            : 1;    // 0 = EKF not using GPS, 1 = EKF active
         uint16_t failsafe_radio        : 1;    // 1 if radio failsafe
         uint16_t failsafe_gcs          : 1;    // 1 if gcs failsafe
         uint16_t failsafe_ekf          : 1;    // 1 if ekf failsafe

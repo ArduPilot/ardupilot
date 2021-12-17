@@ -97,7 +97,9 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
 #define AP_NOTIFY_TONE_NO_SDCARD 30
     { "MNBGG", false },
 #define AP_NOTIFY_TONE_EKF_ALERT 31
-    { "MBNT255>A#8A#8A#8A#8P8A#8A#8A#8A#8P8A#8A#8A#8A#8P8A#8A#8A#8A#8", true },
+    { "MBNT255>A#8A#8A#8A#8P8A#8A#8A#8A#8P8A#8A#8A#8A#8P8A#8A#8A#8A#8", false },
+#define AP_NOTIFY_TONE_EKF_ACTIVE 32
+    { "MFT100L8>G#6G#6G#6G#6G#6G#6G#6G#6", true },
 };
 
 bool AP_ToneAlarm::init()
@@ -341,6 +343,16 @@ void AP_ToneAlarm::update()
                 play_tone(AP_NOTIFY_TONE_LOUD_POS_FEEDBACK);
             } else {
                 play_tone(AP_NOTIFY_TONE_QUIET_POS_FEEDBACK);
+            }
+        }
+    }
+
+    // notify the user when EKF is using GPS if this occurs after arming
+    if (AP_Notify::flags.armed) {
+        if (flags.gps_fusion != AP_Notify::flags.gps_fusion) {
+            flags.gps_fusion = AP_Notify::flags.gps_fusion;
+            if (flags.gps_fusion) {
+                play_tone(AP_NOTIFY_TONE_EKF_ACTIVE);
             }
         }
     }
