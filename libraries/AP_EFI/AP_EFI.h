@@ -80,7 +80,9 @@ public:
         MegaSquirt = 1,
         NWPMU      = 2,
         Lutan      = 3,
-        // LOWEHEISER = 4,
+#if AP_EFI_LOWEHEISER_ENABLED
+        LOWEHEISER = 4,
+#endif
         DroneCAN = 5,
         CurrawongECU = 6,
         SCRIPTING  = 7,

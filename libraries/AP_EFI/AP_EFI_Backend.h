@@ -35,6 +35,8 @@ public:
     virtual bool handle_scripting(const EFI_State &efi_state) { return false; }
 #endif
 
+    virtual bool healthy() const;
+
 protected:
     // Copies internal state to the frontend state
     void copy_to_frontend();

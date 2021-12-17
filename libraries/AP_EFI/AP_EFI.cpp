@@ -23,6 +23,7 @@
 #include "AP_EFI_DroneCAN.h"
 #include "AP_EFI_Currawong_ECU.h"
 #include "AP_EFI_Scripting.h"
+#include "AP_EFI_Loweheiser.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
@@ -38,7 +39,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,4:Loweheiser,5:DroneCAN,6:Currawong-ECU,7:Scripting
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -113,6 +114,11 @@ void AP_EFI::init(void)
         backend = new AP_EFI_Scripting(*this);
 #endif
         break;
+#if AP_EFI_LOWEHEISER_ENABLED
+    case Type::LOWEHEISER:
+        backend = new AP_EFI_Loweheiser(*this);
+        break;
+#endif
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unknown EFI type");
         break;
@@ -132,7 +138,10 @@ void AP_EFI::update()
 
 bool AP_EFI::is_healthy(void) const
 {
-    return (backend && (AP_HAL::millis() - state.last_updated_ms) < HEALTHY_LAST_RECEIVED_MS);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->healthy();
 }
 
 #if HAL_LOGGING_ENABLED
