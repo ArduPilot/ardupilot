@@ -219,16 +219,17 @@ public:
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
         // options 150-199 continue user rc switch options
-        CRUISE =             150,  ///CRUISE mode
+        CRUISE =             150,  // CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
         SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
         ARMDISARM =          153, // arm or disarm vehicle
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
-        EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
+        EMERGENCY_LANDING_EN = 157, // Force long FS action to FBWA for landing out of range
+        HEADING_HOLD =       158,  // select heading hold or rate mode for yaw controller
 
-        // inputs from 200 will eventually used to replace RCMAP
+        // inputs from 200 will eventually be used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
         THROTTLE =           203, // throttle pilot input
@@ -251,7 +252,7 @@ public:
     };
     typedef enum AUX_FUNC aux_func_t;
 
-    // auxillary switch handling (n.b.: we store this as 2-bits!):
+    // auxiliary switch handling (n.b.: we store this as 2-bits!):
     enum class AuxSwitchPos : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
@@ -301,7 +302,7 @@ protected:
 
     virtual void init_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
-    // virtual function to be overridden my subclasses
+    // virtual function to be overridden by subclasses
     virtual bool do_aux_function(aux_func_t ch_option, AuxSwitchPos);
 
     void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
@@ -540,7 +541,7 @@ public:
     uint32_t last_input_ms() const { return last_update_ms; };
 
     // method for other parts of the system (e.g. Button and mavlink)
-    // to trigger auxillary functions
+    // to trigger auxiliary functions
     bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
         return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }
