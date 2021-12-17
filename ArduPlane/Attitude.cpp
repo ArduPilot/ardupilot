@@ -380,7 +380,7 @@ void Plane::stabilize_training(float speed_scaler)
 
 /*
   this is the ACRO mode stabilization function. It does rate
-  stabilization on roll and pitch axes
+  stabilization on roll, pitch and yaw axes
  */
 void Plane::stabilize_acro(float speed_scaler)
 {
@@ -448,7 +448,8 @@ void Plane::stabilize_acro(float speed_scaler)
         // user has asked for yaw rate control with yaw rate scaled by ACRO_YAW_RATE
         const float rudd_expo = rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
-        steering_control.steering = steering_control.rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
+        steering_control.steering = steering_control.rudder = 
+            yawController.get_rate_out(yaw_rate,  speed_scaler, heading_hold_disable);
     } else if (plane.g2.flight_options & FlightOptions::ACRO_YAW_DAMPER) {
         // use yaw controller
         calc_nav_yaw_coordinated(speed_scaler);
