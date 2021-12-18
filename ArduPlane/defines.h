@@ -79,7 +79,7 @@ enum tuning_pid_bits {
 
 static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to be set by MAVLink");
 
-// Logging message types
+// Logging message types - only 32 messages are available to the vehicle here.
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
