@@ -261,6 +261,11 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
 // only the VISION_POSITION_ESTIMATE message's reset_counter is used to determine if sensor data should be ignored
 bool AP_VisualOdom_IntelT265::should_consume_sensor_data(bool vision_position_estimate, uint8_t reset_counter)
 {
+    if (get_type() == AP_VisualOdom::VisualOdom_Type::VOXL) {
+        // we don't discard data after a reset for VOXL
+        return true;
+    }
+
     uint32_t now_ms = AP_HAL::millis();
 
     // set ignore start time if reset counter has changed
