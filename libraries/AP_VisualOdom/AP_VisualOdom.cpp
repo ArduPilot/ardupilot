@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AP_VisualOdom::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Visual odometry camera connection type
     // @Description: Visual odometry camera connection type
-    // @Values: 0:None,1:MAVLink,2:IntelT265
+    // @Values: 0:None,1:MAVLink,2:IntelT265,3:VOXL(ModalAI)
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_VisualOdom, _type, 0, AP_PARAM_FLAG_ENABLE),
@@ -124,14 +124,15 @@ AP_VisualOdom::AP_VisualOdom()
 void AP_VisualOdom::init()
 {
     // create backend
-    switch (_type) {
-    case AP_VisualOdom_Type_None:
+    switch (VisualOdom_Type(_type.get())) {
+    case VisualOdom_Type::None:
         // do nothing
         break;
-    case AP_VisualOdom_Type_MAV:
+    case VisualOdom_Type::MAV:
         _driver = new AP_VisualOdom_MAV(*this);
         break;
-    case AP_VisualOdom_Type_IntelT265:
+    case VisualOdom_Type::IntelT265:
+    case VisualOdom_Type::VOXL:
         _driver = new AP_VisualOdom_IntelT265(*this);
         break;
     }
@@ -140,7 +141,7 @@ void AP_VisualOdom::init()
 // return true if sensor is enabled
 bool AP_VisualOdom::enabled() const
 {
-    return ((_type != AP_VisualOdom_Type_None));
+    return ((_type != VisualOdom_Type::None));
 }
 
 // return true if sensor is basically healthy (we are receiving data)

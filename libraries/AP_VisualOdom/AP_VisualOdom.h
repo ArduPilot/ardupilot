@@ -44,10 +44,11 @@ public:
     }
 
     // external position backend types (used by _TYPE parameter)
-    enum AP_VisualOdom_Type {
-        AP_VisualOdom_Type_None         = 0,
-        AP_VisualOdom_Type_MAV          = 1,
-        AP_VisualOdom_Type_IntelT265    = 2
+    enum class VisualOdom_Type {
+        None         = 0,
+        MAV          = 1,
+        IntelT265    = 2,
+        VOXL         = 3,
     };
 
     // detect and initialise any sensors
@@ -106,12 +107,16 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    VisualOdom_Type get_type(void) const {
+        return _type;
+    }
+
 private:
 
     static AP_VisualOdom *_singleton;
 
     // parameters
-    AP_Int8 _type;              // sensor type
+    AP_Enum<VisualOdom_Type> _type; // sensor type
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
     AP_Float _pos_scale;        // position scale factor applied to sensor values
