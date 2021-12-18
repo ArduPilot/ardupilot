@@ -176,6 +176,7 @@ public:
         BOARD_OPTION_WATCHDOG = (1 << 0),
         DISABLE_FTP = (1<<1),
         ALLOW_SET_INTERNAL_PARM = (1<<2),
+        BOARD_OPTION_DEBUG_ENABLE = (1<<3),
     };
 
     // return true if ftp is disabled
@@ -237,6 +238,7 @@ private:
 #endif // AP_FEATURE_BOARD_DETECT
 
     void board_init_safety(void);
+    void board_init_debug(void);
 
     void board_setup_uart(void);
     void board_setup_sbus(void);
