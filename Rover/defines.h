@@ -17,12 +17,14 @@
 #define FAILSAFE_EVENT_THROTTLE (1<<0)
 #define FAILSAFE_EVENT_GCS      (1<<1)
 
-//  Logging parameters
-#define LOG_THR_MSG             0x01
-#define LOG_NTUN_MSG            0x02
-#define LOG_STARTUP_MSG         0x06
-#define LOG_STEERING_MSG        0x0D
-#define LOG_GUIDEDTARGET_MSG    0x0E
+//  Logging parameters - only 32 messages are available to the vehicle here.
+enum LoggingParameters {
+    LOG_THR_MSG,
+    LOG_NTUN_MSG,
+    LOG_STARTUP_MSG,
+    LOG_STEERING_MSG,
+    LOG_GUIDEDTARGET_MSG,
+};
 
 #define TYPE_GROUNDSTART_MSG    0x01
 
