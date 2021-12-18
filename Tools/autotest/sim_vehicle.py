@@ -876,6 +876,9 @@ vehicle_choices.append("APMrover2")
 vehicle_choices.append("Copter")  # should change to ArduCopter at some stage
 vehicle_choices.append("Plane")  # should change to ArduPlane at some stage
 vehicle_choices.append("Sub")  # should change to Sub at some stage
+vehicle_choices.append("copter")  # should change to ArduCopter at some stage
+vehicle_choices.append("plane")  # should change to ArduPlane at some stage
+vehicle_choices.append("sub")  # should change to Sub at some stage
 
 parser.add_option("-v", "--vehicle",
                   type='choice',
@@ -1272,6 +1275,9 @@ vehicle_map = {
     "Copter": "ArduCopter",  # will switch eventually
     "Plane": "ArduPlane",  # will switch eventually
     "Sub": "ArduSub",  # will switch eventually
+    "copter": "ArduCopter",  # will switch eventually
+    "plane": "ArduPlane",  # will switch eventually
+    "sub": "ArduSub",  # will switch eventually
 }
 if cmd_opts.vehicle in vehicle_map:
     progress("%s is now known as %s" %
