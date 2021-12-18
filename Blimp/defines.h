@@ -124,7 +124,7 @@ enum DevOptions {
     DevOptionSetAttitudeTarget_ThrustAsThrust = 4,
 };
 
-//  Logging parameters
+//  Logging parameters - only 32 messages are available to the vehicle here.
 enum LoggingParameters {
     LOG_CONTROL_TUNING_MSG,
     LOG_DATA_INT16_MSG,
