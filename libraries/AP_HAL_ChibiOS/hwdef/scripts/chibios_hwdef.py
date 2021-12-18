@@ -368,6 +368,15 @@ class generic_pin(object):
              self.label.endswith('_CTS') or
              self.label.endswith('_RTS'))):
             v = "PULLUP"
+
+        if (self.type.startswith('SWD') and
+            'SWDIO' in self.label):
+            v = "PULLUP"
+
+        if (self.type.startswith('SWD') and
+            'SWCLK' in self.label):
+            v = "PULLDOWN"
+
         # generate pullups for SDIO and SDMMC
         if (self.type.startswith('SDIO') or
             self.type.startswith('SDMMC')) and (
