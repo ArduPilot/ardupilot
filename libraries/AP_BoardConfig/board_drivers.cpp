@@ -46,6 +46,24 @@ void AP_BoardConfig::board_init_safety()
 #endif
 }
 
+/*
+  init debug pins. We set debug pins as input if BRD_OPTIONS bit for debug enable is not set
+  this prevents possible ESD issues on the debug pins
+ */
+void AP_BoardConfig::board_init_debug()
+{
+#ifndef HAL_BUILD_AP_PERIPH
+    if ((_options & BOARD_OPTION_DEBUG_ENABLE) == 0) {
+#ifdef HAL_GPIO_PIN_JTCK_SWCLK
+        palSetLineMode(HAL_GPIO_PIN_JTCK_SWCLK, PAL_MODE_INPUT);
+#endif
+#ifdef HAL_GPIO_PIN_JTMS_SWDIO
+        palSetLineMode(HAL_GPIO_PIN_JTMS_SWDIO, PAL_MODE_INPUT);
+#endif
+    }
+#endif // HAL_BUILD_AP_PERIPH
+}
+
 
 #if AP_FEATURE_BOARD_DETECT
 
