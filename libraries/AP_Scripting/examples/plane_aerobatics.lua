@@ -81,6 +81,25 @@ function wrap_180(angle)
     return res
 end
 
+function wrap_pi(angle_rad)
+   return math.rad(wrap_180(math.deg(angle_rad)))
+end
+
+function convert_ef_rates_to_bf_rates(roll, pitch, yaw, ef_roll_rate, ef_pitch_rate, ef_yaw_rate)
+   local cr = math.cos(roll)
+   local sr = math.sin(roll)
+   local cp = math.cos(pitch)
+   local sp = math.sin(pitch) 
+   local cy = math.cos(yaw)
+   local sy = math.sin(yaw)
+   
+   local bf_roll_rate  =  ef_roll_rate                   -    sp*ef_yaw_rate
+   local bf_pitch_rate =                cr*ef_pitch_rate + sr*cp*ef_yaw_rate
+   local bf_yaw_rate   =               -sr*ef_pitch_rate + cr*cp*ef_yaw_rate
+
+   return bf_roll_rate, bf_pitch_rate, bf_yaw_rate
+end
+
 -- a PI controller implemented as a Lua object
 local function PI_controller(kP,kI,iMax)
    -- the new instance. You can put public variables inside this self
@@ -335,6 +354,8 @@ function do_rolling_circle(arg1, arg2)
       vel = ahrs:get_velocity_NED()
       throttle = speed_PI.update(TRIM_ARSPD_CM:get()*0.01, vel:length())
       throttle = constrain(throttle, 0, 100.0)
+      --saturation_error = constrained_throttle - target_throttle
+      --gcs:send_text(0, string.format("saturation_error: e=%.1f", saturation_error))
       speed_PI.log("SPI", 0.0)
       pitch_rate, yaw_rate = pitch_controller(target_pitch, wrap_360(rolling_circle_yaw+initial_yaw_deg), PITCH_TCONST)
       vehicle:set_target_throttle_rate_rpy(throttle, roll_rate_corrected, pitch_rate, yaw_rate)
@@ -363,6 +384,157 @@ function resolve_jump(i)
    return i
 end
 
+function path_circle(t, radius, unused)
+   t = t*math.pi*2
+   --TODO: include * overload in lua bindings
+   local vec = Vector3f()
+   vec:x(1.0-math.cos(t))
+   vec:y(-math.sin(t))
+   return vec:scale(radius)
+end
+
+function path_figure_eight(t, radius, unused)
+   t = t*math.pi*2
+   local vec = Vector3f()
+   vec:x(math.sin(t))
+   vec:y(math.sin(t)*math.cos(t))
+   return vec:scale(radius)
+end
+
+function path_length(path_f, arg1, arg2)
+   local dt = 0.01
+   local total = 0.0
+   for i = 0, math.floor(1.0/dt) do
+      local t = i*dt
+      local t2 = t + dt
+      local v1 = path_f(t, arg1, arg2)
+      local v2 = path_f(t2, arg1, arg2)
+
+      local dv = v2-v1
+      total = total + dv:length()
+   end
+   return total
+end
+
+function rotate_position(position, yaw)
+   local rotated_point = Vector3f()
+   local cs = math.cos(yaw)
+   local sn = math.sin(yaw)
+
+   rotated_point:x(position:x() * cs - position:y() * sn)
+   rotated_point:y(position:x() * sn + position:y() * cs)
+   return rotated_point
+end
+
+function rotate_path(path_f, t, arg1, arg2, yaw)
+   return rotate_position(path_f(t, arg1, arg2), yaw)
+end
+
+local path_var = {}
+path_var.count = 0
+
+function do_path(path, arg1, arg2)
+
+   local now = millis():tofloat() * 0.001
+
+   path_var.count = path_var.count + 1
+
+   if not running then
+      running = true
+      path_var.length = path_length(path, arg1, arg2)
+      local speed = TRIM_ARSPD_CM:get()*0.01
+
+      --assuming constant velocity
+      path_var.total_time = path_var.length/speed
+      path_var.start_time = now
+      path_var.last_time = now
+      path_var.last_pos = path(0.0, arg1, arg2)
+      local path_delta = path(0.001, arg1, arg2)
+      local init_tangent = path_delta - path_var.last_pos
+      path_var.init_yaw = wrap_pi(math.atan(init_tangent:y(), init_tangent:x()))
+      path_var.init_yaw = -wrap_pi(path_var.init_yaw - math.rad(wp_yaw_deg))
+      
+      corrected_position_t0 = rotate_path(path, 0.0, arg1, arg2, path_var.init_yaw)
+      corrected_position_t1 = rotate_path(path, 0.001, arg1, arg2, path_var.init_yaw)
+
+      path_var.prev_target_pos = corrected_position_t0
+
+      local tangent = corrected_position_t1 - corrected_position_t0
+      local corrected_yaw = wrap_pi(math.atan(tangent:y(), tangent:x()))
+
+      path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
+
+      height_PI.reset()
+
+      speed_PI.set_P(SCR_USER5:get())
+      speed_PI.set_I(SCR_USER6:get())
+      speed_PI.reset(math.max(SRV_Channels:get_output_scaled(k_throttle), TRIM_THROTTLE:get()))
+   end
+
+   local dt = now - path_var.last_time
+
+   --normalise current time to [0, 1]
+   local t = (now - path_var.start_time)/path_var.total_time
+
+   --TODO: add time correction
+
+   --TODO: Fix this exit condition
+   if t > 1.0 then --done
+      running = false
+      vehicle:nav_script_time_done(last_id)
+      return
+   end
+
+   --where we aim to be on the path at this timestamp
+   local current_target_pos = rotate_path(path, t, arg1, arg2, path_var.init_yaw)
+   local current_measured_pos = ahrs:get_relative_position_NED_origin() - path_var.initial_ef_pos
+   local position_error = current_target_pos - current_measured_pos
+   --arbitrary time constant larger than dt over which to correct the position error
+   local correction_time = 2.0
+   --velocity required to correct current position error
+   local position_error_velocity = (position_error):scale(1.0/correction_time)
+   --velocity required to travel along trajectory
+   local trajectory_velocity = (current_target_pos - path_var.prev_target_pos):scale(1.0/dt)
+   local target_velocity = position_error_velocity + trajectory_velocity
+
+   path_var.prev_target_pos = current_target_pos
+   path_var.last_measured_pos = current_pos
+   path_var.last_time = now
+
+   local target_yaw_rad = wrap_pi(math.atan(target_velocity:y(), target_velocity:x()))   
+   local current_yaw_rad = wrap_pi(ahrs:get_yaw())
+   local yaw_error = wrap_pi(target_yaw_rad - current_yaw_rad)
+   local yaw_tconst = dt
+   local ef_yaw_rate = yaw_error/yaw_tconst  
+
+   local target_pitch_rad = wrap_pi(math.atan(-target_velocity:z(), math.sqrt(target_velocity:x()^2 + target_velocity:y()^2)))
+   local current_pitch_rad = wrap_pi(ahrs:get_pitch())
+   local pitch_error = wrap_pi(target_pitch_rad - current_pitch_rad)
+   local pitch_tconst = dt
+   local ef_pitch_rate = pitch_error/pitch_tconst
+
+   --assume roll 0 for now, should work for 2D paths like circle and figure eight
+   local target_roll_rad = 0.0
+   local current_roll_rad = wrap_pi(ahrs:get_roll())
+   local roll_error = wrap_pi(target_roll_rad - current_roll_rad)
+   local roll_tconst = dt
+   local ef_roll_rate = roll_error/roll_tconst
+
+   --convert ef rates to bf rates, I assume there is a function we can bind in Ardupilot to do this already, but couldn't find it.
+   bf_roll_rate, bf_pitch_rate, bf_yaw_rate = convert_ef_rates_to_bf_rates(current_roll_rad,
+                                                                        current_pitch_rad,
+                                                                        current_yaw_rad,
+                                                                        ef_roll_rate, 
+                                                                        ef_pitch_rate, 
+                                                                        ef_yaw_rate)
+
+   vel = ahrs:get_velocity_NED()
+   local target_speed = TRIM_ARSPD_CM:get()*0.01
+   throttle = speed_PI.update(target_speed, vel:length())
+   throttle = constrain(throttle, 0, 100.0)
+   vehicle:set_target_throttle_rate_rpy(throttle, bf_roll_rate, bf_pitch_rate, bf_yaw_rate)
+end
+
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
    if id then
@@ -385,6 +557,10 @@ function update()
          do_loop(arg1, arg2)
       elseif cmd == 3 then
          do_rolling_circle(arg1, arg2)
+      elseif cmd == 4 then
+         do_path(path_circle, arg1, arg2)
+      elseif cmd == 5 then
+         do_path(path_figure_eight, arg1, arg2)
       end
    else
       running = false
