@@ -1353,7 +1353,7 @@ LOG_STRUCTURE_FROM_AIS, \
 
 // message types for common messages
 enum LogMessages : uint8_t {
-    LOG_PARAMETER_MSG = 64,
+    LOG_PARAMETER_MSG = 32,
     LOG_IDS_FROM_NAVEKF2,
     LOG_IDS_FROM_NAVEKF3,
     LOG_MESSAGE_MSG,
@@ -1377,14 +1377,6 @@ enum LogMessages : uint8_t {
 
     LOG_IDS_FROM_GPS,
 
-    // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
-    LOG_MODE_MSG,
-
-    LOG_FORMAT_MSG = 128, // this must remain #128
-
-    LOG_IDS_FROM_DAL,
-    LOG_IDS_FROM_INERTIALSENSOR,
-
     LOG_PIDR_MSG,
     LOG_PIDP_MSG,
     LOG_PIDY_MSG,
@@ -1401,9 +1393,18 @@ enum LogMessages : uint8_t {
     LOG_FORMAT_UNITS_MSG,
     LOG_UNIT_MSG,
     LOG_MULT_MSG,
-
     LOG_RALLY_MSG,
+
+    // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
+    LOG_MODE_MSG,
+
+    LOG_FORMAT_MSG = 128, // this must remain #128
+
+    LOG_IDS_FROM_DAL,
+    LOG_IDS_FROM_INERTIALSENSOR,
+
     LOG_IDS_FROM_VISUALODOM,
+    LOG_IDS_FROM_AVOIDANCE,
     LOG_BEACON_MSG,
     LOG_PROXIMITY_MSG,
     LOG_DF_FILE_STATS,
@@ -1416,7 +1417,6 @@ enum LogMessages : uint8_t {
     LOG_ERROR_MSG,
     LOG_ADSB_MSG,
     LOG_ARM_DISARM_MSG,
-    LOG_IDS_FROM_AVOIDANCE,
     LOG_WINCH_MSG,
     LOG_PSCN_MSG,
     LOG_PSCE_MSG,
