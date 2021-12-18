@@ -244,7 +244,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Board options
     // @Description: Board specific option flags
-    // @Bitmask: 0:Enable hardware watchdog
+    // @Bitmask: 0:Enable hardware watchdog, 3:Enable Debug Pins
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 
@@ -337,6 +337,7 @@ void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
 void AP_BoardConfig::init_safety()
 {
     board_init_safety();
+    board_init_debug();
 }
 
 /*
