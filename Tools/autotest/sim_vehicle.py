@@ -1275,7 +1275,7 @@ vehicle_map = {
 }
 if cmd_opts.vehicle in vehicle_map:
     progress("%s is now known as %s" %
-             (cmd_opts.vehicle, vehicle_map[cmd_opts.vehicle]))
+             (vehicle_map[cmd_opts.vehicle], cmd_opts.vehicle, ))
     cmd_opts.vehicle = vehicle_map[cmd_opts.vehicle]
 
 # try to validate vehicle
