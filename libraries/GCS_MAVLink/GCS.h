@@ -864,6 +864,7 @@ private:
     void handle_vision_position_estimate(const mavlink_message_t &msg);
     void handle_global_vision_position_estimate(const mavlink_message_t &msg);
     void handle_att_pos_mocap(const mavlink_message_t &msg);
+    void handle_odometry(const mavlink_message_t &msg);
     void handle_common_vision_position_estimate_data(const uint64_t usec,
                                                      const float x,
                                                      const float y,
