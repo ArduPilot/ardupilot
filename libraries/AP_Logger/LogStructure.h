@@ -1431,5 +1431,6 @@ enum LogMessages : uint8_t {
     _LOG_LAST_MSG_
 };
 
-static_assert(_LOG_LAST_MSG_ <= 255, "Too many message formats");
+// we reserve ID #255 for future expansion
+static_assert(_LOG_LAST_MSG_ < 255, "Too many message formats");
 static_assert(LOG_MODE_MSG < 128, "Duplicate message format IDs");
