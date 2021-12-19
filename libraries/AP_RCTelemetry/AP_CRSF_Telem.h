@@ -351,6 +351,8 @@ private:
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
 
+    bool _noted_lq_as_rssi_active;
+
     static AP_CRSF_Telem *singleton;
 };
 
