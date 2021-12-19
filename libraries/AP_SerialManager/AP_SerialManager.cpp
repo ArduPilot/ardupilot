@@ -547,8 +547,8 @@ void AP_SerialManager::init()
                     break;
 #endif
                     
-                case SerialProtocol_EFI_MS:
-                    state[i].baud = AP_SERIALMANAGER_EFI_MS_BAUD;   // update baud param in case user looks at it
+                case SerialProtocol_EFI:
+                    state[i].baud.set_default(AP_SERIALMANAGER_EFI_MS_BAUD);
                     uart->begin(map_baudrate(state[i].baud),
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX);
