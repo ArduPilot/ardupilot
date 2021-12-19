@@ -101,6 +101,7 @@ AUTOBUILD_BOARDS = ["fmuv2",
                     "modalai_fc-v1",
                     "Pixhawk5X",
                     "AIRLink",
+                    "PixC4-Jetson",
                     # SITL targets
                     "SITL_x86_64_linux_gnu",
                     "SITL_arm_linux_gnueabihf",
