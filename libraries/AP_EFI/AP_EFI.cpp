@@ -18,6 +18,7 @@
 #if HAL_EFI_ENABLED
 
 #include "AP_EFI_Serial_MS.h"
+#include "AP_EFI_Serial_Lutan.h"
 #include "AP_EFI_NWPMU.h"
 #include <AP_Logger/AP_Logger.h>
 
@@ -32,7 +33,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -75,6 +76,9 @@ void AP_EFI::init(void)
         break;
     case Type::MegaSquirt:
         backend = new AP_EFI_Serial_MS(*this);
+        break;
+    case Type::Lutan:
+        backend = new AP_EFI_Serial_Lutan(*this);
         break;
     case Type::NWPMU:
 #if HAL_EFI_NWPWU_ENABLED
