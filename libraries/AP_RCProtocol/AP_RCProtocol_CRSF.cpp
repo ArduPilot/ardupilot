@@ -272,6 +272,9 @@ void AP_RCProtocol_CRSF::update(void)
         process_telemetry(false);
         _last_frame_time_us = now;
     }
+
+    //Check if LQ is to be reported in place of RSSI
+    _use_lq_for_rssi = bool(rc().use_crsf_lq_as_rssi());
 }
 
 // write out a frame of any type
@@ -464,14 +467,18 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         rssi_dbm = link->uplink_rssi_ant2;
     }
     _link_status.link_quality = link->uplink_status;
-     // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
-    if (rssi_dbm < 50) {
-        _link_status.rssi = 255;
-    } else if (rssi_dbm > 120) {
-        _link_status.rssi = 0;
-    } else {
-        // this is an approximation recommended by Remo from TBS
-        _link_status.rssi = int16_t(roundf((1.0f - (rssi_dbm - 50.0f) / 70.0f) * 255.0f));
+    if (_use_lq_for_rssi) {
+        _link_status.rssi = derive_scaled_lq_value(link->uplink_status);
+    } else{
+        // AP rssi: -1 for unknown, 0 for no link, 255 for maximum link
+        if (rssi_dbm < 50) {
+            _link_status.rssi = 255;
+        } else if (rssi_dbm > 120) {
+            _link_status.rssi = 0;
+        } else {
+            // this is an approximation recommended by Remo from TBS
+            _link_status.rssi = int16_t(roundf((1.0f - (rssi_dbm - 50.0f) / 70.0f) * 255.0f));
+        }
     }
 
     _link_status.rf_mode = static_cast<RFMode>(MIN(link->rf_mode, 3U));
@@ -482,7 +489,11 @@ void AP_RCProtocol_CRSF::process_link_stats_rx_frame(const void* data)
 {
     const LinkStatisticsRXFrame* link = (const LinkStatisticsRXFrame*)data;
 
-    _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
+    if (_use_lq_for_rssi) {
+        _link_status.rssi = derive_scaled_lq_value(link->link_quality);
+    } else {
+        _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
+    }
 }
 
 // process link statistics to get TX RSSI
@@ -490,7 +501,11 @@ void AP_RCProtocol_CRSF::process_link_stats_tx_frame(const void* data)
 {
     const LinkStatisticsTXFrame* link = (const LinkStatisticsTXFrame*)data;
 
-    _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
+    if (_use_lq_for_rssi) {
+        _link_status.rssi = derive_scaled_lq_value(link->link_quality);
+    } else {
+        _link_status.rssi = link->rssi_percent * 255.0f * 0.01f;
+    }
 }
 
 // process a byte provided by a uart
@@ -533,6 +548,12 @@ bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
     _new_baud_rate = baudrate;
 
     return true;
+}
+
+//returns uplink link quality on 0-255 scale
+int16_t AP_RCProtocol_CRSF::derive_scaled_lq_value(uint8_t uplink_lq)
+{
+    return int16_t(roundf(constrain_float(uplink_lq*2.5f,0,255)));
 }
 
 namespace AP {
