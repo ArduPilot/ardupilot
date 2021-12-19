@@ -1923,6 +1923,7 @@ void NavEKF3_core::ConstrainVariances()
             }
             // reset all delta velocity bias covariances
             zeroCols(P,13,15);
+            zeroRows(P,13,15);
             // restore all delta velocity bias variances
             for (uint8_t i=0; i<=2; i++) {
                 P[i+13][i+13] = delVelBiasVar[i];
