@@ -270,6 +270,9 @@ private:
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
 
+    bool _use_lq_for_rssi;
+    int16_t derive_scaled_lq_value(uint8_t uplink_lq);
+
     volatile struct LinkStatus _link_status;
 
     AP_HAL::UARTDriver *_uart;
