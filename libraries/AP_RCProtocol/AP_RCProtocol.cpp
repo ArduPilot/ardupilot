@@ -296,7 +296,7 @@ void AP_RCProtocol::check_added_uart(void)
             process_byte(uint8_t(b), added.baudrate);
         }
     }
-    if (!_detected_with_bytes) {
+    if (searching) {
         if (now - added.last_baud_change_ms > 1000) {
             // flip baudrates if not detected once a second
             added.phase = (enum config_phase)(uint8_t(added.phase) + 1);
