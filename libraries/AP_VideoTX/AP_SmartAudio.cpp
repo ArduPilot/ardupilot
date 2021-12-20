@@ -115,7 +115,7 @@ void AP_SmartAudio::loop()
         }
 
         // nothing going on so give CPU to someone else
-        if (!_is_waiting_response && !_initialised) {
+        if (!_is_waiting_response || !_initialised) {
             hal.scheduler->delay(100);
         }
 
