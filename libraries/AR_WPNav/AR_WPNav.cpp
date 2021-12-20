@@ -115,6 +115,7 @@ void AR_WPNav::init(float speed_max, float accel_max, float lat_accel_max, float
 
     // ensure pivot turns are deactivated
     _pivot.deactivate();
+    _pivot_at_next_wp = false;
 
     // initialise origin and destination to stopping point
     Location stopping_loc;
@@ -180,7 +181,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     // or journey to previous waypoint was interrupted or navigation has just started
     if (!_fast_waypoint) {
         _pivot.deactivate();
-        _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01);
+        _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01, _pivot_at_next_wp);
     }
 
     // convert origin and destination to offset from EKF origin
@@ -210,28 +211,33 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     }
 
     // handle next destination
+    _scurve_next_leg.init();
+    _fast_waypoint = false;
+    _pivot_at_next_wp = false;
     if (next_destination.initialised()) {
-        // convert next_destination to offset from EKF origin
-        Vector2f next_destination_NE;
-        if (!next_destination.get_vector_xy_from_origin_NE(next_destination_NE)) {
-            return false;
-        }
-        next_destination_NE *= 0.01f;
-        _scurve_next_leg.calculate_track(Vector3f{destination_NE.x, destination_NE.y, 0.0f},
-                                         Vector3f{next_destination_NE.x, next_destination_NE.y, 0.0f},
-                                         _pos_control.get_speed_max(),
-                                         _pos_control.get_speed_max(),  // speed up (not used)
-                                         _pos_control.get_speed_max(),  // speed down (not used)
-                                         _pos_control.get_accel_max(),
-                                         _pos_control.get_accel_max(),  // vertical accel (not used)
-                                         1.0,                           // jerk time
-                                         _scurve_jerk);
+        // check if vehicle should pivot at next waypoint
+        const float next_wp_yaw_change = get_corner_angle(_origin, destination, next_destination);
+        _pivot_at_next_wp = _pivot.would_activate(next_wp_yaw_change);
+        if (!_pivot_at_next_wp) {
+            // convert next_destination to offset from EKF origin
+            Vector2f next_destination_NE;
+            if (!next_destination.get_vector_xy_from_origin_NE(next_destination_NE)) {
+                return false;
+            }
+            next_destination_NE *= 0.01f;
+            _scurve_next_leg.calculate_track(Vector3f{destination_NE.x, destination_NE.y, 0.0f},
+                                             Vector3f{next_destination_NE.x, next_destination_NE.y, 0.0f},
+                                             _pos_control.get_speed_max(),
+                                             _pos_control.get_speed_max(),  // speed up (not used)
+                                             _pos_control.get_speed_max(),  // speed down (not used)
+                                             _pos_control.get_accel_max(),
+                                             _pos_control.get_accel_max(),  // vertical accel (not used)
+                                             1.0,                           // jerk time
+                                             _scurve_jerk);
 
-        // next destination provided so fast waypoint
-        _fast_waypoint = true;
-    } else {
-        _scurve_next_leg.init();
-        _fast_waypoint = false;
+            // next destination provided so fast waypoint
+            _fast_waypoint = true;
+        }
     }
 
     update_distance_and_bearing_to_destination();
@@ -457,4 +463,18 @@ float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 
     // calculate distance to target track, for reporting
     return fabsf(veh_from_origin % dest_from_origin);
+}
+
+// calculate yaw change at next waypoint in degrees
+// returns zero if the angle cannot be calculated because some points are on top of others
+float AR_WPNav::get_corner_angle(const Location& loc1, const Location& loc2, const Location& loc3) const
+{
+    // sanity check
+    if (!loc1.initialised() || !loc2.initialised() || !loc3.initialised()) {
+        return 0;
+    }
+    const float loc1_to_loc2_deg = loc1.get_bearing_to(loc2) * 0.01;
+    const float loc2_to_loc3_deg = loc2.get_bearing_to(loc3) * 0.01;
+    const float diff_yaw_deg = wrap_180(loc2_to_loc3_deg - loc1_to_loc2_deg);
+    return diff_yaw_deg;
 }

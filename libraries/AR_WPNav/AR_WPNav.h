@@ -116,6 +116,10 @@ protected:
     // calculate the crosstrack error (does not rely on L1 controller)
     float calc_crosstrack_error(const Location& current_loc) const;
 
+    // calculate yaw change at next waypoint in degrees
+    // returns zero if the angle cannot be calculated because some points are on top of others
+    float get_corner_angle(const Location& loc1, const Location& loc2, const Location& loc3) const;
+
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
     AP_Float _speed_min;            // target speed minimum in m/s.  Vehicle will not slow below this speed for corners
@@ -132,6 +136,7 @@ protected:
     SCurve _scurve_next_leg;        // next scurve trajectory used to blend with current scurve trajectory
     float _scurve_jerk;             // scurve jerk max in m/s/s/s
     bool _fast_waypoint;            // true if vehicle will stop at the next waypoint
+    bool _pivot_at_next_wp;         // true if vehicle should pivot at next waypoint
     float _track_scalar_dt;         // time scaler to ensure scurve target doesn't get too far ahead of vehicle
 
     // variables held in vehicle code (for now)
