@@ -113,6 +113,9 @@ public:
     // get the pitch angular velocity limit in radians/s
     float get_ang_vel_pitch_max_rads() const { return radians(_ang_vel_pitch_max); }
 
+    // get the yaw angular velocity limit in radians/s
+    float get_ang_vel_yaw_max_rads() const { return radians(_ang_vel_yaw_max); }
+    
     // get the yaw slew limit
     float get_slew_yaw_cds() const { return _slew_yaw; }
 
