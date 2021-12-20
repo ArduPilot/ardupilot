@@ -610,6 +610,12 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
     return port;
 }
 
+// have_serial - return true if we have the given serial protocol configured
+bool AP_SerialManager::have_serial(enum SerialProtocol protocol, uint8_t instance) const
+{
+    return find_protocol_instance(protocol, instance) != nullptr;
+}
+
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
 //  instance should be zero if searching for the first instance, 1 for the second, etc
 //  returns baudrate on success, 0 if a serial port cannot be found
