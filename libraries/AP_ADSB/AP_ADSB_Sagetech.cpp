@@ -45,7 +45,7 @@
 // detect if any port is configured as Sagetech
 bool AP_ADSB_Sagetech::detect()
 {
-    return (AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_ADSB, 0) != nullptr);
+    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_ADSB, 0);
 }
 
 // Init, called once after class is constructed
