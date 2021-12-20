@@ -89,7 +89,7 @@ void AP_AIS::update()
     }
 
     // read any available lines
-    uint32_t nbytes = MAX(_uart->available(),1024U);
+    uint32_t nbytes = MIN(_uart->available(),1024U);
     while (nbytes-- > 0) {
         const int16_t byte = _uart->read();
         if (byte == -1) {
