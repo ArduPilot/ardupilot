@@ -68,7 +68,7 @@ AP_Spektrum_Telem::~AP_Spektrum_Telem(void)
 bool AP_Spektrum_Telem::init(void)
 {
     // sanity check that we are using a UART for RC input
-    if (!AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_RCIN, 0)) {
+    if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_RCIN, 0)) {
         return false;
     }
     return AP_RCTelemetry::init();
