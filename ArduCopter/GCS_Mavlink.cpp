@@ -1215,7 +1215,11 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             yaw_relative = packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED;
         }
         if (!yaw_rate_ignore) {
-            yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+            if(isnan(packet.yaw_rate)){
+                break;
+            } else{
+                yaw_rate_cds = ToDeg(packet.yaw_rate) * 100.0f;
+            }
         }
 
         // send request
