@@ -300,7 +300,7 @@ void AP_RCProtocol::check_added_uart(void)
             process_byte(uint8_t(b), current_baud);
         }
     }
-    if (!_detected_with_bytes) {
+    if (searching) {
         if (now - added.last_config_change_ms > 1000) {
             // change configs if not detected once a second
             added.config_num++;
