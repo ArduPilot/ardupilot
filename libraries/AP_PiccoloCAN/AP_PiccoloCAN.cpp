@@ -376,7 +376,8 @@ void AP_PiccoloCAN::send_esc_telemetry_mavlink(uint8_t mav_chan)
         if (is_esc_present(ii)) {
             dataAvailable = true;
 
-            temperature[idx] = esc.fetTemperature;
+            // Provide the maximum ESC temperature in the telemetry stream
+            temperature[idx] = MAX(esc.fetTemperature, esc.escTemperature);
             voltage[idx] = esc.voltage;
             current[idx] = esc.current;
             totalcurrent[idx] = 0;
@@ -690,22 +691,28 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
         // There are no common error bits between the Gen-1 and Gen-2 ICD
     } else if (decodeESC_StatusBPacket(&frame, &esc.voltage, &esc.current, &esc.dutyCycle, &esc.escTemperature, &esc.motorTemperature)) {
         
-        AP_ESC_Telem_Backend::TelemetryData t {
-            .temperature_cdeg = int16_t(esc.escTemperature * 100),
-            .voltage = float(esc.voltage) * 0.01f,
-            .current = float(esc.current) * 0.01f,
-        };
+        AP_ESC_Telem_Backend::TelemetryData telem {};
 
-        update_telem_data(addr, t,
+        telem.voltage = float(esc.voltage) * 0.01f;
+        telem.current = float(esc.current) * 0.01f;
+        telem.motor_temp_cdeg = int16_t(esc.motorTemperature * 100);
+
+        update_telem_data(addr, telem,
             AP_ESC_Telem_Backend::TelemetryType::CURRENT
                 | AP_ESC_Telem_Backend::TelemetryType::VOLTAGE
-                | AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
+                | AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
 
         esc.newTelemetry = true;
     } else if (decodeESC_StatusCPacket(&frame, &esc.fetTemperature, &esc.pwmFrequency, &esc.timingAdvance)) {
-        AP_ESC_Telem_Backend::TelemetryData t { };
-        t.motor_temp_cdeg = int16_t(esc.fetTemperature * 100);
-        update_telem_data(addr, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE);
+
+        // Use the higher reported value of 'escTemperature' and 'fetTemperature'
+        const int16_t escTemp = MAX(esc.fetTemperature, esc.escTemperature);
+
+        AP_ESC_Telem_Backend::TelemetryData telem {};
+
+        telem.temperature_cdeg = int16_t(escTemp * 100);
+        
+        update_telem_data(addr, telem, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE);
 
         esc.newTelemetry = true;
     } else if (decodeESC_WarningErrorStatusPacket(&frame, &esc.warnings, &esc.errors)) {
@@ -1053,4 +1060,3 @@ uint32_t getServoPacketID(const void* pkt)
 }
 
 #endif // HAL_PICCOLO_CAN_ENABLE
-

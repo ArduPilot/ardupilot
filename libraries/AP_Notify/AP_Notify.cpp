@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: BUZZ_TYPES
     // @DisplayName: Buzzer Driver Types
     // @Description: Controls what types of Buzzer will be enabled
-    // @Bitmask: 0:Built-in buzzer, 1:DShot, 2:UAVCAN
+    // @Bitmask: 0:Built-in buzzer, 1:DShot, 2:DroneCAN
     // @User: Advanced
     AP_GROUPINFO("BUZZ_TYPES", 1, AP_Notify, _buzzer_type, BUILD_DEFAULT_BUZZER_TYPE),
 
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: LED_TYPES
     // @DisplayName: LED Driver Types
     // @Description: Controls what types of LEDs will be enabled
-    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:UAVCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI
+    // @Bitmask: 0:Built-in LED, 1:Internal ToshibaLED, 2:External ToshibaLED, 3:External PCA9685, 4:Oreo LED, 5:DroneCAN, 6:NCP5623 External, 7:NCP5623 Internal, 8:NeoPixel, 9:ProfiLED, 10:Scripting, 11:DShot, 12:ProfiLED_SPI
     // @User: Advanced
     AP_GROUPINFO("LED_TYPES", 6, AP_Notify, _led_type, BUILD_DEFAULT_LED_TYPE),
 

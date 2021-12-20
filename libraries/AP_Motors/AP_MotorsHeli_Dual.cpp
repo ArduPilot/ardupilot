@@ -125,7 +125,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-    
+
     // @Param: SW_H3_PHANG
     // @DisplayName: Swash 1 H3 Generic Phase Angle Comp
     // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-    
+
     // @Param: SW2_H3_PHANG
     // @DisplayName: Swash 2 H3 Generic Phase Angle Comp
     // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
@@ -250,7 +250,7 @@ bool AP_MotorsHeli_Dual::init_outputs()
     }
 
     // set signal value for main rotor external governor to know when to use autorotation bailout ramp up
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH) {
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH) {
         _main_rotor.set_ext_gov_arot_bail(_main_rotor._ext_gov_arot_pct.get());
     } else {
         _main_rotor.set_ext_gov_arot_bail(0);
@@ -324,17 +324,11 @@ void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
     _main_rotor.set_desired_speed(desired_speed);
 }
 
-// set_rotor_rpm - used for governor with speed sensor
-void AP_MotorsHeli_Dual::set_rpm(float rotor_rpm)
-{
-    _main_rotor.set_rotor_rpm(rotor_rpm);
-}
-
 // calculate_armed_scalars
 void AP_MotorsHeli_Dual::calculate_armed_scalars()
 {
     // Set rsc mode specific parameters
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_OPEN_LOOP_POWER_OUTPUT || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_CLOSED_LOOP_POWER_OUTPUT) {
+    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
         _main_rotor.set_throttle_curve();
     }
     // keeps user from changing RSC mode while armed
@@ -353,7 +347,7 @@ void AP_MotorsHeli_Dual::calculate_armed_scalars()
     _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
 
     // allow use of external governor autorotation bailout window on main rotor
-    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SPEED_PASSTHROUGH)){
+    if (_main_rotor._ext_gov_arot_pct.get() > 0  &&  (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH)){
         // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
         _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
     }

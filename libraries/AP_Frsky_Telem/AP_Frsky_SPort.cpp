@@ -421,7 +421,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
             res = abs_number<<1;
         } else if (abs_number < 10240) {
             res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
+        } else { // transmit max possible value (0x3FF x 10^1 = 10230)
             res = 0x7FF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
@@ -436,7 +436,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
             res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
         } else if (abs_number < 1024000) {
             res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
+        } else { // transmit max possible value (0x3FF x 10^3 = 1023000)
             res = 0xFFF;
         }
         if (number < 0) { // if number is negative, add sign bit in front

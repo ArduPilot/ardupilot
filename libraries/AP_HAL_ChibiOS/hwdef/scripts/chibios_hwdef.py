@@ -12,6 +12,7 @@ import shlex
 import pickle
 import re
 import shutil
+import filecmp
 
 parser = argparse.ArgumentParser("chibios_pins.py")
 parser.add_argument(
@@ -367,6 +368,15 @@ class generic_pin(object):
              self.label.endswith('_CTS') or
              self.label.endswith('_RTS'))):
             v = "PULLUP"
+
+        if (self.type.startswith('SWD') and
+            'SWDIO' in self.label):
+            v = "PULLUP"
+
+        if (self.type.startswith('SWD') and
+            'SWCLK' in self.label):
+            v = "PULLDOWN"
+
         # generate pullups for SDIO and SDMMC
         if (self.type.startswith('SDIO') or
             self.type.startswith('SDMMC')) and (
@@ -1074,8 +1084,8 @@ INCLUDE common_extf.ld
        instruction_ram_base, instruction_ram_length,
        ram0_start, ram0_len))
 
-def copy_common_linkerscript(outdir, hwdef):
-    dirpath = os.path.dirname(hwdef)
+def copy_common_linkerscript(outdir):
+    dirpath = os.path.dirname(os.path.realpath(__file__))
     if not get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int) or args.bootloader:
         shutil.copy(os.path.join(dirpath, "../common/common.ld"),
                     os.path.join(outdir, "common.ld"))
@@ -2068,7 +2078,8 @@ def write_all_lines(hwdat):
 def write_hwdef_header(outfilename):
     '''write hwdef header file'''
     print("Writing hwdef setup in %s" % outfilename)
-    f = open(outfilename, 'w')
+    tmpfile = outfilename + ".tmp"
+    f = open(tmpfile, 'w')
 
     f.write('''/*
  generated hardware definitions from hwdef.dat - DO NOT EDIT
@@ -2221,6 +2232,21 @@ def write_hwdef_header(outfilename):
             for r in dma_required:
                 if fnmatch.fnmatch(d, r):
                     error("Missing required DMA for %s" % d)
+
+    f.close()
+    # see if we ended up with the same file, on an unnecessary reconfigure
+    try:
+        if filecmp.cmp(outfilename, tmpfile):
+            print("No change in hwdef.h")
+            os.unlink(tmpfile)
+            return
+    except Exception:
+        pass
+    try:
+        os.unlink(outfilename)
+    except Exception:
+        pass
+    os.rename(tmpfile, outfilename)
 
 
 def build_peripheral_list():
@@ -2560,6 +2586,9 @@ def add_apperiph_defaults(f):
 #ifndef AP_FETTEC_ONEWIRE_ENABLED
 #define AP_FETTEC_ONEWIRE_ENABLED 0
 #endif
+#ifndef HAL_BARO_WIND_COMP_ENABLED
+#define HAL_BARO_WIND_COMP_ENABLED 0
+#endif
 ''')
 
 
@@ -2595,6 +2624,6 @@ write_ROMFS(outdir)
 
 # copy the shared linker script into the build directory; it must
 # exist in the same directory as the ldscript.ld file we generate.
-copy_common_linkerscript(outdir, args.hwdef[0])
+copy_common_linkerscript(outdir)
 
 write_env_py(os.path.join(outdir, "env.py"))

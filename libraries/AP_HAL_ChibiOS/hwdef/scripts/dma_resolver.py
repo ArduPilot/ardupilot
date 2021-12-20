@@ -494,7 +494,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
     if len(shared_set) == 0:
         f.write("#define SHARED_DMA_MASK 0\n")
     else:
-        f.write("#define SHARED_DMA_MASK (%s)\n" % '|'.join(list(shared_set)))
+        f.write("#define SHARED_DMA_MASK (%s)\n" % '|'.join(sorted(list(shared_set))))
 
     # now generate UARTDriver.cpp DMA config lines
     f.write("\n\n// generated UART DMA configuration lines\n")

@@ -310,7 +310,7 @@ void RangeFinder::update(void)
             drivers[i]->update();
         }
     }
-#ifndef HAL_BUILD_AP_PERIPH
+#if HAL_LOGGING_ENABLED
     Log_RFND();
 #endif
 }
