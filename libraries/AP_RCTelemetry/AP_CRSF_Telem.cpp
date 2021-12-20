@@ -56,8 +56,8 @@ AP_CRSF_Telem::~AP_CRSF_Telem(void)
 bool AP_CRSF_Telem::init(void)
 {
     // sanity check that we are using a UART for RC input
-    if (!AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_RCIN, 0)
-        && !AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
+    if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_RCIN, 0)
+        && !AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         return false;
     }
     return AP_RCTelemetry::init();
