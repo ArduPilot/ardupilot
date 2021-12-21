@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.1.3-rc2 21-Dec-2021
+Changes from 4.1.3-rc1
+1) Suport for IIM-42652, ICM-40605 and ICM-20608-D IMUs
+2) Bug fixes
+    a) Autotune twitches at no more than ATC_RATE_R/P/Y_MAX param value
+    b) SmartAudio high CPU load fix (previously it could starve other threads of CPU)
+    c) Debug pins disabled by default to prevent rare inflight reset due to electrostatic discharge
+    d) EKF3 reset causing bad accel biases fixed
+    e) RC protocol detection fix that forced PH4-mini users to powerup autopilot before transmitter
+------------------------------------------------------------------
 Copter 4.1.3-rc1 18-Dec-2021
 Changes from 4.1.2
 1) Enhancements:
