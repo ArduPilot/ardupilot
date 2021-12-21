@@ -529,10 +529,6 @@ void AC_AutoTune::control_attitude()
         switch (axis) {
         case ROLL: {
             target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-            const float roll_rate_max_cds = degrees(attitude_control->get_ang_vel_roll_max_rads()) * 100;
-            if (is_positive(roll_rate_max_cds)) {
-                target_max_rate = MIN(target_max_rate, roll_rate_max_cds);
-            }
             target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
             target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_roll())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
@@ -543,10 +539,6 @@ void AC_AutoTune::control_attitude()
         }
         case PITCH: {
             target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_RLLPIT_CDS);
-            const float pitch_rate_max_cds = degrees(attitude_control->get_ang_vel_pitch_max_rads()) * 100;
-            if (is_positive(pitch_rate_max_cds)) {
-                target_max_rate = MIN(target_max_rate, pitch_rate_max_cds);
-            }
             target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, target_max_rate);
             target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_pitch())*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD, AUTOTUNE_TARGET_ANGLE_RLLPIT_CD);
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
@@ -557,10 +549,6 @@ void AC_AutoTune::control_attitude()
         }
         case YAW: {
             target_max_rate = MAX(AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS, step_scaler*AUTOTUNE_TARGET_RATE_YAW_CDS);
-            const float yaw_rate_max_cds = degrees(attitude_control->get_ang_vel_yaw_max_rads()) * 100;
-            if (is_positive(yaw_rate_max_cds)) {
-                target_max_rate = MIN(target_max_rate, yaw_rate_max_cds);
-            }
             target_rate = constrain_float(ToDeg(attitude_control->max_rate_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_RATE_YAW_CDS, target_max_rate);
             target_angle = constrain_float(ToDeg(attitude_control->max_angle_step_bf_yaw()*0.75f)*100.0f, AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD, AUTOTUNE_TARGET_ANGLE_YAW_CD);
             abort_angle = AUTOTUNE_TARGET_ANGLE_YAW_CD;
