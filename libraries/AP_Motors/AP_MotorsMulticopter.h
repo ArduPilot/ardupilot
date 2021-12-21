@@ -55,15 +55,6 @@ public:
     //   throttle_input is in the range of 0 ~ 1 where 0 will send get_pwm_output_min() and 1 will send get_pwm_output_max()
     void                set_throttle_passthrough_for_esc_calibration(float throttle_input);
 
-    // get_lift_max - get maximum lift ratio - for logging purposes only
-    float               get_lift_max() const { return _lift_max; }
-
-    // get_batt_voltage_filt - get battery voltage ratio - for logging purposes only
-    float               get_batt_voltage_filt() const { return _batt_voltage_filt.get(); }
-
-    // get throttle limit imposed by battery current limiting.  This is a number from 0 ~ 1 where 0 means hover throttle, 1 means full throttle (i.e. not limited)
-    float               get_throttle_limit() const { return _throttle_limit; }
-
     // returns maximum thrust in the range 0 to 1
     float               get_throttle_thrust_max() const { return _throttle_thrust_max; }
 
@@ -107,6 +98,9 @@ public:
 
     // convert values to PWM min and max if not configured
     void                convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max);
+
+    // 10hz logging of voltage scaling and max trust
+    void                Log_Write() override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];

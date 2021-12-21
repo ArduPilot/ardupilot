@@ -16,6 +16,7 @@
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -392,6 +393,21 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
     // calculate lift max
     float thrust_curve_expo = constrain_float(_thrust_curve_expo, -1.0f, 1.0f);
     _lift_max = batt_voltage_filt * (1 - thrust_curve_expo) + thrust_curve_expo * batt_voltage_filt * batt_voltage_filt;
+}
+
+// 10hz logging of voltage scaling and max trust
+void AP_MotorsMulticopter::Log_Write()
+{
+    struct log_MotBatt pkt_mot = {
+        LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
+        time_us         : AP_HAL::micros64(),
+        lift_max        : _lift_max,
+        bat_volt        : _batt_voltage_filt.get(),
+        th_limit        : _throttle_limit,
+        th_average_max  : _throttle_avg_max,
+        mot_fail_flags  : (uint8_t)(_thrust_boost | (_thrust_balanced << 1U)),
+    };
+    AP::logger().WriteBlock(&pkt_mot, sizeof(pkt_mot));
 }
 
 float AP_MotorsMulticopter::get_compensation_gain() const
