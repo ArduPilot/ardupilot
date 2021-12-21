@@ -1745,10 +1745,11 @@ void QuadPlane::update(void)
             // log RATE at main loop rate
             ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
 
-            // log CTRL at 10 Hz
+            // log CTRL and MOTB at 10 Hz
             if (now - last_ctrl_log_ms > 100) {
                 last_ctrl_log_ms = now;
                 attitude_control->control_monitor_log();
+                motors->Log_Write();
             }
         }
         // log QTUN at 25 Hz if motors are active, or have been active in the last quarter second
