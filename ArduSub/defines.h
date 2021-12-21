@@ -90,7 +90,6 @@ enum LoggingParameters {
     LOG_DATA_INT32_MSG,
     LOG_DATA_UINT32_MSG,
     LOG_DATA_FLOAT_MSG,
-    LOG_MOTBATT_MSG,
     LOG_GUIDEDTARGET_MSG
 };
 
