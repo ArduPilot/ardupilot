@@ -1,3 +1,19 @@
+Release 4.1.6beta1 21st December 2021
+-------------------------------------
+
+This is a minor release with some important bug fixes:
+
+ - disable the STLink debug pins after boot by default to prevent ESD
+   from triggering CPU changes or a reset
+ - support ICM-20608-D, IIM-42652 and ICM-40605 sensors
+ - fixed missing covarience reset row in EKF3
+ - fixed failure to detect inverted RC input on uarts when transmitter
+   is on at boot
+ - fixed QAUTOTUNE to obey maximum attitude rate limits
+ - fixed a bug in smartaudio support that increased CPU usage
+
+Happy flying!
+
 Release 4.1.5 13th December 2021
 --------------------------------
 

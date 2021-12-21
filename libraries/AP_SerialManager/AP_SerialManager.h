@@ -173,8 +173,12 @@ public:
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns uart on success, nullptr if a serial port cannot be found
+    // note that the SERIALn_OPTIONS are applied if the port is found
     AP_HAL::UARTDriver *find_serial(enum SerialProtocol protocol, uint8_t instance) const;
 
+    // have_serial - return true if we have the corresponding serial protocol configured
+    bool have_serial(enum SerialProtocol protocol, uint8_t instance) const;
+    
     // find_baudrate - searches available serial ports for the first instance that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns the baudrate of that protocol on success, 0 if a serial port cannot be found

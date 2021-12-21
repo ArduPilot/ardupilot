@@ -45,7 +45,7 @@ extern const AP_HAL::HAL &hal;
 // detect if any port is configured as uAvionix_UCP
 bool AP_ADSB_uAvionix_UCP::detect()
 {
-    return (AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_ADSB, 0) != nullptr);
+    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_ADSB, 0);
 }
 
 

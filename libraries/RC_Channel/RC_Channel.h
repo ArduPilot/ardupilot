@@ -507,6 +507,10 @@ public:
         return _options & uint32_t(Option::MULTI_RECEIVER_SUPPORT);
     }
 
+    bool use_crsf_lq_as_rssi(void) const {
+        return get_singleton() != nullptr && (_options & uint32_t(Option::USE_CRSF_LQ_AS_RSSI)) != 0;
+    }
+
     // returns true if overrides should time out.  If true is returned
     // then returned_timeout_ms will contain the timeout in
     // milliseconds, with 0 meaning overrides are disabled.
@@ -570,6 +574,7 @@ protected:
         CRSF_CUSTOM_TELEMETRY   = (1U << 8), // use passthrough data for crsf telemetry
         SUPPRESS_CRSF_MESSAGE   = (1U << 9), // suppress CRSF mode/rate message for ELRS systems
         MULTI_RECEIVER_SUPPORT  = (1U << 10), // allow multiple receivers
+        USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
     };
 
     void new_override_received() {

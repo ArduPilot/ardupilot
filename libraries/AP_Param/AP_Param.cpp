@@ -2074,7 +2074,6 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 
 
 #if HAL_OS_POSIX_IO == 1
-#include <stdio.h>
 
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)

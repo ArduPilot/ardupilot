@@ -141,6 +141,24 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @Range: -1 100
     AP_GROUPINFO("THR_VT", 18, Tailsitter, transition_throttle_vtol, -1),
 
+    // @Param: VT_R_P
+    // @DisplayName: Tailsitter VTOL control surface roll gain
+    // @Description: Scale from PID output to control surface, for use where a single axis is actuated by both motors and Tilt/control surface on a copter style tailsitter, increase to favor control surfaces and reduce motor output by reducing gains
+    // @Range: 0 2
+    AP_GROUPINFO("VT_R_P", 19, Tailsitter, VTOL_roll_scale, 1),
+
+    // @Param: VT_P_P
+    // @DisplayName: Tailsitter VTOL control surface pitch gain
+    // @Description: Scale from PID output to control surface, for use where a single axis is actuated by both motors and Tilt/control surface on a copter style tailsitter, increase to favor control surfaces and reduce motor output by reducing gains
+    // @Range: 0 2
+    AP_GROUPINFO("VT_P_P", 20, Tailsitter, VTOL_pitch_scale, 1),
+
+    // @Param: VT_Y_P
+    // @DisplayName: Tailsitter VTOL control surface yaw gain
+    // @Description: Scale from PID output to control surface, for use where a single axis is actuated by both motors and Tilt/control surface on a copter style tailsitter, increase to favor control surfaces and reduce motor output by reducing gains
+    // @Range: 0 2
+    AP_GROUPINFO("VT_Y_P", 21, Tailsitter, VTOL_yaw_scale, 1),
+
     AP_GROUPEND
 };
 
@@ -363,9 +381,9 @@ void Tailsitter::output(void)
     plane.yawController.reset_I();
 
     // pull in copter control outputs
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, (motors->get_yaw()+motors->get_yaw_ff())*-SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, (motors->get_pitch()+motors->get_pitch_ff())*SERVO_MAX);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, (motors->get_roll()+motors->get_roll_ff())*SERVO_MAX);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, (motors->get_yaw()+motors->get_yaw_ff())*-SERVO_MAX*VTOL_yaw_scale);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, (motors->get_pitch()+motors->get_pitch_ff())*SERVO_MAX*VTOL_pitch_scale);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, (motors->get_roll()+motors->get_roll_ff())*SERVO_MAX*VTOL_roll_scale);
 
     if (hal.util->get_soft_armed()) {
         // scale surfaces for throttle

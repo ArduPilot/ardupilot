@@ -18,12 +18,9 @@
 #include <utility>
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_Baro_ICM20789.h"
 
-#include <utility>
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>

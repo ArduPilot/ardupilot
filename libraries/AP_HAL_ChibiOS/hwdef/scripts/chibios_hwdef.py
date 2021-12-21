@@ -1084,8 +1084,8 @@ INCLUDE common_extf.ld
        instruction_ram_base, instruction_ram_length,
        ram0_start, ram0_len))
 
-def copy_common_linkerscript(outdir, hwdef):
-    dirpath = os.path.dirname(hwdef)
+def copy_common_linkerscript(outdir):
+    dirpath = os.path.dirname(os.path.realpath(__file__))
     if not get_config('EXTERNAL_PROG_FLASH_MB', default=0, type=int) or args.bootloader:
         shutil.copy(os.path.join(dirpath, "../common/common.ld"),
                     os.path.join(outdir, "common.ld"))
@@ -2624,6 +2624,6 @@ write_ROMFS(outdir)
 
 # copy the shared linker script into the build directory; it must
 # exist in the same directory as the ldscript.ld file we generate.
-copy_common_linkerscript(outdir, args.hwdef[0])
+copy_common_linkerscript(outdir)
 
 write_env_py(os.path.join(outdir, "env.py"))

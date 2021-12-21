@@ -24,7 +24,6 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Notify/AP_Notify.h>
-#include <AP_Common/AP_FWVersion.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AP_Frsky_Telem/AP_Frsky_SPort_Passthrough.h>
 #include <math.h>
@@ -56,8 +55,8 @@ AP_CRSF_Telem::~AP_CRSF_Telem(void)
 bool AP_CRSF_Telem::init(void)
 {
     // sanity check that we are using a UART for RC input
-    if (!AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_RCIN, 0)
-        && !AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
+    if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_RCIN, 0)
+        && !AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         return false;
     }
     return AP_RCTelemetry::init();
@@ -170,6 +169,12 @@ void AP_CRSF_Telem::process_rf_mode_changes()
     // warn the user if their setup is sub-optimal
     if (_telem_last_report_ms == 0 && !uart->is_dma_enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "CRSF: running on non-DMA serial port");
+    }
+    // note if option was set to show LQ in place of RSSI
+    bool current_lq_as_rssi_active = bool(rc().use_crsf_lq_as_rssi());
+    if(_telem_last_report_ms == 0 || _noted_lq_as_rssi_active != current_lq_as_rssi_active){
+        _noted_lq_as_rssi_active = current_lq_as_rssi_active;
+        gcs().send_text(MAV_SEVERITY_INFO, "CRSF: RSSI now displays %s", current_lq_as_rssi_active ? " as LQ" : "normally");
     }
     // report a change in RF mode or a chnage of more than 10Hz if we haven't done so in the last 5s
     if ((now - _telem_last_report_ms > 5000) &&
