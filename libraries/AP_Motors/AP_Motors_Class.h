@@ -258,6 +258,9 @@ public:
     void set_frame_string(const char * str);
 #endif
 
+    // write log, to be called at 10hz
+    virtual void Log_Write() {};
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
