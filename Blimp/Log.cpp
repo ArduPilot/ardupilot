@@ -106,21 +106,6 @@ void Blimp::Log_Write_EKF_POS()
     ahrs.Write_POS();
 }
 
-struct PACKED log_MotBatt {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   lift_max;
-    float   bat_volt;
-    float   bat_res;
-    float   th_limit;
-};
-
-// Write an rate packet
-void Blimp::Log_Write_MotBatt()
-{
-
-}
-
 struct PACKED log_Data_Int16t {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -458,18 +443,6 @@ const struct LogStructure Blimp::log_structure[] = {
         "CTUN", "Qffffffefffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00B000BB"
     },
 
-    // @LoggerMessage: MOTB
-    // @Description: Battery information
-    // @Field: TimeUS: Time since system startup
-    // @Field: LiftMax: Maximum motor compensation gain
-    // @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
-    // @Field: BatRes: Estimated battery resistance
-    // @Field: ThLimit: Throttle limit set due to battery current limitations
-
-    {
-        LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-        "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-"
-    },
     {
         LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),
         "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--"
@@ -547,7 +520,6 @@ void Blimp::Log_Write_Performance() {}
 void Blimp::Log_Write_Attitude(void) {}
 void Blimp::Log_Write_PIDs(void) {}
 void Blimp::Log_Write_EKF_POS() {}
-void Blimp::Log_Write_MotBatt() {}
 void Blimp::Log_Write_Data(LogDataID id, int32_t value) {}
 void Blimp::Log_Write_Data(LogDataID id, uint32_t value) {}
 void Blimp::Log_Write_Data(LogDataID id, int16_t value) {}
