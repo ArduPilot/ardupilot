@@ -65,29 +65,6 @@ void Sub::Log_Write_Attitude()
     ahrs.Write_POS();
 }
 
-struct PACKED log_MotBatt {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float   lift_max;
-    float   bat_volt;
-    float   bat_res;
-    float   th_limit;
-};
-
-// Write an rate packet
-void Sub::Log_Write_MotBatt()
-{
-    struct log_MotBatt pkt_mot = {
-        LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
-        time_us         : AP_HAL::micros64(),
-        lift_max        : (float)(motors.get_lift_max()),
-        bat_volt        : (float)(motors.get_batt_voltage_filt()),
-        bat_res         : (float)(battery.get_resistance()),
-        th_limit        : (float)(motors.get_throttle_limit())
-    };
-    logger.WriteBlock(&pkt_mot, sizeof(pkt_mot));
-}
-
 struct PACKED log_Data_Int16t {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -313,8 +290,6 @@ const struct LogStructure Sub::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
       "CTUN", "Qfffffffccfhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00BBBBBB" },
-    { LOG_MOTBATT_MSG, sizeof(log_MotBatt),
-      "MOTB", "Qffff",  "TimeUS,LiftMax,BatVolt,BatRes,ThLimit", "s-vw-", "F-00-" },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         
@@ -347,7 +322,6 @@ void Sub::log_init()
 
 void Sub::Log_Write_Control_Tuning() {}
 void Sub::Log_Write_Attitude(void) {}
-void Sub::Log_Write_MotBatt() {}
 void Sub::Log_Write_Data(LogDataID id, int32_t value) {}
 void Sub::Log_Write_Data(LogDataID id, uint32_t value) {}
 void Sub::Log_Write_Data(LogDataID id, int16_t value) {}
