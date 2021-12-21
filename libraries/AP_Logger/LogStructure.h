@@ -704,6 +704,16 @@ struct PACKED log_Scripting {
     int32_t run_mem;
 };
 
+struct PACKED log_MotBatt {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   lift_max;
+    float   bat_volt;
+    float   th_limit;
+    float th_average_max;
+    uint8_t mot_fail_flags;
+};
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1228,6 +1238,15 @@ struct PACKED log_Scripting {
 // @Field: Total_mem: total memory useage
 // @Field: Run_mem: run memory usage
 
+// @LoggerMessage: MOTB
+// @Description: Motor mixer information
+// @Field: TimeUS: Time since system startup
+// @Field: LiftMax: Maximum motor compensation gain
+// @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
+// @Field: ThLimit: Throttle limit set due to battery current limitations
+// @Field: ThrAvMx: Maximum average throttle that can be used to maintain attitude controll, derived from throttle mix params
+// @Field: FailFlags: bit 0 motor failed, bit 1 motors balanced, should be 2 in normal flight
+
 // messages for all boards
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -1347,7 +1366,9 @@ LOG_STRUCTURE_FROM_VISUALODOM \
       "FILE",   "NIBZ",       "FileName,Offset,Length,Data", "----", "----" }, \
 LOG_STRUCTURE_FROM_AIS, \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
-      "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s-sbb", "F-F--", true }
+      "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s-sbb", "F-F--", true }, \
+    { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
+      "MOTB", "QffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,FailFlags", "s-----", "F-----" , true }
 
 // message types 0 to 63 reserved for vehicle specific use
 
@@ -1428,6 +1449,7 @@ enum LogMessages : uint8_t {
     LOG_FILE_MSG,
     LOG_SCRIPTING_MSG,
     LOG_VIDEO_STABILISATION_MSG,
+    LOG_MOTBATT_MSG,
 
     _LOG_LAST_MSG_
 };
