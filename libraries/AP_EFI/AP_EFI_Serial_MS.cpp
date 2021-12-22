@@ -110,12 +110,12 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
             case MAT_MSB:
                 temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
                 offset++;
-                internal_state.intake_manifold_temperature = f_to_k(temp_float);
+                internal_state.intake_manifold_temperature = degF_to_Kelvin(temp_float);
                 break;
             case CHT_MSB:
                 temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
                 offset++;
-                internal_state.cylinder_status[0].cylinder_head_temperature = f_to_k(temp_float);
+                internal_state.cylinder_status[0].cylinder_head_temperature = degF_to_Kelvin(temp_float);
                 break;
             case TPS_MSB:
                 temp_float = (float)((data << 8) + read_byte_CRC32())/10.0f;
