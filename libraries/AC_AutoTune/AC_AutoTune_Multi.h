@@ -34,17 +34,24 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    // load gains
+    //
+    // methods to load and save gains
+    //
+
+    // backup original gains and prepare for start of tuning
+    void backup_gains_and_initialise() override;
+
+    // switch to use original gains
+    void load_orig_gains() override;
+
+    // switch to gains found by last successful autotune
+    void load_tuned_gains() override;
+
+    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
+    void load_intra_test_gains() override;
+
+    // load test gains
     void load_test_gains() override;
-
-    // get intra test rate I gain for the specified axis
-    float get_intra_test_ri(AxisType test_axis) override;
-
-    // get tuned rate I gain for the specified axis
-    float get_tuned_ri(AxisType test_axis) override;
-
-    // get tuned yaw rate D gain
-    float get_tuned_yaw_rd() override { return 0.0f; }
 
     void test_init() override;
     void test_run(AxisType test_axis, const float dir_sign) override;
