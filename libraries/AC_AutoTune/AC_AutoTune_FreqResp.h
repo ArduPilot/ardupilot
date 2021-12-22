@@ -14,9 +14,6 @@ public:
     // Constructor
     AC_AutoTune_FreqResp()
 {
-    // initialize test variables
-    meas_peak_info_buffer = new ObjectBuffer<peak_info>(AUTOTUNE_DWELL_CYCLES);
-    tgt_peak_info_buffer = new ObjectBuffer<peak_info>(AUTOTUNE_DWELL_CYCLES);
 }
 
     // Enumeration of input type
@@ -177,10 +174,10 @@ private:
     };
 
     // Buffer object for measured peak data
-    ObjectBuffer<peak_info> *meas_peak_info_buffer;
+    ObjectBuffer<peak_info> meas_peak_info_buffer{AUTOTUNE_DWELL_CYCLES};
 
     // Buffer object for target peak data
-    ObjectBuffer<peak_info> *tgt_peak_info_buffer;
+    ObjectBuffer<peak_info> tgt_peak_info_buffer{AUTOTUNE_DWELL_CYCLES};
 
     // Push data into measured peak data buffer object
     void push_to_meas_buffer(uint16_t count, float amplitude, uint32_t time_ms);
