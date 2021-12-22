@@ -18,6 +18,7 @@
 #include "AP_Math/AP_Math.h"
 #include "AP_Common/Location.h"
 #include <stdio.h>
+#include "AP_AHRS/AP_AHRS.h"
 
 using namespace SITL;
 
@@ -38,7 +39,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @Increment: 0.000001
     // @Range: -90 90
     // @User: Advanced
-    AP_GROUPINFO("LAT", 1, SIM_Precland, _origin_lat, 0),
+    AP_GROUPINFO("LAT", 1, SIM_Precland, _precland_lat, 0),
 
     // @Param: LON
     // @DisplayName: Precland device origin's longitude
@@ -47,7 +48,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @Increment: 0.000001
     // @Range: -180 180
     // @User: Advanced
-    AP_GROUPINFO("LON", 2, SIM_Precland, _origin_lon, 0),
+    AP_GROUPINFO("LON", 2, SIM_Precland, _precland_lon, 0),
 
     // @Param: HEIGHT
     // @DisplayName: Precland device origin's height above sealevel
@@ -56,7 +57,7 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @Increment: 1
     // @Range: 0 10000
     // @User: Advanced
-    AP_GROUPINFO("HEIGHT", 3, SIM_Precland, _origin_height, 0),
+    AP_GROUPINFO("HEIGHT", 3, SIM_Precland, _precland_height, 0),
 
     // @Param: YAW
     // @DisplayName: Precland device systems rotation from north
@@ -113,23 +114,29 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
     }
 
     const float distance_z = -position.z;
-    const float origin_height_m = _origin_height * 0.01f;
-    if (distance_z > _alt_limit + origin_height_m) {
+    const float precland_height_m = _precland_height * 0.01f;
+    if (distance_z > _alt_limit + precland_height_m) {
         _healthy = false;
         return;
     }
 
-    const Location origin_center(static_cast<int32_t>(_origin_lat * 1.0e7f),
-            static_cast<int32_t>(_origin_lon * 1.0e7f),
-            static_cast<int32_t>(_origin_height),
-            Location::AltFrame::ABOVE_HOME);
+    Location precland_loc;
+    if (is_zero(_precland_lat) && is_zero(_precland_lon)) {
+        precland_loc = AP_AHRS::get_singleton()->get_home();
+    } else {
+        precland_loc = Location{static_cast<int32_t>(_precland_lat * 1.0e7f),
+            static_cast<int32_t>(_precland_lon * 1.0e7f),
+            static_cast<int32_t>(_precland_height),
+            Location::AltFrame::ABOVE_HOME};
+    }
+
     Vector2f center;
-    if (!origin_center.get_vector_xy_from_origin_NE(center)) {
+    if (!precland_loc.get_vector_xy_from_origin_NE(center)) {
         _healthy = false;
         return;
     }
     center = center * 0.01f;  // cm to m
-    _over_precland_base = origin_center.get_distance(loc) <= 2.0f;
+    _over_precland_base = precland_loc.get_distance(loc) <= 2.0f;
 
     const uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms < 1000.0f * (1.0f / _rate)) {
@@ -139,7 +146,7 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
 
     switch (_type) {
         case PRECLAND_TYPE_CONE: {
-            const float in_radius = distance_z * _dist_limit / (_alt_limit + origin_height_m);
+            const float in_radius = distance_z * _dist_limit / (_alt_limit + precland_height_m);
             if (norm(position.x - center.x, position.y - center.y) > in_radius) {
                 _healthy = false;
                 return;
@@ -147,7 +154,7 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
             break;
         }
         case PRECLAND_TYPE_SPHERE: {
-            if (norm(position.x - center.x, position.y - center.y, distance_z - _origin_height) > (_alt_limit + origin_height_m)) {
+            if (norm(position.x - center.x, position.y - center.y, distance_z - _precland_height) > (_alt_limit + precland_height_m)) {
                 _healthy = false;
                 return;
             }
@@ -162,14 +169,7 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
             break;
         }
     }
-    _target_pos = position - Vector3d(center.x, center.y, origin_height_m);
+    _target_pos = position - Vector3d(center.x, center.y, precland_height_m);
     _healthy = true;
 }
 
-void SIM_Precland::set_default_location(float lat, float lon, int16_t yaw) {
-    if (is_zero(_origin_lat) && is_zero(_origin_lon)) {
-        _origin_lat = lat;
-        _origin_lon = lon;
-        _orient_yaw = yaw;
-    }
-}

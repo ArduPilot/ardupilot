@@ -38,13 +38,12 @@ public:
 
     const Vector3d &get_target_position() const { return _target_pos; }
     bool is_enabled() const {return static_cast<bool>(_enable);}
-    void set_default_location(float lat, float lon, int16_t yaw);
     static const struct AP_Param::GroupInfo var_info[];
 
     AP_Int8 _enable;
-    AP_Float _origin_lat;
-    AP_Float _origin_lon;
-    AP_Float _origin_height;
+    AP_Float _precland_lat;
+    AP_Float _precland_lon;
+    AP_Float _precland_height;
     AP_Int16 _orient_yaw;
     AP_Int8 _type;
     AP_Int32 _rate;
