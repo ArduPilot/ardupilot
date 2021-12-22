@@ -162,11 +162,11 @@ void AC_AutoTune_Heli::test_init()
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
             freqresp_angle.init(AC_AutoTune_FreqResp::InputType::SWEEP);
-            dwell_test_init(stop_freq);
+            angle_dwell_test_init(stop_freq);
         } else {
             // initialize determine gain function
             freqresp_angle.init(AC_AutoTune_FreqResp::InputType::DWELL);
-            dwell_test_init(start_freq);
+            angle_dwell_test_init(start_freq);
         }
 
         // TODO add time limit for sweep test
