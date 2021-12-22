@@ -1032,6 +1032,7 @@ void ModeAuto::loiter_to_alt_run()
         pos_control->get_pos_z_p().kP(),
         pos_control->get_max_accel_z_cmss(),
         G_Dt);
+    target_climb_rate = constrain_float(target_climb_rate, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
