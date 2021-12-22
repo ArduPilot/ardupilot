@@ -96,17 +96,24 @@ protected:
     // log PIDs at full rate for during twitch
     virtual void log_pids() = 0;
 
+    //
+    // methods to load and save gains
+    //
+
+    // backup original gains and prepare for start of tuning
+    virtual void backup_gains_and_initialise();
+
+    // switch to use original gains
+    virtual void load_orig_gains() = 0;
+
+    // switch to gains found by last successful autotune
+    virtual void load_tuned_gains() = 0;
+
+    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
+    virtual void load_intra_test_gains() = 0;
+
     // load gains for next test.  relies on axis variable being set
     virtual void load_test_gains() = 0;
-
-    // get intra test rate I gain for the specified axis
-    virtual float get_intra_test_ri(AxisType test_axis) = 0;
-
-    // get tuned rate I gain for the specified axis
-    virtual float get_tuned_ri(AxisType test_axis) = 0;
-
-    // get tuned yaw rate d gain
-    virtual float get_tuned_yaw_rd() = 0;
 
     // test initialization and run methods that should be overridden for each vehicle
     virtual void test_init() = 0;
@@ -277,22 +284,6 @@ private:
     // main state machine to level vehicle, perform a test and update gains
     // directly updates attitude controller with targets
     void control_attitude();
-
-    //
-    // methods to load and save gains
-    //
-
-    // backup original gains and prepare for start of tuning
-    void backup_gains_and_initialise();
-
-    // switch to use original gains
-    void load_orig_gains();
-
-    // switch to gains found by last successful autotune
-    void load_tuned_gains();
-
-    // load gains used between tests. called during testing mode's update-gains step to set gains ahead of return-to-level step
-    void load_intra_test_gains();
 
     // get attitude for slow position hold in autotune mode
     void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
