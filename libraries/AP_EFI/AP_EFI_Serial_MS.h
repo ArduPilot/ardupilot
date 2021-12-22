@@ -36,8 +36,7 @@ private:
     void send_request(uint8_t table, uint16_t first_offset, uint16_t last_offset);
     uint8_t read_byte_CRC32();
     uint32_t CRC32_compute_byte(uint32_t inCrc32, uint8_t data);
-    float f_to_k(float temp_f) { return (temp_f + 459.67f) * 0.55556f; };
-    
+
     // Serial Protocol Variables
     uint32_t checksum;
     uint8_t step;
