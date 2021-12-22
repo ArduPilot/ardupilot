@@ -53,6 +53,7 @@
 #define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
+#define AUTOTUNE_ANGLE_MAX_RLLPIT          30.0f    // maximum allowable angle during testing
 
 
 // ifdef is not working.  Modified multi values to reflect heli requirements
@@ -478,7 +479,8 @@ void AC_AutoTune::control_attitude()
         }
 
         // protect from roll over
-        if (ahrs_view->roll_sensor > 3000.0f || ahrs_view->roll_sensor < -3000.0f ||ahrs_view->pitch_sensor > 3000.0f || ahrs_view->pitch_sensor < -3000.0f) {
+        float resultant_angle = degrees(acosf(ahrs_view->cos_roll() * ahrs_view->cos_pitch()));
+        if (resultant_angle > AUTOTUNE_ANGLE_MAX_RLLPIT) {
             step = WAITING_FOR_LEVEL;
         }
 
