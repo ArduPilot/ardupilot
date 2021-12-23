@@ -96,6 +96,9 @@ public:
     ///     This function decays the output acceleration by 95% every half second to achieve a smooth transition to zero requested acceleration.
     void relax_velocity_controller_xy();
 
+    /// reduce response for landing
+    void soften_for_landing_xy();
+
     // init_xy_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
     ///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
     ///     This function is private and contains all the shared xy axis initialisation functions
