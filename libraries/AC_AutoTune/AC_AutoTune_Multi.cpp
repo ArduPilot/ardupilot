@@ -120,11 +120,9 @@ void AC_AutoTune_Multi::do_gcs_announcements()
     case RD_UP:
     case RD_DOWN:
     case RP_UP:
-    case RP_DOWN:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
         break;
     case RFF_UP:
-    case RFF_DOWN:
         break;
     case SP_DOWN:
     case SP_UP:

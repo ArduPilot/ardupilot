@@ -53,6 +53,9 @@ protected:
     // load test gains
     void load_test_gains() override;
 
+    // reset the test vaariables for heli
+    void reset_vehicle_test_variables() override;
+
     // initializes test
     void test_init() override;
 

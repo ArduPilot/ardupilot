@@ -102,7 +102,7 @@ AC_AutoTune_Heli::AC_AutoTune_Heli()
 // initialize tests for each tune type
 void AC_AutoTune_Heli::test_init()
 {
-    if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
+    if (tune_type == RFF_UP) {
         rate_ff_test_init();
         step_time_limit_ms = 10000;
     } else if (tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP) {
@@ -187,7 +187,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
     
     if (tune_type == SP_UP) {
         angle_dwell_test_run(start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
-    } else if ((tune_type == RFF_UP) || (tune_type == RFF_DOWN)) {
+    } else if (tune_type == RFF_UP) {
         rate_ff_test_run(AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD, AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS, dir_sign);
     } else if (tune_type == RP_UP || tune_type == RD_UP) {
         dwell_test_run(1, start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt]);
@@ -247,7 +247,6 @@ void AC_AutoTune_Heli::do_gcs_announcements()
         //        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f d=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)(test_phase[freq_cnt]), (double)tune_rd);
         break;
     case RD_DOWN:
-    case RP_DOWN:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
         break;
     case RP_UP:
@@ -257,9 +256,6 @@ void AC_AutoTune_Heli::do_gcs_announcements()
         if (!is_zero(test_rate_filt)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: target=%f rotation=%f command=%f", (double)(test_tgt_rate_filt*57.3f), (double)(test_rate_filt*57.3f), (double)(test_command_filt));
         }
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f", (double)tune_rff);
-        break;
-    case RFF_DOWN:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f", (double)tune_rff);
         break;
     case SP_DOWN:
@@ -280,6 +276,12 @@ void AC_AutoTune_Heli::do_gcs_announcements()
 void AC_AutoTune_Heli::backup_gains_and_initialise()
 {
     AC_AutoTune::backup_gains_and_initialise();
+
+    // initializes dwell test sequence for rate_p_up and rate_d_up tests for tradheli
+    freq_cnt = 0;
+    start_freq = 0.0f;
+    stop_freq = 0.0f;
+    ff_up_first_iter = true;
 
     orig_bf_feedforward = attitude_control->get_bf_feedforward();
 
@@ -2059,6 +2061,17 @@ float AC_AutoTune_Heli::get_sp_min() const
 float AC_AutoTune_Heli::get_yaw_rate_filt_min() const
 {
     return AUTOTUNE_RLPF_MIN;
+}
+
+// reset the test vaariables for each vehicle
+void AC_AutoTune_Heli::reset_vehicle_test_variables()
+{
+    // reset dwell test variables if sweep was interrupted in order to restart sweep
+    if (!is_equal(start_freq, stop_freq)) {
+        freq_cnt = 0;
+        start_freq = 0.0f;
+        stop_freq = 0.0f;
+    }
 }
 
 // set the tuning test sequence
