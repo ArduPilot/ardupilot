@@ -132,14 +132,7 @@ void AC_Loiter::init_target()
 /// reduce response for landing
 void AC_Loiter::soften_for_landing()
 {
-    const Vector3f& curr_pos = _inav.get_position_neu_cm();
-
-    // set target position to current position
-    _pos_control.set_pos_target_xy_cm(curr_pos.x, curr_pos.y);
-
-    // also prevent I term build up in xy velocity controller. Note
-    // that this flag is reset on each loop, in update_xy_controller()
-    _pos_control.set_externally_limited_xy();
+    _pos_control.soften_for_landing_xy();
 }
 
 /// set pilot desired acceleration in centi-degrees
