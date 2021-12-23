@@ -104,12 +104,6 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         FALLTHROUGH;
 
     case UNINITIALISED:
-        // initializes dwell test sequence for rate_p_up and rate_d_up tests for tradheli
-        freq_cnt = 0;
-        start_freq = 0.0f;
-        stop_freq = 0.0f;
-        ff_up_first_iter = true;
-
         // autotune has never been run
         // so store current gains as original gains
         backup_gains_and_initialise();
@@ -120,14 +114,10 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         break;
 
     case TUNING:
+        // reset test variables for each vehicle
+        reset_vehicle_test_variables();
+
         // we are restarting tuning so restart where we left off
-        // reset test variables to continue where we left off
-        // reset dwell test variables if sweep was interrupted in order to restart sweep
-        if (!is_equal(start_freq, stop_freq)) {
-            freq_cnt = 0;
-            start_freq = 0.0f;
-            stop_freq = 0.0f;
-        }
         step = WAITING_FOR_LEVEL;
         step_start_time_ms = AP_HAL::millis();
         level_start_time_ms = step_start_time_ms;
@@ -228,12 +218,8 @@ const char *AC_AutoTune::type_string() const
         return "Rate D Down";
     case RP_UP:
         return "Rate P Up";
-    case RP_DOWN:
-        return "Rate P Down";
     case RFF_UP:
         return "Rate FF Up";
-    case RFF_DOWN:
-        return "Rate FF Down";
     case SP_UP:
         return "Angle P Up";
     case SP_DOWN:
@@ -526,8 +512,6 @@ void AC_AutoTune::control_attitude()
         case MAX_GAINS:
             updating_max_gains_all(axis);
             break;
-        case RP_DOWN:
-        case RFF_DOWN:
         case TUNE_COMPLETE:
             break;
         }
@@ -602,9 +586,7 @@ void AC_AutoTune::control_attitude()
                     break;
                 }
                 break;
-            case RP_DOWN:
             case RFF_UP:
-            case RFF_DOWN:
             case MAX_GAINS:
             case TUNE_COMPLETE:
                 break;
