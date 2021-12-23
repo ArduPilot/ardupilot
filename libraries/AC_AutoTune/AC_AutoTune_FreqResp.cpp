@@ -179,22 +179,26 @@ void AC_AutoTune_FreqResp::update_rate(float tgt_rate, float meas_rate, float tg
                 // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
     }
 
-    if (tgt_rate > max_target && new_target) {
-        max_target = tgt_rate;
-        max_tgt_time = now;
+    if (new_target) {
+        if (tgt_rate > max_target) {
+            max_target = tgt_rate;
+            max_tgt_time = now;
+        }
+    } else {
+        if (tgt_rate < min_target) {
+            min_target = tgt_rate;
+        }
     }
 
-    if (tgt_rate < min_target && !new_target) {
-        min_target = tgt_rate;
-    }
-
-    if (meas_rate > max_meas && new_meas) {
-        max_meas = meas_rate;
-        max_meas_time = now;
-    }
-
-    if (meas_rate < min_meas && !new_meas) {
-        min_meas = meas_rate;
+    if (new_meas) {
+        if (meas_rate > max_meas) {
+            max_meas = meas_rate;
+            max_meas_time = now;
+        }
+    } else {
+        if (meas_rate < min_meas) {
+            min_meas = meas_rate;
+        }
     }
 
     prev_target = tgt_rate;
@@ -367,22 +371,26 @@ void AC_AutoTune_FreqResp::update_angle(float command, float tgt_angle, float me
                 // gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: min_meas_cnt=%f", (double)(min_meas_cnt));
     }
 
-    if (tgt_angle > max_target && new_target) {
-        max_target = tgt_angle;
-        max_tgt_time = now;
+    if (new_target) {
+        if (tgt_angle > max_target) {
+            max_target = tgt_angle;
+            max_tgt_time = now;
+        }
+    } else {
+        if (tgt_angle < min_target) {
+            min_target = tgt_angle;
+        }
     }
 
-    if (tgt_angle < min_target && !new_target) {
-        min_target = tgt_angle;
-    }
-
-    if (meas_angle > max_meas && new_meas) {
-        max_meas = meas_angle;
-        max_meas_time = now;
-    }
-
-    if (meas_angle < min_meas && !new_meas) {
-        min_meas = meas_angle;
+    if (new_meas) {
+        if (meas_angle > max_meas) {
+            max_meas = meas_angle;
+            max_meas_time = now;
+        }
+    } else {
+        if (meas_angle < min_meas) {
+            min_meas = meas_angle;
+        }
     }
 
     if (now > (uint32_t)(input_start_time_ms + 7.0f * cycle_time_ms) && now < (uint32_t)(input_start_time_ms + 9.0f * cycle_time_ms)) {
