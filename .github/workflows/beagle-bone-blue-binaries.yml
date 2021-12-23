@@ -1,4 +1,4 @@
-name: ardupilot-beagle-bone-blue-binaries
+name: beagle-bone-blue-binaries
 on:
   push:
   schedule:
