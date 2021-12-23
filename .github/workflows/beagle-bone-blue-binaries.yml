@@ -1,0 +1,101 @@
+name: ardupilot-beagle-bone-blue-binaries
+on:
+  push:
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    - cron:  '30 5,17 * * *'
+jobs:
+  latest:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      #- run: sudo apt update
+      #- run: sudo apt install git
+      - run: git clone https://github.com/ardupilot/ardupilot.git
+      - run: cd ardupilot && ./Tools/environment_install/install-prereqs-ubuntu.sh
+      - run: cd ardupilot && git submodule update --init --recursive
+      - run: cd ardupilot && ./waf configure --board=blue
+      - run: cd ardupilot && ./waf
+      - uses: actions/upload-artifact@v2
+        with:
+          name: latest
+          path: ardupilot/build/blue/bin/
+  Copter-4_1:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      #- run: sudo apt update
+      #- run: sudo apt install git
+      - run: git clone https://github.com/ardupilot/ardupilot.git
+      - run: cd ardupilot && ./Tools/environment_install/install-prereqs-ubuntu.sh
+      - run: cd ardupilot && git checkout Copter-4.1
+      - run: cd ardupilot && git submodule update --init --recursive
+      - run: cd ardupilot && ./waf configure --board=blue
+      - run: cd ardupilot && ./waf
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Copter-4.1
+          path: ardupilot/build/blue/bin/
+  Plane-4_1:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      #- run: sudo apt update
+      #- run: sudo apt install git
+      - run: git clone https://github.com/ardupilot/ardupilot.git
+      - run: cd ardupilot && ./Tools/environment_install/install-prereqs-ubuntu.sh
+      - run: cd ardupilot && git checkout Plane-4.1
+      - run: cd ardupilot && git submodule update --init --recursive
+      - run: cd ardupilot && ./waf configure --board=blue
+      - run: cd ardupilot && ./waf
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Plane-4.1
+          path: ardupilot/build/blue/bin/
+  Rover-4_1:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      #- run: sudo apt update
+      #- run: sudo apt install git
+      - run: git clone https://github.com/ardupilot/ardupilot.git
+      - run: cd ardupilot && ./Tools/environment_install/install-prereqs-ubuntu.sh
+      - run: cd ardupilot && git checkout Rover-4.1
+      - run: cd ardupilot && git submodule update --init --recursive
+      - run: cd ardupilot && ./waf configure --board=blue
+      - run: cd ardupilot && ./waf
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Rover-4.1
+          path: ardupilot/build/blue/bin/
+  Sub-4_1:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      #- run: sudo apt update
+      #- run: sudo apt install git
+      - run: git clone https://github.com/ardupilot/ardupilot.git
+      - run: cd ardupilot && ./Tools/environment_install/install-prereqs-ubuntu.sh
+      - run: cd ardupilot && git checkout Sub-4.1
+      - run: cd ardupilot && git submodule update --init --recursive
+      - run: cd ardupilot && ./waf configure --board=blue
+      - run: cd ardupilot && ./waf
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Sub-4.1
+          path: ardupilot/build/blue/bin/
