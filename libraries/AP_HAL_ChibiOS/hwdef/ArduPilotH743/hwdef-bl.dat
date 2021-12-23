@@ -1,54 +1,60 @@
-# hw definition file for processing by chibios_pins.py
-# for ArduPilotH743 bootloader
+# hw definition file for processing by chibios_hwdef.py
+# for ArduPilotH743
 
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
+# crystal frequency
+OSCILLATOR_HZ 25000000
+
 # board ID for firmware load
 APJ_BOARD_ID 1666
 
-# crystal frequency, setup to use external oscillator
-OSCILLATOR_HZ 25000000
-
 FLASH_SIZE_KB 2048
 
-# bootloader starts at zero offset
+# bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
-
-# reserve space for flash storage in last 2 sectors
-FLASH_RESERVE_END_KB 256
 
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 128
 
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
 
-# order of UARTs (and USB). Allow bootloading on USB and telem1
+#define LED pins
+PE2 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # red
+PE1 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # green
+PE0 LED_RED OUTPUT OPENDRAIN HIGH # blue
+
+define HAL_LED_ON 1
+
+# order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7
 
-# UART7 (telem1)
+# UART7 is debug
 PE7 UART7_RX UART7 NODMA
 PE8 UART7_TX UART7 NODMA
 
-# PA10 IO-debug-console
-# USB 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
+PA9  VBUS INPUT
 
-# SWD debugging
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-PE3 LED_BOOTLOADER OUTPUT LOW # blue
-define HAL_LED_ON 0
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 32768
 
-# pullup buzzer for no sound in bootloader
-PA15 BUZZER OUTPUT LOW PULLDOWN
+define BOOTLOADER_DEBUG SD7
 
 # Add CS pins to ensure they are high in bootloader
-#PC15 IMU1_CS CS
-#PB12 BARO1_CS CS
-#PE11 IMU2_CS CS
-#PD4 BARO2_CS CS
-#PE2 EXT_CS2 CS
-#PC13 IMU3_CS CS
+PB2  IMU1_CS       CS
+PE10 IMU2_CS       CS
+PE12 IMU3_CS       CS
+PA10 FRAM_CS       CS
+PA15 ADIS1647X_CS  CS
+PA8  AT7456_CS     CS
+PE3  MS5611_CS     CS
+PD7  DPS310_CS     CS
+PC10 FLASH_CS      CS
