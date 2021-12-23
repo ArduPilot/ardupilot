@@ -115,6 +115,9 @@ protected:
     // load gains for next test.  relies on axis variable being set
     virtual void load_test_gains() = 0;
 
+    // reset the test vaariables for each vehicle
+    virtual void reset_vehicle_test_variables() = 0;
+
     // test initialization and run methods that should be overridden for each vehicle
     virtual void test_init() = 0;
     virtual void test_run(AxisType test_axis, const float dir_sign) = 0;
@@ -201,13 +204,11 @@ protected:
         RD_UP = 0,                // rate D is being tuned up
         RD_DOWN = 1,              // rate D is being tuned down
         RP_UP = 2,                // rate P is being tuned up
-        RP_DOWN = 3,              // rate P is being tuned down
-        RFF_UP = 4,               // rate FF is being tuned up
-        RFF_DOWN = 5,             // rate FF is being tuned down
-        SP_UP = 6,                // angle P is being tuned up
-        SP_DOWN = 7,              // angle P is being tuned down
-        MAX_GAINS = 8,            // max allowable stable gains are determined
-        TUNE_COMPLETE = 9         // Reached end of tuning
+        RFF_UP = 3,               // rate FF is being tuned up
+        SP_UP = 4,                // angle P is being tuned up
+        SP_DOWN = 5,              // angle P is being tuned down
+        MAX_GAINS = 6,            // max allowable stable gains are determined
+        TUNE_COMPLETE = 7         // Reached end of tuning
     };
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
