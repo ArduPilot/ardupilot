@@ -463,9 +463,19 @@ void AC_PosControl::relax_velocity_controller_xy()
     _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
 }
 
+/// reduce response for landing
+void AC_PosControl::soften_for_landing_xy()
+{
+    // set target position to current position
+    _pos_target.xy() = _inav.get_position_xy_cm().topostype();
+
+    // also prevent I term build up in xy velocity controller. Note
+    // that this flag is reset on each loop, in update_xy_controller()
+    set_externally_limited_xy();
+}
+
 /// init_xy_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
 ///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
-///     This function is private and contains all the shared xy axis initialisation functions
 void AC_PosControl::init_xy_controller()
 {
     // set roll, pitch lean angle targets to current attitude
