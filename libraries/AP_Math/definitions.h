@@ -112,3 +112,6 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 // Convert amps milliseconds to milliamp hours
 // Amp.millisec to milliAmp.hour = 1/1E3(ms->s) * 1/3600(s->hr) * 1000(A->mA)
 #define AMS_TO_MAH 0.000277777778f
+
+// Amps microseconds to milliamp hours
+#define AUS_TO_MAH 0.0000002778f

@@ -16,6 +16,7 @@
   driver for all supported Invensense IMUs, including
   MPU6000, MPU9250,  ICM20608, ICM20602, ICM20601, ICM20789, ICM20689
  */
+#define AP_INLINE_VECTOR_OPS
 
 #include <assert.h>
 #include <utility>
@@ -421,6 +422,7 @@ bool AP_InertialSensor_Invensense::get_output_banner(char* banner, uint8_t banne
     }
     return false;
 }
+
 
 /*
   publish any pending data

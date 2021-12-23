@@ -272,3 +272,22 @@
 #ifndef HAL_WITH_MCU_MONITORING
 #define HAL_WITH_MCU_MONITORING defined(STM32H7)
 #endif
+
+#ifndef HAL_HNF_MAX_FILTERS
+// On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
+// The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
+// So at 1Khz almost all notch combinations can be supported on F7 and certainly H7
+#if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// Enough for a double-notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one double-notch harmonics
+#define HAL_HNF_MAX_FILTERS 54
+#elif defined(STM32F7)
+// Enough for a notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one harmonics
+#define HAL_HNF_MAX_FILTERS 27
+#else
+// Enough for a notch per motor on an octa quad using two IMUs and one harmonic
+// plus one static notch with one harmonic
+#define HAL_HNF_MAX_FILTERS 18
+#endif
+#endif
