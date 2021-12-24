@@ -22,7 +22,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 

@@ -15,7 +15,7 @@
 #pragma once
 
 /*
- *       OpticalFlow.h - OpticalFlow Base Class for Ardupilot
+ *       AP_OpticalFlow.h - OpticalFlow Base Class for Ardupilot
  *       Code by Randy Mackay. DIYDrones.com
  */
 
