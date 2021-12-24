@@ -14,6 +14,18 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_OPTICALFLOW_ENABLED
+#define AP_OPTICALFLOW_ENABLED 1
+#endif
+
+#ifndef HAL_MSP_OPTICALFLOW_ENABLED
+#define HAL_MSP_OPTICALFLOW_ENABLED (AP_OPTICALFLOW_ENABLED && (HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES))
+#endif
+
+#if AP_OPTICALFLOW_ENABLED
+
 /*
  *       AP_OpticalFlow.h - OpticalFlow Base Class for Ardupilot
  *       Code by Randy Mackay. DIYDrones.com
@@ -24,10 +36,6 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-
-#ifndef HAL_MSP_OPTICALFLOW_ENABLED
-#define HAL_MSP_OPTICALFLOW_ENABLED HAL_MSP_ENABLED && !HAL_MINIMIZE_FEATURES
-#endif
 
 class OpticalFlow_backend;
 class AP_AHRS;
@@ -143,3 +151,5 @@ namespace AP {
 }
 
 #include "AP_OpticalFlow_Backend.h"
+
+#endif // AP_OPTICALFLOW_ENABLED
