@@ -38,7 +38,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <utility>
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 #include <stdio.h>
 
 #define UPFLOW_HEADER0         (uint8_t)0xFE

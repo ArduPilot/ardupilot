@@ -19,7 +19,7 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 
 class AP_OpticalFlow_Onboard : public OpticalFlow_backend
 {

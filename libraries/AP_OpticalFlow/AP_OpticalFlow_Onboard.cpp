@@ -16,7 +16,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX &&\
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
