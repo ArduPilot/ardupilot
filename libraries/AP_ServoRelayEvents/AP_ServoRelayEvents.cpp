@@ -81,7 +81,7 @@ bool AP_ServoRelayEvents::do_set_relay(uint8_t relay_num, uint8_t state)
 }
 
 bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_value, 
-                                          int16_t _repeat, uint16_t _delay_ms)
+                                          int16_t _repeat, uint16_t _delay_s)
 {
     SRV_Channel *c = SRV_Channels::srv_channel(_channel-1);
     if (c == nullptr) {
@@ -104,14 +104,14 @@ bool AP_ServoRelayEvents::do_repeat_servo(uint8_t _channel, uint16_t _servo_valu
     type = EVENT_TYPE_SERVO;
 
     start_time_ms  = 0;
-    delay_ms    = _delay_ms / 2;
+    delay_ms    = uint32_t(_delay_s) * 1000 / 2;
     repeat      = _repeat * 2;
     servo_value = _servo_value;
     update_events();
     return true;
 }
 
-bool AP_ServoRelayEvents::do_repeat_relay(uint8_t relay_num, int16_t _repeat, uint32_t _delay_ms)
+bool AP_ServoRelayEvents::do_repeat_relay(uint8_t relay_num, int16_t _repeat, uint16_t _delay_s)
 {
     AP_Relay *relay = AP::relay();
     if (relay == nullptr) {
@@ -123,7 +123,7 @@ bool AP_ServoRelayEvents::do_repeat_relay(uint8_t relay_num, int16_t _repeat, ui
     type = EVENT_TYPE_RELAY;
     channel = relay_num;
     start_time_ms  = 0;
-    delay_ms        = _delay_ms/2; // half cycle time
+    delay_ms        = uint32_t(_delay_s) * 1000 / 2; // half cycle time
     repeat          = _repeat*2;  // number of full cycles
     update_events();
     return true;
