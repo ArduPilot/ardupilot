@@ -290,7 +290,9 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_Baro_UAVCAN::subscribe_msgs(this);
     AP_BattMonitor_UAVCAN::subscribe_msgs(this);
     AP_Airspeed_UAVCAN::subscribe_msgs(this);
+#if AP_OPTICALFLOW_HEREFLOW_ENABLED
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
+#endif
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
