@@ -274,6 +274,7 @@ singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 
 include AP_OpticalFlow/AP_OpticalFlow.h
+singleton OpticalFlow depends AP_OPTICALFLOW_ENABLED
 singleton OpticalFlow alias optical_flow
 singleton OpticalFlow method enabled boolean
 singleton OpticalFlow method healthy boolean
