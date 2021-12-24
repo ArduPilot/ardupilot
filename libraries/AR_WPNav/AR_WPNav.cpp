@@ -68,6 +68,24 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @Path: AR_PivotTurn.cpp
     AP_SUBGROUPINFO(_pivot, "PIVOT_", 8, AR_WPNav, AR_PivotTurn),
 
+    // @Param: ACCEL
+    // @DisplayName: Waypoint acceleration
+    // @Description: Waypoint acceleration.  If zero then ATC_ACCEL_MAX is used
+    // @Units: m/s/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("ACCEL", 9, AR_WPNav, _accel_max, 0),
+
+    // @Param: JERK
+    // @DisplayName: Waypoint jerk
+    // @Description: Waypoint jerk (change in acceleration).  If zero then jerk is same as acceleration
+    // @Units: m/s/s/s
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("JERK", 10, AR_WPNav, _jerk_max, 0),
+
     AP_GROUPEND
 };
 
@@ -91,18 +109,18 @@ void AR_WPNav::init(float speed_max, float accel_max, float lat_accel_max, float
         speed_max = _speed_max;
     }
     if (!is_positive(accel_max)) {
-        accel_max = _atc.get_accel_max();
+        accel_max = get_accel_max();
     }
     if (!is_positive(lat_accel_max)) {
         lat_accel_max = _atc.get_turn_lat_accel_max();
     }
     if (!is_positive(jerk_max)) {
-        jerk_max = _atc.get_accel_max();
+        jerk_max = get_jerk_max();
     }
     _scurve_jerk = jerk_max;
 
     // initialise position controller
-    _pos_control.set_limits(speed_max, accel_max, lat_accel_max);
+    _pos_control.set_limits(speed_max, accel_max, lat_accel_max, jerk_max);
 
     _scurve_prev_leg.init();
     _scurve_this_leg.init();
@@ -282,6 +300,24 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vecto
     dest_loc.offset(destination.x, destination.y);
     next_dest_loc.offset(next_destination.x, next_destination.y);
     return set_desired_location(dest_loc, next_dest_loc);
+}
+
+// get max acceleration in m/s/s
+float AR_WPNav::get_accel_max() const
+{
+    if (is_positive(_accel_max)) {
+        return _accel_max;
+    }
+    return _atc.get_accel_max();
+}
+
+// get max jerk in m/s/s/s
+float AR_WPNav::get_jerk_max() const
+{
+    if (is_positive(_jerk_max)) {
+        return _jerk_max;
+    }
+    return get_accel_max();
 }
 
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
