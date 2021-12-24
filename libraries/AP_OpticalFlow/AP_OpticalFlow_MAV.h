@@ -1,6 +1,6 @@
 #pragma once
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 #include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_MAV : public OpticalFlow_backend

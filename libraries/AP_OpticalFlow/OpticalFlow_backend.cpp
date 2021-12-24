@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 
 extern const AP_HAL::HAL& hal;
 
