@@ -48,7 +48,6 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
     return fence_checks(display_failure)
            & parameter_checks(display_failure)
            & motor_checks(display_failure)
-           & pilot_throttle_checks(display_failure)
            & gcs_failsafe_check(display_failure)
            & alt_checks(display_failure)
            & AP_Arming::pre_arm_checks(display_failure);
@@ -146,21 +145,6 @@ bool AP_Arming_Blimp::motor_checks(bool display_failure)
     // further checks enabled with parameters
     if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
-    }
-
-    return true;
-}
-
-bool AP_Arming_Blimp::pilot_throttle_checks(bool display_failure)
-{
-    // check throttle is above failsafe throttle
-    // this is near the bottom to allow other failures to be displayed before checking pilot throttle
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
-        if (blimp.g.failsafe_throttle != FS_THR_DISABLED && blimp.channel_down->get_radio_in() < blimp.g.failsafe_throttle_value) {
-            const char *failmsg = "Throttle below Failsafe";
-            check_failed(ARMING_CHECK_RC, display_failure, "%s", failmsg);
-            return false;
-        }
     }
 
     return true;
