@@ -25,9 +25,27 @@ void ModeRTL::update()
     plane.calc_throttle();
 
     bool alt_threshold_reached = false;
+
+    int32_t curr_terr_alt_cm, old_alt;
+    bool alt_success;
+
     if (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN) {
         // Climb to ALT_HOLD_RTL before turning. This overrides RTL_CLIMB_MIN.
-        alt_threshold_reached = plane.current_loc.alt > plane.next_WP_loc.alt;
+        if (plane.g.terrain_follow == 1) {
+            // If we're using terrain data, we need to convert the current altitude to
+            // the altitude above the terrain.
+            old_alt = plane.current_loc.alt;
+            alt_success = plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_cm);
+            if (!alt_success) {
+                // I'm not sure if this is correct, but I don't know what to do if the
+                // above function returns false, since there's no documentation on what
+                // false actually means.
+                curr_terr_alt_cm = old_alt;
+            }
+        } else {
+            curr_terr_alt_cm = plane.current_loc.alt;
+        }
+        alt_threshold_reached = curr_terr_alt_cm > plane.next_WP_loc.alt;
     } else if (plane.g2.rtl_climb_min > 0) {
         /*
            when RTL first starts limit bank angle to LEVEL_ROLL_LIMIT
