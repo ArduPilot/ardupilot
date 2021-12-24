@@ -241,7 +241,7 @@ private:
     AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     // Optical flow sensor
     OpticalFlow optflow;
 #endif
