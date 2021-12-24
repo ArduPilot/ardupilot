@@ -31,7 +31,7 @@ void ModeRTL::update()
 
     if (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN) {
         // Climb to ALT_HOLD_RTL before turning. This overrides RTL_CLIMB_MIN.
-        if (plane.g.terrain_follow == 1) {
+        if (plane.terrain_enabled_in_current_mode()) {
             // If we're using terrain data, we need to convert the current altitude to
             // the altitude above the terrain.
             old_alt = plane.current_loc.alt;
