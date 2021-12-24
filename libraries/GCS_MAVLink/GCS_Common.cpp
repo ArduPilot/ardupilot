@@ -2308,6 +2308,7 @@ MAV_RESULT GCS_MAVLINK::_set_mode_common(const MAV_MODE _base_mode, const uint32
     return MAV_RESULT_DENIED;
 }
 
+#if AP_OPTICALFLOW_ENABLED
 /*
   send OPTICAL_FLOW message
  */
@@ -2344,6 +2345,7 @@ void GCS_MAVLINK::send_opticalflow()
         flowRate.x,
         flowRate.y);
 }
+#endif  // AP_OPTICALFLOW_ENABLED
 
 /*
   send AUTOPILOT_VERSION packet
@@ -3361,8 +3363,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
 
 }
 
-// allow override of RC channel values for HIL or for complete GCS
-// control of switch position and RC PWM values.
+#if AP_OPTICALFLOW_ENABLED
 void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
 {
     OpticalFlow *optflow = AP::opticalflow();
@@ -3371,6 +3372,7 @@ void GCS_MAVLINK::handle_optical_flow(const mavlink_message_t &msg)
     }
     optflow->handle_msg(msg);
 }
+#endif
 
 
 /*
@@ -3642,9 +3644,11 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_rc_channels_override(msg);
         break;
 
+#if AP_OPTICALFLOW_ENABLED
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
         handle_optical_flow(msg);
         break;
+#endif
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
         handle_distance_sensor(msg);
@@ -5181,8 +5185,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_OPTICAL_FLOW:
+#if AP_OPTICALFLOW_ENABLED
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
+#endif
         break;
 
     case MSG_POSITION_TARGET_GLOBAL_INT:
