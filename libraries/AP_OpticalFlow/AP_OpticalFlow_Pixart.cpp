@@ -20,12 +20,15 @@
   timing for register reads and writes is critical
  */
 
+#include "AP_OpticalFlow_Pixart.h"
+
+#if AP_OPTICALFLOW_PIXART_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <utility>
 #include "AP_OpticalFlow.h"
-#include "AP_OpticalFlow_Pixart.h"
 #include "AP_OpticalFlow_Pixart_SROM.h"
 #include <stdio.h>
 
@@ -360,3 +363,5 @@ void AP_OpticalFlow_Pixart::update(void)
     // copy results to front end
     _update_frontend(state);
 }
+
+#endif  // AP_OPTICALFLOW_PIXART_ENABLED

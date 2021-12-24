@@ -33,8 +33,11 @@
    byte13:footer (0x55)
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_OpticalFlow_UPFLOW.h"
+
+#if AP_OPTICALFLOW_UPFLOW_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <utility>
@@ -187,3 +190,5 @@ void AP_OpticalFlow_UPFLOW::update(void)
     gyro_sum.zero();
     gyro_sum_count = 0;
 }
+
+#endif  // AP_OPTICALFLOW_UPFLOW_ENABLED

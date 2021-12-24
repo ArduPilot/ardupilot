@@ -15,6 +15,8 @@
 
 #include "AP_OpticalFlow.h"
 
+#if AP_OPTICALFLOW_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 OpticalFlow_backend::OpticalFlow_backend(OpticalFlow &_frontend) :
@@ -46,3 +48,5 @@ void OpticalFlow_backend::_applyYaw(Vector2f &v)
     v.x = cosYaw * x - sinYaw * y;
     v.y = sinYaw * x + cosYaw * y;
 }
+
+#endif

@@ -1,5 +1,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_OpticalFlow.h"
+
+#if AP_OPTICALFLOW_ENABLED
+
 #include "AP_OpticalFlow_Onboard.h"
 #include "AP_OpticalFlow_SITL.h"
 #include "AP_OpticalFlow_Pixart.h"
@@ -247,3 +250,5 @@ OpticalFlow *opticalflow()
 }
 
 }
+
+#endif // AP_OPTICALFLOW_ENABLED
