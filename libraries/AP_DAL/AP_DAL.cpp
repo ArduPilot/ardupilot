@@ -66,7 +66,9 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.ahrs_airspeed_sensor_enabled = AP::ahrs().airspeed_sensor_enabled();
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
+#if AP_OPTICALFLOW_ENABLED
     _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
+#endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
