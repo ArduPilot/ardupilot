@@ -14,7 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
 
 #ifndef AP_OPTICALFLOW_ONBOARD_ENABLED
 #define AP_OPTICALFLOW_ONBOARD_ENABLED AP_OPTICALFLOW_ENABLED
