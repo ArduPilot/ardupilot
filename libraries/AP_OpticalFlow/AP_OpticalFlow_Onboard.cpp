@@ -14,6 +14,8 @@
  */
 #include "AP_OpticalFlow_Onboard.h"
 
+#if AP_OPTICALFLOW_ONBOARD_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_OpticalFlow.h"
@@ -98,3 +100,5 @@ void AP_OpticalFlow_Onboard::update()
 }
 
 #endif
+
+#endif  // AP_OPTICALFLOW_ONBOARD_ENABLED
