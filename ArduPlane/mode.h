@@ -592,6 +592,8 @@ public:
 
     bool update_target_altitude() override;
 
+    bool allows_throttle_nudging() const override;
+
 protected:
 
     bool _enter() override;
