@@ -218,35 +218,36 @@ def size_summary(bld, nodes):
             path = n.path_from(bld.bldnode)
         l.append(dict(binary_path=path))
 
-    if bld.env.SIZE:
-        if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
-            cmd = [bld.env.get_flat('SIZE')] + ["-t"] + [d['binary_path'] for d in l]
-        else:
-            cmd = [bld.env.get_flat('SIZE')] + [d['binary_path'] for d in l]
-
-            if bld.env.get_flat('SIZE').endswith("arm-none-eabi-size"):
-                cmd2 = [bld.env.get_flat('SIZE')] + ["-A"] + [d['binary_path'] for d in l]
-                out2 = bld.cmd_and_log(cmd2,
-                                       cwd=bld.bldnode.abspath(),
-                                       quiet=Context.BOTH,
-                                      )
+    for d in l:
+        if bld.env.SIZE:
+            if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+                cmd = [bld.env.get_flat('SIZE')] + ["-t"] + [d['binary_path']]
             else:
-                out2 = None
+                cmd = [bld.env.get_flat('SIZE')] + [d['binary_path']]
 
-        out = bld.cmd_and_log(
-            cmd,
-            cwd=bld.bldnode.abspath(),
-            quiet=Context.BOTH,
-        )
-        if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
-            parsed = _parse_size_output(out, out2, True)
-        else:
-            parsed = _parse_size_output(out, out2, False)
-        for i, data in enumerate(parsed):
-            try:
-              l[i].update(data)
-            except:
-              print("build summary debug: "+str(i)+"->"+str(data))
+                if bld.env.get_flat('SIZE').endswith("arm-none-eabi-size"):
+                    cmd2 = [bld.env.get_flat('SIZE')] + ["-A"] + [d['binary_path']]
+                    out2 = bld.cmd_and_log(cmd2,
+                                        cwd=bld.bldnode.abspath(),
+                                        quiet=Context.BOTH,
+                                        )
+                else:
+                    out2 = None
+
+            out = bld.cmd_and_log(
+                cmd,
+                cwd=bld.bldnode.abspath(),
+                quiet=Context.BOTH,
+            )
+            if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+                parsed = _parse_size_output(out, out2, True)
+            else:
+                parsed = _parse_size_output(out, out2, False)
+            for i, data in enumerate(parsed):
+                try:
+                    d.update(data)
+                except:
+                    print("build summary debug: "+str(i)+"->"+str(data))
 
     return l
 
