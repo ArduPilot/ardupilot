@@ -8,7 +8,6 @@
 #include "UARTDriver.h"
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_SITL/Storage.h>
-#include <AP_Logger/AP_Logger_SITL.h>
 #include <AP_Param/AP_Param.h>
 
 #include <SITL/SIM_Multicopter.h>
@@ -581,9 +580,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     if (erase_all_storage) {
         AP_Param::erase_all();
-#if HAL_LOGGING_SITL_ENABLED
-        unlink(AP_Logger_SITL::filename);
-#endif
         unlink("flash.dat");
         hal.set_wipe_storage(wiping_storage);
     }

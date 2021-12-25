@@ -7846,6 +7846,7 @@ Also, ignores heartbeats not from our target system'''
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 4)
             self.set_parameter("LOG_FILE_DSRMROT", 1)
+            self.set_parameter("LOG_BLK_RATEMAX", 1)
             self.reboot_sitl()
             # First log created here, but we are in chip erase so ignored
             mavproxy.send("module load log\n")

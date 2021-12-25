@@ -113,5 +113,7 @@ protected:
     // tiltrotor tilt angle when airspeed wait transition stage completes
     float airspeed_reached_tilt;
 
+    bool in_forced_transition;
+
 };
 
