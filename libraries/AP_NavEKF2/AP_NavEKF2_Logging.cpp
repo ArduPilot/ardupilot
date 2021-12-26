@@ -252,7 +252,6 @@ void NavEKF2_core::Log_Write_Beacon(uint64_t time_us)
 void NavEKF2_core::Log_Write_Timing(uint64_t time_us)
 {
     // log EKF timing statistics every 5s
-    static uint32_t lastTimingLogTime_ms = 0;
     if (AP::dal().millis() - lastTimingLogTime_ms <= 5000) {
         return;
     }
