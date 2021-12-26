@@ -1479,6 +1479,12 @@ private:
     bool EKFGSF_run_filterbank;             // true when the filter bank is active
     uint8_t EKFGSF_yaw_valid_count;         // number of updates since the last invalid yaw estimate
 
+    // logging timestamps
+    uint32_t lastLogTime_ms;
+    uint32_t lastUpdateTime_ms;
+    uint32_t lastEkfStateVarLogTime_ms;
+    uint32_t lastTimingLogTime_ms;
+
     // bits in EK3_AFFINITY
     enum ekf_affinity {
         EKF_AFFINITY_GPS  = (1U<<0),
@@ -1519,7 +1525,7 @@ private:
     void Log_Write_Quaternion(uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us);
     void Log_Write_BodyOdom(uint64_t time_us);
-    void Log_Write_State_Variances(uint64_t time_us) const;
+    void Log_Write_State_Variances(uint64_t time_us);
     void Log_Write_Timing(uint64_t time_us);
     void Log_Write_GSF(uint64_t time_us);
 };
