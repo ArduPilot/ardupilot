@@ -593,13 +593,11 @@ void AC_AutoTune::control_attitude()
             }
 
             // increment the tune type to the next one in tune sequence
-            tune_seq_curr++;
-            tune_type = tune_seq[tune_seq_curr];
+            next_tune_type(tune_type, false);
 
             if (tune_type == TUNE_COMPLETE) {
                 // we've reached the end of a D-up-down PI-up-down tune type cycle
-                tune_seq_curr = 0;
-                tune_type = tune_seq[tune_seq_curr];
+                next_tune_type(tune_type, true);
 
                 // advance to the next axis
                 bool complete = false;
@@ -675,12 +673,8 @@ void AC_AutoTune::backup_gains_and_initialise()
     // no axes are complete
     axes_completed = 0;
 
-    // set the tune sequence
-    set_tune_sequence();
-
     // start at the beginning of tune sequence
-    tune_seq_curr = 0;
-    tune_type = tune_seq[tune_seq_curr];
+    next_tune_type(tune_type, true);
 
     positive_direction = false;
     step = WAITING_FOR_LEVEL;
@@ -848,3 +842,16 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
 
     yaw_cd_out = target_yaw_cd;
 }
+
+// get the next tune type
+void AC_AutoTune::next_tune_type(TuneType &curr_tune_type, bool reset)
+{
+    if (reset) {
+        set_tune_sequence();
+        tune_seq_curr = 0;
+    } else {
+        tune_seq_curr++;
+    }
+    curr_tune_type = tune_seq[tune_seq_curr];
+}
+
