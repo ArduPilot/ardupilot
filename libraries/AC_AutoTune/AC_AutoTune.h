@@ -213,6 +213,12 @@ protected:
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
 
+    // get the next tune type
+    void next_tune_type(TuneType &curr_tune_type, bool reset);
+
+    // Sets customizable tune sequence for the vehicle
+    virtual void set_tune_sequence() = 0;
+
     // parameters
     AP_Int8  axis_bitmask;        // axes to be tuned
     AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
@@ -315,9 +321,6 @@ private:
         SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
         FAILED = 3,               // tuning has failed, user is flying on original gains
     };
-
-    // Sets customizable tune sequence for the vehicle
-    virtual void set_tune_sequence() = 0;
 
     // type of gains to load
     enum GainType {

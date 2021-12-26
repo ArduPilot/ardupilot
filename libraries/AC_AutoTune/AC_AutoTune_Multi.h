@@ -105,6 +105,15 @@ protected:
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 
+    void set_tune_sequence() override {
+        tune_seq[0] = RD_UP;
+        tune_seq[1] = RD_DOWN;
+        tune_seq[2] = RP_UP;
+        tune_seq[3] = SP_DOWN;
+        tune_seq[4] = SP_UP;
+        tune_seq[5] = TUNE_COMPLETE;
+    }
+
 private:
     // twitch test functions for multicopter
     void twitch_test_init();
@@ -136,14 +145,5 @@ private:
     // updating_angle_p_up - increase P to ensure the target is reached
     // P is increased until we achieve our target within a reasonable time
     void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
-
-    void set_tune_sequence() override {
-        tune_seq[0] = RD_UP;
-        tune_seq[1] = RD_DOWN;
-        tune_seq[2] = RP_UP;
-        tune_seq[3] = SP_DOWN;
-        tune_seq[4] = SP_UP;
-        tune_seq[5] = TUNE_COMPLETE;
-    }
 
 };
