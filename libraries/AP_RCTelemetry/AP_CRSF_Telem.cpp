@@ -33,10 +33,16 @@
 #if HAL_CRSF_TELEM_ENABLED
 
 //#define CRSF_DEBUG
+//#define CRSF_DEBUG_VTX
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
 #else
 # define debug(fmt, args...)	do {} while(0)
+#endif
+#if defined(CRSF_DEBUG_VTX) || defined(CRSF_DEBUG)
+# define debug_vtx(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
+#else
+# define debug_vtx(fmt, args...)	do {} while(0)
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -62,6 +68,11 @@ bool AP_CRSF_Telem::init(void)
     if (!AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_RCIN, 0)
         && !AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         return false;
+    }
+
+    // if we are flying blind force an update for everything
+    if (ignore_vtx_status()) {
+        _vtx_freq_change_pending = _vtx_power_change_pending = _vtx_options_change_pending = VTX_SETTINGS_RETRIES;
     }
 
     return AP_RCTelemetry::init();
@@ -142,7 +153,7 @@ void AP_CRSF_Telem::setup_custom_telemetry()
 void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_mode)
 {
     // ignore rf mode changes if we are processing parameter packets
-    if (_custom_telem.params_mode_active) {
+    if (_custom_telem.disable_telemetry) {
         return;
     }
 
@@ -333,16 +344,18 @@ void AP_CRSF_Telem::enable_tx_entries()
     update_custom_telemetry_rates(_telem_rf_mode);
 }
 
-void AP_CRSF_Telem::enter_scheduler_params_mode()
+void AP_CRSF_Telem::disable_telemetry(uint32_t enable_at_ms)
 {
-    debug("parameter passthrough enabled");
+    debug("disable telemetry");
+    _custom_telem.disable_telemetry_timeout_ms = enable_at_ms;
+
     set_scheduler_entry(HEARTBEAT, 50, 200);            // heartbeat        5Hz
     disable_tx_entries();
 }
 
-void AP_CRSF_Telem::exit_scheduler_params_mode()
+void AP_CRSF_Telem::enable_telemetry()
 {
-    debug("parameter passthrough disabled");
+    debug("enable telemetry");
     // setup the crossfire scheduler for custom telemetry
     set_scheduler_entry(HEARTBEAT, 2000, 5000);     // 0.2Hz
     enable_tx_entries();
@@ -358,19 +371,17 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
      to allow faster parameters processing.
      We start a "fast parameter window" that we close after 5sec
     */
-    bool expired = (now_ms - _custom_telem.params_mode_start_ms) > 5000;
-    if (!_custom_telem.params_mode_active
+    bool expired = _custom_telem.disable_telemetry_timeout_ms > 0
+        && now_ms > _custom_telem.disable_telemetry_timeout_ms;
+    if (!_custom_telem.disable_telemetry
         && _pending_request.frame_type > 0
         && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO
         && !hal.util->get_soft_armed()) {
         // fast window start
-        _custom_telem.params_mode_start_ms = now_ms;
-        _custom_telem.params_mode_active = true;
-        enter_scheduler_params_mode();
-    } else if (expired && _custom_telem.params_mode_active) {
+        disable_telemetry(now_ms + 5000);
+    } else if (expired && _custom_telem.disable_telemetry) {
         // fast window stop
-        _custom_telem.params_mode_active = false;
-        exit_scheduler_params_mode();
+        enable_telemetry();
     }
 }
 
@@ -385,7 +396,7 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
     case PARAMETERS:
         return _pending_request.frame_type > 0;
     case VTX_PARAMETERS:
-        return AP::vtx().have_params_changed() ||_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
+        return AP::vtx().have_params_changed() || is_vtx_change_pending();
     case PASSTHROUGH:
         return rc().crsf_custom_telemetry();
     case STATUS_TEXT:
@@ -478,10 +489,6 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
         _enable_telemetry = true;
         break;
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
-        process_vtx_frame((VTXFrame*)data);
-        break;
-
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX_TELEM:
         process_vtx_telem_frame((VTXTelemetryFrame*)data);
         break;
@@ -512,60 +519,29 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
     return true;
 }
 
-void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
-    vtx->user_frequency = be16toh(vtx->user_frequency);
-
-    debug("VTX: SmartAudio: %d, Avail: %d, FreqMode: %d, Band: %d, Channel: %d, Freq: %d, PitMode: %d, Pwr: %d, Pit: %d",
-        vtx->smart_audio_ver, vtx->is_vtx_available, vtx->is_in_user_frequency_mode,
-        vtx->band, vtx->channel, vtx->is_in_user_frequency_mode ? vtx->user_frequency : AP_VideoTX::get_frequency_mhz(vtx->band, vtx->channel),
-        vtx->is_in_pitmode, vtx->power, vtx->pitmode);
-    AP_VideoTX& apvtx = AP::vtx();
-
-    // the user may have a VTX connected but not want AP to control it
-    // (for instance because they are using myVTX on the transmitter)
-    if (!apvtx.get_enabled()) {
-        return;
-    }
-
-    apvtx.set_band(vtx->band);
-    apvtx.set_channel(vtx->channel);
-    if (vtx->is_in_user_frequency_mode) {
-        apvtx.set_frequency_mhz(vtx->user_frequency);
-    } else {
-        apvtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(vtx->band, vtx->channel));
-    }
-    // 14dBm (25mW), 20dBm (100mW), 26dBm (400mW), 29dBm (800mW)
-    switch (vtx->power) {
-        case 0:
-            apvtx.set_power_mw(25);
-            break;
-        case 1:
-            apvtx.set_power_mw(100);
-            break;
-        case 2:
-            apvtx.set_power_mw(400);
-            break;
-        case 3:
-            apvtx.set_power_mw(800);
-            break;
-    }
-    if (vtx->is_in_pitmode) {
-        apvtx.set_options(apvtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-    } else {
-        apvtx.set_options(apvtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-    }
-    // make sure the configured values now reflect reality
-    if (!apvtx.set_defaults() && (_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending)) {
-        AP::vtx().announce_vtx_settings();
-    }
-
-    _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
+bool AP_CRSF_Telem::is_vtx_change_pending() const {
+    return _vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
 }
 
 void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 {
     vtx->frequency = be16toh(vtx->frequency);
-    debug("VTXTelemetry: Freq: %d, PitMode: %d, Power: %d", vtx->frequency, vtx->pitmode, vtx->power);
+
+    // start processing configuration changes
+    vtx_is_alive = true;
+
+    // the VTX rewrite sends many fake frames that can be spotted through zeros
+    if (_crsf_version.major == 6 && _crsf_version.minor <= 19
+        && vtx->power == 0 && vtx->pitmode == 0 && vtx->frequency == 5865) {
+        return;
+    }
+
+    debug_vtx("VTXTelemetry: Freq: %d, PitMode: %d, Power: %d", vtx->frequency, vtx->pitmode, vtx->power);
+
+    // if we can't trust the status message, simply bail
+    if (ignore_vtx_status()) {
+        return;
+    }
 
     AP_VideoTX& apvtx = AP::vtx();
 
@@ -583,18 +559,41 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
     }
 
     apvtx.set_power_dbm(vtx->power);
+    // no change pending and whatever we configured did not take
+    if (_vtx_power_change_pending && apvtx.get_configured_power_dbm() != vtx->power) {
+        _vtx_power_change_pending = 0;
+        apvtx.update_power_dbm(apvtx.get_configured_power_dbm(), AP_VideoTX::PowerActive::Inactive);
+    }
+    process_vtx_frame(vtx->pitmode);
+}
 
-    if (vtx->pitmode) {
-        apvtx.set_options(apvtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+void AP_CRSF_Telem::process_vtx_frame(bool pitmode)
+{
+    AP_VideoTX& vtx = AP::vtx();
+
+    if (pitmode) {
+        vtx.set_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
     } else {
-        apvtx.set_options(apvtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+        vtx.set_options(vtx.get_options() & ~uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
+    }
+
+    const bool update_pending = is_vtx_change_pending();
+
+    if (!vtx.update_power()) {
+        _vtx_power_change_pending = 0;
+    }
+
+    if (!vtx.update_band() && !vtx.update_channel() && !vtx.update_frequency()) {
+        _vtx_freq_change_pending = 0;
+    }
+
+    if (!vtx.update_options()) {
+        _vtx_options_change_pending = 0;
     }
     // make sure the configured values now reflect reality
-    if (!apvtx.set_defaults() && (_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending)) {
-        AP::vtx().announce_vtx_settings();
+    if (!vtx.set_defaults() && update_pending && !is_vtx_change_pending()) {
+        vtx.announce_vtx_settings();
     }
-
-    _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
 }
 
 // request for device info
@@ -664,6 +663,10 @@ void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
         return; // request was not for us
     }
 
+    if (command->payload[0] == AP_RCProtocol_CRSF::CRSF_COMMAND_ACK) {
+        debug("command ACK: %d %d %d from %d", command->payload[1], command->payload[2], command->payload[3], command->origin);
+    }
+
     // we are only interested in commands from the RX
     if (command->origin != 0 && command->origin != AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER) {
         return;
@@ -707,7 +710,7 @@ void AP_CRSF_Telem::process_pending_requests()
     switch (_pending_request.frame_type) {
     // construct a response to a ping frame
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-        _custom_telem.params_mode_start_ms = AP_HAL::millis();
+        _custom_telem.disable_telemetry_timeout_ms = AP_HAL::millis() + 5000;
         calc_device_info();
         break;
     // construct a ping frame originating here
@@ -716,7 +719,7 @@ void AP_CRSF_Telem::process_pending_requests()
         break;
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
         // reset parameter passthrough timeout
-        _custom_telem.params_mode_start_ms = AP_HAL::millis();
+        _custom_telem.disable_telemetry_timeout_ms = AP_HAL::millis() + 5000;
         calc_parameter();
         break;
     default:
@@ -730,17 +733,30 @@ void AP_CRSF_Telem::update_vtx_params()
 {
     AP_VideoTX& vtx = AP::vtx();
 
-    if (!vtx.get_enabled()) {
+    if (!vtx.get_enabled() || !vtx_is_alive) {
         return;
     }
 
-    _vtx_freq_change_pending = vtx.update_band() || vtx.update_channel() || vtx.update_frequency() || _vtx_freq_change_pending;
-    // don't update the power if we are supposed to be in pitmode as this will take us out of pitmode
-    const bool pitmode = vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE);
-    _vtx_power_change_pending = !pitmode && (vtx.update_power() || _vtx_power_change_pending);
-    _vtx_options_change_pending = vtx.update_options() || _vtx_options_change_pending;
+    if (!_vtx_freq_change_pending && (vtx.update_band() || vtx.update_channel() || vtx.update_frequency())) {
+        _vtx_freq_change_pending = VTX_SETTINGS_RETRIES;
+    }
 
-    if (_vtx_freq_change_pending || _vtx_power_change_pending || _vtx_options_change_pending) {
+    // don't update the power if we are supposed to be in pitmode as this will take us out of pitmode
+    if (!_vtx_options_change_pending && vtx.update_options()) {
+        if (vtx.get_configured_pitmode()) {
+            _vtx_pitmode_change = PitmodeChangeState::PitmodeOn;
+        } else {
+            _vtx_pitmode_change = PitmodeChangeState::PitmodeOff;
+        }
+        _vtx_options_change_pending = VTX_SETTINGS_RETRIES;
+    }
+
+    if (!vtx.get_configured_pitmode() && vtx.update_power()
+        && !_vtx_freq_change_pending && !_vtx_options_change_pending && !_vtx_power_change_pending) {
+        _vtx_power_change_pending = VTX_SETTINGS_RETRIES;
+    }
+
+    if (is_vtx_change_pending()) {
         // make the desired frequency match the desired band and channel
         if (_vtx_freq_change_pending) {
             if (vtx.update_band() || vtx.update_channel()) {
@@ -750,7 +766,7 @@ void AP_CRSF_Telem::update_vtx_params()
             }
         }
 
-        debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
+        debug_vtx("update_vtx(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
             vtx.get_frequency_mhz(),  vtx.get_configured_frequency_mhz(),
             vtx.get_channel(), vtx.get_configured_channel(),
             vtx.get_band(), vtx.get_configured_band(),
@@ -765,47 +781,39 @@ void AP_CRSF_Telem::update_vtx_params()
         uint8_t len = 5;
         // prioritize option changes so that the pilot can get in and out of pitmode
         if (_vtx_options_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE;
-            if (vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE)) {
-                _telem.ext.command.payload[1] = 1;
+            if (_vtx_pitmode_change == PitmodeChangeState::PowerupFromPitmode) {
+                _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE_POWERUP;
+                debug_vtx("pitmode power up");
+                len--;
             } else {
-                _telem.ext.command.payload[1] = 0;
+                _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE;
+                if (vtx.get_configured_pitmode()) {
+                    _telem.ext.command.payload[1] = 1;
+                    debug_vtx("pitmode on");
+                } else {
+                    debug_vtx("pitmode off");
+                    _telem.ext.command.payload[1] = 0;
+                    //_vtx_pitmode_change = PitmodeChangeState::PowerupFromPitmode; // try power up next time
+                }
             }
-        } else if (_vtx_freq_change_pending && _vtx_freq_update) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_FREQ;
-            _telem.ext.command.payload[1] = (vtx.get_frequency_mhz() & 0xFF00) >> 8;
-            _telem.ext.command.payload[2] = (vtx.get_frequency_mhz() & 0xFF);
-            _vtx_freq_update = false;
-            len++;
+            if (ignore_vtx_status() && --_vtx_options_change_pending == 0) {
+                vtx.set_options_are_current();
+            }
         } else if (_vtx_freq_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_CHANNEL;
-            _telem.ext.command.payload[1] = vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel();
-            _vtx_freq_update = true;
-        } else if (_vtx_power_change_pending && _vtx_dbm_update) {
+            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_FREQ;
+            _telem.ext.command.payload[1] = (vtx.get_configured_frequency_mhz() & 0xFF00) >> 8;
+            _telem.ext.command.payload[2] = (vtx.get_configured_frequency_mhz() & 0xFF);
+            if (ignore_vtx_status() && --_vtx_freq_change_pending == 0) {
+                vtx.set_freq_is_current();
+            }
+            len++;
+        } else if (_vtx_power_change_pending) {
+            debug_vtx("power %ddbm", vtx.get_configured_power_dbm());
             _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_POWER_DBM;
             _telem.ext.command.payload[1] = vtx.get_configured_power_dbm();
-            _vtx_dbm_update = false;
-        } else if (_vtx_power_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_POWER;
-            if (vtx.get_configured_power_mw() < 26) {
-                vtx.set_configured_power_mw(25);
-            } else if (vtx.get_configured_power_mw() < 201) {
-                if (vtx.get_configured_power_mw() < 101) {
-                    vtx.set_configured_power_mw(100);
-                } else {
-                    vtx.set_configured_power_mw(200);
-                }
-            } else if (vtx.get_configured_power_mw() < 501) {
-                if (vtx.get_configured_power_mw() < 401) {
-                    vtx.set_configured_power_mw(400);
-                } else {
-                    vtx.set_configured_power_mw(500);
-                }
-            } else {
-                vtx.set_configured_power_mw(800);
+            if (ignore_vtx_status() && --_vtx_power_change_pending == 0) {
+                vtx.set_power_is_current();
             }
-            _telem.ext.command.payload[1] = vtx.get_configured_power_level();
-            _vtx_dbm_update = true;
         }
         _telem_pending = true;
         // calculate command crc
@@ -816,6 +824,13 @@ void AP_CRSF_Telem::update_vtx_params()
         }
         crcptr[len] = crc;
         _telem_size = len + 1;
+
+        // if we have sent settings enough times, declare victory
+        if (ignore_vtx_status() && !is_vtx_change_pending()) {
+            if (!vtx.set_defaults()) {
+                vtx.announce_vtx_settings();
+            }
+        }
     }
 }
 

@@ -28,6 +28,7 @@
 #if HAL_CRSF_TELEM_ENABLED
 
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>
 
@@ -73,30 +74,15 @@ public:
         uint8_t remaining; // ( percent )
     };
 
-    struct PACKED VTXFrame {
+    struct PACKED VTXTelemetryFrame {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
 #endif
         uint8_t origin; // address
-        // status
-        uint8_t is_in_pitmode : 1;
-        uint8_t is_in_user_frequency_mode : 1;
-        uint8_t unused : 2;
-        uint8_t is_vtx_available : 1;
-        uint8_t smart_audio_ver : 3;    // SmartAudio_V1 = 0, SmartAudio_V2 = 1
-        // band / channel
-        uint8_t channel : 3;            // 1x-8x
-        uint8_t band : 5;               // A, B, E, AirWave, Race
-        uint16_t user_frequency;
-        uint8_t power : 4;              // 25mW = 0, 200mW = 1, 500mW = 2, 800mW = 3
-        uint8_t pitmode : 4;            // off = 0, In_Band = 1, Out_Band = 2;
-    };
-
-    struct PACKED VTXTelemetryFrame {
-        uint8_t origin; // address
         uint8_t power;              // power in dBm
         uint16_t frequency;         // frequency in Mhz
-        uint8_t pitmode;            // disable 0, enable 1
+        uint8_t pitmode : 1;        // disable 0, enable 1
+        uint8_t unused : 7;
     };
 
     struct PACKED AttitudeFrame {
@@ -211,7 +197,6 @@ public:
         GPSFrame gps;
         HeartbeatFrame heartbeat;
         BatteryFrame battery;
-        VTXFrame vtx;
         AttitudeFrame attitude;
         FlightModeFrame flightmode;
         APCustomTelemFrame custom_telem;
@@ -247,6 +232,11 @@ public:
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data);
     // process any changed settings and schedule for transmission
     void update();
+
+    // setup the scheduler for doing other things
+    void disable_telemetry(uint32_t enable_at_ms);
+    void enable_telemetry();
+
     // get next telemetry data for external consumers of SPort data
     static bool get_telem_data(AP_RCProtocol_CRSF::Frame* frame, bool is_tx_active);
 
@@ -299,13 +289,14 @@ private:
     uint16_t get_telemetry_rate() const;
     bool is_high_speed_telemetry(const AP_RCProtocol_CRSF::RFMode rf_mode) const;
 
-    void process_vtx_frame(VTXFrame* vtx);
     void process_vtx_telem_frame(VTXTelemetryFrame* vtx);
+    void process_vtx_frame(bool pitmode);
     void process_ping_frame(ParameterPingFrame* ping);
     void process_param_read_frame(ParameterSettingsReadFrame* read);
     void process_param_write_frame(ParameterSettingsWriteFrame* write);
     void process_device_info_frame(ParameterDeviceInfoFrame* info);
     void process_command_frame(CommandFrame* command);
+    bool is_vtx_change_pending() const;
 
     // setup ready for passthrough operation
     void setup_wfq_scheduler(void) override;
@@ -353,8 +344,8 @@ private:
 
     struct {
         bool init_done;
-        uint32_t params_mode_start_ms;
-        bool params_mode_active;
+        uint32_t disable_telemetry_timeout_ms;
+        bool disable_telemetry;
     } _custom_telem;
 
     struct {
@@ -364,11 +355,23 @@ private:
     } _baud_rate_request;
 
     // vtx state
-    bool _vtx_freq_update;  // update using the frequency method or not
-    bool _vtx_dbm_update; // update using the dbm method or not
-    bool _vtx_freq_change_pending; // a vtx command has been issued but not confirmed by a vtx broadcast frame
-    bool _vtx_power_change_pending;
-    bool _vtx_options_change_pending;
+    // work around a bug in most versions of CRSF where the status message does not reflect the VTX status
+    bool ignore_vtx_status() const { return AP::vtx().has_option(AP_VideoTX::VideoOptions::VTX_CRSF_IGNORE_STAT); }
+    // still use the status message for determining liveness
+    bool vtx_is_alive;
+
+    uint8_t _vtx_freq_change_pending; // a vtx command has been issued but not confirmed by a vtx broadcast frame
+    uint8_t _vtx_power_change_pending;
+    uint8_t _vtx_options_change_pending;
+    enum class PitmodeChangeState {
+        PitmodeOn,
+        PitmodeOff,
+        PowerupFromPitmode
+    };
+
+    // number of times to set a parameter before stopping
+    static const uint8_t VTX_SETTINGS_RETRIES = 3;
+    PitmodeChangeState _vtx_pitmode_change;
 
     bool _noted_lq_as_rssi_active;
 
