@@ -273,7 +273,6 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
         return;
     }
 
-    static uint32_t lastUpdateTime_ms = 0;
     const uint32_t updateTime_ms = MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
     if (updateTime_ms > lastUpdateTime_ms) {
         const struct log_XKFD pkt11{
@@ -293,14 +292,13 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
 }
 #endif
 
-void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us) const
+void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us)
 {
     if (core_index != frontend->primary) {
         // log only primary instance for now
         return;
     }
 
-    static uint32_t lastEkfStateVarLogTime_ms = 0;
     if (AP::dal().millis() - lastEkfStateVarLogTime_ms > 490) {
         lastEkfStateVarLogTime_ms = AP::dal().millis();
         const struct log_XKV pktv1{
@@ -394,7 +392,6 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
 void NavEKF3_core::Log_Write_Timing(uint64_t time_us)
 {
     // log EKF timing statistics every 5s
-    static uint32_t lastTimingLogTime_ms = 0;
     if (AP::dal().millis() - lastTimingLogTime_ms <= 5000) {
         return;
     }
