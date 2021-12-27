@@ -4,8 +4,29 @@
 
 Clone the project from GitHub:
 ```sh
-git clone --recursive https://github.com/ArduPilot/ardupilot.git
+apt-get update
+apt-get upgrade
+apt-get install gcc-arm-none-eabi
+
+git clone --recursive https://github.com/AlfredBaum/ardupilot.git
+
 cd ardupilot
+pip3 install future
+git submodule update --init --recursive
+
+./waf list_boards
+./waf configure --board MatekH743
+./waf plane
+
+# ArduPilot Bootloader
+./waf distclean
+./waf configure --board ArduPilotH743 --bootloader
+./waf clean
+./waf bootloader
+
+This is the bootloader used for STM32 boards for ArduPilot. To build
+the bootloader do this: 
+dfu-util -a 0 --dfuse-address 0x08000000 -D new-board-bootloader.bin -R
 ```
 
 Ardupilot is gradually moving from the make-based build system to
@@ -65,6 +86,7 @@ list some basic and more used commands as example.
     Here are some commands to configure waf for commonly used boards:
 
     ```sh
+    ./waf configure --board MatekH743      # Matek Wing STM32H743VIT6
     ./waf configure --board bebop --static # Bebop or Bebop2
     ./waf configure --board edge           # emlid edge
     ./waf configure --board fmuv3          # 3DR Pixhawk 2 boards
@@ -98,6 +120,8 @@ list some basic and more used commands as example.
     the build. The first keeps the `configure` information, cleaning only the
     objects for the current board. The second cleans everything for every board,
     including the saved `configure` information.
+    ./waf clean
+    ./waf distclean
 
     Cleaning the build is very often not necessary and discouraged. We do
     incremental builds reducing the build time by orders of magnitude.

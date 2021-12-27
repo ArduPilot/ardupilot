@@ -22,8 +22,8 @@ FLASH_RESERVE_END_KB 256
 # the H743 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 128
 
-
-
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
 
 #define LED pins
 PE2 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # red
@@ -49,7 +49,7 @@ PA14 JTCK-SWCLK SWD
 
 
 
- 
+ define BOOTLOADER_DEBUG SD7
 
 # Add CS pins to ensure they are high in bootloader
 PB2  IMU1_CS       CS
