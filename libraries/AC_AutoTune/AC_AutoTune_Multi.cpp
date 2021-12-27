@@ -130,13 +130,15 @@ void AC_AutoTune_Multi::do_gcs_announcements()
     case RP_UP:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
         break;
-    case RFF_UP:
-        break;
     case SP_DOWN:
     case SP_UP:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
         break;
+    case RFF_UP:
     case MAX_GAINS:
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        break;
     case TUNE_COMPLETE:
         break;
     }
@@ -728,6 +730,9 @@ void AC_AutoTune_Multi::set_gains_post_tune(AxisType test_axis)
         break;
     case RFF_UP:
     case MAX_GAINS:
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        break;
     case TUNE_COMPLETE:
         break;
     }
@@ -1171,6 +1176,11 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     case SP_UP:
         twitching_test_angle(lean_angle, rotation_rate, target_angle*(1+0.5f*aggressiveness), test_angle_min, test_angle_max, test_rate_min, test_rate_max);
         twitching_measure_acceleration(test_accel_max, rotation_rate - dir_sign * start_rate, rate_max);
+        break;
+    case RFF_UP:
+    case MAX_GAINS:
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         break;
     default:
         break;
