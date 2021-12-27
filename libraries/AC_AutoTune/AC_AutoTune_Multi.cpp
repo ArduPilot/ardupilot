@@ -38,6 +38,14 @@
 #define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
 #define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
 
+#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
+#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
+#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
+#define AUTOTUNE_RP_ACCEL_MIN            4000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN             1000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_SP_BACKOFF                 0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
+
 #include "AC_AutoTune_Multi.h"
 
 const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
@@ -152,6 +160,8 @@ void AC_AutoTune_Multi::test_run(AxisType test_axis, const float dir_sign)
 void AC_AutoTune_Multi::backup_gains_and_initialise()
 {
     AC_AutoTune::backup_gains_and_initialise();
+
+    aggressiveness = constrain_float(aggressiveness, 0.05f, 0.2f);
 
     orig_bf_feedforward = attitude_control->get_bf_feedforward();
 
@@ -663,6 +673,66 @@ void AC_AutoTune_Multi::updating_angle_p_down_all(AxisType test_axis)
     }
 }
 
+// set gains post tune for the tune type
+void AC_AutoTune_Multi::set_gains_post_tune(AxisType test_axis)
+{
+    switch (tune_type) {
+    case RD_UP:
+        break;
+    case RD_DOWN:
+        switch (test_axis) {
+        case ROLL:
+            tune_roll_rd = MAX(min_d, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
+            tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RD_BACKOFF);
+            break;
+        case PITCH:
+            tune_pitch_rd = MAX(min_d, tune_pitch_rd * AUTOTUNE_RD_BACKOFF);
+            tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
+            break;
+        case YAW:
+            tune_yaw_rLPF = MAX(AUTOTUNE_RLPF_MIN, tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
+            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
+            break;
+        }
+        break;
+    case RP_UP:
+        switch (test_axis) {
+        case ROLL:
+            tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RP_BACKOFF);
+            break;
+        case PITCH:
+            tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RP_BACKOFF);
+            break;
+        case YAW:
+            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RP_BACKOFF);
+            break;
+        }
+        break;
+    case SP_DOWN:
+        break;
+    case SP_UP:
+        switch (test_axis) {
+        case ROLL:
+            tune_roll_sp = MAX(AUTOTUNE_SP_MIN, tune_roll_sp * AUTOTUNE_SP_BACKOFF);
+            tune_roll_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
+            break;
+        case PITCH:
+            tune_pitch_sp = MAX(AUTOTUNE_SP_MIN, tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
+            tune_pitch_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
+            break;
+        case YAW:
+            tune_yaw_sp = MAX(AUTOTUNE_SP_MIN, tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
+            tune_yaw_accel = MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_Y_BACKOFF);
+            break;
+        }
+        break;
+    case RFF_UP:
+    case MAX_GAINS:
+    case TUNE_COMPLETE:
+        break;
+    }
+}
+
 // updating_rate_d_up - increase D and adjust P to optimize the D term for a little bounce back
 // optimize D term while keeping the maximum just below the target by adjusting P
 void AC_AutoTune_Multi::updating_rate_d_up(float &tune_d, float tune_d_min, float tune_d_max, float tune_d_step_ratio, float &tune_p, float tune_p_min, float tune_p_max, float tune_p_step_ratio, float rate_target, float meas_rate_min, float meas_rate_max)
@@ -1105,22 +1175,4 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
     default:
         break;
     }
-}
-
-// get minimum rate P (for any axis)
-float AC_AutoTune_Multi::get_rp_min() const
-{
-    return AUTOTUNE_RP_MIN;
-}
-
-// get minimum angle P (for any axis)
-float AC_AutoTune_Multi::get_sp_min() const
-{
-    return AUTOTUNE_SP_MIN;
-}
-
-// get minimum rate Yaw filter value
-float AC_AutoTune_Multi::get_yaw_rate_filt_min() const
-{
-    return AUTOTUNE_RLPF_MIN;
 }

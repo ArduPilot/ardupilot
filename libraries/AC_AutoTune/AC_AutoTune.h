@@ -142,20 +142,8 @@ protected:
     // update gains for the angle p down tune type
     virtual void updating_angle_p_down_all(AxisType test_axis)=0;
 
-    // returns true if rate P gain of zero is acceptable for this vehicle
-    virtual bool allow_zero_rate_p() = 0;
-
-    // returns true if max tested accel is used for parameter
-    virtual bool set_accel_to_max_test_value() = 0;
-
-    // get minimum rate P (for any axis)
-    virtual float get_rp_min() const = 0;
-
-    // get minimum angle P (for any axis)
-    virtual float get_sp_min() const = 0;
-
-    // get minimum rate Yaw filter value
-    virtual float get_yaw_rate_filt_min() const = 0;
+    // set gains post tune for the tune type
+    virtual void set_gains_post_tune(AxisType test_axis)=0;
 
     // reverse direction for twitch test
     virtual bool twitch_reverse_direction() = 0;
@@ -219,11 +207,8 @@ protected:
     // Sets customizable tune sequence for the vehicle
     virtual void set_tune_sequence() = 0;
 
-    // parameters
-    AP_Int8  axis_bitmask;        // axes to be tuned
-    AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
-    AP_Float min_d;               // minimum rate d gain allowed during tuning
-    AP_Float vel_hold_gain;       // gain for velocity hold
+    // get_axis_bitmask accessor
+    virtual uint8_t get_axis_bitmask() const = 0;
 
     // copies of object pointers to make code a bit clearer
     AC_AttitudeControl *attitude_control;

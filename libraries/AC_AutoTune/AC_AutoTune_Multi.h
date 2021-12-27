@@ -81,20 +81,8 @@ protected:
     // update gains for the max gain tune type
     void updating_max_gains_all(AxisType test_axis) override {};
 
-    // returns true if rate P gain of zero is acceptable for this vehicle
-    bool allow_zero_rate_p() override { return false; }
-
-    // returns true if max tested accel is used for parameter
-    bool set_accel_to_max_test_value() override { return true; }
-
-    // get minimum rate P (for any axis)
-    float get_rp_min() const override;
-
-    // get minimum angle P (for any axis)
-    float get_sp_min() const override;
-
-    // get minimum yaw rate filter value
-    float get_yaw_rate_filt_min() const override;
+    // set gains post tune for the tune type
+    void set_gains_post_tune(AxisType test_axis) override;
 
     // reverse direction for twitch test
     bool twitch_reverse_direction() override { return !positive_direction; }
@@ -113,6 +101,9 @@ protected:
         tune_seq[4] = SP_UP;
         tune_seq[5] = TUNE_COMPLETE;
     }
+
+    // get_axis_bitmask accessor
+    uint8_t get_axis_bitmask() const override { return axis_bitmask; }
 
 private:
     // twitch test functions for multicopter
@@ -146,4 +137,8 @@ private:
     // P is increased until we achieve our target within a reasonable time
     void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
 
+    // parameters
+    AP_Int8  axis_bitmask;        // axes to be tuned
+    AP_Float aggressiveness;      // aircraft response aggressiveness to be tuned
+    AP_Float min_d;               // minimum rate d gain allowed during tuning
 };
