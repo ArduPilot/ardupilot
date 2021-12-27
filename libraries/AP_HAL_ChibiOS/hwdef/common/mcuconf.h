@@ -52,3 +52,11 @@
 #else
 #error "Unsupported MCU"
 #endif
+
+#ifndef STM32_SDC_USE_SDMMC1
+#define STM32_SDC_USE_SDMMC1                FALSE
+#endif
+
+#ifndef STM32_SDC_USE_SDMMC2
+#define STM32_SDC_USE_SDMMC2                FALSE
+#endif
