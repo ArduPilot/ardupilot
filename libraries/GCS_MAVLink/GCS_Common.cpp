@@ -5221,13 +5221,17 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 
     case MSG_SCALED_IMU2:
+#if INS_MAX_INSTANCES > 1
         CHECK_PAYLOAD_SIZE(SCALED_IMU2);
         send_scaled_imu(1, mavlink_msg_scaled_imu2_send);
+#endif
         break;
 
     case MSG_SCALED_IMU3:
+#if INS_MAX_INSTANCES > 2
         CHECK_PAYLOAD_SIZE(SCALED_IMU3);
         send_scaled_imu(2, mavlink_msg_scaled_imu3_send);
+#endif
         break;
 
     case MSG_SCALED_PRESSURE:
