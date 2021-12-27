@@ -14,8 +14,9 @@ cd ardupilot
 pip3 install future
 git submodule update --init --recursive
 
+./waf distclean
 ./waf list_boards
-./waf configure --board MatekH743
+./waf configure --board ArduPilotH743
 ./waf plane
 
 # ArduPilot Bootloader
