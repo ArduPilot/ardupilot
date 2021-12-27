@@ -40,6 +40,14 @@
 #define AUTOTUNE_RFF_MIN                   0.025f    // maximum Stab P value
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
 
+#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
+#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
+#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
+#define AUTOTUNE_RP_ACCEL_MIN           20000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN            10000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_SP_BACKOFF                 1.0f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
+
 #define AUTOTUNE_SEQ_BITMASK_VFF             1
 #define AUTOTUNE_SEQ_BITMASK_RATE_D          2
 #define AUTOTUNE_SEQ_BITMASK_ANGLE_P         4
@@ -1424,6 +1432,62 @@ void AC_AutoTune_Heli::updating_max_gains_all(AxisType test_axis)
     }
 }
 
+// set gains post tune for the tune type
+void AC_AutoTune_Heli::set_gains_post_tune(AxisType test_axis)
+{
+    switch (tune_type) {
+    case RD_UP:
+        break;
+    case RD_DOWN:
+        switch (test_axis) {
+        case ROLL:
+            tune_roll_rd = MAX(0.0f, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
+            tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RD_BACKOFF);
+            break;
+        case PITCH:
+            tune_pitch_rd = MAX(0.0f, tune_pitch_rd * AUTOTUNE_RD_BACKOFF);
+            tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
+            break;
+        case YAW:
+            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
+            break;
+        }
+        break;
+    case RP_UP:
+        switch (test_axis) {
+        case ROLL:
+            tune_roll_rp = MAX(AUTOTUNE_RP_MIN, tune_roll_rp * AUTOTUNE_RP_BACKOFF);
+            break;
+        case PITCH:
+            tune_pitch_rp = MAX(AUTOTUNE_RP_MIN, tune_pitch_rp * AUTOTUNE_RP_BACKOFF);
+            break;
+        case YAW:
+            tune_yaw_rp = MAX(AUTOTUNE_RP_MIN, tune_yaw_rp * AUTOTUNE_RP_BACKOFF);
+            break;
+        }
+        break;
+    case SP_DOWN:
+        break;
+    case SP_UP:
+        switch (test_axis) {
+        case ROLL:
+            tune_roll_sp = MAX(AUTOTUNE_SP_MIN, tune_roll_sp * AUTOTUNE_SP_BACKOFF);
+            break;
+        case PITCH:
+            tune_pitch_sp = MAX(AUTOTUNE_SP_MIN, tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
+            break;
+        case YAW:
+            tune_yaw_sp = MAX(AUTOTUNE_SP_MIN, tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
+            break;
+        }
+        break;
+    case RFF_UP:
+    case MAX_GAINS:
+    case TUNE_COMPLETE:
+        break;
+    }
+}
+
 // updating_rate_ff_up - adjust FF to ensure the target is reached
 // FF is adjusted until rate requested is acheived
 void AC_AutoTune_Heli::updating_rate_ff_up(float &tune_ff, float rate_target, float meas_rate, float meas_command)
@@ -2043,24 +2107,6 @@ void AC_AutoTune_Heli::Log_Write_AutoTuneSweep(float freq, float gain, float pha
         freq,
         gain,
         phase);
-}
-
-// get minimum rate P (for any axis)
-float AC_AutoTune_Heli::get_rp_min() const
-{
-    return AUTOTUNE_RP_MIN;
-}
-
-// get minimum angle P (for any axis)
-float AC_AutoTune_Heli::get_sp_min() const
-{
-    return AUTOTUNE_SP_MIN;
-}
-
-// get minimum rate Yaw filter value
-float AC_AutoTune_Heli::get_yaw_rate_filt_min() const
-{
-    return AUTOTUNE_RLPF_MIN;
 }
 
 // reset the test vaariables for each vehicle
