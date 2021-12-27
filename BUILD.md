@@ -24,6 +24,9 @@ git submodule update --init --recursive
 ./waf clean
 ./waf bootloader
 
+use "git status"
+use "git pull" to merge the remote branch into yours
+
 This is the bootloader used for STM32 boards for ArduPilot. To build
 the bootloader do this: 
 dfu-util -a 0 --dfuse-address 0x08000000 -D new-board-bootloader.bin -R
