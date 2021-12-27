@@ -54,7 +54,10 @@ protected:
     void load_test_gains() override;
 
     // reset the test vaariables for heli
-    void reset_vehicle_test_variables() override {};
+    void reset_vehicle_test_variables() override {
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 
     void test_init() override;
     void test_run(AxisType test_axis, const float dir_sign) override;
@@ -70,7 +73,10 @@ protected:
     void updating_rate_d_down_all(AxisType test_axis) override;
 
     // update gains for the rate ff up tune type
-    void updating_rate_ff_up_all(AxisType test_axis) override {};
+    void updating_rate_ff_up_all(AxisType test_axis) override {
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 
     // update gains for the angle P up tune type
     void updating_angle_p_up_all(AxisType test_axis) override;
@@ -79,7 +85,10 @@ protected:
     void updating_angle_p_down_all(AxisType test_axis) override;
 
     // update gains for the max gain tune type
-    void updating_max_gains_all(AxisType test_axis) override {};
+    void updating_max_gains_all(AxisType test_axis) override {
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 
     // set gains post tune for the tune type
     void set_gains_post_tune(AxisType test_axis) override;
@@ -89,7 +98,10 @@ protected:
 
     void Log_AutoTune() override;
     void Log_AutoTuneDetails() override;
-    void Log_AutoTuneSweep() override {};
+    void Log_AutoTuneSweep() override {
+        // this should never happen
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
     void Log_Write_AutoTune(uint8_t axis, uint8_t tune_step, float meas_target, float meas_min, float meas_max, float new_gain_rp, float new_gain_rd, float new_gain_sp, float new_ddt);
     void Log_Write_AutoTuneDetails(float angle_cd, float rate_cds);
 
