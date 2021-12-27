@@ -207,6 +207,33 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 
+
+    // send ODOMETRY message
+    if (should_send(ViconTypeMask::ODOMETRY) && get_free_msg_buf_index(msg_buf_index)) {
+        mavlink_msg_odometry_pack_chan(
+            system_id,
+            component_id,
+            mavlink_ch,
+            &msg_buf[msg_buf_index].obs_msg,
+            now_us + time_offset_us,
+            MAV_FRAME_LOCAL_FRD,
+            MAV_FRAME_BODY_FRD,
+            pos_corrected.x,
+            pos_corrected.y,
+            pos_corrected.z,
+            &attitude[0],
+            vel_corrected.x,
+            vel_corrected.y,
+            vel_corrected.z,
+            gyro.x,
+            gyro.y,
+            gyro.z,
+            NULL, NULL,
+            0,
+            MAV_ESTIMATOR_TYPE_VIO);
+        msg_buf[msg_buf_index].time_send_us = time_send_us;
+    }
+
     // determine time, position, and angular deltas
     uint64_t time_delta = now_us - last_observation_usec;
 
