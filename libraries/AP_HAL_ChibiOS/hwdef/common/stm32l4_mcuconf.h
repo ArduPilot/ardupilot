@@ -238,9 +238,6 @@
 /*
  * SDC driver system settings.
  */
-#ifndef STM32_SDC_USE_SDMMC1
-#define STM32_SDC_USE_SDMMC1                FALSE
-#endif
 #define STM32_SDC_SDMMC_UNALIGNED_SUPPORT   TRUE
 #define STM32_SDC_SDMMC_WRITE_TIMEOUT       1000
 #define STM32_SDC_SDMMC_READ_TIMEOUT        1000
