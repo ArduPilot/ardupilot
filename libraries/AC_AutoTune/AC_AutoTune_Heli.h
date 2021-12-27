@@ -83,14 +83,8 @@ protected:
     // update gains for the max gain tune type
     void updating_max_gains_all(AxisType test_axis) override;
 
-    // get minimum rate P (for any axis)
-    float get_rp_min() const override;
-
-    // get minimum angle P (for any axis)
-    float get_sp_min() const override;
-
-    // get minimum rate Yaw filter value
-    float get_yaw_rate_filt_min() const override;
+    // set gains post tune for the tune type
+    void set_gains_post_tune(AxisType test_axis) override;
 
     // reverse direction for twitch test
     bool twitch_reverse_direction() override { return positive_direction; }
@@ -107,29 +101,14 @@ protected:
     void Log_AutoTuneSweep() override;
     void Log_Write_AutoTuneSweep(float freq, float gain, float phase);
 
-    // returns true if rate P gain of zero is acceptable for this vehicle
-    bool allow_zero_rate_p() override { return true; }
-
-    // returns true if max tested accel is used for parameter
-    bool set_accel_to_max_test_value() override { return false; }
-
     // send intermittant updates to user on status of tune
     void do_gcs_announcements() override;
 
     // set the tuning test sequence
     void set_tune_sequence() override;
 
-    // tuning sequence bitmask
-    AP_Int8  seq_bitmask;
-
-    // minimum sweep frequency
-    AP_Float min_sweep_freq;
-
-    // maximum sweep frequency
-    AP_Float max_sweep_freq;
-
-    // maximum response gain
-    AP_Float max_resp_gain;
+    // get_axis_bitmask accessor
+    uint8_t get_axis_bitmask() const override { return axis_bitmask; }
 
 private:
     // max_gain_data type stores information from the max gain test
@@ -280,6 +259,14 @@ private:
         uint8_t  progress;  // set based on phase of frequency response.  0 - start; 1 - reached 180 deg; 2 - reached 270 deg;
     };
     sweep_data sweep;
+
+    // parameters
+    AP_Int8  axis_bitmask;        // axes to be tuned
+    AP_Int8  seq_bitmask;       // tuning sequence bitmask
+    AP_Float min_sweep_freq;    // minimum sweep frequency
+    AP_Float max_sweep_freq;    // maximum sweep frequency
+    AP_Float max_resp_gain;     // maximum response gain
+    AP_Float vel_hold_gain;     // gain for velocity hold
 
     // freqresp object for the rate frequency response tests
     AC_AutoTune_FreqResp freqresp_rate;

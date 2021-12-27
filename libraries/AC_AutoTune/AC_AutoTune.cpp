@@ -49,25 +49,7 @@
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
 #define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS 5000     // level failure warning messages sent at this interval to users
-#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
-#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ANGLE_MAX_RLLPIT          30.0f    // maximum allowable angle during testing
-
-
-// ifdef is not working.  Modified multi values to reflect heli requirements
-#if APM_BUILD_TYPE(APM_BUILD_Heli)
- // heli defines
- #define AUTOTUNE_RP_ACCEL_MIN           20000.0f     // Minimum acceleration for Roll and Pitch
- #define AUTOTUNE_Y_ACCEL_MIN            10000.0f     // Minimum acceleration for Yaw
- #define AUTOTUNE_SP_BACKOFF                 1.0f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
-#else
- // Frame specific defaults
- #define AUTOTUNE_RP_ACCEL_MIN            4000.0f     // Minimum acceleration for Roll and Pitch
- #define AUTOTUNE_Y_ACCEL_MIN             1000.0f     // Minimum acceleration for Yaw
- #define AUTOTUNE_SP_BACKOFF                 0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
-#endif // HELI_BUILD
 
 // second table of user settable parameters for quadplanes, this
 // allows us to go beyond the 64 parameter limit
@@ -526,71 +508,8 @@ void AC_AutoTune::control_attitude()
             step_scaler = 1.0f;
 
 
-            // move to the next tuning type
-            switch (tune_type) {
-            case RD_UP:
-                break;
-            case RD_DOWN:
-                switch (axis) {
-                case ROLL:
-                    tune_roll_rd = MAX(min_d, tune_roll_rd * AUTOTUNE_RD_BACKOFF);
-                    tune_roll_rp = MAX(get_rp_min(), tune_roll_rp * AUTOTUNE_RD_BACKOFF);
-                    break;
-                case PITCH:
-                    tune_pitch_rd = MAX(min_d, tune_pitch_rd * AUTOTUNE_RD_BACKOFF);
-                    tune_pitch_rp = MAX(get_rp_min(), tune_pitch_rp * AUTOTUNE_RD_BACKOFF);
-                    break;
-                case YAW:
-                    tune_yaw_rLPF = MAX(get_yaw_rate_filt_min(), tune_yaw_rLPF * AUTOTUNE_RD_BACKOFF);
-                    tune_yaw_rp = MAX(get_rp_min(), tune_yaw_rp * AUTOTUNE_RD_BACKOFF);
-                    break;
-                }
-                break;
-            case RP_UP:
-                switch (axis) {
-                case ROLL:
-                    tune_roll_rp = MAX(get_rp_min(), tune_roll_rp * AUTOTUNE_RP_BACKOFF);
-                    break;
-                case PITCH:
-                    tune_pitch_rp = MAX(get_rp_min(), tune_pitch_rp * AUTOTUNE_RP_BACKOFF);
-                    break;
-                case YAW:
-                    tune_yaw_rp = MAX(get_rp_min(), tune_yaw_rp * AUTOTUNE_RP_BACKOFF);
-                    break;
-                }
-                break;
-            case SP_DOWN:
-                break;
-            case SP_UP:
-                switch (axis) {
-                case ROLL:
-                    tune_roll_sp = MAX(get_sp_min(), tune_roll_sp * AUTOTUNE_SP_BACKOFF);
-                    // trad heli uses original parameter value rather than max demostrated through test
-                    if (set_accel_to_max_test_value()) {
-                        tune_roll_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
-                    }
-                    break;
-                case PITCH:
-                    tune_pitch_sp = MAX(get_sp_min(), tune_pitch_sp * AUTOTUNE_SP_BACKOFF);
-                    // trad heli uses original parameter value rather than max demostrated through test
-                    if (set_accel_to_max_test_value()) {
-                        tune_pitch_accel = MAX(AUTOTUNE_RP_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_RP_BACKOFF);
-                    }
-                    break;
-                case YAW:
-                    tune_yaw_sp = MAX(get_sp_min(), tune_yaw_sp * AUTOTUNE_SP_BACKOFF);
-                    // trad heli uses original parameter value rather than max demostrated through test
-                    if (set_accel_to_max_test_value()) {
-                        tune_yaw_accel = MAX(AUTOTUNE_Y_ACCEL_MIN, test_accel_max * AUTOTUNE_ACCEL_Y_BACKOFF);
-                    }
-                    break;
-                }
-                break;
-            case RFF_UP:
-            case MAX_GAINS:
-            case TUNE_COMPLETE:
-                break;
-            }
+            // set gains for post tune before moving to the next tuning type
+            set_gains_post_tune(axis);
 
             // increment the tune type to the next one in tune sequence
             next_tune_type(tune_type, false);
@@ -683,8 +602,6 @@ void AC_AutoTune::backup_gains_and_initialise()
     step_scaler = 1.0f;
 
     desired_yaw_cd = ahrs_view->yaw_sensor;
-
-    aggressiveness = constrain_float(aggressiveness, 0.05f, 0.2f);
 }
 
 /*
@@ -739,17 +656,17 @@ void AC_AutoTune::update_gcs(uint8_t message_id) const
 // axis helper functions
 bool AC_AutoTune::roll_enabled() const
 {
-    return axis_bitmask & AUTOTUNE_AXIS_BITMASK_ROLL;
+    return get_axis_bitmask() & AUTOTUNE_AXIS_BITMASK_ROLL;
 }
 
 bool AC_AutoTune::pitch_enabled() const
 {
-    return axis_bitmask & AUTOTUNE_AXIS_BITMASK_PITCH;
+    return get_axis_bitmask() & AUTOTUNE_AXIS_BITMASK_PITCH;
 }
 
 bool AC_AutoTune::yaw_enabled() const
 {
-    return axis_bitmask & AUTOTUNE_AXIS_BITMASK_YAW;
+    return get_axis_bitmask() & AUTOTUNE_AXIS_BITMASK_YAW;
 }
 
 /*
