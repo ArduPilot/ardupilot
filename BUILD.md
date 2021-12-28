@@ -22,8 +22,8 @@ git submodule update --init --recursive
 # ArduPilot Bootloader
 ./waf distclean
 ./waf configure --board ArduPilotH743 --bootloader
-./waf clean
 ./waf bootloader
+./waf clean
 
 use "git status"
 use "git pull" to merge the remote branch into yours
