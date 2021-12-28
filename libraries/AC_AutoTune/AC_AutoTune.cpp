@@ -2,41 +2,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 
-/*
- * autotune support for multicopters
- *
- * Instructions:
- *      1) Set up one flight mode switch position to be AltHold.
- *      2) Set the Ch7 Opt or Ch8 Opt to AutoTune to allow you to turn the auto tuning on/off with the ch7 or ch8 switch.
- *      3) Ensure the ch7 or ch8 switch is in the LOW position.
- *      4) Wait for a calm day and go to a large open area.
- *      5) Take off and put the vehicle into AltHold mode at a comfortable altitude.
- *      6) Set the ch7/ch8 switch to the HIGH position to engage auto tuning:
- *          a) You will see it twitch about 20 degrees left and right for a few minutes, then it will repeat forward and back.
- *          b) Use the roll and pitch stick at any time to reposition the copter if it drifts away (it will use the original PID gains during repositioning and between tests).
- *             When you release the sticks it will continue auto tuning where it left off.
- *          c) Move the ch7/ch8 switch into the LOW position at any time to abandon the autotuning and return to the origin PIDs.
- *          d) Make sure that you do not have any trim set on your transmitter or the autotune may not get the signal that the sticks are centered.
- *      7) When the tune completes the vehicle will change back to the original PID gains.
- *      8) Put the ch7/ch8 switch into the LOW position then back to the HIGH position to test the tuned PID gains.
- *      9) Put the ch7/ch8 switch into the LOW position to fly using the original PID gains.
- *      10) If you are happy with the autotuned PID gains, leave the ch7/ch8 switch in the HIGH position, land and disarm to save the PIDs permanently.
- *          If you DO NOT like the new PIDS, switch ch7/ch8 LOW to return to the original PIDs. The gains will not be saved when you disarm
- *
- * What it's doing during each "twitch":
- *      a) invokes 90 deg/sec rate request
- *      b) records maximum "forward" roll rate and bounce back rate
- *      c) when copter reaches 20 degrees or 1 second has passed, it commands level
- *      d) tries to keep max rotation rate between 80% ~ 100% of requested rate (90deg/sec) by adjusting rate P
- *      e) increases rate D until the bounce back becomes greater than 10% of requested rate (90deg/sec)
- *      f) decreases rate D until the bounce back becomes less than 10% of requested rate (90deg/sec)
- *      g) increases rate P until the max rotate rate becomes greater than the request rate (90deg/sec)
- *      h) invokes a 20deg angle request on roll or pitch
- *      i) increases stab P until the maximum angle becomes greater than 110% of the requested angle (20deg)
- *      j) decreases stab P by 25%
- *
- */
-
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  # define AUTOTUNE_LEVEL_ANGLE_CD           500     // angle which qualifies as level (Plane uses more relaxed 5deg)
@@ -49,10 +14,7 @@
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     500     // time we require the aircraft to be level
 #define AUTOTUNE_LEVEL_TIMEOUT_MS          2000     // time out for level
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS 5000     // level failure warning messages sent at this interval to users
-#define AUTOTUNE_ANGLE_MAX_RLLPIT          30.0f    // maximum allowable angle during testing
-
-// second table of user settable parameters for quadplanes, this
-// allows us to go beyond the 64 parameter limit
+#define AUTOTUNE_ANGLE_MAX_RLLPIT          30.0f    // maximum allowable angle in degrees during testing
 
 AC_AutoTune::AC_AutoTune()
 {
