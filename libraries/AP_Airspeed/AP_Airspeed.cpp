@@ -16,6 +16,12 @@
  *   AP_Airspeed.cpp - airspeed (pitot) driver
  */
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include "AP_Airspeed.h"
+
+#if !APM_BUILD_COPTER_OR_HELI && !APM_BUILD_TYPE(APM_BUILD_Tracker) && !!APM_BUILD_TYPE(APM_BUILD_Blimp)
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -25,7 +31,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <utility>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"
@@ -710,6 +715,17 @@ bool AP_Airspeed::all_healthy(void) const
     }
     return true;
 }
+
+#else  // build type is not appropriate; provide a dummy implementation:
+
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
+void AP_Airspeed::calibrate(bool in_startup) { }
+bool AP_Airspeed::use(uint8_t i) const { return false; }
+void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) { }
+AP_Airspeed::AP_Airspeed() {}
+
+#endif
+
 
 // singleton instance
 AP_Airspeed *AP_Airspeed::_singleton;
