@@ -49,6 +49,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_RCTelemetry/AP_CRSF_Telem.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -489,6 +490,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::VISODOM_ALIGN:
     case AUX_FUNC::EKF_LANE_SWITCH:
     case AUX_FUNC::EKF_YAW_RESET:
+    case AUX_FUNC::CRSF_TELEMETRY:
     case AUX_FUNC::GENERATOR: // don't turn generator on or off initially
     case AUX_FUNC::EKF_POS_SOURCE:
     case AUX_FUNC::TORQEEDO_CLEAR_ERR:
@@ -594,6 +596,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
     { AUX_FUNC::MOUNT_LOCK, "MountLock"},
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
+    { AUX_FUNC::CRSF_TELEMETRY, "CRSF Telemetry"},
 };
 
 /* lookup the announcement for switch change */
@@ -1273,6 +1276,27 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         // used to test emergency yaw reset
         AP::ahrs().request_yaw_reset();
         break;
+
+    case AUX_FUNC::CRSF_TELEMETRY: {
+#if HAL_CRSF_TELEM_ENABLED
+        AP_CRSF_Telem* crsf = AP::crsf_telem();
+        if (crsf == nullptr) {
+            break;
+        }
+        switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                crsf->disable_telemetry(0);
+                break;
+            case AuxSwitchPos::MIDDLE:
+                // nothing
+                break;
+            case AuxSwitchPos::LOW:
+                crsf->enable_telemetry();
+                break;
+        }
+#endif
+        break;
+    }
 
     // clear torqeedo error
     case AUX_FUNC::TORQEEDO_CLEAR_ERR: {
