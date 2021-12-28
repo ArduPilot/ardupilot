@@ -22,12 +22,14 @@ AP_BattMonitor_SMBus_SUI::AP_BattMonitor_SMBus_SUI(AP_BattMonitor &mon,
       cell_count(_cell_count)
 {
     _pec_supported = false;
-    _dev->set_retries(2);
 }
 
 void AP_BattMonitor_SMBus_SUI::init(void)
 {
     AP_BattMonitor_SMBus::init();
+    if (_dev) {
+        _dev->set_retries(2);
+    }
     if (_dev && timer_handle) {
         // run twice as fast for two phases
         _dev->adjust_periodic_callback(timer_handle, 50000);
