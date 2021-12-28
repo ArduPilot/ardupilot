@@ -40,12 +40,6 @@
 
 #define AUTOTUNE_ANNOUNCE_INTERVAL_MS 2000
 
-//#if APM_BUILD_TYPE(APM_BUILD_Heli)
-// #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U     // timeout for tuning mode's testing step
-//#else
- #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U     // timeout for tuning mode's testing step
-//#endif
-
 #define AUTOTUNE_TARGET_MIN_ANGLE_RLLPIT_CD 1000    // minimum target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_ANGLE_RLLPIT_CD     2000    // target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_ANGLE_YAW_CD        3000    // target angle during TESTING_RATE step that will cause us to move to next step
@@ -209,6 +203,9 @@ protected:
 
     // get_axis_bitmask accessor
     virtual uint8_t get_axis_bitmask() const = 0;
+
+    // get_testing_step_timeout_ms accessor
+    virtual uint32_t get_testing_step_timeout_ms() const = 0;
 
     // copies of object pointers to make code a bit clearer
     AC_AttitudeControl *attitude_control;

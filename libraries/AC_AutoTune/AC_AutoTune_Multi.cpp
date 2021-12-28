@@ -36,6 +36,8 @@
  *
  */
 
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   1000U     // timeout for tuning mode's testing step
+
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.05f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
@@ -1208,3 +1210,10 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
         break;
     }
 }
+
+// get_testing_step_timeout_ms accessor
+uint32_t AC_AutoTune_Multi::get_testing_step_timeout_ms() const
+{
+    return AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
+}
+
