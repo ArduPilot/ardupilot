@@ -81,6 +81,10 @@
 extern const AP_HAL::HAL& hal;
 
 //#define CRSF_DEBUG
+#define CRSF_DEBUG_IN_FRAME_TYPE (CRSF_FRAMETYPE_VTX_TELEM)
+#define CRSF_DEBUG_IN_FRAME_TYPE2 (CRSF_FRAMETYPE_VTX)
+#define CRSF_DEBUG_OUT_FRAME_TYPE (CRSF_FRAMETYPE_COMMAND)
+#define CRSF_DEBUG_OUT_FRAME_TYPE2 (CRSF_FRAMETYPE_COMMAND)
 //#define CRSF_DEBUG_CHARS
 #ifdef CRSF_DEBUG
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
@@ -308,42 +312,29 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
     uart->flush();
 
 #ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
-    for (uint8_t i = 0; i < frame->length + 2; i++) {
-        uint8_t val = ((uint8_t*)frame)[i];
+    if (frame->type == CRSF_DEBUG_OUT_FRAME_TYPE || CRSF_DEBUG_OUT_FRAME_TYPE == 0) {
+        hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
+        for (uint8_t i = 0; i < frame->length + 2; i++) {
+            uint8_t val = ((uint8_t*)frame)[i];
 #ifdef CRSF_DEBUG_CHARS
-        if (val >= 32 && val <= 126) {
-            hal.console->printf(" 0x%x '%c'", val, (char)val);
-        } else {
+            if (val >= 32 && val <= 126) {
+                hal.console->printf(" 0x%x '%c'", val, (char)val);
+            } else {
 #endif
-            hal.console->printf(" 0x%x", val);
+                hal.console->printf(" 0x%x", val);
 #ifdef CRSF_DEBUG_CHARS
+            }
+#endif
         }
-#endif
+        hal.console->printf("\n");
+    } else {
+        hal.console->printf(">");
     }
-    hal.console->printf("\n");
 #endif
 }
 
 bool AP_RCProtocol_CRSF::decode_crsf_packet()
 {
-#ifdef CRSF_DEBUG
-    hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
-    uint8_t* fptr = (uint8_t*)&_frame;
-    for (uint8_t i = 0; i < _frame.length + 2; i++) {
-#ifdef CRSF_DEBUG_CHARS
-        if (fptr[i] >= 32 && fptr[i] <= 126) {
-            hal.console->printf(" 0x%x '%c'", fptr[i], (char)fptr[i]);
-        } else {
-#endif
-            hal.console->printf(" 0x%x", fptr[i]);
-#ifdef CRSF_DEBUG_CHARS
-        }
-#endif
-    }
-    hal.console->printf("\n");
-#endif
-
     bool rc_active = false;
 
     switch (_frame.type) {
@@ -367,7 +358,29 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
         case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
             process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
-        default:
+        default: {
+#ifdef CRSF_DEBUG
+            if (_frame.type == CRSF_DEBUG_IN_FRAME_TYPE || CRSF_DEBUG_IN_FRAME_TYPE == 0
+                || _frame.type == CRSF_DEBUG_IN_FRAME_TYPE2) {
+                hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+                uint8_t* fptr = (uint8_t*)&_frame;
+                for (uint8_t i = 0; i < _frame.length + 2; i++) {
+#ifdef CRSF_DEBUG_CHARS
+                    if (fptr[i] >= 32 && fptr[i] <= 126) {
+                        hal.console->printf(" 0x%x '%c'", fptr[i], (char)fptr[i]);
+                    } else {
+#endif
+                        hal.console->printf(" 0x%x", fptr[i]);
+#ifdef CRSF_DEBUG_CHARS
+                    }
+#endif
+                }
+                hal.console->printf("\n");
+            } else {
+                hal.console->printf("<");
+            }
+#endif
+        }
             break;
     }
 #if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
