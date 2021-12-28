@@ -1,4 +1,4 @@
-# hw definition file for processing by chibios_hwdef.py for  Qiotek ZealotH743
+# hw definition file for processing by chibios_hwdef.py for  ArduPilotH743
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
@@ -14,7 +14,7 @@ FLASH_SIZE_KB 2048
 env OPTIMIZE -O2
 
 # ChibiOS system timer
-STM32_ST_USE_TIMER 12
+STM32_ST_USE_TIMER 2
 
 # bootloader takes first sector
 FLASH_RESERVE_START_KB 128
