@@ -110,6 +110,9 @@ protected:
     // get_axis_bitmask accessor
     uint8_t get_axis_bitmask() const override { return axis_bitmask; }
 
+    // get_testing_step_timeout_ms accessor
+    uint32_t get_testing_step_timeout_ms() const override;
+
 private:
     // max_gain_data type stores information from the max gain test
     struct max_gain_data {
