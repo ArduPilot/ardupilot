@@ -19,6 +19,8 @@
 
 #include "AC_AutoTune_Heli.h"
 
+#define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U     // timeout for tuning mode's testing step
+
 #define AUTOTUNE_RD_STEP                  0.0005f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.005f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
@@ -66,26 +68,26 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SEQ", 2, AC_AutoTune_Heli, seq_bitmask,  5),
 
-    // @Param: MIN_FRQ
+    // @Param: FRQ_MIN
     // @DisplayName: AutoTune minimum sweep frequency
     // @Description: Defines the start frequency for sweeps and dwells
     // @Range: 10 30
     // @User: Standard
-    AP_GROUPINFO("MIN_FRQ", 3, AC_AutoTune_Heli, min_sweep_freq,  10.0f),
+    AP_GROUPINFO("FRQ_MIN", 3, AC_AutoTune_Heli, min_sweep_freq,  10.0f),
 
-    // @Param: MAX_FRQ
+    // @Param: FRQ_MAX
     // @DisplayName: AutoTune maximum sweep frequency
     // @Description: Defines the end frequency for sweeps and dwells
     // @Range: 50 120
     // @User: Standard
-    AP_GROUPINFO("MAX_FRQ", 4, AC_AutoTune_Heli, max_sweep_freq,  70.0f),
+    AP_GROUPINFO("FRQ_MAX", 4, AC_AutoTune_Heli, max_sweep_freq,  70.0f),
 
-    // @Param: MAX_GN
+    // @Param: GN_MAX
     // @DisplayName: AutoTune maximum response gain
     // @Description: Defines the response gain (output/input) to tune
     // @Range: 1 2.5
     // @User: Standard
-    AP_GROUPINFO("MAX_GN", 5, AC_AutoTune_Heli, max_resp_gain,  1.4f),
+    AP_GROUPINFO("GN_MAX", 5, AC_AutoTune_Heli, max_resp_gain,  1.4f),
 
     // @Param: VELXY_P
     // @DisplayName: AutoTune velocity xy P gain
@@ -2144,4 +2146,10 @@ void AC_AutoTune_Heli::set_tune_sequence()
     }
     tune_seq[seq_cnt] = TUNE_COMPLETE;
 
+}
+
+// get_testing_step_timeout_ms accessor
+uint32_t AC_AutoTune_Heli::get_testing_step_timeout_ms() const
+{
+    return AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
 }

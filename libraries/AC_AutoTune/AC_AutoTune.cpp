@@ -356,7 +356,7 @@ void AC_AutoTune::control_attitude()
             // initiate variables for next step
             step = TESTING;
             step_start_time_ms = now;
-            step_time_limit_ms = AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
+            step_time_limit_ms = get_testing_step_timeout_ms();
             // set gains to their to-be-tested values
             twitch_first_iter = true;
             test_rate_max = 0.0f;
