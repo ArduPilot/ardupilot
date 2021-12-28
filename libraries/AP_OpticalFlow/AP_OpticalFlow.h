@@ -38,7 +38,6 @@
 
 
 class OpticalFlow_backend;
-class AP_AHRS;
 
 class OpticalFlow
 {
