@@ -19,34 +19,31 @@
 
 #include "AC_AutoTune_Heli.h"
 
-#define AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD     2000   // target roll/pitch angle during AUTOTUNE FeedForward rate test
-#define AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS     5000   // target roll/pitch rate during AUTOTUNE FeedForward rate test
-#define AUTOTUNE_FFI_RATIO_FOR_TESTING     0.5f     // I is set 2x smaller than VFF during testing
-#define AUTOTUNE_FFI_RATIO_FINAL           0.5f     // I is set 0.5x VFF after testing
-#define AUTOTUNE_PI_RATIO_FINAL            1.0f     // I is set 1x P after testing
-#define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
 #define AUTOTUNE_RD_STEP                  0.0005f     // minimum increment when increasing/decreasing Rate D term
 #define AUTOTUNE_RP_STEP                  0.005f     // minimum increment when increasing/decreasing Rate P term
 #define AUTOTUNE_SP_STEP                  0.05f     // minimum increment when increasing/decreasing Stab P term
 #define AUTOTUNE_PI_RATIO_FOR_TESTING      0.1f     // I is set 10x smaller than P during testing
+#define AUTOTUNE_PI_RATIO_FINAL            1.0f     // I is set 1x P after testing
+#define AUTOTUNE_YAW_PI_RATIO_FINAL        0.1f     // I is set 1x P after testing
 #define AUTOTUNE_RD_MAX                  0.020f     // maximum Rate D value
-#define AUTOTUNE_RLPF_MIN                  1.0f     // minimum Rate Yaw filter value
-#define AUTOTUNE_RLPF_MAX                  20.0f     // maximum Rate Yaw filter value
 #define AUTOTUNE_RP_MIN                   0.001f     // minimum Rate P value
 #define AUTOTUNE_RP_MAX                   0.3f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                    10.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    3.0f     // maximum Stab P value
 #define AUTOTUNE_RFF_MAX                   0.5f     // maximum Stab P value
 #define AUTOTUNE_RFF_MIN                   0.025f    // maximum Stab P value
-#define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
-
 #define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
 #define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
+#define AUTOTUNE_SP_BACKOFF                1.0f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
+
+#define AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD     2000   // target roll/pitch angle during AUTOTUNE FeedForward rate test
+#define AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS     5000   // target roll/pitch rate during AUTOTUNE FeedForward rate test
+#define AUTOTUNE_FFI_RATIO_FOR_TESTING     0.5f     // I is set 2x smaller than VFF during testing
+#define AUTOTUNE_FFI_RATIO_FINAL           0.5f     // I is set 0.5x VFF after testing
 #define AUTOTUNE_RP_ACCEL_MIN           20000.0f     // Minimum acceleration for Roll and Pitch
 #define AUTOTUNE_Y_ACCEL_MIN            10000.0f     // Minimum acceleration for Yaw
-#define AUTOTUNE_SP_BACKOFF                 1.0f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
 
 #define AUTOTUNE_SEQ_BITMASK_VFF             1
 #define AUTOTUNE_SEQ_BITMASK_RATE_D          2
