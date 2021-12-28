@@ -1,20 +1,39 @@
-/*
-   This program is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
+#include "AC_AutoTune_Multi.h"
 
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 /*
-  support for autotune of multirotors. Based on original autotune code from ArduCopter, written by Leonard Hall
-  Converted to a library by Andrew Tridgell
+ * autotune support for multicopters
+ *
+ *
+ * Instructions:
+ *      1) Set up one flight mode switch position to be AltHold.
+ *      2) Set the Ch7 Opt or Ch8 Opt to AutoTune to allow you to turn the auto tuning on/off with the ch7 or ch8 switch.
+ *      3) Ensure the ch7 or ch8 switch is in the LOW position.
+ *      4) Wait for a calm day and go to a large open area.
+ *      5) Take off and put the vehicle into AltHold mode at a comfortable altitude.
+ *      6) Set the ch7/ch8 switch to the HIGH position to engage auto tuning:
+ *          a) You will see it twitch about 20 degrees left and right for a few minutes, then it will repeat forward and back.
+ *          b) Use the roll and pitch stick at any time to reposition the copter if it drifts away (it will use the original PID gains during repositioning and between tests).
+ *             When you release the sticks it will continue auto tuning where it left off.
+ *          c) Move the ch7/ch8 switch into the LOW position at any time to abandon the autotuning and return to the origin PIDs.
+ *          d) Make sure that you do not have any trim set on your transmitter or the autotune may not get the signal that the sticks are centered.
+ *      7) When the tune completes the vehicle will change back to the original PID gains.
+ *      8) Put the ch7/ch8 switch into the LOW position then back to the HIGH position to test the tuned PID gains.
+ *      9) Put the ch7/ch8 switch into the LOW position to fly using the original PID gains.
+ *      10) If you are happy with the autotuned PID gains, leave the ch7/ch8 switch in the HIGH position, land and disarm to save the PIDs permanently.
+ *          If you DO NOT like the new PIDS, switch ch7/ch8 LOW to return to the original PIDs. The gains will not be saved when you disarm
+ *
+ * What it's doing during each "twitch":
+ *      a) invokes 90 deg/sec rate request
+ *      b) records maximum "forward" roll rate and bounce back rate
+ *      c) when copter reaches 20 degrees or 1 second has passed, it commands level
+ *      d) tries to keep max rotation rate between 80% ~ 100% of requested rate (90deg/sec) by adjusting rate P
+ *      e) increases rate D until the bounce back becomes greater than 10% of requested rate (90deg/sec)
+ *      f) decreases rate D until the bounce back becomes less than 10% of requested rate (90deg/sec)
+ *      g) increases rate P until the max rotate rate becomes greater than the request rate (90deg/sec)
+ *      h) invokes a 20deg angle request on roll or pitch
+ *      i) increases stab P until the maximum angle becomes greater than 110% of the requested angle (20deg)
+ *      j) decreases stab P by 25%
+ *
  */
 
 #define AUTOTUNE_RD_STEP                  0.05f     // minimum increment when increasing/decreasing Rate D term
@@ -30,24 +49,27 @@
 #define AUTOTUNE_RP_MAX                    2.0f     // maximum Rate P value
 #define AUTOTUNE_SP_MAX                   20.0f     // maximum Stab P value
 #define AUTOTUNE_SP_MIN                    0.5f     // maximum Stab P value
+#define AUTOTUNE_RP_ACCEL_MIN            4000.0f     // Minimum acceleration for Roll and Pitch
+#define AUTOTUNE_Y_ACCEL_MIN             1000.0f     // Minimum acceleration for Yaw
+#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
 #define AUTOTUNE_D_UP_DOWN_MARGIN          0.2f     // The margin below the target that we tune D in
-#define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
+#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
+#define AUTOTUNE_SP_BACKOFF                0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
+#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
+#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
+
+// roll and pitch axes
 #define AUTOTUNE_TARGET_RATE_RLLPIT_CDS     18000   // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+#define AUTOTUNE_TARGET_MIN_RATE_RLLPIT_CDS 4500    // target roll/pitch rate during AUTOTUNE_STEP_TWITCHING step
+
+// yaw axis
 #define AUTOTUNE_TARGET_RATE_YAW_CDS        9000    // target yaw rate during AUTOTUNE_STEP_TWITCHING step
 #define AUTOTUNE_TARGET_MIN_ANGLE_YAW_CD     500    // minimum target angle during TESTING_RATE step that will cause us to move to next step
 #define AUTOTUNE_TARGET_MIN_RATE_YAW_CDS    1500    // minimum target yaw rate during AUTOTUNE_STEP_TWITCHING step
-#define AUTOTUNE_Y_FILT_FREQ              10.0f     // Autotune filter frequency when testing Yaw
 
-#define AUTOTUNE_RD_BACKOFF                1.0f     // Rate D gains are reduced to 50% of their maximum value discovered during tuning
-#define AUTOTUNE_RP_BACKOFF                1.0f     // Rate P gains are reduced to 97.5% of their maximum value discovered during tuning
-#define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
-#define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
-#define AUTOTUNE_RP_ACCEL_MIN            4000.0f     // Minimum acceleration for Roll and Pitch
-#define AUTOTUNE_Y_ACCEL_MIN             1000.0f     // Minimum acceleration for Yaw
-#define AUTOTUNE_SP_BACKOFF                 0.9f     // Stab P gains are reduced to 90% of their maximum value discovered during tuning
-
-#include "AC_AutoTune_Multi.h"
-
+// second table of user settable parameters for quadplanes, this
+// allows us to go beyond the 64 parameter limit
 const AP_Param::GroupInfo AC_AutoTune_Multi::var_info[] = {
 
     // @Param: AXES
