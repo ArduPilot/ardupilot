@@ -697,7 +697,7 @@ const AP_Param::Info Copter::var_info[] = {
 
 #if OPTFLOW == ENABLED
     // @Group: FLOW
-    // @Path: ../libraries/AP_OpticalFlow/OpticalFlow.cpp
+    // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
     GOBJECT(optflow,   "FLOW", OpticalFlow),
 #endif
 

@@ -1,5 +1,5 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 #include "AP_OpticalFlow_Onboard.h"
 #include "AP_OpticalFlow_SITL.h"
 #include "AP_OpticalFlow_Pixart.h"

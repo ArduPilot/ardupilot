@@ -40,7 +40,6 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AP_OpticalFlow/OpticalFlow.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -4655,6 +4654,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi_sysid(packet);
     case MAV_CMD_DO_SET_HOME:
         return handle_command_int_do_set_home(packet);
+    case MAV_CMD_STORAGE_FORMAT: {
+        if (!is_equal(packet.param1, 1.0f) ||
+            !is_equal(packet.param2, 1.0f)) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        return AP::FS().format() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    }
+
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
         {

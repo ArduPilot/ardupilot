@@ -49,6 +49,12 @@ void ModeQRTL::run()
         // start landing logic
         quadplane.verify_vtol_land();
     }
+
+    // when in approach allow stick mixing
+    if (quadplane.poscontrol.get_state() == QuadPlane::QPOS_AIRBRAKE ||
+        quadplane.poscontrol.get_state() == QuadPlane::QPOS_APPROACH) {
+        plane.stabilize_stick_mixing_fbw();
+    }
 }
 
 /*
@@ -81,6 +87,12 @@ bool ModeQRTL::update_target_altitude()
     loc.alt += alt*100;
     plane.set_target_altitude_location(loc);
     return true;
+}
+
+// only nudge during approach
+bool ModeQRTL::allows_throttle_nudging() const
+{
+    return plane.quadplane.poscontrol.get_state() == QuadPlane::QPOS_APPROACH;
 }
 
 #endif

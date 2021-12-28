@@ -1178,6 +1178,9 @@ private:
     uint8_t EKFGSF_yaw_reset_count;         // number of emergency yaw resets performed
     bool EKFGSF_run_filterbank;             // true when the filter bank is active
 
+    // logging timestamps
+    uint32_t lastTimingLogTime_ms;
+
     // logging functions shared by cores:
     void Log_Write_NKF1(uint64_t time_us) const;
     void Log_Write_NKF2(uint64_t time_us) const;
