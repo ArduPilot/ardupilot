@@ -93,6 +93,7 @@ AP_HW_JDMINIF405                      144
 AP_HW_KAKUTEF7_MINI                   145
 AP_HW_H757I_EVAL                      146
 AP_HW_F4BY                             20 # value due to previous release by vendor
+AP_HW_ArduPilotH743                   666
 AP_HW_VRBRAIN_V51                    1151
 AP_HW_VRBRAIN_V52                    1152
 AP_HW_VRBRAIN_V54                    1154
@@ -159,4 +160,3 @@ AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
 AP_HW_SWBOOMBOARD_PERIPH             1403
 
-AP_HW_ArduPilotH743                  1666
