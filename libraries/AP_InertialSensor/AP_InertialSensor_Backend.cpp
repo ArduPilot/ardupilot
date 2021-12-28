@@ -1,3 +1,5 @@
+#define AP_INLINE_VECTOR_OPS
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"

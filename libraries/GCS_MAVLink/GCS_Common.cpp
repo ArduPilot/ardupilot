@@ -40,7 +40,6 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AP_OpticalFlow/OpticalFlow.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_Proximity/AP_Proximity.h>
@@ -3194,6 +3193,44 @@ void GCS_MAVLINK::handle_vicon_position_estimate(const mavlink_message_t &msg)
                                                 PAYLOAD_SIZE(chan, VICON_POSITION_ESTIMATE));
 }
 
+/*
+  handle ODOMETRY message. This message combines position, velocity
+  and attitude data
+ */
+void GCS_MAVLINK::handle_odometry(const mavlink_message_t &msg)
+{
+#if HAL_VISUALODOM_ENABLED
+    AP_VisualOdom *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+
+    mavlink_odometry_t m;
+    mavlink_msg_odometry_decode(&msg, &m);
+
+    if (m.frame_id != MAV_FRAME_LOCAL_FRD ||
+        m.child_frame_id != MAV_FRAME_BODY_FRD) {
+        // only support local FRD frame data
+        return;
+    }
+
+    Quaternion q{m.q[0],m.q[1],m.q[2],m.q[3]};
+
+    float posErr = 0;
+    float angErr = 0;
+    if (!isnan(m.pose_covariance[0])) {
+        posErr = cbrtf(sq(m.pose_covariance[0])+sq(m.pose_covariance[6])+sq(m.pose_covariance[11]));
+        angErr = cbrtf(sq(m.pose_covariance[15])+sq(m.pose_covariance[18])+sq(m.pose_covariance[20]));
+    }
+    
+    const uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ODOMETRY));
+    visual_odom->handle_vision_position_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, q, posErr, angErr, m.reset_counter);
+
+    const Vector3f vel{m.vx, m.vy, m.vz};
+    visual_odom->handle_vision_speed_estimate(m.time_usec, timestamp_ms, vel, m.reset_counter);
+#endif
+}
+
 // there are several messages which all have identical fields in them.
 // This function provides common handling for the data contained in
 // these packets
@@ -3242,7 +3279,7 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
         return;
     }
     // note: att_pos_mocap does not include reset counter
-    visual_odom->handle_vision_position_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, 0);
+    visual_odom->handle_vision_position_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, 0, 0, 0);
 #endif
 }
 
@@ -3585,6 +3622,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_vicon_position_estimate(msg);
         break;
 
+    case MAVLINK_MSG_ID_ODOMETRY:
+        handle_odometry(msg);
+        break;
+        
     case MAVLINK_MSG_ID_ATT_POS_MOCAP:
         handle_att_pos_mocap(msg);
         break;
@@ -4613,6 +4654,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_set_roi_sysid(packet);
     case MAV_CMD_DO_SET_HOME:
         return handle_command_int_do_set_home(packet);
+    case MAV_CMD_STORAGE_FORMAT: {
+        if (!is_equal(packet.param1, 1.0f) ||
+            !is_equal(packet.param2, 1.0f)) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+        return AP::FS().format() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    }
+
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_SCRIPTING:
         {

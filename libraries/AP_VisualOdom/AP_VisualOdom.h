@@ -24,7 +24,6 @@
 #if HAL_VISUALODOM_ENABLED
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Math/AP_Math.h>
@@ -45,10 +44,11 @@ public:
     }
 
     // external position backend types (used by _TYPE parameter)
-    enum AP_VisualOdom_Type {
-        AP_VisualOdom_Type_None         = 0,
-        AP_VisualOdom_Type_MAV          = 1,
-        AP_VisualOdom_Type_IntelT265    = 2
+    enum class VisualOdom_Type {
+        None         = 0,
+        MAV          = 1,
+        IntelT265    = 2,
+        VOXL         = 3,
     };
 
     // detect and initialise any sensors
@@ -89,7 +89,7 @@ public:
     // general purpose methods to consume position estimate data and send to EKF
     // distances in meters, roll, pitch and yaw are in radians
     void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float posErr, float angErr, uint8_t reset_counter);
-    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, uint8_t reset_counter);
+    void handle_vision_position_estimate(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, const Quaternion &attitude, float posErr, float angErr, uint8_t reset_counter);
     
     // general purpose methods to consume velocity estimate data and send to EKF
     // velocity in NED meters per second
@@ -107,12 +107,16 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    VisualOdom_Type get_type(void) const {
+        return _type;
+    }
+
 private:
 
     static AP_VisualOdom *_singleton;
 
     // parameters
-    AP_Int8 _type;              // sensor type
+    AP_Enum<VisualOdom_Type> _type; // sensor type
     AP_Vector3f _pos_offset;    // position offset of the camera in the body frame
     AP_Int8 _orientation;       // camera orientation on vehicle frame
     AP_Float _pos_scale;        // position scale factor applied to sensor values

@@ -45,10 +45,11 @@ MAX_TARGETS = 20
 header_text = {
     'target': 'Target',
     'binary_path': 'Binary',
-    'size_text': 'Text',
-    'size_data': 'Data',
-    'size_bss': 'BSS',
-    'size_total': 'Total',
+    'size_text': 'Text (B)',
+    'size_data': 'Data (B)',
+    'size_bss': 'BSS (B)',
+    'size_total': 'Total Flash Used (B)',
+    'size_free_flash': 'Free Flash (B)',
 }
 
 def text(label, text=''):
@@ -77,7 +78,13 @@ def print_table(summary_data_list, header):
         header_row.append(txt)
         max_width = len(txt)
         for i, row_data in enumerate(summary_data_list):
-            txt = str(row_data.get(h, '-'))
+            data = row_data.get(h, '-')
+
+            # Output if a piece of reporting data is not applicable, example: free_flash in SITL
+            if data is None:
+                data = "Not Applicable"
+
+            txt = str(data)
             table[i].append(txt)
 
             w = len(txt)
@@ -161,7 +168,18 @@ def _build_summary(bld):
         bld.extra_build_summary(bld, sys.modules[__name__])
 
 # totals=True means relying on -t flag to give us a "(TOTALS)" output
-def _parse_size_output(s, totals=False):
+def _parse_size_output(s, s_all, totals=False):
+
+    # Get the size of .crash_log to remove it from .bss reporting
+    crash_log_size = None
+    if s_all is not None:
+        lines = s_all.splitlines()[1:]
+        for line in lines:
+            if ".crash_log" in line:
+                row = line.strip().split()
+                crash_log_size = int(row[1])
+                break
+
     import re
     pattern = re.compile("^.*TOTALS.*$")
     lines = s.splitlines()[1:]
@@ -169,11 +187,25 @@ def _parse_size_output(s, totals=False):
     for line in lines:
       if pattern.match(line) or totals==False:
         row = line.strip().split()
+
+        # check if crash_log wasn't found
+        # this will be the case for none arm boards: sitl, linux, etc.
+        if crash_log_size is None:
+            size_bss = int(row[2])
+            size_free_flash = None
+        else:
+            # BSS: remove the portion occupied by crash_log as the command `size binary.elf`
+            # reports BSS with crash_log included
+            size_bss = int(row[2]) - crash_log_size
+            size_free_flash = crash_log_size
+
         l.append(dict(
             size_text=int(row[0]),
             size_data=int(row[1]),
-            size_bss=int(row[2]),
-            size_total=int(row[3]),
+            size_bss=size_bss,
+            # Total Flash Cost = Data + Text
+            size_total=int(row[0]) + int(row[1]),
+            size_free_flash=size_free_flash,
         ))
     return l
 
@@ -186,25 +218,36 @@ def size_summary(bld, nodes):
             path = n.path_from(bld.bldnode)
         l.append(dict(binary_path=path))
 
-    if bld.env.SIZE:
-        if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
-            cmd = [bld.env.get_flat('SIZE')] + ["-t"] + [d['binary_path'] for d in l]
-        else:
-            cmd = [bld.env.get_flat('SIZE')] + [d['binary_path'] for d in l]
-        out = bld.cmd_and_log(
-            cmd,
-            cwd=bld.bldnode.abspath(),
-            quiet=Context.BOTH,
-        )
-        if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
-            parsed = _parse_size_output(out,True)
-        else:
-            parsed = _parse_size_output(out,False)
-        for i, data in enumerate(parsed):
-            try:
-              l[i].update(data)
-            except:
-              print("build summary debug: "+str(i)+"->"+str(data))
+    for d in l:
+        if bld.env.SIZE:
+            if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+                cmd = [bld.env.get_flat('SIZE')] + ["-t"] + [d['binary_path']]
+            else:
+                cmd = [bld.env.get_flat('SIZE')] + [d['binary_path']]
+
+                if bld.env.get_flat('SIZE').endswith("arm-none-eabi-size"):
+                    cmd2 = [bld.env.get_flat('SIZE')] + ["-A"] + [d['binary_path']]
+                    out2 = bld.cmd_and_log(cmd2,
+                                        cwd=bld.bldnode.abspath(),
+                                        quiet=Context.BOTH,
+                                        )
+                else:
+                    out2 = None
+
+            out = bld.cmd_and_log(
+                cmd,
+                cwd=bld.bldnode.abspath(),
+                quiet=Context.BOTH,
+            )
+            if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+                parsed = _parse_size_output(out, out2, True)
+            else:
+                parsed = _parse_size_output(out, out2, False)
+            for i, data in enumerate(parsed):
+                try:
+                    d.update(data)
+                except:
+                    print("build summary debug: "+str(i)+"->"+str(data))
 
     return l
 
@@ -242,4 +285,5 @@ def configure(cfg):
             'size_data',
             'size_bss',
             'size_total',
+            'size_free_flash',
         ]

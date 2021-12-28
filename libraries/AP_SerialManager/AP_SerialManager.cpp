@@ -450,9 +450,14 @@ void AP_SerialManager::init()
             set_options(i);
             switch (state[i].protocol) {
                 case SerialProtocol_None:
+#if HAL_GCS_ENABLED
                     // disable RX and TX pins in case they are shared
-                    // with another peripheral (eg. RCIN pin)
+                    // with another peripheral (eg. RCIN pin). We
+                    // don't do this if GCS is not enabled as in that
+                    // case we don't have serialmanager parameters and
+                    // this would prevent AP_Periph from using a GPS
                     uart->disable_rxtx();
+#endif
                     break;
                 case SerialProtocol_Console:
                 case SerialProtocol_MAVLink:
@@ -608,6 +613,12 @@ AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, 
         port->set_options(_state->options);
     }
     return port;
+}
+
+// have_serial - return true if we have the given serial protocol configured
+bool AP_SerialManager::have_serial(enum SerialProtocol protocol, uint8_t instance) const
+{
+    return find_protocol_instance(protocol, instance) != nullptr;
 }
 
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol

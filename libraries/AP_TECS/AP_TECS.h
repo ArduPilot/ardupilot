@@ -88,7 +88,12 @@ public:
     void reset_pitch_I(void) {
         _integSEB_state = 0.0f;
     }
-    
+
+    // reset throttle integrator
+    void reset_throttle_I(void) {
+        _integTHR_state = 0.0;
+    }
+
     // return landing sink rate
     float get_land_sinkrate(void) const {
         return _land_sink;

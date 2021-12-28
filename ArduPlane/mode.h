@@ -3,7 +3,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <stdint.h>
-#include <AP_Common/Location.h>
 #include <AP_Soaring/AP_Soaring.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
@@ -592,6 +591,8 @@ public:
     bool does_auto_throttle() const override { return true; }
 
     bool update_target_altitude() override;
+
+    bool allows_throttle_nudging() const override;
 
 protected:
 

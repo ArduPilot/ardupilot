@@ -61,37 +61,91 @@ AP_Baro_Backend *AP_Baro_KellerLD::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::D
     return sensor;
 }
 
-// The hardware does not need to be reset/initialized
-// We read out the measurement range to be used in raw value conversions
-bool AP_Baro_KellerLD::_init()
+
+// convenience function to work around device transfer oddities
+bool AP_Baro_KellerLD::transfer_with_delays(uint8_t *send, uint8_t sendlen, uint8_t *recv, uint8_t recvlen)
 {
-    if (!_dev) {
+    if (!_dev->transfer(send, sendlen, nullptr, 0)) {
+        return false;
+    }
+    hal.scheduler->delay(1);
+
+    if(!_dev->transfer(nullptr, 0, recv, recvlen)) {
+        return false;
+    }
+    hal.scheduler->delay(1);
+    return true;
+}
+
+// This device has some undocumented finicky quirks and requires
+// delays when reading out the measurement range, but for some reason
+// this isn't an issue when requesting measurements.  This is why we
+// need to split the transfers with delays like this.  (Using
+// AP_HAL::I2CDevice::set_split_transfers will not work with these
+// sensors)
+bool AP_Baro_KellerLD::read_measurement_limit(float *limit, uint8_t msb_addr, uint8_t lsb_addr)
+{
+    uint8_t data[3];
+
+    if (!transfer_with_delays(&msb_addr, 1, data, ARRAY_SIZE(data))) {
         return false;
     }
 
-    _dev->get_semaphore()->take_blocking();
+    const uint16_t ms_word = (data[1] << 8) | data[2];
+    Debug("0x%02x: %d [%d, %d, %d]", msb_addr, ms_word, data[0], data[1], data[2]);
 
-    // high retries for init
-    _dev->set_retries(10);
-    
-    bool cal_read_ok = true;
-    
+    if (!transfer_with_delays(&lsb_addr, 1, data, ARRAY_SIZE(data))) {
+        return false;
+    }
+
+    const uint16_t ls_word = (data[1] << 8) | data[2];
+    Debug("0x%02x: %d [%d, %d, %d]", lsb_addr, ls_word, data[0], data[1], data[2]);
+
+    const uint32_t cal_data = (ms_word << 16) | ls_word;
+    memcpy(limit, &cal_data, sizeof(*limit));
+
+    if (isinf(*limit) || isnan(*limit)) {
+        return false;
+    }
+
+    Debug("data: %d, float: %.2f", cal_data, _p_min);
+    return true;
+}
+
+bool AP_Baro_KellerLD::read_cal()
+{
+    // Read out pressure measurement range
+    if (!read_measurement_limit(&_p_min, CMD_PRANGE_MIN_MSB, CMD_PRANGE_MIN_LSB)) {
+        return false;
+    }
+
+    if (!read_measurement_limit(&_p_max, CMD_PRANGE_MAX_MSB, CMD_PRANGE_MAX_LSB)) {
+        return false;
+    }
+
+    if (_p_max <= _p_min) {
+        return false;
+    }
+
+    return true;
+}
+
+// Read sensor P-Mode type and set pressure reference offset
+// This determines the pressure offset based on the type of sensor
+// vented to atmosphere, gauged to vacuum, or gauged to standard sea-level pressure
+bool AP_Baro_KellerLD::read_mode_type()
+{
+    uint8_t cmd = CMD_METADATA_PMODE;
     uint8_t data[3];
-    uint16_t ms_word, ls_word;
+    if (!transfer_with_delays(&cmd, 1, data, ARRAY_SIZE(data))) {
+        return false;
+    }
 
-    // This device has some undocumented finicky quirks and requires delays when reading out the
-    // measurement range, but for some reason this isn't an issue when requesting measurements.
-    // This is why we need to split the transfers with delays like this.
-    // (Using AP_HAL::I2CDevice::set_split_transfers will not work with these sensors)
-    
-    // Read out sensor P-mode and select relevant pressure offset
-    cal_read_ok &= _dev->transfer(&CMD_METADATA_PMODE, 1, nullptr, 0);
-    hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
-    hal.scheduler->delay(1);
-    
+    // Byte 3, Bit 0 & 1: Represents P-Mode
+    // "Communication Protocol 4 LD…9 LD", Version 2.6 pg 12 of 25
+    // https://keller-druck.com/?d=VeMYAQBxgoSNjUSHbdnBTU
     _p_mode = (SensorMode)(data[2] & 0b11);
-    
+
     // update pressure offset based on P-Mode
     switch (_p_mode) {
         case SensorMode::PR_MODE:
@@ -112,58 +166,31 @@ bool AP_Baro_KellerLD::_init()
         case SensorMode::UNDEFINED:
             // we should give an error here
             printf("KellerLD Device Mode UNDEFINED\n");
-            _dev->get_semaphore()->give();
             return false;
     }
 
-    // Read out pressure measurement range
-    cal_read_ok &= _dev->transfer(&CMD_PRANGE_MIN_MSB, 1, nullptr, 0);
-    hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
-    hal.scheduler->delay(1);
+    return true;
+}
 
-    ms_word = (data[1] << 8) | data[2];
-    Debug("0x13: %d [%d, %d, %d]", ms_word, data[0], data[1], data[2]);
+// We read out the measurement range to be used in raw value conversions
+bool AP_Baro_KellerLD::_init()
+{
+    if (!_dev) {
+        return false;
+    }
 
-    cal_read_ok &= _dev->transfer(&CMD_PRANGE_MIN_LSB, 1, nullptr, 0);
-    hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
-    hal.scheduler->delay(1);
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
-    ls_word = (data[1] << 8) | data[2];
-    Debug("0x14: %d [%d, %d, %d]", ls_word, data[0], data[1], data[2]);
+    // high retries for init
+    _dev->set_retries(10);
 
-    uint32_t cal_data = (ms_word << 16) | ls_word;
-    memcpy(&_p_min, &cal_data, sizeof(_p_min));
-    Debug("data: %d, p_min: %.2f", cal_data, _p_min);
-
-    cal_read_ok &= _dev->transfer(&CMD_PRANGE_MAX_MSB, 1, nullptr, 0);
-    hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
-    hal.scheduler->delay(1);
-
-    ms_word = (data[1] << 8) | data[2];
-    Debug("0x15: %d [%d, %d, %d]", ms_word, data[0], data[1], data[2]);
-
-    cal_read_ok &= _dev->transfer(&CMD_PRANGE_MAX_LSB, 1, nullptr, 0);
-    hal.scheduler->delay(1);
-    cal_read_ok &= _dev->transfer(nullptr, 0, &data[0], 3);
-    hal.scheduler->delay(1);
-
-    ls_word = (data[1] << 8) | data[2];
-    Debug("0x16: %d [%d, %d, %d]", ls_word, data[0], data[1], data[2]);
-
-    cal_data = (ms_word << 16) | ls_word;
-    memcpy(&_p_max, &cal_data, sizeof(_p_max));
-    Debug("data: %d, p_max: %.2f", cal_data, _p_max);
-
-    cal_read_ok &= !isnan(_p_min) && !isinf(_p_min) && !isnan(_p_max) && !isinf(_p_max);
-
-    cal_read_ok &= _p_max > _p_min;
-
-    if (!cal_read_ok) {
+    if (!read_cal()) {
         printf("Cal read bad!\n");
-        _dev->get_semaphore()->give();
+        return false;
+    }
+
+    if (!read_mode_type()) {
+        printf("Mode_Type read bad!\n");
         return false;
     }
 
@@ -183,8 +210,6 @@ bool AP_Baro_KellerLD::_init()
 
     // lower retries for run
     _dev->set_retries(3);
-    
-    _dev->get_semaphore()->give();
 
     // The sensor needs time to take a deep breath after reading out the calibration...
     hal.scheduler->delay(150);

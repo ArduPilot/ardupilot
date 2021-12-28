@@ -5,12 +5,16 @@
 #if HAL_INS_ENABLED
 #include <AP_HAL/I2CDevice.h>
 #include <AP_HAL/SPIDevice.h>
+#include <AP_HAL/DSP.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AP_Motors/AP_Motors_Class.h>
+#endif
 
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_BMI160.h"
@@ -529,8 +533,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
 
     // @Group: NOTCH_
-    // @Path: ../Filter/NotchFilter.cpp
-    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, NotchFilterParams),
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, HarmonicNotchFilterParams),
 
     // @Group: LOG_
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
@@ -869,12 +873,67 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // configured value
     _calculated_harmonic_notch_freq_hz[0] = _harmonic_notch_filter.center_freq_hz();
     _num_calculated_harmonic_notch_frequencies = 1;
+    _num_dynamic_harmonic_notches = 1;
 
+    uint8_t num_filters = 0;
+    const bool double_notch = _harmonic_notch_filter.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    if (_harmonic_notch_filter.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+#if HAL_WITH_DSP
+        if (get_gyro_harmonic_notch_tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+            _num_dynamic_harmonic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
+        } else
+#endif
+        {
+            AP_Motors *motors = AP::motors();
+            _num_dynamic_harmonic_notches = __builtin_popcount(motors->get_motor_mask());
+        }
+        // avoid harmonics unless actually configured by the user
+        _harmonic_notch_filter.set_default_harmonics(1);
+    }
+#endif
+    // count number of used sensors
+    uint8_t sensors_used = 0;
+    for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
+        sensors_used += _use[i];
+    }
+
+    // calculate number of notches we might want to use for harmonic notch
+    if (_harmonic_notch_filter.enabled()) {
+        num_filters = __builtin_popcount( _harmonic_notch_filter.harmonics())
+            * _num_dynamic_harmonic_notches * (double_notch ? 2 : 1)
+            * sensors_used;
+    }
+    // add filters used by static notch
+    if (_notch_filter.enabled()) {
+        _notch_filter.set_default_harmonics(1);
+        num_filters +=  __builtin_popcount(_notch_filter.harmonics())
+            * (_notch_filter.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch) ? 2 : 1)
+            * sensors_used;
+    }
+
+    if (num_filters > HAL_HNF_MAX_FILTERS) {
+        AP_BoardConfig::config_error("Too many notches: %u > %u", num_filters, HAL_HNF_MAX_FILTERS);
+    }
+
+    // allocate notches
     for (uint8_t i=0; i<get_gyro_count(); i++) {
-        _gyro_harmonic_notch_filter[i].allocate_filters(_harmonic_notch_filter.harmonics(), _harmonic_notch_filter.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch));
-        // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
-        _gyro_harmonic_notch_filter[i].init(_gyro_raw_sample_rates[i], _calculated_harmonic_notch_freq_hz[0],
-             _harmonic_notch_filter.bandwidth_hz(), _harmonic_notch_filter.attenuation_dB());
+        // only allocate notches for IMUs in use
+        if (_use[i]) {
+            if (_harmonic_notch_filter.enabled()) {
+                _gyro_harmonic_notch_filter[i].allocate_filters(_num_dynamic_harmonic_notches,
+                    _harmonic_notch_filter.harmonics(), double_notch);
+                // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
+                _gyro_harmonic_notch_filter[i].init(_gyro_raw_sample_rates[i], _calculated_harmonic_notch_freq_hz[0],
+                    _harmonic_notch_filter.bandwidth_hz(), _harmonic_notch_filter.attenuation_dB());
+            }
+            if (_notch_filter.enabled()) {
+                _gyro_notch_filter[i].allocate_filters(1, _notch_filter.harmonics(),
+                    _notch_filter.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch));
+                _gyro_notch_filter[i].init(_gyro_raw_sample_rates[i], _notch_filter.center_freq_hz(),
+                    _notch_filter.bandwidth_hz(), _notch_filter.attenuation_dB());
+            }
+        }
     }
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
@@ -912,7 +971,7 @@ AP_InertialSensor::detect_backends(void)
 
     _backends_detected = true;
 
-#if defined(HAL_CHIBIOS_ARCH_CUBE)
+#if defined(HAL_CHIBIOS_ARCH_CUBE) && INS_MAX_INSTANCES > 2
     // special case for Cubes, where the IMUs on the isolated
     // board could fail on some boards. If the user has INS_USE=1,
     // INS_USE2=1 and INS_USE3=0 then force INS_USE3 to 1. This is

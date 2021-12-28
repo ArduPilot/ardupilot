@@ -18,7 +18,7 @@
   OpticalFlow backend class for ArduPilot
  */
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 
 class OpticalFlow_backend
 {

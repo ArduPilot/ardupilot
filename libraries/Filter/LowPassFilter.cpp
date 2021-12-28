@@ -4,7 +4,10 @@
 ///         the downside being that it's a little slower as it internally uses a float
 ///         and it consumes an extra 4 bytes of memory to hold the constant gain
 
-
+#ifndef HAL_DEBUG_BUILD
+#define AP_INLINE_VECTOR_OPS
+#pragma GCC optimize("O2")
+#endif
 #include "LowPassFilter.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////

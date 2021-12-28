@@ -55,8 +55,6 @@ public:
         const uint16_t _bin_count;
         // size of the FFT window
         const uint16_t _window_size;
-        // number of harmonics of interest
-        const uint8_t _harmonics;
         // FFT data
         float* _freq_bins;
         // derivative real data scratch space
@@ -71,10 +69,10 @@ public:
         float _window_scale;
 
         virtual ~FFTWindowState();
-        FFTWindowState(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics);
+        FFTWindowState(uint16_t window_size, uint16_t sample_rate);
     };
     // initialise an FFT instance
-    virtual FFTWindowState* fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t harmonics) = 0;
+    virtual FFTWindowState* fft_init(uint16_t window_size, uint16_t sample_rate) = 0;
     // start an FFT analysis with an ObjectBuffer
     virtual void fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance) = 0;
     // perform remaining steps of an FFT analysis

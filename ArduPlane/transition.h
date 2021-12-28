@@ -110,5 +110,10 @@ protected:
     uint32_t last_fw_mode_ms;
     int32_t last_fw_nav_pitch_cd;
 
+    // tiltrotor tilt angle when airspeed wait transition stage completes
+    float airspeed_reached_tilt;
+
+    bool in_forced_transition;
+
 };
 

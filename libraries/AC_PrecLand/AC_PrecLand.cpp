@@ -9,8 +9,6 @@
 #include "AC_PrecLand_SITL.h"
 #include <GCS_MAVLink/GCS.h>
 
-#include <AP_AHRS/AP_AHRS.h>
-
 extern const AP_HAL::HAL& hal;
 
 static const uint32_t EKF_INIT_TIME_MS = 2000; // EKF initialisation requires this many milliseconds of good sensor data
