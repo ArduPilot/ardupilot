@@ -77,20 +77,41 @@ float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) c
     return wrap_360(angle_degrees * angle_sign + frontend.get_yaw_correction(state.instance));
 }
 
-// check if a reading should be ignored because it falls into an ignore area or if obstacle is near land
-bool AP_Proximity_Backend::ignore_reading(uint16_t angle_deg, float distance_m) const
+// check if a reading should be ignored because it falls into an ignore area (check_for_ign_area should be sent as false if this check is not needed)
+// pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle)
+// yaw is the horizontal body-frame angle (in degrees) to the obstacle (0=directly ahead of the vehicle, 90 is to the right of the vehicle)
+// Also checks if obstacle is near land or out of range
+// angles should be in degrees and in the range of 0 to 360, distance should be in meteres
+bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance_m, bool check_for_ign_area) const
 {
-    // check angle vs each ignore area
-    for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
-        if (frontend._ignore_width_deg[i] != 0) {
-            if (abs(angle_deg - frontend._ignore_angle_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
-                return true;
+    // check if distances are supposed to be in a particular range
+    if (!is_zero(frontend._max_m)) {
+        if (distance_m > frontend._max_m) {
+            // too far away
+            return true;
+        }
+    }
+
+    if (!is_zero(frontend._min_m)) {
+        if (distance_m < frontend._min_m) {
+            // too close
+            return true;
+        }
+    }
+
+    if (check_for_ign_area) {
+        // check angle vs each ignore area
+        for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
+            if (frontend._ignore_width_deg[i] != 0) {
+                if (abs(yaw - frontend._ignore_angle_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
+                    return true;
+                }
             }
         }
     }
 
    // check if obstacle is near land
-   return check_obstacle_near_ground(angle_deg, distance_m);
+   return check_obstacle_near_ground(pitch, yaw, distance_m);
 }
 
 // store rangefinder values
@@ -121,7 +142,7 @@ bool AP_Proximity_Backend::get_rangefinder_alt(float &alt_m) const
 }
 
 // Check if Obstacle defined by body-frame yaw and pitch is near ground
-bool AP_Proximity_Backend::check_obstacle_near_ground(float yaw, float pitch, float distance) const
+bool AP_Proximity_Backend::check_obstacle_near_ground(float pitch, float yaw, float distance) const
 {
     if (!frontend._ign_gnd_enable) {
         return false;
@@ -139,28 +160,15 @@ bool AP_Proximity_Backend::check_obstacle_near_ground(float yaw, float pitch, fl
     object_3D.offset_bearing(wrap_180(yaw), (pitch * -1.0f), distance);
     const Matrix3f body_to_ned = AP::ahrs().get_rotation_body_to_ned();
     const Vector3f rotated_object_3D = body_to_ned * object_3D;
-    return check_obstacle_near_ground(rotated_object_3D);
-}
-
-// Check if Obstacle defined by Vector3f is near ground. The vector is assumed to be body frame FRD
-bool AP_Proximity_Backend::check_obstacle_near_ground(const Vector3f &obstacle) const
-{
-    if (!frontend._ign_gnd_enable) {
-        return false;
-    }
-    if (!hal.util->get_soft_armed()) {
-        // don't run this feature while vehicle is disarmed, otherwise proximity data will not show up on GCS
-        return false;
-    }
 
     float alt = FLT_MAX;
     if (!get_rangefinder_alt(alt)) {
         return false;
     }
 
-    if (obstacle.z > -0.5f) {
+    if (rotated_object_3D.z > -0.5f) {
         // obstacle is at the most 0.5 meters above vehicle
-        if ((alt - PROXIMITY_GND_DETECT_THRESHOLD) < obstacle.z) {
+        if ((alt - PROXIMITY_GND_DETECT_THRESHOLD) < rotated_object_3D.z) {
             // obstacle is near or below ground
             return true;
         }

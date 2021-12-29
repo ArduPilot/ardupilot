@@ -191,6 +191,8 @@ private:
     AP_Int8 _raw_log_enable;                            // enable logging raw distances
     AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
     AP_Float _filt_freq;                               // cutoff frequency for low pass filter
+    AP_Float _max_m;                                   // Proximity maximum range
+    AP_Float _min_m;                                   // Proximity minimum range
 
     void detect_instance(uint8_t instance);
 };

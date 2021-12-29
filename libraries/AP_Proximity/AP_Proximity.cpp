@@ -174,6 +174,22 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_FILT", 18, AP_Proximity, _filt_freq, 0.25f),
 
+    // @Param: _MIN
+    // @DisplayName: Proximity minimum range
+    // @Description: Minimum expected range for Proximity Sensor. Setting this to 0 will set value to manufacturer reported range.
+    // @Units: m
+    // @Range: 0 500
+    // @User: Advanced
+    AP_GROUPINFO("_MIN", 19, AP_Proximity, _min_m, 0.0f),
+
+    // @Param: _MAX
+    // @DisplayName: Proximity maximum range
+    // @Description: Maximum expected range for Proximity Sensor. Setting this to 0 will set value to manufacturer reported range.
+    // @Units: m
+    // @Range: 0 500
+    // @User: Advanced
+    AP_GROUPINFO("_MAX", 20, AP_Proximity, _max_m, 0.0f),
+
     AP_GROUPEND
 };
 
