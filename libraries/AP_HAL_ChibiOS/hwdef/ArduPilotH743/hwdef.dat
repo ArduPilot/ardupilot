@@ -173,8 +173,8 @@ IMU Invensense   SPI:imu3      ROTATION_ROLL_180
 
 
 # two Baro sensors
-BARO DPS280 SPI:baro1
-BARO DPS280 SPI:baro2
+BARO MS5611 SPI:baro1
+BARO BMP280 SPI:baro2
 
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 5
