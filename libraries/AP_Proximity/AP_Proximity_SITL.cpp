@@ -101,7 +101,7 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
         }
     }
     distance = min_dist;
-    if (check_obstacle_near_ground(angle_deg, distance)) {
+    if (ignore_reading(angle_deg, distance, false)) {
         // obstacle near land, lets ignore it
         return false;
     }

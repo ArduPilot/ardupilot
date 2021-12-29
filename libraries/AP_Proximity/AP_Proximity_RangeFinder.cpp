@@ -50,7 +50,7 @@ void AP_Proximity_RangeFinder::update(void)
                 const float distance = sensor->distance();
                 _distance_min = sensor->min_distance_cm() * 0.01f;
                 _distance_max = sensor->max_distance_cm() * 0.01f;
-                if ((distance <= _distance_max) && (distance >= _distance_min) && !check_obstacle_near_ground(angle, distance)) {
+                if ((distance <= _distance_max) && (distance >= _distance_min) && !ignore_reading(angle, distance, false)) {
                     boundary.set_face_attributes(face, angle, distance);
                     // update OA database
                     database_push(angle, distance);
