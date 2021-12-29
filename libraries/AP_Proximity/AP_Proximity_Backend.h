@@ -89,19 +89,20 @@ protected:
 
     // correct an angle (in degrees) based on the orientation and yaw correction parameters
     float correct_angle_for_orientation(float angle_degrees) const;
-    
-    // check if a reading should be ignored because it falls into an ignore area
-    // angles should be in degrees and in the range of 0 to 360
-    bool ignore_reading(uint16_t angle_deg, float distance_m) const;
+
+    // check if a reading should be ignored because it falls into an ignore area (check_for_ign_area should be sent as false if this check is not needed)
+    // pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle)
+    // yaw is the horizontal body-frame angle (in degrees) to the obstacle (0=directly ahead of the vehicle, 90 is to the right of the vehicle)
+    // Also checks if obstacle is near land or out of range
+    // angles should be in degrees and in the range of 0 to 360, distance should be in meteres
+    bool ignore_reading(float pitch, float yaw, float distance_m, bool check_for_ign_area = true) const;
+    bool ignore_reading(float yaw, float distance_m, bool check_for_ign_area = true) const { return ignore_reading(0.0f, yaw, distance_m, check_for_ign_area); }
 
     // get alt from rangefinder in meters. This reading is corrected for vehicle tilt
     bool get_rangefinder_alt(float &alt_m) const;
 
     // Check if Obstacle defined by body-frame yaw and pitch is near ground
-    bool check_obstacle_near_ground(float yaw, float pitch, float distance) const;
-    bool check_obstacle_near_ground(float yaw, float distance) const { return check_obstacle_near_ground(yaw, 0.0f, distance); };
-    // Check if Obstacle defined by Vector3f is near ground. The vector is assumed to be body frame FRD
-    bool check_obstacle_near_ground(const Vector3f &obstacle) const;
+    bool check_obstacle_near_ground(float pitch, float yaw, float distance) const;
 
     // database helpers. All angles are in degrees
     static bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
