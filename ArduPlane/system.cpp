@@ -136,7 +136,7 @@ void Plane::init_ardupilot()
     reset_control_switch();
 
     // initialise sensor
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     if (optflow.enabled()) {
         optflow.init(-1);
     }

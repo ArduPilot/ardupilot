@@ -77,11 +77,9 @@
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
 
-// libraries which are dependent on #defines in defines.h and/or config.h
-#if OPTFLOW == ENABLED
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
-#endif
 
+// libraries which are dependent on #defines in defines.h and/or config.h
 #if RCMAP_ENABLED == ENABLED
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #endif
@@ -167,7 +165,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)};
 
     // Optical flow sensor
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     OpticalFlow optflow;
 #endif
 

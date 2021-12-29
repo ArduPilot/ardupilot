@@ -1,5 +1,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_OpticalFlow.h"
+
+#if AP_OPTICALFLOW_ENABLED
+
 #include "AP_OpticalFlow_Onboard.h"
 #include "AP_OpticalFlow_SITL.h"
 #include "AP_OpticalFlow_Pixart.h"
@@ -113,13 +116,17 @@ void OpticalFlow::init(uint32_t log_bit)
     case OpticalFlowType::NONE:
         break;
     case OpticalFlowType::PX4FLOW:
+#if AP_OPTICALFLOW_PX4FLOW_ENABLED
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
+#endif
         break;
     case OpticalFlowType::PIXART:
+#if AP_OPTICALFLOW_PIXART_ENABLED
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
         if (backend == nullptr) {
             backend = AP_OpticalFlow_Pixart::detect("pixartPC15", *this);
         }
+#endif
         break;
     case OpticalFlowType::BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
@@ -127,13 +134,17 @@ void OpticalFlow::init(uint32_t log_bit)
 #endif
         break;
     case OpticalFlowType::CXOF:
+#if AP_OPTICALFLOW_CXOF_ENABLED
         backend = AP_OpticalFlow_CXOF::detect(*this);
+#endif
         break;
     case OpticalFlowType::MAVLINK:
+#if AP_OPTICALFLOW_MAV_ENABLED
         backend = AP_OpticalFlow_MAV::detect(*this);
+#endif
         break;
     case OpticalFlowType::UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_OPTICALFLOW_HEREFLOW_ENABLED
         backend = new AP_OpticalFlow_HereFlow(*this);
 #endif
         break;
@@ -143,7 +154,9 @@ void OpticalFlow::init(uint32_t log_bit)
 #endif
         break;
     case OpticalFlowType::UPFLOW:
+#if AP_OPTICALFLOW_UPFLOW_ENABLED
         backend = AP_OpticalFlow_UPFLOW::detect(*this);
+#endif
         break;
     case OpticalFlowType::SITL:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -247,3 +260,5 @@ OpticalFlow *opticalflow()
 }
 
 }
+
+#endif // AP_OPTICALFLOW_ENABLED

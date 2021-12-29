@@ -132,7 +132,7 @@ bool Copter::ekf_over_threshold()
     }
 
     bool optflow_healthy = false;
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     optflow_healthy = optflow.healthy();
 #endif
     if (!optflow_healthy && (vel_variance >= (2.0f * g.fs_ekf_thresh))) {

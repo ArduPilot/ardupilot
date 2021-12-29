@@ -938,7 +938,7 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(afs,  "AFS_", AP_AdvancedFailsafe),
 #endif
 
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     // @Group: FLOW
     // @Path: ../libraries/AP_OpticalFlow/AP_OpticalFlow.cpp
     GOBJECT(optflow,   "FLOW", OpticalFlow),
