@@ -112,13 +112,13 @@ void AP_Motors::rc_write_angle(uint8_t chan, int16_t angle_cd)
 /*
   set frequency of a set of channels
  */
-void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
+void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
 {
     if (freq_hz > 50) {
-        _motor_fast_mask |= mask;
+        _motor_fast_mask |= motor_mask;
     }
 
-    mask = motor_mask_to_srv_channel_mask(mask);
+    const uint32_t mask = motor_mask_to_srv_channel_mask(motor_mask);
     hal.rcout->set_freq(mask, freq_hz);
 
     switch (pwm_type(_pwm_type.get())) {
@@ -152,9 +152,9 @@ void AP_Motors::rc_set_freq(uint32_t mask, uint16_t freq_hz)
           this is a motor output type for multirotors which honours
           the SERVOn_MIN/MAX values per channel
          */
-        _motor_pwm_range_mask |= mask;
+        _motor_pwm_range_mask |= motor_mask;
         for (uint8_t i=0; i<16; i++) {
-            if ((1U<<i) & mask) {
+            if ((1U<<i) & motor_mask) {
                 SRV_Channels::set_range(SRV_Channels::get_motor_function(i), 1000);
             }
         }
