@@ -25,11 +25,7 @@
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_UAVCAN/AP_UAVCAN.h>
-
-  // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    #include <AP_KDECAN/AP_KDECAN.h>
-  #endif
+  #include <AP_KDECAN/AP_KDECAN.h>
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
@@ -407,8 +403,7 @@ void SRV_Channels::push()
                 break;
             }
             case AP_CANManager::Driver_Type_KDECAN: {
-// To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if AP_KDECAN_ENABLED
                 AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
                 if (ap_kdecan == nullptr) {
                     continue;
