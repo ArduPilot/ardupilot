@@ -104,7 +104,7 @@ void AP_Airspeed_DLVR::timer()
 
     if ((data >> STATUS_SHIFT)) {
         // anything other then 00 in the status bits is an error
-        Debug("DLVR: Bad status read %d", data >> STATUS_SHIFT);
+        Debug("DLVR: Bad status read %u", (unsigned int)(data >> STATUS_SHIFT));
         return;
     }
 
@@ -112,15 +112,31 @@ void AP_Airspeed_DLVR::timer()
     uint32_t temp_raw = (data >> TEMPERATURE_SHIFT) & TEMPERATURE_MASK;
 
     float press_h2o = 1.25f * 2.0f * range_inH2O * ((pres_raw - DLVR_OFFSET) / DLVR_SCALE);
+
+    if ((press_h2o > range_inH2O) || (press_h2o < -range_inH2O)) {
+        Debug("DLVR: Out of range pressure %f", press_h2o);
+        return;
+    }
+
     float temp = temp_raw * (200.0f / 2047.0f) - 50.0f;
 
     WITH_SEMAPHORE(sem);
+
+    const uint32_t now = AP_HAL::millis();
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as we are only worried about the case where we had never read
+    if ((temperature != 0) && (fabsf(temperature - temp) > 10) && ((now - last_sample_time_ms) < 2000)) {
+        Debug("DLVR: Temperature swing %f", temp);
+        return;
+    }
+#pragma GCC diagnostic pop
 
     pressure_sum += INCH_OF_H2O_TO_PASCAL * press_h2o;
     temperature_sum += temp;
     press_count++;
     temp_count++;
-    last_sample_time_ms = AP_HAL::millis();
+    last_sample_time_ms = now;
 }
 
 // return the current differential_pressure in Pascal
