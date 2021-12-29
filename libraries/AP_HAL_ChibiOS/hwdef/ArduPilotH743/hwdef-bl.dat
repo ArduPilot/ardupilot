@@ -47,9 +47,6 @@ PA9  VBUS INPUT
 PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 32768
-
 define BOOTLOADER_DEBUG SD7
 
 # Add CS pins to ensure they are high in bootloader
