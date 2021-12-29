@@ -675,7 +675,8 @@ void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cd
                    || (ahrs_view->roll_sensor > max_angle_cd + start_angle && !is_positive(dir_sign)))
                    && ff_test_phase == 1 ) {
             ff_test_phase = 2;
-            angle_request_cd = attitude_control->get_att_target_euler_cd().x;
+            attitude_control->reset_target_and_rate(false);
+            angle_request_cd = ahrs_view->roll_sensor;
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(angle_request_cd, start_angles.y, 0.0f);
         } else if (ff_test_phase == 2 ) {
             angle_request_cd += (start_angles.x - angle_request_cd) * filt_alpha;
@@ -713,7 +714,8 @@ void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cd
                    || (ahrs_view->pitch_sensor > max_angle_cd + start_angle && !is_positive(dir_sign)))
                    && ff_test_phase == 1 ) {
             ff_test_phase = 2;
-            angle_request_cd = attitude_control->get_att_target_euler_cd().y;
+            attitude_control->reset_target_and_rate(false);
+            angle_request_cd = ahrs_view->pitch_sensor;
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(start_angles.x, angle_request_cd, 0.0f);
         } else if (ff_test_phase == 2 ) {
             angle_request_cd += (start_angles.x - angle_request_cd) * filt_alpha;
@@ -751,7 +753,8 @@ void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cd
                    || (wrap_180_cd(ahrs_view->yaw_sensor - trim_heading) > 2.0f * max_angle_cd && !is_positive(dir_sign)))
                    && ff_test_phase == 1 ) {
             ff_test_phase = 2;
-            angle_request_cd = attitude_control->get_att_target_euler_cd().z;
+            attitude_control->reset_yaw_target_and_rate(false);
+            angle_request_cd = wrap_180_cd(ahrs_view->yaw_sensor - trim_heading);
             attitude_control->input_euler_angle_roll_pitch_yaw(start_angles.x, start_angles.y, angle_request_cd, false);
         } else if (ff_test_phase == 2 ) {
             angle_request_cd += wrap_180_cd(trim_heading - angle_request_cd) * filt_alpha;
