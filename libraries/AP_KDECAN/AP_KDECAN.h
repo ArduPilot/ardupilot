@@ -20,23 +20,28 @@
  
 #pragma once
 
-#include <AP_CANManager/AP_CANDriver.h>
+#include <AP_HAL/AP_HAL.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#ifndef AP_KDECAN_ENABLED
+    #define AP_KDECAN_ENABLED (HAL_NUM_CAN_IFACES && !HAL_MINIMIZE_FEATURES) && !defined(HAL_BUILD_AP_PERIPH)
+#endif
 
-#include <AP_HAL/Semaphores.h>
+#if AP_KDECAN_ENABLED
 
+#include <AP_CANManager/AP_CANSensor.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
-#include <atomic>
+#define AP_KDECAN_USE_EVENTS (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_CFG_USE_EVENTS == TRUE)
 
-// there are 12 motor functions in SRV_Channel but CAN driver can't keep up
+#define DEFAULT_NUM_POLES 14
+
 #define KDECAN_MAX_NUM_ESCS 8
 
-class AP_KDECAN : public AP_CANDriver, public AP_ESC_Telem_Backend {
+class AP_KDECAN : public CANSensor, public AP_ESC_Telem_Backend {
 public:
-    AP_KDECAN();
+    AP_KDECAN(const uint8_t driver_index);
     
     /* Do not allow copies */
     AP_KDECAN(const AP_KDECAN &other) = delete;
@@ -47,47 +52,73 @@ public:
     // Return KDECAN from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_KDECAN *get_kdecan(uint8_t driver_index);
 
-    void init(uint8_t driver_index, bool enable_filters) override;
-    bool add_interface(AP_HAL::CANIface* can_iface) override;
-
     // called from SRV_Channels
     void update();
     
     // check that arming can happen
     bool pre_arm_check(char* reason, uint8_t reason_len);
 
+#ifdef HAL_BUILD_AP_PERIPH
+    void set_param_npole(const int8_t value) { _telemetry.num_poles = value; }
+#endif
+
     // caller checks that vehicle isn't armed
     // start_stop: true to start, false to stop
     bool run_enumeration(bool start_stop);
 
 private:
+
+    // enumeration for self-ordering
+    enum class ENUMERATION_STATE : uint8_t {
+        START,
+        RUNNING,
+        STOP,
+        CHECK_STATUS,
+        STOPPED,
+    };
+
+    // handler for incoming frames
+    void handle_frame(AP_HAL::CANFrame &frame) override;
+    
+    void handle_frame_discovery(AP_HAL::CANFrame &esc_id_frame);
+    void request_telemetry();
+    bool send_packet_uint16(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint16_t data);
+    bool send_packet(const uint8_t address, const uint8_t dest_id, const uint32_t timeout_ms, const uint8_t *data = nullptr, const uint8_t data_len = 0);
+
+    void update_enumeration();
+
     void loop();
 
-    bool _initialized;
-    char _thread_name[11];
-    uint8_t _driver_index;
-    AP_HAL::CANIface* _can_iface;
-    HAL_EventHandle _event_handle;
+    struct {
+        char thread_name[11];
+        uint8_t driver_index;
+    } _init;
 
-    AP_Int8 _num_poles;
+    struct {
+        // ESC detected information
+        uint32_t timer_ms;
+        uint16_t present_bitmask = 0;
+        uint8_t max_node_id;
+        uint8_t esc_num;
+        ENUMERATION_STATE state = ENUMERATION_STATE::STOPPED;
+    } _enumeration;
 
-    // ESC detected information
-    uint16_t _esc_present_bitmask;
-    uint8_t _esc_max_node_id;
+    struct {
+        HAL_Semaphore sem;
+        bool is_new;
+        uint32_t last_new_ms;
+        uint16_t pwm[KDECAN_MAX_NUM_ESCS];
+#if AP_KDECAN_USE_EVENTS
+        thread_t *thread_ctx;
+#endif
+        uint16_t present_bitmask;
+        uint16_t max_node_id;
+    } _output;
 
-    // enumeration
-    HAL_Semaphore _enum_sem;
-    enum enumeration_state_t : uint8_t {
-        ENUMERATION_STOPPED,
-        ENUMERATION_START,
-        ENUMERATION_STOP,
-        ENUMERATION_RUNNING
-    } _enumeration_state = ENUMERATION_STOPPED;
-
-    // PWM output
-    HAL_Semaphore _rc_out_sem;
-    std::atomic<bool> _new_output;
-    uint16_t _scaled_output[KDECAN_MAX_NUM_ESCS];
+    struct {
+        AP_Int8 num_poles;
+        uint32_t timer_ms;
+    } _telemetry;
 
     union frame_id_t {
         struct PACKED {
@@ -117,11 +148,11 @@ private:
     static const uint8_t ENUM_OBJ_ADDR = 10;
     static const uint8_t TELEMETRY_OBJ_ADDR = 11;
 
-    static const uint16_t SET_PWM_MIN_INTERVAL_US = 2500;
-    static const uint32_t TELEMETRY_INTERVAL_US = 100000;
 
-    static const uint32_t SET_PWM_TIMEOUT_US = 2000;
-    static const uint16_t TELEMETRY_TIMEOUT_US = 500;
+    static const uint32_t PWM_MIN_INTERVAL_MS = 3;
+    static const uint32_t PWM_IS_NEW_TIMEOUT_MS = 1000;
+    static const uint32_t TELEMETRY_INTERVAL_MS = 100;
     static const uint16_t ENUMERATION_TIMEOUT_MS = 30000;
+
 };
-#endif //HAL_NUM_CAN_IFACES
+#endif //AP_KDECAN_ENABLED
