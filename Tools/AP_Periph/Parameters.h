@@ -51,6 +51,7 @@ public:
         k_param_gps_mb_only_can_port,
         k_param_scripting,
         k_param_esc_telem_port,
+        k_param_kdecan_npole_param,
     };
 
     AP_Int16 format_version;
@@ -109,6 +110,10 @@ public:
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     AP_Int8 esc_telem_port;
 #endif
+#endif
+
+#if AP_KDECAN_ENABLED
+    AP_Int8 kdecan_npole_param;
 #endif
 
     AP_Int8 debug;

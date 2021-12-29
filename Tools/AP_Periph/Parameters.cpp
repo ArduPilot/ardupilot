@@ -367,6 +367,14 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_Scripting/AP_Scripting.cpp
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
+
+#if AP_KDECAN_ENABLED
+    // @Param: KDE_NPOLE
+    // @DisplayName: Number of motor poles
+    // @Description: Sets the number of motor poles to calculate the correct RPM value
+    GSCALAR(kdecan_npole_param,         "KDE_NPOLE",  DEFAULT_NUM_POLES),
+  #endif
+
     AP_VAREND
 };
 

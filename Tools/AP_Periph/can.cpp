@@ -27,6 +27,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <dronecan_msgs.h>
+#include <AP_KDECAN/AP_KDECAN.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include "../AP_Bootloader/app_comms.h"
@@ -736,6 +737,16 @@ static void handle_esc_rawcommand(CanardInstance* ins, CanardRxTransfer* transfe
         return;
     }
     periph.rcout_esc(cmd.cmd.data, cmd.cmd.len);
+
+#if AP_KDECAN_ENABLED
+    SRV_Channels::calc_pwm();
+    for (auto &can_ins : instances) {
+        if (can_ins.cansensor != nullptr && can_ins.protocol == AP_CANManager::Driver_Type_KDECAN) {
+            static_cast<AP_KDECAN*>(can_ins.cansensor)->update();
+        }
+    }
+#endif
+
 }
 
 static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
@@ -1264,7 +1275,7 @@ static void process1HzTasks(uint64_t timestamp_usec)
     cleanup_stale_transactions(timestamp_usec);
 
     /*
-     * Printing the memory usage statistics.
+     * Printing the memory usage statistics and other slow tasks per instance
      */
     {
         /*
@@ -1275,6 +1286,12 @@ static void process1HzTasks(uint64_t timestamp_usec)
             if (pool_peak_percent(ins) > 70) {
                 printf("WARNING: ENLARGE MEMORY POOL on Iface %d\n", ins.index);
             }
+
+#if AP_KDECAN_ENABLED
+            if (ins.cansensor != nullptr && ins.protocol == AP_CANManager::Driver_Type_KDECAN) {
+                static_cast<AP_KDECAN*>(ins.cansensor)->set_param_npole(periph.g.kdecan_npole_param);
+            }
+#endif
         }
     }
 
@@ -1446,6 +1463,13 @@ void AP_Periph_FW::can_start()
         if (PreferredNodeID != CANARD_BROADCAST_NODE_ID) {
             canardSetLocalNodeID(&instances[i].canard, PreferredNodeID);
         }
+
+        // initialize stand-alone CAN drivers
+#if AP_KDECAN_ENABLED
+        if (instances[i].protocol == AP_CANManager::Driver_Type_KDECAN) {
+            instances[i].cansensor = new AP_KDECAN(i);
+        }
+#endif
     }
 }
 
