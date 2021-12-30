@@ -15,9 +15,6 @@ bool ModeQLoiter::_enter()
 
     quadplane.init_throttle_wait();
 
-    // remember initial pitch
-    quadplane.loiter_initial_pitch_cd = MAX(plane.ahrs.pitch_sensor, 0);
-
     // prevent re-init of target position
     quadplane.last_loiter_ms = AP_HAL::millis();
     return true;
