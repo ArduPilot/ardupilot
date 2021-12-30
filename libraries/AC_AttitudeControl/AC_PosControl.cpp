@@ -446,11 +446,6 @@ void AC_PosControl::set_correction_speed_accel_xy(float speed_cms, float accel_c
 void AC_PosControl::init_xy_controller()
 {
     init_xy();
-
-    // set resultant acceleration to current attitude target
-    Vector3f accel_target;
-    lean_angles_to_accel_xy(accel_target.x, accel_target.y);
-    _pid_vel_xy.set_integrator(accel_target - _accel_desired);
 }
 
 /// init_xy_controller_stopping_point - initialise the position controller to the stopping point with zero velocity and acceleration.
@@ -502,6 +497,7 @@ void AC_PosControl::init_xy()
     _accel_desired.xy().limit_length(_accel_max_xy_cmss);
 
     lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+    _accel_target.xy().limit_length(_accel_max_xy_cmss);
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
