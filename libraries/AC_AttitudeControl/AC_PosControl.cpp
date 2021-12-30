@@ -496,7 +496,7 @@ void AC_PosControl::init_xy()
     _accel_desired.xy() = curr_accel.xy();
     _accel_desired.xy().limit_length(_accel_max_xy_cmss);
 
-    lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+    lean_angles_to_accel_xy(_accel_target.x, _accel_target.y, true);
     _accel_target.xy().limit_length(_accel_max_xy_cmss);
 
     // initialise I terms from lean angles
@@ -1144,7 +1144,7 @@ void AC_PosControl::write_log()
 {
     if (is_active_xy()) {
         float accel_x, accel_y;
-        lean_angles_to_accel_xy(accel_x, accel_y);
+        lean_angles_to_accel_xy(accel_x, accel_y, false);
         AP::logger().Write_PSCN(get_pos_target_cm().x, _inav.get_position_neu_cm().x,
                                 get_vel_desired_cms().x, get_vel_target_cms().x, _inav.get_velocity_neu_cms().x,
                                 _accel_desired.x, get_accel_target_cmss().x, accel_x);
@@ -1196,10 +1196,13 @@ void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss,
 
 // lean_angles_to_accel_xy - convert roll, pitch lean target angles to NE frame accelerations in cm/s/s
 // todo: this should be based on thrust vector attitude control
-void AC_PosControl::lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_cmss) const
+void AC_PosControl::lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_cmss, bool limit_angle_max) const
 {
     // rotate our roll, pitch angles into lat/lon frame
     Vector3f att_target_euler = _attitude_control.get_att_target_euler_rad();
+    if (limit_angle_max) {
+        att_target_euler.xy().limit_length(radians(get_lean_angle_max_cd() * 0.01));
+    }
     att_target_euler.z = _ahrs.yaw;
     Vector3f accel_cmss = lean_angles_to_accel(att_target_euler);
 

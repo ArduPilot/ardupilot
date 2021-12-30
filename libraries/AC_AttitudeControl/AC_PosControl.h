@@ -408,7 +408,7 @@ protected:
     void accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const;
 
     // lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
-    void lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_cmss) const;
+    void lean_angles_to_accel_xy(float& accel_x_cmss, float& accel_y_cmss, bool limit_angle_max) const;
 
     // calculate_yaw_and_rate_yaw - calculate the vehicle yaw and rate of yaw.
     bool calculate_yaw_and_rate_yaw();
