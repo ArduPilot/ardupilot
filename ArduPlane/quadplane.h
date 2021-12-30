@@ -374,9 +374,6 @@ private:
 
     Location last_auto_target;
 
-    // pitch when we enter loiter mode
-    int32_t loiter_initial_pitch_cd;
-
     // when did we last run the attitude controller?
     uint32_t last_att_control_ms;
 
