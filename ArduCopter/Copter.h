@@ -864,7 +864,6 @@ private:
     void rpm_update();
     void update_optical_flow(void);
     void compass_cal_update(void);
-    void init_proximity();
 
     // RC_Channel.cpp
     void save_trim();

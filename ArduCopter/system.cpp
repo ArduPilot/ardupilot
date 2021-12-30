@@ -149,8 +149,10 @@ void Copter::init_ardupilot()
     // initialise rangefinder
     init_rangefinder();
 
+#if HAL_PROXIMITY_ENABLED
     // init proximity sensor
-    init_proximity();
+    g2.proximity.init();
+#endif
 
 #if BEACON_ENABLED == ENABLED
     // init beacons used for non-gps position estimation

@@ -159,12 +159,3 @@ void Copter::rpm_update(void)
     }
 #endif
 }
-
-
-// initialise proximity sensor
-void Copter::init_proximity(void)
-{
-#if HAL_PROXIMITY_ENABLED
-    g2.proximity.init();
-#endif
-}
