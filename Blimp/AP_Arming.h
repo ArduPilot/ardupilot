@@ -12,7 +12,7 @@ public:
     {
         // default REQUIRE parameter to 1 (Blimp does not have an
         // actual ARMING_REQUIRE parameter)
-        require.set_default((uint8_t)Required::YES_MIN_PWM);
+        set_arming_required_default(Required::YES_MIN_PWM);
     }
 
     /* Do not allow copies */
