@@ -233,12 +233,6 @@ protected:
     // publish a temperature value
     void _publish_temperature(uint8_t instance, float temperature);
 
-    // set accelerometer error_count
-    void _set_accel_error_count(uint8_t instance, uint32_t error_count);
-
-    // set gyro error_count
-    void _set_gyro_error_count(uint8_t instance, uint32_t error_count);
-
     // increment accelerometer error_count
     void _inc_accel_error_count(uint8_t instance);
 
