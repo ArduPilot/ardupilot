@@ -664,18 +664,6 @@ void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
     _imu._accel_max_abs_offsets[instance] = max_offset;
 }
 
-// set accelerometer error_count
-void AP_InertialSensor_Backend::_set_accel_error_count(uint8_t instance, uint32_t error_count)
-{
-    _imu._accel_error_count[instance] = error_count;
-}
-
-// set gyro error_count
-void AP_InertialSensor_Backend::_set_gyro_error_count(uint8_t instance, uint32_t error_count)
-{
-    _imu._gyro_error_count[instance] = error_count;
-}
-
 // increment accelerometer error_count
 void AP_InertialSensor_Backend::_inc_accel_error_count(uint8_t instance)
 {
