@@ -125,9 +125,10 @@ public:
     Method last_disarm_method() const { return _last_disarm_method; } 
 
 protected:
-
+    void set_arming_required_default(Required default_require) {
+        require.set_default((uint8_t)default_require);
+    }
     // Parameters
-    AP_Int8                 require;
     AP_Int32                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
@@ -213,6 +214,8 @@ protected:
 private:
 
     static AP_Arming *_singleton;
+
+    AP_Int8                 require;
 
     bool ins_accels_consistent(const AP_InertialSensor &ins);
     bool ins_gyros_consistent(const AP_InertialSensor &ins);
