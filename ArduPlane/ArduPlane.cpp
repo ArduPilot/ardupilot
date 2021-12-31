@@ -243,13 +243,12 @@ void Plane::update_logging2(void)
 {
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
+        write_notch_log_messages();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
-#else
-        write_notch_log_messages();
 #endif
     }
-    
+
     if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
         Log_Write_Guided();
