@@ -239,8 +239,6 @@ public:
 
 #endif // AP_SCRIPTING_ENABLED
 
-    // write out harmonic notch log messages
-    void write_notch_log_messages() const;
     // update the harmonic notch
     virtual void update_dynamic_notch() {};
 
