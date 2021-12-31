@@ -666,12 +666,20 @@ void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
 // increment accelerometer error_count
 void AP_InertialSensor_Backend::_inc_accel_error_count(uint8_t instance)
 {
+    // prevent integer wrapping:
+    if (_imu._accel_error_count[instance] == UINT32_MAX) {
+        return;
+    }
     _imu._accel_error_count[instance]++;
 }
 
 // increment gyro error_count
 void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
 {
+    // prevent integer wrapping:
+    if (_imu._gyro_error_count[instance] == UINT32_MAX) {
+        return;
+    }
     _imu._gyro_error_count[instance]++;
 }
 

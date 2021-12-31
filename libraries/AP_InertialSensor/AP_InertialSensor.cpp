@@ -1618,52 +1618,24 @@ void AP_InertialSensor::update(void)
             }
         }
 
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_error_count[i] < _accel_startup_error_count[i]) {
-                _accel_startup_error_count[i] = _accel_error_count[i];
-            }
-            if (_gyro_error_count[i] < _gyro_startup_error_count[i]) {
-                _gyro_startup_error_count[i] = _gyro_error_count[i];
-            }
+    // set our primary accel and gyro to those with the lowest error counts:
+    uint32_t lowest_accel_error_count = UINT32_MAX;
+    uint32_t lowest_gyro_error_count = UINT32_MAX;
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        if (!_use[i]) {
+            continue;
         }
-
-        // adjust health status if a sensor has a non-zero error count
-        // but another sensor doesn't.
-        bool have_zero_accel_error_count = false;
-        bool have_zero_gyro_error_count = false;
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _accel_error_count[i] <= _accel_startup_error_count[i]) {
-                have_zero_accel_error_count = true;
-            }
-            if (_gyro_healthy[i] && _gyro_error_count[i] <= _gyro_startup_error_count[i]) {
-                have_zero_gyro_error_count = true;
-            }
+        const uint32_t accel_error_count = _accel_error_count[i] - _accel_startup_error_count[i];
+        const uint32_t gyro_error_count = _gyro_error_count[i] - _gyro_startup_error_count[i];
+        if (_accel_healthy[i] && accel_error_count < lowest_accel_error_count) {
+            lowest_accel_error_count = accel_error_count;
+            _primary_accel = i;
         }
-
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _gyro_error_count[i] > _gyro_startup_error_count[i] && have_zero_gyro_error_count) {
-                // we prefer not to use a gyro that has had errors
-                _gyro_healthy[i] = false;
-            }
-            if (_accel_healthy[i] && _accel_error_count[i] > _accel_startup_error_count[i] && have_zero_accel_error_count) {
-                // we prefer not to use a accel that has had errors
-                _accel_healthy[i] = false;
-            }
+        if (_gyro_healthy[i] && gyro_error_count < lowest_gyro_error_count) {
+            lowest_gyro_error_count = gyro_error_count;
+            _primary_gyro = i;
         }
-
-        // set primary to first healthy accel and gyro
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_gyro_healthy[i] && _use[i]) {
-                _primary_gyro = i;
-                break;
-            }
-        }
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            if (_accel_healthy[i] && _use[i]) {
-                _primary_accel = i;
-                break;
-            }
-        }
+    }
 
     _last_update_usec = AP_HAL::micros();
     
