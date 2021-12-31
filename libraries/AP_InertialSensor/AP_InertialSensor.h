@@ -276,6 +276,9 @@ public:
         return _harmonic_notch_filter.hasOption(option);
     }
 
+    // write out harmonic notch log messages
+    void write_notch_log_messages() const;
+
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
 
