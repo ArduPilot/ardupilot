@@ -225,8 +225,8 @@ private:
     //variables from rate FF test
     float trim_command_reading;
     float trim_heading;
-    float rate_request_cds;
-    float angle_request_cd;
+    LowPassFilterFloat rate_request_cds;
+    LowPassFilterFloat angle_request_cd;
 
     // variables from rate dwell test
     Vector3f trim_attitude_cd;
