@@ -777,9 +777,6 @@ float AP_GyroFFT::calculate_weighted_freq_hz(const Vector3f& energy, const Vecto
 // log gyro fft messages
 void AP_GyroFFT::write_log_messages()
 {
-    // still want to see the harmonic notch values
-    AP::vehicle()->write_notch_log_messages();
-
     if (!analysis_enabled()) {
         return;
     }
