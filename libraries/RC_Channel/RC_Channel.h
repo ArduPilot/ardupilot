@@ -227,6 +227,7 @@ public:
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
         EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
+        WEATHER_VANE_ENABLE = 158, // enable/disable weathervaning
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
