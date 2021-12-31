@@ -260,10 +260,9 @@ void Blimp::update_altitude()
     read_barometer();
 
     if (should_log(MASK_LOG_CTUN)) {
+        write_notch_log_messages();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();
-#else
-        write_notch_log_messages();
 #endif
     }
 }
