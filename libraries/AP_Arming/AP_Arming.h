@@ -79,7 +79,8 @@ public:
     enum class Required {
         NO           = 0,
         YES_MIN_PWM  = 1,
-        YES_ZERO_PWM = 2
+        YES_ZERO_PWM = 2,
+        AUTO_ARM_FORCE_CHECKS = 3
     };
 
     void init(void);
@@ -222,6 +223,11 @@ private:
 
     // check if we should keep logging after disarming
     void check_forced_logging(const AP_Arming::Method method);
+
+    // arm() in a low priority thread for AUTO_ARM_FORCE_CHECKS
+    void low_priority_arm();
+    bool low_priority_arm_initialized{false};
+    uint32_t last_arm_trial{0};
 
     enum MIS_ITEM_CHECK {
         MIS_ITEM_CHECK_LAND          = (1 << 0),

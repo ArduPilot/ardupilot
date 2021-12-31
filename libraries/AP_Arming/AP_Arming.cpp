@@ -151,7 +151,30 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return (Required)require.get() == Required::NO || armed;
+    if (!armed && !low_priority_arm_initialized &&
+     arming_required() == Required::AUTO_ARM_FORCE_CHECKS) {
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Arming::low_priority_arm, void));
+        low_priority_arm_initialized = true;
+    }
+    return arming_required() == Required::NO || armed;
+}
+
+/*
+    This tries to arm() forcing all checks every 1.5 seconds to avoid over loading
+    It should be run on another low priority thread to avoid an issue where arm()
+    caused imu_reset with Pixhawk1 when INS_FAST_SAMPLE is enabled
+*/
+void AP_Arming::low_priority_arm()
+{
+    if (armed || arming_required() != Required::AUTO_ARM_FORCE_CHECKS) {
+        return;
+    }
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_arm_trial > 1500) {
+        last_arm_trial = now;
+        arm(AP_Arming::Method::UNKNOWN, true);
+    }
+    return;
 }
 
 uint32_t AP_Arming::get_enabled_checks() const
