@@ -441,24 +441,12 @@ void AC_PosControl::set_correction_speed_accel_xy(float speed_cms, float accel_c
     _p_pos_xy.set_limits(speed_cms, accel_cmss, 0.0f);
 }
 
-/// init_xy_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
-///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
-void AC_PosControl::init_xy_controller()
-{
-    init_xy();
-
-    // set resultant acceleration to current attitude target
-    Vector3f accel_target;
-    lean_angles_to_accel_xy(accel_target.x, accel_target.y);
-    _pid_vel_xy.set_integrator(accel_target - _accel_desired);
-}
-
 /// init_xy_controller_stopping_point - initialise the position controller to the stopping point with zero velocity and acceleration.
 ///     This function should be used when the expected kinematic path assumes a stationary initial condition but does not specify a specific starting position.
 ///     The starting position can be retrieved by getting the position target using get_pos_target_cm() after calling this function.
 void AC_PosControl::init_xy_controller_stopping_point()
 {
-    init_xy();
+    init_xy_controller();
 
     get_stopping_point_xy_cm(_pos_target.xy());
     _vel_desired.xy().zero();
@@ -471,7 +459,7 @@ void AC_PosControl::init_xy_controller_stopping_point()
 ///     This function decays the output acceleration by 95% every half second to achieve a smooth transition to zero requested acceleration.
 void AC_PosControl::relax_velocity_controller_xy()
 {
-    init_xy();
+    init_xy_controller();
 
     // decay resultant acceleration and therefore current attitude target to zero
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
@@ -480,9 +468,10 @@ void AC_PosControl::relax_velocity_controller_xy()
     _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
 }
 
-/// init_xy - initialise the position controller to the current position, velocity and acceleration.
+/// init_xy_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
+///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
 ///     This function is private and contains all the shared xy axis initialisation functions
-void AC_PosControl::init_xy()
+void AC_PosControl::init_xy_controller()
 {
     // set roll, pitch lean angle targets to current attitude
     const Vector3f &att_target_euler_cd = _attitude_control.get_att_target_euler_cd();
@@ -502,6 +491,11 @@ void AC_PosControl::init_xy()
     _accel_desired.xy().limit_length(_accel_max_xy_cmss);
 
     lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+
+    // limit acceleration using maximum lean angles
+    float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
+    float accel_max = GRAVITY_MSS * 100.0f * tanf(ToRad(angle_max * 0.01f));
+    _accel_target.xy().limit_length(accel_max);
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
@@ -700,17 +694,6 @@ void AC_PosControl::set_correction_speed_accel_z(float speed_down, float speed_u
 
 /// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
 ///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
-void AC_PosControl::init_z_controller()
-{
-    // Initialise the position controller to the current position, velocity and acceleration.
-    init_z();
-
-    // Set accel PID I term based on the current throttle
-    _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
-}
-
-/// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
-///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
 ///     This function does not allow any negative velocity or acceleration
 void AC_PosControl::init_z_controller_no_descent()
 {
@@ -742,7 +725,7 @@ void AC_PosControl::init_z_controller_stopping_point()
 void AC_PosControl::relax_z_controller(float throttle_setting)
 {
     // Initialise the position controller to the current position, velocity and acceleration.
-    init_z();
+    init_z_controller();
 
     // Set accel PID I term based on the requested throttle
     float throttle = _attitude_control.get_throttle_in();
@@ -750,9 +733,10 @@ void AC_PosControl::relax_z_controller(float throttle_setting)
     _pid_accel_z.set_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
 }
 
-/// init_z - initialise the position controller to the current position, velocity and acceleration.
+/// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
+///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
 ///     This function is private and contains all the shared z axis initialisation functions
-void AC_PosControl::init_z()
+void AC_PosControl::init_z_controller()
 {
     _pos_target.z = _inav.get_position_z_up_cm();
 
@@ -776,6 +760,9 @@ void AC_PosControl::init_z()
     _pos_offset_z = 0.0;
     _vel_offset_z = 0.0;
     _accel_offset_z = 0.0;
+
+    // Set accel PID I term based on the current throttle
+    _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f);
 
     // initialise ekf z reset handler
     init_ekf_z_reset();
