@@ -30,7 +30,10 @@ void GlitchFilter::init(const float filter_koef, const float scaling, float pena
     _filter_koef = filter_koef;
     _scaling = scaling;
 
-    if (_penalty < 1.0f) penalty = 1.0f;
+    if (penalty < 1.0f) {
+        penalty = 1.0f;
+    }
+    
     _penalty = penalty;
 
     reset();
