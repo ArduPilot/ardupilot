@@ -159,8 +159,6 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    const char* get_frame_string() const override { return "HELI"; }
-
 protected:
 
     // manual servo modes (used for setup)
@@ -226,6 +224,8 @@ protected:
 
     // updates the takeoff collective flag indicating that current collective is greater than collective required to indicate takeoff.
     void update_takeoff_collective_flag(float coll_out);
+
+    const char* _get_frame_string() const override { return "HELI"; }
 
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {

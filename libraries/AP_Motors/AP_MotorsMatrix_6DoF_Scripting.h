@@ -37,14 +37,14 @@ public:
     // if the expected number of motors have been setup then set as initalized
     bool init(uint8_t expected_num_motors) override;
 
-    const char* get_frame_string() const override { return "6DoF scripting"; }
-
 protected:
     // output - sends commands to the motors
     void output_armed_stabilizing() override;
 
     // nothing to do for setup, scripting will mark as initalized when done
     void setup_motors(motor_frame_class frame_class, motor_frame_type frame_type) override {};
+
+    const char* _get_frame_string() const override { return "6DoF scripting"; }
 
     float _forward_factor[AP_MOTORS_MAX_NUM_MOTORS];      // each motors contribution to forward thrust
     float _right_factor[AP_MOTORS_MAX_NUM_MOTORS];        // each motors contribution to right thrust
