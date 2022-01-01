@@ -217,7 +217,7 @@ void AP_Frsky_MAVliteMsgHandler::handle_param_set(const AP_Frsky_MAVlite_Message
     }
     if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Param write denied (%s)", param_name);
-    } else if (!AP_Param::set_and_save(param_name, param_value)) {
+    } else if (!AP_Param::set_and_save_by_name(param_name, param_value)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Param write failed (%s)", param_name);
     }
     // let's read back the last value, either the readonly one or the updated one
