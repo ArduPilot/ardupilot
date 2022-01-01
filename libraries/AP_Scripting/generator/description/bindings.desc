@@ -294,8 +294,10 @@ singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHAN
 include AP_Param/AP_Param.h
 singleton AP_Param alias param
 singleton AP_Param method get boolean string float'Null
-singleton AP_Param method set boolean string float'skip_check
-singleton AP_Param method set_and_save boolean string float'skip_check
+singleton AP_Param method set_by_name boolean string float'skip_check
+singleton AP_Param method set_by_name alias set
+singleton AP_Param method set_and_save_by_name boolean string float'skip_check
+singleton AP_Param method set_and_save_by_name alias set_and_save
 
 include AP_Scripting/AP_Scripting_helpers.h
 userdata Parameter method init boolean string
