@@ -33,3 +33,5 @@ add_motor(AP_MOTORS_MOT_5,  30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1)
 add_motor(AP_MOTORS_MOT_6,-150, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4)
 
 assert(MotorsMatrix:init(6), "Failed to init MotorsMatrix")
+
+motors:set_frame_string("fault tolerant hex")
