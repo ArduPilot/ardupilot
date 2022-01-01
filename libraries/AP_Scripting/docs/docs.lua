@@ -646,6 +646,15 @@ function RC_Channel_ud:norm_input() end
 
 
 -- desc
+---@class motors
+motors = {}
+
+-- desc
+---@param param1 string
+function motors:set_frame_string(param1) end
+
+
+-- desc
 ---@class periph
 periph = {}
 
