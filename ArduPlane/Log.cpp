@@ -534,8 +534,9 @@ void Plane::Log_Write_Vehicle_Startup_Messages()
     Log_Write_Startup(TYPE_GROUNDSTART_MSG);
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.initialised) {
-        logger.Write_MessageF("QuadPlane Frame: %s/%s", quadplane.motors->get_frame_string(),
-                                                        quadplane.motors->get_type_string());
+        char frame_and_type_string[30];
+        quadplane.motors->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
+        logger.Write_MessageF("QuadPlane %s", frame_and_type_string);
     }
 #endif
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);

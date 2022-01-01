@@ -727,7 +727,9 @@ bool QuadPlane::setup(void)
     // param count will have changed
     AP_Param::invalidate_count();
 
-    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised, class: %s, type: %s", motors->get_frame_string(), motors->get_type_string());
+    char frame_and_type_string[30];
+    motors->get_frame_and_type_string(frame_and_type_string, ARRAY_SIZE(frame_and_type_string));
+    gcs().send_text(MAV_SEVERITY_INFO, "QuadPlane initialised, %s", frame_and_type_string);
     initialised = true;
     return true;
 }
