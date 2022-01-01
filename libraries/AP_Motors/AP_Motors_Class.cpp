@@ -52,7 +52,11 @@ void AP_Motors::get_frame_and_type_string(char *buffer, uint8_t buflen) const
 {
     const char *frame_str = get_frame_string();
     const char *type_str = get_type_string();
-    if (type_str != nullptr && strlen(type_str)) {
+    if (type_str != nullptr && strlen(type_str)
+#if AP_SCRIPTING_ENABLED
+        && custom_frame_string == nullptr
+#endif
+    ) {
         hal.util->snprintf(buffer, buflen, "Frame: %s/%s", frame_str, type_str);
     } else {
         hal.util->snprintf(buffer, buflen, "Frame: %s", frame_str);
@@ -226,6 +230,31 @@ bool AP_Motors::is_digital_pwm_type() const
     }
     return false;
 }
+
+// return string corresponding to frame_class
+const char* AP_Motors::get_frame_string() const
+{
+#if AP_SCRIPTING_ENABLED
+    if (custom_frame_string != nullptr) {
+        return custom_frame_string;
+    }
+#endif
+    return _get_frame_string();
+}
+
+#if AP_SCRIPTING_ENABLED
+// set custom frame string
+void AP_Motors::set_frame_string(const char * str) {
+    if (custom_frame_string != nullptr) {
+        return;
+    }
+    const size_t len = strlen(str)+1;
+    custom_frame_string = new char[len];
+    if (custom_frame_string != nullptr) {
+        strncpy(custom_frame_string, str, len);
+    }
+}
+#endif
 
 namespace AP {
     AP_Motors *motors()

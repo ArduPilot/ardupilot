@@ -49,8 +49,6 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t            get_motor_mask() override;
 
-    const char* get_frame_string() const override { return "COAX"; }
-
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -58,4 +56,6 @@ protected:
     float               _actuator_out[NUM_ACTUATORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     float               _thrust_yt_ccw;
     float               _thrust_yt_cw;
+
+    const char* _get_frame_string() const override { return "COAX"; }
 };

@@ -43,13 +43,13 @@ public:
     // output - sends commands to the motors
     void output_to_motors() override;
 
-    const char* get_frame_string() const override { return "Dynamic Matrix"; }
-
 protected:
 
     // Do not apply thrust compensation, this is used by Quadplane tiltrotors
     // assume the compensation is done in the mixer and should not be done by quadplane
     void thrust_compensation(void) override {};
+
+    const char* _get_frame_string() const override { return "Dynamic Matrix"; }
 
 private:
 

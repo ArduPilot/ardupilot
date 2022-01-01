@@ -74,8 +74,6 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    const char* get_frame_string() const override { return "HELI_QUAD"; }
-
 protected:
 
     // init_outputs
@@ -89,6 +87,8 @@ protected:
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
+
+    const char* _get_frame_string() const override { return "HELI_QUAD"; }
 
     // rate factors
     float _rollFactor[AP_MOTORS_HELI_QUAD_NUM_MOTORS];

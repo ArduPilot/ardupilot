@@ -73,7 +73,7 @@ public:
     };
 
     // return string corresponding to frame_class
-    virtual const char* get_frame_string() const = 0;
+    const char* get_frame_string() const;
 
     enum motor_frame_type {
         MOTOR_FRAME_TYPE_PLUS = 0,
@@ -95,8 +95,6 @@ public:
         MOTOR_FRAME_TYPE_Y4 = 19, //Y4 Quadrotor frame
     };
 
-    // return string corresponding to frame_type
-    virtual const char* get_type_string() const { return ""; }
 
     // returns a formatted string into buffer, e.g. "QUAD/X"
     void get_frame_and_type_string(char *buffer, uint8_t buflen) const;
@@ -256,6 +254,10 @@ public:
     // direct motor write
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
 
+#if AP_SCRIPTING_ENABLED
+    void set_frame_string(const char * str);
+#endif
+
 protected:
     // output functions that should be overloaded by child classes
     virtual void        output_armed_stabilizing() = 0;
@@ -330,6 +332,17 @@ protected:
                     PWM_TYPE_DSHOT600   = 6,
                     PWM_TYPE_DSHOT1200  = 7,
                     PWM_TYPE_PWM_RANGE  = 8 };
+
+    // return string corresponding to frame_class
+    virtual const char* _get_frame_string() const = 0;
+
+    // return string corresponding to frame_type
+    virtual const char* get_type_string() const { return ""; }
+
+#if AP_SCRIPTING_ENABLED
+    // Custom frame string set from scripting
+    char* custom_frame_string;
+#endif
 
 private:
 
