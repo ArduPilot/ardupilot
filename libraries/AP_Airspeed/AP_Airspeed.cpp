@@ -16,6 +16,19 @@
  *   AP_Airspeed.cpp - airspeed (pitot) driver
  */
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#include "AP_Airspeed.h"
+
+// Dummy the AP_Airspeed class to allow building Airspeed only for plane, rover, sub, and copter & heli 2MB boards
+// This could be removed once the build system allows for APM_BUILD_TYPE in header files
+#ifndef AP_AIRSPEED_DUMMY_METHODS_ENABLED
+#define AP_AIRSPEED_DUMMY_METHODS_ENABLED ((APM_BUILD_COPTER_OR_HELI && BOARD_FLASH_SIZE <= 1024) || \
+                                            APM_BUILD_TYPE(APM_BUILD_AntennaTracker) || APM_BUILD_TYPE(APM_BUILD_Blimp))
+#endif
+
+#if !AP_AIRSPEED_DUMMY_METHODS_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
@@ -25,7 +38,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <utility>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include "AP_Airspeed.h"
 #include "AP_Airspeed_MS4525.h"
 #include "AP_Airspeed_MS5525.h"
 #include "AP_Airspeed_SDP3X.h"
@@ -715,6 +727,24 @@ bool AP_Airspeed::all_healthy(void) const
     }
     return true;
 }
+
+#else  // build type is not appropriate; provide a dummy implementation:
+const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
+
+void AP_Airspeed::update() {};
+bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
+void AP_Airspeed::calibrate(bool in_startup) {}
+bool AP_Airspeed::use(uint8_t i) const { return false; }
+
+#if HAL_MSP_AIRSPEED_ENABLED
+void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
+#endif
+
+bool AP_Airspeed::all_healthy(void) const { return false; }
+void AP_Airspeed::init(void) {};
+AP_Airspeed::AP_Airspeed() {}
+
+#endif // #if AP_AIRSPEED_DUMMY_METHODS_ENABLED
 
 // singleton instance
 AP_Airspeed *AP_Airspeed::_singleton;
