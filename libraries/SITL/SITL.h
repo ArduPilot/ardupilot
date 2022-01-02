@@ -92,7 +92,7 @@ struct sitl_fdm {
 };
 
 // number of rc output channels
-#define SITL_NUM_CHANNELS 16
+#define SITL_NUM_CHANNELS 32
 
 class SIM {
 public:
