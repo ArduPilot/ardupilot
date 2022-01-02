@@ -45,7 +45,7 @@ public:
     // calculate the turn rate in rad/sec given a lateral acceleration (in m/s/s) and speed (in m/s)
     float get_turn_rate_from_lat_accel(float lat_accel, float speed) const;
 
-    // get the G limit lateral acceleration ( m/s/s), returning at least 0.1G
+    // get the lateral acceleration limit (in m/s/s).  Returns at least 0.1G or approximately 1 m/s/s
     float get_turn_lat_accel_max() const { return MAX(_turn_lateral_G_max, 0.1f) * GRAVITY_MSS; }
 
     //
