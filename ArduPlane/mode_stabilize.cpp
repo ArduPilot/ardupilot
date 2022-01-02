@@ -3,7 +3,7 @@
 
 void ModeStabilize::update()
 {
-    plane.nav_roll_cd = plane.ahrs.roll_sensor;
-    plane.nav_pitch_cd = plane.ahrs.pitch_sensor;
+    plane.nav_roll_cd = 0;
+    plane.nav_pitch_cd = 0;
 }
 
