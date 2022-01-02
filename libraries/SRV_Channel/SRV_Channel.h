@@ -616,6 +616,9 @@ private:
     // mask of outputs which are digitally reversible (eg. DShot-3D)
     static uint32_t reversible_mask;
 
+    // mask of channels with invalid funtions, eg GPIO
+    static uint32_t invalid_mask;
+
     SRV_Channel obj_channels[NUM_SERVO_CHANNELS];
 
     // override loop counter

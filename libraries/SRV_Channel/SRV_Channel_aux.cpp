@@ -178,10 +178,12 @@ void SRV_Channels::update_aux_servo_function(void)
     for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
         functions[i].channel_mask = 0;
     }
+    invalid_mask = 0;
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (!channels[i].valid_function()) {
+            invalid_mask |= 1U<<i;
             continue;
         }
         const uint16_t function = channels[i].function.get();
@@ -595,7 +597,7 @@ uint32_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t
     if (SRV_Channel::valid_function(function)) {
         return functions[function].channel_mask;
     }
-    return 0;
+    return invalid_mask;
 }
 
 
