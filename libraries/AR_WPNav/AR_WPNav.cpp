@@ -230,7 +230,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
                                              _pos_control.get_speed_max(),
                                              _pos_control.get_speed_max(),  // speed up (not used)
                                              _pos_control.get_speed_max(),  // speed down (not used)
-                                             _pos_control.get_accel_max(),
+                                             MIN(_pos_control.get_accel_max(), _pos_control.get_lat_accel_max()),
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
                                              1.0,                           // jerk time
                                              _scurve_jerk);
