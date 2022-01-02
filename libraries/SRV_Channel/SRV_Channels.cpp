@@ -349,6 +349,12 @@ SRV_Channels::SRV_Channels(void)
     // setup ch_num on channels
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         channels[i].ch_num = i;
+#if NUM_SERVO_CHANNELS > 16
+        if (i >= 16) {
+            // default to GPIO, this disables the pin and stops logging
+            channels[i].function.set_default(SRV_Channel::k_GPIO);
+        }
+#endif
     }
 
 #if AP_FETTEC_ONEWIRE_ENABLED
