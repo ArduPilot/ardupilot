@@ -41,7 +41,6 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>     // Range finder library
 #include <Filter/Filter.h>                     // Filter library
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
-#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
@@ -399,9 +398,6 @@ private:
     AP_BattMonitor battery{MASK_LOG_CURRENT,
                            FUNCTOR_BIND_MEMBER(&Plane::handle_battery_failsafe, void, const char*, const int8_t),
                            _failsafe_priorities};
-
-    // Airspeed Sensors
-    AP_Airspeed airspeed;
 
     // ACRO controller state
     struct {
@@ -1047,7 +1043,6 @@ private:
 
     // sensors.cpp
     void read_rangefinder(void);
-    void read_airspeed(void);
 
     // system.cpp
     void init_ardupilot() override;
