@@ -178,58 +178,66 @@ void AP_Logger::Write_RCIN(void)
 // Write an SERVO packet
 void AP_Logger::Write_RCOUT(void)
 {
-    const struct log_RCOUT pkt{
-        LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
-        time_us       : AP_HAL::micros64(),
-        chan1         : hal.rcout->read(0),
-        chan2         : hal.rcout->read(1),
-        chan3         : hal.rcout->read(2),
-        chan4         : hal.rcout->read(3),
-        chan5         : hal.rcout->read(4),
-        chan6         : hal.rcout->read(5),
-        chan7         : hal.rcout->read(6),
-        chan8         : hal.rcout->read(7),
-        chan9         : hal.rcout->read(8),
-        chan10        : hal.rcout->read(9),
-        chan11        : hal.rcout->read(10),
-        chan12        : hal.rcout->read(11),
-        chan13        : hal.rcout->read(12),
-        chan14        : hal.rcout->read(13)
-    };
-    WriteBlock(&pkt, sizeof(pkt));
+    const uint32_t enabled_mask = ~SRV_Channels::get_output_channel_mask(SRV_Channel::k_GPIO);
+
+    if ((enabled_mask & 0x3FFF) != 0) {
+        const struct log_RCOUT pkt{
+            LOG_PACKET_HEADER_INIT(LOG_RCOUT_MSG),
+            time_us       : AP_HAL::micros64(),
+            chan1         : hal.rcout->read(0),
+            chan2         : hal.rcout->read(1),
+            chan3         : hal.rcout->read(2),
+            chan4         : hal.rcout->read(3),
+            chan5         : hal.rcout->read(4),
+            chan6         : hal.rcout->read(5),
+            chan7         : hal.rcout->read(6),
+            chan8         : hal.rcout->read(7),
+            chan9         : hal.rcout->read(8),
+            chan10        : hal.rcout->read(9),
+            chan11        : hal.rcout->read(10),
+            chan12        : hal.rcout->read(11),
+            chan13        : hal.rcout->read(12),
+            chan14        : hal.rcout->read(13)
+        };
+        WriteBlock(&pkt, sizeof(pkt));
+    }
 
 #if NUM_SERVO_CHANNELS >= 15
-    const struct log_RCOUT2 pkt2{
-        LOG_PACKET_HEADER_INIT(LOG_RCOUT2_MSG),
-        time_us       : AP_HAL::micros64(),
-        chan15         : hal.rcout->read(14),
-        chan16         : hal.rcout->read(15),
-        chan17         : hal.rcout->read(16),
-        chan18         : hal.rcout->read(17),
-    };
-    WriteBlock(&pkt2, sizeof(pkt2));
+    if ((enabled_mask & 0x3C000) != 0) {
+        const struct log_RCOUT2 pkt2{
+            LOG_PACKET_HEADER_INIT(LOG_RCOUT2_MSG),
+            time_us       : AP_HAL::micros64(),
+            chan15         : hal.rcout->read(14),
+            chan16         : hal.rcout->read(15),
+            chan17         : hal.rcout->read(16),
+            chan18         : hal.rcout->read(17),
+        };
+        WriteBlock(&pkt2, sizeof(pkt2));
+    }
 #endif
 
 #if NUM_SERVO_CHANNELS >= 19
-    const struct log_RCOUT pkt3{
-        LOG_PACKET_HEADER_INIT(LOG_RCOUT3_MSG),
-        time_us       : AP_HAL::micros64(),
-        chan1         : hal.rcout->read(18),
-        chan2         : hal.rcout->read(19),
-        chan3         : hal.rcout->read(20),
-        chan4         : hal.rcout->read(21),
-        chan5         : hal.rcout->read(22),
-        chan6         : hal.rcout->read(23),
-        chan7         : hal.rcout->read(24),
-        chan8         : hal.rcout->read(25),
-        chan9         : hal.rcout->read(26),
-        chan10        : hal.rcout->read(27),
-        chan11        : hal.rcout->read(28),
-        chan12        : hal.rcout->read(29),
-        chan13        : hal.rcout->read(30),
-        chan14        : hal.rcout->read(31)
-    };
-    WriteBlock(&pkt3, sizeof(pkt3));
+    if ((enabled_mask & 0xFFFC0000) != 0) {
+        const struct log_RCOUT pkt3{
+            LOG_PACKET_HEADER_INIT(LOG_RCOUT3_MSG),
+            time_us       : AP_HAL::micros64(),
+            chan1         : hal.rcout->read(18),
+            chan2         : hal.rcout->read(19),
+            chan3         : hal.rcout->read(20),
+            chan4         : hal.rcout->read(21),
+            chan5         : hal.rcout->read(22),
+            chan6         : hal.rcout->read(23),
+            chan7         : hal.rcout->read(24),
+            chan8         : hal.rcout->read(25),
+            chan9         : hal.rcout->read(26),
+            chan10        : hal.rcout->read(27),
+            chan11        : hal.rcout->read(28),
+            chan12        : hal.rcout->read(29),
+            chan13        : hal.rcout->read(30),
+            chan14        : hal.rcout->read(31)
+        };
+        WriteBlock(&pkt3, sizeof(pkt3));
+    }
 #endif
 
 }
