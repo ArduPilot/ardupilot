@@ -2010,7 +2010,9 @@ void emit_sandbox(void) {
   struct userdata *single = parsed_singletons;
   fprintf(source, "const char *singletons[] = {\n");
   while (single) {
+    start_dependency(source, single->dependency);
     fprintf(source, "    \"%s\",\n", single->alias ? single->alias : single->sanatized_name);
+    end_dependency(source, single->dependency);
     single = single->next;
   }
   fprintf(source, "};\n\n");
