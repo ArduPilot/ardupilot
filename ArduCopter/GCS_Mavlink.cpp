@@ -195,6 +195,16 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
 
 float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
 {
+#if AP_AIRSPEED_ENABLED
+    // airspeed sensors are best. While the AHRS airspeed_estimate
+    // will use an airspeed sensor, that value is constrained by the
+    // ground speed. When reporting we should send the true airspeed
+    // value if possible:
+    if (copter.airspeed.enabled() && copter.airspeed.healthy()) {
+        return copter.airspeed.get_airspeed();
+    }
+#endif
+    
     Vector3f airspeed_vec_bf;
     if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
         // we are running the EKF3 wind estimation code which can give
