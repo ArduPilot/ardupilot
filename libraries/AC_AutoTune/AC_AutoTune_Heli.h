@@ -132,11 +132,11 @@ private:
     void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);
 
     // dwell test used to perform frequency dwells for rate gains
-    void dwell_test_init(float filt_freq);
+    void dwell_test_init(float start_frq, float filt_freq);
     void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // dwell test used to perform frequency dwells for angle gains
-    void angle_dwell_test_init(float filt_freq);
+    void angle_dwell_test_init(float start_frq, float filt_freq);
     void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // generates waveform for frequency sweep excitations
@@ -228,25 +228,21 @@ private:
     LowPassFilterFloat rate_request_cds;
     LowPassFilterFloat angle_request_cd;
 
-    // variables from rate dwell test
-    Vector3f trim_attitude_cd;
-    Vector3f filt_attitude_cd;
-    Vector2f filt_att_fdbk_from_velxy_cd;
-    float filt_command_reading;
-    float filt_gyro_reading;
-    float filt_tgt_rate_reading;
-    float trim_command;
+    // variables from dwell test
+    LowPassFilterVector3f filt_attitude_cd;
+    LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;
+    LowPassFilterFloat filt_command_reading;        // filtered command reading to keep oscillation centered
+    LowPassFilterFloat filt_gyro_reading;           // filtered gyro reading to keep oscillation centered
+    LowPassFilterFloat filt_tgt_rate_reading;       // filtered target rate reading to keep oscillation centered
 
-    // variables from angle dwell test
-    float trim_yaw_tgt_reading;
-    float trim_yaw_heading_reading;
-//    Vector2f filt_att_fdbk_from_velxy_cd;
-//    float filt_command_reading;
-//    float filt_gyro_reading;
-//    float filt_tgt_rate_reading;
+    // trim variables for determining trim state prior to test starting
+    Vector3f trim_attitude_cd;                      // trim attitude before starting test
+    float trim_command;                             // trim target yaw reading before starting test
+    float trim_yaw_tgt_reading;                     // trim target yaw reading before starting test
+    float trim_yaw_heading_reading;                 // trim heading reading before starting test
 
-    LowPassFilterFloat  command_filt;               // filtered command
-    LowPassFilterFloat  target_rate_filt;            // filtered target rotation rate in radians/second
+    LowPassFilterFloat  command_filt;               // filtered command - filtering intended to remove noise
+    LowPassFilterFloat  target_rate_filt;           // filtered target rate in radians/second - filtering intended to remove noise
 
     // sweep_data tracks the overall characteristics in the response to the frequency sweep
     struct sweep_data {
