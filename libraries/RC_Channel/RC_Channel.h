@@ -479,7 +479,7 @@ public:
 
     // returns a mask indicating which channels have overrides.  Bit 0
     // is RC channel 1.  Beware this is not a cheap call.
-    static uint16_t get_override_mask();
+    uint16_t get_override_mask() const;
 
     class RC_Channel *find_channel_for_option(const RC_Channel::aux_func_t option);
     bool duplicate_options_exist();
