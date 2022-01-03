@@ -14,7 +14,7 @@ public:
         _logger_backend = backend;
     }
 
-    bool out_of_time_for_writing_messages() const;
+    virtual bool out_of_time_for_writing_messages() const;
 
 protected:
     bool _finished = false;
@@ -124,7 +124,7 @@ public:
 #endif
     }
 
-    bool out_of_time_for_writing_messages() const;
+    bool out_of_time_for_writing_messages() const override;
 
     void reset() override;
     void process() override;
