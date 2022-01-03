@@ -80,7 +80,7 @@ ALL_PROJECTS = [
 
 
 class build_binaries(object):
-    def __init__(self, tags, boards=None, projects=ALL_PROJECTS, require_checkout=True):
+    def __init__(self, tags, boards=None, projects=ALL_PROJECTS, require_checkout=True, skip_history=False):
         self.tags = tags
         self.require_checkout = require_checkout
         if boards:
@@ -504,6 +504,7 @@ is bob we will attempt to checkout bob-AVR'''
                     # record some history about this build
                     t1 = time.time()
                     time_taken_to_build = t1-t0
+                    # FIXME: do we need to handle skip_history here too?
                     self.history.record_build(githash, tag, vehicle, board, frame, None, t0, time_taken_to_build)
                     continue
 
@@ -543,11 +544,12 @@ is bob we will attempt to checkout bob-AVR'''
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
 
-                # record some history about this build
+                # record some history about this build if needed
                 try:
                     self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
                 except:
-                    pass
+                    if not skip_history:
+                        raise
 
         self.checkout(vehicle, "latest")
 
@@ -780,9 +782,9 @@ if __name__ == '__main__':
     parser.add_option("", "--projects", action="append", type="string",
                       default=[], help="projects to build")
     parser.add_option("", "--skip-history", type="string",
-                      default=[], help="skip recording of build history?")
+                      default='no', help="skip recording of build history?")
     parser.add_option("", "--require-checkout", type="string",
-                      default='no', help="shall we do git checkout?") # FIXME!
+                      default='yes', help="shall we do git checkout?")
     cmd_opts, cmd_args = parser.parse_args()
 
     tags = cmd_opts.tags
@@ -793,9 +795,10 @@ if __name__ == '__main__':
     boards = flatten_comma_opts(cmd_opts.boards)
     projects = flatten_comma_opts(cmd_opts.projects)
     require_checkout = cmd_opts.require_checkout == "yes"
+    skip_history = cmd_opts.skip_history == "yes"
     if len(projects) == 0:
         projects = ALL_PROJECTS
     projects = filter_valid_projects(projects)
 
-    bb = build_binaries(tags, boards=boards, projects=projects, require_checkout=require_checkout)
+    bb = build_binaries(tags, boards=boards, projects=projects, require_checkout=require_checkout, skip_history=skip_history)
     bb.run()

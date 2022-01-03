@@ -8,7 +8,7 @@ on:
         required: true
         default: 'MatekF405-Wing,MatekF405-CAN,MatekF765-Wing,MambaF405v2'
       projects:
-        description: 'Boards to build (e.g. `arducopter,arduplane,rover,antennatracker,ardusub,AP_Periph` )'
+        description: 'Projects to build (e.g. `arducopter,arduplane,rover,antennatracker,ardusub,AP_Periph` )'
         required: true
         default: 'arduplane'
 
@@ -60,13 +60,14 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           mkdir -p $BUILDLOGS/binaries
           mkdir -p $BUILD_BINARIES_PATH
-          # latest tag would use newer compiled, but it's not installed here (linked)...
+          # P.S.: 'latest' tags would use newer compiler, but it's not installed or linked in current build environment
           ./Tools/scripts/build_binaries.py --tags beta --boards ${{ github.event.inputs.boards }} --projects ${{ github.event.inputs.projects }} --skip-history yes --require-checkout no
-          tar -cvf /tmp/buildlogs/built_binaries.tar /tmp/buildlogs/binaries/Plane/
+          # FIXME: we probably want to upload other projects too?
+          tar -cvf $BUILDLOGS/built_arduplane_binaries.tar $BUILDLOGS/binaries/Plane/
           ccache -s
           ccache -z
-      - name: 'Upload'
+      - name: 'Upload build artefacts to Github'
         uses: actions/upload-artifact@v2
         with:
           name: arduplane build files tar of ${{ github.event.inputs.boards }}
-          path: /tmp/buildlogs/built_binaries.tar
+          path: $BUILDLOGS/built_arduplane_binaries.tar
