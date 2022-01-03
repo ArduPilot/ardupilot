@@ -149,6 +149,7 @@ private:
     uint32_t _last_vvelocity_ms;
     uint32_t _last_vaccuracy_ms;
     uint32_t _last_3D_velocity_ms;
+    uint32_t _last_KSXT_pos_ms;
     uint32_t _last_fix_ms;
 
     /// @name	Init strings
