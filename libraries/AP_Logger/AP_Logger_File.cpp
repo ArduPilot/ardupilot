@@ -235,7 +235,7 @@ uint16_t AP_Logger_File::find_oldest_log()
             // not long enough for \d+[.]BIN
             continue;
         }
-        if (strncmp(&de->d_name[length-4], ".BIN", 4)) {
+        if (strncmp(&de->d_name[length-4], ".BIN", 4) != 0) {
             // doesn't end in .BIN
             continue;
         }
