@@ -352,7 +352,7 @@ void AP_Logger_MAVLink::stats_log()
     Write_logger_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
-           dropped,
+           _dropped,
            _blocks_retry.sent_count,
            stats.resends,
            stats.state_free_min,
