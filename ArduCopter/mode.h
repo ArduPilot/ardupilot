@@ -1421,7 +1421,8 @@ public:
     // enum for RTL_ALT_TYPE parameter
     enum class RTLAltType : int8_t {
         RELATIVE = 0,
-        TERRAIN = 1
+        TERRAIN = 1,
+        ABSOLUTE = 2,
     };
     ModeRTL::RTLAltType get_alt_type() const;
 
@@ -1468,8 +1469,10 @@ private:
     enum class ReturnTargetAltType {
         RELATIVE = 0,
         RANGEFINDER = 1,
-        TERRAINDATABASE = 2
+        TERRAINDATABASE = 2,
+        ABSOLUTE = 3,
     };
+    Location::AltFrame convert_ReturnTargetAltType_to_AltFrame(ModeRTL::ReturnTargetAltType alt_type);
 
     // Loiter timer - Records how long we have been in loiter
     uint32_t _loiter_start_time;
