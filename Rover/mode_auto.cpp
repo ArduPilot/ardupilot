@@ -703,7 +703,6 @@ void ModeAuto::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
     _desired_speed = constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max);
     _desired_yaw_cd = desired_heading_cd;
     _reached_heading = false;
-    _reached_destination = false;
     _submode = Auto_HeadingAndSpeed;
 }
 
