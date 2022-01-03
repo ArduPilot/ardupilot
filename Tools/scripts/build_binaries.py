@@ -80,13 +80,10 @@ ALL_PROJECTS = [
 
 
 class build_binaries(object):
-    def __init__(self, tags, boards=None, projects=ALL_PROJECTS, require_checkout=True, skip_history=False):
+    def __init__(self, tags, selected_boards=[], projects=ALL_PROJECTS, require_checkout=True, skip_history=False):
         self.tags = tags
         self.require_checkout = require_checkout
-        if boards:
-            self.selected_boards = boards
-        else:
-            self.selected_boards = [] # build all boards
+        self.selected_boards = selected_boards # P.S. build all boards when selected_boards=[]
         self.projects = projects
         self.dirty = False
         binaries_history_filepath = os.path.join(self.buildlogs_dirpath(),
@@ -366,11 +363,13 @@ is bob we will attempt to checkout bob-AVR'''
     def addfwversion(self, destdir, src):
         '''write version information into destdir'''
         self.addfwversion_gitversion(destdir, src)
+        # FIXME: this seem to sometimes result in utf-8/encoding issues. at least add traceback for now
         try:
             self.addfwversion_firmwareversiontxt(destdir, src)
         except:
             import traceback
             traceback.print_stack()
+            raise
 
     def read_string_from_filepath(self, filepath):
         '''returns content of filepath as a string'''
@@ -793,12 +792,10 @@ if __name__ == '__main__':
         tags = ["stable", "beta", "latest"]
 
     boards = flatten_comma_opts(cmd_opts.boards)
-    projects = flatten_comma_opts(cmd_opts.projects)
+    projects = flatten_comma_opts(cmd_opts.projects) or ALL_PROJECTS
     require_checkout = cmd_opts.require_checkout == "yes"
     skip_history = cmd_opts.skip_history == "yes"
-    if len(projects) == 0:
-        projects = ALL_PROJECTS
     projects = filter_valid_projects(projects)
 
-    bb = build_binaries(tags, boards=boards, projects=projects, require_checkout=require_checkout, skip_history=skip_history)
+    bb = build_binaries(tags, selected_boards=boards, projects=projects, require_checkout=require_checkout, skip_history=skip_history)
     bb.run()
