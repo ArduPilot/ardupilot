@@ -229,6 +229,11 @@ bool AP_GPS_NMEA::_have_new_message()
         state.have_gps_yaw = false;
     }
 
+    if (now - _last_KSXT_pos_ms > 500) {
+        // we have lost KSXT
+        _last_KSXT_pos_ms = 0;
+    }
+
     // special case for fixing low output rate of ALLYSTAR GPS modules
     const int32_t dt_ms = now - _last_fix_ms;
     if (labs(dt_ms - gps._rate_ms[state.instance]) > 50 &&
@@ -266,8 +271,10 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_RMC_ms = now;
                     //time                        = _new_time;
                     //date                        = _new_date;
-                    state.location.lat     = _new_latitude;
-                    state.location.lng     = _new_longitude;
+                    if (_last_KSXT_pos_ms == 0) {
+                        state.location.lat     = _new_latitude;
+                        state.location.lng     = _new_longitude;
+                    }
                     if (_last_3D_velocity_ms == 0 ||
                         now - _last_3D_velocity_ms > 1000) {
                         state.ground_speed     = _new_speed*0.01f;
@@ -283,9 +290,11 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_GGA:
                     _last_GGA_ms = now;
-                    state.location.alt  = _new_altitude;
-                    state.location.lat  = _new_latitude;
-                    state.location.lng  = _new_longitude;
+                    if (_last_KSXT_pos_ms == 0) {
+                        state.location.alt  = _new_altitude;
+                        state.location.lat  = _new_latitude;
+                        state.location.lng  = _new_longitude;
+                    }
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
                     switch(_new_quality_indicator) {
@@ -362,6 +371,10 @@ bool AP_GPS_NMEA::_term_complete()
                     }
                     break;
                 case _GPS_SENTENCE_KSXT:
+                    state.location.lat     = _ksxt.fields[2]*1.0e7;
+                    state.location.lng     = _ksxt.fields[1]*1.0e7;
+                    state.location.alt     = _ksxt.fields[3]*1.0e2;
+                    _last_KSXT_pos_ms = now;
                     if (_ksxt.fields[9] >= 1) {
                         // we have 3D fix
                         constexpr float kmh_to_mps = 1.0 / 3.6;
