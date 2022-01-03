@@ -367,6 +367,10 @@ protected:
     AP_EFI efi;
 #endif
 
+#if AP_AIRSPEED_ENABLED
+    AP_Airspeed airspeed;
+#endif
+
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Scheduler::Task scheduler_tasks[];
 
