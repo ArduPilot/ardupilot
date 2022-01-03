@@ -244,7 +244,7 @@ bool ModeGuided::reached_destination() const
 {
     switch (_guided_mode) {
     case Guided_WP:
-        return _reached_destination;
+        return g2.wp_nav.reached_destination();
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
     case Guided_Loiter:
