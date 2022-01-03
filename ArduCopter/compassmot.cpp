@@ -169,7 +169,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         current_amps_max = MAX(current_amps_max, current);
 
         // if throttle is near zero, update base x,y,z values
-        if (throttle_pct <= 0.0f) {
+        if (!is_positive(throttle_pct)) {
             for (uint8_t i=0; i<compass.get_count(); i++) {
                 compass_base[i] = compass_base[i] * 0.99f + compass.get_field(i) * 0.01f;
             }
