@@ -99,42 +99,18 @@ void AR_WPNav_OA::update(float dt)
                 break;
 
             case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerHorizontal: {
-                // calculate final destination as an offset from EKF origin in NE
-                Vector2f dest_NE_ftype;
-                if (oa_destination_new.get_vector_xy_from_origin_NE(dest_NE_ftype)) {
-                    // initialise position controller if required
-                    if (!_oa_active) {
-                        _pos_control.init();
+                // BendyRuler.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
+                if (!_oa_active || !oa_destination_new.same_latlon_as(_oa_destination)) {
+                    if (AR_WPNav::set_desired_location_expect_fast_update(oa_destination_new)) {
+                        // if new target set successfully, update oa state and destination
                         _oa_active = true;
+                        _oa_origin = oa_origin_new;
+                        _oa_destination = oa_destination_new;
+                    } else {
+                        // this should never happen
+                        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                        stop_vehicle = true;
                     }
-                    _oa_origin = oa_origin_new;
-                    _oa_destination = oa_destination_new;
-
-                    // check for pivot turn
-                    update_oa_distance_and_bearing_to_destination();
-                    _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01);
-
-                    if (!_pivot.active()) {
-                        // pass the desired position directly to the position controller
-                        dest_NE_ftype *= 0.01;  // convert to meters
-                        Vector2p dest_NE(dest_NE_ftype.x, dest_NE_ftype.y);
-                        _pos_control.input_pos_target(dest_NE, dt);
-
-                        // run position controllers
-                        _pos_control.update(dt);
-                    }
-
-                    update_distance_and_bearing_to_destination();
-
-                    // update_steering_and_speed
-                    update_steering_and_speed(current_loc, dt);
-
-                    // return without calling parent AC_WPNav
-                    return;
-                } else {
-                    // this should never happen because we can only get here if we have an EKF origin
-                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-                    stop_vehicle = true;
                 }
             }
             break;
