@@ -316,7 +316,7 @@ void AP_Logger_DataFlash::flash_test()
     for (uint8_t i=1; i<=20; i++) {
         printf("Flash check %u\n", i);
         PageToBuffer(i);
-        for (uint16_t j=0; j<df_PageSize; j++) {
+        for (uint32_t j=0; j<df_PageSize; j++) {
             if (buffer[j] != i) {
                 printf("Test error: page %u j=%u v=%u\n", i, j, buffer[j]);
                 break;
