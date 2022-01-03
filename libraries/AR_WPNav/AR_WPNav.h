@@ -54,6 +54,11 @@ public:
     bool set_desired_location_NED(const Vector3f& destination) WARN_IF_UNUSED;
     bool set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination) WARN_IF_UNUSED;
 
+    // set desired location but expect the destination to be updated again in the near future
+    // position controller input shaping will be used for navigation instead of scurves
+    // Note: object avoidance is not supported if this method is used
+    bool set_desired_location_expect_fast_update(const Location &destination) WARN_IF_UNUSED;
+
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return _reached_destination; }
 
@@ -106,8 +111,11 @@ protected:
     // true if update has been called recently
     bool is_active() const;
 
-    // move target location along track from origin to destination
+    // move target location along track from origin to destination using SCurves navigation
     void advance_wp_target_along_track(const Location &current_loc, float dt);
+
+    // update psc input shaping navigation controller
+    void update_psc_input_shaping(float dt);
 
     // update distance and bearing from vehicle's current position to destination
     void update_distance_and_bearing_to_destination();
@@ -125,6 +133,10 @@ protected:
     // calculate yaw change at next waypoint in degrees
     // returns zero if the angle cannot be calculated because some points are on top of others
     float get_corner_angle(const Location& loc1, const Location& loc2, const Location& loc3) const;
+
+    // helper function to initialise position controller if it hasn't been called recently
+    // this should be called before updating the position controller with new targets but after the EKF has a good position estimate
+    void init_pos_control_if_necessary();
 
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
@@ -156,6 +168,10 @@ protected:
     Location _destination;          // destination Location when in Guided_WP
     bool _orig_and_dest_valid;      // true if the origin and destination have been set
     bool _reversed;                 // execute the mission by backing up
+    enum class NavControllerType {
+        NAV_SCURVE = 0,             // scurves used for navigation
+        NAV_PSC_INPUT_SHAPING       // position controller input shaping used for navigation
+    } _nav_control_type;            // navigation controller that should be used to travel from _origin to _destination
 
     // main outputs from navigation library
     float _desired_speed;           // desired speed in m/s
