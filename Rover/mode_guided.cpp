@@ -337,7 +337,6 @@ void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_
     // initialisation and logging
     _guided_mode = ModeGuided::Guided_HeadingAndSpeed;
     _des_att_time_ms = AP_HAL::millis();
-    _reached_destination = false;
 
     // record targets
     _desired_yaw_cd = yaw_angle_cd;
@@ -364,7 +363,6 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
     // handle initialisation
     _guided_mode = ModeGuided::Guided_TurnRateAndSpeed;
     _des_att_time_ms = AP_HAL::millis();
-    _reached_destination = false;
 
     // record targets
     _desired_yaw_rate_cds = turn_rate_cds;
