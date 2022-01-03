@@ -141,7 +141,7 @@ void AP_FETtecOneWire::init()
 
     // initialise ESC ids.  This enforces that the FETtec ESC ids
     // inside FETtec ESCs need to be contiguous and start at ID 1
-    // which required by fast-throttle commands.
+    // which is required by fast-throttle commands.
     uint8_t esc_offset = 0;  // offset into our device-driver dynamically-allocated array of ESCs
     uint8_t esc_id = 1;      // ESC ids inside FETtec protocol are one-indexed
     uint8_t servo_chan_offset = 0;  // offset into _motor_mask_parameter array
