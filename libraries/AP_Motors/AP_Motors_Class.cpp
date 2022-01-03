@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef AP_MOTORS_ENABLE
+#define AP_MOTORS_ENABLE 1
+#endif
+
 #include "AP_Motors_Class.h"
 #include <AP_HAL/AP_HAL.h>
 #include <SRV_Channel/SRV_Channel.h>
