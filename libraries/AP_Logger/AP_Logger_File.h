@@ -60,6 +60,7 @@ public:
 
     bool logging_started(void) const override { return _write_fd != -1; }
     void io_timer(void) override;
+    AP_Logger_Backend::Type get_backend_type() const override { return AP_Logger_Backend::Type::FILESYSTEM; };
 
 protected:
 

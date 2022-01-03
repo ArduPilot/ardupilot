@@ -19,6 +19,7 @@ public:
     }
     void              Init(void) override;
     bool              CardInserted() const override { return !flash_died && df_NumPages > 0; }
+    AP_Logger_Backend::Type get_backend_type() const override { return AP_Logger_Backend::Type::BLOCK; };
 
 private:
     void              BufferToPage(uint32_t PageAdr) override;
