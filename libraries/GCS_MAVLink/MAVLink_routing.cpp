@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "GCS.h"
 #include "MAVLink_routing.h"
 
@@ -134,6 +135,105 @@ bool MAVLink_routing::check_and_forward(GCS_MAVLINK &in_link, const mavlink_mess
         // ADSB packets are not forwarded, they have their own stream rate
         return true;
     }
+
+#if HAL_WITH_ESC_TELEM
+    AP_ESC_Telem& telem = AP::esc_telem();
+    if (msg.msgid == MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4) {
+        const uint32_t now = AP_HAL::millis();
+        constexpr uint16_t datamask = AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
+                                      AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
+                                      AP_ESC_Telem_Backend::TelemetryType::CURRENT |
+                                      AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION;
+        mavlink_esc_telemetry_1_to_4_t mav;
+        mavlink_msg_esc_telemetry_1_to_4_get_voltage(&msg, mav.voltage);
+        mavlink_msg_esc_telemetry_1_to_4_get_current(&msg, mav.current);
+        mavlink_msg_esc_telemetry_1_to_4_get_totalcurrent(&msg, mav.totalcurrent);
+        mavlink_msg_esc_telemetry_1_to_4_get_rpm(&msg, mav.rpm);
+        mavlink_msg_esc_telemetry_1_to_4_get_count(&msg, mav.count);
+        mavlink_msg_esc_telemetry_1_to_4_get_temperature(&msg, mav.temperature);
+        for (int i = 0; i < 4; i++) {
+            AP_ESC_Telem_Backend::TelemetryData t {
+                .temperature_cdeg = int16_t(mav.temperature[i] * 100),   // centi-degrees C, negative values allowed
+                .voltage          = mav.voltage[i]     * 0.01f, // Volt
+                .current          = mav.current[i]     * 0.01f, // Ampere
+                .consumption_mah  = float(mav.totalcurrent[i]), // milli-Ampere.hours
+                .usage_s          = 0,                          // usage seconds
+                .motor_temp_cdeg  = 0,                          // centi-degrees C, negative values allowed
+                .last_update_ms   = now,                        // last update time in miliseconds, determines whether active
+                .types            = datamask,                   // telemetry types present
+                .count            = mav.count[i],               // number of times updated
+            };
+            // inject received MAVLink ESC telemetry data into the autopilot
+            telem.update_telem_data(i, t, datamask);
+            telem.update_rpm(i, mav.rpm[i], 0.0f);
+        }
+        return true;
+    }
+
+    if (msg.msgid == MAVLINK_MSG_ID_ESC_TELEMETRY_5_TO_8) {
+        const uint32_t now = AP_HAL::millis();
+        constexpr uint16_t datamask = AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
+                                      AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
+                                      AP_ESC_Telem_Backend::TelemetryType::CURRENT |
+                                      AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION;
+        mavlink_esc_telemetry_5_to_8_t mav;
+        mavlink_msg_esc_telemetry_5_to_8_get_voltage(&msg, mav.voltage);
+        mavlink_msg_esc_telemetry_5_to_8_get_current(&msg, mav.current);
+        mavlink_msg_esc_telemetry_5_to_8_get_totalcurrent(&msg, mav.totalcurrent);
+        mavlink_msg_esc_telemetry_5_to_8_get_rpm(&msg, mav.rpm);
+        mavlink_msg_esc_telemetry_5_to_8_get_count(&msg, mav.count);
+        mavlink_msg_esc_telemetry_5_to_8_get_temperature(&msg, mav.temperature);
+        for (int i = 0; i < 4; i++) {
+            AP_ESC_Telem_Backend::TelemetryData t {
+                .temperature_cdeg = int16_t(mav.temperature[i] * 100),   // centi-degrees C, negative values allowed
+                .voltage          = mav.voltage[i]     * 0.01f, // Volt
+                .current          = mav.current[i]     * 0.01f, // Ampere
+                .consumption_mah  = float(mav.totalcurrent[i]), // milli-Ampere.hours
+                .usage_s          = 0,                          // usage seconds
+                .motor_temp_cdeg  = 0,                          // centi-degrees C, negative values allowed
+                .last_update_ms   = now,                        // last update time in miliseconds, determines whether active
+                .types            = datamask,                   // telemetry types present
+                .count            = mav.count[i],               // number of times updated
+            };
+            // inject received MAVLink ESC telemetry data into the autopilot
+            telem.update_telem_data(4+i, t, datamask);
+            telem.update_rpm(4+i, mav.rpm[i], 0.0f);
+        }
+        return true;
+    }
+
+    if (msg.msgid == MAVLINK_MSG_ID_ESC_TELEMETRY_9_TO_12) {
+        const uint32_t now = AP_HAL::millis();
+        constexpr uint16_t datamask = AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
+                                      AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
+                                      AP_ESC_Telem_Backend::TelemetryType::CURRENT |
+                                      AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION;
+        mavlink_esc_telemetry_9_to_12_t mav;
+        mavlink_msg_esc_telemetry_9_to_12_get_voltage(&msg, mav.voltage);
+        mavlink_msg_esc_telemetry_9_to_12_get_current(&msg, mav.current);
+        mavlink_msg_esc_telemetry_9_to_12_get_totalcurrent(&msg, mav.totalcurrent);
+        mavlink_msg_esc_telemetry_9_to_12_get_rpm(&msg, mav.rpm);
+        mavlink_msg_esc_telemetry_9_to_12_get_count(&msg, mav.count);
+        mavlink_msg_esc_telemetry_9_to_12_get_temperature(&msg, mav.temperature);
+        for (int i = 0; i < 4; i++) {
+            AP_ESC_Telem_Backend::TelemetryData t {
+                .temperature_cdeg = int16_t(mav.temperature[i] * 100),   // centi-degrees C, negative values allowed
+                .voltage          = mav.voltage[i]     * 0.01f, // Volt
+                .current          = mav.current[i]     * 0.01f, // Ampere
+                .consumption_mah  = float(mav.totalcurrent[i]), // milli-Ampere.hours
+                .usage_s          = 0,                          // usage seconds
+                .motor_temp_cdeg  = 0,                          // centi-degrees C, negative values allowed
+                .last_update_ms   = now,                        // last update time in miliseconds, determines whether active
+                .types            = datamask,                   // telemetry types present
+                .count            = mav.count[i],               // number of times updated
+            };
+            // inject received MAVLink ESC telemetry data into the autopilot
+            telem.update_telem_data(8+i, t, datamask);
+            telem.update_rpm(8+i, mav.rpm[i], 0.0f);
+        }
+        return true;
+    }
+#endif
 
     // extract the targets for this packet
     int16_t target_system = -1;
