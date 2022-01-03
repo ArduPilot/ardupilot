@@ -207,6 +207,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     Vector2f destination_NE;
     if (!_origin.get_vector_xy_from_origin_NE(origin_NE) ||
         !_destination.get_vector_xy_from_origin_NE(destination_NE)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
     }
     origin_NE *= 0.01f;
@@ -240,6 +241,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
             // convert next_destination to offset from EKF origin
             Vector2f next_destination_NE;
             if (!next_destination.get_vector_xy_from_origin_NE(next_destination_NE)) {
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                 return false;
             }
             next_destination_NE *= 0.01f;
