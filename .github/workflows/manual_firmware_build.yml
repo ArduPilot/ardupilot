@@ -63,6 +63,8 @@ jobs:
           # P.S.: 'latest' tags would use newer compiler, but it's not installed or linked in current build environment
           ./Tools/scripts/build_binaries.py --tags beta --boards ${{ github.event.inputs.boards }} --projects ${{ github.event.inputs.projects }} --skip-history yes --require-checkout no
           # FIXME: we probably want to upload other projects too?
+          echo "listing files in BUILDLOGS/binaries/"
+          ls -lh $BUILDLOGS/binaries
           tar -cvf $BUILDLOGS/built_arduplane_binaries.tar $BUILDLOGS/binaries/Plane/
           ccache -s
           ccache -z
