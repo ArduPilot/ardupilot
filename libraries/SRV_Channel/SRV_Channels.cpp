@@ -53,6 +53,10 @@ AP_RobotisServo *SRV_Channels::robotis_ptr;
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
 
+#if AP_TMOTOR_ESC_ENABLED
+AP_TMotorESC *SRV_Channels::tmotor_esc_ptr;
+#endif
+
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
 #if HAL_SUPPORT_RCOUT_SERIAL
@@ -233,7 +237,15 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),
-    
+
+#ifndef HAL_BUILD_AP_PERIPH
+#if AP_TMOTOR_ESC_ENABLED
+    // @Group: _TME_
+    // @Path: ../AP_TMotorESC/AP_TMotorESC.cpp
+    AP_SUBGROUPINFO(tmotor_esc, "_TME_",  27, SRV_Channels, AP_TMotorESC),
+#endif
+#endif // HAL_BUILD_AP_PERIPH
+
     AP_GROUPEND
 };
 
@@ -255,6 +267,10 @@ SRV_Channels::SRV_Channels(void)
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr = &fetteconwire;
+#endif
+
+#if AP_TMOTOR_ESC_ENABLED
+    tmotor_esc_ptr = &tmotor_esc;
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -391,6 +407,10 @@ void SRV_Channels::push()
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     fetteconwire_ptr->update();
+#endif
+
+#if AP_TMOTOR_ESC_ENABLED
+    tmotor_esc_ptr->update();
 #endif
 
 #if HAL_CANMANAGER_ENABLED

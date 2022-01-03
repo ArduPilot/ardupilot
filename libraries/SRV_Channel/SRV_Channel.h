@@ -22,6 +22,7 @@
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_TMotorESC/AP_TMotorESC.h>
 
 #ifndef NUM_SERVO_CHANNELS
 #if defined(HAL_BUILD_AP_PERIPH) && defined(HAL_PWM_COUNT)
@@ -584,6 +585,11 @@ private:
     AP_FETtecOneWire fetteconwire;
     static AP_FETtecOneWire *fetteconwire_ptr;
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
+
+#if AP_TMOTOR_ESC_ENABLED
+    AP_TMotorESC tmotor_esc;
+    static AP_TMotorESC *tmotor_esc_ptr;
+#endif  // AP_TMOTOR_ESC_ENABLED
 
     static uint16_t disabled_mask;
 
