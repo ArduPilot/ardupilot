@@ -250,7 +250,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
             return _units[i].unit;
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 /// return a multiplier value given its ID
