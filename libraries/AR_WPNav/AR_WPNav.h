@@ -103,6 +103,9 @@ public:
     // returns true on success, false on failure
     bool get_stopping_location(Location& stopping_loc) WARN_IF_UNUSED;
 
+    // is_fast_waypoint returns true if vehicle will not stop at destination (e.g. set_desired_location provided a next_destination)
+    bool is_fast_waypoint() const { return _fast_waypoint; }
+
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
