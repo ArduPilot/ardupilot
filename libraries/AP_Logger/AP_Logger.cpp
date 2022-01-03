@@ -45,13 +45,13 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # if HAL_LOGGING_FILESYSTEM_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend::Type::FILESYSTEM
 # elif HAL_LOGGING_DATAFLASH_ENABLED
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend::Type::BLOCK
 # elif HAL_LOGGING_FILESYSTEM_ENABLED
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend::Type::FILESYSTEM
 # elif HAL_LOGGING_MAVLINK_ENABLED
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::MAVLINK
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend::Type::MAVLINK
 # else
 #  define HAL_LOGGING_BACKENDS_DEFAULT 0
 # endif
@@ -179,17 +179,17 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
     // the "main" logging type needs to come before mavlink so that
     // index 0 is correct
     static const struct {
-        Backend_Type type;
+        AP_Logger_Backend::Type type;
         AP_Logger_Backend* (*probe_fn)(AP_Logger&, LoggerMessageWriter_DFLogStart*);
     } backend_configs[] {
 #if HAL_LOGGING_FILESYSTEM_ENABLED
-        { Backend_Type::FILESYSTEM, AP_Logger_File::probe },
+        { AP_Logger_Backend::Type::FILESYSTEM, AP_Logger_File::probe },
 #endif
 #if HAL_LOGGING_DATAFLASH_ENABLED
-        { Backend_Type::BLOCK, AP_Logger_DataFlash::probe },
+        { AP_Logger_Backend::Type::BLOCK, AP_Logger_DataFlash::probe },
 #endif
 #if HAL_LOGGING_MAVLINK_ENABLED
-        { Backend_Type::MAVLINK, AP_Logger_MAVLink::probe },
+        { AP_Logger_Backend::Type::MAVLINK, AP_Logger_MAVLink::probe },
 #endif
 };
 
@@ -605,7 +605,7 @@ bool AP_Logger::should_log(const uint32_t mask) const
  */
 bool AP_Logger::in_log_download() const
 {
-    if (uint8_t(_params.backend_types) & uint8_t(Backend_Type::BLOCK)) {
+    if (uint8_t(_params.backend_types) & uint8_t(AP_Logger_Backend::Type::BLOCK)) {
         // when we have a BLOCK backend then listing completely prevents logging
         return transfer_activity != TransferActivity::IDLE;
     }
