@@ -43,6 +43,7 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_TMotorESC/AP_TMotorESC.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -1116,6 +1117,24 @@ bool AP_Arming::fettec_checks(bool display_failure) const
     return true;
 }
 
+bool AP_Arming::tmotor_esc_checks(bool display_failure) const
+{
+#if AP_TMOTOR_ESC_ENABLED
+    const AP_TMotorESC *f = AP_TMotorESC::get_singleton();
+    if (f == nullptr) {
+        return true;
+    }
+
+    // check ESCs are ready
+    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (!f->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+        check_failed(ARMING_CHECK_ALL, display_failure, "TMotor: %s", fail_msg);
+        return false;
+    }
+#endif
+    return true;
+}
+
 // request an auxiliary authorisation id.  This id should be used in subsequent calls to set_aux_auth_passed/failed
 // returns true on success
 bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
@@ -1280,7 +1299,12 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  proximity_checks(report)
         &  camera_checks(report)
         &  osd_checks(report)
+#if AP_FETTEC_ONEWIRE_ENABLED
         &  fettec_checks(report)
+#endif
+#if AP_TMOTOR_ESC_ENABLED
+        &  tmotor_esc_checks(report)
+#endif
         &  visodom_checks(report)
         &  aux_auth_checks(report)
         &  disarm_switch_checks(report)

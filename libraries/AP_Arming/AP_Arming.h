@@ -188,6 +188,8 @@ protected:
 
     bool fettec_checks(bool display_failure) const;
 
+    bool tmotor_esc_checks(bool display_failure) const;
+
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;
