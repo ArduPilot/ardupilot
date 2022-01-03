@@ -168,7 +168,14 @@ void AR_WPNav::update(float dt)
 
     // advance target along path unless vehicle is pivoting
     if (!_pivot.active()) {
-        advance_wp_target_along_track(current_loc, dt);
+        switch (_nav_control_type) {
+        case NavControllerType::NAV_SCURVE:
+            advance_wp_target_along_track(current_loc, dt);
+            break;
+        case NavControllerType::NAV_PSC_INPUT_SHAPING:
+            update_psc_input_shaping(dt);
+            break;
+        }
     }
 
     // update_steering_and_speed
@@ -179,8 +186,8 @@ void AR_WPNav::update(float dt)
 // next_destination should be provided if known to allow smooth cornering
 bool AR_WPNav::set_desired_location(const struct Location& destination, Location next_destination)
 {
-    // re-initialise if previous destination has been interrupted
-    if (!is_active() || !_reached_destination) {
+    // re-initialise if inactive, previous destination has been interrupted or different controller was used
+    if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
         init(0,0,0,0);
     }
 
@@ -260,6 +267,9 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
         }
     }
 
+    // scurves used for navigation to destination
+    _nav_control_type = NavControllerType::NAV_SCURVE;
+
     update_distance_and_bearing_to_destination();
 
     return true;
@@ -302,6 +312,32 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vecto
     dest_loc.offset(destination.x, destination.y);
     next_dest_loc.offset(next_destination.x, next_destination.y);
     return set_desired_location(dest_loc, next_dest_loc);
+}
+
+// set desired location but expect the destination to be updated again in the near future
+// position controller input shaping will be used for navigation instead of scurves
+// Note: object avoidance is not supported if this method is used
+bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destination)
+{
+    // initialise if not active
+    if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
+        init(0,0,0,0);
+    }
+
+    // initialise some variables
+    _origin = _destination;
+    _destination = destination;
+    _orig_and_dest_valid = true;
+    _reached_destination = false;
+
+    update_distance_and_bearing_to_destination();
+
+    // check if vehicle should pivot
+    _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01);
+
+    // position controller input shaping used for navigation to destination
+    _nav_control_type = NavControllerType::NAV_PSC_INPUT_SHAPING;
+    return true;
 }
 
 // get max acceleration in m/s/s
@@ -357,7 +393,7 @@ bool AR_WPNav::is_active() const
     return ((AP_HAL::millis() - _last_update_ms) < AR_WPNAV_TIMEOUT_MS);
 }
 
-// move target location along track from origin to destination
+// move target location along track from origin to destination using SCurves navigation
 void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float dt)
 {
     // exit immediately if no current location, destination or disarmed
@@ -401,6 +437,7 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
     bool s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, wp_radius, _fast_waypoint, _track_scalar_dt * dt, target_pos_3d_ftype, target_vel, target_accel);
 
     // pass new target to the position controller
+    init_pos_control_if_necessary();
     Vector2p target_pos_ptype{target_pos_3d_ftype.x, target_pos_3d_ftype.y};
     _pos_control.set_pos_vel_accel_target(target_pos_ptype, target_vel.xy(), target_accel.xy());
 
@@ -415,6 +452,31 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
             const bool past_wp = current_loc.past_interval_finish_line(_origin, _destination);
             _reached_destination = near_wp || past_wp;
         }
+    }
+}
+
+// update psc input shaping navigation controller
+void AR_WPNav::update_psc_input_shaping(float dt)
+{
+    // convert destination location to offset from EKF origin (in meters)
+    Vector2f pos_target_cm;
+    if (!_destination.get_vector_xy_from_origin_NE(pos_target_cm)) {
+        return;
+    }
+
+    // initialise position controller if not called recently
+    init_pos_control_if_necessary();
+
+    // convert to meters and update target
+    const Vector2p pos_target = pos_target_cm.topostype() * 0.01;
+    _pos_control.input_pos_target(pos_target, dt);
+
+    // update reached_destination
+    if (!_reached_destination) {
+        // calculate position difference between destination and position controller input shaped target
+        Vector2p pos_target_diff = pos_target - _pos_control.get_pos_target();
+        // vehicle has reached destination when the target is within 1cm of the destination and vehicle is within waypoint radius
+        _reached_destination = (pos_target_diff.length_squared() < sq(0.01)) && (_pos_control.get_pos_error().length_squared() < sq(_radius));
     }
 }
 
@@ -515,4 +577,18 @@ float AR_WPNav::get_corner_angle(const Location& loc1, const Location& loc2, con
     const float loc2_to_loc3_deg = loc2.get_bearing_to(loc3) * 0.01;
     const float diff_yaw_deg = wrap_180(loc2_to_loc3_deg - loc1_to_loc2_deg);
     return diff_yaw_deg;
+}
+
+// helper function to initialise position controller if it hasn't been called recently
+// this should be called before updating the position controller with new targets but after the EKF has a good position estimate
+void AR_WPNav::init_pos_control_if_necessary()
+{
+    // initialise position controller if not called recently
+    if (!_pos_control.is_active()) {
+        if (!_pos_control.init()) {
+            // this should never fail because we should always have a valid position estimate at this point
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return;
+        }
+    }
 }
