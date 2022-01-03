@@ -16,6 +16,7 @@ static_assert(ESC_TELEM_MAX_ESCS > 0, "Cannot have 0 ESC telemetry instances");
 class AP_ESC_Telem {
 public:
     friend class AP_ESC_Telem_Backend;
+    friend class MAVLink_routing;
 
     AP_ESC_Telem();
 
