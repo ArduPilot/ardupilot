@@ -1,5 +1,5 @@
-Release 4.1.6beta1 21st December 2021
--------------------------------------
+Release 4.1.6 3rd January 2022
+------------------------------
 
 This is a minor release with some important bug fixes:
 
@@ -11,6 +11,10 @@ This is a minor release with some important bug fixes:
    is on at boot
  - fixed QAUTOTUNE to obey maximum attitude rate limits
  - fixed a bug in smartaudio support that increased CPU usage
+ - added lowpass filter to speed scaling to prevent sudden surface
+   movement on VTOL arming
+ - fixed hang when BATT_MONITOR is set to 14
+ - fixed gaps in EKF3 logging of variances and timing
 
 Happy flying!
 
