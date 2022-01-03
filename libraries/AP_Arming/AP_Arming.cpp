@@ -1106,7 +1106,7 @@ bool AP_Arming::fettec_checks(bool display_failure) const
         return true;
     }
 
-    // check camera is ready
+    // check ESCs are ready
     char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     if (!f->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
         check_failed(ARMING_CHECK_ALL, display_failure, "FETtec: %s", fail_msg);
