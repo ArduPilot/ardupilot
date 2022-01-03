@@ -327,12 +327,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: TRANS_FAIL
     // @DisplayName: Quadplane transition failure time
-    // @Description: Maximum time allowed for forward transitions, exceeding this time will cancel the transition and the aircraft will immediately change to QLAND or finish the transition depending on Q_OPTIONS bit 19. 0 for no limit.
+    // @Description: Maximum time allowed for forward transitions, exceeding this time will cancel the transition and the aircraft will immediately change to the mode set by Q_TRANS_FAIL_ACT or finish the transition depending on Q_OPTIONS bit 19. 0 for no limit.
     // @Units: s
     // @Range: 0 20
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure, 0),
+    AP_GROUPINFO("TRANS_FAIL", 8, QuadPlane, transition_failure.timeout, 0),
 
     // 9: TAILSIT_MOTMX
 
@@ -435,6 +435,12 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Units: ms
     // @Range: 0 10000
     AP_GROUPINFO("BACKTRANS_MS", 28, QuadPlane, back_trans_pitch_limit_ms, 3000),
+
+    // @Param: TRANS_FAIL_ACT
+    // @DisplayName: Quadplane transition failure action
+    // @Description: This sets the mode that is changed to when Q_TRANS_FAIL time elapses, if set. See also Q_OPTIONS bit 19: CompleteTransition if Q_TRANS_FAIL
+    // @Values: -1:Warn only, 0:QLand, 1:QRTL
+    AP_GROUPINFO("TRANS_FAIL_ACT", 29, QuadPlane, transition_failure.action, 0),
 
     AP_GROUPEND
 };
@@ -1482,22 +1488,35 @@ void SLT_Transition::update()
 
         // check if we have failed to transition while in TRANSITION_AIRSPEED_WAIT
         if (transition_start_ms != 0 &&
-        (quadplane.transition_failure > 0) &&
-        ((now - transition_start_ms) > ((uint32_t)quadplane.transition_failure * 1000))) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Transition failed, exceeded time limit");
+        (quadplane.transition_failure.timeout > 0) &&
+        ((now - transition_start_ms) > ((uint32_t)quadplane.transition_failure.timeout * 1000))) {
+            if (!quadplane.transition_failure.warned) {
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Transition failed, exceeded time limit");
+                quadplane.transition_failure.warned = true;
+            }
             // if option is set and ground speed> 1/2 arspd_fbw_min for non-tiltrotors, then complete transition, otherwise QLAND.
             // tiltrotors will immediately transition
-            if (quadplane.options & QuadPlane::OPTION_TRANS_FAIL_TO_FW) {
-                if (!plane.quadplane.tiltrotor.enabled() &&
-                plane.ahrs.groundspeed() < plane.aparm.airspeed_min * 0.5) {
-                    plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION);
-                } else {
-                    transition_state = TRANSITION_TIMER;
-                    in_forced_transition = true;
-                } 
+            const bool tiltrotor_with_ground_speed = quadplane.tiltrotor.enabled() && (plane.ahrs.groundspeed() > plane.aparm.airspeed_min * 0.5);
+            if ((quadplane.options & QuadPlane::OPTION_TRANS_FAIL_TO_FW) && tiltrotor_with_ground_speed) {
+                transition_state = TRANSITION_TIMER;
+                in_forced_transition = true;
             } else {
-                plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION);
+                switch (QuadPlane::TRANS_FAIL::ACTION(quadplane.transition_failure.action)) {
+                    case QuadPlane::TRANS_FAIL::ACTION::QLAND:
+                        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION);
+                        break;
+
+                    case QuadPlane::TRANS_FAIL::ACTION::QRTL:
+                        plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION);
+                        quadplane.poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                        break;
+
+                    default:
+                        break;
+                }
             }
+        } else {
+            quadplane.transition_failure.warned = false;
         }
 
         transition_low_airspeed_ms = now;
