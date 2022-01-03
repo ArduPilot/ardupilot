@@ -505,7 +505,7 @@ uint16_t AP_Logger_File::find_last_log()
     FileData *fd = AP::FS().load_file(fname);
     free(fname);
     if (fd != nullptr) {
-        ret = strtol((const char *)fd->data, NULL, 10);
+        ret = strtol((const char *)fd->data, nullptr, 10);
         delete fd;
     }
     return ret;
