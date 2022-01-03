@@ -273,7 +273,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #endif // AIRSPEED_MAX_SENSORS
 
     // Note that 21, 22 and 23 are used above by the _OPTIONS, _WIND_MAX and _WIND_WARN parameters.  Do not use them!!
-    
+
+    // NOTE: Index 63 is used by AIRSPEED_TYPE, Do not use it!: AP_Param converts an index of 0 to 63 so that the index may be bit shifted
     AP_GROUPEND
 };
 
@@ -597,7 +598,7 @@ void AP_Airspeed::read(uint8_t i)
 }
 
 // read all airspeed sensors
-void AP_Airspeed::update(bool log)
+void AP_Airspeed::update()
 {
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         read(i);
@@ -624,8 +625,8 @@ void AP_Airspeed::update(bool log)
 
     check_sensor_failures();
 
-#ifndef HAL_BUILD_AP_PERIPH
-    if (log) {
+#if HAL_LOGGING_ENABLED
+    if (_log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         Log_Airspeed();
     }
 #endif
