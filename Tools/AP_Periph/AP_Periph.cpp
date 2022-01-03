@@ -181,6 +181,7 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     if (airspeed.enabled()) {
+        // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit();
         airspeed.init();
     }
 #endif

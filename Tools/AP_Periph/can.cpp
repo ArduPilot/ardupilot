@@ -2138,7 +2138,7 @@ void AP_Periph_FW::can_airspeed_update(void)
         return;
     }
     last_airspeed_update_ms = now;
-    airspeed.update(false);
+    airspeed.update();
     if (!airspeed.healthy()) {
         // don't send any data
         return;
