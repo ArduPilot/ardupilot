@@ -1410,7 +1410,7 @@ void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
     // always enusre a lag is provided
-    lag_sec = 0.22f;
+    lag_sec = 0.1f;
 
     if (instance >= GPS_MAX_INSTANCES) {
         return false;
