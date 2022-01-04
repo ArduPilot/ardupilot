@@ -148,7 +148,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 void AP_InertialSensor::write_notch_log_messages() const
 {
     const float* notches = get_gyro_dynamic_notch_center_frequencies_hz();
-    AP::logger().Write(
+    AP::logger().WriteStreaming(
         "FTN", "TimeUS,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s-zzzzzzzzzzzz", "F-------------", "QBffffffffffff", AP_HAL::micros64(), get_num_gyro_dynamic_notch_center_frequencies(),
             notches[0], notches[1], notches[2], notches[3],
             notches[4], notches[5], notches[6], notches[7],
