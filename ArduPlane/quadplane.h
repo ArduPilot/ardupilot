@@ -108,6 +108,7 @@ public:
     bool verify_vtol_land(void);
     bool in_vtol_auto(void) const;
     bool in_vtol_mode(void) const;
+    bool in_vtol_takeoff(void) const;
     bool in_vtol_posvel_mode(void) const;
     void update_throttle_hover();
     bool show_vtol_view() const;
@@ -433,6 +434,7 @@ private:
             return AP_HAL::millis() - last_state_change_ms;
         }
         Vector3p target_cm;
+        Vector2f xy_correction;
         Vector3f target_vel_cms;
         bool slow_descent:1;
         bool pilot_correction_active;
@@ -442,6 +444,8 @@ private:
         bool reached_wp_speed;
         uint32_t last_run_ms;
         float pos1_start_speed;
+        Vector2f velocity_match;
+        uint32_t last_velocity_match_ms;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
@@ -564,6 +568,11 @@ private:
       see if we are in the VTOL position control phase of a landing
     */
     bool in_vtol_land_poscontrol(void) const;
+
+    /*
+      are we in the airbrake phase of a VTOL landing?
+     */
+    bool in_vtol_airbrake(void) const;
     
     // Q assist state, can be enabled, disabled or force. Default to enabled
     Q_ASSIST_STATE_ENUM q_assist_state = Q_ASSIST_STATE_ENUM::Q_ASSIST_ENABLED;
