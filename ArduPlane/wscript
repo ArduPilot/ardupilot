@@ -29,6 +29,7 @@ def build(bld):
             'AP_OSD',
             'AC_AutoTune',
             'AP_KDECAN',
+            'AP_Follow',
         ],
     )
 
