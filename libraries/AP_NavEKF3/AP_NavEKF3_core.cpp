@@ -99,8 +99,10 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     // calculate buffer size for optical flow data
     const uint8_t flow_buffer_length = MIN((ekf_delay_ms / frontend->flowIntervalMin_ms) + 1, imu_buffer_length);
 
+#if EK3_FEATURE_EXTERNAL_NAV
     // calculate buffer size for external nav data
     const uint8_t extnav_buffer_length = MIN((ekf_delay_ms / frontend->extNavIntervalMin_ms) + 1, imu_buffer_length);
+#endif // EK3_FEATURE_EXTERNAL_NAV
 
     if(!storedGPS.init(obs_buffer_length)) {
         return false;
@@ -159,15 +161,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #endif
-
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u buffs IMU=%u OBS=%u OF=%u EN:%u dt=%.4f",
-                    (unsigned)imu_index,
-                    (unsigned)imu_buffer_length,
-                    (unsigned)obs_buffer_length,
-                    (unsigned)flow_buffer_length,
-                    (unsigned)extnav_buffer_length,
-                    (double)dtEkfAvg);
-
+ 
     if ((yawEstimator == nullptr) && (frontend->_gsfRunMask & (1U<<core_index))) {
         // check if there is enough memory to create the EKF-GSF object
         if (dal.available_memory() < sizeof(EKFGSF_yaw) + 1024) {
