@@ -63,8 +63,6 @@ private:
     AP_HAL::CANIface* _can_iface;
 
 #ifdef HAL_BUILD_AP_PERIPH
-    void register_driver_periph(const AP_CANManager::Driver_Type dtype);
-    
     struct CANSensor_Periph {
         AP_HAL::CANIface* iface;
         AP_CANManager::Driver_Type protocol;

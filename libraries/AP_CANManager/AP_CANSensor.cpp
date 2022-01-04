@@ -30,6 +30,10 @@ extern const AP_HAL::HAL& hal;
 #define debug_can(level_debug, fmt, args...)
 #endif
 
+#ifdef HAL_BUILD_AP_PERIPH
+CANSensor::CANSensor_Periph CANSensor::_periph[HAL_NUM_CAN_IFACES];
+#endif
+
 CANSensor::CANSensor(const char *driver_name, uint16_t stack_size) :
     _driver_name(driver_name),
     _stack_size(stack_size)
@@ -44,17 +48,8 @@ void CANSensor::register_driver(AP_CANManager::Driver_Type dtype)
     } else {
         debug_can(AP_CANManager::LOG_INFO, "%s: constructed", _driver_name);
     }
+
 #elif defined(HAL_BUILD_AP_PERIPH)
-    register_driver_periph(dtype);
-#endif
-}
-
-
-#ifdef HAL_BUILD_AP_PERIPH
-CANSensor::CANSensor_Periph CANSensor::_periph[HAL_NUM_CAN_IFACES];
-
-void CANSensor::register_driver_periph(const AP_CANManager::Driver_Type dtype)
-{
     for (uint8_t i = 0; i < HAL_NUM_CAN_IFACES; i++) {
         if (_periph[i].protocol != dtype) {
             continue;
@@ -67,8 +62,8 @@ void CANSensor::register_driver_periph(const AP_CANManager::Driver_Type dtype)
         init(0, false); // TODO: allow multiple drivers
         return;
     }
-}
 #endif
+}
 
 void CANSensor::init(uint8_t driver_index, bool enable_filters)
 {
