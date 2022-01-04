@@ -499,13 +499,12 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
 {
     // handle pivot turns
     if (_pivot.active()) {
-        _cross_track_error = calc_crosstrack_error(current_loc);
-        _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
-        _desired_turn_rate_rads = _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt);
-        _desired_lat_accel = 0.0f;
-
         // decelerate to zero
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
+        _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
+        _desired_turn_rate_rads = is_zero(_desired_speed_limited) ? _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt) : 0;
+        _desired_lat_accel = 0.0f;
+        _cross_track_error = calc_crosstrack_error(current_loc);
         return;
     }
 
