@@ -310,7 +310,7 @@ class AutoTestRover(AutoTest):
             self.change_mode("AUTO")
 #            self.send_debug_trap()
             self.progress("Waiting for sprayer to start")
-            self.wait_servo_channel_value(pump_ch, 1300, timeout=60, comparator=operator.gt)
+            self.wait_servo_channel_value(pump_ch, 1250, timeout=60, comparator=operator.gt)
             self.progress("Waiting for sprayer to stop")
             self.wait_servo_channel_value(pump_ch, pump_ch_min, timeout=120)
 
