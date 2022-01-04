@@ -2487,6 +2487,8 @@ def process_line(line):
             config.pop(u, '')
             bytype.pop(u, '')
             bylabel.pop(u, '')
+            alttype.pop(u, '')
+            altlabel.pop(u, '')
             # also remove all occurences of defines in previous lines if any
             for line in alllines[:]:
                 if line.startswith('define') and u == line.split()[1]:
