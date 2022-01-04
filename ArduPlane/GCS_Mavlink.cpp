@@ -653,7 +653,7 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 #if HAL_ADSB_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
 #endif
-#if SHIP_LANDING_ENABLED
+#if AP_SCRIPTING_ENABLED
     // pass message to follow library
     plane.g2.follow.handle_msg(msg);
 #endif
@@ -889,7 +889,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         return handle_command_int_guided_slew_commands(packet);
 
     case MAV_CMD_DO_FOLLOW:
-#if SHIP_LANDING_ENABLED
+#if AP_SCRIPTING_ENABLED
         // param1: sysid of target to follow
         if ((packet.param1 > 0) && (packet.param1 <= 255)) {
             plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
@@ -1099,7 +1099,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_ACCEPTED;
 
-#if SHIP_LANDING_ENABLED
+#if AP_SCRIPTING_ENABLED
     case MAV_CMD_DO_FOLLOW:
         // param1: sysid of target to follow
         if ((packet.param1 > 0) && (packet.param1 <= 255)) {

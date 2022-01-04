@@ -1714,7 +1714,7 @@ void QuadPlane::update(void)
     }
 
     const uint32_t now = AP_HAL::millis();
-    if (!in_vtol_mode()) {
+    if (!in_vtol_mode() && !in_vtol_airbrake()) {
         // we're in a fixed wing mode, cope with transitions and check
         // for assistance needed
         if (plane.control_mode == &plane.mode_manual ||
@@ -1733,7 +1733,7 @@ void QuadPlane::update(void)
 
     } else {
 
-        assisted_flight = false;
+        assisted_flight = in_vtol_airbrake();
 
         // output to motors
         motors_output();
@@ -2011,6 +2011,9 @@ bool QuadPlane::in_vtol_auto(void) const
 /*
   are we in a VTOL mode? This is used to decide if we run the
   transition handling code or not
+
+  note that AIRBRAKE is not considered in_vtol_mode even though the
+  VTOL motors are running
  */
 bool QuadPlane::in_vtol_mode(void) const
 {
@@ -2018,7 +2021,7 @@ bool QuadPlane::in_vtol_mode(void) const
         return false;
     }
     if (in_vtol_land_sequence()) {
-        return poscontrol.get_state() != QPOS_APPROACH;
+        return poscontrol.get_state() != QPOS_APPROACH && poscontrol.get_state() != QPOS_AIRBRAKE;
     }
     if (plane.control_mode->is_vtol_mode()) {
         return true;
@@ -2033,7 +2036,7 @@ bool QuadPlane::in_vtol_mode(void) const
         return true;
     }
     if (in_vtol_auto()) {
-        if (!plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_APPROACH) {
+        if (!plane.auto_state.vtol_loiter || poscontrol.get_state() > QPOS_AIRBRAKE) {
             return true;
         }
     }
@@ -2082,7 +2085,8 @@ void QuadPlane::update_land_positioning(void)
     poscontrol.target_vel_cms = Vector3f(-pitch_in, roll_in, 0) * speed_max_cms;
     poscontrol.target_vel_cms.rotate_xy(ahrs_view->yaw);
 
-    poscontrol.target_cm += (poscontrol.target_vel_cms * dt).topostype();
+    // integrate our corrected position
+    poscontrol.xy_correction += poscontrol.target_vel_cms.xy() * dt * 0.01;
 
     poscontrol.pilot_correction_active = (!is_zero(roll_in) || !is_zero(pitch_in));
     if (poscontrol.pilot_correction_active) {
@@ -2095,9 +2099,16 @@ void QuadPlane::update_land_positioning(void)
  */
 void QuadPlane::run_xy_controller(void)
 {
+    float accel_cmss = wp_nav->get_wp_acceleration();
+    if (in_vtol_land_sequence() &&
+        (poscontrol.get_state() == QPOS_POSITION1 ||
+         poscontrol.get_state() == QPOS_POSITION2)) {
+        accel_cmss = MAX(accel_cmss, transition_decel*100);
+    }
+    const float speed_cms = wp_nav->get_default_speed_xy();
+    pos_control->set_max_speed_accel_xy(speed_cms, accel_cmss);
+    pos_control->set_correction_speed_accel_xy(speed_cms, accel_cmss);
     if (!pos_control->is_active_xy()) {
-        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
-        pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
         pos_control->init_xy_controller();
     }
     pos_control->update_xy_controller();
@@ -2130,6 +2141,8 @@ void QuadPlane::poscontrol_init_approach(void)
         }
         poscontrol.thrust_loss_start_ms = 0;
     }
+    poscontrol.pilot_correction_done = false;
+    poscontrol.xy_correction.zero();
 }
 
 /*
@@ -2159,13 +2172,6 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             // if it is active then the rate control should not be reset at all
             qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_start_speed = plane.ahrs.groundspeed_vector().length();
-        } else if (s == QPOS_POSITION2) {
-            // POSITION2 changes target speed, so we need to change it
-            // back to normal
-            qp.pos_control->set_max_speed_accel_xy(qp.wp_nav->get_default_speed_xy(),
-                                                   qp.wp_nav->get_wp_acceleration());
-            qp.pos_control->set_correction_speed_accel_xy(qp.wp_nav->get_default_speed_xy(),
-                                                   qp.wp_nav->get_wp_acceleration());
         } else if (s == QPOS_AIRBRAKE) {
             // start with zero integrator on vertical throttle
             qp.pos_control->get_accel_z_pid().set_integrator(0);
@@ -2211,6 +2217,11 @@ void QuadPlane::vtol_position_controller(void)
     // avoid running the z controller in approach and airbrake if we're not already running it
     // and tilt is more than tilt max
     bool suppress_z_controller = false;
+
+    Vector2f landing_velocity;
+    if (now_ms - poscontrol.last_velocity_match_ms < 1000) {
+        landing_velocity = poscontrol.velocity_match;
+    }
 
     // horizontal position control
     switch (poscontrol.get_state()) {
@@ -2423,19 +2434,11 @@ void QuadPlane::vtol_position_controller(void)
         if (distance > 0.1) {
             target_speed_xy_cms = diff_wp.normalized() * target_speed * 100;
         }
-        if (!tailsitter.enabled()) {
-            // this method ignores pos-control velocity/accel limtis
-            pos_control->set_vel_desired_xy_cms(target_speed_xy_cms);
 
-            // reset position controller xy target to current position
-            // because we only want velocity control (no position control)
-            const Vector2f& curr_pos = inertial_nav.get_position_xy_cm();
-            pos_control->set_pos_target_xy_cm(curr_pos.x, curr_pos.y);
-            pos_control->set_accel_desired_xy_cmss(Vector2f());
-        } else {
-            // tailsitters use input shaping and abide by velocity limits
-            pos_control->input_vel_accel_xy(target_speed_xy_cms, Vector2f());
-        }
+        target_speed_xy_cms += landing_velocity * 100;
+
+        // use input shaping and abide by accel and jerk limits
+        pos_control->input_vel_accel_xy(target_speed_xy_cms, Vector2f());
 
         // run horizontal velocity controller
         run_xy_controller();
@@ -2465,34 +2468,18 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_POSITION2:
     case QPOS_LAND_DESCEND: {
+        setup_target_position();
         /*
           for final land repositioning and descent we run the position controller
          */
-        if (poscontrol.pilot_correction_done) {
-            // if the pilot has repositioned the vehicle then we switch to velocity control.  This prevents the vehicle
-            // shifting position in the event of GPS glitches.
-            Vector2f zero;
-            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms.xy(), zero);
-        } else {
-            Vector2f zero;
-            pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), zero, zero);
-        }
+        Vector2f zero;
+        Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
+        pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), vel_cms, zero);
 
         // also run fixed wing navigation
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         update_land_positioning();
-
-        /*
-          apply the same asymmetric speed limits from POSITION1, so we
-          don't suddenly speed up when we change to POSITION2 and
-          LAND_DESCEND
-         */
-        const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
-        const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
-
-        pos_control->set_max_speed_accel_xy(scaled_wp_speed*100, wp_nav->get_wp_acceleration());
-        pos_control->set_correction_speed_accel_xy(scaled_wp_speed*100, wp_nav->get_wp_acceleration());
 
         run_xy_controller();
 
@@ -2520,7 +2507,8 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             // we use velocity control in QPOS_LAND_FINAL to allow for GPS glitch handling
             Vector2f zero;
-            pos_control->input_vel_accel_xy(poscontrol.target_vel_cms.xy(), zero);
+            Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
+            pos_control->input_vel_accel_xy(vel_cms, zero);
         }
 
         run_xy_controller();
@@ -2681,19 +2669,11 @@ void QuadPlane::setup_target_position(void)
         set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 
-    const Vector2f diff2d = origin.get_distance_NE(loc);
+    Vector2f diff2d = origin.get_distance_NE(loc);
+    diff2d += poscontrol.xy_correction;
     poscontrol.target_cm.x = diff2d.x * 100;
     poscontrol.target_cm.y = diff2d.y * 100;
     poscontrol.target_cm.z = plane.next_WP_loc.alt - origin.alt;
-
-    const uint32_t now = AP_HAL::millis();
-    if (!loc.same_latlon_as(last_auto_target) ||
-        plane.next_WP_loc.alt != last_auto_target.alt ||
-        now - last_loiter_ms > 500) {
-        wp_nav->set_wp_destination(poscontrol.target_cm.tofloat());
-        last_auto_target = loc;
-    }
-    last_loiter_ms = now;
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
@@ -2705,18 +2685,24 @@ void QuadPlane::setup_target_position(void)
  */
 void QuadPlane::takeoff_controller(void)
 {
+    if (!hal.util->get_soft_armed()) {
+        return;
+    }
     /*
       for takeoff we use the position controller
     */
     setup_target_position();
 
-    // set position controller desired velocity and acceleration to zero
-    pos_control->set_vel_desired_xy_cms(Vector2f());
-    pos_control->set_accel_desired_xy_cmss(Vector2f());
-
     // set position control target and update
-    Vector2f zero;
-    pos_control->input_vel_accel_xy(zero, zero);
+
+    Vector2f vel, zero;
+    if (AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000) {
+        vel = poscontrol.velocity_match * 100;
+    }
+
+    pos_control->set_accel_desired_xy_cmss(zero);
+    pos_control->set_vel_desired_xy_cms(vel);
+    pos_control->input_vel_accel_xy(vel, zero);
 
     run_xy_controller();
 
@@ -2756,6 +2742,16 @@ void QuadPlane::takeoff_controller(void)
 void QuadPlane::waypoint_controller(void)
 {
     setup_target_position();
+
+    const Location &loc = plane.next_WP_loc;
+    const uint32_t now = AP_HAL::millis();
+    if (!loc.same_latlon_as(last_auto_target) ||
+        plane.next_WP_loc.alt != last_auto_target.alt ||
+        now - last_loiter_ms > 500) {
+        wp_nav->set_wp_destination(poscontrol.target_cm.tofloat());
+        last_auto_target = loc;
+    }
+    last_loiter_ms = now;
 
     /*
       this is full copter control of auto flight
@@ -3086,10 +3082,18 @@ bool QuadPlane::verify_vtol_land(void)
             const float dist = (inertial_nav.get_position_neu_cm().topostype() - poscontrol.target_cm).xy().length() * 0.01;
             reached_position = dist < descend_dist_threshold;
         }
+        Vector2f target_vel;
+        if (AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000) {
+            target_vel = poscontrol.velocity_match;
+        }
+        Vector3f vel_ned;
+        UNUSED_RESULT(plane.ahrs.get_velocity_NED(vel_ned));
+        
         if (reached_position &&
-            plane.ahrs.groundspeed() < descend_speed_threshold) {
+            (vel_ned.xy() - target_vel).length() < descend_speed_threshold) {
             poscontrol.set_state(QPOS_LAND_DESCEND);
             poscontrol.pilot_correction_done = false;
+            poscontrol.xy_correction.zero();
 #if AC_FENCE == ENABLED
             plane.fence.auto_disable_fence_for_landing();
 #endif
@@ -3642,6 +3646,23 @@ bool QuadPlane::in_vtol_land_poscontrol(void) const
     return false;
 }
 
+/*
+  see if we are in the airbrake phase of a VTOL landing
+ */
+bool QuadPlane::in_vtol_airbrake(void) const
+{
+    if (plane.control_mode == &plane.mode_qrtl &&
+        poscontrol.get_state() == QPOS_AIRBRAKE) {
+        return true;
+    }
+    if (plane.control_mode == &plane.mode_auto &&
+        is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
+        poscontrol.get_state() == QPOS_AIRBRAKE) {
+        return true;
+    }
+    return false;
+}
+
 // return true if we should show VTOL view
 bool QuadPlane::show_vtol_view() const
 {
@@ -3875,6 +3896,17 @@ MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
     }
 
     return MAV_VTOL_STATE_UNDEFINED;
+}
+
+/*
+  see if we are in a VTOL takeoff
+ */
+bool QuadPlane::in_vtol_takeoff(void) const
+{
+    if (in_vtol_auto() && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
+        return true;
+    }
+    return false;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
