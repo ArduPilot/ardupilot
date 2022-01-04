@@ -94,12 +94,6 @@ public:
     void check_for_serial_reboot_cmd(const int8_t serial_index);
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    static ChibiOS::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static HALSITL::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
-#endif
-
     AP_SerialManager serial_manager;
 
 #ifdef HAL_PERIPH_ENABLE_GPS
@@ -125,13 +119,6 @@ public:
         uint32_t last_read_ms;
         uint32_t last_can_send_ms;
     } battery;
-#endif
-
-#if HAL_NUM_CAN_IFACES >= 2
-    // This allows you to change the protocol and it continues to use the one at boot.
-    // Without this, changing away from UAVCAN causes loss of comms and you can't
-    // change the rest of your params or verify it succeeded.
-    AP_CANManager::Driver_Type can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_MSP

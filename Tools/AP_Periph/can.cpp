@@ -91,6 +91,12 @@ static struct instance_t {
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HALSITL::CANIface* iface;
 #endif
+
+    AP_CANManager::Driver_Type protocol = AP_CANManager::Driver_Type_UAVCAN;
+    
+#if HAL_NUM_CAN_IFACES >= 2
+    CANSensor* cansensor;
+#endif
 } instances[HAL_NUM_CAN_IFACES];
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
@@ -135,12 +141,6 @@ uint8_t PreferredNodeID = HAL_CAN_DEFAULT_NODE_ID;
 
 #ifndef AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
 #define AP_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz 1
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-ChibiOS::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
 
@@ -1153,7 +1153,7 @@ static void processTx(void)
             continue;
         }
 #if HAL_NUM_CAN_IFACES >= 2
-        if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_UAVCAN) {
+        if (ins.protocol != AP_CANManager::Driver_Type_UAVCAN) {
             continue;
         }
 #endif
@@ -1189,7 +1189,7 @@ static void processRx(void)
             continue;
         }
 #if HAL_NUM_CAN_IFACES >= 2
-        if (periph.can_protocol_cached[ins.index] != AP_CANManager::Driver_Type_UAVCAN) {
+        if (ins.protocol != AP_CANManager::Driver_Type_UAVCAN) {
             continue;
         }
 #endif
@@ -1427,18 +1427,18 @@ void AP_Periph_FW::can_start()
 
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        can_iface_periph[i] = new ChibiOS::CANIface();
+        instances[i].iface = new ChibiOS::CANIface();
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        can_iface_periph[i] = new HALSITL::CANIface();
+        instances[i].iface = new HALSITL::CANIface();
 #endif
-        instances[i].iface = can_iface_periph[i];
         instances[i].index = i;
 #if HAL_NUM_CAN_IFACES >= 2
-        can_protocol_cached[i] = g.can_protocol[i];
-        CANSensor::set_periph(i, can_protocol_cached[i], can_iface_periph[i]);
+        instances[i].protocol = g.can_protocol[i];
+        CANSensor::set_periph(i, instances[i].protocol, instances[i].iface);
 #endif
-        if (can_iface_periph[i] != nullptr) {
-            can_iface_periph[i]->init(g.can_baudrate[i], AP_HAL::CANIface::NormalMode);
+
+        if (instances[i].iface != nullptr) {
+            instances[i].iface->init(g.can_baudrate[i], AP_HAL::CANIface::NormalMode);
         }
         canardInit(&instances[i].canard, (uint8_t *)instances[i].canard_memory_pool, sizeof(instances[i].canard_memory_pool),
                 onTransferReceived, shouldAcceptTransfer, NULL);
