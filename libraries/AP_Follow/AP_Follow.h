@@ -39,6 +39,11 @@ public:
     // constructor
     AP_Follow();
 
+    // enable as singleton
+    static AP_Follow *get_singleton(void) {
+        return _singleton;
+    }
+
     // returns true if library is enabled
     bool enabled() const { return _enabled; }
 
@@ -58,6 +63,9 @@ public:
     // get target's estimated location and velocity (in NED)
     bool get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const;
 
+    // get target's estimated location and velocity (in NED), with offsets added
+    bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const;
+    
     // get distance vector to target (in meters), target plus offsets, and target's velocity all in NED frame
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
@@ -87,10 +95,14 @@ public:
     // get bearing to target (including offset) in degrees (for reporting purposes)
     float get_bearing_to_target() const { return _bearing_to_target; }
 
+    // get system time of last position update
+    uint32_t get_last_update_ms() const { return _last_location_update_ms; }
+
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
+    static AP_Follow *_singleton;
 
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
@@ -132,4 +144,8 @@ private:
 
     // setup jitter correction with max transport lag of 3s
     JitterCorrection _jitter{3000};
+};
+
+namespace AP {
+    AP_Follow &follow();
 };
