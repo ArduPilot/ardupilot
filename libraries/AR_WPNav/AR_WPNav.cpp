@@ -220,7 +220,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
                                          MIN(_pos_control.get_accel_max(), _pos_control.get_lat_accel_max()),
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
                                          1.0,                           // jerk time
-                                         _scurve_jerk);
+                                         _pos_control.get_jerk_max());
     }
 
     // handle next destination
@@ -247,7 +247,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
                                              MIN(_pos_control.get_accel_max(), _pos_control.get_lat_accel_max()),
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
                                              1.0,                           // jerk time
-                                             _scurve_jerk);
+                                             _pos_control.get_jerk_max());
 
             // next destination provided so fast waypoint
             _fast_waypoint = true;
@@ -393,8 +393,8 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
     }
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
     float track_scaler_tc = 1.0f;
-    if (is_positive(_scurve_jerk)) {
-        track_scaler_tc = _pos_control.get_accel_max() / _scurve_jerk;
+    if (is_positive(_pos_control.get_jerk_max())) {
+        track_scaler_tc = _pos_control.get_accel_max() / _pos_control.get_jerk_max();
     }
     _track_scalar_dt += (track_scaler_dt - _track_scalar_dt) * (dt / track_scaler_tc);
 
