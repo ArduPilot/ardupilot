@@ -341,24 +341,6 @@ bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destinati
     return true;
 }
 
-// get max acceleration in m/s/s
-float AR_WPNav::get_accel_max() const
-{
-    if (is_positive(_accel_max)) {
-        return _accel_max;
-    }
-    return _atc.get_accel_max();
-}
-
-// get max jerk in m/s/s/s
-float AR_WPNav::get_jerk_max() const
-{
-    if (is_positive(_jerk_max)) {
-        return _jerk_max;
-    }
-    return get_accel_max();
-}
-
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
 bool AR_WPNav::get_stopping_location(Location& stopping_loc)
 {
