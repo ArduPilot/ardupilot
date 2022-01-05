@@ -98,12 +98,6 @@ public:
     float get_radius() const { return _radius; }
     float get_pivot_rate() const { return _pivot.get_rate_max(); }
 
-    // get max acceleration in m/s/s
-    float get_accel_max() const;
-
-    // get max jerk in m/s/s/s
-    float get_jerk_max() const;
-
     // calculate stopping location using current position and attitude controller provided maximum deceleration
     // returns true on success, false on failure
     bool get_stopping_location(Location& stopping_loc) WARN_IF_UNUSED;
