@@ -145,63 +145,11 @@ void AR_WPNav::update(float dt)
     }
     _last_update_ms = AP_HAL::millis();
 
-    // run path planning around obstacles
-    bool stop_vehicle = false;
-   
-    // true if OA has been recently active;
-    bool _oa_was_active = _oa_active;
-
-    AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
-    if (oa != nullptr) {
-        AP_OAPathPlanner::OAPathPlannerUsed path_planner_used;
-        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination, path_planner_used);
-        switch (oa_retstate) {
-        case AP_OAPathPlanner::OA_NOT_REQUIRED:
-            _oa_active = false;
-            break;
-        case AP_OAPathPlanner::OA_PROCESSING:
-        case AP_OAPathPlanner::OA_ERROR:
-            // during processing or in case of error, slow vehicle to a stop
-            stop_vehicle = true;
-            _oa_active = false;
-            break;
-        case AP_OAPathPlanner::OA_SUCCESS:
-            _oa_active = true;
-            break;
-        }
-    }
-    if (!_oa_active) {
-        _oa_origin = _origin;
-        _oa_destination = _destination;
-    }
-
     update_distance_and_bearing_to_destination();
-
-    // if object avoidance is active check if vehicle should pivot towards destination
-    if (_oa_active) {
-        _pivot.check_activation(_oa_wp_bearing_cd * 0.01);
-    }
-
-    // check if vehicle is in recovering state after switching off OA
-    if (!_oa_active && _oa_was_active) {
-        if (oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET) {
-            //reset wp origin to vehicles current location
-            _origin = current_loc;
-        }
-    }
 
     // advance target along path unless vehicle is pivoting
     if (!_pivot.active()) {
         advance_wp_target_along_track(current_loc, dt);
-    }
-
-    // handle stopping vehicle if avoidance has failed
-    if (stop_vehicle) {
-        // decelerate to speed to zero and set turn rate to zero
-        _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
-        _desired_lat_accel = 0.0f;
-        _desired_turn_rate_rads = 0.0f;
-        return;
     }
 
     // update_steering_and_speed
@@ -221,8 +169,8 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     _scurve_prev_leg = _scurve_this_leg;
 
     // initialise some variables
-    _oa_origin = _origin = _destination;
-    _oa_destination = _destination = destination;
+    _origin = _destination;
+    _destination = destination;
     _orig_and_dest_valid = true;
     _reached_destination = false;
 
@@ -232,7 +180,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     // or journey to previous waypoint was interrupted or navigation has just started
     if (!_fast_waypoint) {
         _pivot.deactivate();
-        _pivot.check_activation(_oa_wp_bearing_cd * 0.01);
+        _pivot.check_activation(oa_wp_bearing_cd() * 0.01);
     }
 
     // convert origin and destination to offset from EKF origin
@@ -434,23 +382,10 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
     if (!_orig_and_dest_valid || !AP::ahrs().get_location(current_loc)) {
         _distance_to_destination = 0.0f;
         _wp_bearing_cd = 0.0f;
-
-        // update OA adjusted values
-        _oa_distance_to_destination = 0.0f;
-        _oa_wp_bearing_cd = 0.0f;
         return;
     }
     _distance_to_destination = current_loc.get_distance(_destination);
     _wp_bearing_cd = current_loc.get_bearing_to(_destination);
-
-    // update OA adjusted values
-    if (_oa_active) {
-        _oa_distance_to_destination = current_loc.get_distance(_oa_destination);
-        _oa_wp_bearing_cd = current_loc.get_bearing_to(_oa_destination);
-    } else {
-        _oa_distance_to_destination = _distance_to_destination;
-        _oa_wp_bearing_cd = _wp_bearing_cd;
-    }
 }
 
 // calculate steering and speed to drive along line from origin to destination waypoint
@@ -459,7 +394,7 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
     // handle pivot turns
     if (_pivot.active()) {
         _cross_track_error = calc_crosstrack_error(current_loc);
-        _desired_heading_cd = _reversed ? wrap_360_cd(_oa_wp_bearing_cd + 18000) : _oa_wp_bearing_cd;;
+        _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
         _desired_turn_rate_rads = _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt);
         _desired_lat_accel = 0.0f;
 
@@ -495,26 +430,30 @@ void AR_WPNav::apply_speed_min(float &desired_speed) const
     desired_speed = MAX(desired_speed, _speed_min);
 }
 
-// calculate the crosstrack error (does not rely on L1 controller)
+// calculate the crosstrack error
 float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 {
     if (!_orig_and_dest_valid) {
         return 0.0f;
     }
 
-    // calculate the NE position of destination relative to origin
-    Vector2f dest_from_origin = _oa_origin.get_distance_NE(_oa_destination);
+    // get object avoidance adjusted origin and destination
+    const Location &orig = get_oa_origin();
+    const Location &dest = get_oa_destination();
 
-    // return distance to origin if length of track is very small
+    // calculate the NE position of destination relative to origin
+    Vector2f dest_from_origin = orig.get_distance_NE(dest);
+
+    // return distance to destination if length of track is very small
     if (dest_from_origin.length() < 1.0e-6f) {
-        return current_loc.get_distance_NE(_oa_destination).length();
+        return current_loc.get_distance_NE(dest).length();
     }
 
     // convert to a vector indicating direction only
     dest_from_origin.normalize();
 
     // calculate the NE position of the vehicle relative to origin
-    const Vector2f veh_from_origin = _oa_origin.get_distance_NE(current_loc);
+    const Vector2f veh_from_origin = orig.get_distance_NE(current_loc);
 
     // calculate distance to target track, for reporting
     return fabsf(veh_from_origin % dest_from_origin);
