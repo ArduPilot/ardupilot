@@ -141,6 +141,10 @@ void Sailboat::init()
     // sailboat defaults
     if (sail_enabled()) {
         rover.g2.crash_angle.set_default(0);
+
+        // sailboats without motors may travel faster than WP_SPEED so allow waypoint navigation to
+        // speedup to catch the vehicle instead of asking the vehicle to slow down
+        rover.g2.wp_nav.enable_overspeed(motor_state != UseMotor::USE_MOTOR_ALWAYS);
     }
 
     if (tack_enabled()) {
