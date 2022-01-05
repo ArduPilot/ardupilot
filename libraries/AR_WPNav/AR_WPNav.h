@@ -88,6 +88,11 @@ public:
     // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
     void set_turn_params(float turn_radius, bool pivot_possible);
 
+    // enable speeding up position target to catch-up with vehicles travelling faster than WP_SPEED
+    // designed to support sailboats that do not have precise speed control
+    // only supported when using SCurves and not when using position controller input shaping
+    void enable_overspeed(bool enable) { _overspeed_enabled = enable; }
+
     // accessors for parameter values
     float get_default_speed() const { return _speed_max; }
     float get_radius() const { return _radius; }
@@ -160,6 +165,7 @@ protected:
     float _scurve_jerk;             // scurve jerk max in m/s/s/s
     bool _fast_waypoint;            // true if vehicle will stop at the next waypoint
     bool _pivot_at_next_wp;         // true if vehicle should pivot at next waypoint
+    bool _overspeed_enabled;        // if true scurve's position target will speedup to catch vehicles travelling faster than WP_SPEED
     float _track_scalar_dt;         // time scaler to ensure scurve target doesn't get too far ahead of vehicle
 
     // variables held in vehicle code (for now)
