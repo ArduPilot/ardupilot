@@ -2,6 +2,7 @@
 
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_long_t &packet)
 {
@@ -76,6 +77,7 @@ void GCS_MAVLINK::send_fence_status() const
 
     // report on Avoidance liminting
     uint8_t breach_mitigation = FENCE_MITIGATE_UNKNOWN;
+#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     const AC_Avoid* avoid =  AC_Avoid::get_singleton();
     if (avoid != nullptr) {
         if (avoid->limits_active()) {
@@ -84,6 +86,7 @@ void GCS_MAVLINK::send_fence_status() const
             breach_mitigation = FENCE_MITIGATE_NONE;
         }
     }
+#endif
 
     // send status
     mavlink_msg_fence_status_send(chan,
