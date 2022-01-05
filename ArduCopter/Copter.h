@@ -862,7 +862,6 @@ private:
     void read_rangefinder(void);
     bool rangefinder_alt_ok() const;
     bool rangefinder_up_ok() const;
-    void rpm_update();
     void update_optical_flow(void);
     void compass_cal_update(void);
 
