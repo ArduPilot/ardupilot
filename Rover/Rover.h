@@ -353,7 +353,6 @@ private:
     void update_wheel_encoder();
     void read_rangefinders(void);
     void read_airspeed();
-    void rpm_update(void);
 
     // Steering.cpp
     void set_servos(void);

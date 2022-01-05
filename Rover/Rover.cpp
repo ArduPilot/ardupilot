@@ -96,7 +96,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
 #endif
-    SCHED_TASK(rpm_update,             10,    100,  72),
+    SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200,  75),
 #endif
