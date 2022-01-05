@@ -145,17 +145,3 @@ bool Copter::get_rangefinder_height_interpolated_cm(int32_t& ret)
     ret += inertial_alt_cm - rangefinder_state.inertial_alt_cm;
     return true;
 }
-
-
-/*
-  update RPM sensors
- */
-void Copter::rpm_update(void)
-{
-#if RPM_ENABLED == ENABLED
-    rpm_sensor.update();
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        logger.Write_RPM(rpm_sensor);
-    }
-#endif
-}
