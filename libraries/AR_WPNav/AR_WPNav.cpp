@@ -497,6 +497,8 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
 // calculate steering and speed to drive along line from origin to destination waypoint
 void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
 {
+    _cross_track_error = calc_crosstrack_error(current_loc);
+
     // handle pivot turns
     if (_pivot.active()) {
         // decelerate to zero
@@ -504,7 +506,6 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
         _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
         _desired_turn_rate_rads = is_zero(_desired_speed_limited) ? _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt) : 0;
         _desired_lat_accel = 0.0f;
-        _cross_track_error = calc_crosstrack_error(current_loc);
         return;
     }
 
@@ -513,7 +514,6 @@ void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
     _desired_speed_limited = _pos_control.get_desired_speed();
     _desired_turn_rate_rads = _pos_control.get_desired_turn_rate_rads();
     _desired_lat_accel = _pos_control.get_desired_lat_accel();
-    _cross_track_error = _pos_control.get_crosstrack_error();
 }
 
 // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
@@ -561,7 +561,7 @@ float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
     const Vector2f veh_from_origin = orig.get_distance_NE(current_loc);
 
     // calculate distance to target track, for reporting
-    return fabsf(veh_from_origin % dest_from_origin);
+    return veh_from_origin % dest_from_origin;
 }
 
 // calculate yaw change at next waypoint in degrees
