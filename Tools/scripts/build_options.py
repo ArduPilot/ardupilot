@@ -26,6 +26,7 @@ BUILD_OPTIONS = [
 
     Feature('Safety', 'PARACHUTE', 'HAL_PARACHUTE_ENABLED', 'Enable Parachute', 0, None),
     Feature('Safety', 'PROXIMITY', 'HAL_PROXIMITY_ENABLED', 'Enable Proximity', 0, None),
+    Feature('Safety', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, None),
 
     Feature('Battery', 'BATTMON_FUEL', 'HAL_BATTMON_FUEL_ENABLE', 'Enable Fuel BatteryMonitor', 0, None),
     Feature('Battery', 'BATTMON_SMBUS', 'HAL_BATTMON_SMBUS_ENABLE', 'Enable SMBUS BatteryMonitor', 0, None),
@@ -54,6 +55,7 @@ BUILD_OPTIONS = [
 
     Feature('ICE', 'EFI', 'HAL_EFI_ENABLED', 'Enable EFI Monitoring', 0, None),
     Feature('ICE', 'EFI_NMPWU', 'HAL_EFI_NWPWU_ENABLED', 'Enable EFI NMPMU', 0, None),
+    Feature('ICE', 'GENERATOR', 'HAL_GENERATOR_ENABLED', 'Enable Generator', 0, None),
 
     Feature('OSD', 'OSD', 'OSD_ENABLED', 'Enable OSD', 0, None),
     Feature('OSD', 'PLUSCODE', 'HAL_PLUSCODE_ENABLE', 'Enable PlusCode', 0, None),
@@ -62,7 +64,9 @@ BUILD_OPTIONS = [
     Feature('OSD', 'OSD_PARAM', 'OSD_PARAM_ENABLED', 'Enable OSD param', 0, 'OSD'),
     Feature('OSD', 'OSD_SIDEBARS', 'HAL_OSD_SIDEBAR_ENABLE', 'Enable Scrolling Sidebars', 0, 'OSD'),
 
-    Feature('CAN', 'PICCOLOCAN', 'HAL_PICCOLO_CAN_ENABLE', 'Enable PiccoloCAN', 0, None),
+    Feature('ESC', 'PICCOLOCAN', 'HAL_PICCOLO_CAN_ENABLE', 'Enable PiccoloCAN', 0, None),
+    Feature('ESC', 'TORQEEDO', 'HAL_TORQEEDO_ENABLED', 'Enable Torqeedo Motors', 0, None),
+
     Feature('CAN', 'MPPTCAN', 'HAL_MPPT_PACKETDIGITAL_CAN_ENABLE', 'Enable MPPT CAN', 0, None),
 
     Feature('Mode', 'MODE_ZIGZAG', 'MODE_ZIGZAG_ENABLED', 'Enable Mode ZigZag', 0, None),
@@ -83,27 +87,27 @@ BUILD_OPTIONS = [
     Feature('VTOL Frame', 'Y6', 'AP_MOTORS_FRAME_Y6_ENABLED', 'Y6', 0, None),
     Feature('VTOL Frame', 'OCTAQUAD', 'AP_MOTORS_FRAME_OCTAQUAD_ENABLED', 'OCTAQUAD', 0, None),
 
-    Feature('Other', 'SOARING', 'HAL_SOARING_ENABLED', 'Enable Soaring', 0, None),
-    Feature('Other', 'DEEPSTALL', 'HAL_LANDING_DEEPSTALL_ENABLED', 'Enable Deepstall Landing', 0, None),
-    Feature('Other', 'DSP',  'HAL_WITH_DSP', 'Enable DSP for In-Flight FFT', 0, None),
-    Feature('Other', 'SPRAYER', 'HAL_SPRAYER_ENABLED', 'Enable Sprayer', 0, None),
-    Feature('Other', 'TORQEEDO', 'HAL_TORQEEDO_ENABLED', 'Enable Torqeedo Motors', 0, None),
-    Feature('Other', 'RPM', 'RPM_ENABLED', 'Enable RPM sensors', 0, None),
-    Feature('Other', 'DISPLAY', 'HAL_DISPLAY_ENABLED', 'Enable I2C Displays', 0, None),
-    Feature('Other', 'GRIPPER', 'GRIPPER_ENABLED', 'Enable Gripper', 0, None),
-    Feature('Other', 'BEACON', 'BEACON_ENABLED', 'Enable Beacon', 0, None),
-    Feature('Other', 'LANDING_GEAR', 'LANDING_GEAR_ENABLED', 'Enable Landing Gear', 0, None),
-    Feature('Other', 'NMEA_OUTPUT', 'HAL_NMEA_OUTPUT_ENABLED', 'Enable NMEA Output', 0, None),
-    Feature('Other', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro Wind Compensation', 0, None),
-    Feature('Other', 'GENERATOR', 'HAL_GENERATOR_ENABLED', 'Enable Generator', 0, None),
-    Feature('Other', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, None),
-    Feature('Other', 'WINCH', 'WINCH_ENABLED', 'Enable Winch', 0, None),
-    Feature('Other', 'GPS_MOVING_BASELINE', 'GPS_MOVING_BASELINE', 'Enable GPS Moving Baseline', 0, None),
-    # disable OPTFLOW until we cope with enum clash
-    # Feature('Other', 'OPTFLOW', 'OPTFLOW', 'Enable Optical Flow', 0, None),
+    Feature('Payload', 'GRIPPER', 'GRIPPER_ENABLED', 'Enable Gripper', 0, None),
+    Feature('Payload', 'SPRAYER', 'HAL_SPRAYER_ENABLED', 'Enable Sprayer', 0, None),
+    Feature('Payload', 'LANDING_GEAR', 'LANDING_GEAR_ENABLED', 'Enable Landing Gear', 0, None),
+    Feature('Payload', 'WINCH', 'WINCH_ENABLED', 'Enable Winch', 0, None),
 
     Feature('Plane', 'QUADPLANE', 'HAL_QUADPLANE_ENABLED', 'Enable QuadPlane support', 0, None),
-    Feature('Other', 'AIRSPEED', 'AP_AIRSPEED_ENABLED', 'Enable Airspeed Sensors', 1, None),    # Default to enabled to not annoy Plane users
+    Feature('Plane', 'SOARING', 'HAL_SOARING_ENABLED', 'Enable Soaring', 0, None),
+    Feature('Plane', 'DEEPSTALL', 'HAL_LANDING_DEEPSTALL_ENABLED', 'Enable Deepstall Landing', 0, None),
+
+    Feature('Sensors', 'AIRSPEED', 'AP_AIRSPEED_ENABLED', 'Enable Airspeed Sensors', 1, None),    # Default to enabled to not annoy Plane users
+    Feature('Sensors', 'BEACON', 'BEACON_ENABLED', 'Enable Beacon', 0, None),
+    Feature('Sensors', 'GPS_MOVING_BASELINE', 'GPS_MOVING_BASELINE', 'Enable GPS Moving Baseline', 0, None),
+    # disable OPTFLOW until we cope with enum clash
+    # Feature('Sensors', 'OPTFLOW', 'OPTFLOW', 'Enable Optical Flow', 0, None),
+    Feature('Sensors', 'RPM', 'RPM_ENABLED', 'Enable RPM sensors', 0, None),
+
+    Feature('Other', 'DSP',  'HAL_WITH_DSP', 'Enable DSP for In-Flight FFT', 0, None),
+    Feature('Other', 'DISPLAY', 'HAL_DISPLAY_ENABLED', 'Enable I2C Displays', 0, None),
+    Feature('Other', 'NMEA_OUTPUT', 'HAL_NMEA_OUTPUT_ENABLED', 'Enable NMEA Output', 0, None),
+    Feature('Other', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro Wind Compensation', 0, None),
+
     ]
 
 BUILD_OPTIONS.sort(key=lambda x: x.category)
