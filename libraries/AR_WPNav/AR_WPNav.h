@@ -152,7 +152,6 @@ protected:
     SCurve _scurve_prev_leg;        // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;        // current scurve trajectory
     SCurve _scurve_next_leg;        // next scurve trajectory used to blend with current scurve trajectory
-    float _scurve_jerk;             // scurve jerk max in m/s/s/s
     bool _fast_waypoint;            // true if vehicle will stop at the next waypoint
     bool _pivot_at_next_wp;         // true if vehicle should pivot at next waypoint
     bool _overspeed_enabled;        // if true scurve's position target will speedup to catch vehicles travelling faster than WP_SPEED
