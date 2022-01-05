@@ -20,6 +20,9 @@ builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AP_Periph']
 
 args = parser.parse_args()
 
+warning_flash_free = 5000
+warning_build_days = 3
+
 
 class APJInfo:
     def __init__(self, vehicle, board, githash, mtime, flash_free):
@@ -28,6 +31,7 @@ class APJInfo:
         self.githash = githash
         self.mtime = mtime
         self.flash_free = flash_free
+        self.warning = 0
 
 
 def apj_list(basedir):
@@ -56,6 +60,8 @@ def write_headers(h):
 <html>
 <head>
 <script src="sorttable.js"></script>
+<script src="filtertable.js"></script>
+<link href="../../css/main.css" rel="stylesheet" type="text/css" />
 <style>
 td {
  border-left:1px solid black;
@@ -70,12 +76,23 @@ table {
  border-right:1px solid black;
  border-bottom:1px solid black;
 }
+a {
+ color: inherit;
+}
 </style>
 <title>Build List</title>
 </head>
 <body>
-<h1>Build list</h1>
-This is an auto-generated list of current builds allowing us to quickly see how close we are to running out of flash space
+<div id="main">
+<a href="https://firmware.ardupilot.org/">
+<div id="logo" style="text-align:center;">
+</div>
+</a>
+<h2 id='top'>Build List</h2>
+<p>This is an auto-generated list of current builds
+    allowing us to quickly see how close we are to running out of flash space. </p>
+<p>Builds that are coloured red haven't built recently. Builds that are coloured yellow have low flash space remaining.</p>
+<p>Click on any column header to sort by that column, or filter by entering a search term in the box above each table.</p>
 <ul>
 <li>Jump to <a href='#latest'>latest</a></li>
 <li>Jump to <a href='#beta'>beta</a></li>
@@ -87,6 +104,7 @@ This is an auto-generated list of current builds allowing us to quickly see how 
 def write_footer(h):
     '''write html footer'''
     h.write('''
+</div>
 </body>
 </html>
 ''')
@@ -99,20 +117,54 @@ def write_table(h, build_type):
     for build in builds:
         boards.extend(apj_list(os.path.join(args.basedir, build, build_type)))
 
-    h.write('''
-<h1 id='%s'>%s builds</h1>
-<table class="sortable">
-<tr><th>Vehicle</th><th>Board</th><th>Build Date</th><th>git hash</th><th>Flash Free</th></tr>
-''' % (build_type, build_type))
+    max_mtime = 0
+    for apjinfo in boards:
+        if apjinfo.mtime > max_mtime:
+            max_mtime = apjinfo.mtime
 
     for apjinfo in boards:
-        h.write('''<tr><td>%s</td><td>%s</td><td>%s</td>
+        if apjinfo.flash_free < warning_flash_free:
+            apjinfo.warning = 1
+        if int(apjinfo.mtime) < int(max_mtime)-warning_build_days*86400:
+            apjinfo.warning = 2
+
+    boards.sort(key=lambda board: board.warning, reverse=True)
+
+    try:
+        idxs1 = [i for (i, e) in enumerate(boards) if e.warning == 1]
+        boards[min(idxs1):max(idxs1)] = sorted(boards[min(idxs1):max(idxs1)], key=lambda board: board.flash_free)
+    except ValueError:
+        pass
+
+    try:
+        idxs2 = [i for (i, e) in enumerate(boards) if e.warning == 2]
+        boards[min(idxs2):max(idxs2)] = sorted(boards[min(idxs2):max(idxs2)], key=lambda board: board.mtime)
+    except ValueError:
+        pass
+
+    h.write('''
+<h3 id='%s'>%s builds</h3>
+<p><input type="text" id="search_%s" onkeyup="searchFunc('%s')" placeholder="Filter..."></p>
+<table class="sortable" id="table_%s">
+<tr><th style="width:80px">Vehicle</th><th style="width:220px">Board</th><th style="width:140px">Build Date</th>
+    <th style="width:100px">git hash</th><th style="width:100px">Flash Free</th></tr>
+''' % (build_type, build_type.capitalize(), build_type, build_type, build_type))
+
+    for apjinfo in boards:
+        if apjinfo.warning == 1:
+            h.write('<tr style="color:#E6B800;">')
+        elif apjinfo.warning == 2:
+            h.write('<tr style="color:#FF0000;">')
+        else:
+            h.write('<tr>')
+        h.write('''<td>%s</td><td>%s</td><td>%s</td>
    <td><a href="https://github.com/ArduPilot/ardupilot/commit/%s">%s</a></td><td>%u</td></tr>\n''' % (
             apjinfo.vehicle, apjinfo.board, datetime.fromtimestamp(apjinfo.mtime).strftime("%F %k:%M"),
             apjinfo.githash, apjinfo.githash, apjinfo.flash_free))
 
     h.write('''
 </table>
+<p>Return to <a href='#top'>top</a></p>
 ''')
 
 
