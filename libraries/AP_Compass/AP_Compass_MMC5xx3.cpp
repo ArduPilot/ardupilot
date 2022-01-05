@@ -78,9 +78,17 @@ bool AP_Compass_MMC5XX3::init()
         dev->set_read_flag(0x80);
     }
 
-    uint8_t whoami;
-    if (!dev->read_registers(REG_PRODUCT_ID, &whoami, 1) ||
-        whoami != MMC5983_ID) {
+    // Reading REG_PRODUCT_ID fails sometimes on SPI, so we retry up to 10 times
+    uint8_t whoami = 0;
+    uint8_t tries = 10;
+    while (whoami == 0 && tries > 0) {
+        tries--;
+        dev->read_registers(REG_PRODUCT_ID, &whoami, 1);
+        hal.scheduler->delay(5);
+    }
+
+    if (whoami != MMC5983_ID) {
+        printf("MMC5983 got unexpected product id: %d, expected: %d\n", whoami, MMC5983_ID);
         // not a MMC5983
         return false;
     }
