@@ -133,7 +133,9 @@ void AR_WPNav::update(float dt)
     float speed;
     if (!hal.util->get_soft_armed() || !_orig_and_dest_valid || !AP::ahrs().get_location(current_loc) || !_atc.get_forward_speed(speed)) {
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
+        _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = 0.0f;
+        _cross_track_error = 0;
         return;
     }
 
