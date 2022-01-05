@@ -406,9 +406,6 @@ private:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
-#if RPM_ENABLED == ENABLED
-    void rpm_update();
-#endif
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
