@@ -14,11 +14,7 @@ public:
     AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control);
 
     // initialise waypoint controller
-    // speed_max should be the max speed (in m/s) the vehicle will travel to waypoint.  Leave as zero to use the default speed
-    // accel_max should be the max forward-back acceleration (in m/s/s).  Leave as zero to use the attitude controller's default acceleration
-    // lat_accel_max should be the max right-left acceleration (in m/s/s).  Leave as zero to use the attitude controller's default acceleration
-    // jerk_max should be the max forward-back and lateral jerk (in m/s/s/s).  Leave as zero to use the attitude controller's default acceleration
-    void init(float speed_max, float accel_max, float lat_accel_max, float jerk_max);
+    void init();
 
     // update navigation
     virtual void update(float dt);
