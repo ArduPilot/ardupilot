@@ -896,7 +896,7 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
     const bool ret = do_aux_function(ch_option, pos);
 
     // @LoggerMessage: AUXF
-    // @Description: Auxillary function invocation information
+    // @Description: Auxiliary function invocation information
     // @Field: TimeUS: Time since system startup
     // @Field: function: ID of triggered function
     // @Field: pos: switch position when function triggered
