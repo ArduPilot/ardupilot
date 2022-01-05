@@ -58,14 +58,3 @@ void Plane::read_airspeed(void)
     const float dt = 0.1;
     surface_speed_scaler += calc_lowpass_alpha_dt(dt, cutoff_Hz) * (speed_scaler - surface_speed_scaler);
 }
-
-/*
-  update RPM sensors
- */
-void Plane::rpm_update(void)
-{
-    rpm_sensor.update();
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        logger.Write_RPM(rpm_sensor);
-    }
-}
