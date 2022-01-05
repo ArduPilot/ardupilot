@@ -99,29 +99,15 @@ AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control) :
 }
 
 // initialise waypoint controller
-// speed_max should be the max speed (in m/s) the vehicle will travel to waypoint.  Leave as zero to use the default speed
-// accel_max should be the max forward-back acceleration (in m/s/s).  Leave as zero to use the attitude controller's default acceleration
-// lat_accel_max should be the max right-left acceleration (in m/s/s).  Leave as zero to use the attitude controller's default acceleration
-// jerk_max should be the max forward-back and lateral jerk (in m/s/s/s).  Leave as zero to use the attitude controller's default acceleration
-void AR_WPNav::init(float speed_max, float accel_max, float lat_accel_max, float jerk_max)
+void AR_WPNav::init()
 {
-    // default max speed and accel
-    if (!is_positive(speed_max)) {
-        speed_max = _speed_max;
-    }
-    if (!is_positive(accel_max)) {
-        accel_max = get_accel_max();
-    }
-    if (!is_positive(lat_accel_max)) {
-        lat_accel_max = _atc.get_turn_lat_accel_max();
-    }
-    if (!is_positive(jerk_max)) {
-        jerk_max = get_jerk_max();
-    }
-    _scurve_jerk = jerk_max;
+    // sanity check parameters
+    const float speed_max = MAX(0, _speed_max);
+    const float accel_max = is_positive(_accel_max) ? _accel_max : _atc.get_accel_max();
+    const float jerk_max = is_positive(_jerk_max) ? _jerk_max : accel_max;
 
     // initialise position controller
-    _pos_control.set_limits(speed_max, accel_max, lat_accel_max, jerk_max);
+    _pos_control.set_limits(speed_max, accel_max, _atc.get_turn_lat_accel_max(), jerk_max);
 
     _scurve_prev_leg.init();
     _scurve_this_leg.init();
@@ -189,7 +175,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
 {
     // re-initialise if inactive, previous destination has been interrupted or different controller was used
     if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
-        init(0,0,0,0);
+        init();
     }
 
     // shift this leg to previous leg
@@ -322,7 +308,7 @@ bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destinati
 {
     // initialise if not active
     if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
-        init(0,0,0,0);
+        init();
     }
 
     // initialise some variables
