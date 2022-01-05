@@ -26,12 +26,6 @@ def get_location_metres(original_location, dNorth, dEast):
 
 def adds_alphabet_mission(aLocation, aSize):
     """
-    Adds a takeoff command and four waypoint commands to the current mission. 
-    The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
-    The function assumes vehicle.commands matches the vehicle mission state 
-    (you must have called download at least once in the session and after clearing the mission)
-    """
-    """
     アルファベット軌跡の定義
     """
     Alphabet_Mission_Plan = {
@@ -79,12 +73,12 @@ def adds_alphabet_mission(aLocation, aSize):
 
 
     cmds = vehicle.commands
-
     print(" Clear any existing commands")
     cmds.clear() 
     
-    print(" Define/add new commands.")
-    print(" Enter 'A' or 'B'.")
+
+    print(" Define Alphabet Flight Trajectory")
+    print(" Enter 'A' or 'B'.  (other characters are under implementation...)")
      
     
     Command_Alph = input()
@@ -132,5 +126,19 @@ while True:
 ####################
 # ミッションの開始
 ####################
+
+# Waypointの数を取得
+Number_of_WP = len(vehicle.commands)
+print("Alphabet Flight is started. ")
 vehicle.mode = VehicleMode("AUTO")
 
+while(True):
+    # Waypointをすべて実行するまで待機
+    if vehicle.commands.next == Number_of_WP:
+        break
+
+print("Alphabet Flight is completed. ")
+
+# 着陸
+vehicle.mode = VehicleMode( 'LAND' )
+print("Landing...")
