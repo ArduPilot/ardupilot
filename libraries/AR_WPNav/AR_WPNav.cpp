@@ -180,7 +180,7 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     // or journey to previous waypoint was interrupted or navigation has just started
     if (!_fast_waypoint) {
         _pivot.deactivate();
-        _pivot.check_activation(oa_wp_bearing_cd() * 0.01);
+        _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01);
     }
 
     // convert origin and destination to offset from EKF origin
