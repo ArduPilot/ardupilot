@@ -111,63 +111,7 @@ void AC_AutoTune_Multi::do_gcs_announcements()
     if (now - announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
         return;
     }
-    float tune_rp = 0.0f;
-    float tune_rd = 0.0f;
-    float tune_sp = 0.0f;
-    float tune_accel = 0.0f;
-    char axis_char = '?';
-    switch (axis) {
-    case ROLL:
-        tune_rp = tune_roll_rp;
-        tune_rd = tune_roll_rd;
-        tune_sp = tune_roll_sp;
-        tune_accel = tune_roll_accel;
-        axis_char = 'R';
-        break;
-    case PITCH:
-        tune_rp = tune_pitch_rp;
-        tune_rd = tune_pitch_rd;
-        tune_sp = tune_pitch_sp;
-        tune_accel = tune_pitch_accel;
-        axis_char = 'P';
-        break;
-    case YAW:
-        tune_rp = tune_yaw_rp;
-        tune_rd = tune_yaw_rLPF;
-        tune_sp = tune_yaw_sp;
-        tune_accel = tune_yaw_accel;
-        axis_char = 'Y';
-        break;
-    }
-
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis_char, type_string());
-    send_step_string();
-    if (!is_zero(lean_angle)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: lean=%f target=%f", (double)lean_angle, (double)target_angle);
-    }
-    if (!is_zero(rotation_rate)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rotation=%f target=%f", (double)(rotation_rate*0.01f), (double)(target_rate*0.01f));
-    }
-    switch (tune_type) {
-    case RD_UP:
-    case RD_DOWN:
-    case RP_UP:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f d=%f", (double)tune_rp, (double)tune_rd);
-        break;
-    case SP_DOWN:
-    case SP_UP:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: p=%f accel=%f", (double)tune_sp, (double)tune_accel);
-        break;
-    case RFF_UP:
-    case MAX_GAINS:
-        // this should never happen
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        break;
-    case TUNE_COMPLETE:
-        break;
-    }
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: success %u/%u", counter, AUTOTUNE_SUCCESS_COUNT);
-
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: %s %s %u%%", axis_string(), type_string(), (counter * (100/AUTOTUNE_SUCCESS_COUNT)) );
     announce_time = now;
 }
 
