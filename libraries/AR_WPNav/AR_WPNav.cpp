@@ -53,16 +53,7 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 
     // 4 was PIVOT_ANGLE
     // 5 was PIVOT_RATE
-
-    // @Param: SPEED_MIN
-    // @DisplayName: Waypoint speed minimum
-    // @Description: Vehicle will not slow below this speed for corners.  Should be set to boat's plane speed.  Does not apply to pivot turns.
-    // @Units: m/s
-    // @Range: 0 100
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("SPEED_MIN", 6, AR_WPNav, _speed_min, 0),
-
+    // 6 was SPEED_MIN
     // 7 was PIVOT_DELAY
 
     // @Group: PIVOT_
@@ -491,18 +482,6 @@ void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 {
     _turn_radius = pivot_possible ? 0.0 : turn_radius;
     _pivot.enable(pivot_possible);
-}
-
-// adjust speed to ensure it does not fall below value held in SPEED_MIN
-// desired_speed should always be positive (or zero)
-void AR_WPNav::apply_speed_min(float &desired_speed) const
-{
-    if (!is_positive(_speed_min) || (_speed_min > _speed_max)) {
-        return;
-    }
-
-    // ensure speed does not fall below minimum
-    desired_speed = MAX(desired_speed, _speed_min);
 }
 
 // calculate the crosstrack error
