@@ -121,10 +121,6 @@ protected:
     // calculate steering and speed to drive along line from origin to destination waypoint
     void update_steering_and_speed(const Location &current_loc, float dt);
 
-    // adjust speed to ensure it does not fall below value held in SPEED_MIN
-    // desired_speed should always be positive (or zero)
-    void apply_speed_min(float &desired_speed) const;
-
     // calculate the crosstrack error (does not rely on L1 controller)
     float calc_crosstrack_error(const Location& current_loc) const;
 
@@ -138,7 +134,6 @@ protected:
 
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
-    AP_Float _speed_min;            // target speed minimum in m/s.  Vehicle will not slow below this speed for corners
     AP_Float _radius;               // distance in meters from a waypoint when we consider the waypoint has been reached
     AR_PivotTurn _pivot;            // pivot turn controller
     AP_Float _accel_max;            // max acceleration.  If zero then attitude controller's specified max accel is used
