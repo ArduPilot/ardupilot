@@ -72,19 +72,6 @@ bool Sub::rangefinder_alt_ok() const
 }
 
 /*
-  update RPM sensors
- */
-#if RPM_ENABLED == ENABLED
-void Sub::rpm_update(void)
-{
-    rpm_sensor.update();
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        logger.Write_RPM(rpm_sensor);
-    }
-}
-#endif
-
-/*
   ask airspeed sensor for a new value, duplicated from plane
  */
 void Sub::read_airspeed()
