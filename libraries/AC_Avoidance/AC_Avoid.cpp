@@ -21,6 +21,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <stdio.h>
 
+#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
  # define AP_AVOID_BEHAVE_DEFAULT AC_Avoid::BehaviourType::BEHAVIOR_STOP
 #else
@@ -1466,3 +1468,5 @@ AC_Avoid *ac_avoid()
 }
 
 }
+
+#endif // !APM_BUILD_Arduplane
