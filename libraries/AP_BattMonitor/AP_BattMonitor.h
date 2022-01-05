@@ -32,7 +32,7 @@
 #endif
 
 #ifndef HAL_BATTMON_FUEL_ENABLE
-#define HAL_BATTMON_FUEL_ENABLE 1
+#define HAL_BATTMON_FUEL_ENABLE (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
 #endif
 
 // declare backend class

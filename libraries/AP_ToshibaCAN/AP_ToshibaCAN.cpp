@@ -13,10 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_ToshibaCAN.h"
+
+#if AP_TOSHIBACAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
-
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_CANManager/AP_CANManager.h>
@@ -24,7 +25,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
-#include "AP_ToshibaCAN.h"
 #include <AP_Logger/AP_Logger.h>
 #include <stdio.h>
 

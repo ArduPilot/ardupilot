@@ -29,7 +29,7 @@
 //
 
 #ifndef ADVANCED_FAILSAFE
- # define ADVANCED_FAILSAFE ENABLED
+ # define ADVANCED_FAILSAFE (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
 #endif
 
 
@@ -253,7 +253,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Payload Gripper
 #ifndef GRIPPER_ENABLED
-  #define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES
+  #define GRIPPER_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
 #endif
 
 #ifndef STATS_ENABLED
@@ -269,7 +269,7 @@
 #endif
 
 #ifndef LANDING_GEAR_ENABLED
- #define LANDING_GEAR_ENABLED !HAL_MINIMIZE_FEATURES
+ #define LANDING_GEAR_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -25,11 +25,7 @@
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_UAVCAN/AP_UAVCAN.h>
-
-  // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    #include <AP_KDECAN/AP_KDECAN.h>
-  #endif
+  #include <AP_KDECAN/AP_KDECAN.h>
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
@@ -406,17 +402,17 @@ void SRV_Channels::push()
                 ap_uavcan->SRV_push_servos();
                 break;
             }
+#if AP_KDECAN_ENABLED
             case AP_CANManager::Driver_Type_KDECAN: {
-// To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                 AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
                 if (ap_kdecan == nullptr) {
                     continue;
                 }
                 ap_kdecan->update();
-#endif
                 break;
             }
+#endif
+#if AP_TOSHIBACAN_ENABLED
             case AP_CANManager::Driver_Type_ToshibaCAN: {
                 AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
                 if (ap_tcan == nullptr) {
@@ -425,6 +421,7 @@ void SRV_Channels::push()
                 ap_tcan->update();
                 break;
             }
+#endif
 #if HAL_PICCOLO_CAN_ENABLE
             case AP_CANManager::Driver_Type_PiccoloCAN: {
                 AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);

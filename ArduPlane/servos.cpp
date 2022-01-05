@@ -388,8 +388,10 @@ void Plane::set_servos_manual_passthrough(void)
         // as it prevents the VTOL motors from running
         int8_t min_throttle = aparm.throttle_min.get();
 
+#if AP_ICENGINE_ENABLED
         // apply idle governor
         g2.ice_control.update_idle_governor(min_throttle);
+#endif
         throttle = MAX(throttle, min_throttle);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle);
     }
@@ -494,9 +496,11 @@ void Plane::set_servos_controlled(void)
     int8_t min_throttle = aparm.throttle_min.get();
     int8_t max_throttle = aparm.throttle_max.get();
 
+#if AP_ICENGINE_ENABLED
     // apply idle governor
     g2.ice_control.update_idle_governor(min_throttle);
-    
+#endif
+
     if (min_throttle < 0 && !allow_reverse_thrust()) {
         // reverse thrust is available but inhibited.
         min_throttle = 0;
@@ -917,11 +921,13 @@ void Plane::set_servos(void)
         }
     }
 
+#if AP_ICENGINE_ENABLED
     uint8_t override_pct;
     if (g2.ice_control.throttle_override(override_pct)) {
         // the ICE controller wants to override the throttle for starting
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
     }
+#endif
 
     // run output mixer and send values to the hal for output
     servos_output();

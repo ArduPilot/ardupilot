@@ -1073,10 +1073,12 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 #endif
 
     case MAV_CMD_DO_ENGINE_CONTROL:
-        if (!plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
-            return MAV_RESULT_FAILED;
+#if AP_ICENGINE_ENABLED
+        if (plane.g2.ice_control.engine_control(packet.param1, packet.param2, packet.param3)) {
+            return MAV_RESULT_ACCEPTED;
         }
-        return MAV_RESULT_ACCEPTED;
+#endif
+        return MAV_RESULT_FAILED;
 
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);

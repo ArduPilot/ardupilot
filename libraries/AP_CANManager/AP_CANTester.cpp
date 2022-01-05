@@ -16,12 +16,12 @@
  * Code by Siddharth Bharat Purohit
  */
 
+#include "AP_CANTester.h"
+#if AP_CANTESTER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-
 #include "AP_CANManager.h"
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
-#include "AP_CANTester.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 #include <AP_Vehicle/AP_Vehicle.h>

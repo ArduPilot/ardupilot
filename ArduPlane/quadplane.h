@@ -18,6 +18,7 @@
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_ICEngine/AP_ICEngine.h>
 #include "qautotune.h"
 #include "defines.h"
 #include "tailsitter.h"
@@ -335,8 +336,10 @@ private:
     AP_Int8 esc_calibration;
     void run_esc_calibration(void);
 
+#if AP_ICENGINE_ENABLED
     // ICEngine control on landing
     AP_Int8 land_icengine_cut;
+#endif
 
     // HEARTBEAT mav_type override
     AP_Int8 mav_type;

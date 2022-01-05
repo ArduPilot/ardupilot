@@ -16,11 +16,12 @@
  * Author: Francisco Ferreira
  * Modified for CANManager by Siddharth B Purohit
  */
+#include "AP_CANTester_KDECAN.h"
+
+#if AP_CANTESTER_KDECAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
-#include "AP_CANTester_KDECAN.h"
 #include "AP_CANManager.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/utility/sparse-endian.h>

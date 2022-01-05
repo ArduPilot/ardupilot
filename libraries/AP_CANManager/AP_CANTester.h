@@ -15,10 +15,17 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
+#ifndef AP_CANTESTER_ENABLED
+#define AP_CANTESTER_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if AP_CANTESTER_ENABLED
+
 #include "AP_CANDriver.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
 
 class CANTester : public AP_CANDriver
 {
@@ -105,5 +112,5 @@ private:
     uint8_t _num_ifaces;
     bool _kdecan_enumeration;
 };
-#endif //#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif // AP_CANTESTER_ENABLED
 

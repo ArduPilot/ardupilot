@@ -472,6 +472,8 @@ class ParametersG2 {
 public:
     ParametersG2(void);
 
+    bool constructor_placeholder_unused;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -485,8 +487,10 @@ public:
     AP_Stats stats;
 #endif
 
+#if AP_ICENGINE_ENABLED
     // internal combustion engine control
     AP_ICEngine ice_control;
+#endif
 
     // RC input channels
     RC_Channels_Plane rc_channels;

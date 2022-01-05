@@ -19,6 +19,12 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#ifndef AP_ICENGINE_ENABLED
+#define AP_ICENGINE_ENABLED (!HAL_MINIMIZE_FEATURES &&  BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if AP_ICENGINE_ENABLED
 #include <AP_RPM/AP_RPM.h>
 
 class AP_ICEngine {
@@ -134,3 +140,5 @@ private:
 namespace AP {
     AP_ICEngine *ice();
 };
+
+#endif // AP_ICENGINE_ENABLED

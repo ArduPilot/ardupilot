@@ -15,6 +15,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
+#ifndef AP_TOSHIBACAN_ENABLED
+#define AP_TOSHIBACAN_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS && !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if AP_TOSHIBACAN_ENABLED
+
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <AP_CANManager/AP_CANDriver.h>
 #include <AP_HAL/Semaphores.h>
@@ -182,3 +190,4 @@ private:
     AP_HAL::CANFrame mot_rot_frame2;
     AP_HAL::CANFrame mot_rot_frame3;
 };
+#endif // AP_TOSHIBACAN_ENABLED

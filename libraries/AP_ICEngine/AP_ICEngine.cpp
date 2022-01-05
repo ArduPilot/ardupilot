@@ -14,12 +14,15 @@
  */
 
 
+#include "AP_ICEngine.h"
+
+#if AP_ICENGINE_ENABLED
+
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Notify/AP_Notify.h>
-#include "AP_ICEngine.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -457,3 +460,4 @@ AP_ICEngine *ice() {
         return AP_ICEngine::get_singleton();
     }
 }
+#endif // AP_ICENGINE_ENABLED

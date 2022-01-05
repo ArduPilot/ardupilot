@@ -17,10 +17,17 @@
  * Modified for CANManager by Siddharth B Purohit
  */
 
+#include <AP_HAL/AP_HAL.h>
+#include <AP_KDECAN/AP_KDECAN.h>
+#include "AP_CANTester.h"
+
+#ifndef AP_CANTESTER_KDECAN_ENABLED
+#define AP_CANTESTER_KDECAN_ENABLED (AP_CANTESTER_ENABLED && AP_KDECAN_ENABLED)
+#endif
+
+#if AP_CANTESTER_KDECAN_ENABLED
 #include "AP_CANDriver.h"
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 #define NUM_ESCS 4
 

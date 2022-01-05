@@ -16,12 +16,12 @@
  */
 
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
-
 #include "AP_PiccoloCAN.h"
 
 #if HAL_PICCOLO_CAN_ENABLE
+
+#include <AP_HAL/AP_HAL.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include <AP_Param/AP_Param.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
