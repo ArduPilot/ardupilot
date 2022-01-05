@@ -8,7 +8,7 @@ class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    AP_RangeFinder_MaxsonarSerialLV(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
 
 protected:
 
@@ -24,4 +24,5 @@ private:
 
     char linebuf[10];
     uint8_t linebuf_len = 0;
+    float unit_conversion = 0.0254f;
 };

@@ -477,6 +477,8 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #endif
         break;
     case Type::MBSER:
+    case Type::MBSER_CM:
+    case Type::MBSER_MM:
         if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_instance)) {
             _add_backend(new AP_RangeFinder_MaxsonarSerialLV(state[instance], params[instance]), instance, serial_instance++);
         }

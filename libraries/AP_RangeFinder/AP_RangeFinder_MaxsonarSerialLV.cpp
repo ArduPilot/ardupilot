@@ -24,6 +24,20 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_RangeFinder_MaxsonarSerialLV::AP_RangeFinder_MaxsonarSerialLV(
+    RangeFinder::RangeFinder_State &_state,
+    AP_RangeFinder_Params &_params):
+    AP_RangeFinder_Backend_Serial(_state, _params)
+{
+    if (_backend_type == RangeFinder::Type::MBSER) {
+        unit_conversion = 0.0254f;
+    } else if (_backend_type == RangeFinder::Type::MBSER_CM) {
+        unit_conversion = 0.01f;
+    } else if (_backend_type == RangeFinder::Type::MBSER_MM) {
+        unit_conversion = 0.001f;
+    }
+}
+
 // read - return last value measured by sensor
 bool AP_RangeFinder_MaxsonarSerialLV::get_reading(float &reading_m)
 {
@@ -56,7 +70,7 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(float &reading_m)
     }
 
     // This sonar gives the metrics in inches, so we have to transform this to meters
-    reading_m = (2.54f * 0.01f) * (float(sum) / count);
+    reading_m = unit_conversion * (float(sum) / count);
 
     return true;
 }
