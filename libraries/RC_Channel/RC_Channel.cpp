@@ -46,6 +46,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Mount/AP_Mount.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -689,6 +690,7 @@ void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 
 void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     AC_Avoid *avoid = AP::ac_avoid();
     if (avoid == nullptr) {
         return;
@@ -705,6 +707,7 @@ void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
         avoid->proximity_avoidance_enable(false);
         break;
     }
+#endif // !APM_BUILD_ArduPlane
 }
 
 void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
