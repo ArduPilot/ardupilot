@@ -582,6 +582,15 @@ is bob we will attempt to checkout bob-AVR'''
                            "AP_Periph",
                            "AP_Periph")
 
+    def build_blimp(self, tag):
+        '''build Blimp binaries'''
+        boards = self.common_boards()
+        self.build_vehicle(tag,
+                           "Blimp",
+                           boards,
+                           "Blimp",
+                           "blimp")
+
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
         self.progress("Generating manifest")
@@ -692,6 +701,7 @@ is bob we will attempt to checkout bob-AVR'''
             self.build_antennatracker(tag)
             self.build_ardusub(tag)
             self.build_AP_Periph(tag)
+            self.build_blimp(tag)
             self.history.record_run(githash, tag, t0, time.time()-t0)
 
         if os.path.exists(self.tmpdir):
