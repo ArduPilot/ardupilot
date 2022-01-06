@@ -121,6 +121,9 @@ dual_USB_enabled = False
 # list of device patterns that can't be shared
 dma_noshare = []
 
+# integer defines
+intdefines = {}
+
 def is_int(str):
     '''check if a string is an integer'''
     try:
@@ -776,6 +779,22 @@ def get_storage_flash_page():
             return ret
     return None
 
+def validate_flash_storage_size():
+    '''check there is room for storage with HAL_STORAGE_SIZE'''
+    if intdefines.get('HAL_WITH_RAMTRON',0) == 1:
+        # no check for RAMTRON storage
+        return
+    storage_flash_page = get_storage_flash_page()
+    pages = get_flash_pages_sizes()
+    page_size = pages[storage_flash_page] * 1024
+    storage_size = intdefines.get('HAL_STORAGE_SIZE', None)
+    if storage_size is None:
+        error('Need HAL_STORAGE_SIZE define')
+    if storage_size >= page_size:
+        error("HAL_STORAGE_SIZE too large %u %u" % (storage_size, page_size))
+    if page_size == 16384 and storage_size > 15360:
+        error("HAL_STORAGE_SIZE invalid, needs to be 15360")
+
 def write_mcu_config(f):
     '''write MCU config defines'''
     f.write('// MCU type (ChibiOS define)\n')
@@ -876,6 +895,10 @@ def write_mcu_config(f):
             if 'HAL_USE_CAN' in d:
                 using_chibios_can = True
             f.write('#define %s\n' % d[7:])
+            # extract numerical defines for processing by other parts of the script
+            result = re.match(r'define\s*([A-Z_]+)\s*([0-9]+)', d)
+            if result:
+                intdefines[result.group(1)] = int(result.group(2))
 
     if have_type_prefix('CAN') and not using_chibios_can:
         enable_can(f)
@@ -903,6 +926,7 @@ def write_mcu_config(f):
     if storage_flash_page is not None:
         if not args.bootloader:
             f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
+            validate_flash_storage_size()
         else:
             # ensure the flash page leaves room for bootloader
             offset = get_flash_page_offset_kb(storage_flash_page)
