@@ -12,8 +12,8 @@ bool ModeGuided::_enter()
         start_stop();
     }
 
-    // initialise waypoint speed
-    g2.wp_nav.set_desired_speed_to_default();
+    // initialise waypoint navigation library
+    g2.wp_nav.init();
 
     send_notification = false;
 
