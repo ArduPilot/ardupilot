@@ -27,6 +27,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_WPNAV_TIMEOUT_MS             100
 #define AR_WPNAV_SPEED_DEFAULT          2.0f
 #define AR_WPNAV_SPEED_MIN              0.05f   // minimum speed between waypoints in m/s
+#define AR_WPNAV_SPEED_UPDATE_MIN_MS    500     // max speed cannot be updated more than once in this many milliseconds
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
 #define AR_WPNAV_OVERSPEED_RATIO_MAX    5.0f    // if _overspeed_enabled the vehicle may travel as quickly as 5x WP_SPEED
 
@@ -94,16 +95,18 @@ AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control) :
 void AR_WPNav::init(float speed_max)
 {
     // determine max speed, acceleration and jerk
-    if (!is_positive(speed_max)) {
-        speed_max = _speed_max;
+    if (is_positive(speed_max)) {
+        _base_speed_max = speed_max;
+    } else {
+        _base_speed_max = _speed_max;
     }
-    speed_max = MAX(AR_WPNAV_SPEED_MIN, speed_max);
+    _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _base_speed_max);
     const float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
     const float accel_max = is_positive(_accel_max) ? MIN(_accel_max, atc_accel_max) : atc_accel_max;
     const float jerk_max = is_positive(_jerk_max) ? _jerk_max : accel_max;
 
     // initialise position controller
-    _pos_control.set_limits(speed_max, accel_max, _atc.get_turn_lat_accel_max(), jerk_max);
+    _pos_control.set_limits(_base_speed_max, accel_max, _atc.get_turn_lat_accel_max(), jerk_max);
 
     _scurve_prev_leg.init();
     _scurve_this_leg.init();
@@ -121,6 +124,9 @@ void AR_WPNav::init(float speed_max)
     // initialise origin and destination to stopping point
     _orig_and_dest_valid = false;
     set_origin_and_destination_to_stopping_point();
+
+    // initialise nudge speed to zero
+    set_nudge_speed_max(0);
 }
 
 // update navigation
@@ -144,6 +150,9 @@ void AR_WPNav::update(float dt)
     _last_update_ms = AP_HAL::millis();
 
     update_distance_and_bearing_to_destination();
+
+    // handle change in max speed
+    update_speed_max();
 
     // advance target along path unless vehicle is pivoting
     if (!_pivot.active()) {
@@ -170,19 +179,15 @@ bool AR_WPNav::set_speed_max(float speed_max)
         return false;
     }
 
-    // ignore calls that do not change the speed
-    if (is_equal(speed_max, _pos_control.get_speed_max())) {
-        return true;
-    }
-
-    // update position controller max speed
-    _pos_control.set_limits(speed_max, _pos_control.get_accel_max(), _pos_control.get_lat_accel_max(), _pos_control.get_jerk_max());
-
-    // change track speed
-    _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
-    _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
-
+    _base_speed_max = speed_max;
     return true;
+}
+
+// set speed nudge in m/s.  this will have no effect unless nudge_speed_max > speed_max
+// nudge_speed_max should always be positive regardless of whether the vehicle is travelling forward or reversing
+void AR_WPNav::set_nudge_speed_max(float nudge_speed_max)
+{
+    _nudge_speed_max = nudge_speed_max;
 }
 
 // set desired location and (optionally) next_destination
@@ -585,4 +590,30 @@ bool AR_WPNav::set_origin_and_destination_to_stopping_point()
     _origin = _destination = stopping_loc;
     _orig_and_dest_valid = true;
     return true;
+}
+
+// check for changes in _base_speed_max or _nudge_speed_max
+// updates position controller limits and recalculate scurve path if required
+void AR_WPNav::update_speed_max()
+{
+    const float speed_max = MAX(_base_speed_max, _nudge_speed_max);
+
+    // ignore calls that do not change the speed
+    if (is_equal(speed_max, _pos_control.get_speed_max())) {
+        return;
+    }
+
+    // protect against rapid updates
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_speed_update_ms < AR_WPNAV_SPEED_UPDATE_MIN_MS) {
+        return;
+    }
+    _last_speed_update_ms = now_ms;
+
+    // update position controller max speed
+    _pos_control.set_limits(speed_max, _pos_control.get_accel_max(), _pos_control.get_lat_accel_max(), _pos_control.get_jerk_max());
+
+    // change track speed
+    _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+    _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
 }
