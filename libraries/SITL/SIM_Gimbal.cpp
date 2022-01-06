@@ -28,6 +28,14 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define GIMBAL_DEBUG 0
+
+#if GIMBAL_DEBUG
+#define debug(fmt, args...)  do { printf("GIMBAL: " fmt, ##args); } while(0)
+#else
+#define debug(fmt, args...)  do { } while(0)
+#endif
+
 namespace SITL {
 
 Gimbal::Gimbal(const struct sitl_fdm &_fdm) :
@@ -287,7 +295,7 @@ void Gimbal::send_report(void)
                 case MAVLINK_MSG_ID_HEARTBEAT: {
                     mavlink_heartbeat_t pkt;
                     mavlink_msg_heartbeat_decode(&msg, &pkt);
-                    printf("Gimbal: got HB type=%u autopilot=%u base_mode=0x%x\n", pkt.type, pkt.autopilot, pkt.base_mode);
+                    debug("got HB type=%u autopilot=%u base_mode=0x%x\n", pkt.type, pkt.autopilot, pkt.base_mode);
                     if (!seen_heartbeat) {
                         seen_heartbeat = true;
                         vehicle_component_id = msg.compid;
@@ -336,7 +344,7 @@ void Gimbal::send_report(void)
                     break;
                 }
                 default:
-                    printf("Gimbal got unexpected msg %u\n", msg.msgid);
+                    debug("got unexpected msg %u\n", msg.msgid);
                     break;
                 }
             }
