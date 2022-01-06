@@ -648,11 +648,16 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
     }
     _armed = armed_state;
 
-    if (!_armed) {
+    if (_armed) {
+         // went from disarmed to armed
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        // get a set of @SYS files logged:
+        file_content_prepare_for_arming = true;
+#endif
+    } else {
         // went from armed to disarmed
         FOR_EACH_BACKEND(vehicle_was_disarmed());
     }
-
 }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -1394,10 +1399,85 @@ bool AP_Logger::log_while_disarmed(void) const
 }
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
+void AP_Logger::prepare_at_arming_sys_file_logging()
+{
+    // free existing content:
+    at_arm_file_content.reset();
+
+    /*
+      log files useful for diagnostics on arming. We log on arming as
+      with LOG_DISARMED we don't want to log the statistics at boot or
+      we wouldn't get a realistic idea of key system values
+      Note that some of these files may not exist, in that case they
+      are ignored
+     */
+    static const char *log_content_filenames[] = {
+        "@SYS/uarts.txt",
+        "@SYS/dma.txt",
+        "@SYS/memory.txt",
+        "@SYS/threads.txt",
+        "@ROMFS/hwdef.dat",
+        "@SYS/storage.bin",
+        "@SYS/crash_dump.bin",
+    };
+    for (const auto *name : log_content_filenames) {
+        log_file_content(at_arm_file_content, name);
+    }
+}
+
+void AP_Logger::FileContent::reset()
+{
+    WITH_SEMAPHORE(sem);
+    file_list *next = nullptr;
+    for (auto *c = head; c != nullptr; c = next) {
+        next = c->next;
+        delete [] c->filename;
+        delete c;
+    }
+    head = nullptr;
+    tail = nullptr;
+    if (fd != -1) {
+        AP::FS().close(fd);
+        fd = -1;
+    }
+    counter = 0;
+    fast = false;
+    offset = 0;
+}
+
+// removes victim from FileContent ***and delete()s it***
+void AP_Logger::FileContent::remove_and_free(file_list *victim)
+{
+    WITH_SEMAPHORE(sem);
+
+    file_list *prev = nullptr;
+    for (auto *c = head; c != nullptr; prev = c, c = c->next) {
+        if (c != victim) {
+            continue;
+        }
+
+        // found the item to remove; remove it and return
+        if (prev == nullptr) {
+            head = victim->next;
+        } else {
+            prev->next = victim->next;
+        }
+        delete [] victim->filename;
+        delete victim;
+        return;
+    }
+}
+
+
 /*
   log the content of a file in FILE log messages
  */
 void AP_Logger::log_file_content(const char *filename)
+{
+    log_file_content(normal_file_content, filename);
+}
+
+void AP_Logger::log_file_content(FileContent &file_content, const char *filename)
 {
     WITH_SEMAPHORE(file_content.sem);
     auto *file = new file_list;
@@ -1434,6 +1514,17 @@ void AP_Logger::log_file_content(const char *filename)
  */
 void AP_Logger::file_content_update(void)
 {
+    if (file_content_prepare_for_arming) {
+        file_content_prepare_for_arming = false;
+        prepare_at_arming_sys_file_logging();
+    }
+
+    file_content_update(at_arm_file_content);
+    file_content_update(normal_file_content);
+}
+
+void AP_Logger::file_content_update(FileContent &file_content)
+{
     auto *file = file_content.head;
     if (file == nullptr) {
         return;
@@ -1451,25 +1542,12 @@ void AP_Logger::file_content_update(void)
         return;
     }
 
-    // remove a file structure from the linked list
-    auto remove_from_list = [this,file]()
-    { 
-        WITH_SEMAPHORE(file_content.sem);
-        file_content.head = file->next;
-        if (file_content.tail == file) {
-            file_content.tail = file_content.head;
-        }
-        delete [] file->filename;
-        delete file;
-        file_content.fd = -1;
-    };
-
     if (file_content.fd == -1) {
         // open a new file
         file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
         file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0;
         if (file_content.fd == -1) {
-            remove_from_list();
+            file_content.remove_and_free(file);
             return;
         }
         file_content.offset = 0;
@@ -1485,7 +1563,7 @@ void AP_Logger::file_content_update(void)
     const auto length = AP::FS().read(file_content.fd, pkt.data, sizeof(pkt.data));
     if (length <= 0) {
         AP::FS().close(file_content.fd);
-        remove_from_list();
+        file_content.remove_and_free(file);
         return;
     }
     pkt.offset = file_content.offset;
