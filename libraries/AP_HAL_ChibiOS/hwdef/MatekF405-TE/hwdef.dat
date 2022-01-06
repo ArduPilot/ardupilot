@@ -9,7 +9,7 @@ FLASH_SIZE_KB 1024
 
 # store parameters in pages 11 and 12
 STORAGE_FLASH_PAGE 1
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load
 APJ_BOARD_ID 1054
