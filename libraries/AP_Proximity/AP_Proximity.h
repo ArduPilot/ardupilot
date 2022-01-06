@@ -48,7 +48,7 @@ public:
     // Proximity driver types
     enum class Type {
         None    = 0,
-        SF40C_v09 = 1,
+        // 1 was SF40C_v09
         MAV     = 2,
         TRTOWER = 3,
         RangeFinder = 4,

@@ -16,7 +16,6 @@
 #include "AP_Proximity.h"
 
 #if HAL_PROXIMITY_ENABLED
-#include "AP_Proximity_LightWareSF40C_v09.h"
 #include "AP_Proximity_RPLidarA2.h"
 #include "AP_Proximity_TeraRangerTower.h"
 #include "AP_Proximity_TeraRangerTowerEvo.h"
@@ -37,7 +36,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,1:LightWareSF40C-legacy,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1
+    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",   1, AP_Proximity, _type[0], 0, AP_PARAM_FLAG_ENABLE),
@@ -281,13 +280,6 @@ void AP_Proximity::detect_instance(uint8_t instance)
     switch (get_type(instance)) {
     case Type::None:
         return;
-    case Type::SF40C_v09:
-        if (AP_Proximity_LightWareSF40C_v09::detect()) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF40C_v09(*this, state[instance]);
-            return;
-        }
-        break;
     case Type::RPLidarA2:
         if (AP_Proximity_RPLidarA2::detect()) {
             state[instance].instance = instance;
