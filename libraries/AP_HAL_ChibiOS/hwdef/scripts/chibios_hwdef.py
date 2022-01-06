@@ -704,34 +704,77 @@ def get_ram_map():
             return ram_map
     return get_mcu_config('RAM_MAP', True)
 
-
-def get_flash_npages():
+def get_flash_pages_sizes():
     global mcu_series
     if mcu_series.startswith('STM32F4'):
         if get_config('FLASH_SIZE_KB', type=int) == 512:
-            return 8
+            return [ 16, 16, 16, 16, 64, 128, 128, 128 ]
         elif get_config('FLASH_SIZE_KB', type=int) == 1024:
-            return 12
+            return [ 16, 16, 16, 16, 64, 128, 128, 128,
+                     128, 128, 128, 128 ]
         elif get_config('FLASH_SIZE_KB', type=int) == 2048:
-            return 24
+            return [ 16, 16, 16, 16, 64, 128, 128, 128,
+                     128, 128, 128, 128,
+                     128, 128, 128, 128,
+                     128, 128, 128, 128,
+                     128, 128, 128, 128 ]
         else:
             raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
     elif mcu_series.startswith('STM32F7'):
         if get_config('FLASH_SIZE_KB', type=int) == 512:
-            return 8
+            return [ 16, 16, 16, 16, 64, 128, 128, 128 ]
         elif get_config('FLASH_SIZE_KB', type=int) == 1024:
-            return 8
+            return [ 32, 32, 32, 32, 128, 256, 256, 256 ]
         elif get_config('FLASH_SIZE_KB', type=int) == 2048:
-            return 12
+            return [ 32, 32, 32, 32, 128, 256, 256, 256,
+                     256, 256, 256, 256]
         else:
             raise Exception("Unsupported flash size %u" % get_config('FLASH_SIZE_KB', type=int))
     elif mcu_series.startswith('STM32H7'):
-        return get_config('FLASH_SIZE_KB', type=int)//128
+        return [ 128 ] * (get_config('FLASH_SIZE_KB', type=int)//128)
     elif mcu_series.startswith('STM32F100') or mcu_series.startswith('STM32F103'):
-        return get_config('FLASH_SIZE_KB', type=int)
+        return [ 1 ] * get_config('FLASH_SIZE_KB', type=int)
+    elif (mcu_series.startswith('STM32F105') or
+          mcu_series.startswith('STM32F3') or
+          mcu_series.startswith('STM32G4') or
+          mcu_series.startswith('STM32L4')):
+        return [ 2 ] * (get_config('FLASH_SIZE_KB', type=int)//2)
     else:
-        return get_config('FLASH_SIZE_KB', type=int)//2
+        raise Exception("Unsupported flash size MCU %s" % mcu_series)
 
+def get_flash_npages():
+    page_sizes = get_flash_pages_sizes()
+    total_size = sum(pages)
+    if total_size != get_config('FLASH_SIZE_KB',type=int):
+        raise Exception("Invalid flash size MCU %s" % mcu_series)
+    return len(pages)
+
+def get_flash_page_offset_kb(sector):
+    '''return the offset in flash of a page number'''
+    pages = get_flash_pages_sizes()
+    offset = 0
+    for i in range(sector):
+        offset += pages[i]
+    return offset
+
+def get_storage_flash_page():
+    '''get STORAGE_FLASH_PAGE either from this hwdef or from hwdef.dat
+       in the same directory if this is a bootloader
+    '''
+    storage_flash_page = get_config('STORAGE_FLASH_PAGE', default=None, type=int, required=False)
+    if storage_flash_page is not None:
+        return storage_flash_page
+    if args.bootloader and args.hwdef[0].find("-bl") != -1:
+        hwdefdat = args.hwdef[0].replace("-bl", "")
+        if os.path.exists(hwdefdat):
+            ret = None
+            lines = open(hwdefdat,'r').readlines()
+            for line in lines:
+                result = re.match(r'STORAGE_FLASH_PAGE\s*([0-9]+)', line)
+                if result:
+                    ret = int(result.group(1))
+            return ret
+    return None
 
 def write_mcu_config(f):
     '''write MCU config defines'''
@@ -856,11 +899,13 @@ def write_mcu_config(f):
     else:
         f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
 
-    storage_flash_page = None
-    if not args.bootloader:
-        if get_config('STORAGE_FLASH_PAGE', default=0, type=int):
-            storage_flash_page = get_config('STORAGE_FLASH_PAGE', type=int)
+    storage_flash_page = get_storage_flash_page()
+    if storage_flash_page is not None:
+        if not args.bootloader:
             f.write('#define STORAGE_FLASH_PAGE %u\n' % storage_flash_page)
+        else:
+            # ensure the flash page leaves room for bootloader
+            offset = get_flash_page_offset_kb(storage_flash_page)
 
     if flash_size >= 2048 and not args.bootloader:
         # lets pick a flash sector for Crash log
@@ -969,7 +1014,9 @@ def write_mcu_config(f):
 #define HAL_NO_UARTDRIVER
 #define CH_CFG_USE_DYNAMIC FALSE
 #define HAL_USE_EMPTY_STORAGE 1
+#ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
+#endif
 ''')
         else:
             f.write('''
@@ -998,7 +1045,9 @@ def write_mcu_config(f):
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
 #define HAL_USE_EMPTY_STORAGE 1
+#ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
+#endif
 #define HAL_USE_RTC FALSE
 #define DISABLE_SERIAL_ESC_COMM TRUE
 ''')
@@ -1024,6 +1073,18 @@ def write_ldscript(fname):
     flash_reserve_start = get_config(
         'FLASH_RESERVE_START_KB', default=16, type=int)
 
+    storage_flash_page = get_storage_flash_page()
+    if storage_flash_page is not None:
+        offset = get_flash_page_offset_kb(storage_flash_page)
+        if offset > flash_reserve_start:
+            # storage is after flash, need to ensure flash doesn't encroach on it
+            flash_size = min(flash_size, offset)
+        else:
+            # storage is before flash, need to ensure storage fits
+            offset2 = get_flash_page_offset_kb(storage_flash_page+2)
+            if flash_reserve_start < offset2:
+                error("Storage overlaps flash")
+
     env_vars['FLASH_RESERVE_START_KB'] = str(flash_reserve_start)
 
     # space to reserve for storage at end of flash
@@ -1042,7 +1103,7 @@ def write_ldscript(fname):
     if not args.bootloader:
         flash_length = flash_size - (flash_reserve_start + flash_reserve_end)
     else:
-        flash_length = get_config('FLASH_BOOTLOADER_LOAD_KB', type=int)
+        flash_length = min(flash_size, get_config('FLASH_BOOTLOADER_LOAD_KB', type=int))
 
     env_vars['FLASH_TOTAL'] = flash_length * 1024
 
