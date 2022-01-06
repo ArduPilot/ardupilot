@@ -69,7 +69,7 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(float &reading_m)
         return false;
     }
 
-    // This sonar gives the metrics in inches, so we have to transform this to meters
+    // Maxbotix serial sonar may give the metrics in inches, cm or mm, so we have to transform this to meters
     reading_m = unit_conversion * (float(sum) / count);
 
     return true;
