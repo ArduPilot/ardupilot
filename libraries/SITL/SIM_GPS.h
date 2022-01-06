@@ -70,9 +70,8 @@ private:
     uint32_t last_update; // milliseconds
 
     // for delay simulation:
-    uint8_t next_index;
-    uint8_t delay;
     struct gps_data {
+        uint32_t timestamp_ms;
         double latitude;
         double longitude;
         float altitude;
@@ -84,8 +83,8 @@ private:
         double pitch_deg;
         bool have_lock;
     };
-#define MAX_GPS_DELAY 100
-    gps_data _gps_data[MAX_GPS_DELAY];
+    // last 20 samples, allowing for up to 20 samples of delay
+    gps_data _gps_history[20];
 
 
 #if HAL_SIM_GPS_EXTERNAL_FIFO_ENABLED
@@ -114,6 +113,9 @@ private:
     void nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
     uint32_t CRC32Value(uint32_t icrc);
     uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
+
+    // get delayed data
+    gps_data interpolate_data(const gps_data &d, uint32_t delay_ms);
 };
 
 }
