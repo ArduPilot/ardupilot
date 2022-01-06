@@ -161,6 +161,30 @@ void AR_WPNav::update(float dt)
     update_steering_and_speed(current_loc, dt);
 }
 
+// set maximum speed in m/s.  returns true on success
+// this should not be called at more than 3hz or else SCurve path planning may not advance properly
+bool AR_WPNav::set_speed_max(float speed_max)
+{
+    // range check target speed
+    if (speed_max < AR_WPNAV_SPEED_MIN) {
+        return false;
+    }
+
+    // ignore calls that do not change the speed
+    if (is_equal(speed_max, _pos_control.get_speed_max())) {
+        return true;
+    }
+
+    // update position controller max speed
+    _pos_control.set_limits(speed_max, _pos_control.get_accel_max(), _pos_control.get_lat_accel_max(), _pos_control.get_jerk_max());
+
+    // change track speed
+    _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+    _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+
+    return true;
+}
+
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
 bool AR_WPNav::set_desired_location(const struct Location& destination, Location next_destination)
