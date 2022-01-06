@@ -250,11 +250,7 @@ bool ModeAuto::set_desired_speed(float speed)
     switch (_submode) {
     case Auto_WP:
     case Auto_Stop:
-        if (!is_negative(speed)) {
-            g2.wp_nav.set_desired_speed(speed);
-            return true;
-        }
-        return false;
+        return g2.wp_nav.set_speed_max(speed);
     case Auto_HeadingAndSpeed:
         _desired_speed = speed;
         return true;
