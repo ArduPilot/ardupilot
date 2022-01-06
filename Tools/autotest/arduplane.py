@@ -873,6 +873,31 @@ class AutoTestPlane(AutoTest):
         if x is None:
             raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
+    def test_short_failsafe(self):
+        self.set_parameter("GCS_FS_ENABL", 1)
+        self.set_parameter("FS_SHORT_ACTN", 1)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoff()
+        self.load_mission("/arduPilot/Tools/autotests/CMAC-circuits.txt")
+        self.change_mode('AUTO')
+        
+        try:
+            self.set_heartbeat_rate(0)
+            self.wait_statustext("GCS Failsafe")
+            
+        except Exception as e:
+            self.set_heartbeat_rate(1)
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        if ex:
+            if self.armed():
+                self.fly_home_land_and_disarm()
+            raise ex
+
+    
     def test_throttle_failsafe(self):
         self.change_mode('MANUAL')
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
@@ -991,7 +1016,8 @@ class AutoTestPlane(AutoTest):
         self.context_pop()
         if ex is not None:
             raise ex
-
+    
+    
     def test_throttle_failsafe_fence(self):
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
