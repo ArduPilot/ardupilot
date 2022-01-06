@@ -637,6 +637,10 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     throttle_out += _throttle_speed_pid.get_ff();
     throttle_out += throttle_base;
 
+    // update PID info for reporting purposes
+    _throttle_speed_pid_info = _throttle_speed_pid.get_pid_info();
+    _throttle_speed_pid_info.FF += throttle_base;
+
     // clear local limit flags used to stop i-term build-up as we stop reversed outputs going to motors
     _throttle_limit_low = false;
     _throttle_limit_high = false;
