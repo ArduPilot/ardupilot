@@ -26,6 +26,7 @@ extern const AP_HAL::HAL& hal;
 
 #define AR_WPNAV_TIMEOUT_MS             100
 #define AR_WPNAV_SPEED_DEFAULT          2.0f
+#define AR_WPNAV_SPEED_MIN              0.05f   // minimum speed between waypoints in m/s
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
 #define AR_WPNAV_OVERSPEED_RATIO_MAX    5.0f    // if _overspeed_enabled the vehicle may travel as quickly as 5x WP_SPEED
 
@@ -89,12 +90,16 @@ AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// initialise waypoint controller
-void AR_WPNav::init()
+// initialise waypoint controller.  speed_max should be set to the maximum speed in m/s (or left at zero to use the default speed)
+void AR_WPNav::init(float speed_max)
 {
-    // sanity check parameters
-    const float speed_max = MAX(0, _speed_max);
-    const float accel_max = is_positive(_accel_max) ? _accel_max : _atc.get_accel_max();
+    // determine max speed, acceleration and jerk
+    if (!is_positive(speed_max)) {
+        speed_max = _speed_max;
+    }
+    speed_max = MAX(AR_WPNAV_SPEED_MIN, speed_max);
+    const float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
+    const float accel_max = is_positive(_accel_max) ? MIN(_accel_max, atc_accel_max) : atc_accel_max;
     const float jerk_max = is_positive(_jerk_max) ? _jerk_max : accel_max;
 
     // initialise position controller
@@ -114,12 +119,8 @@ void AR_WPNav::init()
     _pivot_at_next_wp = false;
 
     // initialise origin and destination to stopping point
-    Location stopping_loc;
-    if (get_stopping_location(stopping_loc)) {
-        _origin = _destination = stopping_loc;
-    } else {
-        // handle not current location
-    }
+    _orig_and_dest_valid = false;
+    set_origin_and_destination_to_stopping_point();
 }
 
 // update navigation
@@ -166,7 +167,13 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
 {
     // re-initialise if inactive, previous destination has been interrupted or different controller was used
     if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
-        init();
+        if (!set_origin_and_destination_to_stopping_point()) {
+            return false;
+        }
+        // clear scurves
+        _scurve_prev_leg.init();
+        _scurve_this_leg.init();
+        _scurve_next_leg.init();
     }
 
     // shift this leg to previous leg
@@ -299,7 +306,9 @@ bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destinati
 {
     // initialise if not active
     if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
-        init();
+        if (!set_origin_and_destination_to_stopping_point()) {
+            return false;
+        }
     }
 
     // initialise some variables
@@ -539,4 +548,17 @@ void AR_WPNav::init_pos_control_if_necessary()
             return;
         }
     }
+}
+
+// set origin and destination to stopping point
+bool AR_WPNav::set_origin_and_destination_to_stopping_point()
+{
+    // initialise origin and destination to stopping point
+    Location stopping_loc;
+    if (!get_stopping_location(stopping_loc)) {
+        return false;
+    }
+    _origin = _destination = stopping_loc;
+    _orig_and_dest_valid = true;
+    return true;
 }
