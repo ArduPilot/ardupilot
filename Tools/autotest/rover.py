@@ -406,9 +406,10 @@ class AutoTestRover(AutoTest):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_statustext("Gripper Grabbed", timeout=60)
-        self.wait_statustext("Gripper Released", timeout=60)
-        self.wait_statustext("Mission Complete", timeout=60)
+        self.context_collect('STATUSTEXT')
+        self.wait_statustext("Gripper Grabbed", timeout=60, check_context=True)
+        self.wait_statustext("Gripper Released", timeout=60, check_context=True)
+        self.wait_statustext("Mission Complete", timeout=60, check_context=True)
         self.disarm_vehicle()
 
     def do_get_banner(self):
