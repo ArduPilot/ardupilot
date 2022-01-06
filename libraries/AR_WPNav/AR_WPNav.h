@@ -19,11 +19,10 @@ public:
     // update navigation
     virtual void update(float dt);
 
-    // return desired speed
-    float get_desired_speed() const { return _desired_speed; }
-
-    // set desired speed in m/s
-    void set_desired_speed(float speed) { _desired_speed = MAX(speed, 0.0f); }
+    // get or set maximum speed in m/s
+    // set_speed_max should not be called at more than 3hz or else SCurve path planning may not advance properly
+    float get_speed_max() const { return _pos_control.get_speed_max(); }
+    bool set_speed_max(float speed_max);
 
     // execute the mission in reverse (i.e. drive backwards to destination)
     bool get_reversed() const { return _reversed; }
@@ -167,7 +166,6 @@ protected:
     } _nav_control_type;            // navigation controller that should be used to travel from _origin to _destination
 
     // main outputs from navigation library
-    float _desired_speed;           // desired speed in m/s
     float _desired_speed_limited;   // desired speed (above) but accel/decel limited
     float _desired_turn_rate_rads;  // desired turn-rate in rad/sec (negative is counter clockwise, positive is clockwise)
     float _desired_lat_accel;       // desired lateral acceleration (for reporting only)
