@@ -3305,7 +3305,7 @@ function'''
         self.set_parameters({
             "EK3_POS_I_GATE": 0,
             "SIM_GPS_HZ": 1,
-            "GPS_DELAY_MS": 300,
+            "SIM_GPS_LAG_MS": 1000,
         })
         self.wait_statustext("DCM Active", check_context=True, timeout=60)
         self.wait_statustext("EKF3 Active", check_context=True)
