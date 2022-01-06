@@ -13,8 +13,8 @@ public:
     // constructor
     AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control);
 
-    // initialise waypoint controller
-    void init();
+    // initialise waypoint controller.  speed_max should be set to the maximum speed in m/s (or left at zero to use the default speed)
+    void init(float speed_max = 0);
 
     // update navigation
     virtual void update(float dt);
@@ -24,9 +24,6 @@ public:
 
     // set desired speed in m/s
     void set_desired_speed(float speed) { _desired_speed = MAX(speed, 0.0f); }
-
-    // restore desired speed to default from parameter value
-    void set_desired_speed_to_default() { _desired_speed = _speed_max; }
 
     // execute the mission in reverse (i.e. drive backwards to destination)
     bool get_reversed() const { return _reversed; }
@@ -131,6 +128,9 @@ protected:
     // helper function to initialise position controller if it hasn't been called recently
     // this should be called before updating the position controller with new targets but after the EKF has a good position estimate
     void init_pos_control_if_necessary();
+
+    // set origin and destination to stopping point
+    bool set_origin_and_destination_to_stopping_point();
 
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
