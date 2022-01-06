@@ -321,7 +321,7 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
-    AP_GROUPINFO("GPS_DELAY",      2, SIM,  gps_delay[0],   1),
+    AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
@@ -337,7 +337,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
 
     AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
-    AP_GROUPINFO("GPS2_DELAY",    31, SIM,  gps_delay[1],   1),
+    AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
     AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
