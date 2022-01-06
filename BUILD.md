@@ -6,6 +6,7 @@ Clone the project from GitHub:
 ```sh
 git clone --recursive https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
+git submodule update --init --recursive
 ```
 
 Ardupilot is gradually moving from the make-based build system to
