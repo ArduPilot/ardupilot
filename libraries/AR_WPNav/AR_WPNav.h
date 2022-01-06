@@ -20,9 +20,13 @@ public:
     virtual void update(float dt);
 
     // get or set maximum speed in m/s
-    // set_speed_max should not be called at more than 3hz or else SCurve path planning may not advance properly
-    float get_speed_max() const { return _pos_control.get_speed_max(); }
+    // if set_speed_max is called in rapid succession changes in speed may be delayed by up to 0.5sec
+    float get_speed_max() const { return _base_speed_max; }
     bool set_speed_max(float speed_max);
+
+    // set speed nudge in m/s.  this will have no effect unless nudge_speed_max > speed_max
+    // nudge_speed_max should always be positive regardless of whether the vehicle is travelling forward or reversing
+    void set_nudge_speed_max(float nudge_speed_max);
 
     // execute the mission in reverse (i.e. drive backwards to destination)
     bool get_reversed() const { return _reversed; }
@@ -131,6 +135,10 @@ protected:
     // set origin and destination to stopping point
     bool set_origin_and_destination_to_stopping_point();
 
+    // check for changes in _base_speed_max or _nudge_speed_max
+    // updates position controller limits and recalculate scurve path if required
+    void update_speed_max();
+
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
     AP_Float _radius;               // distance in meters from a waypoint when we consider the waypoint has been reached
@@ -164,6 +172,11 @@ protected:
         NAV_SCURVE = 0,             // scurves used for navigation
         NAV_PSC_INPUT_SHAPING       // position controller input shaping used for navigation
     } _nav_control_type;            // navigation controller that should be used to travel from _origin to _destination
+
+    // speed_max handling
+    float _base_speed_max;          // speed max (in m/s) derived from parameters or passed into init
+    float _nudge_speed_max;         // "nudge" speed max (in m/s) normally from the pilot.  has no effect if less than _base_speed_max.  always positive.
+    uint32_t _last_speed_update_ms; // system time that speed_max was last update.  used to ensure speed_max is not update too quickly
 
     // main outputs from navigation library
     float _desired_speed_limited;   // desired speed (above) but accel/decel limited
