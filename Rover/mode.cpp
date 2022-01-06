@@ -420,14 +420,19 @@ float Mode::calc_speed_nudge(float target_speed, bool reversed)
 // this function updates _distance_to_destination
 void Mode::navigate_to_waypoint()
 {
+    // apply speed nudge from pilot
+    // calc_speed_nudge's "desired_speed" argument should be negative when vehicle is reversing
+    // AR_WPNav nudge_speed_max argu,ent should always be positive even when reversing
+    const float calc_nudge_input_speed = g2.wp_nav.get_speed_max() * (g2.wp_nav.get_reversed() ? -1.0 : 1.0);
+    const float nudge_speed_max = calc_speed_nudge(calc_nudge_input_speed, g2.wp_nav.get_reversed());
+    g2.wp_nav.set_nudge_speed_max(fabsf(nudge_speed_max));
+
     // update navigation controller
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
-    // pass speed to throttle controller after applying nudge from pilot
-    float desired_speed = g2.wp_nav.get_speed();
-    desired_speed = calc_speed_nudge(desired_speed, g2.wp_nav.get_reversed());
-    calc_throttle(desired_speed, true);
+    // pass desired speed to throttle controller
+    calc_throttle(g2.wp_nav.get_speed(), true);
 
     float desired_heading_cd = g2.wp_nav.oa_wp_bearing_cd();
     if (g2.sailboat.use_indirect_route(desired_heading_cd)) {
