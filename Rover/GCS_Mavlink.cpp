@@ -206,7 +206,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
 
     // speed to throttle PID
     if (g.gcs_pid_mask & 2) {
-        pid_info = &g2.attitude_control.get_throttle_speed_pid().get_pid_info();
+        pid_info = &g2.attitude_control.get_throttle_speed_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info->target,
                                     pid_info->actual,
