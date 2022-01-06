@@ -187,7 +187,7 @@ public:
     AP_Int16 gps_lock_time[2]; // delay in seconds before GPS gets lock
     AP_Int16 gps_alt_offset[2]; // gps alt error
     AP_Int8  gps_disable[2]; // disable simulated GPS
-    AP_Int8  gps_delay[2];   // delay in samples
+    AP_Int16 gps_delay_ms[2];   // delay in milliseconds
     AP_Int8  gps_type[2]; // see enum SITL::GPS::Type
     AP_Float gps_byteloss[2];// byte loss as a percent
     AP_Int8  gps_numsats[2]; // number of visible satellites
