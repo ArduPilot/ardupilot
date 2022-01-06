@@ -262,11 +262,7 @@ bool ModeGuided::set_desired_speed(float speed)
 {
     switch (_guided_mode) {
     case Guided_WP:
-        if (!is_negative(speed)) {
-            g2.wp_nav.set_desired_speed(speed);
-            return true;
-        }
-        return false;
+        return g2.wp_nav.set_speed_max(speed);
     case Guided_HeadingAndSpeed:
     case Guided_TurnRateAndSpeed:
         // speed is set from mavlink message
@@ -327,7 +323,7 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
     // handle guided specific initialisation and logging
     _guided_mode = ModeGuided::Guided_WP;
     send_notification = true;
-    rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_desired_speed(), 0.0f, 0.0f));
+    rover.Log_Write_GuidedTarget(_guided_mode, Vector3f(destination.lat, destination.lng, 0), Vector3f(g2.wp_nav.get_speed_max(), 0.0f, 0.0f));
     return true;
 }
 
