@@ -46,6 +46,15 @@
 #endif
 #endif
 
+// allow for dynamically added tables when scripting enabled
+#define AP_PARAM_DYNAMIC_ENABLED AP_SCRIPTING_ENABLED
+
+// maximum number of dynamically created tables (from scripts)
+#ifndef AP_PARAM_MAX_DYNAMIC
+#define AP_PARAM_MAX_DYNAMIC 10
+#endif
+#define AP_PARAM_DYNAMIC_KEY_BASE 300
+
 /*
   flags for variables in var_info and group tables
  */
@@ -201,7 +210,9 @@ public:
         uint16_t i;
         for (i=0; info[i].type != AP_PARAM_NONE; i++) ;
         _num_vars = i;
-
+#if AP_PARAM_DYNAMIC_ENABLED
+        _num_vars_base = _num_vars;
+#endif
         if (_singleton != nullptr) {
             AP_HAL::panic("AP_Param must be singleton");
         }
@@ -490,7 +501,7 @@ public:
     bool is_read_only(void) const;
 
     // return the persistent top level key for the ParamToken key
-    static uint16_t get_persistent_key(uint16_t key) { return _var_info[key].key; }
+    static uint16_t get_persistent_key(uint16_t key) { return var_info(key).key; }
     
     // count of parameters in tree
     static uint16_t count_parameters(void);
@@ -528,6 +539,13 @@ public:
 
     static AP_Param *get_singleton() { return _singleton; }
 
+#if AP_PARAM_DYNAMIC_ENABLED
+    // allow for dynamically added parameter tables from scripts
+    static bool add_table(uint8_t key, const char *prefix, uint8_t num_params);
+    static bool add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
+    static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
+#endif
+    
 private:
     static AP_Param *_singleton;
 
@@ -697,6 +715,21 @@ private:
     static uint16_t             _count_marker_done;
     static HAL_Semaphore        _count_sem;
     static const struct Info *  _var_info;
+
+#if AP_PARAM_DYNAMIC_ENABLED
+    // allow for a dynamically allocated var table
+    static uint16_t             _num_vars_base;
+    static struct Info *        _var_info_dynamic;
+    static const struct AP_Param::Info &var_info(uint16_t i) {
+        return i<_num_vars_base? _var_info[i] : _var_info_dynamic[i-_num_vars_base];
+    }
+    static uint8_t _dynamic_table_sizes[AP_PARAM_MAX_DYNAMIC];
+#else
+    // simple static var table in flash
+    static const struct Info &var_info(uint16_t i) {
+        return _var_info[i];
+    }
+#endif
 
     /*
       list of overridden values from load_defaults_file()
