@@ -12,7 +12,7 @@ class Feature:
         self.label = label
         self.define = define
         self.description = description
-        self.define = default
+        self.default = default
         self.dependency = dependency
 
 # list of build options to offer
