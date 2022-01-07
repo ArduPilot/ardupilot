@@ -35,6 +35,8 @@ class BoardList(object):
             Board("edge"),
             Board("obal"),
             Board("pxf"),
+            Board("bbbmini"),
+            Board("blue"),
             Board("pxfmini"),
             Board("SITL_x86_64_linux_gnu"),
             Board("SITL_arm_linux_gnueabihf"),
