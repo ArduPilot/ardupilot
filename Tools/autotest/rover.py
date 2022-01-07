@@ -5525,11 +5525,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        tstart = self.get_sim_time()
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > 10:
-                raise AutoTestTimeoutException("Didn't get to speed")
+        ofs_x = 30.0
+        ofs_y = 30.0
+
+        def send_target():
             self.mav.mav.set_position_target_local_ned_send(
                 0, # time_boot_ms
                 target_sysid,
@@ -5543,8 +5542,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE |
                 mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
                 mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE,
-                30.0,  # pos-x
-                30.0,  # pos-y
+                ofs_x,  # pos-x
+                ofs_y,  # pos-y
                 0,     # pos-z
                 0,     # vel-x
                 0,     # vel-y
@@ -5556,12 +5555,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 0,     # yaw rate
             )
 
-            msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=1)
-            if msg is None:
-                raise NotAchievedException("No VFR_HUD message")
-            self.progress("speed=%f" % msg.groundspeed)
-            if msg.groundspeed > 5:
-                break
+        self.wait_distance_to_local_position(
+            (ofs_x, ofs_y, 0),
+            distance_min=0,
+            distance_max=1,
+            timeout=60,
+            called_function=lambda last_value, target : send_target(),
+            minimum_duration=5,  # make sure we stop!
+        )
+
+        self.do_RTL()
         self.disarm_vehicle()
 
     def test_end_mission_behavior(self, timeout=60):
