@@ -963,6 +963,20 @@ function param:set(name, value) end
 ---@return number|nil
 function param:get(name) end
 
+-- desc
+---@param table_key number
+---@param prefix string
+---@param num_params number
+---@return boolean
+function param:add_table(table_key, prefix, num_params) end
+
+-- desc
+---@param table_key number
+---@param param_num number
+---@param name string
+---@param default_value number
+---@return boolean
+function param::add_param(table_key, param_num, name, default_value) end
 
 -- desc
 ---@class esc_telem
