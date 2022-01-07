@@ -53,15 +53,20 @@ protected:
     // load test gains
     void load_test_gains() override;
 
-    // reset the test vaariables for heli
-    void reset_vehicle_test_variables() override {
-        // this should never happen
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    }
+    // reset the test vaariables for multi
+    void reset_vehicle_test_variables() override {};
+
+    // reset the update gain variables for multi
+    void reset_update_gain_variables() override {};
 
     void test_init() override;
     void test_run(AxisType test_axis, const float dir_sign) override;
+
+    // send intermittant updates to user on status of tune
     void do_gcs_announcements() override;
+
+    // send post test updates to user
+    void do_post_test_gcs_announcements() override {};
 
     // update gains for the rate P up tune type
     void updating_rate_p_up_all(AxisType test_axis) override;

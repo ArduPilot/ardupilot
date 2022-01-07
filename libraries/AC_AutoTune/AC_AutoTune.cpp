@@ -429,6 +429,10 @@ void AC_AutoTune::control_attitude()
         // log the latest gains
         Log_AutoTune();
 
+        // Announce tune type test results
+        // must be done before updating method because this method changes parameters for next test
+        do_post_test_gcs_announcements();
+
         switch (tune_type) {
         // Check results after mini-step to increase rate D gain
         case RD_UP:
@@ -516,6 +520,7 @@ void AC_AutoTune::control_attitude()
                     AP_Notify::events.autotune_complete = true;
                 } else {
                     AP_Notify::events.autotune_next_axis = true;
+                    reset_update_gain_variables();
                 }
             }
         }
@@ -553,6 +558,9 @@ void AC_AutoTune::backup_gains_and_initialise()
     }
     // no axes are complete
     axes_completed = 0;
+
+    // reset update gain variables for each vehicle
+    reset_update_gain_variables();
 
     // start at the beginning of tune sequence
     next_tune_type(tune_type, true);
