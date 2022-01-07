@@ -112,6 +112,9 @@ protected:
     // reset the test vaariables for each vehicle
     virtual void reset_vehicle_test_variables() = 0;
 
+    // reset the update gain variables for each vehicle
+    virtual void reset_update_gain_variables() = 0;
+
     // test initialization and run methods that should be overridden for each vehicle
     virtual void test_init() = 0;
     virtual void test_run(AxisType test_axis, const float dir_sign) = 0;
@@ -155,6 +158,9 @@ protected:
 
     // send intermittant updates to user on status of tune
     virtual void do_gcs_announcements() = 0;
+
+    // send post test updates to user
+    virtual void do_post_test_gcs_announcements() = 0;
 
     // send message with high level status (e.g. Started, Stopped)
     void update_gcs(uint8_t message_id) const;
