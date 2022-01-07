@@ -708,6 +708,11 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
+    // Throttle Failsafe check
+    if (copter.g.failsafe_throttle == FS_THR_DISABLED) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FS_THR_ENABLE is disabled");
+    }
+    
     // superclass method should always be the last thing called; it
     // has side-effects which would need to be cleaned up if one of
     // our arm checks failed
