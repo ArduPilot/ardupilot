@@ -49,16 +49,6 @@ void setup()
 #endif
     motors.output_min();
 
-    // setup radio
-    SRV_Channels::srv_channel(2)->set_output_min(1000);
-    SRV_Channels::srv_channel(2)->set_output_max(2000);
-
-    // set rc channel ranges
-    SRV_Channels::srv_channel(0)->set_angle(4500);
-    SRV_Channels::srv_channel(1)->set_angle(4500);
-    SRV_Channels::srv_channel(2)->set_range(1000);
-    SRV_Channels::srv_channel(3)->set_angle(4500);
-
     hal.scheduler->delay(1000);
 }
 
@@ -114,8 +104,6 @@ void stability_test()
     uint8_t throttle_tests_num = sizeof(throttle_tests) / sizeof(int16_t);
     int16_t rpy_tests[] = {0, 1000, 2000, 3000, 4500, -1000, -2000, -3000, -4500};
     uint8_t rpy_tests_num = sizeof(rpy_tests) / sizeof(int16_t);
-
-    hal.console->printf("\nTesting stability patch\nThrottle Min:%d Max:%d\n",(int)SRV_Channels::srv_channel(2)->get_output_min(),(int)SRV_Channels::srv_channel(2)->get_output_max());
 
     // arm motors
     motors.armed(true);
