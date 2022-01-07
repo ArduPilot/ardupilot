@@ -56,6 +56,9 @@ protected:
     // reset the test vaariables for heli
     void reset_vehicle_test_variables() override;
 
+    // reset the update gain variables for heli
+    void reset_update_gain_variables() override;
+
     // initializes test
     void test_init() override;
 
@@ -103,6 +106,9 @@ protected:
 
     // send intermittant updates to user on status of tune
     void do_gcs_announcements() override;
+
+    // send post test updates to user
+    void do_post_test_gcs_announcements() override;
 
     // set the tuning test sequence
     void set_tune_sequence() override;
