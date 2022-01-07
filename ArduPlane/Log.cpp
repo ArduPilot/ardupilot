@@ -249,7 +249,7 @@ void Plane::Log_Write_AETR()
         ,elevator : SRV_Channels::get_output_scaled(SRV_Channel::k_elevator)
         ,throttle : SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)
         ,rudder   : SRV_Channels::get_output_scaled(SRV_Channel::k_rudder)
-        ,flap     : SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)
+        ,flap     : SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)
         ,speed_scaler : get_speed_scaler(),
         };
 

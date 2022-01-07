@@ -24,6 +24,10 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
     if (_terminate_action == TERMINATE_ACTION_LAND) {
         plane.landing.terminate();
     } else {
+        // remove flap slew limiting
+        SRV_Channels::set_slew_rate(SRV_Channel::k_flap_auto, 0.0, 100, plane.G_Dt);
+        SRV_Channels::set_slew_rate(SRV_Channel::k_flap, 0.0, 100, plane.G_Dt);
+
         // aerodynamic termination is the default approach to termination
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 100.0);
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap, 100.0);

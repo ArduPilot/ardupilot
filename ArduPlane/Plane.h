@@ -1092,7 +1092,7 @@ private:
     void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Aux_servo_function_t func1_in, SRV_Channel::Aux_servo_function_t func2_in,
                                 SRV_Channel::Aux_servo_function_t func1_out, SRV_Channel::Aux_servo_function_t func2_out) const;
-    void flaperon_update(int8_t flap_percent);
+    void flaperon_update();
 
     // is_flying.cpp
     void update_is_flying_5Hz(void);
