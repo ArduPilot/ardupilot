@@ -130,6 +130,8 @@ public:
         return 57;
     }
 
+    virtual void set_bandwidth(uint32_t bandwidth) { return; }
+
     /*
       return true if this UART has DMA enabled on both RX and TX
      */

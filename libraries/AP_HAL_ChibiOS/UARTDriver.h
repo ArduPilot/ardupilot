@@ -138,8 +138,15 @@ public:
         if (sdef.is_usb) {
             return 200;
         }
+
+        //if bandwidth setting is not zero then use baud rate.
+        if(_bandwidth_Bps != 0){
+            return _bandwidth_Bps/1024;
+        }
         return _baudrate/(9*1024);
     }
+
+    void set_bandwidth(uint32_t bandwidth) override { _bandwidth_Bps=bandwidth ; }
 
     // request information on uart I/O for one uart
     void uart_info(ExpandingString &str) override;
@@ -180,6 +187,17 @@ private:
     uint32_t lock_read_key;
 
     uint32_t _baudrate;
+
+    // bandwidth in bytes per second
+    uint32_t _bandwidth_Bps;
+    //Last time that the space in the buffer was updated
+    uint32_t _last_txspace_update_ms;
+    //tx space remaining when bandwidth limiting
+    uint32_t _bandwidth_space_available;
+
+#define UART_BW_LIMIT_MAX_TDELTA_MS		1000
+
+
 #if HAL_USE_SERIAL == TRUE
     SerialConfig sercfg;
 #endif

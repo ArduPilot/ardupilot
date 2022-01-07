@@ -99,6 +99,9 @@ public:
 
     // saveable rate of each stream
     AP_Int16        streamRates[GCS_MAVLINK_NUM_STREAM_RATES];
+
+    //Bandwidth override value
+    AP_Int32		bandwidthOverride;
 };
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -424,6 +427,7 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        *streamRates;
+    AP_Int16		streamOptions;
 
     void handle_heartbeat(const mavlink_message_t &msg) const;
 
