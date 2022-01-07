@@ -92,6 +92,8 @@ define HAL_DISABLE_ADC_DRIVER TRUE
 
 define HAL_NO_MONITOR_THREAD
 
+# avoid timer and RCIN threads to save memory
+define HAL_NO_RCIN_THREAD
 
 define HAL_DEVICE_THREAD_STACK 0x200
 define STORAGE_THD_WA_SIZE 512
