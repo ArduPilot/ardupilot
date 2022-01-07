@@ -202,7 +202,7 @@ float Tiltrotor::get_fully_forward_tilt() const
 // return the target tilt value for forward flight
 float Tiltrotor::get_forward_flight_tilt() const
 {
-    return 1.0 - ((flap_angle_deg / 90.0) * SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto) * 0.01);
+    return 1.0 - ((flap_angle_deg / 90.0) * SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto) * 0.01);
 }
 
 /*
