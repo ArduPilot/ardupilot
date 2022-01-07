@@ -348,8 +348,8 @@ void Plane::trim_radio()
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight2);
     }
 
-    if (is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)) &&
-        is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_flap))) {
+    if (is_zero(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)) &&
+        is_zero(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap))) {
         // trim flaperons if no flap input
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_left);
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_right);
