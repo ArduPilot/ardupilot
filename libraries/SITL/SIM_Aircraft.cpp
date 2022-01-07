@@ -1014,6 +1014,13 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         richenpower->update(input);
     }
 
+#if AP_SIM_LOWEHEISER_ENABLED
+    // update Loweheiser generator
+    if (loweheiser) {
+        loweheiser->update();
+    }
+#endif
+
     if (fetteconewireesc) {
         fetteconewireesc->update(*this);
     }
