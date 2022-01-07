@@ -125,7 +125,7 @@ def write_table(h, build_type):
     for apjinfo in boards:
         if apjinfo.flash_free < warning_flash_free:
             apjinfo.warning = 1
-        if int(apjinfo.mtime) < int(max_mtime)-warning_build_days*86400:
+        if int(apjinfo.mtime) < int(max_mtime)-warning_build_days*86400 and build_type == "latest":
             apjinfo.warning = 2
 
     boards.sort(key=lambda board: board.warning, reverse=True)
@@ -157,9 +157,13 @@ def write_table(h, build_type):
             h.write('<tr style="color:#FF0000;">')
         else:
             h.write('<tr>')
-        h.write('''<td>%s</td><td>%s</td><td>%s</td>
-   <td><a href="https://github.com/ArduPilot/ardupilot/commit/%s">%s</a></td><td>%u</td></tr>\n''' % (
-            apjinfo.vehicle, apjinfo.board, datetime.fromtimestamp(apjinfo.mtime).strftime("%F %k:%M"),
+        h.write('''<td>%s</td>
+    <td><a href="https://firmware.ardupilot.org/%s/%s/%s">%s</a></td>
+    <td>%s</td>
+    <td><a href="https://github.com/ArduPilot/ardupilot/commit/%s">%s</a></td>
+    <td>%u</td></tr>\n''' % (
+            apjinfo.vehicle, apjinfo.vehicle, build_type, apjinfo.board, apjinfo.board,
+            datetime.fromtimestamp(apjinfo.mtime).strftime("%F %k:%M"),
             apjinfo.githash, apjinfo.githash, apjinfo.flash_free))
 
     h.write('''
