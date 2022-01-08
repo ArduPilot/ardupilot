@@ -746,8 +746,16 @@ void AC_PosControl::relax_z_controller(float throttle_setting)
 
     // Set accel PID I term based on the requested throttle
     float throttle = _attitude_control.get_throttle_in();
-    throttle_setting = throttle + (throttle_setting - throttle) * (_dt / (_dt + POSCONTROL_RELAX_TC));
-    _pid_accel_z.set_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
+    float throttle_error = throttle_setting - throttle;
+    // Only allow throttle to decrease to requested throttle setting.
+    if (((is_positive(_throttle_setting) && is_negative(throttle_error)) || (is_negative(_throttle_setting) && is_positive(throttle_error)))) {
+        _throttle_setting = throttle + throttle_error * (_dt / (_dt + POSCONTROL_RELAX_TC));
+    } else {
+        // treat previous throttle setting as current throttle in and continue to decay to requestd throttle setting
+        throttle_error = throttle_setting - _throttle_setting;
+        _throttle_setting = _throttle_setting + throttle_error * (_dt / (_dt + POSCONTROL_RELAX_TC)); 
+    }
+    _pid_accel_z.set_integrator((_throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
 }
 
 /// init_z - initialise the position controller to the current position, velocity and acceleration.
