@@ -404,126 +404,86 @@ AP_GPS_UBLOX::_request_next_config(void)
 void
 AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
     uint8_t desired_rate;
-
+    uint32_t config_msg_id;
     switch(msg_class) {
     case CLASS_NAV:
         switch(msg_id) {
         case MSG_POSLLH:
             desired_rate = havePvtMsg ? 0 : RATE_POSLLH;
-            if(rate == desired_rate) {
-                _unconfigured_messages &= ~CONFIG_RATE_POSLLH;
-            } else {
-                _configure_message_rate(msg_class, msg_id, desired_rate);
-                _unconfigured_messages |= CONFIG_RATE_POSLLH;
-                _cfg_needs_save = true;
-            }
+            config_msg_id = CONFIG_RATE_POSLLH;
             break;
         case MSG_STATUS:
             desired_rate = havePvtMsg ? 0 : RATE_STATUS;
-            if(rate == desired_rate) {
-                _unconfigured_messages &= ~CONFIG_RATE_STATUS;
-            } else {
-                _configure_message_rate(msg_class, msg_id, desired_rate);
-                _unconfigured_messages |= CONFIG_RATE_STATUS;
-                _cfg_needs_save = true;
-            }
+            config_msg_id = CONFIG_RATE_STATUS;
             break;
         case MSG_SOL:
             desired_rate = havePvtMsg ? 0 : RATE_SOL;
-            if(rate == desired_rate) {
-                _unconfigured_messages &= ~CONFIG_RATE_SOL;
-            } else {
-                _configure_message_rate(msg_class, msg_id, desired_rate);
-                _unconfigured_messages |= CONFIG_RATE_SOL;
-                _cfg_needs_save = true;
-            }
+            config_msg_id = CONFIG_RATE_SOL;
             break;
         case MSG_PVT:
-            if(rate == RATE_PVT) {
-                _unconfigured_messages &= ~CONFIG_RATE_PVT;
-            } else {
-                _configure_message_rate(msg_class, msg_id, RATE_PVT);
-                _unconfigured_messages |= CONFIG_RATE_PVT;
-                _cfg_needs_save = true;
-            }
+            desired_rate = RATE_PVT;
+            config_msg_id = CONFIG_RATE_PVT;
             break;
         case MSG_TIMEGPS:
-            if(rate == RATE_TIMEGPS) {
-                _unconfigured_messages &= ~CONFIG_RATE_TIMEGPS;
-            } else {
-                _configure_message_rate(msg_class, msg_id, RATE_TIMEGPS);
-                _unconfigured_messages |= CONFIG_RATE_TIMEGPS;
-                _cfg_needs_save = true;
-            }
+            desired_rate = RATE_TIMEGPS;
+            config_msg_id = CONFIG_RATE_TIMEGPS;
             break;
         case MSG_VELNED:
             desired_rate = havePvtMsg ? 0 : RATE_VELNED;
-            if(rate == desired_rate) {
-                _unconfigured_messages &= ~CONFIG_RATE_VELNED;
-            } else {
-                _configure_message_rate(msg_class, msg_id, desired_rate);
-                _unconfigured_messages |= CONFIG_RATE_VELNED;
-                _cfg_needs_save = true;
-            }
+            config_msg_id = CONFIG_RATE_VELNED;
             break;
         case MSG_DOP:
-            if(rate == RATE_DOP) {
-                _unconfigured_messages &= ~CONFIG_RATE_DOP;
-            } else {
-                _configure_message_rate(msg_class, msg_id, RATE_DOP);
-                _unconfigured_messages |= CONFIG_RATE_DOP;
-                _cfg_needs_save = true;
-            }
+            desired_rate = RATE_DOP;
+            config_msg_id = CONFIG_RATE_DOP;
             break;
+        default:
+            return;
         }
         break;
     case CLASS_MON:
         switch(msg_id) {
         case MSG_MON_HW:
-            if(rate == RATE_HW) {
-                _unconfigured_messages &= ~CONFIG_RATE_MON_HW;
-            } else {
-                _configure_message_rate(msg_class, msg_id, RATE_HW);
-                _unconfigured_messages |= CONFIG_RATE_MON_HW;
-                _cfg_needs_save = true;
-            }
+            desired_rate = RATE_HW;
+            config_msg_id = CONFIG_RATE_MON_HW;
             break;
         case MSG_MON_HW2:
-            if(rate == RATE_HW2) {
-                _unconfigured_messages &= ~CONFIG_RATE_MON_HW2;
-            } else {
-                _configure_message_rate(msg_class, msg_id, RATE_HW2);
-                _unconfigured_messages |= CONFIG_RATE_MON_HW2;
-                _cfg_needs_save = true;
-            }
+            desired_rate = RATE_HW2;
+            config_msg_id = CONFIG_RATE_MON_HW2;
             break;
+        default:
+            return;
         }
         break;
 #if UBLOX_RXM_RAW_LOGGING
     case CLASS_RXM:
         switch(msg_id) {
         case MSG_RXM_RAW:
-            if(rate == gps._raw_data) {
-                _unconfigured_messages &= ~CONFIG_RATE_RAW;
-            } else {
-                _configure_message_rate(msg_class, msg_id, gps._raw_data);
-                _unconfigured_messages |= CONFIG_RATE_RAW;
-                _cfg_needs_save = true;
-            }
+            desired_rate = gps._raw_data;
+            config_msg_id = CONFIG_RATE_RAW;
             break;
         case MSG_RXM_RAWX:
-            if(rate == gps._raw_data) {
-                _unconfigured_messages &= ~CONFIG_RATE_RAW;
-            } else {
-                _configure_message_rate(msg_class, msg_id, gps._raw_data);
-                _unconfigured_messages |= CONFIG_RATE_RAW;
-                _cfg_needs_save = true;
-            }
+            desired_rate = gps._raw_data;
+            config_msg_id = CONFIG_RATE_RAW;
             break;
+        default:
+            return;
         }
         break;
 #endif // UBLOX_RXM_RAW_LOGGING
+    default:
+        return;
     }
+
+    if (rate == desired_rate) {
+        // coming in at correct rate; mark as configured
+        _unconfigured_messages &= ~config_msg_id;
+        return;
+    }
+
+    // coming in at wrong rate; try to configure it
+    _configure_message_rate(msg_class, msg_id, desired_rate);
+    _unconfigured_messages |= config_msg_id;
+    _cfg_needs_save = true;
 }
 
 // Requests the ublox driver to identify what port we are using to communicate
