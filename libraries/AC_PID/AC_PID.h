@@ -58,9 +58,6 @@ public:
     // reset_I - reset the integrator
     void reset_I();
 
-    // reset_I - reset the integrator smoothly to zero within 0.5 seconds
-    void reset_I_smoothly();
-
     // reset_filter - input filter will be reset to the next value provided to set_input()
     void reset_filter() {
         _flags._reset_filter = true;
@@ -111,6 +108,7 @@ public:
     void set_integrator(float target, float measurement, float i);
     void set_integrator(float error, float i);
     void set_integrator(float i);
+    void relax_integrator(float integrator, float time_constant);
 
     // set slew limiter scale factor
     void set_slew_limit_scale(int8_t scale) { _slew_limit_scale = scale; }
@@ -156,8 +154,6 @@ protected:
     float _error;             // error value to enable filtering
     float _derivative;        // derivative value to enable filtering
     int8_t _slew_limit_scale;
-    uint16_t _reset_counter;  // loop counter for reset decay
-    uint64_t _reset_last_update; //time in microseconds of last update to reset_I
 
     AP_Logger::PID_Info _pid_info;
 };

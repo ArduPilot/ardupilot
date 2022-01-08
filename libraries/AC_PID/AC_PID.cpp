@@ -271,24 +271,7 @@ float AC_PID::get_ff()
 
 void AC_PID::reset_I()
 {
-    _integrator = 0;
-}
-
-void AC_PID::reset_I_smoothly()
-{
-    float reset_time = AC_PID_RESET_TC * 3.0f;
-    uint64_t now = AP_HAL::micros64();
-
-    if ((now - _reset_last_update) > 5e5 ) {
-        _reset_counter = 0;
-    }
-    if ((float)_reset_counter < (reset_time/_dt)) {
-        _integrator = _integrator - (_dt / (_dt + AC_PID_RESET_TC)) * _integrator;
-        _reset_counter++;
-    } else {
-        _integrator = 0;
-    }
-    _reset_last_update = now;
+    _integrator = 0.0;
 }
 
 void AC_PID::load_gains()
@@ -355,19 +338,26 @@ float AC_PID::get_filt_alpha(float filt_hz) const
     return calc_lowpass_alpha_dt(_dt, filt_hz);
 }
 
-void AC_PID::set_integrator(float target, float measurement, float i)
+void AC_PID::set_integrator(float target, float measurement, float integrator)
 {
-    set_integrator(target - measurement, i);
+    set_integrator(target - measurement, integrator);
 }
 
-void AC_PID::set_integrator(float error, float i)
+void AC_PID::set_integrator(float error, float integrator)
 {
-    _integrator = constrain_float(i - error * _kp, -_kimax, _kimax);
+    _integrator = constrain_float(integrator - error * _kp, -_kimax, _kimax);
     _pid_info.I = _integrator;
 }
 
-void AC_PID::set_integrator(float i)
+void AC_PID::set_integrator(float integrator)
 {
-    _integrator = constrain_float(i, -_kimax, _kimax);
+    _integrator = constrain_float(integrator, -_kimax, _kimax);
+    _pid_info.I = _integrator;
+}
+
+void AC_PID::relax_integrator(float integrator, float time_constant)
+{
+    integrator = constrain_float(integrator, -_kimax, _kimax);
+    _integrator = _integrator + (integrator - _integrator) * (_dt / (_dt + time_constant));
     _pid_info.I = _integrator;
 }
