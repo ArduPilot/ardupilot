@@ -8,6 +8,7 @@ Mode::Mode()
     loiter_nav(plane.quadplane.loiter_nav),
     poscontrol(plane.quadplane.poscontrol)
 #endif
+    // G_Dt(plane.G_Dt) TT Avoidance
 {
 }
 
@@ -49,6 +50,7 @@ bool Mode::enter()
 #endif
 
 #if CAMERA == ENABLED
+
     plane.camera.set_is_auto_mode(this == &plane.mode_auto);
 #endif
 
@@ -111,3 +113,16 @@ bool Mode::is_vtol_man_throttle() const
 #endif
     return false;
 }
+
+/*
+float Mode::get_avoidance_adjusted_climbrate(float target_rate)
+{
+#if AC_AVOID_ENABLED == ENABLED
+    AP::ac_avoid()->adjust_velocity_z(pos_control->get_pos_z_p().kP(), pos_control->get_max_accel_z_cmss(), target_rate, G_Dt);
+    return target_rate;
+#else
+    return target_rate;
+#endif
+}
+*/
+

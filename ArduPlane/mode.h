@@ -121,6 +121,18 @@ public:
     // handle a guided target request from GCS
     virtual bool handle_guided_request(Location target_loc) { return false; }
 
+
+    // Added for Object Avoidance
+    // returns climb target_rate reduced to avoid obstacles and
+    // altitude fence
+    float get_avoidance_adjusted_climbrate(float target_rate);
+
+    const Vector3f& get_vel_desired_cms() {
+        // note that position control isn't used in every mode, so
+        // this may return bogus data:
+        return pos_control->get_vel_desired_cms();
+    }
+
 protected:
 
     // subclasses override this to perform checks before entering the mode

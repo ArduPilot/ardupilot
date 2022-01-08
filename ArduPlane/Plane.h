@@ -115,6 +115,14 @@
 #endif
 #include "AP_Arming.h"
 
+#if AC_AVOID_ENABLED == ENABLED
+ #include <AC_Avoidance/AC_Avoid.h>
+#endif
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+ #include <AC_WPNav/AC_WPNav_OA.h>
+ #include <AC_Avoidance/AP_OAPathPlanner.h>
+#endif
+
 /*
   main APM:Plane class
  */

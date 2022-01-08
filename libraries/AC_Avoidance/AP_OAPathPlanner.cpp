@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
     // @Group: DB_
     // @Path: AP_OADatabase.cpp
-    AP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
+    AOA_PATHPLAN_DIJKSTRAP_SUBGROUPINFO(_oadatabase, "DB_", 4, AP_OAPathPlanner, AP_OADatabase),
 
     // @Param: OPTIONS
     // @DisplayName: Options while recovering from Object Avoidance

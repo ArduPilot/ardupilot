@@ -90,6 +90,10 @@ void Plane::init_ardupilot()
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init(serial_manager);
 
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+    g2.oa.init();
+#endif
+
     init_rc_in();               // sets up rc channels from radio
 
 #if HAL_MOUNT_ENABLED

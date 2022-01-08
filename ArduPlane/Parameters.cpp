@@ -794,6 +794,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(avoidance_adsb, "AVD_", AP_Avoidance_Plane),
 #endif
 
+#if AC_OAPATHPLANNER_ENABLED == ENABLED
+    // @Group: OA_
+    // @Path: ../libraries/AC_Avoidance/AP_OAPathPlanner.cpp
+    AP_SUBGROUPINFO(oa, "OA_", 33, ParametersG2, AP_OAPathPlanner),
+#endif
+
 #if HAL_QUADPLANE_ENABLED
     // @Group: Q_
     // @Path: quadplane.cpp

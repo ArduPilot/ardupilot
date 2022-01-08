@@ -245,6 +245,30 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+//
+// Avoidance including Bendy Ruler and Djiksstra
+
+#ifndef AC_RALLY
+ #define AC_RALLY   ENABLED
+#endif
+
+#if AP_TERRAIN_AVAILABLE && !AC_RALLY
+ #error Terrain relies on Rally which is disabled
+#endif
+
+#ifndef AC_AVOID_ENABLED
+ #define AC_AVOID_ENABLED   ENABLED
+#endif
+
+#ifndef AC_OAPATHPLANNER_ENABLED
+ #define AC_OAPATHPLANNER_ENABLED   !HAL_MINIMIZE_FEATURES
+#endif
+
+#if AC_AVOID_ENABLED && !AC_FENCE
+  #error AC_Avoidance relies on AC_FENCE which is disabled
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
 #define PARACHUTE HAL_PARACHUTE_ENABLED
