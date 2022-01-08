@@ -586,10 +586,10 @@ void Util::apply_persistent_params(void) const
 extern ChibiOS::UARTDriver uart_io;
 #endif
 
+#if HAL_UART_STATS_ENABLED
 // request information on uart I/O
 void Util::uart_info(ExpandingString &str)
 {
-#if !defined(HAL_NO_UARTDRIVER)    
     // a header to allow for machine parsers to determine format
     str.printf("UARTV1\n");
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
@@ -603,8 +603,8 @@ void Util::uart_info(ExpandingString &str)
     str.printf("IOMCU   ");
     uart_io.uart_info(str);
 #endif
-#endif // HAL_NO_UARTDRIVER
 }
+#endif
 
 /**
  * This method will generate random values with set size. It will fall back to AP_Math's get_random16()
