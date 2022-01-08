@@ -258,7 +258,7 @@ float Mode::AutoYaw::rate_cds() const
 void Mode::AutoYaw::update_weathervane(const int16_t roll_cdeg, const int16_t pitch_cdeg, const int16_t pilot_yaw, const int32_t hgt_cm)
 {
 #if WEATHERVANE_ENABLED == ENABLED
-    if (copter.g2.weathervane.should_weathervane(roll_cdeg, pitch_cdeg, pilot_yaw, (float)hgt_cm*0.01)) {
+    if (copter.g2.weathervane.should_weathervane(pilot_yaw, (float)hgt_cm*0.01)) {
         if (mode() != AUTO_YAW_WEATHERVANE) {
             set_mode(AUTO_YAW_WEATHERVANE);
         }
@@ -268,8 +268,10 @@ void Mode::AutoYaw::update_weathervane(const int16_t roll_cdeg, const int16_t pi
             copter.g2.weathervane.reset();
             _yaw_rate_cds = 0.0;
         } else {
-            // set yaw rate 
-            _yaw_rate_cds = copter.g2.weathervane.get_yaw_rate_cds(roll_cdeg, pitch_cdeg);
+            // set yaw rate
+            // we set the scaler limit as the max roll/pitch angle available.  This effectively means that the controller is simply converting 
+            // the amount of roll or pitch error into a yaw rate in the direction of the error.
+            _yaw_rate_cds = copter.g2.weathervane.get_yaw_rate_cds(roll_cdeg, pitch_cdeg, copter.aparm.angle_max.get());
         }
 
     } else if (mode() == AUTO_YAW_WEATHERVANE) {
