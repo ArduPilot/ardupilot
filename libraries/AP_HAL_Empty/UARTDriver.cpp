@@ -30,7 +30,9 @@ size_t Empty::UARTDriver::write(const uint8_t *buffer, size_t size)
     return n;
 }
 
+#if HAL_UART_STATS_ENABLED
 void Empty::UARTDriver::uart_info(ExpandingString &str)
 {
     str.printf("EMPTY\n");
 }
+#endif
