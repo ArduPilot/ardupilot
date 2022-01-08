@@ -17,7 +17,7 @@ FLASH_RESERVE_START_KB 64
 
 # store parameters in pages 2 and 3
 STORAGE_FLASH_PAGE 2
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load
 APJ_BOARD_ID 1402
