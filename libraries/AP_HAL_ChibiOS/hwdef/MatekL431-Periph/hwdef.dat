@@ -52,7 +52,6 @@ define HAL_AIRSPEED_TYPE_DEFAULT 1
 define AIRSPEED_MAX_SENSORS 1
 
 # -------------------- MSP --------------------------------
-define HAL_PERIPH_ENABLE_MSP
 define HAL_MSP_ENABLED 1
 define AP_PERIPH_MSP_PORT_DEFAULT 1
 

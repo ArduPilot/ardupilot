@@ -2918,6 +2918,10 @@ def add_apperiph_defaults(f):
 
 // no CAN manager in AP_Periph:
 #define HAL_CANMANAGER_ENABLED 0
+
+#ifndef HAL_MSP_ENABLED
+#define HAL_MSP_ENABLED 0
+#endif
 ''')
 
 def add_bootloader_defaults(f):
