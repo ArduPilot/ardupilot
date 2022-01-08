@@ -141,8 +141,10 @@ public:
         return _baudrate/(9*1024);
     }
 
+#if HAL_UART_STATS_ENABLED
     // request information on uart I/O for one uart
     void uart_info(ExpandingString &str) override;
+#endif
 
     /*
       return true if this UART has DMA enabled on both RX and TX
