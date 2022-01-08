@@ -5,6 +5,11 @@
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 
+#ifndef HAL_UART_STATS_ENABLED
+#define HAL_UART_STATS_ENABLED !defined(HAL_NO_UARTDRIVER)
+
+#endif
+
 class ExpandingString;
 
 /* Pure virtual UARTDriver class */
@@ -135,8 +140,10 @@ public:
      */
     virtual bool is_dma_enabled() const { return false; }
 
+#if HAL_UART_STATS_ENABLED
     // request information on uart I/O for this uart, for @SYS/uarts.txt
     virtual void uart_info(ExpandingString &str) {}
+#endif
 
     /*
       software control of the CTS/RTS pins if available. Return false if
