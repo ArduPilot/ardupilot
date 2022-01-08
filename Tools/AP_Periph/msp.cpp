@@ -6,7 +6,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if HAL_MSP_ENABLED
 
 void AP_Periph_FW::msp_init(AP_HAL::UARTDriver *_uart)
 {
@@ -211,4 +211,4 @@ void AP_Periph_FW::send_msp_airspeed(void)
 #endif // HAL_PERIPH_ENABLE_AIRSPEED
 
 
-#endif // HAL_PERIPH_ENABLE_MSP
+#endif // HAL_MSP_ENABLED

@@ -151,7 +151,7 @@ public:
     AP_CANManager::Driver_Type can_protocol_cached[HAL_NUM_CAN_IFACES];
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if HAL_MSP_ENABLED
     struct {
         AP_MSP msp;
         MSP::msp_port_t port;

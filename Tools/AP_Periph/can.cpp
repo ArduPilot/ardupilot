@@ -1719,7 +1719,6 @@ void AP_Periph_FW::can_update()
         last_1Hz_ms = now;
         process1HzTasks(AP_HAL::native_micros64());
     }
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!hal.run_in_maintenance_mode())
 #endif
@@ -1745,7 +1744,7 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_PERIPH_ENABLE_HWESC
         hwesc_telem_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_MSP
+    #if HAL_MSP_ENABLED
         msp_sensor_update();
     #endif
     #ifdef HAL_PERIPH_ENABLE_RC_OUT

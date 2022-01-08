@@ -402,7 +402,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(temperature_sensor,         "TEMP",     AP_TemperatureSensor),
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_MSP
+#if HAL_MSP_ENABLED
     // @Param: MSP_PORT
     // @DisplayName: MSP Serial Port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to MSP
