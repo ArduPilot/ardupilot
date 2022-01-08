@@ -10,13 +10,13 @@ class AC_WeatherVane {
         CLASS_NO_COPY(AC_WeatherVane);
 
         // Calculate and return the yaw rate to weathervane the vehicle
-        float get_yaw_rate_cds(const int16_t roll_cdeg, const int16_t pitch_cdeg);
+        float get_yaw_rate_cds(const float roll_cdeg, const float pitch_cdeg, const float rate_limit);
 
         // Returns true if the vehicle is in a condition whereby weathervaning is allowed
         // pilot_yaw can be an angle or a rate or rcin from yaw channel.  It just needs to represent a pilot's request to yaw the vehicle
-        bool should_weathervane(const int16_t roll_cdeg, const int16_t pitch_cdeg, const int16_t pilot_yaw, const float hgt);
+        bool should_weathervane(const int16_t pilot_yaw, const float hgt);
 
-        // Function to reset all flags and set values. Invoked whenever the weather vaning process is interupted
+        // Function to reset all flags and set values. Invoked whenever the weather vaning process is interrupted
         void reset(void);
 
         // allow/disallow weather vaning from other means than by the parameter

@@ -83,43 +83,45 @@ AC_WeatherVane::AC_WeatherVane(void)
     _singleton = this;
 }
 
-float AC_WeatherVane::get_yaw_rate_cds(const int16_t roll_cdeg, const int16_t pitch_cdeg)
+float AC_WeatherVane::get_yaw_rate_cds(const float roll_cdeg, const float pitch_cdeg, const float rate_limit)
 {
     if (!active_msg_sent) {
         gcs().send_text(MAV_SEVERITY_INFO, "Weathervane Active");
         active_msg_sent = true;
     }
 
+    // Normalise the roll and pitch targets to be between -1 and 1
+    const float roll = roll_cdeg / 4500.0;
+    const float pitch = pitch_cdeg / 4500.0;
     float output = 0.0;
     switch (get_direction()) {
         case Direction::OFF:
             return 0.0;
 
         case Direction::NOSE_OR_TAIL_IN:
-            output = roll_cdeg * _gain;
+            output = roll * _gain;
 
-            if (pitch_cdeg > 0) {
+            if (pitch > 0) {
                 output *= -1.0;
             }
             break;
 
         case Direction::NOSE_IN:
-            output = (fabsf(roll_cdeg) + MAX(pitch_cdeg,0.0)) * _gain;
+            output = (fabsf(roll) + MAX(pitch,0.0)) * _gain;
 
             // Yaw in the direction of the lowest 'wing'
-            if (roll_cdeg < 0) {
+            if (roll < 0) {
                 output *= -1.0;
             }
             break;
 
         case Direction::SIDE_IN:
-            output = pitch_cdeg * _gain;
+            output = pitch * _gain;
 
-            if (roll_cdeg < 0) {
+            if (roll < 0) {
                 output *= -1.0;
             }
             break;
-
     }
 
     // Don't activate weather vane if less than deadzone angle
@@ -128,10 +130,10 @@ float AC_WeatherVane::get_yaw_rate_cds(const int16_t roll_cdeg, const int16_t pi
         output = 0.0;
     }
 
-    // Slew output
-    last_output = 0.98 * last_output + 0.02 * output;
+    // Constrain and slew output
+    last_output = 0.98 * last_output + 0.02 * constrain_float(output, -1, 1);
 
-    return last_output;
+    return last_output * rate_limit;
 }
 
 // Called on an interrupt to reset the weathervane controller
@@ -144,7 +146,7 @@ void AC_WeatherVane::reset(void)
 
 // Returns true if the vehicle is in a condition whereby weathervaning is allowed
 // pilot_yaw can be an angle or a rate or rcin from yaw channel. It just needs to represent a pilot's request to yaw the vehicle.
-bool AC_WeatherVane::should_weathervane(const int16_t roll_cdeg, const int16_t pitch_cdeg, const int16_t pilot_yaw, const float hgt)
+bool AC_WeatherVane::should_weathervane(const int16_t pilot_yaw, const float hgt)
 {
     // Check enabled
     if (get_direction() == Direction::OFF) {
@@ -183,13 +185,15 @@ bool AC_WeatherVane::should_weathervane(const int16_t roll_cdeg, const int16_t p
 
     // Check if we meet the horizontal velocity thresholds to allow weathervaning
     Vector3f vel_ned;
-    if (!AP::ahrs().get_velocity_NED(vel_ned) || ((_max_vel_xy.get() > 0) && (sqrtf(vel_ned.x*vel_ned.x + vel_ned.y*vel_ned.y) > _max_vel_xy.get()))) {
+    // Check if we meet the vertical velocity thresholds to allow weathervaning
+    if (!AP::ahrs().get_velocity_NED(vel_ned) || ((_max_vel_z.get() > 0) && (fabsf(vel_ned.z) > _max_vel_z.get()))) {
         reset();
         return false;
     }
 
-    // Check if we meet the vertical velocity thresholds to allow weathervaning
-    if ((_max_vel_z.get() > 0) && (fabsf(vel_ned.z) > _max_vel_z.get())) {
+    // set z speed to zero so we can get xy speed^2 from .length_squared()
+    vel_ned.z = 0.0;
+    if ((_max_vel_xy.get() > 0) && (vel_ned.length_squared() > (_max_vel_xy.get()*_max_vel_xy.get()))) {
         reset();
         return false;
     }
