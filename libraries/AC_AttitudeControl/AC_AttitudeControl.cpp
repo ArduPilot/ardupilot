@@ -182,9 +182,9 @@ void AC_AttitudeControl::reset_rate_controller_I_terms()
 // reset rate controller I terms smoothly to zero in 0.5 seconds
 void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
 {
-    get_rate_roll_pid().reset_I_smoothly();
-    get_rate_pitch_pid().reset_I_smoothly();
-    get_rate_yaw_pid().reset_I_smoothly();
+    get_rate_roll_pid().relax_integrator(0.0, AC_ATTITUDE_RATE_RELAX_TC);;
+    get_rate_pitch_pid().relax_integrator(0.0, AC_ATTITUDE_RATE_RELAX_TC);;
+    get_rate_yaw_pid().relax_integrator(0.0, AC_ATTITUDE_RATE_RELAX_TC);;
 }
 
 // The attitude controller works around the concept of the desired attitude, target attitude
