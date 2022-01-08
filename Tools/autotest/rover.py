@@ -5558,7 +5558,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_local_position(
             (ofs_x, ofs_y, 0),
             distance_min=0,
-            distance_max=1,
+            distance_max=3,
             timeout=60,
             called_function=lambda last_value, target : send_target(),
             minimum_duration=5,  # make sure we stop!
