@@ -441,6 +441,9 @@ public:
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
+    // Mission change detector
+    AP_Mission_ChangeDetector mis_change_detector;
+
 protected:
 
     const char *name() const override { return auto_RTL? "AUTO RTL" : "AUTO"; }
@@ -574,15 +577,6 @@ private:
     } nav_payload_place;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
-
-    // variables to detect mission changes
-    static const uint8_t mis_change_detect_cmd_max = 3;
-    struct {
-        uint32_t last_change_time_ms;       // local copy of last time mission was changed
-        uint16_t curr_cmd_index;            // local copy of AP_Mission's current command index
-        uint8_t cmd_count;                  // number of commands in the cmd array
-        AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max]; // local copy of the next few mission commands
-    } mis_change_detect = {};
 
     // True if we have entered AUTO to perform a DO_LAND_START landing sequence and we should report as AUTO RTL mode
     bool auto_RTL;
