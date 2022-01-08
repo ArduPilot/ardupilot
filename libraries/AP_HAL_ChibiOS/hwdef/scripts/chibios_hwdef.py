@@ -1525,8 +1525,6 @@ def get_UART_ORDER():
         # in bootloader SERIAL_ORDER is treated the same as UART_ORDER
         return serial_order
     map = [ 0, 3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]
-    while len(serial_order) < 4:
-        serial_order += ['EMPTY']
     uart_order = []
     global uart_serial_num
     for i in range(len(serial_order)):
