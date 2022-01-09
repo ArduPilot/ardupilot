@@ -124,6 +124,7 @@ userdata Vector3f method cross Vector3f Vector3f
 userdata Vector3f method scale Vector3f float'skip_check
 userdata Vector3f method copy Vector3f
 userdata Vector3f method xy Vector2f
+userdata Vector3f method rotate_xy void float'skip_check
 
 userdata Vector2f field x float'skip_check read write
 userdata Vector2f field y float'skip_check read write
