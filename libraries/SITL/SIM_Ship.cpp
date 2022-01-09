@@ -41,6 +41,7 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
+    AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
     AP_GROUPEND
 };
 
@@ -117,6 +118,10 @@ void ShipSim::update(void)
         if (home.lat == 0 && home.lng == 0) {
             return;
         }
+        const Vector3f &ofs = offset.get();
+        home.offset(ofs.x, ofs.y);
+        home.alt -= ofs.z*100;
+
         initialised = true;
         ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
         ship.sim = this;
@@ -204,6 +209,19 @@ void ShipSim::send_report(void)
                                               vel.y*100,
                                               0,
                                               ship.heading_deg*100);
+    len = mavlink_msg_to_send_buffer(buf, &msg);
+    if (len > 0) {
+        mav_socket.send(buf, len);
+    }
+
+    // also set ATTITUDE so MissionPlanner can display ship orientation
+    mavlink_msg_attitude_pack_chan(sys_id,
+                                   component_id,
+                                   mavlink_ch,
+                                   &msg,
+                                   now,
+                                   0, 0, radians(ship.heading_deg),
+                                   0, 0, ship.yaw_rate);
     len = mavlink_msg_to_send_buffer(buf, &msg);
     if (len > 0) {
         mav_socket.send(buf, len);
