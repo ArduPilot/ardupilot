@@ -154,6 +154,7 @@ AP_HW_SierraF405                     1052
 AP_HW_CarbonixL496                   1053
 AP_HW_MatekF405_TE                   1054
 AP_HW_SierraF412                     1055
+AP_HW_BEASTH7v2                      1056
 AP_HW_BEASTF7v2                      1057
 AP_HW_KakuteH7Mini                   1058
 AP_HW_JHEMCUGSF405A                  1059
