@@ -18,6 +18,8 @@ userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
 userdata Location method get_distance_NE Vector2f Location
 userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
+userdata Location method copy Location
+
 
 include AP_AHRS/AP_AHRS.h
 
@@ -119,6 +121,7 @@ userdata Vector3f operator -
 userdata Vector3f method dot float Vector3f
 userdata Vector3f method cross Vector3f Vector3f
 userdata Vector3f method scale Vector3f float'skip_check
+userdata Vector3f method copy Vector3f
 
 userdata Vector2f field x float'skip_check read write
 userdata Vector2f field y float'skip_check read write
@@ -130,6 +133,8 @@ userdata Vector2f method is_zero boolean
 userdata Vector2f method rotate void float'skip_check
 userdata Vector2f operator +
 userdata Vector2f operator -
+userdata Vector2f method copy Vector2f
+
 
 include AP_Notify/AP_Notify.h
 singleton AP_Notify alias notify

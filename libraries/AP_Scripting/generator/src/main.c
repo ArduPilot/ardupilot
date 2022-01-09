@@ -1692,7 +1692,12 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       static_cast = FALSE;
       break;
     case TYPE_USERDATA:
-      fprintf(source, "    const %s &data = %s%s%s(", method->return_type.data.ud.name, ud_name, ud_access, method->name);
+      if (strcmp(method->name, "copy") == 0) {
+          // special case for copy method
+          fprintf(source, "    const %s data = (*%s", method->return_type.data.ud.name, ud_name);
+      } else {
+          fprintf(source, "    const %s &data = %s%s%s(", method->return_type.data.ud.name, ud_name, ud_access, method->name);
+      }
       static_cast = FALSE;
       break;
     case TYPE_AP_OBJECT:
