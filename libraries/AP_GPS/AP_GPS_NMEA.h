@@ -46,6 +46,11 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#ifndef AP_GPS_NMEA_ENABLED
+  #define AP_GPS_NMEA_ENABLED 1
+#endif
+
+#if AP_GPS_NMEA_ENABLED
 /// NMEA parser
 ///
 class AP_GPS_NMEA : public AP_GPS_Backend
@@ -199,3 +204,4 @@ private:
         "$JASC,GPVTG,5\r\n" /* VTG at 5Hz */                            \
         "$JASC,GPHDT,5\r\n" /* HDT at 5Hz */                            \
         "$JMODE,SBASR,YES\r\n" /* Enable SBAS */
+#endif

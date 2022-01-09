@@ -38,6 +38,7 @@
 
 #include "AP_GPS_NMEA.h"
 
+#if AP_GPS_NMEA_ENABLED
 extern const AP_HAL::HAL& hal;
 
 // Convenience macros //////////////////////////////////////////////////////////
@@ -603,3 +604,4 @@ AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
     }
     return false;
 }
+#endif

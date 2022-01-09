@@ -21,6 +21,8 @@
 #include "AP_GPS_NOVA.h"
 #include <AP_Logger/AP_Logger.h>
 
+#if AP_GPS_NOVA_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 #define NOVA_DEBUGGING 0
@@ -304,3 +306,4 @@ uint32_t AP_GPS_NOVA::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint
     }
     return( crc );
 }
+#endif

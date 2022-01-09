@@ -20,9 +20,12 @@
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
 
+
 #include "AP_GPS.h"
 #include "AP_GPS_SBP.h"
 #include <AP_Logger/AP_Logger.h>
+
+#if AP_GPS_SBP_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -456,3 +459,4 @@ AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
 };
 
 #endif // SBP_HW_LOGGING
+#endif // AP_GPS_SBP_ENABLED

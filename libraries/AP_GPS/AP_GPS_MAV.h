@@ -25,6 +25,11 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#ifndef AP_GPS_MAV_ENABLED
+  #define AP_GPS_MAV_ENABLED 1
+#endif 
+
+#if AP_GPS_MAV_ENABLED
 class AP_GPS_MAV : public AP_GPS_Backend {
 public:
 
@@ -43,3 +48,4 @@ private:
     uint32_t first_week;
     JitterCorrection jitter{2000};
 };
+#endif

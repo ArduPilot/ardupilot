@@ -19,6 +19,8 @@
 #include "AP_GPS_MAV.h"
 #include <stdint.h>
 
+#if AP_GPS_MAV_ENABLED
+
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume
 // the caller is consuming the new data;
@@ -172,3 +174,4 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             break;
     }
 }
+#endif
