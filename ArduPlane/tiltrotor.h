@@ -42,6 +42,7 @@ public:
     void bicopter_output();
     void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul);
     void tilt_compensate(float *thrust, uint8_t num_motors);
+    bool tilt_over_max_angle(void) const;
 
     bool is_motor_tilting(uint8_t motor) const {
         return (((uint8_t)tilt_mask.get()) & (1U<<motor));
