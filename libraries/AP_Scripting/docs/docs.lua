@@ -325,6 +325,10 @@ local Vector2f_ud = {}
 ---@return Vector2f_ud
 function Vector2f() end
 
+-- copy
+---@return Vector2f_ud
+function Vector2f_ud:copy() end
+
 -- get field
 ---@return number
 function Vector2f_ud:y() end
@@ -371,6 +375,10 @@ local Vector3f_ud = {}
 
 ---@return Vector3f_ud
 function Vector3f() end
+
+-- copy
+---@return Vector3f_ud
+function Vector3f_ud:copy() end
 
 -- get field
 ---@return number
@@ -437,6 +445,10 @@ local Location_ud = {}
 
 ---@return Location_ud
 function Location() end
+
+-- copy
+---@return Location_ud
+function Location_ud:copy() end
 
 -- get field
 ---@return boolean
