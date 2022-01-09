@@ -1552,7 +1552,7 @@ AP_GPS_UBLOX::_update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8
  *  send a ublox message
  */
 bool
-AP_GPS_UBLOX::_send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size)
+AP_GPS_UBLOX::_send_message(uint8_t msg_class, uint8_t msg_id, const void *msg, uint16_t size)
 {
     if (port->txspace() < (sizeof(struct ubx_header) + 2 + size)) {
         return false;
@@ -1697,10 +1697,11 @@ AP_GPS_UBLOX::_configure_config_set(const config_list *list, uint8_t count, uint
 void
 AP_GPS_UBLOX::_save_cfg()
 {
-    ubx_cfg_cfg save_cfg;
-    save_cfg.clearMask = 0;
-    save_cfg.saveMask = SAVE_CFG_ALL;
-    save_cfg.loadMask = 0;
+    static const ubx_cfg_cfg save_cfg {
+      clearMask: 0,
+      saveMask: SAVE_CFG_ALL,
+      loadMask: 0
+    };
     _send_message(CLASS_CFG, MSG_CFG_CFG, &save_cfg, sizeof(save_cfg));
     _last_cfg_sent_time = AP_HAL::millis();
     _num_cfg_save_tries++;
