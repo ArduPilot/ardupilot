@@ -98,7 +98,7 @@ private:
         // battery capacity in Ah. Use zero for unlimited
         float battCapacityAh = 0.0;
 
-        // CTUN.ThO at bover at refAlt
+        // CTUN.ThO at hover at refAlt
         float hoverThrOut = 0.39;
 
         // MOT_THST_EXPO
@@ -121,7 +121,7 @@ private:
         float slew_max = 150;
 
         // rotor disc area in m**2 for 4 x 0.35m dia rotors
-        // Note that coaxial rotors count as one rotor only when cauclating effective disc area
+        // Note that coaxial rotors count as one rotor only when calculating effective disc area
         float disc_area = 0.385;
 
         // momentum drag coefficient
