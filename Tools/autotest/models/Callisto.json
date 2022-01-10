@@ -27,7 +27,7 @@
     # MOT_THST_EXPO
     "propExpo" : 0.5,
 
-    # approximage maximum yaw rate in deg/sec
+    # approximate maximum yaw rate in deg/sec
     "refRotRate" : 120,
 
     # hover throttle from 0 to 1
@@ -53,6 +53,6 @@
     "disc_area" : 1.82,
 
     # momentum drag coefficient
-    # ratio of momentum drag realtive to a ducted rotor of the same effective disc area
+    # ratio of momentum drag relative to a ducted rotor of the same effective disc area
     "mdrag_coef" : 0.10
 }
