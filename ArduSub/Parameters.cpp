@@ -657,9 +657,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(scripting, "SCR_", 18, ParametersG2, AP_Scripting),
 #endif
 
-    // @Group: ARSPD
-    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    AP_SUBGROUPINFO(airspeed, "ARSPD", 19, ParametersG2, AP_Airspeed),
+    // 19 was airspeed
 
     AP_GROUPEND
 };
@@ -667,8 +665,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 /*
   constructor for g2 object
  */
-ParametersG2::ParametersG2():
-    airspeed()
+ParametersG2::ParametersG2()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -730,6 +727,20 @@ void Sub::load_parameters()
     AP_Param::set_by_name("MNT_RC_IN_TILT", 8);
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
+
+// PARAMETER_CONVERSION - Added: JAN-2022
+#if AP_AIRSPEED_ENABLED
+    // Find G2's Top Level Key
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
+        return;
+    }
+
+    const uint16_t old_index = 19;          // Old parameter index in the tree
+    const uint16_t old_top_element = 4051;  // Old group element in the tree for the first subgroup element
+    AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
+#endif
+
 }
 
 void Sub::convert_old_parameters()
