@@ -332,7 +332,10 @@ bool AP_Compass_AK09916::_check_id()
 }
 
 bool AP_Compass_AK09916::_setup_mode() {
-    return _bus->register_write(REG_CNTL2, 0x08); //Continuous Mode 2
+    if (_devtype == DEVTYPE_AK09915) {
+        return _bus->register_write(REG_CNTL2, 0xA); //Continuous Mode 5 - 200Hz
+    }
+    return _bus->register_write(REG_CNTL2, 0x08); //Continuous Mode 4 - 100Hz
 }
 
 bool AP_Compass_AK09916::_reset()
