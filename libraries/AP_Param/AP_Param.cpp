@@ -1908,7 +1908,14 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
         info.old_key = param_key;
         info.type = (ap_var_type)group_info[i].type;
         info.new_name = nullptr;
-        info.old_group_element = (uint16_t(group_info[i].idx)<<group_shift) + old_index;
+
+        uint16_t idx = group_info[i].idx;
+        if (group_shift != 0 && idx == 0) {
+            // Note: Index 0 is treated as 63 for group bit shifting purposes. See group_id()
+            idx = 63;
+        }
+
+        info.old_group_element = (idx << group_shift) + old_index;
 
         uint8_t old_value[type_size(info.type)];
         AP_Param *ap = (AP_Param *)&old_value[0];
