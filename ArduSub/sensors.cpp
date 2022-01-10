@@ -70,11 +70,3 @@ bool Sub::rangefinder_alt_ok() const
 {
     return (rangefinder_state.enabled && rangefinder_state.alt_healthy);
 }
-
-/*
-  ask airspeed sensor for a new value, duplicated from plane
- */
-void Sub::read_airspeed()
-{
-    g2.airspeed.update(should_log(MASK_LOG_IMU));
-}
