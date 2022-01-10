@@ -1022,6 +1022,21 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
 
+#if HAL_WITH_MSP_DISPLAYPORT
+    // @Param: TXT_RES
+    // @DisplayName: Sets the overlay text resolution (MSP DisplayPort only)
+    // @Description: Sets the overlay text resolution for this screen to either LD 30x16 or HD 50x18 (MSP DisplayPort only)
+    // @Values: 0:30x16,1:50x18
+    // @User: Standard
+    AP_GROUPINFO("TXT_RES", 3, AP_OSD_Screen, txt_resolution, 0),
+
+    // @Param: FONT
+    // @DisplayName: Sets the font index for this screen (MSP DisplayPort only)
+    // @Description: Sets the font index for this screen (MSP DisplayPort only)
+    // @Range: 0 15
+    // @User: Standard
+    AP_GROUPINFO("FONT", 4, AP_OSD_Screen, font_index, 0),
+#endif
     AP_GROUPEND
 };
 
