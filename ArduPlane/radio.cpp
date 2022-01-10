@@ -412,12 +412,12 @@ float Plane::roll_in_expo(bool use_dz) const
 
 float Plane::pitch_in_expo(bool use_dz) const
 {
-    return channel_expo(channel_pitch, g2.man_expo_roll, use_dz);
+    return channel_expo(channel_pitch, g2.man_expo_pitch, use_dz);
 }
 
 float Plane::rudder_in_expo(bool use_dz) const
 {
-    return channel_expo(channel_rudder, g2.man_expo_roll, use_dz);
+    return channel_expo(channel_rudder, g2.man_expo_rudder, use_dz);
 }
 
 bool Plane::throttle_at_zero(void) const
