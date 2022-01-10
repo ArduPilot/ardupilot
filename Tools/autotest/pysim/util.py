@@ -96,7 +96,7 @@ def relwaf():
     return "./modules/waf/waf-light"
 
 
-def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, ekf_single=False, postype_single=False, sitl_32bit=False, extra_args=[]):
+def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, ekf_single=False, postype_single=False, sitl_32bit=False, extra_args=[], extra_hwdef=None):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
@@ -110,6 +110,8 @@ def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage
         cmd_configure.append('--postype-single')
     if sitl_32bit:
         cmd_configure.append('--sitl-32bit')
+    if extra_hwdef is not None:
+        cmd_configure.extend(['--extra-hwdef', extra_hwdef])
     if j is not None:
         cmd_configure.extend(['-j', str(j)])
     pieces = [shlex.split(x) for x in extra_args]
@@ -121,6 +123,12 @@ def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage
 def waf_clean():
     run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
 
+
+def waf_build(target=None):
+    cmd = [relwaf(), "build"]
+    if target is not None:
+        cmd.append(target)
+    run_cmd(cmd, directory=topdir(), checkfail=True)
 
 def build_SITL(build_target, j=None, debug=False, board='sitl', clean=True, configure=True, math_check_indexes=False, coverage=False,
                ekf_single=False, postype_single=False, sitl_32bit=False, extra_configure_args=[]):
