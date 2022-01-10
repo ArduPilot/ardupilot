@@ -27,7 +27,6 @@
 #include <AC_PID/AC_PID.h>
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_AHRS/AP_AHRS.h>                        // ArduPilot Mega DCM Library
-#include <AP_Airspeed/AP_Airspeed.h>                // needed for AHRS build
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>          // Battery monitor library
 #include <AP_Beacon/AP_Beacon.h>
@@ -352,7 +351,6 @@ private:
     void compass_save(void);
     void update_wheel_encoder();
     void read_rangefinders(void);
-    void read_airspeed();
 
     // Steering.cpp
     void set_servos(void);

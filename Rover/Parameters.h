@@ -371,9 +371,6 @@ public:
     // windvane
     AP_WindVane windvane;
 
-    // Airspeed
-    AP_Airspeed airspeed;
-
     // mission behave
     AP_Int8 mis_done_behave;
 
