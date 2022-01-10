@@ -47,6 +47,19 @@ mavlink_system_t mavlink_system = {7,1};
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
+// return the parse buffer for supplied channel.  Caller must do
+// range-checking on chan.
+mavlink_message_t *GCS_MAVLINK::get_channel_buffer(mavlink_channel_t _chan)
+{
+    return mavlink_get_channel_buffer(chan);
+}
+// return the parse status object for supplied channel.  Caller must
+// do range-checking on chan.
+mavlink_status_t *GCS_MAVLINK::get_channel_status(mavlink_channel_t _chan)
+{
+    return mavlink_get_channel_status(chan);
+}
+
 // set a channel as private. Private channels get sent heartbeats, but
 // don't get broadcast packets or forwarded packets
 void GCS_MAVLINK::set_channel_private(mavlink_channel_t _chan)

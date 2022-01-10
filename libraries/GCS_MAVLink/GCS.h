@@ -335,6 +335,14 @@ public:
         return _locked;
     }
 
+    // return the parse buffer for supplied channel.  Caller must do
+    // range-checking on chan.
+    mavlink_message_t *get_channel_buffer(mavlink_channel_t _chan);
+
+    // return the parse status object for supplied channel.  Caller
+    // must do range-checking on chan.
+    mavlink_status_t *get_channel_status(mavlink_channel_t _chan);
+
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    
     static uint8_t active_channel_mask(void) { return mavlink_active; }

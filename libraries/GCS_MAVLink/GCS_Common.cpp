@@ -1450,12 +1450,8 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     }
 
     // receive new packets
-    mavlink_message_t msg;
-    mavlink_status_t status;
     uint32_t tstart_us = AP_HAL::micros();
     uint32_t now_ms = AP_HAL::millis();
-
-    status.packet_rx_drop_count = 0;
 
     const uint16_t nbytes = _port->available();
     for (uint16_t i=0; i<nbytes; i++)
@@ -1487,9 +1483,11 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         bool parsed_packet = false;
 
         // Try to get a new message
-        if (mavlink_parse_char(chan, c, &msg, &status)) {
-            hal.util->persistent_data.last_mavlink_msgid = msg.msgid;
-            packetReceived(status, msg);
+        if (mavlink_parse_char(chan, c, NULL, NULL)) {
+            const mavlink_message_t *msg = GCS_MAVLINK::get_channel_buffer(chan);
+            const mavlink_status_t *status = GCS_MAVLINK::get_channel_status(chan);
+            hal.util->persistent_data.last_mavlink_msgid = msg->msgid;
+            packetReceived(*status, *msg);
             parsed_packet = true;
             gcs_alternative_active[chan] = false;
             alternative.last_mavlink_ms = now_ms;
