@@ -174,7 +174,7 @@ public:
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Float servo_speed; // servo speed in seconds
 
-    AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
+    AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
 
@@ -215,7 +215,7 @@ public:
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
-    AP_Int8  odom_enable; // enable visual odomotry data
+    AP_Int8  odom_enable; // enable visual odometry data
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
