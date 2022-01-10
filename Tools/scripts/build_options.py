@@ -67,7 +67,6 @@ BUILD_OPTIONS = [
     Feature('ESC', 'PICCOLOCAN', 'HAL_PICCOLO_CAN_ENABLE', 'Enable PiccoloCAN', 0, None),
     Feature('ESC', 'TORQEEDO', 'HAL_TORQEEDO_ENABLED', 'Enable Torqeedo Motors', 0, None),
 
-    Feature('CAN', 'MPPTCAN', 'HAL_MPPT_PACKETDIGITAL_CAN_ENABLE', 'Enable MPPT CAN', 0, None),
 
     Feature('Mode', 'MODE_ZIGZAG', 'MODE_ZIGZAG_ENABLED', 'Enable Mode ZigZag', 0, None),
     Feature('Mode', 'MODE_SYSTEMID', 'MODE_SYSTEMID_ENABLED', 'Enable Mode SystemID', 0, None),
