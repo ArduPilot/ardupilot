@@ -104,6 +104,7 @@ typedef enum : uint8_t {
     MSP_DISPLAYPORT_CLEAR_SCREEN = 2,
     MSP_DISPLAYPORT_WRITE_STRING = 3,
     MSP_DISPLAYPORT_DRAW_SCREEN = 4,
+    MSP_DISPLAYPORT_SET_OPTIONS = 5,
 } msp_displayport_subcmd_e;
 
 typedef struct PACKED {
