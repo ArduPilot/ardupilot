@@ -88,6 +88,7 @@ public:
     virtual void msp_displayport_clear_screen();
     virtual void msp_displayport_draw_screen();
     virtual void msp_displayport_write_string(uint8_t col, uint8_t row, bool blink, const char *string);
+    virtual void msp_displayport_set_options(const uint8_t font_index, const uint8_t screen_resolution);
 #endif
 protected:
     enum msp_packet_type : uint8_t {
