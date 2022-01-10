@@ -1217,6 +1217,12 @@ void AP_MSP_Telem_Backend::msp_displayport_write_string(uint8_t col, uint8_t row
 
     msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, &packet, 4 + len, false);
 }
+
+void AP_MSP_Telem_Backend::msp_displayport_set_options(const uint8_t font_index, const uint8_t screen_resolution)
+{
+    const uint8_t subcmd[] = { msp_displayport_subcmd_e::MSP_DISPLAYPORT_SET_OPTIONS, font_index, screen_resolution };
+    msp_send_packet(MSP_DISPLAYPORT, MSP::MSP_V1, subcmd, sizeof(subcmd), false);
+}
 #endif //HAL_WITH_MSP_DISPLAYPORT
 bool AP_MSP_Telem_Backend::displaying_stats_screen() const
 {
