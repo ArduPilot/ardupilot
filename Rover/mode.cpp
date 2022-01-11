@@ -431,8 +431,15 @@ void Mode::navigate_to_waypoint()
     g2.wp_nav.update(rover.G_Dt);
     _distance_to_destination = g2.wp_nav.get_distance_to_destination();
 
+    // sailboats trigger tack if simple avoidance becomes active
+    if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
+        // we are a sailboat trying to avoid fence, try a tack
+        rover.control_mode->handle_tack_request();
+    }
+
     // pass desired speed to throttle controller
-    calc_throttle(g2.wp_nav.get_speed(), true);
+    // do not do simple avoidance because this is already handled in the position controller
+    calc_throttle(g2.wp_nav.get_speed(), false);
 
     float desired_heading_cd = g2.wp_nav.oa_wp_bearing_cd();
     if (g2.sailboat.use_indirect_route(desired_heading_cd)) {
