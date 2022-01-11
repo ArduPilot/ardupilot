@@ -121,12 +121,12 @@ def build_binaries():
             "board_list.py",
             "build_binaries_history.py",
             "build_binaries.py",
-            "build_sizes.py",
+            "build_sizes/build_sizes.py",
             "generate_manifest.py",
             "gen_stable.py",
     ]:
         orig = util.reltopdir('Tools/scripts/%s' % thing)
-        copy = util.reltopdir('./%s' % thing)
+        copy = util.reltopdir('./%s' % os.path.basename(thing))
         shutil.copy2(orig, copy)
 
     if util.run_cmd("./build_binaries.py", directory=util.reltopdir('.')) != 0:
