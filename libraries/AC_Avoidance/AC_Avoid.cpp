@@ -67,12 +67,12 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MARGIN", 4, AC_Avoid, _margin, 2.0f),
 
-    // @Param{Copter}: BEHAVE
+    // @Param{Copter, Rover}: BEHAVE
     // @DisplayName: Avoidance behaviour
     // @Description: Avoidance behaviour (slide or stop)
     // @Values: 0:Slide,1:Stop
     // @User: Standard
-    AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("BEHAVE", 5, AC_Avoid, _behavior, AP_AVOID_BEHAVE_DEFAULT, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_ROVER),
 
     // @Param: BACKUP_SPD
     // @DisplayName: Avoidance maximum backup speed
