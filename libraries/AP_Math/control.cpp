@@ -31,7 +31,7 @@
 // update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero.
 // limit - specifies if the system is unable to continue to accelerate.
-// vel_error - specifies the direction of the velocity error useded in limit handling.
+// vel_error - specifies the direction of the velocity error used in limit handling.
 void update_vel_accel(float& vel, float accel, float dt, float limit, float vel_error)
 {
     const float delta_vel = accel * dt;
@@ -44,7 +44,7 @@ void update_vel_accel(float& vel, float accel, float dt, float limit, float vel_
 // update_pos_vel_accel - single axis projection of position and velocity forward in time based on a time step of dt and acceleration of accel.
 // the position and velocity is not moved in the direction of limit if limit is not set to zero.
 // limit - specifies if the system is unable to continue to accelerate.
-// pos_error and vel_error - specifies the direction of the velocity error useded in limit handling.
+// pos_error and vel_error - specifies the direction of the velocity error used in limit handling.
 void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, float limit, float pos_error, float vel_error)
 {
     // move position and velocity forward by dt if it does not increase error when limited.
@@ -60,7 +60,7 @@ void update_pos_vel_accel(postype_t& pos, float& vel, float accel, float dt, flo
 // update_vel_accel - dual axis projection of position and velocity, pos and vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero.
 // limit - specifies if the system is unable to continue to accelerate.
-// pos_error and vel_error - specifies the direction of the velocity error useded in limit handling.
+// pos_error and vel_error - specifies the direction of the velocity error used in limit handling.
 void update_vel_accel_xy(Vector2f& vel, const Vector2f& accel, float dt, const Vector2f& limit, const Vector2f& vel_error)
 {
     // increase velocity by acceleration * dt if it does not increase error when limited.
@@ -188,7 +188,7 @@ void shape_vel_accel(float vel_input, float accel_input,
 }
 
 // 2D version
-void shape_vel_accel_xy(const Vector2f &vel_input, const Vector2f& accel_input,
+void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
                         const Vector2f& vel, Vector2f& accel,
                         float accel_max, float jerk_max, float dt, bool limit_total_accel)
 {
