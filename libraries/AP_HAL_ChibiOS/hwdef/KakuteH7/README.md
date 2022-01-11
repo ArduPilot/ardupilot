@@ -25,13 +25,12 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
  - SERIAL0 -> USB
  - SERIAL1 -> UART1 (Telem1)
- - SERIAL2 -> UART2 (Telem2)
+ - SERIAL2 -> UART2 (Telem2) (connected to internal BT module)
  - SERIAL3 -> UART3 (GPS)
  - SERIAL4 -> UART4
  - SERIAL5 -> not available
  - SERIAL6 -> UART6
  - SERIAL7 -> UART7
- - SERIAL7 -> USB2
 
 ## RC Input
 
@@ -43,7 +42,7 @@ and inversion enabled.
  
 ## FrSky Telemetry
  
-FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL6). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC prtocols, you must a different UART for FrSky Telemetry.
  
   - SERIAL6_PROTOCOL 10
   - SERIAL6_OPTIONS 7
