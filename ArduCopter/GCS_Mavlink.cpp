@@ -1109,6 +1109,14 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             attitude_quat.zero();
         } else {
             attitude_quat = Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]);
+
+            // Do not accept the attitude_quaternion
+            // if its magnitude is not close to unit length +/- 1E-3
+            // this limit is somewhat greater than sqrt(FLT_EPSL)
+            if (!attitude_quat.is_unit_length()) {
+                // The attitude quaternion is ill-defined
+                break;
+            }
         }
 
         // check if the message's thrust field should be interpreted as a climb rate or as thrust
