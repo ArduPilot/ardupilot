@@ -18,13 +18,27 @@ class Board(object):
 
 class BoardList(object):
 
-    def __init__(self):
+    def set_hwdef_dir(self):
         self.hwdef_dir = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
 
-        if not os.path.exists(self.hwdef_dir):
-            raise ValueError("%s does not exist" % self.hwdef_dir)
+        if os.path.exists(self.hwdef_dir):
+            return
+
+        self.hwdef_dir = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "libraries", "AP_HAL_ChibiOS", "hwdef")
+
+        if os.path.exists(self.hwdef_dir):
+            # we're on the autotest server and have been copied in
+            # to the APM root directory
+            return
+
+        raise ValueError("Did not find hwdef_dir")
+
+    def __init__(self):
+        self.set_hwdef_dir()
 
         # no hwdefs for Linux boards - yet?
         self.boards = [
