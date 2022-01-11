@@ -220,6 +220,9 @@ class Board:
                 '-lgcov',
                 '-coverage',
             ]
+            env.DEFINES.update(
+                HAL_COVERAGE_BUILD = 1,
+            )
 
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
