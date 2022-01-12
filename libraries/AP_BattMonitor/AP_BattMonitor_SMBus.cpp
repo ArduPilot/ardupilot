@@ -117,7 +117,7 @@ void AP_BattMonitor_SMBus::read_temp(void)
     _has_temperature = true;
 
     _state.temperature_time = AP_HAL::millis();
-    _state.temperature = (data * 0.1f) - C_TO_KELVIN;
+    _state.temperature = KELVIN_TO_C(0.1f * data);
 }
 
 // reads the serial number if it's not already known
