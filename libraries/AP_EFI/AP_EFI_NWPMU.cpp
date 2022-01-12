@@ -90,8 +90,8 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
             internal_state.cylinder_status[0].cylinder_head_temperature = C_TO_KELVIN(data.coolant_temp * 0.1f);
             break;
         case NWPMU_TEMPERATURE_TYPE::F:
-            internal_state.coolant_temperature = C_TO_KELVIN(((data.coolant_temp * 0.1f) - 32 * 5/9));
-            internal_state.cylinder_status[0].cylinder_head_temperature = C_TO_KELVIN(((data.coolant_temp * 0.1f) - 32 * 5/9));
+            internal_state.coolant_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
+            internal_state.cylinder_status[0].cylinder_head_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
             break;
         default:
             break;
