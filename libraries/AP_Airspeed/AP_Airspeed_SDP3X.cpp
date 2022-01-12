@@ -237,7 +237,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         temperature = 25;
     }
 
-    float rho_air = baro_pressure / (ISA_GAS_CONSTANT * (temperature + C_TO_KELVIN));
+    float rho_air = baro_pressure / (ISA_GAS_CONSTANT * C_TO_KELVIN(temperature));
     if (!is_positive(rho_air)) {
         // bad pressure
         return press;
