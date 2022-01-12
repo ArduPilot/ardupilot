@@ -1116,7 +1116,7 @@ void mexFunction(
         Print_Start_Message();
 
         mexAtExit(CleanUpMex);
-        /* Init all connecttions to to free */
+        /* Init all connecttions to free */
         for(con_index=0; con_index<MAX_CON; con_index++)
             init_con(-1,STATUS_FREE);
         con_index=0;
