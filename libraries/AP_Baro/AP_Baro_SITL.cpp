@@ -118,14 +118,14 @@ void AP_Baro_SITL::_timer()
 
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
     float p = SSL_AIR_PRESSURE * delta;
-    float T = SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN;
+    float T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
 
     temperature_adjustment(p, T);
 #else
     float rho, delta, theta;
     AP_Baro::SimpleUnderWaterAtmosphere(-sim_alt * 0.001f, rho, delta, theta);
     float p = SSL_AIR_PRESSURE * delta;
-    float T = SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN;
+    float T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
 #endif
 
     // add in correction for wind effects
