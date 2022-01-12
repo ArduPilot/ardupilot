@@ -48,7 +48,7 @@ void SerialRangeFinder::send_temperature()
     // Use the simple underwater model to get temperature
     float rho, delta, theta;
     AP_Baro::SimpleUnderWaterAtmosphere(-0.5 * 0.001, rho, delta, theta); // get simulated temperature for 0.5m depth
-    const float temperature = Aircraft::rand_normal(SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN, 1); // FIXME pick a stddev based on data sheet
+    const float temperature = Aircraft::rand_normal(KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta), 1); // FIXME pick a stddev based on data sheet
 
     uint8_t data[255];
     const uint32_t packetlen = packet_for_temperature(temperature,
