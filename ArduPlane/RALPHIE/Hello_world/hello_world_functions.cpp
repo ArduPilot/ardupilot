@@ -1,2 +1,2 @@
-void main_Dawei():
+void HelloDawei():
 Dawei_test
