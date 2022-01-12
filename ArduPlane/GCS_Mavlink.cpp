@@ -265,7 +265,7 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
         return plane.g2.soaring_controller.get_vario_reading();
     }
 #endif
-    return AP::baro().get_climb_rate();
+    return GCS_MAVLINK::vfr_hud_climbrate();
 }
 
 void GCS_MAVLINK_Plane::send_wind() const
