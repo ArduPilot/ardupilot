@@ -8546,7 +8546,7 @@ Also, ignores heartbeats not from our target system'''
     def test_request_message(self, timeout=60):
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
-            raise PreconditionFailedException("Receving camera feedback")
+            raise PreconditionFailedException("Receiving camera feedback")
         m = self.poll_message("CAMERA_FEEDBACK")
         if m is None:
             raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
