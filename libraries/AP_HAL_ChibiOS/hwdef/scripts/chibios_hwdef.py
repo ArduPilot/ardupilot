@@ -1102,7 +1102,9 @@ def write_ldscript(fname):
         offset = get_flash_page_offset_kb(storage_flash_page)
         if offset > flash_reserve_start:
             # storage is after flash, need to ensure flash doesn't encroach on it
-            flash_size = min(flash_size, offset)
+            storage_size = intdefines.get('HAL_STORAGE_SIZE', None)
+            if storage_size is not None and (flash_size - offset) < (storage_size / 1024):
+                error("Flash encroach storage")
         else:
             # storage is before flash, need to ensure storage fits
             offset2 = get_flash_page_offset_kb(storage_flash_page+2)
