@@ -99,28 +99,38 @@ class BoardList(object):
         # should probably have a line in the hwdef indicating they
         # shouldn't be auto-built...
         blacklist = [
+            # the following boards are hacked into build_binaries.py
+            # to be built for Copter only:
+            "CubeGreen-solo",
+            "CubeSolo",
             "skyviper-journey",
             "skyviper-v2450",
-            "CubeGreen-solo",
-            "omnibusf4pro-one",
-            "CubeSolo",
-            "MazzyStarDrone",
-            "fmuv3-bdshot",
-            "CubeYellow-bdshot",
-            "crazyflie2",
-            "NucleoH743",
-            "Pixhawk1-1M-bdshot",
-            "Nucleo-G491",
-            "fmuv5-bdshot",
-            "KakuteF7-bdshot",
+
+            # IOMCU:
             "iomcu",
-            "luminousbee4",
-            "skyviper-f412-rev1",
-            "CubeOrange-joey",
-            "OMNIBUSF7V2-bdshot",
+            'iomcu_f103_8MHz',
+
+            # evaluation boards
             'H757I_EVAL',
             'H757I_EVAL_intf',
-            'iomcu_f103_8MHz',
+            "Nucleo-G491",
+            "NucleoH743",
+
+            # bdshot
+            "CubeYellow-bdshot",
+            "fmuv3-bdshot",
+            "fmuv5-bdshot",
+            "KakuteF7-bdshot",
+            "OMNIBUSF7V2-bdshot",
+            "Pixhawk1-1M-bdshot",
+
+            # other
+            "crazyflie2",
+            "CubeOrange-joey",
+            "luminousbee4",
+            "MazzyStarDrone",
+            "omnibusf4pro-one",
+            "skyviper-f412-rev1",
         ]
 
         ret = filter(lambda x : x not in blacklist, ret)
@@ -129,14 +139,16 @@ class BoardList(object):
 
     def find_ap_periph_boards(self):
         blacklist = [
-            "Pixracer-periph",
-            "f103-Trigger",
-            "H757I_EVAL",
-            "HerePro",
-            "HereID",
-            "G4-ESC",
             "CubeOrange-periph-heavy",
             "f103-HWESC",
+            "f103-Trigger",
+            "G4-ESC",
+            "HereID",
+            "HerePro",
+            "Pixracer-periph",
+
+            # evaluation boards
+            "H757I_EVAL",
             "Nucleo-L476",
             "Nucleo-L496",
         ]
