@@ -145,7 +145,6 @@ class BoardList(object):
             "G4-ESC",
             "HereID",
             "HerePro",
-            "Pixracer-periph",
 
             # evaluation boards
             "H757I_EVAL",
