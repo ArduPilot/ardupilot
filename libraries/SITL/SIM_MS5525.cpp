@@ -72,6 +72,6 @@ void MS5525::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
     AP_Baro::SimpleAtmosphere(sim_alt * 0.001f, sigma, delta, theta);
 
     // To Do: Add a sensor board temperature offset parameter
-    Temp_C = (SSL_AIR_TEMPERATURE * theta - C_TO_KELVIN) + 25.0;
+    Temp_C = (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
     P_Pa = AP::sitl()->state.airspeed_raw_pressure[0];
 }
