@@ -24,6 +24,7 @@
     #pragma GCC optimize("O2")
 #endif
 
+#include "AP_NavEKF3_feature.h"
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
@@ -35,7 +36,6 @@
 #include <AP_DAL/AP_DAL.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
-#include "AP_NavEKF3_feature.h"
 
 // GPS pre-flight check bit locations
 #define MASK_GPS_NSATS      (1<<0)
@@ -394,8 +394,11 @@ public:
         // 6 was EXTERNAL_YAW_FALLBACK (do not use)
     };
 
-    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
-    bool using_external_yaw(void) const;
+    // are we using (aka fusing) a non-compass yaw?
+    bool using_noncompass_for_yaw(void) const;
+
+    // are we using (aka fusing) external nav for yaw?
+    bool using_extnav_for_yaw() const;
 
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
@@ -417,6 +420,9 @@ public:
 
     // returns true when the state estimates are significantly degraded by vibration
     bool isVibrationAffected() const { return badIMUdata; }
+
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
 
 private:
     EKFGSF_yaw *yawEstimator;
@@ -1050,7 +1056,7 @@ private:
     bool needMagBodyVarReset;       // we need to reset mag body variances at next CovariancePrediction
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
-    bool gpsNotAvailable;           // bool true when valid GPS data is not available
+    bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
     struct Location EKF_origin;     // LLH origin of the NED axis system, internal only
     struct Location &public_origin; // LLH origin of the NED axis system, public functions
     bool validOrigin;               // true when the EKF origin is valid
@@ -1088,6 +1094,7 @@ private:
     Vector3F delAngCorrection;      // correction applied to delta angles used by output observer to track the EKF
     Vector3F velErrintegral;        // integral of output predictor NED velocity tracking error (m)
     Vector3F posErrintegral;        // integral of output predictor NED position tracking error (m.sec)
+    ftype badImuVelErrIntegral;     // integral of output predictor D velocity tracking error when bad IMU data is detected (m)
     ftype innovYaw;                 // compass yaw angle innovation (rad)
     uint32_t timeTasReceived_ms;    // time last TAS data was received (msec)
     bool gpsGoodToAlign;            // true when the GPS quality can be used to initialise the navigation system
@@ -1480,6 +1487,12 @@ private:
     bool EKFGSF_run_filterbank;             // true when the filter bank is active
     uint8_t EKFGSF_yaw_valid_count;         // number of updates since the last invalid yaw estimate
 
+    // logging timestamps
+    uint32_t lastLogTime_ms;
+    uint32_t lastUpdateTime_ms;
+    uint32_t lastEkfStateVarLogTime_ms;
+    uint32_t lastTimingLogTime_ms;
+
     // bits in EK3_AFFINITY
     enum ekf_affinity {
         EKF_AFFINITY_GPS  = (1U<<0),
@@ -1520,7 +1533,7 @@ private:
     void Log_Write_Quaternion(uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us);
     void Log_Write_BodyOdom(uint64_t time_us);
-    void Log_Write_State_Variances(uint64_t time_us) const;
+    void Log_Write_State_Variances(uint64_t time_us);
     void Log_Write_Timing(uint64_t time_us);
     void Log_Write_GSF(uint64_t time_us);
 };

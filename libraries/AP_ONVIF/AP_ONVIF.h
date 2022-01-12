@@ -26,7 +26,7 @@
 #include <AP_ONVIF/onvifMediaBindingProxy.h>
 #include <AP_ONVIF/onvifPTZBindingProxy.h>
 #include <plugin/wsseapi-lite.h>
-#pragma pop
+#pragma GCC diagnostic pop
 #include <AP_Math/AP_Math.h>
 
 class AP_ONVIF {

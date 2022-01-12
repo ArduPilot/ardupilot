@@ -58,8 +58,9 @@ float ADCSource::read_latest() {
     }
 }
 
-void ADCSource::set_pin(uint8_t pin) {
+bool ADCSource::set_pin(uint8_t pin) {
     _pin = pin;
+    return true;
 }
 
 void AnalogIn::init() {

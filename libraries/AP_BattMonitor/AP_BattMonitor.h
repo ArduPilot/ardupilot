@@ -7,7 +7,9 @@
 #include "AP_BattMonitor_Params.h"
 
 // maximum number of battery monitors
+#ifndef AP_BATT_MONITOR_MAX_INSTANCES
 #define AP_BATT_MONITOR_MAX_INSTANCES       9
+#endif
 
 // first monitor is always the primary monitor
 #define AP_BATT_PRIMARY_INSTANCE            0
@@ -43,7 +45,9 @@ class AP_BattMonitor_SMBus_Maxell;
 class AP_BattMonitor_SMBus_Rotoye;
 class AP_BattMonitor_UAVCAN;
 class AP_BattMonitor_Generator;
-class AP_BattMonitor_MPPT_PacketDigital;
+class AP_BattMonitor_INA2XX;
+class AP_BattMonitor_LTC2946;
+class AP_BattMonitor_Torqeedo;
 
 class AP_BattMonitor
 {
@@ -59,7 +63,10 @@ class AP_BattMonitor
     friend class AP_BattMonitor_FuelFlow;
     friend class AP_BattMonitor_FuelLevel_PWM;
     friend class AP_BattMonitor_Generator;
-    friend class AP_BattMonitor_MPPT_PacketDigital;
+    friend class AP_BattMonitor_INA2XX;
+    friend class AP_BattMonitor_LTC2946;
+
+    friend class AP_BattMonitor_Torqeedo;
 
 public:
 
@@ -90,7 +97,10 @@ public:
         GENERATOR_ELEC             = 17,
         GENERATOR_FUEL             = 18,
         Rotoye                     = 19,
-        MPPT_PacketDigital         = 20,
+        // 20 was MPPT_PacketDigital
+        INA2XX                     = 21,
+        LTC2946                    = 22,
+        Torqeedo                   = 23,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -128,11 +138,12 @@ public:
         bool        healthy;                   // battery monitor is communicating correctly
         bool        is_powering_off;           // true when power button commands power off
         bool        powerOffNotified;          // only send powering off notification once
+        uint32_t    time_remaining;            // remaining battery time
+        bool        has_time_remaining;        // time_remaining is only valid if this is true
         const struct AP_Param::GroupInfo *var_info;
     };
 
-    static const struct AP_Param::GroupInfo *backend_analog_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
-    static const struct AP_Param::GroupInfo *backend_smbus_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
+    static const struct AP_Param::GroupInfo *backend_var_info[AP_BATT_MONITOR_MAX_INSTANCES];
 
     // Return the number of battery monitor instances
     uint8_t num_instances(void) const { return _num_instances; }
@@ -165,9 +176,12 @@ public:
     /// consumed_wh - returns total energy drawn since start-up in watt.hours
     bool consumed_wh(float&wh, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
-    /// capacity_remaining_pct - returns the % battery capacity remaining (0 ~ 100)
-    virtual uint8_t capacity_remaining_pct(uint8_t instance) const;
-    uint8_t capacity_remaining_pct() const { return capacity_remaining_pct(AP_BATT_PRIMARY_INSTANCE); }
+    /// capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
+    virtual bool capacity_remaining_pct(uint8_t &percentage, uint8_t instance) const WARN_IF_UNUSED;
+    bool capacity_remaining_pct(uint8_t &percentage) const WARN_IF_UNUSED { return capacity_remaining_pct(percentage, AP_BATT_PRIMARY_INSTANCE); }
+
+    /// time_remaining - returns remaining battery time
+    bool time_remaining(uint32_t &seconds, const uint8_t instance = AP_BATT_PRIMARY_INSTANCE) const WARN_IF_UNUSED;
 
     /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
     int32_t pack_capacity_mah(uint8_t instance) const;
@@ -225,6 +239,9 @@ public:
     // Returns mavlink charge state
     MAV_BATTERY_CHARGE_STATE get_mavlink_charge_state(const uint8_t instance) const;
 
+    // Returns mavlink fault state
+    uint32_t get_mavlink_fault_bitmask(const uint8_t instance) const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -240,7 +257,6 @@ private:
     uint32_t    _log_battery_bit;
     uint8_t     _num_instances;                                     /// number of monitors
 
-    void convert_params(void);
     void convert_dynamic_param_groups(uint8_t instance);
 
     /// returns the failsafe state of the battery

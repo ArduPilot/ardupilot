@@ -62,12 +62,23 @@ void Util::commandline_arguments(uint8_t &argc, char * const *&argv)
     argv = saved_argv;
 }
 
+uint64_t Util::get_hw_rtc() const
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    const uint64_t seconds = ts.tv_sec;
+    const uint64_t nanoseconds = ts.tv_nsec;
+    return (seconds * 1000000ULL + nanoseconds/1000ULL);
+}
+
 void Util::set_hw_rtc(uint64_t time_utc_usec)
 {
+// don't reset the HW clock time on people's laptops.
 #if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-    // call superclass method to set time.  We've guarded this so we
-    // don't reset the HW clock time on people's laptops.
-    AP_HAL::Util::set_hw_rtc(time_utc_usec);
+    timespec ts;
+    ts.tv_sec = time_utc_usec/1000000ULL;
+    ts.tv_nsec = (time_utc_usec % 1000000ULL) * 1000ULL;
+    clock_settime(CLOCK_REALTIME, &ts);
 #endif
 }
 
@@ -303,5 +314,43 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
         return false;
     }
     close(dev_random);
+    return true;
+}
+
+bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set) const
+{
+    unsigned long cpu1, cpu2;
+    char *endptr, sep;
+
+    CPU_ZERO(cpu_set);
+
+    do {
+        cpu1 = strtoul(str, &endptr, 10);
+        if (str == endptr) {
+            return false;
+        }
+
+        str = endptr + 1;
+        sep = *endptr;
+        if (sep == ',' || sep == '\0') {
+            CPU_SET(cpu1, cpu_set);
+            continue;
+        }
+
+        if (sep != '-') {
+            return false;
+        }
+
+        cpu2 = strtoul(str, &endptr, 10);
+        if (str == endptr) {
+            return false;
+        }
+
+        str = endptr + 1;
+        for (; cpu1 <= cpu2; cpu1++) {
+            CPU_SET(cpu1, cpu_set);
+        }
+    } while (*endptr != '\0');
+
     return true;
 }

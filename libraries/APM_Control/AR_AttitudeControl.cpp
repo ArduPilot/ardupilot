@@ -19,6 +19,45 @@
 #include "AR_AttitudeControl.h"
 #include <AP_GPS/AP_GPS.h>
 
+// attitude control default definition
+#define AR_ATTCONTROL_STEER_ANG_P       2.00f
+#define AR_ATTCONTROL_STEER_RATE_FF     0.20f
+#define AR_ATTCONTROL_STEER_RATE_P      0.20f
+#define AR_ATTCONTROL_STEER_RATE_I      0.20f
+#define AR_ATTCONTROL_STEER_RATE_IMAX   1.00f
+#define AR_ATTCONTROL_STEER_RATE_D      0.00f
+#define AR_ATTCONTROL_STEER_RATE_FILT   10.00f
+#define AR_ATTCONTROL_STEER_RATE_MAX    120.0f
+#define AR_ATTCONTROL_STEER_ACCEL_MAX   120.0f
+#define AR_ATTCONTROL_THR_SPEED_P       0.20f
+#define AR_ATTCONTROL_THR_SPEED_I       0.20f
+#define AR_ATTCONTROL_THR_SPEED_IMAX    1.00f
+#define AR_ATTCONTROL_THR_SPEED_D       0.00f
+#define AR_ATTCONTROL_THR_SPEED_FILT    10.00f
+#define AR_ATTCONTROL_PITCH_THR_P       1.80f
+#define AR_ATTCONTROL_PITCH_THR_I       1.50f
+#define AR_ATTCONTROL_PITCH_THR_D       0.03f
+#define AR_ATTCONTROL_PITCH_THR_IMAX    1.0f
+#define AR_ATTCONTROL_PITCH_THR_FILT    10.0f
+#define AR_ATTCONTROL_BAL_SPEED_FF      1.0f
+#define AR_ATTCONTROL_DT                0.02f
+#define AR_ATTCONTROL_TIMEOUT_MS        200
+#define AR_ATTCONTROL_HEEL_SAIL_P       1.0f
+#define AR_ATTCONTROL_HEEL_SAIL_I       0.1f
+#define AR_ATTCONTROL_HEEL_SAIL_D       0.0f
+#define AR_ATTCONTROL_HEEL_SAIL_IMAX    1.0f
+#define AR_ATTCONTROL_HEEL_SAIL_FILT    10.0f
+#define AR_ATTCONTROL_DT                0.02f
+
+// throttle/speed control maximum acceleration/deceleration (in m/s) (_ACCEL_MAX parameter default)
+#define AR_ATTCONTROL_THR_ACCEL_MAX     1.00f
+
+// minimum speed in m/s
+#define AR_ATTCONTROL_STEER_SPEED_MIN   1.0f
+
+// speed (in m/s) at or below which vehicle is considered stopped (_STOP_SPEED parameter default)
+#define AR_ATTCONTROL_STOP_SPEED_DEFAULT    0.1f
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
@@ -594,9 +633,13 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     }
 
     // calculate final output
-    float throttle_out = _throttle_speed_pid.update_all(desired_speed, speed, (_throttle_limit_low || _throttle_limit_high));
+    float throttle_out = _throttle_speed_pid.update_all(desired_speed, speed, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
     throttle_out += _throttle_speed_pid.get_ff();
     throttle_out += throttle_base;
+
+    // update PID info for reporting purposes
+    _throttle_speed_pid_info = _throttle_speed_pid.get_pid_info();
+    _throttle_speed_pid_info.FF += throttle_base;
 
     // clear local limit flags used to stop i-term build-up as we stop reversed outputs going to motors
     _throttle_limit_low = false;

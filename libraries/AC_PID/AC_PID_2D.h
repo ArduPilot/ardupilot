@@ -25,7 +25,7 @@ public:
     // update_all - set target and measured inputs to PID controller and calculate outputs
     // target and error are filtered
     // the derivative is then calculated and filtered
-    //  the integral is then updated if it does not increase in the direction of the limit vector
+    // the integral is then updated if it does not increase in the direction of the limit vector
     Vector2f update_all(const Vector2f &target, const Vector2f &measurement, const Vector2f &limit);
     Vector2f update_all(const Vector3f &target, const Vector3f &measurement, const Vector3f &limit);
 

@@ -5,7 +5,8 @@
 #define LOG_IDS_FROM_AVOIDANCE \
     LOG_OA_BENDYRULER_MSG, \
     LOG_OA_DIJKSTRA_MSG, \
-    LOG_SIMPLE_AVOID_MSG
+    LOG_SIMPLE_AVOID_MSG, \
+    LOG_OD_VISGRAPH_MSG
 
 // @LoggerMessage: OABR
 // @Description: Object avoidance (Bendy Ruler) diagnostics
@@ -89,10 +90,28 @@ struct PACKED log_SimpleAvoid {
   uint8_t backing_up;
 };
 
+// @LoggerMessage: OAVG
+// @Description: Object avoidance path planning visgraph points
+// @Field: TimeUS: Time since system startup
+// @Field: version: Visgraph version, increments each time the visgraph is re-generated
+// @Field: point_num: point number in visgraph
+// @Field: Lat: Latitude
+// @Field: Lon: longitude
+struct PACKED log_OD_Visgraph {
+  LOG_PACKET_HEADER;
+  uint64_t time_us;
+  uint8_t version;
+  uint8_t point_num;
+  int32_t Lat;
+  int32_t Lon;
+};
+
 #define LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_OA_BENDYRULER_MSG, sizeof(log_OABendyRuler), \
       "OABR","QBBHHHBfLLiLLi","TimeUS,Type,Act,DYaw,Yaw,DP,RChg,Mar,DLt,DLg,DAlt,OLt,OLg,OAlt", "s-bddd-mDUmDUm", "F-------GGBGGB" , true }, \
     { LOG_OA_DIJKSTRA_MSG, sizeof(log_OADijkstra), \
       "OADJ","QBBBBLLLL","TimeUS,State,Err,CurrPoint,TotPoints,DLat,DLng,OALat,OALng", "sbbbbDUDU", "F----GGGG" , true }, \
     { LOG_SIMPLE_AVOID_MSG, sizeof(log_SimpleAvoid), \
-      "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "sbnnnnnnb", "F--------", true },
+      "SA",  "QBffffffB","TimeUS,State,DVelX,DVelY,DVelZ,MVelX,MVelY,MVelZ,Back", "sbnnnnnnb", "F--------", true }, \
+     { LOG_OD_VISGRAPH_MSG, sizeof(log_OD_Visgraph), \
+      "OAVG", "QBBLL", "TimeUS,version,point_num,Lat,Lon", "s--DU", "F--GG", true},

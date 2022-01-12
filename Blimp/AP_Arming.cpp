@@ -48,7 +48,6 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
     return fence_checks(display_failure)
            & parameter_checks(display_failure)
            & motor_checks(display_failure)
-           & pilot_throttle_checks(display_failure)
            & gcs_failsafe_check(display_failure)
            & alt_checks(display_failure)
            & AP_Arming::pre_arm_checks(display_failure);
@@ -69,7 +68,7 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
         nav_filter_status filt_status = blimp.inertial_nav.get_filter_status();
         bool using_baro_ref = (!filt_status.flags.pred_horiz_pos_rel && filt_status.flags.pred_horiz_pos_abs);
         if (using_baro_ref) {
-            if (fabsf(blimp.inertial_nav.get_altitude() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
+            if (fabsf(blimp.inertial_nav.get_position_z_up_cm() - blimp.baro_alt) > PREARM_MAX_ALT_DISPARITY_CM) {
                 check_failed(ARMING_CHECK_BARO, display_failure, "Altitude disparity");
                 ret = false;
             }
@@ -146,21 +145,6 @@ bool AP_Arming_Blimp::motor_checks(bool display_failure)
     // further checks enabled with parameters
     if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
-    }
-
-    return true;
-}
-
-bool AP_Arming_Blimp::pilot_throttle_checks(bool display_failure)
-{
-    // check throttle is above failsafe throttle
-    // this is near the bottom to allow other failures to be displayed before checking pilot throttle
-    if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
-        if (blimp.g.failsafe_throttle != FS_THR_DISABLED && blimp.channel_down->get_radio_in() < blimp.g.failsafe_throttle_value) {
-            const char *failmsg = "Throttle below Failsafe";
-            check_failed(ARMING_CHECK_RC, display_failure, "%s", failmsg);
-            return false;
-        }
     }
 
     return true;
@@ -303,7 +287,7 @@ bool AP_Arming_Blimp::mandatory_checks(bool display_failure)
         result = false;
     }
 
-    return result;
+    return result & AP_Arming::mandatory_checks(display_failure);
 }
 
 void AP_Arming_Blimp::set_pre_arm_check(bool b)
@@ -364,7 +348,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         }
 
         // remember the height when we armed
-        blimp.arming_altitude_m = blimp.inertial_nav.get_altitude() * 0.01;
+        blimp.arming_altitude_m = blimp.inertial_nav.get_position_z_up_cm() * 0.01;
     }
 
     hal.util->set_soft_armed(true);

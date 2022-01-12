@@ -18,6 +18,8 @@
 
 #include "SIM_XPlane.h"
 
+#if HAL_SIM_XPLANE_ENABLED
+
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -488,3 +490,5 @@ void XPlane::update(const struct sitl_input &input)
 }
 
 } // namespace SITL
+
+#endif  // HAL_SIM_XPLANE_ENABLED

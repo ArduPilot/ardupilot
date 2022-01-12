@@ -715,7 +715,7 @@ private:
     void        _configure_rate(void);
     void        _configure_sbas(bool enable);
     void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
-    bool        _send_message(uint8_t msg_class, uint8_t msg_id, void *msg, uint16_t size);
+    bool        _send_message(uint8_t msg_class, uint8_t msg_id, const void *msg, uint16_t size);
     void	send_next_rate_update(void);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
     void        _request_next_config(void);

@@ -46,7 +46,7 @@ void ModeDrift::run()
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
 
     // Grab inertial velocity
-    const Vector3f& vel = inertial_nav.get_velocity();
+    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
 
     // rotate roll, pitch input from north facing to vehicle's perspective
     float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
@@ -54,7 +54,7 @@ void ModeDrift::run()
 
     // gain scheduling for yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    float target_yaw_rate = ((float)target_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g.acro_yaw_p;
+    float target_yaw_rate = target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.acro_y_rate / 45.0;
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);

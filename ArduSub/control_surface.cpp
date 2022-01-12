@@ -55,7 +55,7 @@ void Sub::surface_run()
     desired_climb_rate = cmb_rate;
 
     // update altitude target and call position controller
-    pos_control.set_pos_target_z_from_climb_rate_cm(cmb_rate, true);
+    pos_control.set_pos_target_z_from_climb_rate_cm(cmb_rate);
     pos_control.update_z_controller();
 
     // pilot has control for repositioning

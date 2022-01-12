@@ -211,7 +211,7 @@ public:
         uint8_t digital_switch_flag:1;  // configuration bit for digital channel
         uint8_t channels[CRSF_FRAMELEN_MAX - 4]; // +1 for crc
         // uint16_t channel[]:res;      // variable amount of channels (with variable resolution based
-                                        // on the res_configuration) based on the frame size 
+                                        // on the res_configuration) based on the frame size
         // uint16_t digital_switch_channel[]:10; // digital switch channel
     } PACKED;
 
@@ -220,13 +220,23 @@ public:
         CRSF_RF_MODE_50HZ,
         CRSF_RF_MODE_150HZ,
         CRSF_RF_MODE_250HZ,
-        CRSF_RF_MODE_UNKNOWN,
+        ELRS_RF_MODE_4HZ,
+        ELRS_RF_MODE_25HZ,
+        ELRS_RF_MODE_50HZ,
+        ELRS_RF_MODE_100HZ,
+        ELRS_RF_MODE_150HZ,
+        ELRS_RF_MODE_200HZ,
+        ELRS_RF_MODE_250HZ,
+        ELRS_RF_MODE_500HZ,
+        RF_MODE_UNKNOWN,
     };
+    // nominal ELRS air rates
+    static constexpr uint16_t elrs_air_rates[8] = {4, 25, 50, 100, 150, 200, 250, 500};
 
     struct LinkStatus {
         int16_t rssi = -1;
         int16_t link_quality = -1;
-        RFMode rf_mode;
+        uint8_t rf_mode;
     };
 
     // this will be used by AP_CRSF_Telem to access link status data
@@ -239,13 +249,14 @@ private:
     struct Frame _frame;
     struct Frame _telemetry_frame;
     uint8_t _frame_ofs;
+    uint8_t _frame_crc;
 
     const uint8_t MAX_CHANNELS = MIN((uint8_t)CRSF_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
     static AP_RCProtocol_CRSF* _singleton;
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    bool decode_csrf_packet();
+    bool decode_crsf_packet();
     bool process_telemetry(bool check_constraint = true);
     void process_link_stats_frame(const void* data);
     void process_link_stats_rx_frame(const void* data);
@@ -268,6 +279,9 @@ private:
     bool telem_available;
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
+
+    bool _use_lq_for_rssi;
+    int16_t derive_scaled_lq_value(uint8_t uplink_lq);
 
     volatile struct LinkStatus _link_status;
 

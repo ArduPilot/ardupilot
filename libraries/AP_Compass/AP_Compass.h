@@ -336,7 +336,8 @@ public:
       fast compass calibration given vehicle position and yaw
      */
     MAV_RESULT mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
-                                 float lat_deg, float lon_deg);
+                                 float lat_deg, float lon_deg,
+                                 bool force_use=false);
 
 #if HAL_MSP_COMPASS_ENABLED
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);

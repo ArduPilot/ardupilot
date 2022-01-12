@@ -15,8 +15,12 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
+#include "transition.h"
+#include <AP_Motors/AP_MotorsTailsitter.h>
+
 class QuadPlane;
 class AP_MotorsMulticopter;
+class Tailsitter_Transition;
 class Tailsitter
 {
 friend class QuadPlane;
@@ -25,7 +29,9 @@ public:
 
     Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors);
 
-    bool enabled() const { return enable > 0;}
+    bool enabled() const { return (enable > 0) && setup_complete;}
+
+    void setup();
 
     // return true when flying a control surface only tailsitter
     bool is_control_surface_tailsitter(void) const;
@@ -57,9 +63,8 @@ public:
     // return the transition_angle_vtol value
     int8_t get_transition_angle_vtol() const;
 
-
-    // true when flying a tilt-vectored tailsitter
-    bool _is_vectored;
+    // return true if pitch control should be relaxed
+    bool relax_pitch();
 
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
@@ -85,6 +90,7 @@ public:
     AP_Float transition_rate_fw;
     AP_Int8 transition_angle_vtol;
     AP_Float transition_rate_vtol;
+    AP_Float transition_throttle_vtol;
     AP_Int8 input_type;
     AP_Float vectored_forward_gain;
     AP_Float vectored_hover_gain;
@@ -97,11 +103,89 @@ public:
     AP_Float scaling_speed_max;
     AP_Int16 gain_scaling_mask;
     AP_Float disk_loading;
+    AP_Float VTOL_roll_scale;
+    AP_Float VTOL_pitch_scale;
+    AP_Float VTOL_yaw_scale;
+    AP_Float disk_loading_min_outflow;
+
+    AP_MotorsTailsitter* tailsitter_motors;
 
 private:
+
+    bool setup_complete;
+
+    // true when flying a tilt-vectored tailsitter
+    bool _is_vectored;
+
+    // true is outputs are configured
+    bool _have_elevator;
+    bool _have_aileron;
+    bool _have_rudder;
 
     // refences for convenience
     QuadPlane& quadplane;
     AP_MotorsMulticopter*& motors;
+
+    // transition logic
+    Tailsitter_Transition* transition;
+
+};
+
+
+// Transition for tailsitters
+class Tailsitter_Transition : public Transition
+{
+friend class Tailsitter;
+public:
+
+    Tailsitter_Transition(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors, Tailsitter& _tailsitter):Transition(_quadplane, _motors), tailsitter(_tailsitter) {};
+
+    void update() override;
+
+    void VTOL_update() override;
+
+    void force_transistion_complete() override;
+
+    bool complete() const override { return transition_state == TRANSITION_DONE; }
+
+    // setup for the transition back to fixed wing
+    void restart() override;
+
+    uint8_t get_log_transision_state() const override { return static_cast<uint8_t>(transition_state); }
+
+    bool active() const override { return transition_state != TRANSITION_DONE; }
+
+    bool show_vtol_view() const override;
+
+    void set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing) override;
+
+    MAV_VTOL_STATE get_mav_vtol_state() const override;
+
+    bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) override;
+
+private:
+
+    enum {
+        TRANSITION_ANGLE_WAIT_FW,
+        TRANSITION_ANGLE_WAIT_VTOL,
+        TRANSITION_DONE
+    } transition_state;
+
+    // for transition to VTOL flight
+    uint32_t vtol_transition_start_ms;
+    float vtol_transition_initial_pitch;
+
+    // for rate limit of VTOL flight
+    uint32_t vtol_limit_start_ms;
+    float vtol_limit_initial_pitch;
+
+    // for transition to FW flight
+    uint32_t fw_transition_start_ms;
+    float fw_transition_initial_pitch;
+
+    // time when we were last in a vtol control mode
+    uint32_t last_vtol_mode_ms;
+
+    Tailsitter& tailsitter;
 
 };

@@ -19,10 +19,7 @@
 #include "AP_GPS_MAV.h"
 #include <stdint.h>
 
-AP_GPS_MAV::AP_GPS_MAV(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
-    AP_GPS_Backend(_gps, _state, _port)
-{
-}
+#if AP_GPS_MAV_ENABLED
 
 // Reading does nothing in this class; we simply return whether or not
 // the latest reading has been consumed.  By calling this function we assume
@@ -86,7 +83,7 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
 
                 state.velocity = vel;
                 state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-                state.ground_speed = norm(vel.x, vel.y);
+                state.ground_speed = vel.xy().length();
             }
 
             if (have_sa) {
@@ -177,3 +174,4 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             break;
     }
 }
+#endif

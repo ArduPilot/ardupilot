@@ -121,6 +121,12 @@ void AC_PID::filt_D_hz(float hz)
     _filt_D_hz.set(fabsf(hz));
 }
 
+// slew_limit - set slew limit
+void AC_PID::slew_limit(float smax)
+{
+    _slew_rate_max.set(fabsf(smax));
+}
+
 //  update_all - set target and measured inputs to PID controller and calculate outputs
 //  target and error are filtered
 //  the derivative is then calculated and filtered

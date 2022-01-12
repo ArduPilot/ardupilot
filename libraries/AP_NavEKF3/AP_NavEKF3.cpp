@@ -15,7 +15,7 @@
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
   where the code is built.
  */
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 // copter defaults
 #define VELNE_M_NSE_DEFAULT     0.3f
 #define VELD_M_NSE_DEFAULT      0.5f
@@ -121,6 +121,15 @@
 
 #endif // APM_BUILD_DIRECTORY
 
+#ifndef EK3_PRIMARY_DEFAULT
+#define EK3_PRIMARY_DEFAULT 0
+#endif
+
+// This allows boards to default to using a specified number of IMUs and EKF lanes
+#ifndef HAL_EKF_IMU_MASK_DEFAULT
+#define HAL_EKF_IMU_MASK_DEFAULT 3       // Default to using two IMUs
+#endif
+
 // Define tuning parameters
 const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
@@ -156,7 +165,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: VEL_I_GATE
     // @DisplayName: GPS velocity innovation gate size
-    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements willbe rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Description: This sets the percentage number of standard deviations applied to the GPS velocity measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
     // @Range: 100 1000
     // @Increment: 25
     // @User: Advanced
@@ -398,7 +407,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, 3),
+    AP_GROUPINFO("IMU_MASK",     33, NavEKF3, _imuMask, HAL_EKF_IMU_MASK_DEFAULT),
     
     // @Param: CHECK_SCALE
     // @DisplayName: GPS accuracy check scaler (%)
@@ -709,7 +718,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Range: 0 2
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, 0),
+    AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, EK3_PRIMARY_DEFAULT),
     
     AP_GROUPEND
 };
@@ -964,7 +973,7 @@ void NavEKF3::UpdateFilter(void)
     }
 
     const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
-    if (primary != 0 && core[user_primary].healthy() && !armed) {
+    if (primary != user_primary && core[user_primary].healthy() && !armed) {
         // when on the ground and disarmed force the selected primary
         // core. This avoids us ending with with a lottery for which
         // IMU is used in each flight. Otherwise the alignment of the
@@ -1466,13 +1475,22 @@ bool NavEKF3::use_compass(void) const
     return core[primary].use_compass();
 }
 
-// are we using an external yaw source? Needed for ahrs attitudes_consistent
-bool NavEKF3::using_external_yaw(void) const
+// are we using (aka fusing) a non-compass yaw?
+bool NavEKF3::using_noncompass_for_yaw(void) const
 {
     if (!core) {
         return false;
     }
-    return core[primary].using_external_yaw();
+    return core[primary].using_noncompass_for_yaw();
+}
+
+// are we using (aka fusing) external nav for yaw?
+bool NavEKF3::using_extnav_for_yaw() const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].using_extnav_for_yaw();
 }
 
 // check if configured to use GPS for horizontal position estimation
@@ -2001,4 +2019,13 @@ bool NavEKF3::isVibrationAffected(int8_t instance) const
         return core[instance].isVibrationAffected();
     }
     return false;
+}
+
+// get a yaw estimator instance
+const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
+{
+    if (core) {
+        return core[primary].get_yawEstimator();
+    }
+    return nullptr;
 }

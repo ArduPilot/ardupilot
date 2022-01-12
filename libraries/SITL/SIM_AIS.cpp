@@ -21,8 +21,10 @@
 */
 
 #include "SIM_AIS.h"
-#include <SITL/SITL.h>
 
+#if HAL_SIM_AIS_ENABLED
+
+#include <SITL/SITL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -73,3 +75,5 @@ void AIS::update()
     write_to_autopilot(line, strlen(line));
 
 }
+
+#endif  // HAL_SIM_AIS_ENABLED

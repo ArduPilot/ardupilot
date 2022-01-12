@@ -140,6 +140,8 @@ public:
     // mavlink message handler
     void handle_message(const mavlink_channel_t chan, const mavlink_message_t &msg);
 
+    void send_adsb_out_status(const mavlink_channel_t chan) const;
+
     // when true, a vehicle with that ICAO was found in database and the vehicle is populated.
     bool get_vehicle_by_ICAO(const uint32_t icao, adsb_vehicle_t &vehicle) const;
 
@@ -150,18 +152,13 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
-    // Mode-S IDENT is active. While true, we are currently a large "HEY LOOK AT ME" symbol on the Air Traffic Controllers' radar screen.
-    bool ident_is_active() const {
-        return out_state.ident_is_active;
-    }
-
     // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
     // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
     bool ident_start() {
-        if (ident_is_active() || !healthy() || ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0)) {
+        if (!healthy() || ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0)) {
             return false;
         }
-        out_state.ident_pending = true;
+        out_state.ctrl.identActive = true;
         return true;
     }
 
@@ -195,6 +192,9 @@ private:
 
     // configure ADSB-out transceivers
     void handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet);
+
+    // control ADSB-out transcievers
+    void handle_out_control(const mavlink_uavionix_adsb_out_control_t &packet);
 
     // mavlink handler
     void handle_transceiver_report(const mavlink_channel_t chan, const mavlink_uavionix_adsb_transceiver_health_report_t &packet);
@@ -236,11 +236,6 @@ private:
         bool        is_flying;
         bool        is_in_auto_mode;
 
-        // Mode 3/A transponder IDENT. This triggers, or shows status of, an active IDENT status should only be done when requested to do so by an Air Traffic Controller.
-        // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
-        bool        ident_pending;
-        bool        ident_is_active;
-
         // ADSB-OUT configuration
         struct {
             int32_t     ICAO_id;
@@ -260,6 +255,22 @@ private:
             bool        was_set_externally;
         } cfg;
 
+        struct {
+            bool                          baroCrossChecked;
+            uint8_t                       airGroundState;
+            bool                          identActive;
+            bool                          modeAEnabled;
+            bool                          modeCEnabled;
+            bool                          modeSEnabled;
+            bool                          es1090TxEnabled;
+            int32_t                       externalBaroAltitude_mm;
+            uint16_t                      squawkCode;
+            uint8_t                       emergencyState;
+            uint8_t                       callsign[8];
+            bool                          x_bit;
+        } ctrl;
+
+        mavlink_uavionix_adsb_out_status_t tx_status;
     } out_state;
 
     uint8_t detected_num_instances;

@@ -3,6 +3,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 #include "AP_Compass.h"
 
@@ -206,7 +207,7 @@ bool Compass::_accept_calibration(uint8_t i)
         set_and_save_offdiagonals(i,offdiag);
         set_and_save_scale_factor(i,scale_factor);
 
-        if (_get_state(prio).external && _rotate_auto >= 2) {
+        if (cal_report.check_orientation && _get_state(prio).external && _rotate_auto >= 2) {
             set_and_save_orientation(i, cal_report.orientation);
         }
 
@@ -482,7 +483,7 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
   This assumes that the compass is correctly scaled in milliGauss
 */
 MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
-                                      float lat_deg, float lon_deg)
+                                      float lat_deg, float lon_deg, bool force_use)
 {
     _reset_compass_id();
     if (is_zero(lat_deg) && is_zero(lon_deg)) {
@@ -525,7 +526,7 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             // skip this compass
             continue;
         }
-        if (!use_for_yaw(i)) {
+        if (!force_use && !use_for_yaw(i)) {
             continue;
         }
         if (!healthy(i)) {

@@ -32,6 +32,22 @@ def sizes_for_file(filepath):
             bss=int(row[2]),
             total=int(row[3]),
         ))
+
+    # Get the size of .crash_log to remove it from .bss reporting
+    cmd = "size -A %s" % (filepath,)
+    output = os.popen(cmd).read()
+    lines = output.splitlines()[1:]
+    for line in lines:
+        if ".crash_log" in line:
+            row = line.strip().split()
+            size_list[0]["crash_log"] = int(row[1])
+            break
+
+    # check if crash_log wasn't found and set to 0B if not found
+    # FIX ME : so it doesn't report Flash_Free 0B for non-ARM boards
+    if size_list[0].get("crash_log") is None:
+        size_list[0]["crash_log"] = 0
+
     return size_list
 
 
@@ -48,20 +64,36 @@ def print_table(summary_data_list_second, summary_data_list_master):
                 for key in ["text", "data", "bss", "total"]:
                     bvalue = summary_data_list_second[0][name].get(key)
                     mvalue = summary_data_list_master[0][name].get(key)
-                    if key == "total" and mvalue is None:
-                        mvalue = summary_data_list_master[0][name].get("text") + summary_data_list_master[0][name].get(
-                            "data") + summary_data_list_master[0][name].get("bss")
+
+                    # BSS: remove the portion occupied by crash_log as the command `size binary.elf`
+                    # reports BSS with crash_log included
+                    if key == "bss":
+                        mvalue = (summary_data_list_master[0][name].get("bss") -
+                                  summary_data_list_master[0][name].get("crash_log"))
+                        bvalue = (summary_data_list_second[0][name].get("bss") -
+                                  summary_data_list_second[0][name].get("crash_log"))
+
+                    # Total Flash Cost = Data + Text
+                    if key == "total":
+                        mvalue = (summary_data_list_master[0][name].get("text") +
+                                  summary_data_list_master[0][name].get("data"))
+                        bvalue = (summary_data_list_second[0][name].get("text") +
+                                  summary_data_list_second[0][name].get("data"))
                     diff = (bvalue - mvalue) * 100.0 / mvalue
                     signum = "+" if diff > 0.0 else ""
                     print_diff = str(bvalue - mvalue)
                     print_diff += " (" + signum + "%0.4f%%" % diff + ")"
                     col_data.append(print_diff)
+
+                # Append free flash space which is equivalent to crash_log's size
+                col_data.append(str(summary_data_list_second[0][name].get("crash_log")))
                 print_data.append(col_data)
-    print(tabulate(print_data, headers=["Binary", "text", "data", "bss", "total"]))
+    print(tabulate(print_data, headers=["Binary Name", "Text [B]", "Data [B]", "BSS (B)",
+                                        "Total Flash Change [B] (%)", "Flash Free After PR (B)"]))
 
 
 def extract_binaries_size(path):
-    """Seach and extract binary size for each binary in the given path."""
+    """Search and extract binary size for each binary in the given path."""
     print("Extracting binaries size on %s" % path)
     binaries_list = []
     for file in os.listdir(args.master):

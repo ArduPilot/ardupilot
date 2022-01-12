@@ -72,34 +72,6 @@ bool Sub::rangefinder_alt_ok() const
 }
 
 /*
-  update RPM sensors
- */
-#if RPM_ENABLED == ENABLED
-void Sub::rpm_update(void)
-{
-    rpm_sensor.update();
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        if (should_log(MASK_LOG_RCIN)) {
-            logger.Write_RPM(rpm_sensor);
-        }
-    }
-}
-#endif
-
-void Sub::accel_cal_update()
-{
-    if (hal.util->get_soft_armed()) {
-        return;
-    }
-    ins.acal_update();
-    // check if new trim values, and set them
-    float trim_roll, trim_pitch;
-    if (ins.get_new_trim(trim_roll, trim_pitch)) {
-        ahrs.set_trim(Vector3f(trim_roll, trim_pitch, 0));
-    }
-}
-
-/*
   ask airspeed sensor for a new value, duplicated from plane
  */
 void Sub::read_airspeed()

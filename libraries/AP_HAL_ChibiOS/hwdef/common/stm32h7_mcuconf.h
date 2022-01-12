@@ -266,7 +266,7 @@
 #define STM32_CKPERSEL                      STM32_CKPERSEL_HSE_CK
 #endif
 #define STM32_SDMMCSEL                      STM32_SDMMCSEL_PLL1_Q_CK
-#define STM32_QSPISEL                       STM32_QSPISEL_HCLK
+#define STM32_QSPISEL                       STM32_QSPISEL_PLL2_R_CK
 #define STM32_FMCSEL                        STM32_QSPISEL_HCLK
 #define STM32_SWPSEL                        STM32_SWPSEL_PCLK1
 #define STM32_FDCANSEL                      STM32_FDCANSEL_PLL2_Q_CK

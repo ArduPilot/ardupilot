@@ -24,7 +24,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
 #define AR_WPNAV_OVERSHOOT_DEFAULT      2.0f
 #define AR_WPNAV_PIVOT_ANGLE_DEFAULT    60
-#define AR_WPNAV_PIVOT_ANGLE_ACCURACY   10      // vehicle will pivot to within this many degrees of destination
+#define AR_WPNAV_PIVOT_ANGLE_ACCURACY   5   // vehicle will pivot to within this many degrees of destination
 #define AR_WPNAV_PIVOT_RATE_DEFAULT     90
 
 const AP_Param::GroupInfo AR_WPNav::var_info[] = {
@@ -327,7 +327,7 @@ void AR_WPNav::update_pivot_active_flag()
 
     uint32_t now = AP_HAL::millis();
 
-    // if within 10 degrees of the target heading, set start time of pivot steering
+    // if within 5 degrees of the target heading, set start time of pivot steering
     if (_pivot_active && yaw_error < AR_WPNAV_PIVOT_ANGLE_ACCURACY && _pivot_start_ms == 0) {
         _pivot_start_ms = now;
     }

@@ -160,13 +160,16 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
+        // record maximum throttle
+        throttle_pct_max = MAX(throttle_pct_max, throttle_pct);
+
         if (!battery.current_amps(current)) {
             current = 0;
         }
         current_amps_max = MAX(current_amps_max, current);
 
         // if throttle is near zero, update base x,y,z values
-        if (throttle_pct <= 0.0f) {
+        if (!is_positive(throttle_pct)) {
             for (uint8_t i=0; i<compass.get_count(); i++) {
                 compass_base[i] = compass_base[i] * 0.99f + compass.get_field(i) * 0.01f;
             }
@@ -211,9 +214,6 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
                     interference_pct[i] = motor_compensation[i].length() * (current_amps_max/throttle_pct_max) / (float)arming.compass_magfield_expected() * 100.0f;
                 }
             }
-
-            // record maximum throttle
-            throttle_pct_max = MAX(throttle_pct_max, throttle_pct);
         }
 
         if (AP_HAL::millis() - last_send_time > 500) {
@@ -225,6 +225,10 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
                                                motor_compensation[0].x,
                                                motor_compensation[0].y,
                                                motor_compensation[0].z);
+#if HAL_WITH_ESC_TELEM
+            // send ESC telemetry to monitor ESC and motor temperatures
+            AP::esc_telem().send_esc_telemetry_mavlink(gcs_chan.get_chan());
+#endif
         }
     }
 

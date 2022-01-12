@@ -1,8 +1,8 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_OpticalFlow_HereFlow.h"
+
+#if AP_OPTICALFLOW_HEREFLOW_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -101,5 +101,4 @@ void AP_OpticalFlow_HereFlow::_push_state(void)
     new_data = false;
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
-
+#endif // AP_OPTICALFLOW_HEREFLOW_ENABLED

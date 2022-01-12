@@ -24,6 +24,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+extern const AP_HAL::HAL& hal;
+
 using namespace SITL;
 
 Vicon::Vicon() :
@@ -88,8 +90,8 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             uint8_t buf[300];
             uint16_t buf_len = mavlink_msg_to_send_buffer(buf, &msg_buf[i].obs_msg);
 
-            if (::write(fd_my_end, (void*)&buf, buf_len) != buf_len) {
-                ::fprintf(stderr, "Vicon: write failure\n");
+            if (write_to_autopilot((char*)&buf, buf_len) != buf_len) {
+                hal.console->printf("Vicon: write failure\n");
             }
             msg_buf[i].time_send_us = 0;
         }
@@ -202,6 +204,33 @@ void Vicon::update_vicon_position_estimate(const Location &loc,
             vel_corrected.y,
             vel_corrected.z,
             NULL, 0);
+        msg_buf[msg_buf_index].time_send_us = time_send_us;
+    }
+
+
+    // send ODOMETRY message
+    if (should_send(ViconTypeMask::ODOMETRY) && get_free_msg_buf_index(msg_buf_index)) {
+        mavlink_msg_odometry_pack_chan(
+            system_id,
+            component_id,
+            mavlink_ch,
+            &msg_buf[msg_buf_index].obs_msg,
+            now_us + time_offset_us,
+            MAV_FRAME_LOCAL_FRD,
+            MAV_FRAME_BODY_FRD,
+            pos_corrected.x,
+            pos_corrected.y,
+            pos_corrected.z,
+            &attitude[0],
+            vel_corrected.x,
+            vel_corrected.y,
+            vel_corrected.z,
+            gyro.x,
+            gyro.y,
+            gyro.z,
+            NULL, NULL,
+            0,
+            MAV_ESTIMATOR_TYPE_VIO);
         msg_buf[msg_buf_index].time_send_us = time_send_us;
     }
 

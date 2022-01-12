@@ -30,13 +30,16 @@
    sensor sends packets at 25hz
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "AP_OpticalFlow_CXOF.h"
+
+#if AP_OPTICALFLOW_CXOF_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <utility>
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 #include <stdio.h>
 
 #define CXOF_HEADER         (uint8_t)0xFE
@@ -199,3 +202,5 @@ void AP_OpticalFlow_CXOF::update(void)
     gyro_sum.zero();
     gyro_sum_count = 0;
 }
+
+#endif  // AP_OPTICALFLOW_CXOF_ENABLED

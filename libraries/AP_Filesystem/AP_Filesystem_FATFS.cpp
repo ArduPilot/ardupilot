@@ -10,6 +10,7 @@
 #if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #include <AP_HAL_ChibiOS/sdcard.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if 0
 #define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -849,6 +850,52 @@ void AP_Filesystem_FATFS::unmount(void)
 {
     WITH_SEMAPHORE(sem);
     return sdcard_stop();
+}
+
+/*
+  format sdcard
+*/
+bool AP_Filesystem_FATFS::format(void)
+{
+#if FF_USE_MKFS
+    WITH_SEMAPHORE(sem);
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Filesystem_FATFS::format_handler, void));
+    // the format is handled asyncronously, we inform user of success
+    // via a text message
+    format_pending = true;
+    return true;
+#else
+    return false;
+#endif
+}
+
+/*
+  format sdcard
+*/
+void AP_Filesystem_FATFS::format_handler(void)
+{
+#if FF_USE_MKFS
+    if (!format_pending) {
+        return;
+    }
+    WITH_SEMAPHORE(sem);
+    format_pending = false;
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Formatting SDCard");
+    uint8_t *buf = (uint8_t *)hal.util->malloc_type(FF_MAX_SS, AP_HAL::Util::MEM_DMA_SAFE);
+    if (buf == nullptr) {
+        return;
+    }
+    // format first disk
+    auto ret = f_mkfs("0:", 0, buf, FF_MAX_SS);
+    hal.util->free_type(buf, FF_MAX_SS, AP_HAL::Util::MEM_DMA_SAFE);
+    if (ret == FR_OK) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Format: OK");
+    } else {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Format: Failed (%d)", int(ret));
+    }
+    sdcard_stop();
+    sdcard_retry();
+#endif
 }
 
 /*

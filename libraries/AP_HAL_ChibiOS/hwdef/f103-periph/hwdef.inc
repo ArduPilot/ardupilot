@@ -7,7 +7,7 @@ MCU STM32F103 STM32F103xB
 FLASH_RESERVE_START_KB 25
 
 # store parameters in pages 23 and 24
-define STORAGE_FLASH_PAGE 23
+STORAGE_FLASH_PAGE 23
 define HAL_STORAGE_SIZE 800
 
 # board ID for firmware load
@@ -17,7 +17,6 @@ APJ_BOARD_ID 1000
 env AP_PERIPH 1
 
 # enable watchdog
-define HAL_WATCHDOG_ENABLED_DEFAULT true
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -72,17 +71,15 @@ define __FPU_PRESENT 0
 
 define HAL_USE_RTC FALSE
 define DISABLE_SERIAL_ESC_COMM TRUE
-define NO_DATAFLASH TRUE
 
 define DMA_RESERVE_SIZE 0
 
-define PERIPH_FW TRUE
 
 # MAIN_STACK is stack of initial thread and ISRs
 MAIN_STACK 0x200
 
 # PROCESS_STACK controls stack for main thread
-PROCESS_STACK 0x600
+PROCESS_STACK 0xA00
 define HAL_DISABLE_LOOP_DELAY
 
 # enable CAN support
@@ -104,12 +101,10 @@ define HAL_UART_STACK_SIZE 256
 define STORAGE_THD_WA_SIZE 300
 define IO_THD_WA_SIZE      300
 
-define HAL_NO_GCS
 define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 # only one I2C bus
 I2C_ORDER I2C1
@@ -128,11 +123,7 @@ define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 define HAL_WITH_DSP FALSE
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

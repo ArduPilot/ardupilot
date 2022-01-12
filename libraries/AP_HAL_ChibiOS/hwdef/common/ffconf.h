@@ -44,7 +44,10 @@
 /  f_findnext(). (0:Disable, 1:Enable 2:Enable with matching altname[] too) */
 
 
-#define FF_USE_MKFS       0
+#ifndef FF_USE_MKFS
+// f_mkfs() only supported on SDC so far
+#define FF_USE_MKFS       HAL_USE_SDC
+#endif
 /* This option switches f_mkfs() function. (0:Disable or 1:Enable) */
 
 

@@ -27,7 +27,7 @@
   #include <AP_UAVCAN/AP_UAVCAN.h>
 
   // To be replaced with macro saying if KDECAN library is included
-  #if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+  #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
   #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
@@ -47,10 +47,11 @@ SRV_Channels *SRV_Channels::_singleton;
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#endif // HAL_BUILD_AP_PERIPH
+
+#if AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
 #endif
-#endif // HAL_BUILD_AP_PERIPH
 
 uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 
@@ -190,6 +191,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // @Group: _BLH_
@@ -197,11 +199,12 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
+#if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
@@ -223,6 +226,14 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
 
+    // @Param: _GPIO_MASK
+    // @DisplayName: Servo GPIO mask
+    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any auxillary output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
+    // @Bitmask: 0:Servo 1, 1:Servo 2, 2:Servo 3, 3:Servo 4, 4:Servo 5, 5:Servo 6, 6:Servo 7, 7:Servo 8, 8:Servo 9, 9:Servo 10, 10:Servo 11, 11:Servo 12, 12:Servo 13, 13:Servo 14, 14:Servo 15, 15:Servo 16
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),
+    
     AP_GROUPEND
 };
 
@@ -242,17 +253,18 @@ SRV_Channels::SRV_Channels(void)
         channels[i].ch_num = i;
     }
 
+#if AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr = &fetteconwire;
+#endif
+
 #ifndef HAL_BUILD_AP_PERIPH
     volz_ptr = &volz;
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
-    fetteconwire_ptr = &fetteconwire;
-#endif
+#endif // HAL_BUILD_AP_PERIPH
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
-#endif // HAL_BUILD_AP_PERIPH
 }
 
 // SRV_Channels initialization
@@ -262,7 +274,9 @@ void SRV_Channels::init(void)
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr->init();
 #endif
+#ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
+#endif
 }
 
 /*
@@ -303,7 +317,9 @@ void SRV_Channels::calc_pwm(void)
             channels[i].set_override(true);
             override_counter[i]--;
         }
-        channels[i].calc_pwm(functions[channels[i].function].output_scaled);
+        if (channels[i].valid_function()) {
+            channels[i].calc_pwm(functions[channels[i].function.get()].output_scaled);
+        }
     }
 }
 
@@ -328,7 +344,16 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         const uint32_t loop_count = ((timeout_ms * 1000U) + (loop_period_us - 1U)) / loop_period_us;
         override_counter[chan] = constrain_int32(loop_count, 0, UINT16_MAX);
         channels[chan].set_override(true);
+        const bool had_pwm = SRV_Channel::have_pwm_mask & (1U<<chan);
         channels[chan].set_output_pwm(value,true);
+        if (!had_pwm) {
+            // clear the have PWM mask so the channel will default back to the scaled value when timeout expires
+            // this is also cleared by set_output_scaled but that requires it to be re-called as some point
+            // after the timeout is applied
+            // note that we can't default back to a pre-override PWM value as it is not stored
+            // checking had_pwm means the PWM will not change after the timeout, this was the existing behaviour
+            SRV_Channel::have_pwm_mask &= ~(1U<<chan);
+        }
     }
 }
 
@@ -357,15 +382,16 @@ void SRV_Channels::push()
     // give robotis library a chance to update
     robotis_ptr->update();
 
-#if HAL_AP_FETTEC_ONEWIRE_ENABLED
-    fetteconwire_ptr->update();
-#endif
+#endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
     blheli_ptr->update_telemetry();
 #endif
-#endif // HAL_BUILD_AP_PERIPH
+
+#if AP_FETTEC_ONEWIRE_ENABLED
+    fetteconwire_ptr->update();
+#endif
 
 #if HAL_CANMANAGER_ENABLED
     // push outputs to CAN
@@ -382,7 +408,7 @@ void SRV_Channels::push()
             }
             case AP_CANManager::Driver_Type_KDECAN: {
 // To be replaced with macro saying if KDECAN library is included
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
                 AP_KDECAN *ap_kdecan = AP_KDECAN::get_kdecan(i);
                 if (ap_kdecan == nullptr) {
                     continue;
@@ -430,4 +456,19 @@ void SRV_Channels::zero_rc_outputs()
         hal.rcout->write(i, 0);
     }
     push();
+}
+
+/*
+  return true if a channel should be available as a GPIO
+ */
+bool SRV_Channels::is_GPIO(uint8_t channel)
+{
+    if (channel_function(channel) == SRV_Channel::k_GPIO) {
+        return true;
+    }
+    if (_singleton != nullptr && (_singleton->gpio_mask & (1U<<channel)) != 0) {
+        // user has set this channel in SERVO_GPIO_MASK
+        return true;
+    }
+    return false;
 }

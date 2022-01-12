@@ -87,9 +87,20 @@ public:
     // save/load key persistent parameters in bootloader sector
     bool load_persistent_params(ExpandingString &str) const override;
 #endif
+#if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) override;
-    
+#endif
+
+    // returns random values
+    bool get_random_vals(uint8_t* data, size_t size) override;
+
+    // returns true random values
+    bool get_true_random_vals(uint8_t* data, size_t size, uint32_t timeout_us) override;
+
+    // set armed state
+    void set_soft_armed(const bool b) override;
+
 private:
 #ifdef HAL_PWM_ALARM
     struct ToneAlarmPwmGroup {
@@ -126,4 +137,14 @@ private:
     // save/load key persistent parameters in bootloader sector
     bool get_persistent_params(ExpandingString &str) const;
 #endif
+
+    // log info on stack usage
+    void log_stack_info(void) override;
+
+#if !defined(HAL_BOOTLOADER_BUILD)
+    // get last crash dump
+    size_t last_crash_dump_size() const override;
+    void* last_crash_dump_ptr() const override;
+#endif
+
 };

@@ -4,10 +4,6 @@
  * Init and run calls for guided flight mode
  */
 
-#ifndef GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM
-# define GUIDED_LOOK_AT_TARGET_MIN_DISTANCE_CM     500     // point nose at target if it is more than 5m away
-#endif
-
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
@@ -286,9 +282,7 @@ void Sub::guided_pos_control_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        // initialise velocity controller
-        pos_control.init_z_controller();
-        pos_control.init_xy_controller();
+        wp_nav.wp_and_spline_init();
         return;
     }
 
@@ -470,7 +464,7 @@ void Sub::guided_angle_control_run()
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
     float total_in = norm(roll_in, pitch_in);
-    float angle_max = MIN(attitude_control.get_althold_lean_angle_max(), aparm.angle_max);
+    float angle_max = MIN(attitude_control.get_althold_lean_angle_max_cd(), aparm.angle_max);
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -481,7 +475,7 @@ void Sub::guided_angle_control_run()
     float yaw_in = wrap_180_cd(guided_angle_state.yaw_cd);
 
     // constrain climb rate
-    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -fabsf(wp_nav.get_default_speed_down()), wp_nav.get_default_speed_up());
+    float climb_rate_cms = constrain_float(guided_angle_state.climb_rate_cms, -wp_nav.get_default_speed_down(), wp_nav.get_default_speed_up());
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
@@ -498,7 +492,7 @@ void Sub::guided_angle_control_run()
     attitude_control.input_euler_angle_roll_pitch_yaw(roll_in, pitch_in, yaw_in, true);
 
     // call position controller
-    pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms, false);
+    pos_control.set_pos_target_z_from_climb_rate_cm(climb_rate_cms);
     pos_control.update_z_controller();
 }
 
@@ -530,7 +524,7 @@ void Sub::guided_limit_init_time_and_pos()
     guided_limit.start_time = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos = inertial_nav.get_position();
+    guided_limit.start_pos = inertial_nav.get_position_neu_cm();
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -543,7 +537,7 @@ bool Sub::guided_limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos = inertial_nav.get_position();
+    const Vector3f& curr_pos = inertial_nav.get_position_neu_cm();
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos.z < guided_limit.alt_min_cm)) {
@@ -557,7 +551,7 @@ bool Sub::guided_limit_check()
 
     // check if we have gone beyond horizontal limit
     if (guided_limit.horiz_max_cm > 0.0f) {
-        float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos, curr_pos);
+        const float horiz_move = get_horizontal_distance_cm(guided_limit.start_pos.xy(), curr_pos.xy());
         if (horiz_move > guided_limit.horiz_max_cm) {
             return true;
         }

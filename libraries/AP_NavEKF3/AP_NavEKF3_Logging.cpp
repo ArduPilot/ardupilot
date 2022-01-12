@@ -153,7 +153,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
     float tempVar = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
     getFilterFaults(_faultStatus);
     getFilterStatus(solutionStatus);
-    const struct log_NKF4 pkt4{
+    const struct log_XKF4 pkt4{
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
@@ -182,14 +182,14 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         return;
     }
 
-    const struct log_NKF5 pkt5{
+    const struct log_XKF5 pkt5{
         LOG_PACKET_HEADER_INIT(LOG_XKF5_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
         normInnov : (uint8_t)(MIN(100*MAX(flowTestRatio[0],flowTestRatio[1]),255)),  // normalised innovation variance ratio for optical flow observations fused by the main nav filter
         FIX : (int16_t)(1000*flowInnov[0]),  // optical flow LOS rate vector innovations from the main nav filter
         FIY : (int16_t)(1000*flowInnov[1]),  // optical flow LOS rate vector innovations from the main nav filter
-        AFI : (int16_t)(1000*norm(auxFlowObsInnov.x,auxFlowObsInnov.y)),  // optical flow LOS rate innovation from terrain offset estimator
+        AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
         HAGL : (int16_t)(100*(terrainState - stateStruct.position.z)),    // height above ground level
         offset : (int16_t)(100*terrainState),           // filter ground offset state error
         RI : (int16_t)(100*innovRng),                   // range finder innovations
@@ -274,7 +274,6 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
         return;
     }
 
-    static uint32_t lastUpdateTime_ms = 0;
     const uint32_t updateTime_ms = MAX(bodyOdmDataDelayed.time_ms,wheelOdmDataDelayed.time_ms);
     if (updateTime_ms > lastUpdateTime_ms) {
         const struct log_XKFD pkt11{
@@ -294,14 +293,13 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
 }
 #endif
 
-void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us) const
+void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us)
 {
     if (core_index != frontend->primary) {
         // log only primary instance for now
         return;
     }
 
-    static uint32_t lastEkfStateVarLogTime_ms = 0;
     if (AP::dal().millis() - lastEkfStateVarLogTime_ms > 490) {
         lastEkfStateVarLogTime_ms = AP::dal().millis();
         const struct log_XKV pktv1{
@@ -395,7 +393,6 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
 void NavEKF3_core::Log_Write_Timing(uint64_t time_us)
 {
     // log EKF timing statistics every 5s
-    static uint32_t lastTimingLogTime_ms = 0;
     if (AP::dal().millis() - lastTimingLogTime_ms <= 5000) {
         return;
     }

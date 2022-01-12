@@ -37,9 +37,11 @@ public:
     void commandline_arguments(uint8_t &argc, char * const *&argv) override;
 
     /*
-      set system clock in UTC microseconds
+      get/set system clock in UTC microseconds
      */
     void set_hw_rtc(uint64_t time_utc_usec) override;
+    uint64_t get_hw_rtc() const override;
+
     const char *get_custom_log_directory() const override final { return custom_log_directory; }
     const char *get_custom_terrain_directory() const override final { return custom_terrain_directory; }
     const char *get_custom_storage_directory() const override final { return custom_storage_directory; }
@@ -57,6 +59,9 @@ public:
     const char* get_custom_defaults_file() const override final {
         return custom_defaults;
     }
+
+    /* Parse cpu set in the form 0; 0,2; or 0-2 */
+    bool parse_cpu_set(const char *s, cpu_set_t *cpu_set) const;
 
     bool is_chardev_node(const char *path);
     void set_imu_temp(float current) override;

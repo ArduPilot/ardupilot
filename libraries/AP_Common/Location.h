@@ -49,7 +49,7 @@ public:
     // the original frame or desired frame is above-terrain
     bool change_alt_frame(AltFrame desired_frame);
 
-    // get position as a vector from origin (x,y only or x,y,z)
+    // get position as a vector (in cm) from origin (x,y only or x,y,z)
     // return false on failure to get the vector which can only
     // happen if the EKF origin has not been set yet
     // x, y and z are in centimetres
@@ -59,7 +59,11 @@ public:
     // return distance in meters between two locations
     ftype get_distance(const struct Location &loc2) const;
 
+    // return the altitude difference in meters taking into account alt frame.
+    bool get_alt_distance(const struct Location &loc2, ftype &distance) const WARN_IF_UNUSED;
+
     // return the distance in meters in North/East/Down plane as a N/E/D vector to loc2
+    // NOT CONSIDERING ALT FRAME!
     Vector3f get_distance_NED(const Location &loc2) const;
     Vector3d get_distance_NED_double(const Location &loc2) const;
 

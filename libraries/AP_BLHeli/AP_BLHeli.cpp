@@ -41,7 +41,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define debug(fmt, args ...) do { if (debug_level) { gcs().send_text(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
+#define debug(fmt, args ...) do { if (debug_level) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: " fmt, ## args); } } while (0)
 
 // key for locking UART for exclusive use. This prevents any other writes from corrupting
 // the MSP protocol on hal.console
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MASK",  1, AP_BLHeli, channel_mask, 0),
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param: AUTO
     // @DisplayName: BLHeli pass-thru auto-enable for multicopter motors
     // @Description: If set to 1 this auto-enables BLHeli pass-thru support for all multicopter motors
@@ -1193,11 +1193,11 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
     debug_uart = hal.console;
     uint8_t saved_chan = blheli.chan;
     if (chan >= num_motors) {
-        gcs().send_text(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: bad channel %u", chan);
         return;
     }
     blheli.chan = chan;
-    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Running test on channel %u",  blheli.chan);
     bool passed = false;
     for (uint8_t tries=0; tries<5; tries++) {
         EXPECT_DELAY_MS(3000);
@@ -1229,7 +1229,7 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
     motors_disabled = false;
     serial_start_ms = 0;
     blheli.chan = saved_chan;
-    gcs().send_text(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ESC: Test %s", passed?"PASSED":"FAILED");
     debug_uart = nullptr;
 }
 
@@ -1260,9 +1260,11 @@ void AP_BLHeli::update(void)
             motors_disabled = false;
             SRV_Channels::set_disabled_channel_mask(0);
         }
-        debug("Unlocked UART");
-        uart->lock_port(0, 0);
-        uart_locked = false;
+        if (uart != nullptr) {
+            debug("Unlocked UART");
+            uart->lock_port(0, 0);
+            uart_locked = false;
+        }
         if (motor_control_active) {
             for (uint8_t i = 0; i < num_motors; i++) {
                 bool reversed = ((1U<<motor_map[i]) & channel_reversible_mask.get()) != 0;
@@ -1288,6 +1290,7 @@ void AP_BLHeli::init(void)
 
     run_test.set_and_notify(0);
 
+#if HAL_GCS_ENABLED
     // only install pass-thru protocol handler if either auto or the motor mask are set
     if (channel_mask.get() != 0 || channel_auto.get() != 0) {
         if (last_control_port > 0 && last_control_port != control_port) {
@@ -1301,6 +1304,7 @@ void AP_BLHeli::init(void)
             last_control_port = control_port;
         }
     }
+#endif // HAL_GCS_ENABLED
 
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -1315,47 +1319,35 @@ void AP_BLHeli::init(void)
       allow mode override - this makes it possible to use DShot for
       rovers and subs, plus for quadplane fwd motors
      */
-    AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE;
-    AP_Motors::pwm_type otype = AP_Motors::pwm_type(output_type.get());
-
+    // +1 converts from AP_Motors::pwm_type to AP_HAL::RCOutput::output_mode and saves doing a param conversion
+    // this is the only use of the param, but this is still a bit of a hack
+    const int16_t type = output_type.get() + 1;
+    AP_HAL::RCOutput::output_mode otype = ((type > AP_HAL::RCOutput::MODE_PWM_NONE) && (type < AP_HAL::RCOutput::MODE_NEOPIXEL)) ? AP_HAL::RCOutput::output_mode(type) : AP_HAL::RCOutput::MODE_PWM_NONE;
     switch (otype) {
-    case AP_Motors::PWM_TYPE_ONESHOT:
-        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT;
-        break;
-    case AP_Motors::PWM_TYPE_ONESHOT125:
-        mode = AP_HAL::RCOutput::MODE_PWM_ONESHOT125;
-        break;
-    case AP_Motors::PWM_TYPE_BRUSHED:
-        mode = AP_HAL::RCOutput::MODE_PWM_BRUSHED;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT150:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT150;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT300:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT300;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT600:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT600;
-        break;
-    case AP_Motors::PWM_TYPE_DSHOT1200:
-        mode = AP_HAL::RCOutput::MODE_PWM_DSHOT1200;
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
+    case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
+    case AP_HAL::RCOutput::MODE_PWM_BRUSHED:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT150:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT300:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT600:
+    case AP_HAL::RCOutput::MODE_PWM_DSHOT1200:
+        if (mask) {
+            hal.rcout->set_output_mode(mask, otype);
+        }
         break;
     default:
         break;
-    }
-    if (mask && mode != AP_HAL::RCOutput::MODE_PWM_NONE) {
-        hal.rcout->set_output_mode(mask, mode);
     }
 
     uint16_t digital_mask = 0;
     // setting the digital mask changes the min/max PWM values
     // it's important that this is NOT done for non-digital channels as otherwise
     // PWM min can result in motors turning. set for individual overrides first
-    if (mask && otype >= AP_Motors::PWM_TYPE_DSHOT150) {
+    if (mask && hal.rcout->is_dshot_protocol(otype)) {
         digital_mask = mask;
     }
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter) || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
     /*
       plane and copter can use AP_Motors to get an automatic mask
      */
@@ -1367,7 +1359,7 @@ void AP_BLHeli::init(void)
     if (motors) {
         uint16_t motormask = motors->get_motor_mask();
         // set the rest of the digital channels
-        if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_DSHOT150) {
+        if (motors->is_digital_pwm_type()) {
             digital_mask |= motormask;
         }
         mask |= motormask;

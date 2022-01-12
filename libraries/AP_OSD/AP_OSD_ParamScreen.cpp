@@ -125,7 +125,7 @@ static const char* event_names[5] = {
 #endif
 
 static const AP_OSD_ParamSetting::Initializer PARAM_DEFAULTS[AP_OSD_NUM_PARAM_SCREENS][AP_OSD_ParamScreen::NUM_PARAMS] {
-#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+#if APM_BUILD_COPTER_OR_HELI
     {
         { 1, { 102, 0, 4033 }, OSD_PARAM_NONE },            // ATC_RAT_RLL_P
         { 2, { 102, 0, 129  }, OSD_PARAM_NONE },            // ATC_RAT_RLL_D
@@ -628,6 +628,7 @@ void AP_OSD_ParamScreen::save_parameters()
 }
 
 // handle OSD configuration messages
+#if HAL_GCS_ENABLED
 void AP_OSD_ParamScreen::handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link)
 {
     // request out of range - return an error
@@ -666,5 +667,6 @@ void AP_OSD_ParamScreen::handle_read_msg(const mavlink_osd_param_show_config_t& 
     mavlink_msg_osd_param_show_config_reply_send(link.get_chan(), packet.request_id, OSD_PARAM_SUCCESS,
         buf, param._type, param._param_min, param._param_max, param._param_incr);
 }
+#endif
 
 #endif // OSD_PARAM_ENABLED

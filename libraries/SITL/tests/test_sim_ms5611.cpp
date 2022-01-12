@@ -30,8 +30,8 @@ const struct forward_check {
         float P_Pa;
         float Temp_C;
     } conversion_table [] = {
-        {3897939, 7529942, 1200, -20},          // < -15 deg C Temperature, Low Pressure
-        {10398464, 7529942, 115200, -20},       // < -15 deg C Temperatures, High Pressure
+        {3894332, 7304992, 1200, -30},          // < -15 deg C Temperature, Low Pressure
+        {10566581, 7304992, 115200, -30},       // < -15 deg C Temperatures, High Pressure
 
         {3919542, 8425824, 1200, 15.15},        // < 20 deg C Temperatures, Low Pressure
         {9937566, 8425824, 115200, 15.15},      // < 20 deg C Temperatures, High Pressure
@@ -63,8 +63,10 @@ TEST(MS5611, convert)
         uint32_t D1;
         uint32_t D2;
         ms5611.convert_pub(elem.P_Pa, elem.Temp_C, D1, D2);
-        EXPECT_EQ(D1, elem.D1);
-        EXPECT_EQ(D2, elem.D2);
+
+        // Expect NEAR here instead of EQ because in 32bit they are off by 1
+        EXPECT_NEAR(D1, elem.D1, 1);
+        EXPECT_NEAR(D2, elem.D2, 1);
     }
 }
 

@@ -21,10 +21,10 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <RC_Channel/RC_Channel.h>
-#include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_OLC/AP_OLC.h>
-
+#include <AP_MSP/msp.h>
+#include <AP_Baro/AP_Baro.h>
 
 #ifndef OSD_ENABLED
 #define OSD_ENABLED !HAL_MINIMIZE_FEATURES
@@ -36,6 +36,10 @@
 
 #ifndef OSD_PARAM_ENABLED
 #define OSD_PARAM_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+
+#ifndef HAL_OSD_SIDEBAR_ENABLE
+#define HAL_OSD_SIDEBAR_ENABLE !HAL_MINIMIZE_FEATURES
 #endif
 
 class AP_OSD_Backend;
@@ -52,7 +56,7 @@ class AP_MSP;
 #define PARAM_INDEX(key, idx, group) (uint32_t(uint32_t(key) << 23 | uint32_t(idx) << 18 | uint32_t(group)))
 #define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
-#define AP_OSD_NUM_SYMBOLS 79
+#define AP_OSD_NUM_SYMBOLS 91
 /*
   class to hold one setting
  */
@@ -130,6 +134,7 @@ public:
 private:
     friend class AP_MSP;
     friend class AP_MSP_Telem_Backend;
+    friend class AP_MSP_Telem_DJI;
 
     static const uint8_t message_visible_width = 26;
     static const uint8_t message_scroll_time_ms = 200;
@@ -171,7 +176,9 @@ private:
     AP_OSD_Setting roll_angle{false, 0, 0};
     AP_OSD_Setting pitch_angle{false, 0, 0};
     AP_OSD_Setting temp{false, 0, 0};
+#if BARO_MAX_INSTANCES > 1
     AP_OSD_Setting btemp{false, 0, 0};
+#endif
     AP_OSD_Setting hdop{false, 0, 0};
     AP_OSD_Setting waypoint{false, 0, 0};
     AP_OSD_Setting xtrack_error{false, 0, 0};
@@ -193,9 +200,9 @@ private:
 #if HAL_PLUSCODE_ENABLE
     AP_OSD_Setting pluscode{false, 0, 0};
 #endif
+    AP_OSD_Setting sidebars{false, 4, 5};
 
     // MSP OSD only
-    AP_OSD_Setting sidebars{false, 0, 0};
     AP_OSD_Setting crosshair{false, 0, 0};
     AP_OSD_Setting home_dist{true, 1, 1};
     AP_OSD_Setting home_dir{true, 1, 1};
@@ -222,6 +229,9 @@ private:
     void draw_home(uint8_t x, uint8_t y);
     void draw_throttle(uint8_t x, uint8_t y);
     void draw_heading(uint8_t x, uint8_t y);
+#ifdef HAL_OSD_SIDEBAR_ENABLE
+    void draw_sidebars(uint8_t x, uint8_t y);
+#endif
     void draw_compass(uint8_t x, uint8_t y);
     void draw_wind(uint8_t x, uint8_t y);
     void draw_aspeed(uint8_t x, uint8_t y);
@@ -244,7 +254,9 @@ private:
     void draw_roll_angle(uint8_t x, uint8_t y);
     void draw_pitch_angle(uint8_t x, uint8_t y);
     void draw_temp(uint8_t x, uint8_t y);
+#if BARO_MAX_INSTANCES > 1
     void draw_btemp(uint8_t x, uint8_t y);
+#endif
     void draw_hdop(uint8_t x, uint8_t y);
     void draw_waypoint(uint8_t x, uint8_t y);
     void draw_xtrack_error(uint8_t x, uint8_t y);
@@ -367,11 +379,13 @@ public:
     static const uint8_t NUM_PARAMS = 9;
     static const uint8_t SAVE_PARAM = NUM_PARAMS + 1;
 
-#if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
+#if OSD_ENABLED && (HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT)
     void draw(void) override;
 #endif
+#if HAL_GCS_ENABLED
     void handle_write_msg(const mavlink_osd_param_config_t& packet, const GCS_MAVLINK& link);
     void handle_read_msg(const mavlink_osd_param_show_config_t& packet, const GCS_MAVLINK& link);
+#endif
     // get a setting and associated metadata
     AP_OSD_ParamSetting* get_setting(uint8_t param_idx);
     // Save button co-ordinates
@@ -503,7 +517,22 @@ public:
         uint16_t wp_number;
     };
 
+    struct StatsInfo {
+        uint32_t last_update_ms;
+        float last_distance_m;
+        float max_dist_m;
+        float max_alt_m;
+        float max_speed_mps;
+        float max_airspeed_mps;
+        float max_current_a;
+        float avg_current_a;
+        float min_voltage_v = FLT_MAX;
+        float min_rssi = FLT_MAX;   // 0-1
+        int16_t max_esc_temp;
+    };
+
     void set_nav_info(NavInfo &nav_info);
+    const volatile StatsInfo& get_stats_info() const {return _stats;};
     // disable the display
     void disable() {
         _disable = true;
@@ -525,6 +554,8 @@ public:
     // Check whether arming is allowed
     bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const;
     bool is_readonly_screen() const { return current_screen < AP_OSD_NUM_DISPLAY_SCREENS; }
+    // get the current screen
+    uint8_t get_current_screen() const { return current_screen; };
 #endif // OSD_ENABLED
 #if OSD_PARAM_ENABLED
     AP_OSD_ParamScreen param_screen[AP_OSD_NUM_PARAM_SCREENS] { 0, 1 };
@@ -537,13 +568,20 @@ public:
     }
 #endif
     // handle OSD parameter configuration
+#if HAL_GCS_ENABLED
     void handle_msg(const mavlink_message_t &msg, const GCS_MAVLINK& link);
+#endif
+
+    // allow threads to lock against OSD update
+    HAL_Semaphore &get_semaphore(void) {
+        return _sem;
+    }
 
 private:
     void osd_thread();
 #if OSD_ENABLED
     void update_osd();
-    void stats();
+    void update_stats();
     void update_current_screen();
     void next_screen();
 
@@ -559,17 +597,13 @@ private:
     bool was_failsafe;
     bool _disable;
 
-    uint32_t last_update_ms;
-    float last_distance_m;
-    float max_dist_m;
-    float max_alt_m;
-    float max_speed_mps;
-    float max_current_a;
-    float avg_current_a;
+    StatsInfo _stats;
 #endif
     AP_OSD_Backend *backend;
 
     static AP_OSD *_singleton;
+    // multi-thread access support
+    HAL_Semaphore _sem;
 };
 
 namespace AP

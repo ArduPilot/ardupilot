@@ -1,13 +1,9 @@
 #include "mode.h"
 #include "Plane.h"
 
-bool ModeQHover::_enter()
-{
-    return plane.mode_qstabilize._enter();
-}
+#if HAL_QUADPLANE_ENABLED
 
-// init quadplane hover mode 
-void ModeQHover::init()
+bool ModeQHover::_enter()
 {
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
@@ -15,6 +11,7 @@ void ModeQHover::init()
     quadplane.set_climb_rate_cms(0, false);
 
     quadplane.init_throttle_wait();
+    return true;
 }
 
 void ModeQHover::update()
@@ -36,3 +33,5 @@ void ModeQHover::run()
         quadplane.hold_hover(quadplane.get_pilot_desired_climb_rate_cms());
     }
 }
+
+#endif

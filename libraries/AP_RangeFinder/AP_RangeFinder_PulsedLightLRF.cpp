@@ -91,7 +91,7 @@ void AP_RangeFinder_PulsedLightLRF::timer(void)
             uint16_t _distance_cm = be16toh(val);
             // remove momentary spikes
             if (abs(_distance_cm - last_distance_cm) < 100) {
-                state.distance_cm = _distance_cm;
+                state.distance_m = _distance_cm * 0.01f;
                 state.last_reading_ms = AP_HAL::millis();
                 update_status();                
             }

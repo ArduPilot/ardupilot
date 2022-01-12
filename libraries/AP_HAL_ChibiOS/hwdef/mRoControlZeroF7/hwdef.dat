@@ -43,13 +43,13 @@ define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
 # fallback storage in case FRAM is not populated
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # USB setup
 USB_STRING_MANUFACTURER "mRo"
 
 # RC Input set for Interrupt not DMA also USART6_RX for serial RC
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
 
 # Control of Spektrum power pin
 PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)
@@ -133,11 +133,11 @@ PF9 SPI5_MOSI SPI5
 
 # GPIOs
 # This defines general purpose outputs, mapped to GPIO
-# numbers 1 thru 4 for users.
-PG9  EXTERN_GPIO1 GPIO(1)
-PG13 EXTERN_GPIO2 GPIO(2)
-PG12 EXTERN_GPIO3 GPIO(3)
-PG14 EXTERN_GPIO4 GPIO(4)
+# numbers 3 thru 6 for users.
+PG9  EXTERN_GPIO1 OUTPUT GPIO(3)
+PG13 EXTERN_GPIO2 OUTPUT GPIO(4)
+PG12 EXTERN_GPIO3 OUTPUT GPIO(5)
+PG14 EXTERN_GPIO4 OUTPUT GPIO(6)
 
 # This is the pin that senses USB being connected. It is an input pin
 # setup as OPENDRAIN.

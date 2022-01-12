@@ -64,11 +64,14 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // notify user of a fatal startup error related to available sensors. 
-    static void config_error(const char *reason, ...);
+    static void config_error(const char *reason, ...) FMT_PRINTF(1, 2) NORETURN;
+
+    // notify user of a non-fatal startup error related to allocation failures.
+    static void allocation_error(const char *reason, ...) FMT_PRINTF(1, 2) NORETURN;
 
     // permit other libraries (in particular, GCS_MAVLink) to detect
     // that we're never going to boot properly:
-    static bool in_config_error(void) { return _in_sensor_config_error; }
+    static bool in_config_error(void) { return _in_error_loop; }
 
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
@@ -121,11 +124,13 @@ public:
 #endif
     }
 
+#ifdef HAL_PIN_ALT_CONFIG
     // get alternative config selection
     uint8_t get_alt_config(void) {
         return uint8_t(_alt_config.get());
     }
-    
+#endif // HAL_PIN_ALT_CONFIG
+
     enum board_safety_button_option {
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF= (1 << 0),
         BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_ON=  (1 << 1),
@@ -171,6 +176,7 @@ public:
         BOARD_OPTION_WATCHDOG = (1 << 0),
         DISABLE_FTP = (1<<1),
         ALLOW_SET_INTERNAL_PARM = (1<<2),
+        BOARD_OPTION_DEBUG_ENABLE = (1<<3),
     };
 
     // return true if ftp is disabled
@@ -199,6 +205,10 @@ public:
     float get_heater_duty_cycle(void) const {
         return heater.output;
     }
+
+    // getters for current temperature and min arming temperature, return false if heater disabled
+    bool get_board_heater_temperature(float &temperature) const;
+    bool get_board_heater_arming_temperature(int8_t &temperature) const;
 #endif
 
 private:
@@ -231,12 +241,16 @@ private:
 #endif // AP_FEATURE_BOARD_DETECT
 
     void board_init_safety(void);
+    void board_init_debug(void);
 
     void board_setup_uart(void);
     void board_setup_sbus(void);
     void board_setup(void);
 
-    static bool _in_sensor_config_error;
+    // common method to throw errors
+    static void throw_error(const char *err_str, const char *fmt, va_list arg) NORETURN;
+
+    static bool _in_error_loop;
 
 #if HAL_HAVE_IMU_HEATER
     struct {
@@ -247,6 +261,8 @@ private:
         float sum;
         float output;
         uint32_t last_log_ms;
+        float temperature;
+        AP_Int8 imu_arming_temperature_margin_low;
     } heater;
 #endif
 
@@ -278,7 +294,9 @@ private:
 
     AP_Int32 _options;
 
+#ifdef HAL_PIN_ALT_CONFIG
     AP_Int8  _alt_config;
+#endif
 };
 
 namespace AP {

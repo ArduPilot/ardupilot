@@ -12,7 +12,7 @@
 
 #if REMOTE_LOG_DEBUGGING
 #include <stdio.h>
- # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
+ # define Debug(fmt, args ...)  do {fprintf(stderr, "%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
@@ -352,7 +352,7 @@ void AP_Logger_MAVLink::stats_log()
     Write_logger_MAV(*this);
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
-           dropped,
+           _dropped,
            _blocks_retry.sent_count,
            stats.resends,
            stats.state_free_min,

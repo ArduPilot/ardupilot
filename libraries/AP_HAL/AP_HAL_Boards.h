@@ -13,6 +13,7 @@
 #define HAL_BOARD_VRBRAIN  8
 #define HAL_BOARD_CHIBIOS  10
 #define HAL_BOARD_F4LIGHT  11 // reserved
+#define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_EMPTY    99
 
 /* Default board subtype is -1 */
@@ -40,6 +41,7 @@
 #define HAL_BOARD_SUBTYPE_LINUX_POCKET     1022
 #define HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR  1023
 #define HAL_BOARD_SUBTYPE_LINUX_VNAV       1024
+#define HAL_BOARD_SUBTYPE_LINUX_OBAL_V1    1025
 
 /* HAL CHIBIOS sub-types, starting at 5000
 
@@ -57,6 +59,10 @@
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRUBRAIN_V51  5018
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRCORE_V10    5019
 #define HAL_BOARD_SUBTYPE_CHIBIOS_VRBRAIN_V54   5020
+
+#define HAL_BOARD_SUBTYPE_ESP32_DIY             6001
+#define HAL_BOARD_SUBTYPE_ESP32_ICARUS          6002
+#define HAL_BOARD_SUBTYPE_ESP32_BUZZ            6003
 
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
@@ -129,6 +135,8 @@
     #include <AP_HAL/board/vrbrain.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 	#include <AP_HAL/board/chibios.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+    #include <AP_HAL/board/esp32.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
@@ -167,10 +175,6 @@
 
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU 0
-#endif
-
-#ifndef HAL_HAVE_GETTIME_SETTIME
-#define HAL_HAVE_GETTIME_SETTIME 0
 #endif
 
 // this is used as a general mechanism to make a 'small' build by
@@ -267,4 +271,23 @@
 
 #ifndef HAL_WITH_MCU_MONITORING
 #define HAL_WITH_MCU_MONITORING defined(STM32H7)
+#endif
+
+#ifndef HAL_HNF_MAX_FILTERS
+// On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
+// The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
+// So at 1Khz almost all notch combinations can be supported on F7 and certainly H7
+#if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// Enough for a double-notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one double-notch harmonics
+#define HAL_HNF_MAX_FILTERS 54
+#elif defined(STM32F7)
+// Enough for a notch per motor on an octa using three IMUs and one harmonics
+// plus one static notch with one harmonics
+#define HAL_HNF_MAX_FILTERS 27
+#else
+// Enough for a notch per motor on an octa quad using two IMUs and one harmonic
+// plus one static notch with one harmonic
+#define HAL_HNF_MAX_FILTERS 18
+#endif
 #endif

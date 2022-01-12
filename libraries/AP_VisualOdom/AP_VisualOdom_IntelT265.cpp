@@ -129,8 +129,8 @@ void AP_VisualOdom_IntelT265::rotate_attitude(Quaternion &attitude) const
 // use sensor provided attitude to calculate rotation to align sensor with AHRS/EKF attitude
 bool AP_VisualOdom_IntelT265::align_sensor_to_vehicle(const Vector3f &position, const Quaternion &attitude)
 {
-    // do not align to ahrs if it is using us as its yaw source
-    if (AP::ahrs().is_ext_nav_used_for_yaw()) {
+    // do not align to ahrs if we are its yaw source
+    if (AP::ahrs().using_extnav_for_yaw()) {
         return false;
     }
 
@@ -261,6 +261,11 @@ bool AP_VisualOdom_IntelT265::pre_arm_check(char *failure_msg, uint8_t failure_m
 // only the VISION_POSITION_ESTIMATE message's reset_counter is used to determine if sensor data should be ignored
 bool AP_VisualOdom_IntelT265::should_consume_sensor_data(bool vision_position_estimate, uint8_t reset_counter)
 {
+    if (get_type() == AP_VisualOdom::VisualOdom_Type::VOXL) {
+        // we don't discard data after a reset for VOXL
+        return true;
+    }
+
     uint32_t now_ms = AP_HAL::millis();
 
     // set ignore start time if reset counter has changed

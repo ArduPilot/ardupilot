@@ -64,11 +64,26 @@ private:
     } _accum;
 
     uint8_t _instance;
-    
+
+    enum class SensorMode {
+        PR_MODE = 0,    // Vented gauge
+        PA_MODE = 1,    // Sealed gauge
+        PAA_MODE = 2,   // Absolute
+        UNDEFINED = 3,  
+    };
+
+    // to store sensor mode
+    SensorMode _p_mode;
     // Model-specific offset/calibration values stored in device ROM
     //  pressure offset used in pressure calculation
     float _p_mode_offset;
     //  measurement range parameters used in pressure calculation
     float _p_min;
     float _p_max;
+
+    // helpers for reading out calibration information:
+    bool transfer_with_delays(uint8_t *send, uint8_t sendlen, uint8_t *recv, uint8_t recvlen);
+    bool read_measurement_limit(float *limit, uint8_t msb_addr, uint8_t lsb_addr);
+    bool read_cal();
+    bool read_mode_type();
 };

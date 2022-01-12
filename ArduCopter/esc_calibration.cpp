@@ -9,7 +9,7 @@
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-    if (motors->get_pwm_type() == AP_Motors::PWM_TYPE_BRUSHED) {
+    if (motors->is_brushed_pwm_type()) {
         // ESC cal not valid for brushed motors
         return;
     }
@@ -153,7 +153,7 @@ void Copter::esc_calibration_setup()
     // clear esc flag for next time
     g.esc_calibrate.set_and_save(ESCCAL_NONE);
 
-    if (motors->get_pwm_type() >= AP_Motors::PWM_TYPE_ONESHOT) {
+    if (motors->is_normal_pwm_type()) {
         // run at full speed for oneshot ESCs (actually done on push)
         motors->set_update_rate(g.rc_speed);
     } else {

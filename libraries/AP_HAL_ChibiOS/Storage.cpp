@@ -468,4 +468,18 @@ bool Storage::erase(void)
 #endif
 }
 
+/*
+  get storage size and ptr
+ */
+bool Storage::get_storage_ptr(void *&ptr, size_t &size)
+{
+    if (_initialisedType==StorageBackend::None) {
+        return false;
+    }
+    ptr = _buffer;
+    size = sizeof(_buffer);
+    return true;
+}
+
+
 #endif // HAL_USE_EMPTY_STORAGE

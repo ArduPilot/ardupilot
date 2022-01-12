@@ -27,6 +27,7 @@
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 
 class NavEKF3_core;
+class EKFGSF_yaw;
 
 class NavEKF3 {
     friend class NavEKF3_core;
@@ -336,8 +337,11 @@ public:
     // write EKF information to on-board logs
     void Log_Write();
 
-    // are we using an external yaw source? This is needed by AHRS attitudes_consistent check
-    bool using_external_yaw(void) const;
+    // are we using (aka fusing) a non-compass yaw?
+    bool using_noncompass_for_yaw() const;
+
+    // are we using (aka fusing) external nav for yaw?
+    bool using_extnav_for_yaw() const;
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
@@ -354,6 +358,9 @@ public:
     // returns true when the state estimates for the selected core are significantly degraded by vibration
     // if instance < 0, the primary instance will be used
     bool isVibrationAffected(int8_t instance) const;
+
+    // get a yaw estimator instance
+    const EKFGSF_yaw *get_yawEstimator(void) const;
 
 private:
     uint8_t num_cores; // number of allocated cores

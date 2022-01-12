@@ -27,6 +27,8 @@
 
 using namespace SITL;
 
+extern const AP_HAL::HAL& hal;
+
 // table of user settable parameters
 const AP_Param::GroupInfo RichenPower::var_info[] = {
 
@@ -59,6 +61,11 @@ RichenPower::RichenPower() : SerialDevice::SerialDevice()
 
     u.packet.footermagic1 = 0x55;
     u.packet.footermagic2 = 0xAA;
+}
+
+void RichenPower::set_run_state(State newstate) {
+    hal.console->printf("Moving to state %u from %u\n", (unsigned)newstate, (unsigned)_state);
+    _state = newstate;
 }
 
 void RichenPower::update(const struct sitl_input &input)

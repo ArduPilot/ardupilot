@@ -495,7 +495,9 @@ void Frame::init(const char *frame_str, Battery *_battery)
     // setup reasonable defaults for battery
     AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
     AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
-    AP_Param::set_default_by_name("BATT_CAPACITY", model.battCapacityAh*1000);
+    if (model.battCapacityAh > 0) {
+        AP_Param::set_default_by_name("BATT_CAPACITY", model.battCapacityAh*1000);
+    }
 }
 
 /*

@@ -42,7 +42,7 @@ void AP_RangeFinder_SITL::update(void)
         return;
     }
 
-    state.distance_cm = dist * 100.0f;
+    state.distance_m = dist;
     state.last_reading_ms = AP_HAL::millis();
 
     // update range_valid state based on distance measured

@@ -92,7 +92,7 @@ void AP_Periph_FW::init()
 
     stm32_watchdog_pat();
 
-#ifdef HAL_NO_GCS
+#if !HAL_GCS_ENABLED
     hal.serial(0)->begin(AP_SERIALMANAGER_CONSOLE_BAUD, 32, 32);
 #endif
     hal.serial(3)->begin(115200, 128, 256);
@@ -103,14 +103,15 @@ void AP_Periph_FW::init()
 
     can_start();
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     stm32_watchdog_pat();
     gcs().init();
 #endif
     serial_manager.init();
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     gcs().setup_console();
+    gcs().setup_uarts();
     gcs().send_text(MAV_SEVERITY_INFO, "AP_Periph GCS Initialised!");
 #endif
 
@@ -213,6 +214,9 @@ void AP_Periph_FW::init()
     notify.init();
 #endif
 
+#if AP_SCRIPTING_ENABLED
+    scripting.init();
+#endif
     start_ms = AP_HAL::native_millis();
 }
 
@@ -347,7 +351,7 @@ void AP_Periph_FW::update()
         rcout_init_1Hz();
 #endif
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
         gcs().send_message(MSG_HEARTBEAT);
         gcs().send_message(MSG_SYS_STATUS);
 #endif    
@@ -384,7 +388,7 @@ void AP_Periph_FW::update()
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
         notify.update();
 #endif
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
         gcs().update_receive();
         gcs().update_send();
 #endif

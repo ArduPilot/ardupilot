@@ -4,7 +4,7 @@
 SITL::Rotoye::Rotoye() :
     SIM_BattMonitor_SMBus_Generic()
 {
-    add_register("External Temperature", SMBusBattRotoyeDevReg::TEMP_EXT, O_RDONLY);
+    add_register("External Temperature", SMBusBattRotoyeDevReg::TEMP_EXT, SITL::I2CRegisters::RegMode::RDONLY);
 
     set_register(SMBusBattRotoyeDevReg::SERIAL, (uint16_t)39);
 }

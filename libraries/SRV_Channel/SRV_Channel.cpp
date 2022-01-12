@@ -20,7 +20,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Math/AP_Math.h>
 #include "SRV_Channel.h"
 
 extern const AP_HAL::HAL& hal;
@@ -84,52 +83,57 @@ SRV_Channel::SRV_Channel(void)
 }
 
 // convert a 0..range_max to a pwm
-uint16_t SRV_Channel::pwm_from_range(int16_t scaled_value) const
+uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 {
     if (servo_max <= servo_min || high_out == 0) {
         return servo_min;
     }
-    scaled_value = constrain_int16(scaled_value, 0, high_out);
+    scaled_value = constrain_float(scaled_value, 0, high_out);
     if (reversed) {
         scaled_value = high_out - scaled_value;
     }
-    return servo_min + ((int32_t)scaled_value * (int32_t)(servo_max - servo_min)) / (int32_t)high_out;
+    return servo_min + uint16_t( (scaled_value * (float)(servo_max - servo_min)) / (float)high_out );
 }
 
 // convert a -angle_max..angle_max to a pwm
-uint16_t SRV_Channel::pwm_from_angle(int16_t scaled_value) const
+uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
 {
     if (reversed) {
         scaled_value = -scaled_value;
     }
-    scaled_value = constrain_int16(scaled_value, -high_out, high_out);
+    scaled_value = constrain_float(scaled_value, -high_out, high_out);
     if (scaled_value > 0) {
-        return servo_trim + ((int32_t)scaled_value * (int32_t)(servo_max - servo_trim)) / (int32_t)high_out;
+        return servo_trim + uint16_t( (scaled_value * (float)(servo_max - servo_trim)) / (float)high_out);
     } else {
-        return servo_trim - (-(int32_t)scaled_value * (int32_t)(servo_trim - servo_min)) / (int32_t)high_out;
+        return servo_trim - uint16_t( (-scaled_value * (float)(servo_trim - servo_min)) / (float)high_out);
     }
 }
 
-void SRV_Channel::calc_pwm(int16_t output_scaled)
+void SRV_Channel::calc_pwm(float output_scaled)
 {
     if (have_pwm_mask & (1U<<ch_num)) {
+        // Note that this allows a set_output_pwm call to override E-Stop!!
+        // tricky to fix because we would endup E-stoping to individual SEROVx_MIN not MOT_PWM_MIN on copter
         return;
     }
 
     // check for E - stop
     bool force = false;
     if (SRV_Channel::should_e_stop(get_function()) && SRV_Channels::emergency_stop) {
-        output_scaled = 0;
+        output_scaled = 0.0;
         force = true;
     }
 
-    uint16_t pwm;
-    if (type_angle) {
-        pwm = pwm_from_angle(output_scaled);
-    } else {
-        pwm = pwm_from_range(output_scaled);
+    if (!force && override_active) {
+        // don't overwrite a override
+        return;
     }
-    set_output_pwm(pwm,force);
+
+    if (type_angle) {
+        output_pwm = pwm_from_angle(output_scaled);
+    } else {
+        output_pwm = pwm_from_range(output_scaled);
+    }
 }
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
@@ -215,9 +219,76 @@ bool SRV_Channel::is_motor(SRV_Channel::Aux_servo_function_t function)
 // return true if function is for anything that should be stopped in a e-stop situation, ie is dangerous
 bool SRV_Channel::should_e_stop(SRV_Channel::Aux_servo_function_t function)
 {
-    return ((function >= SRV_Channel::k_heli_rsc && function <= SRV_Channel::k_motor8) ||
-            function == SRV_Channel::k_starter || function == SRV_Channel::k_throttle ||
-            function == SRV_Channel::k_throttleLeft || function == SRV_Channel::k_throttleRight ||
-            (function >= SRV_Channel::k_boost_throttle && function <= SRV_Channel::k_motor12) ||
-            function == k_engine_run_enable);
+    switch (function) {
+    case Aux_servo_function_t::k_heli_rsc:  
+    case Aux_servo_function_t::k_heli_tail_rsc:
+    case Aux_servo_function_t::k_motor1:
+    case Aux_servo_function_t::k_motor2:
+    case Aux_servo_function_t::k_motor3:
+    case Aux_servo_function_t::k_motor4:
+    case Aux_servo_function_t::k_motor5:
+    case Aux_servo_function_t::k_motor6:
+    case Aux_servo_function_t::k_motor7:
+    case Aux_servo_function_t::k_motor8:
+    case Aux_servo_function_t::k_starter:
+    case Aux_servo_function_t::k_throttle:
+    case Aux_servo_function_t::k_throttleLeft:
+    case Aux_servo_function_t::k_throttleRight:
+    case Aux_servo_function_t::k_boost_throttle:
+    case Aux_servo_function_t::k_motor9:
+    case Aux_servo_function_t::k_motor10:
+    case Aux_servo_function_t::k_motor11:
+    case Aux_servo_function_t::k_motor12:
+    case Aux_servo_function_t::k_engine_run_enable:
+        return true;
+    default:
+        return false;
+    }
+    return false;
+}
+
+// return true if function is for a control surface
+bool SRV_Channel::is_control_surface(SRV_Channel::Aux_servo_function_t function)
+{
+    switch (function)
+    {
+    case SRV_Channel::Aux_servo_function_t::k_flap:  
+    case SRV_Channel::Aux_servo_function_t::k_flap_auto:
+    case SRV_Channel::Aux_servo_function_t::k_aileron:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft1:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerLeft2:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight1:
+    case SRV_Channel::Aux_servo_function_t::k_dspoilerRight2:
+    case SRV_Channel::Aux_servo_function_t::k_elevator:
+    case SRV_Channel::Aux_servo_function_t::k_rudder:
+    case SRV_Channel::Aux_servo_function_t::k_flaperon_left:
+    case SRV_Channel::Aux_servo_function_t::k_flaperon_right:
+    case SRV_Channel::Aux_servo_function_t::k_elevon_left:
+    case SRV_Channel::Aux_servo_function_t::k_elevon_right:
+    case SRV_Channel::Aux_servo_function_t::k_vtail_left:
+    case SRV_Channel::Aux_servo_function_t::k_vtail_right:
+    case SRV_Channel::Aux_servo_function_t::k_airbrake:
+        return true;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+// return the motor number of a channel, or -1 if not a motor
+// return 0 for first motor
+int8_t SRV_Channel::get_motor_num(void) const
+{
+    const auto k_function = get_function();
+    switch (k_function) {
+    case k_motor1 ... k_motor8:
+        return int8_t(uint16_t(k_function) - k_motor1);
+    case k_motor9 ... k_motor12:
+        return 8 + int8_t(uint16_t(k_function) - k_motor9);
+    default:
+        break;
+    }
+    return -1;
 }

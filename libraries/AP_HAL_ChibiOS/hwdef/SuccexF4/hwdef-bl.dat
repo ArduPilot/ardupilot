@@ -37,9 +37,6 @@ PA13 JTMS-SWDIO SWD
 PA14 JTCK-SWCLK SWD
 
 
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 15360
-
 
 # Add CS pins to ensure they are high in bootloader
 PA4 ICM20689_1_CS CS

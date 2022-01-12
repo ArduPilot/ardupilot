@@ -53,7 +53,7 @@
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav_NavEKF.h>     // ArduPilot Mega inertial navigation library
+#include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // Waypoint navigation library
 #include <AC_WPNav/AC_Loiter.h>
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
@@ -77,11 +77,9 @@
 #include "AP_Arming_Sub.h"
 #include "GCS_Sub.h"
 
-// libraries which are dependent on #defines in defines.h and/or config.h
-#if OPTFLOW == ENABLED
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
-#endif
 
+// libraries which are dependent on #defines in defines.h and/or config.h
 #if RCMAP_ENABLED == ENABLED
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
 #endif
@@ -106,12 +104,8 @@
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #endif
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
 #endif
 
 class Sub : public AP_Vehicle {
@@ -164,10 +158,6 @@ private:
     AP_RPM rpm_sensor;
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
-#endif
-
     // Mission library
     AP_Mission mission{
             FUNCTOR_BIND_MEMBER(&Sub::start_command, bool, const AP_Mission::Mission_Command &),
@@ -175,7 +165,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Sub::exit_mission, void)};
 
     // Optical flow sensor
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     OpticalFlow optflow;
 #endif
 
@@ -333,7 +323,7 @@ private:
     uint32_t condition_start;
 
     // Inertial Navigation
-    AP_InertialNav_NavEKF inertial_nav;
+    AP_InertialNav inertial_nav;
 
     AP_AHRS_View ahrs_view;
 
@@ -349,7 +339,7 @@ private:
 
     // Camera
 #if CAMERA == ENABLED
-    AP_Camera camera{MASK_LOG_CAMERA, current_loc};
+    AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
     // Camera/Antenna mount tracking and stabilisation stuff
@@ -416,9 +406,6 @@ private:
     float get_surface_tracking_climb_rate(int16_t target_rate, float current_alt_target, float dt);
     void update_poscon_alt_max();
     void rotate_body_frame_to_NE(float &x, float &y);
-#if RPM_ENABLED == ENABLED
-    void rpm_update();
-#endif
     void Log_Write_Control_Tuning();
     void Log_Write_Attitude();
     void Log_Write_MotBatt();
@@ -591,7 +578,6 @@ private:
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
     void log_init(void);
-    void accel_cal_update(void);
     void read_airspeed();
 
     void failsafe_leak_check();

@@ -84,8 +84,8 @@ float AutoTune::get_pilot_desired_climb_rate_cms(void) const
 void AutoTune::get_pilot_desired_rp_yrate_cd(float &des_roll_cd, float &des_pitch_cd, float &yaw_rate_cds)
 {
     copter.mode_autotune.get_pilot_desired_lean_angles(des_roll_cd, des_pitch_cd, copter.aparm.angle_max,
-                                                       copter.attitude_control->get_althold_lean_angle_max());
-    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate(copter.channel_yaw->get_control_in());
+                                                       copter.attitude_control->get_althold_lean_angle_max_cd());
+    yaw_rate_cds = copter.mode_autotune.get_pilot_desired_yaw_rate(copter.channel_yaw->norm_input_dz());
 }
 
 /*

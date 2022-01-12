@@ -31,6 +31,7 @@ void ModeVelocity::run()
         motors->yaw_out = act_yaw;
     }
 
-    AP::logger().Write_PSC({0,0,0}, blimp.pos_ned, target_vel*100.0f, blimp.vel_ned_filtd*100.0f, blimp.vel_ned*100.0f, 0, 0);
-    AP::logger().Write_PSCZ(0.0f, 0.0f, 0.0f, target_vel.z*100.0f, blimp.vel_ned_filtd.z*100.0f, 0.0f, blimp.vel_ned.z*100.0f, blimp.vel_yaw*100.0f, blimp.vel_yaw_filtd*100.0f);
+    AP::logger().Write_PSCN(0.0, blimp.pos_ned.x * 100.0, 0.0, 0.0, blimp.vel_ned_filtd.x * 100.0, 0.0, 0.0, 0.0);
+    AP::logger().Write_PSCE(0.0, blimp.pos_ned.y * 100.0, 0.0, 0.0, blimp.vel_ned_filtd.y * 100.0, 0.0, 0.0, 0.0);
+    AP::logger().Write_PSCD(0.0, -blimp.pos_ned.z * 100.0, 0.0, 0.0, -blimp.vel_ned_filtd.z * 100.0, 0.0, 0.0, 0.0);
 }

@@ -44,6 +44,11 @@ jobs:
           apt-get update
           apt-get install -y gcc-multilib g++-multilib
 
+      - name: run dronecan dsdlc generator test
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          python modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py -O dsdlc_generated modules/DroneCAN/DSDL/uavcan modules/DroneCAN/DSDL/dronecan modules/DroneCAN/DSDL/com --run-test
+
       - name: build sitl_periph_gps
         shell: bash
         run: |

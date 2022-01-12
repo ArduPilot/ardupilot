@@ -12,7 +12,7 @@ define CAN_APP_NODE_NAME "io.mrobotics.mRo-M10095"
 FLASH_RESERVE_START_KB 30
 
 # store parameters in pages 13 and 14
-define STORAGE_FLASH_PAGE 13
+STORAGE_FLASH_PAGE 13
 define HAL_STORAGE_SIZE 800
 
 # setup build for a peripheral firmware
@@ -58,11 +58,7 @@ define HAL_PERIPH_ENABLE_BARO
 PA0 VSENSE50  ADC1 SCALE(3)
 PA1 VSENSE3v3 ADC1 SCALE(2)
 
-define NO_DATAFLASH TRUE
-
 define DMA_RESERVE_SIZE 2048
-
-define PERIPH_FW TRUE
 
 define HAL_USE_ADC TRUE
 
@@ -86,20 +82,11 @@ define HAL_DISABLE_LOOP_DELAY
 PA11 CAN1_RX CAN1
 PA12 CAN1_TX CAN1
 
-define HAL_NO_GCS
 define HAL_NO_MONITOR_THREAD
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
-
 define AP_PARAM_MAX_EMBEDDED_PARAM 512
-
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
-
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # keep ROMFS uncompressed as we don't have enough RAM
 # to uncompress the bootloader at runtime

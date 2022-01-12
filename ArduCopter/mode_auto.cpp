@@ -45,10 +45,13 @@ bool ModeAuto::init(bool ignore_checks)
         waiting_to_start = true;
 
         // initialise mission change check (ignore results)
-        check_for_mission_change();
+        IGNORE_RETURN(mis_change_detector.check_for_mission_change());
 
         // clear guided limits
         copter.mode_guided.limit_clear();
+
+        // reset flag indicating if pilot has applied roll or pitch inputs during landing
+        copter.ap.land_repo_active = false;
 
 #if PRECISION_LANDING == ENABLED
         // initialise precland state machine
@@ -88,13 +91,13 @@ void ModeAuto::run()
             waiting_to_start = false;
 
             // initialise mission change check (ignore results)
-            check_for_mission_change();
+            IGNORE_RETURN(mis_change_detector.check_for_mission_change());
         }
     } else {
         // check for mission changes
-        if (check_for_mission_change()) {
+        if (mis_change_detector.check_for_mission_change()) {
             // if mission is running restart the current command if it is a waypoint or spline command
-            if ((copter.mode_auto.mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
+            if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
                 if (mission.restart_current_nav_cmd()) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
                 } else {
@@ -151,8 +154,10 @@ void ModeAuto::run()
     }
 
     // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
-    if (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE)) {
+    if (auto_RTL && (!(mission.get_in_landing_sequence_flag() || mission.state() == AP_Mission::mission_state::MISSION_COMPLETE))) {
         auto_RTL = false;
+        // log exit from Auto RTL
+        copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), ModeReason::AUTO_RTL_EXIT);
     }
 }
 
@@ -166,15 +171,31 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
     if (mission.jump_to_landing_sequence()) {
         mission.set_force_resume(true);
-        if (set_mode(Mode::Number::AUTO, reason)) {
+        // if not already in auto switch to auto
+        if ((copter.flightmode == &copter.mode_auto) || set_mode(Mode::Number::AUTO, reason)) {
             auto_RTL = true;
+            // log entry into AUTO RTL
+            copter.logger.Write_Mode((uint8_t)copter.flightmode->mode_number(), reason);
+
+            // make happy noise
+            if (copter.ap.initialised) {
+                AP_Notify::events.user_mode_change = 1;
+            }
             return true;
         }
         // mode change failed, revert force resume flag
         mission.set_force_resume(false);
-        return false;
+
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed");
+    } else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Mode change to AUTO RTL failed: No landing sequence found");
     }
-    gcs().send_text(MAV_SEVERITY_INFO, "No landing sequence found");
+
+    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(Number::AUTO_RTL));
+    // make sad noise
+    if (copter.ap.initialised) {
+        AP_Notify::events.user_mode_change_failed = 1;
+    }
     return false;
 }
 
@@ -334,7 +355,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     // check our distance from edge of circle
     Vector3f circle_edge_neu;
     copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position() - circle_edge_neu).length();
+    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
 
     // if more than 3m then fly to edge
     if (dist_to_edge > 300.0f) {
@@ -354,9 +375,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        const Vector3p &circle_center_neu = copter.circle_nav->get_center();
-        const Vector3f &curr_pos = inertial_nav.get_position();
-        float dist_to_center = norm(circle_center_neu.x - curr_pos.x, circle_center_neu.y - curr_pos.y);
+        const float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), copter.circle_nav->get_center().xy());
         // initialise yaw
         // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
         if (auto_yaw.mode() != AUTO_YAW_ROI) {
@@ -587,55 +606,6 @@ void ModeAuto::exit_mission()
     }
 }
 
-// detect external changes to mission
-bool ModeAuto::check_for_mission_change()
-{
-    // check if mission has been updated
-    const uint32_t change_time_ms = mission.last_change_time_ms();
-    const bool update_time_changed = (change_time_ms != mis_change_detect.last_change_time_ms);;
-
-    // check if active command index has changed
-    const uint16_t curr_cmd_idx = mission.get_current_nav_index();
-    const bool curr_cmd_idx_changed = (curr_cmd_idx != mis_change_detect.curr_cmd_index);
-
-    // no changes if neither mission update time nor active command index has changed
-    if (!update_time_changed && !curr_cmd_idx_changed) {
-        return false;
-    }
-
-    // the mission has been updated (but maybe not changed) and/or the current command index has changed
-    // check the contents of the next three commands to ensure they have not changed
-    // and update storage so we can detect future changes
-
-    bool cmds_changed = false;  // true if upcoming command contents have changed
-
-    // retrieve cmds from mission and compare with mis_change_detect
-    uint8_t num_cmds = 0;
-    uint16_t cmd_idx = curr_cmd_idx;
-    AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max];
-    while ((num_cmds < ARRAY_SIZE(cmd)) && mission.get_next_nav_cmd(cmd_idx, cmd[num_cmds])) {
-        num_cmds++;
-        if ((num_cmds > mis_change_detect.cmd_count) || (cmd[num_cmds-1] != mis_change_detect.cmd[num_cmds-1])) {
-            cmds_changed = true;
-            mis_change_detect.cmd[num_cmds-1] = cmd[num_cmds-1];
-        }
-        cmd_idx = cmd[num_cmds-1].index+1;
-    }
-
-    // mission has changed if number of upcoming commands does not match mis_change_detect
-    if (num_cmds != mis_change_detect.cmd_count) {
-        cmds_changed = true;
-    }
-
-    // update mis_change_detect with last change time, command index and number of commands
-    mis_change_detect.last_change_time_ms = change_time_ms;
-    mis_change_detect.curr_cmd_index = curr_cmd_idx;
-    mis_change_detect.cmd_count = num_cmds;
-
-    // mission has changed if upcoming command contents have changed without the current command index changing
-    return cmds_changed && !curr_cmd_idx_changed;
-}
-
 // do_guided - start guided mode
 bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
 {
@@ -840,7 +810,7 @@ void ModeAuto::wp_run()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -909,7 +879,7 @@ void ModeAuto::circle_run()
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio && use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -955,7 +925,7 @@ void ModeAuto::loiter_run()
     // accept pilot input of yaw
     float target_yaw_rate = 0;
     if (!copter.failsafe.radio && use_pilot_yaw()) {
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
     }
 
     // set motors to full range
@@ -1013,11 +983,17 @@ void ModeAuto::loiter_to_alt_run()
         pos_control->get_pos_z_p().kP(),
         pos_control->get_max_accel_z_cmss(),
         G_Dt);
+    target_climb_rate = constrain_float(target_climb_rate, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
 
     // get avoidance adjusted climb rate
     target_climb_rate = get_avoidance_adjusted_climbrate(target_climb_rate);
 
-    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+    // update the vertical offset based on the surface measurement
+    copter.surface_tracking.update_surface_offset();
+
+    // Send the commanded climb rate to the position controller
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+
     pos_control->update_z_controller();
 }
 
@@ -1635,7 +1611,7 @@ bool ModeAuto::verify_land()
         case State::Descending:
             // rely on THROTTLE_LAND mode to correctly update landing status
             retval = copter.ap.land_complete && (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
-            if (retval && !mission.continue_after_land() && copter.motors->armed()) {
+            if (retval && !mission.continue_after_land_check_for_takeoff() && copter.motors->armed()) {
                 /*
                   we want to stop mission processing on land
                   completion. Disarm now, then return false. This
@@ -1729,15 +1705,15 @@ bool ModeAuto::verify_payload_place()
         FALLTHROUGH;
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
-        nav_payload_place.descend_start_altitude = inertial_nav.get_altitude();
+        nav_payload_place.descend_start_altitude = inertial_nav.get_position_z_up_cm();
         nav_payload_place.descend_throttle_level = 0;
         nav_payload_place.state = PayloadPlaceStateType_Descending;
         FALLTHROUGH;
     case PayloadPlaceStateType_Descending:
         // make sure we don't descend too far:
-        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()), nav_payload_place.descend_max);
+        debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
-            nav_payload_place.descend_start_altitude - inertial_nav.get_altitude()  > nav_payload_place.descend_max) {
+            nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()  > nav_payload_place.descend_max) {
             nav_payload_place.state = PayloadPlaceStateType_Ascending;
             gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
@@ -1795,7 +1771,7 @@ bool ModeAuto::verify_payload_place()
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
-        Location target_loc(inertial_nav.get_position(), Location::AltFrame::ABOVE_ORIGIN);
+        Location target_loc(inertial_nav.get_position_neu_cm(), Location::AltFrame::ABOVE_ORIGIN);
         target_loc.alt = nav_payload_place.descend_start_altitude;
         wp_start(target_loc);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;

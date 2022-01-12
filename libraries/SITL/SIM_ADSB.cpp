@@ -17,6 +17,9 @@
 */
 
 #include "SIM_ADSB.h"
+
+#if HAL_SIM_ADSB_ENABLED
+
 #include "SITL.h"
 
 #include <stdio.h>
@@ -26,14 +29,17 @@
 
 namespace SITL {
 
-SIM *_sitl;
-
 /*
   update a simulated vehicle
  */
 void ADSB_Vehicle::update(float delta_t)
 {
     if (!initialised) {
+        const SIM *_sitl = AP::sitl();
+        if (_sitl == nullptr) {
+            return;
+        }
+
         initialised = true;
         ICAO_address = (uint32_t)(rand() % 10000);
         snprintf(callsign, sizeof(callsign), "SIM%u", ICAO_address);
@@ -52,14 +58,19 @@ void ADSB_Vehicle::update(float delta_t)
         type = (ADSB_EMITTER_TYPE)(rand() % (ADSB_EMITTER_TYPE_POINT_OBSTACLE + 1));
         // don't allow surface emitters to move
         if (type == ADSB_EMITTER_TYPE_POINT_OBSTACLE) {
+            stationary_object_created_ms = AP_HAL::millis64();
             velocity_ef.zero();
         } else {
+            stationary_object_created_ms = 0;
             velocity_ef.x = Aircraft::rand_normal(vel_min, vel_max);
             velocity_ef.y = Aircraft::rand_normal(vel_min, vel_max);
             if (type < ADSB_EMITTER_TYPE_EMERGENCY_SURFACE) {
                 velocity_ef.z = Aircraft::rand_normal(-3, 3);
             }
         }
+    } else if (stationary_object_created_ms > 0 && AP_HAL::millis64() - stationary_object_created_ms > AP_MSEC_PER_HOUR) {
+        // regenerate stationary objects so we don't randomly fill up the screen with them over time
+        initialised = false;
     }
 
     position += velocity_ef * delta_t;
@@ -72,7 +83,7 @@ void ADSB_Vehicle::update(float delta_t)
 /*
   update the ADSB peripheral state
 */
-void ADSB::update(void)
+void ADSB::update(const class Aircraft &aircraft)
 {
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
@@ -101,24 +112,17 @@ void ADSB::update(void)
     }
     
     // see if we should do a report
-    send_report();
+    send_report(aircraft);
 }
 
 /*
   send a report to the vehicle control code over MAVLink
 */
-void ADSB::send_report(void)
+void ADSB::send_report(const class Aircraft &aircraft)
 {
     if (AP_HAL::millis() < 10000) {
         // simulated aircraft don't appear until 10s after startup. This avoids a windows
         // threading issue with non-blocking sockets and the initial wait on uartA
-        return;
-    }
-    if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("ADSB connected to %s:%u\n", target_address, (unsigned)target_port);
-        mavlink.connected = true;
-    }
-    if (!mavlink.connected) {
         return;
     }
 
@@ -126,7 +130,7 @@ void ADSB::send_report(void)
     uint8_t buf[100];
     ssize_t ret;
 
-    while ((ret=mav_socket.recv(buf, sizeof(buf), 0)) > 0) {
+    while ((ret=read_from_autopilot((char*)buf, sizeof(buf))) > 0) {
         for (uint8_t i=0; i<ret; i++) {
             mavlink_message_t msg;
             mavlink_status_t status;
@@ -177,7 +181,7 @@ void ADSB::send_report(void)
                                            &msg, &heartbeat);
         chan0_status->current_tx_seq = saved_seq;
 
-        mav_socket.send(&msg.magic, len);
+        write_to_autopilot((char*)&msg.magic, len);
 
         last_heartbeat_ms = now;
     }
@@ -186,6 +190,8 @@ void ADSB::send_report(void)
     /*
       send a ADSB_VEHICLE messages
      */
+    const Location &home = aircraft.get_home();
+
     uint32_t now_us = AP_HAL::micros();
     if (now_us - last_report_us >= reporting_period_ms*1000UL) {
         for (uint8_t i=0; i<num_vehicles; i++) {
@@ -238,7 +244,7 @@ void ADSB::send_report(void)
             uint8_t msgbuf[len];
             len = mavlink_msg_to_send_buffer(msgbuf, &msg);
             if (len > 0) {
-                mav_socket.send(msgbuf, len);
+                write_to_autopilot((char*)msgbuf, len);
             }
         }
     }
@@ -262,7 +268,7 @@ void ADSB::send_report(void)
         uint8_t msgbuf[len];
         len = mavlink_msg_to_send_buffer(msgbuf, &msg);
         if (len > 0) {
-            mav_socket.send(msgbuf, len);
+            write_to_autopilot((char*)msgbuf, len);
             ::printf("ADSBsim send tx health packet\n");
         }
     }
@@ -270,3 +276,5 @@ void ADSB::send_report(void)
 }
 
 } // namespace SITL
+
+#endif // HAL_SIM_ADSB_ENABLED

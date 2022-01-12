@@ -17,7 +17,7 @@
 #define INS_MAX_INSTANCES 3
 #endif
 #define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
-#define INS_MAX_NOTCHES 4
+#define INS_MAX_NOTCHES 12
 #ifndef INS_VIBRATION_CHECK_INSTANCES
   #if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
     #define INS_VIBRATION_CHECK_INSTANCES INS_MAX_INSTANCES
@@ -39,13 +39,11 @@
 #include <stdint.h>
 
 #include <AP_AccelCal/AP_AccelCal.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <Filter/LowPassFilter2p.h>
 #include <Filter/LowPassFilter.h>
-#include <Filter/NotchFilter.h>
 #include <Filter/HarmonicNotchFilter.h>
 #include <AP_Math/polyfit.h>
 
@@ -102,7 +100,7 @@ public:
     // a function called by the main thread at the main loop rate:
     void periodic();
 
-    bool calibrate_trim(float &trim_roll, float &trim_pitch);
+    bool calibrate_trim(Vector3f &trim_rad);
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const;
@@ -252,6 +250,9 @@ public:
     // harmonic notch current center frequency
     float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
 
+    // number of dynamic harmonic notches
+    uint8_t get_num_gyro_dynamic_notches(void) const { return _num_dynamic_harmonic_notches; }
+
     // set of harmonic notch current center frequencies
     const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
 
@@ -274,6 +275,9 @@ public:
     bool has_harmonic_option(HarmonicNotchFilterParams::Options option) {
         return _harmonic_notch_filter.hasOption(option);
     }
+
+    // write out harmonic notch log messages
+    void write_notch_log_messages() const;
 
     // indicate which bit in LOG_BITMASK indicates raw logging enabled
     void set_log_raw_bit(uint32_t log_raw_bit) { _log_raw_bit = log_raw_bit; }
@@ -317,7 +321,7 @@ public:
     bool get_primary_accel_cal_sample_avg(uint8_t sample_num, Vector3f& ret) const;
 
     // Returns newly calculated trim values if calculated
-    bool get_new_trim(float& trim_roll, float &trim_pitch);
+    bool get_new_trim(Vector3f &trim_rad);
 
     // initialise and register accel calibrator
     // called during the startup of accel cal
@@ -327,7 +331,9 @@ public:
     void acal_update();
 
     // simple accel calibration
+#if HAL_GCS_ENABLED
     MAV_RESULT simple_accel_cal();
+#endif
 
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
 
@@ -449,7 +455,7 @@ private:
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde
 
-    bool _calculate_trim(const Vector3f &accel_sample, float& trim_roll, float& trim_pitch);
+    bool _calculate_trim(const Vector3f &accel_sample, Vector3f &trim_rad);
 
     // save gyro calibration values to eeprom
     void _save_gyro_calibration();
@@ -497,12 +503,14 @@ private:
     bool _new_gyro_data[INS_MAX_INSTANCES];
 
     // optional notch filter on gyro
-    NotchFilterParams _notch_filter;
-    NotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
+    HarmonicNotchFilterParams _notch_filter;
+    HarmonicNotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
 
     // optional harmonic notch filter on gyro
     HarmonicNotchFilterParams _harmonic_notch_filter;
     HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
+    // number of independent notches in the filter
+    uint8_t _num_dynamic_harmonic_notches;
     // the current center frequency for the notch
     float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
     uint8_t _num_calculated_harmonic_notch_frequencies;
@@ -666,8 +674,7 @@ private:
     // Returns AccelCalibrator objects pointer for specified acceleromter
     AccelCalibrator* _acal_get_calibrator(uint8_t i) override { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }
 
-    float _trim_pitch;
-    float _trim_roll;
+    Vector3f _trim_rad;
     bool _new_trim;
 
     bool _accel_cal_requires_reboot;

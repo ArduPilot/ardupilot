@@ -1,12 +1,9 @@
 #include "mode.h"
 #include "Plane.h"
 
-bool ModeQLoiter::_enter()
-{
-    return plane.mode_qstabilize._enter();
-}
+#if HAL_QUADPLANE_ENABLED
 
-void ModeQLoiter::init()
+bool ModeQLoiter::_enter()
 {
     // initialise loiter
     loiter_nav->clear_pilot_desired_acceleration();
@@ -18,11 +15,9 @@ void ModeQLoiter::init()
 
     quadplane.init_throttle_wait();
 
-    // remember initial pitch
-    quadplane.loiter_initial_pitch_cd = MAX(plane.ahrs.pitch_sensor, 0);
-
     // prevent re-init of target position
     quadplane.last_loiter_ms = AP_HAL::millis();
+    return true;
 }
 
 void ModeQLoiter::update()
@@ -43,10 +38,8 @@ void ModeQLoiter::run()
         return;
     }
     if (!quadplane.motors->armed()) {
-        plane.mode_qloiter.init();
+        plane.mode_qloiter._enter();
     }
-
-    quadplane.check_attitude_relax();
 
     if (quadplane.should_relax()) {
         loiter_nav->soften_for_landing();
@@ -67,7 +60,7 @@ void ModeQLoiter::run()
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;
-    quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+    quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
     loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
     
     // run loiter controller
@@ -80,18 +73,10 @@ void ModeQLoiter::run()
     plane.nav_roll_cd = loiter_nav->get_roll();
     plane.nav_pitch_cd = loiter_nav->get_pitch();
 
-    if (now - quadplane.last_pidz_init_ms < (uint32_t)quadplane.transition_time_ms*2 && !quadplane.tailsitter.enabled()) {
-        // we limit pitch during initial transition
-        float pitch_limit_cd = linear_interpolate(quadplane.loiter_initial_pitch_cd, quadplane.aparm.angle_max,
-                                                  now,
-                                                  quadplane.last_pidz_init_ms, quadplane.last_pidz_init_ms+quadplane.transition_time_ms*2);
-        if (plane.nav_pitch_cd > pitch_limit_cd) {
-            plane.nav_pitch_cd = pitch_limit_cd;
-            pos_control->set_externally_limited_xy();
-        }
+    if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
+        pos_control->set_externally_limited_xy();
     }
-    
-    
+
     // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
@@ -124,3 +109,4 @@ void ModeQLoiter::run()
     quadplane.run_z_controller();
 }
 
+#endif

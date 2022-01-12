@@ -23,7 +23,7 @@ class AP_WheelEncoder_Quadrature : public AP_WheelEncoder_Backend
 {
 public:
     // constructor
-    AP_WheelEncoder_Quadrature(AP_WheelEncoder &frontend, uint8_t instance, AP_WheelEncoder::WheelEncoder_State &state);
+    using AP_WheelEncoder_Backend::AP_WheelEncoder_Backend;
 
     // update state
     void update(void) override;

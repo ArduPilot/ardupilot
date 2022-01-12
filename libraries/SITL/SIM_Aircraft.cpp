@@ -384,7 +384,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.vtol_motor_start = vtol_motor_start;
     memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
     fdm.rcin_chan_count = rcin_chan_count;
-    fdm.range = range;
+    fdm.range = rangefinder_range();
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));
     fdm.bodyMagField = mag_bf;
 
@@ -484,14 +484,47 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     }
 }
 
+// returns perpendicular height to surface downward-facing rangefinder
+// is bouncing off:
+float Aircraft::perpendicular_distance_to_rangefinder_surface() const
+{
+    return sitl->height_agl;
+}
+
 float Aircraft::rangefinder_range() const
 {
-    // swiped from sitl_rangefinder.cpp - we should unify them at some stage
+    float roll = sitl->state.rollDeg;
+    float pitch = sitl->state.pitchDeg;
 
-    float altitude = range;  // only sub appears to set this
-    if (is_equal(altitude, -1.0f)) {  // Use SITL altitude as reading by default
-        altitude = sitl->height_agl;
+    if (roll > 0) {
+        roll -= rangefinder_beam_width();
+        if (roll < 0) {
+            roll = 0;
+        }
+    } else {
+        roll += rangefinder_beam_width();
+        if (roll > 0) {
+            roll = 0;
+        }
     }
+    if (pitch > 0) {
+        pitch -= rangefinder_beam_width();
+        if (pitch < 0) {
+            pitch = 0;
+        }
+    } else {
+        pitch += rangefinder_beam_width();
+        if (pitch > 0) {
+            pitch = 0;
+        }
+    }
+
+    if (fabs(roll) >= 90.0 || fabs(pitch) >= 90.0) {
+        // not going to hit the ground....
+        return INFINITY;
+    }
+
+    float altitude = perpendicular_distance_to_rangefinder_surface();
 
     // sensor position offset in body frame
     const Vector3f relPosSensorBF = sitl->rngfnd_pos_offset;
@@ -507,16 +540,11 @@ float Aircraft::rangefinder_range() const
         altitude -= relPosSensorEF.z;
     }
 
-    // If the attidude is non reversed for SITL OR we are using rangefinder from external simulator,
-    // We adjust the reading with noise, glitch and scaler as the reading is on analog port.
-    if ((fabs(sitl->state.rollDeg) < 90.0 && fabs(sitl->state.pitchDeg) < 90.0) || !is_equal(range, -1.0f)) {
-        if (is_equal(range, -1.0f)) {  // disable for external reading that already handle this
-            // adjust for apparent altitude with roll
-            altitude /= cosf(radians(sitl->state.rollDeg)) * cosf(radians(sitl->state.pitchDeg));
-        }
-        // Add some noise on reading
-        altitude += sitl->sonar_noise * rand_float();
-    }
+    // adjust for apparent altitude with roll
+    altitude /= cosf(radians(roll)) * cosf(radians(pitch));
+
+    // Add some noise on reading
+    altitude += sitl->sonar_noise * rand_float();
 
     return altitude;
 }
@@ -626,9 +654,12 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
         // get speed of ground movement (for ship takeoff/landing)
         float yaw_rate = 0;
+#if AP_SIM_SHIP_ENABLED
         const Vector2f ship_movement = sitl->shipsim.get_ground_speed_adjustment(location, yaw_rate);
         const Vector3f gnd_movement(ship_movement.x, ship_movement.y, 0);
-
+#else
+        const Vector3f gnd_movement;
+#endif
         switch (ground_behavior) {
         case GROUND_BEHAVIOR_NONE:
             break;
@@ -690,15 +721,24 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             break;
         }
         case GROUND_BEHAVIOR_TAILSITTER: {
-            // point straight up
+            // rotate normal refernce frame to get yaw angle, then rotate back
+            Matrix3f rot;
+            rot.from_rotation(ROTATION_PITCH_270);
             float r, p, y;
-            dcm.to_euler(&r, &p, &y);
+            (dcm * rot).to_euler(&r, &p, &y);
             y = y + yaw_rate * delta_time;
-            dcm.from_euler(0.0f, radians(90), y);
+            dcm.from_euler(0.0, 0.0, y);
+            rot.from_rotation(ROTATION_PITCH_90);
+            dcm *= rot;
             // X, Y movement tracks ground movement
             velocity_ef.x = gnd_movement.x;
             velocity_ef.y = gnd_movement.y;
+            if (velocity_ef.z > 0.0f) {
+                velocity_ef.z = 0.0f;
+            }
             gyro.zero();
+            gyro.x = yaw_rate;
+            use_smoothing = true;
             break;
         }
         }
@@ -946,7 +986,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         fetteconewireesc->update(*this);
     }
 
+#if AP_SIM_SHIP_ENABLED
     sitl->shipsim.update();
+#endif
 
     // update IntelligentEnergy 2.4kW generator
     if (ie24) {

@@ -43,6 +43,7 @@ void Sub::circle_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         attitude_control.set_throttle_out(0,true,g.throttle_filt);
         attitude_control.relax_attitude_controllers();
+        circle_nav.init();
         return;
     }
 
@@ -80,6 +81,6 @@ void Sub::circle_run()
     }
 
     // update altitude target and call position controller
-    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate, false);
+    pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate);
     pos_control.update_z_controller();
 }

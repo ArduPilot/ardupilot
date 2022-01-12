@@ -31,6 +31,14 @@ void AP_Periph_FW::rcout_init()
     // start up with safety enabled. This disables the pwm output until we receive an packet from the rempte system
     hal.rcout->force_safety_on();
 
+#if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
+    if (g.esc_telem_port >= 0) {
+        serial_manager.set_protocol_and_baud(g.esc_telem_port, AP_SerialManager::SerialProtocol_ESCTelemetry, 115200);
+    }
+#endif
+
+    SRV_Channels::init();
+
 #if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
@@ -88,11 +96,6 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
 void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
-    if ((actuator_id == 0) || (actuator_id > HAL_PWM_COUNT)) {
-        // not supported or out of range
-        return;
-    }
-
     const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
 
@@ -121,6 +124,13 @@ void AP_Periph_FW::rcout_update()
     SRV_Channels::cork();
     SRV_Channels::output_ch_all();
     SRV_Channels::push();
+#if HAL_WITH_ESC_TELEM
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_esc_telem_update_ms >= 20) {
+        last_esc_telem_update_ms = now_ms;
+        esc_telem_update();
+    }
+#endif
 }
 
 #endif // HAL_PERIPH_ENABLE_RC_OUT

@@ -67,6 +67,20 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 #define HAL_I2C_H7_400_TIMINGR 0x00300F38
 #endif
 
+#ifndef HAL_I2C_L4_100_TIMINGR
+#define HAL_I2C_L4_100_TIMINGR 0x10909CEC
+#endif
+#ifndef HAL_I2C_L4_400_TIMINGR
+#define HAL_I2C_L4_400_TIMINGR 0x00702991
+#endif
+
+#ifndef HAL_I2C_G4_100_TIMINGR
+#define HAL_I2C_G4_100_TIMINGR 0x60505F8C
+#endif
+#ifndef HAL_I2C_G4_400_TIMINGR
+#define HAL_I2C_G4_400_TIMINGR 0x20501E65
+#endif
+
 /*
   enable clear (toggling SCL) on I2C bus timeouts which leave SDA stuck low
  */
@@ -144,7 +158,7 @@ I2CDeviceManager::I2CDeviceManager(void)
           drop the speed to be the minimum speed requested
          */
         businfo[i].busclock = HAL_I2C_MAX_CLOCK;
-#if defined(STM32F7) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32F3)
         if (businfo[i].busclock <= 100000) {
             businfo[i].i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             businfo[i].busclock = 100000;
@@ -158,6 +172,22 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].busclock = 100000;
         } else {
             businfo[i].i2ccfg.timingr = HAL_I2C_H7_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#elif defined(STM32L4)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_L4_400_TIMINGR;
+            businfo[i].busclock = 400000;
+        }
+#elif defined(STM32G4)
+        if (businfo[i].busclock <= 100000) {
+            businfo[i].i2ccfg.timingr = HAL_I2C_G4_100_TIMINGR;
+            businfo[i].busclock = 100000;
+        } else {
+            businfo[i].i2ccfg.timingr = HAL_I2C_G4_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
 #else // F1 or F4
@@ -184,7 +214,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
     if (bus_clock < bus.busclock) {
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
         if (bus_clock <= 100000) {
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
@@ -231,7 +261,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
 
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
     if (_use_smbus) {
         bus.i2ccfg.cr1 |= I2C_CR1_SMBHEN;
     } else {

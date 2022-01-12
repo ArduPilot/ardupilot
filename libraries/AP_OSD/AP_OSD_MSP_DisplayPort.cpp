@@ -55,10 +55,11 @@ void AP_OSD_MSP_DisplayPort::clear(void)
     // clear remote MSP screen
     _displayport->msp_displayport_clear_screen();
 
-    // toggle flashing @2Hz
+    // toggle flashing @1Hz
     const uint32_t now = AP_HAL::millis();
-    if (((now / 500) & 0x01) != _blink_on) {
+    if ((uint32_t(now * 0.004) & 0x01) != _blink_on) {
         _blink_on = !_blink_on;
+        blink_phase = (blink_phase+1)%4;
     }
 }
 
@@ -67,20 +68,11 @@ void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, const char* text)
     _displayport->msp_displayport_write_string(x, y, 0, text);
 }
 
-void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, bool blink, const char *fmt, ...)
+uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, bool decimal_packed, const char *fmt, va_list ap)
 {
-    if (blink && !_blink_on) {
-        return;
-    }
-    char buf[32+1]; // +1 for snprintf null-termination
-    va_list ap;
-    va_start(ap, fmt);
-    int res = hal.util->vsnprintf(buf, sizeof(buf), fmt, ap);
-    res = MIN(res, int(sizeof(buf)));
-    if (res < int(sizeof(buf))-1) {
-        _displayport->msp_displayport_write_string(x, y, blink, buf);
-    }
-    va_end(ap);
+    const AP_MSP *msp = AP::msp();
+    const bool pack =  decimal_packed && msp && !msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS);
+    return AP_OSD_Backend::format_string_for_osd(buff, size, pack, fmt, ap);
 }
 
 void AP_OSD_MSP_DisplayPort::flush(void)
@@ -97,11 +89,8 @@ void AP_OSD_MSP_DisplayPort::flush(void)
 void AP_OSD_MSP_DisplayPort::init_symbol_set(uint8_t *lookup_table, const uint8_t size)
 {
     const AP_MSP *msp = AP::msp();
-    if (msp == nullptr) {
-        return;
-    }
     // do we use backend specific symbols table?
-    if (msp->check_option(AP_MSP::MspOption::OPTION_DISPLAYPORT_BTFL_SYMBOLS)) {
+    if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS)) {
         memcpy(lookup_table, symbols, size);
     } else {
         memcpy(lookup_table, AP_OSD_Backend::symbols, size);

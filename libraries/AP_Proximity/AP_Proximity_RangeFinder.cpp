@@ -47,13 +47,13 @@ void AP_Proximity_RangeFinder::update(void)
                 const float angle = sector * 45;
                 const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle);
                 // distance in meters
-                const float distance_m = sensor->distance_cm() * 0.01f;
+                const float distance = sensor->distance();
                 _distance_min = sensor->min_distance_cm() * 0.01f;
                 _distance_max = sensor->max_distance_cm() * 0.01f;
-                if ((distance_m <= _distance_max) && (distance_m >= _distance_min) && !check_obstacle_near_ground(angle, distance_m)) {
-                    boundary.set_face_attributes(face, angle, distance_m);
+                if ((distance <= _distance_max) && (distance >= _distance_min) && !check_obstacle_near_ground(angle, distance)) {
+                    boundary.set_face_attributes(face, angle, distance);
                     // update OA database
-                    database_push(angle, distance_m);
+                    database_push(angle, distance);
                 } else {
                     boundary.reset_face(face);
                 }

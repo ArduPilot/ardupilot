@@ -16,7 +16,7 @@
 --     EK3_SRC2_VELZ  = 0 (None)
 --     EK3_SRC2_POSZ  = 1 (Baro)
 --     EK3_SRC2_YAW   = 1 (Compass)
---     EK3_OPTIONS    = 0 (Do not fuse all velocities)
+--     EK3_SRC_OPTIONS    = 0 (Do not fuse all velocities)
 --
 -- SCR_USER1 holds the threshold (in meters) for rangefinder altitude (around 15 is a good choice)
 --     if rangefinder distance >= SCR_USER1, source1 (GPS) will be used
@@ -64,40 +64,41 @@ end
 function update()
 
   -- check switches are configured
+  -- at least one switch must be set
   -- source selection from RCx_FUNCTION = 90 (EKF Source Select)
   -- auto source from RCx_FUNCTION = 300 (Scripting1)
   local rc_function_source = rc:find_channel_for_option(90)
   local rc_function_auto = rc:find_channel_for_option(300)
-  if not rc_function_source or  not rc_function_auto then
-    gcs:send_text(0, "ahrs-source.lua: RCx_FUNCTION=90 or 300 not set!")
+  if not rc_function_source and not rc_function_auto then
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: RCx_FUNCTION=90 or 300 not set!")
     return update, 1000
   end
 
   -- check rangefinder distance threshold has been set
   local rangefinder_thresh_dist = scr_user1_param:get()     -- SCR_USER1 holds rangefinder threshold
   if (rangefinder_thresh_dist <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER1 to rangefinder threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER1 to rangefinder threshold")
     return update, 1000
   end
 
   -- check GPS speed accuracy threshold has been set
   local gps_speedaccuracy_thresh = scr_user2_param:get()    -- SCR_USER2 holds GPS speed accuracy threshold
   if (gps_speedaccuracy_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER2 to GPS speed accuracy threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER2 to GPS speed accuracy threshold")
     return update, 1000
   end
 
   -- check optical flow quality threshold has been set
   local opticalflow_quality_thresh = scr_user3_param:get()  -- SCR_USER3 holds opticalflow quality
   if (opticalflow_quality_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER3 to OpticalFlow quality threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER3 to OpticalFlow quality threshold")
     return update, 1000
   end
 
   -- check optical flow innovation threshold has been set
   local opticalflow_innov_thresh = scr_user4_param:get()    -- SCR_USER4 holds opticalflow innovation
   if (opticalflow_innov_thresh <= 0) then
-    gcs:send_text(0, "ahrs-source.lua: set SCR_USER4 to OpticalFlow innovation threshold")
+    gcs:send_text(0, "ahrs-source-gps-optflow.lua: set SCR_USER4 to OpticalFlow innovation threshold")
     return update, 1000
   end
 
@@ -166,32 +167,34 @@ function update()
     play_source_tune(source_prev)                -- alert user of source whether changed or not
   end
 
-  -- read auto source switch position from RCx_FUNCTION = 300 (Scripting1)
-  local sw_auto_pos = rc_function_auto:get_aux_switch_pos()
-  if sw_auto_pos ~= sw_auto_pos_prev  then       -- check for changes in source auto switch position
-    sw_auto_pos_prev = sw_auto_pos               -- record new switch position so we can detect changes
-    if sw_auto_pos == 0 then                     -- pilot has pulled switch low
-      auto_switch = false                        -- disable auto switching of source
-      if sw_source_pos ~= source_prev then       -- check if source will change
-        source_prev = sw_source_pos              -- record pilot's selected source
-        ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
-        gcs:send_text(0, "Auto source disabled, switched to Source " .. string.format("%d", source_prev+1))
-      else
-        gcs:send_text(0, "Auto source disabled, already Source " .. string.format("%d", source_prev+1))
+  -- if auto switch exists then read auto source switch position from RCx_FUNCTION = 300 (Scripting1)
+  if rc_function_auto then
+    local sw_auto_pos = rc_function_auto:get_aux_switch_pos()
+    if sw_auto_pos ~= sw_auto_pos_prev  then       -- check for changes in source auto switch position
+      sw_auto_pos_prev = sw_auto_pos               -- record new switch position so we can detect changes
+      if sw_auto_pos == 0 then                     -- pilot has pulled switch low
+        auto_switch = false                        -- disable auto switching of source
+        if sw_source_pos ~= source_prev then       -- check if source will change
+          source_prev = sw_source_pos              -- record pilot's selected source
+          ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
+          gcs:send_text(0, "Auto source disabled, switched to Source " .. string.format("%d", source_prev+1))
+        else
+          gcs:send_text(0, "Auto source disabled, already Source " .. string.format("%d", source_prev+1))
+        end
+      elseif sw_auto_pos == 2 then                 -- pilot has pulled switch high
+        auto_switch = true                         -- enable auto switching of source
+        if auto_source < 0 then
+          gcs:send_text(0, "Auto source enabled, undecided, Source " .. string.format("%d", source_prev+1))
+        elseif auto_source ~= source_prev then     -- check if source will change
+          source_prev = auto_source                -- record pilot's selected source
+          ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
+          gcs:send_text(0, "Auto source enabled, switched to Source " .. string.format("%d", source_prev+1))
+        else
+          gcs:send_text(0, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
+        end
       end
-    elseif sw_auto_pos == 2 then                 -- pilot has pulled switch high
-      auto_switch = true                         -- enable auto switching of source
-      if auto_source < 0 then
-        gcs:send_text(0, "Auto source enabled, undecided, Source " .. string.format("%d", source_prev+1))
-      elseif auto_source ~= source_prev then     -- check if source will change
-        source_prev = auto_source                -- record pilot's selected source
-        ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
-        gcs:send_text(0, "Auto source enabled, switched to Source " .. string.format("%d", source_prev+1))
-      else
-        gcs:send_text(0, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
-      end
+      play_source_tune(source_prev)
     end
-    play_source_tune(source_prev)
   end
 
   -- auto switching

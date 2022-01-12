@@ -14,12 +14,20 @@
  */
 #pragma once
 
+#include <AP_OpticalFlow/AP_OpticalFlow.h>
+
+#ifndef AP_OPTICALFLOW_ONBOARD_ENABLED
+#define AP_OPTICALFLOW_ONBOARD_ENABLED AP_OPTICALFLOW_ENABLED
+#endif
+
+#if AP_OPTICALFLOW_ONBOARD_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
 
 class AP_OpticalFlow_Onboard : public OpticalFlow_backend
 {
@@ -30,3 +38,5 @@ public:
 private:
     uint32_t _last_read_ms;
 };
+
+#endif  // AP_OPTICALFLOW_ONBOARD_ENABLED

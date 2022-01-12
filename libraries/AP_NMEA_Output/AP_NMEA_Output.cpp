@@ -97,7 +97,7 @@ void AP_NMEA_Output::update()
 
     // get location (note: get_position from AHRS always returns true after having GPS position once)
     Location loc;
-    bool pos_valid = ahrs.get_location(loc);
+    bool pos_valid = ahrs.get_position(loc);
 
     // format latitude
     char lat_string[13];
@@ -138,7 +138,7 @@ void AP_NMEA_Output::update()
 
     // get speed
     Vector2f speed = ahrs.groundspeed_vector();
-    float speed_knots = norm(speed.x, speed.y) * M_PER_SEC_TO_KNOTS;
+    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
     float heading = wrap_360(degrees(atan2f(speed.x, speed.y)));
 
     // format RMC message
@@ -167,24 +167,15 @@ void AP_NMEA_Output::update()
             continue;
         }
 
-        if (gga_res != -1) {
-            _uart[i]->write(gga);
-            _uart[i]->write(gga_end);
-        }
+        _uart[i]->write(gga);
+        _uart[i]->write(gga_end);
 
-        if (rmc_res != -1) {
-            _uart[i]->write(rmc);
-            _uart[i]->write(rmc_end);
-        }
+        _uart[i]->write(rmc);
+        _uart[i]->write(rmc_end);
     }
 
-    if (gga_res != -1) {
-        free(gga);
-    }
-
-    if (rmc_res != -1) {
-        free(rmc);
-    }
+    free(gga);
+    free(rmc);
 }
 
 #endif  // HAL_NMEA_OUTPUT_ENABLED

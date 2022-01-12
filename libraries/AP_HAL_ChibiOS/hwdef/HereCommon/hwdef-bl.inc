@@ -12,8 +12,6 @@ env AP_PERIPH 1
 
 FLASH_SIZE_KB 2048
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
 # the location where the bootloader will put the firmware
 # the H743 has 128k sectors
@@ -63,6 +61,3 @@ define HAL_LED_ON 0
 PB8 CAN1_RX CAN1
 PB9 CAN1_TX CAN1
 PC7 SLEEPCAN OUTPUT PUSHPULL SPEED_LOW LOW 
-
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384

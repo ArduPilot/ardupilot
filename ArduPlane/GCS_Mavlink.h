@@ -20,7 +20,6 @@ protected:
     bool sysid_enforce() const override;
 
     MAV_RESULT handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
-    MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet) override;
@@ -72,4 +71,8 @@ private:
     uint8_t high_latency_wind_direction() const override;
     int8_t high_latency_air_temperature() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+    MAV_VTOL_STATE vtol_state() const override;
+    MAV_LANDED_STATE landed_state() const override;
+
 };

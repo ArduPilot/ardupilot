@@ -238,6 +238,7 @@ void NavEKF2_core::InitialiseVariables()
     runUpdates = false;
     framesSincePredict = 0;
     gpsYawResetRequest = false;
+    stateStruct.quat.initialise();
     quatAtLastMagReset = stateStruct.quat;
     delAngBiasLearned = false;
     memset(&filterStatus, 0, sizeof(filterStatus));
@@ -676,7 +677,7 @@ void NavEKF2_core::UpdateStrapdownEquationsNED()
     // calculate a magnitude of the filtered nav acceleration (required for GPS
     // variance estimation)
     accNavMag = velDotNEDfilt.length();
-    accNavMagHoriz = norm(velDotNEDfilt.x , velDotNEDfilt.y);
+    accNavMagHoriz = velDotNEDfilt.xy().length();
 
     // if we are not aiding, then limit the horizontal magnitude of acceleration
     // to prevent large manoeuvre transients disturbing the attitude

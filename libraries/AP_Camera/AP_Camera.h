@@ -18,9 +18,8 @@
 class AP_Camera {
 
 public:
-    AP_Camera(uint32_t _log_camera_bit, const struct Location &_loc)
+    AP_Camera(uint32_t _log_camera_bit)
         : log_camera_bit(_log_camera_bit)
-        , current_loc(_loc)
     {
         AP_Param::setup_object_defaults(this, var_info);
         _singleton = this;
@@ -117,7 +116,17 @@ private:
 
     uint32_t        _camera_trigger_count;
     uint32_t        _camera_trigger_logged;
-    uint32_t        _feedback_timestamp_us;
+    uint32_t        _feedback_trigger_timestamp_us;
+    struct {
+        uint64_t        timestamp_us;
+        Location        location; // place where most recent image was taken
+        int32_t         roll_sensor;
+        int32_t         pitch_sensor;
+        int32_t         yaw_sensor;
+        uint32_t        camera_trigger_logged;  // ID sequence number
+    } feedback;
+    void prep_mavlink_msg_camera_feedback(uint64_t timestamp_us);
+
     bool            _timer_installed;
     bool            _isr_installed;
     uint8_t         _last_pin_state;
@@ -130,7 +139,6 @@ private:
     void Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us=0);
 
     uint32_t log_camera_bit;
-    const struct Location &current_loc;
 
     // update camera trigger - 50Hz
     void update_trigger();

@@ -5,17 +5,17 @@
 SITL::SIM_BattMonitor_SMBus::SIM_BattMonitor_SMBus() :
     SMBusDevice()
 {
-    add_register("Temperature", SMBusBattDevReg::TEMP, O_RDONLY);
-    add_register("Voltage", SMBusBattDevReg::VOLTAGE, O_RDONLY);
-    add_register("Current", SMBusBattDevReg::CURRENT, O_RDONLY);
-    add_register("Remaining Capacity", SMBusBattDevReg::REMAINING_CAPACITY, O_RDONLY);
-    add_register("Full Charge Capacity", SMBusBattDevReg::FULL_CHARGE_CAPACITY, O_RDONLY);
-    add_register("Cycle_Count", SMBusBattDevReg::CYCLE_COUNT, O_RDONLY);
-    add_register("Specification Info", SMBusBattDevReg::SPECIFICATION_INFO, O_RDONLY);
-    add_register("Serial", SMBusBattDevReg::SERIAL, O_RDONLY);
-    add_block("Manufacture Name", SMBusBattDevReg::MANUFACTURE_NAME, O_RDONLY);
-    add_block("Device Name", SMBusBattDevReg::DEVICE_NAME, O_RDONLY);
-    add_register("Manufacture Data", SMBusBattDevReg::MANUFACTURE_DATA, O_RDONLY);
+    add_register("Temperature", SMBusBattDevReg::TEMP, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Voltage", SMBusBattDevReg::VOLTAGE, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Current", SMBusBattDevReg::CURRENT, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Remaining Capacity", SMBusBattDevReg::REMAINING_CAPACITY, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Full Charge Capacity", SMBusBattDevReg::FULL_CHARGE_CAPACITY, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Cycle_Count", SMBusBattDevReg::CYCLE_COUNT, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Specification Info", SMBusBattDevReg::SPECIFICATION_INFO, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Serial", SMBusBattDevReg::SERIAL, SITL::I2CRegisters::RegMode::RDONLY);
+    add_block("Manufacture Name", SMBusBattDevReg::MANUFACTURE_NAME, SITL::I2CRegisters::RegMode::RDONLY);
+    add_block("Device Name", SMBusBattDevReg::DEVICE_NAME, SITL::I2CRegisters::RegMode::RDONLY);
+    add_register("Manufacture Data", SMBusBattDevReg::MANUFACTURE_DATA, SITL::I2CRegisters::RegMode::RDONLY);
 
     set_register(SMBusBattDevReg::TEMP, (int16_t)((15 + C_TO_KELVIN)*10));
      // see update for voltage

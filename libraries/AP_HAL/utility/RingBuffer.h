@@ -244,7 +244,7 @@ public:
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wcast-align"
         const T *ret = (const T *)buffer->readptr(avail_bytes);
-        #pragma pop
+        #pragma GCC diagnostic pop
         if (!ret || avail_bytes < sizeof(T)) {
             return nullptr;
         }
@@ -424,7 +424,7 @@ public:
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wcast-align"
         const T *ret = (const T *)buffer->readptr(avail_bytes);
-        #pragma pop
+        #pragma GCC diagnostic pop
         if (!ret || avail_bytes < sizeof(T)) {
             return nullptr;
         }

@@ -24,6 +24,9 @@ MCU STM32H7xx STM32H743xx
 # board ID for firmware load
 APJ_BOARD_ID 1017
 
+env MANUFACTURER mRo
+env BRAND_NAME mRo Pixracer Pro
+
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
@@ -43,7 +46,7 @@ define HAL_WITH_RAMTRON 1
 USB_STRING_MANUFACTURER "mRo"
 
 # RC Input set for Interrupt also USART6_RX for serial RC
-PC7 TIM3_CH2 TIM3 RCININT FLOAT LOW
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
 
 # Control of Spektrum power pin
 PE4 SPEKTRUM_PWR OUTPUT LOW GPIO(70)

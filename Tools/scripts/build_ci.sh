@@ -10,7 +10,6 @@ set -ex
 # CXX and CC are exported by default by travis
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
-unset CXX CC
 
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
@@ -43,7 +42,7 @@ function run_autotest() {
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
-          git clone --recursive https://github.com/ardupilot/MAVProxy
+          git clone https://github.com/ardupilot/MAVProxy
           pushd MAVProxy
             python setup.py build install --user --force
           popd
@@ -171,9 +170,17 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "revo-bootloader" ]; then
         echo "Building revo bootloader"
-        $waf configure --board revo-mini --bootloader
+        if [ -f ~/alternate_build/revo-mini/bin/AP_Bootloader.bin ]; then
+            rm -r ~/alternate_build
+        fi
+        $waf configure --board revo-mini --bootloader --out ~/alternate_build
         $waf clean
         $waf bootloader
+        # check if bootloader got built under alternate_build
+        if [ ! -f ~/alternate_build/revo-mini/bin/AP_Bootloader.bin ]; then
+            echo "alternate build output directory Test failed"
+            exit 1
+        fi
         continue
     fi
 
@@ -208,6 +215,18 @@ for t in $CI_BUILD_TARGET; do
         $waf bootloader
         echo "Building G4-ESC peripheral fw"
         $waf configure --board G4-ESC
+        $waf clean
+        $waf AP_Periph
+        echo "Building Nucleo-L496 peripheral fw"
+        $waf configure --board Nucleo-L496
+        $waf clean
+        $waf AP_Periph
+        echo "Building Nucleo-L496 peripheral fw"
+        $waf configure --board Nucleo-L476
+        $waf clean
+        $waf AP_Periph
+        echo "Building Sierra-L431 peripheral fw"
+        $waf configure --board Sierra-L431
         $waf clean
         $waf AP_Periph
         echo "Building FreeflyRTK peripheral fw"
@@ -328,6 +347,7 @@ python Tools/autotest/param_metadata/param_parse.py --vehicle AntennaTracker
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduCopter
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduPlane
 python Tools/autotest/param_metadata/param_parse.py --vehicle ArduSub
+python Tools/autotest/param_metadata/param_parse.py --vehicle Blimp
 
 echo build OK
 exit 0

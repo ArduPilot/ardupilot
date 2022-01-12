@@ -33,11 +33,14 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint16_t get_motor_mask() override;
 
-    const char* get_frame_string() const override { return "TAILSITTER"; }
+    // Set by tailsitters using diskloading minumum outflow velocity limit
+    void set_min_throttle(float val) {_external_min_throttle = val;}
 
 protected:
     // calculate motor outputs
     void output_armed_stabilizing() override;
+
+    const char* _get_frame_string() const override { return "TAILSITTER"; }
 
     // calculated outputs
     float _throttle; // 0..1
@@ -45,4 +48,11 @@ protected:
     float _tilt_right;  // -1..1
     float _thrust_left;  // 0..1
     float _thrust_right;  // 0..1
+
+    // Set by tailsitters using diskloading minumum outflow velocity limit
+    float _external_min_throttle;
+
+    // true if differential thrust is available
+    bool _has_diff_thrust;
+
 };

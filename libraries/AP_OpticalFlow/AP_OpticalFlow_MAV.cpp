@@ -13,9 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_OpticalFlow_MAV.h"
+
+#if AP_OPTICALFLOW_MAV_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include "AP_OpticalFlow_MAV.h"
 
 #define OPTFLOW_MAV_TIMEOUT_SEC 0.5f
 
@@ -104,3 +107,5 @@ void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
     // take sensor id from message
     sensor_id = packet.sensor_id;
 }
+
+#endif  // AP_OPTICALFLOW_MAV_ENABLED

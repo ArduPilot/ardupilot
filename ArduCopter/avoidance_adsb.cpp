@@ -144,7 +144,7 @@ void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(Mode::Number mode)
     }
 }
 
-int16_t AP_Avoidance_Copter::get_altitude_minimum() const
+int32_t AP_Avoidance_Copter::get_altitude_minimum() const
 {
 #if MODE_RTL_ENABLED == ENABLED
     // do not descend if below RTL alt

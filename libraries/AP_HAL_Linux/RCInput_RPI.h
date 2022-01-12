@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdint.h>
-#include <signal.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -22,6 +21,8 @@
 #include <queue>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH
+#define RCIN_RPI_CHN_NUM 8
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
 #define RCIN_RPI_CHN_NUM 8
 #else
 #define RCIN_RPI_CHN_NUM 1

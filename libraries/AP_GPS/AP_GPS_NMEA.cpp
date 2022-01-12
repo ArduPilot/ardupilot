@@ -38,14 +38,8 @@
 
 #include "AP_GPS_NMEA.h"
 
+#if AP_GPS_NMEA_ENABLED
 extern const AP_HAL::HAL& hal;
-
-// optionally log all NMEA data for debug purposes
-// #define NMEA_LOG_PATH "nmea.log"
-
-#ifdef NMEA_LOG_PATH
-#include <stdio.h>
-#endif
 
 // Convenience macros //////////////////////////////////////////////////////////
 //
@@ -60,18 +54,12 @@ bool AP_GPS_NMEA::read(void)
     numc = port->available();
     while (numc--) {
         char c = port->read();
-#ifdef NMEA_LOG_PATH
-        static FILE *logf = nullptr;
-        if (logf == nullptr) {
-            logf = fopen(NMEA_LOG_PATH, "wb");
-        }
-        if (logf != nullptr) {
-            ::fwrite(&c, 1, 1, logf);
-        }
-#endif
         if (_decode(c)) {
             parsed = true;
         }
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data((const uint8_t *)&c, 1);
+#endif
     }
     return parsed;
 }
@@ -214,20 +202,21 @@ bool AP_GPS_NMEA::_have_new_message()
     }
 
     /*
-      if we have seen the $PHD messages then wait for them again. This
-      is important as the have_vertical_velocity field will be
-      overwritten by fill_3d_velocity()
+      if we have seen a message with 3D velocity data messages then
+      wait for them again. This is important as the
+      have_vertical_velocity field will be overwritten by
+      fill_3d_velocity()
      */
-    if (_last_PHD_12_ms != 0 &&
-        now - _last_PHD_12_ms > 150 &&
-        now - _last_PHD_12_ms < 1000) {
-        // waiting on PHD_12
+    if (_last_vvelocity_ms != 0 &&
+        now - _last_vvelocity_ms > 150 &&
+        now - _last_vvelocity_ms < 1000) {
+        // waiting on a message with velocity
         return false;
     }
-    if (_last_PHD_26_ms != 0 &&
-        now - _last_PHD_26_ms > 150 &&
-        now - _last_PHD_26_ms < 1000) {
-        // waiting on PHD_26
+    if (_last_vaccuracy_ms != 0 &&
+        now - _last_vaccuracy_ms > 150 &&
+        now - _last_vaccuracy_ms < 1000) {
+        // waiting on a message with velocity accuracy
         return false;
     }
 
@@ -236,9 +225,14 @@ bool AP_GPS_NMEA::_have_new_message()
         _last_VTG_ms = 1;
     }
 
-    if (now - _last_HDT_THS_ms > 300) {
+    if (now - _last_yaw_ms > 300) {
         // we have lost GPS yaw
         state.have_gps_yaw = false;
+    }
+
+    if (now - _last_KSXT_pos_ms > 500) {
+        // we have lost KSXT
+        _last_KSXT_pos_ms = 0;
     }
 
     // special case for fixing low output rate of ALLYSTAR GPS modules
@@ -278,23 +272,30 @@ bool AP_GPS_NMEA::_term_complete()
                     _last_RMC_ms = now;
                     //time                        = _new_time;
                     //date                        = _new_date;
-                    state.location.lat     = _new_latitude;
-                    state.location.lng     = _new_longitude;
-                    state.ground_speed     = _new_speed*0.01f;
-                    state.ground_course    = wrap_360(_new_course*0.01f);
+                    if (_last_KSXT_pos_ms == 0) {
+                        state.location.lat     = _new_latitude;
+                        state.location.lng     = _new_longitude;
+                    }
+                    if (_last_3D_velocity_ms == 0 ||
+                        now - _last_3D_velocity_ms > 1000) {
+                        state.ground_speed     = _new_speed*0.01f;
+                        state.ground_course    = wrap_360(_new_course*0.01f);
+                    }
                     make_gps_time(_new_date, _new_time * 10);
                     set_uart_timestamp(_sentence_length);
                     state.last_gps_time_ms = now;
-                    if (_last_PHD_12_ms == 0 ||
-                        now - _last_PHD_12_ms > 1000) {
+                    if (_last_vvelocity_ms == 0 ||
+                        now - _last_vvelocity_ms > 1000) {
                         fill_3d_velocity();
                     }
                     break;
                 case _GPS_SENTENCE_GGA:
                     _last_GGA_ms = now;
-                    state.location.alt  = _new_altitude;
-                    state.location.lat  = _new_latitude;
-                    state.location.lng  = _new_longitude;
+                    if (_last_KSXT_pos_ms == 0) {
+                        state.location.alt  = _new_altitude;
+                        state.location.lat  = _new_latitude;
+                        state.location.lng  = _new_longitude;
+                    }
                     state.num_sats      = _new_satellite_count;
                     state.hdop          = _new_hdop;
                     switch(_new_quality_indicator) {
@@ -326,17 +327,20 @@ bool AP_GPS_NMEA::_term_complete()
                     break;
                 case _GPS_SENTENCE_VTG:
                     _last_VTG_ms = now;
-                    state.ground_speed  = _new_speed*0.01f;
-                    state.ground_course = wrap_360(_new_course*0.01f);
-                    if (_last_PHD_12_ms == 0 ||
-                        now - _last_PHD_12_ms > 1000) {
-                        fill_3d_velocity();
+                    if (_last_3D_velocity_ms == 0 ||
+                        now - _last_3D_velocity_ms > 1000) {
+                        state.ground_speed  = _new_speed*0.01f;
+                        state.ground_course = wrap_360(_new_course*0.01f);
+                        if (_last_vvelocity_ms == 0 ||
+                            now - _last_vvelocity_ms > 1000) {
+                            fill_3d_velocity();
+                        }
                     }
                     // VTG has no fix indicator, can't change fix status
                     break;
                 case _GPS_SENTENCE_HDT:
                 case _GPS_SENTENCE_THS:
-                    _last_HDT_THS_ms = now;
+                    _last_yaw_ms = now;
                     state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                     state.have_gps_yaw = true;
                     state.gps_yaw_time_ms = AP_HAL::millis();
@@ -352,7 +356,11 @@ bool AP_GPS_NMEA::_term_complete()
                         state.velocity.y = _phd.fields[1] * 0.01;
                         state.velocity.z = _phd.fields[2] * 0.01;
                         state.have_vertical_velocity = true;
-                        _last_PHD_12_ms = now;
+                        _last_vvelocity_ms = now;
+                        // we prefer a true 3D velocity when available
+                        state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
+                        state.ground_speed = state.velocity.xy().length();
+                        _last_3D_velocity_ms = now;
                     } else if (_phd.msg_id == 26) {
                         state.horizontal_accuracy = MAX(_phd.fields[0],_phd.fields[1]) * 0.001;
                         state.have_horizontal_accuracy = true;
@@ -360,8 +368,36 @@ bool AP_GPS_NMEA::_term_complete()
                         state.have_vertical_accuracy = true;
                         state.speed_accuracy = MAX(_phd.fields[3],_phd.fields[4]) * 0.001;
                         state.have_speed_accuracy = true;
-                        _last_PHD_26_ms = now;
+                        _last_vaccuracy_ms = now;
                     }
+                    break;
+                case _GPS_SENTENCE_KSXT:
+                    state.location.lat     = _ksxt.fields[2]*1.0e7;
+                    state.location.lng     = _ksxt.fields[1]*1.0e7;
+                    state.location.alt     = _ksxt.fields[3]*1.0e2;
+                    _last_KSXT_pos_ms = now;
+                    if (_ksxt.fields[9] >= 1) {
+                        // we have 3D fix
+                        constexpr float kmh_to_mps = 1.0 / 3.6;
+                        state.velocity.y = _ksxt.fields[16] * kmh_to_mps;
+                        state.velocity.x = _ksxt.fields[17] * kmh_to_mps;
+                        state.velocity.z = _ksxt.fields[18] * -kmh_to_mps;
+                        state.have_vertical_velocity = true;
+                        _last_vvelocity_ms = now;
+                        // we prefer a true 3D velocity when available
+                        state.ground_course = wrap_360(degrees(atan2f(state.velocity.y, state.velocity.x)));
+                        state.ground_speed = state.velocity.xy().length();
+                        _last_3D_velocity_ms = now;
+                    }
+                    if (is_equal(3.0f, _ksxt.fields[10])) {
+                        // have good yaw (from RTK fixed moving baseline solution)
+                        _last_yaw_ms = now;
+                        state.gps_yaw = _ksxt.fields[4];
+                        state.have_gps_yaw = true;
+                        state.gps_yaw_time_ms = AP_HAL::millis();
+                        state.gps_yaw_configured = true;
+                    }
+                    break;
                 }
             } else {
                 switch (_sentence_type) {
@@ -390,6 +426,11 @@ bool AP_GPS_NMEA::_term_complete()
          */
         if (strcmp(_term, "PHD") == 0) {
             _sentence_type = _GPS_SENTENCE_PHD;
+            return false;
+        }
+        if (strcmp(_term, "KSXT") == 0) {
+            _sentence_type = _GPS_SENTENCE_KSXT;
+            _gps_data_good = true;
             return false;
         }
         /*
@@ -516,6 +557,9 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
             _phd.fields[_term_number-6] = atol(_term);
             break;
+        case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // PHD message, fields
+            _ksxt.fields[_term_number-1] = atof(_term);
+            break;
         }
     }
 
@@ -560,3 +604,4 @@ AP_GPS_NMEA::_detect(struct NMEA_detect_state &state, uint8_t data)
     }
     return false;
 }
+#endif

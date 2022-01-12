@@ -27,7 +27,7 @@
   storage. Use larger areas for other boards
  */
 #if HAL_STORAGE_SIZE >= 32768
-#define STORAGE_NUM_AREAS 19
+#define STORAGE_NUM_AREAS 18
 #elif HAL_STORAGE_SIZE >= 16384
 #define STORAGE_NUM_AREAS 15
 #elif HAL_STORAGE_SIZE >= 15360 && defined(HAL_NUM_CAN_IFACES)

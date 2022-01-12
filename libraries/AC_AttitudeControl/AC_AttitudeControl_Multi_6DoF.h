@@ -1,5 +1,5 @@
 #pragma once
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 
 #include "AC_AttitudeControl_Multi.h"
 
@@ -62,7 +62,7 @@ public:
     void rate_controller_run() override;
 
     // limiting lean angle based on throttle makes no sense for 6DoF, always allow 90 deg, return in centi-degrees
-    float get_althold_lean_angle_max() const override { return 9000.0f; }
+    float get_althold_lean_angle_max_cd() const override { return 9000.0f; }
 
     // set the attitude that will be used in 6DoF flight
     void set_offset_roll_pitch(float roll_deg, float pitch_deg) {
@@ -94,4 +94,4 @@ private:
 
 };
 
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

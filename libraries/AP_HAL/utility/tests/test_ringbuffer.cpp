@@ -41,9 +41,10 @@ TEST(ByteBufferTest, Basic)
     EXPECT_EQ(x.space(), unsigned(size-1));
     EXPECT_TRUE(x.is_empty());
 
-    static const char *str = "fo";
+    constexpr auto str_size = 3;
+    static const char str[str_size] = "fo";
     EXPECT_EQ(x.write((uint8_t*)str, 2), 2U);
-    uint8_t buf[strlen(str)+5] {};
+    uint8_t buf[str_size+5] {};
     EXPECT_EQ(x.read(buf, sizeof(buf)), 2U);
     EXPECT_STREQ((char*)buf, (char*)str);
 }
@@ -99,6 +100,26 @@ TEST(ObjectBufferTest, SetSize)
     EXPECT_EQ(x.get_size(), unsigned(size));
     EXPECT_EQ(x.space(), unsigned(size));
     EXPECT_TRUE(x.is_empty());
+}
+
+TEST(ObjectBufferTest, PeekTest)
+{
+    ByteBuffer bb(128);
+    uint8_t seven[7] {1,2,3,4,5,6,7};
+    for (uint8_t i=0; i<100; i++) {
+        bb.write(seven, 7);
+        ByteBuffer::IoVec vec[2];
+        uint8_t nvec = bb.peekiovec(vec, 7);
+        uint32_t got = 0;
+        if (nvec > 0) {
+            got += vec[0].len;
+        }
+        if (nvec > 1) {
+            got += vec[1].len;
+        }
+        EXPECT_EQ(got, 7U);
+        bb.advance(7);
+    }
 }
 
 AP_GTEST_MAIN()

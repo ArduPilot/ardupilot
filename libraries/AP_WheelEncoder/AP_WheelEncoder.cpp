@@ -174,7 +174,7 @@ void AP_WheelEncoder::init(void)
 
         case WheelEncoder_TYPE_SITL_QUADRATURE:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            drivers[i] = new AP_WheelEncoder_SITL_Qaudrature(*this, i, state[i]);
+            drivers[i] = new AP_WheelEncoder_SITL_Quadrature(*this, i, state[i]);
 #endif
             break;
             

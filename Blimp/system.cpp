@@ -48,6 +48,7 @@ void Blimp::init_ardupilot()
     allocate_motors();
 
     // initialise rc channels including setting mode
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // sets up motors and output to escs
@@ -82,9 +83,9 @@ void Blimp::init_ardupilot()
 
     startup_INS_ground();
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     g2.scripting.init();
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are
@@ -241,7 +242,7 @@ bool Blimp::should_log(uint32_t mask)
 // return MAV_TYPE corresponding to frame class
 MAV_TYPE Blimp::get_frame_mav_type()
 {
-    return MAV_TYPE_QUADROTOR; //TODO: Mavlink changes to allow type to be correct
+    return MAV_TYPE_AIRSHIP;
 }
 
 // return string corresponding to frame_class
@@ -262,7 +263,7 @@ void Blimp::allocate_motors(void)
         break;
     }
     if (motors == nullptr) {
-        AP_HAL::panic("Unable to allocate FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
+        AP_BoardConfig::allocation_error("FRAME_CLASS=%u", (unsigned)g2.frame_class.get());
     }
     AP_Param::load_object_from_eeprom(motors, Fins::var_info);
 

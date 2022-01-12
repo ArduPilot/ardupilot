@@ -33,7 +33,6 @@
 #include <AP_Common/Location.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_Baro/AP_Baro.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_MSP/msp.h>
 #include <AP_OLC/AP_OLC.h>
@@ -603,6 +602,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(eff, "EFF", 36, AP_OSD_Screen, AP_OSD_Setting),
 
+#if BARO_MAX_INSTANCES > 1
     // @Param: BTEMP_EN
     // @DisplayName: BTEMP_EN
     // @Description: Displays temperature reported by secondary barometer
@@ -618,6 +618,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(btemp, "BTEMP", 37, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
     // @Param: ATEMP_EN
     // @DisplayName: ATEMP_EN
@@ -716,23 +717,25 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
     // @Range: 0 15
     AP_SUBGROUPINFO(clk, "CLK", 43, AP_OSD_Screen, AP_OSD_Setting),
 
-#if HAL_MSP_ENABLED
+#if HAL_OSD_SIDEBAR_ENABLE || HAL_MSP_ENABLED
     // @Param: SIDEBARS_EN
     // @DisplayName: SIDEBARS_EN
-    // @Description: Displays artificial horizon side bars (MSP OSD only)
+    // @Description: Displays artificial horizon side bars
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: SIDEBARS_X
     // @DisplayName: SIDEBARS_X
-    // @Description: Horizontal position on screen (MSP OSD only)
+    // @Description: Horizontal position on screen
     // @Range: 0 29
 
     // @Param: SIDEBARS_Y
     // @DisplayName: SIDEBARS_Y
-    // @Description: Vertical position on screen (MSP OSD only)
+    // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(sidebars, "SIDEBARS", 44, AP_OSD_Screen, AP_OSD_Setting),
+#endif
 
+#if HAL_MSP_ENABLED
     // @Param: CRSSHAIR_EN
     // @DisplayName: CRSSHAIR_EN
     // @Description: Displays artificial horizon crosshair (MSP OSD only)
@@ -1000,6 +1003,9 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 };
 
 const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
+    // duplicate of OSDn_ENABLE to ensure params are hidden when not enabled
+    AP_GROUPINFO_FLAGS("ENABLE", 2, AP_OSD_Screen, enabled, 0, AP_PARAM_FLAG_ENABLE | AP_PARAM_FLAG_HIDDEN),
+
     // @Param: LINK_Q_EN
     // @DisplayName: LINK_Q_EN
     // @Description: Displays Receiver link quality
@@ -1111,6 +1117,19 @@ uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 #define SYM_FENCE_DISABLED 76
 #define SYM_RNGFD 77
 #define SYM_LQ 78
+
+#define SYM_SIDEBAR_R_ARROW 79
+#define SYM_SIDEBAR_L_ARROW 80
+#define SYM_SIDEBAR_A 81
+#define SYM_SIDEBAR_B 82
+#define SYM_SIDEBAR_C 83
+#define SYM_SIDEBAR_D 84
+#define SYM_SIDEBAR_E 85
+#define SYM_SIDEBAR_F 86
+#define SYM_SIDEBAR_G 87
+#define SYM_SIDEBAR_H 88
+#define SYM_SIDEBAR_I 89
+#define SYM_SIDEBAR_J 90
 
 #define SYMBOL(n) AP_OSD_AbstractScreen::symbols_lookup_table[n]
 
@@ -1252,16 +1271,22 @@ void AP_OSD_Screen::draw_altitude(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat_volt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
-    uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
+    uint8_t pct;
+    if (!battery.capacity_remaining_pct(pct)) {
+        // Do not show battery percentage
+        backend->write(x,y, v < osd->warn_batvolt, "%2.1f%c", (double)v, SYMBOL(SYM_VOLT));
+        return;
+    }
+    uint8_t p = (100 - pct) / 16.6;
     backend->write(x,y, v < osd->warn_batvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
 }
 
 void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t pct = 0;
+    IGNORE_RETURN(battery.capacity_remaining_pct(pct));
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
@@ -1280,7 +1305,8 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_restvolt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct = battery.capacity_remaining_pct();
+    uint8_t pct = 0;
+    IGNORE_RETURN(battery.capacity_remaining_pct(pct));
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage_resting_estimate();
     backend->write(x,y, v < osd->warn_restvolt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p, (double)v, SYMBOL(SYM_VOLT));
@@ -1314,15 +1340,15 @@ void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
     float amps;
     if (!AP::battery().current_amps(amps, instance)) {
-        osd->avg_current_a = 0;
+        osd->_stats.avg_current_a = 0;
     }
     //filter current and display with autoranging for low values
-    osd->avg_current_a= osd->avg_current_a + (amps - osd->avg_current_a) * 0.33;
-    if (osd->avg_current_a < 10.0) {
-        backend->write(x, y, false, "%2.2f%c", osd->avg_current_a, SYMBOL(SYM_AMP));
+    osd->_stats.avg_current_a= osd->_stats.avg_current_a + (amps - osd->_stats.avg_current_a) * 0.33;
+    if (osd->_stats.avg_current_a < 10.0) {
+        backend->write(x, y, false, "%2.2f%c", osd->_stats.avg_current_a, SYMBOL(SYM_AMP));
     }
     else {
-        backend->write(x, y, false, "%2.1f%c", osd->avg_current_a, SYMBOL(SYM_AMP));
+        backend->write(x, y, false, "%2.1f%c", osd->_stats.avg_current_a, SYMBOL(SYM_AMP));
     }
 }
 
@@ -1562,6 +1588,73 @@ void AP_OSD_Screen::draw_throttle(uint8_t x, uint8_t y)
     backend->write(x, y, false, "%3d%c", gcs().get_hud_throttle(), SYMBOL(SYM_PCNT));
 }
 
+#if HAL_OSD_SIDEBAR_ENABLE
+
+void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
+{
+    const int8_t total_sectors = 18;
+    static const uint8_t sidebar_sectors[total_sectors] = {
+        SYM_SIDEBAR_A,
+        SYM_SIDEBAR_B,
+        SYM_SIDEBAR_C,
+        SYM_SIDEBAR_D,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_G,
+        SYM_SIDEBAR_E,
+        SYM_SIDEBAR_F,
+        SYM_SIDEBAR_H,
+        SYM_SIDEBAR_I,
+        SYM_SIDEBAR_J,
+    };
+
+    // Get altitude and airspeed, scaled to appropriate units
+    float aspd = 0.0f;
+    float alt = 0.0f;
+    AP_AHRS &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+    bool have_speed_estimate = ahrs.airspeed_estimate(aspd);
+    if (!have_speed_estimate) { aspd = 0.0f; }
+    ahrs.get_relative_position_D_home(alt);
+    float scaled_aspd = u_scale(SPEED, aspd);
+    float scaled_alt = u_scale(ALTITUDE, -alt);
+    static const int aspd_interval = 10; //units between large tick marks
+    int alt_interval = (osd->units == AP_OSD::UNITS_AVIATION || osd->units == AP_OSD::UNITS_IMPERIAL) ? 20 : 10;
+
+    // render airspeed ladder
+    int aspd_symbol_index = fmodf(scaled_aspd, aspd_interval) / aspd_interval * total_sectors;
+    for (int i = 0; i < 7; i++){
+        if (i == 3) {
+            // the middle section of the ladder with the currrent airspeed
+            backend->write(x, y+i, false, "%3d%c%c", (int) scaled_aspd, u_icon(SPEED), SYMBOL(SYM_SIDEBAR_R_ARROW));
+        } else {
+            backend->write(x+4, y+i, false,  "%c", SYMBOL(sidebar_sectors[aspd_symbol_index]));
+        }
+        aspd_symbol_index = (aspd_symbol_index + 12) % 18;
+    }
+
+    // render the altitude ladder
+    // similar formula to above, but accounts for negative altitudes
+    int alt_symbol_index = fmodf(fmodf(scaled_alt, alt_interval) + alt_interval, alt_interval) / alt_interval * total_sectors;
+    for (int i = 0; i < 7; i++){
+        if (i == 3) {
+            // the middle section of the ladder with the currrent altitude
+            backend->write(x+16, y+i, false, "%c%d%c", SYMBOL(SYM_SIDEBAR_L_ARROW), (int) scaled_alt, u_icon(ALTITUDE));
+        } else {
+            backend->write(x+16, y+i, false,  "%c", SYMBOL(sidebar_sectors[alt_symbol_index]));
+        }
+        alt_symbol_index = (alt_symbol_index + 12) % 18;
+    }
+}
+
+#endif // HAL_OSD_SIDEBAR_ENABLE
+
 //Thanks to betaflight/inav for simple and clean compass visual design
 void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
 {
@@ -1797,19 +1890,19 @@ void AP_OSD_Screen::draw_stat(uint8_t x, uint8_t y)
 {
     backend->write(x+2, y, false, "%c%c%c", 0x4d,0x41,0x58);
     backend->write(x, y+1, false, "%c",SYMBOL(SYM_GSPD));
-    backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->max_speed_mps), u_icon(SPEED));
-    backend->write(x, y+2, false, "%5.1f%c", (double)osd->max_current_a, SYMBOL(SYM_AMP));
-    backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->max_alt_m), u_icon(ALTITUDE));
+    backend->write(x+1, y+1, false, "%4d%c", (int)u_scale(SPEED, osd->_stats.max_speed_mps), u_icon(SPEED));
+    backend->write(x, y+2, false, "%5.1f%c", (double)osd->_stats.max_current_a, SYM_AMP);
+    backend->write(x, y+3, false, "%5d%c", (int)u_scale(ALTITUDE, osd->_stats.max_alt_m), u_icon(ALTITUDE));
     backend->write(x, y+4, false, "%c", SYMBOL(SYM_HOME));
-    draw_distance(x+1, y+4, osd->max_dist_m);
+    draw_distance(x+1, y+4, osd->_stats.max_dist_m);
     backend->write(x, y+5, false, "%c", SYMBOL(SYM_DIST));
-    draw_distance(x+1, y+5, osd->last_distance_m);
+    draw_distance(x+1, y+5, osd->_stats.last_distance_m);
 }
 
 void AP_OSD_Screen::draw_dist(uint8_t x, uint8_t y)
 {
     backend->write(x, y, false, "%c", SYMBOL(SYM_DIST));
-    draw_distance(x+1, y, osd->last_distance_m);
+    draw_distance(x+1, y, osd->_stats.last_distance_m);
 }
 
 void  AP_OSD_Screen::draw_flightime(uint8_t x, uint8_t y)
@@ -1869,12 +1962,14 @@ void AP_OSD_Screen::draw_climbeff(uint8_t x, uint8_t y)
     }
 }
 
+#if BARO_MAX_INSTANCES > 1
 void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 {
     AP_Baro &barometer = AP::baro();
     float btmp = barometer.get_temperature(1);
     backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, btmp), u_icon(TEMPERATURE));
 }
+#endif
 
 void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 {
@@ -1894,9 +1989,14 @@ void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_bat2_vlt(uint8_t x, uint8_t y)
 {
     AP_BattMonitor &battery = AP::battery();
-    uint8_t pct2 = battery.capacity_remaining_pct(1);
-    uint8_t p2 = (100 - pct2) / 16.6;
+    uint8_t pct2 = 0;
     float v2 = battery.voltage(1);
+    if (!battery.capacity_remaining_pct(pct2, 1)) {
+        // Do not show battery percentage
+        backend->write(x,y, v2 < osd->warn_bat2volt, "%2.1f%c", (double)v2, SYMBOL(SYM_VOLT));
+        return;
+    }
+    uint8_t p2 = (100 - pct2) / 16.6;
     backend->write(x,y, v2 < osd->warn_bat2volt, "%c%2.1f%c", SYMBOL(SYM_BATT_FULL) + p2, (double)v2, SYMBOL(SYM_VOLT));
 }
 
@@ -2039,9 +2139,11 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
        return;
     }
     if (rangefinder->status_orient(ROTATION_PITCH_270) <= RangeFinder::Status::NoData) {
-        backend->write(x, y, false, "%cNO DATA", SYMBOL(SYM_RNGFD));
+        backend->write(x, y, false, "%c----%c", SYMBOL(SYM_RNGFD), u_icon(DISTANCE));
     } else {
-        backend->write(x, y, false, "%c%2.2f%c", SYMBOL(SYM_RNGFD), u_scale(DISTANCE, (rangefinder->distance_cm_orient(ROTATION_PITCH_270) * 0.01f)), u_icon(DISTANCE));
+        const float distance = rangefinder->distance_orient(ROTATION_PITCH_270);
+        const char *format = distance < 9.995 ? "%c %1.2f%c" : "%c%2.2f%c";
+        backend->write(x, y, false, format, SYMBOL(SYM_RNGFD), u_scale(DISTANCE, distance), u_icon(DISTANCE));
     }
 }
 
@@ -2056,6 +2158,10 @@ void AP_OSD_Screen::draw(void)
     //Note: draw order should be optimized.
     //Big and less important items should be drawn first,
     //so they will not overwrite more important ones.
+#if HAL_OSD_SIDEBAR_ENABLE
+    DRAW_SETTING(sidebars);
+#endif
+
     DRAW_SETTING(message);
     DRAW_SETTING(horizon);
     DRAW_SETTING(compass);
@@ -2092,7 +2198,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
+#if BARO_MAX_INSTANCES > 1
     DRAW_SETTING(btemp);
+#endif
     DRAW_SETTING(atemp);
     DRAW_SETTING(hdop);
     DRAW_SETTING(flightime);

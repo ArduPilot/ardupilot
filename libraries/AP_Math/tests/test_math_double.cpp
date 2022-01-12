@@ -86,7 +86,11 @@ TEST(MathTest, ConstrainDouble)
 
     EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     EXPECT_EQ(1.0, constrain_value(nan("0x4152"), 1.0, 1.0));
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    EXPECT_EXIT(constrain_value(nan("0x4152"), 1.0, 1.0), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+#endif
 }
 
 TEST(MathWrapTest, Angle180Double)
@@ -232,6 +236,7 @@ TEST(MathTest, NormDouble)
     EXPECT_DOUBLE_EQ(norm_6, 13.0);
 }
 
+AP_GTEST_PANIC()
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop

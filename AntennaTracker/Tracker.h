@@ -54,12 +54,8 @@
 
 #include "AP_Arming.h"
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
-#endif
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#include <SITL/SITL.h>
 #endif
 
 #include "mode.h"
@@ -85,10 +81,6 @@ private:
 
     AP_Logger logger;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    SITL::SIM sitl;
-#endif
-    
     /**
        antenna control channels
     */
@@ -124,7 +116,7 @@ private:
     ModeServoTest mode_servotest;
     ModeStop mode_stop;
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
 #endif
 
@@ -194,7 +186,6 @@ private:
     void update_ahrs();
     void compass_save();
     void update_compass(void);
-    void accel_cal_update(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 

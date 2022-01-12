@@ -23,7 +23,7 @@ protected:
 
 private:
     // get a reading
-    bool get_reading(uint16_t &reading_cm) override;
+    bool get_reading(float &reading_m) override;
 
     uint8_t buf[6];
     uint8_t buf_len = 0;

@@ -100,6 +100,8 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #define AP_USEC_PER_SEC   1000000ULL
 #define AP_USEC_PER_MSEC  1000ULL
 #define AP_MSEC_PER_SEC   1000ULL
+#define AP_SEC_PER_HOUR   (3600ULL)
+#define AP_MSEC_PER_HOUR  (AP_SEC_PER_HOUR * AP_MSEC_PER_SEC)
 #define AP_SEC_PER_WEEK   (7ULL * 86400ULL)
 #define AP_MSEC_PER_WEEK  (AP_SEC_PER_WEEK * AP_MSEC_PER_SEC)
 
@@ -110,3 +112,6 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 // Convert amps milliseconds to milliamp hours
 // Amp.millisec to milliAmp.hour = 1/1E3(ms->s) * 1/3600(s->hr) * 1000(A->mA)
 #define AMS_TO_MAH 0.000277777778f
+
+// Amps microseconds to milliamp hours
+#define AUS_TO_MAH 0.0000002778f

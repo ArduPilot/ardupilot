@@ -5,15 +5,15 @@ Mode::AutoYaw Mode::auto_yaw;
 // roi_yaw - returns heading towards location held in roi
 float Mode::AutoYaw::roi_yaw() const
 {
-    return get_bearing_cd(copter.inertial_nav.get_position(), roi);
+    return get_bearing_cd(copter.inertial_nav.get_position_xy_cm(), roi.xy());
 }
 
 float Mode::AutoYaw::look_ahead_yaw()
 {
-    const Vector3f& vel = copter.inertial_nav.get_velocity();
-    float speed = norm(vel.x,vel.y);
+    const Vector3f& vel = copter.inertial_nav.get_velocity_neu_cms();
+    const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
-    if (copter.position_ok() && (speed > YAW_LOOK_AHEAD_MIN_SPEED)) {
+    if (copter.position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
         _look_ahead_yaw = degrees(atan2f(vel.y,vel.x))*100.0f;
     }
     return _look_ahead_yaw;
@@ -61,6 +61,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
     // perform initialisation
     switch (_mode) {
 
+    case AUTO_YAW_HOLD:
+        break;
+
     case AUTO_YAW_LOOK_AT_NEXT_WP:
         // wpnav will initialise heading when wpnav's set_destination method is called
         break;
@@ -81,6 +84,9 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
 
     case AUTO_YAW_RESETTOARMEDYAW:
         // initial_armed_bearing will be set during arming so no init required
+        break;
+
+    case AUTO_YAW_ANGLE_RATE:
         break;
 
     case AUTO_YAW_RATE:

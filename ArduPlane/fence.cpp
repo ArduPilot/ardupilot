@@ -60,15 +60,11 @@ void Plane::fence_check()
         case AC_FENCE_ACTION_GUIDED:
         case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
         case AC_FENCE_ACTION_RTL_AND_LAND:
-            // make sure we don't auto trim the surfaces on this mode change
-            int8_t saved_auto_trim = g.auto_trim;
-            g.auto_trim.set(0);
             if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
                 set_mode(mode_rtl, ModeReason::FENCE_BREACHED);
             } else {
                 set_mode(mode_guided, ModeReason::FENCE_BREACHED);
             }
-            g.auto_trim.set(saved_auto_trim);
 
             if (fence.get_return_rally() != 0 || fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
                 guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());

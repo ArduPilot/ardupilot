@@ -1,0 +1,83 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the Pixhawk5X hardware
+
+# MCU class and specific type
+MCU STM32F7xx STM32F767xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# USB setup
+USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
+USB_PRODUCT 0x0051
+USB_STRING_MANUFACTURER "Holybro"
+
+# board ID for firmware load
+APJ_BOARD_ID 51
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 32
+
+# flash size
+FLASH_SIZE_KB 2048
+
+env OPTIMIZE -Os
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART2 USART3
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9 VBUS INPUT OPENDRAIN
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins
+PI9 ICM20602_CS CS
+PH5 ICM42688_CS CS
+PI4 ICM20649_CS CS
+PI8 SENSORS3_CS2 CS
+PG7 FRAM_CS CS
+PH15 BMM150_CS CS
+PI10 EXT1_CS1 CS
+PA15 EXT1_CS2 CS
+
+# telem1
+PF6  UART7_RX  UART7
+PE8  UART7_TX  UART7
+
+# telem2
+PB9 UART5_TX  UART5
+PD2 UART5_RX  UART5
+
+# telem3
+PA3 USART2_RX USART2
+PD5 USART2_TX USART2
+
+# USART3 is debug
+PD8 USART3_TX USART3 NODMA
+PD9 USART3_RX USART3 NODMA
+
+# armed indication
+PC12 nARMED OUTPUT HIGH
+
+# start peripheral power off
+PF12 nVDD_5V_HIPOWER_EN OUTPUT HIGH
+PG4  nVDD_5V_PERIPH_EN OUTPUT HIGH
+
+# LEDs
+PE3 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # red
+PE5 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # blue
+define HAL_LED_ON 0
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384

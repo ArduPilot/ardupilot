@@ -11,11 +11,6 @@ bool ModeAuto::_enter()
         return false;
     }
 
-    // init location target
-    if (!g2.wp_nav.set_desired_location(rover.current_loc)) {
-        return false;
-    }
-
     // initialise waypoint speed
     g2.wp_nav.set_desired_speed_to_default();
 
@@ -25,8 +20,18 @@ bool ModeAuto::_enter()
     // clear guided limits
     rover.mode_guided.limit_clear();
 
-    // restart mission processing
-    mission.start_or_resume();
+    // initialise submode to stop or loiter
+    if (rover.is_boat()) {
+        if (!start_loiter()) {
+            start_stop();
+        }
+    } else {
+        start_stop();
+    }
+
+    // set flag to start mission
+    waiting_to_start = true;
+
     return true;
 }
 
@@ -40,6 +45,19 @@ void ModeAuto::_exit()
 
 void ModeAuto::update()
 {
+    // start or update mission
+    if (waiting_to_start) {
+        // don't start the mission until we have an origin
+        Location loc;
+        if (ahrs.get_origin(loc)) {
+            // start/resume the mission (based on MIS_RESTART parameter)
+            mission.start_or_resume();
+            waiting_to_start = false;
+        }
+    } else {
+        mission.update();
+    }
+
     switch (_submode) {
         case Auto_WP:
         {

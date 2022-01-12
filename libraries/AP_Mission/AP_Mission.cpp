@@ -149,15 +149,10 @@ void AP_Mission::resume()
     //      update will take care of finding and starting the nav command
 }
 
-/// check mission starts with a takeoff command
-bool AP_Mission::starts_with_takeoff_cmd()
+/// check if the next nav command is a takeoff, skipping delays
+bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
 {
     Mission_Command cmd = {};
-    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
-    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
-        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
-    }
-
     // check a maximum of 16 items, remembering that missions can have
     // loops in them
     for (uint8_t i=0; i<16; i++, cmd_index++) {
@@ -178,6 +173,33 @@ bool AP_Mission::starts_with_takeoff_cmd()
         }
     }
     return false;
+}
+
+/// check mission starts with a takeoff command
+bool AP_Mission::starts_with_takeoff_cmd()
+{
+    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    }
+    return is_takeoff_next(cmd_index);
+}
+
+/*
+    return true if MIS_OPTIONS is set to allow continue of mission
+    logic after a land and the next waypoint is a takeoff. If this
+    is false then after a landing is complete the vehicle should 
+    disarm and mission logic should stop
+*/
+bool AP_Mission::continue_after_land_check_for_takeoff()
+{
+    if (!continue_after_land()) {
+        return false;
+    }
+    if (_nav_cmd.index == AP_MISSION_CMD_INDEX_NONE) {
+        return false;
+    }
+    return is_takeoff_next(_nav_cmd.index+1);
 }
 
 /// start_or_resume - if MIS_AUTORESTART=0 this will call resume(), otherwise it will call start()
@@ -384,8 +406,10 @@ bool AP_Mission::replace_cmd(uint16_t index, const Mission_Command& cmd)
 /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
 bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 {
-    // NAV commands all have ids below MAV_CMD_NAV_LAST except NAV_SET_YAW_SPEED
-    return (cmd.id <= MAV_CMD_NAV_LAST || cmd.id == MAV_CMD_NAV_SET_YAW_SPEED);
+    // NAV commands all have ids below MAV_CMD_NAV_LAST, plus some exceptions
+    return (cmd.id <= MAV_CMD_NAV_LAST ||
+            cmd.id == MAV_CMD_NAV_SET_YAW_SPEED ||
+            cmd.id == MAV_CMD_NAV_SCRIPT_TIME);
 }
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -938,8 +962,12 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        return MAV_MISSION_UNSUPPORTED;
+#else
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
         break;
+#endif
 
     case MAV_CMD_NAV_GUIDED_ENABLE:                     // MAV ID: 92
         cmd.p1 = packet.param1;                         // on/off. >0.5 means "on", hand-over control to external controller
@@ -965,10 +993,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.yaw.turn_rate_dps = packet.param2;  // 0 = use default turn rate otherwise specific turn rate in deg/sec
         cmd.content.yaw.direction = packet.param3;      // -1 = ccw, +1 = cw
         cmd.content.yaw.relative_angle = packet.param4; // lng=0: absolute angle provided, lng=1: relative angle provided
-        break;
-
-    case MAV_CMD_DO_SET_MODE:                           // MAV ID: 176
-        cmd.p1 = packet.param1;                         // flight mode identifier
         break;
 
     case MAV_CMD_DO_JUMP:                               // MAV ID: 177
@@ -1140,6 +1164,17 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.scripting.p3 = packet.param4;
         break;
 
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        cmd.content.nav_script_time.command = packet.param1;
+        cmd.content.nav_script_time.timeout_s = packet.param2;
+        cmd.content.nav_script_time.arg1 = packet.param3;
+        cmd.content.nav_script_time.arg2 = packet.param4;
+        break;
+
+    case MAV_CMD_DO_PAUSE_CONTINUE:
+        cmd.p1 = packet.param1;
+        break;
+        
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1423,10 +1458,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.yaw.relative_angle; // 0 = absolute angle provided, 1 = relative angle provided
         break;
 
-    case MAV_CMD_DO_SET_MODE:                           // MAV ID: 176
-        packet.param1 = cmd.p1;                         // set flight mode identifier
-        break;
-
     case MAV_CMD_DO_JUMP:                               // MAV ID: 177
         packet.param1 = cmd.content.jump.target;        // jump-to command number
         packet.param2 = cmd.content.jump.num_times;     // repeat count
@@ -1596,6 +1627,17 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param4 = cmd.content.scripting.p3;
         break;
 
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        packet.param1 = cmd.content.nav_script_time.command;
+        packet.param2 = cmd.content.nav_script_time.timeout_s;
+        packet.param3 = cmd.content.nav_script_time.arg1;
+        packet.param4 = cmd.content.nav_script_time.arg2;
+        break;
+
+    case MAV_CMD_DO_PAUSE_CONTINUE:
+        packet.param1 = cmd.p1;
+        break;
+        
     default:
         // unrecognised command
         return false;
@@ -1689,7 +1731,7 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
     uint8_t max_loops = 255;
 
     // search until we find next nav command or reach end of command list
-    while (!_flags.nav_cmd_loaded) {
+    while (!_flags.nav_cmd_loaded && max_loops-- > 0) {
         // get next command
         Mission_Command cmd;
         if (!get_next_cmd(cmd_index, cmd, true)) {
@@ -1732,15 +1774,16 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 _do_cmd = cmd;
                 _flags.do_cmd_loaded = true;
                 start_command(_do_cmd);
-            } else {
-                // protect against endless loops of do-commands
-                if (max_loops-- == 0) {
-                    return false;
-                }
             }
         }
         // move onto next command
         cmd_index = cmd.index+1;
+    }
+
+    if (max_loops == 0) {
+        // infinite loop.  This can happen if there's a loop involving
+        // only nav commands (no DO commands) which won't start()
+        return false;
     }
 
     // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
@@ -2309,6 +2352,14 @@ const char *AP_Mission::Mission_Command::type() const
         return "Winch";
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return "Scripting";
+    case MAV_CMD_DO_JUMP:
+        return "Jump";
+    case MAV_CMD_DO_GO_AROUND:
+        return "Go Around";
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        return "NavScriptTime";
+    case MAV_CMD_DO_PAUSE_CONTINUE:
+        return "PauseContinue";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

@@ -49,6 +49,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_MICRON_N25Q128        0x20ba18
 #define JEDEC_ID_WINBOND_W25Q16        0xEF4015
 #define JEDEC_ID_WINBOND_W25Q32        0xEF4016
+#define JEDEC_ID_WINBOND_W25X32        0xEF3016
 #define JEDEC_ID_WINBOND_W25Q64        0xEF4017
 #define JEDEC_ID_WINBOND_W25Q128       0xEF4018
 #define JEDEC_ID_WINBOND_W25Q256       0xEF4019
@@ -122,6 +123,7 @@ bool AP_Logger_DataFlash::getSectorCount(void)
         df_PagePerSector = 16;
         break;
     case JEDEC_ID_WINBOND_W25Q32:
+    case JEDEC_ID_WINBOND_W25X32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
         blocks = 64;
         df_PagePerBlock = 256;
@@ -184,7 +186,7 @@ void AP_Logger_DataFlash::Enter4ByteAddressMode(void)
     WITH_SEMAPHORE(dev_sem);
 
     const uint8_t cmd = 0xB7;
-    dev->transfer(&cmd, 1, NULL, 0);
+    dev->transfer(&cmd, 1, nullptr, 0);
 }
 
 /*
@@ -205,7 +207,7 @@ void AP_Logger_DataFlash::send_command_addr(uint8_t command, uint32_t PageAdr)
         cmd[3] = (PageAdr >>  0) & 0xff;
     }
 
-    dev->transfer(cmd, use_32bit_address?5:4, NULL, 0);
+    dev->transfer(cmd, use_32bit_address?5:4, nullptr, 0);
 }
 
 
@@ -223,7 +225,7 @@ void AP_Logger_DataFlash::PageToBuffer(uint32_t pageNum)
     WITH_SEMAPHORE(dev_sem);
     dev->set_chip_select(true);
     send_command_addr(JEDEC_READ_DATA, PageAdr);
-    dev->transfer(NULL, 0, buffer, df_PageSize);
+    dev->transfer(nullptr, 0, buffer, df_PageSize);
     dev->set_chip_select(false);
 }
 
@@ -241,7 +243,7 @@ void AP_Logger_DataFlash::BufferToPage(uint32_t pageNum)
 
     dev->set_chip_select(true);
     send_command_addr(JEDEC_PAGE_WRITE, PageAdr);
-    dev->transfer(buffer, df_PageSize, NULL, 0);
+    dev->transfer(buffer, df_PageSize, nullptr, 0);
     dev->set_chip_select(false);
 }
 
@@ -277,7 +279,7 @@ void AP_Logger_DataFlash::StartErase()
     WITH_SEMAPHORE(dev_sem);
 
     uint8_t cmd = JEDEC_BULK_ERASE;
-    dev->transfer(&cmd, 1, NULL, 0);
+    dev->transfer(&cmd, 1, nullptr, 0);
 
     erase_start_ms = AP_HAL::millis();
     printf("Dataflash: erase started\n");
@@ -297,7 +299,7 @@ void AP_Logger_DataFlash::WriteEnable(void)
     WaitReady();
     WITH_SEMAPHORE(dev_sem);
     uint8_t b = JEDEC_WRITE_ENABLE;
-    dev->transfer(&b, 1, NULL, 0);
+    dev->transfer(&b, 1, nullptr, 0);
 }
 
 void AP_Logger_DataFlash::flash_test()
@@ -316,7 +318,7 @@ void AP_Logger_DataFlash::flash_test()
     for (uint8_t i=1; i<=20; i++) {
         printf("Flash check %u\n", i);
         PageToBuffer(i);
-        for (uint16_t j=0; j<df_PageSize; j++) {
+        for (uint32_t j=0; j<df_PageSize; j++) {
             if (buffer[j] != i) {
                 printf("Test error: page %u j=%u v=%u\n", i, j, buffer[j]);
                 break;

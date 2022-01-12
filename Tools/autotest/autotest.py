@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-APM automatic test suite.
+ArduPilot automatic test suite.
 
 Andrew Tridgell, October 2011
 
@@ -29,6 +29,7 @@ import antennatracker
 import quadplane
 import balancebot
 import sailboat
+import helicopter
 
 import examples
 from pysim import util
@@ -116,9 +117,16 @@ def build_binaries():
 
     # copy the script (and various libraries used by the script) as it
     # changes git branch, which can change the script while running
-    for thing in "build_binaries.py", "generate_manifest.py", "gen_stable.py", "build_binaries_history.py", "board_list.py":
+    for thing in [
+            "board_list.py",
+            "build_binaries_history.py",
+            "build_binaries.py",
+            "build_sizes/build_sizes.py",
+            "generate_manifest.py",
+            "gen_stable.py",
+    ]:
         orig = util.reltopdir('Tools/scripts/%s' % thing)
-        copy = util.reltopdir('./%s' % thing)
+        copy = util.reltopdir('./%s' % os.path.basename(thing))
         shutil.copy2(orig, copy)
 
     if util.run_cmd("./build_binaries.py", directory=util.reltopdir('.')) != 0:
@@ -143,7 +151,7 @@ def build_examples(**kwargs):
 
 def build_unit_tests(**kwargs):
     """Build tests."""
-    for target in ['linux']:
+    for target in ['linux', 'sitl']:
         print("Running build.unit_tests for %s" % target)
         try:
             util.build_tests(target, **kwargs)
@@ -163,20 +171,22 @@ def run_unit_test(test):
 
 def run_unit_tests():
     """Run all unit tests files."""
-    binary_dir = util.reltopdir(os.path.join('build',
-                                             'linux',
-                                             'tests',
-                                             ))
-    tests = glob.glob("%s/*" % binary_dir)
     success = True
     fail_list = []
-    for test in tests:
-        try:
-            run_unit_test(test)
-        except subprocess.CalledProcessError:
-            print("Exception running (%s)" % test)
-            fail_list.append(os.path.basename(test))
-            success = False
+    for target in ['linux', 'sitl']:
+        binary_dir = util.reltopdir(os.path.join('build',
+                                                 target,
+                                                 'tests',
+                                                 ))
+        tests = glob.glob("%s/*" % binary_dir)
+        for test in tests:
+            try:
+                run_unit_test(test)
+            except subprocess.CalledProcessError:
+                print("Exception running (%s)" % test)
+                fail_list.append(target + '/' + os.path.basename(test))
+                success = False
+
     print("Failing tests:")
     for failure in fail_list:
         print("  %s" % failure)
@@ -214,7 +224,8 @@ def all_vehicles():
             'ArduCopter',
             'Rover',
             'AntennaTracker',
-            'ArduSub')
+            'ArduSub',
+            'Blimp')
 
 
 def build_parameters():
@@ -311,6 +322,7 @@ __bin_names = {
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
     "Sub": "ardusub",
+    "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphGPS": "sitl_periph_gp.AP_Periph",
@@ -383,7 +395,7 @@ tester_class_map = {
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
-    "test.Helicopter": arducopter.AutoTestHeli,
+    "test.Helicopter": helicopter.AutoTestHelicopter,
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
@@ -434,6 +446,7 @@ def run_step(step):
         "postype_single": opts.postype_single,
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
+        "sitl_32bit" : opts.sitl_32bit,
     }
 
     if opts.Werror:
@@ -448,6 +461,9 @@ def run_step(step):
 
     if step == 'build.Copter':
         vehicle_binary = 'bin/arducopter'
+
+    if step == 'build.Blimp':
+        vehicle_binary = 'bin/blimp'
 
     if step == 'build.Tracker':
         vehicle_binary = 'bin/antennatracker'
@@ -501,6 +517,7 @@ def run_step(step):
         "viewerip": opts.viewerip,
         "use_map": opts.map,
         "valgrind": opts.valgrind,
+        "callgrind": opts.callgrind,
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
@@ -937,6 +954,11 @@ if __name__ == "__main__":
                            action="store_true",
                            dest="ekf_single",
                            help="force single precision EKF")
+    group_build.add_option("--sitl-32bit",
+                           default=False,
+                           action='store_true',
+                           dest="sitl_32bit",
+                           help="compile sitl using 32-bit")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
@@ -948,6 +970,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under valgrind')
+    group_sim.add_option("", "--callgrind",
+                         action='store_true',
+                         default=False,
+                         help="enable valgrind for performance analysis (slow!!)")
     group_sim.add_option("--gdb",
                          default=False,
                          action='store_true',
@@ -1018,6 +1044,8 @@ if __name__ == "__main__":
         # adjust if we're running in a regime which may slow us down e.g. Valgrind
         if opts.valgrind:
             opts.timeout *= 10
+        elif opts.callgrind:
+            opts.timeout *= 10
         elif opts.gdb:
             opts.timeout = None
 
@@ -1059,6 +1087,9 @@ if __name__ == "__main__":
         'build.Sub',
         'defaults.Sub',
         'test.Sub',
+
+        'build.Blimp',
+        'defaults.Blimp',
 
         'build.SITLPeriphGPS',
         'test.CAN',

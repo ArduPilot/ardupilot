@@ -26,6 +26,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #ifdef SFML_JOYSTICK
   #ifdef HAVE_SFML_GRAPHICS_HPP
@@ -74,7 +75,9 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
     AP_GROUPINFO("FLOW_POS",      56, SIM,  optflow_pos_offset, 0),
     AP_GROUPINFO("ENGINE_FAIL",   58, SIM,  engine_fail,  0),
+#if AP_SIM_SHIP_ENABLED
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
+#endif
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
     AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
@@ -226,8 +229,12 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_GROUPINFO("BARO_COUNT",    33, SIM,  baro_count, 2),
 
     AP_SUBGROUPINFO(baro[0], "BARO_", 34, SIM, SIM::BaroParm),
+#if BARO_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(baro[1], "BAR2_", 35, SIM, SIM::BaroParm),
+#endif
+#if BARO_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(baro[2], "BAR3_", 36, SIM, SIM::BaroParm),
+#endif
 
     // user settable parameters for the 1st barometer
     // @Param: BARO_RND
@@ -314,8 +321,8 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
-    AP_GROUPINFO("GPS_DELAY",      2, SIM,  gps_delay[0],   1),
-    AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  SIM::GPS_TYPE_UBLOX),
+    AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
+    AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
     AP_GROUPINFO("GPS_GLITCH",     6, SIM,  gps_glitch[0],  0),
@@ -330,8 +337,8 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
 
     AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
-    AP_GROUPINFO("GPS2_DELAY",    31, SIM,  gps_delay[1],   1),
-    AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  SIM::GPS_TYPE_UBLOX),
+    AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
+    AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
     AP_GROUPINFO("GPS2_GLTCH",    35, SIM,  gps_glitch[1],  0),
@@ -366,12 +373,24 @@ const AP_Param::GroupInfo SIM::var_mag[] = {
     AP_GROUPINFO("MAG1_SCALING",  10, SIM,  mag_scaling[0], 1),
     AP_GROUPINFO("MAG1_DEVID",    11, SIM,  mag_devid[0], 97539),
     AP_GROUPINFO("MAG2_DEVID",    12, SIM,  mag_devid[1], 131874),
+#if MAX_CONNECTED_MAGS > 2
     AP_GROUPINFO("MAG3_DEVID",    13, SIM,  mag_devid[2], 263178),
+#endif
+#if MAX_CONNECTED_MAGS > 3
     AP_GROUPINFO("MAG4_DEVID",    14, SIM,  mag_devid[3], 97283),
+#endif
+#if MAX_CONNECTED_MAGS > 4
     AP_GROUPINFO("MAG5_DEVID",    15, SIM,  mag_devid[4], 97795),
+#endif
+#if MAX_CONNECTED_MAGS > 5
     AP_GROUPINFO("MAG6_DEVID",    16, SIM,  mag_devid[5], 98051),
+#endif
+#if MAX_CONNECTED_MAGS > 6
     AP_GROUPINFO("MAG7_DEVID",    17, SIM,  mag_devid[6], 0),
+#endif
+#if MAX_CONNECTED_MAGS > 7
     AP_GROUPINFO("MAG8_DEVID",    18, SIM,  mag_devid[7], 0),
+#endif
     AP_GROUPINFO("MAG1_FAIL",     26, SIM,  mag_fail[0], 0),
 #if HAL_COMPASS_MAX_SENSORS > 1
     AP_GROUPINFO("MAG2_OFS",      19, SIM,  mag_ofs[1], 0),
@@ -414,25 +433,49 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_BIAS",     7, SIM, accel_bias[2], 0),
+#endif
     AP_GROUPINFO("GYR1_RND",      8, SIM, gyro_noise[0],  0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("GYR2_RND",      9, SIM, gyro_noise[1],  0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_RND",     10, SIM, gyro_noise[2],  0),
+#endif
     AP_GROUPINFO("ACC1_RND",     11, SIM, accel_noise[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_RND",     12, SIM, accel_noise[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_RND",     13, SIM, accel_noise[2], 0),
+#endif
     AP_GROUPINFO("GYR1_SCALE",   14, SIM, gyro_scale[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("GYR2_SCALE",   15, SIM, gyro_scale[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("GYR3_SCALE",   16, SIM, gyro_scale[2], 0),
+#endif
     AP_GROUPINFO("ACCEL1_FAIL",  17, SIM, accel_fail[0],  0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACCEL2_FAIL",  18, SIM, accel_fail[1],  0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACCEL3_FAIL",  19, SIM, accel_fail[2],  0),
+#endif
     AP_GROUPINFO("GYR_FAIL_MSK", 20, SIM, gyro_fail_mask,  0),
     AP_GROUPINFO("ACC_FAIL_MSK", 21, SIM, accel_fail_mask,  0),
     AP_GROUPINFO("ACC1_SCAL",    22, SIM, accel_scale[0], 0),
+#if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_SCAL",    23, SIM, accel_scale[1], 0),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
+#endif
     AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
 
     // @Param: SAIL_TYPE
@@ -447,8 +490,12 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 
     // the IMUT parameters must be last due to the enable parameters
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
+#if INS_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
+#endif
+#if INS_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
+#endif
     AP_GROUPEND
 };
     

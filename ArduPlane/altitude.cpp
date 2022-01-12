@@ -96,7 +96,7 @@ void Plane::setup_glide_slope(void)
     // for calculating out rate of change of altitude
     auto_state.wp_distance = current_loc.get_distance(next_WP_loc);
     auto_state.wp_proportion = current_loc.line_path_proportion(prev_WP_loc, next_WP_loc);
-    SpdHgt_Controller->set_path_proportion(auto_state.wp_proportion);
+    TECS_controller.set_path_proportion(auto_state.wp_proportion);
     update_flight_stage();
 
     /*
@@ -112,7 +112,7 @@ void Plane::setup_glide_slope(void)
            https://github.com/ArduPilot/ardupilot/issues/39
         */
         if (above_location_current(next_WP_loc)) {
-            set_offset_altitude_location(next_WP_loc);
+            set_offset_altitude_location(prev_WP_loc, next_WP_loc);
         } else {
             reset_offset_altitude();
         }
@@ -125,7 +125,7 @@ void Plane::setup_glide_slope(void)
         // gain height at low altitudes, potentially hitting
         // obstacles.
         if (adjusted_relative_altitude_cm() > 2000 || above_location_current(next_WP_loc)) {
-            set_offset_altitude_location(next_WP_loc);
+            set_offset_altitude_location(prev_WP_loc, next_WP_loc);
         } else {
             reset_offset_altitude();
         }
@@ -157,12 +157,14 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         return rangefinder_state.height_estimate;
    }
 
+#if HAL_QUADPLANE_ENABLED
    if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
        rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
        // below minimum. Consider our height above ground to be zero
        return 0;
    }
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     float altitude;
@@ -173,6 +175,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
     }
 #endif
 
+#if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() &&
         !(quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)) {
         // when doing a VTOL landing we can use the waypoint height as
@@ -181,6 +184,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
         // height
         return height_above_target();
     }
+#endif
 
     return relative_altitude;
 }
@@ -316,7 +320,7 @@ void Plane::set_target_altitude_proportion(const Location &loc, float proportion
     if(g.glide_slope_threshold > 0) {
         if(target_altitude.offset_cm > 0 && calc_altitude_error_cm() < -100 * g.glide_slope_threshold) {
             set_target_altitude_location(loc);
-            set_offset_altitude_location(loc);
+            set_offset_altitude_location(current_loc, loc);
             change_target_altitude(-target_altitude.offset_cm*proportion);
             //adjust the new target offset altitude to reflect that we are partially already done
             if(proportion > 0.0f)
@@ -388,13 +392,13 @@ void Plane::reset_offset_altitude(void)
 
 /*
   reset the altitude offset used for glide slopes, based on difference
-  between altitude at a destination and current altitude. If
-  destination is above the current altitude then the result is
+  between altitude at a destination and a specified start altitude. If
+  destination is above the starting altitude then the result is
   positive.
  */
-void Plane::set_offset_altitude_location(const Location &loc)
+void Plane::set_offset_altitude_location(const Location &start_loc, const Location &destination_loc)
 {
-    target_altitude.offset_cm = loc.alt - current_loc.alt;
+    target_altitude.offset_cm = destination_loc.alt - start_loc.alt;
 
 #if AP_TERRAIN_AVAILABLE
     /*
@@ -403,7 +407,7 @@ void Plane::set_offset_altitude_location(const Location &loc)
       terrain altitude
      */
     float height;
-    if (loc.terrain_alt && 
+    if (destination_loc.terrain_alt && 
         target_altitude.terrain_following &&
         terrain.height_above_terrain(height, true)) {
         target_altitude.offset_cm = target_altitude.terrain_alt_cm - (height * 100);
@@ -566,7 +570,7 @@ float Plane::lookahead_adjustment(void)
     // we need to know the climb ratio. We use 50% of the maximum
     // climb rate so we are not constantly at 100% throttle and to
     // give a bit more margin on terrain
-    float climb_ratio = 0.5f * SpdHgt_Controller->get_max_climbrate() / groundspeed;
+    float climb_ratio = 0.5f * TECS_controller.get_max_climbrate() / groundspeed;
 
     if (climb_ratio <= 0) {
         // lookahead makes no sense for negative climb rates
@@ -639,7 +643,7 @@ void Plane::rangefinder_terrain_correction(float &height)
  */
 void Plane::rangefinder_height_update(void)
 {
-    float distance = rangefinder.distance_cm_orient(ROTATION_PITCH_270)*0.01f;
+    float distance = rangefinder.distance_orient(ROTATION_PITCH_270);
     
     if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
@@ -668,11 +672,19 @@ void Plane::rangefinder_height_update(void)
             }
         } else {
             rangefinder_state.in_range = true;
+            bool flightstage_good_for_rangefinder_landing = false;
+            if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+                flightstage_good_for_rangefinder_landing = true;
+            }
+#if HAL_QUADPLANE_ENABLED
+            if (control_mode == &mode_qland ||
+                control_mode == &mode_qrtl ||
+                (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
+                flightstage_good_for_rangefinder_landing = true;
+            }
+#endif
             if (!rangefinder_state.in_use &&
-                (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND ||
-                 control_mode == &mode_qland ||
-                 control_mode == &mode_qrtl ||
-                 (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) &&
+                flightstage_good_for_rangefinder_landing &&
                 g.rangefinder_landing) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
@@ -745,12 +757,19 @@ const Plane::TerrainLookupTable Plane::Terrain_lookup[] = {
     {Mode::Number::GUIDED, terrain_bitmask::GUIDED},
     {Mode::Number::LOITER, terrain_bitmask::LOITER},
     {Mode::Number::CIRCLE, terrain_bitmask::CIRCLE},
+#if HAL_QUADPLANE_ENABLED
     {Mode::Number::QRTL, terrain_bitmask::QRTL},
     {Mode::Number::QLAND, terrain_bitmask::QLAND},
     {Mode::Number::QLOITER, terrain_bitmask::QLOITER},
+#endif
 };
 
 bool Plane::terrain_enabled_in_current_mode() const
+{
+    return terrain_enabled_in_mode(control_mode->mode_number());
+}
+
+bool Plane::terrain_enabled_in_mode(Mode::Number num) const
 {
     // Global enable
     if ((g.terrain_follow.get() & int32_t(terrain_bitmask::ALL)) != 0) {
@@ -759,7 +778,7 @@ bool Plane::terrain_enabled_in_current_mode() const
 
     // Specific enable
     for (const struct TerrainLookupTable entry : Terrain_lookup) {
-        if (entry.mode_num == control_mode->mode_number()) {
+        if (entry.mode_num == num) {
             if ((g.terrain_follow.get() & int32_t(entry.bitmask)) != 0) {
                 return true;
             }

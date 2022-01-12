@@ -49,7 +49,7 @@ void Sub::init_ardupilot()
         AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
         break;
     }
-#else
+#elif CONFIG_HAL_BOARD != HAL_BOARD_LINUX
     AP_Param::set_default_by_name("BARO_EXT_BUS", 1);
 #endif
     celsius.init(barometer.external_bus());
@@ -62,7 +62,9 @@ void Sub::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
+    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
+
 
     init_rc_in();               // sets up rc channels from radio
     init_rc_out();              // sets up motors and output to escs
@@ -83,7 +85,7 @@ void Sub::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
 #endif
@@ -149,9 +151,9 @@ void Sub::init_ardupilot()
 
     startup_INS_ground();
 
-#ifdef ENABLE_SCRIPTING
+#if AP_SCRIPTING_ENABLED
     g2.scripting.init();
-#endif // ENABLE_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED
 
     g2.airspeed.init();
 
@@ -229,7 +231,7 @@ bool Sub::optflow_position_ok()
 
     // return immediately if neither optflow nor visual odometry is enabled
     bool enabled = false;
-#if OPTFLOW == ENABLED
+#if AP_OPTICALFLOW_ENABLED
     if (optflow.enabled()) {
         enabled = true;
     }

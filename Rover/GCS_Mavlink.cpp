@@ -206,7 +206,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
 
     // speed to throttle PID
     if (g.gcs_pid_mask & 2) {
-        pid_info = &g2.attitude_control.get_throttle_speed_pid().get_pid_info();
+        pid_info = &g2.attitude_control.get_throttle_speed_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info->target,
                                     pid_info->actual,
@@ -572,13 +572,7 @@ void GCS_MAVLINK_Rover::handle_change_alt_request(AP_Mission::Mission_Command &c
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_long_t &packet)
 {
-    if (is_equal(packet.param4, 1.0f)) {
-        if (rover.trim_radio()) {
-            return MAV_RESULT_ACCEPTED;
-        } else {
-            return MAV_RESULT_FAILED;
-        }
-    } else if (is_equal(packet.param6, 1.0f)) {
+    if (is_equal(packet.param6, 1.0f)) {
         if (rover.g2.windvane.start_direction_calibration()) {
             return MAV_RESULT_ACCEPTED;
         } else {
@@ -1001,21 +995,13 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
         target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
         // convert vector direction to target yaw
         target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
-
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
 
     // consume yaw heading
     if (!yaw_ignore) {
         target_yaw_cd = ToDeg(packet.yaw) * 100.0f;
-        // rotate target yaw if provided in body-frame
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-            target_yaw_cd = wrap_180_cd(target_yaw_cd + rover.ahrs.yaw_sensor);
-        }
     }
+
     // consume yaw rate
     float target_turn_rate_cds = 0.0f;
     if (!yaw_rate_ignore) {

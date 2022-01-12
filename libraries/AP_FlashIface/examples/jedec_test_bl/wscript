@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+    if bld.env.BOOTLOADER:
+        bld.ap_program(
+            source=['../../../../Tools/AP_Bootloader/support.cpp', 'jedec_test.cpp'],
+            use=['ap','JEDEC_libs'],
+            program_groups='examples',
+            includes=bld.env.SRCROOT + '/Tools/AP_Bootloader/'
+        )
+        bld.ap_stlib(name= 'JEDEC_libs',
+                    ap_vehicle='AP_Bootloader',
+                    ap_libraries= ['AP_FlashIface', 'AP_HAL_Empty'])

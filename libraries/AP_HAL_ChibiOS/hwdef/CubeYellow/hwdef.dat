@@ -1,6 +1,8 @@
 # The CUBE Yellow is a variant of The CUBE Black from ProfiCNC/Hex
 # with a STM32F777 MCU
 
+define HAL_CHIBIOS_ARCH_CUBE 1
+
 # MCU class and specific type
 MCU STM32F7xx STM32F777xx
 
@@ -441,6 +443,10 @@ define HAL_WITH_RAMTRON 1
 # setup for the possibility of an IMU heater as the The CUBE has
 # an IMU header
 define HAL_HAVE_IMU_HEATER 1
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
+# Enable all IMUs to be used and therefore three active EKF Lanes
+define HAL_EKF_IMU_MASK_DEFAULT 7
 
 # enable FAT filesystem support (needs a microSD defined via SDIO)
 define HAL_OS_FATFS_IO 1
@@ -465,7 +471,7 @@ DMA_PRIORITY USART6*
 FLASH_RESERVE_START_KB 96
 
 # fallback storage in case FRAM is not populated
-define STORAGE_FLASH_PAGE 1
+STORAGE_FLASH_PAGE 1
 
 # list of files to put in ROMFS. For fmuv3 we need an IO firmware so
 # we can automatically update the IOMCU firmware on boot. The format

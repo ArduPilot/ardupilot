@@ -34,7 +34,7 @@ public:
     AP_AHRS_View(AP_AHRS &ahrs, enum Rotation rotation, float pitch_trim_deg=0);
 
     // update state
-    void update(bool skip_ins_update=false);
+    void update();
 
     // empty virtual destructor
     virtual ~AP_AHRS_View() {}
@@ -184,6 +184,12 @@ public:
     int32_t roll_sensor;
     int32_t pitch_sensor;
     int32_t yaw_sensor;
+
+
+    // get current rotation
+    enum Rotation get_rotation(void) const {
+        return rotation;
+    }
 
 private:
     const enum Rotation rotation;

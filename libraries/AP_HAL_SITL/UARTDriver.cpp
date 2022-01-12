@@ -39,7 +39,9 @@
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+#if HAL_GCS_ENABLED
 #include <AP_HAL/utility/packetise.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -64,11 +66,11 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _fd = _sitlState->gps_pipe(0);
+        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "");
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _fd = _sitlState->gps_pipe(1);
+        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "");
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -87,6 +89,16 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         char *devtype = strtok_r(s, ":", &saveptr);
         char *args1 = strtok_r(nullptr, ":", &saveptr);
         char *args2 = strtok_r(nullptr, ":", &saveptr);
+#if !defined(HAL_BUILD_AP_PERIPH)
+        if (_portNumber == 2 && AP::sitl()->adsb_plane_count >= 0) {
+            // this is ordinarily port 5762.  The ADSB simulation assumed
+            // this port, so if enabled we assume we'll be doing ADSB...
+            // add sanity check here that we're doing mavlink on this port?
+            ::printf("SIM-ADSB connection on port %u\n", _portNumber);
+            _connected = true;
+            _sim_serial_device = _sitlState->create_serial_sim("adsb", nullptr);
+        } else
+#endif
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
             bool wait = (args2 && strcmp(args2, "wait") == 0);
@@ -118,8 +130,7 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             if (!_connected) {
                 ::printf("SIM connection %s:%s on port %u\n", args1, args2, _portNumber);
                 _connected = true;
-                _fd = _sitlState->sim_fd(args1, args2);
-                _fd_write = _sitlState->sim_fd_write(args1);
+                _sim_serial_device = _sitlState->create_serial_sim(args1, args2);
             }
         } else if (strcmp(devtype, "udpclient") == 0) {
             // udp client connection
@@ -244,17 +255,8 @@ size_t UARTDriver::write(const uint8_t *buffer, size_t size)
         return 0;
     }
     if (_unbuffered_writes) {
-        // write buffer straight to the file descriptor
-        int fd = _fd_write;
-        if (fd == -1) {
-            fd = _fd;
-        }
-        const ssize_t nwritten = ::write(fd, buffer, size);
+        const ssize_t nwritten = ::write(_fd, buffer, size);
         if (nwritten == -1 && errno != EAGAIN && _uart_path) {
-            if (_fd_write != -1) {
-                close(_fd_write);
-                _fd_write = -1;
-            }
             close(_fd);
             _fd = -1;
             _connected = false;
@@ -474,7 +476,9 @@ void UARTDriver::_udp_start_client(const char *address, uint16_t port)
     }
 
     _is_udp = true;
+#if HAL_GCS_ENABLED
     _packetise = true;
+#endif
     _connected = true;
 }
 
@@ -698,9 +702,11 @@ void UARTDriver::_timer_tick(void)
     if (_packetise) {
         uint16_t n = _writebuffer.available();
         n = MIN(n, max_bytes);
+#if HAL_GCS_ENABLED
         if (n > 0) {
             n = mavlink_packetise(_writebuffer, n);
         }
+#endif
         if (n > 0) {
             // keep as a single UDP packet
             uint8_t tmpbuf[n];
@@ -715,17 +721,11 @@ void UARTDriver::_timer_tick(void)
         const uint8_t *readptr = _writebuffer.readptr(navail);
         if (readptr && navail > 0) {
             navail = MIN(navail, max_bytes);
-            if (!_use_send_recv) {
-                int fd = _fd_write;
-                if (fd == -1) {
-                    fd = _fd;
-                }
-                nwritten = ::write(fd, readptr, navail);
+            if (_sim_serial_device != nullptr) {
+                nwritten = _sim_serial_device->write_to_device((const char*)readptr, navail);
+            } else if (!_use_send_recv) {
+                nwritten = ::write(_fd, readptr, navail);
                 if (nwritten == -1 && errno != EAGAIN && _uart_path) {
-                    if (_fd_write != -1){
-                        close(_fd_write);
-                        _fd_write = -1;
-                    }
                     close(_fd);
                     _fd = -1;
                     _connected = false;
@@ -770,6 +770,8 @@ void UARTDriver::_timer_tick(void)
                 nread = 0;
             }
         }
+    } else if (_sim_serial_device != nullptr) {
+        nread = _sim_serial_device->read_from_device(buf, space);
     } else if (!_use_send_recv) {
         if (!_select_check(_fd)) {
             return;

@@ -58,7 +58,7 @@ void AP_AHRS_View::set_pitch_trim(float trim_deg) {
 };
 
 // update state
-void AP_AHRS_View::update(bool skip_ins_update)
+void AP_AHRS_View::update()
 {
     rot_body_to_ned = ahrs.get_rotation_body_to_ned();
     gyro = ahrs.get_gyro();

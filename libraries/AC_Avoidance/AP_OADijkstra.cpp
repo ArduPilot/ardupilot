@@ -14,6 +14,7 @@
  */
 
 #include "AP_OADijkstra.h"
+#include "AP_OAPathPlanner.h"
 
 #include <AC_Fence/AC_Fence.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -24,7 +25,8 @@
 #define OA_DIJKSTRA_ERROR_REPORTING_INTERVAL_MS         5000    // failure messages sent to GCS every 5 seconds
 
 /// Constructor
-AP_OADijkstra::AP_OADijkstra() :
+AP_OADijkstra::AP_OADijkstra(AP_Int16 &options) :
+        _options(options),
         _inclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_polygon_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
         _exclusion_circle_pts(OA_DIJKSTRA_EXPANDING_ARRAY_ELEMENTS_PER_CHUNK),
@@ -112,6 +114,19 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
+        // reset logging count to restart logging updated graph
+        _log_num_points = 0;
+        _log_visgraph_version++;
+    }
+
+    // Log one visgraph point per loop
+    if (_polyfence_visgraph_ok && (_log_num_points < total_numpoints()) && (_options & AP_OAPathPlanner::OARecoveryOptions::OA_OPTION_LOG_DIJKSTRA_POINTS) ) {
+        Vector2f vis_point;
+        if (get_point(_log_num_points, vis_point)) {
+            Location log_location(Vector3f{vis_point.x, vis_point.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
+            Write_Visgraph_point(_log_visgraph_version, _log_num_points, log_location.lat, log_location.lng);
+            _log_num_points++;
+        }
     }
 
     // rebuild path if destination has changed
@@ -140,7 +155,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         Vector2f origin_pos;
         if ((_path_idx_returned > 0) && get_shortest_path_point(_path_idx_returned-1, origin_pos)) {
             // convert offset from ekf origin to Location
-            Location temp_loc(Vector3f(origin_pos.x, origin_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
+            Location temp_loc(Vector3f{origin_pos.x, origin_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
             origin_new = temp_loc;
         } else {
             // for first point use current loc as origin
@@ -148,7 +163,7 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
         }
 
         // convert offset from ekf origin to Location
-        Location temp_loc(Vector3f(dest_pos.x, dest_pos.y, 0.0f), Location::AltFrame::ABOVE_ORIGIN);
+        Location temp_loc(Vector3f{dest_pos.x, dest_pos.y, 0.0}, Location::AltFrame::ABOVE_ORIGIN);
         destination_new = destination;
         destination_new.lat = temp_loc.lat;
         destination_new.lng = temp_loc.lng;
@@ -274,14 +289,9 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_inclusion_polygon(i, num_points);
 
-        // expand array if required
-        if (!_inclusion_polygon_pts.expand_to_hold(_inclusion_polygon_numpoints + num_points)) {
-            err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
-            return false;
-        }
-
         // for each point in inclusion polygon
         // Note: boundary is "unclosed" meaning the last point is *not* the same as the first
+        uint16_t new_points = 0;
         for (uint16_t j = 0; j < num_points; j++) {
 
             // find points before and after current point (relative to current point)
@@ -301,26 +311,40 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
             after_pt.normalize();
 
             // calculate intermediate point and scale to margin
-            Vector2f intermediate_pt = (after_pt + before_pt) * 0.5f;
-            float intermediate_len = intermediate_pt.length();
-            intermediate_pt *= (margin_cm / intermediate_len);
+            Vector2f intermediate_pt = after_pt + before_pt;
+            intermediate_pt.normalize();
+            intermediate_pt *= margin_cm;
 
             // find final point which is outside the inside polygon
-            uint16_t next_index = _inclusion_polygon_numpoints + j;
-            _inclusion_polygon_pts[next_index] = boundary[j] + intermediate_pt;
-            if (Polygon_outside(_inclusion_polygon_pts[next_index], boundary, num_points)) {
-                _inclusion_polygon_pts[next_index] = boundary[j] - intermediate_pt;
-                if (Polygon_outside(_inclusion_polygon_pts[next_index], boundary, num_points)) {
+            Vector2f temp_point = boundary[j] + intermediate_pt;
+            if (Polygon_outside(temp_point, boundary, num_points)) {
+                intermediate_pt *= -1.0;
+                temp_point = boundary[j] + intermediate_pt;
+                if (Polygon_outside(temp_point, boundary, num_points)) {
                     // could not find a point on either side that was outside the exclusion polygon so fail
                     // this may happen if the exclusion polygon has overlapping lines
                     err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OVERLAPPING_POLYGON_LINES;
                     return false;
                 }
             }
+
+            // don't add points in corners
+            if (fabsf(intermediate_pt.angle() - before_pt.angle()) < M_PI_2) {
+                continue;
+            }
+
+            // expand array if required
+            if (!_inclusion_polygon_pts.expand_to_hold(_inclusion_polygon_numpoints + new_points + 1)) {
+                err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
+                return false;
+            }
+            // add point
+            _inclusion_polygon_pts[_inclusion_polygon_numpoints + new_points] = temp_point;
+            new_points++;
         }
 
         // update total number of points
-        _inclusion_polygon_numpoints += num_points;
+        _inclusion_polygon_numpoints += new_points;
     }
     return true;
 }
@@ -366,14 +390,9 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
         uint16_t num_points;
         const Vector2f* boundary = fence->polyfence().get_exclusion_polygon(i, num_points);
    
-        // expand array if required
-        if (!_exclusion_polygon_pts.expand_to_hold(_exclusion_polygon_numpoints + num_points)) {
-            err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
-            return false;
-        }
-
         // for each point in exclusion polygon
         // Note: boundary is "unclosed" meaning the last point is *not* the same as the first
+        uint16_t new_points = 0;
         for (uint16_t j = 0; j < num_points; j++) {
 
             // find points before and after current point (relative to current point)
@@ -393,26 +412,40 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
             after_pt.normalize();
 
             // calculate intermediate point and scale to margin
-            Vector2f intermediate_pt = (after_pt + before_pt) * 0.5f;
-            float intermediate_len = intermediate_pt.length();
-            intermediate_pt *= (margin_cm / intermediate_len);
+            Vector2f intermediate_pt = after_pt + before_pt;
+            intermediate_pt.normalize();
+            intermediate_pt *= margin_cm;
 
             // find final point which is outside the original polygon
-            uint16_t next_index = _exclusion_polygon_numpoints + j;
-            _exclusion_polygon_pts[next_index] = boundary[j] + intermediate_pt;
-            if (!Polygon_outside(_exclusion_polygon_pts[next_index], boundary, num_points)) {
-                _exclusion_polygon_pts[next_index] = boundary[j] - intermediate_pt;
-                if (!Polygon_outside(_exclusion_polygon_pts[next_index], boundary, num_points)) {
+            Vector2f temp_point = boundary[j] + intermediate_pt;
+            if (!Polygon_outside(temp_point, boundary, num_points)) {
+                intermediate_pt *= -1;
+                temp_point = boundary[j] + intermediate_pt;
+                if (!Polygon_outside(temp_point, boundary, num_points)) {
                     // could not find a point on either side that was outside the exclusion polygon so fail
                     // this may happen if the exclusion polygon has overlapping lines
                     err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OVERLAPPING_POLYGON_LINES;
                     return false;
                 }
             }
+
+            // don't add points in corners
+            if (fabsf(intermediate_pt.angle() - before_pt.angle()) < M_PI_2) {
+                continue;
+            }
+
+            // expand array if required
+            if (!_exclusion_polygon_pts.expand_to_hold(_exclusion_polygon_numpoints + new_points + 1)) {
+                err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
+                return false;
+            }
+            // add point
+            _exclusion_polygon_pts[_exclusion_polygon_numpoints + new_points] = temp_point;
+            new_points++;
         }
 
         // update total number of points
-        _exclusion_polygon_numpoints += num_points;
+        _exclusion_polygon_numpoints += new_points;
     }
     return true;
 }
@@ -640,11 +673,6 @@ bool AP_OADijkstra::create_fence_visgraph(AP_OADijkstra_Error &err_id)
 // returns true on success
 bool AP_OADijkstra::update_visgraph(AP_OAVisGraph& visgraph, const AP_OAVisGraph::OAItemID& oaid, const Vector2f &position, bool add_extra_position, Vector2f extra_position)
 {
-    // exit immediately if no fence (with margin) points
-    if (total_numpoints() == 0) {
-        return false;
-    }
-
     // clear visibility graph
     visgraph.clear();
 
@@ -759,13 +787,31 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
     // scan through all nodes looking for closest
     for (node_index i=0; i<_short_path_data_numpoints; i++) {
         const ShortPathNode &node = _short_path_data[i];
-        if (!node.visited && (node.distance_cm < lowest_dist)) {
+        if (node.visited || is_equal(_short_path_data[i].distance_cm, FLT_MAX)) {
+            // if node is already visited OR cannot be reached yet, we can't use it
+            continue;
+        }
+        // figure out the pos of this node
+        Vector2f node_pos;
+        float dist_with_heuristics = FLT_MAX;
+        if (convert_node_to_point(node.id, node_pos)) {
+            // heuristics is is simple Euclidean distance from the node to the destination
+            // This should be admissible, therefore optimal path is guaranteed
+            const float heuristics = (node_pos-_path_destination).length();
+            dist_with_heuristics = node.distance_cm + heuristics;
+        } else {
+            // shouldn't happen
+            return false;
+        }
+        if (dist_with_heuristics < lowest_dist) {
+            // for NOW, this is the closest node
             lowest_idx = i;
-            lowest_dist = node.distance_cm;
+            lowest_dist = dist_with_heuristics;
         }
     }
 
     if (lowest_dist < FLT_MAX) {
+        // found the closest node
         node_idx = lowest_idx;
         return true;
     }
@@ -779,18 +825,17 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
 bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id)
 {
     // convert origin and destination to offsets from EKF origin
-    Vector2f origin_NE, destination_NE;
-    if (!origin.get_vector_xy_from_origin_NE(origin_NE) || !destination.get_vector_xy_from_origin_NE(destination_NE)) {
+    if (!origin.get_vector_xy_from_origin_NE(_path_source) || !destination.get_vector_xy_from_origin_NE(_path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
         return false;
     }
 
     // create visgraphs of origin and destination to fence points
-    if (!update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, origin_NE, true, destination_NE)) {
+    if (!update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, _path_source, true, _path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
     }
-    if (!update_visgraph(_destination_visgraph, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, destination_NE)) {
+    if (!update_visgraph(_destination_visgraph, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, _path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
     }
@@ -830,6 +875,12 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
 
     // move current_node_idx to node with lowest distance
     while (find_closest_node_idx(current_node_idx)) {
+        node_index dest_node;
+        // See if this next "closest" node is actually the destination
+        if (find_node_from_id({AP_OAVisGraph::OATYPE_DESTINATION,0}, dest_node) && current_node_idx == dest_node) {
+            // We have discovered destination.. Don't bother with the rest of the graph
+            break;
+        }
         // update distances to all neighbours of current node
         update_visible_node_distances(current_node_idx);
 
@@ -869,11 +920,8 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
             }
         }
     }
-    // update source and destination for by get_shortest_path_point
-    if (success) {
-        _path_source = origin_NE;
-        _path_destination = destination_NE;
-    } else {
+    // report error incase path not found
+    if (!success) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
     }
 
@@ -890,6 +938,12 @@ bool AP_OADijkstra::get_shortest_path_point(uint8_t point_num, Vector2f& pos)
     // get id from path
     AP_OAVisGraph::OAItemID id = _path[_path_numpoints - point_num - 1];
 
+    return convert_node_to_point(id, pos);
+}
+
+// find the position of a node as an offset (in cm) from the ekf origin
+bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vector2f& pos) const
+{
     // convert id to a position offset from EKF origin
     switch (id.id_type) {
     case AP_OAVisGraph::OATYPE_SOURCE:

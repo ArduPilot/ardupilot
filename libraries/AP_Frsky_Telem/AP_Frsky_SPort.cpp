@@ -66,8 +66,12 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_FAS: // Sensor ID  2
                 switch (_SPort.fas_call) {
                 case 0:
-                    send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(_battery.capacity_remaining_pct())); // send battery remaining as %
-                    break;
+                    {
+                        uint8_t percentage = 0;
+                        IGNORE_RETURN(_battery.capacity_remaining_pct(percentage));
+                        send_sport_frame(SPORT_DATA_FRAME, FUEL_ID, (uint16_t)roundf(percentage)); // send battery remaining
+                        break;
+                    }
                 case 1:
                     send_sport_frame(SPORT_DATA_FRAME, VFAS_ID, (uint16_t)roundf(_battery.voltage() * 100.0f)); // send battery voltage in cV
                     break;
@@ -417,7 +421,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
             res = abs_number<<1;
         } else if (abs_number < 10240) {
             res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
-        } else { // transmit max possible value (0x3FF x 10^1 = 10240)
+        } else { // transmit max possible value (0x3FF x 10^1 = 10230)
             res = 0x7FF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
@@ -432,7 +436,7 @@ uint16_t AP_Frsky_SPort::prep_number(int32_t number, uint8_t digits, uint8_t pow
             res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
         } else if (abs_number < 1024000) {
             res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
-        } else { // transmit max possible value (0x3FF x 10^3 = 127000)
+        } else { // transmit max possible value (0x3FF x 10^3 = 1023000)
             res = 0xFFF;
         }
         if (number < 0) { // if number is negative, add sign bit in front

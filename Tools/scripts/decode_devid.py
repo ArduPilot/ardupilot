@@ -62,6 +62,8 @@ compass_types = {
     0x10 : "DEVTYPE_IST8308",
     0x11 : "DEVTYPE_RM3100_OLD",
     0x12 : "DEVTYPE_RM3100",
+    0x13 : "DEVTYPE_MMC5883",
+    0x14 : "DEVTYPE_AK09918",
 }
 
 imu_types = {
@@ -92,6 +94,9 @@ imu_types = {
     0x33 : "DEVTYPE_INS_ICM40609",
     0x34 : "DEVTYPE_INS_ICM42688",
     0x35 : "DEVTYPE_INS_ICM42605",
+    0x36 : "DEVTYPE_INS_ICM40605",
+    0x37 : "DEVTYPE_INS_IIM42652",
+    0x38 : "DEVTYPE_INS_BMI270",
 }
 
 baro_types = {

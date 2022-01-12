@@ -18,8 +18,8 @@ const extern AP_HAL::HAL& hal;
 #define DF_LOGGING_FORMAT    0x1901201B
 
 AP_Logger_Block::AP_Logger_Block(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
-    writebuf(0),
-    AP_Logger_Backend(front, writer)
+    AP_Logger_Backend(front, writer),
+    writebuf(0)
 {
     // buffer is used for both reads and writes so access must always be within the semaphore
     buffer = (uint8_t *)hal.util->malloc_type(page_size_max, AP_HAL::Util::MEM_DMA_SAFE);

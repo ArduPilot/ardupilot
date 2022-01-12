@@ -18,7 +18,9 @@
 
 #include "SIM_Frsky_D.h"
 
-#include <stdio.h>
+#include <AP_HAL/AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
 
@@ -30,7 +32,7 @@ static const uint8_t BYTESTUFF_D               = 0x5D;
 
 void Frsky_D::handle_data(uint8_t id, uint16_t data)
 {
-    ::fprintf(stderr,
+    hal.console->printf(
               "Frsky: id=%s (0x%02X) data=%u\n",
               dataid_string((DataID)id),
               (unsigned)_id,

@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),
 
@@ -198,7 +198,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Second Airspeed type
     // @Description: Type of 2nd airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:UAVCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
     // @User: Standard
     AP_GROUPINFO_FLAGS("2_TYPE", 11, AP_Airspeed, param[1].type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -294,6 +294,36 @@ AP_Airspeed::AP_Airspeed()
     _singleton = this;
 }
 
+// macro for use by HAL_INS_PROBE_LIST
+#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+
+bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
+{
+    if (!backend) {
+        return false;
+    }
+    if (num_sensors >= AIRSPEED_MAX_SENSORS) {
+        AP_HAL::panic("Too many airspeed drivers");
+    }
+    const uint8_t i = num_sensors;
+    sensor[num_sensors++] = backend;
+    if (!sensor[i]->init()) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i+1);
+        delete sensor[i];
+        sensor[i] = nullptr;
+    }
+    return true;
+}
+
+/*
+  macro to add a backend with check for too many sensors
+  We don't try to start more than the maximum allowed
+ */
+#define ADD_BACKEND(backend) \
+    do { add_backend(backend);     \
+    if (num_sensors == AIRSPEED_MAX_SENSORS) { return; } \
+    } while (0)
+
 void AP_Airspeed::init()
 {   
     if (sensor[0] != nullptr) {
@@ -307,6 +337,7 @@ void AP_Airspeed::init()
 
 #ifndef HAL_BUILD_AP_PERIPH
     // Switch to dedicated WIND_MAX param
+    // PARAMETER_CONVERSION - Added: Oct-2020
     const float ahrs_max_wind = AP::ahrs().get_max_wind();
     if (!_wind_max.configured() && is_positive(ahrs_max_wind)) {
         _wind_max.set_and_save(ahrs_max_wind);
@@ -318,6 +349,11 @@ void AP_Airspeed::init()
     }
 #endif
 
+#ifdef HAL_AIRSPEED_PROBE_LIST
+    // load sensors via a list from hwdef.dat
+    HAL_AIRSPEED_PROBE_LIST;
+#else
+    // look for sensors based on type parameters
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
         state[i].calibration.init(param[i].ratio);
@@ -396,7 +432,7 @@ void AP_Airspeed::init()
             break;
         }
         if (sensor[i] && !sensor[i]->init()) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u init failed", i + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
             delete sensor[i];
             sensor[i] = nullptr;
         }
@@ -404,6 +440,7 @@ void AP_Airspeed::init()
             num_sensors = i+1;
         }
     }
+#endif // HAL_AIRSPEED_PROBE_LIST
 }
 
 // read the airspeed sensor
@@ -450,6 +487,10 @@ void AP_Airspeed::calibrate(bool in_startup)
         if (in_startup && param[i].skip_cal) {
             continue;
         }
+        if (sensor[i] == nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u not initalized, cannot cal", i+1);
+            continue;
+        }
         state[i].cal.start_ms = AP_HAL::millis();
         state[i].cal.count = 0;
         state[i].cal.sum = 0;
@@ -472,7 +513,7 @@ void AP_Airspeed::update_calibration(uint8_t i, float raw_pressure)
     if (AP_HAL::millis() - state[i].cal.start_ms >= 1000 &&
         state[i].cal.read_count > 15) {
         if (state[i].cal.count == 0) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u unhealthy", i + 1);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %u unhealthy", i + 1);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Airspeed %u calibrated", i + 1);
             param[i].offset.set_and_save(state[i].cal.sum / state[i].cal.count);
@@ -562,7 +603,7 @@ void AP_Airspeed::update(bool log)
         read(i);
     }
 
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     // debugging until we get MAVLink support for 2nd airspeed sensor
     if (enabled(1)) {
         gcs().send_named_float("AS2", get_airspeed(1));
@@ -647,7 +688,7 @@ bool AP_Airspeed::use(uint8_t i) const
         return false;
     }
 #ifndef HAL_BUILD_AP_PERIPH
-    if (param[i].use == 2 && SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) != 0) {
+    if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
         // special case for gliders with airspeed sensors behind the
         // propeller. Allow airspeed to be disabled when throttle is
         // running

@@ -31,6 +31,10 @@
 # define HAL_COMPASS_ICM20948_I2C_ADDR 0x69
 #endif
 
+#ifndef HAL_COMPASS_ICM20948_I2C_ADDR2
+# define HAL_COMPASS_ICM20948_I2C_ADDR2 0x68
+#endif
+
 class AuxiliaryBus;
 class AuxiliaryBusSlave;
 class AP_InertialSensor;
@@ -50,8 +54,13 @@ public:
                                              bool force_external,
                                              enum Rotation rotation);
 
-    /* Probe for AK09916 on auxiliary bus of ICM20948, connected through SPI */
-    static AP_Compass_Backend *probe_ICM20948(uint8_t mpu9250_instance,
+    /* Probe for AK09916 on auxiliary bus of ICM20948, connected through SPI by default */
+    static AP_Compass_Backend *probe_ICM20948(uint8_t mpu9250_instance, enum Rotation rotation);
+    static AP_Compass_Backend *probe_ICM20948_SPI(uint8_t mpu9250_instance,
+                                             enum Rotation rotation);
+
+	/* Probe for AK09916 on auxiliary bus of ICM20948, connected through I2C */
+    static AP_Compass_Backend *probe_ICM20948_I2C(uint8_t mpu9250_instance,
                                              enum Rotation rotation);
 
     static constexpr const char *name = "AK09916";
@@ -77,11 +86,11 @@ private:
 
     AP_AK09916_BusDriver *_bus;
 
-    float _magnetometer_ASA[3] {0, 0, 0};
     bool _force_external;
     uint8_t _compass_instance;
     bool _initialized;
     enum Rotation _rotation;
+    enum AP_Compass_Backend::DevTypes _devtype;
 };
 
 
@@ -92,7 +101,7 @@ public:
 
     virtual bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) = 0;
     virtual bool register_read(uint8_t reg, uint8_t *val) = 0;
-    virtual bool register_write(uint8_t reg, uint8_t val) = 0;
+    virtual bool register_write(uint8_t reg, uint8_t val, bool checked=false) = 0;
 
     virtual AP_HAL::Semaphore  *get_semaphore() = 0;
 
@@ -105,6 +114,14 @@ public:
 
     // return 24 bit bus identifier
     virtual uint32_t get_bus_id(void) const = 0;
+
+    /**
+     setup for register value checking. Frequency is how often to
+     check registers. If set to 10 then every 10th call to
+     check_next_register will check a register
+     */
+    virtual void setup_checked_registers(uint8_t num_regs) {}
+    virtual void check_next_register(void) {}
 };
 
 class AP_AK09916_BusDriver_HALDevice: public AP_AK09916_BusDriver
@@ -114,7 +131,7 @@ public:
 
     virtual bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     virtual bool register_read(uint8_t reg, uint8_t *val) override;
-    virtual bool register_write(uint8_t reg, uint8_t val) override;
+    virtual bool register_write(uint8_t reg, uint8_t val, bool checked) override;
 
     virtual AP_HAL::Semaphore  *get_semaphore() override;
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
@@ -127,6 +144,18 @@ public:
     // return 24 bit bus identifier
     uint32_t get_bus_id(void) const override {
         return _dev->get_bus_id();
+    }
+
+    /**
+     setup for register value checking. Frequency is how often to
+     check registers. If set to 10 then every 10th call to
+     check_next_register will check a register
+     */
+    void setup_checked_registers(uint8_t num_regs) override {
+        _dev->setup_checked_registers(num_regs);
+    }
+    void check_next_register(void) override {
+        _dev->check_next_register();
     }
     
 private:
@@ -142,7 +171,7 @@ public:
 
     bool block_read(uint8_t reg, uint8_t *buf, uint32_t size) override;
     bool register_read(uint8_t reg, uint8_t *val) override;
-    bool register_write(uint8_t reg, uint8_t val) override;
+    bool register_write(uint8_t reg, uint8_t val, bool checked) override;
 
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb) override;
     

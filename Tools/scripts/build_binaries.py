@@ -88,7 +88,7 @@ class build_binaries(object):
 
     def board_options(self, board):
         '''return board-specific options'''
-        if board == "bebop":
+        if board in ["bebop", "disco"]:
             return ["--static"]
         return []
 
@@ -461,6 +461,9 @@ is bob we will attempt to checkout bob-AVR'''
                 except subprocess.CalledProcessError:
                     self.progress("waf configure failed")
                     continue
+
+                time_taken_to_configure = time.time() - t0
+
                 try:
                     target = os.path.join("bin",
                                           "".join([binaryname, framesuffix]))
@@ -476,10 +479,11 @@ is bob we will attempt to checkout bob-AVR'''
                     self.history.record_build(githash, tag, vehicle, board, frame, None, t0, time_taken_to_build)
                     continue
 
-                t1 = time.time()
-                time_taken_to_build = t1-t0
-                self.progress("Building %s %s %s %s took %u seconds" %
-                              (vehicle, tag, board, frame, time_taken_to_build))
+                time_taken_to_build = (time.time()-t0) - time_taken_to_configure
+
+                time_taken = time.time()-t0
+                self.progress("Making %s %s %s %s took %u seconds (configure=%u build=%u)" %
+                              (vehicle, tag, board, frame, time_taken, time_taken_to_configure, time_taken_to_build))
 
                 bare_path = os.path.join(self.buildroot,
                                          board,
@@ -577,6 +581,15 @@ is bob we will attempt to checkout bob-AVR'''
                            boards,
                            "AP_Periph",
                            "AP_Periph")
+
+    def build_blimp(self, tag):
+        '''build Blimp binaries'''
+        boards = self.common_boards()
+        self.build_vehicle(tag,
+                           "Blimp",
+                           boards,
+                           "Blimp",
+                           "blimp")
 
     def generate_manifest(self):
         '''generate manigest files for GCS to download'''
@@ -688,6 +701,7 @@ is bob we will attempt to checkout bob-AVR'''
             self.build_antennatracker(tag)
             self.build_ardusub(tag)
             self.build_AP_Periph(tag)
+            self.build_blimp(tag)
             self.history.record_run(githash, tag, t0, time.time()-t0)
 
         if os.path.exists(self.tmpdir):

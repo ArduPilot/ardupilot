@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #define LOG_IDS_FROM_NAVEKF2 \
     LOG_NKF0_MSG,  \
@@ -166,7 +167,7 @@ struct PACKED log_NKF3 {
 
 
 // @LoggerMessage: NKF4
-// @Description: EKF2 variances
+// @Description: EKF2 variances  SV, SP, SH and SM are probably best described as 'Squared Innovation Test Ratios' where values <1 tells us the measurement was accepted and >1 tells us it was rejected. They represent the square of the (innovation / maximum allowed innovation) where the innovation is the difference between predicted and measured value and the maximum allowed innovation is determined from the uncertainty of the measurement, uncertainty of the prediction and scaled using the number of standard deviations set by the innovation gate parameter for that measurement, eg EK2_MAG_I_GATE, EK2_HGT_I_GATE, etc
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF2 core this data is for
 // @Field: SV: Square root of the velocity variance
@@ -283,6 +284,9 @@ struct PACKED log_NKT {
     float delVelDT_max;
 };
 
+#if !HAL_NAVEKF2_AVAILABLE
+#define LOG_STRUCTURE_FROM_NAVEKF2
+#else
 #define LOG_STRUCTURE_FROM_NAVEKF2        \
     { LOG_NKF0_MSG, sizeof(log_NKF0), \
       "NKF0","QBBccCCcccccccc","TimeUS,C,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFH,OFL,OFN,OFE,OFD", "s#-m---mmmmmmmm", "F--B---BBBBBBBB" , true }, \
@@ -299,3 +303,4 @@ struct PACKED log_NKT {
     { LOG_NKQ_MSG, sizeof(log_NKQ), "NKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_NKT_MSG, sizeof(log_NKT),   \
       "NKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true },
+#endif

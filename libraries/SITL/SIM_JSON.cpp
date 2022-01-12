@@ -18,6 +18,8 @@
 
 #include "SIM_JSON.h"
 
+#if HAL_SIM_JSON_ENABLED
+
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <errno.h>
@@ -448,3 +450,5 @@ void JSON::update(const struct sitl_input &input)
     }
 #endif
 }
+
+#endif  // HAL_SIM_JSON_ENABLED

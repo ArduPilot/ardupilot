@@ -18,6 +18,8 @@
 
 #include "SIM_SerialProximitySensor.h"
 
+#if HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+
 #include <AP_Math/AP_Math.h>
 
 #include <stdio.h>
@@ -134,3 +136,5 @@ float SerialProximitySensor::measure_distance_at_angle_bf(const Location &locati
     // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
     return min_dist_cm / 100.0f;
 }
+
+#endif  // HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED

@@ -25,8 +25,8 @@ FLASH_SIZE_KB 2048
 # the H743 has 128k sectors, we leave 2 sectors for BL
 FLASH_BOOTLOADER_LOAD_KB 256
 
-PB15 LED_2 OUTPUT LOW
-PB14 LED OUTPUT LOW
+PB15 LED_SWITCH_2 OUTPUT HIGH
+PB14 LED_SWITCH_1 OUTPUT HIGH
 
 # board voltage
 STM32_VDD 330U
@@ -55,16 +55,17 @@ PA14 JTCK-SWCLK SWD
 define BUILD_DEFAULT_LED_TYPE Notify_LED_ProfiLED_SPI
 define NOTIFY_LED_LEN_DEFAULT 16
 define CONFIGURE_PPS_PIN TRUE
+define HAL_PERIPH_ENABLE_NOTIFY
+define HAL_PERIPH_NOTIFY_WITHOUT_RCOUT
 
 FLASH_RESERVE_START_KB 256
 
 define GPS_UBLOX_MOVING_BASELINE TRUE
-# define HAL_NO_LOGGING TRUE
+define HAL_GCS_ENABLED 1
 define HAL_LOGGING_ENABLED TRUE
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_NO_MONITOR_THREAD
 
-define PERIPH_FW TRUE
 
 define HAL_DISABLE_LOOP_DELAY
 define USB_USE_WAIT TRUE
@@ -72,7 +73,6 @@ define HAL_USE_USB_MSD TRUE
 
 define HAL_MINIMIZE_FEATURES 0
 
-define HAL_BUILD_AP_PERIPH
 
 define HAL_DEVICE_THREAD_STACK 2048
 
@@ -92,8 +92,6 @@ define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
 define HAL_INS_ENABLED 1
 
-# use the app descriptor needed by MissionPlanner for CAN upload
-env APP_DESCRIPTOR MissionPlanner
 
 # enable CAN support
 PB8 CAN1_RX CAN1
@@ -197,11 +195,7 @@ PH13 VDD_33V_SENS INPUT
 # This defines some input pins, currently unused.
 PB2 BOOT1 INPUT
 
-# reserve 256 bytes for comms between app and bootloader
-RAM_RESERVE_START 256
 
-# use DNA
-define HAL_CAN_DEFAULT_NODE_ID 0
 
 define CAN_APP_NODE_NAME "com.cubepilot.herepro"
 

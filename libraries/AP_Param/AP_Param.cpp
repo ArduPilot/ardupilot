@@ -45,7 +45,7 @@ uint16_t AP_Param::sentinal_offset;
 // singleton instance
 AP_Param *AP_Param::_singleton;
 
-#define ENABLE_DEBUG 1
+#define ENABLE_DEBUG 0
 
 #if ENABLE_DEBUG
  # define Debug(fmt, args ...)  do {::printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -53,10 +53,10 @@ AP_Param *AP_Param::_singleton;
  # define Debug(fmt, args ...)
 #endif
 
-#ifdef HAL_NO_GCS
-#define GCS_SEND_PARAM(name, type, v)
-#else
+#if HAL_GCS_ENABLED
 #define GCS_SEND_PARAM(name, type, v) gcs().send_parameter_value(name, type, v)
+#else
+#define GCS_SEND_PARAM(name, type, v)
 #endif
 
 // Note about AP_Vector3f handling.
@@ -74,6 +74,13 @@ AP_Param *AP_Param::_singleton;
 
 // number of rows in the _var_info[] table
 uint16_t AP_Param::_num_vars;
+
+#if AP_PARAM_DYNAMIC_ENABLED
+uint16_t AP_Param::_num_vars_base;
+AP_Param::Info *AP_Param::_var_info_dynamic;
+static const char *_empty_string = "";
+uint8_t AP_Param::_dynamic_table_sizes[AP_PARAM_MAX_DYNAMIC];
+#endif
 
 // cached parameter count
 uint16_t AP_Param::_parameter_count;
@@ -183,6 +190,10 @@ uint32_t AP_Param::group_id(const struct GroupInfo *grpinfo, uint32_t base, uint
  */
 bool AP_Param::check_frame_type(uint16_t flags)
 {
+    if (flags & AP_PARAM_FLAG_HIDDEN) {
+        // hidden on all frames
+        return false;
+    }
     uint16_t frame_flags = flags >> AP_PARAM_FRAME_TYPE_SHIFT;
     if (frame_flags == 0) {
         return true;
@@ -248,7 +259,7 @@ bool AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
 bool AP_Param::duplicate_key(uint16_t vindex, uint16_t key)
 {
     for (uint16_t i=vindex+1; i<_num_vars; i++) {
-        uint16_t key2 = _var_info[i].key;
+        uint16_t key2 = var_info(i).key;
         if (key2 == key) {
             // no duplicate keys allowed
             return true;
@@ -285,18 +296,19 @@ bool AP_Param::check_var_info(void)
     uint16_t total_size = sizeof(struct EEPROM_header);
 
     for (uint16_t i=0; i<_num_vars; i++) {
-        uint8_t type = _var_info[i].type;
-        uint16_t key = _var_info[i].key;
+        const auto &info = var_info(i);
+        uint8_t type = info.type;
+        uint16_t key = info.key;
         if (type == AP_PARAM_GROUP) {
             if (i == 0) {
                 // first element can't be a group, for first() call
                 return false;
             }
-            const struct GroupInfo *group_info = get_group_info(_var_info[i]);
+            const struct GroupInfo *group_info = get_group_info(info);
             if (group_info == nullptr) {
                 continue;
             }
-            if (!check_group_info(group_info, &total_size, 0, strlen(_var_info[i].name))) {
+            if (!check_group_info(group_info, &total_size, 0, strlen(info.name))) {
                 return false;
             }
         } else {
@@ -311,7 +323,7 @@ bool AP_Param::check_var_info(void)
         if (duplicate_key(i, key)) {
             return false;
         }
-        if (type != AP_PARAM_GROUP && (_var_info[i].flags & AP_PARAM_FLAG_POINTER)) {
+        if (type != AP_PARAM_GROUP && (info.flags & AP_PARAM_FLAG_POINTER)) {
             // only groups can be pointers
             return false;
         }
@@ -378,7 +390,7 @@ bool AP_Param::adjust_group_offset(uint16_t vindex, const struct GroupInfo &grou
     if (group_info.flags & AP_PARAM_FLAG_POINTER) {
         // group_info.offset refers to a pointer
         ptrdiff_t base;
-        if (!get_base(_var_info[vindex], base)) {
+        if (!get_base(var_info(vindex), base)) {
             // the object is not allocated yet
             return false;
         }
@@ -456,11 +468,11 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
         if (group_id(group_info, group_base, i, group_shift) == phdr.group_element && type == phdr.type) {
             // found a group element
             ptrdiff_t base;
-            if (!get_base(_var_info[vindex], base)) {
+            if (!get_base(var_info(vindex), base)) {
                 continue;
             }
             *ptr = (void*)(base + group_info[i].offset + group_offset);
-            return &_var_info[vindex];
+            return &var_info(vindex);
         }
     }
     return nullptr;
@@ -472,14 +484,15 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
 {
     // loop over all named variables
     for (uint16_t i=0; i<_num_vars; i++) {
-        uint8_t type = _var_info[i].type;
-        uint16_t key = _var_info[i].key;
+        const auto &info = var_info(i);
+        uint8_t type = info.type;
+        uint16_t key = info.key;
         if (key != get_key(phdr)) {
             // not the right key
             continue;
         }
         if (type == AP_PARAM_GROUP) {
-            const struct GroupInfo *group_info = get_group_info(_var_info[i]);
+            const struct GroupInfo *group_info = get_group_info(info);
             if (group_info == nullptr) {
                 continue;
             }
@@ -488,11 +501,11 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
         if (type == phdr.type) {
             // found it
             ptrdiff_t base;
-            if (!get_base(_var_info[i], base)) {
+            if (!get_base(info, base)) {
                 return nullptr;
             }
             *ptr = (void*)base;
-            return &_var_info[i];
+            return &info;
         }
     }
     return nullptr;
@@ -510,7 +523,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
                                                            uint8_t *                idx) const
 {
     ptrdiff_t base;
-    if (!get_base(_var_info[vindex], base)) {
+    if (!get_base(var_info(vindex), base)) {
         return nullptr;
     }
     uint8_t type;
@@ -554,7 +567,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             *group_element = group_id(group_info, group_base, i, group_shift);
             group_ret = &group_info[i];
             *idx = 0;
-            return &_var_info[vindex];
+            return &var_info(vindex);
         } else if (type == AP_PARAM_VECTOR3F &&
                    (base+ofs+(ptrdiff_t)sizeof(float) == (ptrdiff_t) this ||
                     base+ofs+2*(ptrdiff_t)sizeof(float) == (ptrdiff_t) this)) {
@@ -563,7 +576,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             *idx = (((ptrdiff_t) this) - (base+ofs))/sizeof(float);
             *group_element = group_id(group_info, group_base, i, group_shift);
             group_ret = &group_info[i];
-            return &_var_info[vindex];
+            return &var_info(vindex);
         }
     }
     return nullptr;
@@ -578,25 +591,26 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
     group_ret = nullptr;
     
     for (uint16_t i=0; i<_num_vars; i++) {
-        uint8_t type = _var_info[i].type;
+        const auto &info = var_info(i);
+        uint8_t type = info.type;
         ptrdiff_t base;
-        if (!get_base(_var_info[i], base)) {
+        if (!get_base(info, base)) {
             continue;
         }
         if (type == AP_PARAM_GROUP) {
-            const struct GroupInfo *group_info = get_group_info(_var_info[i]);
+            const struct GroupInfo *group_info = get_group_info(info);
             if (group_info == nullptr) {
                 continue;
             }
-            const struct AP_Param::Info *info;
-            info = find_var_info_group(group_info, i, 0, 0, 0, group_element, group_ret, group_nesting, idx);
-            if (info != nullptr) {
-                return info;
+            const struct AP_Param::Info *info2;
+            info2 = find_var_info_group(group_info, i, 0, 0, 0, group_element, group_ret, group_nesting, idx);
+            if (info2 != nullptr) {
+                return info2;
             }
         } else if (base == (ptrdiff_t) this) {
             *group_element = 0;
             *idx = 0;
-            return &_var_info[i];
+            return &info;
         } else if (type == AP_PARAM_VECTOR3F &&
                    (base+(ptrdiff_t)sizeof(float) == (ptrdiff_t) this ||
                     base+2*(ptrdiff_t)sizeof(float) == (ptrdiff_t) this)) {
@@ -604,7 +618,7 @@ const struct AP_Param::Info *AP_Param::find_var_info(uint32_t *                 
             // referring to.
             *idx = (((ptrdiff_t) this) - base)/sizeof(float);
             *group_element = 0;
-            return &_var_info[i];
+            return &info;
         }
     }
     return nullptr;
@@ -619,27 +633,28 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
                                                            uint8_t *                  idx) const
 {
     uint16_t i = token.key;
-    uint8_t type = _var_info[i].type;
+    const auto &info = var_info(i);
+    uint8_t type = info.type;
     ptrdiff_t base;
-    if (!get_base(_var_info[i], base)) {
+    if (!get_base(info, base)) {
         return nullptr;
     }
     group_ret = nullptr;
     
     if (type == AP_PARAM_GROUP) {
-        const struct GroupInfo *group_info = get_group_info(_var_info[i]);
+        const struct GroupInfo *group_info = get_group_info(info);
         if (group_info == nullptr) {
             return nullptr;
         }
-        const struct AP_Param::Info *info;
-        info = find_var_info_group(group_info, i, 0, 0, 0, group_element, group_ret, group_nesting, idx);
-        if (info != nullptr) {
-            return info;
+        const struct AP_Param::Info *info2;
+        info2 = find_var_info_group(group_info, i, 0, 0, 0, group_element, group_ret, group_nesting, idx);
+        if (info2 != nullptr) {
+            return info2;
         }
     } else if (base == (ptrdiff_t) this) {
         *group_element = 0;
         *idx = 0;
-        return &_var_info[i];
+        return &info;
     } else if (type == AP_PARAM_VECTOR3F &&
                (base+(ptrdiff_t)sizeof(float) == (ptrdiff_t) this ||
                 base+2*(ptrdiff_t)sizeof(float) == (ptrdiff_t) this)) {
@@ -647,7 +662,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
         // referring to.
         *idx = (((ptrdiff_t) this) - base)/sizeof(float);
         *group_element = 0;
-        return &_var_info[i];
+        return &info;
     }
     return nullptr;
 }
@@ -836,7 +851,7 @@ AP_Param::find_group(const char *name, uint16_t vindex, ptrdiff_t group_offset,
             }
         } else if (strcasecmp(name, group_info[i].name) == 0) {
             ptrdiff_t base;
-            if (!get_base(_var_info[vindex], base)) {
+            if (!get_base(var_info(vindex), base)) {
                 continue;
             }
             *ptype = (enum ap_var_type)type;
@@ -850,7 +865,7 @@ AP_Param::find_group(const char *name, uint16_t vindex, ptrdiff_t group_offset,
                  name[suffix_len+1] == 'Y' ||
                  name[suffix_len+1] == 'Z')) {
                 ptrdiff_t base;
-                if (!get_base(_var_info[vindex], base)) {
+                if (!get_base(var_info(vindex), base)) {
                     continue;
                 }
                 AP_Float *v = (AP_Float *)(base + group_info[i].offset + group_offset);
@@ -876,13 +891,14 @@ AP_Param *
 AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
-        uint8_t type = _var_info[i].type;
+        const auto &info = var_info(i);
+        uint8_t type = info.type;
         if (type == AP_PARAM_GROUP) {
-            uint8_t len = strnlen(_var_info[i].name, AP_MAX_NAME_SIZE);
-            if (strncmp(name, _var_info[i].name, len) != 0) {
+            uint8_t len = strnlen(info.name, AP_MAX_NAME_SIZE);
+            if (strncmp(name, info.name, len) != 0) {
                 continue;
             }
-            const struct GroupInfo *group_info = get_group_info(_var_info[i]);
+            const struct GroupInfo *group_info = get_group_info(info);
             if (group_info == nullptr) {
                 continue;
             }
@@ -903,10 +919,10 @@ AP_Param::find(const char *name, enum ap_var_type *ptype, uint16_t *flags)
             // we continue looking as we want to allow top level
             // parameter to have the same prefix name as group
             // parameters, for example CAM_P_G
-        } else if (strcasecmp(name, _var_info[i].name) == 0) {
+        } else if (strcasecmp(name, info.name) == 0) {
             *ptype = (enum ap_var_type)type;
             ptrdiff_t base;
-            if (!get_base(_var_info[i], base)) {
+            if (!get_base(info, base)) {
                 return nullptr;
             }
             return (AP_Param *)base;
@@ -938,7 +954,7 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
     for (ap = AP_Param::first(token, ptype);
          ap && *ptype != AP_PARAM_GROUP && *ptype != AP_PARAM_NONE;
          ap = AP_Param::next_scalar(token, ptype)) {
-        int32_t ret = strncasecmp(name, _var_info[token->key].name, AP_MAX_NAME_SIZE);
+        int32_t ret = strncasecmp(name, var_info(token->key).name, AP_MAX_NAME_SIZE);
         if (ret >= 0) {
             char buf[AP_MAX_NAME_SIZE];
             ap->copy_name_token(*token, buf, AP_MAX_NAME_SIZE);
@@ -963,16 +979,16 @@ bool AP_Param::find_key_by_pointer_group(const void *ptr, uint16_t vindex,
             continue;
         }
         ptrdiff_t base;
-        if (!get_base(_var_info[vindex], base)) {
+        if (!get_base(var_info(vindex), base)) {
             continue;
         }
         if (group_info[i].flags & AP_PARAM_FLAG_POINTER) {
             if (ptr == *(void **)(base+group_info[i].offset+offset)) {
-                key = _var_info[vindex].key;
+                key = var_info(vindex).key;
                 return true;
             }
         } else if (ptr == (void *)(base+group_info[i].offset+offset)) {
-            key = _var_info[vindex].key;
+            key = var_info(vindex).key;
             return true;
         }
         ptrdiff_t new_offset = offset;
@@ -997,16 +1013,17 @@ bool AP_Param::find_key_by_pointer_group(const void *ptr, uint16_t vindex,
 bool AP_Param::find_key_by_pointer(const void *ptr, uint16_t &key)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
-        if (_var_info[i].type != AP_PARAM_GROUP) {
+        const auto &info = var_info(i);
+        if (info.type != AP_PARAM_GROUP) {
             continue;
         }
-        if ((_var_info[i].flags & AP_PARAM_FLAG_POINTER) &&
-            ptr == *(void **)_var_info[i].ptr) {
-            key = _var_info[i].key;
+        if ((info.flags & AP_PARAM_FLAG_POINTER) &&
+            ptr == *(void **)info.ptr) {
+            key = info.key;
             return true;
         }
         ptrdiff_t offset = 0;
-        const struct GroupInfo *ginfo = get_group_info(_var_info[i]);
+        const struct GroupInfo *ginfo = get_group_info(info);
         if (ginfo == nullptr) {
             continue;
         }
@@ -1023,11 +1040,12 @@ bool AP_Param::find_key_by_pointer(const void *ptr, uint16_t &key)
 bool AP_Param::find_top_level_key_by_pointer(const void *ptr, uint16_t &key)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
-        if (_var_info[i].type != AP_PARAM_GROUP) {
+        const auto &info = var_info(i);
+        if (info.type != AP_PARAM_GROUP) {
             continue;
         }
-        if (ptr == (void **)_var_info[i].ptr) {
-            key = _var_info[i].key;
+        if (ptr == (void **)info.ptr) {
+            key = info.key;
             return true;
         }
     }
@@ -1056,9 +1074,10 @@ AP_Param *
 AP_Param::find_object(const char *name)
 {
     for (uint16_t i=0; i<_num_vars; i++) {
-        if (strcasecmp(name, _var_info[i].name) == 0) {
+        const auto &info = var_info(i);
+        if (strcasecmp(name, info.name) == 0) {
             ptrdiff_t base;
-            if (!get_base(_var_info[i], base)) {
+            if (!get_base(info, base)) {
                 return nullptr;
             }
             return (AP_Param *)base;
@@ -1116,8 +1135,14 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
     // create the header we will use to store the variable
     if (ginfo != nullptr) {
         phdr.type = ginfo->type;
+        if (ginfo->flags & AP_PARAM_FLAG_HIDDEN) {
+            send_to_gcs = false;
+        }
     } else {
         phdr.type = info->type;
+        if (info->flags & AP_PARAM_FLAG_HIDDEN) {
+            send_to_gcs = false;
+        }
     }
     set_key(phdr, info->key);
     phdr.group_element = group_element;
@@ -1463,12 +1488,13 @@ void AP_Param::setup_sketch_defaults(void)
 {
     setup();
     for (uint16_t i=0; i<_num_vars; i++) {
-        uint8_t type = _var_info[i].type;
+        const auto &info = var_info(i);
+        uint8_t type = info.type;
         if (type <= AP_PARAM_FLOAT) {
             ptrdiff_t base;
-            if (get_base(_var_info[i], base)) {
+            if (get_base(info, base)) {
                 set_value((enum ap_var_type)type, (void*)base,
-                          get_default_value((const AP_Param *)base, &_var_info[i].def_value));
+                          get_default_value((const AP_Param *)base, &info.def_value));
             }
         }
     }
@@ -1613,10 +1639,10 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype)
         return nullptr;
     }
     if (ptype != nullptr) {
-        *ptype = (enum ap_var_type)_var_info[0].type;
+        *ptype = (enum ap_var_type)var_info(0).type;
     }
     ptrdiff_t base;
-    if (!get_base(_var_info[0], base)) {
+    if (!get_base(var_info(0), base)) {
         // should be impossible, first var needs to be non-pointer
         return nullptr;
     }
@@ -1669,7 +1695,7 @@ AP_Param *AP_Param::next_group(const uint16_t vindex, const struct GroupInfo *gr
                     *ptype = type;
                 }
                 ptrdiff_t base;
-                if (!get_base(_var_info[vindex], base)) {
+                if (!get_base(var_info(vindex), base)) {
                     continue;
                 }
 
@@ -1698,7 +1724,7 @@ AP_Param *AP_Param::next_group(const uint16_t vindex, const struct GroupInfo *gr
                         *ptype = AP_PARAM_FLOAT;
                     }
                     ptrdiff_t base;
-                    if (!get_base(_var_info[vindex], base)) {
+                    if (!get_base(var_info(vindex), base)) {
                         continue;
                     }
                     ptrdiff_t ofs = base + group_info[i].offset + group_offset;
@@ -1721,7 +1747,7 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype, bool skip_d
         // illegal token
         return nullptr;
     }
-    enum ap_var_type type = (enum ap_var_type)_var_info[i].type;
+    enum ap_var_type type = (enum ap_var_type)var_info(i).type;
 
     // allow Vector3f to be seen as 3 variables. First as a vector,
     // then as 3 separate floats
@@ -1730,7 +1756,7 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype, bool skip_d
         if (ptype != nullptr) {
             *ptype = AP_PARAM_FLOAT;
         }
-        return (AP_Param *)(((token->idx - 1u)*sizeof(float))+(ptrdiff_t)_var_info[i].ptr);
+        return (AP_Param *)(((token->idx - 1u)*sizeof(float))+(ptrdiff_t)var_info(i).ptr);
     }
 
     if (type != AP_PARAM_GROUP) {
@@ -1738,12 +1764,13 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype, bool skip_d
         found_current = true;
     }
     for (; i<_num_vars; i++) {
-        if (!check_frame_type(_var_info[i].flags)) {
+        const auto &info = var_info(i);
+        if (!check_frame_type(info.flags)) {
             continue;
         }
-        type = (enum ap_var_type)_var_info[i].type;
+        type = (enum ap_var_type)info.type;
         if (type == AP_PARAM_GROUP) {
-            const struct GroupInfo *group_info = get_group_info(_var_info[i]);
+            const struct GroupInfo *group_info = get_group_info(info);
             if (group_info == nullptr) {
                 continue;
             }
@@ -1759,7 +1786,7 @@ AP_Param *AP_Param::next(ParamToken *token, enum ap_var_type *ptype, bool skip_d
             if (ptype != nullptr) {
                 *ptype = type;
             }
-            return (AP_Param *)(_var_info[i].ptr);
+            return (AP_Param *)(info.ptr);
         }
     }
     return nullptr;
@@ -1892,22 +1919,28 @@ void AP_Param::convert_old_parameters(const struct ConversionInfo *conversion_ta
     flush();
 }
 
-/*
-  move old class variables for a class that was sub-classed to one that isn't
-  For example, used when the AP_MotorsTri class changed from having its own parameter table
-  plus a subgroup for AP_MotorsMulticopter to just inheriting the AP_MotorsMulticopter var_info
-
-  This does not handle nesting beyond the single level shift
-*/
-void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
-                                    const struct AP_Param::GroupInfo *group_info)
+// move all parameters from a class to a new location
+// is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
+void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
+                                    const struct AP_Param::GroupInfo *group_info,
+                                    uint16_t old_index, uint16_t old_top_element, bool is_top_level)
 {
+    const uint8_t group_shift = is_top_level ? 0 : 6;
+
     for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         struct ConversionInfo info;
         info.old_key = param_key;
         info.type = (ap_var_type)group_info[i].type;
         info.new_name = nullptr;
-        info.old_group_element = uint16_t(group_info[i].idx)<<6;
+
+        uint16_t idx = group_info[i].idx;
+        if (group_shift != 0 && idx == 0) {
+            // Note: Index 0 is treated as 63 for group bit shifting purposes. See group_id()
+            idx = 63;
+        }
+
+        info.old_group_element = (idx << group_shift) + old_index;
+
         uint8_t old_value[type_size(info.type)];
         AP_Param *ap = (AP_Param *)&old_value[0];
         
@@ -1916,9 +1949,15 @@ void AP_Param::convert_parent_class(uint8_t param_key, void *object_pointer,
             continue;
         }
 
-        uint8_t *new_value = group_info[i].offset + (uint8_t *)object_pointer;
-        memcpy(new_value, old_value, sizeof(old_value));
+        AP_Param *ap2 = (AP_Param *)(group_info[i].offset + (uint8_t *)object_pointer);
+        memcpy(ap2, ap, sizeof(old_value));
+        // and save
+        ap2->save();
     }
+
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
 }
 
 /*
@@ -2066,7 +2105,6 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 
 
 #if HAL_OS_POSIX_IO == 1
-#include <stdio.h>
 
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
@@ -2120,11 +2158,13 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
             if (last_pass) {
+#if ENABLE_DEBUG
                 ::printf("Ignored unknown param %s in defaults file %s\n",
                          pname, filename);
                 hal.console->printf(
                          "Ignored unknown param %s in defaults file %s\n",
                          pname, filename);
+#endif
             }
             continue;
         }
@@ -2316,11 +2356,13 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
             if (last_pass) {
+#if ENABLE_DEBUG
                 ::printf("Ignored unknown param %s from embedded region (offset=%u)\n",
                          pname, unsigned(ptr - param_defaults_data.data));
                 hal.console->printf(
                          "Ignored unknown param %s from embedded region (offset=%u)\n",
                          pname, unsigned(ptr - param_defaults_data.data));
+#endif
             }
             continue;
         }
@@ -2372,7 +2414,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     // of a set of the first element of a AP_Vector3f. This happens as the ap->save() call can't
     // distinguish between a vector and scalar save. It means that setting first element of a vector
     // via MAVLink results in sending all 3 elements to the GCS
-#ifndef HAL_NO_GCS
+#if HAL_GCS_ENABLED
     const Vector3f &v = ((AP_Vector3f *)this)->get();
     char name2[AP_MAX_NAME_SIZE+1];
     strncpy(name2, name, AP_MAX_NAME_SIZE);
@@ -2385,7 +2427,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.y);
     name_axis = 'Z';
     GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.z);
-#endif // HAL_NO_GCS
+#endif // HAL_GCS_ENABLED
 }
 
 /*
@@ -2474,10 +2516,7 @@ void AP_Param::set_defaults_from_table(const struct defaults_table_struct *table
 {
     for (uint8_t i=0; i<count; i++) {
         if (!AP_Param::set_default_by_name(table[i].name, table[i].value)) {
-            char *buf = nullptr;
-            if (asprintf(&buf, "param deflt fail:%s", table[i].name) > 0) {
-                AP_BoardConfig::config_error(buf);
-            }
+            AP_BoardConfig::config_error("param deflt fail:%s", table[i].name);
         }
     }
 }
@@ -2654,7 +2693,7 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
          ap;
          ap=AP_Param::next_scalar(&token, &type)) {
         if (showKeyValues) {
-            ::printf("Key %u: Index %u: GroupElement %u  :  ", (unsigned)_var_info[token.key].key, (unsigned)token.idx, (unsigned)token.group_element);
+            ::printf("Key %u: Index %u: GroupElement %u  :  ", (unsigned)var_info(token.key).key, (unsigned)token.idx, (unsigned)token.group_element);
         }
         show(ap, token, type, port);
         hal.scheduler->delay(1);
@@ -2662,3 +2701,250 @@ void AP_Param::show_all(AP_HAL::BetterStream *port, bool showKeyValues)
 }
 #endif // AP_PARAM_KEY_DUMP
 
+
+#if AP_PARAM_DYNAMIC_ENABLED
+/*
+  allow for dynamically added parameter tables from scripts
+
+  The layout we create is as follows:
+    - a top level Info with the given prefix, using one of the 10 possible slots in _var_info_dynamic
+    - a dynamically allocated GroupInfo table, never freed, of size (num_params+2)
+    - the GroupInfo table has an initial AP_Int32 hidden entry with a 32 bit CRC of the prefix
+    - the last GroupInfo is a footer
+*/
+bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
+{
+    // check if the key already exists. We only check base params to allow
+    // for scripting reload without a conflict
+    uint16_t key = uint16_t(_key) + AP_PARAM_DYNAMIC_KEY_BASE;
+    for (uint16_t i=0; i<_num_vars_base; i++) {
+        if (var_info(i).key == key) {
+            return false;
+        }
+    }
+    if (num_params > 63) {
+        return false;
+    }
+
+    // we use a crc of the prefix to ensure the table key isn't re-used
+    const int32_t crc = int32_t(crc32_small(0, (const uint8_t *)prefix, strlen(prefix)));
+    int32_t current_crc;
+    if (load_int32(key, 0, current_crc) && current_crc != crc) {
+        // crc mismatch, we have a conflict with an existing use of this key
+        return false;
+    }
+
+    // create the dynamic table if needed. This is never freed
+    if (_var_info_dynamic == nullptr) {
+        _var_info_dynamic = (Info *)calloc(AP_PARAM_MAX_DYNAMIC, sizeof(struct Info));
+        if (_var_info_dynamic == nullptr) {
+            return false;
+        }
+        for (uint8_t i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
+            auto &info = _var_info_dynamic[i];
+            info.type = AP_PARAM_NONE;
+            info.name = _empty_string;
+            info.key = 0xFFFF;
+            info.ptr = nullptr;
+            info.group_info = nullptr;
+            info.flags = 0;
+        }
+        // make tables available
+        _num_vars += AP_PARAM_MAX_DYNAMIC;
+    }
+
+    // find existing key (allows for script reload)
+    uint8_t i;
+    for (i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
+        auto &info = _var_info_dynamic[i];
+        if (info.type != AP_PARAM_NONE && info.key == key) {
+            if (_dynamic_table_sizes[i] != 0 &&
+                num_params > _dynamic_table_sizes[i]) {
+                // can't expand the table at runtime
+                return false;
+            }
+            if (strcmp(prefix, info.name) != 0) {
+                // prefix has changed, reject as two scripts running
+                // with the same key
+                return false;
+            }
+            break;
+        }
+    }
+
+    if (i == AP_PARAM_MAX_DYNAMIC) {
+        // find an unused slot
+        for (i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
+            auto &info = _var_info_dynamic[i];
+            if (info.type == AP_PARAM_NONE ) {
+                break;
+            }
+        }
+    }
+
+    if (i == AP_PARAM_MAX_DYNAMIC) {
+        // no empty slots
+        return false;
+    }
+
+    auto &info = _var_info_dynamic[i];
+
+    // create memory for the array of floats if needed
+    // first float is used for the crc
+    if (info.ptr == nullptr) {
+        info.ptr = calloc(num_params+1, sizeof(float));
+        if (info.ptr == nullptr) {
+            return false;
+        }
+    }
+
+    // allocate the name
+    if (info.name == _empty_string) {
+        info.name = strdup(prefix);
+        if (info.name == nullptr) {
+            free(const_cast<void*>(info.ptr));
+            info.ptr = nullptr;
+            info.name = _empty_string;
+            return false;
+        }
+    }
+
+    // if it doesn't exist then create the table
+    if (info.group_info == nullptr) {
+        info.group_info = (GroupInfo *)calloc(num_params+2, sizeof(GroupInfo));
+        if (info.group_info == nullptr) {
+            free(const_cast<void*>(info.ptr));
+            free(const_cast<char*>(info.name));
+            info.ptr = nullptr;
+            info.name = _empty_string;
+            return false;
+        }
+        // fill in footer for all entries
+        for (uint8_t gi=1; gi<num_params+2; gi++) {
+            auto &ginfo = const_cast<GroupInfo*>(info.group_info)[gi];
+            ginfo.name = _empty_string;
+            ginfo.idx = 0xff;
+        }
+        // hidden first parameter containing AP_Int32 crc
+        auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
+        hinfo.flags = AP_PARAM_FLAG_HIDDEN;
+        hinfo.name = _empty_string;
+        hinfo.idx = 0;
+        hinfo.offset = 0;
+        hinfo.type = AP_PARAM_INT32;
+        // fill in default value with the CRC. Relies on sizeof crc == sizeof float
+        memcpy((uint8_t *)&hinfo.def_value, (const uint8_t *)&crc, sizeof(crc));
+    }
+
+    // remember the table size
+    if (_dynamic_table_sizes[i] == 0) {
+        _dynamic_table_sizes[i] = num_params;
+    }
+    
+    // make the group active
+    info.key = key;
+    info.type = AP_PARAM_GROUP;
+
+    invalidate_count();
+
+    // save the CRC
+    AP_Int32 *crc_param = const_cast<AP_Int32 *>((AP_Int32 *)info.ptr);
+    crc_param->set(crc);
+    crc_param->save(true);
+
+    return true;
+}
+
+/*
+ Load an AP_Int32 variable from EEPROM using top level key and group element. Used to confirm
+ a key in add_table()
+*/
+bool AP_Param::load_int32(uint16_t key, uint32_t group_element, int32_t &value)
+{
+    struct Param_header phdr;
+
+    phdr.type = AP_PARAM_INT32;
+    set_key(phdr, key);
+    phdr.group_element = group_element;
+
+    // scan EEPROM to find the right location
+    uint16_t ofs;
+    if (!scan(&phdr, &ofs)) {
+        return false;
+    }
+
+    // found it
+    _storage.read_block(&value, ofs+sizeof(phdr), type_size(AP_PARAM_INT32));
+    return true;
+}
+
+/*
+  add a parameter to a dynamic table
+ */
+bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, float default_value)
+{
+    // check for valid values
+    if (param_num == 0 || param_num > 63 || strlen(pname) > 16) {
+        return false;
+    }
+
+    uint16_t key = uint16_t(_key) + AP_PARAM_DYNAMIC_KEY_BASE;
+    // find the info
+    uint8_t i;
+    for (i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
+        auto &info = _var_info_dynamic[i];
+        if (info.key == key) {
+            break;
+        }
+    }
+    if (i == AP_PARAM_MAX_DYNAMIC) {
+        // not found
+        return false;
+    }
+
+    if (param_num > _dynamic_table_sizes[i]) {
+        return false;
+    }
+
+    auto &info = _var_info_dynamic[i];
+    if (info.ptr == nullptr) {
+        return false;
+    }
+
+    // check CRC
+    auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
+    const int32_t crc = *(const int32_t *)(&hinfo.def_value);
+
+    int32_t current_crc;
+    if (load_int32(key, 0, current_crc) && current_crc != crc) {
+        // crc mismatch, we have a conflict with an existing use of this key
+        return false;
+    }
+
+    auto &ginfo = const_cast<GroupInfo*>(info.group_info)[param_num];
+
+    if (ginfo.name == _empty_string) {
+        // we don't allow name change while running
+        ginfo.name = strdup(pname);
+        if (ginfo.name == nullptr) {
+            ginfo.name = _empty_string;
+            return false;
+        }
+    }
+    ginfo.offset = param_num*sizeof(float);
+    ginfo.idx = param_num;
+    float *def_value = const_cast<float *>(&ginfo.def_value);
+    *def_value = default_value;
+    ginfo.type = AP_PARAM_FLOAT;
+
+    invalidate_count();
+
+    // load from storage if available
+    AP_Float *pvalues = const_cast<AP_Float *>((const AP_Float *)info.ptr);
+    AP_Float &p = pvalues[param_num];
+    p.set_default(default_value);
+    p.load();
+
+    return true;
+}
+#endif

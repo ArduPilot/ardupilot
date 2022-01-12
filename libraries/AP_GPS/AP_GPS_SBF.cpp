@@ -21,9 +21,11 @@
 #include "AP_GPS.h"
 #include "AP_GPS_SBF.h"
 #include <GCS_MAVLink/GCS.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <stdio.h>
 #include <ctype.h>
 
+#if AP_GPS_SBF_ENABLED
 extern const AP_HAL::HAL& hal;
 
 #define SBF_DEBUGGING 0
@@ -613,3 +615,4 @@ bool AP_GPS_SBF::prepare_for_arming(void) {
 
     return is_logging;
 }
+#endif

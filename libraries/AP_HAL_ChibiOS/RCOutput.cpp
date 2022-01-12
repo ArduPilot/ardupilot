@@ -508,7 +508,7 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
     if (safety_state == AP_HAL::Util::SAFETY_DISARMED && !(safety_mask & (1U<<chan))) {
         // implement safety pwm value
-        period_us = safe_pwm[chan];
+        period_us = 0;
     }
 
     chan -= chan_offset;
@@ -555,7 +555,7 @@ void RCOutput::push_local(void)
 
                 if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                     // safety is on, overwride pwm
-                    period_us = safe_pwm[chan+chan_offset];
+                    period_us = 0;
                 }
 
                 if (group.current_mode == MODE_PWM_BRUSHED) {
@@ -620,7 +620,12 @@ uint16_t RCOutput::read(uint8_t chan)
     }
 #if HAL_WITH_IO_MCU
     if (chan < chan_offset) {
-        return iomcu.read_channel(chan);
+        uint16_t period_us = iomcu.read_channel(chan);
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<chan) & io_fast_channel_mask)) {
+            // convert back to 1000 - 2000 range
+            period_us *= 8;
+        }
+        return period_us;
     }
 #endif
     chan -= chan_offset;
@@ -635,6 +640,10 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
+        if ((iomcu_mode == MODE_PWM_ONESHOT125) && ((1U<<i) & io_fast_channel_mask)) {
+            // convert back to 1000 - 2000 range
+            period_us[i] *= 8;
+        }
     }
 #endif
     if (len <= chan_offset) {
@@ -1363,7 +1372,7 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 
             if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                 // safety is on, overwride pwm
-                pwm = safe_pwm[chan+chan_offset];
+                pwm = 0;
             }
 
             const uint16_t chan_mask = (1U<<chan);
@@ -1373,12 +1382,12 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
             }
 
             pwm = constrain_int16(pwm, 1000, 2000);
-            uint16_t value = 2 * (pwm - 1000);
+            uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
             if (chan_mask & (_reversible_mask>>chan_offset)) {
                 // this is a DShot-3D output, map so that 1500 PWM is zero throttle reversed
                 if (value < 1000) {
-                    value = 2000 - value;
+                    value = 1999 - value;
                 } else if (value > 1000) {
                     value = value - 1000;
                 } else {
@@ -1718,7 +1727,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
  */
 void RCOutput::serial_bit_irq(void)
 {
-    uint32_t now = AP_HAL::micros();
+    uint16_t now = AP_HAL::micros16();
     uint8_t bit = palReadLine(irq.line);
     bool send_signal = false;
 
@@ -1737,7 +1746,7 @@ void RCOutput::serial_bit_irq(void)
             irq.bitmask = 0;
         }
     } else {
-        systime_t dt = now - irq.byte_start_tick;
+        uint16_t dt = now - irq.byte_start_tick;
         uint8_t bitnum = (dt+(irq.bit_time_tick/2)) / irq.bit_time_tick;
 
         if (bitnum > 10) {
@@ -1819,7 +1828,12 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len)
     pwm_group &group = *serial_group;
     const ioline_t line = group.pal_lines[group.serial.chan];
     // keep speed low to avoid noise when switching between input and output
+#ifndef PAL_STM32_OSPEED_LOWEST
+    // for GPIOv3
+    uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOW;
+#else
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
+#endif
     // restore the line to what it was before
     iomode_t restore_mode = palReadLineMode(line);
     uint16_t i = 0;
@@ -1948,24 +1962,6 @@ void RCOutput::force_safety_off(void)
 }
 
 /*
-  set PWM to send to a set of channels when the safety switch is
-  in the safe state
-*/
-void RCOutput::set_safety_pwm(uint32_t chmask, uint16_t period_us)
-{
-#if HAL_WITH_IO_MCU
-    if (AP_BoardConfig::io_enabled()) {
-        iomcu.set_safety_pwm(chmask, period_us);
-    }
-#endif
-    for (uint8_t i=0; i<16; i++) {
-        if (chmask & (1U<<i)) {
-            safe_pwm[i] = period_us;
-        }
-    }
-}
-
-/*
   update safety state
  */
 void RCOutput::safety_update(void)
@@ -2024,22 +2020,6 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
         iomcu.set_failsafe_pwm(chmask, period_us);
     }
 #endif
-}
-
-/*
-  true when the output mode is of type dshot
-*/
-bool RCOutput::is_dshot_protocol(const enum output_mode mode)
-{
-    switch (mode) {
-    case MODE_PWM_DSHOT150:
-    case MODE_PWM_DSHOT300:
-    case MODE_PWM_DSHOT600:
-    case MODE_PWM_DSHOT1200:
-        return true;
-    default:
-        return false;
-    }
 }
 
 /*

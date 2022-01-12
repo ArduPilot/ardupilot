@@ -1,7 +1,0 @@
-#
-# support for Safety LED on UAVCAN
-
-uint8 STATUS_SAFETY_ON           = 0
-uint8 STATUS_SAFETY_OFF          = 255
-
-uint8 status

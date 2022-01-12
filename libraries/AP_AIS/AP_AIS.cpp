@@ -89,7 +89,7 @@ void AP_AIS::update()
     }
 
     // read any available lines
-    uint32_t nbytes = MAX(_uart->available(),1024U);
+    uint32_t nbytes = MIN(_uart->available(),1024U);
     while (nbytes-- > 0) {
         const int16_t byte = _uart->read();
         if (byte == -1) {
@@ -802,17 +802,6 @@ bool AP_AIS::decode_latest_term()
         //case 5, number of fill bits, discarded
     }
     return false;
-}
-
-// return the numeric value of an ascii hex character
-int16_t AP_AIS::char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
 }
 
 #endif  // HAL_AIS_ENABLED

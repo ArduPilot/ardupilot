@@ -19,7 +19,7 @@ void Rover::Log_Write_Attitude()
 
     // log steering rate controller
     logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
-    logger.Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid().get_pid_info());
+    logger.Write_PID(LOG_PIDA_MSG, g2.attitude_control.get_throttle_speed_pid_info());
 
     // log pitch control for balance bots
     if (is_balancebot()) {
@@ -38,8 +38,8 @@ void Rover::Log_Write_Attitude()
 // Write a range finder depth message
 void Rover::Log_Write_Depth()
 {
-    // only log depth on boats with working downward facing range finders
-    if (!rover.is_boat() || !rangefinder.has_data_orient(ROTATION_PITCH_270)) {
+    // only log depth on boats
+    if (!rover.is_boat() || !rangefinder.has_orientation(ROTATION_PITCH_270)) {
         return;
     }
 
@@ -47,35 +47,43 @@ void Rover::Log_Write_Depth()
     Location loc;
     IGNORE_RETURN(ahrs.get_position(loc));
 
-    // check if new sensor reading has arrived
-    uint32_t reading_ms = rangefinder.last_reading_ms(ROTATION_PITCH_270);
-    if (reading_ms == rangefinder_last_reading_ms) {
-        return;
+    for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
+        const AP_RangeFinder_Backend *s = rangefinder.get_backend(i);
+        
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
+
+        // check if new sensor reading has arrived
+        const uint32_t reading_ms = s->last_reading_ms();
+        if (reading_ms == rangefinder_last_reading_ms[i]) {
+            continue;
+        }
+        rangefinder_last_reading_ms[i] = reading_ms;
+
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            temp_C = 0.0f;
+        }
+
+        // @LoggerMessage: DPTH
+        // @Description: Depth messages on boats with downwards facing range finder
+        // @Field: TimeUS: Time since system startup
+        // @Field: Inst: Instance
+        // @Field: Lat: Latitude 
+        // @Field: Lng: Longitude   
+        // @Field: Depth: Depth as detected by the sensor
+        // @Field: Temp: Temperature
+
+        logger.Write("DPTH", "TimeUS,Inst,Lat,Lng,Depth,Temp",
+                            "s#DUmO", "F-GG00", "QBLLff",
+                            AP_HAL::micros64(),
+                            i,
+                            loc.lat,
+                            loc.lng,
+                            (double)(s->distance()),
+                            temp_C);
     }
-    rangefinder_last_reading_ms = reading_ms;
-
-    // get temperature
-    float temp_C;
-    if (!rangefinder.get_temp(ROTATION_PITCH_270, temp_C)) {
-        temp_C = 0.0f;
-    }
-
-// @LoggerMessage: DPTH
-// @Description: Depth messages on boats with downwards facing range finder
-// @Field: TimeUS: Time since system startup
-// @Field: Lat: Latitude 
-// @Field: Lng: Longitude   
-// @Field: Depth: Depth as detected by the sensor
-// @Field: Temp: Temperature
-
-    logger.Write("DPTH", "TimeUS,Lat,Lng,Depth,Temp",
-                        "sDUmO", "FGG00", "QLLff",
-                        AP_HAL::micros64(),
-                        loc.lat,
-                        loc.lng,
-                        (double)(rangefinder.distance_cm_orient(ROTATION_PITCH_270) * 0.01f),
-                        temp_C);
-
     // send water depth and temp to ground station
     gcs().send_message(MSG_WATER_DEPTH);
 }
@@ -302,7 +310,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: XTrack: the vehicle's current distance from the current travel segment
 
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),
-      "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhdm", "F000B0" },
+      "NTUN", "QfffHf", "TimeUS,WpDist,WpBrg,DesYaw,Yaw,XTrack", "smhhhm", "F000B0" },
     
 // @LoggerMessage: STER
 // @Description: Steering related messages

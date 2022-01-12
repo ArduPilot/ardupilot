@@ -75,7 +75,7 @@ static uint16_t adc_sample_channel(uint32_t channel)
 uint16_t adc_sample_vservo(void)
 {
     const uint32_t channel = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN4);
-    return adc_sample_channel(channel) * 9900 / 4096;
+    return adc_sample_channel(channel);
 }
 
 /*
@@ -84,5 +84,5 @@ uint16_t adc_sample_vservo(void)
 uint16_t adc_sample_vrssi(void)
 {
     const uint32_t channel = ADC_SQR3_SQ1_N(ADC_CHANNEL_IN5);
-    return adc_sample_channel(channel) * 9900 / 4096;
+    return adc_sample_channel(channel);
 }

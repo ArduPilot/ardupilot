@@ -1,6 +1,13 @@
 #pragma once
 
-#include "OpticalFlow.h"
+#include "AP_OpticalFlow.h"
+
+#ifndef AP_OPTICALFLOW_PIXART_ENABLED
+#define AP_OPTICALFLOW_PIXART_ENABLED AP_OPTICALFLOW_ENABLED
+#endif
+
+#if AP_OPTICALFLOW_PIXART_ENABLED
+
 #include <AP_HAL/utility/OwnPtr.h>
 
 class AP_OpticalFlow_Pixart : public OpticalFlow_backend
@@ -75,3 +82,5 @@ private:
     uint32_t last_burst_us;
     uint32_t last_update_ms;
 };
+
+#endif  // AP_OPTICALFLOW_PIXART_ENABLED

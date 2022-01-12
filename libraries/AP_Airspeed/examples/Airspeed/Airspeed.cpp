@@ -32,7 +32,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 float temperature;
 
 // create an AHRS object for get_airspeed_max
-AP_AHRS_DCM ahrs;
+AP_AHRS ahrs;
 
 // create airspeed object
 AP_Airspeed airspeed;

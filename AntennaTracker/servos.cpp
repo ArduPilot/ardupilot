@@ -74,7 +74,7 @@ void Tracker::update_pitch_position_servo()
     // PITCH2SRV_IMAX   4000.000000
 
     // calculate new servo position
-    int32_t new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_pitch) + g.pidPitch2Srv.update_error(nav_status.angle_error_pitch);
+    float new_servo_out = SRV_Channels::get_output_scaled(SRV_Channel::k_tracker_pitch) + g.pidPitch2Srv.update_error(nav_status.angle_error_pitch);
 
     // position limit pitch servo
     if (new_servo_out <= pitch_min_cd) {
@@ -166,7 +166,7 @@ void Tracker::update_yaw_position_servo()
     // (in fact, any alignment is permissible), and that the alignment may change (possibly rapidly) over time
     // (as when the antenna is mounted on a moving, turning vehicle)
     //
-    // With my antenna mount, large pwm output drives the antenna anticlockise, so need:
+    // With my antenna mount, large pwm output drives the antenna anticlockwise, so need:
     // param set RC1_REV -1
     // to reverse the servo. Yours may be different
     //

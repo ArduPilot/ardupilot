@@ -1,5 +1,59 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.1.3 31-Dec-2021 /4.1.3-rc2 21-Dec-2021
+Changes from 4.1.3-rc1
+1) Suport for IIM-42652, ICM-40605 and ICM-20608-D IMUs
+2) Bug fixes
+    a) SmartAudio high CPU load fix (previously it could starve other threads of CPU)
+    b) Debug pins disabled by default to prevent rare inflight reset due to electrostatic discharge
+    c) EKF3 reset causing bad accel biases fixed
+    d) RC protocol detection fix that forced PH4-mini users to powerup autopilot before transmitter
+------------------------------------------------------------------
+Rover 4.1.3-rc1 18-Dec-2021
+Changes from 4.1.2
+1) CUAV-X7 servo voltage detection support
+2) Bug fixes
+    a) Main loop delay fix for boards with 16 bit timers (could affect smaller boards like those from MatekSys)
+    b) Polygon Fence upload fix when replacing fence with one that has fewer points
+------------------------------------------------------------------
+Rover 4.1.2 07-Dec-2021 / 4.1.2-rc1 22-Nov-2021
+Changes from 4.1.1
+1) CAN_Dn_UC_OPTION param added to help resolve DroneCAN DNA conflicts
+2) Durandal with alternative ICM-20602 IMU
+3) OBAL autopilot support (Open Board Architecture for Linux)
+4) FETtec One ESC protocol support
+5) Bug Fixes
+    a) APM/LOGS directory creation fixed on some boards
+    b) EKF3 fix to switch to non-zero primary core when disarmed
+------------------------------------------------------------------
+Rover 4.1.1 10-Nov-2021 / 4.1.1-rc1 16-Oct-2021
+Changes from 4.1.0 
+1) EK3_PRIMARY allows selection of which EKF core/IMU to use on startup
+2) Bug Fixes
+    a) MAVFTP init fix (could cause slow parameter download)
+    b) Scripting fix when logging strings
+    c) Serial flow control fix (affected at least Lightware LW20 serial lidar)
+    d) QiotekZealotF427 IMU (ICM42605) orientation fixed
+------------------------------------------------------------------
+Rover 4.1.0 20-Sep-2021 / 4.1.0-rc3 15-Sep-2021
+Changes from 4.1.0-rc2
+1) Bug Fixes
+    a) Serial port auto detection of flow control fix
+------------------------------------------------------------------
+Rover 4.1.0-rc2 10-Sep-2021
+Changes from 4.1.0-rc1
+1) Enhancements
+    a) Log download speeds improved on F765 and F777 based boards (USB buffers increased)
+    b) Serial port DMA contention heuristics improved (reduces chance of delays writing to serial devices)
+2) Bug Fixes
+    a) CRSF frame timeout increased to reduce RC failsafes
+    b) Declination automatic lookup rounding fix (caused inaccurate declination in some parts of world)
+    c) DShot (bi-directional) support on Pixhawk4, CUAVv5, CUAVv5-Nano
+    d) IMU semaphore fix to avoid occasional corruption
+    e) QioTek Zealot F427 GPIO pin fix
+    f) Replay/DAL RMGH log message format fix
+    g) Rangefinder initial buffer size and baudrate fix (affected Aintein US-D1 radar)
+------------------------------------------------------------------
 Rover 4.1.0-rc1 28-Aug-2021
 Changes from 4.1.0-beta7
 1) Enhancements

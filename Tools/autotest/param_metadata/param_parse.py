@@ -17,6 +17,7 @@ from param import (Library, Parameter, Vehicle, known_group_fields,
                    known_param_fields, required_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
+from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
 from mdemit import MDEmit
 from jsonemit import JSONEmit
@@ -34,7 +35,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md', 'xml_mp'],
                     help="what output format to use")
 parser.add_argument("--sitl",
                     dest='emit_sitl',
@@ -182,6 +183,8 @@ def process_vehicle(vehicle):
             if field[0] in known_param_fields:
                 value = re.sub('@PREFIX@', "", field[1]).rstrip()
                 setattr(p, field[0], value)
+            elif field[0] == "CopyValuesFrom":
+                setattr(p, field[0], field[1])
             else:
                 error("param: unknown parameter metadata field '%s'" % field[0])
         for req_field in required_param_fields:
@@ -251,6 +254,8 @@ def process_library(vehicle, library, pathprefix=None):
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[1])
                     setattr(p, field[0], value)
+                elif field[0] == "CopyValuesFrom":
+                    setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
             debug("matching %s" % field_text)
@@ -317,6 +322,8 @@ def process_library(vehicle, library, pathprefix=None):
             for field in fields:
                 if field[0] in known_group_fields:
                     setattr(lib, field[0], field[1])
+                elif field[0] == "CopyValuesFrom":
+                    setattr(p, field[0], field[1])
                 else:
                     error("unknown parameter metadata field '%s'" % field[0])
             if not any(lib.name == parsed_l.name for parsed_l in libraries):
@@ -368,6 +375,32 @@ def clean_param(param):
             start = start.strip()
             new_valueList.append(":".join([start, end]))
         param.Values = ",".join(new_valueList)
+
+
+def do_copy_values(vehicle_params, libraries, param):
+    if not hasattr(param, "CopyValuesFrom"):
+        return
+
+    # so go and find the values...
+    wanted_name = param.CopyValuesFrom
+    del param.CopyValuesFrom
+    for x in vehicle_params:
+        name = x.name
+        (v, name) = name.split(":")
+        if name != wanted_name:
+            continue
+        param.Values = x.Values
+        return
+
+    for lib in libraries:
+        for x in lib.params:
+            if x.name != wanted_name:
+                continue
+            param.Values = x.Values
+            return
+
+    error("Did not find value to copy (%s wants %s)" %
+          (param.name, wanted_name))
 
 
 def validate(param):
@@ -447,6 +480,13 @@ for library in libraries:
     for param in library.params:
         validate(param)
 
+# handle CopyValuesFrom:
+for param in vehicle.params:
+    do_copy_values(vehicle.params, libraries, param)
+for library in libraries:
+    for param in library.params:
+        do_copy_values(vehicle.params, libraries, param)
+
 if not args.emit_params:
     sys.exit(error_count)
 
@@ -455,6 +495,7 @@ all_emitters = {
     'xml': XmlEmit,
     'html': HtmlEmit,
     'rst': RSTEmit,
+    'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
     'xml_mp': XmlEmitMP,
 }

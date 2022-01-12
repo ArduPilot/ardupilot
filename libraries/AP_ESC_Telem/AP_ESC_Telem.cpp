@@ -231,6 +231,7 @@ bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 // send ESC telemetry messages over MAVLink
 void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
+#if HAL_GCS_ENABLED
     static_assert(ESC_TELEM_MAX_ESCS <= 12, "AP_ESC_Telem::send_esc_telemetry_mavlink() only supports up-to 12 motors");
 
     if (!_have_data) {
@@ -295,6 +296,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
                 break;
         }
     }
+#endif // HAL_GCS_ENABLED
 }
 
 // record an update to the telemetry data together with timestamp
@@ -377,6 +379,8 @@ void AP_ESC_Telem::update()
 
                 float rpm = 0.0f;
                 get_rpm(i, rpm);
+                float rawrpm = 0.0f;
+                get_raw_rpm(i, rawrpm);
 
                 // Write ESC status messages
                 //   id starts from 0
@@ -392,6 +396,7 @@ void AP_ESC_Telem::update()
                     time_us     : AP_HAL::micros64(),
                     instance    : i,
                     rpm         : (int32_t) rpm * 100,
+                    raw_rpm     : (int32_t) rawrpm * 100,
                     voltage     : _telem_data[i].voltage,
                     current     : _telem_data[i].current,
                     esc_temp    : _telem_data[i].temperature_cdeg,

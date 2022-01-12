@@ -16,7 +16,7 @@
 #include "AP_Generator_IE_FuelCell.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 
-#if GENERATOR_ENABLED
+#if HAL_GENERATOR_ENABLED
 
 // Initialize the fuelcell object and prepare it for use
 void AP_Generator_IE_FuelCell::init()
@@ -28,8 +28,7 @@ void AP_Generator_IE_FuelCell::init()
         return;
     }
     _uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_Generator, 0));
-
-    _health_warn_sent = false;
+    _health_warn_last_ms = AP_HAL::millis();
 }
 
 // Update fuelcell, expected to be called at 20hz
@@ -62,7 +61,7 @@ void AP_Generator_IE_FuelCell::update()
     _healthy = (now - _last_time_ms) < HEALTHY_TIMEOUT_MS;
 
     // Check if we should notify gcs off any change of fuel cell state
-    check_status();
+    check_status(now);
 
     update_frontend();
 
@@ -144,16 +143,16 @@ const AP_Generator_IE_FuelCell::Lookup_State AP_Generator_IE_FuelCell::lookup_st
 };
 
 // Check for any change in error state or status and report to gcs
-void AP_Generator_IE_FuelCell::check_status()
+void AP_Generator_IE_FuelCell::check_status(const uint32_t now)
 {
     // Check driver health
-    if (!healthy() && !_health_warn_sent) {
+    if (!healthy() && (!_health_warn_last_ms || (now - _health_warn_last_ms >= 20000))) {
         // Don't spam GCS with unhealthy message
-        _health_warn_sent = true;
+        _health_warn_last_ms = now;
         gcs().send_text(MAV_SEVERITY_ALERT, "Generator: Not healthy");
 
     } else if (healthy()) {
-        _health_warn_sent = false;
+        _health_warn_last_ms = 0;
     }
 
     // If fuel cell state has changed send gcs message

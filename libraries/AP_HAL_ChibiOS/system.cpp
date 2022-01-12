@@ -23,7 +23,9 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
+#if HAL_CRASHDUMP_ENABLE
+#include <CrashCatcher.h>
+#endif
 #include <ch.h>
 #include "hal.h"
 #include <hrt.h>
@@ -33,6 +35,7 @@ static_assert(sizeof(systime_t) == 2, "expected 16 bit systime_t");
 #elif CH_CFG_ST_RESOLUTION == 32
 static_assert(sizeof(systime_t) == 4, "expected 32 bit systime_t");
 #endif
+static_assert(sizeof(systime_t) == sizeof(sysinterval_t), "expected systime_t same size as sysinterval_t");
 
 #if defined(HAL_EXPECTED_SYSCLOCK)
 #ifdef STM32_SYS_CK
@@ -48,53 +51,9 @@ extern const AP_HAL::HAL& hal;
 extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
-typedef enum  {
-    Reset = 1,
-    NMI = 2,
-    HardFault = 3,
-    MemManage = 4,
-    BusFault = 5,
-    UsageFault = 6,
-} FaultType;
 
-void *__dso_handle;
-
-void __cxa_pure_virtual(void);
-void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
-
-void NMI_Handler(void);
-void NMI_Handler(void) { while (1); }
-
-/*
-  save watchdog data for a hard fault
- */
-static void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr, uint32_t lr)
-{
-#ifndef HAL_BOOTLOADER_BUILD
-    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
-    if (using_watchdog) {
-        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
-        if (pd.fault_type == 0) {
-            // don't overwrite earlier fault
-            pd.fault_line = line;
-            pd.fault_type = fault_type;
-            pd.fault_addr = fault_addr;
-            thread_t *tp = chThdGetSelfX();
-            if (tp) {
-                pd.fault_thd_prio = tp->hdr.pqueue.prio;
-                // get first 4 bytes of the name, but only of first fault
-                if (tp->name && pd.thread_name4[0] == 0) {
-                    strncpy_noterm(pd.thread_name4, tp->name, 4);
-                }
-            }
-            pd.fault_icsr = SCB->ICSR;
-            pd.fault_lr = lr;
-        }
-        stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
-    }
-#endif
-}
-
+#if !HAL_CRASHDUMP_ENABLE
+// do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
@@ -224,6 +183,62 @@ void MemManage_Handler(void) {
 
     while(1) {}
 }
+#else
+// Handle via Crash Catcher
+extern void HardFault_Handler(void);
+
+void BusFault_Handler(void);
+void BusFault_Handler(void) {
+    HardFault_Handler();
+}
+
+void UsageFault_Handler(void);
+void UsageFault_Handler(void) {
+    HardFault_Handler();
+}
+
+void MemManage_Handler(void);
+void MemManage_Handler(void) {
+    HardFault_Handler();
+}
+#endif
+/*
+  save watchdog data for a hard fault
+ */
+void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr, uint32_t lr)
+{
+#ifndef HAL_BOOTLOADER_BUILD
+    bool using_watchdog = AP_BoardConfig::watchdog_enabled();
+    if (using_watchdog) {
+        AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
+        if (pd.fault_type == 0) {
+            // don't overwrite earlier fault
+            pd.fault_line = line;
+            pd.fault_type = fault_type;
+            pd.fault_addr = fault_addr;
+            thread_t *tp = chThdGetSelfX();
+            if (tp) {
+                pd.fault_thd_prio = tp->hdr.pqueue.prio;
+                // get first 4 bytes of the name, but only of first fault
+                if (tp->name && pd.thread_name4[0] == 0) {
+                    strncpy_noterm(pd.thread_name4, tp->name, 4);
+                }
+            }
+            pd.fault_icsr = SCB->ICSR;
+            pd.fault_lr = lr;
+        }
+        stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    }
+#endif
+}
+
+void *__dso_handle;
+
+void __cxa_pure_virtual(void);
+void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
+
+void NMI_Handler(void);
+void NMI_Handler(void) { while (1); }
 
 }
 namespace AP_HAL {
@@ -259,9 +274,25 @@ void panic(const char *errormsg, ...)
 
 uint32_t micros()
 {
+#if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
+    // special case optimisation for 32 bit timers
+    return st_lld_get_counter();
+#else
     return hrt_micros32();
+#endif
 }
 
+uint16_t micros16()
+{
+#if CH_CFG_ST_RESOLUTION == 32 && CH_CFG_ST_FREQUENCY==1000000U
+    return st_lld_get_counter() & 0xFFFF;
+#elif CH_CFG_ST_RESOLUTION == 16 && CH_CFG_ST_FREQUENCY==1000000U
+    return st_lld_get_counter();
+#else
+    return hrt_micros32() & 0xFFFF;
+#endif
+}
+    
 uint32_t millis()
 {
     return hrt_millis32();
