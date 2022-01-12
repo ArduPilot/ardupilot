@@ -20,9 +20,6 @@ FLASH_SIZE_KB 2048
 # space to reserve for bootloader and storage at start of flash
 FLASH_RESERVE_START_KB 16
 
-# space to reserve for storage at end of flash
-FLASH_RESERVE_END_KB 0
-
 # serial port for stdout disabled, uses USB instead
 # STDOUT_SERIAL SD7
 # STDOUT_BAUDRATE 57600
