@@ -16,9 +16,6 @@ FLASH_RESERVE_START_KB 34
 STORAGE_FLASH_PAGE 126
 define HAL_STORAGE_SIZE 800
 
-# reserve space for flash storage in last 2 sectors
-FLASH_RESERVE_END_KB 2
-
 # board ID for firmware load
 APJ_BOARD_ID 1005
 
@@ -31,10 +28,6 @@ OSCILLATOR_HZ 16000000
 define CH_CFG_ST_FREQUENCY 1000
 
 FLASH_SIZE_KB 256
-
-
-# reserve space for params
-FLASH_RESERVE_END_KB 2
 
 # USART3 for debug
 STDOUT_SERIAL SD3

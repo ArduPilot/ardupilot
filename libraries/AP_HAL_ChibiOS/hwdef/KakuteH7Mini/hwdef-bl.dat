@@ -18,8 +18,8 @@ FLASH_RESERVE_START_KB 0
 # the location where the bootloader will put the firmware
 FLASH_BOOTLOADER_LOAD_KB 128
 
-# reserve space for flash storage in last 2 sectors
-FLASH_RESERVE_END_KB 256
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1
