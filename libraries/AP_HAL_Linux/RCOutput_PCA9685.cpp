@@ -173,8 +173,6 @@ bool RCOutput_PCA9685::force_safety_on() {
     }
     /* Shutdown before sleeping. */
     _dev->write_register(PCA9685_RA_ALL_LED_OFF_H, PCA9685_ALL_LED_OFF_H_SHUT);
-    /* Put PCA9685 to sleep */
-    _dev->write_register(PCA9685_RA_MODE1, PCA9685_MODE1_SLEEP_BIT);
 
     _dev->get_semaphore()->give();
     return true;
