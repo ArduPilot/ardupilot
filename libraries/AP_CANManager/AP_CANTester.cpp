@@ -864,7 +864,7 @@ bool CANTester::test_uavcan_esc()
                 status_msg.error_count = 0;
                 status_msg.voltage = 30 + 2*((float)get_random16()/INT16_MAX);
                 status_msg.current = 10 + 10*((float)get_random16()/INT16_MAX);
-                status_msg.temperature = 124 + i + C_TO_KELVIN;
+                status_msg.temperature = C_TO_KELVIN(124 + i);
                 status_msg.rpm = 1200 + 300*((float)get_random16()/INT16_MAX);
                 status_msg.power_rating_pct = 70 + 20*((float)get_random16()/INT16_MAX);
                 esc_status_publisher->broadcast(status_msg);
