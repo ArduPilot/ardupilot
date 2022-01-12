@@ -375,7 +375,7 @@ void AP_Baro::update_calibration()
 float AP_Baro::get_altitude_difference(float base_pressure, float pressure) const
 {
     float ret;
-    float temp    = get_ground_temperature() + C_TO_KELVIN;
+    float temp    = C_TO_KELVIN(get_ground_temperature());
     float scaling = pressure / base_pressure;
 
     // This is an exact calculation that is within +-2.5m of the standard
@@ -405,7 +405,7 @@ float AP_Baro::get_EAS2TAS(void)
     // only estimate lapse rate for the difference from the ground location
     // provides a more consistent reading then trying to estimate a complete
     // ISA model atmosphere
-    float tempK = get_ground_temperature() + C_TO_KELVIN - ISA_LAPSE_RATE * altitude;
+    float tempK = C_TO_KELVIN(get_ground_temperature()) - ISA_LAPSE_RATE * altitude;
     const float eas2tas_squared = SSL_AIR_DENSITY / (pressure / (ISA_GAS_CONSTANT * tempK));
     if (!is_positive(eas2tas_squared)) {
         return 1.0f;
