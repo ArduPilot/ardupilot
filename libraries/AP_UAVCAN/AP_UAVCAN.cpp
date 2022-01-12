@@ -925,7 +925,7 @@ void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const E
     }
 
     TelemetryData t {
-        .temperature_cdeg = int16_t((cb.msg->temperature - C_TO_KELVIN) * 100),
+        .temperature_cdeg = int16_t((KELVIN_TO_C(cb.msg->temperature)) * 100),
         .voltage = cb.msg->voltage,
         .current = cb.msg->current,
     };
