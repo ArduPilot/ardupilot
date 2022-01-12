@@ -447,7 +447,7 @@ template <typename T>
 void QuaternionT<T>::from_axis_angle(Vector3<T> v)
 {
     const T theta = v.length();
-    if (is_zero(theta)) {
+    if (::is_zero(theta)) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
         return;
@@ -462,7 +462,7 @@ template <typename T>
 void QuaternionT<T>::from_axis_angle(const Vector3<T> &axis, T theta)
 {
     // axis must be a unit vector as there is no check for length
-    if (is_zero(theta)) {
+    if (::is_zero(theta)) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
         return;
@@ -491,7 +491,7 @@ void QuaternionT<T>::to_axis_angle(Vector3<T> &v) const
 {
     const T l = sqrtF(sq(q2)+sq(q3)+sq(q4));
     v = Vector3<T>(q2,q3,q4);
-    if (!is_zero(l)) {
+    if (!::is_zero(l)) {
         v /= l;
         v *= wrap_PI(2.0f * atan2F(l,q1));
     }
@@ -503,7 +503,7 @@ template <typename T>
 void QuaternionT<T>::from_axis_angle_fast(Vector3<T> v)
 {
     const T theta = v.length();
-    if (is_zero(theta)) {
+    if (::is_zero(theta)) {
         q1 = 1.0f;
         q2=q3=q4=0.0f;
         return;
@@ -533,7 +533,7 @@ template <typename T>
 void QuaternionT<T>::rotate_fast(const Vector3<T> &v)
 {
     const T theta = v.length();
-    if (is_zero(theta)) {
+    if (::is_zero(theta)) {
         return;
     }
     const T t2 = 0.5*theta;
@@ -613,6 +613,13 @@ T QuaternionT<T>::length(void) const
     return sqrtF(sq(q1) + sq(q2) + sq(q3) + sq(q4));
 }
 
+// gets the length squared of the quaternion
+template <typename T>
+T QuaternionT<T>::length_squared() const
+{
+    return (T)(q1*q1 + q2*q2 + q3*q3 + q4*q4);
+}
+
 // return the reverse rotation of this quaternion
 template <typename T>
 QuaternionT<T> QuaternionT<T>::inverse(void) const
@@ -633,7 +640,7 @@ template <typename T>
 void QuaternionT<T>::normalize(void)
 {
     const T quatMag = length();
-    if (!is_zero(quatMag)) {
+    if (!::is_zero(quatMag)) {
         const T quatMagInv = 1.0f/quatMag;
         q1 *= quatMagInv;
         q2 *= quatMagInv;
@@ -643,6 +650,36 @@ void QuaternionT<T>::normalize(void)
         // The code goes here if the quaternion is [0,0,0,0]. This shouldn't happen.
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
+}
+
+// Checks if each element of the quaternion is zero
+template <typename T>
+bool QuaternionT<T>::is_zero(void) const {
+    return (fabsf(q1) < FLT_EPSILON) &&
+            (fabsf(q2) < FLT_EPSILON) &&
+            (fabsf(q3) < FLT_EPSILON) &&
+            (fabsf(q4) < FLT_EPSILON);
+}
+
+// zeros the quaternion to [0, 0, 0, 0], an invalid quaternion
+// See initialize() if you want the zero rotation quaternion
+template <typename T>
+void QuaternionT<T>::zero(void)
+{
+    q1 = q2 = q3 = q4 = 0.0;
+}
+
+// Checks if the quaternion is unit_length within a tolerance
+// Returns True: if its magnitude is close to unit length +/- 1E-3
+// This limit is somewhat greater than sqrt(FLT_EPSL)
+template <typename T>
+bool QuaternionT<T>::is_unit_length(void) const
+{
+    if (fabsf(length_squared() - 1) < 1E-3) {
+        return true;
+    }
+
+    return false;
 }
 
 template <typename T>
@@ -725,8 +762,7 @@ QuaternionT<T> QuaternionT<T>::operator/(const QuaternionT<T> &v) const
     const T &quat2 = q3;
     const T &quat3 = q4;
 
-    const T quatMag = length();
-    if (is_zero(quatMag)) {
+    if (is_zero()) {
         // The code goes here if the quaternion is [0,0,0,0]. This shouldn't happen.
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
