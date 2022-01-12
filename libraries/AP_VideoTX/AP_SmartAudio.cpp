@@ -607,7 +607,7 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
             vtx.set_configured_power_mw(vtx.get_power_mw());
             break;
         }
-        debug("Power was set to to %d", power);
+        debug("Power was set to %d", power);
     }
         break;
 
