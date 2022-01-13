@@ -34,7 +34,7 @@ void NavEKF2_core::SelectFlowFusion()
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground
-    // is insuffient to achieve acceptable focus. This allows the vehicle to be picked up
+    // is insufficient to achieve acceptable focus. This allows the vehicle to be picked up
     // and carried to test optical flow operation
     if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
         ofDataDelayed.flowRadXYcomp.zero();
