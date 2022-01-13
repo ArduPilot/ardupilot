@@ -2675,6 +2675,11 @@ def add_apperiph_defaults(f):
 #endif
 #ifndef HAL_BARO_WIND_COMP_ENABLED
 #define HAL_BARO_WIND_COMP_ENABLED 0
+
+#ifndef HAL_UART_STATS_ENABLED
+#define HAL_UART_STATS_ENABLED (HAL_GCS_ENABLED || HAL_LOGGING_ENABLED)
+#endif
+
 #endif
 ''')
 
