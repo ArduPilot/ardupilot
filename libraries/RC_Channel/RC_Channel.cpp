@@ -908,7 +908,7 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
     AP::logger().Write(
         "AUXF",
         "TimeUS,function,pos,source,result",
-        "s----",
+        "s#---",
         "F----",
         "QHBBB",
         AP_HAL::micros64(),
