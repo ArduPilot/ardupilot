@@ -1083,7 +1083,7 @@ void GPS::update()
             d.altitude += _sitl->gps_drift_alt[idx]*sinf(AP_HAL::millis()*0.001f*0.02f);
         }
 
-        // correct the latitude, longitude, hiehgt and NED velocity for the offset between
+        // correct the latitude, longitude, height and NED velocity for the offset between
         // the vehicle c.g. and GPs antenna
         Vector3f posRelOffsetBF = _sitl->gps_pos_offset[idx];
         if (!posRelOffsetBF.is_zero()) {
