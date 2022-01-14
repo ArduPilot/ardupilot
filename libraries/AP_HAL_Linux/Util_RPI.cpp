@@ -48,6 +48,13 @@ int UtilRPI::_check_rpi_version()
              return _rpi_version;
         }
         
+        ret = strncmp(buffer, "Raspberry Pi Zero 2", 19);
+        if (ret == 0) {
+             _rpi_version = 2; // Raspberry PI Zero 2 W e.g. Raspberry Pi Zero 2 Rev 1.0.
+             printf("%s. (intern: %d)\n", buffer, _rpi_version);
+             return _rpi_version;
+        }
+        
         ret = sscanf(buffer + 12, "%d", &_rpi_version);
         if (ret != EOF) {
             if (_rpi_version > 3)  {
