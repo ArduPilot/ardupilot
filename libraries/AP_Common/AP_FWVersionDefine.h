@@ -23,6 +23,17 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+/*
+  allow vendors to set AP_CUSTOM_FIRMWARE_STRING in hwdef.dat
+ */
+#ifdef AP_CUSTOM_FIRMWARE_STRING
+#define ACTIVE_FWSTR AP_CUSTOM_FIRMWARE_STRING
+#define ORIGINAL_FWSTR THISFIRMWARE
+#else
+#define ACTIVE_FWSTR THISFIRMWARE
+#define ORIGINAL_FWSTR nullptr
+#endif
+
 const AP_FWVersion AP_FWVersion::fwver{
     // Version header struct
     .header = 0x61706677766572fb, // First 7 MSBs: "apfwver", LSB is the checksum of the previous string: 0xfb
@@ -43,13 +54,14 @@ const AP_FWVersion AP_FWVersion::fwver{
    .os_sw_version = 0,
 #endif
 #ifndef GIT_VERSION
-    .fw_string = THISFIRMWARE,
+    .fw_string = ACTIVE_FWSTR,
     .fw_hash_str = "",
 #else
-    .fw_string = THISFIRMWARE " (" GIT_VERSION ")",
+    .fw_string = ACTIVE_FWSTR " (" GIT_VERSION ")",
     .fw_hash_str = GIT_VERSION,
 #endif
-    .fw_short_string = THISFIRMWARE,
+    .fw_string_original = ORIGINAL_FWSTR,
+    .fw_short_string = ACTIVE_FWSTR,
     .middleware_name = nullptr,
     .middleware_hash_str = nullptr,
 #ifdef CHIBIOS_GIT_VERSION
