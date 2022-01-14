@@ -2036,11 +2036,11 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return ret;
 #endif
     case EKFType::NONE:
-        return dcm.pre_arm_check(requires_position, failure_msg, failure_msg_len);
+        return dcm.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len);
+        return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len) && ret;
 #endif
         
 #if HAL_NAVEKF2_AVAILABLE
