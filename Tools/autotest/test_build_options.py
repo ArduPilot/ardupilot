@@ -54,6 +54,10 @@ def get_defines(feature, options):
 
 def test_feature(feature, options):
     defines = get_defines(feature, options)
+    test_compile_with_defines(defines)
+
+
+def test_compile_with_defines(defines):
     extra_hwdef_filepath = "/tmp/extra.hwdef"
     write_defines_to_file(defines, extra_hwdef_filepath)
     util.waf_configure(
@@ -64,12 +68,12 @@ def test_feature(feature, options):
         try:
             util.waf_build(t)
         except Exception:
-            print("Failed to build (%s) with (%s) disabled" %
-                  (t, feature.label))
+            print("Failed to build (%s) with everything disabled" %
+                  (t,))
             raise
 
 
-def run():
+def run_disable_in_turn():
     options = get_build_options_from_ardupilot_tree()
     count = 1
     for feature in options:
@@ -77,6 +81,19 @@ def run():
               (feature.label, feature.define, count, len(options)))
         test_feature(feature, options)
         count += 1
+
+
+def run_disable_all():
+    options = get_build_options_from_ardupilot_tree()
+    defines = {}
+    for feature in options:
+        defines[feature.define] = 0
+    test_compile_with_defines(defines)
+
+
+def run():
+    run_disable_all()
+    run_disable_in_turn()
 
 
 if __name__ == '__main__':
