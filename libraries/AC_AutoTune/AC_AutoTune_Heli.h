@@ -161,9 +161,6 @@ private:
     // updating_angle_p_up - determines maximum angle p gain for pitch and roll
     void updating_angle_p_up(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
 
-    // updating_angle_p_up_yaw - determines maximum angle p gain for yaw
-    void updating_angle_p_up_yaw(float &tune_p, float *freq, float *gain, float *phase, uint8_t &frq_cnt);
-
    // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
     void updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
 
@@ -235,7 +232,8 @@ private:
     LowPassFilterFloat angle_request_cd;
 
     // variables from dwell test
-    LowPassFilterVector3f filt_attitude_cd;
+    LowPassFilterVector2f filt_pit_roll_cd;         // filtered pitch and roll attitude for dwell rate method
+    LowPassFilterFloat filt_heading_error_cd;       // filtered heading error for dwell rate method
     LowPassFilterVector2f filt_att_fdbk_from_velxy_cd;
     LowPassFilterFloat filt_command_reading;        // filtered command reading to keep oscillation centered
     LowPassFilterFloat filt_gyro_reading;           // filtered gyro reading to keep oscillation centered
@@ -277,5 +275,4 @@ private:
     AC_AutoTune_FreqResp freqresp_rate;
     // freqresp object for the angle frequency response tests
     AC_AutoTune_FreqResp freqresp_angle;
-
 };
