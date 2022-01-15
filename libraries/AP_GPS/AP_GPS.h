@@ -22,6 +22,7 @@
 #include "GPS_detect_state.h"
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <SITL/SIM_GPS.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -127,6 +128,9 @@ public:
         GPS_TYPE_EXTERNAL_AHRS = 21,
         GPS_TYPE_UAVCAN_RTK_BASE = 22,
         GPS_TYPE_UAVCAN_RTK_ROVER = 23,
+#if HAL_SIM_GPS_ENABLED
+        GPS_TYPE_SITL = 100,
+#endif
     };
 
     /// GPS status codes
