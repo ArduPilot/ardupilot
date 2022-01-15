@@ -322,7 +322,7 @@ void NavEKF2_core::FuseRngBcnStatic()
                 // calculate the delta to the estimated receiver position
                 ftype delta = receiverPos.z - bcnMidPosD;
 
-                // calcuate the two hypothesis for our vertical position
+                // calculate the two hypothesis for our vertical position
                 ftype receiverPosDownMax;
                 ftype receiverPosDownMin;
                 if (delta >= 0.0f) {
