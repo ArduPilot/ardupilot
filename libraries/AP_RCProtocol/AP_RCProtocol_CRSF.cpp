@@ -198,8 +198,6 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _frame_ofs = 0;
     }
 
-    _last_rx_time_us = timestamp_us;
-
     // overflow check
     if (_frame_ofs >= CRSF_FRAMELEN_MAX) {
         _frame_ofs = 0;
@@ -250,9 +248,10 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
             return;
         }
 
-        _last_frame_time_us = timestamp_us;
+        _last_frame_time_us = _last_rx_frame_time_us = timestamp_us;
         // decode here
         if (decode_crsf_packet()) {
+            _last_tx_frame_time_us = timestamp_us;  // we have received a frame from the transmitter
             add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality);
         }
     }
@@ -273,14 +272,15 @@ void AP_RCProtocol_CRSF::update(void)
         for (uint8_t i = 0; i < n; i++) {
             int16_t b = _uart->read();
             if (b >= 0) {
-                _process_byte(now, uint8_t(b));
+                process_byte(AP_HAL::micros(), uint8_t(b));
             }
         }
     }
 
     // never received RC frames, but have received CRSF frames so make sure we give the telemetry opportunity to run
     uint32_t now = AP_HAL::micros();
-    if (_last_frame_time_us > 0 && !get_rc_frame_count() && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
+    if (_last_frame_time_us > 0 && (!get_rc_frame_count() || !is_tx_active())
+        && now - _last_frame_time_us > CRSF_INTER_FRAME_TIME_US_250HZ) {
         process_telemetry(false);
         _last_frame_time_us = now;
     }
@@ -472,7 +472,7 @@ bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
 
     if (!telem_available) {
 #if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
-        if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame)) {
+        if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame, is_tx_active())) {
             telem_available = true;
         } else {
             return false;
