@@ -309,6 +309,13 @@ void AP_RCProtocol::check_added_uart(void)
             }
             added.opened = false;
         }
+    // power loss on CRSF requires re-bootstrap because the baudrate is reset to the default. The CRSF side will
+    // drop back down to 416k if it has received 200 incorrect characters (or none at all)
+    } else if (_detected_protocol != AP_RCProtocol::NONE
+        // protocols that want to be able to renegotiate should return false in is_rx_active()
+        && !backend[_detected_protocol]->is_rx_active()
+        && now - added.last_config_change_ms > 1000) {
+        added.opened = false;
     }
 }
 
