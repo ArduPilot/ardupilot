@@ -18,6 +18,8 @@
 
 #include "SIM_CRSF.h"
 
+#if AP_SIM_CRSF_ENABLED
+
 using namespace SITL;
 
 extern const AP_HAL::HAL& hal;
@@ -80,3 +82,5 @@ void CRSF::update()
         return;
     }
 }
+
+#endif  // AP_SIM_CRSF_ENABLED
