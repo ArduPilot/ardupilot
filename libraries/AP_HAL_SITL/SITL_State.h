@@ -262,8 +262,10 @@ private:
     SITL::PS_TeraRangerTower *terarangertower;
 #endif
 
+#if AP_SIM_CRSF_ENABLED
     // simulated CRSF devices
     SITL::CRSF *crsf;
+#endif
 
     // simulated VectorNav system:
     SITL::VectorNav *vectornav;

@@ -323,12 +323,14 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
     //     }
     //     frsky_sport = new SITL::Frsky_SPortPassthrough();
     //     return frsky_sportpassthrough;
+#if AP_SIM_CRSF_ENABLED
     } else if (streq(name, "crsf")) {
         if (crsf != nullptr) {
             AP_HAL::panic("Only one crsf at a time");
         }
         crsf = new SITL::CRSF();
         return crsf;
+#endif
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     } else if (streq(name, "rplidara2")) {
         if (rplidara2 != nullptr) {
@@ -615,9 +617,11 @@ void SITL_State::_fdm_input_local(void)
     //     frsky_sportpassthrough->update();
     // }
 
+#if AP_SIM_CRSF_ENABLED
     if (crsf != nullptr) {
         crsf->update();
     }
+#endif
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     if (rplidara2 != nullptr) {
