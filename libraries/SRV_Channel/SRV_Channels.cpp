@@ -68,6 +68,7 @@ bool SRV_Channels::initialised;
 bool SRV_Channels::emergency_stop;
 Bitmask<SRV_Channel::k_nr_aux_servo_functions> SRV_Channels::function_mask;
 SRV_Channels::srv_function SRV_Channels::functions[SRV_Channel::k_nr_aux_servo_functions];
+SRV_Channels::slew_list *SRV_Channels::_slew;
 
 const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 #if (NUM_SERVO_CHANNELS >= 1)
@@ -306,6 +307,15 @@ void SRV_Channels::setup_failsafe_trim_all_non_motors(void)
  */
 void SRV_Channels::calc_pwm(void)
 {
+    // slew rate limit functions
+    for (slew_list *slew = _slew; slew; slew = slew->next) {
+        if (is_positive(slew->max_change)) {
+            // treat negative or zero slew rate as disabled
+            functions[slew->func].output_scaled = constrain_float(functions[slew->func].output_scaled, slew->last_scaled_output - slew->max_change, slew->last_scaled_output + slew->max_change);
+        }
+        slew->last_scaled_output = functions[slew->func].output_scaled;
+    }
+
     WITH_SEMAPHORE(_singleton->override_counter_sem);
 
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
