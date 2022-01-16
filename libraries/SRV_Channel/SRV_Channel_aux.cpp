@@ -542,6 +542,25 @@ float SRV_Channels::get_output_scaled(SRV_Channel::Aux_servo_function_t function
     return 0;
 }
 
+// get slew limited scaled output for the given function type
+float SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::Aux_servo_function_t function)
+{
+    if (!SRV_Channel::valid_function(function)) {
+        return 0.0;
+    }
+    for (slew_list *slew = _slew; slew; slew = slew->next) {
+        if (slew->func == function) {
+            if (!is_positive(slew->max_change)) {
+                // treat negative or zero slew rate as disabled
+                break;
+            }
+            return constrain_float(functions[function].output_scaled, slew->last_scaled_output - slew->max_change, slew->last_scaled_output + slew->max_change);
+        }
+    }
+    // no slew limiting
+    return functions[function].output_scaled;
+}
+
 /*
   get mask of output channels for a function
  */
@@ -691,33 +710,35 @@ void SRV_Channels::set_output_norm(SRV_Channel::Aux_servo_function_t function, f
   limit slew rate for an output function to given rate in percent per
   second. This assumes output has not yet done to the hal
  */
-void SRV_Channels::limit_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, float dt)
+void SRV_Channels::set_slew_rate(SRV_Channel::Aux_servo_function_t function, float slew_rate, uint16_t range, float dt)
 {
-    if (slew_rate <= 0) {
-        // nothing to do
-        return;
-    }
     if (!SRV_Channel::valid_function(function)) {
         return;
     }
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &c = channels[i];
-        if (c.function == function) {
-            c.calc_pwm(functions[function].output_scaled);
-            uint16_t last_pwm = hal.rcout->read_last_sent(c.ch_num);
-            if (last_pwm == c.get_output_pwm()) {
-                continue;
-            }
-            uint16_t max_change = (c.get_output_max() - c.get_output_min()) * slew_rate * dt * 0.01f;
-            if (max_change == 0 || dt > 1) {
-                // always allow some change. If dt > 1 then assume we
-                // are just starting out, and only allow a small
-                // change for this loop
-                max_change = 1;
-            }
-            c.set_output_pwm(constrain_int16(c.get_output_pwm(), last_pwm-max_change, last_pwm+max_change));
+    const float max_change = range * slew_rate * 0.01 * dt;
+
+    for (slew_list *slew = _slew; slew; slew = slew->next) {
+        if (slew->func == function) {
+            // found existing item, update max change
+            slew->max_change = max_change;
+            return;
         }
     }
+
+    if (!is_positive(max_change)) {
+        // no point in adding a disabled slew limit
+        return;
+    }
+
+    // add new item
+    slew_list *new_slew = new slew_list(function);
+    if (new_slew == nullptr) {
+        return;
+    }
+    new_slew->last_scaled_output = functions[function].output_scaled;
+    new_slew->max_change = max_change;
+    new_slew->next = _slew;
+    _slew = new_slew;
 }
 
 // call set_angle() on matching channels
