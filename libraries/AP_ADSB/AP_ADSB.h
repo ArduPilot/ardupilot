@@ -78,6 +78,7 @@ public:
         Ping200X_Send_GPS               = (1<<0),
         Squawk_7400_FS_RC               = (1<<1),
         Squawk_7400_FS_GCS              = (1<<2),
+        Prefer_ARHS_for_Location        = (1<<3),
     };
 
     // for holding parameters
