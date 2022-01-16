@@ -4267,22 +4267,58 @@ class AutoTest(ABC):
                               (delta, timeout))
                 return True
 
-    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10, message_type='ATTITUDE'):
+    def wait_attitude(self,
+                      desroll=None,
+                      despitch=None,
+                      desyaw=None,
+                      timeout=2,
+                      tolerance=10,
+                      message_type='ATTITUDE',
+                      minimum_duration=2):
         '''wait for an attitude (degrees)'''
         if desroll is None and despitch is None:
             raise ValueError("despitch or desroll must be supplied")
         tstart = self.get_sim_time()
+        pass_start = None
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
                 raise AutoTestTimeoutException("Failed to achieve attitude")
-            m = self.assert_receive_message(message_type, timeout=60)
+            m = self.assert_receive_message(type=message_type, timeout=timeout)
             roll_deg = math.degrees(m.roll)
             pitch_deg = math.degrees(m.pitch)
-            self.progress("wait_att: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (roll_deg, desroll, pitch_deg, despitch))
+            yaw_deg = math.degrees(m.yaw)
+
+            # emit a progress message to the user:
+            s = []
+            if desroll is not None:
+                s.append("roll=%f wantroll=%s" % (roll_deg, desroll))
+            if despitch is not None:
+                s.append("pitch=%f wantpitch=%s" % (pitch_deg, despitch))
+            if desyaw is not None:
+                s.append("yaw=%f wantyaw=%s" % (yaw_deg, desyaw))
+            s.append("ps=%s" % str(pass_start))
+            if pass_start is not None:
+                s.append("dur=%s" % str(now - pass_start))
+
+            self.progress("wait_att: %s" % " ".join(s))
+
+            # see if we've passed now:
             if desroll is not None and abs(roll_deg - desroll) > tolerance:
+                pass_start = None
                 continue
             if despitch is not None and abs(pitch_deg - despitch) > tolerance:
+                pass_start = None
+                continue
+            if desyaw is not None and abs(yaw_deg - desyaw) > tolerance:
+                pass_start = None
+                continue
+            if minimum_duration is None:
+                return
+            if pass_start is None:
+                pass_start = now
+                continue
+            if now - pass_start < minimum_duration:
                 continue
             return
 
