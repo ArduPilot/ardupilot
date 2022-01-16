@@ -195,6 +195,7 @@ public:
         bool have_gps_yaw_accuracy;       ///< does the GPS give a heading accuracy estimate? Set to true only once available
         uint32_t last_gps_time_ms;          ///< the system time we got the last GPS timestamp, milliseconds
         uint32_t uart_timestamp_ms;         ///< optional timestamp from set_uart_timestamp()
+        uint64_t last_corrected_gps_time_us;///< the system time we got the last corrected GPS timestamp, microseconds
         uint32_t lagged_sample_count;       ///< number of samples with 50ms more lag than expected
 
         // all the following fields must only all be filled by RTK capable backend drivers
@@ -476,6 +477,11 @@ public:
     uint64_t time_epoch_usec(uint8_t instance) const;
     uint64_t time_epoch_usec(void) const {
         return time_epoch_usec(primary_instance);
+    }
+
+    uint64_t last_message_epoch_usec(uint8_t instance) const;
+    uint64_t last_message_epoch_usec() const {
+        return last_message_epoch_usec(primary_instance);
     }
 
     // convert GPS week and millis to unix epoch in ms
