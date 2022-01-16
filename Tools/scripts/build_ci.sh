@@ -13,8 +13,8 @@ cxx_compiler=${CXX:-g++}
 
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
-export GIT_VERSION="ci_test"
-export CHIBIOS_GIT_VERSION="ci_test"
+export GIT_VERSION="abcdef"
+export CHIBIOS_GIT_VERSION="12345667"
 export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
 autotest_args=""
 
