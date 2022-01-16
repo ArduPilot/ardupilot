@@ -204,6 +204,19 @@ bool Rover::set_steering_and_throttle(float steering, float throttle)
     return true;
 }
 
+// set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
+bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!control_mode->in_guided_mode()) {
+        return false;
+    }
+
+    // set turn rate and speed. Turn rate is expected in centidegrees/s and speed in meters/s
+    mode_guided.set_desired_turn_rate_and_speed(turn_rate * 100.0f, speed);
+    return true;
+}
+
 // get control output (for use in scripting)
 // returns true on success and control_value is set to a value in the range -1 to +1
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
