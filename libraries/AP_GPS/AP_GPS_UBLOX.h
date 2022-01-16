@@ -759,6 +759,10 @@ private:
     // return true if GPS is capable of F9 config
     bool supports_F9_config(void) const;
 
+#ifdef HAL_GPIO_PPS
+    void pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us);
+#endif
+
 #if GPS_MOVING_BASELINE
     // config for moving baseline base
     static const config_list config_MB_Base_uart1[];

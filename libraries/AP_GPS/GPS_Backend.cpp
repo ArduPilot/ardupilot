@@ -249,8 +249,11 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
-        if (port) {
+        if (port && _last_pps_time_us == 0) {
             uart_us = port->receive_time_constraint_us(msg_length);
+        } else if (_last_pps_time_us != 0) {
+            uart_us = _last_pps_time_us;
+            _last_pps_time_us = 0;
         } else {
             uart_us = AP_HAL::micros64();
         }
@@ -287,6 +290,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // use msg arrival time, and correct for jitter
         uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
+        state.last_corrected_gps_time_us = local_us;
         state.uart_timestamp_ms = local_us / 1000U;
 
         // look for lagged data from the GPS. This is meant to detect
@@ -301,6 +305,10 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
             } else {
                 state.lagged_sample_count = 0;
             }
+        }
+        if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
+            // we must have a decent fix to calculate difference between itow and pseudo-itow
+            _pseudo_itow_delta_ms = itow - (_pseudo_itow/1000ULL);
         }
     }
 }
