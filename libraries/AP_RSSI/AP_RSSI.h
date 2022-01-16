@@ -93,7 +93,7 @@ private:
     // read the PWM value from a pin
     float read_pwm_pin_rssi();
 
-    // read the (RC) RSSI value from telemtry radio RSSI (e.g. rfd900x pass-through)
+    // read the (RC) RSSI value from telemetry radio RSSI (e.g. rfd900x pass-through)
     float read_telemetry_radio_rssi();
 
     // Scale and constrain a float rssi value to 0.0 to 1.0 range
