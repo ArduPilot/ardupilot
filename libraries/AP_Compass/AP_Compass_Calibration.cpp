@@ -521,12 +521,12 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     // Rotate into body frame using provided yaw
     field = dcm.transposed() * field;
 
-    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+    for (uint8_t i=0; i<get_count(); i++) {
         if (compass_mask != 0 && ((1U<<i) & compass_mask) == 0) {
             // skip this compass
             continue;
         }
-        if (!force_use && !use_for_yaw(i)) {
+        if (_use_for_yaw[Priority(i)] == 0 || (!force_use && !use_for_yaw(i))) {
             continue;
         }
         if (!healthy(i)) {
