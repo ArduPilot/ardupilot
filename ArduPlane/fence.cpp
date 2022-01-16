@@ -71,17 +71,6 @@ void Plane::fence_check()
             } else {
                 //return to fence return point, not a rally point
                 guided_WP_loc = {};
-                if (fence.get_return_altitude() > 0) {
-                    // fly to the return point using _retalt
-                    guided_WP_loc.alt = home.alt + 100.0f * fence.get_return_altitude();
-                } else if (fence.get_safe_alt_min() >= fence.get_safe_alt_max()) {
-                    // invalid min/max, use RTL_altitude
-                    guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
-                } else {
-                    // fly to the return point, with an altitude half way between
-                    // min and max
-                    guided_WP_loc.alt = home.alt + 100.0f * (fence.get_safe_alt_min() + fence.get_safe_alt_max()) / 2;
-                }
 
                 Vector2l return_point;
                 if(fence.polyfence().get_return_point(return_point)) {
@@ -93,6 +82,21 @@ void Plane::fence_check()
                     // return point.
                     guided_WP_loc.lat = home.lat;
                     guided_WP_loc.lng = home.lng;
+                }
+
+                float fence_alt_max, fence_alt_min;
+                if (fence.get_return_altitude() > 0) {
+                    // fly to the return point using _retalt
+                    guided_WP_loc.alt = home.alt + 100.0f * fence.get_return_altitude();
+                } else if (!fence.get_safe_alt_min(guided_WP_loc, Location::AltFrame::ABOVE_HOME, fence_alt_min) ||
+                           !fence.get_safe_alt_max(guided_WP_loc, Location::AltFrame::ABOVE_HOME, fence_alt_max) ||
+                           fence_alt_min >= fence_alt_max) {
+                    // invalid min/max, use RTL_altitude
+                    guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
+                } else {
+                    // fly to the return point, with an altitude half way between
+                    // min and max
+                    guided_WP_loc.alt = home.alt + 100.0f * (fence_alt_min + fence_alt_max) * 0.5;
                 }
             }
 

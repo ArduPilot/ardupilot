@@ -27,6 +27,9 @@ public:
         ABOVE_TERRAIN = 3
     };
 
+    // check if an alt frame is valid
+    static bool valid_alt_frame(AltFrame frame) { return frame <= AltFrame::ABOVE_TERRAIN; }
+
     /// constructors
     Location();
     Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame);

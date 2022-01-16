@@ -500,7 +500,10 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
     }
 
     // safe max alt = fence alt - fence margin
-    const float max_fence_alt = fence->get_safe_alt_max();
+    float max_fence_alt;
+    if (!fence->get_safe_alt_max(Location::AltFrame::ABOVE_HOME, max_fence_alt)) {
+        return false;
+    }
     const float margin_start =  max_fence_alt - alt_above_home_cm_start * 0.01f;
     const float margin_end =  max_fence_alt - alt_above_home_cm_end * 0.01f;
 

@@ -369,8 +369,13 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         // calculate distance from vehicle to safe altitude
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
-        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = fence->get_safe_alt_max() + veh_alt;
+        float fence_alt_max;
+        if (!fence->get_safe_alt_max(Location::AltFrame::ABOVE_HOME, fence_alt_max)) {
+            // if we can't get the alt max then use vehicle altitude to prevent climbing
+            fence_alt_max = veh_alt;
+        }
+        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN, so we add
+        alt_diff = fence_alt_max + veh_alt;
         limit_alt = true;
     }
 
