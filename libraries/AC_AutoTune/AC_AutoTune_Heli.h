@@ -164,6 +164,12 @@ private:
    // updating_max_gains: use dwells at increasing frequency to determine gain at which instability will occur
     void updating_max_gains(float *freq, float *gain, float *phase, uint8_t &frq_cnt, max_gain_data &max_gain_p, max_gain_data &max_gain_d, float &tune_p, float &tune_d);
 
+    // reset the max_gains update gain variables
+    void reset_maxgains_update_gain_variables();
+
+    // reset the sweep variables
+    void reset_sweep_variables();
+
     uint8_t method; //0: determine freq, 1: use max gain method, 2: use phase 180 method
 
     // updating rate FF variables
