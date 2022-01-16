@@ -323,7 +323,7 @@ void AP_PiccoloCAN::update()
 
     AP_Logger *logger = AP_Logger::get_singleton();
 
-    // Push received telemtry data into the logging system
+    // Push received telemetry data into the logging system
     if (logger && logger->logging_enabled()) {
 
         WITH_SEMAPHORE(_telem_sem);
