@@ -70,6 +70,23 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/master_bin
           cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/master_bin/
 
+          # build a set of binaries without symbols so we can check if
+          #  the binaries have changed.
+          echo [`date`] Building master with no versions
+
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/master_bin_no_versions"
+          mkdir "$NO_VERSIONS_DIR"
+
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf AP_Periph
+          else
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf
+          fi
+          cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
+
+          echo [`date`] Built master with no versions
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -98,6 +115,23 @@ jobs:
           mkdir $GITHUB_WORKSPACE/pr_bin
           cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/pr_bin/
 
+          # build a set of binaries without symbols so we can check if
+          #  the binaries have changed.
+          echo [`date`] Building PR with no versions
+
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/pr_bin_no_versions"
+          mkdir "$NO_VERSIONS_DIR"
+
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf AP_Periph
+          else
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf
+          fi
+          cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
+
+          echo [`date`] Built PR with no versions
+
           # build MatekF405 Plane without quadplane
           if [ "${{matrix.config}}" = "MatekF405" ]; then
             PLANE_BINARY="build/MatekF405/bin/arduplane.bin"
@@ -118,6 +152,11 @@ jobs:
           cd pr/
           python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/master_bin -s $GITHUB_WORKSPACE/pr_bin
+
+      - name: Checksum compare with Master
+        shell: bash
+        run: |
+          diff -r $GITHUB_WORKSPACE/master_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
 
       - name: elf_diff compare with Master
         shell: bash
