@@ -162,7 +162,7 @@ bool AP_EFI_Serial_MS::read_incoming_realtime_data()
     float duty_cycle = (internal_state.cylinder_status[0].injection_time_ms * internal_state.engine_speed_rpm)/600.0f;
     uint32_t current_time = AP_HAL::millis();
     // Super Simplified integration method - Error Analysis TBD
-    // This calcualtion gives erroneous results when the engine isn't running
+    // This calculation gives erroneous results when the engine isn't running
     if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
         internal_state.fuel_consumption_rate_cm3pm = duty_cycle*get_coef1() - get_coef2();
         internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (current_time - internal_state.last_updated_ms)/60000.0f;
