@@ -6765,7 +6765,7 @@ Also, ignores heartbeats not from our target system'''
 
         # need to wait for a heartbeat to arrive as then mavutil will
         # select the correct set of messages for us to receive in
-        # self.mav.messages.  You can actually recieve messages with
+        # self.mav.messages.  You can actually receive messages with
         # recv_match and those will not be in self.mav.messages until
         # you do this!
         self.wait_heartbeat()
