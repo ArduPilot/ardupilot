@@ -132,8 +132,8 @@ void AP_OpticalFlow_PX4Flow::timer(void)
                                   frame.pixel_flow_y_integral * flowScaleFactorY) * 1.0e-4 * integralToRate;
         state.bodyRate = Vector2f(frame.gyro_x_rate_integral, frame.gyro_y_rate_integral) * 1.0e-4 * integralToRate;
         
-        _applyYaw(state.flowRate);
-        _applyYaw(state.bodyRate);
+        apply_orientation(state.flowRate);
+        apply_orientation(state.bodyRate);
     }
 
     _update_frontend(state);
