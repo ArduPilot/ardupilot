@@ -211,9 +211,18 @@ void LoggerMessageWriter_WriteSysInfo::process() {
     switch(stage) {
 
     case Stage::FIRMWARE_STRING:
+#ifdef AP_CUSTOM_FIRMWARE_STRING
+        // also log original firmware string if different
+        if (! _logger_backend->Write_MessageF("%s [%s]",
+                                              fwver.fw_string,
+                                              fwver.fw_string_original)) {
+            return; // call me again
+        }
+#else
         if (! _logger_backend->Write_Message(fwver.fw_string)) {
             return; // call me again
         }
+#endif
         stage = Stage::GIT_VERSIONS;
         FALLTHROUGH;
 
