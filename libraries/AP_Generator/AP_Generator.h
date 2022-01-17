@@ -80,6 +80,7 @@ private:
         IE_650_800 = 1,
         IE_2400 = 2,
         RICHENPOWER = 3,
+        // LOWEHEISER = 4,
     };
 
     // Helper to get param and cast to GenType
