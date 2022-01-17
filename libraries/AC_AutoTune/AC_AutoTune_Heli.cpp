@@ -155,11 +155,11 @@ void AC_AutoTune_Heli::test_init()
         }
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine_gain function whenever test is initialized
-            freqresp_rate.init(AC_AutoTune_FreqResp::InputType::SWEEP);
+            freqresp_rate.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::RATE);
             dwell_test_init(start_freq, stop_freq);
         } else {
             // initialize determine_gain function whenever test is initialized
-            freqresp_rate.init(AC_AutoTune_FreqResp::InputType::DWELL);
+            freqresp_rate.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
             dwell_test_init(start_freq, start_freq);
         }
         if (!is_zero(start_freq)) {
@@ -185,11 +185,11 @@ void AC_AutoTune_Heli::test_init()
 
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
-            freqresp_angle.init(AC_AutoTune_FreqResp::InputType::SWEEP);
+            freqresp_angle.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
             angle_dwell_test_init(start_freq, stop_freq);
         } else {
             // initialize determine gain function
-            freqresp_angle.init(AC_AutoTune_FreqResp::InputType::DWELL);
+            freqresp_angle.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::ANGLE);
             angle_dwell_test_init(start_freq, start_freq);
         }
 
@@ -1082,9 +1082,9 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
     // wait for dwell to start before determining gain and phase or just start if sweep
     if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
         if (freq_resp_input == 1) {
-            freqresp_rate.update_rate(filt_target_rate,rotation_rate, dwell_freq);
+            freqresp_rate.update(command_out,filt_target_rate,rotation_rate, dwell_freq);
         } else {
-            freqresp_rate.update_rate(command_out,rotation_rate, dwell_freq);
+            freqresp_rate.update(command_out,command_out,rotation_rate, dwell_freq);
         }
         if (freqresp_rate.is_cycle_complete()) {
             if (!is_equal(start_frq,stop_frq)) {
@@ -1282,7 +1282,7 @@ void AC_AutoTune_Heli::angle_dwell_test_run(float start_frq, float stop_frq, flo
 
     // wait for dwell to start before determining gain and phase
     if ((float)(now - dwell_start_time_ms) > 6.25f * cycle_time_ms || (!is_equal(start_frq,stop_frq) && settle_time == 0)) {
-        freqresp_angle.update_angle(command_out, filt_target_rate, rotation_rate, dwell_freq);
+        freqresp_angle.update(command_out, filt_target_rate, rotation_rate, dwell_freq);
         if (freqresp_angle.is_cycle_complete()) {
             if (!is_equal(start_frq,stop_frq)) {
                 curr_test_freq = freqresp_angle.get_freq();
