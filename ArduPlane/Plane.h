@@ -115,6 +115,8 @@
 #endif
 #include "AP_Arming.h"
 
+
+#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
 /*
   main APM:Plane class
  */
@@ -987,6 +989,11 @@ private:
 #endif
 
     // ArduPlane.cpp
+	
+	void update_state();
+	void update_trajectory();
+	void lqt_controller();
+
     void disarm_if_autoland_complete();
 # if OSD_ENABLED
     void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
