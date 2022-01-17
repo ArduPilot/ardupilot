@@ -14,6 +14,8 @@ public:
     bool set(float value);
     bool set_and_save(float value);
     bool get(float &value);
+    bool configured();
+    bool set_default(float value);
 
 private:
     enum ap_var_type vtype;
