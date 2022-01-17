@@ -75,6 +75,7 @@ public:
         MegaSquirt = 1,
         NWPMU     = 2,
         Lutan     = 3,
+        // LOWEHEISER = 4,
     };
 
     static AP_EFI *get_singleton(void) {
