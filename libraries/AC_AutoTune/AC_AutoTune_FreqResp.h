@@ -22,15 +22,18 @@ public:
         SWEEP = 1, 
     };
 
+    // Enumeration of type
+    enum ResponseType {
+        RATE = 0,                 
+        ANGLE = 1, 
+    };
+
     // Initialize the Frequency Response Object. 
     // Must be called before running dwell or frequency sweep tests
-    void init(InputType input_type);
-
-    // Determines the gain and phase based on rate response for a dwell or sweep
-    void update_rate(float tgt_rate, float meas_rate, float tgt_freq);
+    void init(InputType input_type, ResponseType response_type);
 
     // Determines the gain and phase based on angle response for a dwell or sweep
-    void update_angle(float command, float tgt_angle, float meas_angle, float tgt_freq);
+    void update(float command, float tgt_resp, float meas_resp, float tgt_freq);
 
     // Enable external query if cycle is complete and freq response data are available
     bool is_cycle_complete() { return cycle_complete;}
@@ -78,8 +81,8 @@ private:
     // maximum target value from previous cycle
     float prev_target;
 
-    // maximum target angle from previous cycle
-    float prev_tgt_angle;
+    // maximum target response from previous cycle
+    float prev_tgt_resp;
 
     // holds target amplitude for gain calculation
     float temp_tgt_ampl;
@@ -117,8 +120,8 @@ private:
     // maximum measured value from previous cycle
     float prev_meas;
 
-    // maximum measured angle from previous cycle
-    float prev_meas_angle;
+    // maximum measured response from previous cycle
+    float prev_meas_resp;
 
     // holds measured amplitude for gain calculation
     float temp_meas_ampl;
@@ -151,6 +154,9 @@ private:
 
     // Input type for frequency response object
     InputType excitation;
+
+    // Response type for frequency response object
+    ResponseType response;
 
     // sweep_peak_finding_data tracks the peak data
     struct sweep_peak_finding_data {
