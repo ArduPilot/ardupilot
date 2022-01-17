@@ -301,6 +301,15 @@ function Parameter() end
 -- desc
 ---@param value number
 ---@return boolean
+function Parameter_ud:set_default(value) end
+
+-- desc
+---@return boolean
+function Parameter_ud:configured() end
+
+-- desc
+---@param value number
+---@return boolean
 function Parameter_ud:set_and_save(value) end
 
 -- desc
@@ -976,19 +985,25 @@ function param:set(name, value) end
 function param:get(name) end
 
 -- desc
----@param table_key number
+---@param name string
+---@param value number
+---@return boolean
+function param:set_default(name, value) end
+
+-- desc
+---@param table_key integer
 ---@param prefix string
----@param num_params number
+---@param num_params integer
 ---@return boolean
 function param:add_table(table_key, prefix, num_params) end
 
 -- desc
----@param table_key number
----@param param_num number
+---@param table_key integer
+---@param param_num integer
 ---@param name string
 ---@param default_value number
 ---@return boolean
-function param::add_param(table_key, param_num, name, default_value) end
+function param:add_param(table_key, param_num, name, default_value) end
 
 -- desc
 ---@class esc_telem
