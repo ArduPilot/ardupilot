@@ -102,6 +102,9 @@ public:
     // get user defined sensor orientation
     enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
 
+    // returns true if sensor is orientated to face upwards
+    bool upwards_orientation() const;
+
     struct OpticalFlow_state {
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
         Vector2f flowRate;          // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.

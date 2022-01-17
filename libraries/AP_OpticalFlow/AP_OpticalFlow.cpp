@@ -224,6 +224,13 @@ void OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 }
 #endif //HAL_MSP_OPTICALFLOW_ENABLED
 
+// returns true if sensor is orientated to face upwards
+bool OpticalFlow::upwards_orientation() const
+{
+    const enum Rotation orient = get_orientation();
+    return (orient >= Rotation::ROTATION_ROLL_180 && orient <= ROTATION_ROLL_180_YAW_315);
+}
+
 // start calibration
 void OpticalFlow::start_calibration()
 {
@@ -257,7 +264,8 @@ void OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _state.flowRate,
                                 _state.bodyRate,
                                 _last_update_ms,
-                                get_pos_offset());
+                                get_pos_offset(),
+                                upwards_orientation());
     Log_Write_Optflow();
 }
 
