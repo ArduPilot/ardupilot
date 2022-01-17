@@ -40,14 +40,14 @@ void NavEKF3_core::SelectFlowFusion()
     // Constrain measurements to zero if takeoff is not detected and the height above ground
     // is insufficient to achieve acceptable focus. This allows the vehicle to be picked up
     // and carried to test optical flow operation
-    if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
+    if (!takeOffDetected && !ofDataDelayed.upwardsOrientation && ((terrainState - stateStruct.position.z) < 0.5f)) {
         ofDataDelayed.flowRadXYcomp.zero();
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
     }
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
-    if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
+    if (((flowDataToFuse && !ofDataDelayed.upwardsOrientation && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset(ofDataDelayed);
     }

@@ -166,7 +166,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void NavEKF3_core::writeOptFlowMeas(uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, uint32_t msecFlowMeas, const Vector3f &posOffset, bool upwardsOrientation)
 {
     // limit update rate to maximum allowed by sensor buffers
     if ((imuSampleTime_ms - flowMeaTime_ms) < frontend->sensorIntervalMin_ms) {
@@ -197,6 +197,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor body rates for bias and write
         of_elements ofDataNew {};
+        ofDataNew.upwardsOrientation = upwardsOrientation;
         ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
         ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
         // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead
