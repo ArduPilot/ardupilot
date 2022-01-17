@@ -88,7 +88,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         inhibitGndState = false;
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
-        // limit distance to prevent intialisation after bad gps causing bad numerical conditioning
+        // limit distance to prevent initialisation after bad gps causing bad numerical conditioning
         ftype distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
         distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
         prevPosN = stateStruct.position[0];
@@ -100,7 +100,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
-        // fuse range finder data
+        // fuse range finder data to calculate terrain offset
         if (rangeDataToFuse) {
             // reset terrain state if rangefinder data not fused for 5 seconds
             if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
@@ -153,6 +153,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             }
         }
 
+        // fuse optical flow data to calculate terrain offset
         if (!cantFuseFlowData) {
 
             Vector3F relVelSensor;          // velocity of sensor relative to ground in sensor axes
@@ -280,7 +281,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     Vector2 losPred;
 
     // Copy required states to local variable names
-    ftype q0  = stateStruct.quat[0];
+    ftype q0 = stateStruct.quat[0];
     ftype q1 = stateStruct.quat[1];
     ftype q2 = stateStruct.quat[2];
     ftype q3 = stateStruct.quat[3];
@@ -292,7 +293,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
 
-    // calculate range from ground plain to centre of sensor fov assuming flat earth
+    // calculate range from ground plane to centre of sensor fov assuming flat earth
     ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
 
     // correct range for flow sensor offset body frame position offset
@@ -767,8 +768,3 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
     }
     return false;
 }
-
-/********************************************************
-*                   MISC FUNCTIONS                      *
-********************************************************/
-
