@@ -398,7 +398,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
 // 10hz logging of voltage scaling and max trust
 void AP_MotorsMulticopter::Log_Write()
 {
-    struct log_MotBatt pkt_mot = {
+    const struct log_MotBatt pkt_mot {
         LOG_PACKET_HEADER_INIT(LOG_MOTBATT_MSG),
         time_us         : AP_HAL::micros64(),
         lift_max        : _lift_max,
