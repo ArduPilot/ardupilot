@@ -5,7 +5,7 @@
 # thanks to betaflight for pin information (https://github.com/betaflight/unified-targets/blob/master/configs/default/JHEF-JHEF405PRO.config)
 # Version of JHEMCU GSF405A target to use external RX on USART2
 
-include ../JHEMCU-GSF405A/hwdef.data
+include ../JHEMCU-GSF405A/hwdef.dat
 
 undef PD5 PD6 PB10 PB11 PA3 PA2
 undef HAL_SERIAL1_PROTOCOL
