@@ -4103,9 +4103,9 @@ class AutoTestCopter(AutoTest):
             1, # target compid
             0, # bitmask of things to ignore
             mavextra.euler_to_quat([0, math.radians(pitch), 0]), # att
-            0, # roll rate (rad/s)
-            1, # pitch rate
-            0, # yaw rate
+            0, # roll rate  (rad/s)
+            0, # pitch rate (rad/s)
+            0, # yaw rate   (rad/s)
             0.5) # thrust, 0 to 1, translated to a climb/descent rate
 
     def setup_servo_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
@@ -4234,6 +4234,10 @@ class AutoTestCopter(AutoTest):
                          0,
                          0,
                          )
+
+            # Delay here to allow the attitude to command to timeout and level out the copter a bit
+            self.delay_sim_time(3)
+
             start = self.mav.location()
             self.progress("start=%s" % str(start))
             (t_lat, t_lon) = mavextra.gps_offset(start.lat, start.lng, 10, 20)
@@ -4263,9 +4267,9 @@ class AutoTestCopter(AutoTest):
                 1, # target compid
                 0, # bitmask of things to ignore
                 mavextra.euler_to_quat([0, 0, 0]), # att
-                1, # roll rate (rad/s)
-                1, # pitch rate
-                1, # yaw rate
+                0, # roll rate  (rad/s)
+                0, # pitch rate (rad/s)
+                0, # yaw rate   (rad/s)
                 0.5) # thrust, 0 to 1, translated to a climb/descent rate
 
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
