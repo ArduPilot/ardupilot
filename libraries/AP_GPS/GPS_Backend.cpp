@@ -277,6 +277,9 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         } else {
             _rate_counter = 0;
             _last_rate_ms = dt_ms;
+            if (_rate_ms != 0) {
+                set_pps_desired_freq(1000/_rate_ms);
+            }
         }
         if (_rate_ms == 0) {
             // only allow 5Hz to 20Hz in user config

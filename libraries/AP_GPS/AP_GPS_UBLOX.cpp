@@ -1059,7 +1059,8 @@ AP_GPS_UBLOX::_parse_gps(void)
             hal.gpio->attach_interrupt(HAL_GPIO_PPS, FUNCTOR_BIND_MEMBER(&AP_GPS_UBLOX::pps_interrupt, void, uint8_t, bool, uint32_t), AP_HAL::GPIO::INTERRUPT_FALLING);
 #endif
             const uint16_t desired_flags = 0x003f;
-            const uint16_t desired_period_hz = 1;
+            const uint16_t desired_period_hz = _pps_freq;
+
             if (_buffer.nav_tp5.flags != desired_flags ||
                 _buffer.nav_tp5.freqPeriod != desired_period_hz) {
                 _buffer.nav_tp5.tpIdx = 0;
@@ -1542,6 +1543,13 @@ void
 AP_GPS_UBLOX::pps_interrupt(uint8_t pin, bool high, uint32_t timestamp_us)
 {
     _last_pps_time_us = timestamp_us;
+}
+
+void
+AP_GPS_UBLOX::set_pps_desired_freq(uint8_t freq)
+{
+    _pps_freq = freq;
+    _unconfigured_messages |= CONFIG_TP5;
 }
 #endif
 

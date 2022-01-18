@@ -150,6 +150,8 @@ protected:
         return gps.get_type(state.instance);
     }
 
+    virtual void set_pps_desired_freq(uint8_t freq) {}
+
 #if AP_GPS_DEBUG_LOGGING_ENABLED
     // log some data for debugging
     void log_data(const uint8_t *data, uint16_t length);
