@@ -52,6 +52,9 @@ void NavEKF3_core::SelectFlowFusion()
         EstimateTerrainOffset(ofDataDelayed);
     }
 
+    // Estimate ceiling offset (i.e. ceiling's height above EKF origin) using an upward facing rangefinder
+    EstimateCeilingOffset();
+
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
         const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
@@ -267,6 +270,92 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     }
 }
 
+// Estimate ceiling offset (i.e. ceiling's height above EKF origin) using an upward facing rangefinder
+void NavEKF3_core::EstimateCeilingOffset()
+{
+    // read latest range finder data
+    readRangeFinderUp();
+
+    // check for rangefinder data at the fusion time horizon
+    range_elements rngUpDataDelayed;
+    const bool rngUpDataToFuse = storedRangeUp.recall(rngUpDataDelayed, imuDataDelayed.time_ms);
+
+    // return immediately if no new upward facing rangefinder data
+    if (!rngUpDataToFuse) {
+        return;
+    }
+
+    // reset ceiling state on first iteration or if rangefinder data not fused for 5 seconds
+    // limit resets so they only happen at most every 5 sec
+    const bool first_iteration = ((ceilingValidTime_ms == 0) && (ceilingResetTime_ms == 0));
+    if (first_iteration || ((imuSampleTime_ms - ceilingValidTime_ms > 5000) && (imuSampleTime_ms - ceilingResetTime_ms > 5000))) {
+        ceilingState = MAX(rngUpDataDelayed.rng * prevTnb.c.z, ceilingDistMin) - stateStruct.position.z;
+        ceilingResetTime_ms = imuSampleTime_ms;
+        if (!first_iteration) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u upward range reset to %4.1fm", (unsigned)imu_index, (double)ceilingState);
+        }
+    }
+
+    // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
+    // limit distance to prevent initialisation after bad gps causing bad numerical conditioning
+    ftype distanceTravelledSq = sq(stateStruct.position[0] - ceilingPrevPosNE[0]) + sq(stateStruct.position[1] - ceilingPrevPosNE[1]);
+    distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
+    ceilingPrevPosNE[0] = stateStruct.position[0];
+    ceilingPrevPosNE[1] = stateStruct.position[1];
+
+    // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copter's vertical velocity
+    ftype timeLapsed = MIN(0.001f * (imuSampleTime_ms - ceilingPrevPosNETime_ms), 1.0f);
+    ftype Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
+    ceilingPopt += Pincrement;
+    ceilingPrevPosNETime_ms = imuSampleTime_ms;
+
+    // fuse range finder data to calculate ceiling predict range
+    ftype predRngMeas = MAX((ceilingState + stateStruct.position[2]), ceilingDistMin) / prevTnb.c.z;
+
+    // copy required states to local variable names
+    ftype q0 = stateStruct.quat[0]; // quaternion at optical flow measurement time
+    ftype q1 = stateStruct.quat[1]; // quaternion at optical flow measurement time
+    ftype q2 = stateStruct.quat[2]; // quaternion at optical flow measurement time
+    ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
+
+    // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
+    ftype R_RNG = frontend->_rngNoise;
+
+    // calculate Kalman gain
+    ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
+    ftype K_RNG = ceilingPopt/(SK_RNG*(R_RNG + ceilingPopt/sq(SK_RNG)));
+
+    // Calculate the range finder observation innovation variance  (m^2)
+    const ftype varInnovRng = (R_RNG + ceilingPopt/sq(SK_RNG));
+
+    // constrain ceiling height to be above the vehicle
+    ceilingState = MAX(ceilingState, ceilingDistMin - stateStruct.position[2]);
+
+    // Calculate the rangefinder measurement innovation
+    ceilingRngInnov = predRngMeas - rngUpDataDelayed.rng;
+
+    // calculate the innovation consistency test ratio
+    ceilingRngTestRatio = sq(ceilingRngInnov) / (sq(MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
+
+    // check the innovation test ratio and don't fuse if too large
+    if (ceilingRngTestRatio < 1.0f) {
+        // correct the state
+        ceilingState -= K_RNG * ceilingRngInnov;
+
+        // constrain ceiling height to be above the vehicle
+        ceilingState = MAX(ceilingState, ceilingDistMin - stateStruct.position[2]);
+
+        // correct the covariance
+        ceilingPopt = ceilingPopt - sq(ceilingPopt)/(SK_RNG*(R_RNG + ceilingPopt/sq(SK_RNG))*(sq(q0) - sq(q1) - sq(q2) + sq(q3)));
+
+        // prevent the state variance from becoming negative
+        ceilingPopt = MAX(ceilingPopt, 0.0f);
+
+        // record the time we last updated the ceiling offset state
+        ceilingValidTime_ms = imuSampleTime_ms;
+    }
+}
+
 /*
  * Fuse angular motion compensated optical flow rates using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
@@ -291,11 +380,21 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, ftype flowNoise
     ftype vd = stateStruct.velocity.z;
     ftype pd = stateStruct.position.z;
 
-    // constrain height above ground to be above range measured on ground
-    ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
+    // calculate range to surface
+    ftype range;
+    if (ofDataDelayed.upwardsOrientation) {
+        // constrain height above ground to be above range measured on ground
+        ftype heightBelowCeiling = MAX((ceilingState - pd), ceilingDistMin);
 
-    // calculate range from ground plane to centre of sensor fov assuming flat earth
-    ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
+        // calculate range from ceiling to centre of sensor fov assuming flat ceiling
+        range = constrain_ftype((heightBelowCeiling/prevTnb.c.z), ceilingDistMin, 1000.0f);
+    } else {
+        // constrain height above ground to be above range measured on ground
+        ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
+
+        // calculate range from ground plane to centre of sensor fov assuming flat earth
+        range = constrain_ftype((heightAboveGndEst/prevTnb.c.z), rngOnGnd, 1000.0f);
+    }
 
     // correct range for flow sensor offset body frame position offset
     // the corrected value is the predicted range from the sensor focal point to the

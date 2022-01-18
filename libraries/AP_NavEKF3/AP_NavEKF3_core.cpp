@@ -135,6 +135,10 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.rangefinder() && !storedRange.init(MIN(2*obs_buffer_length , imu_buffer_length))) {
         return false;
     }
+    // upward facing rangefinder
+    if(dal.rangefinder() && !storedRangeUp.init(MIN(obs_buffer_length , imu_buffer_length))) {
+        return false;
+    }
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
     if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
         return false;
@@ -413,6 +417,7 @@ void NavEKF3_core::InitialiseVariables()
     storedBaro.reset();
     storedTAS.reset();
     storedRange.reset();
+    storedRangeUp.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
 #if EK3_FEATURE_BODY_ODOM
@@ -2013,6 +2018,8 @@ void NavEKF3_core::ConstrainStates()
     if (!inhibitTerrainState) {
         terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
     }
+    // constrain ceiling state to be above the vehicle
+    ceilingState = MAX(ceilingState, ceilingDistMin - stateStruct.position.z);
 }
 
 // calculate the NED earth spin vector in rad/sec
