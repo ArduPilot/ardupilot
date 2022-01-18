@@ -247,6 +247,7 @@ public:
     uint32_t last_gps_update_ms;
     uint32_t last_baro_update_ms;
     uint32_t last_airspeed_update_ms;
+    bool saw_gps_lock_once;
 
     static AP_Periph_FW *_singleton;
 
