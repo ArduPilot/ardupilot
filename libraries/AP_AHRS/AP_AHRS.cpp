@@ -2027,7 +2027,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         ret = false;
     }
 
-#if !HAL_NAVEKF2_AVAILABLE && !#if HAL_NAVEKF3_AVAILABLE
+#if !HAL_NAVEKF2_AVAILABLE && !HAL_NAVEKF3_AVAILABLE
     // allow compilation without EKF2/EKF3 compiled in
     (void)ret;
 #endif
