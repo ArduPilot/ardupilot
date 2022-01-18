@@ -1,21 +1,58 @@
 # ModalAI Flight Core v1 Controller
 
-The ModalAI FlightCore is a flight controller produced by [ModalAI](http://www.modalai.com/).
+The [ModalAI](http://www.modalai.com/) FlightCore is a flight controller made in the USA. 
+The Flight Core can be paired with ModalAI VOXL for obstacle avoidance and GPS-denied navigation, or used independently as a standalone flight controller.
+
+Buy [Here](https://www.modalai.com/products/flight-core)
+
+See Flight Core Documentation [Here](https://docs.modalai.com/flight-core/)
+
+See Flight Core Datasheet [Here](https://docs.modalai.com/flight-core-datasheets/)
+
+![ModalAI_FC](flight-core.jpg "modal-fc")
 
 ## Features
 
- - STM32F765 microcontroller
- - ICM42688 and ICM20602 IMUs
- - BMP388 barometer
- - microSD card slot
- - 7 UARTs plus USB
- - 8 PWM outputs
+| Feature          | Details                                                                                                                                                         |
+|:-----------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Weight           | 6 g                                                                                                                                                             |
+| MCU              | 216MHz, 32-bit ARM M7 [STM32F765II](https://www.st.com/en/microcontrollers-microprocessors/stm32f765ii.html)                                                    |
+| Memory           | 256Kb FRAM                                                                                                                                                      |
+|                  | 2Mbit Flash                                                                                                                                                     |
+|                  | 512Kbit SRAM                                                                                                                                                    |
+| IMUs             | [ICM-20602](https://www.invensense.com/products/motion-tracking/6-axis/icm-20602/) (SPI1)                                                                       |
+|                  | [ICM-42688-P](https://invensense.tdk.com/products/motion-tracking/6-axis/icm-42688-p/) (SPI2)                                                                   |
+|                  | [BMI088](https://www.bosch-sensortec.com/bst/products/all_products/bmi088_1) (SPI6)                                                                             |
+| Barometer        | [BMP388](https://www.bosch-sensortec.com/bst/products/all_products/bmp388) (I2C4)                                                                               |
+| Secure Element   | [A71CH](https://www.nxp.com/products/security-and-authentication/authentication/plug-and-trust-the-fast-easy-way-to-deploy-secure-iot-connections:A71CH) (I2C4) |
+| microSD Card     | [Information on supported cards](https://dev.px4.io/v1.9.0/en/log/logging.html#sd-cards)                                                                        |
+| Inputs           | GPS/Mag                                                                                                                                                         |
+|                  | Spektrum                                                                                                                                                        |
+|                  | Telemetry                                                                                                                                                       |
+|                  | CAN bus                                                                                                                                                         |
+|                  | PPM                                                                                                                                                             |
+| Outputs          | 6 LEDs (2xRGB)                                                                                                                                                  |
+|                  | 8 PWM Channels                                                                                                                                                  |
+| Extra Interfaces | 3 serial ports                                                                                                                                                  |
+|                  | I2C                                                                                                                                                             |
+|                  | GPIO                                                                                                                                                            |
+
 
 ## Pinout
 
 ![ModalAI_v1 Board](fc-overlay-top-144-dpi.jpg "ModalAI_v1")
 
 For detailed pinout descriptions see [FlightCore Pinout](https://docs.modalai.com/flight-core-datasheets-connectors/)
+
+## Dimensions
+
+![ModalAI-fc-dims](flight_core_v1_imu_locations.png "modal-fc-dims")
+
+![ModalAI_fc-dims2](flight-core-dims.png "modal-fc-dims2")
+
+## Block Diagram
+
+![ModalAI_FC](fc-dk-preliminary-datasheet.png "modal-fc-block")
 
 ## UART Mapping
 
