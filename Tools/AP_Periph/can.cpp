@@ -1859,9 +1859,14 @@ void AP_Periph_FW::can_gps_update(void)
         uavcan_equipment_gnss_Fix2 pkt {};
         const Location &loc = gps.location();
         const Vector3f &vel = gps.velocity();
-
-        pkt.timestamp.usec = AP_HAL::native_micros64();
-        pkt.gnss_timestamp.usec = gps.time_epoch_usec();
+        if (gps.status() < AP_GPS::GPS_OK_FIX_2D && !saw_gps_lock_once) {
+            pkt.timestamp.usec = AP_HAL::micros64();
+            pkt.gnss_timestamp.usec = 0;
+        } else {
+            saw_gps_lock_once = true;
+            pkt.timestamp.usec = gps.time_epoch_usec();
+            pkt.gnss_timestamp.usec = gps.last_message_epoch_usec();
+        }
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
         } else {
