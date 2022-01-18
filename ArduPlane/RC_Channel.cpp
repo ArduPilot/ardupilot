@@ -195,6 +195,11 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
         // want to startup with reverse thrust
         break;
 
+    case AUX_FUNC::HEADING_HOLD:
+        // enabled by default
+        plane.heading_hold_disable = false;
+        break;
+
     default:
         // handle in parent class
         RC_Channel::init_aux_function(ch_option, ch_flag);
@@ -202,7 +207,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
     }
 }
 
-// do_aux_function - implement the function invoked by auxillary switches
+// do_aux_function - implement the function invoked by auxiliary switches
 bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
@@ -377,6 +382,22 @@ case AUX_FUNC::ARSPD_CALIBRATE:
         case AuxSwitchPos::LOW:
             plane.emergency_landing = false;
             break;
+        }
+        break;
+
+    case AUX_FUNC::HEADING_HOLD:
+        switch (ch_flag) {
+            case AuxSwitchPos::HIGH:
+                // enable yaw controller integrator
+                plane.heading_hold_disable = false;
+                break;
+            case AuxSwitchPos::MIDDLE:
+                // nothing
+                break;
+            case AuxSwitchPos::LOW:
+                // disable yaw controller integrator
+                plane.heading_hold_disable = true;
+                break;
         }
         break;
 
