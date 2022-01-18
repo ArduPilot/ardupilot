@@ -12,18 +12,33 @@ NAV_WAYPOINT = 16
 
 k_throttle = 70
 
+-- the table key must be used by only one script on a particular flight
+-- controller. If you want to re-use it then you need to wipe your old parameters
+-- the key must be a number between 0 and 200. The key is persistent in storage
+local PARAM_TABLE_KEY = 59
+local PARAM_TABLE_PREFIX = "AERO_"
+
 function bind_param(name)
    local p = Parameter()
    assert(p:init(name), string.format('could not find %s parameter', name))
    return p
 end
 
-local SCR_USER1 = bind_param("SCR_USER1") -- height P gain
-local SCR_USER2 = bind_param("SCR_USER2") -- height I gain
-local SCR_USER3 = bind_param("SCR_USER3") -- throttle FF from pitch
-local SCR_USER4 = bind_param("SCR_USER4") -- height knifeedge addition for pitch
-local SCR_USER5 = bind_param("SCR_USER5") -- speed P gain
-local SCR_USER6 = bind_param("SCR_USER6") -- speed I gain
+function bind_add_param(name, idx, default_value)
+   assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
+   return bind_param(PARAM_TABLE_PREFIX .. name)
+end
+
+-- setup SHIP specific parameters
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 8), 'could not add param table')
+HEIGHT_P     = bind_add_param('HEIGHT_P', 1, 2.0)
+HEIGHT_I     = bind_add_param('HEIGHT_I', 2, 2.0)
+THR_FF       = bind_add_param('THR_FF', 3, 40.0) --percentage
+PITCH_FF     = bind_add_param('PITCH_FF', 4, 15.0) --degrees
+SPEED_P      = bind_add_param('SPEED_P', 5, 2.0)
+SPEED_I      = bind_add_param('SPEED_I', 6, 2.0)
+
+
 local TRIM_THROTTLE = bind_param("TRIM_THROTTLE")
 local TRIM_ARSPD_CM = bind_param("TRIM_ARSPD_CM")
 
@@ -197,8 +212,8 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
    return self
 end
 
-local height_PI = height_controller(SCR_USER1, SCR_USER2, SCR_USER4, 20.0)
-local speed_PI = PI_controller(SCR_USER5:get(), SCR_USER6:get(), 100.0)
+local height_PI = height_controller(HEIGHT_P, HEIGHT_I, PITCH_FF, 20.0)
+local speed_PI = PI_controller(SPEED_P:get(), SPEED_I:get(), 100.0)
 
 -- a controller to target a zero pitch angle and zero heading change, used in a roll
 -- output is a body frame pitch rate, with convergence over time tconst in seconds
@@ -219,7 +234,7 @@ end
 -- a controller for throttle to account for pitch
 function throttle_controller(tconst)
    local pitch_rad = ahrs:get_pitch()
-   local thr_ff = SCR_USER3:get()
+   local thr_ff = THR_FF:get()
    local throttle = TRIM_THROTTLE:get() + math.sin(pitch_rad) * thr_ff
    return constrain(throttle, 0.0, 100.0)
 end
@@ -303,8 +318,8 @@ function do_rolling_circle(arg1, arg2)
       rolling_circle_last_ms = millis()
       height_PI.reset()
 
-      speed_PI.set_P(SCR_USER5:get())
-      speed_PI.set_I(SCR_USER6:get())
+      speed_PI.set_P(SPEED_P:get())
+      speed_PI.set_I(SPEED_I:get())
       speed_PI.reset(math.max(SRV_Channels:get_output_scaled(k_throttle), TRIM_THROTTLE:get()))
       gcs:send_text(0, string.format("Starting rolling circle"))
    end
@@ -466,8 +481,8 @@ function do_path(path, arg1, arg2)
 
       height_PI.reset()
 
-      speed_PI.set_P(SCR_USER5:get())
-      speed_PI.set_I(SCR_USER6:get())
+      speed_PI.set_P(SPEED_P:get())
+      speed_PI.set_I(SPEED_I:get())
       speed_PI.reset(math.max(SRV_Channels:get_output_scaled(k_throttle), TRIM_THROTTLE:get()))
    end
 
