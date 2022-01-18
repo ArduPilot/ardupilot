@@ -1226,7 +1226,7 @@ private:
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
     uint32_t rngValidMeaTime_ms;            // time stamp from latest valid range measurement (msec)
     uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
-    bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+    bool terrainHgtStable;                  // flag set by external caller to true when the terrain height is stable enough to be used as a height reference
 
     // body frame odometry fusion
 #if EK3_FEATURE_BODY_ODOM
