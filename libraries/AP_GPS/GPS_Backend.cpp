@@ -227,7 +227,8 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
 {
     if (port) {
-        state.uart_timestamp_ms = port->receive_time_constraint_us(nbytes) / 1000U;
+        state.last_corrected_gps_time_us = port->receive_time_constraint_us(nbytes);
+        state.corrected_timestamp_updated = true;
     }
 }
 
@@ -291,14 +292,14 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         // use msg arrival time, and correct for jitter
         uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
         state.last_corrected_gps_time_us = local_us;
-        state.uart_timestamp_ms = local_us / 1000U;
+        state.corrected_timestamp_updated = true;
 
         // look for lagged data from the GPS. This is meant to detect
         // the case that the GPS is trying to push more data into the
         // UART than can fit (eg. with GPS_RAW_DATA at 115200).
         float expected_lag;
         if (gps.get_lag(state.instance, expected_lag)) {
-            float lag_s = (now - state.uart_timestamp_ms) * 0.001;
+            float lag_s = (now - (state.last_corrected_gps_time_us/1000U)) * 0.001;
             if (lag_s > expected_lag+0.05) {
                 // more than 50ms over expected lag, increment lag counter
                 state.lagged_sample_count++;
