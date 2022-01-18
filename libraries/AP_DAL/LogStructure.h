@@ -167,6 +167,7 @@ struct log_RRNH {
 // @LoggerMessage: RRNI
 // @Description: Replay Data Rangefinder Instance
 struct log_RRNI {
+    uint32_t last_reading_ms;
     Vector3f pos_offset;
     uint16_t distance_cm;
     uint8_t orientation;
@@ -395,7 +396,7 @@ struct log_RBOH {
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
       "RRNH", "hhB", "GCl,MaxD,NumSensors", "???", "???" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \
-      "RRNI", "fffHBBB", "PX,PY,PZ,Dist,Orient,Status,I", "------#", "-------" }, \
+      "RRNI", "IfffHBBB", "LastReadingMS,PX,PY,PZ,Dist,Orient,Status,I", "-------#", "--------" }, \
     { LOG_RGPH_MSG, RLOG_SIZE(RGPH),                                   \
       "RGPH", "BB", "NumInst,Primary", "--", "--" },  \
     { LOG_RGPI_MSG, RLOG_SIZE(RGPI),                                   \
