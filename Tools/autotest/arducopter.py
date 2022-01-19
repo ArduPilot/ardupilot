@@ -2997,8 +2997,12 @@ class AutoTestCopter(AutoTest):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(num_wp-1, num_wp-1)
+        self.wait_waypoint(1, num_wp-1)
+        #self.wait_waypoint(12, 12, timeout=5000)
         self.wait_disarmed()
+
+    def auto_fly(self):
+        self.fly_mission('modified_copter.txt', strict=False)
 
     def test_surface_tracking(self):
         ex = None
@@ -8164,6 +8168,10 @@ class AutoTestCopter(AutoTest):
             ("LogUpload",
              "Log upload",
              self.log_upload),
+
+            ("Autofly",
+             "Automatically fly mission called mission.txt",
+             self.auto_fly),
         ])
         return ret
 
