@@ -7,13 +7,14 @@ Provide structured data understood by the CustomBuild server app.py
 
 class Feature:
     '''defines a feature which can be built into the firmware, along with its dependencies'''
-    def __init__(self, category, label, define, description, default, dependency):
+    def __init__(self, category, label, define, description, default, dependency, is_env_not_define=False):
         self.category = category
         self.label = label
         self.define = define
         self.description = description
         self.default = default
         self.dependency = dependency
+        self.is_env_not_define = is_env_not_define
 
 # list of build options to offer
 # NOTE: the dependencies must be written as a single string with commas and no spaces, eg. 'dependency1,dependency2'
@@ -114,6 +115,7 @@ BUILD_OPTIONS = [
     Feature('Other', 'DISPLAY', 'HAL_DISPLAY_ENABLED', 'Enable I2C Displays', 0, None),
     Feature('Other', 'NMEA_OUTPUT', 'HAL_NMEA_OUTPUT_ENABLED', 'Enable NMEA Output', 0, None),
     Feature('Other', 'BARO_WIND_COMP', 'HAL_BARO_WIND_COMP_ENABLED', 'Enable Baro Wind Compensation', 0, None),
+    Feature('Other', 'SIMULATION', 'SIM_ENABLED', 'Enable Simulation', 0, None, True),
 
     Feature('GPS Drivers', 'SBP2', 'AP_GPS_SBP2_ENABLED', 'Enable SBP2 GPS', 0, 'SBP'),
     Feature('GPS Drivers', 'SBP', 'AP_GPS_SBP_ENABLED', 'Enable SBP GPS', 0, None),
