@@ -132,6 +132,11 @@ public:
 
     virtual void io_timer(void) {}
 
+    enum class Type : uint8_t {
+      FILESYSTEM = (1<<0),
+      MAVLINK    = (1<<1),
+      BLOCK      = (1<<2),
+    };
 protected:
 
     AP_Logger &_front;
