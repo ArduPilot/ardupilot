@@ -1765,6 +1765,11 @@ void AP_Periph_FW::can_battery_update(void)
 #endif
 }
 
+#ifndef HAL_PERIPH_ENABLE_OLD_FIX
+// save some bandwidth by default
+#define HAL_PERIPH_ENABLE_OLD_FIX 0
+#endif
+
 /*
   update CAN GPS
  */
@@ -1782,6 +1787,7 @@ void AP_Periph_FW::can_gps_update(void)
     }
     last_gps_update_ms = gps.last_message_time_ms();
 
+#if HAL_PERIPH_ENABLE_OLD_FIX
     {
         /*
           send Fix packet
@@ -1791,7 +1797,7 @@ void AP_Periph_FW::can_gps_update(void)
         const Vector3f &vel = gps.velocity();
 
         pkt.timestamp.usec = AP_HAL::native_micros64();
-        pkt.gnss_timestamp.usec = gps.time_epoch_usec();
+        pkt.gnss_timestamp.usec = gps.time_epoch_usec(0, false);
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
         } else {
@@ -1851,6 +1857,7 @@ void AP_Periph_FW::can_gps_update(void)
                         &buffer[0],
                         total_size);
     }
+#endif // HAL_PERIPH_ENABLE_OLD_FIX
 
     {
         /*
@@ -1861,7 +1868,7 @@ void AP_Periph_FW::can_gps_update(void)
         const Vector3f &vel = gps.velocity();
 
         pkt.timestamp.usec = AP_HAL::native_micros64();
-        pkt.gnss_timestamp.usec = gps.time_epoch_usec();
+        pkt.gnss_timestamp.usec = gps.time_epoch_usec(0, false);
         if (pkt.gnss_timestamp.usec == 0) {
             pkt.gnss_time_standard = UAVCAN_EQUIPMENT_GNSS_FIX_GNSS_TIME_STANDARD_NONE;
         } else {
