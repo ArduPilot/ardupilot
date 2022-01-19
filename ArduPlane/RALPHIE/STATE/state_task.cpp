@@ -3,12 +3,6 @@
 
 
 
-void LqtStateManager::executeUpdateStateTask() {
-	
-	
-}
-
-
 
 
 

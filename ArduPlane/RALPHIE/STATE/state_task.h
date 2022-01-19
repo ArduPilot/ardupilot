@@ -1,24 +1,18 @@
-#ifndef _RALPHIE_STATE_TASK_H_
-#define _RALPHIE_STATE_TASK_H_
 
 #include "../../Plane.h"
 
-class LqtStateManager {
+#define WARIO_TRAJECTORY_SIZE   (100)
 
-	
+typedef struct {
 
-public:
-	/* Execute the task */
-	void executeUpdateStateTask();
+    Vector3f position;
+    Vector3f velocity;
+    Vector3f angularVelocity;
 
-	/* Access to current aircraft state */
-	void currentState();
+    float roll;
+    float pitch;
+    float yaw;
 
-	/* Access to current desired state */
-	void desiredState();
+} aircraftState_t;
 
-};
-
-
-#endif /* RALPHIE_STATE_TASK_H_ */
 

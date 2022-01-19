@@ -52,9 +52,9 @@ SCHED_TASK_CLASS arguments:
  */
 const AP_Scheduler::Task Plane::scheduler_tasks[] = {
                            // Units:   Hz      us
-	SCHED_TASK(update_state, 		    1,     50,   3),
-	SCHED_TASK(update_trajectory,       1,     50,   3),
-	SCHED_TASK(lqt_controller, 		    1,     50,   3),
+	SCHED_TASK(update_state, 		    1,     50,   3),    /* TODO: determine correct scheduler parameters */
+	SCHED_TASK(update_trajectory,       1,     50,   3),    /* TODO: determine correct scheduler parameters */
+	SCHED_TASK(lqt_controller, 		    1,     50,   3),    /* TODO: determine correct scheduler parameters */
     SCHED_TASK(ahrs_update,           400,    400,   3),
     SCHED_TASK(read_radio,             50,    100,   6),
     SCHED_TASK(check_short_failsafe,   50,    100,   9),
@@ -155,22 +155,26 @@ constexpr int8_t Plane::_failsafe_priorities[6];
 
 void Plane::update_state() {
 
-	float roll = ahrs.get_roll();
-	float pitch = ahrs.get_pitch();
-	float yaw  = ahrs.get_yaw();
+	currentState.roll = ahrs.get_roll();
+	currentState.pitch = ahrs.get_pitch();
+	currentState.yaw  = ahrs.get_yaw();
 
 	Vector3f omega = ahrs.get_gyro();
+    memcpy(&currentState.angularVelocity, &omega, sizeof(Vector3f));
 	
 	Vector3f velocity;
 	ahrs.get_velocity_NED(velocity);
+    memcpy(&currentState.velocity, &velocity, sizeof(Vector3f));
 
 	Vector3f position;
 	ahrs.get_relative_position_NED_origin(position);
+    memcpy(&currentState.position, &position, sizeof(Vector3f));
 
-	printf("Position: %.3f, %.3f, %.3f\n", position.x, position.y, position.z);
-	printf("Velocity: %.3f, %.3f, %.3f\n", velocity.x, velocity.y, velocity.z);
-	printf("Angles:   %.3f, %.3f, %.3f\n", roll*3.14/180, pitch*3.14/180, yaw*3.14/180);
-	printf("Omega:    %.3f, %.3f, %.3f\n\n", omega.x, omega.y, omega.z);
+
+	printf("Position: %.3f, %.3f, %.3f\n", currentState.position.x, currentState.position.y, currentState.position.z);
+	printf("Velocity: %.3f, %.3f, %.3f\n", currentState.velocity.x, currentState.velocity.y, currentState.velocity.z);
+	printf("Angles:   %.3f, %.3f, %.3f\n", currentState.roll*180/3.14, currentState.pitch*180/3.14, currentState.yaw*180/3.14);
+	printf("Omega:    %.3f, %.3f, %.3f\n\n", currentState.angularVelocity.x, currentState.angularVelocity.y, currentState.angularVelocity.z);
 }
 
 void Plane::update_trajectory() {

@@ -117,6 +117,7 @@
 
 
 #include "../../ArduPlane/RALPHIE/STATE/state_task.h"
+#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
 /*
   main APM:Plane class
  */
@@ -989,8 +990,10 @@ private:
 #endif
 
     // ArduPlane.cpp
-	
+
 	void update_state();
+    aircraftState_t currentState;
+
 	void update_trajectory();
 	void lqt_controller();
 
