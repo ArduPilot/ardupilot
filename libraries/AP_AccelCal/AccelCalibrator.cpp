@@ -392,13 +392,6 @@ float AccelCalibrator::calc_residual(const Vector3f& sample, const struct param_
 }
 
 // calculated the total mean squared fitness of all the collected samples using parameters
-// converged to LSq estimator so far
-float AccelCalibrator::calc_mean_squared_residuals() const
-{
-    return calc_mean_squared_residuals(_param.s);
-}
-
-// calculated the total mean squared fitness of all the collected samples using parameters
 // supplied
 float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params) const
 {
