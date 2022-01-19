@@ -740,7 +740,7 @@ void AC_PosControl::init_z_controller()
 {
     _pos_target.z = _inav.get_position_z_up_cm();
 
-    const float &curr_vel_z = _inav.get_velocity_z_up_cms();
+    const float curr_vel_z = constrain_float(_inav.get_velocity_z_up_cms(), _vel_max_down_cms, _vel_max_up_cms);
     _vel_desired.z = curr_vel_z;
     // with zero position error _vel_target = _vel_desired
     _vel_target.z = curr_vel_z;
