@@ -7,7 +7,7 @@ void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
     const AP_AHRS &ahrs = AP::ahrs();
 
     Location current_loc;
-    if (!ahrs.get_position(current_loc)) {
+    if (!ahrs.get_location(current_loc)) {
         // completely ignore this failure!  AHRS will provide its best guess.
     }
 
