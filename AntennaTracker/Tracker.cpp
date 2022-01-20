@@ -96,7 +96,7 @@ void Tracker::one_second_loop()
     if (!ahrs.home_is_set()) {
         // set home to current location
         Location temp_loc;
-        if (ahrs.get_position(temp_loc)) {
+        if (ahrs.get_location(temp_loc)) {
             if (!set_home(temp_loc)){
                 // fail silently
             }
