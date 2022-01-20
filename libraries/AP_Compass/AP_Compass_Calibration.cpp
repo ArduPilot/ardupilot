@@ -489,7 +489,7 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     if (is_zero(lat_deg) && is_zero(lon_deg)) {
         Location loc;
         // get AHRS position. If unavailable then try GPS location
-        if (!AP::ahrs().get_position(loc)) {
+        if (!AP::ahrs().get_location(loc)) {
             if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
                 gcs().send_text(MAV_SEVERITY_ERROR, "Mag: no position available");
                 return MAV_RESULT_FAILED;
