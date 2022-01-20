@@ -196,7 +196,7 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point) co
 bool AC_PolyFence_loader::breached() const
 {
     struct Location loc;
-    if (!AP::ahrs().get_position(loc)) {
+    if (!AP::ahrs().get_location(loc)) {
         return false;
     }
 
