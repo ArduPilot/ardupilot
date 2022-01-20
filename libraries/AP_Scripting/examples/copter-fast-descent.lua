@@ -66,7 +66,7 @@ function update()
 
   if (stage == 0) then            -- Stage0: initialise
     local home = ahrs:get_home()
-    local curr_loc = ahrs:get_position()
+    local curr_loc = ahrs:get_location()
     if home and curr_loc then
       circle_center_pos = ahrs:get_relative_position_NED_origin()
       circle_radius_rate_ms = 0   -- reset circle radius expandion rate to zero

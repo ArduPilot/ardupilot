@@ -32,7 +32,7 @@ An example script is given below:
 
 ```lua
 function update () -- periodic function that will be called
-  current_pos = ahrs:get_position()
+  current_pos = ahrs:get_location()
   home = ahrs:get_home()
   if current_pos and home then
     distance = current_pos:get_distance(ahrs:get_home()) -- calculate the distance from home

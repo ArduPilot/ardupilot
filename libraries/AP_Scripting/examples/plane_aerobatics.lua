@@ -161,7 +161,7 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
    local PI = PI_controller(kP:get(), kI:get(), Imax)
 
    function self.update(target)
-      local target_pitch = PI.update(initial_height, ahrs:get_position():alt()*0.01)
+      local target_pitch = PI.update(initial_height, ahrs:get_location():alt()*0.01)
       local roll_rad = ahrs:get_roll()
       local ke_add = math.abs(math.sin(roll_rad)) * KnifeEdge:get()
       target_pitch = target_pitch + ke_add
@@ -371,7 +371,7 @@ function update()
          running = false
          last_id = id
          initial_yaw_deg = math.deg(ahrs:get_yaw())
-         initial_height = ahrs:get_position():alt()*0.01
+         initial_height = ahrs:get_location():alt()*0.01
 
          -- work out yaw between previous WP and next WP
          local cnum = mission:get_current_nav_index()
