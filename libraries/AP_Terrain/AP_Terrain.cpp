@@ -193,7 +193,7 @@ bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool 
     }
 
     Location loc;
-    if (!ahrs.get_position(loc)) {
+    if (!ahrs.get_location(loc)) {
         // we don't know where we are
         return false;
     }
@@ -279,7 +279,7 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
     }
 
     Location loc;
-    if (!AP::ahrs().get_position(loc)) {
+    if (!AP::ahrs().get_location(loc)) {
         // we don't know where we are
         return 0;
     }
@@ -329,7 +329,7 @@ void AP_Terrain::update(void)
 
     // update the cached current location height
     Location loc;
-    bool pos_valid = ahrs.get_position(loc);
+    bool pos_valid = ahrs.get_location(loc);
     bool terrain_valid = pos_valid && height_amsl(loc, height, false);
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
@@ -365,7 +365,7 @@ void AP_Terrain::log_terrain_data()
         return;
     }
     Location loc;
-    if (!AP::ahrs().get_position(loc)) {
+    if (!AP::ahrs().get_location(loc)) {
         // we don't know where we are
         return;
     }
