@@ -610,7 +610,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_home(void)
     {
         AP_AHRS &_ahrs = AP::ahrs();
         WITH_SEMAPHORE(_ahrs.get_semaphore());
-        got_position = _ahrs.get_position(loc);
+        got_position = _ahrs.get_location(loc);
         home_loc = _ahrs.get_home();
     }
 
