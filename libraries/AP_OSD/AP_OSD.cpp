@@ -370,7 +370,7 @@ void AP_OSD::update_stats()
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
         v = ahrs.groundspeed_vector();
-        home_is_set = ahrs.get_position(loc) && ahrs.home_is_set();
+        home_is_set = ahrs.get_location(loc) && ahrs.home_is_set();
         if (home_is_set) {
             home_loc = ahrs.get_home();
         }

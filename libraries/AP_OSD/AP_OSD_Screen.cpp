@@ -1559,7 +1559,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
     Location loc;
-    if (ahrs.get_position(loc) && ahrs.home_is_set()) {
+    if (ahrs.get_location(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
         float distance = home_loc.get_distance(loc);
         int32_t angle = wrap_360_cd(loc.get_bearing_to(home_loc) - ahrs.yaw_sensor);
