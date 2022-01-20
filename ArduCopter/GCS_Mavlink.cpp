@@ -195,6 +195,16 @@ void GCS_MAVLINK_Copter::send_nav_controller_output() const
 
 float GCS_MAVLINK_Copter::vfr_hud_airspeed() const
 {
+#if AP_AIRSPEED_ENABLED
+    // airspeed sensors are best. While the AHRS airspeed_estimate
+    // will use an airspeed sensor, that value is constrained by the
+    // ground speed. When reporting we should send the true airspeed
+    // value if possible:
+    if (copter.airspeed.enabled() && copter.airspeed.healthy()) {
+        return copter.airspeed.get_airspeed();
+    }
+#endif
+    
     Vector3f airspeed_vec_bf;
     if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
         // we are running the EKF3 wind estimation code which can give
@@ -1093,9 +1103,30 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             break;
         }
 
-        // ensure type_mask specifies to use attitude and thrust
-        if ((packet.type_mask & ((1<<7)|(1<<6))) != 0) {
+        const bool roll_rate_ignore   = packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE;
+        const bool pitch_rate_ignore  = packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE;
+        const bool yaw_rate_ignore    = packet.type_mask & ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE;
+        const bool throttle_ignore    = packet.type_mask & ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE;
+        const bool attitude_ignore    = packet.type_mask & ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE;
+
+        // ensure thrust field is not ignored
+        if (throttle_ignore) {
             break;
+        }
+
+        Quaternion attitude_quat;
+        if (attitude_ignore) {
+            attitude_quat.zero();
+        } else {
+            attitude_quat = Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]);
+
+            // Do not accept the attitude_quaternion
+            // if its magnitude is not close to unit length +/- 1E-3
+            // this limit is somewhat greater than sqrt(FLT_EPSL)
+            if (!attitude_quat.is_unit_length()) {
+                // The attitude quaternion is ill-defined
+                break;
+            }
         }
 
         // check if the message's thrust field should be interpreted as a climb rate or as thrust
@@ -1119,15 +1150,19 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             }
         }
 
-        // if the body_yaw_rate field is ignored, use the commanded yaw position
-        // otherwise use the commanded yaw rate
-        bool use_yaw_rate = false;
-        if ((packet.type_mask & (1<<2)) == 0) {
-            use_yaw_rate = true;
+        Vector3f ang_vel;
+        if (!roll_rate_ignore) {
+            ang_vel.x = packet.body_roll_rate;
+        }
+        if (!pitch_rate_ignore) {
+            ang_vel.y = packet.body_pitch_rate;
+        }
+        if (!yaw_rate_ignore) {
+            ang_vel.z = packet.body_yaw_rate;
         }
 
-        copter.mode_guided.set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]),
-                climb_rate_or_thrust, use_yaw_rate, packet.body_yaw_rate, use_thrust);
+        copter.mode_guided.set_angle(attitude_quat, ang_vel,
+                climb_rate_or_thrust, use_thrust);
 
         break;
     }

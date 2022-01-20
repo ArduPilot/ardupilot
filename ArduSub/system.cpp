@@ -85,6 +85,10 @@ void Sub::init_ardupilot()
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
 
+#if AP_AIRSPEED_ENABLED
+    airspeed.set_log_bit(MASK_LOG_IMU);
+#endif
+
 #if AP_OPTICALFLOW_ENABLED
     // initialise optical flow sensor
     optflow.init(MASK_LOG_OPTFLOW);
@@ -154,8 +158,6 @@ void Sub::init_ardupilot()
 #if AP_SCRIPTING_ENABLED
     g2.scripting.init();
 #endif // AP_SCRIPTING_ENABLED
-
-    g2.airspeed.init();
 
     // we don't want writes to the serial port to cause us to pause
     // mid-flight, so set the serial ports non-blocking once we are

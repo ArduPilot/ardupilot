@@ -577,7 +577,6 @@ private:
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
     void log_init(void);
-    void read_airspeed();
 
     void failsafe_leak_check();
     void failsafe_internal_pressure_check();

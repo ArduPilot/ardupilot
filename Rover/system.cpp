@@ -42,8 +42,6 @@ void Rover::init_ardupilot()
 
     rssi.init();
 
-    g2.airspeed.init();
-
     g2.windvane.init(serial_manager);
 
     // init baro before we start the GCS, so that the CLI baro test works
@@ -67,6 +65,10 @@ void Rover::init_ardupilot()
     // initialise compass
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
+
+#if AP_AIRSPEED_ENABLED
+    airspeed.set_log_bit(MASK_LOG_IMU);
+#endif
 
     // initialise rangefinder
     rangefinder.set_log_rfnd_bit(MASK_LOG_RANGEFINDER);
