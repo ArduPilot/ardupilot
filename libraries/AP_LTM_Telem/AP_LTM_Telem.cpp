@@ -74,7 +74,7 @@ void AP_LTM_Telem::send_Gframe(void)
         ahrs.get_relative_position_D_home(alt_ahrs);
         alt = (int32_t) roundf(-alt_ahrs * 100.0); // altitude (cm)
         Location loc;
-        if (ahrs.get_position(loc)) {
+        if (ahrs.get_location(loc)) {
             lat = loc.lat;
             lon = loc.lng;
             gndspeed = (uint8_t) roundf(gps.ground_speed());
