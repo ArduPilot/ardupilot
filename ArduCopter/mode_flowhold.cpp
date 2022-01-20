@@ -233,9 +233,6 @@ void ModeFlowHold::run()
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
         flow_filter.set_cutoff_frequency(flow_filter_hz.get());
@@ -312,8 +309,11 @@ void ModeFlowHold::run()
     Vector2f bf_angles;
 
     // calculate alt-hold angles
-    int16_t roll_in = copter.channel_roll->get_control_in();
-    int16_t pitch_in = copter.channel_pitch->get_control_in();
+    float roll_in = copter.channel_roll->get_control_in();
+    float pitch_in = copter.channel_pitch->get_control_in();
+
+    apply_simple_mode(roll_in, pitch_in);
+
     float angle_max = copter.aparm.angle_max;
     get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y, angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
@@ -322,7 +322,7 @@ void ModeFlowHold::run()
         // don't use for first 3s when we are just taking off
         Vector2f flow_angles;
 
-        flowhold_flow_to_angle(flow_angles, (roll_in != 0) || (pitch_in != 0));
+        flowhold_flow_to_angle(flow_angles, !is_zero(roll_in) || !is_zero(pitch_in));
         flow_angles.x = constrain_float(flow_angles.x, -angle_max/2, angle_max/2);
         flow_angles.y = constrain_float(flow_angles.y, -angle_max/2, angle_max/2);
         bf_angles += flow_angles;

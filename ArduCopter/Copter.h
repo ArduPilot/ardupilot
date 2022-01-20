@@ -339,7 +339,7 @@ private:
             uint8_t auto_armed              : 1; // 5       // stops auto missions from beginning until throttle is raised
             uint8_t logging_started         : 1; // 6       // true if logging has started
             uint8_t land_complete           : 1; // 7       // true if we have detected a landing
-            uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
+            uint8_t new_radio_frame         : 1; // 8       // UNUSED
             uint8_t usb_connected_unused    : 1; // 9       // UNUSED
             uint8_t rc_receiver_present     : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
             uint8_t compass_mot             : 1; // 11      // true if we are currently performing compassmot calibration
@@ -659,7 +659,6 @@ private:
     void three_hz_loop();
     void one_hz_loop();
     void init_simple_bearing();
-    void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();

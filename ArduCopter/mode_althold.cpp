@@ -28,9 +28,6 @@ void ModeAltHold::run()
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // get pilot desired lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());

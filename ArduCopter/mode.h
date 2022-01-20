@@ -66,6 +66,7 @@ public:
     virtual bool allows_save_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
+    virtual bool allows_simple() const { return false; }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
@@ -263,12 +264,14 @@ public:
     };
     static AutoYaw auto_yaw;
 
+    // apply simple/supper-simple transform to roll and pitch
+    void apply_simple_mode(float& roll, float& pitch) const;
+
     // pass-through functions to reduce code churn on conversion;
     // these are candidates for moving into the Mode base
     // class.
     float get_pilot_desired_climb_rate(float throttle_control);
     float get_non_takeoff_throttle(void);
-    void update_simple_mode(void);
     bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();
@@ -362,6 +365,7 @@ public:
     }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_simple() const override { return true; }
 
 protected:
 
@@ -618,6 +622,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return false; }
+    bool allows_simple() const override { return true; }
 
     void save_tuning_gains();
     void reset();
@@ -787,6 +792,7 @@ public:
         return !must_navigate;
     }
     bool allows_flip() const override { return true; }
+    bool allows_simple() const override { return true; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -1013,6 +1019,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
+    bool allows_simple() const override { return true; }
 
     bool is_landing() const override { return true; };
 
@@ -1056,6 +1063,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_simple() const override { return true; }
 
 #if PRECISION_LANDING == ENABLED
     void set_precision_loiter_enabled(bool value) { _precision_loiter_enabled = value; }
@@ -1100,6 +1108,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool has_user_takeoff(bool must_navigate) const override { return true; }
     bool allows_autotune() const override { return true; }
+    bool allows_simple() const override { return true; }
 
 protected:
 
@@ -1185,6 +1194,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
+    bool allows_simple() const override { return true; }
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -1351,6 +1361,7 @@ public:
     bool has_user_takeoff(bool must_navigate) const override {
         return !must_navigate;
     }
+    bool allows_simple() const override { return true; }
 
 protected:
 
@@ -1378,6 +1389,7 @@ public:
     bool allows_save_trim() const override { return true; }
     bool allows_autotune() const override { return true; }
     bool allows_flip() const override { return true; }
+    bool allows_simple() const override { return true; }
 
 protected:
 
@@ -1419,6 +1431,7 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool logs_attitude() const override { return true; }
+    bool allows_simple() const override { return true; }
 
     void set_magnitude(float input) { waveform_magnitude = input; }
 
@@ -1650,6 +1663,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; }
     bool is_autopilot() const override { return true; }
+    bool allows_simple() const override { return true; }
 
     // save current position as A or B.  If both A and B have been saved move to the one specified
     void save_or_move_to_destination(Destination ab_dest);

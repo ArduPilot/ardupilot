@@ -68,9 +68,6 @@ ModeZigZag::ModeZigZag(void) : Mode()
 bool ModeZigZag::init(bool ignore_checks)
 {
     if (!copter.failsafe.radio) {
-        // apply simple mode transform to pilot inputs
-        update_simple_mode();
-
         // convert pilot input to lean angles
         float target_roll, target_pitch;
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
@@ -294,9 +291,6 @@ void ModeZigZag::manual_control()
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
         float target_roll, target_pitch;
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
-
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 

@@ -75,9 +75,6 @@ void ModePosHold::run()
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     loiter_nav->clear_pilot_desired_acceleration();
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     float target_roll, target_pitch;
     get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd());

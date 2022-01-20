@@ -409,6 +409,8 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, floa
     roll_out = channel_roll->get_control_in();
     pitch_out = channel_pitch->get_control_in();
 
+    apply_simple_mode(roll_out, pitch_out);
+
     // limit max lean angle
     angle_limit = constrain_float(angle_limit, 1000.0f, angle_max);
 
@@ -619,9 +621,6 @@ void Mode::land_run_horizontal_control()
         }
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // convert pilot input to lean angles
             get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
@@ -940,8 +939,29 @@ float Mode::get_non_takeoff_throttle()
     return copter.get_non_takeoff_throttle();
 }
 
-void Mode::update_simple_mode(void) {
-    copter.update_simple_mode();
+// apply_simple_mode - rotates pilot input if we are in simple mode
+void Mode::apply_simple_mode(float& roll, float& pitch) const
+{
+    // exit immediately if not in simple mode
+    if (!allows_simple() || copter.simple_mode == Copter::SimpleMode::NONE) {
+        return;
+    }
+
+    float rollx, pitchx;
+
+    if (copter.simple_mode == Copter::SimpleMode::SIMPLE) {
+        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
+        rollx =  roll*copter.simple_cos_yaw - pitch*copter.simple_sin_yaw;
+        pitchx = roll*copter.simple_sin_yaw + pitch*copter.simple_cos_yaw;
+    } else {
+        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
+        rollx  = roll*copter.super_simple_cos_yaw - pitch*copter.super_simple_sin_yaw;
+        pitchx = roll*copter.super_simple_sin_yaw + pitch*copter.super_simple_cos_yaw;
+    }
+
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    roll  =  rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw();
+    pitch = -rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw();
 }
 
 bool Mode::set_mode(Mode::Number mode, ModeReason reason)

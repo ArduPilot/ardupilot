@@ -28,14 +28,13 @@ void ModeSport::run()
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
-    // apply SIMPLE mode transform
-    update_simple_mode();
-
     // get pilot's desired roll and pitch rates
 
     // calculate rate requests
     float target_roll_rate = channel_roll->get_control_in() * g2.acro_rp_rate * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
     float target_pitch_rate = channel_pitch->get_control_in() * g2.acro_rp_rate * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
+
+    apply_simple_mode(target_roll_rate, target_pitch_rate);
 
     // get attitude targets
     const Vector3f att_target = attitude_control->get_att_target_euler_cd();

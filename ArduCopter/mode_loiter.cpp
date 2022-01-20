@@ -11,8 +11,6 @@ bool ModeLoiter::init(bool ignore_checks)
 {
     if (!copter.failsafe.radio) {
         float target_roll, target_pitch;
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
@@ -84,9 +82,6 @@ void ModeLoiter::run()
 
     // process pilot inputs unless we are in radio failsafe
     if (!copter.failsafe.radio) {
-        // apply SIMPLE mode transform to pilot inputs
-        update_simple_mode();
-
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
 
