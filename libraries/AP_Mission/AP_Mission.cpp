@@ -2027,7 +2027,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
 {
     struct Location current_loc;
 
-    if (!AP::ahrs().get_position(current_loc)) {
+    if (!AP::ahrs().get_location(current_loc)) {
         return 0;
     }
 
@@ -2086,7 +2086,7 @@ bool AP_Mission::jump_to_abort_landing_sequence(void)
     struct Location current_loc;
 
     uint16_t abort_index = 0;
-    if (AP::ahrs().get_position(current_loc)) {
+    if (AP::ahrs().get_location(current_loc)) {
         float min_distance = FLT_MAX;
 
         for (uint16_t i = 1; i < num_commands(); i++) {
@@ -2153,7 +2153,7 @@ bool AP_Mission::is_best_land_sequence(void)
 
     // get our current location
     Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
+    if (!AP::ahrs().get_location(current_loc)) {
         // we don't know where we are!!
         return false;
     }
@@ -2397,7 +2397,7 @@ void AP_Mission::reset_wp_history(void)
 // store the latest reported position incase of mission exit and rewind resume
 void AP_Mission::update_exit_position(void)
 {
-    if (!AP::ahrs().get_position(_exit_position)) {
+    if (!AP::ahrs().get_location(_exit_position)) {
         _exit_position.lat = 0;
         _exit_position.lng = 0;
     }
