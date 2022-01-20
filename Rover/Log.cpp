@@ -45,7 +45,7 @@ void Rover::Log_Write_Depth()
 
     // get position
     Location loc;
-    IGNORE_RETURN(ahrs.get_position(loc));
+    IGNORE_RETURN(ahrs.get_location(loc));
 
     for (uint8_t i=0; i<rangefinder.num_sensors(); i++) {
         const AP_RangeFinder_Backend *s = rangefinder.get_backend(i);

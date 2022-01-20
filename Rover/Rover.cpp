@@ -263,7 +263,7 @@ void Rover::ahrs_update()
     ahrs.update();
 
     // update position
-    have_position = ahrs.get_position(current_loc);
+    have_position = ahrs.get_location(current_loc);
 
     // set home from EKF if necessary and possible
     if (!ahrs.home_is_set()) {
