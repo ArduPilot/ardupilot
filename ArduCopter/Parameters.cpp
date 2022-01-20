@@ -899,9 +899,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: PILOT_SPEED_DN
     // @DisplayName: Pilot maximum vertical speed descending
-    // @Description: The maximum vertical descending velocity the pilot may request in cm/s
+    // @Description: The maximum vertical descending velocity the pilot may request in cm/s.  If 0 PILOT_SPEED_UP value is used.
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 0 500
     // @Increment: 10
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn, 0),
