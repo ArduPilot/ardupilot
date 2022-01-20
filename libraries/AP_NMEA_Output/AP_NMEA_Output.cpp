@@ -95,9 +95,9 @@ void AP_NMEA_Output::update()
 
     auto &ahrs = AP::ahrs();
 
-    // get location (note: get_position from AHRS always returns true after having GPS position once)
+    // get location (note: get_location from AHRS always returns true after having GPS position once)
     Location loc;
-    bool pos_valid = ahrs.get_position(loc);
+    bool pos_valid = ahrs.get_location(loc);
 
     // format latitude
     char lat_string[13];
