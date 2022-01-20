@@ -77,7 +77,7 @@ void AP_Frsky_Backend::calc_nav_alt(void)
 
     AP_AHRS &_ahrs = AP::ahrs();
     WITH_SEMAPHORE(_ahrs.get_semaphore());
-    if (_ahrs.get_position(loc)) {
+    if (_ahrs.get_location(loc)) {
         current_height = loc.alt*0.01f;
         if (!loc.relative_alt) {
             // loc.alt has home altitude added, remove it
@@ -109,7 +109,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
 
     Location loc;
 
-    if (_ahrs.get_position(loc)) {
+    if (_ahrs.get_location(loc)) {
         float lat = format_gps(fabsf(loc.lat/10000000.0f));
         _SPort_data.latdddmm = lat;
         _SPort_data.latmmmm = (lat - _SPort_data.latdddmm) * 10000;
