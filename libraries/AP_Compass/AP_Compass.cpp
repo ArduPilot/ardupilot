@@ -1718,7 +1718,7 @@ void Compass::try_set_initial_location()
     }
 
     Location loc;
-    if (!AP::ahrs().get_position(loc)) {
+    if (!AP::ahrs().get_location(loc)) {
         return;
     }
     _initial_location_set = true;
