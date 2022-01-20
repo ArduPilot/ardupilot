@@ -2542,7 +2542,7 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
-            plane.ahrs.get_position(plane.current_loc);
+            plane.ahrs.get_location(plane.current_loc);
             int32_t target_altitude_cm;
             if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME,target_altitude_cm)) {
                 break;
