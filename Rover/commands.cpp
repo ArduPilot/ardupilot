@@ -4,7 +4,7 @@
 bool Rover::set_home_to_current_location(bool lock)
 {
     Location temp_loc;
-    if (ahrs.have_inertial_nav() && ahrs.get_position(temp_loc)) {
+    if (ahrs.have_inertial_nav() && ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
             return false;
         }
@@ -64,7 +64,7 @@ void Rover::update_home()
     }
 
     Location loc{};
-    if (!ahrs.get_position(loc)) {
+    if (!ahrs.get_location(loc)) {
         return;
     }
 
