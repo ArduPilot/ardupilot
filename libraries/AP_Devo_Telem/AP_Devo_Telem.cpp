@@ -96,7 +96,7 @@ void AP_DEVO_Telem::send_frames()
     const AP_GPS &gps = AP::gps();
     Location loc;
 
-    if (_ahrs.get_position(loc)) {
+    if (_ahrs.get_location(loc)) {
         devoPacket.lat = gpsDdToDmsFormat(loc.lat);
         devoPacket.lon = gpsDdToDmsFormat(loc.lng);
         devoPacket.speed = (int16_t)(gps.ground_speed() * DEVO_SPEED_FACTOR * 100.0f);  // * 100 for cm
