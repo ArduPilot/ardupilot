@@ -322,7 +322,7 @@ void AP_ADSB::update(void)
 
     const uint32_t now = AP_HAL::millis();
 
-    if (!AP::ahrs().get_position(_my_loc)) {
+    if (!AP::ahrs().get_location(_my_loc)) {
         _my_loc.zero();
     }
 
