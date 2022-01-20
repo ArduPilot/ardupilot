@@ -1880,7 +1880,7 @@ function ahrs:get_home() end
 
 -- desc
 ---@return Location_ud|nil
-function ahrs:get_position() end
+function ahrs:get_location() end
 
 -- desc
 ---@return number
