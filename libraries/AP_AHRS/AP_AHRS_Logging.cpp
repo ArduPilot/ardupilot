@@ -80,7 +80,7 @@ void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
 void AP_AHRS::Write_POS() const
 {
     Location loc;
-    if (!get_position(loc)) {
+    if (!get_location(loc)) {
         return;
     }
     float home, origin;

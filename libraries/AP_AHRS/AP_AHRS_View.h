@@ -85,8 +85,8 @@ public:
       wrappers around ahrs functions which pass-thru directly. See
       AP_AHRS.h for description of each function
      */
-    bool get_position(struct Location &loc) const WARN_IF_UNUSED {
-        return ahrs.get_position(loc);
+    bool get_location(struct Location &loc) const WARN_IF_UNUSED {
+        return ahrs.get_location(loc);
     }
 
     Vector3f wind_estimate(void) {
