@@ -180,7 +180,7 @@ void AP_MSP_Telem_Backend::update_home_pos(home_state_t &home_state)
     WITH_SEMAPHORE(_ahrs.get_semaphore());
     Location loc;
     float alt;
-    if (_ahrs.get_position(loc) && _ahrs.home_is_set()) {
+    if (_ahrs.get_location(loc) && _ahrs.home_is_set()) {
         const Location &home_loc = _ahrs.get_home();
         home_state.home_distance_m = home_loc.get_distance(loc);
         home_state.home_bearing_cd = loc.get_bearing_to(home_loc);
