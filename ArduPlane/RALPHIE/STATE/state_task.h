@@ -1,7 +1,8 @@
+#pragma once
+
 
 #include "../../Plane.h"
 
-#define WARIO_TRAJECTORY_SIZE   (100)
 
 typedef struct {
 
