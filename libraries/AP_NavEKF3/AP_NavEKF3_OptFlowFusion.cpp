@@ -737,6 +737,28 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             }
         }
     }
+
+    // store optical flow rates for use in external calibration
+    flowCalSample.timestamp_ms = imuSampleTime_ms;
+    flowCalSample.flowRate.x = ofDataDelayed.flowRadXY.x;
+    flowCalSample.flowRate.y = ofDataDelayed.flowRadXY.y;
+    flowCalSample.bodyRate.x = ofDataDelayed.bodyRadXYZ.x;
+    flowCalSample.bodyRate.y = ofDataDelayed.bodyRadXYZ.y;
+    flowCalSample.losPred.x = losPred[0];
+    flowCalSample.losPred.y = losPred[1];
+}
+
+// retrieve latest corrected optical flow samples (used for calibration)
+bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
+{
+    if (flowCalSample.timestamp_ms != 0) {
+        timestamp_ms = flowCalSample.timestamp_ms;
+        flowRate = flowCalSample.flowRate;
+        bodyRate = flowCalSample.bodyRate;
+        losPred = flowCalSample.losPred;
+        return true;
+    }
+    return false;
 }
 
 /********************************************************
