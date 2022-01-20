@@ -541,7 +541,7 @@ bool AP_Arming::gps_checks(bool report)
         // check AHRS and GPS are within 10m of each other
         const Location gps_loc = gps.location();
         Location ahrs_loc;
-        if (AP::ahrs().get_position(ahrs_loc)) {
+        if (AP::ahrs().get_location(ahrs_loc)) {
             const float distance = gps_loc.get_distance(ahrs_loc);
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
@@ -757,7 +757,7 @@ bool AP_Arming::mission_checks(bool report)
         }
         if (_required_mission_items & MIS_ITEM_CHECK_RALLY) {
             Location ahrs_loc;
-            if (!AP::ahrs().get_position(ahrs_loc)) {
+            if (!AP::ahrs().get_location(ahrs_loc)) {
                 check_failed(ARMING_CHECK_MISSION, report, "Can't check rally without position");
                 return false;
             }
