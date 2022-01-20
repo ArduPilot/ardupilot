@@ -2765,7 +2765,7 @@ void GCS_MAVLINK::send_vfr_hud()
     AP_AHRS &ahrs = AP::ahrs();
 
     // return values ignored; we send stale data
-    UNUSED_RESULT(ahrs.get_position(global_position_current_loc));
+    UNUSED_RESULT(ahrs.get_location(global_position_current_loc));
 
     mavlink_msg_vfr_hud_send(
         chan,
@@ -4900,7 +4900,7 @@ void GCS_MAVLINK::send_global_position_int()
 {
     AP_AHRS &ahrs = AP::ahrs();
 
-    UNUSED_RESULT(ahrs.get_position(global_position_current_loc)); // return value ignored; we send stale data
+    UNUSED_RESULT(ahrs.get_location(global_position_current_loc)); // return value ignored; we send stale data
 
     Vector3f vel;
     if (!ahrs.get_velocity_NED(vel)) {
@@ -4997,7 +4997,7 @@ void GCS_MAVLINK::send_water_depth() const
     // get position
     const AP_AHRS &ahrs = AP::ahrs();
     Location loc;
-    IGNORE_RETURN(ahrs.get_position(loc));
+    IGNORE_RETURN(ahrs.get_location(loc));
 
     for (uint8_t i=0; i<rangefinder->num_sensors(); i++) {
         const AP_RangeFinder_Backend *s = rangefinder->get_backend(i);
@@ -5917,7 +5917,7 @@ void GCS_MAVLINK::send_high_latency2() const
 {
     AP_AHRS &ahrs = AP::ahrs();
     Location global_position_current;
-    UNUSED_RESULT(ahrs.get_position(global_position_current));
+    UNUSED_RESULT(ahrs.get_location(global_position_current));
 #if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
     const int8_t battery_remaining = battery_remaining_pct(AP_BATT_PRIMARY_INSTANCE);
 #endif
