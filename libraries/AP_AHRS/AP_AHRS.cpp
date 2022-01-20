@@ -718,11 +718,11 @@ void AP_AHRS::reset()
 }
 
 // dead-reckoning support
-bool AP_AHRS::get_position(struct Location &loc) const
+bool AP_AHRS::get_location(struct Location &loc) const
 {
     switch (active_EKF_type()) {
     case EKFType::NONE:
-        return dcm.get_position(loc);
+        return dcm.get_location(loc);
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -763,7 +763,7 @@ bool AP_AHRS::get_position(struct Location &loc) const
 
     // fall back to position from DCM
     if (!always_use_EKF()) {
-        return dcm.get_position(loc);
+        return dcm.get_location(loc);
     }
     return false;
 }
@@ -1170,7 +1170,7 @@ bool AP_AHRS::get_secondary_position(struct Location &loc) const
 
     case EKFType::NONE:
         // return DCM position
-        dcm.get_position(loc);
+        dcm.get_location(loc);
         return true;
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1539,7 +1539,7 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
             return false;
         }
         Location loc, orgn;
-        if (!get_position(loc) ||
+        if (!get_location(loc) ||
             !get_origin(orgn)) {
             return false;
         }
@@ -1613,7 +1613,7 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM: {
         Location loc, orgn;
-        if (!get_position(loc) ||
+        if (!get_location(loc) ||
             !get_origin(orgn)) {
             return false;
         }
@@ -1624,7 +1624,7 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL: {
         Location loc, orgn;
-        if (!get_position(loc) ||
+        if (!get_location(loc) ||
             !get_origin(orgn)) {
             return false;
         }
@@ -1698,7 +1698,7 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
     case EKFType::EXTERNAL: {
         Location orgn, loc;
         if (!get_origin(orgn) ||
-            !get_position(loc)) {
+            !get_location(loc)) {
             return false;
         }
         posD = -(loc.alt - orgn.alt)*0.01;
