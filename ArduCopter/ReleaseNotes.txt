@@ -345,7 +345,7 @@ Changes from 4.1.0-beta6
     e) Guided mode terrain following init fix (might fly at incorrect alt on second use)
     f) Guided mode yaw rate target timeout fix (vehicle could keep spinning even after targets stopped arriving)
     g) OSD overwrite and nullptr check fix
-    h) Proximity Avoidance auxilary switch also disables avoidance using upward facing lidar
+    h) Proximity Avoidance auxiliary switch also disables avoidance using upward facing lidar
     i) Proximity sensor pre-arm check disabled if avoidance using proximity sensors is disabled 
     j) RCOut banner displayed at very end of startup procedure to avoid invalid output
     k) Tricopter tail servo alway uses regular PWM (fixes use with BLHeli motors)
