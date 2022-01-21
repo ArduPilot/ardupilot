@@ -394,7 +394,7 @@ float RC_Channel::stick_mixing(const float servo_in)
 }
 
 //
-// support for auxillary switches:
+// support for auxiliary switches:
 //
 
 void RC_Channel::reset_mode_switch()
@@ -461,7 +461,7 @@ bool RC_Channel::debounce_completed(int8_t position)
 }
 
 //
-// support for auxillary switches:
+// support for auxiliary switches:
 //
 
 // init_aux_switch_function - initialize aux functions
@@ -903,7 +903,7 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
     // @Field: TimeUS: Time since system startup
     // @Field: function: ID of triggered function
     // @Field: pos: switch position when function triggered
-    // @Field: source: source of auxillary function invocation
+    // @Field: source: source of auxiliary function invocation
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",

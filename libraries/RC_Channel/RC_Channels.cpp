@@ -148,7 +148,7 @@ bool RC_Channels::receiver_bind(const int dsmMode)
 }
 
 
-// support for auxillary switches:
+// support for auxiliary switches:
 // read_aux_switches - checks aux switch positions and invokes configured actions
 void RC_Channels::read_aux_all()
 {
