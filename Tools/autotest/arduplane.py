@@ -3765,7 +3765,7 @@ function'''
              self.test_imu_tempcal),
 
             ("MAV_DO_AUX_FUNCTION",
-             "Test triggering Auxillary Functions via mavlink",
+             "Test triggering Auxiliary Functions via mavlink",
              self.fly_aux_function),
 
             ("SmartBattery",
