@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  SRV_Channel_aux.cpp - handling of servo auxillary functions
+  SRV_Channel_aux.cpp - handling of servo auxiliary functions
  */
 #include "SRV_Channel.h"
 
@@ -535,7 +535,7 @@ bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint
 }
 
 /*
-  get a pointer to first auxillary channel for a channel function
+  get a pointer to first auxiliary channel for a channel function
 */
 SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan)
 {
