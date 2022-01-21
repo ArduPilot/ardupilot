@@ -1187,9 +1187,9 @@ bool Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps
     if (!nav_scripting_active()) {
         return false;
     }
-    nav_scripting.roll_rate_dps = roll_rate_dps;
-    nav_scripting.pitch_rate_dps = pitch_rate_dps;
-    nav_scripting.yaw_rate_dps = yaw_rate_dps;
+    nav_scripting.roll_rate_dps = constrain_float(roll_rate_dps, -g.acro_roll_rate, g.acro_roll_rate);
+    nav_scripting.pitch_rate_dps = constrain_float(pitch_rate_dps, -g.acro_pitch_rate, g.acro_pitch_rate);
+    nav_scripting.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
     nav_scripting.throttle_pct = throttle_pct;
     return true;
 }
