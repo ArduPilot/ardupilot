@@ -736,9 +736,13 @@ void AC_AutoTune::next_tune_type(TuneType &curr_tune_type, bool reset)
     if (reset) {
         set_tune_sequence();
         tune_seq_curr = 0;
+    } else if (curr_tune_type == TUNE_COMPLETE) {
+        // leave tune_type as TUNE_COMPLETE to initiate next axis or exit autotune
+        return;
     } else {
         tune_seq_curr++;
     }
+
     curr_tune_type = tune_seq[tune_seq_curr];
 }
 
