@@ -213,6 +213,18 @@ protected:
     // get_testing_step_timeout_ms accessor
     virtual uint32_t get_testing_step_timeout_ms() const = 0;
 
+    // get attitude for slow position hold in autotune mode
+    void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
+
+    // type of gains to load
+    enum GainType {
+        GAIN_ORIGINAL   = 0,
+        GAIN_TEST       = 1,
+        GAIN_INTRA_TEST = 2,
+        GAIN_TUNED      = 3,
+    };
+    void load_gains(enum GainType gain_type);
+
     // copies of object pointers to make code a bit clearer
     AC_AttitudeControl *attitude_control;
     AC_PosControl *pos_control;
@@ -280,9 +292,6 @@ private:
     // directly updates attitude controller with targets
     void control_attitude();
 
-    // get attitude for slow position hold in autotune mode
-    void get_poshold_attitude(float &roll_cd, float &pitch_cd, float &yaw_cd);
-
     // convert latest level issue to string for reporting
     const char *level_issue_string() const;
 
@@ -309,15 +318,6 @@ private:
         SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
         FAILED = 3,               // tuning has failed, user is flying on original gains
     };
-
-    // type of gains to load
-    enum GainType {
-        GAIN_ORIGINAL   = 0,
-        GAIN_TEST       = 1,
-        GAIN_INTRA_TEST = 2,
-        GAIN_TUNED      = 3,
-    };
-    void load_gains(enum GainType gain_type);
 
     TuneMode mode;                       // see TuneMode for what modes are allowed
     bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
