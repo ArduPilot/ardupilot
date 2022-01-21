@@ -249,7 +249,7 @@ public:
     };
     typedef enum AUX_FUNC aux_func_t;
 
-    // auxillary switch handling (n.b.: we store this as 2-bits!):
+    // auxiliary switch handling (n.b.: we store this as 2-bits!):
     enum class AuxSwitchPos : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
@@ -546,7 +546,7 @@ public:
     uint32_t last_input_ms() const { return last_update_ms; };
 
     // method for other parts of the system (e.g. Button and mavlink)
-    // to trigger auxillary functions
+    // to trigger auxiliary functions
     bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
         return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }
