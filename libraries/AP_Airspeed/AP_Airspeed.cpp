@@ -176,7 +176,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _BUS
     // @DisplayName: Airspeed I2C bus
     // @Description: Bus number of the I2C bus where the airspeed sensor is connected
-    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
+    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxiliary)
     // @User: Advanced
     AP_GROUPINFO("_BUS",  9, AP_Airspeed, param[0].bus, HAL_AIRSPEED_BUS_DEFAULT),
 #endif // HAL_BUILD_AP_PERIPH
@@ -282,7 +282,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: 2_BUS
     // @DisplayName: Airspeed I2C bus for 2nd sensor
     // @Description: The bus number of the I2C bus to look for the sensor on
-    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
+    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxiliary)
     // @User: Advanced
     AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
 
