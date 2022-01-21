@@ -433,6 +433,7 @@ private:
         DRIVER_MSP      =17,
         DRIVER_SERIAL   =18,
         DRIVER_MMC5XX3  =19,
+        DRIVER_QMC5883P =20,
     };
 
     bool _driver_enabled(enum DriverType driver_type);

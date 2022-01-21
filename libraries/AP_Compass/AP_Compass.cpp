@@ -20,6 +20,7 @@
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
+#include "AP_Compass_QMC5883P.h"
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Compass_UAVCAN.h"
 #endif
@@ -1059,6 +1060,24 @@ void Compass::_probe_external_i2c_compasses(void)
             ADD_BACKEND(DRIVER_QMC5883L, AP_Compass_QMC5883L::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883L_I2C_ADDR),
                         all_external,
                         all_external?HAL_COMPASS_QMC5883L_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883L_ORIENTATION_INTERNAL));
+        }
+    }
+#endif
+
+#if !defined(HAL_DISABLE_I2C_MAGS_BY_DEFAULT) || defined(HAL_USE_I2C_MAG_QMC5883P)
+    //external i2c bus
+    FOREACH_I2C_EXTERNAL(i) {
+        ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
+                    true, HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL));
+    }
+
+    // internal i2c bus
+    if (all_external) {
+        // only probe QMC5883P on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            ADD_BACKEND(DRIVER_QMC5883P, AP_Compass_QMC5883P::probe(GET_I2C_DEVICE(i, HAL_COMPASS_QMC5883P_I2C_ADDR),
+                        all_external,
+                        all_external?HAL_COMPASS_QMC5883P_ORIENTATION_EXTERNAL:HAL_COMPASS_QMC5883P_ORIENTATION_INTERNAL));
         }
     }
 #endif
