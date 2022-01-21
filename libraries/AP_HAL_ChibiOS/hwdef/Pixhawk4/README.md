@@ -155,9 +155,9 @@ The Pixhawk4 supports up to 16 PWM outputs. First first 8 outputs (labelled
 "MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
 outputs support all PWM output formats, but not DShot.
 
-The remaining 8 outputs (labelled AUX1 to AUX8) are the "auxillary"
+The remaining 8 outputs (labelled AUX1 to AUX8) are the "auxiliary"
 outputs. These are directly attached to the STM32F765 and support all
-PWM protocols. The first 4 of the auxillary PWM outputs support DShot.
+PWM protocols. The first 4 of the auxiliary PWM outputs support DShot.
 
 The 8 main PWM outputs are in 3 groups:
 
@@ -165,7 +165,7 @@ The 8 main PWM outputs are in 3 groups:
  - PWM 3 and 4 in group2
  - PWM 5, 6, 7 and 8 in group3
 
-The 8 auxillary PWM outputs are in 3 groups:
+The 8 auxiliary PWM outputs are in 3 groups:
 
  - PWM 1, 2, 3 and 4 in group1
  - PWM 5 and 6 in group2
