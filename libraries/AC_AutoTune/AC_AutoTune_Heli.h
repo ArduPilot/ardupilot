@@ -170,7 +170,8 @@ private:
     // reset the sweep variables
     void reset_sweep_variables();
 
-    uint8_t method; //0: determine freq, 1: use max gain method, 2: use phase 180 method
+    // exceeded_freq_range - ensures tuning remains inside frequency range
+    bool exceeded_freq_range(float frequency);
 
     // updating rate FF variables
     // flag for completion of the initial direction for the feedforward test

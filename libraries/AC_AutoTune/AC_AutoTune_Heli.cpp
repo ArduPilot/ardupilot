@@ -209,8 +209,36 @@ void AC_AutoTune_Heli::test_init()
 // run tests for each tune type
 void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 {
-    
-    if (tune_type == TUNE_COMPLETE) { return; }
+    // if tune complete or beyond frequency range or no max allowed gains then exit testing
+    if (tune_type == TUNE_COMPLETE ||
+       (tune_type == RP_UP && max_rate_p.max_allowed <= 0.0f) ||
+       (tune_type == RD_UP && max_rate_d.max_allowed <= 0.0f) ||
+       ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq))){
+
+        load_gains(GAIN_INTRA_TEST);
+
+        attitude_control->use_sqrt_controller(true);
+
+        get_poshold_attitude(roll_cd, pitch_cd, desired_yaw_cd);
+
+        // hold level attitude
+        attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
+
+        if ((tune_type == RP_UP && max_rate_p.max_allowed <= 0.0f) || (tune_type == RD_UP && max_rate_d.max_allowed <= 0.0f)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Gains Failed, Skip Rate P/D Tuning");
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            step = UPDATE_GAINS;
+        } else if ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq)){
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Exceeded frequency range");
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            step = UPDATE_GAINS;
+        } else if (tune_type == TUNE_COMPLETE) {
+            counter = AUTOTUNE_SUCCESS_COUNT;
+            step = UPDATE_GAINS;
+        }
+        return;
+    }
 
     switch (tune_type) {
     case RFF_UP:
@@ -1781,7 +1809,7 @@ void AC_AutoTune_Heli::updating_max_gains(float *freq, float *gain, float *phase
         if (!is_zero(sweep.ph180_freq)) {
             freq[frq_cnt] = sweep.ph180_freq - 0.5f * test_freq_incr;
         } else {
-            freq[frq_cnt] = 4.0f * M_PI;
+            freq[frq_cnt] = min_sweep_freq;
         }
         curr_test_freq = freq[frq_cnt];
         start_freq = curr_test_freq;
@@ -2095,4 +2123,14 @@ void AC_AutoTune_Heli::set_tune_sequence()
 uint32_t AC_AutoTune_Heli::get_testing_step_timeout_ms() const
 {
     return AUTOTUNE_TESTING_STEP_TIMEOUT_MS;
+}
+
+    // exceeded_freq_range - ensures tuning remains inside frequency range
+bool AC_AutoTune_Heli::exceeded_freq_range(float frequency)
+{
+    bool ret = false;
+    if (frequency < min_sweep_freq || frequency > max_sweep_freq) {
+        ret = true;
+    }
+    return ret;
 }
