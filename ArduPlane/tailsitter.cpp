@@ -960,4 +960,10 @@ MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const
     return MAV_VTOL_STATE_UNDEFINED;
 }
 
+// only allow to weathervane once transition is complete and desired pitch has been reached
+bool Tailsitter_Transition::allow_weathervane()
+{
+    return !tailsitter.in_vtol_transition() && (vtol_limit_start_ms == 0);
+}
+
 #endif  // HAL_QUADPLANE_ENABLED
