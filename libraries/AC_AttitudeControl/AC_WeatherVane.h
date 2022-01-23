@@ -10,7 +10,7 @@ class AC_WeatherVane {
         CLASS_NO_COPY(AC_WeatherVane);
 
         // Calculate and return the yaw output to weathervane the vehicle
-        bool get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg);
+        bool get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg, const bool is_takeoff, const bool is_landing);
 
         // Function to reset all flags and set values. Invoked whenever the weather vaning process is interrupted
         void reset(void);
@@ -38,6 +38,8 @@ class AC_WeatherVane {
         AP_Float _min_height;
         AP_Float _max_vel_xy;
         AP_Float _max_vel_z;
+        AP_Int8 _landing_direction;
+        AP_Int8 _takeoff_direction;
 
         float last_output;
         bool active_msg_sent;
