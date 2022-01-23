@@ -163,6 +163,8 @@ public:
 
     bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) override;
 
+    bool allow_weathervane() override;
+
 private:
 
     enum {

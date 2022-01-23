@@ -3259,6 +3259,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
       position control.
     */
     if (!in_vtol_mode() ||
+        !transition->allow_weathervane() ||
         !motors->armed() || (motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) ||
         plane.control_mode == &plane.mode_qstabilize ||
 #if QAUTOTUNE_ENABLED
