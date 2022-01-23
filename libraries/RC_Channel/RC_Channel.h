@@ -229,6 +229,7 @@ public:
         EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
         OPTFLOW_CAL =        158, // optical flow calibration
         FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max
+        WEATHER_VANE_ENABLE = 160, // enable/disable weathervaning
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
