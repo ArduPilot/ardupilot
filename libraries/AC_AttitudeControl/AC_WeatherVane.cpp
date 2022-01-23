@@ -163,6 +163,17 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
             dir_string = "side in";
             break;
 
+        case Direction::TAIL_IN:
+            if (is_negative(pitch_cdeg)) {
+                output = fabsf(roll_cdeg) - pitch_cdeg;
+            } else {
+                output = MAX(fabsf(roll_cdeg) - deadzone_cdeg, 0.0);
+            }
+            if (is_positive(roll_cdeg)) {
+                output *= -1.0;
+            }
+            dir_string = "tail in";
+            break;
     }
 
     if (!active_msg_sent) {
