@@ -71,6 +71,20 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("VELZ_MAX", 6, AC_WeatherVane, _max_vel_z, WVANE_PARAM_VELZ_MAX_DEFAULT),
 
+    // @Param: TAKEOFF
+    // @DisplayName: Takeoff override
+    // @Description: Override the weather vaning behaviour when in takeoffs
+    // @Values: -1:No override,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
+    // @User: Standard
+    AP_GROUPINFO("TAKEOFF", 7, AC_WeatherVane, _takeoff_direction, -1),
+
+    // @Param: LAND
+    // @DisplayName: Landing override
+    // @Description: Override the weather vaning behaviour when in landing
+    // @Values: -1:No override,0:Disabled,1:Nose into wind,2:Nose or tail into wind,3:Side into wind,4:tail into wind
+    // @User: Standard
+    AP_GROUPINFO("LAND", 8, AC_WeatherVane, _landing_direction, -1),
+
     AP_GROUPEND
 };
 
@@ -81,13 +95,26 @@ AC_WeatherVane::AC_WeatherVane(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg)
+bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg, const bool is_takeoff, const bool is_landing)
 {
     Direction dir = (Direction)_direction.get();
     if ((dir == Direction::OFF) || !allowed || (pilot_yaw != 0)) {
         // parameter disabled
         // disabled temporarily
         // dont't override pilot
+        reset();
+        return false;
+    }
+
+    // override direction when in takeoff for landing
+    if (is_takeoff && (_takeoff_direction >= 0)) {
+        dir = (Direction)_takeoff_direction.get();
+    }
+    if (is_landing && (_landing_direction >= 0)) {
+        dir = (Direction)_landing_direction.get();
+    }
+    if (dir == Direction::OFF) {
+        // Disabled for takeoff or landing
         reset();
         return false;
     }
