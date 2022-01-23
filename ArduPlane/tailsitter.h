@@ -179,6 +179,10 @@ private:
     uint32_t vtol_limit_start_ms;
     float vtol_limit_initial_pitch;
 
+    // for rate limit of FW flight
+    uint32_t fw_limit_start_ms;
+    float fw_limit_initial_pitch;
+
     // for transition to FW flight
     uint32_t fw_transition_start_ms;
     float fw_transition_initial_pitch;
