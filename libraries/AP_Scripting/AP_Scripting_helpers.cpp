@@ -75,16 +75,16 @@ bool Parameter::set_and_save(float value)
     }
     switch (vtype) {
     case AP_PARAM_INT8:
-        ((AP_Int8 *)vp)->set_and_save(value);
+        ((AP_Int8 *)vp)->set_and_save_ifchanged(value);
         return true;
     case AP_PARAM_INT16:
-        ((AP_Int16 *)vp)->set_and_save(value);
+        ((AP_Int16 *)vp)->set_and_save_ifchanged(value);
         return true;
     case AP_PARAM_INT32:
-        ((AP_Int32 *)vp)->set_and_save(value);
+        ((AP_Int32 *)vp)->set_and_save_ifchanged(value);
         return true;
     case AP_PARAM_FLOAT:
-        ((AP_Float *)vp)->set_and_save(value);
+        ((AP_Float *)vp)->set_and_save_ifchanged(value);
         return true;
     default:
         break;
