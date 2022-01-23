@@ -777,6 +777,12 @@ void Tailsitter_Transition::update()
     case TRANSITION_ANGLE_WAIT_FW: {
         if (tailsitter.transition_fw_complete()) {
             transition_state = TRANSITION_DONE;
+            if (hal.util->get_soft_armed()) {
+                fw_limit_start_ms = now;
+                fw_limit_initial_pitch = constrain_float(quadplane.ahrs.pitch_sensor,-8500,8500);
+                plane.nav_pitch_cd = fw_limit_initial_pitch;
+                plane.nav_roll_cd = 0;
+            }
             break;
         }
         quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -867,7 +873,21 @@ void Tailsitter_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& na
 
     } else if (transition_state == TRANSITION_DONE) {
         // still in FW, reset transition starting point
-        force_transistion_complete();
+        vtol_transition_start_ms = now;
+        vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
+
+        // rate limit initial pitch down
+        if (fw_limit_start_ms != 0) {
+            const float pitch_limit_cd = fw_limit_initial_pitch - (now - fw_limit_start_ms) * tailsitter.transition_rate_fw * 0.1;
+            if ((pitch_limit_cd <= 0) || (nav_pitch_cd >= pitch_limit_cd)) {
+                // never limit past 0, never limit to a smaller pitch angle
+                fw_limit_start_ms = 0;
+            } else {
+                nav_pitch_cd = pitch_limit_cd;
+                nav_roll_cd = 0;
+                allow_stick_mixing = false;
+            }
+        }
     }
 }
 
@@ -917,6 +937,7 @@ void Tailsitter_Transition::force_transistion_complete()
     transition_state = TRANSITION_DONE;
     vtol_transition_start_ms = AP_HAL::millis();
     vtol_transition_initial_pitch = constrain_float(plane.nav_pitch_cd,-8500,8500);
+    fw_limit_start_ms = 0;
 }
 
 MAV_VTOL_STATE Tailsitter_Transition::get_mav_vtol_state() const
