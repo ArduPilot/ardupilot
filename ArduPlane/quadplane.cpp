@@ -3272,12 +3272,15 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
         return 0.0;
     }
 
+    const bool is_takeoff = in_vtol_auto() && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id);
     float wv_output;
     if (weathervane->get_yaw_out(wv_output,
                                      plane.channel_rudder->get_control_in(),
                                      plane.relative_ground_altitude(plane.g.rangefinder_landing),
                                      wp_nav->get_roll(),
-                                     wp_nav->get_pitch())) {
+                                     wp_nav->get_pitch(),
+                                     is_takeoff,
+                                     in_vtol_land_sequence())) {
         return constrain_float(wv_output / 45, -100.0, 100.0) * yaw_rate_max * 0.5;
     }
 
@@ -3562,7 +3565,7 @@ bool QuadPlane::in_vtol_land_approach(void) const
  */
 bool QuadPlane::in_vtol_land_descent(void) const
 {
-    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
+    if (((in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id)) || (plane.control_mode == &plane.mode_qrtl)) &&
         (poscontrol.get_state() == QPOS_LAND_DESCEND || poscontrol.get_state() == QPOS_LAND_FINAL)) {
         return true;
     }
