@@ -736,18 +736,17 @@ void AC_PosControl::init_z_controller()
 {
     _pos_target.z = _inav.get_position_z_up_cm();
 
-    const float &curr_vel_z = _inav.get_velocity_z_up_cms();
+    const float curr_vel_z = _inav.get_velocity_z_up_cms();
     _vel_desired.z = curr_vel_z;
     // with zero position error _vel_target = _vel_desired
     _vel_target.z = curr_vel_z;
-
-    const Vector3f &curr_accel = _ahrs.get_accel_ef_blended();
 
     // Reset I term of velocity PID
     _pid_vel_z.reset_filter();
     _pid_vel_z.set_integrator(0.0f);
 
-    _accel_desired.z = constrain_float(-(curr_accel.z + GRAVITY_MSS) * 100.0f, -_accel_max_z_cmss, _accel_max_z_cmss);
+    _accel_desired.z = constrain_float(get_z_accel_cmss(), -_accel_max_z_cmss, _accel_max_z_cmss);
+    // with zero position error _accel_target = _accel_desired
     _accel_target.z = _accel_desired.z;
     _pid_accel_z.reset_filter();
 
@@ -925,8 +924,8 @@ void AC_PosControl::update_z_controller()
 
     // Velocity Controller
 
-    const Vector3f& curr_vel = _inav.get_velocity_neu_cms();
-    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel.z, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    const float curr_vel_z = _inav.get_velocity_z_up_cms();
+    _accel_target.z = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
     _accel_target.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component
