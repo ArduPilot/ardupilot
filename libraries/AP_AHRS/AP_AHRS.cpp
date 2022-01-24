@@ -3080,6 +3080,13 @@ void AP_AHRS::Log_Write()
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.Log_Write();
 #endif
+
+    Write_AHRS2();
+    Write_POS();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    AP::sitl()->Log_Write_SIMSTATE();
+#endif
 }
 
 // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
