@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: 2SRV_RMAX_UP
     // @DisplayName: Pitch up max rate
-    // @Description: Maximum pitch up rate that the pitch controller demands (degrees/sec) in ACRO mode.
+    // @Description: This sets the maximum nose up pitch rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables the limit.
     // @Range: 0 100
     // @Units: deg/s
     // @Increment: 1
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: 2SRV_RMAX_DN
     // @DisplayName: Pitch down max rate
-    // @Description: This sets the maximum nose down pitch rate that the controller will demand (degrees/sec). Setting it to zero disables the limit.
+    // @Description: This sets the maximum nose down pitch rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables the limit.
     // @Range: 0 100
     // @Units: deg/s
     // @Increment: 1
