@@ -42,12 +42,6 @@ void Plane::Log_Write_Attitude(void)
     logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
 
     AP::ahrs().Log_Write();
-    ahrs.Write_AHRS2();
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
-    ahrs.Write_POS();
 }
 
 // do fast logging for plane
