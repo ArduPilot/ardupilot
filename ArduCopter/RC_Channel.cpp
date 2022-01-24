@@ -118,6 +118,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::SURFACE_TRACKING:
     case AUX_FUNC::WINCH_ENABLE:
     case AUX_FUNC::AIRMODE:
+    case AUX_FUNC::FORCEFLYING:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
@@ -565,6 +566,10 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #endif
             break;
 
+        case AUX_FUNC::FORCEFLYING:
+            do_aux_function_change_force_flying(ch_flag);
+            break;
+
         case AUX_FUNC::AUTO_RTL:
 #if MODE_AUTO_ENABLED == ENABLED
             do_aux_function_change_mode(Mode::Number::AUTO_RTL, ch_flag);
@@ -608,6 +613,21 @@ void RC_Channel_Copter::do_aux_function_change_air_mode(const AuxSwitchPos ch_fl
         break;
     case AuxSwitchPos::LOW:
         copter.air_mode = AirMode::AIRMODE_DISABLED;
+        break;
+    }
+}
+
+// change force flying status
+void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos ch_flag)
+{
+    switch (ch_flag) {
+    case AuxSwitchPos::HIGH:
+        copter.force_flying = true;
+        break;
+    case AuxSwitchPos::MIDDLE:
+        break;
+    case AuxSwitchPos::LOW:
+        copter.force_flying = false;
         break;
     }
 }
