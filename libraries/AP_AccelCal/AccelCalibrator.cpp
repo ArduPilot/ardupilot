@@ -450,7 +450,7 @@ void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& p
             ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
             return;
         }
-    };
+    }
 }
 
 // returns number of parameters are required for selected Fit type
