@@ -61,6 +61,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { nullptr, fs_local },
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
     { "@ROMFS/", fs_romfs },
+    { "@ROMFS", fs_romfs },
 #endif
     { "@PARAM/", fs_param },
     { "@SYS/", fs_sys },

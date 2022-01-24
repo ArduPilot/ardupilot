@@ -171,10 +171,13 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
         return nullptr;
     }
     const uint32_t plen = strlen(dir[idx].path);
-    if (strncmp(name, dir[idx].path, plen) != 0 || name[plen] != '/') {
-        return nullptr;
+    if (plen > 0) {
+        // strip leading directory name from name if it exists
+        if (strncmp(name, dir[idx].path, plen) != 0 || name[plen] != '/') {
+            return nullptr;
+        }
+        name += plen + 1;
     }
-    name += plen + 1;
     dir[idx].de.d_type = DT_REG;
     strncpy(dir[idx].de.d_name, name, sizeof(dir[idx].de.d_name));
     return &dir[idx].de;
