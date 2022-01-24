@@ -116,8 +116,12 @@
 #include "AP_Arming.h"
 
 
-#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
-#include "../../ArduPlane/RALPHIE/WARIO/trajectory.h"
+//#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
+//#include "../../ArduPlane/RALPHIE/WARIO/trajectory.h"
+// #include "../../ArduPlane/state_task.h"
+#include "state_task.h"
+#include "RALPHIE/Hello_world/hello_world_functions.h"
+// #include "../../ArduPlane/trajectory.h"
 
 /*
   main APM:Plane class
@@ -993,10 +997,12 @@ private:
     // ArduPlane.cpp
 
 	void update_state();
-    aircraftState_t currentState;
+
+    
+    // aircraftState_t currentState;
 
 	void update_trajectory();
-    RalphieTrajectory ralphieTrajectory;
+    // RalphieTrajectory ralphieTrajectory;
 
 	void lqt_controller();
 
