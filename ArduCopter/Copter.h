@@ -365,7 +365,8 @@ private:
 
     ap_t ap;
 
-    AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled
+    AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled;
+    bool force_flying; // force flying is enabled when true;
 
     static_assert(sizeof(uint32_t) == sizeof(ap), "ap_t must be uint32_t");
 
