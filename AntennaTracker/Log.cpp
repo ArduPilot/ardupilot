@@ -12,11 +12,6 @@ void Tracker::Log_Write_Attitude()
     targets.z = wrap_360_cd(nav_status.bearing * 100.0f);
     ahrs.Write_Attitude(targets);
     AP::ahrs().Log_Write();
-    ahrs.Write_AHRS2();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
-    ahrs.Write_POS();
 }
 
 struct PACKED log_Vehicle_Baro {
