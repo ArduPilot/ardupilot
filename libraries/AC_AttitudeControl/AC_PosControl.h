@@ -34,7 +34,7 @@
 
 #define POSCONTROL_OVERSPEED_GAIN_Z             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
 
-#define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the relevant variable to 5% in half a second.
+#define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second.
 
 class AC_PosControl
 {
