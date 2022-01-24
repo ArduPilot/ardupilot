@@ -486,9 +486,8 @@ void AC_PosControl::init_xy_controller()
     _vel_desired.xy() = curr_vel;
     _vel_target.xy() = curr_vel;
 
-    const Vector3f &curr_accel = _ahrs.get_accel_ef_blended() * 100.0f;
-    _accel_desired.xy() = curr_accel.xy();
-    _accel_desired.xy().limit_length(_accel_max_xy_cmss);
+    // Set desired accel to zero because raw acceleration is prone to noise
+    _accel_desired.xy().zero();
 
     lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
 
@@ -499,7 +498,9 @@ void AC_PosControl::init_xy_controller()
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
-    _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
+    // initialise the I term to _accel_target - _accel_desired
+    // _accel_desired is zero and can be removed from the equation
+    _pid_vel_xy.set_integrator(_accel_target);
 
     // initialise ekf xy reset handler
     init_ekf_xy_reset();
