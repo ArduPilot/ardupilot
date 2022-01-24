@@ -13,9 +13,6 @@ void Rover::Log_Write_Attitude()
     ahrs.Write_Attitude(targets);
 
     AP::ahrs().Log_Write();
-    ahrs.Write_AHRS2();
-
-    ahrs.Write_POS();
 
     // log steering rate controller
     logger.Write_PID(LOG_PIDS_MSG, g2.attitude_control.get_steering_rate_pid().get_pid_info());
@@ -30,9 +27,6 @@ void Rover::Log_Write_Attitude()
     if (rover.g2.sailboat.sail_enabled()) {
         logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
 }
 
 // Write a range finder depth message
