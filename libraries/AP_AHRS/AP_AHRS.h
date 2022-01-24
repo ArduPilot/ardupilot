@@ -427,7 +427,6 @@ public:
 
     // Logging functions
     void Log_Write_Home_And_Origin();
-    void Write_AHRS2(void) const;
     void Write_Attitude(const Vector3f &targets) const;
 
     enum class LogOriginType {
@@ -435,7 +434,6 @@ public:
         ahrs_home = 1
     };
     void Write_Origin(LogOriginType origin_type, const Location &loc) const; 
-    void Write_POS(void) const;
     void write_video_stabilisation() const;
 
     // return a smoothed and corrected gyro vector in radians/second
@@ -830,6 +828,11 @@ private:
      * updating derived values like sin_roll and sin_pitch.
      */
     void copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estimates &results);
+
+    // write out secondary estimates:
+    void Write_AHRS2(void) const;
+    // write POS (canonical vehicle position) message out:
+    void Write_POS(void) const;
 
 #if HAL_NMEA_OUTPUT_ENABLED
     class AP_NMEA_Output* _nmea_out;
