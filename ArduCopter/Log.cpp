@@ -87,11 +87,6 @@ void Copter::Log_Write_Attitude()
 void Copter::Log_Write_EKF_POS()
 {
     AP::ahrs().Log_Write();
-    ahrs.Write_AHRS2();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    sitl.Log_Write_SIMSTATE();
-#endif
-    ahrs.Write_POS();
 }
 
 struct PACKED log_Data_Int16t {
