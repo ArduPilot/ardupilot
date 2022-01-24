@@ -407,6 +407,9 @@ protected:
     // calculate_yaw_and_rate_yaw - calculate the vehicle yaw and rate of yaw.
     bool calculate_yaw_and_rate_yaw();
 
+    // calculate_overspeed_gain - calculated increased maximum acceleration and jerk if over speed condition is detected
+    float calculate_overspeed_gain();
+
     /// initialise and check for ekf position resets
     void init_ekf_xy_reset();
     void handle_ekf_xy_reset();
