@@ -763,10 +763,9 @@ void AC_PosControl::relax_z_controller(float throttle_setting)
     // Initialise the position controller to the current position, velocity and acceleration.
     init_z();
 
-    // Set accel PID I term based on the requested throttle
-    float throttle = _attitude_control.get_throttle_in();
-    throttle_setting = throttle + (throttle_setting - throttle) * (_dt / (_dt + POSCONTROL_RELAX_TC));
-    _pid_accel_z.set_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f);
+    // init_z_controller has set the accel PID I term to generate the current throttle set point
+    // Use relax_integrator to decay the throttle set point to throttle_setting
+    _pid_accel_z.relax_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f, POSCONTROL_RELAX_TC);
 }
 
 /// init_z - initialise the position controller to the current position, velocity and acceleration.
@@ -796,6 +795,13 @@ void AC_PosControl::init_z()
     _pos_offset_z = 0.0;
     _vel_offset_z = 0.0;
     _accel_offset_z = 0.0;
+
+    // Set accel PID I term based on the current throttle
+    // Remove the expected P term due to _accel_desired.z being constrained to _accel_max_z_cmss
+    // Remove the expected FF term due to non-zero _accel_target.z
+    _pid_accel_z.set_integrator((_attitude_control.get_throttle_in() - _motors.get_throttle_hover()) * 1000.0f
+        - _pid_accel_z.kP() * (_accel_target.z - get_z_accel_cmss())
+        - _pid_accel_z.ff() * _accel_target.z);
 
     // initialise ekf z reset handler
     init_ekf_z_reset();
