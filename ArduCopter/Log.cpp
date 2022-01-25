@@ -330,8 +330,8 @@ void Copter::Log_Write_Heli()
 }
 #endif
 
-// guided target logging
-struct PACKED log_GuidedTarget {
+// guided position target logging
+struct PACKED log_Guided_Position_Target {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t type;
@@ -347,14 +347,29 @@ struct PACKED log_GuidedTarget {
     float accel_target_z;
 };
 
-// Write a Guided mode target
-// pos_target is lat, lon, alt OR offset from ekf origin in cm OR roll, pitch, yaw target in centi-degrees
+// guided attitude target logging
+struct PACKED log_Guided_Attitude_Target {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t type;
+    float roll;
+    float pitch;
+    float yaw;
+    float roll_rate;
+    float pitch_rate;
+    float yaw_rate;
+    float thrust;
+    float climb_rate;
+};
+
+// Write a Guided mode position target
+// pos_target is lat, lon, alt OR offset from ekf origin in cm
 // terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target is cm/s
-void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
 {
-    struct log_GuidedTarget pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
+    const log_Guided_Position_Target pkt {
+        LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)target_type,
         pos_target_x    : pos_target.x,
@@ -367,6 +382,29 @@ void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vecto
         accel_target_x  : accel_target.x,
         accel_target_y  : accel_target.y,
         accel_target_z  : accel_target.z
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+// Write a Guided mode attitude target
+// roll, pitch and yaw are in radians
+// ang_vel: angular velocity, [roll rate, pitch_rate, yaw_rate] in radians/sec
+// thrust is between 0 to 1
+// climb_rate is in (m/s)
+void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate)
+{
+    const log_Guided_Attitude_Target pkt {
+        LOG_PACKET_HEADER_INIT(LOG_GUIDED_ATTITUDE_TARGET_MSG),
+        time_us         : AP_HAL::micros64(),
+        type            : (uint8_t)target_type,
+        roll            : degrees(roll),       // rad to deg
+        pitch           : degrees(pitch),      // rad to deg
+        yaw             : degrees(yaw),        // rad to deg
+        roll_rate       : degrees(ang_vel.x),  // rad/s to deg/s
+        pitch_rate      : degrees(ang_vel.y),  // rad/s to deg/s
+        yaw_rate        : degrees(ang_vel.z),  // rad/s to deg/s
+        thrust          : thrust,
+        climb_rate      : climb_rate
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -491,8 +529,8 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_SYSIDS_MSG, sizeof(log_SysIdS),
       "SIDS", "QBfffffff",  "TimeUS,Ax,Mag,FSt,FSp,TFin,TC,TR,TFout", "s--ssssss", "F--------" , true },
 
-// @LoggerMessage: GUID
-// @Description: Guided mode target information
+// @LoggerMessage: GUIP
+// @Description: Guided mode position target information
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Type of guided mode
 // @Field: pX: Target position, X-Axis
@@ -506,8 +544,24 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aY: Target acceleration, Y-Axis
 // @Field: aZ: Target acceleration, Z-Axis
 
-    { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" , true },
+    { LOG_GUIDED_POSITION_TARGET_MSG, sizeof(log_Guided_Position_Target),
+      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" , true },
+
+// @LoggerMessage: GUIA
+// @Description: Guided mode attitude target information
+// @Field: TimeUS: Time since system startup
+// @Field: Type: Type of guided mode
+// @Field: Roll: Target attitude, Roll
+// @Field: Pitch: Target attitude, Pitch
+// @Field: Yaw: Target attitude, Yaw
+// @Field: RollRt: Roll rate
+// @Field: PitchRt: Pitch rate
+// @Field: YawRt: Yaw rate
+// @Field: Thrust: Thrust 
+// @Field: ClimbRt: Climb rate
+
+    { LOG_GUIDED_ATTITUDE_TARGET_MSG, sizeof(log_Guided_Attitude_Target),
+      "GUIA",  "QBffffffff",    "TimeUS,Type,Roll,Pitch,Yaw,RollRt,PitchRt,YawRt,Thrust,ClimbRt", "s-dddkkk-n", "F-000000-0" , true },
 };
 
 void Copter::Log_Write_Vehicle_Startup_Messages()
@@ -538,7 +592,8 @@ void Copter::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Copter::Log_Write_Data(LogDataID id, float value) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
 void Copter::Log_Sensor_Health() {}
-void Copter::Log_Write_GuidedTarget(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target) {}
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target) {}
+void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate) {}
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
 void Copter::Log_Write_Vehicle_Startup_Messages() {}
