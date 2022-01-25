@@ -1188,7 +1188,7 @@ private:
     ftype terrainPopt;              // Optical flow terrain height state covariance (m^2)
     ftype terrainState;             // terrain position state (m)
     Vector2F terrainPrevPosNE;      // position at last measurement in NE frame
-    ftype rngInnov;                 // range finder observation innovation (m)
+    ftype terrainRngInnov;          // range finder observation innovation (m)
     struct {
         uint32_t timestamp_ms;      // system timestamp of last correct optical flow sample (used for calibration)
         Vector2f flowRate;          // latest corrected optical flow flow rate (used for calibration)

@@ -129,15 +129,15 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
             // Calculate the measurement innovation
-            rngInnov = predRngMeas - rangeDataDelayed.rng;
+            terrainRngInnov = predRngMeas - rangeDataDelayed.rng;
 
             // calculate the innovation consistency test ratio
-            auxRngTestRatio = sq(rngInnov) / (sq(MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
+            auxRngTestRatio = sq(terrainRngInnov) / (sq(MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f)) * varInnovRng);
 
             // Check the innovation test ratio and don't fuse if too large
             if (auxRngTestRatio < 1.0f) {
                 // correct the state
-                terrainState -= K_RNG * rngInnov;
+                terrainState -= K_RNG * terrainRngInnov;
 
                 // constrain the state
                 terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
