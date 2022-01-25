@@ -53,7 +53,7 @@ template <typename T>
 inline bool is_zero(const T fVal1) {
     static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
                   "Template parameter not of type float");
-    return (fabsf(static_cast<float>(fVal1)) < FLT_EPSILON);
+    return is_zero(static_cast<float>(fVal1));
 }
 
 /* 
@@ -75,14 +75,6 @@ inline bool is_negative(const T fVal1) {
     static_assert(std::is_floating_point<T>::value || std::is_base_of<T,AP_Float>::value,
                   "Template parameter not of type float");
     return (static_cast<float>(fVal1) <= (-1.0 * FLT_EPSILON));
-}
-
-
-/*
- * @brief: Check whether a double is zero
- */
-inline bool is_zero(const double fVal1) {
-    return (fabsf(fVal1) < static_cast<double>(FLT_EPSILON));
 }
 
 /*
