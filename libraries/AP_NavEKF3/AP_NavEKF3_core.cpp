@@ -245,8 +245,8 @@ void NavEKF3_core::InitialiseVariables()
     rangeDataToFuse  = false;
     terrainPopt = 0.0f;
     terrainState = 0.0f;
-    prevPosN = stateStruct.position.x;
-    prevPosE = stateStruct.position.y;
+    terrainPrevPosNE.x = stateStruct.position.x;
+    terrainPrevPosNE.y = stateStruct.position.y;
     inhibitTerrainState = false;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;

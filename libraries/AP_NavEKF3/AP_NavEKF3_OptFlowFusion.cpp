@@ -89,10 +89,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
         // limit distance to prevent initialisation after bad gps causing bad numerical conditioning
-        ftype distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
+        ftype distanceTravelledSq = sq(stateStruct.position[0] - terrainPrevPosNE.x) + sq(stateStruct.position[1] - terrainPrevPosNE.y);
         distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
-        prevPosN = stateStruct.position[0];
-        prevPosE = stateStruct.position[1];
+        terrainPrevPosNE.x = stateStruct.position[0];
+        terrainPrevPosNE.y = stateStruct.position[1];
 
         // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copter's vertical velocity
         ftype timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
