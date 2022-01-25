@@ -264,7 +264,7 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 {
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
-    return !hgtTimeout && gndOffsetValid && healthy();
+    return !hgtTimeout && terrainStateValid && healthy();
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84

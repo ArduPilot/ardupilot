@@ -265,7 +265,7 @@ void NavEKF3_core::InitialiseVariables()
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
-    gndOffsetValid =  false;
+    terrainStateValid =  false;
     validOrigin = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
