@@ -187,9 +187,7 @@ public:
 
     // check if all elements are zero
     bool is_zero(void) const WARN_IF_UNUSED {
-        return (fabsf(x) < FLT_EPSILON) &&
-               (fabsf(y) < FLT_EPSILON) &&
-               (fabsf(z) < FLT_EPSILON);
+        return x == 0 && y == 0 && z == 0;
     }
 
 
@@ -290,7 +288,7 @@ public:
     static Vector3<T> perpendicular(const Vector3<T> &p1, const Vector3<T> &v1)
     {
         const T d = p1 * v1;
-        if (fabsf(d) < FLT_EPSILON) {
+        if (::is_zero(d)) {
             return p1;
         }
         const Vector3<T> parallel = (v1 * d) / v1.length_squared();
@@ -314,6 +312,15 @@ public:
     // Returns true if the passed 3D segment passes through a plane defined by plane normal, and a point on the plane
     static bool segment_plane_intersect(const Vector3<T>& seg_start, const Vector3<T>& seg_end, const Vector3<T>& plane_normal, const Vector3<T>& plane_point);
 };
+
+// check if all elements are zero
+template<> inline bool Vector3<float>::is_zero(void) const {
+    return ::is_zero(x) && ::is_zero(y) && ::is_zero(z);
+}
+
+template<> inline bool Vector3<double>::is_zero(void) const {
+    return ::is_zero(x) && ::is_zero(y) && ::is_zero(z);
+}
 
 // The creation of temporary vector objects as return types creates a significant overhead in certain hot 
 // code paths. This allows callers to select the inline versions where profiling shows a significant benefit

@@ -655,10 +655,7 @@ void QuaternionT<T>::normalize(void)
 // Checks if each element of the quaternion is zero
 template <typename T>
 bool QuaternionT<T>::is_zero(void) const {
-    return (fabsf(q1) < FLT_EPSILON) &&
-            (fabsf(q2) < FLT_EPSILON) &&
-            (fabsf(q3) < FLT_EPSILON) &&
-            (fabsf(q4) < FLT_EPSILON);
+    return ::is_zero(q1) && ::is_zero(q2) && ::is_zero(q3) && ::is_zero(q4);
 }
 
 // zeros the quaternion to [0, 0, 0, 0], an invalid quaternion
@@ -675,7 +672,7 @@ void QuaternionT<T>::zero(void)
 template <typename T>
 bool QuaternionT<T>::is_unit_length(void) const
 {
-    if (fabsf(length_squared() - 1) < 1E-3) {
+    if (fabsF(length_squared() - 1) < 1E-3) {
         return true;
     }
 
