@@ -828,8 +828,9 @@ private:
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
     // fuse optical flow measurements into the main filter
+    // flowNoise is the variance of of optical flow rate measurements in (rad/sec)^2
     // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
-    void FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse);
+    void FuseOptFlow(const of_elements &ofDataDelayed, ftype flowNoise, bool really_fuse);
 
     // Control filter mode changes
     void controlFilterModes();
@@ -1199,7 +1200,6 @@ private:
     bool inhibitTerrainState;       // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
-    ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
     ftype auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F flowGyroBias;          // bias error of optical flow sensor gyro output
     bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.

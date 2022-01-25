@@ -56,9 +56,9 @@ void NavEKF3_core::SelectFlowFusion()
     if (flowDataToFuse && tiltOK) {
         const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
         // Set the flow noise used by the fusion processes
-        R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
+        const ftype flowNoise = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
-        FuseOptFlow(ofDataDelayed, fuse_optflow);
+        FuseOptFlow(ofDataDelayed, flowNoise, fuse_optflow);
     }
 }
 
@@ -273,9 +273,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
  * Requires a valid terrain height estimate.
  *
+ * flowNoise is the variance of of optical flow rate measurements in (rad/sec)^2
  * really_fuse should be true to actually fuse into the main filter, false to only calculate variances
 */
-void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse)
+void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, ftype flowNoise, bool really_fuse)
 {
     Vector24 H_LOS;
     Vector2 losPred;
@@ -419,16 +420,16 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             ftype t76 = t2*t10*t75;
             ftype t87 = t2*t22*t56;
             ftype t92 = t2*t7*t69;
-            ftype t77 = R_LOS+t37+t43+t50+t63+t76-t87-t92;
+            ftype t77 = flowNoise+t37+t43+t50+t63+t76-t87-t92;
             ftype t78;
 
             // calculate innovation variance for X axis observation and protect against a badly conditioned calculation
-            if (t77 > R_LOS) {
+            if (t77 > flowNoise) {
                 t78 = 1.0f/t77;
                 faultStatus.bad_xflow = false;
             } else {
-                t77 = R_LOS;
-                t78 = 1.0f/R_LOS;
+                t77 = flowNoise;
+                t78 = 1.0f/flowNoise;
                 faultStatus.bad_xflow = true;
                 return;
             }
@@ -596,16 +597,16 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             ftype t76 = t71+t72+t73+t74+t75-t92-t93;
             ftype t85 = t2*t19*t49;
             ftype t94 = t2*t10*t76;
-            ftype t77 = R_LOS+t37+t43+t56+t63+t70-t85-t94;
+            ftype t77 = flowNoise+t37+t43+t56+t63+t70-t85-t94;
             ftype t78;
 
             // calculate innovation variance for Y axis observation and protect against a badly conditioned calculation
-            if (t77 > R_LOS) {
+            if (t77 > flowNoise) {
                 t78 = 1.0f/t77;
                 faultStatus.bad_yflow = false;
             } else {
-                t77 = R_LOS;
-                t78 = 1.0f/R_LOS;
+                t77 = flowNoise;
+                t78 = 1.0f/flowNoise;
                 faultStatus.bad_yflow = true;
                 return;
             }
