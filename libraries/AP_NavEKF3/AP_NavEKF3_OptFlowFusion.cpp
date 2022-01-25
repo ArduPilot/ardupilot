@@ -123,7 +123,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             ftype K_RNG = terrainPopt/(SK_RNG*(R_RNG + terrainPopt/sq(SK_RNG)));
 
             // Calculate the innovation variance for data logging
-            varInnovRng = (R_RNG + terrainPopt/sq(SK_RNG));
+            const ftype varInnovRng = (R_RNG + terrainPopt/sq(SK_RNG));
 
             // constrain terrain height to be below the vehicle
             terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
