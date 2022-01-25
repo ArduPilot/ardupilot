@@ -108,7 +108,7 @@ struct Vector2
 
     // check if all elements are zero
     bool is_zero(void) const WARN_IF_UNUSED {
-        return (fabsf(x) < FLT_EPSILON) && (fabsf(y) < FLT_EPSILON);
+        return x == 0 && y == 0;
     }
 
     // allow a vector2 to be used as an array, 0 indexed
@@ -275,6 +275,15 @@ struct Vector2
         return true;
     }
 };
+
+// check if all elements are zero
+template<> inline bool Vector2<float>::is_zero(void) const {
+    return ::is_zero(x) && ::is_zero(y);
+}
+
+template<> inline bool Vector2<double>::is_zero(void) const {
+    return ::is_zero(x) && ::is_zero(y);
+}
 
 typedef Vector2<int16_t>        Vector2i;
 typedef Vector2<uint16_t>       Vector2ui;
