@@ -211,10 +211,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             K_OPT = terrainPopt * H_OPT / auxFlowObsInnovVar.y;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio.y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
+            const ftype auxFlowTestRatio_y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
 
             // don't fuse if optical flow data is outside valid range
-            if (auxFlowTestRatio.y < 1.0f) {
+            if (auxFlowTestRatio_y < 1.0f) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov.y;
@@ -246,10 +246,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             K_OPT = terrainPopt * H_OPT / auxFlowObsInnovVar.x;
 
             // calculate the innovation consistency test ratio
-            auxFlowTestRatio.x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
+            const ftype auxFlowTestRatio_x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
 
             // don't fuse if optical flow data is outside valid range
-            if (auxFlowTestRatio.x < 1.0f) {
+            if (auxFlowTestRatio_x < 1.0f) {
 
                 // correct the state
                 terrainState -= K_OPT * auxFlowObsInnov.x;
