@@ -23,12 +23,12 @@ extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_UAVCAN::var_info[] = {
 
-    // @Param: CUR_MULT
+    // @Param: CURR_MULT
     // @DisplayName: Scales reported power monitor current
     // @Description: Multiplier applied to all current related reports to allow for adjustment if no UAVCAN param access or current splitting applications
     // @Range: .1 10
     // @User: Advanced
-    AP_GROUPINFO("CUR_MULT", 27, AP_BattMonitor_UAVCAN, _cur_mult, 1.0),
+    AP_GROUPINFO("CURR_MULT", 27, AP_BattMonitor_UAVCAN, _curr_mult, 1.0),
     AP_GROUPEND
 };
 
@@ -139,7 +139,7 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     WITH_SEMAPHORE(_sem_battmon);
 
     _interim_state.voltage = voltage;
-    _interim_state.current_amps = _cur_mult * current;
+    _interim_state.current_amps = _curr_mult * current;
     _soc = soc;
 
     if (!isnanf(temperature_K) && temperature_K > 0) {
