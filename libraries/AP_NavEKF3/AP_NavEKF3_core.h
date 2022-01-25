@@ -1198,7 +1198,7 @@ private:
     } flowCalSample;
 
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
-    bool inhibitGndState;           // true when the terrain position state is to remain constant
+    bool inhibitTerrainState;       // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator

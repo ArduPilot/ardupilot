@@ -83,9 +83,9 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
     if ((!rangeDataToFuse && cantFuseFlowData) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
         // skip update
-        inhibitGndState = true;
+        inhibitTerrainState = true;
     } else {
-        inhibitGndState = false;
+        inhibitTerrainState = false;
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
         // limit distance to prevent initialisation after bad gps causing bad numerical conditioning
