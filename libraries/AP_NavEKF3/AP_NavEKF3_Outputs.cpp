@@ -580,7 +580,7 @@ void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
     // range finder is fitted for other applications
     float temp;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
-        temp = sqrtF(auxRngTestRatio);
+        temp = sqrtF(terrainRngTestRatio);
     } else {
         temp = 0.0f;
     }
