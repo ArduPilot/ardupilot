@@ -209,7 +209,7 @@ void NavEKF3_core::InitialiseVariables()
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
-    gndHgtValidTime_ms = 0;
+    terrainValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
