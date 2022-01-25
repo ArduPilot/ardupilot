@@ -95,7 +95,7 @@ private:
     bool _has_battery_info_aux;
     uint8_t _instance;                  // instance of this battery monitor
     uavcan::Node<0> *_node;             // UAVCAN node id
-    AP_Float _cur_mult;                 // scaling multiplier applied to current reports for adjustment
+    AP_Float _curr_mult;                 // scaling multiplier applied to current reports for adjustment
     // MPPT variables
     struct {
         bool is_detected;               // true if this UAVCAN device is a Packet Digital MPPT
