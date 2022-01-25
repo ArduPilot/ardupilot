@@ -2020,6 +2020,15 @@ uint16_t AP_Mission::get_landing_sequence_start(struct Location start_loc)
     return landing_start_index;
 }
 
+uint16_t AP_Mission::get_landing_sequence_start()
+{
+    struct Location current_loc;
+    if (!AP::ahrs().get_position(current_loc)) {
+        return 0;
+    }
+    return get_landing_sequence_start(current_loc);
+}
+
 /*
    find the nearest landing sequence starting point (DO_LAND_START) and
    switch to that mission item.  Returns false if no DO_LAND_START

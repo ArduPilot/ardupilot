@@ -532,6 +532,7 @@ public:
     // find the nearest landing sequence starting point (DO_LAND_START) and
     // return its index.  Returns 0 if no appropriate DO_LAND_START point can
     // be found.
+    uint16_t get_landing_sequence_start();
     uint16_t get_landing_sequence_start(struct Location start_loc);
 
     // find the shortest distance to landing via DO_LAND_START and
