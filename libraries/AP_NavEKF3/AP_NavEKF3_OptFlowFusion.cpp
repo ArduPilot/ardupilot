@@ -181,7 +181,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             losPred.y = - relVelSensor.x / flowRngPred;
 
             // calculate innovations
-            auxFlowObsInnov = losPred - ofDataDelayed.flowRadXYcomp;
+            terrainFlowInnov = losPred - ofDataDelayed.flowRadXYcomp;
 
             // calculate observation jacobians 
             ftype t2 = q0*q0;
@@ -211,13 +211,13 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             K_OPT = terrainPopt * H_OPT / auxFlowObsInnovVar.y;
 
             // calculate the innovation consistency test ratio
-            const ftype auxFlowTestRatio_y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
+            const ftype auxFlowTestRatio_y = sq(terrainFlowInnov.y) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
 
             // don't fuse if optical flow data is outside valid range
             if (auxFlowTestRatio_y < 1.0f) {
 
                 // correct the state
-                terrainState -= K_OPT * auxFlowObsInnov.y;
+                terrainState -= K_OPT * terrainFlowInnov.y;
 
                 // constrain the state
                 terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
@@ -246,13 +246,13 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             K_OPT = terrainPopt * H_OPT / auxFlowObsInnovVar.x;
 
             // calculate the innovation consistency test ratio
-            const ftype auxFlowTestRatio_x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
+            const ftype auxFlowTestRatio_x = sq(terrainFlowInnov.x) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
 
             // don't fuse if optical flow data is outside valid range
             if (auxFlowTestRatio_x < 1.0f) {
 
                 // correct the state
-                terrainState -= K_OPT * auxFlowObsInnov.x;
+                terrainState -= K_OPT * terrainFlowInnov.x;
 
                 // constrain the state
                 terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
