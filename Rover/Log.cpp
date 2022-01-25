@@ -319,7 +319,7 @@ const LogStructure Rover::log_structure[] = {
     { LOG_STEERING_MSG, sizeof(log_Steering),
       "STER", "Qhfffff",   "TimeUS,SteerIn,SteerOut,DesLatAcc,LatAcc,DesTurnRate,TurnRate", "s--ookk", "F--0000" },
 
-// @LoggerMessage: GUID
+// @LoggerMessage: GUIP
 // @Description: Guided mode target information
 // @Field: TimeUS: Time since system startup
 // @Field: Type: Type of guided mode
@@ -331,7 +331,7 @@ const LogStructure Rover::log_structure[] = {
 // @Field: vZ: Target velocity, Z-Axis
     
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUID",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
 };
 
 void Rover::log_init(void)
