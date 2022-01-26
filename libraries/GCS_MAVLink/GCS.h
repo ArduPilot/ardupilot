@@ -351,6 +351,11 @@ public:
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
+#if HAL_HIGH_LATENCY2_ENABLED
+    // return true if the link should be sending. Will return false if is a high latency link AND is not active
+    bool should_send() { return is_high_latency_link ? high_latency_link_enabled : true; }
+#endif
+
     /*
       send a MAVLink message to all components with this vehicle's system id
       This is a no-op if no routes to components have been learned
@@ -599,8 +604,14 @@ protected:
     virtual uint8_t high_latency_wind_speed() const { return 0; }
     virtual uint8_t high_latency_wind_direction() const { return 0; }
     int8_t high_latency_air_temperature() const;
-#endif // HAL_HIGH_LATENCY2_ENABLED
 
+    MAV_RESULT handle_control_high_latency(const mavlink_command_long_t &packet);
+
+    // true if this is a high latency link
+    bool is_high_latency_link;
+    bool high_latency_link_enabled;
+#endif // HAL_HIGH_LATENCY2_ENABLED
+    
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
@@ -682,9 +693,10 @@ private:
         const ap_message id;
         uint16_t interval_ms;
         uint16_t last_sent_ms; // from AP_HAL::millis16()
-    } deferred_message[2] = {
+    } deferred_message[3] = {
         { MSG_HEARTBEAT, },
         { MSG_NEXT_PARAM, },
+        { MSG_HIGH_LATENCY2, },
     };
     // returns index of id in deferred_message[] or -1 if not present
     int8_t get_deferred_message_index(const ap_message id) const;
@@ -1100,6 +1112,10 @@ public:
     MAV_RESULT set_message_interval(uint8_t port_num, uint32_t msg_id, int32_t interval_us);
 
     uint8_t get_channel_from_port_number(uint8_t port_num);
+
+#if HAL_HIGH_LATENCY2_ENABLED
+    void enable_high_latency_connections(bool enabled);
+#endif // HAL_HIGH_LATENCY2_ENABLED
 
 protected:
 
