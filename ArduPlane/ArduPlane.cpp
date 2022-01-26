@@ -155,32 +155,23 @@ constexpr int8_t Plane::_failsafe_priorities[6];
 
 void Plane::update_state() {
 
-    printSomething();
-    helloWorldCarson();
+    currentState.roll = ahrs.get_roll();
+    currentState.pitch = ahrs.get_pitch();
+    currentState.yaw = ahrs.get_yaw();
 
-    // float roll = ahrs.get_roll();
-    // float pitch = ahrs.get_pitch();
-    // float yaw = ahrs.get_yaw();
-    
-    // currentState.setRoll(roll, false);
-    // currentState.setPitch(pitch, false);
-    // currentState.setYaw(yaw, false);
+    Vector3f position;
+    ahrs.get_relative_position_NED_origin(currentState.position);
 
-	// Vector3f omega = ahrs.get_gyro();
-    // currentState.setAngularVelocity(omega);
-	
-	// Vector3f velocity;
-	// ahrs.get_velocity_NED(velocity);
-    // currentState.setVelocity(velocity);
+    Vector3f velocity;
+    ahrs.get_velocity_NED(currentState.velocity);
 
-	// Vector3f position;
-	// ahrs.get_relative_position_NED_origin(position);
-    // currentState.setPosition(position);
+    Vector3f omega;
+    omega = ahrs.get_gyro();
 
-	// printf("Position: %.3f, %.3f, %.3f\n",   position.x, position.y, position.z);
-	// printf("Velocity: %.3f, %.3f, %.3f\n",   velocity.x, velocity.y, velocity.z);
-	// printf("Angles:   %.3f, %.3f, %.3f\n",   roll*180/3.14, pitch*180/3.14, yaw*180/3.14);
-	// printf("Omega:    %.3f, %.3f, %.3f\n\n", omega.x, omega.y, omega.z);
+	printf("Position: %.3f, %.3f, %.3f\n", currentState.position.x, currentState.position.y, currentState.position.z);
+	printf("Velocity: %.3f, %.3f, %.3f\n", currentState.velocity.x, currentState.velocity.y, currentState.velocity.z);
+	printf("Angles:   %.3f, %.3f, %.3f\n", currentState.roll*180/3.14, currentState.pitch*180/3.14, currentState.yaw*180/3.14);
+	printf("Omega:    %.3f, %.3f, %.3f\n\n", currentState.angularVelocity.x, currentState.angularVelocity.y, currentState.angularVelocity.z);
 }
 
 void Plane::update_trajectory() {
