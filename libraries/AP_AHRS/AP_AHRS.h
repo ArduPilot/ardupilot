@@ -158,10 +158,7 @@ public:
 
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
-    bool airspeed_sensor_enabled(void) const {
-        // FIXME: make this "using_airspeed_sensor"?
-        return dcm.airspeed_sensor_enabled();
-    }
+    bool airspeed_sensor_enabled(void) const;
 
     // return true if airspeed comes from a specific airspeed sensor, as
     // opposed to an IMU estimate
