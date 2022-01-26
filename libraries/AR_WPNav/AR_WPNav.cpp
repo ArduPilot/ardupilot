@@ -31,6 +31,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
 #define AR_WPNAV_OVERSPEED_RATIO_MAX    5.0f    // if _overspeed_enabled the vehicle may travel as quickly as 5x WP_SPEED
 #define AR_WPNAV_JERK_TIME_SEC          0.1     // jerk time (the time taken for jerk to climb to its maximum) is hard-coded to 0.1
+#define AR_WPNAV_ACCEL_MAX              20.0    // acceleration used when user has specified no acceleration limit
 
 const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 
@@ -102,7 +103,11 @@ void AR_WPNav::init(float speed_max)
         _base_speed_max = _speed_max;
     }
     _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _base_speed_max);
-    const float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
+    float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
+    if (!is_positive(atc_accel_max)) {
+        // accel_max of zero means no limit so use maximum acceleration
+        atc_accel_max = AR_WPNAV_ACCEL_MAX;
+    }
     const float accel_max = is_positive(_accel_max) ? MIN(_accel_max, atc_accel_max) : atc_accel_max;
     const float jerk_max = is_positive(_jerk_max) ? _jerk_max : accel_max;
 
