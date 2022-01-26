@@ -392,6 +392,12 @@ int32_t AP_AltitudePlanner::calc_altitude_error_cm()
       return 0;
     }
 
+    AP::logger().Write("ALTP", "TimeUS,tgt,off,terr", "Qfff",
+                               AP_HAL::micros64(),
+                               (double)_target_amsl_cm,
+                               (double)_target_offset_cm,
+                               (double)_terrain_enabled);
+
 #if AP_TERRAIN_AVAILABLE
     float terrain_height;
     if (is_terrain_following() && 
