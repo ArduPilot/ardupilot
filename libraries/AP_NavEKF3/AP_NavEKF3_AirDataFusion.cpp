@@ -137,6 +137,11 @@ void NavEKF3_core::FuseAirspeed()
         // fail if the ratio is > 1, but don't fail if bad IMU data
         bool tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
+        if (!tasHealth) {
+            lastTasFailTime_ms = imuSampleTime_ms;
+        } else {
+            lastTasFailTime_ms = 0;
+        }
 
         // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
         if (tasHealth || (tasTimeout && posTimeout)) {
