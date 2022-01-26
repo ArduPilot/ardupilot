@@ -31,7 +31,9 @@ mcu = {
     'RAM_MAP' : [
         (0x20000000, 320, 1), # main memory, DMA safe
         (0x10000000,  64, 1), # CCM memory, faster, not DMA safe
-    ]
+    ],
+
+	'EXPECTED_CLOCK' : 180000000
 }
 
 DMA_Map = {
