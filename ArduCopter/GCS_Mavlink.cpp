@@ -1066,6 +1066,26 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
          * bool force           = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_FORCE;
          */
 
+        //If we get a MAV_FRAME_LOCAL_NED command with zero x/y and
+        //an altitude value, this is a "change altitude to".  If in
+        //planck tracking or planck_wingman, adjust the tracking altitude
+        //with a new target shift cmd
+        if(packet.coordinate_frame == MAV_FRAME_LOCAL_NED &&
+           is_equal(packet.x,0.0f) && is_equal(packet.y,0.0f) &&
+           (copter.flightmode == &copter.mode_plancktracking ||
+            copter.flightmode == &copter.mode_planckwingman))
+        {
+            //Don't allow if we don't have a good tag or commbox track or
+            //if we are not currently flying
+            if((copter.planck_interface.get_tag_tracking_state() ||
+                copter.planck_interface.get_commbox_state()) &&
+                !copter.ap.land_complete)
+            {
+                copter.planck_interface.request_alt_change(-packet.z, copter.pos_control->get_max_speed_up(), copter.pos_control->get_max_speed_down());
+                break;
+            }
+        }
+
         // prepare position
         Vector3f pos_vector;
         if (!pos_ignore) {
