@@ -116,8 +116,6 @@
 #include "AP_Arming.h"
 
 
-#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
-#include "../../ArduPlane/RALPHIE/WARIO/trajectory.h"
 #include "LQT_Constants.h"
 /*
   main APM:Plane class
