@@ -12,5 +12,6 @@ void RalphieTrajectory::update() {
 
 
 void RalphieTrajectory::setCurrentWind(Vector3f windEstimate) {
-    // Just update the wind variable
+
+    memcpy(&currentWindEstimate, &windEstimate, sizeof(Vector3f));
 }
