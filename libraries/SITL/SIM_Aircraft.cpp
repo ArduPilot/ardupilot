@@ -475,13 +475,15 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 // @Field: VN: Velocity north
 // @Field: VE: Velocity east
 // @Field: VD: Velocity down
+// @Field: As: Airspeed
         Vector3d pos = get_position_relhome();
         Vector3f vel = get_velocity_ef();
-        AP::logger().WriteStreaming("SIM2", "TimeUS,PN,PE,PD,VN,VE,VD",
-                                    "Qdddfff",
+        AP::logger().WriteStreaming("SIM2", "TimeUS,PN,PE,PD,VN,VE,VD,As",
+                                    "Qdddffff",
                                     AP_HAL::micros64(),
                                     pos.x, pos.y, pos.z,
-                                    vel.x, vel.y, vel.z);
+                                    vel.x, vel.y, vel.z,
+                                    airspeed_pitot);
     }
 }
 
