@@ -260,7 +260,10 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
 
     uint8_t i = 0;
     for (; i<buflen-1; i++) {
-        if (backend.fs.read(fd, &buf[i], 1) != 1) {
+        if (backend.fs.read(fd, &buf[i], 1) <= 0) {
+            if (i==0) {
+                return false;
+            }
             break;
         }
         if (buf[i] == '\r' || buf[i] == '\n') {
@@ -268,7 +271,7 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
         }
     }
     buf[i] = '\0';
-    return i != 0;
+    return true;
 }
 
 // format filesystem
