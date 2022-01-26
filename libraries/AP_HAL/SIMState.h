@@ -60,7 +60,9 @@ public:
 
     void update();
 
+#if HAL_SIM_GPS_ENABLED
     void set_gps0(SITL::GPS *_gps) { gps[0] = _gps; }
+#endif
 
     uint16_t pwm_output[16];  // was SITL_NUM_CHANNELS
 
@@ -227,8 +229,10 @@ private:
 
     const char *_home_str;
 
+#if HAL_SIM_GPS_ENABLED
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
+#endif
 };
 
 #endif // AP_SIM_ENABLED
