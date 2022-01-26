@@ -62,6 +62,10 @@ static const eventmask_t EVT_LED_SEND  = EVENT_MASK(15);
  */
 void RCOutput::init()
 {
+    if (_initialised) {
+        // cannot init RCOutput twice
+        return;
+    }
     for (auto &group : pwm_group_list) {
         const uint8_t i = &group - pwm_group_list;
         //Start Pwm groups
