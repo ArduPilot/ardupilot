@@ -213,7 +213,7 @@ void AP_Compass_MMC3416::timer()
         Vector3f f2(float(data1[0]) - zero_offset,
                     float(data1[1]) - zero_offset,
                     float(data1[2]) - zero_offset);
-        field = (f1 - f2) * (counts_to_milliGauss / 2);
+        field = -(f1 - f2) * (counts_to_milliGauss / 2);
         Vector3f new_offset = (f1 + f2) * (counts_to_milliGauss / 2);
         if (!have_initial_offset) {
             offset = new_offset;
@@ -270,8 +270,8 @@ void AP_Compass_MMC3416::timer()
         Vector3f field(float(data1[0]) - zero_offset,
                        float(data1[1]) - zero_offset,
                        float(data1[2]) - zero_offset);
-        field *= -counts_to_milliGauss;
-        field += offset;
+        field *= counts_to_milliGauss;
+        field += -offset;
 
         last_sample_ms = AP_HAL::millis();
         accumulate_sample(field, compass_instance);
