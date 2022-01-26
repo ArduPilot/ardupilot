@@ -10,6 +10,9 @@ public:
     // init to param by name
     bool init(const char *name);
 
+    // init by token, to get the value of old params
+    bool init_by_info(uint16_t key, uint32_t group_element, enum ap_var_type type);
+
     // setters and getters
     bool set(float value);
     bool set_and_save(float value);

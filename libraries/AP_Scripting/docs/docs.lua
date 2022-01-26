@@ -322,6 +322,17 @@ function Parameter_ud:set(value) end
 function Parameter_ud:get() end
 
 -- desc
+---@param key integer
+---@param group_element uint32_t_ud
+---@param type integer
+---| '1' # AP_PARAM_INT8
+---| '2' # AP_PARAM_INT16
+---| '3' # AP_PARAM_INT32
+---| '4' # AP_PARAM_FLOAT
+---@return boolean
+function Parameter_ud:init_by_info(key, group_element, type) end
+
+-- desc
 ---@param name string
 ---@return boolean
 function Parameter_ud:init(name) end

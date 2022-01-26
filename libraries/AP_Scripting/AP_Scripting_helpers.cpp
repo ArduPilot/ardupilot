@@ -12,6 +12,38 @@ bool Parameter::init(const char *name)
     return true;
 }
 
+// init by info, to get the value of old params
+bool Parameter::init_by_info(uint16_t key, uint32_t group_element, enum ap_var_type type)
+{
+    switch (type) {
+    case AP_PARAM_INT8:
+        vp = new AP_Int8;
+        break;
+    case AP_PARAM_INT16:
+        vp = new AP_Int16;
+        break;
+    case AP_PARAM_INT32:
+        vp = new AP_Int32;
+        break;
+    case AP_PARAM_FLOAT:
+        vp = new AP_Float;
+        break;
+    default:
+        return false;
+    }
+    if (vp == nullptr) {
+        return false;
+    }
+    vtype = type;
+    AP_Param::ConversionInfo info = {
+        key,
+        group_element,
+        type,
+        nullptr
+    };
+    return AP_Param::find_old_parameter(&info, vp);
+}
+
 // set a value
 bool Parameter::set(float value)
 {
