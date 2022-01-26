@@ -115,7 +115,6 @@
 #endif
 #include "AP_Arming.h"
 
-
 #include "LQT_Constants.h"
 /*
   main APM:Plane class
