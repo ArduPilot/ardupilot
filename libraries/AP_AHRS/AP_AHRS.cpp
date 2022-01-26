@@ -816,6 +816,28 @@ Vector3f AP_AHRS::wind_estimate(void) const
     return wind;
 }
 
+/*
+  return true if a real airspeed sensor is enabled
+ */
+bool AP_AHRS::airspeed_sensor_enabled(void) const
+{
+    if (!dcm.airspeed_sensor_enabled()) {
+        return false;
+    }
+    nav_filter_status filter_status;
+    if (fly_forward &&
+        hal.util->get_soft_armed() &&
+        get_filter_status(filter_status) &&
+        filter_status.flags.rejecting_airspeed) {
+        // special case for when backend is rejecting airspeed data in
+        // an armed fly_forward state. Then the airspeed data is
+        // highly suspect and will be rejected. We will use the
+        // synthentic airspeed instead
+        return false;
+    }
+    return true;
+}
+
 // return an airspeed estimate if available. return true
 // if we have an estimate
 bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
