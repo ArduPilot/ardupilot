@@ -164,14 +164,20 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
     
-    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
+    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
+        mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         // load signing key
         load_signing_key();
     } else if (status) {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
-    
+
+#if HAL_HIGH_LATENCY2_ENABLED
+    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
+        is_high_latency_link = true;
+    }
+#endif
     return true;
 }
 
@@ -938,8 +944,9 @@ bool GCS_MAVLINK::should_send_message_in_delay_callback(const ap_message id) con
     // microseconds to return!
 
     switch (id) {
-    case MSG_HEARTBEAT:
     case MSG_NEXT_PARAM:
+    case MSG_HEARTBEAT:
+    case MSG_HIGH_LATENCY2:
     case MSG_AUTOPILOT_VERSION:
         return true;
     default:
@@ -1405,7 +1412,7 @@ bool GCS_MAVLINK::set_ap_message_interval(enum ap_message id, uint16_t interval_
 // mavlink work!)
 void GCS_MAVLINK::send_message(enum ap_message id)
 {
-    if (id == MSG_HEARTBEAT) {
+    if (id == MSG_HEARTBEAT || id == MSG_HIGH_LATENCY2) {
         save_signing_timestamp(false);
         // update the mask of all streaming channels
         if (is_streaming()) {
@@ -1428,7 +1435,8 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     }
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-        AP::serialmanager().get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2) {
+        (AP::serialmanager().get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2 ||
+         AP::serialmanager().get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLinkHL)) {
         // if we receive any MAVLink2 packets on a connection
         // currently sending MAVLink1 then switch to sending
         // MAVLink2
@@ -4354,6 +4362,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_preflight_reboot(packet);
         break;
 
+#if HAL_HIGH_LATENCY2_ENABLED
+    case MAV_CMD_CONTROL_HIGH_LATENCY:
+        result = handle_control_high_latency(packet);
+        break;
+#endif // HAL_HIGH_LATENCY2_ENABLED
+
     case MAV_CMD_DO_START_MAG_CAL:
     case MAV_CMD_DO_ACCEPT_MAG_CAL:
     case MAV_CMD_DO_CANCEL_MAG_CAL: {
@@ -5695,7 +5709,15 @@ void GCS_MAVLINK::initialise_message_intervals_from_streamrates()
     for (uint8_t i=0; all_stream_entries[i].ap_message_ids != nullptr; i++) {
         initialise_message_intervals_for_stream(all_stream_entries[i].stream_id);
     }
+#if HAL_HIGH_LATENCY2_ENABLED
+    if (!is_high_latency_link) {
+        set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+    } else {
+        set_mavlink_message_id_interval(MAVLINK_MSG_ID_HIGH_LATENCY2, 5000);
+    }
+#else
     set_mavlink_message_id_interval(MAVLINK_MSG_ID_HEARTBEAT, 1000);
+#endif
 }
 
 bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint16_t &interval) const
@@ -5703,6 +5725,12 @@ bool GCS_MAVLINK::get_default_interval_for_ap_message(const ap_message id, uint1
     if (id == MSG_HEARTBEAT) {
         // handle heartbeat requests as a special case because heartbeat is not "streamed"
         interval = 1000;
+        return true;
+    }
+
+    if (id == MSG_HIGH_LATENCY2) {
+        // handle HL2 requests as a special case because HL2 is not "streamed"
+        interval = 5000;
         return true;
     }
 
@@ -5941,7 +5969,7 @@ uint64_t GCS_MAVLINK::capabilities() const
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
     AP_SerialManager::SerialProtocol mavlink_protocol = AP::serialmanager().get_mavlink_protocol(chan);
-    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2) {
+    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
     }
 
@@ -6102,5 +6130,30 @@ int8_t GCS_MAVLINK::high_latency_air_temperature() const
 #endif
 
     return INT8_MIN;
+}
+
+/*
+  handle a MAV_CMD_CONTROL_HIGH_LATENCY command 
+
+  Enable or disable any marked (via SERIALn_PROTOCOL) high latency connections
+ */
+MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_long_t &packet)
+{
+    // high latency mode is enabled if param1=1 or disabled if param1=0
+    if (is_equal(packet.param1, 0.0f)) {
+        gcs().enable_high_latency_connections(false);
+    } else if (is_equal(packet.param1, 1.0f)) {
+        gcs().enable_high_latency_connections(true);
+    } else {
+        return MAV_RESULT_FAILED;
+    }
+
+    // send to all other mavlink components with same sysid
+    mavlink_command_long_t hl_msg{};
+    hl_msg.command = MAV_CMD_CONTROL_HIGH_LATENCY;
+    hl_msg.param1 = packet.param1;
+    GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&hl_msg, sizeof(hl_msg));
+
+    return MAV_RESULT_ACCEPTED;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
