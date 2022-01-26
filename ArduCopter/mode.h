@@ -427,6 +427,9 @@ public:
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
+    
+    void pause_mission();
+    void continue_mission();
 
     bool is_landing() const override;
 
