@@ -116,8 +116,11 @@
 #include "AP_Arming.h"
 
 
-#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
-#include "../../ArduPlane/RALPHIE/WARIO/trajectory.h"
+//#include "../../ArduPlane/RALPHIE/STATE/state_task.h"
+//#include "../../ArduPlane/RALPHIE/WARIO/trajectory.h"
+// #include "../../ArduPlane/state_task.h"
+#include "state_task.h"
+#include "trajectory.h"
 
 /*
   main APM:Plane class
@@ -992,12 +995,11 @@ private:
 
     // ArduPlane.cpp
 
-	void update_state();
+    RalphieTrajectory trajectory;
     aircraftState_t currentState;
 
+	void update_state();
 	void update_trajectory();
-    RalphieTrajectory ralphieTrajectory;
-
 	void lqt_controller();
 
     void disarm_if_autoland_complete();
