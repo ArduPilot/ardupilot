@@ -1658,7 +1658,7 @@ class AutoTest(ABC):
         if self.params is None:
             self.params = self.model_defaults_filepath(self.frame)
         for x in self.params:
-            self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
+            self.repeatedly_apply_parameter_file(x)
 
     def count_lines_in_filepath(self, filepath):
         return len([i for i in open(filepath)])
@@ -11695,7 +11695,7 @@ switch value'''
             defaults_filepath = [defaults_filepath]
         defaults_list = []
         for d in defaults_filepath:
-            defaults_list.append(os.path.join(testdir, d))
+            defaults_list.append(util.reltopdir(os.path.join(testdir, d)))
         return defaults_list
 
     def load_default_params_file(self, filename):
