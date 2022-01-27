@@ -218,7 +218,7 @@ public:
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) = 0;
+    void                output_test_seq(uint8_t motor_seq, int16_t pwm);
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -345,6 +345,11 @@ protected:
 
     // return string corresponding to frame_type
     virtual const char* get_type_string() const { return ""; }
+
+    // output_test_seq - spin a motor at the pwm value specified
+    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) = 0;
 
 #if AP_SCRIPTING_ENABLED
     // Custom frame string set from scripting

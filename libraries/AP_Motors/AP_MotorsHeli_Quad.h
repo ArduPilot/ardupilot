@@ -29,9 +29,6 @@ public:
     // set_update_rate - set update rate to motors
     void set_update_rate( uint16_t speed_hz ) override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
@@ -87,6 +84,9 @@ protected:
 
     // move_actuators - moves swash plate to attitude of parameters passed in
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)  override;
+
+    // output_test_seq - spin a motor at the pwm value specified
+    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     const char* _get_frame_string() const override { return "HELI_QUAD"; }
 
