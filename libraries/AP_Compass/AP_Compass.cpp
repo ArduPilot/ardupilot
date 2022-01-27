@@ -1353,11 +1353,6 @@ void Compass::_detect_backends(void)
     default:
         break;
     }
-
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NONE
-    // no compass, or only external probe
-#else
-#error Unrecognised HAL_COMPASS_TYPE setting
 #endif
 
 
