@@ -12,10 +12,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_Baro_LPS2XH.h"
+
+#if AP_BARO_LPS2XH_ENABLED
+
 #include <utility>
 #include <stdio.h>
-
-#include "AP_Baro_LPS2XH.h"
 
 #include <AP_InertialSensor/AP_InertialSensor_Invensense_registers.h>
 
@@ -274,3 +276,5 @@ void AP_Baro_LPS2XH::_update_pressure(void)
     _pressure_sum += Pressure_mb;
     _pressure_count++;
 }
+
+#endif  // AP_BARO_LPS2XH_ENABLED

@@ -1,8 +1,6 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_Baro_UAVCAN.h"
+
+#if AP_BARO_UAVCAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -192,5 +190,4 @@ void AP_Baro_UAVCAN::update(void)
     }
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
-
+#endif // AP_BARO_UAVCAN_ENABLED
