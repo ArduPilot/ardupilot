@@ -697,7 +697,6 @@ bool QuadPlane::setup(void)
     motors->init(frame_class, frame_type);
     motors->update_throttle_range();
     motors->set_update_rate(rc_speed);
-    motors->set_interlock(true);
     attitude_control->parameter_sanity_check();
 
     // setup the trim of any motors used by AP_Motors so I/O board
@@ -1663,6 +1662,9 @@ void QuadPlane::update(void)
     if (!setup()) {
         return;
     }
+
+    // keep motors interlock state upto date with E-stop
+    motors->set_interlock(!SRV_Channels::get_emergency_stop());
 
     if ((ahrs_view != NULL) && !is_equal(_last_ahrs_trim_pitch, ahrs_trim_pitch.get())) {
         _last_ahrs_trim_pitch = ahrs_trim_pitch.get();
