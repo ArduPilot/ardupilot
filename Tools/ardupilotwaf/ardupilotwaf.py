@@ -295,7 +295,8 @@ def ap_program(bld,
         tg.env.STLIB += [kw['use']]
 
     for group in program_groups:
-        _grouped_programs.setdefault(group, []).append(tg)
+        _grouped_programs.setdefault(group, {}).update({tg.name : tg})
+
 
 @conf
 def ap_example(bld, **kw):
@@ -507,21 +508,20 @@ def _select_programs_from_group(bld):
             groups = ['bin']
 
     if 'all' in groups:
-        groups = _grouped_programs.keys()
+        groups = list(_grouped_programs.keys())
+        groups.remove('bin')       # Remove `bin` so as not to duplicate all items in bin
 
     for group in groups:
         if group not in _grouped_programs:
             bld.fatal('Group %s not found' % group)
 
-        tg = _grouped_programs[group][0]
-        if bld.targets:
-            bld.targets += ',' + tg.name
-        else:
-            bld.targets = tg.name
+        target_names = _grouped_programs[group].keys()
 
-        if len(_grouped_programs[group]) > 2:
-            for tg in _grouped_programs[group][1:]:
-                bld.targets += ',' + tg.name
+        for name in target_names:
+            if bld.targets:
+                bld.targets += ',' + name
+            else:
+                bld.targets = name
 
 def options(opt):
     opt.ap_groups = {
