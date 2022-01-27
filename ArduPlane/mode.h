@@ -7,6 +7,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Vehicle/ModeReason.h>
 #include "quadplane.h"
+#include "trajectory.h"
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -53,6 +54,7 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+        RALPHIE       = 26
     };
 
     // Constructor
@@ -717,3 +719,29 @@ protected:
 };
 
 #endif
+
+
+#include <stdio.h>
+class ModeRalphie: public Mode {
+
+public:
+    Number mode_number() const override { return Number::RALPHIE; }
+
+    const char *name() const override { return "RALPHIE"; }
+    const char *name4() const override { return "RALP"; }
+
+    bool does_auto_throttle() const override { return true; }
+    virtual bool does_auto_navigation() const override { return true; }
+
+    void run() override;
+
+    void update() override;
+
+    void navigate() override;
+
+protected:
+    
+    RalphieTrajectory trajectory;
+
+    bool _enter() override;
+};
