@@ -525,7 +525,7 @@ void Plane::stabilize()
 #endif
 
     } else if (control_mode == &mode_ralphie) {
-        control_mode->run();
+        plane.control_mode->run();
 
     } else {
         if (allow_stick_mixing && g.stick_mixing == StickMixing::FBW && control_mode != &mode_stabilize) {
