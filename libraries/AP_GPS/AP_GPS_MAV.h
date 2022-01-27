@@ -26,7 +26,7 @@
 #include "GPS_Backend.h"
 
 #ifndef AP_GPS_MAV_ENABLED
-  #define AP_GPS_MAV_ENABLED 1
+  #define AP_GPS_MAV_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
 #endif 
 
 #if AP_GPS_MAV_ENABLED
