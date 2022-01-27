@@ -116,9 +116,9 @@ public:
 
     // get the yaw angular velocity limit in radians/s
     float get_ang_vel_yaw_max_rads() const { return radians(_ang_vel_yaw_max); }
-    
-    // get the yaw slew limit
-    float get_slew_yaw_cds() const { return _slew_yaw; }
+
+    // get the slew yaw rate limit in deg/s
+    float get_slew_yaw_max_degs() const;
 
     // get the rate control input smoothing time constant
     float get_input_tc() const { return _input_tc; }
@@ -373,7 +373,7 @@ protected:
     virtual float get_roll_trim_rad() { return 0;}
 
     // Return the yaw slew rate limit in radians/s
-    float get_slew_yaw_rads() { return radians(_slew_yaw * 0.01f); }
+    float get_slew_yaw_max_rads() const { return radians(get_slew_yaw_max_degs()); }
 
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _slew_yaw;
