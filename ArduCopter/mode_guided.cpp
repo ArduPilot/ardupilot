@@ -47,6 +47,11 @@ bool ModeGuided::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeGuided::run()
 {
+    // if (paused) {
+    //     pause_control_run();
+    //     return;
+    // }
+
     // call the correct auto controller
     switch (guided_mode) {
 
@@ -847,6 +852,36 @@ void ModeGuided::velaccel_control_run()
         // roll & pitch from position controller, yaw heading from GCS or auto_heading()
         attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.yaw(), auto_yaw.rate_cds());
     }
+}
+
+// velaccel_control_run - runs the guided velocity and acceleration controller
+// called from guided_run
+void ModeGuided::pause_control_run()
+{
+    // if not armed set throttle to zero and exit immediately
+    if (is_disarmed_or_landed()) {
+        // do not spool down tradheli when on the ground with motor interlock enabled
+        make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
+        return;
+    }
+
+    // set motors to full range
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+
+    // set the horizontal velocity and acceleration targets to zero
+    Vector2f vel_xy, accel_xy;
+    pos_control->input_vel_accel_xy(vel_xy, accel_xy, false);
+
+    // set the vertical velocity and acceleration targets to zero
+    float vel_z = 0.0;
+    pos_control->input_vel_accel_z(vel_z, 0.0, false, false);
+
+    // call velocity controller which includes z axis controller
+    pos_control->update_xy_controller();
+    pos_control->update_z_controller();
+
+    // call attitude controller
+    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
 }
 
 // posvelaccel_control_run - runs the guided position, velocity and acceleration controller
