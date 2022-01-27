@@ -49,6 +49,7 @@
 
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Arming/AP_Arming.h>
 #include <AP_Logger/AP_Logger.h>
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
@@ -131,6 +132,15 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV.
     // @Values: 1.0:Freshwater,1.024:Saltwater
     AP_GROUPINFO_FRAME("_SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
+
+    // @Param: _FIELD_ELV
+    // @DisplayName: field elevation
+    // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. A value of 0 means no correction for takeoff height above sea level is performed.
+    // @Units: m
+    // @Increment: 0.1
+    // @Volatile: True
+    // @User: Advanced
+    AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
 
 #if BARO_MAX_INSTANCES > 1
     // @Param: 2_GND_PRESS
@@ -240,6 +250,7 @@ AP_Baro::AP_Baro()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+    _field_elevation_active = _field_elevation;
 }
 
 // calibrate the barometer. This must be called at least once before
@@ -317,7 +328,8 @@ void AP_Baro::calibrate(bool save)
             sensors[i].calibrated = false;
         } else {
             if (save) {
-                sensors[i].ground_pressure.set_and_save(sum_pressure[i] / count[i]);
+                float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i]);
+                sensors[i].ground_pressure.set_and_save(p0_sealevel);
             }
         }
     }
@@ -352,7 +364,7 @@ void AP_Baro::update_calibration()
     }
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (healthy(i)) {
-            float corrected_pressure = get_pressure(i) + sensors[i].p_correction;
+            float corrected_pressure = get_sealevel_pressure(get_pressure(i) + sensors[i].p_correction);
             sensors[i].ground_pressure.set(corrected_pressure);
         }
 
@@ -379,9 +391,22 @@ float AP_Baro::get_altitude_difference(float base_pressure, float pressure) cons
 
     // This is an exact calculation that is within +-2.5m of the standard
     // atmosphere tables in the troposphere (up to 11,000 m amsl).
-    ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)));
+    ret = 153.8462f * temp * (1.0f - expf(0.190259f * logf(scaling)))-_field_elevation_active;
 
     return ret;
+}
+
+// return sea level pressure where in which the current measured pressure
+// at field elevation returns the same altitude under the
+// 1976 standard atmospheric model
+float AP_Baro::get_sealevel_pressure(float pressure) const
+{
+    const float standard_day_temp = C_TO_KELVIN(15); //15 degrees Celsius converted to Kelvin
+    float p0_sealevel;
+
+    p0_sealevel = 8.651154799255761e30f*pressure*powF((769231.0f-(5000.0f*_field_elevation_active)/standard_day_temp),-5.255993146184937f);
+
+    return p0_sealevel;
 }
 
 
@@ -523,10 +548,12 @@ void AP_Baro::init(void)
 {
     init_done = true;
 
-    // ensure that there isn't a previous ground temperature saved
-    if (!is_zero(_user_ground_temperature)) {
-        _user_ground_temperature.set_and_save(0.0f);
-        _user_ground_temperature.notify();
+    // always set field elvation to zero on reboot in the case user
+    // fails to update.  TBD automate sanity checking error bounds on
+    // on previously saved value at new location etc.
+    if (!is_zero(_field_elevation)) {
+        _field_elevation.set_and_save(0.0f);
+        _field_elevation.notify();
     }
 
     // zero bus IDs before probing
@@ -943,6 +970,22 @@ void AP_Baro::update(void)
                 break;
             }
         }
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _field_elevation_last_ms >= 1000 && fabs(_field_elevation_active-_field_elevation) > 1.0) {
+      if (!AP::arming().is_armed()) {
+        _field_elevation_last_ms = now_ms;
+        _field_elevation_active = _field_elevation;
+        AP::ahrs().resetHeightDatum();
+        update_calibration();
+        BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer Field Elevation Set: %.0fm",_field_elevation_active);
+      }
+      else {
+        _field_elevation.set_and_save(_field_elevation_active);
+        _field_elevation.notify();
+        BARO_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
+      }
     }
 
     // logging

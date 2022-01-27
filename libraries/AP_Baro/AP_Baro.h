@@ -118,6 +118,10 @@ public:
     // pressure in Pascal
     float get_altitude_difference(float base_pressure, float pressure) const;
 
+    // get sea level pressure relative to 1976 standard atmosphere model
+    // pressure in Pascal
+    float get_sealevel_pressure(float pressure) const;
+
     // get scale factor required to convert equivalent to true airspeed
     float get_EAS2TAS(void);
 
@@ -271,6 +275,9 @@ private:
 
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
+    AP_Float                            _field_elevation;       // field elevation in meters
+    float                               _field_elevation_active;
+    uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
     float                               _last_altitude_EAS2TAS;
