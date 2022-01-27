@@ -1005,31 +1005,24 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_command_int_t &packet)
 {
-#if MODE_AUTO_ENABLED
-    if (copter.flightmode->mode_number() != Mode::Number::AUTO) {
-        // only supported in AUTO mode
+    // requested pause
+    if ((uint8_t) packet.param1 == 0) {
+        if (copter.flightmode->pause()) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        send_text(MAV_SEVERITY_INFO, "Failed to pause");
         return MAV_RESULT_FAILED;
     }
 
-    // requested pause from GCS
-    if ((int8_t) packet.param1 == 0) {
-        // copter.mode_auto.mission.stop();
-        copter.mode_auto.pause_mission();
-        gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
-        return MAV_RESULT_ACCEPTED;
+    // requested resume
+    if ((uint8_t) packet.param1 == 1) {
+        if (copter.flightmode->resume()) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        send_text(MAV_SEVERITY_INFO, "Failed to resume");
+        return MAV_RESULT_FAILED;
     }
-
-    // requested resume from GCS
-    if ((int8_t) packet.param1 == 1) {
-        // copter.mode_auto.mission.resume();
-        copter.mode_auto.continue_mission();
-        gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
-        return MAV_RESULT_ACCEPTED;
-    }
-#endif
-
-    // fail pause or continue
-    return MAV_RESULT_FAILED;
+    return MAV_RESULT_DENIED;
 }
 
 void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
