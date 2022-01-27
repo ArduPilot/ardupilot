@@ -758,7 +758,7 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
 
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            if ((mask & (1U << i)) && armed()) {
+            if ((mask & (1U << i)) && armed() && get_interlock()) {
                 /*
                  apply rudder mixing differential thrust
                  copter frame roll is plane frame yaw as this only
