@@ -1008,6 +1008,7 @@ private:
     void pos_control_run();
     void accel_control_run();
     void velaccel_control_run();
+    void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
