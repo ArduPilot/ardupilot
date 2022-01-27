@@ -122,7 +122,12 @@ public:
 
     // method that was last used for disarm; invalid unless the
     // vehicle has been disarmed at least once.
-    Method last_disarm_method() const { return _last_disarm_method; } 
+    Method last_disarm_method() const { return _last_disarm_method; }
+
+    // enum for ARMING_OPTIONS parameter
+    enum class ArmingOptions : int32_t {
+        DISABLE_PREARM_DISPLAY   = (1U << 0),
+    };
 
 protected:
 
@@ -131,7 +136,8 @@ protected:
     AP_Int32                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
-    AP_Int32                 _required_mission_items;
+    AP_Int32                _required_mission_items;
+    AP_Int32                _arming_options;
 
     // internal members
     bool                    armed;
