@@ -38,7 +38,7 @@ public:
     // have to have these functions as they are pure virtual
     void init(motor_frame_class frame_class, motor_frame_type frame_type) override {};
     void set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) override {};
-    void output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
+    void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
     const char* _get_frame_string() const override { return "TEST"; }
     void output_armed_stabilizing() override {};
     void output_to_motors() override {};

@@ -23,9 +23,6 @@ public:
     // set update rate to motors - a value in hertz
     void set_update_rate( uint16_t speed_hz ) override;
 
-    // spin a motor at the pwm value specified
-    void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
-
     // output_to_motors - sends output to named servos
     void output_to_motors() override;
 
@@ -41,6 +38,9 @@ protected:
     void output_armed_stabilizing() override;
 
     const char* _get_frame_string() const override { return "TAILSITTER"; }
+
+    // spin a motor at the pwm value specified
+    void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // calculated outputs
     float _throttle; // 0..1
