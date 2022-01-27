@@ -124,9 +124,9 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
     // get turn speed
     if (!is_positive(turn_rate_ds)) {
         // default to default slew rate
-        _fixed_yaw_slewrate_cds = copter.attitude_control->get_slew_yaw_cds();
+        _fixed_yaw_slewrate_cds = copter.attitude_control->get_slew_yaw_max_degs() * 100.0;
     } else {
-        _fixed_yaw_slewrate_cds = MIN(copter.attitude_control->get_slew_yaw_cds(), turn_rate_ds * 100.0);
+        _fixed_yaw_slewrate_cds = MIN(copter.attitude_control->get_slew_yaw_max_degs(), turn_rate_ds) * 100.0;
     }
 
     // set yaw mode
