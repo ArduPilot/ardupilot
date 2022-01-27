@@ -103,6 +103,10 @@ define AP_VOLZ_ENABLED 0
 define HAL_SUPPORT_RCOUT_SERIAL 0
 define HAL_TORQEEDO_ENABLED 0
 
+# the SkyViper only has a single Baro:
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_ICM20789_ENABLED 1
+
 # SkyViper has only one physical GPS but can also take from mavlink:
 define AP_GPS_BACKEND_DEFAULT_ENABLED 0
 define AP_GPS_UBLOX_ENABLED 1
