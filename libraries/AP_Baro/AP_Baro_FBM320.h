@@ -1,10 +1,16 @@
 #pragma once
 
+#include "AP_Baro_Backend.h"
+
+#ifndef AP_BARO_FBM320_ENABLED
+#define AP_BARO_FBM320_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_BARO_FBM320_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/utility/OwnPtr.h>
-
-#include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_FBM320_I2C_ADDR
  #define HAL_BARO_FBM320_I2C_ADDR  0x6C
@@ -46,3 +52,5 @@ private:
         uint32_t C4, C5, C7;
     } calibration;
 };
+
+#endif  // AP_BARO_FBM320_ENABLED
