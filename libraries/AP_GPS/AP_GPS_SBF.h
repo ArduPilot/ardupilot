@@ -23,7 +23,7 @@
 #include "GPS_Backend.h"
 
 #ifndef AP_GPS_SBF_ENABLED
-  #define AP_GPS_SBF_ENABLED 1
+  #define AP_GPS_SBF_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
 #endif
 
 #if AP_GPS_SBF_ENABLED

@@ -25,7 +25,7 @@
 #include "GPS_Backend.h"
 
 #ifndef AP_GPS_ERB_ENABLED
-  #define AP_GPS_ERB_ENABLED 1
+  #define AP_GPS_ERB_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
 #endif
 
 #if AP_GPS_ERB_ENABLED
