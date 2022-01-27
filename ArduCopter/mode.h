@@ -110,6 +110,10 @@ public:
     // returns true if pilot's yaw input should be used to adjust vehicle's heading
     virtual bool use_pilot_yaw() const {return true; }
 
+    // pause and resume a mode
+    virtual bool pause() { return false; };
+    virtual bool resume() { return false; };
+
 protected:
 
     // helper functions
@@ -419,6 +423,10 @@ public:
     // Auto
     SubMode mode() const { return _mode; }
 
+    // pause continue in auto mode
+    bool pause() override;
+    bool resume() override;
+
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
@@ -427,9 +435,6 @@ public:
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
-    
-    void pause_mission();
-    void continue_mission();
 
     bool is_landing() const override;
 
@@ -973,6 +978,10 @@ public:
 
     bool use_pilot_yaw() const override;
 
+    // pause continue in guided mode
+    bool pause() override;
+    bool resume() override;
+
 protected:
 
     const char *name() const override { return "GUIDED"; }
@@ -1016,6 +1025,9 @@ private:
     SubMode guided_mode = SubMode::TakeOff;
     bool send_notification;     // used to send one time notification to ground station
     bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
+
+    // guided mode is paused or not
+    bool _paused;
 };
 
 
