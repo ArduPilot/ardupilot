@@ -11,7 +11,8 @@ void AP_Arming_Copter::update(void)
     static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
     pre_arm_display_counter++;
     bool display_fail = false;
-    if (pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
+    if ((_arming_options & uint32_t(AP_Arming::ArmingOptions::DISABLE_PREARM_DISPLAY)) == 0 &&
+        pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
         display_fail = true;
         pre_arm_display_counter = 0;
     }
