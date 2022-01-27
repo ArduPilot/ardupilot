@@ -10,8 +10,12 @@
 #define AP_SIM_BARO_ENABLED AP_SIM_ENABLED
 #endif
 
-#ifndef HAL_MSP_BARO_ENABLED
-#define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
+#ifndef AP_BARO_EXTERNALAHRS_ENABLED
+#define AP_BARO_EXTERNALAHRS_ENABLED HAL_EXTERNAL_AHRS_ENABLED
+#endif
+
+#ifndef AP_BARO_MSP_ENABLED
+#define AP_BARO_MSP_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
 
 // maximum number of sensor instances
@@ -190,14 +194,13 @@ public:
         return _rsem;
     }
 
-#if HAL_MSP_BARO_ENABLED
+#if AP_BARO_MSP_ENABLED
     void handle_msp(const MSP::msp_baro_data_message_t &pkt);
 #endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_BARO_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
-    
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -216,9 +219,7 @@ private:
 
     bool init_done;
 
-#if HAL_MSP_BARO_ENABLED
     uint8_t msp_instance_mask;
-#endif
 
     // bitmask values for GND_PROBE_EXT
     enum {

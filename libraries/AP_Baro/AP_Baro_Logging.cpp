@@ -1,4 +1,5 @@
 #include "AP_Baro.h"
+
 #include <AP_Logger/AP_Logger.h>
 
 void AP_Baro::Write_Baro_instance(uint64_t time_us, uint8_t baro_instance)

@@ -14,6 +14,8 @@
  */
 #include "AP_Baro_BMP280.h"
 
+#if AP_BARO_BMP280_ENABLED
+
 #include <utility>
 
 extern const AP_HAL::HAL &hal;
@@ -203,3 +205,5 @@ void AP_Baro_BMP280::_update_pressure(int32_t press_raw)
     _pressure_sum += press;
     _pressure_count++;
 }
+
+#endif  // AP_BARO_BMP280_ENABLED

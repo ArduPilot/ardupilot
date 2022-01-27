@@ -14,6 +14,8 @@
  */
 #include "AP_Baro_MS5611.h"
 
+#if AP_BARO_MS56XX_ENABLED
+
 #include <utility>
 #include <stdio.h>
 
@@ -490,3 +492,5 @@ void AP_Baro_MS56XX::_calculate_5837()
 
     _copy_to_frontend(_instance, (float)pressure, temperature);
 }
+
+#endif  // AP_BARO_MS56XX_ENABLED

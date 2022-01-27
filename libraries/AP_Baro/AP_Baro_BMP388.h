@@ -1,10 +1,16 @@
 #pragma once
 
+#include "AP_Baro_Backend.h"
+
+#ifndef AP_BARO_BMP388_ENABLED
+#define AP_BARO_BMP388_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_BARO_BMP388_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/utility/OwnPtr.h>
-
-#include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_BMP388_I2C_ADDR
  #define HAL_BARO_BMP388_I2C_ADDR  (0x76)
@@ -80,3 +86,5 @@ private:
     void scale_calibration_data(void);
     bool read_registers(uint8_t reg, uint8_t *data, uint8_t len);
 };
+
+#endif  // AP_BARO_BMP388_ENABLED

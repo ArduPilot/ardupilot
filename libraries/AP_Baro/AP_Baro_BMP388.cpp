@@ -14,6 +14,8 @@
  */
 #include "AP_Baro_BMP388.h"
 
+#if AP_BARO_BMP388_ENABLED
+
 #include <utility>
 
 extern const AP_HAL::HAL &hal;
@@ -238,3 +240,5 @@ bool AP_Baro_BMP388::read_registers(uint8_t reg, uint8_t *data, uint8_t len)
     memcpy(data, &b[2], len);
     return true;
 }
+
+#endif  // AP_BARO_BMP388_ENABLED
