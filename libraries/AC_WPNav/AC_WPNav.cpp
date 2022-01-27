@@ -197,8 +197,9 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
     _this_leg_is_spline = false;
 
     // initialise the terrain velocity to the current maximum velocity
-    _terrain_vel = _wp_desired_speed_xy_cms;
-    _terrain_accel = 0.0;
+    _offset_vel = _wp_desired_speed_xy_cms;
+    _offset_accel = 0.0;
+    _paused = false;
 
     // mark as active
     _wp_last_update = AP_HAL::millis();
@@ -209,8 +210,8 @@ void AC_WPNav::set_speed_xy(float speed_cms)
 {
     // range check target speed and protect against divide by zero
     if (speed_cms >= WPNAV_WP_SPEED_MIN && is_positive(_wp_desired_speed_xy_cms)) {
-        // update terrain following speed scalar
-        _terrain_vel = speed_cms * _terrain_vel / _wp_desired_speed_xy_cms;
+        // update horizontal velocity speed offset scalar
+        _offset_vel = speed_cms * _offset_vel / _wp_desired_speed_xy_cms;
 
         // initialize the desired wp speed
         _wp_desired_speed_xy_cms = speed_cms;
@@ -463,14 +464,14 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
 
     // get current position and adjust altitude to origin and destination's frame (i.e. _frame)
     const Vector3f &curr_pos = _inav.get_position_neu_cm() - Vector3f{0, 0, terr_offset};
-
-    // Use _track_scalar_dt to slow down S-Curve time to prevent target moving too far in front of aircraft
     Vector3f curr_target_vel = _pos_control.get_vel_desired_cms();
     curr_target_vel.z -= _pos_control.get_vel_offset_z_cms();
 
+    // Use _track_scalar_dt to slow down progression of the position target moving too far in front of aircraft
+    // _track_scalar_dt does not scale the velocity or acceleration
     float track_scaler_dt = 1.0f;
     // check target velocity is non-zero
-    if (is_positive(curr_target_vel.length())) {
+    if (is_positive(curr_target_vel.length_squared())) {
         Vector3f track_direction = curr_target_vel.normalized();
         const float track_error = _pos_control.get_pos_error_cm().dot(track_direction);
         const float track_velocity = _inav.get_velocity_neu_cms().dot(track_direction);
@@ -478,13 +479,15 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
         track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_xy_p().kP() * track_error) / curr_target_vel.length(), 0.1f, 1.0f);
     }
 
-    float vel_time_scalar = 1.0;
+    // Use vel_scaler_dt to slow down the trajectory time
+    // vel_scaler_dt scales the velocity and acceleration to be kinematically constent
+    float vel_scaler_dt = 1.0;
     if (is_positive(_wp_desired_speed_xy_cms)) {
-        update_vel_accel(_terrain_vel, _terrain_accel, dt, 0.0, 0.0);
-        shape_vel_accel( _wp_desired_speed_xy_cms * offset_z_scaler, 0.0,
-            _terrain_vel, _terrain_accel,
-            -_wp_accel_cmss, _wp_accel_cmss, _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
-        vel_time_scalar = _terrain_vel / _wp_desired_speed_xy_cms;
+        update_vel_accel(_offset_vel, _offset_accel, dt, 0.0, 0.0);
+        const float vel_input = !_paused ? _wp_desired_speed_xy_cms * offset_z_scaler : 0.0;
+        shape_vel_accel(vel_input, 0.0, _offset_vel, _offset_accel, -_wp_accel_cmss, _wp_accel_cmss,
+                        _pos_control.get_shaping_jerk_xy_cmsss(), dt, true);
+        vel_scaler_dt = _offset_vel / _wp_desired_speed_xy_cms;
     }
 
     // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
@@ -501,16 +504,23 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (!_this_leg_is_spline) {
         // update target position, velocity and acceleration
         target_pos = _origin;
-        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, _scurve_accel_corner, _flags.fast_waypoint, _track_scalar_dt * vel_time_scalar * dt, target_pos, target_vel, target_accel);
+        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, _scurve_accel_corner, _flags.fast_waypoint, _track_scalar_dt * vel_scaler_dt * dt, target_pos, target_vel, target_accel);
     } else {
         // splinetarget_vel
         target_vel = curr_target_vel;
-        _spline_this_leg.advance_target_along_track(_track_scalar_dt * vel_time_scalar * dt, target_pos, target_vel);
+        _spline_this_leg.advance_target_along_track(_track_scalar_dt * vel_scaler_dt * dt, target_pos, target_vel);
         s_finished = _spline_this_leg.reached_destination();
     }
 
-    target_vel *= vel_time_scalar;
-    target_accel *= sq(vel_time_scalar);
+    Vector3f accel_offset;
+    if (is_positive(target_vel.length_squared())) {
+        Vector3f track_direction = target_vel.normalized();
+        accel_offset = track_direction * _offset_accel * target_vel.length() / _wp_desired_speed_xy_cms;
+    }
+
+    target_vel *= vel_scaler_dt;
+    target_accel *= sq(vel_scaler_dt);
+    target_accel += accel_offset;
 
     // convert final_target.z to altitude above the ekf origin
     target_pos.z += _pos_control.get_pos_offset_z_cm();
