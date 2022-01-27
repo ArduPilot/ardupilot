@@ -97,3 +97,8 @@ define HAL_WITH_ESC_TELEM 0
 define LANDING_GEAR_ENABLED 0
 define MODE_TURTLE_ENABLED 0
 define WINCH_ENABLED 0
+
+# SkyViper has only one physical GPS but can also take from mavlink:
+define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+define AP_GPS_UBLOX_ENABLED 1
+define AP_GPS_MAV_ENABLED 1
