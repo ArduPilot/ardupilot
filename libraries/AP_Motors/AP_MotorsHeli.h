@@ -60,11 +60,6 @@ public:
     // output_min - sets servos to neutral point with motors stopped
     void output_min() override;
 
-    // output_test_seq - spin a motor at the pwm value specified
-    //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
-    //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override = 0;
-
     //
     // heli specific methods
     //
