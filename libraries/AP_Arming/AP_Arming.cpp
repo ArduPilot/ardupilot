@@ -128,6 +128,13 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
+    // @Param: OPTIONS
+    // @DisplayName: Arming options
+    // @Description: Options that can be applied to change arming behaviour
+    // @Values: 0:None,1:Disable prearm display
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("OPTIONS", 9,   AP_Arming, _arming_options, 0, AP_PARAM_FRAME_COPTER),
+
     AP_GROUPEND
 };
 
