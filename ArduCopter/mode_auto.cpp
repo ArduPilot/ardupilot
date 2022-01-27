@@ -673,18 +673,6 @@ void ModeAuto::exit_mission()
     }
 }
 
-// pause_mission - Prevent aircraft from progressing along the track
-void ModeAuto::pause_mission()
-{
-        wp_nav->set_pause();
-}
-
-// continue_mission - Allow aircraft to progress along the track
-void ModeAuto::continue_mission()
-{
-        wp_nav->set_continue();
-}
-
 // do_guided - start guided mode
 bool ModeAuto::do_guided(const AP_Mission::Mission_Command& cmd)
 {
@@ -2077,5 +2065,29 @@ bool ModeAuto::verify_nav_script_time()
     return false;
 }
 #endif
+
+// pause - Prevent aircraft from progressing along the track
+bool ModeAuto::pause()
+{
+    // do not pause if already paused or not in the WP sub mode or already reached to the destination
+    if(wp_nav->paused() || _mode != SubMode::WP || wp_nav->reached_wp_destination()) {
+        return false;
+    }
+
+    wp_nav->set_pause();
+    return true;
+}
+
+// resume - Allow aircraft to progress along the track
+bool ModeAuto::resume()
+{
+    // do not resume if not paused before
+    if(!wp_nav->paused()) {
+        return false;
+    }
+
+    wp_nav->set_resume();
+    return true;
+}
 
 #endif

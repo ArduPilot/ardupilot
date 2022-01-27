@@ -40,6 +40,10 @@ bool ModeGuided::init(bool ignore_checks)
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
     send_notification = false;
+
+    // clear pause state when entering guided mode
+    _paused = false;
+
     return true;
 }
 
@@ -47,10 +51,11 @@ bool ModeGuided::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeGuided::run()
 {
-    // if (paused) {
-    //     pause_control_run();
-    //     return;
-    // }
+    // run pause control if the vehicle is paused
+    if (_paused) {
+        pause_control_run();
+        return;
+    }
 
     // call the correct auto controller
     switch (guided_mode) {
@@ -854,7 +859,7 @@ void ModeGuided::velaccel_control_run()
     }
 }
 
-// velaccel_control_run - runs the guided velocity and acceleration controller
+// pause_control_run - runs the guided mode pause controller
 // called from guided_run
 void ModeGuided::pause_control_run()
 {
@@ -1197,6 +1202,20 @@ float ModeGuided::crosstrack_error() const
 uint32_t ModeGuided::get_timeout_ms() const
 {
     return MAX(copter.g2.guided_timeout, 0.1) * 1000;
+}
+
+// pause guide mode
+bool ModeGuided::pause()
+{
+    _paused = true;
+    return true;
+}
+
+// resume guided mode
+bool ModeGuided::resume()
+{
+    _paused = false;
+    return true;
 }
 
 #endif
