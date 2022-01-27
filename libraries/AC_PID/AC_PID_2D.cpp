@@ -129,17 +129,18 @@ Vector2f AC_PID_2D::update_all(const Vector3f &target, const Vector3f &measureme
 //  If the limit is set the integral is only allowed to reduce in the direction of the limit
 void AC_PID_2D::update_i(const Vector2f &limit)
 {
-    Vector2f limit_direction = limit;
+    _pid_info_x.limit = false;
+    _pid_info_y.limit = false;
+    
     Vector2f delta_integrator = (_error * _ki) * _dt;
-    if (!is_zero(limit_direction.length_squared())) {
-        // zero delta_vel if it will increase the velocity error
-        limit_direction.normalize();
-        if (is_positive(delta_integrator * limit)) {
-            delta_integrator.zero();
-        }
+    float integrator_length = _integrator.length();
+    _integrator += delta_integrator;
+    // do not let integrator increase in length if delta_integrator is in the direction of limit
+    if (is_positive(delta_integrator * limit) && _integrator.limit_length(integrator_length)) {
+        _pid_info_x.limit = true;
+        _pid_info_y.limit = true;
     }
 
-    _integrator += delta_integrator;
     _integrator.limit_length(_kimax);
 }
 
