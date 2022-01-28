@@ -33,6 +33,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_ESC_TELEM_PORT_DEFAULT -1
 #endif
 
+#ifndef AP_PERIPH_BARO_ENABLE_DEFAULT
+#define AP_PERIPH_BARO_ENABLE_DEFAULT 1
+#endif
+
 #ifndef HAL_DEFAULT_MAV_SYSTEM_ID
 #define MAV_SYSTEM_ID 3
 #else
@@ -201,7 +205,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Description: Barometer Enable
     // @Values: 0:Disabled, 1:Enabled
     // @User: Standard
-    GSCALAR(baro_enable, "BARO_ENABLE", 1),
+    GSCALAR(baro_enable, "BARO_ENABLE", AP_PERIPH_BARO_ENABLE_DEFAULT),
 #endif
 
 #ifdef AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
