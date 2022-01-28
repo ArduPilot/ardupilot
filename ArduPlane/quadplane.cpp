@@ -3436,12 +3436,6 @@ bool QuadPlane::using_wp_nav(void) const
     if (plane.control_mode == &plane.mode_qloiter || plane.control_mode == &plane.mode_qland) {
         return true;
     }
-    if (plane.control_mode == &plane.mode_qrtl && poscontrol.get_state() >= QPOS_POSITION2) {
-        return true;
-    }
-    if (plane.control_mode == &plane.mode_auto && poscontrol.get_state() > QPOS_APPROACH) {
-        return true;
-    }
     return false;
 }
 
