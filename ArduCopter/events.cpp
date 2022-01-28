@@ -284,6 +284,10 @@ void Copter::failsafe_terrain_on_event()
 // check for gps glitch failsafe
 void Copter::gpsglitch_check()
 {
+    if (copter.gps.num_sensors() < 1) {
+        return;  // copter that do not use GNSS do not need a glitch check.
+    }
+
     // get filter status
     nav_filter_status filt_status = inertial_nav.get_filter_status();
     bool gps_glitching = filt_status.flags.gps_glitching;
