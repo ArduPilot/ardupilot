@@ -991,6 +991,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_command_int_t &packet)
 {
+#if MODE_AUTO_ENABLED
     if (copter.flightmode->mode_number() != Mode::Number::AUTO) {
         // only supported in AUTO mode
         return MAV_RESULT_FAILED;
@@ -1010,6 +1011,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
         gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
         return MAV_RESULT_ACCEPTED;
     }
+#endif
 
     // fail pause or continue
     return MAV_RESULT_FAILED;
