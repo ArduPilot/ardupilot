@@ -432,10 +432,12 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPINFO("IMUT_START",    1, SIM, imu_temp_start,  25),
     AP_GROUPINFO("IMUT_END",      2, SIM, imu_temp_end, 45),
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
+#endif
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
 #if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
@@ -493,6 +495,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("JSON_MASTER",     27, SIM, ride_along_master, 0),
 
     // the IMUT parameters must be last due to the enable parameters
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
 #if INS_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
@@ -500,6 +503,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
 #endif
+#endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND
 };
     
