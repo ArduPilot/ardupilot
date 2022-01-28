@@ -46,6 +46,7 @@ static float calculate_noise(float noise, float noise_variation) {
 
 float AP_InertialSensor_SITL::get_temperature(void)
 {
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (!is_zero(sitl->imu_temp_fixed)) {
         // user wants fixed temperature
         return sitl->imu_temp_fixed;
@@ -60,6 +61,9 @@ float AP_InertialSensor_SITL::get_temperature(void)
     const float T1 = sitl->imu_temp_end;
     const float tconst = sitl->imu_temp_tconst;
     return T1 - (T1 - T0) * expf(-tsec / tconst);
+#else
+    return 20.0f;
+#endif
 }
 
 /*
@@ -69,8 +73,6 @@ void AP_InertialSensor_SITL::generate_accel()
 {
     Vector3f accel_accum;
     uint8_t nsamples = enable_fast_sampling(accel_instance) ? 4 : 1;
-
-    float T = get_temperature();
 
     for (uint8_t j = 0; j < nsamples; j++) {
 
@@ -173,7 +175,10 @@ void AP_InertialSensor_SITL::generate_accel()
             accel.x = accel.y = accel.z = sitl->accel_fail[accel_instance];
         }
 
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+        const float T = get_temperature();
         sitl->imu_tcal[gyro_instance].sitl_apply_accel(T, accel);
+#endif
 
         _notify_new_accel_sensor_rate_sample(accel_instance, accel);
 
@@ -256,7 +261,9 @@ void AP_InertialSensor_SITL::generate_gyro()
 
         Vector3f gyro = Vector3f(p, q, r);
 
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
         sitl->imu_tcal[gyro_instance].sitl_apply_gyro(get_temperature(), gyro);
+#endif
 
         // add in gyro scaling
         Vector3f scale = sitl->gyro_scale[gyro_instance];
