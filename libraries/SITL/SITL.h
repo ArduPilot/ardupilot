@@ -451,12 +451,14 @@ public:
     float get_apparent_wind_dir() const{return state.wind_vane_apparent.direction;}
     float get_apparent_wind_spd() const{return state.wind_vane_apparent.speed;}
 
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     // IMU temperature calibration params
     AP_Float imu_temp_start;
     AP_Float imu_temp_end;
     AP_Float imu_temp_tconst;
     AP_Float imu_temp_fixed;
     AP_InertialSensor::TCal imu_tcal[INS_MAX_INSTANCES];
+#endif
 
     // IMU control parameters
     AP_Float gyro_noise[INS_MAX_INSTANCES];  // in degrees/second
