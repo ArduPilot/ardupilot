@@ -998,7 +998,7 @@ void ModeAuto::loiter_to_alt_run()
 void ModeAuto::payload_place_start(const Vector2f& destination)
 {
     _mode = SubMode::NAV_PAYLOAD_PLACE;
-    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+    nav_payload_place.state = PayloadPlaceStateType::Calibrating_Hover_Start;
 
     // initialise loiter target destination
     loiter_nav->init_target(destination);
@@ -1026,21 +1026,21 @@ void ModeAuto::payload_place_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     switch (nav_payload_place.state) {
-    case PayloadPlaceStateType_FlyToLocation:
+    case PayloadPlaceStateType::FlyToLocation:
         return wp_run();
-    case PayloadPlaceStateType_Calibrating_Hover_Start:
-    case PayloadPlaceStateType_Calibrating_Hover:
+    case PayloadPlaceStateType::Calibrating_Hover_Start:
+    case PayloadPlaceStateType::Calibrating_Hover:
         return payload_place_run_loiter();
-    case PayloadPlaceStateType_Descending_Start:
-    case PayloadPlaceStateType_Descending:
+    case PayloadPlaceStateType::Descending_Start:
+    case PayloadPlaceStateType::Descending:
         return payload_place_run_descend();
-    case PayloadPlaceStateType_Releasing_Start:
-    case PayloadPlaceStateType_Releasing:
-    case PayloadPlaceStateType_Released:
-    case PayloadPlaceStateType_Ascending_Start:
+    case PayloadPlaceStateType::Releasing_Start:
+    case PayloadPlaceStateType::Releasing:
+    case PayloadPlaceStateType::Released:
+    case PayloadPlaceStateType::Ascending_Start:
         return payload_place_run_loiter();
-    case PayloadPlaceStateType_Ascending:
-    case PayloadPlaceStateType_Done:
+    case PayloadPlaceStateType::Ascending:
+    case PayloadPlaceStateType::Done:
         return wp_run();
     }
 }
@@ -1543,13 +1543,13 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
     // if location provided we fly to that location at current altitude
     if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
         // set state to fly to location
-        nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
+        nav_payload_place.state = PayloadPlaceStateType::FlyToLocation;
 
         const Location target_loc = terrain_adjusted_location(cmd);
 
         wp_start(target_loc);
     } else {
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
+        nav_payload_place.state = PayloadPlaceStateType::Calibrating_Hover_Start;
 
         // initialise placing controller
         payload_place_start();
@@ -1655,39 +1655,39 @@ bool ModeAuto::verify_payload_place()
     // if we discover we've landed then immediately release the load:
     if (copter.ap.land_complete) {
         switch (nav_payload_place.state) {
-        case PayloadPlaceStateType_FlyToLocation:
-        case PayloadPlaceStateType_Calibrating_Hover_Start:
-        case PayloadPlaceStateType_Calibrating_Hover:
-        case PayloadPlaceStateType_Descending_Start:
-        case PayloadPlaceStateType_Descending:
+        case PayloadPlaceStateType::FlyToLocation:
+        case PayloadPlaceStateType::Calibrating_Hover_Start:
+        case PayloadPlaceStateType::Calibrating_Hover:
+        case PayloadPlaceStateType::Descending_Start:
+        case PayloadPlaceStateType::Descending:
             gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: landed");
-            nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
+            nav_payload_place.state = PayloadPlaceStateType::Releasing_Start;
             break;
-        case PayloadPlaceStateType_Releasing_Start:
-        case PayloadPlaceStateType_Releasing:
-        case PayloadPlaceStateType_Released:
-        case PayloadPlaceStateType_Ascending_Start:
-        case PayloadPlaceStateType_Ascending:
-        case PayloadPlaceStateType_Done:
+        case PayloadPlaceStateType::Releasing_Start:
+        case PayloadPlaceStateType::Releasing:
+        case PayloadPlaceStateType::Released:
+        case PayloadPlaceStateType::Ascending_Start:
+        case PayloadPlaceStateType::Ascending:
+        case PayloadPlaceStateType::Done:
             break;
         }
     }
 
     switch (nav_payload_place.state) {
-    case PayloadPlaceStateType_FlyToLocation:
+    case PayloadPlaceStateType::FlyToLocation:
         if (!copter.wp_nav->reached_wp_destination()) {
             return false;
         }
         payload_place_start();
         return false;
-    case PayloadPlaceStateType_Calibrating_Hover_Start:
+    case PayloadPlaceStateType::Calibrating_Hover_Start:
         // hover for 1 second to get an idea of what our hover
         // throttle looks like
         debug("Calibrate start");
         nav_payload_place.hover_start_timestamp = now;
-        nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover;
+        nav_payload_place.state = PayloadPlaceStateType::Calibrating_Hover;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Calibrating_Hover: {
+    case PayloadPlaceStateType::Calibrating_Hover: {
         if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
             // still calibrating...
             debug("Calibrate Timer: %d", now - nav_payload_place.hover_start_timestamp);
@@ -1697,21 +1697,21 @@ bool ModeAuto::verify_payload_place()
         nav_payload_place.hover_throttle_level = current_throttle_level;
         const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors->get_throttle_hover());
         gcs().send_text(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
-        nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
+        nav_payload_place.state = PayloadPlaceStateType::Descending_Start;
         }
         FALLTHROUGH;
-    case PayloadPlaceStateType_Descending_Start:
+    case PayloadPlaceStateType::Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_position_z_up_cm();
         nav_payload_place.descend_throttle_level = 0;
-        nav_payload_place.state = PayloadPlaceStateType_Descending;
+        nav_payload_place.state = PayloadPlaceStateType::Descending;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Descending:
+    case PayloadPlaceStateType::Descending:
         // make sure we don't descend too far:
         debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
             nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()  > nav_payload_place.descend_max) {
-            nav_payload_place.state = PayloadPlaceStateType_Ascending;
+            nav_payload_place.state = PayloadPlaceStateType::Ascending;
             gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
         }
@@ -1738,49 +1738,49 @@ bool ModeAuto::verify_payload_place()
             debug("Place Timer: %d", now - nav_payload_place.place_start_timestamp);
             return false;
         }
-        nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
+        nav_payload_place.state = PayloadPlaceStateType::Releasing_Start;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Releasing_Start:
+    case PayloadPlaceStateType::Releasing_Start:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Releasing the gripper");
             g2.gripper.release();
         } else {
             gcs().send_text(MAV_SEVERITY_INFO, "Gripper not valid");
-            nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+            nav_payload_place.state = PayloadPlaceStateType::Ascending_Start;
             break;
         }
 #else
         gcs().send_text(MAV_SEVERITY_INFO, "Gripper code disabled");
 #endif
-        nav_payload_place.state = PayloadPlaceStateType_Releasing;
+        nav_payload_place.state = PayloadPlaceStateType::Releasing;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Releasing:
+    case PayloadPlaceStateType::Releasing:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid() && !g2.gripper.released()) {
             return false;
         }
 #endif
-        nav_payload_place.state = PayloadPlaceStateType_Released;
+        nav_payload_place.state = PayloadPlaceStateType::Released;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Released: {
-        nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+    case PayloadPlaceStateType::Released: {
+        nav_payload_place.state = PayloadPlaceStateType::Ascending_Start;
         }
         FALLTHROUGH;
-    case PayloadPlaceStateType_Ascending_Start: {
+    case PayloadPlaceStateType::Ascending_Start: {
         Location target_loc(inertial_nav.get_position_neu_cm(), Location::AltFrame::ABOVE_ORIGIN);
         target_loc.alt = nav_payload_place.descend_start_altitude;
         wp_start(target_loc);
-        nav_payload_place.state = PayloadPlaceStateType_Ascending;
+        nav_payload_place.state = PayloadPlaceStateType::Ascending;
         }
         FALLTHROUGH;
-    case PayloadPlaceStateType_Ascending:
+    case PayloadPlaceStateType::Ascending:
         if (!copter.wp_nav->reached_wp_destination()) {
             return false;
         }
-        nav_payload_place.state = PayloadPlaceStateType_Done;
+        nav_payload_place.state = PayloadPlaceStateType::Done;
         FALLTHROUGH;
-    case PayloadPlaceStateType_Done:
+    case PayloadPlaceStateType::Done:
         return true;
     default:
         // this should never happen

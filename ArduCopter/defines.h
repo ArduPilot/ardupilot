@@ -88,18 +88,18 @@ enum class AirMode {
     AIRMODE_ENABLED,
 };
 
-enum PayloadPlaceStateType {
-    PayloadPlaceStateType_FlyToLocation,
-    PayloadPlaceStateType_Calibrating_Hover_Start,
-    PayloadPlaceStateType_Calibrating_Hover,
-    PayloadPlaceStateType_Descending_Start,
-    PayloadPlaceStateType_Descending,
-    PayloadPlaceStateType_Releasing_Start,
-    PayloadPlaceStateType_Releasing,
-    PayloadPlaceStateType_Released,
-    PayloadPlaceStateType_Ascending_Start,
-    PayloadPlaceStateType_Ascending,
-    PayloadPlaceStateType_Done,
+enum class PayloadPlaceStateType {
+    FlyToLocation,
+    Calibrating_Hover_Start,
+    Calibrating_Hover,
+    Descending_Start,
+    Descending,
+    Releasing_Start,
+    Releasing,
+    Released,
+    Ascending_Start,
+    Ascending,
+    Done,
 };
 
 // bit options for DEV_OPTIONS parameter
