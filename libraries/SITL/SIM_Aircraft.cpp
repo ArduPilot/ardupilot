@@ -34,6 +34,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Declination/AP_Declination.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 using namespace SITL;
 
@@ -993,6 +994,8 @@ float Aircraft::get_local_updraft(const Vector3d &currentPos)
     int n_thermals = 0;
 
     switch (scenario) {
+        case 0:
+            return 0;
         case 1:
             n_thermals = 1;
             thermals_w[0] =  2.0;
@@ -1014,6 +1017,8 @@ float Aircraft::get_local_updraft(const Vector3d &currentPos)
             thermals_x[0] = -180.0;
             thermals_y[0] = -260.0;
             break;
+        default:
+            AP_BoardConfig::config_error("Bad thermal scenario");
     }
 
     // Wind drift at this altitude
