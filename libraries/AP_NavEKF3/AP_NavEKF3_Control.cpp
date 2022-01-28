@@ -302,8 +302,12 @@ void NavEKF3_core::setAidingMode()
             // check if drag data is being used
             bool dragUsed = (imuSampleTime_ms - lastDragPassTime_ms <= minTestTime_ms);
 
+#if EK3_FEATURE_BEACON_FUSION
             // Check if range beacon data is being used
-            bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
+            const bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms <= minTestTime_ms);
+#else
+            const bool rngBcnUsed = false;
+#endif
 
             // Check if GPS or external nav is being used
             bool posUsed = (imuSampleTime_ms - lastPosPassTime_ms <= minTestTime_ms);
@@ -323,7 +327,9 @@ void NavEKF3_core::setAidingMode()
             if (!attAiding) {
             	attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
                 		(imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+#if EK3_FEATURE_BEACON_FUSION
                         (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+#endif
                         (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
                         (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
             }
@@ -337,8 +343,11 @@ void NavEKF3_core::setAidingMode()
                 } else {
                     maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
                 }
-                posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
-                                     (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
+                posAidLossCritical =
+#if EK3_FEATURE_BEACON_FUSION
+                    (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
+#endif
+                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms);
             }
 
             if (attAidLossCritical) {
@@ -411,12 +420,14 @@ void NavEKF3_core::setAidingMode()
                 posResetSource = resetDataSource::GPS;
                 velResetSource = resetDataSource::GPS;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using GPS",(unsigned)imu_index);
+#if EK3_FEATURE_BEACON_FUSION
             } else if (readyToUseRangeBeacon()) {
                 // We are commencing aiding using range beacons
                 posResetSource = resetDataSource::RNGBCN;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u is using range beacons",(unsigned)imu_index);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,(double)receiverPos.x,(double)receiverPos.y);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,(double)bcnPosOffsetNED.z);
+#endif  // EK3_FEATURE_BEACON_FUSION
 #if EK3_FEATURE_EXTERNAL_NAV
             } else if (readyToUseExtNav()) {
                 // we are commencing aiding using external nav
@@ -441,7 +452,9 @@ void NavEKF3_core::setAidingMode()
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
             lastVelPassTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_BEACON_FUSION
             lastRngBcnPassTime_ms = imuSampleTime_ms;
+#endif
             break;
         }
 
@@ -541,11 +554,15 @@ bool NavEKF3_core::readyToUseGPS(void) const
 // return true if the filter to be ready to use the beacon range measurements
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
+#if EK3_FEATURE_BEACON_FUSION
     if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
         return false;
     }
 
     return tiltAlignComplete && yawAlignComplete && delAngBiasLearned && rngBcnAlignmentCompleted && rngBcnDataToFuse;
+#else
+    return false;
+#endif  // EK3_FEATURE_BEACON_FUSION
 }
 
 // return true if the filter is ready to use external nav data

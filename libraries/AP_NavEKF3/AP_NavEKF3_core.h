@@ -674,8 +674,10 @@ private:
     // fuse body frame velocity measurements
     void FuseBodyVel();
 
+#if EK3_FEATURE_BEACON_FUSION
     // fuse range beacon measurements
     void FuseRngBcn();
+#endif
 
     // use range beacon measurements to calculate a static position
     void FuseRngBcnStatic();
@@ -745,14 +747,18 @@ private:
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 
+#if EK3_FEATURE_BEACON_FUSION
     // check for new range beacon data and update stored measurements if available
     void readRngBcnData();
+#endif
 
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
 
+#if EK3_FEATURE_BEACON_FUSION
     // determine when to perform fusion of range measurements take relative to a beacon at a known NED position
     void SelectRngBcnFusion();
+#endif
 
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
@@ -1273,6 +1279,7 @@ private:
     yaw_elements yawAngDataStatic;      // yaw angle (regardless of yaw source) when the vehicle was last on ground and not moving
 
     // Range Beacon Sensor Fusion
+#if EK3_FEATURE_BEACON_FUSION
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
     rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
     uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
@@ -1320,6 +1327,7 @@ private:
         ftype testRatio;    // innovation consistency test ratio
         Vector3F beaconPosNED; // beacon NED position
     } *rngBcnFusionReport;
+#endif  // if EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_DRAG_FUSION
     // drag fusion for multicopter wind estimation

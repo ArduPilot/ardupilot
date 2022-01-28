@@ -1,6 +1,8 @@
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 
+#if EK3_FEATURE_BEACON_FUSION
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -641,3 +643,4 @@ void NavEKF3_core::CalcRangeBeaconPosDownOffset(ftype obsVar, Vector3F &vehicleP
     rngBcnDataDelayed.beacon_posNED.z += bcnPosOffsetNED.z;
 }
 
+#endif  // EK3_FEATURE_BEACON_FUSION
