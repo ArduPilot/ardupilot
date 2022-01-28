@@ -233,11 +233,13 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
                 const struct Location &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
                 return false;
+#if EK3_FEATURE_BEACON_FUSION
             } else if (rngBcnAlignmentStarted) {
                 // If we are attempting alignment using range beacon data, then report the position
                 posNE.x = receiverPos.x;
                 posNE.y = receiverPos.y;
                 return false;
+#endif
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
                 posNE = outputDataNew.position.xy().tofloat();
