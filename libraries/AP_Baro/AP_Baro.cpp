@@ -402,10 +402,10 @@ float AP_Baro::get_altitude_difference(float base_pressure, float pressure) cons
 // 1976 standard atmospheric model
 float AP_Baro::get_sealevel_pressure(float pressure) const
 {
-    const float standard_day_temp = C_TO_KELVIN(15); //15 degrees Celsius converted to Kelvin
+    float temp    = C_TO_KELVIN(get_ground_temperature());
     float p0_sealevel;
 
-    p0_sealevel = 8.651154799255761e30f*pressure*powF((769231.0f-(5000.0f*_field_elevation_active)/standard_day_temp),-5.255993146184937f);
+    p0_sealevel = 8.651154799255761e30f*pressure*powF((769231.0f-(5000.0f*_field_elevation_active)/temp),-5.255993146184937f);
 
     return p0_sealevel;
 }
@@ -932,7 +932,7 @@ void AP_Baro::update(void)
     }
 
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - _field_elevation_last_ms >= 1000 && fabs(_field_elevation_active-_field_elevation) > 1.0) {
+    if (now_ms - _field_elevation_last_ms >= 1000 && fabsf(_field_elevation_active-_field_elevation) > 1.0) {
       if (!AP::arming().is_armed()) {
         _field_elevation_last_ms = now_ms;
         _field_elevation_active = _field_elevation;
