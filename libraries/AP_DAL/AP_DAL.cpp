@@ -85,9 +85,11 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     if (_rangefinder) {
         _rangefinder->start_frame();
     }
+#if AP_BEACON_ENABLED
     if (_beacon) {
         _beacon->start_frame();
     }
+#endif
 #if HAL_VISUALODOM_ENABLED
     if (_visualodom) {
         _visualodom->start_frame();
@@ -136,10 +138,12 @@ void AP_DAL::init_sensors(void)
     }
 #endif
 
+#if AP_BEACON_ENABLED
     auto *bcn = AP::beacon();
     if (bcn != nullptr && bcn->enabled()) {
         alloc_failed |= (_beacon = new AP_DAL_Beacon) == nullptr;
     }
+#endif
 
 #if HAL_VISUALODOM_ENABLED
     auto *vodom = AP::visualodom();
