@@ -616,12 +616,12 @@ void SoloGimbalEKF::fuseVelocity()
         // Calculate the velocity measurement innovation using the SoloGimbalEKF estimate as the observation
         // if heading isn't aligned, use zero velocity (static assumption)
         if (YawAligned) {
-            Vector3f measVelNED = Vector3f(0,0,0);
+            Vector3f measVelNED;
             nav_filter_status main_ekf_status;
 
             if (_ahrs.get_filter_status(main_ekf_status)) {
                 if (main_ekf_status.flags.horiz_vel) {
-                    _ahrs.get_velocity_NED(measVelNED);
+                    UNUSED_RESULT(_ahrs.get_velocity_NED(measVelNED));
                 }
             }
 
