@@ -96,6 +96,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 #endif
     case Mode::Number::INITIALISING:
         break;
+    case Mode::Number::RALPHIE:
+        break;
     }
 }
 
@@ -178,6 +180,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #endif
     case Mode::Number::TAKEOFF:
     case Mode::Number::INITIALISING:
+        break;
+    case Mode::Number::RALPHIE:
         break;
     }
     gcs().send_text(MAV_SEVERITY_INFO, "Flight mode = %s", control_mode->name());
