@@ -169,11 +169,6 @@ bool GCS_MAVLINK_Tracker::handle_guided_request(AP_Mission::Mission_Command&)
     return false;
 }
 
-void GCS_MAVLINK_Tracker::handle_change_alt_request(AP_Mission::Mission_Command&)
-{
-    // do nothing
-}
-
 /*
   default stream rates to 1Hz
  */
