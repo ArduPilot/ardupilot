@@ -26,6 +26,10 @@ public:
     /* AP_Baro public interface: */
     void update() override;
 
+    static AP_Baro_Backend *probe_280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
+        return probe(baro, std::move(dev), false);
+    }
+
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool _is_dps310=false);
 
 protected:

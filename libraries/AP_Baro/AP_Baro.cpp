@@ -780,114 +780,64 @@ void AP_Baro::_probe_i2c_barometers(void)
     if (ext_bus >= 0) {
         mask = 1U << (uint8_t)ext_bus;
     }
+
+    static const struct BaroProbeSpec {
+        uint32_t bit;
+        AP_Baro_Backend* (*probefn)(AP_Baro&, AP_HAL::OwnPtr<AP_HAL::Device>);
+        uint8_t addr;
+    } baroprobespec[] {
 #if AP_BARO_BMP085_ENABLED
-    if (probe & PROBE_BMP085) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_BMP085::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_BMP085_I2C_ADDR))));
-        }
-    }
+        { PROBE_BMP085, AP_Baro_BMP085::probe, HAL_BARO_BMP085_I2C_ADDR },
 #endif
 #if AP_BARO_BMP280_ENABLED
-    if (probe & PROBE_BMP280) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_BMP280_I2C_ADDR))));
-            ADD_BACKEND(AP_Baro_BMP280::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_BMP280_I2C_ADDR2))));
-        }
-    }
+        { PROBE_BMP280, AP_Baro_BMP280::probe, HAL_BARO_BMP280_I2C_ADDR },
+        { PROBE_BMP280, AP_Baro_BMP280::probe, HAL_BARO_BMP280_I2C_ADDR2 },
 #endif
 #if AP_BARO_SPL06_ENABLED
-    if (probe & PROBE_SPL06) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_SPL06::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_SPL06_I2C_ADDR))));
-            ADD_BACKEND(AP_Baro_SPL06::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_SPL06_I2C_ADDR2))));
-        }
-    }
+        { PROBE_SPL06, AP_Baro_SPL06::probe, HAL_BARO_SPL06_I2C_ADDR },
+        { PROBE_SPL06, AP_Baro_SPL06::probe, HAL_BARO_SPL06_I2C_ADDR2 },
 #endif
 #if AP_BARO_BMP388_ENABLED
-    if (probe & PROBE_BMP388) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_BMP388::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_BMP388_I2C_ADDR))));
-            ADD_BACKEND(AP_Baro_BMP388::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_BMP388_I2C_ADDR2))));
-        }
-    }
+        { PROBE_BMP388, AP_Baro_BMP388::probe, HAL_BARO_BMP388_I2C_ADDR },
+        { PROBE_BMP388, AP_Baro_BMP388::probe, HAL_BARO_BMP388_I2C_ADDR2 },
 #endif
 #if AP_BARO_MS56XX_ENABLED
-    if (probe & PROBE_MS5611) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_MS5611_I2C_ADDR))));
-            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_MS5611_I2C_ADDR2))));
-        }
-    }
-    if (probe & PROBE_MS5607) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_MS5607_I2C_ADDR)),
-                                              AP_Baro_MS56XX::BARO_MS5607));
-        }
-    }
-    if (probe & PROBE_MS5637) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_MS5637_I2C_ADDR)),
-                                              AP_Baro_MS56XX::BARO_MS5637));
-        }
-    }
-#endif  // AP_BARO_MS56XX_ENABLED
+        { PROBE_MS5611, AP_Baro_MS56XX::probe_5611, HAL_BARO_MS5611_I2C_ADDR },
+        { PROBE_MS5611, AP_Baro_MS56XX::probe_5611, HAL_BARO_MS5611_I2C_ADDR2 },
+        { PROBE_MS5607, AP_Baro_MS56XX::probe_5607, HAL_BARO_MS5607_I2C_ADDR },
+        { PROBE_MS5637, AP_Baro_MS56XX::probe_5637, HAL_BARO_MS5637_I2C_ADDR },
+#endif
 #if AP_BARO_FBM320_ENABLED
-    if (probe & PROBE_FBM320) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_FBM320::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_FBM320_I2C_ADDR))));
-            ADD_BACKEND(AP_Baro_FBM320::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_FBM320_I2C_ADDR2))));
-        }
-    }
+        { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR },
+        { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR2 },
 #endif
 #if AP_BARO_DPS280_ENABLED
-    if (probe & PROBE_DPS280) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_DPS280::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_DPS280_I2C_ADDR))));
-            ADD_BACKEND(AP_Baro_DPS280::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_DPS280_I2C_ADDR2))));
-        }
-    }
+        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR },
+        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR2 },
 #endif
 #if AP_BARO_LPS2XH_ENABLED
-    if (probe & PROBE_LPS25H) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_LPS2XH::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_LPS25H_I2C_ADDR))));
-        }
-    }
+        { PROBE_LPS25H, AP_Baro_LPS2XH::probe, HAL_BARO_LPS25H_I2C_ADDR },
 #endif
+
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #if AP_BARO_KELLERLD_ENABLED
-    if (probe & PROBE_KELLER) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_KellerLD::probe(*this,
-                                                std::move(GET_I2C_DEVICE(i, HAL_BARO_KELLERLD_I2C_ADDR))));
-        }
-    }
+        { PROBE_KELLER, AP_Baro_KellerLD::probe, HAL_BARO_KELLERLD_I2C_ADDR },
 #endif
 #if AP_BARO_MS56XX_ENABLED
-    if (probe & PROBE_MS5837) {
-        FOREACH_I2C_MASK(i,mask) {
-            ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                              std::move(GET_I2C_DEVICE(i, HAL_BARO_MS5837_I2C_ADDR)), AP_Baro_MS56XX::BARO_MS5837));
+        { PROBE_MS5837, AP_Baro_MS56XX::probe_5837, HAL_BARO_MS5837_I2C_ADDR },
+#endif
+#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    };
+
+    for (const auto &spec : baroprobespec) {
+        if (!(probe & spec.bit)) {
+            // not in mask to be probed for
+            continue;
+        }
+        FOREACH_I2C_MASK(i, mask) {
+            ADD_BACKEND(spec.probefn(*this, std::move(GET_I2C_DEVICE(i, spec.addr))));
         }
     }
-#endif
-#endif
 }
 
 bool AP_Baro::should_log() const
