@@ -874,7 +874,7 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 void QuadPlane::hold_stabilize(float throttle_in)
 {    
     // call attitude controller
-    multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
+    multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
 
     if ((throttle_in <= 0) && !air_mode_active()) {
         set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
@@ -960,7 +960,7 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
     pos_control->set_max_speed_accel_z(-get_pilot_velocity_z_max_dn(), pilot_velocity_z_max_up, pilot_accel_z);
 
     // call attitude controller
-    multicopter_attitude_rate_update(get_desired_yaw_rate_cds());
+    multicopter_attitude_rate_update(get_desired_yaw_rate_cds(false));
 
     // call position controller
     set_climb_rate_cms(target_climb_rate_cms, false);
@@ -1201,7 +1201,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 /*
   get overall desired yaw rate in cd/s
  */
-float QuadPlane::get_desired_yaw_rate_cds(void)
+float QuadPlane::get_desired_yaw_rate_cds(bool should_weathervane)
 {
     float yaw_cds = 0;
     if (assisted_flight) {
@@ -1215,8 +1215,11 @@ float QuadPlane::get_desired_yaw_rate_cds(void)
     }
     // add in pilot input
     yaw_cds += get_pilot_input_yaw_rate_cds();
-    // add in weathervaning
-    yaw_cds += get_weathervane_yaw_rate_cds();
+
+    if (should_weathervane) {
+        // add in weathervaning
+        yaw_cds += get_weathervane_yaw_rate_cds();
+    }
     
     return yaw_cds;
 }
