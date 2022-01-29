@@ -268,7 +268,7 @@ def kill_tasks():
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
-            'scrimmage'
+            'scrimmage',
             'ardurover',
             'arduplane',
             'arducopter'
