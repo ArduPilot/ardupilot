@@ -159,34 +159,46 @@ void Plane::reset_control_switch()
 /*
   called when entering autotune
  */
-void Plane::autotune_start(void)
+void Plane::autotune_start(uint8_t tune_type)
 {
     gcs().send_text(MAV_SEVERITY_INFO, "Started autotune");
-    rollController.autotune_start();
-    pitchController.autotune_start();
-    yawController.autotune_start();
+    if (tune_type & (1U<<AP_AutoTune::AUTOTUNE_ROLL)) {
+        rollController.autotune_start();
+    }
+    if (tune_type & (1U<<AP_AutoTune::AUTOTUNE_PITCH)) {
+        pitchController.autotune_start();
+    }
+    if (tune_type & (1U<<AP_AutoTune::AUTOTUNE_YAW)) {
+        yawController.autotune_start();
+    }
 }
 
 /*
   called when exiting autotune
  */
-void Plane::autotune_restore(void)
+void Plane::autotune_restore(uint8_t tune_type)
 {
-    rollController.autotune_restore();
-    pitchController.autotune_restore();
-    yawController.autotune_restore();
+    if (tune_type & (1U<<AP_AutoTune::AUTOTUNE_ROLL)) {
+        rollController.autotune_restore();
+    }
+    if (tune_type & (1U<<AP_AutoTune::AUTOTUNE_PITCH)) {
+        pitchController.autotune_restore();
+    }
+    if (tune_type & (1U<<AP_AutoTune::AUTOTUNE_YAW)) {
+        yawController.autotune_restore();
+    }
     gcs().send_text(MAV_SEVERITY_INFO, "Stopped autotune");
 }
 
 /*
   enable/disable autotune for AUTO modes
  */
-void Plane::autotune_enable(bool enable)
+void Plane::autotune_enable(bool enable, uint8_t tune_type)
 {
     if (enable) {
-        autotune_start();
+        autotune_start(tune_type);
     } else {
-        autotune_restore();
+        autotune_restore(tune_type);
     }
 }
 

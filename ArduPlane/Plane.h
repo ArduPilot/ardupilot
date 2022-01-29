@@ -965,9 +965,9 @@ private:
     void read_control_switch();
     uint8_t readSwitch(void) const;
     void reset_control_switch();
-    void autotune_start(void);
-    void autotune_restore(void);
-    void autotune_enable(bool enable);
+    void autotune_start(uint8_t = 255);
+    void autotune_restore(uint8_t = 255);
+    void autotune_enable(bool enable, uint8_t = 255);
     bool fly_inverted(void);
     uint8_t get_mode() const override { return (uint8_t)control_mode->mode_number(); }
     Mode *mode_from_mode_num(const enum Mode::Number num);

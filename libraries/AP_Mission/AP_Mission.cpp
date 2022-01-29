@@ -1104,6 +1104,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:                    // MAV ID: 211
         cmd.p1 = packet.param1;                         // disable=0 enable=1
+        cmd.content.axis_to_tune.masked_value = packet.param2;
         break;
 
     case MAV_CMD_NAV_ALTITUDE_WAIT:                     // MAV ID: 83
@@ -1571,6 +1572,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         packet.param1 = cmd.p1;                         // disable=0 enable=1
+        packet.param2 = cmd.content.axis_to_tune.masked_value;
         break;
 
     case MAV_CMD_DO_SET_REVERSE:

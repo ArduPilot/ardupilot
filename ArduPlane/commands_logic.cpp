@@ -157,7 +157,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
-        autotune_enable(cmd.p1);
+        autotune_enable(cmd.p1, cmd.content.axis_to_tune.masked_value);
         break;
 
 #if HAL_MOUNT_ENABLED

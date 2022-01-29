@@ -60,6 +60,12 @@ class AP_Mission
 {
 
 public:
+
+    // autotune bitmasked roll/pitch/yaw
+    struct PACKED Axis_To_Tune {
+        uint8_t masked_value ;
+    };
+
     // jump command structure
     struct PACKED Jump_Command {
         uint16_t target;        // target command id
@@ -304,6 +310,9 @@ public:
         
         // location
         Location location{};      // Waypoint location
+
+        // autotune axis
+        Axis_To_Tune axis_to_tune ;
     };
 
     // command structure

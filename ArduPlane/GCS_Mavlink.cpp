@@ -1018,7 +1018,26 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         // param1 : enable/disable
-        plane.autotune_enable(!is_zero(packet.param1));
+        // param2 : axis to tune
+        if ((u_int8_t)packet.param2 == 0) {
+            plane.autotune_enable(!is_zero(packet.param1));
+        } else {
+            u_int8_t axis_bitmask = 0;
+            static const struct axis_mapping {
+                    AUTOTUNE_AXIS mavlink_bit;
+                    AP_AutoTune::ATType ardupilot_bit;
+                } mapping[] {
+                    { AUTOTUNE_AXIS_ROLL, AP_AutoTune::AUTOTUNE_ROLL },
+                    { AUTOTUNE_AXIS_PITCH, AP_AutoTune::AUTOTUNE_PITCH },
+                    { AUTOTUNE_AXIS_YAW, AP_AutoTune::AUTOTUNE_YAW }
+                };
+                for (const auto &map : mapping) {
+                    if ((u_int8_t)packet.param2 & map.mavlink_bit) {
+                        axis_bitmask |= 1U<<map.ardupilot_bit;
+                    }
+                }
+            plane.autotune_enable(!is_zero(packet.param1), axis_bitmask);
+        }
         return MAV_RESULT_ACCEPTED;
 
 #if PARACHUTE == ENABLED
