@@ -593,11 +593,12 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
     // inform AP_Avoidance we have a new player
     mavlink_global_position_int_t packet;
     mavlink_msg_global_position_int_decode(&msg, &packet);
-    Location loc;
-    loc.lat = packet.lat;
-    loc.lng = packet.lon;
-    loc.alt = packet.alt / 10; // mm -> cm
-    loc.relative_alt = false;
+    const Location loc {
+        packet.lat,
+        packet.lon,
+        int32_t(packet.alt * 0.1),  // mm -> cm
+        Location::AltFrame::ABSOLUTE
+    };
     Vector3f vel = Vector3f(packet.vx/100.0f, // cm to m
                             packet.vy/100.0f,
                             packet.vz/100.0f);
