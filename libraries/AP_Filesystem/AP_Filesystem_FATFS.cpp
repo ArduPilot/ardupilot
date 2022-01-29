@@ -123,7 +123,7 @@ static int free_file_descriptor(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
@@ -153,7 +153,7 @@ static FIL *fileno_to_fatfs(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if ( stream == NULL ) {
+    if ( stream == nullptr ) {
         return nullptr;
     }
 
@@ -314,14 +314,14 @@ int AP_Filesystem_FATFS::open(const char *pathname, int flags)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         free_file_descriptor(fileno);
         return -1;
     }
 
     // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         free_file_descriptor(fileno);
         errno = EBADF;
         return -1;
@@ -368,13 +368,13 @@ int AP_Filesystem_FATFS::close(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
     // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         return -1;
     }
     res = f_close(fh);
@@ -405,7 +405,7 @@ int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if ( fh == NULL ) {
+    if ( fh == nullptr ) {
         errno = EBADF;
         return -1;
     }
@@ -450,7 +450,7 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if ( fh == NULL ) {
+    if ( fh == nullptr ) {
         errno = EBADF;
         return -1;
     }
@@ -498,13 +498,13 @@ int AP_Filesystem_FATFS::fsync(int fileno)
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if (stream == NULL) {
+    if (stream == nullptr) {
         return -1;
     }
 
     // fileno_to_fatfs checks for fileno out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         return -1;
     }
     res = f_sync(fh);
@@ -526,7 +526,7 @@ off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fileno);
-    if (fh == NULL) {
+    if (fh == nullptr) {
         errno = EMFILE;
         return -1;
     }
