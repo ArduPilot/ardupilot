@@ -243,10 +243,10 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     uint16_t pending, loaded;
     get_statistics(pending, loaded);
 
-    float current_height;
+    float current_height = 0.0f;
     if (spacing == 0 && !(extrapolate && have_current_loc_height)) {
         current_height = 0;
-    } else {
+    } else if (!current_loc.is_zero()) {
         int32_t height_above_home_cm = 0;
         UNUSED_RESULT(current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, height_above_home_cm));
         current_height = height_above_home_cm * 0.01f;  // cm -> m
