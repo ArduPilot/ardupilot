@@ -5,6 +5,16 @@
 
 #define WARIO_TRAJECTORY_SIZE   (100)
 
+typedef struct {
+
+	float lat;
+	float lon;
+	float rad;
+
+	float maxAlt;
+	float minAlt;
+
+} warioInput_t;
 
 
 class RalphieTrajectory {
@@ -27,7 +37,7 @@ public:
      * @brief Generate the default circular trajectory 
      * 
      */
-    void init();
+    void init(warioInput_t parameters);
 
     /**
      * @brief Update the trajectory based on the current wind estimate

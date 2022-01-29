@@ -155,19 +155,6 @@ constexpr int8_t Plane::_failsafe_priorities[6];
 
 // void Plane::update_state() {
 
-//     currentState.roll = ahrs.get_roll();
-//     currentState.pitch = ahrs.get_pitch();
-//     currentState.yaw = ahrs.get_yaw();
-
-//     Vector3f position;
-//     ahrs.get_relative_position_NED_origin(currentState.position);
-
-//     Vector3f velocity;
-//     ahrs.get_velocity_NED(currentState.velocity);
-
-//     Vector3f omega;
-//     omega = ahrs.get_gyro();
-
 // 	printf("Position: %.3f, %.3f, %.3f\n", currentState.position.x, currentState.position.y, currentState.position.z);
 // 	printf("Velocity: %.3f, %.3f, %.3f\n", currentState.velocity.x, currentState.velocity.y, currentState.velocity.z);
 // 	printf("Angles:   %.3f, %.3f, %.3f\n", currentState.roll*180/3.14, currentState.pitch*180/3.14, currentState.yaw*180/3.14);

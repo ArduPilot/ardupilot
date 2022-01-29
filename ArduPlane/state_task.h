@@ -2,8 +2,6 @@
 
 #include <AP_Math/AP_Math.h>
 
-#define DEGREES_TO_RADIANS  (3.14/180) /* TODO: Definitely a conversion for this already */
-
 
 /**
  * @brief Enumeration with values representing the current phase of flight as indicated

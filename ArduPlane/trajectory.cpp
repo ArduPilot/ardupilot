@@ -1,8 +1,15 @@
 #include "trajectory.h"
 
 
-void RalphieTrajectory::init() {
+void RalphieTrajectory::init(warioInput_t parameters) {
+
     // TODO: circle
+	//
+	
+
+	// (x - xc)^2 + (y - yc)^2 = r^2	
+	
+	
 }
 
 

@@ -524,7 +524,7 @@ void Plane::stabilize()
         }
 #endif
 
-    } else if (control_mode == &mode_ralphie) {
+    } else if (control_mode == &mode_ralphie && mode_ralphie.controls == ACTIVE) {
         plane.control_mode->run();
 
     } else {
