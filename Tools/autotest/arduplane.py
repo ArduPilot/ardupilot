@@ -2064,10 +2064,37 @@ function'''
         if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
             raise NotAchievedException("Did not get accepted response")
         self.wait_location(loc, accuracy=100) # based on loiter radius
-        self.delay_sim_time(20)
         self.wait_altitude(altitude_min=desired_relative_alt-3,
                            altitude_max=desired_relative_alt+3,
-                           relative=True)
+                           relative=True,
+                           timeout=30)
+
+        self.start_subtest("changing alt with mission item in guided mode")
+
+        # test changing alt only - NOTE - this is still a
+        # NAV_WAYPOINT, not a changel-alt request!
+        desired_relative_alt = desired_relative_alt + 50
+        self.mav.mav.mission_item_int_send(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            3, # current - change-alt request
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0,
+            desired_relative_alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+        self.wait_altitude(altitude_min=desired_relative_alt-3,
+                           altitude_max=desired_relative_alt+3,
+                           relative=True,
+                           timeout=30)
 
         self.fly_home_land_and_disarm()
 
