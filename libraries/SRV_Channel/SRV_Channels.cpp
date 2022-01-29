@@ -462,7 +462,7 @@ void SRV_Channels::zero_rc_outputs()
      * undesired/unexpected behavior
      */
     cork();
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         hal.rcout->write(i, 0);
     }
     push();
