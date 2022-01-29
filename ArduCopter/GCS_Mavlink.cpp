@@ -997,19 +997,22 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
         return MAV_RESULT_FAILED;
     }
 
-    // requested pause from GCS
-    if ((int8_t) packet.param1 == 0) {
+    switch (int8_t(packet.param1)) {
+    case 0:
+        // requested pause from GCS
         copter.mode_auto.mission.stop();
         copter.mode_auto.loiter_start();
         gcs().send_text(MAV_SEVERITY_INFO, "Paused mission");
         return MAV_RESULT_ACCEPTED;
-    }
 
-    // requested resume from GCS
-    if ((int8_t) packet.param1 == 1) {
+    case 1:
+        // requested resume from GCS
         copter.mode_auto.mission.resume();
         gcs().send_text(MAV_SEVERITY_INFO, "Resumed mission");
         return MAV_RESULT_ACCEPTED;
+
+    default:
+        break;
     }
 #endif
 
