@@ -115,7 +115,8 @@ protected:
         choke_servo,
         ignition_servo,
         starter_servo,
-        slewrate
+        slewrate,
+        true
     };
 
     float liftCoeff(float alpha) const;
