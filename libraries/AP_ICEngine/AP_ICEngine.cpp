@@ -283,6 +283,7 @@ void AP_ICEngine::update(void)
                 rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
+                gcs().send_text(MAV_SEVERITY_INFO, "Uncommanded engine stop");
             }
         }
         break;
