@@ -173,7 +173,9 @@ const char *AC_AutoTune::type_string() const
     case TUNE_COMPLETE:
         return "Tune Complete";
     }
-    return "Bug";
+    return "unknown tune type";
+    // this should never happen
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
 // run - runs the autotune flight mode
