@@ -1,0 +1,9 @@
+prefix=/mnt/hgfs/share_ws/eigen-3.3.7/install_eigen
+exec_prefix=${prefix}
+
+Name: Eigen3
+Description: A C++ template library for linear algebra: vectors, matrices, and related algorithms
+Requires:
+Version: 3.3.7
+Libs:
+Cflags: -I${prefix}/include/eigen3
