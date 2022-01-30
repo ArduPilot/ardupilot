@@ -106,3 +106,6 @@ define AP_GPS_MAV_ENABLED 1
 # enable only the QUAD frame
 define AP_MOTORS_FRAME_DEFAULT_ENABLED 0
 define AP_MOTORS_FRAME_QUAD_ENABLED 1
+
+# SkyViper isn't going to sprout new compasses:
+define COMPASS_MAX_SENSORS 1
