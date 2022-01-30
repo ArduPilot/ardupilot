@@ -6375,7 +6375,7 @@ Also, ignores heartbeats not from our target system'''
                 source_system=250,
                 source_component=250,
                 autoreconnect=True,
-                dialect="ardupilotmega",  # if we don't pass this in we end up with the wrong mavlink version...
+                dialect="all",  # if we don't pass this in we end up with the wrong mavlink version...
             )
         except Exception as msg:
             self.progress("Failed to start mavlink connection on %s: %s" %
