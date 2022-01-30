@@ -372,7 +372,7 @@ private:
         uint16_t voltage;         // centi-Volt
         uint16_t current;         // centi-Ampere  (signed?)
         int16_t rpm;              // centi-rpm
-        uint16_t consumption_mah; // mili-Ampere.hour
+        uint16_t consumption_mah; // milli-Ampere.hour
         uint16_t tx_err_count;    // CRC error count, as perceived from the ESC receiving side
     };
 
