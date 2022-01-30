@@ -388,7 +388,7 @@ void AP_ESC_Telem::update()
                 //   voltage is in Volt
                 //   current is in Ampere
                 //   esc_temp is in centi-degrees Celsius
-                //   current_tot is in mili-Ampere hours
+                //   current_tot is in milli-Ampere hours
                 //   motor_temp is in centi-degrees Celsius
                 //   error_rate is in percentage
                 const struct log_Esc pkt{
