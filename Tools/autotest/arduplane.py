@@ -3318,7 +3318,23 @@ function'''
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.fly_mission("ap-circuit.txt", mission_timeout=1200)
+        # Load and start mission
+        self.load_mission("ap-circuit.txt", strict=True)
+        self.set_current_waypoint(1, check_afterwards=True)
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(1, timeout=5)
+        self.wait_groundspeed(0, 10, timeout=5)
+
+        # Wait for landing waypoint
+        self.wait_current_waypoint(9, timeout=1200)
+
+        # Wait for landing restart
+        self.wait_current_waypoint(5, timeout=60)
+
+        # Wait for landing waypoint (second attempt)
+        self.wait_current_waypoint(9, timeout=1200)
+
+        self.wait_statustext("Auto disarmed", timeout=120)
 
     def DCMFallback(self):
         self.reboot_sitl()
