@@ -1079,6 +1079,7 @@ private:
 
 #if PRECISION_LANDING == ENABLED
     bool _precision_loiter_enabled;
+    bool _precision_loiter_active; // true if user has switched on prec loiter
 #endif
 
 };
