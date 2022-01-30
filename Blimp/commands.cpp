@@ -63,17 +63,9 @@ bool Blimp::set_home(const Location& loc, bool lock)
         return false;
     }
 
-    const bool home_was_set = ahrs.home_is_set();
-
     // set ahrs home (used for RTL)
     if (!ahrs.set_home(loc)) {
         return false;
-    }
-
-    // init inav and compass declination
-    if (!home_was_set) {
-        // record home is set
-        AP::logger().Write_Event(LogEvent::SET_HOME);
     }
 
     // lock home position
