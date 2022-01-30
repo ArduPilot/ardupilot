@@ -458,7 +458,6 @@ void AC_PosControl::relax_velocity_controller_xy()
 
     // decay resultant acceleration and therefore current attitude target to zero
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
-
     _accel_target.xy() *= decay;
     _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
 }
@@ -466,11 +465,11 @@ void AC_PosControl::relax_velocity_controller_xy()
 /// reduce response for landing
 void AC_PosControl::soften_for_landing_xy()
 {
-    // set target position to current position
-    _pos_target.xy() = _inav.get_position_xy_cm().topostype();
+    // decay position error to zero
+    _pos_target.xy() += (_inav.get_position_xy_cm().topostype() - _pos_target.xy()) * (_dt / (_dt + POSCONTROL_RELAX_TC));
 
-    // also prevent I term build up in xy velocity controller. Note
-    // that this flag is reset on each loop, in update_xy_controller()
+    // Prevent I term build up in xy velocity controller.
+    // Note that this flag is reset on each loop in update_xy_controller()
     set_externally_limited_xy();
 }
 
