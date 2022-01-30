@@ -64,7 +64,7 @@ static int new_file_descriptor(const char *pathname)
         if (isatty_(i)) {
             continue;
         }
-        if ( file_table[i] == NULL) {
+        if (file_table[i] == NULL) {
             stream = (FAT_FILE *) calloc(sizeof(FAT_FILE),1);
             if (stream == NULL) {
                 errno = ENOMEM;
@@ -146,14 +146,14 @@ static FIL *fileno_to_fatfs(int fileno)
     FAT_FILE *stream;
     FIL *fh;
 
-    if (isatty_( fileno )) {
+    if (isatty_(fileno)) {
         errno = EBADF;
         return nullptr;
     }
 
     // checks if fileno out of bounds
     stream = fileno_to_stream(fileno);
-    if ( stream == nullptr ) {
+    if (stream == nullptr) {
         return nullptr;
     }
 
@@ -165,9 +165,9 @@ static FIL *fileno_to_fatfs(int fileno)
     return fh;
 }
 
-static int fatfs_to_errno( FRESULT Result )
+static int fatfs_to_errno(FRESULT Result)
 {
-    switch ( Result ) {
+    switch (Result) {
     case FR_OK:              /* FatFS (0) Succeeded */
         return 0;          /* POSIX OK */
     case FR_DISK_ERR:        /* FatFS (1) A hard error occurred in the low level disk I/O layer */
@@ -405,7 +405,7 @@ int32_t AP_Filesystem_FATFS::read(int fd, void *buf, uint32_t count)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if ( fh == nullptr ) {
+    if (fh == nullptr) {
         errno = EBADF;
         return -1;
     }
@@ -450,7 +450,7 @@ int32_t AP_Filesystem_FATFS::write(int fd, const void *buf, uint32_t count)
 
     // fileno_to_fatfs checks for fd out of bounds
     fh = fileno_to_fatfs(fd);
-    if ( fh == nullptr ) {
+    if (fh == nullptr) {
         errno = EBADF;
         return -1;
     }
@@ -611,7 +611,7 @@ int AP_Filesystem_FATFS::stat(const char *name, struct stat *buf)
 
     // We only handle read only case
     mode = (FATFS_R | FATFS_X);
-    if ( !(info.fattrib & AM_RDO)) {
+    if (!(info.fattrib & AM_RDO)) {
         mode |= (FATFS_W);    // enable write if NOT read only
     }
 
