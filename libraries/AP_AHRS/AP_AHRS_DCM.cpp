@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1156,6 +1157,13 @@ bool AP_AHRS::set_home(const Location &loc)
     if (!tmp.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return false;
     }
+
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    if (!_home_is_set) {
+        // record home is set
+        AP::logger().Write_Event(LogEvent::SET_HOME);
+    }
+#endif
 
     _home = tmp;
     _home_is_set = true;
