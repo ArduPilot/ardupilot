@@ -941,7 +941,7 @@ void AP_Baro::update(void)
         BARO_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer Field Elevation Set: %.0fm",_field_elevation_active);
       }
       else {
-        _field_elevation.set_and_save(_field_elevation_active);
+        _field_elevation.set(_field_elevation_active);
         _field_elevation.notify();
         BARO_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
       }
