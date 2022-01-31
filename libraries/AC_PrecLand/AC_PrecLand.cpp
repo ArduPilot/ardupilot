@@ -162,12 +162,12 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Units: m
     AP_GROUPINFO("ALT_MAX", 16, AC_PrecLand, _sensor_max_alt, 8),
 
-    // @Param: MOVING
-    // @DisplayName: Precision Landing Target stationary/moving
-    // @Description: Precision Landing Target stationary/moving
-    // @Values: 0:Stationary, 1:Moving
+    // @Param: OPTIONS
+    // @DisplayName: Precision Landing Extra Options
+    // @Description: Precision Landing Extra Options
+    // @Bitmask: 0: Moving Landing Target
     // @User: Advanced
-    AP_GROUPINFO("MOVING", 17, AC_PrecLand, _moving, 0),
+    AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
 
     AP_GROUPEND
 };
@@ -422,7 +422,7 @@ bool AC_PrecLand::get_target_velocity_relative_cms(Vector2f& ret)
 // get the absolute velocity of the vehicle
 void AC_PrecLand::get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms)
 {
-    if (!_moving) {
+    if (!(_options & PLND_OPTION_MOVING_TARGET)) {
         // the target should not be moving
         target_vel_cms.zero();
         return;
