@@ -112,3 +112,19 @@ void ModeAuto::navigate()
     }
 }
 
+
+bool ModeAuto::does_auto_navigation() const
+{
+#if AP_SCRIPTING_ENABLED
+   return (!plane.nav_scripting_active());
+#endif
+   return true;
+}
+
+bool ModeAuto::does_auto_throttle() const
+{
+#if AP_SCRIPTING_ENABLED
+   return (!plane.nav_scripting_active());
+#endif
+   return true;
+}
