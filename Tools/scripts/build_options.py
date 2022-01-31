@@ -28,8 +28,8 @@ BUILD_OPTIONS = [
     Feature('Safety', 'PROXIMITY', 'HAL_PROXIMITY_ENABLED', 'Enable Proximity', 0, None),
     Feature('Safety', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, None),
 
-    Feature('Battery', 'BATTMON_FUEL', 'HAL_BATTMON_FUEL_ENABLE', 'Enable Fuel BatteryMonitor', 0, None),
-    Feature('Battery', 'BATTMON_SMBUS', 'HAL_BATTMON_SMBUS_ENABLE', 'Enable SMBUS BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTMON_FUEL', 'AP_BATTMON_FUEL_ENABLE', 'Enable Fuel BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTMON_SMBUS', 'AP_BATTMON_SMBUS_ENABLE', 'Enable SMBUS BatteryMonitor', 0, None),
     Feature('Battery', 'BATTMON_INA2XX', 'HAL_BATTMON_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
 
     Feature('Ident', 'ADSB', 'HAL_ADSB_ENABLED', 'Enable ADSB', 0, None),
