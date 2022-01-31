@@ -258,7 +258,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     }
 
     // sanity check target
-    float alt_target_min_cm = copter.current_loc.alt + (copter.ap.land_complete ? 100 : 0);
+    int32_t alt_target_min_cm = copter.current_loc.alt + (copter.ap.land_complete ? 100 : 0);
     if (alt_target < alt_target_min_cm ) {
         dest.set_alt_cm(alt_target_min_cm , Location::AltFrame::ABOVE_HOME);
     }
