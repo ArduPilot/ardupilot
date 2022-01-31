@@ -404,7 +404,8 @@ float AP_Baro::get_sealevel_pressure(float pressure) const
 {
     float temp    = C_TO_KELVIN(get_ground_temperature());
     float p0_sealevel;
-
+    // This is an exact calculation that is within +-2.5m of the standard
+    // atmosphere tables in the troposphere (up to 11,000 m amsl).
     p0_sealevel = 8.651154799255761e30f*pressure*powF((769231.0f-(5000.0f*_field_elevation_active)/temp),-5.255993146184937f);
 
     return p0_sealevel;
