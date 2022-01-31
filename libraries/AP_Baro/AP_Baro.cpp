@@ -930,7 +930,7 @@ void AP_Baro::update(void)
             }
         }
     }
-
+#ifndef HAL_BUILD_AP_PERIPH
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _field_elevation_last_ms >= 1000 && fabsf(_field_elevation_active-_field_elevation) > 1.0) {
       if (!AP::arming().is_armed()) {
@@ -946,6 +946,7 @@ void AP_Baro::update(void)
         BARO_SEND_TEXT(MAV_SEVERITY_ALERT, "Failed to Set Field Elevation: Armed");
       }
     }
+#endif
 
     // logging
 #if HAL_LOGGING_ENABLED
