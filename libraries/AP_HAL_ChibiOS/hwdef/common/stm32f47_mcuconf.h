@@ -114,6 +114,7 @@
 #else
 #error "Unsupported F7 HSE clock"
 #endif
+#define STM32_PLLI2SQ_VALUE                 4
 #else // F4
 #if HAL_EXPECTED_SYSCLOCK == 100000000
 // low frequency variants of F4, such as F412
@@ -128,24 +129,37 @@
 #define STM32_PLLN_VALUE                    100
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 16
 #elif STM32_HSECLK == 8000000U
 #define STM32_PLLM_VALUE                    4
 #define STM32_PLLN_VALUE                    100
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 8
 #elif STM32_HSECLK == 16000000U
 #define STM32_PLLM_VALUE                    8
 #define STM32_PLLN_VALUE                    100
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 16
 #elif STM32_HSECLK == 24000000U
 #define STM32_PLLM_VALUE                    12
 #define STM32_PLLN_VALUE                    100
 #define STM32_PLLP_VALUE                    2
 #define STM32_PLLQ_VALUE                    2
+#define STM32_PLLI2SM_VALUE                 24
 #else
 #error "Unsupported F4 HSE clock"
 #endif
+
+// also setup 48MHz clock to allow for SDIO
+#define STM32_PLLI2SN_VALUE                 192
+#define STM32_PLLI2SP_VALUE                 2
+#define STM32_PLLI2SQ_VALUE                 4
+#define STM32_PLLI2SR_VALUE                 2
+#define STM32_PLLI2SSRC                     STM32_PLLI2SSRC_PLLSRC
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLSAI
+
 #elif HAL_EXPECTED_SYSCLOCK == 168000000
 // medium frequency variants of F4, such as F405, F427
 #if STM32_HSECLK == 0U
@@ -234,8 +248,12 @@
 #define STM32_MCO2SEL                       STM32_MCO2SEL_SYSCLK
 #define STM32_MCO2PRE                       STM32_MCO2PRE_DIV5
 #define STM32_I2SSRC                        STM32_I2SSRC_CKIN
+#ifndef STM32_PLLI2SN_VALUE
 #define STM32_PLLI2SN_VALUE                 192
+#endif
+#ifndef STM32_PLLI2SR_VALUE
 #define STM32_PLLI2SR_VALUE                 5
+#endif
 #define STM32_PVD_ENABLE                    FALSE
 #define STM32_PLS                           STM32_PLS_LEV0
 #define STM32_BKPRAM_ENABLE                 FALSE
