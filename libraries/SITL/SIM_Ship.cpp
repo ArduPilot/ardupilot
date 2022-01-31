@@ -183,7 +183,7 @@ void ShipSim::send_report(void)
 #if AP_TERRAIN_AVAILABLE
     auto terrain = AP::terrain();
     float height;
-    if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height, true)) {
+    if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height)) {
         alt_mm = height * 1000;
     }
 #endif
