@@ -7928,8 +7928,8 @@ class AutoTestCopter(AutoTest):
 
         lines = content.split("\n")
 
-        if not lines[0].startswith("TasksV1"):
-            raise NotAchievedException("Expected TasksV1 as first line first not (%s)" % lines[0])
+        if not lines[0].startswith("TasksV2"):
+            raise NotAchievedException("Expected TasksV2 as first line first not (%s)" % lines[0])
         if not lines[1].startswith("fast_loop"):
             raise NotAchievedException("Expected fast_loop first, not (%s)" % lines[1])
         # last line is empty, so -2 here
