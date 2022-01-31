@@ -143,9 +143,9 @@ AC_WPNav::TerrainSource AC_WPNav::get_terrain_source() const
 
 /// wp_and_spline_init - initialise straight line and spline waypoint controllers
 ///     speed_cms should be a positive value or left at zero to use the default speed
-///     updates target roll, pitch targets and I terms based on vehicle lean angles
+///     stopping_point should be the vehicle's stopping point (equal to the starting point of the next segment) if know or left as zero
 ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-void AC_WPNav::wp_and_spline_init(float speed_cms)
+void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
 {
     
     // sanity check parameters
@@ -185,13 +185,13 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
     _scurve_next_leg.init();
     _track_scalar_dt = 1.0f;
 
-    // set flag so get_yaw() returns current heading target
-    _flags.reached_destination = false;
+    _flags.reached_destination = true;
     _flags.fast_waypoint = false;
 
     // initialise origin and destination to stopping point
-    Vector3f stopping_point;
-    get_wp_stopping_point(stopping_point);
+    if (stopping_point.is_zero()) {
+        get_wp_stopping_point(stopping_point);
+    }
     _origin = _destination = stopping_point;
     _terrain_alt = false;
     _this_leg_is_spline = false;
@@ -199,6 +199,9 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
     // initialise the terrain velocity to the current maximum velocity
     _terrain_vel = _wp_desired_speed_xy_cms;
     _terrain_accel = 0.0;
+
+    // mark as active
+    _wp_last_update = AP_HAL::millis();
 }
 
 /// set_speed_xy - allows main code to pass target horizontal velocity for wp navigation
