@@ -109,6 +109,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_VideoTX',
     'AP_FETtecOneWire',
     'AP_Torqeedo',
+    'eigen',
+    'eigen/include/',
+    'eigen/include/eigen3',
+    'eigen/include/eigen3/Eigen',
 ]
 
 def get_legacy_defines(sketch_name, bld):
