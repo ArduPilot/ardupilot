@@ -1,5 +1,17 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.1.4-rc1 31-Jan-2022
+Changes from 4.1.3
+1) Benewake CAN Lidar support
+2) CAN GPS default lag dropped to 0.1 seconds (was 0.22 seconds)
+3) Bug fixes
+    a) Compass custom orientation is never overwritten during calibration
+    b) EKF logging gaps fixed (some messages were occasionally being skipped)
+    c) IMU logging fix for IREG message (records IMU register changes)
+    d) SBUS RC frame gap increased to better handle some new receivers
+    e) SERVOx_FUNCTION protection to avoid memory overwrite if set too high
+    f) SD card init triggering watchdog fixed
+------------------------------------------------------------------
 Rover 4.1.3 31-Dec-2021 /4.1.3-rc2 21-Dec-2021
 Changes from 4.1.3-rc1
 1) Suport for IIM-42652, ICM-40605 and ICM-20608-D IMUs
