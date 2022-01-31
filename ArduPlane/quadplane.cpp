@@ -2011,14 +2011,8 @@ bool QuadPlane::in_vtol_mode(void) const
     if (!available()) {
         return false;
     }
-    if (plane.control_mode == &plane.mode_qrtl &&
-        (poscontrol.get_state() == QPOS_APPROACH ||
-         poscontrol.get_state() == QPOS_AIRBRAKE)) {
-        return false;
-    }
-    if (in_vtol_land_approach() &&
-        poscontrol.get_state() == QPOS_APPROACH) {
-        return false;
+    if (in_vtol_land_sequence()) {
+        return poscontrol.get_state() != QPOS_APPROACH;
     }
     if (plane.control_mode->is_vtol_mode()) {
         return true;
@@ -3597,7 +3591,11 @@ bool QuadPlane::in_vtol_land_approach(void) const
  */
 bool QuadPlane::in_vtol_land_descent(void) const
 {
-    if (((in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id)) || (plane.control_mode == &plane.mode_qrtl)) &&
+    if (plane.control_mode == &plane.mode_qrtl &&
+        (poscontrol.get_state() == QPOS_LAND_DESCEND || poscontrol.get_state() == QPOS_LAND_FINAL)) {
+        return true;
+    }
+    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
         (poscontrol.get_state() == QPOS_LAND_DESCEND || poscontrol.get_state() == QPOS_LAND_FINAL)) {
         return true;
     }
@@ -3617,7 +3615,7 @@ bool QuadPlane::in_vtol_land_final(void) const
  */
 bool QuadPlane::in_vtol_land_sequence(void) const
 {
-    return in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
+    return plane.control_mode == &plane.mode_qrtl || in_vtol_land_approach() || in_vtol_land_descent() || in_vtol_land_final();
 }
 
 /*
