@@ -208,7 +208,7 @@ AP_BattMonitor::init()
             case Type::ANALOG_VOLTAGE_AND_CURRENT:
                 drivers[instance] = new AP_BattMonitor_Analog(*this, state[instance], _params[instance]);
                 break;
-#if HAL_BATTMON_SMBUS_ENABLE
+#if AP_BATTMON_SMBUS_ENABLE
             case Type::SOLO:
                 drivers[instance] = new AP_BattMonitor_SMBus_Solo(*this, state[instance], _params[instance]);
                 break;
@@ -230,7 +230,7 @@ AP_BattMonitor::init()
             case Type::NeoDesign:
                 drivers[instance] = new AP_BattMonitor_SMBus_NeoDesign(*this, state[instance], _params[instance]);
                 break;
-#endif // HAL_BATTMON_SMBUS_ENABLE
+#endif // AP_BATTMON_SMBUS_ENABLE
             case Type::BEBOP:
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
                 drivers[instance] = new AP_BattMonitor_Bebop(*this, state[instance], _params[instance]);
@@ -249,14 +249,14 @@ AP_BattMonitor::init()
             case Type::Sum:
                 drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
-#if HAL_BATTMON_FUEL_ENABLE
+#if AP_BATTMON_FUEL_ENABLE
             case Type::FuelFlow:
                 drivers[instance] = new AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
                 break;
             case Type::FuelLevel_PWM:
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
-#endif // HAL_BATTMON_FUEL_ENABLE
+#endif // AP_BATTMON_FUEL_ENABLE
 #if HAL_GENERATOR_ENABLED
             case Type::GENERATOR_ELEC:
                 drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
