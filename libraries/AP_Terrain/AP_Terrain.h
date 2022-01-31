@@ -121,12 +121,8 @@ public:
       find the terrain height in meters above sea level for a location
 
       return false if not available
-
-      if corrected is true then terrain alt is adjusted so that
-      the terrain altitude matches the home altitude at the home location
-      (i.e. we assume home is at the terrain altitude)
      */
-    bool height_amsl(const Location &loc, float &height, bool corrected);
+    bool height_amsl(const Location &loc, float &height);
 
     /* 
        find difference between home terrain height and the terrain
