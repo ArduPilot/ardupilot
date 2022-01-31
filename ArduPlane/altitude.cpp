@@ -628,8 +628,8 @@ void Plane::rangefinder_terrain_correction(float &height)
         return;
     }
     float terrain_amsl1, terrain_amsl2;
-    if (!terrain.height_amsl(current_loc, terrain_amsl1, false) ||
-        !terrain.height_amsl(next_WP_loc, terrain_amsl2, false)) {
+    if (!terrain.height_amsl(current_loc, terrain_amsl1) ||
+        !terrain.height_amsl(next_WP_loc, terrain_amsl2)) {
         return;
     }
     float correction = (terrain_amsl1 - terrain_amsl2);
