@@ -27,12 +27,12 @@
 #define AP_BATT_MONITOR_CELLS_MAX           12
 #endif
 
-#ifndef HAL_BATTMON_SMBUS_ENABLE
-#define HAL_BATTMON_SMBUS_ENABLE 1
+#ifndef AP_BATTMON_SMBUS_ENABLE
+#define AP_BATTMON_SMBUS_ENABLE 1
 #endif
 
-#ifndef HAL_BATTMON_FUEL_ENABLE
-#define HAL_BATTMON_FUEL_ENABLE 1
+#ifndef AP_BATTMON_FUEL_ENABLE
+#define AP_BATTMON_FUEL_ENABLE 1
 #endif
 
 // declare backend class
