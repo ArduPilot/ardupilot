@@ -135,6 +135,9 @@ public:
     /// reached_destination - true when we have come within RADIUS cm of the waypoint
     virtual bool reached_wp_destination() const { return _flags.reached_destination; }
 
+    /// set_reached_wp_destination - used to declare we have reached the target height during take-off
+    void set_reached_wp_destination() { _flags.reached_destination = true; }
+
     // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
     bool reached_wp_destination_xy() const {
         return get_wp_distance_to_destination() < _wp_radius_cm;
