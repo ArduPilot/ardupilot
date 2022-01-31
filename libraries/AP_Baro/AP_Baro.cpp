@@ -133,15 +133,6 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Values: 1.0:Freshwater,1.024:Saltwater
     AP_GROUPINFO_FRAME("_SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
 
-    // @Param: _FIELD_ELV
-    // @DisplayName: field elevation
-    // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. A value of 0 means no correction for takeoff height above sea level is performed.
-    // @Units: m
-    // @Increment: 0.1
-    // @Volatile: True
-    // @User: Advanced
-    AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
-
 #if BARO_MAX_INSTANCES > 1
     // @Param: 2_GND_PRESS
     // @DisplayName: Ground Pressure
@@ -228,8 +219,17 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Path: AP_Baro_Wind.cpp
     AP_SUBGROUPINFO(sensors[2].wind_coeff, "3_WCF_", 20, AP_Baro, WindCoeff),
 #endif
+#ifndef HAL_BUILD_AP_PERIPH
+    // @Param: _FIELD_ELV
+    // @DisplayName: field elevation
+    // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. A value of 0 means no correction for takeoff height above sea level is performed.
+    // @Units: m
+    // @Increment: 0.1
+    // @Volatile: True
+    // @User: Advanced
+    AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
 #endif
-
+#endif
     AP_GROUPEND
 };
 
