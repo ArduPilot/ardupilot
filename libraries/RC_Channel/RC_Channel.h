@@ -219,7 +219,7 @@ public:
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
         // options 150-199 continue user rc switch options
-        CRUISE =             150,  ///CRUISE mode
+        CRUISE =             150,  // CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
         SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
         ARMDISARM =          153, // arm or disarm vehicle
@@ -228,6 +228,7 @@ public:
         TORQEEDO_CLEAR_ERR = 156, // clear torqeedo error
         EMERGENCY_LANDING_EN = 157, //Force long FS action to FBWA for landing out of range
         OPTFLOW_CAL =        158, // optical flow calibration
+        FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
