@@ -52,7 +52,7 @@ public:
     ///     speed_cms is the desired max speed to travel between waypoints.  should be a positive value or omitted to use the default speed
     ///     updates target roll, pitch targets and I terms based on vehicle lean angles
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-    void wp_and_spline_init(float speed_cms = 0.0f);
+    void wp_and_spline_init(float speed_cms = 0.0f, Vector3f stopping_point = Vector3f{});
 
     /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
