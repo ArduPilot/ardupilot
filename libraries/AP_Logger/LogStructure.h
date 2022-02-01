@@ -1057,6 +1057,13 @@ struct PACKED log_MotBatt {
 // @Field: Lng: longitude of rally point
 // @Field: Alt: altitude of rally point
 
+// @LoggerMessage: RCI2
+// @Description: (More) RC input channels to vehicle
+// @Field: TimeUS: Time since system startup
+// @Field: C15: channel 15 input
+// @Field: C16: channel 16 input
+// @Field: OMask: bitmask of RC channels being overridden by mavlink input
+
 // @LoggerMessage: RCIN
 // @Description: RC input channels to vehicle
 // @Field: TimeUS: Time since system startup
