@@ -162,9 +162,17 @@ AP_GPS_SBF::read(void)
                                 break;
                             case Config_State::SGA:
                             {
-                                const bool GNSSAttitude = get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA;
-                                if (asprintf(&config_string, "sga, %s\n",
-                                             GNSSAttitude ? "MovingBase" : "none")) {
+                                const char *targetGA = "none";
+                                if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
+                                    targetGA = "MultiAntenna";
+                                }
+                                // We could set the UseBaseForYaw option to set the attitude here, and the attitude offset
+                                // which would generate an AttEuler message for us, and wouldn't require any extra handling
+                                // but by doing it in ArduPilot we can apply our constraints on baseline distances
+                                // if (driver_options() & DriverOptions::SBF_UseBaseForYaw) {
+                                //     targetGA = "MovingBase";
+                                // }
+                                if (asprintf(&config_string, "sga, %s\n", targetGA)) {
                                   config_string = nullptr;
                                 }
                                 break;
