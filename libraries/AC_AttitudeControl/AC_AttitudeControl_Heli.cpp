@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_RLL_VFF
+    // @Param: RAT_RLL_FF
     // @DisplayName: Roll axis rate controller feed forward
     // @Description: Roll axis rate controller feed forward
     // @Range: 0.05 0.5
@@ -123,7 +123,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_PIT_VFF
+    // @Param: RAT_PIT_FF
     // @DisplayName: Pitch axis rate controller feed forward
     // @Description: Pitch axis rate controller feed forward
     // @Range: 0.05 0.5
@@ -197,7 +197,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Increment: 0.001
     // @User: Standard
 
-    // @Param: RAT_YAW_VFF
+    // @Param: RAT_YAW_FF
     // @DisplayName: Yaw axis rate controller feed forward
     // @Description: Yaw axis rate controller feed forward
     // @Range: 0 0.5
