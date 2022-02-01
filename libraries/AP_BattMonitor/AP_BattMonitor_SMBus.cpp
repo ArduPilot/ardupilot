@@ -1,5 +1,7 @@
 #include "AP_BattMonitor_SMBus.h"
 
+#if AP_BATTMON_SMBUS_ENABLE
+
 #define AP_BATTMONITOR_SMBUS_PEC_POLYNOME 0x07 // Polynome for CRC generation
 
 extern const AP_HAL::HAL& hal;
@@ -211,3 +213,4 @@ uint8_t AP_BattMonitor_SMBus::get_PEC(const uint8_t i2c_addr, uint8_t cmd, bool 
     // return result
     return crc;
 }
+#endif

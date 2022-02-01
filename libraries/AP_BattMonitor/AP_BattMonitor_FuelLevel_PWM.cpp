@@ -2,6 +2,8 @@
 #include "AP_BattMonitor_FuelLevel_PWM.h"
 #include <GCS_MAVLink/GCS.h>
 
+#if AP_BATTMON_FUEL_ENABLE
+
 /*
   "battery" monitor for liquid fuel level systems that give a PWM value indicating quantity of remaining fuel.
 
@@ -62,3 +64,5 @@ void AP_BattMonitor_FuelLevel_PWM::read()
     // map consumed_wh using fixed voltage of 1
     _state.consumed_wh = _state.consumed_mah;
 }
+
+#endif

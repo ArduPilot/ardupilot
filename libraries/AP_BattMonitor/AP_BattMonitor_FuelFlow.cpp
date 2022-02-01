@@ -2,6 +2,9 @@
 #include "AP_BattMonitor_FuelFlow.h"
 #include <GCS_MAVLink/GCS.h>
 
+#if AP_BATTMON_FUEL_ENABLE
+
+
 /*
   "battery" monitor for liquid fuel flow systems that give a pulse on
   a pin for fixed volumes of fuel.
@@ -122,3 +125,4 @@ void AP_BattMonitor_FuelFlow::read()
     // map consumed_wh using fixed voltage of 1
     _state.consumed_wh = _state.consumed_mah;
 }
+#endif
