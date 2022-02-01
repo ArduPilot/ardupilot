@@ -3,6 +3,7 @@
 
 void getLateralState(aircraftState_t state) {
     // TODO 
+    float testVal = 10;
 }
 
 
