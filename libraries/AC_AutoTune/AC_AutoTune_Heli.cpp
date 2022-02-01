@@ -40,7 +40,7 @@
 #define AUTOTUNE_ACCEL_RP_BACKOFF          1.0f     // back off from maximum acceleration
 #define AUTOTUNE_ACCEL_Y_BACKOFF           1.0f     // back off from maximum acceleration
 
-#define AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD     2000   // target roll/pitch angle during AUTOTUNE FeedForward rate test
+#define AUTOTUNE_HELI_TARGET_ANGLE_RLLPIT_CD     1500   // target roll/pitch angle during AUTOTUNE FeedForward rate test
 #define AUTOTUNE_HELI_TARGET_RATE_RLLPIT_CDS     5000   // target roll/pitch rate during AUTOTUNE FeedForward rate test
 #define AUTOTUNE_FFI_RATIO_FOR_TESTING     0.5f     // I is set 2x smaller than VFF during testing
 #define AUTOTUNE_FFI_RATIO_FINAL           0.5f     // I is set 0.5x VFF after testing
@@ -734,9 +734,9 @@ void AC_AutoTune_Heli::rate_ff_test_init()
     settle_time = 200;
     phase_out_time = 500;
     rate_request_cds.reset(0);
-    rate_request_cds.set_cutoff_frequency(0.8f);
+    rate_request_cds.set_cutoff_frequency(1.0f);
     angle_request_cd.reset(0);
-    angle_request_cd.set_cutoff_frequency(0.8f);
+    angle_request_cd.set_cutoff_frequency(1.0f);
 }
 
 void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cds, float dir_sign)
