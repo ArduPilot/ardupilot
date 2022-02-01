@@ -5,7 +5,6 @@
 #include <AP_CANManager/AP_CANSensor.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
-
 class AP_Proximity_ARS408_CAN : public CANSensor, public AP_Proximity_Backend {
 public:
     AP_Proximity_ARS408_CAN(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);

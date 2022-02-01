@@ -38,6 +38,7 @@
         radar_cfg_msg.data.RadarCfg_CtrlRelay_valid = 0;
         radar_cfg_msg.data.RadarCfg_StoreInNVM_valid = 0;
         radar_cfg_msg.data.RadarCfg_RCS_Threshold_valid = 0;
+        
     }
 
 
@@ -320,7 +321,7 @@ void AP_Proximity_ARS408_CAN::handle_frame(AP_HAL::CANFrame &frame)
                 obj_width = 1.0f;
               }
             }
-            
+
             auto itera = std::find_if(
                 obj_quality_list_.begin(),obj_quality_list_.end(),
                 [&](const object_2_quality & ps){
