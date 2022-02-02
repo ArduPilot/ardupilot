@@ -876,7 +876,12 @@ bool AP_GPS_UAVCAN::read(void)
         interim_state.speed_accuracy = MIN(interim_state.speed_accuracy, 1000.0);
 
         state = interim_state;
-
+        if (interim_state.last_corrected_gps_time_us) {
+            // If we were able to get a valid last_corrected_gps_time_us
+            // we have had a valid GPS message time, from which we calculate
+            // the time of week.
+            _last_itow = interim_state.time_week_ms;
+        }
         return true;
     }
     if (!seen_message) {
