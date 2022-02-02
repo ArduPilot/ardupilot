@@ -880,7 +880,7 @@ bool AP_GPS_UAVCAN::read(void)
             // If we were able to get a valid last_corrected_gps_time_us
             // we have had a valid GPS message time, from which we calculate
             // the time of week.
-            _last_itow = interim_state.time_week_ms;
+            _last_itow_ms = interim_state.time_week_ms;
         }
         return true;
     }

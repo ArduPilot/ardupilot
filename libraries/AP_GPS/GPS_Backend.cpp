@@ -235,8 +235,8 @@ void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
 
 void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 {
-    if (itow != _last_itow) {
-        _last_itow = itow;
+    if (itow != _last_itow_ms) {
+        _last_itow_ms = itow;
 
         /*
           we need to calculate a pseudo-itow, which copes with the
