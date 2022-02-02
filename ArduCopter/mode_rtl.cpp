@@ -297,8 +297,7 @@ void ModeRTL::descent_start()
 //      called by rtl_run at 100hz or more
 void ModeRTL::descent_run()
 {
-    float target_roll = 0.0f;
-    float target_pitch = 0.0f;
+    Vector2f vel_correction;
     float target_yaw_rate = 0.0f;
 
     // if not armed set throttle to zero and exit immediately
@@ -321,11 +320,11 @@ void ModeRTL::descent_run()
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
 
-            // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+            // convert pilot input to reposition velocity
+            vel_correction = get_pilot_desired_velocity(wp_nav->get_wp_acceleration() * 0.5);
 
             // record if pilot has overridden roll or pitch
-            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+            if (!vel_correction.is_zero()) {
                 if (!copter.ap.land_repo_active) {
                     AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
                 }
@@ -342,11 +341,9 @@ void ModeRTL::descent_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // process roll, pitch inputs
-    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-
-    // run loiter controller
-    loiter_nav->update();
+    Vector2f accel;
+    pos_control->input_vel_accel_xy(vel_correction, accel);
+    pos_control->update_xy_controller();
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
@@ -354,7 +351,7 @@ void ModeRTL::descent_run()
     pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
+    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
     _state_complete = labs(rtl_path.descent_target.alt - copter.current_loc.alt) < 20;
