@@ -42,7 +42,7 @@
 */
 
 #if CH_CFG_ST_RESOLUTION == 16
-static uint32_t system_time_u32_us(void)
+static inline uint32_t system_time_u32_us(void)
 {
     systime_t now = chVTGetSystemTimeX();
 #if CH_CFG_ST_FREQUENCY != 1000000U
@@ -56,7 +56,7 @@ static uint32_t system_time_u32_us(void)
     return timer_base_us32;
 }
 #elif CH_CFG_ST_RESOLUTION == 32
-static uint32_t system_time_u32_us(void)
+static inline uint32_t system_time_u32_us(void)
 {
     systime_t now = chVTGetSystemTimeX();
 #if CH_CFG_ST_FREQUENCY != 1000000U
@@ -69,9 +69,9 @@ static uint32_t system_time_u32_us(void)
 #endif
 
 // offset for micros64()
-static uint64_t timer_base_us64;
+uint64_t timer_base_us64;
 
-static uint32_t get_systime_us32(void)
+uint32_t get_systime_us32(void)
 {
     static uint32_t last_us32;
     uint32_t now = system_time_u32_us();
@@ -83,30 +83,3 @@ static uint32_t get_systime_us32(void)
     return now;
 }
 
-/*
-  for the exposed functions we use chSysGetStatusAndLockX() to prevent
-  an interrupt changing the globals while allowing this call from any
-  context
-*/
-
-uint64_t hrt_micros64()
-{
-    syssts_t sts = chSysGetStatusAndLockX();
-    uint32_t now = get_systime_us32();
-    uint64_t ret = timer_base_us64 + now;
-    chSysRestoreStatusX(sts);
-    return ret;
-}
-
-uint32_t hrt_micros32()
-{
-    syssts_t sts = chSysGetStatusAndLockX();
-    uint32_t ret = get_systime_us32();
-    chSysRestoreStatusX(sts);
-    return ret;
-}
-
-uint32_t hrt_millis32()
-{
-    return (uint32_t)(hrt_micros64() / 1000U);
-}
