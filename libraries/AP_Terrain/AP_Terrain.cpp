@@ -72,8 +72,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
 };
 
 // constructor
-AP_Terrain::AP_Terrain(const AP_Mission &_mission) :
-    mission(_mission),
+AP_Terrain::AP_Terrain() :
     disk_io_state(DiskIoIdle),
     fd(-1)
 {
