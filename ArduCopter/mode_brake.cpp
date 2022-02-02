@@ -47,7 +47,7 @@ void ModeBrake::run()
 
     // relax stop target if we might be landed
     if (copter.ap.land_complete_maybe) {
-        loiter_nav->soften_for_landing();
+        pos_control->soften_for_landing_xy();
     }
 
     // use position controller to stop
