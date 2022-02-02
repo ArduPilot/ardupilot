@@ -501,7 +501,7 @@ bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
 /**
    convert GPS week and milliseconds to unix epoch in milliseconds
  */
-uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
+uint64_t AP_GPS::istate_time_to_epoch_ms(uint16_t gps_week, uint32_t gps_ms)
 {
     uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * AP_MSEC_PER_WEEK + gps_ms;
     return fix_time_ms;
@@ -519,10 +519,10 @@ uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
     uint64_t fix_time_ms;
     // add in the time since the last fix message
     if (istate.last_corrected_gps_time_us != 0) {
-        fix_time_ms = time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow_ms());
+        fix_time_ms = istate_time_to_epoch_ms(istate.time_week, drivers[instance]->get_last_itow_ms());
         return (fix_time_ms*1000ULL) + (AP_HAL::micros64() - istate.last_corrected_gps_time_us);
     } else {
-        fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
+        fix_time_ms = istate_time_to_epoch_ms(istate.time_week, istate.time_week_ms);
         return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
     }
 }
@@ -536,7 +536,7 @@ uint64_t AP_GPS::last_message_epoch_usec(uint8_t instance) const
     if (istate.time_week == 0) {
         return 0;
     }
-    return time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow_ms()) * 1000ULL;
+    return istate_time_to_epoch_ms(istate.time_week, drivers[instance]->get_last_itow_ms()) * 1000ULL;
 }
 
 /*
