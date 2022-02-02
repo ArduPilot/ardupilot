@@ -95,7 +95,7 @@ public:
 
     // return iTOW of last message, or zero if not supported
     uint32_t get_last_itow(void) const {
-        return (_pseudo_itow_delta_ms == 0)?(_last_itow*1000ULL):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
+        return (_pseudo_itow_delta_ms == 0)?(_last_itow):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
     }
 
     enum DriverOptions : int16_t {
@@ -109,6 +109,10 @@ protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
     AP_GPS::GPS_State &state;           ///< public state for this instance
+
+    uint64_t _last_pps_time_us;
+    JitterCorrection jitter_correction;
+    uint32_t _last_itow;
 
     // common utility functions
     int32_t swap_int32(int32_t v) const;
@@ -161,13 +165,8 @@ protected:
     void log_data(const uint8_t *data, uint16_t length);
 #endif
 
-protected:
-    uint64_t _last_pps_time_us;
-    JitterCorrection jitter_correction;
-
 private:
     // itow from previous message
-    uint32_t _last_itow;
     uint64_t _pseudo_itow;
     int32_t _pseudo_itow_delta_ms;
     uint32_t _last_ms;
