@@ -664,10 +664,6 @@
   #error ModeAuto requires ModeRTL which is disabled
 #endif
 
-#if AP_TERRAIN_AVAILABLE && !MODE_AUTO_ENABLED
-  #error Terrain requires ModeAuto which is disabled
-#endif
-
 #if FRAME_CONFIG == HELI_FRAME && !MODE_ACRO_ENABLED
   #error Helicopter frame requires acro mode support which is disabled
 #endif

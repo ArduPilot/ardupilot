@@ -512,8 +512,8 @@ private:
 #endif
 
     // terrain handling
-#if AP_TERRAIN_AVAILABLE && MODE_AUTO_ENABLED == ENABLED
-    AP_Terrain terrain{mode_auto.mission};
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain terrain;
 #endif
 
     // Precision Landing
