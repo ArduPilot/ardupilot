@@ -485,7 +485,7 @@ public:
     }
 
     // convert GPS week and millis to unix epoch in ms
-    static uint64_t time_epoch_convert(uint16_t gps_week, uint32_t gps_ms);
+    static uint64_t istate_time_to_epoch_ms(uint16_t gps_week, uint32_t gps_ms);
 
     static const struct AP_Param::GroupInfo var_info[];
 
