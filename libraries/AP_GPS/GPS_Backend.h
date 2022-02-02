@@ -94,8 +94,8 @@ public:
     virtual bool get_error_codes(uint32_t &error_codes) const { return false; }
 
     // return iTOW of last message, or zero if not supported
-    uint32_t get_last_itow(void) const {
-        return (_pseudo_itow_delta_ms == 0)?(_last_itow):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
+    uint32_t get_last_itow_ms(void) const {
+        return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
     }
 
     enum DriverOptions : int16_t {
@@ -112,7 +112,7 @@ protected:
 
     uint64_t _last_pps_time_us;
     JitterCorrection jitter_correction;
-    uint32_t _last_itow;
+    uint32_t _last_itow_ms;
 
     // common utility functions
     int32_t swap_int32(int32_t v) const;
