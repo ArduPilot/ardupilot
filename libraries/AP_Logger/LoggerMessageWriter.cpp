@@ -242,9 +242,16 @@ void LoggerMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         }
-        stage = Stage::SYSTEM_ID;
+        stage = Stage::VER;
         FALLTHROUGH;
 
+    case Stage::VER: {
+        if (!_logger_backend->Write_VER()) {
+            return;
+        }
+        stage = Stage::SYSTEM_ID;
+        FALLTHROUGH;
+    }
     case Stage::SYSTEM_ID:
         char sysid[40];
         if (hal.util->get_system_id(sysid)) {
