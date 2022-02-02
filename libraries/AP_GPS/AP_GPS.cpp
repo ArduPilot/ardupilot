@@ -522,7 +522,7 @@ uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
         fix_time_ms = time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow());
         return (fix_time_ms*1000ULL) + (AP_HAL::micros64() - istate.last_corrected_gps_time_us);
     } else {
-        fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms) * 1000ULL;
+        fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
         return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
     }
 }
