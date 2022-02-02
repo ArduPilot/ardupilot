@@ -29,8 +29,6 @@ public:
     /**
      * get_position_neu_cm - returns the current position relative to the home location in cm.
      *
-     * the home location was set with AP_InertialNav::set_home_position(int32_t, int32_t)
-     *
      * @return
      */
     const Vector3f&    get_position_neu_cm() const;
