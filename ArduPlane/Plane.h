@@ -641,7 +641,7 @@ private:
 
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
-    AP_Terrain terrain{mission};
+    AP_Terrain terrain;
 #endif
 
     AP_Landing landing{mission,ahrs,&TECS_controller,nav_controller,aparm,
