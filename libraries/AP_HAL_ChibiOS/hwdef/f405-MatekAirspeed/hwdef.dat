@@ -1,0 +1,21 @@
+# hw definition file for the f405 Matek DLVR Airspeed Sensor
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+include ../f405-MatekGPS/hwdef.dat
+
+# Rename to f405_MatekAirspeed
+undef CAN_APP_NODE_NAME
+define CAN_APP_NODE_NAME "org.ardupilot.f405_MatekAirspeed"
+
+# Setup Airspeed Sensor to be I2C-DLVR-10in
+undef HAL_AIRSPEED_TYPE_DEFAULT
+define HAL_AIRSPEED_TYPE_DEFAULT 9
+
+# Disable these sensors by default
+# This is so we do not send messages onto the CAN network for unattached devices
+# A user may change this by using a tool to edit the CAN device parameters such as the DroneCAN GUI Tool
+define AP_COMPASS_ENABLE_DEFAULT 0
+define AP_PERIPH_BARO_ENABLE_DEFAULT 0
+define HAL_GPS_TYPE_DEFAULT 0
