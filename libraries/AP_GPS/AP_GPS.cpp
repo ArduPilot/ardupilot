@@ -519,7 +519,7 @@ uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
     uint64_t fix_time_ms;
     // add in the time since the last fix message
     if (istate.last_corrected_gps_time_us != 0) {
-        fix_time_ms = time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow());
+        fix_time_ms = time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow_ms());
         return (fix_time_ms*1000ULL) + (AP_HAL::micros64() - istate.last_corrected_gps_time_us);
     } else {
         fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
@@ -536,7 +536,7 @@ uint64_t AP_GPS::last_message_epoch_usec(uint8_t instance) const
     if (istate.time_week == 0) {
         return 0;
     }
-    return time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow()) * 1000ULL;
+    return time_epoch_convert(istate.time_week, drivers[instance]->get_last_itow_ms()) * 1000ULL;
 }
 
 /*
@@ -2020,7 +2020,7 @@ uint32_t AP_GPS::get_itow(uint8_t instance) const
     if (instance >= GPS_MAX_RECEIVERS || drivers[instance] == nullptr) {
         return 0;
     }
-    return drivers[instance]->get_last_itow();
+    return drivers[instance]->get_last_itow_ms();
 }
 
 bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const
