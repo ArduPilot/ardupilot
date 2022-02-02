@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Mission/AP_Mission.h>
 #include <AP_Rally/AP_Rally.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
@@ -34,12 +35,18 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::update_mission_data(void)
 {
-    if (last_mission_change_ms != mission.last_change_time_ms() ||
+#if HAL_MISSION_ENABLED
+    const AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        return;
+    }
+
+    if (last_mission_change_ms != mission->last_change_time_ms() ||
         last_mission_spacing != grid_spacing) {
         // the mission has changed - start again
         next_mission_index = 1;
         next_mission_pos = 0;
-        last_mission_change_ms = mission.last_change_time_ms();
+        last_mission_change_ms = mission->last_change_time_ms();
         last_mission_spacing = grid_spacing;
     }
     if (next_mission_index == 0) {
@@ -59,7 +66,7 @@ void AP_Terrain::update_mission_data(void)
     for (uint8_t i=0; i<20; i++) {
         // get next mission command
         AP_Mission::Mission_Command cmd;
-        if (!mission.read_cmd_from_storage(next_mission_index, cmd)) {
+        if (!mission->read_cmd_from_storage(next_mission_index, cmd)) {
             // nothing more to do
             next_mission_index = 0;
             return;
@@ -71,7 +78,7 @@ void AP_Terrain::update_mission_data(void)
                 cmd.id != MAV_CMD_NAV_SPLINE_WAYPOINT) ||
                (cmd.content.location.lat == 0 && cmd.content.location.lng == 0)) {
             next_mission_index++;
-            if (!mission.read_cmd_from_storage(next_mission_index, cmd)) {
+            if (!mission->read_cmd_from_storage(next_mission_index, cmd)) {
                 // nothing more to do
                 next_mission_index = 0;
                 next_mission_pos = 0;
@@ -105,6 +112,7 @@ void AP_Terrain::update_mission_data(void)
             next_mission_pos = 0;
         }
     }
+#endif  // HAL_MISSION_ENABLED
 }
 
 /*
