@@ -684,7 +684,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         paths = stuff["default_params_filename"]
         if not isinstance(paths, list):
             paths = [paths]
-        paths = [util.reltopdir(os.path.join(autotest_dir, x)) for x in paths]
+        paths = [util.relcurdir(os.path.join(autotest_dir, x)) for x in paths]
         for x in paths:
             if not os.path.isfile(x):
                 print("The parameter file (%s) does not exist" % (x,))
