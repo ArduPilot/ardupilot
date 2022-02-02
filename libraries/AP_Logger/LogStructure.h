@@ -714,6 +714,21 @@ struct PACKED log_MotBatt {
     uint8_t mot_fail_flags;
 };
 
+struct PACKED log_VER {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t board_type;
+    uint16_t board_subtype;
+    uint8_t major;
+    uint8_t minor;
+    uint8_t patch;
+    uint8_t fw_type;
+    uint32_t git_hash;
+    char fw_string[64];
+    uint16_t _APJ_BOARD_ID;
+};
+
+
 // FMT messages define all message formats other than FMT
 // UNIT messages define units which can be referenced by FMTU messages
 // FMTU messages associate types (e.g. centimeters/second/second) to FMT message fields
@@ -1374,6 +1389,8 @@ LOG_STRUCTURE_FROM_VISUALODOM \
 LOG_STRUCTURE_FROM_AIS, \
     { LOG_SCRIPTING_MSG, sizeof(log_Scripting), \
       "SCR",   "QNIii", "TimeUS,Name,Runtime,Total_mem,Run_mem", "s-sbb", "F-F--", true }, \
+    { LOG_VER_MSG, sizeof(log_VER), \
+      "VER",   "QBHBBBBIZH", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ", "s---------", "F---------", false }, \
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
       "MOTB", "QffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,FailFlags", "s-----", "F-----" , true }
 
@@ -1457,6 +1474,7 @@ enum LogMessages : uint8_t {
     LOG_SCRIPTING_MSG,
     LOG_VIDEO_STABILISATION_MSG,
     LOG_MOTBATT_MSG,
+    LOG_VER_MSG,
 
     _LOG_LAST_MSG_
 };
