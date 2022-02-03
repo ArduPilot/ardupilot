@@ -112,27 +112,6 @@ bool AC_AutoTune::init_position_controller(void)
     return true;
 }
 
-const char *AC_AutoTune::level_issue_string() const
-{
-    switch (level_problem.issue) {
-    case LevelIssue::NONE:
-        return "None";
-    case LevelIssue::ANGLE_ROLL:
-        return "Angle(R)";
-    case LevelIssue::ANGLE_PITCH:
-        return "Angle(P)";
-    case LevelIssue::ANGLE_YAW:
-        return "Angle(Y)";
-    case LevelIssue::RATE_ROLL:
-        return "Rate(R)";
-    case LevelIssue::RATE_PITCH:
-        return "Rate(P)";
-    case LevelIssue::RATE_YAW:
-        return "Rate(Y)";
-    }
-    return "Bug";
-}
-
 void AC_AutoTune::send_step_string()
 {
     if (pilot_override) {
@@ -141,7 +120,7 @@ void AC_AutoTune::send_step_string()
     }
     switch (step) {
     case WAITING_FOR_LEVEL:
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Leveling (%s %4.1f > %4.1f)", level_issue_string(), (double)(level_problem.current*0.01f), (double)(level_problem.maximum*0.01f));
+        gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Leveling");
         return;
     case UPDATE_GAINS:
         gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Updating Gains");
@@ -258,18 +237,6 @@ void AC_AutoTune::run()
 
 }
 
-// check if current is greater than maximum and update level_problem structure
-bool AC_AutoTune::check_level(const LevelIssue issue, const float current, const float maximum)
-{
-    if (current > maximum) {
-        level_problem.current = current;
-        level_problem.maximum = maximum;
-        level_problem.issue = issue;
-        return false;
-    }
-    return true;
-}
-
 // return true if vehicle is close to level
 bool AC_AutoTune::currently_level()
 {
@@ -289,35 +256,23 @@ bool AC_AutoTune::currently_level()
         level_fail_warning_time_ms = now_ms;
     }
 
-    if (!check_level(LevelIssue::ANGLE_ROLL,
-                     fabsf(ahrs_view->roll_sensor - roll_cd),
-                     threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(ahrs_view->roll_sensor - roll_cd) > threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
 
-    if (!check_level(LevelIssue::ANGLE_PITCH,
-                     fabsf(ahrs_view->pitch_sensor - pitch_cd),
-                     threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(ahrs_view->pitch_sensor - pitch_cd) > threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if (!check_level(LevelIssue::ANGLE_YAW,
-                     fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)),
-                     threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD)) {
+    if (fabsf(wrap_180_cd(ahrs_view->yaw_sensor - desired_yaw_cd)) > threshold_mul*AUTOTUNE_LEVEL_ANGLE_CD) {
         return false;
     }
-    if (!check_level(LevelIssue::RATE_ROLL,
-                     (ToDeg(ahrs_view->get_gyro().x) * 100.0f),
-                     threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if ((ToDeg(ahrs_view->get_gyro().x) * 100.0f) > threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if (!check_level(LevelIssue::RATE_PITCH,
-                     (ToDeg(ahrs_view->get_gyro().y) * 100.0f),
-                     threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD)) {
+    if ((ToDeg(ahrs_view->get_gyro().y) * 100.0f) > threshold_mul*AUTOTUNE_LEVEL_RATE_RP_CD) {
         return false;
     }
-    if (!check_level(LevelIssue::RATE_YAW,
-                     (ToDeg(ahrs_view->get_gyro().z) * 100.0f),
-                     threshold_mul*AUTOTUNE_LEVEL_RATE_Y_CD)) {
+    if ((ToDeg(ahrs_view->get_gyro().z) * 100.0f) > threshold_mul*AUTOTUNE_LEVEL_RATE_Y_CD) {
         return false;
     }
     return true;
