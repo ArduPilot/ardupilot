@@ -308,6 +308,7 @@ public:
     void send_gimbal_report() const;
     void send_home_position() const;
     void send_gps_global_origin() const;
+    virtual void send_attitude_target() {};
     virtual void send_position_target_global_int() { };
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
