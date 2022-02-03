@@ -152,7 +152,7 @@ const char *AC_AutoTune::type_string() const
     case TUNE_COMPLETE:
         return "Tune Complete";
     }
-    return "unknown tune type";
+    return "";
     // this should never happen
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
@@ -309,7 +309,6 @@ void AC_AutoTune::control_attitude()
 
         // if we have been level for a sufficient amount of time (0.5 seconds) move onto tuning step
         if (now - step_start_time_ms > AUTOTUNE_REQUIRED_LEVEL_TIME_MS) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Start Test");
             // initiate variables for next step
             step = TESTING;
             step_start_time_ms = now;
