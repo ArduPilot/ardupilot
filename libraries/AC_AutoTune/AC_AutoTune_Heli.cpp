@@ -267,20 +267,8 @@ void AC_AutoTune_Heli::do_gcs_announcements()
     if (now - announce_time < AUTOTUNE_ANNOUNCE_INTERVAL_MS) {
         return;
     }
-    char axis_char = '?';
-    switch (axis) {
-    case ROLL:
-        axis_char = 'R';
-        break;
-    case PITCH:
-        axis_char = 'P';
-        break;
-    case YAW:
-        axis_char = 'Y';
-        break;
-    }
 
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: (%c) %s", axis_char, type_string());
+    gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: %s %s", axis_string(), type_string());
     send_step_string();
     switch (tune_type) {
     case RD_UP:

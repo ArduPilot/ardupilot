@@ -171,6 +171,9 @@ protected:
     // convert tune type to string for reporting
     const char *type_string() const;
 
+    // return current axis string
+    const char *axis_string() const;
+
     // Functions added for heli autotune
 
     // Add additional updating gain functions specific to heli

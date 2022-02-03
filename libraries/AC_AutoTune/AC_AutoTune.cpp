@@ -157,6 +157,20 @@ const char *AC_AutoTune::type_string() const
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
+// return current axis string
+const char *AC_AutoTune::axis_string() const
+{
+    switch (axis) {
+    case ROLL:
+        return "Roll";
+    case PITCH:
+        return "Pitch";
+    case YAW:
+        return "Yaw";
+    }
+    return "";
+}
+
 // run - runs the autotune flight mode
 // should be called at 100hz or more
 void AC_AutoTune::run()
