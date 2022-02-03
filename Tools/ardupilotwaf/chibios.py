@@ -53,17 +53,73 @@ class upload_fw(Task.Task):
     color='BLUE'
     always_run = True
     def run(self):
+        import platform
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         upload_port = self.generator.bld.options.upload_port
         src = self.inputs[0]
         # Refer Tools/scripts/macos_remote_upload.sh for details
         if 'AP_OVERRIDE_UPLOAD_CMD' in os.environ:
             cmd = "{} '{}'".format(os.environ['AP_OVERRIDE_UPLOAD_CMD'], src.abspath())
+        elif "microsoft-standard-WSL2" in platform.release():
+            if not self.wsl2_prereq_checks():
+                return
+            print("If this takes takes too long here, try power-cycling your hardware\n")
+            cmd = "{} '{}/uploader.py' '{}'".format('python.exe', upload_tools, src.abspath())
         else:
             cmd = "{} '{}/uploader.py' '{}'".format(self.env.get_flat('PYTHON'), upload_tools, src.abspath())
         if upload_port is not None:
             cmd += " '--port' '%s'" % upload_port
         return self.exec_command(cmd)
+
+    def wsl2_prereq_checks(self):
+        # As of July 2022 WSL2 does not support native USB support. The workaround from Microsoft
+        #       using 'usbipd' does not work due to the following workflow:
+        #
+        # 1) connect USB device to Windows computer running WSL2
+        # 2) device boots into app
+        # 3) use 'usbipd' from Windows Cmd/PowerShell to determine busid, this is very hard to automate on Windows
+        # 4) use 'usbipd' from Windows Cmd/PowerShell to attach, this is very hard to automate on Windows
+        # -- device is now viewable via 'lsusb' but you need sudo to read from it.
+        # either run 'chmod666 /dev/ttyACM*' or use udev to automate chmod on device connect
+        # 5) uploader.py detects device, sends reboot command which disconnects the USB port and reboots into
+        #       bootloader (different USB device)
+        # 6) manually repeat steps 3 & 4
+        # 7) doing steps 3 and 4 will most likely take several seconds and in many cases the bootloader has
+        #        moved on into the app
+        #
+        # Solution: simply call "python.exe" instead of 'python' which magically calls it from the windows
+        #   system using the same absolute path back into the WSL2's user's directory
+        # Requirements: Windows must have Python3.9.x (NTO 3.10.x) installed and a few packages.
+        import subprocess
+        try:
+            where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
+        except subprocess.CalledProcessError:
+            #if where.exe can't find the file it returns a non-zero result which throws this exception
+            where_python = ""
+        if not where_python or not "\Python\Python" in where_python or "python.exe" not in where_python:
+            print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
+            return False
+        python_version = subprocess.check_output('python.exe --version', shell=True, text=True)
+        if "3.10." in python_version:
+            print(self.get_full_wsl2_error_msg("Your Windows %s version is not compatible" % python_version.strip()))
+            return False
+        return True
+
+    def get_full_wsl2_error_msg(self, error_msg):
+        return ("""
+        ****************************************
+        ****************************************
+        WSL2 firmware uploads use the host's Windows Python.exe so it has access to the COM ports.
+
+        %s
+        Please download Windows Installer 3.9.x (not 3.10) from https://www.python.org/downloads/
+        and make sure to add it to your path during the installation. Once installed, run this
+        command in Powershell or Command Prompt to install some packages:
+        
+        pip.exe install empy pyserial
+        ****************************************
+        ****************************************
+        """ % error_msg)
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
