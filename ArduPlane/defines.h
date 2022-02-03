@@ -99,10 +99,6 @@ enum log_messages {
     LOG_PIDG_MSG,
     LOG_AETR_MSG,
     LOG_OFG_MSG,
-    LOG_CMDI_MSG,
-    LOG_CMDA_MSG,
-    LOG_CMDS_MSG,
-    LOG_CMDH_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
