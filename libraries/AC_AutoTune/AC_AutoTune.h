@@ -292,22 +292,6 @@ private:
     // directly updates attitude controller with targets
     void control_attitude();
 
-    // convert latest level issue to string for reporting
-    const char *level_issue_string() const;
-
-    enum struct LevelIssue {
-        NONE,
-        ANGLE_ROLL,
-        ANGLE_PITCH,
-        ANGLE_YAW,
-        RATE_ROLL,
-        RATE_PITCH,
-        RATE_YAW,
-    };
-
-    // check if current is greater than maximum and update level_problem structure
-    bool check_level(const enum LevelIssue issue, const float current, const float maximum);
-
     // returns true if vehicle is close to level
     bool currently_level();
 
@@ -332,11 +316,5 @@ private:
 
     // time in ms of last pilot override warning
     uint32_t last_pilot_override_warning;
-
-    struct {
-        LevelIssue issue{LevelIssue::NONE};
-        float maximum;
-        float current;
-    } level_problem;
 
 };
