@@ -4243,9 +4243,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_home(const mavlink_command_long_t 
     }
 
     Location new_home_loc;
-    new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-    new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-    new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+    if (!location_from_command_t(packet, MAV_FRAME_GLOBAL, new_home_loc)) {
+        return MAV_RESULT_DENIED;
+    }
+
     if (!set_home(new_home_loc, true)) {
         return MAV_RESULT_FAILED;
     }
@@ -4459,6 +4460,39 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     return result;
 }
 
+bool GCS_MAVLINK::location_from_command_t(const mavlink_command_long_t &in, MAV_FRAME in_frame, Location &out)
+{
+    mavlink_command_int_t command_int;
+    convert_COMMAND_LONG_to_COMMAND_INT(in, command_int, in_frame);
+
+    return location_from_command_t(command_int, out);
+}
+
+bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
+{
+    if (!command_long_stores_location((MAV_CMD)in.command)) {
+        return false;
+    }
+
+    // integer storage imposes limits on the altitudes we can accept:
+    if (fabsf(in.z) > LOCATION_ALT_MAX_M) {
+        return false;
+    }
+
+    Location::AltFrame frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)in.frame, frame)) {
+        // unknown coordinate frame
+        return false;
+    }
+
+    out.lat = in.x;
+    out.lng = in.y;
+
+    out.set_alt_cm(int32_t(in.z * 100), frame);
+
+    return true;
+}
+
 bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
 {
     switch(command) {
@@ -4472,11 +4506,11 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     return false;
 }
 
-void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out)
+void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out.target_system = in.target_system;
     out.target_component = in.target_component;
-    out.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT; // FIXME?
+    out.frame = frame;
     out.command = in.command;
     out.current = 0;
     out.autocontinue = 0;
@@ -4570,17 +4604,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_do_set_home(const mavlink_command_int
     if (!is_zero(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
-    Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
-        // unknown coordinate frame
-        return MAV_RESULT_UNSUPPORTED;
+    Location new_home_loc;
+    if (!location_from_command_t(packet, new_home_loc)) {
+        return MAV_RESULT_DENIED;
     }
-    const Location new_home_loc{
-        packet.x,
-        packet.y,
-        int32_t(packet.z * 100),
-        frame,
-    };
     if (!set_home(new_home_loc, true)) {
         return MAV_RESULT_FAILED;
     }
@@ -4627,17 +4654,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     // x : lat
     // y : lon
     // z : alt
-    Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
-        // unknown coordinate frame
-        return MAV_RESULT_UNSUPPORTED;
+    Location roi_loc;
+    if (!location_from_command_t(packet, roi_loc)) {
+        return MAV_RESULT_DENIED;
     }
-    const Location roi_loc {
-        packet.x,
-        packet.y,
-        (int32_t)constrain_float(packet.z * 100.0f,INT32_MIN,INT32_MAX),
-        frame
-    };
     return handle_command_do_set_roi(roi_loc);
 }
 
@@ -4648,13 +4668,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_long_t &
     // of the extra fields in the former then you will need to split
     // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
     // support the extra fields).
-
-    const Location roi_loc {
-        (int32_t)constrain_float(packet.param5 * 1.0e7f, INT32_MIN, INT32_MAX),
-        (int32_t)constrain_float(packet.param6 * 1.0e7f, INT32_MIN, INT32_MAX),
-        (int32_t)constrain_float(packet.param7 * 100.0f, INT32_MIN, INT32_MAX),
-        Location::AltFrame::ABOVE_HOME
-    };
+    Location roi_loc;
+    if (!location_from_command_t(packet, MAV_FRAME_GLOBAL_RELATIVE_ALT, roi_loc)) {
+        return MAV_RESULT_DENIED;
+    }
     return handle_command_do_set_roi(roi_loc);
 }
 
