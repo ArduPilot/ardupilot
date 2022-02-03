@@ -72,6 +72,7 @@ import re
 from sys import platform as _platform
 
 is_WSL = bool("Microsoft" in platform.uname()[2])
+is_WSL2 = bool("microsoft-standard-WSL2" in platform.release())
 
 # default list of port names to look for autopilots
 default_ports = ['/dev/serial/by-id/usb-Ardu*',
@@ -92,6 +93,10 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
 
 if "cygwin" in _platform or is_WSL:
     default_ports += ['/dev/ttyS*']
+
+if "win32" in _platform:
+    for com_port in range(1, 255):
+        default_ports += ['COM' + str(com_port)]
 
 # Detect python version
 if sys.version_info[0] < 3:
@@ -1146,7 +1151,7 @@ def main():
                                   args.no_extf)
 
                 except Exception as e:
-                    if not is_WSL:
+                    if not is_WSL and not is_WSL2 and "win32" not in _platform:
                         # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
                         print("Exception creating uploader: %s" % str(e))
                         time.sleep(0.05)
