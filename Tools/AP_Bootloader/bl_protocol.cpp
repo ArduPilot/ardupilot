@@ -643,7 +643,7 @@ bootloader(unsigned timeout)
                 goto cmd_bad;
             }
             uint32_t erased_bytes = 0;
-            uint32_t sector_number = 0;
+            uint32_t sector_number = EXT_FLASH_RESERVE_START_KB * 1024 / ext_flash.get_sector_size();
             uint8_t pct_done = 0;
             if (cmd_erase_bytes > (ext_flash.get_sector_size() * ext_flash.get_sector_count())) {
                 uprintf("Requested to erase more than we can\n");
@@ -752,7 +752,8 @@ bootloader(unsigned timeout)
                     extf_address += arg;
                     break;
                 }
-                if (!ext_flash.start_program_offset(extf_address+offset, &flash_buffer.c[offset], size, programming, delay_us, timeout_us)) {
+                if (!ext_flash.start_program_offset(extf_address+offset+EXT_FLASH_RESERVE_START_KB*1024,
+                    &flash_buffer.c[offset], size, programming, delay_us, timeout_us)) {
                     // uprintf("ext flash write command failed\n");
                     goto cmd_fail;
                 }
@@ -906,13 +907,13 @@ bootloader(unsigned timeout)
                 } else
 #endif
                 {
-                    ext_flash.read(p, (uint8_t *)&bytes, sizeof(bytes));
+                    ext_flash.read(p+EXT_FLASH_RESERVE_START_KB*1024, (uint8_t *)&bytes, sizeof(bytes));
                 }
                 sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
             }
             if (rembytes) {
                 uint8_t bytes[3];
-                ext_flash.read(cmd_verify_bytes-rembytes, bytes, rembytes);
+                ext_flash.read(EXT_FLASH_RESERVE_START_KB*1024+cmd_verify_bytes-rembytes, bytes, rembytes);
                 sum = crc32_small(sum, bytes, rembytes);
             }
             cout_word(sum);
@@ -1091,7 +1092,7 @@ bootloader(unsigned timeout)
                 uint32_t programming;
                 uint32_t delay_us;
                 uint32_t timeout_us;
-                if (!ext_flash.start_program_offset(0, (const uint8_t*)first_words, sizeof(first_words), programming, delay_us, timeout_us)) {
+                if (!ext_flash.start_program_offset(EXT_FLASH_RESERVE_START_KB*1024, (const uint8_t*)first_words, sizeof(first_words), programming, delay_us, timeout_us)) {
                     // uprintf("ext flash write command failed\n");
                     goto cmd_fail;
                 }
