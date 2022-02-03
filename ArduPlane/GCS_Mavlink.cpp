@@ -877,9 +877,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
-
-    plane.Log_Write_MavCmdI(packet);
-
     switch(packet.command) {
 
     case MAV_CMD_DO_REPOSITION:

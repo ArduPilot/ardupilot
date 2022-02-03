@@ -434,71 +434,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: HdgA: target heading lim
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
       "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
-
-// @LoggerMessage: CMDI
-// @Description: Generic CommandInt message logger(CMDI) 
-// @Field: TimeUS: Time since system startup
-// @Field: CId:  command id
-// @Field: TSys: target system
-// @Field: TCmp: target component
-// @Field: cur:  current
-// @Field: cont: autocontinue
-// @Field: Prm1: parameter 1
-// @Field: Prm2: parameter 2
-// @Field: Prm3: parameter 3
-// @Field: Prm4: parameter 4
-// @Field: Lat: target latitude
-// @Field: Lng: target longitude
-// @Field: Alt: target altitude
-// @Field: F:   frame
-    { LOG_CMDI_MSG, sizeof(log_CMDI),     
-      "CMDI", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-// these next three are same format as log_CMDI just each a different name for Heading,Speed and Alt COMMAND_INTs
-    { LOG_CMDS_MSG, sizeof(log_CMDI),     
-      "CMDS", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-    { LOG_CMDA_MSG, sizeof(log_CMDI),     
-      "CMDA", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-    { LOG_CMDH_MSG, sizeof(log_CMDI),     
-      "CMDH", "QHBBBBffffiifB",    "TimeUS,CId,TSys,TCmp,cur,cont,Prm1,Prm2,Prm3,Prm4,Lat,Lng,Alt,F", "s---------DUm-", "F---------GGB-" }, 
-
 };
-
-
-// Write a COMMAND INT packet.
-void Plane::Log_Write_MavCmdI(const mavlink_command_int_t &mav_cmd)
-{
-    struct log_CMDI pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_CMDI_MSG),
-        TimeUS:AP_HAL::micros64(),
-        CId:   mav_cmd.command,
-        TSys:  mav_cmd.target_system,
-        TCmp:  mav_cmd.target_component,
-        cur:   mav_cmd.current,
-        cont:  mav_cmd.autocontinue,
-        Prm1:  mav_cmd.param1,
-        Prm2:  mav_cmd.param2,
-        Prm3:  mav_cmd.param3,
-        Prm4:  mav_cmd.param4,
-        Lat:   mav_cmd.x,
-        Lng:   mav_cmd.y,
-        Alt:   mav_cmd.z,
-        F:     mav_cmd.frame
-};
-
-// rather than have 4 different functions for these similar outputs, we just create it as a CMDI and rename it here
-#if OFFBOARD_GUIDED == ENABLED
-    if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_SPEED) {
-        pkt.msgid = LOG_CMDS_MSG;
-    } else if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_ALTITUDE) {
-        pkt.msgid = LOG_CMDA_MSG;
-    } else if (mav_cmd.command == MAV_CMD_GUIDED_CHANGE_HEADING) {
-        pkt.msgid = LOG_CMDH_MSG;
-    }
-#endif
-    //normally pkt.msgid = LOG_CMDI_MSG
-    logger.WriteBlock(&pkt, sizeof(pkt));
-
-}
 
 void Plane::Log_Write_Vehicle_Startup_Messages()
 {
@@ -532,7 +468,6 @@ void Plane::Log_Write_OFG_Guided() {}
 void Plane::Log_Write_Nav_Tuning() {}
 void Plane::Log_Write_Status() {}
 void Plane::Log_Write_Guided(void) {}
-void Plane::Log_Write_MavCmdI(const mavlink_command_int_t &packet) {}
 void Plane::Log_Write_RC(void) {}
 void Plane::Log_Write_Vehicle_Startup_Messages() {}
 
