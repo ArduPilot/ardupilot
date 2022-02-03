@@ -77,6 +77,29 @@ MAV_STATE GCS_MAVLINK_Copter::vehicle_system_status() const
 }
 
 
+void GCS_MAVLINK_Copter::send_attitude_target()
+{
+    const Quaternion quat  = copter.attitude_control->get_attitude_target_quat();
+    const Vector3f ang_vel = copter.attitude_control->get_attitude_target_ang_vel();
+    const float thrust = copter.attitude_control->get_throttle_in();
+
+    const float quat_out[4] {quat.q1, quat.q2, quat.q3, quat.q4};
+
+    // Note: When sending out the attitude_target info. we send out all of info. no matter the mavlink typemask
+    // This way we send out the maximum information that can be used by the sending control systems to adapt their generated trajectories
+    const uint16_t typemask = 0;    // Ignore nothing
+
+    mavlink_msg_attitude_target_send(
+        chan,
+        AP_HAL::millis(),       // time since boot (ms)
+        typemask,               // Bitmask that tells the system what control dimensions should be ignored by the vehicle
+        quat_out,               // Attitude quaternion [w, x, y, z] order, zero-rotation is [1, 0, 0, 0], unit-length
+        ang_vel.x,              // roll rate (rad/s)
+        ang_vel.y,              // pitch rate (rad/s)
+        ang_vel.z,              // yaw rate (rad/s)
+        thrust);                // Collective thrust, normalized to 0 .. 1
+}
+
 void GCS_MAVLINK_Copter::send_position_target_global_int()
 {
     Location target;
