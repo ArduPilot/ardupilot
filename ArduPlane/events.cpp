@@ -208,7 +208,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #if HAL_QUADPLANE_ENABLED
         case Failsafe_Action_Loiter_alt_QLand:
             if (quadplane.available()) {
-                plane.set_mode(mode_lotier_qland, ModeReason::BATTERY_FAILSAFE);
+                plane.set_mode(mode_loiter_qland, ModeReason::BATTERY_FAILSAFE);
                 break;
             }
             FALLTHROUGH;
@@ -223,7 +223,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_Land: {
             bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
 #if HAL_QUADPLANE_ENABLED
-            if (control_mode == &mode_qland || control_mode == &mode_lotier_qland) {
+            if (control_mode == &mode_qland || control_mode == &mode_loiter_qland) {
                 already_landing = true;
             }
 #endif
@@ -244,7 +244,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
         case Failsafe_Action_RTL: {
             bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
 #if HAL_QUADPLANE_ENABLED
-            if (control_mode == &mode_qland || control_mode == &mode_lotier_qland ||
+            if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
                 quadplane.in_vtol_land_sequence()) {
                 already_landing = true;
             }
