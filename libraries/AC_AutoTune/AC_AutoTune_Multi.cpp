@@ -440,6 +440,30 @@ void AC_AutoTune_Multi::save_tuning_gains()
     reset();
 }
 
+// report final gains for a given axis to GCS
+void AC_AutoTune_Multi::report_final_gains(AxisType test_axis) const
+{
+    switch (test_axis) {
+        case ROLL:
+            report_axis_gains("Roll", tune_roll_rp, tune_roll_rp*AUTOTUNE_PI_RATIO_FINAL, tune_roll_rd, tune_roll_sp, tune_roll_accel);
+            break;
+        case PITCH:
+            report_axis_gains("Pitch", tune_pitch_rp, tune_pitch_rp*AUTOTUNE_PI_RATIO_FINAL, tune_pitch_rd, tune_pitch_sp, tune_pitch_accel);
+            break;
+        case YAW:
+            report_axis_gains("Yaw", tune_yaw_rp, tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL, 0, tune_yaw_sp, tune_yaw_accel);
+            break;
+    }
+}
+
+// report gain formating helper
+void AC_AutoTune_Multi::report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const
+{
+    gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s complete", axis_string);
+    gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s Rate: P:%0.3f, I:%0.3f, D:%0.4f",axis_string,rate_P,rate_I,rate_D);
+    gcs().send_text(MAV_SEVERITY_NOTICE,"AutoTune: %s Angle P:%0.3f, Max Accel:%0.0f",axis_string,angle_P,max_accel);
+}
+
 // twitching_test_rate - twitching tests
 // update min and max and test for end conditions
 void AC_AutoTune_Multi::twitching_test_rate(float rate, float rate_target_max, float &meas_rate_min, float &meas_rate_max)
