@@ -280,6 +280,7 @@ private:
     ModeQLand mode_qland;
     ModeQRTL mode_qrtl;
     ModeQAcro mode_qacro;
+    ModeLoiterAltQLand mode_loiter_qland;
 #if QAUTOTUNE_ENABLED
     ModeQAutotune mode_qautotune;
 #endif  // QAUTOTUNE_ENABLED
@@ -287,9 +288,6 @@ private:
     ModeTakeoff mode_takeoff;
 #if HAL_SOARING_ENABLED
     ModeThermal mode_thermal;
-#endif
-#if HAL_QUADPLANE_ENABLED
-    ModeLoiterAltQLand mode_lotier_qland;
 #endif
 
     // This is the state of the flight control system
