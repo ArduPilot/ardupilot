@@ -79,8 +79,6 @@ static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
-    LOG_STARTUP_MSG,
-    TYPE_GROUNDSTART_MSG,
     LOG_STATUS_MSG,
     LOG_QTUN_MSG,
     LOG_PIQR_MSG,
