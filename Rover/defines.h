@@ -21,12 +21,9 @@
 enum LoggingParameters {
     LOG_THR_MSG,
     LOG_NTUN_MSG,
-    LOG_STARTUP_MSG,
     LOG_STEERING_MSG,
     LOG_GUIDEDTARGET_MSG,
 };
-
-#define TYPE_GROUNDSTART_MSG    0x01
 
 #define MASK_LOG_ATTITUDE_FAST  (1<<0)
 #define MASK_LOG_ATTITUDE_MED   (1<<1)

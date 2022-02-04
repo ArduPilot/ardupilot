@@ -183,24 +183,6 @@ struct PACKED log_Steering {
     float turn_rate;
 };
 
-struct PACKED log_Startup {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t startup_type;
-    uint16_t command_total;
-};
-
-void Rover::Log_Write_Startup(uint8_t type)
-{
-    struct log_Startup pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_STARTUP_MSG),
-        time_us         : AP_HAL::micros64(),
-        startup_type    : type,
-        command_total   : mode_auto.mission.num_commands()
-    };
-    logger.WriteBlock(&pkt, sizeof(pkt));
-}
-
 // Write a steering packet
 void Rover::Log_Write_Steering()
 {
@@ -259,7 +241,6 @@ void Rover::Log_Write_RC(void)
 void Rover::Log_Write_Vehicle_Startup_Messages()
 {
     // only 200(?) bytes are guaranteed by AP_Logger
-    Log_Write_Startup(TYPE_GROUNDSTART_MSG);
     logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
     ahrs.Log_Write_Home_And_Origin();
     gps.Write_AP_Logger_Log_Startup_messages();
@@ -271,15 +252,6 @@ void Rover::Log_Write_Vehicle_Startup_Messages()
 
 const LogStructure Rover::log_structure[] = {
     LOG_COMMON_STRUCTURES,
-
-// @LoggerMessage: STRT
-// @Description: Startup messages
-// @Field: TimeUS: Time since system startup
-// @Field: SType: Type of startup
-// @Field: CTot: Total number of commands in the mission
-
-    { LOG_STARTUP_MSG, sizeof(log_Startup),
-      "STRT", "QBH",        "TimeUS,SType,CTot", "s--", "F--" },
 
 // @LoggerMessage: THR
 // @Description: Throttle related messages
@@ -347,7 +319,6 @@ void Rover::Log_Write_Depth() {}
 void Rover::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Rover::Log_Write_Nav_Tuning() {}
 void Rover::Log_Write_Sail() {}
-void Rover::Log_Write_Startup(uint8_t type) {}
 void Rover::Log_Write_Throttle() {}
 void Rover::Log_Write_RC(void) {}
 void Rover::Log_Write_Steering() {}
