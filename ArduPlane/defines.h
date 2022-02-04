@@ -6,7 +6,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define DEBUG 0
 #define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
