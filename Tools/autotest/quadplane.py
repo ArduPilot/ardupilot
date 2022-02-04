@@ -1450,7 +1450,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_location(loc, timeout=120, accuracy=100, height_accuracy=None)
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
-        self.wait_mode(25)  # LoiterAltQLand
+        self.wait_mode("LOITERALTQLAND")
         self.drain_mav()
         m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT', very_verbose=True)
         q_rtl_alt = self.get_parameter('Q_RTL_ALT')
@@ -1512,7 +1512,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
-        self.wait_mode(25)  # LoiterAltQLand
+        self.wait_mode("LOITERALTQLAND")
         terrain_alt = self.get_terrain_height(verbose=True)
         self.drain_mav()
         m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT', very_verbose=True)
