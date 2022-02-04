@@ -5443,7 +5443,7 @@ return update()
         self.set_rc(2, 1000)
 
         self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
-        self.wait_mode(26) # AUTOLAND,need pymavlink .43 to use text name
+        self.wait_mode("AUTOLAND")
         self.assert_fence_sys_status(True, True, False)
 
         self.set_rc(3, 1500)
@@ -6139,7 +6139,7 @@ return update()
         self.arm_vehicle()
         self.wait_text("Autoland direction", check_context=True)
         self.wait_waypoint(2, 2, max_dist_to_final_wp_m=100)
-        self.change_mode(26) # AUTOLAND need .43 pymavlink to use text name
+        self.change_mode("AUTOLAND")
         self.wait_disarmed(400)
         self.progress("Check TECS target at start of landing approach")
         dfreader = self.dfreader_for_current_onboard_log()

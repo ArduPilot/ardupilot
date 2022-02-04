@@ -133,7 +133,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
                     break
 
             # with no vehicle position AUTO leaves the servos where they are
-            self.change_mode(10)  # "AUTO"
+            self.change_mode("AUTO")
             self.wait_message_field_values('ATTITUDE', {
                 'yawspeed': 0,
                 'pitchspeed': 0,
