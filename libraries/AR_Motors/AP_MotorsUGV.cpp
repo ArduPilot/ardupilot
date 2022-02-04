@@ -750,6 +750,10 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
     // check for saturation and scale back throttle and steering proportionally
     const float saturation_value = fabsf(steering_scaled) + fabsf(throttle_scaled);
     if (saturation_value > 1.0f) {
+        // store pre-scaled values so we can set limit flags afterwards
+        const float steering_scaled_orig = steering_scaled;
+        const float throttle_scaled_orig = throttle_scaled;
+
         const float str_thr_mix = constrain_float(_steering_throttle_mix, 0.0f, 1.0f);
         const float fair_scaler = 1.0f / saturation_value;
         if (str_thr_mix >= 0.5f) {
@@ -760,6 +764,16 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
             // prioritise throttle over steering
             throttle_scaled *= linear_interpolate(fair_scaler, 1.0f, 0.5f - str_thr_mix, 0.0f, 0.5f);
             steering_scaled = (1.0f - fabsf(throttle_scaled)) * (is_negative(steering_scaled) ? -1.0f : 1.0f);
+        }
+
+        // update limits if either steering or throttle has been reduced
+        if (fabsf(steering_scaled) < fabsf(steering_scaled_orig)) {
+            limit.steer_left |= is_negative(steering_scaled_orig);
+            limit.steer_right |= is_positive(steering_scaled_orig);
+        }
+        if (fabsf(throttle_scaled) < fabsf(throttle_scaled_orig)) {
+            limit.throttle_lower |= is_negative(throttle_scaled_orig);
+            limit.throttle_upper |= is_positive(throttle_scaled_orig);
         }
     }
 
