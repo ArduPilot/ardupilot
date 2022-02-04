@@ -287,6 +287,10 @@ void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
         _throttle = 0.0f;
     }
 
+    // clear limit flags
+    // output_ methods are responsible for setting them to true if required on each iteration
+    limit.steer_left = limit.steer_right = limit.throttle_lower = limit.throttle_upper = false;
+
     // sanity check parameters
     sanity_check_parameters();
 
@@ -941,10 +945,10 @@ void AP_MotorsUGV::slew_limit_throttle(float dt)
 void AP_MotorsUGV::set_limits_from_input(bool armed, float steering, float throttle)
 {
     // set limits based on inputs
-    limit.steer_left = !armed || (steering <= -4500.0f);
-    limit.steer_right = !armed || (steering >= 4500.0f);
-    limit.throttle_lower = !armed || (throttle <= -_throttle_max);
-    limit.throttle_upper = !armed || (throttle >= _throttle_max);
+    limit.steer_left |= !armed || (steering <= -4500.0f);
+    limit.steer_right |= !armed || (steering >= 4500.0f);
+    limit.throttle_lower |= !armed || (throttle <= -_throttle_max);
+    limit.throttle_upper |= !armed || (throttle >= _throttle_max);
 }
 
 // scale a throttle using the _throttle_min and _thrust_curve_expo parameters.  throttle should be in the range -100 to +100
