@@ -454,6 +454,8 @@ void AC_AutoTune::control_attitude()
                 // we've reached the end of a D-up-down PI-up-down tune type cycle
                 next_tune_type(tune_type, true);
 
+                report_final_gains(axis);
+
                 // advance to the next axis
                 bool complete = false;
                 switch (axis) {
