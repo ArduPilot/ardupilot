@@ -892,7 +892,6 @@ private:
 
     // Parameters.cpp
     void load_parameters(void) override;
-    void convert_mixers(void);
 
     // commands_logic.cpp
     void set_next_WP(const struct Location &loc);
