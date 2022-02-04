@@ -167,11 +167,11 @@ bool AP_Rally::find_nearest_rally_point(const Location &current_loc, RallyLocati
 }
 
 // return best RTL location from current position
-Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt) const
+Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc, float rtl_home_alt_amsl_cm) const
 {
     // if no valid rally point, return home position:
     Location return_loc { AP::ahrs().get_home() };
-    return_loc.set_alt_cm(rtl_home_alt, Location::AltFrame::ABSOLUTE);
+    return_loc.set_alt_cm(rtl_home_alt_amsl_cm, Location::AltFrame::ABSOLUTE);
 
     RallyLocation ral_loc;
     if (find_nearest_rally_point(current_loc, ral_loc)) {
