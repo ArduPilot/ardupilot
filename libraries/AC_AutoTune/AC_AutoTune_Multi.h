@@ -68,6 +68,9 @@ protected:
     // send post test updates to user
     void do_post_test_gcs_announcements() override {};
 
+    // report final gains for a given axis to GCS
+    void report_final_gains(AxisType test_axis) const override;
+
     // update gains for the rate P up tune type
     void updating_rate_p_up_all(AxisType test_axis) override;
 
@@ -156,6 +159,9 @@ private:
     // updating_angle_p_up - increase P to ensure the target is reached
     // P is increased until we achieve our target within a reasonable time
     void updating_angle_p_up(float &tune_p, float tune_p_max, float tune_p_step_ratio, float angle_target, float meas_angle_max, float meas_rate_min, float meas_rate_max);
+
+    // report gain formating helper
+    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float angle_P, float max_accel) const;
 
     // parameters
     AP_Int8  axis_bitmask;        // axes to be tuned
