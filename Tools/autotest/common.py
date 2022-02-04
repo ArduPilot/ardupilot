@@ -5517,6 +5517,9 @@ class AutoTest(ABC):
             0
         )
 
+    def assert_mode(self, mode):
+        self.wait_mode(mode, timeout=0)
+
     def change_mode(self, mode, timeout=60):
         '''change vehicle flightmode'''
         self.wait_heartbeat()
@@ -5770,6 +5773,15 @@ class AutoTest(ABC):
         self.progress(r % (seconds_to_wait,))
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time(drain_mav=False)
+
+    def send_terrain_check_message(self):
+        here = self.mav.location()
+        self.mav.mav.terrain_check_send(int(here.lat * 1e7), int(here.lng * 1e7))
+
+    def get_terrain_height(self, verbose=False):
+        self.send_terrain_check_message()
+        m = self.assert_receive_message('TERRAIN_REPORT', very_verbose=True)
+        return m.terrain_height
 
     def get_altitude(self, relative=False, timeout=30, altitude_source=None):
         '''returns vehicles altitude in metres, possibly relative-to-home'''
