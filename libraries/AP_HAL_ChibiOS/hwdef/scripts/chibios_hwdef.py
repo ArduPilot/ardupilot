@@ -918,7 +918,7 @@ def write_mcu_config(f):
     if env_vars['EXTERNAL_PROG_FLASH_MB'] and not args.bootloader:
         f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
         f.write('#define __RAMFUNC__ __attribute__ ((long_call, __section__(".ramfunc")))\n')
-        f.write('#define PORT_IRQ_ATTRIBUTES __RAMFUNC__')
+        f.write('#define PORT_IRQ_ATTRIBUTES __RAMFUNC__\n')
     else:
         f.write('#define CRT1_RAMFUNC_ENABLE FALSE\n')
 
