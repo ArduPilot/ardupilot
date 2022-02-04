@@ -120,14 +120,6 @@ enum log_messages {
 #define MASK_LOG_ATTITUDE_FULLRATE      (1U<<20)
 #define MASK_LOG_VIDEO_STABILISATION    (1UL<<21)
 
-// altitude control algorithms
-enum {
-    ALT_CONTROL_DEFAULT      = 0,
-    ALT_CONTROL_NON_AIRSPEED = 1,
-    ALT_CONTROL_TECS         = 2,
-    ALT_CONTROL_AIRSPEED     = 3
-};
-
 enum {
     CRASH_DETECT_ACTION_BITMASK_DISABLED = 0,
     CRASH_DETECT_ACTION_BITMASK_DISARM = (1<<0),
