@@ -64,7 +64,17 @@ extern const AP_HAL::HAL& hal;
 #else
 #define DEFAULT_GYRO_FILTER  20
 #define DEFAULT_ACCEL_FILTER 20
-#define DEFAULT_STILL_THRESH 0.1f
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane) && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // In steady-state level flight on SITL Plane, especially while the motor is off, the INS system
+    // returns ins.is_still()==true. Baseline vibes while airborne are unrealistically low: around 0.07.
+    // A real aircraft would be experiencing micro turbulence and be rocking around a tiny bit. Therefore,
+    // for Plane SIM the vibe threshold needs to be a little lower. Since plane.is_flying() uses
+    // ins.is_still() during gps loss to detect if we're flying, we want to make sure we are not "perfectly"
+    // still in the air like we are on the ground.
+    #define DEFAULT_STILL_THRESH 0.05f
+#else
+    #define DEFAULT_STILL_THRESH 0.1f
+#endif
 #endif
 
 #if defined(STM32H7) || defined(STM32F7)
