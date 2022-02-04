@@ -50,7 +50,7 @@
 #include "support.h"
 #include "can.h"
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 // #pragma GCC optimize("O0")
@@ -148,7 +148,7 @@ volatile unsigned timer[NTIMERS];
 #define RESERVE_LEAD_WORDS 8
 
 
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
 extern AP_FlashIface_JEDEC ext_flash;
 #endif
 
@@ -233,7 +233,7 @@ jump_to_app()
     const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS);
 
     // If we have QSPI chip start it
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
     uint8_t* ext_flash_start_addr;
     if (!ext_flash.start_xip_mode((void**)&ext_flash_start_addr)) {
         return;
@@ -314,7 +314,7 @@ jump_to_app()
     /* extract the stack and entrypoint from the app vector table and go */
     do_jump(app_base[0], app_base[1]);
 exit:
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
     ext_flash.stop_xip_mode();
 #endif
     return;
@@ -432,7 +432,7 @@ bootloader(unsigned timeout)
 #endif
 
     uint32_t	address = board_info.fw_size;	/* force erase before upload will work */
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
     uint32_t	extf_address = board_info.extf_size;	/* force erase before upload will work */
 #endif
     uint32_t	read_address = 0;
@@ -627,7 +627,7 @@ bootloader(unsigned timeout)
         // readback failure:	INSYNC/FAILURE
         //
         case PROTO_EXTF_ERASE:
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
         {
             if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // lower chance of random data on a uart triggering erase
@@ -684,7 +684,7 @@ bootloader(unsigned timeout)
         }
 #else
             goto cmd_bad;
-#endif // EXTERNAL_PROG_FLASH_MB
+#endif // EXT_FLASH_SIZE_MB
             break;
 
         // program bytes at current external flash address
@@ -696,7 +696,7 @@ bootloader(unsigned timeout)
         //
         case PROTO_EXTF_PROG_MULTI:
         {
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
             if (!done_sync || !CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
                 // lower chance of random data on a uart triggering erase
                 goto cmd_bad;
@@ -883,7 +883,7 @@ bootloader(unsigned timeout)
         // reply:			<crc:4>/INSYNC/OK
         //
         case PROTO_EXTF_GET_CRC: {
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
             // expect EOC
             uint32_t cmd_verify_bytes;
             if (cin_word(&cmd_verify_bytes, 100)) {
