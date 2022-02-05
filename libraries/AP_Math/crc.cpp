@@ -468,3 +468,29 @@ uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_
 
     return crc_accum;
 }
+
+/*
+  64 bit crc matching px4 bootloader
+*/
+uint64_t crc_crc64(const uint32_t *data, uint16_t num_words)
+{
+    const uint64_t poly = 0x42F0E1EBA9EA3693ULL;
+    uint64_t crc = ~(0ULL);
+    while (num_words--) {
+        uint32_t value = *data++;
+        for (uint8_t j = 0; j < 4; j++) {
+            uint8_t byte = ((uint8_t *)&value)[j];
+            crc ^= (uint64_t)byte << 56u;
+            for (uint8_t i = 0; i < 8; i++) {
+                if (crc & (1ull << 63u)) {
+                    crc = (uint64_t)(crc << 1u) ^ poly;
+                } else {
+                    crc = (uint64_t)(crc << 1u);
+                }
+            }
+        }
+    }
+    crc ^= ~(0ULL);
+
+    return crc;
+}
