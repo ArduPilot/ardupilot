@@ -119,7 +119,7 @@ void Sub::failsafe_ekf_check()
         last_ekf_good_ms = AP_HAL::millis();
         failsafe.ekf = false;
         AP_Notify::flags.ekf_bad = false;
-        return;;
+        return;
     }
 
     // Bad EKF for 2 solid seconds triggers failsafe
