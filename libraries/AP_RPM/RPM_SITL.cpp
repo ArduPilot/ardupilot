@@ -20,7 +20,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-/* 
+/*
    open the sensor in constructor
 */
 AP_RPM_SITL::AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
@@ -37,8 +37,11 @@ void AP_RPM_SITL::update(void)
     }
     if (instance == 0) {
         state.rate_rpm = sitl->state.rpm[0];
-    } else {
+    } else if(instance == 1){
         state.rate_rpm = sitl->state.rpm[1];
+    }
+    else{
+        state.rate_rpm = sitl->state.rpm[2];
     }
     state.rate_rpm *= ap_rpm._params[state.instance].scaling;
     state.signal_quality = 0.5f;

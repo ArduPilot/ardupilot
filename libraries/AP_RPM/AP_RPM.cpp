@@ -36,6 +36,9 @@ const AP_Param::GroupInfo AP_RPM::var_info[] = {
     // @Group: 2_
     // @Path: AP_RPM_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 15, AP_RPM, AP_RPM_Params),
+    // @Group: 3_
+    // @Path: AP_RPM_Params.cpp
+    AP_SUBGROUPINFO(_params[2], "3_", 16, AP_RPM, AP_RPM_Params),
 #endif
 
     AP_GROUPEND
@@ -99,7 +102,7 @@ void AP_RPM::init(void)
     }
 }
 
-/* 
+/*
 PARAMETER_CONVERSION - Added: Aug-2021
 */
 void AP_RPM::convert_params(void)
@@ -113,10 +116,12 @@ void AP_RPM::convert_params(void)
     bool type_set;
     uint8_t rpm_type = 0;
     uint8_t rpm2_type = 0;
+    uint8_t rpm3_type = 0;
     type_set = AP_Param::get_param_by_index(this, 0, AP_PARAM_INT8, &rpm_type);
     type_set |= AP_Param::get_param_by_index(this, 10, AP_PARAM_INT8, &rpm2_type);
+    type_set |= AP_Param::get_param_by_index(this, 20, AP_PARAM_INT8, &rpm3_type);
 
-    if (!type_set || (rpm_type == 0 && rpm2_type == 0)) {
+    if (!type_set || (rpm_type == 0 && rpm2_type == 0 && rpm3_type == 0)) {
         return;
     }
 
@@ -144,6 +149,15 @@ void AP_RPM::convert_params(void)
             {4, 4, 1}, // MIN_QUAL (Previously the min quality of the 1st RPM instance was used for all RPM instances.)
             {12, 5, 1}, // PIN
             {13, 6, 1}, // ESC_MASK
+
+            // // RPM 3
+            // {20, 0, 2}, // TYPE
+            // {21, 1, 2}, // SCALING
+            // // MAX (Previous bug meant RPM2_MAX param was never accesible to users. No conversion required.)
+            // // MIN (Previous bug meant RPM2_MIN param was never accesible to users. No conversion required.)
+            // {4, 4, 2}, // MIN_QUAL (Previously the min quality of the 1st RPM instance was used for all RPM instances.)
+            // {22, 5, 2}, // PIN
+            // {23, 6, 2}, // ESC_MASK
     };
 
     char param_name[17] = {0};
@@ -189,7 +203,7 @@ void AP_RPM::update(void)
         }
     }
 
-    if (enabled(0) || enabled(1)) {
+    if (enabled(0) || enabled(1) || enabled(2)) {
         AP::logger().Write_RPM(*this);
     }
 }
