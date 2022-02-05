@@ -503,7 +503,7 @@ bool SoaringController::check_drift(Vector2f prev_wp, Vector2f next_wp)
         // as these are favourable (towards next wp)
         parallel = parallel>0 ? 0 : parallel;
 
-        return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);;
+        return (powf(parallel,2)+powf(perpendicular,2)) > powf(max_drift,2);
     }
 }
 
