@@ -848,7 +848,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
         Debug("Initing iface 0...");
         if (!can_ifaces[0]->init(bitrate, mode)) {
             Debug("Iface 0 init failed");
-            return false;;
+            return false;
         }
 
         Debug("Enabling CAN iface");
