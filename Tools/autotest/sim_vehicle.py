@@ -416,7 +416,7 @@ def get_user_locations_path():
     '''The user locations.txt file is located by default in
     $XDG_CONFIG_DIR/ardupilot/locations.txt. If $XDG_CONFIG_DIR is
     not defined, we look in $HOME/.config/ardupilot/locations.txt.  If
-    $HOME is not defined, we look in ./.config/ardpupilot/locations.txt.'''
+    $HOME is not defined, we look in ./.config/ardupilot/locations.txt.'''
 
     config_dir = os.environ.get(
         'XDG_CONFIG_DIR',
