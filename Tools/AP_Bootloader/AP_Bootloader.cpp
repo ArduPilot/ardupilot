@@ -94,7 +94,11 @@ int main(void)
         timeout = 10000;
         can_set_node_id(m & 0xFF);
     }
-    can_check_update();
+    if (can_check_update()) {
+        // trying to update firmware, stay in bootloader
+        try_boot = false;
+        timeout = 0;
+    }
     if (!can_check_firmware()) {
         // bad firmware CRC, don't try and boot
         timeout = 0;
