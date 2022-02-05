@@ -651,7 +651,12 @@ bool can_check_firmware(void)
         return false;
     }
 
-    if (ad->board_id != APJ_BOARD_ID) {
+    bool id_ok = (ad->board_id == APJ_BOARD_ID);
+#ifdef ALT_BOARD_ID
+    id_ok |= (ad->board_id == ALT_BOARD_ID);
+#endif
+
+    if (!id_ok) {
         node_status.vendor_specific_status_code = FAIL_REASON_BAD_BOARD_ID;
         printf("Bad board_id %u should be %u\n", ad->board_id, APJ_BOARD_ID);
         return false;
