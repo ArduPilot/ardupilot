@@ -72,7 +72,7 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
     /* calculate intensity */
 
     float data_sw = intensity_table[min_lat_index][min_lon_index];
-    float data_se = intensity_table[min_lat_index][min_lon_index + 1];;
+    float data_se = intensity_table[min_lat_index][min_lon_index + 1];
     float data_ne = intensity_table[min_lat_index + 1][min_lon_index + 1];
     float data_nw = intensity_table[min_lat_index + 1][min_lon_index];
 
@@ -86,7 +86,7 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
     /* calculate declination */
 
     data_sw = declination_table[min_lat_index][min_lon_index];
-    data_se = declination_table[min_lat_index][min_lon_index + 1];;
+    data_se = declination_table[min_lat_index][min_lon_index + 1];
     data_ne = declination_table[min_lat_index + 1][min_lon_index + 1];
     data_nw = declination_table[min_lat_index + 1][min_lon_index];
 
@@ -100,7 +100,7 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
     /* calculate inclination */
 
     data_sw = inclination_table[min_lat_index][min_lon_index];
-    data_se = inclination_table[min_lat_index][min_lon_index + 1];;
+    data_se = inclination_table[min_lat_index][min_lon_index + 1];
     data_ne = inclination_table[min_lat_index + 1][min_lon_index + 1];
     data_nw = inclination_table[min_lat_index + 1][min_lon_index];
 
