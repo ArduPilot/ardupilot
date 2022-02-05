@@ -356,7 +356,7 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
         };
 
     for (const auto & elem : conversion_table) {
-        info.old_group_element = token.group_element + ((elem.old_group_element - battmonitor_index) * 64);;
+        info.old_group_element = token.group_element + ((elem.old_group_element - battmonitor_index) * 64);
         info.type = elem.type;
 
         hal.util->snprintf(param_name, sizeof(param_name), "%s_%s", param_prefix, elem.new_name);
