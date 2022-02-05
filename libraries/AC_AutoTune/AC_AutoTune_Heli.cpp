@@ -126,7 +126,7 @@ void AC_AutoTune_Heli::test_init()
                 // start with freq found for sweep where phase was 180 deg
                 } else if (!is_zero(sweep.ph180_freq)) {
                     freq_cnt = 12;
-                    test_freq[freq_cnt] = sweep.ph180_freq - 0.25f * 3.14159f * 2.0f;;
+                    test_freq[freq_cnt] = sweep.ph180_freq - 0.25f * 3.14159f * 2.0f;
                 // otherwise start at min freq to step up in dwell frequency until phase > 160 deg
                 } else {
                     freq_cnt = 0;
@@ -140,7 +140,7 @@ void AC_AutoTune_Heli::test_init()
             } else {
                 if (!is_zero(sweep.ph180_freq)) {
                     freq_cnt = 12;
-                    test_freq[freq_cnt] = sweep.ph180_freq - 0.25f * 3.14159f * 2.0f;;
+                    test_freq[freq_cnt] = sweep.ph180_freq - 0.25f * 3.14159f * 2.0f;
                     curr_test_freq = test_freq[freq_cnt];
                     start_freq = curr_test_freq;
                     stop_freq = curr_test_freq;
