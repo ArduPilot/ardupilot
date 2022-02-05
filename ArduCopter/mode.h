@@ -1711,7 +1711,6 @@ private:
     Destination ab_dest_stored;     // store the current destination
     bool is_auto;                   // enable zigzag auto feature which is automate both AB and sideways
     uint16_t line_count = 0;        // current line number
-    int16_t line_num = 0;           // target line number
     bool is_suspended;              // true if zigzag auto is suspended
 };
 

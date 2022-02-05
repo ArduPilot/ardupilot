@@ -7,7 +7,6 @@
 */
 
 #define ZIGZAG_WP_RADIUS_CM 300
-#define ZIGZAG_LINE_INFINITY -1
 
 const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @Param: AUTO_ENABLE
@@ -119,7 +118,6 @@ void ModeZigZag::run()
 
     // set the direction and the total number of lines
     zigzag_direction = (Direction)constrain_int16(_direction, 0, 3);
-    line_num = constrain_int16(_line_num, ZIGZAG_LINE_INFINITY, 32767);
 
     // auto control
     if (stage == AUTO) {
@@ -130,7 +128,7 @@ void ModeZigZag::run()
             // if vehicle has reached destination switch to manual control or moving to A or B
             AP_Notify::events.waypoint_complete = 1;
             if (is_auto) {
-                if (line_num == ZIGZAG_LINE_INFINITY || line_count < line_num) {
+                if (_line_num < 0 || line_count < _line_num) {
                     if (auto_stage == AutoState::SIDEWAYS) {
                         save_or_move_to_destination((ab_dest_stored == Destination::A) ? Destination::B : Destination::A);
                     } else {
@@ -202,11 +200,11 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
                     // spray on while moving to A or B
                     spray(true);
                     reach_wp_time_ms = 0;
-                    if (is_auto == false || line_num == ZIGZAG_LINE_INFINITY) {
+                    if (is_auto == false || _line_num < 0) {
                         gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s", (ab_dest == Destination::A) ? "A" : "B");
                     } else {
                         line_count++;
-                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count, line_num);
+                        gcs().send_text(MAV_SEVERITY_INFO, "ZigZag: moving to %s (line %d/%d)", (ab_dest == Destination::A) ? "A" : "B", line_count, int16_t(_line_num));
                     }
                 }
             }
@@ -531,7 +529,7 @@ void ModeZigZag::run_auto()
 
     is_auto = true;
     // resume if zigzag auto is suspended
-    if (is_suspended && line_count <= line_num) {
+    if (is_suspended && line_count <= _line_num) {
         // resume the stage when it was suspended
         if (auto_stage == AutoState::AB_MOVING) {
             line_count--;
