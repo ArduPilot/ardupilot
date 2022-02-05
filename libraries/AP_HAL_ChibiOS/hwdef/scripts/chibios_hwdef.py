@@ -990,6 +990,11 @@ def write_mcu_config(f):
     f.write('\n// APJ board ID (for bootloaders)\n')
     f.write('#define APJ_BOARD_ID %s\n' % get_config('APJ_BOARD_ID'))
 
+    # support ALT_BOARD_ID for px4 firmware
+    alt_id = get_config('ALT_BOARD_ID', required=False)
+    if alt_id is not None:
+        f.write('#define ALT_BOARD_ID %s\n' % alt_id)
+
     f.write('''
 #ifndef HAL_ENABLE_THREAD_STATISTICS
 #define HAL_ENABLE_THREAD_STATISTICS FALSE
