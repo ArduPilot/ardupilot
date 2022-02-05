@@ -981,7 +981,7 @@ float QuadPlane::get_pilot_throttle()
         float thrust_curve_expo = constrain_float(throttle_expo, 0.0f, 1.0f);
 
         // this puts mid stick at hover throttle
-        return throttle_curve(thr_mid, thrust_curve_expo, throttle_in);;
+        return throttle_curve(thr_mid, thrust_curve_expo, throttle_in);
     } else {
         return throttle_in;
     }
