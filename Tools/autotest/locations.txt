@@ -86,3 +86,5 @@ CMAC_NZ_E=-43.47493266,172.318144,0,84  #Christchurch MAC, New Zealand, East tak
 CMAC_NZ_W=-43.47493266,172.318144,0,264  #Christchurch MAC, New Zealand, West takeoff
 OSPN=30.53202,-97.62892,199,7 #Old Settlers Park , Austin, TX, North takeof
 OSP=30.53202,-97.62892,199,187 #Old Settlers Park , Austin, TX, South takeof
+KalaupapaCliffs=21.16564233,-156.88680160,165.25,0
+LakeGeorgeLookout=-35.10122092,149.37517574,708.12,90
