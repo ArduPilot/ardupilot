@@ -27,7 +27,7 @@ bool ModeSmartRTL::_enter()
     }
 
     // init state
-    smart_rtl_state = SmartRTL_WaitForPathCleanup;
+    smart_rtl_state = SmartRTLState::WaitForPathCleanup;
     _loitering = false;
 
     return true;
@@ -36,24 +36,24 @@ bool ModeSmartRTL::_enter()
 void ModeSmartRTL::update()
 {
     switch (smart_rtl_state) {
-        case SmartRTL_WaitForPathCleanup:
+        case SmartRTLState::WaitForPathCleanup:
             // check if return path is computed and if yes, begin journey home
             if (g2.smart_rtl.request_thorough_cleanup()) {
-                smart_rtl_state = SmartRTL_PathFollow;
+                smart_rtl_state = SmartRTLState::PathFollow;
                 _load_point = true;
             }
             // Note: this may lead to an unnecessary 20ms slow down of the vehicle (but it is unlikely)
             stop_vehicle();
             break;
 
-        case SmartRTL_PathFollow:
+        case SmartRTLState::PathFollow:
             // load point if required
             if (_load_point) {
                 Vector3f next_point;
                 if (!g2.smart_rtl.pop_point(next_point)) {
                     // if not more points, we have reached home
                     gcs().send_text(MAV_SEVERITY_INFO, "Reached destination");
-                    smart_rtl_state = SmartRTL_StopAtHome;
+                    smart_rtl_state = SmartRTLState::StopAtHome;
                     break;
                 }
                 _load_point = false;
@@ -61,7 +61,7 @@ void ModeSmartRTL::update()
                 if (!g2.wp_nav.set_desired_location_NED(next_point)) {
                     // this failure should never happen but we add it just in case
                     gcs().send_text(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
-                    smart_rtl_state = SmartRTL_Failure;
+                    smart_rtl_state = SmartRTLState::Failure;
                 }
             }
             // update navigation controller
@@ -73,8 +73,8 @@ void ModeSmartRTL::update()
             }
             break;
 
-        case SmartRTL_StopAtHome:
-        case SmartRTL_Failure:
+        case SmartRTLState::StopAtHome:
+        case SmartRTLState::Failure:
             _reached_destination = true;
             // we have reached the destination
             // boats loiters, rovers stop
@@ -99,16 +99,16 @@ void ModeSmartRTL::update()
 bool ModeSmartRTL::get_desired_location(Location& destination) const
 {
     switch (smart_rtl_state) {
-    case SmartRTL_WaitForPathCleanup:
+    case SmartRTLState::WaitForPathCleanup:
         return false;
-    case SmartRTL_PathFollow:
+    case SmartRTLState::PathFollow:
         if (g2.wp_nav.is_destination_valid()) {
             destination = g2.wp_nav.get_destination();
             return true;
         }
         return false;
-    case SmartRTL_StopAtHome:
-    case SmartRTL_Failure:
+    case SmartRTLState::StopAtHome:
+    case SmartRTLState::Failure:
         return false;
     }
     // should never reach here but just in case

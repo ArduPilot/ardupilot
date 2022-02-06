@@ -255,7 +255,7 @@ public:
     bool is_autopilot_mode() const override { return true; }
 
     // return if external control is allowed in this mode (Guided or Guided-within-Auto)
-    bool in_guided_mode() const override { return _submode == Auto_Guided; }
+    bool in_guided_mode() const override { return _submode == AutoSubMode::Guided; }
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override;
@@ -276,11 +276,11 @@ public:
         FUNCTOR_BIND_MEMBER(&ModeAuto::verify_command_callback, bool, const AP_Mission::Mission_Command&),
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
-    enum Mis_Done_Behave {
-        MIS_DONE_BEHAVE_HOLD      = 0,
-        MIS_DONE_BEHAVE_LOITER    = 1,
-        MIS_DONE_BEHAVE_ACRO      = 2,
-        MIS_DONE_BEHAVE_MANUAL    = 3
+    enum class Mis_Done_Behave {
+        HOLD      = 0,
+        LOITER    = 1,
+        ACRO      = 2,
+        MANUAL    = 3
     };
 
 protected:
@@ -288,13 +288,13 @@ protected:
     bool _enter() override;
     void _exit() override;
 
-    enum AutoSubMode {
-        Auto_WP,                // drive to a given location
-        Auto_HeadingAndSpeed,   // turn to a given heading
-        Auto_RTL,               // perform RTL within auto mode
-        Auto_Loiter,            // perform Loiter within auto mode
-        Auto_Guided,            // handover control to external navigation system from within auto mode
-        Auto_Stop               // stop the vehicle as quickly as possible
+    enum class AutoSubMode {
+        WP,                // drive to a given location
+        HeadingAndSpeed,   // turn to a given heading
+        RTL,               // perform RTL within auto mode
+        Loiter,            // perform Loiter within auto mode
+        Guided,            // handover control to external navigation system from within auto mode
+        Stop               // stop the vehicle as quickly as possible
     } _submode;
 
 private:
@@ -418,13 +418,13 @@ public:
 
 protected:
 
-    enum GuidedMode {
-        Guided_WP,
-        Guided_HeadingAndSpeed,
-        Guided_TurnRateAndSpeed,
-        Guided_Loiter,
-        Guided_SteeringAndThrottle,
-        Guided_Stop
+    enum class GuidedMode {
+        WP,
+        HeadingAndSpeed,
+        TurnRateAndSpeed,
+        Loiter,
+        SteeringAndThrottle,
+        Stop
     };
 
     bool _enter() override;
@@ -584,7 +584,7 @@ public:
 
     // return distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
-    bool reached_destination() const override { return smart_rtl_state == SmartRTL_StopAtHome; }
+    bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
     // set desired speed in m/s
     bool set_desired_speed(float speed) override;
@@ -595,11 +595,11 @@ public:
 protected:
 
     // Safe RTL states
-    enum SmartRTLState {
-        SmartRTL_WaitForPathCleanup,
-        SmartRTL_PathFollow,
-        SmartRTL_StopAtHome,
-        SmartRTL_Failure
+    enum class SmartRTLState {
+        WaitForPathCleanup,
+        PathFollow,
+        StopAtHome,
+        Failure
     } smart_rtl_state;
 
     bool _enter() override;

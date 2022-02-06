@@ -140,7 +140,7 @@ void Rover::init_ardupilot()
 
     // boat should loiter after completing a mission to avoid drifting off
     if (is_boat()) {
-        rover.g2.mis_done_behave.set_default(ModeAuto::Mis_Done_Behave::MIS_DONE_BEHAVE_LOITER);
+        rover.g2.mis_done_behave.set_default(int8_t(ModeAuto::Mis_Done_Behave::LOITER));
     }
 
     // flag that initialisation has completed
