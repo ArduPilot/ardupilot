@@ -34,6 +34,13 @@ public:
     virtual void init_serial(uint8_t serial_instance) {};
 
     virtual void handle_msg(const mavlink_message_t &msg) { return; }
+
+#if AP_SCRIPTING_ENABLED
+    // Returns false if scripting backing hasn't been setup
+    // Get distance from lua script
+    virtual bool handle_script_msg(float dist_m) { return false; }
+#endif
+
 #if HAL_MSP_RANGEFINDER_ENABLED
     virtual void handle_msp(const MSP::msp_rangefinder_data_message_t &pkt) { return; }
 #endif
@@ -48,6 +55,7 @@ public:
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
+    bool use_sensor() const { return params.use; }
 
     // true if sensor is returning data
     bool has_data() const;
