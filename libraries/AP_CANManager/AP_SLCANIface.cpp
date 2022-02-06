@@ -112,7 +112,7 @@ bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
     frm.frame = frame;
     frm.flags = 0;
     frm.timestamp_us = AP_HAL::native_micros64();
-    return rx_queue_.push(frm);
+    return add_to_rx_queue(frm);
 }
 
 /**

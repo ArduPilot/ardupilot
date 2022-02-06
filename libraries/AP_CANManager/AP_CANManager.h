@@ -24,6 +24,8 @@
 #include <AP_Param/AP_Param.h>
 #include "AP_SLCANIface.h"
 #include "AP_CANDriver.h"
+#include <GCS_MAVLink/GCS.h>
+//#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_CANManager
 {
@@ -107,6 +109,11 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+#if HAL_GCS_ENABLED
+    bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+    void handle_can_frame(const mavlink_message_t &msg) const;
+#endif
+
 private:
 
     // Parameter interface for CANIfaces
@@ -161,6 +168,20 @@ private:
     uint32_t _log_pos;
 
     HAL_Semaphore _sem;
+
+#if HAL_GCS_ENABLED
+    /*
+      handler for CAN frames from the registered callback, sending frames
+      out as CAN_FRAME messages
+    */
+    void can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame);
+
+    struct {
+        mavlink_channel_t chan;
+        uint8_t system_id;
+        uint8_t component_id;
+    } can_forward;
+#endif // HAL_GCS_ENABLED
 };
 
 namespace AP

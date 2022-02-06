@@ -167,11 +167,6 @@ void AP_CANManager::init()
             // we have slcan bridge setup pass that on as can iface
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
-#ifdef HAL_BUILD_AP_PERIPH
-        } else if(drv_type[drv_num] == Driver_Type_UAVCAN) {
-            // setup for filtering on AP_Periph if using UAVCAN
-            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::FilteredMode);
-#endif
         } else {
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
         }
@@ -385,6 +380,62 @@ void AP_CANManager::log_retrieve(ExpandingString &str) const
     }
     str.append(_log_buf, _log_pos);
 }
+
+#if HAL_GCS_ENABLED
+/*
+  handle MAV_CMD_CAN_FORWARD mavlink long command
+ */
+bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    const int8_t bus = int8_t(packet.param1)-1;
+    if (bus == -1) {
+        for (auto can_iface : hal.can) {
+            if (can_iface) {
+                can_iface->register_frame_callback(nullptr);
+            }
+        }
+        return true;
+    }
+    if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+        return false;
+    }
+    if (!hal.can[bus]->register_frame_callback(
+            FUNCTOR_BIND_MEMBER(&AP_CANManager::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &))) {
+        return false;
+    }
+    can_forward.chan = chan;
+    can_forward.system_id = msg.sysid;
+    can_forward.component_id = msg.compid;
+    return true;
+}
+
+/*
+  handle a CAN_FRAME packet
+ */
+void AP_CANManager::handle_can_frame(const mavlink_message_t &msg) const
+{
+    mavlink_can_frame_t p;
+    mavlink_msg_can_frame_decode(&msg, &p);
+    if (p.bus >= HAL_NUM_CAN_IFACES || hal.can[p.bus] == nullptr) {
+        return;
+    }
+    const uint16_t timeout_us = 2000;
+    AP_HAL::CANFrame frame{p.id, p.data, p.len};
+    hal.can[p.bus]->send(frame, AP_HAL::native_micros64() + timeout_us, AP_HAL::CANIface::IsMAVCAN);
+}
+
+/*
+  handler for CAN frames from the registered callback, sending frames
+  out as CAN_FRAME messages
+ */
+void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame)
+{
+    if (HAVE_PAYLOAD_SPACE(can_forward.chan, CAN_FRAME)) {
+        mavlink_msg_can_frame_send(can_forward.chan, can_forward.system_id, can_forward.component_id,
+                                   bus, frame.dlc, frame.id, const_cast<uint8_t*>(frame.data));
+    }
+}
+#endif // HAL_GCS_ENABLED
 
 AP_CANManager& AP::can()
 {
