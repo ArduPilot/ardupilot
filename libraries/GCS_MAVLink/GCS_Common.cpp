@@ -3399,6 +3399,28 @@ MAV_RESULT GCS_MAVLINK::handle_fixed_mag_cal_yaw(const mavlink_command_long_t &p
 #endif
 }
 
+/*
+  handle MAV_CMD_CAN_FORWARD
+ */
+MAV_RESULT GCS_MAVLINK::handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+#if HAL_CANMANAGER_ENABLED
+    return AP::can().handle_can_forward(chan, packet, msg) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
+}
+
+/*
+  handle CAN_FRAME messages
+ */
+void GCS_MAVLINK::handle_can_frame(const mavlink_message_t &msg) const
+{
+#if HAL_CANMANAGER_ENABLED
+    AP::can().handle_can_frame(msg);
+#endif
+}
+
 void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
 {
     RangeFinder *rangefinder = AP::rangefinder();
@@ -3689,6 +3711,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_NAMED_VALUE_FLOAT:
         handle_named_value(msg);
+        break;
+
+    case MAVLINK_MSG_ID_CAN_FRAME:
+        handle_can_frame(msg);
         break;
     }
 
@@ -4451,7 +4477,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
     case MAV_CMD_FIXED_MAG_CAL_YAW:
         result = handle_fixed_mag_cal_yaw(packet);
         break;
-        
+
     default:
         result = MAV_RESULT_UNSUPPORTED;
         break;
@@ -4538,7 +4564,18 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 
     hal.util->persistent_data.last_mavlink_cmd = packet.command;
 
-    const MAV_RESULT result = handle_command_long_packet(packet);
+    MAV_RESULT result;
+
+    // special handling of messages that need the mavlink_message_t
+    switch (packet.command) {
+    case MAV_CMD_CAN_FORWARD:
+        result = handle_can_forward(packet, msg);
+        break;
+
+    default:
+         result = handle_command_long_packet(packet);
+         break;
+    }
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(chan, packet.command, result,
