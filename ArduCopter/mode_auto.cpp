@@ -378,7 +378,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 
     // set circle radius
     if (!is_zero(radius_m)) {
-        copter.circle_nav->set_radius(radius_m * 100.0f);
+        copter.circle_nav->set_radius_cm(radius_m * 100.0f);
     }
 
     // check our distance from edge of circle
