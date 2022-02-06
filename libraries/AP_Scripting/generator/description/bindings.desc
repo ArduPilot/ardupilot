@@ -179,6 +179,14 @@ singleton AP_Proximity method get_closest_object boolean float'Null float'Null
 singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t'skip_check float'Null float'Null
 
 include AP_RangeFinder/AP_RangeFinder.h
+include AP_RangeFinder/AP_RangeFinder_Backend.h
+
+ap_object AP_RangeFinder_Backend method has_data boolean
+ap_object AP_RangeFinder_Backend method distance float
+ap_object AP_RangeFinder_Backend method orientation Rotation'enum
+ap_object AP_RangeFinder_Backend method type uint8_t
+ap_object AP_RangeFinder_Backend method status uint8_t
+ap_object AP_RangeFinder_Backend method handle_script_msg boolean float'skip_check
 
 singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
@@ -190,6 +198,8 @@ singleton RangeFinder method ground_clearance_cm_orient uint16_t Rotation'enum R
 singleton RangeFinder method status_orient uint8_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method has_data_orient boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATION_NONE ROTATION_MAX-1
+
+singleton RangeFinder method get_backend AP_RangeFinder_Backend uint8_t 0 RANGEFINDER_MAX_INSTANCES-1
 
 include AP_Terrain/AP_Terrain.h
 
