@@ -941,7 +941,7 @@ class chibios(Board):
             if cfg.env.HAL_CANFD_SUPPORTED:
                 env.DEFINES.update(CANARD_ENABLE_CANFD=1)
             else:
-                env.DEFINES.update(CANARD_ENABLE_CANFD=0)
+                env.DEFINES.update(CANARD_ENABLE_TAO_OPTION=1)
 
         if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
             cfg.msg("Enabling -Werror", "yes")
