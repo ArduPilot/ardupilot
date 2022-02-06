@@ -158,6 +158,7 @@ int CANIface::_openSocket(const std::string& iface_name)
 int16_t CANIface::send(const AP_HAL::CANFrame& frame, const uint64_t tx_deadline,
                        const CANIface::CanIOFlags flags)
 {
+    WITH_SEMAPHORE(sem);
     CanTxItem tx_item {};
     tx_item.frame = frame;
     if (flags & Loopback) {
@@ -174,12 +175,14 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, const uint64_t tx_deadline
     stats.tx_requests++;
     _pollRead();     // Read poll is necessary because it can release the pending TX flag
     _pollWrite();
-    return 1;
+
+    return AP_HAL::CANIface::send(frame, tx_deadline, flags);
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us,
                           CANIface::CanIOFlags& out_flags)
 {
+    WITH_SEMAPHORE(sem);
     if (_rx_queue.empty()) {
         _pollRead();            // This allows to use the socket not calling poll() explicitly.
         if (_rx_queue.empty()) {
@@ -193,16 +196,18 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
         out_flags        = rx.flags;
     }
     (void)_rx_queue.pop();
-    return 1;
+    return AP_HAL::CANIface::receive(out_frame, out_timestamp_us, out_flags);
 }
 
-bool CANIface::_hasReadyTx() const
+bool CANIface::_hasReadyTx()
 {
-    return !_tx_queue.empty() && (_frames_in_socket_tx_queue < _max_frames_in_socket_tx_queue);
+    WITH_SEMAPHORE(sem);
+    return !_tx_queue.empty();
 }
 
-bool CANIface::_hasReadyRx() const
+bool CANIface::_hasReadyRx()
 {
+    WITH_SEMAPHORE(sem);
     return !_rx_queue.empty();
 }
 
@@ -221,6 +226,7 @@ void CANIface::_poll(bool read, bool write)
 bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
                               const std::uint16_t num_configs)
 {
+#if 0
     if (filter_configs == nullptr || mode_ != FilteredMode) {
         return false;
     }
@@ -244,7 +250,7 @@ bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
             _hw_filters_container[i].can_mask |= CAN_RTR_FLAG;
         }
     }
-
+#endif
     return true;
 }
 
@@ -265,6 +271,7 @@ uint32_t CANIface::getErrorCount() const
 void CANIface::_pollWrite()
 {
     while (_hasReadyTx()) {
+        WITH_SEMAPHORE(sem);
         const CanTxItem tx = _tx_queue.top();
         uint64_t curr_time = AP_HAL::native_micros64();
         if (tx.deadline >= curr_time) {
@@ -311,7 +318,8 @@ bool CANIface::_pollRead()
                 stats.tx_confirmed++;
             }
             if (accept) {
-                _rx_queue.push(rx);
+                WITH_SEMAPHORE(sem);
+                add_to_rx_queue(rx);
                 stats.rx_received++;
                 return true;
             }
@@ -392,6 +400,7 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
 // Might block forever, only to be used for testing
 void CANIface::flush_tx()
 {
+    WITH_SEMAPHORE(sem);
     do {
         _updateDownStatusFromPollResult(_pollfd);
         _poll(true, true);
@@ -400,6 +409,7 @@ void CANIface::flush_tx()
 
 void CANIface::clear_rx()
 {
+    WITH_SEMAPHORE(sem);
     // Clean Rx Queue
     std::queue<CanRxItem> empty;
     std::swap( _rx_queue, empty );
