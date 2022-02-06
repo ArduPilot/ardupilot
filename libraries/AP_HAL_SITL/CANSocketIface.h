@@ -59,7 +59,6 @@ public:
     CANIface(int index)
       : _self_index(index)
       , _frames_in_socket_tx_queue(0)
-      , _max_frames_in_socket_tx_queue(2)
     { }
 
     static uint8_t next_interface;
@@ -145,9 +144,9 @@ private:
 
     bool _checkHWFilters(const can_frame& frame) const;
 
-    bool _hasReadyTx() const;
+    bool _hasReadyTx();
 
-    bool _hasReadyRx() const;
+    bool _hasReadyRx();
 
     void _poll(bool read, bool write);
 
@@ -164,7 +163,6 @@ private:
 
     const uint8_t _self_index;
 
-    const unsigned _max_frames_in_socket_tx_queue;
     unsigned _frames_in_socket_tx_queue;
     uint32_t _tx_frame_counter;
     AP_HAL::EventHandle *_evt_handle;
@@ -193,6 +191,18 @@ private:
         uint32_t num_poll_tx_events;
         uint32_t num_poll_rx_events;
     } stats;
+
+    HAL_Semaphore sem;
+
+protected:
+    bool add_to_rx_queue(const CanRxItem &rx_item) override {
+        _rx_queue.push(rx_item);
+        return true;
+    }
+
+    int8_t get_iface_num(void) const override {
+        return _self_index;
+    }
 };
 
 }
