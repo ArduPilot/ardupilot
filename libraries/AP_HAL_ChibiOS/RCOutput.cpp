@@ -773,11 +773,11 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
         // original prescaler calculation from betaflight. bi-dir dshot is incredibly sensitive to the bitrate
         prescaler = uint32_t(lrintf((float) group.pwm_drv->clock / (bitrate * bit_width) + 0.01f) - 1);
     } else {
-        // adjust frequency to give an allowed value given the clock.
+        // adjust frequency to give an allowed value given the clock, erring on the high side
         const uint32_t clock_hz = group.pwm_drv->clock;
         prescaler = group.pwm_drv->clock / target_frequency;
-        while ((clock_hz / prescaler) * prescaler != clock_hz && prescaler <= 0x8000) {
-            prescaler++;
+        while ((clock_hz / prescaler) < target_frequency && prescaler > 1) {
+            prescaler--;
         }
     }
 
@@ -1918,11 +1918,6 @@ void RCOutput::serial_end(void)
         irq.waiter = nullptr;
         for (uint8_t i = 0; i < NUM_GROUPS; i++ ) {
             pwm_group &group = pwm_group_list[i];
-            // restore normal output
-            if (group.pwm_started) {
-                pwmStop(group.pwm_drv);
-                group.pwm_started = false;
-            }
             set_group_mode(group);
             set_freq_group(group);
         }
