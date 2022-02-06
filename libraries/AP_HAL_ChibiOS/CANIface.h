@@ -238,6 +238,15 @@ public:
 
     // CAN Peripheral register structure
     static constexpr bxcan::CanType* const Can[HAL_NUM_CAN_IFACES] = { HAL_CAN_BASE_LIST };
+
+protected:
+    bool add_to_rx_queue(const CanRxItem &rx_item) override {
+        return rx_queue_.push(rx_item);
+    }
+
+    int8_t get_iface_num(void) const override {
+        return self_index_;
+    }
 };
 #endif //HAL_NUM_CAN_IFACES
 #endif //# if defined(STM32H7XX) || defined(STM32G4)

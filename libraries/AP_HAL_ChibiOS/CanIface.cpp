@@ -362,7 +362,8 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
     txi.abort_on_error = (flags & AbortOnError) != 0;
     // setup frame initial state
     txi.pushed         = false;
-    return 1;
+
+    return AP_HAL::CANIface::send(frame, tx_deadline, flags);
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us, CanIOFlags& out_flags)
@@ -375,7 +376,8 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
     out_frame    = rx_item.frame;
     out_timestamp_us = rx_item.timestamp_us;
     out_flags    = rx_item.flags;
-    return 1;
+
+    return AP_HAL::CANIface::receive(out_frame, out_timestamp_us, out_flags);
 }
 
 #if !defined(HAL_BOOTLOADER_BUILD)
@@ -481,7 +483,7 @@ void CANIface::handleTxMailboxInterrupt(uint8_t mailbox_index, bool txok, const 
         rx_item.timestamp_us = timestamp_us;
         rx_item.flags = AP_HAL::CANIface::Loopback;
         PERF_STATS(stats.tx_loopback);
-        rx_queue_.push(rx_item);
+        add_to_rx_queue(rx_item);
     }
 
     if (txok && !txi.pushed) {
@@ -569,7 +571,7 @@ void CANIface::handleRxInterrupt(uint8_t fifo_index, uint64_t timestamp_us)
     rx_item.frame = frame;
     rx_item.timestamp_us = timestamp_us;
     rx_item.flags = 0;
-    if (rx_queue_.push(rx_item)) {
+    if (add_to_rx_queue(rx_item)) {
         PERF_STATS(stats.rx_received);
     } else {
         PERF_STATS(stats.rx_overflow);
