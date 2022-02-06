@@ -126,32 +126,32 @@ void AP_Motors::rc_set_freq(uint32_t motor_mask, uint16_t freq_hz)
     hal.rcout->set_freq(mask, freq_hz);
 
     switch (pwm_type(_pwm_type.get())) {
-    case PWM_TYPE_ONESHOT:
+    case pwm_type::ONESHOT:
         if (freq_hz > 50 && mask != 0) {
             hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         }
         break;
-    case PWM_TYPE_ONESHOT125:
+    case pwm_type::ONESHOT125:
         if (freq_hz > 50 && mask != 0) {
             hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         }
         break;
-    case PWM_TYPE_BRUSHED:
+    case pwm_type::BRUSHED:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         break;
-    case PWM_TYPE_DSHOT150:
+    case pwm_type::DSHOT150:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
         break;
-    case PWM_TYPE_DSHOT300:
+    case pwm_type::DSHOT300:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
         break;
-    case PWM_TYPE_DSHOT600:
+    case pwm_type::DSHOT600:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
         break;
-    case PWM_TYPE_DSHOT1200:
+    case pwm_type::DSHOT1200:
         hal.rcout->set_output_mode(mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
-    case PWM_TYPE_PWM_RANGE:
+    case pwm_type::PWM_RANGE:
         /*
           this is a motor output type for multirotors which honours
           the SERVOn_MIN/MAX values per channel
@@ -215,17 +215,17 @@ void AP_Motors::set_limit_flag_pitch_roll_yaw(bool flag)
 // returns true if the configured PWM type is digital and should have fixed endpoints
 bool AP_Motors::is_digital_pwm_type() const
 {
-    switch (_pwm_type) {
-        case PWM_TYPE_DSHOT150:
-        case PWM_TYPE_DSHOT300:
-        case PWM_TYPE_DSHOT600:
-        case PWM_TYPE_DSHOT1200:
+    switch (pwm_type(_pwm_type.get())) {
+        case pwm_type::DSHOT150:
+        case pwm_type::DSHOT300:
+        case pwm_type::DSHOT600:
+        case pwm_type::DSHOT1200:
             return true;
-        case PWM_TYPE_NORMAL:
-        case PWM_TYPE_ONESHOT:
-        case PWM_TYPE_ONESHOT125:
-        case PWM_TYPE_BRUSHED:
-        case PWM_TYPE_PWM_RANGE:
+        case pwm_type::NORMAL:
+        case pwm_type::ONESHOT:
+        case pwm_type::ONESHOT125:
+        case pwm_type::BRUSHED:
+        case pwm_type::PWM_RANGE:
             break;
     }
     return false;
