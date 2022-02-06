@@ -100,10 +100,6 @@ public:
     bool init_passthrough(uint8_t i);
 
     void reset_params();
-    int8_t get_iface_num() const
-    {
-        return _iface_num;
-    }
 
     // Overriden methods
     bool set_event_handle(AP_HAL::EventHandle* evt_handle) override;
@@ -123,6 +119,15 @@ public:
 
     int16_t receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
                     AP_HAL::CANIface::CanIOFlags& out_flags) override;
+
+protected:
+    int8_t get_iface_num() const override {
+        return _iface_num;
+    }
+
+    bool add_to_rx_queue(const AP_HAL::CANIface::CanRxItem &frm) override {
+        return rx_queue_.push(frm);
+    }
 };
 
 }
