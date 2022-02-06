@@ -33,7 +33,6 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_InternalError/AP_InternalError.h>
-#include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
@@ -2110,8 +2109,8 @@ bool AP_Param::parse_param_line(char *line, char **vname, float &value, bool &re
 // increments num_defaults for each default found in filename
 bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaults)
 {
-    int f = AP::FS().open(filename, O_RDONLY);
-    if (f == -1) {
+    FILE *f = fopen(filename, "r");
+    if (f == nullptr) {
         return false;
     }
     char line[100];
@@ -2119,7 +2118,7 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     /*
       work out how many parameter default structures to allocate
      */
-    while (AP::FS().fgets(line, sizeof(line)-1, f)) {
+    while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
         bool read_only;
@@ -2133,22 +2132,22 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
         num_defaults++;
     }
 
-     AP::FS().close(f);
+    fclose(f);
 
     return true;
 }
 
 bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
 {
-    int f = AP::FS().open(filename, O_RDONLY);
-    if (f == -1) {
+    FILE *f = fopen(filename, "r");
+    if (f == nullptr) {
         AP_HAL::panic("AP_Param: Failed to re-open defaults file");
         return false;
     }
 
     uint16_t idx = 0;
     char line[100];
-    while (AP::FS().fgets(line, sizeof(line)-1, f)) {
+    while (fgets(line, sizeof(line)-1, f)) {
         char *pname;
         float value;
         bool read_only;
@@ -2180,7 +2179,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass)
             vp->set_float(value, var_type);
         }
     }
-    AP::FS().close(f);
+    fclose(f);
     return true;
 }
 
