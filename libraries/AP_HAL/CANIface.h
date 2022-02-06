@@ -105,6 +105,7 @@ public:
     typedef uint16_t CanIOFlags;
     static const CanIOFlags Loopback = 1;
     static const CanIOFlags AbortOnError = 2;
+    static const CanIOFlags IsMAVCAN = 4;
 
     // Single Rx Frame with related info
     struct CanRxItem {
@@ -167,11 +168,11 @@ public:
     }
 
     // Put frame in queue to be sent, return negative if error occured, 0 if no space, and 1 if successful
-    virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags) = 0;
+    virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags);
 
     // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occured, 
     // 0 if no frame available, 1 if successful
-    virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags) = 0;
+    virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
 
     //Configure filters so as to reject frames that are not going to be handled by us
     virtual bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
@@ -208,7 +209,19 @@ public:
 
     // return true if init was called and successful
     virtual bool is_initialized() const = 0;
+
+    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &);
+
+    // register a frame callback function
+    virtual bool register_frame_callback(FrameCb cb);
+
 protected:
+    virtual int8_t get_iface_num() const = 0;
+    virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
+
+    FrameCb frame_callback;
+    uint8_t frame_counter;
+    uint32_t last_callback_enable_ms;
     uint32_t bitrate_;
     OperatingMode mode_;
 };
