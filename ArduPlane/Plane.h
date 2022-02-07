@@ -517,14 +517,17 @@ private:
 #if AP_SCRIPTING_ENABLED
     // support for scripting nav commands, with verify
     struct {
+        bool enabled;
         uint16_t id;
         float roll_rate_dps;
         float pitch_rate_dps;
         float yaw_rate_dps;
         float throttle_pct;
         uint32_t start_ms;
+        uint32_t current_ms;
         bool done;
     } nav_scripting;
+    
 #endif
 
     struct {
@@ -1138,8 +1141,9 @@ private:
     // command throttle percentage and roll, pitch, yaw target
     // rates. For use with scripting controllers
     bool set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) override;
+    bool nav_scripting_enable(uint8_t mode) override;
 #endif
-
+ 
     enum Failsafe_Action {
         Failsafe_Action_None      = 0,
         Failsafe_Action_RTL       = 1,
