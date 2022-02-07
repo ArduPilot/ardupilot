@@ -59,21 +59,21 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @DisplayName: Fence Type
     // @Description: Configured fence types held as bitmask. Max altitide, Circle and Polygon fences will be immediately enabled if configured. Min altitude fence will only be enabled once the minimum altitude is reached.
     // @Bitmask{Rover}: 1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons
-    // @Bitmask{Copter, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
+    // @Bitmask{Copter, Heli, Plane, Sub}: 0:Max altitude,1:Circle Centered on Home,2:Inclusion/Exclusion Circles+Polygons,3:Min altitude
     // @User: Standard
     AP_GROUPINFO("TYPE",        1,  AC_Fence,   _configured_fences,  AC_FENCE_TYPE_DEFAULT),
 
     // @Param: ACTION
     // @DisplayName: Fence Action
     // @Description: What action should be taken when fence is breached
-    // @Values{Copter}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
+    // @Values{Copter,Heli}: 0:Report Only,1:RTL or Land,2:Always Land,3:SmartRTL or RTL or Land,4:Brake or Land,5:SmartRTL or Land
     // @Values{Rover}: 0:Report Only,1:RTL or Hold,2:Hold,3:SmartRTL or RTL or Hold,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @Values{Plane}: 0:Report Only,1:RTL,6:Guided,7:GuidedThrottlePass,8:AUTOLAND if possible else RTL
     // @Values: 0:Report Only,1:RTL or Land
     // @User: Standard
     AP_GROUPINFO("ACTION",      2,  AC_Fence,   _action,        float(Action::RTL_AND_LAND)),
 
-    // @Param{Copter, Plane, Sub}: ALT_MAX
+    // @Param{Copter, Heli, Plane, Sub}: ALT_MAX
     // @DisplayName: Fence Maximum Altitude
     // @Description: Maximum altitude allowed before geofence triggers
     // @Units: m
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TOTAL",       6,  AC_Fence,   _total, 0),
 
-    // @Param{Copter, Plane, Sub}: ALT_MIN
+    // @Param{Copter, Heli, Plane, Sub}: ALT_MIN
     // @DisplayName: Fence Minimum Altitude
     // @Description: Minimum altitude allowed before geofence triggers
     // @Units: m
