@@ -6570,8 +6570,12 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Armed at end of test; force-rebooting SITL")
             self.disarm_vehicle(force=True)
             self.forced_post_test_sitl_reboots += 1
-            self.progress("Force-resetting SITL")
-            self.reboot_sitl() # that'll learn it
+            if reset_needed:
+                self.progress("Force-resetting SITL")
+                self.reset_SITL_commandline()
+            else:
+                self.progress("Force-rebooting SITL")
+                self.reboot_sitl() # that'll learn it
             passed = False
 
         if self._mavproxy is not None:
