@@ -323,7 +323,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         }
 
                         // fill the buffer
-                        const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, request.size);
+                        const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, MIN(sizeof(reply.data),request.size));
                         if (read_bytes == -1) {
                             ftp_error(reply, FTP_ERROR::FailErrno);
                             break;
@@ -508,7 +508,7 @@ void GCS_MAVLINK::ftp_worker(void) {
                         const uint32_t transfer_size = 100;
                         for (uint32_t i = 0; (i < transfer_size); i++) {
                             // fill the buffer
-                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, max_read);
+                            const ssize_t read_bytes = AP::FS().read(ftp.fd, reply.data, MIN(sizeof(reply.data), max_read));
                             if (read_bytes == -1) {
                                 ftp_error(reply, FTP_ERROR::FailErrno);
                                 break;
