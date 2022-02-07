@@ -718,6 +718,7 @@ void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 
 void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
 {
+#if AP_CAMERA_ENABLED
     AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return;
@@ -725,6 +726,7 @@ void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
     if (ch_flag == AuxSwitchPos::HIGH) {
         camera->take_picture();
     }
+#endif
 }
 
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
@@ -1148,6 +1150,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 #endif // HAL_MINIMIZE_FEATURES
 
+#if AP_CAMERA_ENABLED
     case AUX_FUNC::CAM_MODE_TOGGLE: {
         // Momentary switch to for cycling camera modes
         AP_Camera *camera = AP_Camera::get_singleton();
@@ -1167,6 +1170,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+#endif
 
     case AUX_FUNC::RETRACT_MOUNT: {
 #if HAL_MOUNT_ENABLED
