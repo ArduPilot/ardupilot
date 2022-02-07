@@ -1182,17 +1182,13 @@ void Plane::nav_script_time_done(uint16_t id)
 }
 
 // support for NAV_SCRIPTING mission command and aerobatics in other allowed modes
-bool Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps)
+void Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps)
 {
-    if (!nav_scripting_active()) {
-        return false;
-    }
     nav_scripting.roll_rate_dps = constrain_float(roll_rate_dps, -g.acro_roll_rate, g.acro_roll_rate);
     nav_scripting.pitch_rate_dps = constrain_float(pitch_rate_dps, -g.acro_pitch_rate, g.acro_pitch_rate);
     nav_scripting.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
     nav_scripting.throttle_pct = throttle_pct;
     nav_scripting.current_ms = AP_HAL::millis();
-    return true;
 }
 
 // enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands
