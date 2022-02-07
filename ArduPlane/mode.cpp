@@ -19,6 +19,11 @@ void Mode::exit()
 
 bool Mode::enter()
 {
+#if AP_SCRIPTING_ENABLED
+    // reset nav_scripting.enabled
+    plane.nav_scripting.enabled = false;
+#endif
+
     // cancel inverted flight
     plane.auto_state.inverted_flight = false;
 
