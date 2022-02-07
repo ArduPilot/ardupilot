@@ -228,6 +228,8 @@ singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null f
 singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
 singleton AP_Vehicle method set_target_throttle_rate_rpy boolean float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
+singleton AP_Vehicle method nav_scripting_enable boolean uint8_t 0 UINT8_MAX
+
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
