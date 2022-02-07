@@ -97,9 +97,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount, &plane.camera_mount, update, 50, 100, 105),
 #endif // HAL_MOUNT_ENABLED
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera, &plane.camera, update,      50, 100, 108),
-#endif // CAMERA == ENABLED
+#endif
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100, 111),
     SCHED_TASK(compass_save,          0.1,    200, 114),
     SCHED_TASK(Log_Write_Fast,        400,    300, 117),
