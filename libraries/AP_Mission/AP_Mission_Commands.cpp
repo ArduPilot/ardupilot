@@ -90,6 +90,7 @@ bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Com
 
 bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
 {
+#if AP_CAMERA_ENABLED
     AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return false;
@@ -131,6 +132,8 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
 #endif
         return false;
     }
+#endif // AP_CAMERA_ENABLED
+    return false;
 }
 
 bool AP_Mission::start_command_parachute(const AP_Mission::Mission_Command& cmd)
