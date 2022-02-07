@@ -77,6 +77,7 @@
 #include "GCS_Sub.h"
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
+#include <AP_Camera/AP_Camera.h>          // Photo or video camera
 
 // libraries which are dependent on #defines in defines.h and/or config.h
 #if RCMAP_ENABLED == ENABLED
@@ -97,10 +98,6 @@
 
 #if AC_RALLY == ENABLED
 #include <AP_Rally/AP_Rally.h>           // Rally point library
-#endif
-
-#if CAMERA == ENABLED
-#include <AP_Camera/AP_Camera.h>          // Photo or video camera
 #endif
 
 #if AP_SCRIPTING_ENABLED
@@ -337,7 +334,7 @@ private:
     AC_Circle circle_nav;
 
     // Camera
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
