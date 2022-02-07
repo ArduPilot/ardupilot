@@ -3070,6 +3070,7 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
 
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
 {
+#if AP_CAMERA_ENABLED
     AP_Camera *camera = AP::camera();
     if (camera == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -3108,6 +3109,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
         break;
     }
     return result;
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif
 }
 
 
@@ -3559,6 +3563,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT: // heartbeat from a GoPro in Solo gimbal
+#if AP_CAMERA_ENABLED
         {
             AP_Camera *camera = AP::camera();
             if (camera == nullptr) {
@@ -3566,6 +3571,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
             }
             camera->handle_message(chan, msg);
         }
+#endif
         break;
 
     case MAVLINK_MSG_ID_SET_MODE:
@@ -5259,6 +5265,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_distance_sensor();
         break;
 
+#if AP_CAMERA_ENABLED
     case MSG_CAMERA_FEEDBACK:
         {
             AP_Camera *camera = AP::camera();
@@ -5269,6 +5276,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             camera->send_feedback(chan);
         }
         break;
+#endif
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
