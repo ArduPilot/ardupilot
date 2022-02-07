@@ -19,9 +19,6 @@ GCS_Dummy _gcs;
 
 extern mavlink_system_t mavlink_system;
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 
 static MAVLink_routing routing;
 
