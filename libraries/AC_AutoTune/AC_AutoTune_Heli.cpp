@@ -59,12 +59,12 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @Description: 1-byte bitmap of axes to autotune
     // @Bitmask: 0:Roll,1:Pitch,2:Yaw
     // @User: Standard
-    AP_GROUPINFO("AXES", 1, AC_AutoTune_Heli, axis_bitmask,  1),  // AUTOTUNE_AXIS_BITMASK_DEFAULT
+    AP_GROUPINFO("AXES", 1, AC_AutoTune_Heli, axis_bitmask,  1),
 
     // @Param: SEQ
     // @DisplayName: AutoTune Sequence Bitmask
-    // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D Only,4:Angle P Only,8:Max Gain Only,3:VFF and Rate D (incl max gain),5:VFF and Angle P,13:VFF max gain and angle P
-    // @Bitmask: 0:VFF,1:Rate D,2:Angle P,3:Max Gain Only
+    // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D/Rate P Only(incl max gain),4:Angle P Only,8:Max Gain Only,3:VFF and Rate D/Rate P(incl max gain),5:VFF and Angle P,6:Rate D/Rate P(incl max gain) and angle P
+    // @Bitmask: 0:VFF,1:Rate D/Rate P(incl max gain),2:Angle P,3:Max Gain Only
     // @User: Standard
     AP_GROUPINFO("SEQ", 2, AC_AutoTune_Heli, seq_bitmask,  3),
 
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
     // @Description: Defines the response gain (output/input) to tune
     // @Range: 1 2.5
     // @User: Standard
-    AP_GROUPINFO("GN_MAX", 5, AC_AutoTune_Heli, max_resp_gain,  1.4f),
+    AP_GROUPINFO("GN_MAX", 5, AC_AutoTune_Heli, max_resp_gain,  1.0f),
 
     // @Param: VELXY_P
     // @DisplayName: AutoTune velocity xy P gain
