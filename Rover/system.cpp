@@ -231,7 +231,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     // but it should be harmless to disable the fence temporarily in these situations as well
     g2.fence.manual_recovery_start();
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
 #endif
 
