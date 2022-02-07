@@ -28,7 +28,7 @@ lock_file() {
 
         if test -f "$lck" && kill -0 $pid 2> /dev/null; then
 	    LOCKAGE=$(($(date +%s) - $(stat -c '%Y' "build.lck")))
-	    test $LOCKAGE -gt 60000 && {
+	    test $LOCKAGE -gt 80000 && {
                 echo "old lock file $lck is valid for $pid with age $LOCKAGE seconds"
 	    }
             return 1
@@ -123,7 +123,7 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 32000 APM/Tools/autotest/autotest.py --autotest-server --timeout=30000 > buildlogs/autotest-output.txt 2>&1
+timelimit 72000 APM/Tools/autotest/autotest.py --autotest-server --timeout=70000 > buildlogs/autotest-output.txt 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 
