@@ -551,6 +551,10 @@ void Plane::set_servos_controlled(void)
             // manual pass through of throttle while throttle is suppressed
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, get_throttle_input(true));
         }
+#if AP_SCRIPTING_ENABLED
+    } else if (plane.nav_scripting.current_ms > 0 && nav_scripting.enabled) {
+            SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.nav_scripting.throttle_pct);
+#endif
     } else if (control_mode == &mode_stabilize ||
                control_mode == &mode_training ||
                control_mode == &mode_acro ||
