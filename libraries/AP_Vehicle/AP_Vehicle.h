@@ -204,6 +204,7 @@ public:
     // command throttle percentage and roll, pitch, yaw target
     // rates. For use with scripting controllers
     virtual bool set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) { return false; }
+    virtual bool nav_scripting_enable(uint8_t mode) {return false;}
 
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
