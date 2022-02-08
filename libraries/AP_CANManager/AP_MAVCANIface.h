@@ -33,7 +33,7 @@
 
 static_assert(HAL_CAN_RX_QUEUE_SIZE <= 254, "Invalid CAN Rx queue size");
 
-namespace SLCAN
+namespace MAVCAN
 {
 
 class CANIface: public CANBridge::CANIface
@@ -41,64 +41,14 @@ class CANIface: public CANBridge::CANIface
 
     int16_t reportFrame(const AP_HAL::CANFrame& frame, uint64_t timestamp_usec);
 
-    const char* processCommand(char* cmd);
-
-    // pushes received frame into queue, false if failed
-    bool push_Frame(AP_HAL::CANFrame &frame);
-
-    // Methods to handle different types of frames,
-    // return true if successfully received frame type
-    bool handle_FrameRTRStd(const char* cmd);
-    bool handle_FrameRTRExt(const char* cmd);
-    bool handle_FrameDataStd(const char* cmd);
-    bool handle_FrameDataExt(const char* cmd);
-
-    // Parsing bytes received on the serial port
-    inline void addByte(const uint8_t byte);
-
-    // track changes to slcan serial port
-    void update_slcan_port();
-
     bool initialized_;
-
-    char buf_[SLCAN_BUFFER_SIZE + 1]; // buffer to record raw frame nibbles before parsing
-    int16_t pos_ = 0; // position in the buffer recording nibble frames before parsing
-    AP_HAL::UARTDriver* _port; // UART interface port reference to be used for SLCAN iface
 
     ObjectBuffer<AP_HAL::CANIface::CanRxItem> rx_queue_; // Parsed Rx Frame queue
 
-    const uint32_t _serial_lock_key = 0x53494442; // Key used to lock UART port for use by slcan
-
-    AP_Int8 _slcan_can_port;
-    AP_Int8 _slcan_ser_port;
-    AP_Int8 _slcan_timeout;
-    AP_Int8 _slcan_start_delay;
-
-    bool _slcan_start_req;
-    uint32_t _slcan_start_req_time;
-    int8_t _prev_ser_port;
-    uint32_t _last_had_activity;
-    uint8_t num_tries;
-    bool _set_by_sermgr;
+    uint8_t _fwd_system_id;
+    uint8_t _fwd_component_id;
 public:
-    CANIface():
-        rx_queue_(HAL_CAN_RX_QUEUE_SIZE)
-    {
-        AP_Param::setup_object_defaults(this, var_info);
-    }
-
-    static const struct AP_Param::GroupInfo var_info[];
-
-    bool init(const uint32_t bitrate, const OperatingMode mode) override
-    {
-        return false;
-    }
-
-    // Initialisation of SLCAN Passthrough method of operation
-    bool init_passthrough(uint8_t i);
-    void flush_tx() override;
-
-    void reset_params();
+    CANIface()    {}
 
     // Overriden methods
     bool select(bool &read, bool &write,

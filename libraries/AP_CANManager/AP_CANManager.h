@@ -23,7 +23,9 @@
 
 #include <AP_Param/AP_Param.h>
 #include "AP_SLCANIface.h"
+#include "AP_MAVCANIface.h"
 #include "AP_CANDriver.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_CANManager
 {
@@ -96,6 +98,10 @@ public:
 
     void log_retrieve(ExpandingString &str) const;
 
+    MAV_RESULT handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
+
+    void AP_CANManager::handle_can_frame(const mavlink_message_t &msg);
+
     // return driver type index i
     Driver_Type get_driver_type(uint8_t i) const
     {
@@ -155,6 +161,8 @@ private:
     AP_Int8 _loglevel;
     uint8_t _num_drivers;
     SLCAN::CANIface _slcan_interface;
+    MAVCAN::CANIface _mavcan_interface[HAL_MAX_CAN_PROTOCOL_DRIVERS];
+
     static AP_CANManager *_singleton;
 
     char* _log_buf;

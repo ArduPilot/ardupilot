@@ -500,59 +500,6 @@ void SLCAN::CANIface::update_slcan_port()
     }
 }
 
-bool SLCAN::CANIface::set_event_handle(AP_HAL::EventHandle* evt_handle)
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->set_event_handle(evt_handle);
-    }
-    return false;
-}
-
-uint16_t SLCAN::CANIface::getNumFilters() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->getNumFilters();
-    }
-    return 0;
-}
-
-uint32_t SLCAN::CANIface::getErrorCount() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->getErrorCount();
-    }
-    return 0;
-}
-
-void SLCAN::CANIface::get_stats(ExpandingString &str)
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        _can_iface->get_stats(str);
-    }
-}
-
-bool SLCAN::CANIface::is_busoff() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->is_busoff();
-    }
-    return false;
-}
-
-bool SLCAN::CANIface::configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->configureFilters(filter_configs, num_configs);
-    }
-    return true;
-}
-
 void SLCAN::CANIface::flush_tx()
 {
     // When in passthrough mode methods is handled through can iface
@@ -560,28 +507,9 @@ void SLCAN::CANIface::flush_tx()
         _can_iface->flush_tx();
     }
 
-    if (_port) {
-        _port->flush();
-    }
+    _port->flush();
 }
 
-void SLCAN::CANIface::clear_rx()
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        _can_iface->clear_rx();
-    }
-    rx_queue_.clear();
-}
-
-bool SLCAN::CANIface::is_initialized() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->is_initialized();
-    }
-    return false;
-}
 
 bool SLCAN::CANIface::select(bool &read, bool &write, const AP_HAL::CANFrame* const pending_tx,
                              uint64_t blocking_deadline)
@@ -613,10 +541,7 @@ int16_t SLCAN::CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadlin
 {
     update_slcan_port();
     int16_t ret = 0;
-    // When in passthrough mode select is handled through can iface
-    if (_can_iface) {
-        ret = _can_iface->send(frame, tx_deadline, flags);
-    }
+    ret = CANBridge::CANIface::send(frame, tx_deadline, flags);
 
     if (_port == nullptr) {
         return ret;
@@ -666,39 +591,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
             }
         }
     }
-    if (rx_queue_.available()) {
-        // if we already have something in buffer transmit it
-        CanRxItem frm;
-        if (!rx_queue_.peek(frm)) {
-            return 0;
-        }
-        out_frame = frm.frame;
-        rx_time = frm.timestamp_us;
-        out_flags = frm.flags;
-        _last_had_activity = AP_HAL::millis();
-        // Also send this frame over can_iface when in passthrough mode,
-        // We just push this frame without caring for priority etc
-        if (_can_iface) {
-            bool read = false;
-            bool write = true;
-            _can_iface->select(read, write, &out_frame, 0); // select without blocking
-            if (write && _can_iface->send(out_frame, AP_HAL::native_micros64() + 100000, out_flags) == 1) {
-                    rx_queue_.pop();
-                    num_tries = 0;
-            } else if (num_tries > 8) {
-                rx_queue_.pop();
-                num_tries = 0;
-            } else {
-                num_tries++;
-            }
-        } else {
-            // we just throw away frames if we don't
-            // have any can iface to pass through to
-            rx_queue_.pop();
-        }
-        return 1;
-    }
-    return 0;
+    return CANBridge::CANIface::receive(out_frame, rx_time, out_flags);
 }
 
 void SLCAN::CANIface::reset_params()

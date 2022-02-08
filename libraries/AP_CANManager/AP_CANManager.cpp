@@ -156,7 +156,8 @@ void AP_CANManager::init()
         if (hal.can[i] == nullptr) {
             continue;
         }
-        AP_HAL::CANIface* iface = hal.can[i];
+        _mavcan_interface[i] = new MAVCAN::CANIface(hal.can[i], i);
+        AP_HAL::CANIface* iface = _mavcan_interface[i];
 
         // Find the driver type that we need to allocate and register this interface with
         drv_type[drv_num] = (Driver_Type) _drv_param[drv_num]._driver_type.get();
@@ -167,9 +168,6 @@ void AP_CANManager::init()
             // we have slcan bridge setup pass that on as can iface
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
-        } else if(drv_type[drv_num] == Driver_Type_UAVCAN) {
-            // We do Message ID filtering when using UAVCAN without SLCAN
-            can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::FilteredMode);
         } else {
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
         }
@@ -382,6 +380,44 @@ void AP_CANManager::log_retrieve(ExpandingString &str) const
         return;
     }
     str.append(_log_buf, _log_pos);
+}
+
+MAV_RESULT AP_CANManager::handle_can_forward(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
+{
+    const int8_t bus = int8_t(packet.param1)-1;
+    if (bus == -1) {
+        // disable capture
+        for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+             _mavcan_interface[i]->disable_can_forward();
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+    if (bus >= HAL_NUM_CAN_IFACES || _mavcan_interface[bus] == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+
+    _mavcan_interface[bus]->enable_can_forward(bus, msg.sysid, msg.compid);
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+void AP_CANManager::handle_can_frame(const mavlink_message_t &msg)
+{
+    mavlink_can_frame_t p;
+    mavlink_msg_can_frame_decode(&msg, &p);
+    if (p.bus >= HAL_NUM_CAN_IFACES || _mavcan_interface[p.bus] == nullptr) {
+        return;
+    }
+
+    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+        if (_mavcan_interface[i]->get_iface_num() == p.bus) {
+            _mavcan_interface[i]->handle_can_frame(msg);
+        }
+    }
+
+    const uint16_t timeout_us = 2000;
+    AP_HAL::CANFrame frame{p.id, p.data, p.len};
+    hal.can[p.bus]->send(frame, AP_HAL::native_micros64() + timeout_us, AP_HAL::CANIface::IsMAVCAN);
 }
 
 AP_CANManager& AP::can()
