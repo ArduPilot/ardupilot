@@ -5062,6 +5062,24 @@ void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 #endif
 }
 
+void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
+{
+    // we're not expecting very many of these ever, so a tiny bit of
+    // de-duping is probably OK:
+    if (message == last_deprecation_message) {
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    if (last_deprecation_warning_send_time_ms - now_ms < 30000) {
+        return;
+    }
+    last_deprecation_warning_send_time_ms = now_ms;
+    last_deprecation_message = message;
+
+    send_text(MAV_SEVERITY_WARNING, "Received message (%s) is deprecated", message);
+}
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
