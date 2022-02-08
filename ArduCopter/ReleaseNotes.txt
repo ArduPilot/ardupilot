@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.1.4-rc1 27-Jan-2022
+Copter 4.1.4 08-Feb-2022 / 4.1.4-rc1 27-Jan-2022
 Changes from 4.1.3
 1) Benewake CAN Lidar support
 2) CAN GPS default lag dropped to 0.1 seconds (was 0.22 seconds)
@@ -12,7 +12,7 @@ Changes from 4.1.3
     e) LOITER_TO_ALT mission command's climb rate fixed (could climb or descend too quickly)
     f) Position controller init fix to avoid twitch on vehicles with high vibrations
     g) Position controller init fix to better handle high speed entry to flight mode
-    h) Position controller priortises reducing cross track error
+    h) Position controller prioritises reducing cross track error
     i) Position controller relax fix
     j) SBUS RC frame gap increased to better handle some new receivers
     k) SERVOx_FUNCTION protection to avoid memory overwrite if set too high
