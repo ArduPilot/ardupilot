@@ -222,9 +222,15 @@ private:
     float    test_phase[20];                        // frequency response phase for each dwell test iteration
     float    dwell_start_time_ms;                   // start time in ms of dwell test
     uint8_t  freq_cnt_max;                          // counter number for frequency that produced max gain response
-    float    curr_test_freq;                        // current test frequency
-    float    curr_test_gain;                        // current test frequency response gain
-    float    curr_test_phase;                       // current test frequency response phase
+
+    // sweep_info contains information about a specific test's sweep results
+    struct sweep_info {
+        float freq;
+        float gain;
+        float phase;
+    };
+    sweep_info curr_test;
+
     Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
     uint32_t phase_out_time;                        // time in ms to phase out response
@@ -257,15 +263,10 @@ private:
 
     // sweep_data tracks the overall characteristics in the response to the frequency sweep
     struct sweep_data {
-        float    maxgain_freq;
-        float    maxgain_gain;
-        float    maxgain_phase;
-        float    ph180_freq;
-        float    ph180_gain;
-        float    ph180_phase;
-        float    ph270_freq;
-        float    ph270_gain;
-        float    ph270_phase;
+        sweep_info maxgain;
+        sweep_info ph180;
+        sweep_info ph270;
+
         uint8_t  progress;  // set based on phase of frequency response.  0 - start; 1 - reached 180 deg; 2 - reached 270 deg;
     };
     sweep_data sweep;
