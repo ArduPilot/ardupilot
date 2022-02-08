@@ -24,8 +24,7 @@ protected:
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_long_t &packet) override;
 
-    void send_position_target_global_int() override;
-
+    bool get_target_info(Position_Target_Info &target) const override;
     void send_aoa_ssa();
     void send_attitude() const override;
     void send_wind() const;

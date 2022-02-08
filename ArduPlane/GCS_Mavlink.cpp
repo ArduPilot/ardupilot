@@ -204,34 +204,28 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
     }
 }
 
-void GCS_MAVLINK_Plane::send_position_target_global_int()
+bool GCS_MAVLINK_Plane::get_target_info(Position_Target_Info &target) const
 {
-    if (plane.control_mode == &plane.mode_manual) {
-        return;
-    }
-    Location &next_WP_loc = plane.next_WP_loc;
-    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
-    mavlink_msg_position_target_global_int_send(
-        chan,
-        AP_HAL::millis(), // time_boot_ms
-        MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
-        next_WP_loc.lat, // latitude as 1e7
-        next_WP_loc.lng, // longitude as 1e7
-        next_WP_loc.alt * 0.01f, // altitude is sent as a float
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
-        0.0f, // yaw
-        0.0f); // yaw_rate
-}
+    switch (plane.control_mode->mode_number()) {
+    case Mode::Number::RTL:
+    case Mode::Number::AVOID_ADSB:
+    case Mode::Number::GUIDED:
+    case Mode::Number::AUTO:
+    case Mode::Number::LOITER:
+#if HAL_QUADPLANE_ENABLED
+    case Mode::Number::QLOITER:
+    case Mode::Number::QLAND:
+    case Mode::Number::QRTL:
+#endif
 
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+        target.loc = plane.next_WP_loc;
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
 
 float GCS_MAVLINK_Plane::vfr_hud_airspeed() const
 {
