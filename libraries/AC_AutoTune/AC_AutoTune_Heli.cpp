@@ -1345,19 +1345,13 @@ void AC_AutoTune_Heli::angle_dwell_test_run(float start_frq, float stop_frq, flo
     // set sweep data if a frequency sweep is being conducted
     if (!is_equal(start_frq,stop_frq)) {
         if (curr_test.phase <= 160.0f && curr_test.phase >= 150.0f) {
-            sweep.ph180.freq = curr_test.freq;
-            sweep.ph180.gain = curr_test.gain;
-            sweep.ph180.phase = curr_test.phase;
+            sweep.ph180 = curr_test;
         }
         if (curr_test.phase <= 250.0f && curr_test.phase >= 240.0f) {
-            sweep.ph270.freq = curr_test.freq;
-            sweep.ph270.gain = curr_test.gain;
-            sweep.ph270.phase = curr_test.phase;
+            sweep.ph270 = curr_test;
         }
         if (curr_test.gain > sweep.maxgain.gain) {
-            sweep.maxgain.gain = curr_test.gain;
-            sweep.maxgain.freq = curr_test.freq;
-            sweep.maxgain.phase = curr_test.phase;
+            sweep.maxgain = curr_test;
         }
         if (now - step_start_time_ms >= sweep_time_ms + 200) {
             // we have passed the maximum stop time
