@@ -167,10 +167,10 @@ void shape_vel_accel(float vel_input, float accel_input,
     float vel_error = vel_input - vel;
 
     // Calculate time constants and limits to ensure stable operation
-    float KPa;
     // The direction of acceleration limit is the same as the velocity error.
     // This is because the velocity error is negative when slowing down while
     // closing a positive position error.
+    float KPa;
     if (is_positive(vel_error)) {
         KPa = jerk_max / accel_max;
     } else {
@@ -277,12 +277,12 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
     // position error to be corrected
     float pos_error = pos_input - pos;
 
-    float accel_tc_max;
-    float KPv;
     // Calculate time constants and limits to ensure stable operation
     // The negative acceleration limit is used here because the square root controller
     // manages the approach to the setpoint. Therefore the acceleration is in the opposite
     // direction to the position error.
+    float accel_tc_max;
+    float KPv;
     if (is_positive(pos_error)) {
         accel_tc_max = -0.5 * accel_min;
         KPv = 0.5 * jerk_max / (-accel_min);
