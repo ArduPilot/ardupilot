@@ -4971,6 +4971,42 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
+void GCS_MAVLINK::send_position_target_local_ned() const
+{
+    Position_Target_Info target;
+    target.yaw = 0.0;
+    target.yaw_rate = 0.0;
+    if (!get_target_info(target)) {
+        return;
+    }
+
+    Vector3f target_pos;
+    if (!(target.type_mask & Position_Target_Mask::POS_ONLY)) {
+        if(!target.loc.get_vector_from_origin_NEU(target_pos)) {
+            return;
+        }
+    }
+
+    target.type_mask |= Position_Target_Mask::LAST_BYTE;
+
+    mavlink_msg_position_target_local_ned_send(
+        chan,
+        AP_HAL::millis(), // time boot ms
+        MAV_FRAME_LOCAL_NED, 
+        target.type_mask,
+        target_pos.x,       // x in metres
+        target_pos.y,       // y in metres
+        -target_pos.z,      // z in metres NED frame
+        target.vel.x,       // vx in m/s
+        target.vel.y,       // vy in m/s
+        -target.vel.z,      // vz in m/s NED frame
+        target.accel.x,     // afx in m/s/s
+        target.accel.y,     // afy in m/s/s
+        -target.accel.z,    // afz in m/s/s NED frame
+        target.yaw,         // yaw [rad]
+        target.yaw_rate);   // yaw_rate [rad/s]
+}
+
 void GCS_MAVLINK::send_position_target_global_int() const
 {
     Position_Target_Info target;

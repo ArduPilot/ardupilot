@@ -332,6 +332,7 @@ public:
     void send_position_target_global_int() const;
     virtual bool get_target_info(Position_Target_Info &target) const { return false; }
     void send_position_target_local_ned() const;
+    virtual bool get_target_local_info(Position_Target_Info &target) const { return false; }
 
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);
