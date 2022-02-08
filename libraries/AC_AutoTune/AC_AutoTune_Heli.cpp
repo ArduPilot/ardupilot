@@ -1031,13 +1031,11 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
     }
 
     // limit rate correction for position hold
-    Vector3f trim_rate_cds;
-    trim_rate_cds.x = att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.get().x) - filt_pit_roll_cd.get().x);
-    trim_rate_cds.y = att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.get().y) - filt_pit_roll_cd.get().y);
-    trim_rate_cds.z = att_hold_gain * filt_heading_error_cd.get();
-    trim_rate_cds.x = constrain_float(trim_rate_cds.x, -15000.0f, 15000.0f);
-    trim_rate_cds.y = constrain_float(trim_rate_cds.y, -15000.0f, 15000.0f);
-    trim_rate_cds.z = constrain_float(trim_rate_cds.z, -15000.0f, 15000.0f);
+    Vector3f trim_rate_cds {
+        constrain_float(att_hold_gain * ((trim_attitude_cd.x + filt_att_fdbk_from_velxy_cd.get().x) - filt_pit_roll_cd.get().x), -15000.0f, 15000.0f),
+        constrain_float(att_hold_gain * ((trim_attitude_cd.y + filt_att_fdbk_from_velxy_cd.get().y) - filt_pit_roll_cd.get().y), -15000.0f, 15000.0f),
+        constrain_float(att_hold_gain * filt_heading_error_cd.get(), -15000.0f, 15000.0f)
+    };
 
     switch (axis) {
     case ROLL:
@@ -1268,7 +1266,10 @@ void AC_AutoTune_Heli::angle_dwell_test_run(float start_frq, float stop_frq, flo
                 dwell_freq = waveform_freq_rads;
             }
         }
-        Vector2f att_fdbk = Vector2f(-5730.0f * vel_hold_gain * velocity_bf.y, 5730.0f * vel_hold_gain * velocity_bf.x);
+        const Vector2f att_fdbk {
+            -5730.0f * vel_hold_gain * velocity_bf.y,
+            5730.0f * vel_hold_gain * velocity_bf.x
+        };
         filt_att_fdbk_from_velxy_cd.apply(att_fdbk, AP::scheduler().get_loop_period_s());
     } else {
         target_angle_cd = 0.0f;
@@ -1279,9 +1280,10 @@ void AC_AutoTune_Heli::angle_dwell_test_run(float start_frq, float stop_frq, flo
         filt_att_fdbk_from_velxy_cd.reset(Vector2f(0.0f,0.0f));
     }
 
-    Vector2f trim_angle_cd;
-    trim_angle_cd.x = constrain_float(filt_att_fdbk_from_velxy_cd.get().x, -2000.0f, 2000.0f);
-    trim_angle_cd.y = constrain_float(filt_att_fdbk_from_velxy_cd.get().y, -2000.0f, 2000.0f);
+    const Vector2f trim_angle_cd {
+        constrain_float(filt_att_fdbk_from_velxy_cd.get().x, -2000.0f, 2000.0f),
+        constrain_float(filt_att_fdbk_from_velxy_cd.get().y, -2000.0f, 2000.0f)
+    };
     switch (axis) {
     case ROLL:
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
