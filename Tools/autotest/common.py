@@ -5906,7 +5906,12 @@ class AutoTest(ABC):
             if self.get_sim_time() - tstart > timeout:
                 raise AutoTestTimeoutException("Did not get wanted current waypoint")
             seq = self.mav.waypoint_current()
-            self.progress("Waiting for wp=%u current=%u" % (wpnum, seq))
+            wp_dist = None
+            try:
+                wp_dist = self.mav.messages['NAV_CONTROLLER_OUTPUT'].wp_dist
+            except (KeyError, AttributeError):
+                pass
+            self.progress("Waiting for wp=%u current=%u dist=%sm" % (wpnum, seq, wp_dist))
             if seq == wpnum:
                 break
 
