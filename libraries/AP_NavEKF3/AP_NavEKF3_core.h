@@ -1184,7 +1184,7 @@ private:
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
     Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
-    ftype Popt;                     // Optical flow terrain height state covariance (m^2)
+    ftype terrainPopt;              // Optical flow terrain height state covariance (m^2)
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
     ftype prevPosE;                 // east position at last measurement

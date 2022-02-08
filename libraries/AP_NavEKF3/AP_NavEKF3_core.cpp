@@ -243,7 +243,7 @@ void NavEKF3_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
-    Popt = 0.0f;
+    terrainPopt = 0.0f;
     terrainState = 0.0f;
     prevPosN = stateStruct.position.x;
     prevPosE = stateStruct.position.y;
@@ -626,7 +626,7 @@ void NavEKF3_core::CovarianceInit()
 
 
     // optical flow ground height covariance
-    Popt = 0.25f;
+    terrainPopt = 0.25f;
 
 }
 

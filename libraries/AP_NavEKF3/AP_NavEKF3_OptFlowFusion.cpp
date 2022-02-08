@@ -97,7 +97,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         // in addition to a terrain gradient error model, we also have the growth in uncertainty due to the copter's vertical velocity
         ftype timeLapsed = MIN(0.001f * (imuSampleTime_ms - timeAtLastAuxEKF_ms), 1.0f);
         ftype Pincrement = (distanceTravelledSq * sq(frontend->_terrGradMax)) + sq(timeLapsed)*P[6][6];
-        Popt += Pincrement;
+        terrainPopt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
         // fuse range finder data to calculate terrain offset
@@ -120,10 +120,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 
             // calculate Kalman gain
             ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
-            ftype K_RNG = Popt/(SK_RNG*(R_RNG + Popt/sq(SK_RNG)));
+            ftype K_RNG = terrainPopt/(SK_RNG*(R_RNG + terrainPopt/sq(SK_RNG)));
 
             // Calculate the innovation variance for data logging
-            varInnovRng = (R_RNG + Popt/sq(SK_RNG));
+            varInnovRng = (R_RNG + terrainPopt/sq(SK_RNG));
 
             // constrain terrain height to be below the vehicle
             terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
@@ -143,10 +143,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
                 terrainState = MAX(terrainState, stateStruct.position[2] + rngOnGnd);
 
                 // correct the covariance
-                Popt = Popt - sq(Popt)/(SK_RNG*(R_RNG + Popt/sq(SK_RNG))*(sq(q0) - sq(q1) - sq(q2) + sq(q3)));
+                terrainPopt = terrainPopt - sq(terrainPopt)/(SK_RNG*(R_RNG + terrainPopt/sq(SK_RNG))*(sq(q0) - sq(q1) - sq(q2) + sq(q3)));
 
                 // prevent the state variance from becoming negative
-                Popt = MAX(Popt,0.0f);
+                terrainPopt = MAX(terrainPopt,0.0f);
 
                 // record the time we last updated the terrain offset state
                 terrainValidTime_ms = imuSampleTime_ms;
@@ -194,7 +194,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             ftype t9 = t2-t3-t4+t5;
 
             // prevent the state variances from becoming badly conditioned
-            Popt = MAX(Popt,1E-6f);
+            terrainPopt = MAX(terrainPopt,1E-6f);
 
             // calculate observation noise variance from parameter
             ftype flow_noise_variance = sq(MAX(frontend->_flowNoise, 0.05f));
@@ -205,10 +205,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             H_OPT = t7*t9*(-stateStruct.velocity.z*(q0*q2*2.0-q1*q3*2.0)+stateStruct.velocity.x*(t2+t3-t4-t5)+stateStruct.velocity.y*(t8+q1*q2*2.0));
 
             // calculate innovation variance
-            auxFlowObsInnovVar.y = H_OPT * Popt * H_OPT + flow_noise_variance;
+            auxFlowObsInnovVar.y = H_OPT * terrainPopt * H_OPT + flow_noise_variance;
 
             // calculate Kalman gain
-            K_OPT = Popt * H_OPT / auxFlowObsInnovVar.y;
+            K_OPT = terrainPopt * H_OPT / auxFlowObsInnovVar.y;
 
             // calculate the innovation consistency test ratio
             auxFlowTestRatio.y = sq(auxFlowObsInnov.y) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.y);
@@ -227,10 +227,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
                 t7 = 1.0f / (t6*t6);
 
                 // correct the covariance
-                Popt = Popt - K_OPT * H_OPT * Popt;
+                terrainPopt = terrainPopt - K_OPT * H_OPT * terrainPopt;
 
                 // prevent the state variances from becoming badly conditioned
-                Popt = MAX(Popt,1E-6f);
+                terrainPopt = MAX(terrainPopt,1E-6f);
 
                 // record the time we last updated the terrain offset state
                 terrainValidTime_ms = imuSampleTime_ms;
@@ -240,10 +240,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             H_OPT = -t7*t9*(stateStruct.velocity.z*(q0*q1*2.0+q2*q3*2.0)+stateStruct.velocity.y*(t2-t3+t4-t5)-stateStruct.velocity.x*(t8-q1*q2*2.0));
 
             // calculate innovation variances
-            auxFlowObsInnovVar.x = H_OPT * Popt * H_OPT + flow_noise_variance;
+            auxFlowObsInnovVar.x = H_OPT * terrainPopt * H_OPT + flow_noise_variance;
 
             // calculate Kalman gain
-            K_OPT = Popt * H_OPT / auxFlowObsInnovVar.x;
+            K_OPT = terrainPopt * H_OPT / auxFlowObsInnovVar.x;
 
             // calculate the innovation consistency test ratio
             auxFlowTestRatio.x = sq(auxFlowObsInnov.x) / (sq(MAX(0.01f * (ftype)frontend->_flowInnovGate, 1.0f)) * auxFlowObsInnovVar.x);
@@ -258,10 +258,10 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
                 terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
 
                 // correct the covariance
-                Popt = Popt - K_OPT * H_OPT * Popt;
+                terrainPopt = terrainPopt - K_OPT * H_OPT * terrainPopt;
 
                 // prevent the state variances from becoming badly conditioned
-                Popt = MAX(Popt,1E-6f);
+                terrainPopt = MAX(terrainPopt,1E-6f);
             }
         }
     }
