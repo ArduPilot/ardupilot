@@ -2,6 +2,12 @@
 
 #include "SIM_RAMTRON.h"
 
+#ifndef AP_SIM_RAMTRON_FM25V02_ENABLED
+#define AP_SIM_RAMTRON_FM25V02_ENABLED AP_SIM_RAMTRON_ENABLED
+#endif
+
+#if AP_SIM_RAMTRON_FM25V02_ENABLED
+
 namespace SITL {
 
 class RAMTRON_FM25V02 : public RAMTRON
@@ -31,3 +37,5 @@ private:
 };
 
 }
+
+#endif // AP_SIM_RAMTRON_FM25V02_ENABLED

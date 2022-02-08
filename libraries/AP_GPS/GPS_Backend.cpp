@@ -30,6 +30,10 @@
 
 #include <GCS_MAVLink/GCS.h>
 
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port) :
@@ -223,15 +227,16 @@ void AP_GPS_Backend::send_mavlink_gps_rtk(mavlink_channel_t chan)
 void AP_GPS_Backend::set_uart_timestamp(uint16_t nbytes)
 {
     if (port) {
-        state.uart_timestamp_ms = port->receive_time_constraint_us(nbytes) / 1000U;
+        state.last_corrected_gps_time_us = port->receive_time_constraint_us(nbytes);
+        state.corrected_timestamp_updated = true;
     }
 }
 
 
 void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 {
-    if (itow != _last_itow) {
-        _last_itow = itow;
+    if (itow != _last_itow_ms) {
+        _last_itow_ms = itow;
 
         /*
           we need to calculate a pseudo-itow, which copes with the
@@ -245,8 +250,11 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
-        if (port) {
+        if (port && _last_pps_time_us == 0) {
             uart_us = port->receive_time_constraint_us(msg_length);
+        } else if (_last_pps_time_us != 0) {
+            uart_us = _last_pps_time_us;
+            _last_pps_time_us = 0;
         } else {
             uart_us = AP_HAL::micros64();
         }
@@ -269,6 +277,9 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         } else {
             _rate_counter = 0;
             _last_rate_ms = dt_ms;
+            if (_rate_ms != 0) {
+                set_pps_desired_freq(1000/_rate_ms);
+            }
         }
         if (_rate_ms == 0) {
             // only allow 5Hz to 20Hz in user config
@@ -283,20 +294,25 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // use msg arrival time, and correct for jitter
         uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
-        state.uart_timestamp_ms = local_us / 1000U;
+        state.last_corrected_gps_time_us = local_us;
+        state.corrected_timestamp_updated = true;
 
         // look for lagged data from the GPS. This is meant to detect
         // the case that the GPS is trying to push more data into the
         // UART than can fit (eg. with GPS_RAW_DATA at 115200).
         float expected_lag;
         if (gps.get_lag(state.instance, expected_lag)) {
-            float lag_s = (now - state.uart_timestamp_ms) * 0.001;
+            float lag_s = (now - (state.last_corrected_gps_time_us/1000U)) * 0.001;
             if (lag_s > expected_lag+0.05) {
                 // more than 50ms over expected lag, increment lag counter
                 state.lagged_sample_count++;
             } else {
                 state.lagged_sample_count = 0;
             }
+        }
+        if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
+            // we must have a decent fix to calculate difference between itow and pseudo-itow
+            _pseudo_itow_delta_ms = itow - (_pseudo_itow/1000ULL);
         }
     }
 }
@@ -398,3 +414,37 @@ bad_yaw:
     return false;
 }
 #endif // GPS_MOVING_BASELINE
+
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+
+// log some data for debugging
+void AP_GPS_Backend::log_data(const uint8_t *data, uint16_t length)
+{
+    logging.buf.write(data, length);
+    if (!logging.io_registered) {
+        logging.io_registered = true;
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_GPS_Backend::logging_update, void));
+    }
+}
+
+// IO thread update, writing to log file
+void AP_GPS_Backend::logging_update(void)
+{
+    if (logging.fd == -1) {
+        char fname[] = "gpsN.log";
+        fname[3] = '1' + state.instance;
+        logging.fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_APPEND);
+    }
+    if (logging.fd != -1) {
+        uint32_t n = 0;
+        const uint8_t *p = logging.buf.readptr(n);
+        if (p != nullptr && n != 0) {
+            int32_t written = AP::FS().write(logging.fd, p, n);
+            if (written > 0) {
+                logging.buf.advance(written);
+                AP::FS().fsync(logging.fd);
+            }
+        }
+    }
+}
+#endif // AP_GPS_DEBUG_LOGGING_ENABLED

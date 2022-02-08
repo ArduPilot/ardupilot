@@ -86,12 +86,12 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
         memcpy(&data, frame.data, sizeof(data));
         switch((NWPMU_TEMPERATURE_TYPE)data.temp_type) {
         case NWPMU_TEMPERATURE_TYPE::C:
-            internal_state.coolant_temperature = data.coolant_temp * 0.1f + C_TO_KELVIN;
-            internal_state.cylinder_status[0].cylinder_head_temperature = data.coolant_temp * 0.1f + C_TO_KELVIN;
+            internal_state.coolant_temperature = C_TO_KELVIN(data.coolant_temp * 0.1f);
+            internal_state.cylinder_status[0].cylinder_head_temperature = C_TO_KELVIN(data.coolant_temp * 0.1f);
             break;
         case NWPMU_TEMPERATURE_TYPE::F:
-            internal_state.coolant_temperature = ((data.coolant_temp * 0.1f) - 32 * 5/9) + C_TO_KELVIN;
-            internal_state.cylinder_status[0].cylinder_head_temperature = ((data.coolant_temp * 0.1f) - 32 * 5/9) + C_TO_KELVIN;
+            internal_state.coolant_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
+            internal_state.cylinder_status[0].cylinder_head_temperature = F_TO_KELVIN(data.coolant_temp * 0.1f);
             break;
         default:
             break;

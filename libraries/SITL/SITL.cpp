@@ -79,7 +79,9 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_SUBGROUPINFO(shipsim, "SHIP_", 59, SIM, ShipSim),
 #endif
     AP_SUBGROUPEXTENSION("",      60, SIM,  var_mag),
+#if HAL_SIM_GPS_ENABLED
     AP_SUBGROUPEXTENSION("",      61, SIM,  var_gps),
+#endif
     AP_SUBGROUPEXTENSION("",      62, SIM,  var_info3),
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_info2),
     AP_GROUPEND
@@ -317,11 +319,12 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
     AP_GROUPEND
 };
-    
+
+#if HAL_SIM_GPS_ENABLED
 // GPS SITL parameters
 const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_DISABLE",    1, SIM,  gps_disable[0], 0),
-    AP_GROUPINFO("GPS_DELAY",      2, SIM,  gps_delay[0],   1),
+    AP_GROUPINFO("GPS_LAG_MS",     2, SIM,  gps_delay_ms[0], 100),
     AP_GROUPINFO("GPS_TYPE",       3, SIM,  gps_type[0],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS_BYTELOSS",   4, SIM,  gps_byteloss[0],  0),
     AP_GROUPINFO("GPS_NUMSATS",    5, SIM,  gps_numsats[0],   10),
@@ -337,7 +340,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     AP_GROUPINFO("GPS_VERR",      15, SIM,  gps_vel_err[0], 0),
 
     AP_GROUPINFO("GPS2_DISABLE",  30, SIM,  gps_disable[1], 1),
-    AP_GROUPINFO("GPS2_DELAY",    31, SIM,  gps_delay[1],   1),
+    AP_GROUPINFO("GPS2_LAG_MS",   31, SIM,  gps_delay_ms[1], 100),
     AP_GROUPINFO("GPS2_TYPE",     32, SIM,  gps_type[1],  GPS::Type::UBLOX),
     AP_GROUPINFO("GPS2_BYTELOS",  33, SIM,  gps_byteloss[1],  0),
     AP_GROUPINFO("GPS2_NUMSATS",  34, SIM,  gps_numsats[1],   10),
@@ -358,6 +361,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
 
     AP_GROUPEND
 };
+#endif  // HAL_SIM_GPS_ENABLED
 
 // Mag SITL parameters
 const AP_Param::GroupInfo SIM::var_mag[] = {
@@ -428,10 +432,12 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPINFO("IMUT_START",    1, SIM, imu_temp_start,  25),
     AP_GROUPINFO("IMUT_END",      2, SIM, imu_temp_end, 45),
     AP_GROUPINFO("IMUT_TCONST",   3, SIM, imu_temp_tconst, 300),
     AP_GROUPINFO("IMUT_FIXED",    4, SIM, imu_temp_fixed, 0),
+#endif
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
 #if INS_MAX_INSTANCES > 1
     AP_GROUPINFO("ACC2_BIAS",     6, SIM, accel_bias[1], 0),
@@ -489,6 +495,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_GROUPINFO("JSON_MASTER",     27, SIM, ride_along_master, 0),
 
     // the IMUT parameters must be last due to the enable parameters
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
 #if INS_MAX_INSTANCES > 1
     AP_SUBGROUPINFO(imu_tcal[1], "IMUT2_", 62, SIM, AP_InertialSensor::TCal),
@@ -496,6 +503,7 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #if INS_MAX_INSTANCES > 2
     AP_SUBGROUPINFO(imu_tcal[2], "IMUT3_", 63, SIM, AP_InertialSensor::TCal),
 #endif
+#endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND
 };
     

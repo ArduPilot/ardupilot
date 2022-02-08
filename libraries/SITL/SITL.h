@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -102,7 +102,9 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
         AP_Param::setup_object_defaults(this, var_info3);
+#if HAL_SIM_GPS_ENABLED
         AP_Param::setup_object_defaults(this, var_gps);
+#endif
         AP_Param::setup_object_defaults(this, var_mag);
         AP_Param::setup_object_defaults(this, var_ins);
 #ifdef SFML_JOYSTICK
@@ -134,6 +136,7 @@ public:
         GPS_HEADING_NONE = 0,
         GPS_HEADING_HDT  = 1,
         GPS_HEADING_THS  = 2,
+        GPS_HEADING_KSXT = 3,
     };
 
     struct sitl_fdm state;
@@ -147,7 +150,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
+#if HAL_SIM_GPS_ENABLED
     static const struct AP_Param::GroupInfo var_gps[];
+#endif
     static const struct AP_Param::GroupInfo var_mag[];
     static const struct AP_Param::GroupInfo var_ins[];
 #ifdef SFML_JOYSTICK
@@ -173,7 +178,7 @@ public:
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Float servo_speed; // servo speed in seconds
 
-    AP_Float sonar_glitch;// probablility between 0-1 that any given sonar sample will read as max distance
+    AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
 
@@ -186,7 +191,7 @@ public:
     AP_Int16 gps_lock_time[2]; // delay in seconds before GPS gets lock
     AP_Int16 gps_alt_offset[2]; // gps alt error
     AP_Int8  gps_disable[2]; // disable simulated GPS
-    AP_Int8  gps_delay[2];   // delay in samples
+    AP_Int16 gps_delay_ms[2];   // delay in milliseconds
     AP_Int8  gps_type[2]; // see enum SITL::GPS::Type
     AP_Float gps_byteloss[2];// byte loss as a percent
     AP_Int8  gps_numsats[2]; // number of visible satellites
@@ -214,7 +219,7 @@ public:
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup
-    AP_Int8  odom_enable; // enable visual odomotry data
+    AP_Int8  odom_enable; // enable visual odometry data
     AP_Int8  telem_baudlimit_enable; // enable baudrate limiting on links
     AP_Float flow_noise; // optical flow measurement noise (rad/sec)
     AP_Int8  baro_count; // number of simulated baros to create
@@ -446,12 +451,14 @@ public:
     float get_apparent_wind_dir() const{return state.wind_vane_apparent.direction;}
     float get_apparent_wind_spd() const{return state.wind_vane_apparent.speed;}
 
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
     // IMU temperature calibration params
     AP_Float imu_temp_start;
     AP_Float imu_temp_end;
     AP_Float imu_temp_tconst;
     AP_Float imu_temp_fixed;
     AP_InertialSensor::TCal imu_tcal[INS_MAX_INSTANCES];
+#endif
 
     // IMU control parameters
     AP_Float gyro_noise[INS_MAX_INSTANCES];  // in degrees/second

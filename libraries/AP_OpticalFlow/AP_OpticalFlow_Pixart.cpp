@@ -111,9 +111,6 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     }
     WITH_SEMAPHORE(_dev->get_semaphore());
 
-    uint8_t id;
-    uint16_t crc;
-
     // power-up sequence
     reg_write(PIXART_REG_POWER_RST, 0x5A);
     hal.scheduler->delay(50);
@@ -139,7 +136,7 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
     if (model == PIXART_3900) {
         srom_download();
 
-        id = reg_read(PIXART_REG_SROM_ID);
+        const uint8_t id = reg_read(PIXART_REG_SROM_ID);
         if (id != srom_id) {
             debug("Pixart: bad SROM ID: 0x%02x\n", id);
             return false;
@@ -148,7 +145,7 @@ bool AP_OpticalFlow_Pixart::setup_sensor(void)
         reg_write(PIXART_REG_SROM_EN, 0x15);
         hal.scheduler->delay(10);
 
-        crc = reg_read16u(PIXART_REG_DOUT_L);
+        const uint16_t crc = reg_read16u(PIXART_REG_DOUT_L);
         if (crc != 0xBEEF) {
             debug("Pixart: bad SROM CRC: 0x%04x\n", crc);
             return false;

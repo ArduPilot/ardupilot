@@ -96,7 +96,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &rover.g2.gripper,       update,         10,   75,  69),
 #endif
-    SCHED_TASK(rpm_update,             10,    100,  72),
+    SCHED_TASK_CLASS(AP_RPM,              &rover.rpm_sensor,       update,         10,  100,  72),
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &rover.camera_mount,     update,         50,  200,  75),
 #endif
@@ -130,7 +130,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
-    SCHED_TASK(read_airspeed,          10,    100, 132),
 #if HAL_AIS_ENABLED
     SCHED_TASK_CLASS(AP_AIS, &rover.g2.ais, update, 5, 100, 135),
 #endif
@@ -205,6 +204,19 @@ bool Rover::set_steering_and_throttle(float steering, float throttle)
     return true;
 }
 
+// set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
+bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!control_mode->in_guided_mode()) {
+        return false;
+    }
+
+    // set turn rate and speed. Turn rate is expected in centidegrees/s and speed in meters/s
+    mode_guided.set_desired_turn_rate_and_speed(turn_rate * 100.0f, speed);
+    return true;
+}
+
 // get control output (for use in scripting)
 // returns true on success and control_value is set to a value in the range -1 to +1
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
@@ -264,7 +276,7 @@ void Rover::ahrs_update()
     ahrs.update();
 
     // update position
-    have_position = ahrs.get_position(current_loc);
+    have_position = ahrs.get_location(current_loc);
 
     // set home from EKF if necessary and possible
     if (!ahrs.home_is_set()) {

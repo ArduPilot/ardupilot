@@ -7,8 +7,8 @@ MCU STM32F4xx STM32F405xx
 FLASH_RESERVE_START_KB 64
 FLASH_SIZE_KB 1024
 
-# store parameters in pages 11 and 12
-STORAGE_FLASH_PAGE 1
+# store parameters in pages 2 and 3
+STORAGE_FLASH_PAGE 2
 define HAL_STORAGE_SIZE 15360
 
 # board ID for firmware load
@@ -34,6 +34,10 @@ define HAL_LED_ON 1
 define HAL_NO_GPIO_IRQ
 define SERIAL_BUFFERS_SIZE 512
 define PORT_INT_REQUIRED_STACK 64
+
+# debug (disabled to allow for PA14 LED above), to enable debugging disable the use of PA14 above
+#PA13 JTMS-SWDIO SWD
+#PA14 JTCK-SWCLK SWD
 
 # avoid timer and RCIN threads to save memory
 define HAL_NO_RCIN_THREAD
@@ -192,8 +196,6 @@ define RANGEFINDER_MAX_INSTANCES 1
 # disable rangefinder by default
 define AP_PERIPH_RANGEFINDER_PORT_DEFAULT -1
 
-define HAL_PERIPH_ENABLE_ADSB
-
 # ------------------ BATTERY Monitor -----------------------
 define HAL_PERIPH_ENABLE_BATTERY
 
@@ -211,8 +213,8 @@ PC5 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
 # define BOARD_RSSI_ANA_PIN 12
 # define HAL_DEFAULT_AIRSPEED_PIN 13
 
-define HAL_BATT_MONITOR_DEFAULT 4
-define HAL_BATT2_MONITOR_DEFAULT 4
+# Set the Default Battery Monitor Type to be Off
+define HAL_BATT_MONITOR_DEFAULT 0
 
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_VOLT_SCALE 21.0

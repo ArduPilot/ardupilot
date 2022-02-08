@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#if AP_GPS_SBF_ENABLED
 extern const AP_HAL::HAL& hal;
 
 #define SBF_DEBUGGING 0
@@ -614,3 +615,4 @@ bool AP_GPS_SBF::prepare_for_arming(void) {
 
     return is_logging;
 }
+#endif

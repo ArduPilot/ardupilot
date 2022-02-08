@@ -106,8 +106,8 @@ const AP_Param::GroupInfo AP_BLHeli::var_info[] = {
 
     // @Param: PORT
     // @DisplayName: Control port
-    // @Description: This sets the serial port to use for blheli pass-thru
-    // @Values: 0:Console,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5
+    // @Description: This sets the mavlink channel to use for blheli pass-thru. The channel number is determined by the number of serial ports configured to use mavlink. So 0 is always the console, 1 is the next serial port using mavlink, 2 the next after that and so on.
+    // @Values: 0:Console,1:Mavlink Serial Channel1,2:Mavlink Serial Channel2,3:Mavlink Serial Channel3,4:Mavlink Serial Channel4,5:Mavlink Serial Channel5
     // @User: Advanced
     AP_GROUPINFO("PORT",  8, AP_BLHeli, control_port, 0),
 
@@ -515,7 +515,15 @@ void AP_BLHeli::msp_process_command(void)
             serial_start_ms = 0;
             break;
         }
-        msp_send_reply(msp.cmdMSP, &n, 1);
+        // doing the serial setup here avoids delays when doing it on demand and makes
+        // BLHeliSuite considerably more reliable
+        EXPECT_DELAY_MS(1000);
+        if (!hal.rcout->serial_setup_output(motor_map[0], 19200, motor_mask)) {
+            msp_send_ack(ACK_D_GENERAL_ERROR);
+            break;
+        } else {
+            msp_send_reply(msp.cmdMSP, &n, 1);
+        }
         break;
     }
     default:

@@ -319,7 +319,7 @@ float Frame::get_air_density(float alt_amsl) const
     AP_Baro::SimpleAtmosphere(alt_amsl * 0.001f, sigma, delta, theta);
 
     const float air_pressure = SSL_AIR_PRESSURE * delta;
-    return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN + model.refTempC));
+    return air_pressure / (ISA_GAS_CONSTANT * (C_TO_KELVIN(model.refTempC)));
 }
 
 /*

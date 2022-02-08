@@ -21,6 +21,7 @@
 #include "AP_GPS_SIRF.h"
 #include <stdint.h>
 
+#if AP_GPS_SIRF_ENABLED
 // Initialisation messages
 //
 // Turn off all messages except for 0x29.
@@ -245,3 +246,4 @@ bool AP_GPS_SIRF::_detect(struct SIRF_detect_state &state, uint8_t data)
     }
     return false;
 }
+#endif

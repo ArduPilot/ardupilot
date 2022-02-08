@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Base class for FrSky telemetery
+  Base class for FrSky telemetry
 */
 
 #include "SIM_Frsky.h"

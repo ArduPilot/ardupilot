@@ -151,7 +151,7 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
     //check for target too far, target too close and sensor not connected
     const bool valid = (distance_cm != 0xffff) && (distance_cm > 0x0001);
-    if (valid && !check_obstacle_near_ground(angle_deg, distance_cm * 0.001f)) {
+    if (valid && !ignore_reading(angle_deg, distance_cm * 0.001f, false)) {
         boundary.set_face_attributes(face, angle_deg, ((float) distance_cm) / 1000);
         // update OA database
         database_push(angle_deg, ((float) distance_cm) / 1000);

@@ -175,6 +175,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::aux_func_t ch_option,
 #if HAL_QUADPLANE_ENABLED
     case AUX_FUNC::Q_ASSIST:
     case AUX_FUNC::AIRMODE:
+    case AUX_FUNC::WEATHER_VANE_ENABLE:
 #endif
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     case AUX_FUNC::ARSPD_CALIBRATE:
@@ -359,6 +360,23 @@ case AUX_FUNC::ARSPD_CALIBRATE:
             plane.quadplane.air_mode = AirMode::ON;
         }
         break;
+
+    case AUX_FUNC::WEATHER_VANE_ENABLE: {
+        if (plane.quadplane.weathervane != nullptr) {
+            switch (ch_flag) {
+                case AuxSwitchPos::HIGH:
+                    plane.quadplane.weathervane->allow_weathervaning(true);
+                    break;
+                case AuxSwitchPos::MIDDLE:
+                    // nothing
+                    break;
+                case AuxSwitchPos::LOW:
+                    plane.quadplane.weathervane->allow_weathervaning(false);
+                    break;
+            }
+        }
+        break;
+    }
 #endif
 
     case AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC:

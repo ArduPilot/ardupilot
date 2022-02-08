@@ -28,6 +28,7 @@ import shlex
 import binascii
 import math
 
+from pysim import util
 from pysim import vehicleinfo
 
 
@@ -236,6 +237,25 @@ class BobException(Exception):
 def kill_tasks():
     """Clean up stray processes by name.  This is a shotgun approach"""
     progress("Killing tasks")
+
+    if cmd_opts.coverage:
+        import psutil
+        for proc in psutil.process_iter(['pid', 'name', 'environ']):
+            if proc.name() not in ["arducopter", "ardurover", "arduplane", "ardusub", "antennatracker"]:
+                # only kill vehicle that way
+                continue
+            if os.environ['SIM_VEHICLE_SESSION'] not in proc.environ().get('SIM_VEHICLE_SESSION'):
+                # only kill vehicle launched with sim_vehicle.py that way
+                continue
+            proc.terminate()
+            progress("Waiting SITL to exit cleanly and write coverage .gcda")
+            try:
+                proc.wait(timeout=30)
+                progress("Done")
+            except psutil.TimeoutExpired:
+                progress("SITL doesn't want to exit cleaning, killing ...")
+                proc.kill()
+
     try:
         victim_names = {
             'JSBSim',
@@ -249,7 +269,7 @@ def kill_tasks():
             'MAVProxy.exe',
             'runsim.py',
             'AntennaTracker.elf',
-            'scrimmage'
+            'scrimmage',
             'ardurover',
             'arduplane',
             'arducopter'
@@ -302,6 +322,9 @@ def do_build(opts, frame_options):
     cmd_configure = [waf_light, "configure", "--board", "sitl"]
     if opts.debug:
         cmd_configure.append("--debug")
+
+    if opts.coverage:
+        cmd_configure.append("--coverage")
 
     if opts.enable_onvif and 'antennatracker' in frame_options["waf_target"]:
         cmd_configure.append("--enable-onvif")
@@ -393,7 +416,7 @@ def get_user_locations_path():
     '''The user locations.txt file is located by default in
     $XDG_CONFIG_DIR/ardupilot/locations.txt. If $XDG_CONFIG_DIR is
     not defined, we look in $HOME/.config/ardupilot/locations.txt.  If
-    $HOME is not defined, we look in ./.config/ardpupilot/locations.txt.'''
+    $HOME is not defined, we look in ./.config/ardupilot/locations.txt.'''
 
     config_dir = os.environ.get(
         'XDG_CONFIG_DIR',
@@ -661,7 +684,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         paths = stuff["default_params_filename"]
         if not isinstance(paths, list):
             paths = [paths]
-        paths = [os.path.join(autotest_dir, x) for x in paths]
+        paths = [util.relcurdir(os.path.join(autotest_dir, x)) for x in paths]
         for x in paths:
             if not os.path.isfile(x):
                 print("The parameter file (%s) does not exist" % (x,))
@@ -953,6 +976,10 @@ group_build.add_option("", "--waf-build-arg",
                        type="string",
                        default=[],
                        help="extra arguments to pass to waf in its build step")
+group_build.add_option("", "--coverage",
+                       action='store_true',
+                       default=False,
+                       help="use coverage build")
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")

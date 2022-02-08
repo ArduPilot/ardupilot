@@ -24,14 +24,11 @@ FLASH_RESERVE_START_KB 128
 STORAGE_FLASH_PAGE 14
 define HAL_STORAGE_SIZE 32768
 
-# reserve space for flash storage in last 2 sectors
-FLASH_RESERVE_END_KB 256
-
 # one I2C bus
 I2C_ORDER I2C1
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7 OTG2
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7 
 
 # buzzer
 PC13 BUZZER OUTPUT LOW PULLDOWN GPIO(80)
@@ -75,7 +72,7 @@ PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
 
 PA8 VBUS INPUT
 
-# define default battery setup
+# define default battery setup (note external current sensor required)
 define HAL_BATT_VOLT_PIN 10
 define HAL_BATT_CURR_PIN 11
 define HAL_BATT_VOLT_SCALE 11.0
@@ -138,7 +135,6 @@ SPIDEV osd      SPI2 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2

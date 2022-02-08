@@ -96,7 +96,7 @@ end
 -- check if we should switch to QLAND
 function check_qland()
   local target = vehicle:get_target_location()
-  local pos = ahrs:get_position()
+  local pos = ahrs:get_location()
   if not target or not pos then
     -- we can't estimate distance
     return

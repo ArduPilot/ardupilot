@@ -451,9 +451,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL6:
         case CMDLINE_SERIAL7:
         case CMDLINE_SERIAL8:
-        case CMDLINE_SERIAL9:
-            _uart_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
+        case CMDLINE_SERIAL9: {
+            static const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
+            _uart_path[mapping[opt - CMDLINE_SERIAL0]] = gopt.optarg;
             break;
+        }
         case CMDLINE_RTSCTS:
             _use_rtscts = true;
             break;
@@ -508,10 +510,12 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _usage();
             exit(0);
         case CMDLINE_SLAVE: {
+#if HAL_SIM_JSON_MASTER_ENABLED
             const int32_t slaves = atoi(gopt.optarg);
             if (slaves > 0) {
                 ride_along.init(slaves);
             }
+#endif
             break;
         }
         default:

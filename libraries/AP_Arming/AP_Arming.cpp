@@ -226,6 +226,7 @@ bool AP_Arming::barometer_checks(bool report)
 
 bool AP_Arming::airspeed_checks(bool report)
 {
+#if AP_AIRSPEED_ENABLED
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_AIRSPEED)) {
         const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
@@ -240,6 +241,7 @@ bool AP_Arming::airspeed_checks(bool report)
             }
         }
     }
+#endif
 
     return true;
 }
@@ -539,7 +541,7 @@ bool AP_Arming::gps_checks(bool report)
         // check AHRS and GPS are within 10m of each other
         const Location gps_loc = gps.location();
         Location ahrs_loc;
-        if (AP::ahrs().get_position(ahrs_loc)) {
+        if (AP::ahrs().get_location(ahrs_loc)) {
             const float distance = gps_loc.get_distance(ahrs_loc);
             if (distance > AP_ARMING_AHRS_GPS_ERROR_MAX) {
                 check_failed(ARMING_CHECK_GPS, report, "GPS and AHRS differ by %4.1fm", (double)distance);
@@ -755,7 +757,7 @@ bool AP_Arming::mission_checks(bool report)
         }
         if (_required_mission_items & MIS_ITEM_CHECK_RALLY) {
             Location ahrs_loc;
-            if (!AP::ahrs().get_position(ahrs_loc)) {
+            if (!AP::ahrs().get_location(ahrs_loc)) {
                 check_failed(ARMING_CHECK_MISSION, report, "Can't check rally without position");
                 return false;
             }
@@ -1362,27 +1364,6 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         armed = false;
     }
 
-#if HAL_LOGGER_FILE_CONTENTS_ENABLED
-    /*
-      log files useful for diagnostics on arming. We log on arming as
-      with LOG_DISARMED we don't want to log the statistics at boot or
-      we wouldn't get a realistic idea of key system values
-      Note that some of these files may not exist, in that case they
-      are ignored
-     */
-    static const char *log_content_filenames[] = {
-        "@SYS/uarts.txt",
-        "@SYS/dma.txt",
-        "@SYS/memory.txt",
-        "@SYS/threads.txt",
-        "@ROMFS/hwdef.dat",
-        "@SYS/storage.bin",
-        "@SYS/crash_dump.bin",
-    };
-    for (const auto *name : log_content_filenames) {
-        AP::logger().log_file_content(name);
-    }
-#endif
     return armed;
 }
 

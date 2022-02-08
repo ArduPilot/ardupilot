@@ -392,13 +392,6 @@ float AccelCalibrator::calc_residual(const Vector3f& sample, const struct param_
 }
 
 // calculated the total mean squared fitness of all the collected samples using parameters
-// converged to LSq estimator so far
-float AccelCalibrator::calc_mean_squared_residuals() const
-{
-    return calc_mean_squared_residuals(_param.s);
-}
-
-// calculated the total mean squared fitness of all the collected samples using parameters
 // supplied
 float AccelCalibrator::calc_mean_squared_residuals(const struct param_t& params) const
 {
@@ -450,7 +443,7 @@ void AccelCalibrator::calc_jacob(const Vector3f& sample, const struct param_t& p
             ret[8] = -1.0f * (((sample.z + offset.z) * B) + ((sample.y + offset.y) * C))/length;
             return;
         }
-    };
+    }
 }
 
 // returns number of parameters are required for selected Fit type

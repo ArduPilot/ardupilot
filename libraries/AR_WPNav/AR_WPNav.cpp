@@ -108,7 +108,7 @@ void AR_WPNav::update(float dt)
     // exit immediately if no current location, origin or destination
     Location current_loc;
     float speed;
-    if (!hal.util->get_soft_armed() || !_orig_and_dest_valid || !AP::ahrs().get_position(current_loc) || !_atc.get_forward_speed(speed)) {
+    if (!hal.util->get_soft_armed() || !_orig_and_dest_valid || !AP::ahrs().get_location(current_loc) || !_atc.get_forward_speed(speed)) {
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
         _desired_turn_rate_rads = 0.0f;
         return;
@@ -263,7 +263,7 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f& destination, float next_
 bool AR_WPNav::get_stopping_location(Location& stopping_loc)
 {
     Location current_loc;
-    if (!AP::ahrs().get_position(current_loc)) {
+    if (!AP::ahrs().get_location(current_loc)) {
         return false;
     }
 
@@ -350,7 +350,7 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
 {
     // if no current location leave distance unchanged
     Location current_loc;
-    if (!_orig_and_dest_valid || !AP::ahrs().get_position(current_loc)) {
+    if (!_orig_and_dest_valid || !AP::ahrs().get_location(current_loc)) {
         _distance_to_destination = 0.0f;
         _wp_bearing_cd = 0.0f;
 

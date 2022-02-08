@@ -70,7 +70,12 @@ const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57
 
 // initialisation blobs to send to the GPS to try to get it into the
 // right mode
-const char AP_GPS::_initialisation_blob[] = UBLOX_SET_BINARY_230400 SIRF_SET_BINARY;
+const char AP_GPS::_initialisation_blob[] =
+    UBLOX_SET_BINARY_230400
+#if AP_GPS_SIRF_ENABLED
+    SIRF_SET_BINARY
+#endif
+    ;
 
 AP_GPS *AP_GPS::_singleton;
 
@@ -140,12 +145,14 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_INJECT_TO",   7, AP_GPS, _inject_to, GPS_RTK_INJECT_TO_ALL),
 
+#if AP_GPS_SBP2_ENABLED || AP_GPS_SBP_ENABLED
     // @Param: _SBP_LOGMASK
     // @DisplayName: Swift Binary Protocol Logging Mask
     // @Description: Masked with the SBP msg_type field to determine whether SBR1/SBR2 data is logged
     // @Values: 0:None (0x0000),-1:All (0xFFFF),-256:External only (0xFF00)
     // @User: Advanced
     AP_GROUPINFO("_SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, -256),
+#endif //AP_GPS_SBP2_ENABLED || AP_GPS_SBP_ENABLED
 
     // @Param: _RAW_DATA
     // @DisplayName: Raw data logging
@@ -303,6 +310,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
 
+#if AP_GPS_SBF_ENABLED
     // @Param: _COM_PORT
     // @DisplayName: GPS physical COM port
     // @Description: The physical COM port on the connected device, currently only applies to SBF GPS
@@ -322,6 +330,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("_COM_PORT2", 24, AP_GPS, _com_port[1], HAL_GPS_COM_PORT_DEFAULT),
 #endif
+#endif //AP_GPS_SBF_ENABLED
 
 #if GPS_MOVING_BASELINE
 
@@ -492,7 +501,7 @@ bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
 /**
    convert GPS week and milliseconds to unix epoch in milliseconds
  */
-uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
+uint64_t AP_GPS::istate_time_to_epoch_ms(uint16_t gps_week, uint32_t gps_ms)
 {
     uint64_t fix_time_ms = UNIX_OFFSET_MSEC + gps_week * AP_MSEC_PER_WEEK + gps_ms;
     return fix_time_ms;
@@ -504,12 +513,30 @@ uint64_t AP_GPS::time_epoch_convert(uint16_t gps_week, uint32_t gps_ms)
 uint64_t AP_GPS::time_epoch_usec(uint8_t instance) const
 {
     const GPS_State &istate = state[instance];
-    if (istate.last_gps_time_ms == 0 || istate.time_week == 0) {
+    if ((istate.last_gps_time_ms == 0 && istate.last_corrected_gps_time_us == 0) || istate.time_week == 0) {
         return 0;
     }
-    uint64_t fix_time_ms = time_epoch_convert(istate.time_week, istate.time_week_ms);
-    // add in the milliseconds since the last fix
-    return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
+    uint64_t fix_time_ms;
+    // add in the time since the last fix message
+    if (istate.last_corrected_gps_time_us != 0) {
+        fix_time_ms = istate_time_to_epoch_ms(istate.time_week, drivers[instance]->get_last_itow_ms());
+        return (fix_time_ms*1000ULL) + (AP_HAL::micros64() - istate.last_corrected_gps_time_us);
+    } else {
+        fix_time_ms = istate_time_to_epoch_ms(istate.time_week, istate.time_week_ms);
+        return (fix_time_ms + (AP_HAL::millis() - istate.last_gps_time_ms)) * 1000ULL;
+    }
+}
+
+/**
+   calculate last message time since the unix epoch in microseconds
+ */
+uint64_t AP_GPS::last_message_epoch_usec(uint8_t instance) const
+{
+    const GPS_State &istate = state[instance];
+    if (istate.time_week == 0) {
+        return 0;
+    }
+    return istate_time_to_epoch_ms(istate.time_week, drivers[instance]->get_last_itow_ms()) * 1000ULL;
 }
 
 /*
@@ -533,19 +560,16 @@ void AP_GPS::send_blob_update(uint8_t instance)
         return;
     }
 
-    // see if we can write some more of the initialisation blob
-    if (initblob_state[instance].remaining > 0) {
-        int16_t space = _port[instance]->txspace();
-        if (space > (int16_t)initblob_state[instance].remaining) {
-            space = initblob_state[instance].remaining;
-        }
-        while (space > 0) {
-            _port[instance]->write(*initblob_state[instance].blob);
-            initblob_state[instance].blob++;
-            space--;
-            initblob_state[instance].remaining--;
-        }
+    if (initblob_state[instance].remaining == 0) {
+        return;
     }
+
+    // see if we can write some more of the initialisation blob
+    const uint16_t n = MIN(_port[instance]->txspace(),
+                           initblob_state[instance].remaining);
+    const size_t written = _port[instance]->write((const uint8_t*)initblob_state[instance].blob, n);
+    initblob_state[instance].blob += written;
+    initblob_state[instance].remaining -= written;
 }
 
 /*
@@ -568,9 +592,11 @@ void AP_GPS::detect_instance(uint8_t instance)
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
 #ifndef HAL_BUILD_AP_PERIPH
+#if AP_GPS_MAV_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
+#endif //AP_GPS_MAV_ENABLED
 #endif
         break;
 
@@ -612,19 +638,22 @@ void AP_GPS::detect_instance(uint8_t instance)
     // don't build the less common GPS drivers on F1 AP_Periph
 #if !defined(HAL_BUILD_AP_PERIPH) || !defined(STM32F1)
     switch (_type[instance]) {
+#if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
         new_gps = new AP_GPS_SBF(*this, state[instance], _port[instance]);
         break;
-
+#endif //AP_GPS_SBF_ENABLED
+#if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
         new_gps = new AP_GPS_GSOF(*this, state[instance], _port[instance]);
         break;
-
+#endif //AP_GPS_GSOF_ENABLED
+#if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
         new_gps = new AP_GPS_NOVA(*this, state[instance], _port[instance]);
         break;
-
+#endif //AP_GPS_NOVA_ENABLED
     default:
         break;
     }
@@ -644,8 +673,9 @@ void AP_GPS::detect_instance(uint8_t instance)
         dstate->last_baud_change_ms = now;
 
         if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY && new_gps == nullptr) {
-            if (_type[instance] == GPS_TYPE_HEMI) {
-                send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+            if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
+                static const char blob[] = UBLOX_SET_BINARY_115200;
+                send_blob_start(instance, blob, sizeof(blob));
             } else if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
                         _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
                        ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
@@ -655,9 +685,10 @@ void AP_GPS::detect_instance(uint8_t instance)
                 // link to the flight controller
                 static const char blob[] = UBLOX_SET_BINARY_460800;
                 send_blob_start(instance, blob, sizeof(blob));
-            } else if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
-                static const char blob[] = UBLOX_SET_BINARY_115200;
-                send_blob_start(instance, blob, sizeof(blob));
+#if AP_GPS_NMEA_ENABLED
+            } else if (_type[instance] == GPS_TYPE_HEMI) {
+                send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+#endif // AP_GPS_NMEA_ENABLED        
             } else {
                 send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
             }
@@ -702,29 +733,39 @@ void AP_GPS::detect_instance(uint8_t instance)
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
 #ifndef HAL_BUILD_AP_PERIPH
+#if AP_GPS_SBP2_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
             new_gps = new AP_GPS_SBP2(*this, state[instance], _port[instance]);
         }
+#endif //AP_GPS_SBP2_ENABLED
+#if AP_GPS_SBP_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
             new_gps = new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
-#if !HAL_MINIMIZE_FEATURES
+#endif //AP_GPS_SBP_ENABLED
+#if !HAL_MINIMIZE_FEATURES && AP_GPS_SIRF_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
             new_gps = new AP_GPS_SIRF(*this, state[instance], _port[instance]);
         }
 #endif
+#if AP_GPS_ERB_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
             new_gps = new AP_GPS_ERB(*this, state[instance], _port[instance]);
-        } else if ((_type[instance] == GPS_TYPE_NMEA ||
+        }
+#endif // AP_GPS_ERB_ENABLED
+#if AP_GPS_NMEA_ENABLED
+        else if ((_type[instance] == GPS_TYPE_NMEA ||
                     _type[instance] == GPS_TYPE_HEMI ||
                     _type[instance] == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
             new_gps = new AP_GPS_NMEA(*this, state[instance], _port[instance]);
         }
+#endif //AP_GPS_NMEA_ENABLED
+
 #endif // HAL_BUILD_AP_PERIPH
         if (new_gps) {
             goto found_gps;
@@ -835,11 +876,12 @@ void AP_GPS::update_instance(uint8_t instance)
             data_should_be_logged = true;
         }
     } else {
-        if (state[instance].uart_timestamp_ms != 0) {
+        if (state[instance].corrected_timestamp_updated) {
             // set the timestamp for this messages based on
-            // set_uart_timestamp() in backend, if available
-            tnow = state[instance].uart_timestamp_ms;
-            state[instance].uart_timestamp_ms = 0;
+            // set_uart_timestamp() or per specific transport in backend
+            // , if available
+            tnow = state[instance].last_corrected_gps_time_us/1000U;
+            state[instance].corrected_timestamp_updated = false;
         }
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
@@ -1469,7 +1511,7 @@ void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
 {
     // always enusre a lag is provided
-    lag_sec = 0.22f;
+    lag_sec = 0.1f;
 
     if (instance >= GPS_MAX_INSTANCES) {
         return false;
@@ -1978,7 +2020,7 @@ uint32_t AP_GPS::get_itow(uint8_t instance) const
     if (instance >= GPS_MAX_RECEIVERS || drivers[instance] == nullptr) {
         return 0;
     }
-    return drivers[instance]->get_last_itow();
+    return drivers[instance]->get_last_itow_ms();
 }
 
 bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const

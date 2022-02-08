@@ -49,6 +49,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_MICRON_N25Q128        0x20ba18
 #define JEDEC_ID_WINBOND_W25Q16        0xEF4015
 #define JEDEC_ID_WINBOND_W25Q32        0xEF4016
+#define JEDEC_ID_WINBOND_W25X32        0xEF3016
 #define JEDEC_ID_WINBOND_W25Q64        0xEF4017
 #define JEDEC_ID_WINBOND_W25Q128       0xEF4018
 #define JEDEC_ID_WINBOND_W25Q256       0xEF4019
@@ -122,6 +123,7 @@ bool AP_Logger_DataFlash::getSectorCount(void)
         df_PagePerSector = 16;
         break;
     case JEDEC_ID_WINBOND_W25Q32:
+    case JEDEC_ID_WINBOND_W25X32:
     case JEDEC_ID_MACRONIX_MX25L3206E:
         blocks = 64;
         df_PagePerBlock = 256;

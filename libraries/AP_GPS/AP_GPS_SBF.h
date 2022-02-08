@@ -22,6 +22,12 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#ifndef AP_GPS_SBF_ENABLED
+  #define AP_GPS_SBF_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_GPS_SBF_ENABLED
+
 #define SBF_DISK_ACTIVITY (1 << 7)
 #define SBF_DISK_FULL     (1 << 8)
 #define SBF_DISK_MOUNTED  (1 << 9)
@@ -262,3 +268,4 @@ private:
     uint8_t portLength;
     bool readyForCommand;
 };
+#endif

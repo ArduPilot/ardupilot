@@ -12,9 +12,9 @@
 
 #if QAUTOTUNE_ENABLED
 
-#include <AC_AutoTune/AC_AutoTune.h>
+#include <AC_AutoTune/AC_AutoTune_Multi.h>
 
-class QAutoTune : public AC_AutoTune
+class QAutoTune : public AC_AutoTune_Multi
 {
 public:
     friend class QuadPlane;

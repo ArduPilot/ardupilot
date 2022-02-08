@@ -104,7 +104,7 @@ void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
     }
 
     get_angles();
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100);
+    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100, _state._mode);
 }
 
 /*

@@ -20,11 +20,14 @@
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
 //
 
+
 #include "AP_GPS.h"
 #include "AP_GPS_SBP2.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+
+#if AP_GPS_SBP2_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -522,3 +525,4 @@ AP_GPS_SBP2::logging_ext_event() {
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
+#endif //AP_GPS_SBP2_ENABLED

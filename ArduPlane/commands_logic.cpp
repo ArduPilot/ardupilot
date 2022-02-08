@@ -1181,16 +1181,37 @@ void Plane::nav_script_time_done(uint16_t id)
     }
 }
 
-// support for NAV_SCRIPTING mission command
-bool Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps)
+// support for NAV_SCRIPTING mission command and aerobatics in other allowed modes
+void Plane::set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps)
 {
-    if (!nav_scripting_active()) {
-        return false;
-    }
-    nav_scripting.roll_rate_dps = roll_rate_dps;
-    nav_scripting.pitch_rate_dps = pitch_rate_dps;
-    nav_scripting.yaw_rate_dps = yaw_rate_dps;
+    nav_scripting.roll_rate_dps = constrain_float(roll_rate_dps, -g.acro_roll_rate, g.acro_roll_rate);
+    nav_scripting.pitch_rate_dps = constrain_float(pitch_rate_dps, -g.acro_pitch_rate, g.acro_pitch_rate);
+    nav_scripting.yaw_rate_dps = constrain_float(yaw_rate_dps, -g.acro_yaw_rate, g.acro_yaw_rate);
     nav_scripting.throttle_pct = throttle_pct;
-    return true;
+    nav_scripting.current_ms = AP_HAL::millis();
+}
+
+// enable NAV_SCRIPTING takeover in modes other than AUTO using script time mission commands
+bool Plane::nav_scripting_enable(uint8_t mode)
+{
+   uint8_t current_control_mode = control_mode->mode_number();
+   if (current_control_mode == mode) {
+       switch (current_control_mode) {
+       case Mode::Number::CIRCLE:
+       case Mode::Number::STABILIZE:
+       case Mode::Number::ACRO:
+       case Mode::Number::FLY_BY_WIRE_A:
+       case Mode::Number::FLY_BY_WIRE_B:
+       case Mode::Number::CRUISE:
+       case Mode::Number::LOITER:
+           nav_scripting.enabled = true;
+           break;
+       default:
+           nav_scripting.enabled = false;
+       }
+   } else {
+       nav_scripting.enabled = false;
+   }
+   return nav_scripting.enabled;
 }
 #endif // AP_SCRIPTING_ENABLED

@@ -412,8 +412,8 @@ void GPS::update_ubx(const struct gps_data *d)
         Vector3f gyro(radians(_sitl->state.rollRate),
                       radians(_sitl->state.pitchRate),
                       radians(_sitl->state.yawRate));
-        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw));
-        const float lag = (1.0/_sitl->gps_hertz[instance]) * delay;
+        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw_deg));
+        const float lag = _sitl->gps_delay_ms[instance] * 0.001;
         rot.rotate(gyro * (-lag));
         rel_antenna_pos = rot * rel_antenna_pos;
         relposned.version = 1;
@@ -518,7 +518,8 @@ void GPS::update_nmea(const struct gps_data *d)
                      d->have_lock?_sitl->gps_numsats[instance]:3,
                      2.0,
                      d->altitude);
-    float speed_knots = norm(d->speedN, d->speedE) * M_PER_SEC_TO_KNOTS;
+    const float speed_mps = norm(d->speedN, d->speedE);
+    const float speed_knots = speed_mps * M_PER_SEC_TO_KNOTS;
 
     float heading = ToDeg(atan2f(d->speedE, d->speedN));
     if (heading < 0) {
@@ -543,10 +544,29 @@ void GPS::update_nmea(const struct gps_data *d)
                      dstring);
 
     if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_HDT) {
-        nmea_printf("$GPHDT,%.2f,T", d->yaw);
+        nmea_printf("$GPHDT,%.2f,T", d->yaw_deg);
     }
     else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_THS) {
-        nmea_printf("$GPTHS,%.2f,%c,T", d->yaw, d->have_lock ? 'A' : 'V');
+        nmea_printf("$GPTHS,%.2f,%c,T", d->yaw_deg, d->have_lock ? 'A' : 'V');
+    } else if (_sitl->gps_hdg_enabled[instance] == SITL::SIM::GPS_HEADING_KSXT) {
+        // Unicore support
+        // $KSXT,20211016083433.00,116.31296102,39.95817066,49.4911,223.57,-11.32,330.19,0.024,,1,3,28,27,,,,-0.012,0.021,0.020,,*2D
+        nmea_printf("$KSXT,%04u%02u%02u%02u%02u%02u.%02u,%.8f,%.8f,%.4f,%.2f,%.2f,%.2f,%.2f,%.3f,%u,%u,%u,%u,,,,%.3f,%.3f,%.3f,,",
+                    tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, tm->tm_hour, tm->tm_min, tm->tm_sec, unsigned(tv.tv_usec*1.e-4),
+                    d->longitude, d->latitude,
+                    d->altitude,
+                    wrap_360(d->yaw_deg),
+                    d->pitch_deg,
+                    heading,
+                    speed_mps,
+                    d->roll_deg,
+                    d->have_lock?1:0, // 2=rtkfloat 3=rtkfixed,
+                    3, // fixed rtk yaw solution,
+                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->have_lock?_sitl->gps_numsats[instance]:3,
+                    d->speedE * 3.6,
+                    d->speedN * 3.6,
+                    -d->speedD * 3.6);
     }
 }
 
@@ -976,6 +996,7 @@ uint32_t GPS::CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc
 /*
   temporary method to use file as GPS data
  */
+#if AP_SIM_GPS_FILE_ENABLED
 void GPS::update_file()
 {
     static int fd = -1;
@@ -1007,6 +1028,7 @@ void GPS::update_file()
         lseek(temp_fd, 0, SEEK_SET);
     }
 }
+#endif  // AP_SIM_GPS_FILE_ENABLED
 
 /*
   possibly send a new GPS packet
@@ -1023,9 +1045,9 @@ void GPS::update()
     const double speedN = _sitl->state.speedN;
     const double speedE = _sitl->state.speedE;
     const double speedD = _sitl->state.speedD;
-    const double yaw = _sitl->state.yawDeg;
+    const uint32_t now_ms = AP_HAL::millis();
 
-    if (AP_HAL::millis() < 20000) {
+    if (now_ms < 20000) {
         // apply the init offsets for the first 20s. This allows for
         // having the origin a long way from the takeoff location,
         // which makes testing long flights easier
@@ -1036,7 +1058,7 @@ void GPS::update()
 
     //Capture current position as basestation location for
     if (!_gps_has_basestation_position &&
-        AP_HAL::millis() >= _sitl->gps_lock_time[0]*1000UL) {
+        now_ms >= _sitl->gps_lock_time[0]*1000UL) {
         _gps_basestation_data.latitude = latitude;
         _gps_basestation_data.longitude = longitude;
         _gps_basestation_data.altitude = altitude;
@@ -1051,10 +1073,10 @@ void GPS::update()
         struct gps_data d;
 
         // simulate delayed lock times
-        bool have_lock = (!_sitl->gps_disable[idx] && AP_HAL::millis() >= _sitl->gps_lock_time[idx]*1000UL);
+        bool have_lock = (!_sitl->gps_disable[idx] && now_ms >= _sitl->gps_lock_time[idx]*1000UL);
 
         // run at configured GPS rate (default 5Hz)
-        if ((AP_HAL::millis() - last_update) < (uint32_t)(1000/_sitl->gps_hertz[idx])) {
+        if ((now_ms - last_update) < (uint32_t)(1000/_sitl->gps_hertz[idx])) {
             return;
         }
 
@@ -1062,14 +1084,16 @@ void GPS::update()
         char c;
         read_from_autopilot(&c, 1);
 
-        last_update = AP_HAL::millis();
+        last_update = now_ms;
 
         d.latitude = latitude;
         d.longitude = longitude;
-        d.yaw = yaw;
-    
+        d.yaw_deg = _sitl->state.yawDeg;
+        d.roll_deg = _sitl->state.rollDeg;
+        d.pitch_deg = _sitl->state.pitchDeg;
+
         // add an altitude error controlled by a slow sine wave
-        d.altitude = altitude + _sitl->gps_noise[idx] * sinf(AP_HAL::millis() * 0.0005f) + _sitl->gps_alt_offset[idx];
+        d.altitude = altitude + _sitl->gps_noise[idx] * sinf(now_ms * 0.0005f) + _sitl->gps_alt_offset[idx];
 
         // Add offet to c.g. velocity to get velocity at antenna and add simulated error
         Vector3f velErrorNED = _sitl->gps_vel_err[idx];
@@ -1080,10 +1104,10 @@ void GPS::update()
 
         if (_sitl->gps_drift_alt[idx] > 0) {
             // slow altitude drift
-            d.altitude += _sitl->gps_drift_alt[idx]*sinf(AP_HAL::millis()*0.001f*0.02f);
+            d.altitude += _sitl->gps_drift_alt[idx]*sinf(now_ms*0.001f*0.02f);
         }
 
-        // correct the latitude, longitude, hiehgt and NED velocity for the offset between
+        // correct the latitude, longitude, height and NED velocity for the offset between
         // the vehicle c.g. and GPs antenna
         Vector3f posRelOffsetBF = _sitl->gps_pos_offset[idx];
         if (!posRelOffsetBF.is_zero()) {
@@ -1115,21 +1139,9 @@ void GPS::update()
             d.speedD += velRelOffsetEF.z;
         }
 
-        // add in some GPS lag
-        _gps_data[next_index++] = d;
-        if (next_index >= delay) {
-            next_index = 0;
-        }
-
-        d = _gps_data[next_index];
-
-        if (_sitl->gps_delay[idx] != delay) {
-            // cope with updates to the delay control
-            delay = _sitl->gps_delay[idx];
-            for (uint8_t i=0; i<delay; i++) {
-                _gps_data[i] = d;
-            }
-        }
+        // get delayed data
+        d.timestamp_ms = now_ms;
+        d = interpolate_data(d, _sitl->gps_delay_ms[instance]);
 
         // Applying GPS glitch
         // Using first gps glitch
@@ -1165,10 +1177,48 @@ void GPS::update()
             update_nova(&d);
             break;
 
+#if AP_SIM_GPS_FILE_ENABLED
         case Type::FILE:
             update_file();
             break;
+#endif
     }
+}
+
+/*
+  get delayed data by interpolation
+*/
+GPS::gps_data GPS::interpolate_data(const gps_data &d, uint32_t delay_ms)
+{
+    const uint8_t N = ARRAY_SIZE(_gps_history);
+    const uint32_t now_ms = d.timestamp_ms;
+
+    // add in into history array, shifting old elements
+    memmove(&_gps_history[1], &_gps_history[0], sizeof(_gps_history[0])*(ARRAY_SIZE(_gps_history)-1));
+    _gps_history[0] = d;
+
+    for (uint8_t i=0; i<N-1; i++) {
+        uint32_t dt1 = now_ms - _gps_history[i].timestamp_ms;
+        uint32_t dt2 = now_ms - _gps_history[i+1].timestamp_ms;
+        if (delay_ms >= dt1 && delay_ms <= dt2) {
+            // we will interpolate this pair of samples. Start with
+            // the older sample
+            const gps_data &s1 = _gps_history[i+1];
+            const gps_data &s2 = _gps_history[i];
+            gps_data d2 = s1;
+            const float p = (dt2 - delay_ms) / MAX(1,float(dt2 - dt1));
+            d2.latitude += p * (s2.latitude - s1.latitude);
+            d2.longitude += p * (s2.longitude - s1.longitude);
+            d2.altitude += p * (s2.altitude - s1.altitude);
+            d2.speedN += p * (s2.speedN - s1.speedN);
+            d2.speedE += p * (s2.speedE - s1.speedE);
+            d2.speedD += p * (s2.speedD - s1.speedD);
+            d2.yaw_deg += p * (s2.yaw_deg - s1.yaw_deg);
+            return d2;
+        }
+    }
+    // delay is too long, use last sample
+    return _gps_history[N-1];
 }
 
 #endif  // HAL_SIM_GPS_ENABLED

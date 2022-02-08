@@ -37,7 +37,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
     // @Param: 2SRV_RMAX
     // @DisplayName: Maximum Roll Rate
-    // @Description: Maximum roll rate that the roll controller demands (degrees/sec) in ACRO mode.
+    // @Description: This sets the maximum roll rate that the attitude controller will demand (degrees/sec) in angle stabilized modes. Setting it to zero disables this limit.
     // @Range: 0 180
     // @Units: deg/s
     // @Increment: 1

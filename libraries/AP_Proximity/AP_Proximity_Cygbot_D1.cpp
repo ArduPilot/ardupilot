@@ -95,28 +95,26 @@ bool AP_Proximity_Cygbot_D1::parse_byte(uint8_t data)
     case Payload_Header:
         if (data == CYGBOT_PAYLOAD_HEADER) {
             _parse_state = Payload_Data;
-            _msg.payload_counter = 0;
+            _msg.payload_counter = 1;
             _msg.payload[_msg.payload_counter] = data;
-            _msg.payload_counter ++;
             return true;
         }
         return false;
 
     case Payload_Data:
-        if (_msg.payload_counter < (_msg.payload_len - 1)) {
-            _msg.payload[_msg.payload_counter] = data;
+        if (_msg.payload_counter < (_msg.payload_len)) {
             _msg.payload_counter++;
+            _msg.payload[_msg.payload_counter] = data;
             return true;
         }
         _parse_state = CheckSum;
-        return true;
+        FALLTHROUGH;
 
     case CheckSum: {
-        // To-DO: FIX CHECKSUM below. It does not pass correctly
-        // const uint8_t checksum_num = calc_checksum(_msg.payload, _msg.payload_len);
-        // if (data != checksum_num) {
-        // 	return false;
-        // }
+        const uint8_t checksum_num = calc_checksum(_msg.payload, _msg.payload_len);
+        if (data != checksum_num) {
+            return false;
+        }
         // checksum is valid, parse payload
         _last_distance_received_ms = AP_HAL::millis();
         parse_payload();
@@ -139,7 +137,8 @@ void AP_Proximity_Cygbot_D1::parse_payload()
     // current horizontal angle in the payload
     float sampled_angle = CYGBOT_2D_START_ANGLE;
 
-    for (uint16_t i = 1; i < _msg.payload_len - 1; i += 2) {
+    // start from second byte as first byte is part of the header
+    for (uint16_t i = 2; i < _msg.payload_len; i += 2) {
         const uint16_t distance_mm = UINT16_VALUE(_msg.payload[i], _msg.payload[i+1]);
         float distance_m = distance_mm * 0.001f;
         if (distance_m > distance_min() && distance_m < distance_max()) {
@@ -163,11 +162,10 @@ void AP_Proximity_Cygbot_D1::parse_payload()
 // Checksum
 uint8_t AP_Proximity_Cygbot_D1::calc_checksum(uint8_t *buff, int buffSize)
 {
-    uint8_t check_sum_num = 0x00;
-    check_sum_num ^= _msg.payload_len_flags_low;
+    uint8_t check_sum_num = 0;
     check_sum_num ^= _msg.payload_len_flags_high;
-
-    for (uint16_t i = 0; i < buffSize - 1; i++) {
+    check_sum_num ^= _msg.payload_len_flags_low;
+    for (uint16_t i = 0; i <= buffSize; i++) {
         check_sum_num ^= buff[i];
     }
     return check_sum_num;

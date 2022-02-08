@@ -21,7 +21,9 @@ jobs:
         config: [
             Durandal,
             MatekF405,
-            Pixhawk1-1M
+            Pixhawk1-1M,
+            Hitec-Airspeed,  # see special code for Periph below (3 places!)
+            f103-GPS  # see special code for Periph below (3 places!)
         ]
     steps:
       - uses: actions/checkout@v2
@@ -59,9 +61,31 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           cd master
           ./waf configure --board ${{matrix.config}}
-          ./waf
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            ./waf AP_Periph
+          else
+            ./waf
+          fi
           mkdir -p $GITHUB_WORKSPACE/master_bin
           cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/master_bin/
+
+          # build a set of binaries without symbols so we can check if
+          #  the binaries have changed.
+          echo [`date`] Building master with no versions
+
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/master_bin_no_versions"
+          mkdir "$NO_VERSIONS_DIR"
+
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf AP_Periph
+          else
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf
+          fi
+          cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
+
+          echo [`date`] Built master with no versions
 
       - uses: actions/checkout@v2
         with:
@@ -82,9 +106,31 @@ jobs:
           git rebase ardupilot/master
           git submodule update --init --recursive --depth=1
           ./waf configure --board ${{matrix.config}}
-          ./waf
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            ./waf AP_Periph
+          else
+            ./waf
+          fi
           mkdir $GITHUB_WORKSPACE/pr_bin
           cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/pr_bin/
+
+          # build a set of binaries without symbols so we can check if
+          #  the binaries have changed.
+          echo [`date`] Building PR with no versions
+
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/pr_bin_no_versions"
+          mkdir "$NO_VERSIONS_DIR"
+
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf AP_Periph
+          else
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf
+          fi
+          cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
+
+          echo [`date`] Built PR with no versions
 
           # build MatekF405 Plane without quadplane
           if [ "${{matrix.config}}" = "MatekF405" ]; then
@@ -107,13 +153,23 @@ jobs:
           python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/master_bin -s $GITHUB_WORKSPACE/pr_bin
 
+      - name: Checksum compare with Master
+        shell: bash
+        run: |
+          diff -r $GITHUB_WORKSPACE/master_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
+
       - name: elf_diff compare with Master
         shell: bash
         run: |
           python3 -m pip install -U weasyprint elf_diff anytree
           mkdir elf_diff
-          python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
-          python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/master_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+          if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
+             [ "${{matrix.config}}" = "f103-GPS" ]; then
+             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/master_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
+          else
+             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/master_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+          fi
           zip -r elf_diff.zip elf_diff
 
       - name: Archive elf_diff output

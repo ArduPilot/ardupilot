@@ -400,7 +400,12 @@ public:
 
     // notify logging subsystem of an arming failure. This triggers
     // logging for HAL_LOGGER_ARM_PERSIST seconds
-    void arming_failure() { _last_arming_failure_ms = AP_HAL::millis(); }
+    void arming_failure() {
+        _last_arming_failure_ms = AP_HAL::millis();
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+        file_content_prepare_for_arming = true;
+#endif
+    }
 
     void set_vehicle_armed(bool armed_state);
     bool vehicle_is_armed() const { return _armed; }
@@ -540,15 +545,26 @@ private:
         const char *filename;
         char log_filename[16];
     };
-    struct {
+    struct FileContent {
+        void reset();
+        void remove_and_free(file_list *victim);
         struct file_list *head, *tail;
         int fd;
         uint32_t offset;
         bool fast;
         uint8_t counter;
         HAL_Semaphore sem;
-    } file_content;
+    };
+    FileContent normal_file_content;
+    FileContent at_arm_file_content;
+
+    // protect this with a semaphore?
+    bool file_content_prepare_for_arming;
+
     void file_content_update(void);
+
+    void prepare_at_arming_sys_file_logging();
+
 #endif
     
     /* support for retrieving logs via mavlink: */
@@ -613,6 +629,10 @@ private:
 
     /* end support for retrieving logs via mavlink: */
 
+#if HAL_LOGGER_FILE_CONTENTS_ENABLED
+    void log_file_content(FileContent &file_content, const char *filename);
+    void file_content_update(FileContent &file_content);
+#endif
 };
 
 namespace AP {

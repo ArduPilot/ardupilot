@@ -18,7 +18,7 @@ public:
         FUNCTOR_BIND_MEMBER(&DummyVehicle::start_cmd, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&DummyVehicle::verify_cmd, bool, const AP_Mission::Mission_Command &),
         FUNCTOR_BIND_MEMBER(&DummyVehicle::mission_complete, void)};
-    AP_Terrain terrain{mission};
+    AP_Terrain terrain;
 };
 
 const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {

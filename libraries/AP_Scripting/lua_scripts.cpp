@@ -19,6 +19,8 @@
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
+#define DISABLE_INTERRUPTS_FOR_SCRIPT_RUN 0
+
 extern const AP_HAL::HAL& hal;
 
 bool lua_scripts::overtime;
@@ -471,6 +473,10 @@ void lua_scripts::run(void) {
             // copy name for logging, cant do it after as script reschedule moves the pointers
             const char * script_name = scripts->name;
 
+#if DISABLE_INTERRUPTS_FOR_SCRIPT_RUN
+            void *istate = hal.scheduler->disable_interrupts_save();
+#endif
+
             const int startMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
             const uint32_t loadEnd = AP_HAL::micros();
 
@@ -478,6 +484,11 @@ void lua_scripts::run(void) {
 
             const uint32_t runEnd = AP_HAL::micros();
             const int endMem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+
+#if DISABLE_INTERRUPTS_FOR_SCRIPT_RUN
+            hal.scheduler->restore_interrupts(istate);
+#endif
+
             if ((_debug_options.get() & uint8_t(DebugLevel::RUNTIME_MSG)) != 0) {
                 gcs().send_text(MAV_SEVERITY_DEBUG, "Lua: Time: %u Mem: %d + %d",
                                                     (unsigned int)(runEnd - loadEnd),

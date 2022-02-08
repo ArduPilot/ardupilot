@@ -433,13 +433,18 @@ void AP_Spektrum_Telem::calc_airspeed()
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
 
-    const AP_Airspeed *airspeed = AP::airspeed();
     float speed = 0.0f;
+#if AP_AIRSPEED_ENABLED
+    const AP_Airspeed *airspeed = AP::airspeed();
     if (airspeed && airspeed->healthy()) {
         speed = roundf(airspeed->get_airspeed() * 3.6);
     } else {
         speed = roundf(AP::ahrs().groundspeed() * 3.6);
     }
+#else
+    speed = roundf(AP::ahrs().groundspeed() * 3.6);
+#endif
+
     _telem.speed.airspeed = htobe16(uint16_t(speed));           // 1 km/h increments
     _max_speed = MAX(speed, _max_speed);
     _telem.speed.maxAirspeed = htobe16(uint16_t(_max_speed));   // 1 km/h increments

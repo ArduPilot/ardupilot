@@ -368,7 +368,7 @@ void AP_Camera::update()
 
     const AP_AHRS &ahrs = AP::ahrs();
     Location current_loc;
-    if (!ahrs.get_position(current_loc)) {
+    if (!ahrs.get_location(current_loc)) {
         // completely ignore this failure!  AHRS will provide its best guess.
     }
 
@@ -502,7 +502,7 @@ void AP_Camera::take_picture()
 void AP_Camera::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
 {
     const AP_AHRS &ahrs = AP::ahrs();
-    if (!ahrs.get_position(feedback.location)) {
+    if (!ahrs.get_location(feedback.location)) {
         // completely ignore this failure!  AHRS will provide its best guess.
     }
     feedback.timestamp_us = timestamp_us;

@@ -896,9 +896,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
-    // @Group: ARSPD
-    // @Path: ../libraries/AP_Airspeed/AP_Airspeed.cpp
-    GOBJECT(airspeed,                               "ARSPD",   AP_Airspeed),
+    // Airspeed was here
 
     // @Group: NAVL1_
     // @Path: ../libraries/AP_L1_Control/AP_L1_Control.cpp
@@ -1366,9 +1364,6 @@ void Plane::load_parameters(void)
         
     SRV_Channels::upgrade_parameters();
 
-    // possibly convert elevon and vtail mixers
-    convert_mixers();
-
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.enable) {
         // quadplanes needs a higher loop rate
@@ -1497,115 +1492,13 @@ void Plane::load_parameters(void)
     }
 #endif
 
+    // PARAMETER_CONVERSION - Added: Jan-2022
+    {
+        const uint16_t old_key = g.k_param_airspeed;
+        const uint16_t old_index = 0;       // Old parameter index in the tree
+        const uint16_t old_top_element = 0; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
+        AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, old_top_element, true);
+    }
+
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
-}
-
-/*
-  convert from old ELEVON_OUTPUT and VTAIL_OUTPUT mixers to function
-  based mixing
- */
-void Plane::convert_mixers(void)
-{
-    AP_Int8 elevon_output;
-    AP_Int8 vtail_output;
-    AP_Param::ConversionInfo elevon_info = {
-        Parameters::k_param_elevon_output,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    AP_Param::ConversionInfo vtail_info = {
-        Parameters::k_param_vtail_output,
-        0,
-        AP_PARAM_INT8,
-        nullptr
-    };
-    SRV_Channel *chan1 = SRV_Channels::srv_channel(CH_1);
-    SRV_Channel *chan2 = SRV_Channels::srv_channel(CH_2);
-    SRV_Channel *chan4 = SRV_Channels::srv_channel(CH_4);
-
-    if (AP_Param::find_old_parameter(&vtail_info, &vtail_output) &&
-        vtail_output.get() != 0 &&
-        chan2->get_function() == SRV_Channel::k_elevator &&
-        chan4->get_function() == SRV_Channel::k_rudder &&
-        !chan2->function_configured() &&
-        !chan4->function_configured()) {
-        hal.console->printf("Converting vtail_output %u\n", vtail_output.get());
-        switch (vtail_output) {
-        case MIXING_UPUP:
-        case MIXING_UPUP_SWP:
-            chan2->reversed_set_and_save_ifchanged(false);
-            chan4->reversed_set_and_save_ifchanged(false);
-            break;
-        case MIXING_UPDN:
-        case MIXING_UPDN_SWP:
-            chan2->reversed_set_and_save_ifchanged(false);
-            chan4->reversed_set_and_save_ifchanged(true);
-            break;
-        case MIXING_DNUP:
-        case MIXING_DNUP_SWP:
-            chan2->reversed_set_and_save_ifchanged(true);
-            chan4->reversed_set_and_save_ifchanged(false);
-            break;
-        case MIXING_DNDN:
-        case MIXING_DNDN_SWP:
-            chan2->reversed_set_and_save_ifchanged(true);
-            chan4->reversed_set_and_save_ifchanged(true);
-            break;
-        }
-        if (vtail_output < MIXING_UPUP_SWP) {
-            chan2->function_set_and_save(SRV_Channel::k_vtail_right);
-            chan4->function_set_and_save(SRV_Channel::k_vtail_left);
-        } else {
-            chan2->function_set_and_save(SRV_Channel::k_vtail_left);
-            chan4->function_set_and_save(SRV_Channel::k_vtail_right);
-        }
-    } else if (AP_Param::find_old_parameter(&elevon_info, &elevon_output) &&
-        elevon_output.get() != 0 &&
-        chan1->get_function() == SRV_Channel::k_aileron &&
-        chan2->get_function() == SRV_Channel::k_elevator &&
-        !chan1->function_configured() &&
-        !chan2->function_configured()) {
-        hal.console->printf("convert elevon_output %u\n", elevon_output.get());
-        switch (elevon_output) {
-        case MIXING_UPUP:
-        case MIXING_UPUP_SWP:
-            chan2->reversed_set_and_save_ifchanged(false);
-            chan1->reversed_set_and_save_ifchanged(false);
-            break;
-        case MIXING_UPDN:
-        case MIXING_UPDN_SWP:
-            chan2->reversed_set_and_save_ifchanged(false);
-            chan1->reversed_set_and_save_ifchanged(true);
-            break;
-        case MIXING_DNUP:
-        case MIXING_DNUP_SWP:
-            chan2->reversed_set_and_save_ifchanged(true);
-            chan1->reversed_set_and_save_ifchanged(false);
-            break;
-        case MIXING_DNDN:
-        case MIXING_DNDN_SWP:
-            chan2->reversed_set_and_save_ifchanged(true);
-            chan1->reversed_set_and_save_ifchanged(true);
-            break;
-        }
-        if (elevon_output < MIXING_UPUP_SWP) {
-            chan1->function_set_and_save(SRV_Channel::k_elevon_right);
-            chan2->function_set_and_save(SRV_Channel::k_elevon_left);
-        } else {
-            chan1->function_set_and_save(SRV_Channel::k_elevon_left);
-            chan2->function_set_and_save(SRV_Channel::k_elevon_right);
-        }
-    }
-
-    // convert any k_aileron_with_input to aileron and k_elevator_with_input to k_elevator
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel *chan = SRV_Channels::srv_channel(i);
-        if (chan->get_function() == SRV_Channel::k_aileron_with_input) {
-            chan->function_set_and_save(SRV_Channel::k_aileron);
-        } else if (chan->get_function() == SRV_Channel::k_elevator_with_input) {
-            chan->function_set_and_save(SRV_Channel::k_elevator);
-        }
-    }
-    
 }

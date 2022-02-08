@@ -42,7 +42,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Stats/AP_Stats.h>     // statistics library
 #include <Filter/Filter.h>             // Filter library
-#include <AP_Airspeed/AP_Airspeed.h>        // needed for AHRS build
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
 #include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library
 #include <AP_RCMapper/AP_RCMapper.h>        // RC input mapping library
@@ -361,7 +360,6 @@ private:
     void Log_Write_Attitude();
     void Log_Write_PIDs();
     void Log_Write_EKF_POS();
-    void Log_Write_MotBatt();
     void Log_Write_Data(LogDataID id, int32_t value);
     void Log_Write_Data(LogDataID id, uint32_t value);
     void Log_Write_Data(LogDataID id, int16_t value);
@@ -416,8 +414,6 @@ private:
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
     bool rangefinder_up_ok();
-    void rpm_update();
-    void update_optical_flow(void);
 
     // RC_Channel.cpp
     void save_trim();

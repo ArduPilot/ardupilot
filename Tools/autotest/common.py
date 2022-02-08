@@ -1658,7 +1658,7 @@ class AutoTest(ABC):
         if self.params is None:
             self.params = self.model_defaults_filepath(self.frame)
         for x in self.params:
-            self.repeatedly_apply_parameter_file(os.path.join(testdir, x))
+            self.repeatedly_apply_parameter_file(x)
 
     def count_lines_in_filepath(self, filepath):
         return len([i for i in open(filepath)])
@@ -6375,7 +6375,7 @@ Also, ignores heartbeats not from our target system'''
                 source_system=250,
                 source_component=250,
                 autoreconnect=True,
-                dialect="ardupilotmega",  # if we don't pass this in we end up with the wrong mavlink version...
+                dialect="all",  # if we don't pass this in we end up with the wrong mavlink version...
             )
         except Exception as msg:
             self.progress("Failed to start mavlink connection on %s: %s" %
@@ -6765,7 +6765,7 @@ Also, ignores heartbeats not from our target system'''
 
         # need to wait for a heartbeat to arrive as then mavutil will
         # select the correct set of messages for us to receive in
-        # self.mav.messages.  You can actually recieve messages with
+        # self.mav.messages.  You can actually receive messages with
         # recv_match and those will not be in self.mav.messages until
         # you do this!
         self.wait_heartbeat()
@@ -8546,7 +8546,7 @@ Also, ignores heartbeats not from our target system'''
     def test_request_message(self, timeout=60):
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
-            raise PreconditionFailedException("Receving camera feedback")
+            raise PreconditionFailedException("Receiving camera feedback")
         m = self.poll_message("CAMERA_FEEDBACK")
         if m is None:
             raise NotAchievedException("Requested CAMERA_FEEDBACK did not arrive")
@@ -11695,7 +11695,7 @@ switch value'''
             defaults_filepath = [defaults_filepath]
         defaults_list = []
         for d in defaults_filepath:
-            defaults_list.append(os.path.join(testdir, d))
+            defaults_list.append(util.reltopdir(os.path.join(testdir, d)))
         return defaults_list
 
     def load_default_params_file(self, filename):

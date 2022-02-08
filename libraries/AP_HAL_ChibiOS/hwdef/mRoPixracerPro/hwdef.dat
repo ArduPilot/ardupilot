@@ -24,6 +24,9 @@ MCU STM32H7xx STM32H743xx
 # board ID for firmware load
 APJ_BOARD_ID 1017
 
+env MANUFACTURER mRo
+env BRAND_NAME mRo Pixracer Pro
+
 # crystal frequency
 OSCILLATOR_HZ 24000000
 

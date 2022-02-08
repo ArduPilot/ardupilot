@@ -99,7 +99,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         _distance_min = packet.min_distance * 0.01f;
         _distance_max = packet.max_distance * 0.01f;
         const bool in_range = distance <= _distance_max && distance >= _distance_min;
-        if (in_range && !check_obstacle_near_ground(yaw_angle_deg, distance)) {
+        if (in_range && !ignore_reading(yaw_angle_deg, distance, false)) {
             temp_boundary.add_distance(face, yaw_angle_deg, distance);
             // update OA database
             database_push(yaw_angle_deg, distance);
@@ -168,7 +168,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
 
         const bool range_check = distance_cm == 0 || distance_cm == 65535 || distance_cm < packet.min_distance ||
                                  distance_cm > packet.max_distance;
-        if (range_check || check_obstacle_near_ground(mid_angle, packet_distance_m)) {
+        if (range_check || ignore_reading(mid_angle, packet_distance_m, false)) {
             // sanity check failed, ignore this distance value
             continue;
         }
@@ -249,10 +249,6 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
         // message isn't healthy
         return;
     }
-    if (check_obstacle_near_ground(obstacle_FRD)) {
-        // obstacle is probably near ground
-        return;
-    }
 
     // convert to FRU
     const Vector3f obstacle(obstacle_FRD.x, obstacle_FRD.y, obstacle_FRD.z * -1.0f);
@@ -260,6 +256,11 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
     // extract yaw and pitch from Obstacle Vector
     const float yaw = wrap_360(degrees(atan2f(obstacle.y, obstacle.x)));
     const float pitch = wrap_180(degrees(M_PI_2 - atan2f(obstacle.xy().length(), obstacle.z))); 
+
+    if (ignore_reading(pitch, yaw, obstacle_distance, false)) {
+        // obstacle is probably near ground or out of range
+        return;
+    }
 
     // allot to correct layer and sector based on calculated pitch and yaw
     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(pitch, yaw);

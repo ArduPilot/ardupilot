@@ -93,22 +93,3 @@ void Rover::read_rangefinders(void)
     rangefinder.update();
     Log_Write_Depth();
 }
-
-/*
-  ask airspeed sensor for a new value, duplicated from plane
- */
-void Rover::read_airspeed(void)
-{
-    g2.airspeed.update(should_log(MASK_LOG_IMU));
-}
-
-/*
-  update RPM sensors
- */
-void Rover::rpm_update(void)
-{
-    rpm_sensor.update();
-    if (rpm_sensor.enabled(0) || rpm_sensor.enabled(1)) {
-        logger.Write_RPM(rpm_sensor);
-    }
-}

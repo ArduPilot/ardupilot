@@ -34,7 +34,7 @@ void NavEKF2_core::SelectFlowFusion()
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground
-    // is insuffient to achieve acceptable focus. This allows the vehicle to be picked up
+    // is insufficient to achieve acceptable focus. This allows the vehicle to be picked up
     // and carried to test optical flow operation
     if (!takeOffDetected && ((terrainState - stateStruct.position.z) < 0.5f)) {
         ofDataDelayed.flowRadXYcomp.zero();
@@ -89,7 +89,7 @@ void NavEKF2_core::EstimateTerrainOffset()
         gndHgtValidTime_ms = imuSampleTime_ms;
 
         // propagate ground position state noise each time this is called using the difference in position since the last observations and an RMS gradient assumption
-        // limit distance to prevent intialisation afer bad gps causing bad numerical conditioning
+        // limit distance to prevent initialisation after bad gps causing bad numerical conditioning
         ftype distanceTravelledSq = sq(stateStruct.position[0] - prevPosN) + sq(stateStruct.position[1] - prevPosE);
         distanceTravelledSq = MIN(distanceTravelledSq, 100.0f);
         prevPosN = stateStruct.position[0];
@@ -303,7 +303,7 @@ void NavEKF2_core::FuseOptFlow()
 
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
-        // calculate range from ground plain to centre of sensor fov assuming flat earth
+        // calculate range from ground plane to centre of sensor fov assuming flat earth
         ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
 
         // correct range for flow sensor offset body frame position offset

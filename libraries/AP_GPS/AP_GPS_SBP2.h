@@ -24,6 +24,11 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
+#ifndef AP_GPS_SBP2_ENABLED
+   #define AP_GPS_SBP2_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_GPS_SBP2_ENABLED
 class AP_GPS_SBP2 : public AP_GPS_Backend
 {
 public:
@@ -201,4 +206,4 @@ private:
     int32_t distMod(int32_t tow1_ms, int32_t tow2_ms, int32_t mod);
 
 };
-
+#endif

@@ -81,10 +81,3 @@ define BOOTLOADER_BAUDRATE 57600
 
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
-
-define HAL_CUSTOM_CLOCK_TREE
-define STM32_PLLM_VALUE 8
-define STM32_PLLN_VALUE 168
-define STM32_PLLP_VALUE 2
-define STM32_PLLQ_VALUE 4
-

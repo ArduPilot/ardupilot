@@ -24,7 +24,7 @@ void Copter::set_home_to_current_location_inflight() {
     // get current location from EKF
     Location temp_loc;
     Location ekf_origin;
-    if (ahrs.get_position(temp_loc) && ahrs.get_origin(ekf_origin)) {
+    if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
         temp_loc.alt = ekf_origin.alt;
         if (!set_home(temp_loc, false)) {
             return;
@@ -40,7 +40,7 @@ void Copter::set_home_to_current_location_inflight() {
 bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
     Location temp_loc;
-    if (ahrs.get_position(temp_loc)) {
+    if (ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
             return false;
         }
@@ -78,9 +78,6 @@ bool Copter::set_home(const Location& loc, bool lock)
 
     // init inav and compass declination
     if (!home_was_set) {
-        // record home is set
-        AP::logger().Write_Event(LogEvent::SET_HOME);
-
 #if MODE_AUTO_ENABLED == ENABLED
         // log new home position which mission library will pull from ahrs
         if (should_log(MASK_LOG_CMD)) {

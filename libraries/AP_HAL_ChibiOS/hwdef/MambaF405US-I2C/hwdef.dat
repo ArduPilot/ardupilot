@@ -126,14 +126,13 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH_ENABLED 1
-define HAL_STORAGE_SIZE 16384
+define HAL_STORAGE_SIZE 15360
 STORAGE_FLASH_PAGE 1
 
 # flash size

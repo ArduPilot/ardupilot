@@ -39,6 +39,10 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef AP_COMPASS_ENABLE_DEFAULT
+ #define AP_COMPASS_ENABLE_DEFAULT 1
+#endif
+
 #ifndef COMPASS_LEARN_DEFAULT
 #define COMPASS_LEARN_DEFAULT Compass::LEARN_NONE
 #endif
@@ -547,7 +551,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @User: Standard
     // @RebootRequired: True
     // @Values: 0:Disabled,1:Enabled
-    AP_GROUPINFO("ENABLE", 39, Compass, _enabled, 1),
+    AP_GROUPINFO("ENABLE", 39, Compass, _enabled, AP_COMPASS_ENABLE_DEFAULT),
 
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: SCALE
@@ -1227,7 +1231,7 @@ void Compass::_detect_backends(void)
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_COMPASS_ENABLED
     ADD_BACKEND(DRIVER_SITL, new AP_Compass_SITL());
 #endif
 
@@ -1353,11 +1357,6 @@ void Compass::_detect_backends(void)
     default:
         break;
     }
-
-#elif HAL_COMPASS_DEFAULT == HAL_COMPASS_NONE
-    // no compass, or only external probe
-#else
-#error Unrecognised HAL_COMPASS_TYPE setting
 #endif
 
 
@@ -1718,7 +1717,7 @@ void Compass::try_set_initial_location()
     }
 
     Location loc;
-    if (!AP::ahrs().get_position(loc)) {
+    if (!AP::ahrs().get_location(loc)) {
         return;
     }
     _initial_location_set = true;

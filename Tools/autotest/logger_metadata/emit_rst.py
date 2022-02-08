@@ -32,11 +32,10 @@ This is a list of log messages which may be present in logs produced and stored 
             print('.. _%s:' % docco.name, file=self.fh)
             print("", file=self.fh)
             desc = docco.description
-            if desc is None:
-                desc = ""
-            line = '%s: %s' % (docco.name, desc)
-            print(line, file=self.fh)
-            print("~" * len(line), file=self.fh)
+            print(docco.name, file=self.fh)
+            print("~" * len(docco.name), file=self.fh)
+            if desc is not None:
+                print("\n%s\n" % desc, file=self.fh)
 
             rows = []
             for f in docco.fields_order:

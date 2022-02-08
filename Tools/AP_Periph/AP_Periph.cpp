@@ -168,7 +168,7 @@ void AP_Periph_FW::init()
 #endif
 
 #ifdef HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY
-    hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, AP_HAL::RCOutput::MODE_NEOPIXEL);
+    hal.rcout->set_serial_led_num_LEDs(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY, AP_HAL::RCOutput::MODE_NEOPIXEL);
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
@@ -181,6 +181,7 @@ void AP_Periph_FW::init()
 
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     if (airspeed.enabled()) {
+        // Note: logging of ARSPD is not enabled currently. To enable, call airspeed.set_log_bit();
         airspeed.init();
     }
 #endif

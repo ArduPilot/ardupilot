@@ -39,6 +39,8 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
+#define GPS_PPS_EMULATION 0
+
 extern const AP_HAL::HAL& hal;
 
 #define GPS_UAVCAN_DEBUGGING 0
@@ -68,6 +70,11 @@ UC_REGISTRY_BINDER(MovingBaselineDataCb, ardupilot::gnss::MovingBaselineData);
 UC_REGISTRY_BINDER(RelPosHeadingCb, ardupilot::gnss::RelPosHeading);
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::native_micros64())
+#else
+#define NATIVE_TIME_OFFSET 0
+#endif
 AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
 HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 
@@ -578,8 +585,41 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         // hdop from pdop. Some GPS modules don't provide the Aux message
         interim_state.hdop = interim_state.vdop = cb.msg->pdop * 100.0;
     }
+
+    if ((cb.msg->timestamp.usec > cb.msg->gnss_timestamp.usec) && (cb.msg->gnss_timestamp.usec > 0)) {
+        // we have a valid timestamp based on gnss_timestamp timescale, we can use that to correct our gps message time
+        interim_state.last_corrected_gps_time_us = jitter_correction.correct_offboard_timestamp_usec(cb.msg->timestamp.usec, (cb.msg->getUtcTimestamp().toUSec() + NATIVE_TIME_OFFSET));
+        interim_state.last_gps_time_ms = interim_state.last_corrected_gps_time_us/1000U;
+        interim_state.last_corrected_gps_time_us -= cb.msg->timestamp.usec - cb.msg->gnss_timestamp.usec;
+        // this is also the time the message was received on the UART on other end.
+        interim_state.corrected_timestamp_updated = true;
+    } else {
+        interim_state.last_gps_time_ms = jitter_correction.correct_offboard_timestamp_usec(cb.msg->timestamp.usec, cb.msg->getUtcTimestamp().toUSec() + NATIVE_TIME_OFFSET)/1000U;
+    }
+
+#if GPS_PPS_EMULATION
+    // Emulates a PPS signal, can be used to check how close are we to real GPS time
+    static virtual_timer_t timeout_vt;
+    hal.gpio->pinMode(51, 1);
+    auto handle_timeout = [](void *arg)
+    {
+        (void)arg;
+        //we are called from ISR context
+        chSysLockFromISR();
+        hal.gpio->toggle(51);
+        chSysUnlockFromISR();
+    };
+
+    static uint64_t next_toggle, last_toggle;
     
-    interim_state.last_gps_time_ms = AP_HAL::millis();
+    next_toggle = (cb.msg->timestamp.usec) + (1000000ULL - ((cb.msg->timestamp.usec) % 1000000ULL));
+
+    next_toggle += jitter_correction.get_link_offset_usec();
+    if (next_toggle != last_toggle) {
+        chVTSet(&timeout_vt, chTimeUS2I(next_toggle - AP_HAL::micros64()), handle_timeout, nullptr);
+        last_toggle = next_toggle;
+    }
+#endif
 
     _new_data = true;
     if (!seen_message) {
@@ -836,7 +876,12 @@ bool AP_GPS_UAVCAN::read(void)
         interim_state.speed_accuracy = MIN(interim_state.speed_accuracy, 1000.0);
 
         state = interim_state;
-
+        if (interim_state.last_corrected_gps_time_us) {
+            // If we were able to get a valid last_corrected_gps_time_us
+            // we have had a valid GPS message time, from which we calculate
+            // the time of week.
+            _last_itow_ms = interim_state.time_week_ms;
+        }
         return true;
     }
     if (!seen_message) {

@@ -3,10 +3,6 @@
 // Internal defines, don't edit and expect things to work
 // -------------------------------------------------------
 
-#define TRUE 1
-#define FALSE 0
-
-#define DEBUG 0
 #define SERVO_MAX 4500.0  // This value represents 45 degrees and is just an
                         // arbitrary representation of servo max travel.
 
@@ -83,8 +79,6 @@ static_assert(TUNING_BITS_END <= (1 << 24) + 1, "Tuning bit mask is too large to
 enum log_messages {
     LOG_CTUN_MSG,
     LOG_NTUN_MSG,
-    LOG_STARTUP_MSG,
-    TYPE_GROUNDSTART_MSG,
     LOG_STATUS_MSG,
     LOG_QTUN_MSG,
     LOG_PIQR_MSG,
@@ -119,14 +113,6 @@ enum log_messages {
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_ATTITUDE_FULLRATE      (1U<<20)
 #define MASK_LOG_VIDEO_STABILISATION    (1UL<<21)
-
-// altitude control algorithms
-enum {
-    ALT_CONTROL_DEFAULT      = 0,
-    ALT_CONTROL_NON_AIRSPEED = 1,
-    ALT_CONTROL_TECS         = 2,
-    ALT_CONTROL_AIRSPEED     = 3
-};
 
 enum {
     CRASH_DETECT_ACTION_BITMASK_DISABLED = 0,

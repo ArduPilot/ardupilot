@@ -35,6 +35,12 @@ void Copter::crash_check()
         return;
     }
 
+    // exit immediately if in force flying
+    if (force_flying && !flightmode->is_landing()) {
+        crash_counter = 0;
+        return;
+    }
+
     // return immediately if we are not in an angle stabilize flight mode or we are flipping
     if (flightmode->mode_number() == Mode::Number::ACRO || flightmode->mode_number() == Mode::Number::FLIP) {
         crash_counter = 0;
@@ -163,6 +169,12 @@ void Copter::thrust_loss_check()
         // enable thrust loss handling
         motors->set_thrust_boost(true);
         // the motors library disables this when it is no longer needed to achieve the commanded output
+
+#if GRIPPER_ENABLED == ENABLED
+        if ((copter.g2.flight_options & uint32_t(FlightOptions::RELEASE_GRIPPER_ON_THRUST_LOSS)) != 0) {
+            copter.g2.gripper.release();
+        }
+#endif
     }
 }
 

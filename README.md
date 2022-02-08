@@ -113,8 +113,6 @@ for reviewing patches on their specific area.
   - ***Vehicle***: Plane
 - [Bill Geyer](https://github.com/bnsgeyer):
   - ***Vehicle***: TradHeli
-- [Chris Olson](https://github.com/ChristopherOlson):
-  - ***Vehicle***: TradHeli
 - [Emile Castelnuovo](https://github.com/emilecastelnuovo):
   - ***Board***: VRBrain
 - [Georgii Staroselskii](https://github.com/staroselskii):

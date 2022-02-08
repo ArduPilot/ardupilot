@@ -34,7 +34,7 @@ void Tracker::update_tracker_position()
     Location temp_loc;
 
     // REVISIT: what if we lose lock during a mission and the antenna is moving?
-    if (ahrs.get_position(temp_loc)) {
+    if (ahrs.get_location(temp_loc)) {
         stationary = false;
         current_loc = temp_loc;
     }

@@ -72,6 +72,9 @@ public:
     // returns target velocity relative to vehicle
     bool get_target_velocity_relative_cms(Vector2f& ret);
 
+    // get the absolute velocity of the vehicle
+    void get_target_velocity_cms(const Vector2f& vehicle_velocity_cms, Vector2f& target_vel_cms);
+
     // returns true when the landing target has been detected
     bool target_acquired();
 
@@ -122,6 +125,11 @@ private:
         SITL = 4,
     };
 
+    enum PLndOptions {
+        PLND_OPTION_DISABLED = 0,
+        PLND_OPTION_MOVING_TARGET = (1 << 0),
+    };
+
     // check the status of the target
     void check_target_status(float rangefinder_alt_m, bool rangefinder_alt_valid);
 
@@ -165,6 +173,7 @@ private:
     AP_Int8                     _retry_behave;      // Action to do when trying a landing retry
     AP_Float                    _sensor_min_alt;     // PrecLand minimum height required for detecting target
     AP_Float                    _sensor_max_alt;     // PrecLand maximum height the sensor can detect target
+    AP_Int16                    _options;            // Bitmask for extra options
 
     uint32_t                    _last_update_ms;    // system time in millisecond when update was last called
     bool                        _target_acquired;   // true if target has been seen recently after estimator is initialized

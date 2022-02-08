@@ -348,8 +348,8 @@ void Plane::trim_radio()
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_dspoilerRight2);
     }
 
-    if (is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_flap_auto)) &&
-        is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_flap))) {
+    if (is_zero(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap_auto)) &&
+        is_zero(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_flap))) {
         // trim flaperons if no flap input
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_left);
         SRV_Channels::set_trim_to_servo_out_for(SRV_Channel::k_flaperon_right);
@@ -412,12 +412,12 @@ float Plane::roll_in_expo(bool use_dz) const
 
 float Plane::pitch_in_expo(bool use_dz) const
 {
-    return channel_expo(channel_pitch, g2.man_expo_roll, use_dz);
+    return channel_expo(channel_pitch, g2.man_expo_pitch, use_dz);
 }
 
 float Plane::rudder_in_expo(bool use_dz) const
 {
-    return channel_expo(channel_rudder, g2.man_expo_roll, use_dz);
+    return channel_expo(channel_rudder, g2.man_expo_rudder, use_dz);
 }
 
 bool Plane::throttle_at_zero(void) const

@@ -121,7 +121,7 @@ void AP_Airspeed_UAVCAN::handle_airspeed(AP_UAVCAN* ap_uavcan, uint8_t node_id, 
         driver->_pressure = cb.msg->differential_pressure;
         if (!isnan(cb.msg->static_air_temperature) &&
             cb.msg->static_air_temperature > 0) {
-            driver->_temperature = cb.msg->static_air_temperature - C_TO_KELVIN;
+            driver->_temperature = KELVIN_TO_C(cb.msg->static_air_temperature);
             driver->_have_temperature = true;
         }
         driver->_last_sample_time_ms = AP_HAL::millis();

@@ -1745,6 +1745,7 @@ uint16_t UARTDriver::get_options(void) const
     return _last_options;
 }
 
+#if HAL_UART_STATS_ENABLED
 // request information on uart I/O for @SYS/uarts.txt for this uart
 void UARTDriver::uart_info(ExpandingString &str)
 {
@@ -1765,6 +1766,7 @@ void UARTDriver::uart_info(ExpandingString &str)
     _rx_stats_bytes = 0;
     _last_stats_ms = now_ms;
 }
+#endif
 
 /*
   software control of the CTS pin if available. Return false if

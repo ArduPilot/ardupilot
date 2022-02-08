@@ -203,7 +203,8 @@ public:
 
     // command throttle percentage and roll, pitch, yaw target
     // rates. For use with scripting controllers
-    virtual bool set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) { return false; }
+    virtual void set_target_throttle_rate_rpy(float throttle_pct, float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps) {}
+    virtual bool nav_scripting_enable(uint8_t mode) {return false;}
 
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
@@ -214,6 +215,9 @@ public:
 
     // set steering and throttle (-1 to +1) (for use by scripting with Rover)
     virtual bool set_steering_and_throttle(float steering, float throttle) { return false; }
+
+    // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
+    virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
 
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) { return false; }
@@ -365,6 +369,10 @@ protected:
 #if HAL_EFI_ENABLED
     // EFI Engine Monitor
     AP_EFI efi;
+#endif
+
+#if AP_AIRSPEED_ENABLED
+    AP_Airspeed airspeed;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];

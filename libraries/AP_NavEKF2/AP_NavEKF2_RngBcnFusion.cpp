@@ -322,19 +322,19 @@ void NavEKF2_core::FuseRngBcnStatic()
                 // calculate the delta to the estimated receiver position
                 ftype delta = receiverPos.z - bcnMidPosD;
 
-                // calcuate the two hypothesis for our vertical position
-                ftype receverPosDownMax;
-                ftype receverPosDownMin;
+                // calculate the two hypothesis for our vertical position
+                ftype receiverPosDownMax;
+                ftype receiverPosDownMin;
                 if (delta >= 0.0f) {
-                    receverPosDownMax = receiverPos.z;
-                    receverPosDownMin = receiverPos.z - 2.0f * delta;
+                    receiverPosDownMax = receiverPos.z;
+                    receiverPosDownMin = receiverPos.z - 2.0f * delta;
                 } else {
-                    receverPosDownMax = receiverPos.z - 2.0f * delta;
-                    receverPosDownMin = receiverPos.z;
+                    receiverPosDownMax = receiverPos.z - 2.0f * delta;
+                    receiverPosDownMin = receiverPos.z;
                 }
 
-                bcnPosOffsetMax = stateStruct.position.z - receverPosDownMin;
-                bcnPosOffsetMin = stateStruct.position.z - receverPosDownMax;
+                bcnPosOffsetMax = stateStruct.position.z - receiverPosDownMin;
+                bcnPosOffsetMin = stateStruct.position.z - receiverPosDownMax;
             } else {
                 // We are using the beacons as the primary height reference, so don't modify their vertical position
                 bcnPosOffset = 0.0f;

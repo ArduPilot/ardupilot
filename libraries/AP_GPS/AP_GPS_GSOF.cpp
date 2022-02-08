@@ -24,6 +24,8 @@
 #include "AP_GPS_GSOF.h"
 #include <AP_Logger/AP_Logger.h>
 
+#if AP_GPS_GSOF_ENABLED
+
 extern const AP_HAL::HAL& hal;
 
 #define gsof_DEBUGGING 0
@@ -343,4 +345,4 @@ AP_GPS_GSOF::process_message(void)
 
     return false;
 }
-
+#endif

@@ -160,7 +160,7 @@ function update() -- this is the loop which periodically runs
   local alt = 0
 
   -- try and get true position, but don't fail for no GPS lock
-  local position = ahrs:get_position()
+  local position = ahrs:get_location()
   if position then
     lat = position:lat()*10^-7
     lng = position:lng()*10^-7

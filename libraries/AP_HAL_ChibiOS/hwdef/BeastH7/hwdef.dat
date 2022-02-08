@@ -110,9 +110,6 @@ define HAL_STORAGE_SIZE 16384
 # H743 has 16 pages of 128k each
 STORAGE_FLASH_PAGE 14
 
-# reserve space for flash storage in last 2 sectors
-FLASH_RESERVE_END_KB 256
-
 # enable logging to dataflash
 define HAL_LOGGING_DATAFLASH_ENABLED 1
 
@@ -124,7 +121,6 @@ SPIDEV osd       SPI4 DEVID4 AT7456E_CS MODE0 10*MHZ 10*MHZ
 
 # no built-in compass and no external I2C so no compass
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_I2C_INTERNAL_MASK 0
 
 # one IMU

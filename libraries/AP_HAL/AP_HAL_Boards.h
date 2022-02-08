@@ -84,10 +84,6 @@
 #define HAL_BARO_20789_I2C_SPI  15
 #define HAL_BARO_LPS25H_IMU_I2C 17
 
-/* Compass driver types */
-#define HAL_COMPASS_NONE                0
-#define HAL_COMPASS_HIL_UNUSED          3  // unused
-
 /* Heat Types */
 #define HAL_LINUX_HEAT_PWM 1
 
@@ -198,10 +194,6 @@
 
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
-#endif
-
-#ifndef HAL_COMPASS_DEFAULT
-#define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 #endif
 
 #ifndef HAL_BARO_DEFAULT

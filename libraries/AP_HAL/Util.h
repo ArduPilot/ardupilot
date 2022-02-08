@@ -180,8 +180,10 @@ public:
     // load persistent parameters from bootloader sector
     virtual bool load_persistent_params(ExpandingString &str) const { return false; }
 
+#if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) {}
+#endif
 
     // generate Random values
     virtual bool get_random_vals(uint8_t* data, size_t size) { return false; }

@@ -138,7 +138,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
@@ -159,8 +158,8 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 # disable SMBUS and fuel battery monitors to save flash
-define HAL_BATTMON_SMBUS_ENABLE 0
-define HAL_BATTMON_FUEL_ENABLE 0
+define AP_BATTMON_SMBUS_ENABLE 0
+define AP_BATTMON_FUEL_ENABLE 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0

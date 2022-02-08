@@ -99,7 +99,7 @@ void Plane::failsafe_check(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_flap_auto, 0.0);
 
         // setup flaperons
-        flaperon_update(0);
+        flaperon_update();
 
         servos_output();
 

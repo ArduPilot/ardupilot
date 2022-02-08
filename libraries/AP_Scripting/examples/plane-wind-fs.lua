@@ -93,7 +93,7 @@ local timer_active = true
 -- otherwise returns the time in seconds to get back
 local function time_to_home()
   local home = ahrs:get_home()
-  local position = ahrs:get_position()
+  local position = ahrs:get_location()
   local wind = ahrs:wind_estimate()
 
   if home and position and wind then
@@ -201,7 +201,7 @@ function track_return_time()
   end
 
   local home = ahrs:get_home()
-  local position = ahrs:get_position()
+  local position = ahrs:get_location()
   if home and position then
     local now = millis()
 
@@ -373,7 +373,7 @@ function update()
 
         -- Print the return distance
         --[[local home = ahrs:get_home()
-        local position = ahrs:get_position()
+        local position = ahrs:get_location()
         if home and position then
           return_distance = position:get_distance(home)
         end

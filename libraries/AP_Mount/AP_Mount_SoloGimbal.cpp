@@ -116,7 +116,7 @@ void AP_Mount_SoloGimbal::set_mode(enum MAV_MOUNT_MODE mode)
 void AP_Mount_SoloGimbal::send_mount_status(mavlink_channel_t chan)
 {
     if (_gimbal.aligned()) {
-        mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100);
+        mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100, _state._mode);
     }
     
     // block heartbeat from transmitting to the GCS
