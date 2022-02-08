@@ -1392,6 +1392,8 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
+        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
+
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(&msg, &packet);
         if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
