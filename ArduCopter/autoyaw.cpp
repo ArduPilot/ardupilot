@@ -260,6 +260,11 @@ void Mode::AutoYaw::update_weathervane(const int16_t roll_cdeg, const int16_t pi
 #if WEATHERVANE_ENABLED == ENABLED
     if (copter.g2.weathervane.should_weathervane(roll_cdeg, pitch_cdeg, pilot_yaw, (float)hgt_cm*0.01)) {
         if (mode() != AUTO_YAW_WEATHERVANE) {
+            if (mode() != default_mode(false)) {
+                // only override the default mode
+                copter.g2.weathervane.reset();
+                return;
+            }
             set_mode(AUTO_YAW_WEATHERVANE);
         }
 
