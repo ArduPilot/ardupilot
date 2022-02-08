@@ -503,6 +503,10 @@ protected:
 
     virtual void send_banner();
 
+    // send a (textual) message to the GCS that a received message has
+    // been deprecated
+    void send_received_message_deprecation_warning(const char *message);
+
     void handle_device_op_read(const mavlink_message_t &msg);
     void handle_device_op_write(const mavlink_message_t &msg);
 
@@ -631,6 +635,11 @@ private:
     void log_mavlink_stats();
 
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
+
+    // send a (textual) message to the GCS that a received message has
+    // been deprecated
+    uint32_t last_deprecation_warning_send_time_ms;
+    const char *last_deprecation_message;
 
     void service_statustext(void);
 
