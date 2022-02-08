@@ -19,6 +19,9 @@ class AC_WeatherVane {
         // Use to relax weathervaning on landing.  Must be persistently called before calls to get_weathervane_yaw_rate_cds().
         void set_relax(bool relax) { should_relax = relax; }
 
+        // Function to reset all flags and set values. Invoked whenever the weather vaning process is interupted
+        void reset(void);
+
         static const struct AP_Param::GroupInfo var_info[];
 
     private:
@@ -33,9 +36,6 @@ class AC_WeatherVane {
 
         // Returns the set direction, handling the variable cast to type Direction
         Direction get_direction() const { return (Direction)_direction.get(); }
-
-        // Function to reset all flags and set values. Invoked whenever the weather vaning process is interupted
-        void reset(void);
 
         // Paramaters
         AP_Int8 _direction;
