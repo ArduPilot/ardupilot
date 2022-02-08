@@ -3334,7 +3334,7 @@ function'''
         # Wait for landing waypoint (second attempt)
         self.wait_current_waypoint(9, timeout=1200)
 
-        self.wait_statustext("Auto disarmed", timeout=120)
+        self.wait_disarmed(timeout=180)
 
     def DCMFallback(self):
         self.reboot_sitl()
