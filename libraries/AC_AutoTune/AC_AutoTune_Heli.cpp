@@ -2068,14 +2068,8 @@ void AC_AutoTune_Heli::reset_update_gain_variables()
 // reset the max_gains update gain variables
 void AC_AutoTune_Heli::reset_maxgains_update_gain_variables()
 {
-    max_rate_p.freq = 0.0f;
-    max_rate_p.gain = 0.0f;
-    max_rate_p.phase = 0.0f;
-    max_rate_p.max_allowed = 0.0f;
-    max_rate_d.freq = 0.0f;
-    max_rate_d.gain = 0.0f;
-    max_rate_d.phase = 0.0f;
-    max_rate_d.max_allowed = 0.0f;
+    max_rate_p = {};
+    max_rate_d = {};
     found_max_p = false;
     found_max_d = false;
     find_middle = false;
@@ -2085,15 +2079,9 @@ void AC_AutoTune_Heli::reset_maxgains_update_gain_variables()
 // reset the max_gains update gain variables
 void AC_AutoTune_Heli::reset_sweep_variables()
 {
-    sweep.ph180.freq = 0.0f;
-    sweep.ph180.gain = 0.0f;
-    sweep.ph180.phase = 0.0f;
-    sweep.ph270.freq = 0.0f;
-    sweep.ph270.gain = 0.0f;
-    sweep.ph270.phase = 0.0f;
-    sweep.maxgain.gain = 0.0f;
-    sweep.maxgain.freq = 0.0f;
-    sweep.maxgain.phase = 0.0f;
+    sweep.ph180 = {};
+    sweep.ph270 = {};
+    sweep.maxgain = {};
 
     sweep.progress = 0;
 }
