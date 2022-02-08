@@ -164,14 +164,17 @@ int32_t ModeFollow::wp_bearing() const
 }
 
 /*
-  get target position for mavlink reporting
+  get target information for mavlink reporting: typemask, position, velocity, acceleration
  */
-bool ModeFollow::get_wp(Location &loc) const
+bool ModeFollow::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
-    float dist = g2.follow.get_distance_to_target();
-    float bearing = g2.follow.get_bearing_to_target();
-    loc = copter.current_loc;
-    loc.offset_bearing(bearing, dist);
+    target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+    
+    const float dist = g2.follow.get_distance_to_target();
+    const float bearing = g2.follow.get_bearing_to_target();
+    target.loc = copter.current_loc;
+    target.loc.offset_bearing(bearing, dist);
+    
     return true;
 }
 

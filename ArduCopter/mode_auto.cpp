@@ -669,23 +669,36 @@ int32_t ModeAuto::wp_bearing() const
     }
 }
 
-bool ModeAuto::get_wp(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeAuto::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     switch (_mode) {
     case SubMode::NAVGUIDED:
-        return copter.mode_guided.get_wp(destination);
+        return copter.mode_guided.get_target_info(target);
     case SubMode::WP:
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+
         // get the current destination & change altitude frame to the original command altframe
         // only returns false if terrain data is unavailable
-        if (wp_nav->get_oa_wp_destination(destination) && destination.change_alt_frame(command_altframe)) {
+        if (wp_nav->get_oa_wp_destination(target.loc) && target.loc.change_alt_frame(command_altframe)) {
             return true;
         }
         return false;
     case SubMode::RTL:
-        return copter.mode_rtl.get_wp(destination);
-    default:
+        return copter.mode_rtl.get_target_info(target);
+    
+    case SubMode::TAKEOFF:
+    case SubMode::LAND:
+    case SubMode::CIRCLE_MOVE_TO_EDGE:
+    case SubMode::CIRCLE:
+    case SubMode::LOITER:
+    case SubMode::LOITER_TO_ALT:
+    case SubMode::NAV_PAYLOAD_PLACE:
         return false;
     }
+
+    // should never reach here
+    return false;
 }
 
 /*******************************************************************************

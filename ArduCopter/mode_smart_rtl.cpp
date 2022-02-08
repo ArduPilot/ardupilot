@@ -180,7 +180,8 @@ void ModeSmartRTL::save_position()
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
-bool ModeSmartRTL::get_wp(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeSmartRTL::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     // provide target in states which use wp_nav
     switch (smart_rtl_state) {
@@ -188,7 +189,8 @@ bool ModeSmartRTL::get_wp(Location& destination) const
     case SubMode::PATH_FOLLOW:
     case SubMode::PRELAND_POSITION:
     case SubMode::DESCEND:
-        return wp_nav->get_wp_destination_loc(destination);
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+        return wp_nav->get_wp_destination_loc(target.loc);
     case SubMode::LAND:
         return false;
     }

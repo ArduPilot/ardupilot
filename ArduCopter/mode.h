@@ -81,10 +81,10 @@ public:
     virtual bool requires_terrain_failsafe() const { return false; }
 
     // functions for reporting to GCS
-    virtual bool get_wp(Location &loc) const { return false; };
     virtual int32_t wp_bearing() const { return 0; }
     virtual uint32_t wp_distance() const { return 0; }
     virtual float crosstrack_error() const { return 0.0f;}
+    virtual bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const { return false; }
 
     int32_t get_alt_above_ground_cm(void);
 
@@ -454,7 +454,7 @@ protected:
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
-    bool get_wp(Location &loc) const override;
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override;
 
 private:
 
@@ -890,7 +890,7 @@ public:
 
     bool set_destination(const Vector3f& destination, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool terrain_alt = false);
     bool set_destination(const Location& dest_loc, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false);
-    bool get_wp(Location &loc) const override;
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override;
     void set_accel(const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velocity(const Vector3f& velocity, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
     void set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw = false, float yaw_cd = 0.0, bool use_yaw_rate = false, float yaw_rate_cds = 0.0, bool yaw_relative = false, bool log_request = true);
@@ -1198,8 +1198,8 @@ public:
 
     bool requires_terrain_failsafe() const override { return true; }
 
-    // for reporting to GCS
-    bool get_wp(Location &loc) const override;
+    // get target information for mavlink reporting: typemask, position, velocity, acceleration
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override;
 
     bool use_pilot_yaw() const override;
 
@@ -1324,7 +1324,7 @@ protected:
     const char *name4() const override { return "SRTL"; }
 
     // for reporting to GCS
-    bool get_wp(Location &loc) const override;
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override;
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
     float crosstrack_error() const override { return wp_nav->crosstrack_error();}
@@ -1619,7 +1619,7 @@ protected:
     const char *name4() const override { return "FOLL"; }
 
     // for reporting to GCS
-    bool get_wp(Location &loc) const override;
+    bool get_target_info(GCS_MAVLINK::Position_Target_Info &target) const override;
     uint32_t wp_distance() const override;
     int32_t wp_bearing() const override;
 
