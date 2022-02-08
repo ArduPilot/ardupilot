@@ -1196,6 +1196,8 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
+        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
+
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(&msg, &packet);
         Location new_home_loc {};
