@@ -8880,10 +8880,12 @@ Also, ignores heartbeats not from our target system'''
             if m is None:
                 raise NotAchievedException("POSITION_TARGET_GLOBAL_INT not received")
 
+            # If an "echo" field is added we can check the type mask for that case. In guided modes usually, we send out all
+            # of the targets no matter the input mavlink typemask and set the output typemask to 0.
             # Check POS_TARGET_TYPE_MASK Correct
-            if not (m.type_mask == (rcvd_type_mask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == rcvd_type_mask):
-                raise NotAchievedException("Expected Typemask = %u or %u, Received = %u" %
-                      ((rcvd_type_mask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), rcvd_type_mask, m.type_mask))
+            # if not (m.type_mask == (rcvd_type_mask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == rcvd_type_mask):
+            #     raise NotAchievedException("Expected Typemask = %u or %u, Received = %u" %
+            #           ((rcvd_type_mask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), rcvd_type_mask, m.type_mask))
 
             # # Check MAV_FRAME Type Correct
             if test_alt and (m.coordinate_frame != frame):
