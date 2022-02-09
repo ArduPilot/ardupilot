@@ -31,7 +31,7 @@
 // compact and minimise the number of erase cycles needed
 #ifdef STORAGE_FLASH_PAGE
 #define CH_STORAGE_LINE_SHIFT 3
-#elif defined(USE_POSIX)
+#elif defined(USE_POSIX) && !defined(HAL_WITH_RAMTRON)
 #define CH_STORAGE_LINE_SHIFT 9
 #else
 #define CH_STORAGE_LINE_SHIFT 3
