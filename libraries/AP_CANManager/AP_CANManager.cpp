@@ -167,9 +167,11 @@ void AP_CANManager::init()
             // we have slcan bridge setup pass that on as can iface
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
             iface = &_slcan_interface;
+#ifdef HAL_BUILD_AP_PERIPH
         } else if(drv_type[drv_num] == Driver_Type_UAVCAN) {
-            // We do Message ID filtering when using UAVCAN without SLCAN
+            // setup for filtering on AP_Periph if using UAVCAN
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::FilteredMode);
+#endif
         } else {
             can_initialised = hal.can[i]->init(_interfaces[i]._bitrate, AP_HAL::CANIface::NormalMode);
         }
