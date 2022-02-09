@@ -121,6 +121,12 @@ bool Copter::mavlink_motor_control_check(const GCS_MAVLINK &gcs_chan, bool check
         return false;
     }
 
+    // check E-Stop is not active
+    if (SRV_Channels::get_emergency_stop()) {
+        gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: Motor Emergency Stopped", mode);
+        return false;
+    }
+
     // if we got this far the check was successful and the motor test can continue
     return true;
 }
@@ -135,8 +141,6 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
     }
     // if test has not started try to start it
     if (!ap.motor_test) {
-        gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
-
         /* perform checks that it is ok to start test
            The RC calibrated check can be skipped if direct pwm is
            supplied
@@ -145,6 +149,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
             return MAV_RESULT_FAILED;
         } else {
             // start test
+            gcs().send_text(MAV_SEVERITY_INFO, "starting motor test");
             ap.motor_test = true;
 
             EXPECT_DELAY_MS(3000);
