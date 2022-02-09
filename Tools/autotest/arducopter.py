@@ -4074,16 +4074,13 @@ class AutoTestCopter(AutoTest):
         self.change_mode("GUIDED")
 
         # After take off command in guided we enter the velaccl sub mode
-        self.progress("Test weathervaning in guided vel-accel")
+        self.progress("Test weathervaning in guided pos only")
         self.set_rc(3, 1000)
         self.wait_ready_to_arm()
 
         self.arm_vehicle()
         self.user_takeoff(alt_min=15)
-        # Wait for heading to match wind direction.
-        self.wait_heading(100, accuracy=8, timeout=100)
 
-        self.progress("Test weathervaning in guided pos only")
         # Travel directly north to align heading north and build some airspeed.
         self.fly_guided_move_local(x=40, y=0, z_up=15)
         # Wait for heading to match wind direction.
