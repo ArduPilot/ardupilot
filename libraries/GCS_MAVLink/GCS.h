@@ -403,6 +403,11 @@ protected:
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
                                                         Location::AltFrame &frame);
 
+    // Returns true if the mavlink_coordinate frame is set and if the input location's altitude frame can be converted
+    // returns false if the change in altitude frame fails
+    // Note: AltFrame::ABOVE_ORIGIN is converted to AltFrame::ABSOLUTE
+    bool location_alt_frame_to_mavlink_coordinate_frame(Location &frame, MAV_FRAME &coordinate_frame) const;
+
     // overridable method to check for packet acceptance. Allows for
     // enforcement of GCS sysid
     bool accept_packet(const mavlink_status_t &status, const mavlink_message_t &msg) const;

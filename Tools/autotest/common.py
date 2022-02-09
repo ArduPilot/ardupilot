@@ -29,6 +29,7 @@ import threading
 import enum
 
 from MAVProxy.modules.lib import mp_util
+from MAVProxy.modules.mavproxy_map import mp_elevation
 
 from pymavlink import mavparm
 from pymavlink import mavwp, mavutil, DFReader
@@ -63,12 +64,14 @@ class MAV_POS_TARGET_TYPE_MASK(enum.IntEnum):
 
 
 MAV_FRAMES_TO_TEST = [
-    mavutil.mavlink.MAV_FRAME_GLOBAL,
+    # mavutil.mavlink.MAV_FRAME_GLOBAL,                 # Disable equivalent frames
     mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,    # Disable equivalent frames
     mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-    mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
-    mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,     # Disable equivalent frames
+
+    # FIXME Disable Terrain frame testing as there is a large differential between Vehicle terrain data and MAVProxy Module
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT
 ]
 
 # get location of scripts
@@ -5870,6 +5873,12 @@ class AutoTest(ABC):
             if value == m_value:
                 return
 
+    def within_tolerance(self, value, expected, tol, str):
+        tol = abs(tol)
+        delta = abs(value - expected)
+        if delta > tol:
+            raise NotAchievedException("%s mismatch (Expected=%f Value=%f)" % (delta, expected, value))
+
     def wait_location(self,
                       loc,
                       accuracy=5.0,
@@ -5884,9 +5893,17 @@ class AutoTest(ABC):
         def validator(value2, empty=None):
             if value2 <= accuracy:
                 if target_altitude is not None:
-                    height_delta = math.fabs(self.mav.location().alt - target_altitude)
+                    current_altitude = self.mav.location().alt
+                    height_delta = math.fabs(current_altitude - target_altitude)
                     if height_accuracy != -1 and height_delta > height_accuracy:
+                        self.progress("%s = %0.2fm (want %0.2fm +- %0.2fm)"
+                                      % ("Altitude", current_altitude, target_altitude, height_accuracy)
+                                      )
                         return False
+
+                    self.progress("%s = %0.2fm (want %0.2fm +- %0.2fm)"
+                                  % ("Altitude", current_altitude, target_altitude, height_accuracy)
+                                  )
                 return True
             else:
                 return False
@@ -8789,6 +8806,17 @@ Also, ignores heartbeats not from our target system'''
         # we must start mavproxy here as otherwise we can't get the
         # terrain database tiles - this leads to random failures in
         # CI!
+
+        # set the start location to the Grand Cayon for terrain altitude testing
+        self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
+                                         % (36.146, -113.89, 1409.75, 90.0)])
+
+        # if you set it to the below Terrain Test will fail due to AP_terrain::height_asml()
+        # #  home_height being 1409.75m not 1425m
+        # the error comes from home sitl handles theoretical terrain ground level at home location
+        # self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
+        #                                  % (36.146, -113.89, 1425.6, 90.0)])
+
         mavproxy = self.start_mavproxy()
 
         self.set_parameter("FS_GCS_ENABLE", 0)
@@ -8809,26 +8837,39 @@ Also, ignores heartbeats not from our target system'''
         if wp_accuracy is None:
             raise ValueError()
 
-        def to_alt_frame(alt, mav_frame):
+        # use_terrain: is false then return terrain altitudes as the current altitude
+        # this is so that we can accept commands in the frame but ignore the altitude like we do for rover currently
+        def to_alt_frame(loc, mav_frame, use_terrain):
             if mav_frame in ["MAV_FRAME_GLOBAL_RELATIVE_ALT",
-                             "MAV_FRAME_GLOBAL_RELATIVE_ALT_INT",
-                             "MAV_FRAME_GLOBAL_TERRAIN_ALT",
-                             "MAV_FRAME_GLOBAL_TERRAIN_ALT_INT"]:
+                             "MAV_FRAME_GLOBAL_RELATIVE_ALT_INT"]:
                 home = self.home_position_as_mav_location()
-                return alt - home.alt
+                return loc.alt - home.alt
+            elif mav_frame in ["MAV_FRAME_GLOBAL_TERRAIN_ALT",
+                               "MAV_FRAME_GLOBAL_TERRAIN_ALT_INT"] and use_terrain:
+
+                # convert from absolute alittude frame (ASML) to terrain alt_frame
+                self.ElevationModel = mp_elevation.ElevationModel()
+                terrain_alt = self.ElevationModel.GetElevation(loc.lat, loc.lng)
+                if terrain_alt is None:
+                    raise NotAchievedException("No terrain data, terrain error")
+                return loc.alt - terrain_alt
+
             else:
-                return alt
+                return loc.alt
 
         def send_target_position(lat, lng, alt, mav_frame):
+
+            type_mask = (MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                         MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                         MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                         MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+
             self.mav.mav.set_position_target_global_int_send(
                 0,  # timestamp
                 self.sysid_thismav(),  # target system_id
                 1,  # target component id
                 mav_frame,
-                MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
-                MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
-                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
-                MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
+                type_mask,
                 int(lat * 1.0e7),  # lat
                 int(lng * 1.0e7),  # lon
                 alt,  # alt
@@ -8841,45 +8882,86 @@ Also, ignores heartbeats not from our target system'''
                 0,  # yaw
                 0,  # yawrate
             )
+            return type_mask
 
+        # Check received POSITION_TARGET_GLOBAL_INT message is correct compared to SET_POSITION_TARGET_GLOBAL_INT
+        def check_position_target_msg(rcvd_type_mask, frame, targetpos=None, vel=None, accel=None, yaw=None, yaw_rate=None):
+
+            m = self.mav.recv_match(type='POSITION_TARGET_GLOBAL_INT', blocking=True, timeout=5)
+
+            if m is None:
+                raise NotAchievedException("POSITION_TARGET_GLOBAL_INT not received")
+
+            # Check POS_TARGET_TYPE_MASK Correct
+            if not (m.type_mask == (rcvd_type_mask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE) or m.type_mask == rcvd_type_mask):
+                raise NotAchievedException("Expected Typemask = %u or %u, Received = %u" %
+                      ((rcvd_type_mask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE), rcvd_type_mask, m.type_mask))
+
+            # # Check MAV_FRAME Type Correct
+            if test_alt and (m.coordinate_frame != frame):
+                raise NotAchievedException("Expected MAVFRAME = %s, Received Frame = %s" % (frame, m.coordinate_frame))
+
+            # Check Position Correct
+            if not (rcvd_type_mask & MAV_POS_TARGET_TYPE_MASK.POS_IGNORE):
+                rcvd_loc = LocationInt(m.lat_int, m.lon_int, m.alt, 0)
+                target_pos_int = LocationInt(int(targetpos.lat * 1.0e7), int(targetpos.lng * 1.0e7), targetpos.alt, 0)
+                distance = self.get_distance_int(rcvd_loc, target_pos_int)
+                if abs(distance) > 1.0:    # 1 meter of position error is allowed
+                    raise NotAchievedException("Expected X-Y Position Error <= %s, Received Position Error = %s"
+                                               % (2, distance))
+                if test_alt:
+                    alt_converted = to_alt_frame(targetpos, frame_name, test_alt)
+                    self.within_tolerance(m.alt, alt_converted, 1.0, "alt")
+
+        # Note in this test we move 0.0041deg lattitude to get a large differential in terrain altitudes
         for frame in MAV_FRAMES_TO_TEST:
             frame_name = mavutil.mavlink.enums["MAV_FRAME"][frame].name
             self.start_subtest("Testing Set Position in %s" % frame_name)
             self.start_subtest("Changing Latitude")
-            targetpos.lat += 0.0001
+            targetpos.lat += 0.0009                  # approx. 100 m movement
+            targetpos.alt = round(targetpos.alt, -1) # round to the nearest 10 meters
             if test_alt:
-                targetpos.alt += 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+                targetpos.alt += 100
+            rcvd_type_mask = send_target_position(targetpos.lat, targetpos.lng,
+                                                  to_alt_frame(targetpos, frame_name, test_alt), frame)
             self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
                                target_altitude=(targetpos.alt if test_alt else None),
                                height_accuracy=2, minimum_duration=2)
+
+            check_position_target_msg(rcvd_type_mask, frame, targetpos)
 
             self.start_subtest("Changing Longitude")
-            targetpos.lng += 0.0001
+            targetpos.lng += 0.0045                 # approx. 500 m movement
             if test_alt:
-                targetpos.alt -= 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
-            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                targetpos.alt -= 50
+            rcvd_type_mask = send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos, frame_name, test_alt), frame)
+            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=300,
                                target_altitude=(targetpos.alt if test_alt else None),
                                height_accuracy=2, minimum_duration=2)
+
+            check_position_target_msg(rcvd_type_mask, frame, targetpos)
 
             self.start_subtest("Revert Latitude")
-            targetpos.lat -= 0.0001
+            targetpos.lat -= 0.0009
             if test_alt:
-                targetpos.alt += 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
+                targetpos.alt += 50
+            rcvd_type_mask = send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos, frame_name, test_alt), frame)
             self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
                                target_altitude=(targetpos.alt if test_alt else None),
                                height_accuracy=2, minimum_duration=2)
 
+            check_position_target_msg(rcvd_type_mask, frame, targetpos)
+
             self.start_subtest("Revert Longitude")
-            targetpos.lng -= 0.0001
+            targetpos.lng -= 0.0045
             if test_alt:
-                targetpos.alt -= 5
-            send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos.alt, frame_name), frame)
-            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=timeout,
+                targetpos.alt -= 100
+            rcvd_type_mask = send_target_position(targetpos.lat, targetpos.lng, to_alt_frame(targetpos, frame_name, test_alt), frame)
+            self.wait_location(targetpos, accuracy=wp_accuracy, timeout=300,
                                target_altitude=(targetpos.alt if test_alt else None),
                                height_accuracy=2, minimum_duration=2)
+
+            check_position_target_msg(rcvd_type_mask, frame, targetpos)
 
             if test_heading:
                 self.start_subtest("Testing Yaw targetting in %s" % frame_name)
@@ -8897,7 +8979,7 @@ Also, ignores heartbeats not from our target system'''
                     MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                     int(targetpos.lat * 1.0e7),  # lat
                     int(targetpos.lng * 1.0e7),  # lon
-                    to_alt_frame(targetpos.alt, frame_name),  # alt
+                    to_alt_frame(targetpos, frame_name, test_alt),  # alt
                     0,  # vx
                     0,  # vy
                     0,  # vz
@@ -8926,7 +9008,7 @@ Also, ignores heartbeats not from our target system'''
                     MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE,
                     int(targetpos.lat * 1.0e7),  # lat
                     int(targetpos.lng * 1.0e7),  # lon
-                    to_alt_frame(targetpos.alt, frame_name),  # alt
+                    to_alt_frame(targetpos, frame_name, test_alt),  # alt
                     0,  # vx
                     0,  # vy
                     0,  # vz
@@ -8955,7 +9037,7 @@ Also, ignores heartbeats not from our target system'''
                         MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE,
                         int(targetpos.lat * 1.0e7),  # lat
                         int(targetpos.lng * 1.0e7),  # lon
-                        to_alt_frame(targetpos.alt, frame_name),  # alt
+                        to_alt_frame(targetpos, frame_name, test_alt),  # alt
                         0,  # vx
                         0,  # vy
                         0,  # vz

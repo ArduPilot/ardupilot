@@ -107,9 +107,10 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         return;
     }
 
-    // convert altitude frame to AMSL (this may use the terrain database)
-    if (!target.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
-        return;
+    // Note, currently get_wp() only returns either ABOVE_TERRAIN or ABOVE_ORIGIN
+    MAV_FRAME frame;
+    if (!location_alt_frame_to_mavlink_coordinate_frame(target, frame)) {
+        return; // failed altitude frame conversion
     }
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
@@ -118,7 +119,7 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
-        MAV_FRAME_GLOBAL, // targets are always global altitude
+        frame,      // target MAV_FRAME
         TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
@@ -1360,6 +1361,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 copter.mode_guided.init(true);
                 break;
             }
+            copter.mode_guided.set_command_altframe(loc.get_alt_frame()); // Set command altitude frame for target reporting
             copter.mode_guided.set_destination_posvel(pos_neu_cm, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds);
         } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velaccel(vel_vector, accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds);

@@ -270,6 +270,9 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         return;
     }
 
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = dest.get_alt_frame();
+
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
@@ -289,6 +292,9 @@ void ModeAuto::wp_start(const Location& dest_loc)
         copter.failsafe_terrain_on_event();
         return;
     }
+
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = dest_loc.get_alt_frame();
 
     _mode = SubMode::WP;
 
@@ -669,7 +675,12 @@ bool ModeAuto::get_wp(Location& destination) const
     case SubMode::NAVGUIDED:
         return copter.mode_guided.get_wp(destination);
     case SubMode::WP:
-        return wp_nav->get_oa_wp_destination(destination);
+        // get the current destination & change altitude frame to the original command altframe
+        // only returns false if terrain data is unavailable
+        if (wp_nav->get_oa_wp_destination(destination) && destination.change_alt_frame(command_altframe)) {
+            return true;
+        }
+        return false;
     case SubMode::RTL:
         return copter.mode_rtl.get_wp(destination);
     default:
@@ -1164,6 +1175,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         return;
     }
 
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = dest_loc.get_alt_frame();
+
     _mode = SubMode::WP;
 
     // this will be used to remember the time in millis after we reach or pass the WP.
@@ -1245,6 +1259,9 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 
         const Location target_loc = terrain_adjusted_location(cmd);
 
+        // Set the current command altitude frame for target reporting consistency
+        command_altframe = target_loc.get_alt_frame();
+
         wp_start(target_loc);
     } else {
         // set landing state
@@ -1286,6 +1303,9 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         }
     }
 
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = target_loc.get_alt_frame();
+
     // start way point navigator and provide it the desired location
     wp_start(target_loc);
 }
@@ -1294,6 +1314,9 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 {
     const Location circle_center = loc_from_cmd(cmd, copter.current_loc);
+
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = circle_center.get_alt_frame();
 
     // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1329,6 +1352,9 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
         target_loc.lat = copter.current_loc.lat;
         target_loc.lng = copter.current_loc.lng;
     }
+
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = target_loc.get_alt_frame();
 
     if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, loiter_to_alt.alt)) {
         loiter_to_alt.reached_destination_xy = true;
@@ -1366,6 +1392,9 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
         copter.failsafe_terrain_on_event();
         return;
     }
+
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = dest_loc.get_alt_frame();
 
     _mode = SubMode::WP;
 
@@ -1552,6 +1581,9 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
 
         const Location target_loc = terrain_adjusted_location(cmd);
+
+        // Set the current command altitude frame for target reporting consistency
+        command_altframe = target_loc.get_alt_frame();
 
         wp_start(target_loc);
     } else {
