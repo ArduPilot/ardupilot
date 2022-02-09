@@ -117,6 +117,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     }
     target_loc.set_alt_cm(takeoff_alt_cm, frame);
 
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = frame;
+
     if (!wp_nav->set_wp_destination_loc(target_loc)) {
         // failure to set destination can only be because of missing terrain data
         AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
@@ -371,20 +374,51 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     return true;
 }
 
-bool ModeGuided::get_wp(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeGuided::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     switch (guided_mode) {
-    case SubMode::WP:
-        return wp_nav->get_oa_wp_destination(destination);
-    case SubMode::Pos:
-        destination = Location(guided_pos_target_cm.tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        return true;
-    default:
+    case SubMode::Angle:
+        // we don't have a target when in angle mode
         return false;
+    case SubMode::TakeOff:
+    case SubMode::WP:
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+
+        if (!wp_nav->get_oa_wp_destination(target.loc)) {
+            return false;
+        }
+
+        // change altitude frame to the original command frame: only returns false if terrain data is unavailabe
+        if (!target.loc.change_alt_frame(command_altframe)) {
+            return false;
+        }
+        break;
+    case SubMode::Pos:
+    case SubMode::PosVelAccel:
+    case SubMode::VelAccel:
+    case SubMode::Accel:
+        // Note: When sending out the position_target info. we send out all of info. no matter the input mavlink typemask
+        // This way we send out the maximum information that can be used by the sending control systems to adapt their generated trajectories
+        target.type_mask = 0;   // Ignore nothing
+
+        target.loc   = Location(pos_control->get_pos_target_cm().tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+
+        // the target location may not be intitialized by the time this message is first requested
+        // change altitude frame to the original command frame: only returns false if terrain data is unavailabe
+        if (!target.loc.initialised() || !target.loc.change_alt_frame(command_altframe)) {
+            return false;
+        }
+
+        target.vel      = pos_control->get_vel_target_cms() * 0.01;                 // convert cm/s to m/s
+        target.accel    = pos_control->get_accel_target_cmss() * 0.01;              // convert cm/s to m/s
+        target.yaw      = pos_control->get_yaw_cd() * DEG_TO_RAD * 0.01;            // convert centi-degrees to radians
+        target.yaw_rate = pos_control->get_yaw_rate_cds() * DEG_TO_RAD * 0.01;      // convert centi-degrees / second to [rad/s]
+
+        break;
     }
 
-    // should never get here but just in case
-    return false;
+    return true;
 }
 
 // sets guided mode's target from a Location object
@@ -432,6 +466,9 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
+
+    // Set the current command altitude frame for target reporting consistency
+    command_altframe = dest_loc.get_alt_frame();
 
     // set position target and zero velocity and acceleration
     Vector3f pos_target_f;

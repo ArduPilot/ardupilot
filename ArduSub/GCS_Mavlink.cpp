@@ -72,6 +72,47 @@ void GCS_MAVLINK_Sub::send_banner()
     send_text(MAV_SEVERITY_INFO, "Frame: %s", sub.motors.get_frame_string());
 }
 
+bool GCS_MAVLINK_Sub::get_target_info(Position_Target_Info &target) const
+{
+    // call the correct controller
+    switch (sub.control_mode) {
+
+    case AUTO:
+        return sub.auto_get_target_info(target);
+
+    case GUIDED:
+#if NAV_GUIDED == ENABLED
+        return sub.guided_get_target_info(target);
+#endif
+    case SURFACE:   // automatically return to surface, pilot maintains horizontal control
+        // return surface_get_target_info(type_mask, target, target_vel, target_accel);
+    case STABILIZE:
+    case ACRO:
+    case ALT_HOLD:
+    case CIRCLE:
+    case POSHOLD:
+    case MANUAL:
+    case MOTOR_DETECT:
+        return false;
+    }
+
+    // we should never reach here but just in case
+    return false;
+}
+
+bool GCS_MAVLINK_Sub::get_target_local_info(Position_Target_Info &target) const
+{
+#if NAV_GUIDED == ENABLED
+        // exit if vehicle is not in Guided mode or Auto-Guided mode
+        if ((sub.control_mode != GUIDED) && !(sub.control_mode == AUTO && sub.auto_mode == Auto_NavGuided)) {
+            return false;
+        }
+        return sub.guided_get_target_info(target);
+#else
+    return false;
+#endif
+}
+
 void GCS_MAVLINK_Sub::send_nav_controller_output() const
 {
     const Vector3f &targets = sub.attitude_control.get_att_target_euler_cd();
@@ -343,7 +384,8 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_GPS2_RTK,
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_FENCE_STATUS,
-    MSG_NAMED_FLOAT
+    MSG_NAMED_FLOAT,
+    MSG_POSITION_TARGET_GLOBAL_INT,
 };
 static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,

@@ -67,11 +67,12 @@ void ModeRTL::update()
     }
 }
 
-// get desired location
-bool ModeRTL::get_desired_location(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeRTL::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     if (g2.wp_nav.is_destination_valid()) {
-        destination = g2.wp_nav.get_oa_destination();
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+        target.loc = g2.wp_nav.get_oa_destination();
         return true;
     }
     return false;

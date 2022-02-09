@@ -61,9 +61,10 @@ void ModeLoiter::update()
     calc_throttle(_desired_speed, true);
 }
 
-// get desired location
-bool ModeLoiter::get_desired_location(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeLoiter::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
-    destination = _destination;
+    target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+    target.loc = _destination;
     return true;
 }

@@ -179,6 +179,33 @@ bool Sub::guided_set_destination(const Location& dest_loc)
     return true;
 }
 
+bool Sub::guided_get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
+{
+    switch (guided_mode) {
+    case GuidedMode::Guided_Angle:
+        return false;
+    case GuidedMode::Guided_PosVel:
+    case GuidedMode::Guided_Velocity:
+        // Note: When sending out the position_target info. we send out all of info. no matter the input mavlink typemask
+        // This way we send out the maximum information that can be used by the sending control systems to adapt their generated trajectories
+        target.type_mask = 0;   // Ignore nothing
+
+        target.loc = Location(pos_control.get_pos_target_cm(), Location::AltFrame::ABOVE_ORIGIN);
+
+        target.vel      = sub.pos_control.get_vel_target_cms() * 0.01;              // convert cm/s to m/s
+        target.accel    = sub.pos_control.get_accel_target_cmss() * 0.01;           // convert cm/s to m/s
+        target.yaw      = sub.pos_control.get_yaw_cd() * DEG_TO_RAD * 0.01;         // convert centi-degrees to radians
+        target.yaw_rate = sub.pos_control.get_yaw_rate_cds() * DEG_TO_RAD * 0.01;   // convert centi-degrees / second to [rad/s]
+
+        break;
+    case GuidedMode::Guided_WP:
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore velocity, acceleration, yaw, & yaw rate
+        return wp_nav.get_oa_wp_destination(target.loc);
+    }
+
+    return true;
+}
+
 // guided_set_velocity - sets guided mode's target velocity
 void Sub::guided_set_velocity(const Vector3f& velocity)
 {

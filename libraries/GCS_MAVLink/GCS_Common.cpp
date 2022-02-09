@@ -4990,6 +4990,77 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
+void GCS_MAVLINK::send_position_target_local_ned() const
+{
+    Position_Target_Info target;
+    target.yaw = 0.0;
+    target.yaw_rate = 0.0;
+    if (!get_target_info(target)) {
+        return;
+    }
+
+    Vector3f target_pos;
+    if (!(target.type_mask & Position_Target_Mask::POS_ONLY)) {
+        if(!target.loc.get_vector_from_origin_NEU(target_pos)) {
+            return;
+        }
+    }
+
+    target.type_mask |= Position_Target_Mask::LAST_BYTE;
+
+    mavlink_msg_position_target_local_ned_send(
+        chan,
+        AP_HAL::millis(), // time boot ms
+        MAV_FRAME_LOCAL_NED, 
+        target.type_mask,
+        target_pos.x,       // x in metres
+        target_pos.y,       // y in metres
+        -target_pos.z,      // z in metres NED frame
+        target.vel.x,       // vx in m/s
+        target.vel.y,       // vy in m/s
+        -target.vel.z,      // vz in m/s NED frame
+        target.accel.x,     // afx in m/s/s
+        target.accel.y,     // afy in m/s/s
+        -target.accel.z,    // afz in m/s/s NED frame
+        target.yaw,         // yaw [rad]
+        target.yaw_rate);   // yaw_rate [rad/s]
+}
+
+void GCS_MAVLINK::send_position_target_global_int() const
+{
+    Position_Target_Info target;
+    target.yaw = 0.0;
+    target.yaw_rate = 0.0;
+    if (!get_target_info(target)) {
+        return;
+    }
+
+    // Note, currently get_target_info only returns either ABOVE_TERRAIN or ABOVE_ORIGIN
+    MAV_FRAME frame = MAV_FRAME_GLOBAL_INT;
+    if (!location_alt_frame_to_mavlink_coordinate_frame(target.loc, frame)) {
+        return; // failed altitude frame conversion
+    }
+
+    target.type_mask |= Position_Target_Mask::LAST_BYTE;
+
+    mavlink_msg_position_target_global_int_send(
+        chan,
+        AP_HAL::millis(),   // time_boot_ms
+        frame,              // target MAV_FRAME
+        target.type_mask,          // ignore items for the given type mask
+        target.loc.lat,         // latitude as 1e7
+        target.loc.lng,         // longitude as 1e7
+        target.loc.alt * 0.01f, // altitude [m] is sent as a float
+        target.vel.x,       // vx [m/s], frame NED
+        target.vel.y,       // vy [m/s], frame NED
+        -target.vel.z,      // vz [m/s], frame NED
+        target.accel.x,     // afx [m/s^2], frame NED
+        target.accel.y,     // afy [m/s^2], frame NED
+        -target.accel.z,    // afz [m/s^2], frame NED
+        target.yaw,         // yaw [rad]
+        target.yaw_rate);   // yaw_rate [rad/s]
+}
+
 void GCS_MAVLINK::send_generator_status() const
 {
 #if HAL_GENERATOR_ENABLED
@@ -5861,6 +5932,30 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 #endif
         return false;
     }
+}
+
+// Returns true if the mavlink_coordinate frame is set and if the input location's altitude frame can be converted
+// returns false if the change in altitude frame fails
+// Note: AltFrame::ABOVE_ORIGIN is converted to AltFrame::ABSOLUTE
+bool GCS_MAVLINK::location_alt_frame_to_mavlink_coordinate_frame(Location &loc, MAV_FRAME &coordinate_frame) const
+{
+    switch (loc.get_alt_frame()) {
+    case Location::AltFrame::ABOVE_TERRAIN:
+        coordinate_frame = MAV_FRAME_GLOBAL_TERRAIN_ALT_INT;
+        break;
+    case Location::AltFrame::ABSOLUTE:
+        coordinate_frame = MAV_FRAME_GLOBAL_INT;
+        break;
+    case Location::AltFrame::ABOVE_HOME:
+        coordinate_frame = MAV_FRAME_GLOBAL_RELATIVE_ALT_INT;
+        break;
+    case Location::AltFrame::ABOVE_ORIGIN:
+        if (!loc.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+            return false;
+        }
+        coordinate_frame = MAV_FRAME_GLOBAL_INT;
+    }
+    return true;
 }
 
 uint64_t GCS_MAVLINK::capabilities() const

@@ -69,32 +69,18 @@ MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
     return MAV_STATE_ACTIVE;
 }
 
-void GCS_MAVLINK_Rover::send_position_target_global_int()
+bool GCS_MAVLINK_Rover::get_target_info(Position_Target_Info &target) const
 {
-    Location target;
-    if (!rover.control_mode->get_desired_location(target)) {
-        return;
+    return rover.control_mode->get_target_info(target);
+}
+
+bool GCS_MAVLINK_Rover::get_target_local_info(Position_Target_Info &target) const
+{
+    // exit if vehicle is not in Guided mode
+    if (!rover.control_mode->in_guided_mode()) {
+        return false;
     }
-    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
-    mavlink_msg_position_target_global_int_send(
-        chan,
-        AP_HAL::millis(), // time_boot_ms
-        MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
-        target.lat, // latitude as 1e7
-        target.lng, // longitude as 1e7
-        target.alt * 0.01f, // altitude is sent as a float
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
-        0.0f, // yaw
-        0.0f); // yaw_rate
+    return rover.mode_guided.get_target_info(target);
 }
 
 void GCS_MAVLINK_Rover::send_nav_controller_output() const

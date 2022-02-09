@@ -555,7 +555,8 @@ void ModeRTL::compute_return_target()
     rtl_path.return_target.alt = MAX(rtl_path.return_target.alt, curr_alt);
 }
 
-bool ModeRTL::get_wp(Location& destination) const
+// get target information for mavlink reporting: typemask, position, velocity, acceleration
+bool ModeRTL::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     // provide target in states which use wp_nav
     switch (_state) {
@@ -564,7 +565,8 @@ bool ModeRTL::get_wp(Location& destination) const
     case SubMode::RETURN_HOME:
     case SubMode::LOITER_AT_HOME:
     case SubMode::FINAL_DESCENT:
-        return wp_nav->get_oa_wp_destination(destination);
+        target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+        return wp_nav->get_oa_wp_destination(target.loc);
     case SubMode::LAND:
         return false;
     }

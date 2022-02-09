@@ -204,13 +204,13 @@ bool ModeGuided::set_desired_speed(float speed)
     return false;
 }
 
-// get desired location
-bool ModeGuided::get_desired_location(Location& destination) const
+bool ModeGuided::get_target_info(GCS_MAVLINK::Position_Target_Info &target) const
 {
     switch (_guided_mode) {
     case Guided_WP:
         if (g2.wp_nav.is_destination_valid()) {
-            destination = g2.wp_nav.get_oa_destination();
+            target.type_mask = GCS_MAVLINK::POS_ONLY; // ignore everything except position
+            target.loc = g2.wp_nav.get_oa_destination();
             return true;
         }
         return false;
@@ -219,12 +219,11 @@ bool ModeGuided::get_desired_location(Location& destination) const
         // not supported in these submodes
         return false;
     case Guided_Loiter:
-        // get destination from loiter
-        return rover.mode_loiter.get_desired_location(destination);
+        return rover.mode_loiter.get_target_info(target);
     case Guided_SteeringAndThrottle:
     case Guided_Stop:
         // no desired location in this submode
-        break;
+        return false;
     }
 
     // should never get here but just in case
