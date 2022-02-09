@@ -529,7 +529,6 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
 
     // not really aux functions:
     case AUX_FUNC::LOWEHEISER_THROTTLE:
-        break;
     case AUX_FUNC::AVOID_ADSB:
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::FENCE:
