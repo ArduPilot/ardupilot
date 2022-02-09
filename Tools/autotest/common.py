@@ -3049,7 +3049,10 @@ class AutoTest(ABC):
             self.last_sim_time_cached = ret
             self.last_sim_time_cached_wallclock = time.time()
         else:
-            if time.time() - self.last_sim_time_cached_wallclock > 30:
+            timeout = 30
+            if self.valgrind:
+                timeout *= 10
+            if time.time() - self.last_sim_time_cached_wallclock > timeout:
                 raise AutoTestTimeoutException("sim_time_cached is not updating!")
         return ret
 
