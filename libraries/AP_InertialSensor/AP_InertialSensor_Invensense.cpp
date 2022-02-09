@@ -166,7 +166,7 @@ void AP_InertialSensor_Invensense::_fifo_reset(bool log_error)
         reset_count++;
         if (reset_count == 10) {
             // 10 resets, each happening within 10s, triggers an internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::imu_reset);
+            //INTERNAL_ERROR(AP_InternalError::error_t::imu_reset);
             reset_count = 0;
         }
     } else if (log_error &&
