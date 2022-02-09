@@ -94,27 +94,6 @@ int16_t CanIface::receive(CanFrame& out_frame, MonotonicTime& out_ts_monotonic, 
 }
 
 /**
- * Configure the hardware CAN filters. @ref CanFilterConfig.
- *
- * @return 0 = success, negative for error.
- */
-int16_t CanIface::configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-{
-    if (can_iface_ == UAVCAN_NULLPTR) {
-        return -1;
-    }
-    AP_HAL::CANIface::CanFilterConfig* hal_filter_configs = new AP_HAL::CANIface::CanFilterConfig[num_configs];
-    if (hal_filter_configs == nullptr) {
-        return -1;
-    }
-    for (uint16_t i = 0; i < num_configs; i++) {
-        hal_filter_configs[i].id = filter_configs[i].id;
-        hal_filter_configs[i].mask = filter_configs[i].mask;
-    }
-    return can_iface_->configureFilters(hal_filter_configs, num_configs);
-}
-
-/**
  * Number of available hardware filters.
  */
 uint16_t CanIface::getNumFilters() const
