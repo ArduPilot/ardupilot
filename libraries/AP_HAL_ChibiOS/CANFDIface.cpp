@@ -399,8 +399,9 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
-#if defined(STM32G4)
-    // not supported yet
+    // only enable filters in AP_Periph. It makes no sense on the flight controller
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(STM32G4)
+    // no filtering
     can_->CCCR &= ~FDCAN_CCCR_INIT; // Leave init mode
     uint32_t while_start_ms = AP_HAL::millis();
     while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
@@ -525,7 +526,7 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
     }
     initialised_ = true;
     return true;
-#endif // defined(STM32G4)
+#endif // AP_Periph, STM32G4
 }
 
 uint16_t CANIface::getNumFilters() const

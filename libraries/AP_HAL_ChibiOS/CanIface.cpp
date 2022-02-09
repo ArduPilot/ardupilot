@@ -384,6 +384,11 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
                                 uint16_t num_configs)
 {
+#if !defined(HAL_BUILD_AP_PERIPH)
+    // only do filtering for AP_Periph
+    can_->FMR &= ~bxcan::FMR_FINIT;
+    return true;
+#else
     if (mode_ != FilteredMode) {
         return false;
     }
@@ -451,6 +456,7 @@ bool CANIface::configureFilters(const CanFilterConfig* filter_configs,
     }
 
     return false;
+#endif // AP_Periph
 }
 #endif
 
