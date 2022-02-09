@@ -27,7 +27,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_POSCON_TIMEOUT_MS            100     // timeout after 0.1 sec
 #define AR_POSCON_POS_P                 0.2f    // default position P gain
 #define AR_POSCON_VEL_P                 1.0f    // default velocity P gain
-#define AR_POSCON_VEL_I                 0.2f    // default velocity I gain
+#define AR_POSCON_VEL_I                 0.0f    // default velocity I gain
 #define AR_POSCON_VEL_D                 0.0f    // default velocity D gain
 #define AR_POSCON_VEL_FF                0.0f    // default velocity FF gain
 #define AR_POSCON_VEL_IMAX              1.0f    // default velocity IMAX
