@@ -713,19 +713,20 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
 
 #if AP_SCRIPTING_ENABLED
 // set target location (for use by scripting)
-bool Plane::set_target_location(const Location& target_loc)
+bool Plane::set_target_location(const Location &target_loc)
 {
+    Location loc{target_loc};
+
     if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
         return false;
     }
-    plane.guided_WP_loc = target_loc;
     // add home alt if needed
-    if (plane.guided_WP_loc.relative_alt) {
-        plane.guided_WP_loc.alt += plane.home.alt;
-        plane.guided_WP_loc.relative_alt = 0;
+    if (loc.relative_alt) {
+        loc.alt += plane.home.alt;
+        loc.relative_alt = 0;
     }
-    plane.set_guided_WP();
+    plane.set_guided_WP(loc);
     return true;
 }
 

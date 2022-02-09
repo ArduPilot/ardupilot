@@ -61,9 +61,9 @@ void Plane::set_next_WP(const struct Location &loc)
     setup_turn_angle();
 }
 
-void Plane::set_guided_WP(void)
+void Plane::set_guided_WP(const Location &loc)
 {
-    if (aparm.loiter_radius < 0 || guided_WP_loc.loiter_ccw) {
+    if (aparm.loiter_radius < 0 || loc.loiter_ccw) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
@@ -75,7 +75,7 @@ void Plane::set_guided_WP(void)
 
     // Load the next_WP slot
     // ---------------------
-    next_WP_loc = guided_WP_loc;
+    next_WP_loc = loc;
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
