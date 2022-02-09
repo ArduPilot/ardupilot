@@ -357,9 +357,6 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     }
     
     _led_conf.devices_count = 0;
-    if (enable_filters) {
-        configureCanAcceptanceFilters(*_node);
-    }
 
     /*
      * Informing other nodes that we're ready to work.
