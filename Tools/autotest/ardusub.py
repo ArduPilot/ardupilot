@@ -245,9 +245,7 @@ class AutoTestSub(AutoTest):
         self.disarm_vehicle()
         self.progress("Manual dive OK")
 
-        m = self.mav.recv_match(type='SCALED_PRESSURE3', blocking=True)
-        if m is None:
-            raise NotAchievedException("Did not get SCALED_PRESSURE3")
+        m = self.assert_receive_message('SCALED_PRESSURE3')
         if m.temperature != 2650:
             raise NotAchievedException("Did not get correct TSYS01 temperature")
 
