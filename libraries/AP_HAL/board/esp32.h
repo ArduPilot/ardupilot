@@ -7,7 +7,7 @@
 #include "esp32buzz.h" //Buzz
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
 #include "esp32icarus.h" //Alex
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32S3_DEVKIT
 #include "esp32s3devkit.h" //Nick
 #endif
 
