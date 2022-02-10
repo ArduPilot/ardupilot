@@ -24,6 +24,7 @@
 #include "hwdef/common/watchdog.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Common/ExpandingString.h>
 #ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
 #endif
@@ -719,7 +720,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
 
   This is used for both DShot and serial output
  */
-bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length, bool choose_high,
+bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length,
                                uint32_t pulse_time_us, bool is_dshot)
 {
 #ifndef DISABLE_DSHOT
@@ -768,32 +769,15 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     }
 
     const uint32_t target_frequency = bitrate * bit_width;
-    uint32_t prescaler;
-    if (is_dshot) {
-        // original prescaler calculation from betaflight. bi-dir dshot is incredibly sensitive to the bitrate
-        prescaler = uint32_t(lrintf((float) group.pwm_drv->clock / (bitrate * bit_width) + 0.01f) - 1);
-    } else {
-        // adjust frequency to give an allowed value given the clock, erring on the high side
-        const uint32_t clock_hz = group.pwm_drv->clock;
-        prescaler = group.pwm_drv->clock / target_frequency;
-        while ((clock_hz / prescaler) < target_frequency && prescaler > 1) {
-            prescaler--;
-        }
-    }
+    const uint32_t prescaler = calculate_bitrate_prescaler(group.pwm_drv->clock, target_frequency, is_dshot);
 
-    uint32_t freq = group.pwm_drv->clock / prescaler;
-    if (freq > target_frequency && !choose_high) {
-        prescaler++;
-    } else if (freq < target_frequency && choose_high) {
-        prescaler--;
-    }
     if (prescaler > 0x8000) {
         group.dma_handle->unlock();
         print_group_setup_error(group, "failed to match clock speed");
         return false;
     }
 
-    freq = group.pwm_drv->clock / prescaler;
+    const uint32_t freq = group.pwm_drv->clock / prescaler;
     group.pwm_cfg.frequency = freq;
     group.pwm_cfg.period = bit_width;
     group.pwm_cfg.dier = TIM_DIER_UDE;
@@ -878,7 +862,7 @@ void RCOutput::set_group_mode(pwm_group &group)
         // calculate min time between pulses taking into account the DMAR parallelism
         const uint32_t pulse_time_us = 1000000UL * bit_length / rate;
 
-        if (!setup_group_DMA(group, rate, bit_period, active_high, buffer_length, true, pulse_time_us, false)) {
+        if (!setup_group_DMA(group, rate, bit_period, active_high, buffer_length, pulse_time_us, false)) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
@@ -894,8 +878,7 @@ void RCOutput::set_group_mode(pwm_group &group)
 
         // configure timer driver for DMAR at requested rate
         if (!setup_group_DMA(group, rate, bit_period, active_high,
-            // choosing the low frequency for DSHOT150 is based on experimentation with BLHeli32 and bi-directional dshot
-                             MAX(DSHOT_BUFFER_LENGTH, GCR_TELEMETRY_BUFFER_LEN), group.current_mode != MODE_PWM_DSHOT150, pulse_send_time_us, true)) {
+                             MAX(DSHOT_BUFFER_LENGTH, GCR_TELEMETRY_BUFFER_LEN), pulse_send_time_us, true)) {
             group.current_mode = MODE_PWM_NORMAL;
             break;
         }
@@ -1639,7 +1622,7 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t cha
     // channels in blheli pass-thru fast
     for (auto &group : pwm_group_list) {
         if (group.ch_mask & chanmask) {
-            if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, false, 10, false)) {
+            if (!setup_group_DMA(group, baudrate, 10, false, DSHOT_BUFFER_LENGTH, 10, false)) {
                 serial_end();
                 return false;
             }
@@ -2347,6 +2330,20 @@ void RCOutput::serial_led_send(const uint16_t chan)
         chEvtSignal(rcout_thread_ctx, EVT_LED_SEND);
         grp->serial_led_pending = true;
         serial_led_pending = true;
+    }
+}
+
+void RCOutput::timer_info(ExpandingString &str)
+{
+    // a header to allow for machine parsers to determine format
+    str.printf("TIMERV1\n");
+
+    for (auto &group : pwm_group_list) {
+        const uint32_t target_freq = &group == serial_group ? 19200 * 10 : protocol_bitrate(group.current_mode) * 20;
+        const uint32_t prescaler = calculate_bitrate_prescaler(group.pwm_drv->clock, target_freq, is_dshot_protocol(group.current_mode));
+        str.printf("TIM%-2u CLK=%4uMhz MODE=%5s FREQ=%8u TGT=%8u\n", group.timer_id, unsigned(group.pwm_drv->clock / 1000000),
+            get_output_mode_string(group.current_mode),
+            unsigned(group.pwm_drv->clock / prescaler), unsigned(target_freq));
     }
 }
 
