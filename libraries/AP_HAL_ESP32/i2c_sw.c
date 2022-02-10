@@ -35,7 +35,11 @@
 #include <stdio.h>
 
 #include "esp_attr.h"
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
+#include "esp32s3/rom/ets_sys.h"
+#else
 #include "esp32/rom/ets_sys.h"
+#endif
 
 #include "soc/gpio_reg.h"
 #include "soc/gpio_struct.h"
