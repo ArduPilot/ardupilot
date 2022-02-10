@@ -132,6 +132,7 @@ private:
     private:
         AP_Int8 _driver_number;
         AP_Int32 _bitrate;
+        AP_Int32 _fdbitrate;
     };
 
     //Parameter Interface for CANDrivers

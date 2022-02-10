@@ -153,7 +153,6 @@ bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd)
     return push_Frame(f);
 }
 
-#if HAL_CANFD_SUPPORTED
 /**
  * General frame format:
  *  <type> <id> <dlc> <data>
@@ -161,6 +160,9 @@ bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd)
  */
 bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
 {
+#if HAL_CANFD_SUPPORTED
+    return false;
+#else
     AP_HAL::CANFrame f {};
     hex2nibble_error = false;
     f.canfd = true;
@@ -188,8 +190,8 @@ bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
         return false;
     }
     return push_Frame(f);
-}
 #endif //#if HAL_CANFD_SUPPORTED
+}
 
 bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 {
