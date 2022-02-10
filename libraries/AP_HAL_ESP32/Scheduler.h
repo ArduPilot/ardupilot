@@ -72,7 +72,7 @@ public:
     static const int RCIN_SS = 4096;
     static const int RCOUT_SS = 4096;
     static const int WIFI_SS = 4096;
-    static const int UART_SS = 1024;
+    static const int UART_SS = 2048;
     static const int DEVICE_SS = 4096;
     static const int IO_SS = 4096;
     static const int STORAGE_SS = 4096;
