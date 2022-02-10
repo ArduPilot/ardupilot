@@ -204,7 +204,7 @@ class Decoder:
         self.fwversion.os_name = self.unpack_string_from_pointer()
         self.fwversion.os_hash_string = self.unpack_string_from_pointer()
 
-    def process(self, filename) -> None:
+    def process(self, filename) -> FWVersion:
         # We need the file open for ELFFile
         file = open(filename, "rb")
         data = file.read()
@@ -226,7 +226,7 @@ class Decoder:
 
         # Unpack struct and print it
         self.unpack_fwversion()
-        print(self.fwversion)
+        return self.fwversion
 
 
 if __name__ == "__main__":
@@ -242,7 +242,21 @@ if __name__ == "__main__":
         required=True,
         help="File that contains a valid ardupilot firmware in ELF format.",
     )
+    parser.add_argument(
+        "--expected-hash",
+        dest="expected_hash",
+        help="Expected git hash. The script fails if this doesn't match the git hash in the binary file. Used in CI",
+    )
     args = parser.parse_args()
 
     decoder = Decoder()
-    decoder.process(args.file)
+    try:
+        firmware_data = decoder.process(args.file)
+    except Exception as e:
+        print(f"Error decoding FWVersion: {type(e)}")
+        exit(-1)
+
+    print(firmware_data)
+    if args.expected_hash and args.expected_hash != firmware_data.firmware_hash_string:
+        print(f"Git hashes don't match! expected: {args.expected_hash}, got {firmware_data.firmware_hash_string}")
+        exit(-1)
