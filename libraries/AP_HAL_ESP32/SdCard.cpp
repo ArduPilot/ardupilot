@@ -118,8 +118,7 @@ void mount_sdcard_mmc()
 
     //  the dedicated SDMMC host peripheral on the esp32 is about twice as fast as SD card SPI interface in '1-line' mode and somewht faster again in '4-line' mode.  we've using 1-line mode in this driver, so we need less gpio's
 
-    static const char *TAG = "SD...";
-    ESP_LOGI(TAG, "Initializing SD card as SDMMC");
+    printf("Initializing SD card as SDMMC");
 
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
 
@@ -204,8 +203,7 @@ void mount_sdcard_spi()
     //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/README.md
     //https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/main/sd_card_example_main.c
 
-    static const char *TAG = "SD...";
-    ESP_LOGI(TAG, "Initializing SD card as SDSPI");
+    printf("Initializing SD card as SDSPI");
     esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = 10,
