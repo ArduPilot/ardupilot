@@ -94,6 +94,7 @@ class FWVersion:
     os_software_version: int = 0
     firmware_string: str = ""
     firmware_hash_string: str = ""
+    firmware_hash: int = 0
     middleware_name: str = ""
     middleware_hash_string: str = ""
     os_name: str = ""
@@ -120,6 +121,7 @@ class FWVersion:
         board: {BoardType(self.board_type).name}
         board subtype: {BoardSubType(self.board_subtype).name}
         hash: {self.firmware_hash_string}
+        hash integer: 0x{self.firmware_hash:02x}
         version: {self.major}.{self.minor}.{self.patch}
         type: {FirmwareVersionType(self.firmware_type).name}
     os:
@@ -177,6 +179,8 @@ class Decoder:
         )
 
         self.fwversion.header_version = self.unpack("H")
+        major_version = self.fwversion.header_version >> 8
+
         self.pointer_size = self.unpack("B")
         self.fwversion.pointer_size = self.pointer_size
         self.unpack("B")  # reserved
@@ -192,6 +196,9 @@ class Decoder:
 
         self.fwversion.firmware_string = self.unpack_string_from_pointer()
         self.fwversion.firmware_hash_string = self.unpack_string_from_pointer()
+        if major_version >= 2:
+            self.fwversion.firmware_hash = self.unpack("I")
+
         self.fwversion.middleware_name = self.unpack_string_from_pointer()
         self.fwversion.middleware_hash_string = self.unpack_string_from_pointer()
         self.fwversion.os_name = self.unpack_string_from_pointer()
