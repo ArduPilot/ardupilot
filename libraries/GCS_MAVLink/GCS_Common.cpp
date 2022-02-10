@@ -3733,6 +3733,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_CAN_FRAME:
+    case MAVLINK_MSG_ID_CANFD_FRAME:
         handle_can_frame(msg);
         break;
 
