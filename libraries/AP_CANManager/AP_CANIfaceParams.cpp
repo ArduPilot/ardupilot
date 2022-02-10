@@ -35,6 +35,14 @@ const AP_Param::GroupInfo AP_CANManager::CANIface_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BITRATE", 2, AP_CANManager::CANIface_Params, _bitrate, 1000000),
 
+#if HAL_CANFD_SUPPORTED
+    // @Param: BITRATE
+    // @DisplayName: Bitrate of CAN interface
+    // @Description: Bit rate can be set up to from 10000 to 8000000
+    // @Values: 2:2M, 5:5M, 8:8M
+    // @User: Advanced
+    AP_GROUPINFO("FDBITRATE", 3, AP_CANManager::CANIface_Params, _fdbitrate, 8),
+#endif
     // Index 3 occupied by Param: DEBUG
     AP_GROUPEND
 };
