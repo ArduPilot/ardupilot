@@ -734,9 +734,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
             if (sub.far_from_EKF_origin(new_home_loc)) {
                 break;
             }
-            if (!sub.set_home(new_home_loc, true)) {
-                // silently ignored
-            }
+            IGNORE_RETURN(sub.set_home(new_home_loc, true));
         }
         break;
     }
