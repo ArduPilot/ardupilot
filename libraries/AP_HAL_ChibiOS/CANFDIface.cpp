@@ -554,7 +554,7 @@ uint16_t CANIface::getNumFilters() const
 }
 
 bool CANIface::clock_init_ = false;
-bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode)
 {
     Debug("Bitrate %lu mode %d", static_cast<unsigned long>(bitrate), static_cast<int>(mode));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
@@ -669,23 +669,24 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
                   (timings.bs2 << FDCAN_NBTP_NTSEG2_Pos)  |
                   (timings.prescaler << FDCAN_NBTP_NBRP_Pos));
 
-    if (!computeTimings(bitrate*8, timings)) { // Do 8x fast Data transmission for CAN FD frames
-        can_->CCCR &= ~FDCAN_CCCR_INIT;
-        uint32_t while_start_ms = AP_HAL::millis();
-        while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
-            if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
-                return false;
+    if (fdbitrate) {
+        if (!computeTimings(fdbitrate, timings)) { // Do 8x fast Data transmission for CAN FD frames
+            can_->CCCR &= ~FDCAN_CCCR_INIT;
+            uint32_t while_start_ms = AP_HAL::millis();
+            while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
+                if ((AP_HAL::millis() - while_start_ms) > REG_SET_TIMEOUT) {
+                    return false;
+                }
             }
+            return false;
         }
-        return false;
+        Debug("CANFD Timings: presc=%u bs1=%u bs2=%u\n",
+              unsigned(timings.prescaler), unsigned(timings.bs1), unsigned(timings.bs2));
+        can_->DBTP = ((timings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
+                     (timings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
+                     (timings.prescaler << FDCAN_DBTP_DBRP_Pos));
     }
-    Debug("CANFD Timings: presc=%u bs1=%u bs2=%u\n",
-          unsigned(timings.prescaler), unsigned(timings.bs1), unsigned(timings.bs2));
 
-    can_->DBTP = ((timings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
-                  (timings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
-                  (timings.prescaler << FDCAN_DBTP_DBRP_Pos));
-    
     //RX Config
 #if defined(STM32H7)
     can_->RXESC = 0; //Set for 8Byte Frames
