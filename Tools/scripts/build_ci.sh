@@ -298,6 +298,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building navigator"
         $waf configure --board navigator --toolchain=arm-linux-musleabihf
         $waf sub --static
+        ./Tools/scripts/firmware_version_decoder.py -f build/navigator/bin/ardusub --expected-hash $GIT_VERSION
         continue
     fi
 
