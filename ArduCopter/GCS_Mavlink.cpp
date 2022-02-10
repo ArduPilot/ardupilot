@@ -1407,10 +1407,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             new_home_loc.lat = packet.latitude;
             new_home_loc.lng = packet.longitude;
             new_home_loc.alt = packet.altitude / 10;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-            copter.set_home(new_home_loc, true);
-#pragma GCC diagnostic pop
+            IGNORE_RETURN(copter.set_home(new_home_loc, true));
         }
         break;
     }
