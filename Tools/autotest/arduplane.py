@@ -628,9 +628,7 @@ class AutoTestPlane(AutoTest):
         self.reboot_sitl()
 
         self.wait_ready_to_arm()
-        m = self.mav.recv_match(type='BATTERY_STATUS', blocking=True, timeout=10)
-        if m is None:
-            raise NotAchievedException("Did not get BATTERY_STATUS message")
+        m = self.assert_receive_message('BATTERY_STATUS', timeout=10)
         if m.voltages_ext[0] == 65536:
             raise NotAchievedException("Flag value rather than voltage")
         if abs(m.voltages_ext[0] - 1000) > 300:
@@ -1094,9 +1092,7 @@ class AutoTestPlane(AutoTest):
     def assert_fence_sys_status(self, present, enabled, health):
         self.delay_sim_time(1)
         self.drain_mav_unparsed()
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
-        if m is None:
-            raise NotAchievedException("Did not receive SYS_STATUS")
+        m = self.assert_receive_message('SYS_STATUS', timeout=1)
         tests = [
             ("present", present, m.onboard_control_sensors_present),
             ("enabled", enabled, m.onboard_control_sensors_enabled),
@@ -1170,9 +1166,7 @@ class AutoTestPlane(AutoTest):
             self.assert_fence_sys_status(True, False, True)
             self.do_fence_enable()
             self.assert_fence_sys_status(True, True, True)
-            m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
-            if m is None:
-                raise NotAchievedException("Did not get FENCE_STATUS")
+            m = self.assert_receive_message('FENCE_STATUS', timeout=2)
             if m.breach_status:
                 raise NotAchievedException("Breached fence unexpectedly (%u)" %
                                            (m.breach_status))
@@ -1302,9 +1296,7 @@ class AutoTestPlane(AutoTest):
             while True:
                 if self.get_sim_time() - tstart > 30:
                     raise NotAchievedException("Did not breach fence")
-                m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
-                if m is None:
-                    raise NotAchievedException("Did not get FENCE_STATUS")
+                m = self.assert_receive_message('FENCE_STATUS', timeout=2)
                 if m.breach_status == 0:
                     continue
 
@@ -1963,9 +1955,7 @@ function'''
             self.delay_sim_time(2) # TODO: work out why this is required...
             self.test_adsb_send_threatening_adsb_message(here)
             self.progress("Waiting for collision message")
-            m = self.mav.recv_match(type='COLLISION', blocking=True, timeout=4)
-            if m is None:
-                raise NotAchievedException("Did not get collision message")
+            m = self.assert_receive_message('COLLISION', timeout=4)
             if m.threat_level != 2:
                 raise NotAchievedException("Expected some threat at least")
             if m.action != mavutil.mavlink.MAV_COLLISION_ACTION_RTL:
@@ -2034,9 +2024,7 @@ function'''
             int(loc.lng * 1e7), # longitude
             loc.alt, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-        m = self.mav.recv_match(type='MISSION_ACK', blocking=True, timeout=5)
-        if m is None:
-            raise NotAchievedException("Did not get MISSION_ACK")
+        m = self.assert_receive_message('MISSION_ACK', timeout=5)
         if m.type != mavutil.mavlink.MAV_MISSION_ERROR:
             raise NotAchievedException("Did not get appropriate error")
 
@@ -2058,9 +2046,7 @@ function'''
             int(loc.lng * 1e7), # longitude
             desired_relative_alt, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-        m = self.mav.recv_match(type='MISSION_ACK', blocking=True, timeout=5)
-        if m is None:
-            raise NotAchievedException("Did not get MISSION_ACK")
+        m = self.assert_receive_message('MISSION_ACK', timeout=5)
         if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
             raise NotAchievedException("Did not get accepted response")
         self.wait_location(loc, accuracy=100) # based on loiter radius
@@ -2113,14 +2099,10 @@ function'''
                 raise NotAchievedException("Did not get VFR_HUD")
             new_throttle = m.throttle
             alt = m.alt
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=5)
-            if m is None:
-                raise NotAchievedException("Did not get ATTITUDE")
+            m = self.assert_receive_message('ATTITUDE', timeout=5)
             pitch = math.degrees(m.pitch)
             self.progress("Pitch:%f throttle:%u alt:%f" % (pitch, new_throttle, alt))
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=5)
-        if m is None:
-            raise NotAchievedException("Did not get VFR_HUD")
+        m = self.assert_receive_message('VFR_HUD', timeout=5)
         initial_throttle = m.throttle
         initial_alt = m.alt
         self.progress("Initial throttle: %u" % initial_throttle)
@@ -2136,14 +2118,10 @@ function'''
             '''
             if now - tstart > 60:
                 raise NotAchievedException("Did not see increase in throttle")
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=5)
-            if m is None:
-                raise NotAchievedException("Did not get VFR_HUD")
+            m = self.assert_receive_message('VFR_HUD', timeout=5)
             new_throttle = m.throttle
             alt = m.alt
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=5)
-            if m is None:
-                raise NotAchievedException("Did not get ATTITUDE")
+            m = self.assert_receive_message('ATTITUDE', timeout=5)
             pitch = math.degrees(m.pitch)
             self.progress("Pitch:%f throttle:%u alt:%f" % (pitch, new_throttle, alt))
             if new_throttle - initial_throttle > 20:
@@ -2581,9 +2559,7 @@ function'''
             self.set_parameter("SIM_IMUT_FIXED", temp)
             self.delay_sim_time(2)
             for msg in ['RAW_IMU', 'SCALED_IMU2']:
-                m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
-                if m is None:
-                    raise NotAchievedException(msg)
+                m = self.assert_receive_message(msg, timeout=2)
                 temperature = m.temperature*0.01
 
                 if abs(temperature - temp) > 0.2:
@@ -2610,9 +2586,7 @@ function'''
             self.wait_heartbeat()
             self.wait_heartbeat()
             for msg in ['RAW_IMU', 'SCALED_IMU2']:
-                m = self.mav.recv_match(type=msg, blocking=True, timeout=2)
-                if m is None:
-                    raise NotAchievedException(msg)
+                m = self.assert_receive_message(msg, timeout=2)
                 temperature = m.temperature*0.01
 
                 if abs(temperature - temp) > 0.2:
