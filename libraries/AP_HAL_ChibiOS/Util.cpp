@@ -606,6 +606,14 @@ void Util::uart_info(ExpandingString &str)
 }
 #endif
 
+// request information on uart I/O
+#if HAL_USE_PWM == TRUE
+void Util::timer_info(ExpandingString &str)
+{
+    hal.rcout->timer_info(str);
+}
+#endif
+
 /**
  * This method will generate random values with set size. It will fall back to AP_Math's get_random16()
  * if True RNG fails or enough entropy is not present.
