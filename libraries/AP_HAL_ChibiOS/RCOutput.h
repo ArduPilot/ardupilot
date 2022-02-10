@@ -248,6 +248,11 @@ public:
      */
     void rcout_thread();
 
+    /*
+     timer information
+     */
+    void timer_info(ExpandingString &str) override;
+
 private:
     enum class DshotState {
       IDLE = 0,
@@ -282,6 +287,7 @@ private:
         uint8_t chan[4]; // chan number, zero based, 255 for disabled
         PWMConfig pwm_cfg;
         PWMDriver* pwm_drv;
+        uint8_t timer_id;
         bool have_up_dma; // can we do DMAR outputs for DShot?
         uint8_t dma_up_stream_id;
         uint8_t dma_up_channel;
@@ -294,7 +300,6 @@ private:
 #endif
         uint8_t alt_functions[4];
         ioline_t pal_lines[4];
-
         // below this line is not initialised by hwdef.h
         enum output_mode current_mode;
         uint16_t frequency_hz;
@@ -597,7 +602,7 @@ private:
     void dma_cancel(pwm_group& group);
     bool mode_requires_dma(enum output_mode mode) const;
     bool setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
-                         const uint16_t buffer_length, bool choose_high, uint32_t pulse_time_us,
+                         const uint16_t buffer_length, uint32_t pulse_time_us,
                          bool is_dshot);
     void send_pulses_DMAR(pwm_group &group, uint32_t buffer_length);
     void set_group_mode(pwm_group &group);
