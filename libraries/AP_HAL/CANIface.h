@@ -163,7 +163,7 @@ public:
         }
     };
 
-    virtual bool init(const uint32_t bitrate, const OperatingMode mode, const uint32_t fdbitrate) {
+    virtual bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) {
         return init(bitrate, mode);
     }
 
