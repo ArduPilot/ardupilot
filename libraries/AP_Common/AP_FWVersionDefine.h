@@ -42,7 +42,7 @@
 const AP_FWVersion AP_FWVersion::fwver{
     // Version header struct
     .header = 0x61706677766572fb, // First 7 MSBs: "apfwver", LSB is the checksum of the previous string: 0xfb
-    .header_version = 0x0100U, // Major and minor version
+    .header_version = 0x0200U, // Major and minor version
     .pointer_size = static_cast<uint8_t>(sizeof(void*)),
     .reserved = 0,
     .vehicle_type = static_cast<uint8_t>(APM_BUILD_DIRECTORY),
