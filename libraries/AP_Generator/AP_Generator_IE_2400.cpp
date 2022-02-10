@@ -29,7 +29,7 @@ void AP_Generator_IE_2400::init()
     // Tell frontend what measurements are available for this generator
     _frontend._has_current = true;
     _frontend._has_consumed_energy = true;
-    _frontend._has_fuel_remaining = true;
+    _frontend._has_fuel_remaining_pct = true;
 }
 
 // Update fuel cell, expected to be called at 20hz
