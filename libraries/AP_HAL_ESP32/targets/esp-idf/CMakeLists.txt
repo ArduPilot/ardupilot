@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_TOOLCHAIN_FILE $ENV{IDF_PATH}/tools/cmake/toolchain-esp32.cmake CACHE STRING "")
+set(CMAKE_TOOLCHAIN_FILE $ENV{IDF_PATH}/tools/cmake/toolchain-esp32s3.cmake CACHE STRING "")
 
 project(ardupilot)
 
@@ -8,14 +8,14 @@ project(ardupilot)
 include($ENV{IDF_PATH}/tools/cmake/idf.cmake)
 
 # Create idf::esp32 and idf::freertos static libraries
-idf_build_process(esp32
+idf_build_process(esp32s3
     # try and trim the build; additional components
     # will be included as needed based on dependency tree
     #
     # although esptool_py does not generate static library,
     # processing the component is needed for flashing related
     # targets and file generation
-    COMPONENTS esp32
+    COMPONENTS esp32s3
                freertos
                tcpip_adapter
                fatfs
@@ -88,7 +88,7 @@ add_custom_target(showinc ALL
 
 # Link the static libraries to the executable
 target_link_libraries(${elf_file}
-                idf::esp32
+                idf::esp32s3
                 idf::freertos
                 idf::fatfs
                 idf::esp_adc_cal
