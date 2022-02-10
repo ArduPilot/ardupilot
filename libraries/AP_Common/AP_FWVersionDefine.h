@@ -63,7 +63,7 @@ const AP_FWVersion AP_FWVersion::fwver{
 #ifndef GIT_VERSION_INT
     .fw_hash = 0,
 #else
-   .fw_hash = GIT_VERSION_INT,
+    .fw_hash = GIT_VERSION_INT,
 #endif
     .fw_string_original = ORIGINAL_FWSTR,
     .fw_short_string = ACTIVE_FWSTR,
