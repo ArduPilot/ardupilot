@@ -1401,10 +1401,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(&msg, &packet);
         if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-            copter.set_home_to_current_location(true);
-#pragma GCC diagnostic pop
+            IGNORE_RETURN(copter.set_home_to_current_location(true));
         } else {
             Location new_home_loc;
             new_home_loc.lat = packet.latitude;
