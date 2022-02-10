@@ -697,7 +697,7 @@ class sitl_periph_gps(sitl):
 
 class esp32(Board):
     abstract = True
-    toolchain = 'xtensa-esp32-elf'
+    toolchain = 'xtensa-esp32s3-elf'
     def configure_env(self, cfg, env):
         def expand_path(p):
             print("USING EXPRESSIF IDF:"+str(env.idf))
