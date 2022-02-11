@@ -197,14 +197,22 @@ protected:
 
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
-    // method shared by both Guided and Auto for takeoff.  This is
-    // waypoint navigation but the user can control the yaw.
+    // method shared by both Guided and Auto for takeoff.
+    // position controller controls vehicle but the user can control the yaw.
     void auto_takeoff_run();
-    void auto_takeoff_set_start_alt(void);
+    void auto_takeoff_start(float complete_alt_cm, bool terrain_alt);
+    bool auto_takeoff_get_position(Vector3p& completion_pos);
 
     // altitude above-ekf-origin below which auto takeoff does not control horizontal position
     static bool auto_takeoff_no_nav_active;
     static float auto_takeoff_no_nav_alt_cm;
+
+    // auto takeoff variables
+    static float auto_take_off_start_alt_cm;    // start altitude expressed as cm above ekf origin
+    static float auto_take_off_complete_alt_cm; // completion altitude expressed as cm above ekf origin
+    static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
+    static bool auto_takeoff_complete;          // true when takeoff is complete
+    static Vector3p auto_takeoff_complete_pos;  // target takeoff position as offset from ekf origin in cm
 
 public:
     // Navigation Yaw control
@@ -940,6 +948,8 @@ public:
 
     bool is_taking_off() const override;
 
+    // initialises position controller to implement take-off
+    // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
     enum class SubMode {
