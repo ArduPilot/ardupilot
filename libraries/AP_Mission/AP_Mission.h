@@ -91,6 +91,12 @@ public:
         float throttle_pct;     // throttle as a percentage (i.e. 1 ~ 100), 0 means no change
     };
 
+    // change radius command structure
+    struct PACKED Change_Radius_Command {
+        float radius;           // radius in metres
+        int8_t direction;      // -1 for CCW, 1 for CW, 0 for no change
+    };
+
     // set relay command structure
     struct PACKED Set_Relay_Command {
         uint8_t num;            // relay number from 1 to 4
@@ -244,6 +250,9 @@ public:
 
         // change speed
         Change_Speed_Command speed;
+
+        // change radius
+        Change_Radius_Command radius;
 
         // do-set-relay
         Set_Relay_Command relay;

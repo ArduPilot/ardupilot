@@ -325,6 +325,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SPRAYER:
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
+    case MAV_CMD_DO_CHANGE_RADIUS:
         return true;
     default:
         return _cmd_verify_fn(cmd);
@@ -1006,6 +1007,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.speed.throttle_pct = packet.param3; // throttle as a percentage from 1 ~ 100%
         break;
 
+    case MAV_CMD_DO_CHANGE_RADIUS:
+        cmd.content.radius.radius = packet.param1;        // new radius in metres
+        break;
+
     case MAV_CMD_DO_SET_HOME:
         cmd.p1 = packet.param1;                         // p1=0 means use current location, p=1 means use provided location
         break;
@@ -1469,6 +1474,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param3 = cmd.content.speed.throttle_pct; // throttle as a percentage from 1 ~ 100%
         break;
 
+    case MAV_CMD_DO_CHANGE_RADIUS:
+        packet.param1 = cmd.content.radius.radius;      // radius in metres
+        packet.param2 = cmd.content.radius.direction;   // -1=CCW 1=CW 0=no change
+        break;
+
     case MAV_CMD_DO_SET_HOME:                           // MAV ID: 179
         packet.param1 = cmd.p1;                         // p1=0 means use current location, p=1 means use provided location
         break;
@@ -1786,10 +1796,8 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
         return false;
     }
 
-    // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
-    if (!_flags.do_cmd_loaded) {
-        _flags.do_cmd_all_done = true;
-    }
+    // make sure we run do commands appearing after this nav command:
+    _flags.do_cmd_all_done = false;
 
     // if we got this far we must have successfully advanced the nav command
     return true;
@@ -1807,7 +1815,10 @@ void AP_Mission::advance_current_do_cmd()
     // get starting point for search
     uint16_t cmd_index = _do_cmd.index;
     if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
-        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+        if (!_flags.nav_cmd_loaded) {
+            return;
+        }
+        cmd_index = _nav_cmd.index + 1;
     } else {
         // start from one position past the current do command
         cmd_index = _do_cmd.index + 1;
@@ -1907,25 +1918,28 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 ///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
 bool AP_Mission::get_next_do_cmd(uint16_t start_index, Mission_Command& cmd)
 {
-    Mission_Command temp_cmd;
-
     // check we have not passed the end of the mission list
     if (start_index >= (unsigned)_cmd_total) {
         return false;
     }
 
     // get next command
+    Mission_Command temp_cmd;
     if (!get_next_cmd(start_index, temp_cmd, false)) {
         // no more commands so return failure
         return false;
-    } else if (is_nav_cmd(temp_cmd)) {
-        // if it's a "navigation" command then return false because we do not progress past nav commands
-        return false;
-    } else {
-        // this must be a "do" or "conditional" and is not a do-jump command so return it
-        cmd = temp_cmd;
-        return true;
     }
+
+    if (is_nav_cmd(temp_cmd)) {
+        // if it's a "navigation" command then return false because we
+        // do not progress past nav commands
+        return false;
+    }
+
+    // this must be a "do" or "conditional" and is not a do-jump
+    // command so return it
+    cmd = temp_cmd;
+    return true;
 }
 
 ///
@@ -2282,6 +2296,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "CondDist";
     case MAV_CMD_DO_CHANGE_SPEED:
         return "ChangeSpeed";
+    case MAV_CMD_DO_CHANGE_RADIUS:
+        return "ChangeRadius";
     case MAV_CMD_DO_SET_HOME:
         return "SetHome";
     case MAV_CMD_DO_SET_SERVO:
