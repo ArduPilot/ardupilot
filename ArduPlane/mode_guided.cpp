@@ -21,6 +21,9 @@ bool ModeGuided::_enter()
 #endif
 
     plane.set_guided_WP(loc);
+
+    plane.loiter.radius = plane.aparm.loiter_radius;
+
     return true;
 }
 
@@ -39,8 +42,7 @@ void ModeGuided::update()
 
 void ModeGuided::navigate()
 {
-    // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(0);
+    plane.update_loiter();
 }
 
 bool ModeGuided::handle_guided_request(Location target_loc)

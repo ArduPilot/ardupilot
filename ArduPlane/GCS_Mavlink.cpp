@@ -903,6 +903,17 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         return MAV_RESULT_FAILED;
     }
 
+    case MAV_CMD_DO_CHANGE_RADIUS: {
+        AP_Mission::Mission_Command cmd;
+        if (AP_Mission::mavlink_cmd_long_to_mission_cmd(packet, cmd) != MAV_MISSION_ACCEPTED) {
+            return MAV_RESULT_DENIED;
+        }
+        if (plane.do_change_radius(cmd)) {
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+    }
+
     case MAV_CMD_NAV_LOITER_UNLIM:
         plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;

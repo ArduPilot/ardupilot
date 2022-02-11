@@ -15,6 +15,11 @@ bool ModeRTL::_enter()
     switch_QRTL(false);
 #endif
 
+    // RTL radius comes from RTL_RADIUS if it is non-zero otherwise WP_LOITER_RADIUS
+    const int16_t radius = plane.g.rtl_radius ? plane.g.rtl_radius : plane.g.waypoint_radius;
+    plane.loiter.radius = abs(radius);
+    plane.loiter.direction = (radius < 0) ? -1 : 1;
+
     return true;
 }
 
@@ -103,12 +108,8 @@ void ModeRTL::navigate()
         // on every loop
         plane.auto_state.checked_for_autoland = true;
     }
-    uint16_t radius = abs(plane.g.rtl_radius);
-    if (radius > 0) {
-        plane.loiter.direction = (plane.g.rtl_radius < 0) ? -1 : 1;
-    }
 
-    plane.update_loiter(radius);
+    plane.update_loiter();
 }
 
 #if HAL_QUADPLANE_ENABLED

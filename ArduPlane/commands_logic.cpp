@@ -127,6 +127,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_change_speed(cmd);
         break;
 
+    case MAV_CMD_DO_CHANGE_RADIUS:
+        do_change_radius(cmd);
+        break;
+
     case MAV_CMD_DO_SET_HOME:
         do_set_home(cmd);
         break;
@@ -306,6 +310,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
         
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
+    case MAV_CMD_DO_CHANGE_RADIUS:
     case MAV_CMD_DO_SET_HOME:
     case MAV_CMD_DO_INVERTED_FLIGHT:
     case MAV_CMD_DO_LAND_START:
@@ -340,11 +345,13 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
 
+    // configure for the loiter we may do after finishing RTL:
     if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
     }
+    set_loiter_radius_from_mission_value(abs(g.rtl_radius));
 
     setup_glide_slope();
     setup_turn_angle();
@@ -432,6 +439,7 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
     } else if (is_positive(quadplane.fw_land_approach_radius)) {
         loiter.direction = 1;
     }
+    set_loiter_radius_from_mission_value(fabsf(quadplane.fw_land_approach_radius));
 
     vtol_approach_s.approach_stage = LOITER_TO_ALT;
 }
@@ -446,12 +454,14 @@ void Plane::loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd)
     }
 }
 
+
 void Plane::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     Location cmdloc = cmd.content.location;
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+    set_loiter_radius_from_mission_value(cmd.p1);
 }
 
 void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
@@ -460,7 +470,7 @@ void Plane::do_loiter_turns(const AP_Mission::Mission_Command& cmd)
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
-
+    set_loiter_radius_from_mission_value(HIGHBYTE(cmd.p1));
     loiter.total_cd = (uint32_t)(LOWBYTE(cmd.p1)) * 36000UL;
     condition_value = 1; // used to signify primary turns goal not yet met
 }
@@ -471,6 +481,7 @@ void Plane::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     cmdloc.sanitize(current_loc);
     set_next_WP(cmdloc);
     loiter_set_direction_wp(cmd);
+    set_loiter_radius_from_mission_value(0);  // always uses default radius
 
     // we set start_time_ms when we reach the waypoint
     loiter.time_max_ms = cmd.p1 * (uint32_t)1000;     // convert sec to ms
@@ -517,6 +528,7 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
     loc.sanitize(current_loc);
     set_next_WP(loc);
     loiter_set_direction_wp(cmd);
+    set_loiter_radius_from_mission_value(cmd.p1);  // always uses default radius
 
     // init to 0, set to 1 when altitude is reached
     condition_value = 0;
@@ -674,16 +686,14 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
 bool Plane::verify_loiter_unlim(const AP_Mission::Mission_Command &cmd)
 {
-    // else use mission radius
-    update_loiter(cmd.p1);
+    update_loiter();
     return false;
 }
 
 bool Plane::verify_loiter_time()
 {
     bool result = false;
-    // mission radius is always aparm.loiter_radius
-    update_loiter(0);
+    update_loiter();
 
     if (loiter.start_time_ms == 0) {
         if (reached_loiter_target() && loiter.sum_cd > 1) {
@@ -712,8 +722,7 @@ bool Plane::verify_loiter_time()
 bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
-    uint16_t radius = HIGHBYTE(cmd.p1);
-    update_loiter(radius);
+    update_loiter();
 
     // LOITER_TURNS makes no sense as VTOL
     auto_state.vtol_loiter = false;
@@ -745,7 +754,7 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
 
-    update_loiter(cmd.p1);
+    update_loiter();
 
     // condition_value == 0 means alt has never been reached
     if (condition_value == 0) {
@@ -772,12 +781,7 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 
 bool Plane::verify_RTL()
 {
-    if (g.rtl_radius < 0) {
-        loiter.direction = -1;
-    } else {
-        loiter.direction = 1;
-    }
-    update_loiter(abs(g.rtl_radius));
+    update_loiter();
 	if (auto_state.wp_distance <= (uint32_t)MAX(get_wp_radius(),0) || 
         reached_loiter_target()) {
 			gcs().send_text(MAV_SEVERITY_INFO,"Reached RTL location");
@@ -895,11 +899,7 @@ bool Plane::verify_within_distance()
 
 void Plane::do_loiter_at_location()
 {
-    if (aparm.loiter_radius < 0) {
-        loiter.direction = -1;
-    } else {
-        loiter.direction = 1;
-    }
+    configure_loiter_from_parameters();
     next_WP_loc = current_loc;
 }
 
@@ -927,6 +927,25 @@ bool Plane::do_change_speed(const AP_Mission::Mission_Command& cmd)
     }
 
     return false;
+}
+
+bool Plane::do_change_radius(const AP_Mission::Mission_Command& cmd)
+{
+    gcs().send_text(MAV_SEVERITY_INFO, "Set radius %f", cmd.content.radius.radius);
+
+    if (cmd.content.radius.radius < 1) {
+        configure_loiter_from_parameters();
+    } else {
+        loiter.radius = cmd.content.radius.radius;
+    }
+    // see if a change in direction is commanded:
+    if (cmd.content.radius.direction == 1) {
+        loiter.direction = 1;
+    } else if (cmd.content.radius.direction == -1) {
+        loiter.direction = -1;
+    }
+
+    return true;
 }
 
 void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
@@ -986,7 +1005,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
         case RTL:
             {
                 // fly home and loiter at RTL alt
-                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+                update_loiter();
                 if (plane.reached_loiter_target()) {
                     // decend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
@@ -997,7 +1016,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case LOITER_TO_ALT:
             {
-                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+                update_loiter();
 
                 if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
                     Vector3f wind = ahrs.wind_estimate();

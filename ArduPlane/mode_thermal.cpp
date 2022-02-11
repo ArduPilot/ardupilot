@@ -115,9 +115,9 @@ void ModeThermal::update_soaring()
 void ModeThermal::navigate()
 {
     // Soaring library calculates radius from SOAR_THML_BANK.
-    const float radius = plane.g2.soaring_controller.get_thermalling_radius();
+    plane.loiter.radius = fabsf(plane.g2.soaring_controller.get_thermalling_radius());
 
-    plane.update_loiter(radius);
+    plane.update_loiter();
 }
 
 bool ModeThermal::exit_heading_aligned() const

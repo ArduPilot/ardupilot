@@ -291,7 +291,7 @@ void Plane::calc_gndspeed_undershoot()
 }
 
 // method intended to be used by update_loiter
-void Plane::update_loiter_update_nav(uint16_t radius)
+void Plane::update_loiter_update_nav()
 {
 #if HAL_QUADPLANE_ENABLED
     if (loiter.start_time_ms != 0 &&
@@ -316,7 +316,7 @@ void Plane::update_loiter_update_nav(uint16_t radius)
     if ((loiter.start_time_ms == 0 &&
          (control_mode == &mode_auto || control_mode == &mode_guided) &&
          auto_state.crosstrack &&
-         current_loc.get_distance(next_WP_loc) > radius*3) ||
+         current_loc.get_distance(next_WP_loc) > loiter.radius*3) ||
         quadplane_qrtl_switch) {
         /*
           if never reached loiter point and using crosstrack and somewhat far away from loiter point
@@ -329,10 +329,11 @@ void Plane::update_loiter_update_nav(uint16_t radius)
         nav_controller->update_waypoint(prev_WP_loc, next_WP_loc);
         return;
     }
-    nav_controller->update_loiter(next_WP_loc, radius, loiter.direction);
+    nav_controller->update_loiter(next_WP_loc, loiter.radius, loiter.direction);
 }
 
-void Plane::update_loiter(uint16_t radius)
+// this method interprets radius
+void Plane::set_loiter_radius_from_mission_value(uint16_t radius)
 {
     if (radius <= 1) {
         // if radius is <=1 then use the general loiter radius. if it's small, use default
@@ -343,8 +344,12 @@ void Plane::update_loiter(uint16_t radius)
             loiter.direction = (aparm.loiter_radius < 0) ? -1 : 1;
         }
     }
+    loiter.radius = radius;
+}
 
-    update_loiter_update_nav(radius);
+void Plane::update_loiter()
+{
+    update_loiter_update_nav();
 
     if (loiter.start_time_ms == 0) {
         if (reached_loiter_target() ||

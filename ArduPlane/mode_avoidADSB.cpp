@@ -15,8 +15,7 @@ void ModeAvoidADSB::update()
 
 void ModeAvoidADSB::navigate()
 {
-    // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(0);
+    plane.mode_guided.navigate();
 }
 
 #endif // HAL_ADSB_ENABLED

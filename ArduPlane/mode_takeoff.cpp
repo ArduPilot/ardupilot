@@ -53,6 +53,7 @@ ModeTakeoff::ModeTakeoff() :
 bool ModeTakeoff::_enter()
 {
     takeoff_started = false;
+    plane.configure_loiter_from_parameters();
 
     return true;
 }
@@ -133,6 +134,6 @@ void ModeTakeoff::update()
 void ModeTakeoff::navigate()
 {
     // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(0);
+    plane.update_loiter();
 }
 

@@ -674,6 +674,9 @@ private:
         // total angle completed in the loiter so far
         int32_t sum_cd;
 
+        // radius (in metres) to loiter
+        float radius;
+
         // Direction for loiter. 1 for clockwise, -1 for counter-clockwise
         int8_t direction;
 
@@ -694,6 +697,8 @@ private:
         // The amount of time we should stay in a loiter for the Loiter Time command.  Milliseconds.
         uint32_t time_max_ms;
     } loiter;
+    void configure_loiter_from_parameters();
+    void set_loiter_radius_from_mission_value(uint16_t radius);
 
     // Conditional command
     // A value used in condition commands (eg delay, change alt, etc.)
@@ -930,6 +935,7 @@ private:
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     bool do_change_speed(const AP_Mission::Mission_Command& cmd);
+    bool do_change_radius(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
@@ -1017,8 +1023,8 @@ private:
     void calc_airspeed_errors();
     float mode_auto_target_airspeed_cm();
     void calc_gndspeed_undershoot();
-    void update_loiter(uint16_t radius);
-    void update_loiter_update_nav(uint16_t radius);
+    void update_loiter();
+    void update_loiter_update_nav();
     void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);

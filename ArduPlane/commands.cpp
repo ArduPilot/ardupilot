@@ -61,12 +61,21 @@ void Plane::set_next_WP(const struct Location &loc)
     setup_turn_angle();
 }
 
-void Plane::set_guided_WP(const Location &loc)
+void Plane::configure_loiter_from_parameters()
 {
-    if (aparm.loiter_radius < 0 || loc.loiter_ccw) {
+    if (aparm.loiter_radius < 0) {
         loiter.direction = -1;
     } else {
         loiter.direction = 1;
+    }
+    loiter.radius = fabsf(aparm.loiter_radius);
+}
+
+void Plane::set_guided_WP(const Location &loc)
+{
+    configure_loiter_from_parameters();
+    if (loc.loiter_ccw) {
+        loiter.direction = -1;
     }
 
     // copy the current location into the OldWP slot
