@@ -236,11 +236,17 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 {
     _mode = SubMode::TAKEOFF;
 
+    Location dest(dest_loc);
+
     if (!copter.current_loc.initialised()) {
         // vehicle doesn't know where it is ATM.  We should not
         // initialise our takeoff destination without knowing this!
         return;
     }
+
+    // set horizontal target
+    dest.lat = copter.current_loc.lat;
+    dest.lng = copter.current_loc.lng;
 
     // calculate current and target altitudes
     // by default current_alt_cm and alt_target_cm are alt-above-EKF-origin
@@ -248,19 +254,14 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     bool alt_target_terrain = false;
     float current_alt_cm = inertial_nav.get_position_z_up_cm();
     float terrain_offset;   // terrain's altitude in cm above the ekf origin
-    if ((dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset(terrain_offset)) {
+    if ((dest.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) && wp_nav->get_terrain_offset(terrain_offset)) {
         // subtract terrain offset to convert vehicle's alt-above-ekf-origin to alt-above-terrain
         current_alt_cm -= terrain_offset;
 
         // specify alt_target_cm as alt-above-terrain
-        alt_target_cm = dest_loc.alt;
+        alt_target_cm = dest.alt;
         alt_target_terrain = true;
     } else {
-        // set horizontal target
-        Location dest(dest_loc);
-        dest.lat = copter.current_loc.lat;
-        dest.lng = copter.current_loc.lng;
-
         // get altitude target above EKF origin
         if (!dest.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
             // this failure could only happen if take-off alt was specified as an alt-above terrain and we have no terrain data
@@ -273,6 +274,14 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     // sanity check target
     int32_t alt_target_min_cm = current_alt_cm + (copter.ap.land_complete ? 100 : 0);
     alt_target_cm = MAX(alt_target_cm, alt_target_min_cm);
+    dest.set_alt_cm(alt_target_cm , dest.get_alt_frame());
+
+    // set waypoint controller target
+    if (!wp_nav->set_wp_destination_loc(dest)) {
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
 
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
@@ -806,6 +815,7 @@ void ModeAuto::takeoff_run()
     if ((copter.g2.auto_options & (int32_t)Options::AllowTakeOffWithoutRaisingThrottle) != 0) {
         copter.set_auto_armed(true);
     }
+    wp_nav->shift_wp_origin_and_destination_to_current_pos_xy();
     auto_takeoff_run();
 }
 
