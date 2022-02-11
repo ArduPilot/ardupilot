@@ -84,9 +84,7 @@ void AP_AHRS_View::update()
 
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
 Vector3f AP_AHRS_View::get_gyro_latest(void) const {
-    Vector3f gyro_latest = ahrs.get_gyro_latest();
-    gyro_latest.rotate(rotation);
-    return gyro_latest;
+    return rot_view * ahrs.get_gyro_latest();
 }
 
 // rotate a 2D vector from earth frame to body frame
