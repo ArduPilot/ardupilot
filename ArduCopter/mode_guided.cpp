@@ -98,14 +98,15 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return (copter.g2.guided_options & (uint32_t)Options::AllowArmingFromTX) != 0;
 };
 
-// do_user_takeoff_start - initialises waypoint controller to implement take-off
+// initialises position controller to implement take-off
+// takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
     guided_mode = SubMode::TakeOff;
 
-    // initialise wpnav destination
-    Location target_loc = copter.current_loc;
-    Location::AltFrame frame = Location::AltFrame::ABOVE_HOME;
+    // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
+    int32_t alt_target_cm;
+    bool alt_target_terrain = false;
     if (wp_nav->rangefinder_used_and_healthy() &&
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
         takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
@@ -113,15 +114,19 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         if (takeoff_alt_cm <= copter.rangefinder_state.alt_cm) {
             return false;
         }
-        frame = Location::AltFrame::ABOVE_TERRAIN;
-    }
-    target_loc.set_alt_cm(takeoff_alt_cm, frame);
+        // provide target altitude as alt-above-terrain
+        alt_target_cm = takeoff_alt_cm;
+        alt_target_terrain = true;
+    } else {
+        // interpret altitude as alt-above-home
+        Location target_loc = copter.current_loc;
+        target_loc.set_alt_cm(takeoff_alt_cm, Location::AltFrame::ABOVE_HOME);
 
-    if (!wp_nav->set_wp_destination_loc(target_loc)) {
-        // failure to set destination can only be because of missing terrain data
-        AP::logger().Write_Error(LogErrorSubsystem::NAVIGATION, LogErrorCode::FAILED_TO_SET_DESTINATION);
-        // failure is propagated to GCS with NAK
-        return false;
+        // provide target altitude as alt-above-ekf-origin
+        if (!target_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN, alt_target_cm)) {
+            // this should never happen but we reject the command just in case
+            return false;
+        }
     }
 
     // initialise yaw
@@ -130,8 +135,8 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     // clear i term when we're taking off
     set_throttle_takeoff();
 
-    // get initial alt for WP_NAVALT_MIN
-    auto_takeoff_set_start_alt();
+    // initialise alt for WP_NAVALT_MIN and set completion alt
+    auto_takeoff_start(alt_target_cm, alt_target_terrain);
 
     // record takeoff has not completed
     takeoff_complete = false;
@@ -629,7 +634,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 void ModeGuided::takeoff_run()
 {
     auto_takeoff_run();
-    if (!takeoff_complete && wp_nav->reached_wp_destination()) {
+    if (auto_takeoff_complete && !takeoff_complete) {
         takeoff_complete = true;
 #if LANDING_GEAR_ENABLED == ENABLED
         // optionally retract landing gear
