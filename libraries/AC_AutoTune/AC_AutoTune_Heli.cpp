@@ -330,35 +330,20 @@ void AC_AutoTune_Heli::do_post_test_gcs_announcements() {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ff=%f", (double)tune_rff);
             break;
         case RP_UP:
+        case RD_UP:
+        case SP_UP:
+        case MAX_GAINS:
             if (is_equal(start_freq,stop_freq)) {
                 // announce results of dwell
                 gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]));
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f rate_p=%f", (double)(test_phase[freq_cnt]), (double)(tune_rp));
-            } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_freq=%f max_gain=%f", (double)(sweep.maxgain.freq), (double)(sweep.maxgain.gain));
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph180_freq=%f ph180_gain=%f", (double)(sweep.ph180.freq), (double)(sweep.ph180.gain));
-            }
-            break;
-        case RD_UP:
-            // announce results of dwell
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]));
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f rate_d=%f", (double)(test_phase[freq_cnt]), (double)(tune_rd));
-            break;
-        case SP_UP:
-            if (is_equal(start_freq,stop_freq)) {
-                // announce results of dwell and update
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]));
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: phase=%f angle_p=%f", (double)(test_phase[freq_cnt]), (double)(tune_sp));
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: tune_accel=%f max_accel=%f", (double)(tune_accel), (double)(test_accel_max));
-            } else {
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_freq=%f max_gain=%f", (double)(sweep.maxgain.freq), (double)(sweep.maxgain.gain));
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph180_freq=%f ph180_gain=%f", (double)(sweep.ph180.freq), (double)(sweep.ph180.gain));
-            }
-            break;
-        case MAX_GAINS:
-            if (is_equal(start_freq,stop_freq)) {
-                // announce results of dwell and update
-                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: freq=%f gain=%f ph=%f", (double)(test_freq[freq_cnt]), (double)(test_gain[freq_cnt]), (double)(test_phase[freq_cnt]));
+                gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph=%f", (double)(test_phase[freq_cnt]));
+               if (tune_type == RP_UP) {
+                   gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_p=%f", (double)(tune_rp));
+               } else if (tune_type == RD_UP) {
+               gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: rate_d=%f", (double)(tune_rd));
+               } else if (tune_type == SP_UP) {
+                   gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: angle_p=%f tune_accel=%f max_accel=%f", (double)(tune_sp), (double)(tune_accel), (double)(test_accel_max));
+               }
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: max_freq=%f max_gain=%f", (double)(sweep.maxgain.freq), (double)(sweep.maxgain.gain));
                 gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: ph180_freq=%f ph180_gain=%f", (double)(sweep.ph180.freq), (double)(sweep.ph180.gain));
