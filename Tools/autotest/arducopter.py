@@ -60,7 +60,7 @@ class AutoTestCopter(AutoTest):
 
     @staticmethod
     def get_normal_armable_modes_list():
-        return ["ACRO", "ALT_HOLD", "SPORT", "STABILIZE", "GUIDED_NOGPS"]
+        return ["ACRO", "ALT_HOLD", "STABILIZE", "GUIDED_NOGPS"]
 
     def log_name(self):
         return "ArduCopter"
@@ -3690,7 +3690,7 @@ class AutoTestCopter(AutoTest):
             self.set_parameter("FLTMODE_CH", fltmode_ch)
             self.set_rc(fltmode_ch, 1000) # PWM for mode1
             testmodes = [("FLTMODE1", 4, "GUIDED", 1165),
-                         ("FLTMODE2", 13, "SPORT", 1295),
+                         ("FLTMODE2", 2, "ALT_HOLD", 1295),
                          ("FLTMODE3", 6, "RTL", 1425),
                          ("FLTMODE4", 7, "CIRCLE", 1555),
                          ("FLTMODE5", 1, "ACRO", 1685),
