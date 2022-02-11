@@ -168,10 +168,12 @@ public:
     }
 
     // Put frame in queue to be sent, return negative if error occured, 0 if no space, and 1 if successful
+    // must be called on child class
     virtual int16_t send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags);
 
     // Non blocking receive frame that pops the frames received inside the buffer, return negative if error occured, 
     // 0 if no frame available, 1 if successful
+    // must be called on child class
     virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
 
     //Configure filters so as to reject frames that are not going to be handled by us
