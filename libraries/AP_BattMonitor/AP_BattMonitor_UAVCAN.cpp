@@ -28,7 +28,10 @@ const AP_Param::GroupInfo AP_BattMonitor_UAVCAN::var_info[] = {
     // @Description: Multiplier applied to all current related reports to allow for adjustment if no UAVCAN param access or current splitting applications
     // @Range: .1 10
     // @User: Advanced
-    AP_GROUPINFO("CURR_MULT", 27, AP_BattMonitor_UAVCAN, _curr_mult, 1.0),
+    AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_UAVCAN, _curr_mult, 1.0),
+
+    // Param indexes must be between 30 and 39 to avoid conflict with other battery monitor param tables loaded by pointer
+
     AP_GROUPEND
 };
 
