@@ -5949,9 +5949,7 @@ class AutoTest(ABC):
         last_wp_msg = 0
         while self.get_sim_time_cached() < tstart + timeout:
             seq = self.mav.waypoint_current()
-            m = self.mav.recv_match(type='NAV_CONTROLLER_OUTPUT',
-                                    blocking=True)
-            wp_dist = m.wp_dist
+            wp_dist = self.distance_to_nav_target()
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
 
             # if we changed mode, fail
@@ -6988,6 +6986,16 @@ Also, ignores heartbeats not from our target system'''
             if m is None:
                 raise NotAchievedException("Did not get NAV_CONTROLLER_OUTPUT")
         return m.wp_dist
+
+    def position_target_global_int_location(self):
+        '''returns a mavutil.Location for location in POSITION_TARGET_GLOBAL_INT'''
+        m = self.assert_receive_message('POSITION_TARGET_GLOBAL_INT')
+        return mavutil.location(
+            m.lat_int * 1e-7,
+            m.lon_int * 1e-7,
+            m.alt * 1e-3,
+            m.yaw
+        )
 
     def distance_to_home(self, use_cached_home=False):
         m = self.mav.messages.get("HOME_POSITION", None)

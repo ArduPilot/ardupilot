@@ -729,6 +729,66 @@ class AutoTestPlane(AutoTest):
                 break
         self.fly_home_land_and_disarm(timeout=240)
 
+    def DO_CHANGE_RADIUS(self):
+        self.set_parameters({
+            "NAVL1_LIM_BANK": 80,
+        })
+
+        self.progress("Takeoff")
+        self.takeoff(alt=100)
+        self.set_rc(3, 1500)
+
+        self.start_subtest("Check initial loiter radius")
+#        self.send_debug_trap()
+        self.change_mode('LOITER')
+        self.delay_sim_time(2)
+        loiter_loc = self.position_target_global_int_location()
+        self.progress("global target: %s" % str(loiter_loc))
+
+        loiter_radius = self.get_parameter('WP_LOITER_RAD')
+        expected_loiter_radius = self.scale_loiter_radius_for_arduplane_badness(loiter_radius)
+        self.wait_circling_point_with_radius(loiter_loc, expected_loiter_radius)
+
+        loiter_radius = 120
+        expected_loiter_radius = self.scale_loiter_radius_for_arduplane_badness(loiter_radius)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_RADIUS,
+            loiter_radius,
+            0,  # no change in direction
+            0,
+            0,
+            0,
+            0,
+            0,    # alt
+        )
+        self.wait_circling_point_with_radius(loiter_loc, expected_loiter_radius)
+
+        # now back to the number we first thought of:
+        loiter_radius = self.get_parameter('WP_LOITER_RAD')
+        expected_loiter_radius = self.scale_loiter_radius_for_arduplane_badness(loiter_radius)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_RADIUS,
+            loiter_radius,
+            0,  # no change in direction
+            0,
+            0,
+            0,
+            0,
+            0,    # alt
+        )
+        self.wait_circling_point_with_radius(loiter_loc, expected_loiter_radius)
+
+        # try a mission out:
+        self.load_mission("mission.txt")
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(1)
+        loiter_loc = self.position_target_global_int_location()
+        for loiter_radius in 120, 80, 120, 1000:  # magic numbers from mission.txt
+            expected_loiter_radius = self.scale_loiter_radius_for_arduplane_badness(loiter_radius)
+            self.wait_circling_point_with_radius(loiter_loc, expected_loiter_radius)
+
+        self.fly_home_land_and_disarm(timeout=240)
+
     def fly_home_land_and_disarm(self, timeout=120):
         filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
@@ -1119,7 +1179,7 @@ class AutoTestPlane(AutoTest):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get onto circle")
+                raise AutoTestTimeoutException("Did not get onto %fm circle" % (want_radius))
             here = self.mav.location()
             got_radius = self.get_distance(loc, here)
             average_radius = 0.95*average_radius + 0.05*got_radius
@@ -1277,14 +1337,23 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+    def scale_loiter_radius_for_arduplane_badness(self, want_radius):
+        # when ArduPlane is fixed, remove this fudge factor
+        ret_radius = want_radius
+        if want_radius > 100:
+            REALLY_BAD_FUDGE_FACTOR = 1.06
+        else:
+            REALLY_BAD_FUDGE_FACTOR = 1.16
+        ret_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
+        self.progress("Fudging radius of %f to %f" % (want_radius, ret_radius))
+        return ret_radius
+
     def test_fence_breach_circle_at(self, loc, disable_on_breach=False):
         ex = None
         try:
             self.load_fence("CMAC-fence.txt")
             want_radius = 100
-            # when ArduPlane is fixed, remove this fudge factor
-            REALLY_BAD_FUDGE_FACTOR = 1.16
-            expected_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
+            expected_radius = self.scale_loiter_radius_for_arduplane_badness(want_radius)
             self.set_parameters({
                 "RTL_RADIUS": want_radius,
                 "NAVL1_LIM_BANK": 60,
@@ -3506,6 +3575,10 @@ function'''
             ("TestFlaps", "Flaps", self.fly_flaps),
 
             ("DO_CHANGE_SPEED", "Test mavlink DO_CHANGE_SPEED command", self.fly_do_change_speed),
+
+            ("DO_CHANGE_RADIUS",
+             "Test mavlink DO_CHANGE_RADIUS command",
+             self.DO_CHANGE_RADIUS),
 
             ("DO_REPOSITION",
              "Test mavlink DO_REPOSITION command",
