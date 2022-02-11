@@ -197,7 +197,7 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
    local PI = PI_controller(kP:get(), kI:get(), Imax)
 
    function self.update(target)
-      local target_pitch = PI.update(initial_height, ahrs:get_location():alt()*0.01)
+      local target_pitch = PI.update(initial_height, ahrs:get_position():alt()*0.01)
       local roll_rad = ahrs:get_roll()
       local ke_add = math.abs(math.sin(roll_rad)) * KnifeEdge:get()
       target_pitch = target_pitch + ke_add
@@ -418,6 +418,16 @@ function path_figure_eight(t, radius, unused)
    return vec:scale(radius)
 end
 
+function path_vertical_circle(t, radius, unused)
+   t = t*math.pi*2
+   --TODO: include * overload in lua bindings
+   local vec = Vector3f()
+   vec:x(math.sin(t))
+   vec:y(0.0)
+   vec:z(-1.0+math.cos(t))
+   return vec:scale(radius)
+end
+
 function path_length(path_f, arg1, arg2)
    local dt = 0.01
    local total = 0.0
@@ -440,6 +450,7 @@ function rotate_position(position, yaw)
 
    rotated_point:x(position:x() * cs - position:y() * sn)
    rotated_point:y(position:x() * sn + position:y() * cs)
+   rotated_point:z(position:z())
    return rotated_point
 end
 
@@ -541,11 +552,16 @@ function do_path(path, arg1, arg2)
    end
 
    --where we aim to be on the path at this timestamp
+   --TODO: make more clear, yaw and initial translation -> SE3 offset of frame
+   --rotate from maneuver frame to 'local' EF
    local current_target_pos = rotate_path(path, t, arg1, arg2, path_var.init_yaw)
 
-   path_var.positions[-1] = path_var.positions[0]
-   path_var.positions[0] = path_var.positions[1]
-   path_var.positions[1] = current_target_pos
+   logger.write("TPOS",'t,x,y,z','ffff',t, current_target_pos:x(),current_target_pos:y(),current_target_pos:z())
+
+
+   path_var.positions[-1] = path_var.positions[0]:copy()
+   path_var.positions[0] = path_var.positions[1]:copy()
+   path_var.positions[1] = current_target_pos:copy()
 
    local current_measured_pos = ahrs:get_relative_position_NED_origin() - path_var.initial_ef_pos
 
@@ -574,26 +590,30 @@ function do_path(path, arg1, arg2)
    --   path_var.positions[-1] = rotate_path(path, t - dt, arg1, arg2, path_var.init_yaw)
    -- end
 
-   path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
+   --path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
 
    local position_error = path_var.positions[0]- current_measured_pos
    --arbitrary time constant larger than dt over which to correct the position error
    
    local path_loc = path_var.start_pos:copy()
    path_loc:offset(path_var.positions[0]:x(), path_var.positions[0]:y())
+   --gcs:send_text(0, string.format("path loc alt %.1f %.1f", path_loc:alt(), path_var.positions[0]:z()))
+
+   path_loc:alt(path_loc:alt() - math.floor(path_var.positions[0]:z()*100))
 
    --gcs:send_text(0, string.format("position: %d", smallest_error_index))
-   logger.write("PERR",'x,y,z,tc,Lat,Lng','ffffLL',position_error:x(),position_error:y(),position_error:z(), path_var.time_correction, path_loc:lat(), path_loc:lng())
+   logger.write("POSM",'x,y,z','fff',current_measured_pos:x(),current_measured_pos:y(),current_measured_pos:z())
+   logger.write("PERR",'x,y,z,tc,Lat,Lng,Alt','ffffLLf',position_error:x(),position_error:y(),position_error:z(), path_var.time_correction, path_loc:lat(), path_loc:lng(), path_loc:alt()*0.01)
 
    --turn into AERO_PATH_TCONST
    local correction_time = 0.75
    --velocity required to correct current position error
    local position_error_velocity = (position_error):scale(1.0/correction_time)
    --velocity required to travel along trajectory
-   --local trajectory_velocity = (path_var.positions[1] - path_var.positions[-1]):scale(0.5/dt) --derivative from -dt to dt for more accuracy
-   local trajectory_velocity = (path_var.positions[0] - path_var.positions[-1]):scale(1.0/dt) --derivative from -dt to dt for more accuracy
+   local trajectory_velocity = (path_var.positions[1] - path_var.positions[-1]):scale(0.5/dt) --derivative from -dt to dt for more accuracy
+   --local trajectory_velocity = (path_var.positions[1] - path_var.positions[0]):scale(1.0/dt) --derivative from -dt to dt for more accuracy
 
-   gcs:send_text(0, string.format("position_error_velocity %.1f %.1f %.1f", position_error_velocity:x(), position_error_velocity:y(), position_error_velocity:z()))
+   --gcs:send_text(0, string.format("position_error_velocity %.1f %.1f %.1f", position_error_velocity:x(), position_error_velocity:y(), position_error_velocity:z()))
 
    logger.write("VTRA",'x,y,z','fff',trajectory_velocity:x(),trajectory_velocity:y(),trajectory_velocity:z())
 
@@ -605,7 +625,7 @@ function do_path(path, arg1, arg2)
    --if (is_positive(_RISI[i].delta_angle_dt)) {
    --gyro_filtered[i] += ((_RISI[i].delta_angle/_RISI[i].delta_angle_dt) - gyro_filtered[i]) * alpha;
    --local alpha = 0.1
-   gcs:send_text(0, string.format("alpha value %.1f ", alpha))
+   --gcs:send_text(0, string.format("alpha value %.1f ", alpha))
 
    local filtered_target_velocity_x = path_var.filtered_target_velocity:x()
    local filtered_target_velocity_y = path_var.filtered_target_velocity:y()
@@ -620,7 +640,7 @@ function do_path(path, arg1, arg2)
    path_var.filtered_target_velocity:y(filtered_target_velocity_y)
    path_var.filtered_target_velocity:z(filtered_target_velocity_z)
 
-   logger.write("VTAR",'x,y,z','fff',target_velocity:x(),target_velocity:y(),target_velocity:z())
+   logger.write("VTAR",'t,x,y,z','ffff',t,target_velocity:x(),target_velocity:y(),target_velocity:z())
    logger.write("VTFI",'x,y,z','fff',path_var.filtered_target_velocity:x(),path_var.filtered_target_velocity:y(),path_var.filtered_target_velocity:z())
 
 
@@ -645,12 +665,16 @@ function do_path(path, arg1, arg2)
    local pitch_tconst = dt
    local ef_pitch_rate = pitch_error/pitch_tconst
 
+   logger.write("TPR",'rad,error,error_rate','fff',target_pitch_rad, pitch_error, ef_pitch_rate)
+
    --assume roll 0 for now, should work for 2D paths like circle and figure eight
    local target_roll_rad = 0.0
    local current_roll_rad = wrap_pi(ahrs:get_roll())
    local roll_error = wrap_pi(target_roll_rad - current_roll_rad)
    local roll_tconst = dt
    local ef_roll_rate = roll_error/roll_tconst
+
+   logger.write("RATS",'roll,pitch,yaw', 'fff',ef_roll_rate, ef_pitch_rate, ef_yaw_rate)
 
    --convert ef rates to bf rates, I assume there is a function we can bind in Ardupilot to do this already, but couldn't find it.
    bf_roll_rate, bf_pitch_rate, bf_yaw_rate = convert_ef_rates_to_bf_rates(current_roll_rad,
@@ -669,13 +693,15 @@ end
 
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
+   --gcs:send_text(0, string.format("user args arg1=%.1f arg2=%.1f", arg1, arg2))
+
    if id then
       if id ~= last_id then
          -- we've started a new command
          running = false
          last_id = id
          initial_yaw_deg = math.deg(ahrs:get_yaw())
-         initial_height = ahrs:get_location():alt()*0.01
+         initial_height = ahrs:get_position():alt()*0.01
 
          -- work out yaw between previous WP and next WP
          local cnum = mission:get_current_nav_index()
@@ -683,6 +709,8 @@ function update()
          local loc_next = get_wp_location(resolve_jump(cnum+1))
          wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
       end
+      gcs:send_text(0, string.format("user args arg1=%.1f arg2=%.1f", arg1, arg2))
+
       if cmd == 1 then
          do_axial_roll(arg1, arg2)
       elseif cmd == 2 then
@@ -693,6 +721,8 @@ function update()
          do_path(path_circle, arg1, arg2)
       elseif cmd == 5 then
          do_path(path_figure_eight, arg1, arg2)
+      elseif cmd == 6 then
+         do_path(path_vertical_circle, arg1, arg2)
       end
    else
       running = false
