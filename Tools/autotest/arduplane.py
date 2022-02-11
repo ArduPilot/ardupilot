@@ -3746,4 +3746,5 @@ function'''
     def disabled_tests(self):
         return {
             "Terrain-loiter": "Loading of terrain data is not reliable",
+            "Landing-Drift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
         }
