@@ -149,8 +149,7 @@ void Copter::thrust_loss_check()
     }
 
     // check for angle error over 30 degrees to ensure the aircraft has attitude control
-    const float angle_error = attitude_control->get_att_error_angle_deg();
-    if (angle_error >= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
+    if (attitude_control->get_att_error_angle_deg() >= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
         thrust_loss_counter = 0;
         return;
     }
@@ -294,8 +293,7 @@ void Copter::parachute_check()
     parachute.check_sink_rate();
 
     // check for angle error over 30 degrees
-    const float angle_error = attitude_control->get_att_error_angle_deg();
-    if (angle_error <= PARACHUTE_CHECK_ANGLE_DEVIATION_DEG) {
+    if (attitude_control->get_att_error_angle_deg() <= CRASH_CHECK_ANGLE_DEVIATION_DEG) {
         if (control_loss_count > 0) {
             control_loss_count--;
         }
