@@ -22,6 +22,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "GPIO.h"
+#include "Util.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include <AP_InternalError/AP_InternalError.h>
@@ -80,6 +81,18 @@ void RCOutput::init()
             uint8_t chan = group.chan[j];
             if (SRV_Channels::is_GPIO(chan+chan_offset)) {
                 group.chan[j] = CHAN_DISABLED;
+            } else if (SRV_Channels::is_alarm(chan+chan_offset)
+                || SRV_Channels::is_alarm_inverted(chan+chan_offset)) {
+                // alarm takes the whole timer
+                group.ch_mask = 0;
+                group.current_mode = MODE_PWM_NONE;
+                for (uint8_t k = 0; k < 4; k++) {
+                    group.chan[k] = CHAN_DISABLED;
+                    group.pwm_cfg.channels[k].mode = PWM_OUTPUT_DISABLED;
+                }
+                ChibiOS::Util::from(hal.util)->toneAlarm_init(group.pwm_cfg, group.pwm_drv, j,
+                    SRV_Channels::is_alarm(chan+chan_offset));
+                break;
             }
 #endif
             if (group.chan[j] != CHAN_DISABLED) {

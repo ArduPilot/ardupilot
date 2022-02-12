@@ -29,7 +29,7 @@
 #include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
 #include "shared_dma.h"
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED || HAL_USE_PWM == TRUE
 #include <AP_Notify/AP_Notify.h>
 #endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
@@ -158,6 +158,8 @@ Util::safety_state Util::safety_switch_state(void)
 
 #ifdef HAL_PWM_ALARM
 struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
+#elif HAL_USE_PWM == TRUE
+struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = {};
 #endif
 
 uint8_t  Util::_toneAlarm_types = 0;
@@ -170,7 +172,7 @@ bool Util::toneAlarm_init(uint8_t types)
 #endif
     _toneAlarm_types = types;
 
-#if !defined(HAL_PWM_ALARM) && !HAL_DSHOT_ALARM && !HAL_CANMANAGER_ENABLED
+#if HAL_USE_PWM != TRUE && !HAL_DSHOT_ALARM && !HAL_CANMANAGER_ENABLED
     // Nothing to do
     return false;
 #else
@@ -178,18 +180,36 @@ bool Util::toneAlarm_init(uint8_t types)
 #endif
 }
 
-void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+#if HAL_USE_PWM == TRUE
+bool Util::toneAlarm_init(const PWMConfig& pwm_cfg, PWMDriver* pwm_drv, pwmchannel_t chan, bool active_high)
 {
 #ifdef HAL_PWM_ALARM
-    if (is_zero(frequency) || is_zero(volume)) {
-        pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
-    } else {
-        pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
-                        roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
+    pwmStop(_toneAlarm_pwm_group.pwm_drv);
+#endif
+    _toneAlarm_pwm_group.pwm_cfg = pwm_cfg;
+    _toneAlarm_pwm_group.pwm_drv = pwm_drv;
+    _toneAlarm_pwm_group.pwm_cfg.period = 1000;
+    _toneAlarm_pwm_group.pwm_cfg.channels[chan].mode = active_high ? PWM_OUTPUT_ACTIVE_HIGH : PWM_OUTPUT_ACTIVE_LOW;
+    _toneAlarm_pwm_group.chan = chan;
+    pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+    return true;
+}
+#endif
 
-        pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
+void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
+{
+#if HAL_USE_PWM == TRUE
+    if (_toneAlarm_pwm_group.pwm_drv != nullptr) {
+        if (is_zero(frequency) || is_zero(volume)) {
+            pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
+        } else {
+            pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
+                            roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
+
+            pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
+        }
     }
-#endif // HAL_PWM_ALARM
+#endif // HAL_USE_PWM
 #if HAL_DSHOT_ALARM
     // don't play the motors while flying
     if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
