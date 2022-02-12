@@ -1686,6 +1686,12 @@ void QuadPlane::update(void)
         }
         // todo: do you want to set the throttle at this point?
         pos_control->relax_z_controller(0);
+
+    } else if (!plane.is_flying()) {
+        // probbibly on the ground, relax rate I terms
+        // not a full relax, rate controllers will still work if is_flying is wrong
+        // smmoth reset will not cause any step change in output
+        attitude_control->reset_rate_controller_I_terms_smoothly();
     }
 
     const uint32_t now = AP_HAL::millis();
