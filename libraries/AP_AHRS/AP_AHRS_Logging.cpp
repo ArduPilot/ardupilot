@@ -102,13 +102,14 @@ void AP_AHRS::write_video_stabilisation() const
 {
     Quaternion current_attitude;
     get_quat_body_to_ned(current_attitude);
-    Vector3f accel = get_accel() - get_accel_bias();
+    const Vector3f accel = get_accel() - get_accel_bias();
+    const Vector3f gyro_latest = get_gyro_latest();
     const struct log_Video_Stabilisation pkt {
         LOG_PACKET_HEADER_INIT(LOG_VIDEO_STABILISATION_MSG),
         time_us         : AP_HAL::micros64(),
-        gyro_x          : _gyro_estimate.x,
-        gyro_y          : _gyro_estimate.y,
-        gyro_z          : _gyro_estimate.z,
+        gyro_x          : gyro_latest.x,
+        gyro_y          : gyro_latest.y,
+        gyro_z          : gyro_latest.z,
         accel_x         : accel.x,
         accel_y         : accel.y,
         accel_z         : accel.z,
