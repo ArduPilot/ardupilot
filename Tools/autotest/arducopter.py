@@ -7744,6 +7744,42 @@ class AutoTestCopter(AutoTest):
 
         self.wait_disarmed()
 
+    def DO_CHANGE_SPEED(self):
+        self.load_mission("mission.txt", strict=False)
+
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "ANGLE_MAX": 4500,
+        })
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.wait_current_waypoint(2)
+        self.wait_groundspeed(
+            14.5, 15.5,
+            minimum_duration=10,
+            timeout=60,
+        )
+
+        self.wait_current_waypoint(4)
+        self.wait_groundspeed(
+            9.5, 11.5,
+            minimum_duration=10,
+            timeout=60,
+        )
+
+        self.set_parameter("ANGLE_MAX", 6000)
+        self.wait_current_waypoint(6)
+        self.wait_groundspeed(
+            16.5, 18.5,
+            minimum_duration=10,
+            timeout=60,
+        )
+
+        self.wait_disarmed()
+
     # a wrapper around all the 1A,1B,1C..etc tests for travis
     def tests1(self):
         ret = ([])
@@ -8442,6 +8478,10 @@ class AutoTestCopter(AutoTest):
             Test("GroundEffectCompensation_takeOffExpected",
                  "Test EKF's handling of takeoff-expected",
                  self.GroundEffectCompensation_takeOffExpected),
+
+            Test("DO_CHANGE_SPEED",
+                 "Change speed during misison using waypoint items",
+                 self.DO_CHANGE_SPEED),
 
             Test("WPNAV_SPEED",
                  "Change speed during misison",
