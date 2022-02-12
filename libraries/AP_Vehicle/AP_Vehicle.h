@@ -94,6 +94,7 @@ public:
     // happen for many reasons - bad mavlink packet and bad mode
     // parameters for example.
     void notify_no_such_mode(uint8_t mode_number);
+    void notify_no_such_mode_name(uint8_t mode_number, const char *mode_name);
 
     /*
       common parameters for fixed wing aircraft

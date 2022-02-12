@@ -408,6 +408,13 @@ void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
     AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
 }
 
+void AP_Vehicle::notify_no_such_mode_name(uint8_t mode_number, const char *mode_name)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"No such mode %s", mode_name);
+    AP::logger().Write_Error(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode_number));
+}
+
+
 // reboot the vehicle in an orderly manner, doing various cleanups and
 // flashing LEDs as appropriate
 void AP_Vehicle::reboot(bool hold_in_bootloader)
