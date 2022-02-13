@@ -387,6 +387,7 @@ void AP_CANManager::log_retrieve(ExpandingString &str) const
  */
 bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
+    WITH_SEMAPHORE(can_forward.sem);
     const int8_t bus = int8_t(packet.param1)-1;
     if (bus == -1) {
         for (auto can_iface : hal.can) {
@@ -403,6 +404,7 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
             FUNCTOR_BIND_MEMBER(&AP_CANManager::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &))) {
         return false;
     }
+    can_forward.last_callback_enable_ms = AP_HAL::millis();
     can_forward.chan = chan;
     can_forward.system_id = msg.sysid;
     can_forward.component_id = msg.compid;
@@ -430,6 +432,17 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg) const
  */
 void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame)
 {
+    WITH_SEMAPHORE(can_forward.sem);
+    if (can_forward.frame_counter++ == 100) {
+        // check every 100 frames for disabling CAN_FRAME send
+        // we stop sending after 5s if the client stops
+        // sending MAV_CMD_CAN_FORWARD requests
+        if (AP_HAL::millis() - can_forward.last_callback_enable_ms > 5000) {
+            hal.can[bus]->register_frame_callback(nullptr);
+            return;
+        }
+        can_forward.frame_counter = 0;
+    }
     if (HAVE_PAYLOAD_SPACE(can_forward.chan, CAN_FRAME)) {
         mavlink_msg_can_frame_send(can_forward.chan, can_forward.system_id, can_forward.component_id,
                                    bus, frame.dlc, frame.id, const_cast<uint8_t*>(frame.data));
