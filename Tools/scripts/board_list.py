@@ -121,7 +121,6 @@ class BoardList(object):
             # bdshot
             "CubeYellow-bdshot",
             "fmuv3-bdshot",
-            "fmuv5-bdshot",
             "KakuteF7-bdshot",
             "OMNIBUSF7V2-bdshot",
             "Pixhawk1-1M-bdshot",
