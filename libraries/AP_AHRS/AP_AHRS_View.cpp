@@ -100,3 +100,12 @@ Vector2f AP_AHRS_View::body_to_earth2D(const Vector2f &bf) const
     return Vector2f(bf.x * trig.cos_yaw - bf.y * trig.sin_yaw,
                     bf.x * trig.sin_yaw + bf.y * trig.cos_yaw);
 }
+
+// get current rotation
+enum Rotation AP_AHRS_View::get_rotation(void) const {
+    if (is_zero(_pitch_trim_deg)) {
+        return rotation;
+    }
+    // return invalid rotation
+    return ROTATION_MAX;
+}

@@ -187,9 +187,7 @@ public:
 
 
     // get current rotation
-    enum Rotation get_rotation(void) const {
-        return rotation;
-    }
+    enum Rotation get_rotation(void) const;
 
 private:
     const enum Rotation rotation;
