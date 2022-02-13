@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#if MODE_STABILIZE_ENABLED == ENABLED
+
 /*
  * Init and run calls for stabilize flight mode
  */
@@ -62,3 +64,5 @@ void ModeStabilize::run()
                                        true,
                                        g.throttle_filt);
 }
+
+#endif
