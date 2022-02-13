@@ -225,8 +225,6 @@ protected:
     virtual bool add_to_rx_queue(const CanRxItem &rx_item) = 0;
 
     FrameCb frame_callback;
-    uint8_t frame_counter;
-    uint32_t last_callback_enable_ms;
     uint32_t bitrate_;
     OperatingMode mode_;
 };
