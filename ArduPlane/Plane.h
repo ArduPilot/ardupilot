@@ -851,6 +851,8 @@ private:
     float mission_alt_offset(void);
     float height_above_target(void);
     float lookahead_adjustment(void);
+    Rotation rangefinder_down_orientation() const;
+    float rangefinder_attitude_correction_factor(void) const;
     float rangefinder_correction(void);
     void rangefinder_height_update(void);
     void rangefinder_terrain_correction(float &height);

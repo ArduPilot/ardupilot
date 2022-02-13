@@ -159,7 +159,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 
 #if HAL_QUADPLANE_ENABLED
    if (use_rangefinder_if_available && quadplane.in_vtol_land_final() &&
-       rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow) {
+       rangefinder.status_orient(rangefinder_down_orientation()) == RangeFinder::Status::OutOfRangeLow) {
        // a special case for quadplane landing when rangefinder goes
        // below minimum. Consider our height above ground to be zero
        return 0;
@@ -638,21 +638,65 @@ void Plane::rangefinder_terrain_correction(float &height)
 #endif
 }
 
+// return the correct rangefinder orentation for down
+Rotation Plane::rangefinder_down_orientation() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        // find the orientation closest to down
+        const uint8_t orentation = roundf(wrap_360(270.0 - quadplane.ahrs_view->get_relative_pitch_deg()) / 45.0);
+        switch (orentation) {
+            case 0:
+                return ROTATION_NONE;
+            // case 1: no pitch 45
+            case 2:
+                return ROTATION_PITCH_90;
+            // case 3: no pitch 135
+            case 4:
+                return ROTATION_YAW_180; // same as pitch 180
+            // case 5: no pitch 225
+            case 6:
+                return ROTATION_PITCH_270;
+            case 7:
+                return ROTATION_PITCH_315;
+        }
+    }
+#endif
+    // normal plane refences frame
+    return ROTATION_PITCH_270;
+}
+
+float Plane::rangefinder_attitude_correction_factor() const
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode()) {
+        const float relative_pitch = wrap_360(270.0 - quadplane.ahrs_view->get_relative_pitch_deg());
+        const float pitch_offset = relative_pitch - roundf(relative_pitch / 45.0) * 45.0;
+        return cosf(quadplane.ahrs_view->pitch - radians(pitch_offset)) * quadplane.ahrs_view->cos_roll();
+    }
+#endif
+    // correct the range for attitude (multiply by DCM.c.z, which
+    // is cos(roll)*cos(pitch))
+    return ahrs.get_rotation_body_to_ned().c.z;
+}
+
+
 /*
   update the offset between rangefinder height and terrain height
  */
 void Plane::rangefinder_height_update(void)
 {
-    float distance = rangefinder.distance_orient(ROTATION_PITCH_270);
-    
-    if ((rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
+    const Rotation rotation_down = rangefinder_down_orientation();
+    const float distance = rangefinder.distance_orient(rotation_down);
+
+    if ((rangefinder.status_orient(rotation_down) == RangeFinder::Status::Good) && ahrs.home_is_set()) {
         if (!rangefinder_state.have_initial_reading) {
             rangefinder_state.have_initial_reading = true;
             rangefinder_state.initial_range = distance;
         }
         // correct the range for attitude (multiply by DCM.c.z, which
         // is cos(roll)*cos(pitch))
-        rangefinder_state.height_estimate = distance * ahrs.get_rotation_body_to_ned().c.z;
+        rangefinder_state.height_estimate = distance * rangefinder_attitude_correction_factor();
 
         rangefinder_terrain_correction(rangefinder_state.height_estimate);
 
@@ -663,10 +707,10 @@ void Plane::rangefinder_height_update(void)
         // to misconfiguration or a faulty sensor
         if (rangefinder_state.in_range_count < 10) {
             if (!is_equal(distance, rangefinder_state.last_distance) &&
-                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)*0.01f) {
+                fabsf(rangefinder_state.initial_range - distance) > 0.05f * rangefinder.max_distance_cm_orient(rotation_down)*0.01f) {
                 rangefinder_state.in_range_count++;
             }
-            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)*0.01*0.2) {
+            if (fabsf(rangefinder_state.last_distance - distance) > rangefinder.max_distance_cm_orient(rotation_down)*0.01*0.2) {
                 // changes by more than 20% of full range will reset counter
                 rangefinder_state.in_range_count = 0;
             }
