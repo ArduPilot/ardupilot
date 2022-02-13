@@ -308,74 +308,72 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
      *  - It takes CPU time. Not just CPU time, but critical section time, which is expensive.
      */
 
-    CriticalSectionLocker lock;
+    {
+        CriticalSectionLocker lock;
 
-    /*
-     * Seeking for an empty slot
-     */
-    uint8_t txmailbox = 0xFF;
-    if ((can_->TSR & bxcan::TSR_TME0) == bxcan::TSR_TME0) {
-        txmailbox = 0;
-    } else if ((can_->TSR & bxcan::TSR_TME1) == bxcan::TSR_TME1) {
-        txmailbox = 1;
-    } else if ((can_->TSR & bxcan::TSR_TME2) == bxcan::TSR_TME2) {
-        txmailbox = 2;
-    } else {
-        PERF_STATS(stats.tx_rejected);
-        return 0;       // No transmission for you.
+        /*
+         * Seeking for an empty slot
+         */
+        uint8_t txmailbox = 0xFF;
+        if ((can_->TSR & bxcan::TSR_TME0) == bxcan::TSR_TME0) {
+            txmailbox = 0;
+        } else if ((can_->TSR & bxcan::TSR_TME1) == bxcan::TSR_TME1) {
+            txmailbox = 1;
+        } else if ((can_->TSR & bxcan::TSR_TME2) == bxcan::TSR_TME2) {
+            txmailbox = 2;
+        } else {
+            PERF_STATS(stats.tx_rejected);
+            return 0;       // No transmission for you.
+        }
+
+        /*
+         * Setting up the mailbox
+         */
+        bxcan::TxMailboxType& mb = can_->TxMailbox[txmailbox];
+        if (frame.isExtended()) {
+            mb.TIR = ((frame.id & AP_HAL::CANFrame::MaskExtID) << 3) | bxcan::TIR_IDE;
+        } else {
+            mb.TIR = ((frame.id & AP_HAL::CANFrame::MaskStdID) << 21);
+        }
+
+        if (frame.isRemoteTransmissionRequest()) {
+            mb.TIR |= bxcan::TIR_RTR;
+        }
+
+        mb.TDTR = frame.dlc;
+
+        mb.TDHR = frame.data_32[1];
+        mb.TDLR = frame.data_32[0];
+
+        mb.TIR |= bxcan::TIR_TXRQ;  // Go.
+
+        /*
+         * Registering the pending transmission so we can track its deadline and loopback it as needed
+         */
+        CanTxItem& txi = pending_tx_[txmailbox];
+        txi.deadline       = tx_deadline;
+        txi.frame          = frame;
+        txi.loopback       = (flags & Loopback) != 0;
+        txi.abort_on_error = (flags & AbortOnError) != 0;
+        // setup frame initial state
+        txi.pushed         = false;
     }
-
-    /*
-     * Setting up the mailbox
-     */
-    bxcan::TxMailboxType& mb = can_->TxMailbox[txmailbox];
-    if (frame.isExtended()) {
-        mb.TIR = ((frame.id & AP_HAL::CANFrame::MaskExtID) << 3) | bxcan::TIR_IDE;
-    } else {
-        mb.TIR = ((frame.id & AP_HAL::CANFrame::MaskStdID) << 21);
-    }
-
-    if (frame.isRemoteTransmissionRequest()) {
-        mb.TIR |= bxcan::TIR_RTR;
-    }
-
-    mb.TDTR = frame.dlc;
-
-    mb.TDHR = (uint32_t(frame.data[7]) << 24) |
-              (uint32_t(frame.data[6]) << 16) |
-              (uint32_t(frame.data[5]) << 8)  |
-              (uint32_t(frame.data[4]) << 0);
-    mb.TDLR = (uint32_t(frame.data[3]) << 24) |
-              (uint32_t(frame.data[2]) << 16) |
-              (uint32_t(frame.data[1]) << 8)  |
-              (uint32_t(frame.data[0]) << 0);
-
-    mb.TIR |= bxcan::TIR_TXRQ;  // Go.
-
-    /*
-     * Registering the pending transmission so we can track its deadline and loopback it as needed
-     */
-    CanTxItem& txi = pending_tx_[txmailbox];
-    txi.deadline       = tx_deadline;
-    txi.frame          = frame;
-    txi.loopback       = (flags & Loopback) != 0;
-    txi.abort_on_error = (flags & AbortOnError) != 0;
-    // setup frame initial state
-    txi.pushed         = false;
 
     return AP_HAL::CANIface::send(frame, tx_deadline, flags);
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us, CanIOFlags& out_flags)
 {
-    CriticalSectionLocker lock;
-    CanRxItem rx_item;
-    if (!rx_queue_.pop(rx_item)) {
-        return 0;
+    {
+        CriticalSectionLocker lock;
+        CanRxItem rx_item;
+        if (!rx_queue_.pop(rx_item)) {
+            return 0;
+        }
+        out_frame    = rx_item.frame;
+        out_timestamp_us = rx_item.timestamp_us;
+        out_flags    = rx_item.flags;
     }
-    out_frame    = rx_item.frame;
-    out_timestamp_us = rx_item.timestamp_us;
-    out_flags    = rx_item.flags;
 
     return AP_HAL::CANIface::receive(out_frame, out_timestamp_us, out_flags);
 }
