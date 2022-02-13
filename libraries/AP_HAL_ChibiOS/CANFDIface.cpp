@@ -326,72 +326,70 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         return -1;
     }
 
-    CriticalSectionLocker lock;
+    {
+        CriticalSectionLocker lock;
 
-    /*
-     * Seeking for an empty slot
-     */
-    uint8_t index;
+        /*
+         * Seeking for an empty slot
+         */
+        uint8_t index;
 
-    if ((can_->TXFQS & FDCAN_TXFQS_TFQF) != 0) {
-        stats.tx_rejected++;
-        return 0;    //we don't have free space
+        if ((can_->TXFQS & FDCAN_TXFQS_TFQF) != 0) {
+            stats.tx_rejected++;
+            return 0;    //we don't have free space
+        }
+        index = ((can_->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
+
+        // Copy Frame to RAM
+        // Calculate Tx element address
+        uint32_t* buffer = (uint32_t *)(MessageRam_.TxFIFOQSA + (index * FDCAN_FRAME_BUFFER_SIZE * 4));
+
+        //Setup Frame ID
+        if (frame.isExtended()) {
+            buffer[0] = (IDE | frame.id);
+        } else {
+            buffer[0] = (frame.id << 18);
+        }
+        if (frame.isRemoteTransmissionRequest()) {
+            buffer[0] |= RTR;
+        }
+        //Write Data Length Code, and Message Marker
+        buffer[1] =  frame.dlc << 16 | index << 24;
+
+        // Write Frame to the message RAM
+        buffer[2] = frame.data_32[0];
+        buffer[3] = frame.data_32[1];
+
+        //Set Add Request
+        can_->TXBAR = (1 << index);
+
+        //Registering the pending transmission so we can track its deadline and loopback it as needed
+        pending_tx_[index].deadline       = tx_deadline;
+        pending_tx_[index].frame          = frame;
+        pending_tx_[index].loopback       = (flags & AP_HAL::CANIface::Loopback) != 0;
+        pending_tx_[index].abort_on_error = (flags & AP_HAL::CANIface::AbortOnError) != 0;
+        pending_tx_[index].index          = index;
+        // setup frame initial state
+        pending_tx_[index].aborted        = false;
+        pending_tx_[index].setup          = true;
+        pending_tx_[index].pushed         = false;
     }
-    index = ((can_->TXFQS & FDCAN_TXFQS_TFQPI) >> FDCAN_TXFQS_TFQPI_Pos);
-
-    // Copy Frame to RAM
-    // Calculate Tx element address
-    uint32_t* buffer = (uint32_t *)(MessageRam_.TxFIFOQSA + (index * FDCAN_FRAME_BUFFER_SIZE * 4));
-
-    //Setup Frame ID
-    if (frame.isExtended()) {
-        buffer[0] = (IDE | frame.id);
-    } else {
-        buffer[0] = (frame.id << 18);
-    }
-    if (frame.isRemoteTransmissionRequest()) {
-        buffer[0] |= RTR;
-    }
-    //Write Data Length Code, and Message Marker
-    buffer[1] =  frame.dlc << 16 | index << 24;
-
-    // Write Frame to the message RAM
-    buffer[2] = (uint32_t(frame.data[3]) << 24) |
-                (uint32_t(frame.data[2]) << 16) |
-                (uint32_t(frame.data[1]) << 8)  |
-                (uint32_t(frame.data[0]) << 0);
-    buffer[3] = (uint32_t(frame.data[7]) << 24) |
-                (uint32_t(frame.data[6]) << 16) |
-                (uint32_t(frame.data[5]) << 8)  |
-                (uint32_t(frame.data[4]) << 0);
-
-    //Set Add Request
-    can_->TXBAR = (1 << index);
-
-    //Registering the pending transmission so we can track its deadline and loopback it as needed
-    pending_tx_[index].deadline       = tx_deadline;
-    pending_tx_[index].frame          = frame;
-    pending_tx_[index].loopback       = (flags & AP_HAL::CANIface::Loopback) != 0;
-    pending_tx_[index].abort_on_error = (flags & AP_HAL::CANIface::AbortOnError) != 0;
-    pending_tx_[index].index          = index;
-    // setup frame initial state
-    pending_tx_[index].aborted        = false;
-    pending_tx_[index].setup          = true;
-    pending_tx_[index].pushed         = false;
 
     return AP_HAL::CANIface::send(frame, tx_deadline, flags);
 }
 
 int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_us, CanIOFlags& out_flags)
 {
-    CriticalSectionLocker lock;
-    CanRxItem rx_item;
-    if (!rx_queue_.pop(rx_item) || !initialised_) {
-        return 0;
+    {
+        CriticalSectionLocker lock;
+        CanRxItem rx_item;
+        if (!rx_queue_.pop(rx_item) || !initialised_) {
+            return 0;
+        }
+        out_frame    = rx_item.frame;
+        out_timestamp_us = rx_item.timestamp_us;
+        out_flags    = rx_item.flags;
     }
-    out_frame    = rx_item.frame;
-    out_timestamp_us = rx_item.timestamp_us;
-    out_flags    = rx_item.flags;
 
     return AP_HAL::CANIface::receive(out_frame, out_timestamp_us, out_flags);
 }
