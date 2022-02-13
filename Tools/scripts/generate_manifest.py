@@ -30,6 +30,7 @@ brand_map = {
     'KakuteF7' : ('KakuteF7', 'Holybro'),
     'KakuteF7Mini' : ('KakuteF7Mini', 'Holybro'),
     'KakuteF4Mini' : ('KakuteF4Mini', 'Holybro'),
+    'KakuteH7Mini' : ('KakuteH7Mini', 'Holybro'),
     'CubeBlack' : ('CubeBlack', 'Hex/ProfiCNC'),
     'CubeYellow' : ('CubeYellow', 'Hex/ProfiCNC'),
     'CubeOrange' : ('CubeOrange', 'Hex/ProfiCNC'),
@@ -83,6 +84,7 @@ brand_map = {
     "modalai_fc-v1" : ('ModalAI FlightCore v1', 'ModalAI'),
     'Pixhawk5X' : ('Pixhawk 5X', 'Holybro'),
     "AIRLink" : ("Sky-Drones Technologies", "AIRLink"),
+    "SPRacingH7" : ("Seriously Pro Racing", "H7 Extreme"),
 }
 
 class Firmware():
