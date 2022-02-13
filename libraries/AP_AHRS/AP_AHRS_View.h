@@ -189,6 +189,9 @@ public:
     // get current rotation
     enum Rotation get_rotation(void) const;
 
+    // pitch relative to normal AHRS
+    float get_relative_pitch_deg() const { return y_angle + _pitch_trim_deg; }
+
 private:
     const enum Rotation rotation;
     AP_AHRS &ahrs;
