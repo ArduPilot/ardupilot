@@ -5442,9 +5442,9 @@ class AutoTest(ABC):
 
         self.wait_and_maintain(
             value_name="Groundspeed",
-            target=speed_min,
+            target=(speed_min+speed_max)/2,
             current_value_getter=lambda: get_groundspeed(timeout),
-            accuracy=(speed_max - speed_min),
+            accuracy=(speed_max - speed_min)/2,
             validator=lambda value2, target2: validator(value2, target2),
             timeout=timeout,
             **kwargs
