@@ -7773,7 +7773,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("ANGLE_MAX", 6000)
         self.wait_current_waypoint(6)
         self.wait_groundspeed(
-            16.5, 18.5,
+            15.5, 16.5,
             minimum_duration=10,
             timeout=60,
         )
