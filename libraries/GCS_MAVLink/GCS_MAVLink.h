@@ -11,7 +11,7 @@
 
 #define MAVLINK_SEND_UART_BYTES(chan, buf, len) comm_send_buffer(chan, buf, len)
 
-#define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan)
+#define MAVLINK_START_UART_SEND(chan, size) comm_send_lock(chan, size)
 #define MAVLINK_END_UART_SEND(chan, size) comm_send_unlock(chan)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -70,7 +70,8 @@ uint16_t comm_get_txspace(mavlink_channel_t chan);
 #include "include/mavlink/v2.0/all/mavlink.h"
 
 // lock and unlock a channel, for multi-threaded mavlink send
-void comm_send_lock(mavlink_channel_t chan);
+void comm_send_lock(mavlink_channel_t chan, uint16_t size);
 void comm_send_unlock(mavlink_channel_t chan);
+HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan);
 
 #pragma GCC diagnostic pop
