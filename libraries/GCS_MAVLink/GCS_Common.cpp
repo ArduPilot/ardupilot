@@ -1051,6 +1051,7 @@ bool GCS_MAVLINK::do_try_send_message(const ap_message id)
     if (telemetry_delayed()) {
         return false;
     }
+    WITH_SEMAPHORE(comm_chan_lock(chan));
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_send_message_us = AP_HAL::micros();
@@ -2051,6 +2052,8 @@ void GCS::StatusTextQueue::prune(void)
 void GCS_MAVLINK::service_statustext(void)
 {
     GCS::StatusTextQueue &_statustext_queue = gcs().statustext_queue();
+
+    WITH_SEMAPHORE(comm_chan_lock(chan));
 
     const uint8_t chan_bit = (1U<<chan);
     // note the lack of idx++ here.  We may remove the iteration item
