@@ -1051,6 +1051,7 @@ bool GCS_MAVLINK::do_try_send_message(const ap_message id)
     if (telemetry_delayed()) {
         return false;
     }
+    WITH_SEMAPHORE(comm_chan_lock(chan));
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
     void *data = hal.scheduler->disable_interrupts_save();
     uint32_t start_send_message_us = AP_HAL::micros();
@@ -2058,6 +2059,8 @@ void GCS_MAVLINK::service_statustext(void)
     // want to move idx.
     const uint16_t payload_size = PAYLOAD_SIZE(chan, STATUSTEXT);
     for (uint8_t idx=0; idx<_statustext_queue.available(); ) {
+        WITH_SEMAPHORE(comm_chan_lock(chan));
+
         if (txspace() < payload_size) {
             break;
         }
