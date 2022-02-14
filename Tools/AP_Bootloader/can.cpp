@@ -171,7 +171,7 @@ static void handle_get_node_info(CanardInstance* ins,
 static void send_fw_read(void)
 {
     uint32_t now = AP_HAL::millis();
-    if (now - fw_update.last_ms < 250) {
+    if (now - fw_update.last_ms < 750) {
         // the server may still be responding
         return;
     }
