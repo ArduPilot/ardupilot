@@ -667,12 +667,6 @@ void AP_MotorsUGV::output_regular(bool armed, float ground_speed, float steering
                     const float throttle_scaler_inv = cosf(steering_angle_rad);
                     if (!is_zero(throttle_scaler_inv)) {
                         throttle /= throttle_scaler_inv;
-                        if (throttle >= 100.0f) {
-                            limit.throttle_upper = true;
-                        }
-                        if (throttle <= -100.0f) {
-                            limit.throttle_lower = true;
-                        }
                     }
                 }
             } else {
