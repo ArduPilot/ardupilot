@@ -111,6 +111,7 @@ public:
 #if HAL_GCS_ENABLED
     bool handle_can_forward(mavlink_channel_t chan, const mavlink_command_long_t &packet, const mavlink_message_t &msg);
     void handle_can_frame(const mavlink_message_t &msg) const;
+    void handle_can_filter_modify(const mavlink_message_t &msg);
 #endif
 
 private:
@@ -182,6 +183,8 @@ private:
         uint8_t frame_counter;
         uint32_t last_callback_enable_ms;
         HAL_Semaphore sem;
+        uint16_t num_filter_ids;
+        uint16_t *filter_ids;
     } can_forward;
 #endif // HAL_GCS_ENABLED
 };

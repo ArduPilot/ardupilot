@@ -40,6 +40,7 @@
 #endif
 
 #include <AP_Common/ExpandingString.h>
+#include <AP_Common/sorting.h>
 
 #define LOG_TAG "CANMGR"
 #define LOG_BUFFER_SIZE 1024
@@ -408,6 +409,14 @@ bool AP_CANManager::handle_can_forward(mavlink_channel_t chan, const mavlink_com
     can_forward.chan = chan;
     can_forward.system_id = msg.sysid;
     can_forward.component_id = msg.compid;
+
+    // remove registration on other buses, allowing for bus change in the GUI tool
+    for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
+        if (i != bus && hal.can[i] != nullptr) {
+            hal.can[i]->register_frame_callback(nullptr);
+        }
+    }
+
     return true;
 }
 
@@ -427,6 +436,95 @@ void AP_CANManager::handle_can_frame(const mavlink_message_t &msg) const
 }
 
 /*
+  handle a CAN_FILTER_MODIFY packet
+ */
+void AP_CANManager::handle_can_filter_modify(const mavlink_message_t &msg)
+{
+    mavlink_can_filter_modify_t p;
+    mavlink_msg_can_filter_modify_decode(&msg, &p);
+    const int8_t bus = int8_t(p.bus)-1;
+    if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+        return;
+    }
+    if (p.num_ids > ARRAY_SIZE(p.ids)) {
+        return;
+    }
+    uint16_t *new_ids = nullptr;
+    uint16_t num_new_ids = 0;
+    WITH_SEMAPHORE(can_forward.sem);
+
+    // sort the list, so we can bisection search and the array
+    // operations below are efficient
+    insertion_sort_uint16(p.ids, p.num_ids);
+    
+    switch (p.operation) {
+    case CAN_FILTER_REPLACE: {
+        if (p.num_ids == 0) {
+            can_forward.num_filter_ids = 0;
+            delete[] can_forward.filter_ids;
+            can_forward.filter_ids = nullptr;
+            return;
+        }
+        if (p.num_ids == can_forward.num_filter_ids &&
+            memcmp(p.ids, can_forward.filter_ids, p.num_ids*sizeof(uint16_t)) == 0) {
+            // common case of replacing with identical list
+            return;
+        }
+        new_ids = new uint16_t[p.num_ids];
+        if (new_ids != nullptr) {
+            num_new_ids = p.num_ids;
+            memcpy((void*)new_ids, (const void *)p.ids, p.num_ids*sizeof(uint16_t));
+        }
+        break;
+    }
+    case CAN_FILTER_ADD: {
+        if (common_list_uint16(can_forward.filter_ids, can_forward.num_filter_ids,
+                               p.ids, p.num_ids) == p.num_ids) {
+            // nothing changing
+            return;
+        }
+        new_ids = new uint16_t[can_forward.num_filter_ids+p.num_ids];
+        if (new_ids == nullptr) {
+            return;
+        }
+        if (can_forward.num_filter_ids != 0) {
+            memcpy(new_ids, can_forward.filter_ids, can_forward.num_filter_ids*sizeof(uint16_t));
+        }
+        memcpy(&new_ids[can_forward.num_filter_ids], p.ids, p.num_ids*sizeof(uint16_t));
+        insertion_sort_uint16(new_ids, can_forward.num_filter_ids+p.num_ids);
+        num_new_ids = remove_duplicates_uint16(new_ids, can_forward.num_filter_ids+p.num_ids);
+        break;
+    }
+    case CAN_FILTER_REMOVE: {
+        if (common_list_uint16(can_forward.filter_ids, can_forward.num_filter_ids,
+                               p.ids, p.num_ids) == 0) {
+            // nothing changing
+            return;
+        }
+        can_forward.num_filter_ids = remove_list_uint16(can_forward.filter_ids, can_forward.num_filter_ids,
+                                                        p.ids, p.num_ids);
+        if (can_forward.num_filter_ids == 0) {
+            delete[] can_forward.filter_ids;
+            can_forward.filter_ids = nullptr;
+        }
+        break;
+    }
+    }
+    if (new_ids != nullptr) {
+        // handle common case of no change
+        if (num_new_ids == can_forward.num_filter_ids &&
+            memcmp(new_ids, can_forward.filter_ids, num_new_ids*sizeof(uint16_t)) == 0) {
+            delete[] new_ids;
+        } else {
+            // put the new list in place
+            delete[] can_forward.filter_ids;
+            can_forward.filter_ids = new_ids;
+            can_forward.num_filter_ids = num_new_ids;
+        }
+    }
+}
+
+/*
   handler for CAN frames from the registered callback, sending frames
   out as CAN_FRAME messages
  */
@@ -443,7 +541,25 @@ void AP_CANManager::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &fram
         }
         can_forward.frame_counter = 0;
     }
+    WITH_SEMAPHORE(comm_chan_lock(can_forward.chan));
     if (HAVE_PAYLOAD_SPACE(can_forward.chan, CAN_FRAME)) {
+        if (can_forward.num_filter_ids != 0) {
+            // work out ID of this frame
+            uint16_t id = 0;
+            if ((frame.id&0xff) != 0) {
+                // not anonymous
+                if (frame.id & 0x80) {
+                    // service message
+                    id = uint8_t(frame.id>>16);
+                } else {
+                    // message frame
+                    id = uint16_t(frame.id>>8);
+                }
+            }
+            if (!bisect_search_uint16(can_forward.filter_ids, can_forward.num_filter_ids, id)) {
+                return;
+            }
+        }
         mavlink_msg_can_frame_send(can_forward.chan, can_forward.system_id, can_forward.component_id,
                                    bus, frame.dlc, frame.id, const_cast<uint8_t*>(frame.data));
     }
