@@ -281,24 +281,24 @@ public:
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
     // pwm value under which we consider that Radio value is invalid
-    static const uint16_t RC_MIN_LIMIT_PWM = 900;
+    static constexpr uint16_t RC_MIN_LIMIT_PWM = 900;
     // pwm value above which we consider that Radio value is invalid
-    static const uint16_t RC_MAX_LIMIT_PWM = 2200;
+    static constexpr uint16_t RC_MAX_LIMIT_PWM = 2200;
 
     // pwm value above which we condider that Radio min value is invalid
-    static const uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
+    static constexpr uint16_t RC_CALIB_MIN_LIMIT_PWM = 1300;
     // pwm value under which we condider that Radio max value is invalid
-    static const uint16_t RC_CALIB_MAX_LIMIT_PWM = 1700;
+    static constexpr uint16_t RC_CALIB_MAX_LIMIT_PWM = 1700;
 
     // pwm value above which the switch/button will be invoked:
-    static const uint16_t AUX_SWITCH_PWM_TRIGGER_HIGH = 1800;
+    static constexpr uint16_t AUX_SWITCH_PWM_TRIGGER_HIGH = 1800;
     // pwm value below which the switch/button will be disabled:
-    static const uint16_t AUX_SWITCH_PWM_TRIGGER_LOW = 1200;
+    static constexpr uint16_t AUX_SWITCH_PWM_TRIGGER_LOW = 1200;
 
     // pwm value above which the option will be invoked:
-    static const uint16_t AUX_PWM_TRIGGER_HIGH = 1700;
+    static constexpr uint16_t AUX_PWM_TRIGGER_HIGH = 1700;
     // pwm value below which the option will be disabled:
-    static const uint16_t AUX_PWM_TRIGGER_LOW = 1300;
+    static constexpr uint16_t AUX_PWM_TRIGGER_LOW = 1300;
 
 protected:
 
