@@ -81,6 +81,8 @@ press [tab] then enter on the [exit]  box to exit the app
 done.    the 'sdkconfig' file in this folder should have been updated
 cd ../../../..
 
+After any sort of sdkconfig ot sdkconfig.defaults changes, you need to 'rm -rf 'build' , and re-run from ./waf configure ... ' in order for those changes to properly take effect.
+
 OR locate the 'libraries/AP_HAL_ESP32/targets/esp-idf/sdkconfig' and delete it, as it should call back to the 'sdkconfig.defaults' file if its not there.
 
 'cd libraries/AP_HAL_ESP32/targets/esp-idf ; idf.py defconfig' is the command that updates it, but that shouldn't be needed manually, we don't think.
