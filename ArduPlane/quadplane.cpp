@@ -2103,7 +2103,11 @@ void QuadPlane::run_xy_controller(void)
     if (in_vtol_land_sequence() &&
         (poscontrol.get_state() == QPOS_POSITION1 ||
          poscontrol.get_state() == QPOS_POSITION2)) {
-        accel_cmss = MAX(accel_cmss, transition_decel*100);
+        // we allow for a bit higher accel limit than the trans decel,
+        // so if are less likely to overshoot the landing point
+        // if at some stage in the POS1 we are under velocity
+        const float accel_margin = 1.25;
+        accel_cmss = MAX(accel_cmss, accel_margin*transition_decel*100);
     }
     const float speed_cms = wp_nav->get_default_speed_xy();
     pos_control->set_max_speed_accel_xy(speed_cms, accel_cmss);
