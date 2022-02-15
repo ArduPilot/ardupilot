@@ -21,7 +21,7 @@
 #include "AP_RPM_Params.h"
 
 // Maximum number of RPM measurement instances available on this platform
-#define RPM_MAX_INSTANCES 2
+#define RPM_MAX_INSTANCES 3
 
 class AP_RPM_Backend;
 
@@ -54,7 +54,7 @@ public:
         uint8_t                instance;        // the instance number of this RPM
         float                  rate_rpm;        // measured rate in revs per minute
         uint32_t               last_reading_ms; // time of last reading
-        float                  signal_quality;  // synthetic quality metric 
+        float                  signal_quality;  // synthetic quality metric
     };
 
     // parameters for each instance
