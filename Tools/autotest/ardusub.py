@@ -255,8 +255,11 @@ class AutoTestSub(AutoTest):
         self.progress("Manual dive OK")
 
         m = self.assert_receive_message('SCALED_PRESSURE3')
-        if m.temperature != 2650:
-            raise NotAchievedException("Did not get correct TSYS01 temperature")
+
+        # Note this temperature matches the output of the Atmospheric Model for Air currently
+        # And should be within 1 deg C of 40 degC
+        if (m.temperature < 3900) or (4100 < m.temperature):
+            raise NotAchievedException("Did not get correct TSYS01 temperature: Got %f" % m.temperature)
 
     def DiveMission(self):
         '''Dive mission'''
