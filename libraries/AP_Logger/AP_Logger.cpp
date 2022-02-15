@@ -1416,6 +1416,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@SYS/dma.txt",
         "@SYS/memory.txt",
         "@SYS/threads.txt",
+        "@SYS/timers.txt",
         "@ROMFS/hwdef.dat",
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
