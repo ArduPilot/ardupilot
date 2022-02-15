@@ -43,11 +43,14 @@ class POWRChange(object):
                 break
             if current is None:
                 current_flags = 0
+                current_accflags = 0
+                have_accflags = hasattr(m, "AccFlags")
             else:
                 current_flags = current.Flags
+                if have_accflags:
+                    current_accflags = current.AccFlags
+
             flags = m.Flags
-            if flags == current_flags:
-                continue
             line = ""
             for bit in range(0, 32):  # range?
                 mask = 1 << bit
@@ -57,6 +60,19 @@ class POWRChange(object):
                     line += " +%s" % self.bit_description(bit)
                 elif not new_bit_set and old_bit_set:
                     line += " -%s" % self.bit_description(bit)
+
+                if have_accflags:
+                    accflags = m.AccFlags
+                    old_acc_bit_set = current_accflags & mask
+                    new_acc_bit_set = accflags & mask
+
+                    if new_acc_bit_set and not old_acc_bit_set:
+                        line += " ACCFLAGS+%s" % self.bit_description(bit)
+                    elif not new_bit_set and old_bit_set:
+                        line += " ACCFLAGS-%s" % self.bit_description(bit)
+
+            if len(line) == 0:
+                continue
 
             current = m
 
