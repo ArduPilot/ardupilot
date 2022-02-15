@@ -20,8 +20,8 @@
 #include <AP_Common/AP_Common.h>
 
 #include "AP_CANManager.h"
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
 #include "AP_CANTester.h"
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED && HAL_ENABLE_CANTESTER
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 #include <AP_Vehicle/AP_Vehicle.h>
