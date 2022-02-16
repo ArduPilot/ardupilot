@@ -701,11 +701,8 @@ bool QuadPlane::setup(void)
 
     // setup the trim of any motors used by AP_Motors so I/O board
     // failsafe will disable motors
-    for (uint8_t i=0; i<8; i++) {
-        SRV_Channel::Aux_servo_function_t func = SRV_Channels::get_motor_function(i);
-        SRV_Channels::set_failsafe_pwm(func, motors->get_pwm_output_min());
-    }
-
+    uint16_t mask = plane.quadplane.motors->get_motor_mask();
+    hal.rcout->set_failsafe_pwm(mask, plane.quadplane.motors->get_pwm_output_min());
 
     // default QAssist state as set with Q_OPTIONS
     if ((options & OPTION_Q_ASSIST_FORCE_ENABLE) != 0) {
