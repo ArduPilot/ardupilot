@@ -400,7 +400,7 @@ void Copter::notify_flight_mode() {
 void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const
 {
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (!rc().has_valid_input()) {
         roll_out = 0;
         pitch_out = 0;
         return;
@@ -936,7 +936,7 @@ Mode::AltHoldModeState Mode::get_alt_hold_state(float target_climb_rate_cms)
 float Mode::get_pilot_desired_yaw_rate(float yaw_in)
 {
     // throttle failsafe check
-    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+    if (!rc().has_valid_input()) {
         return 0.0f;
     }
 

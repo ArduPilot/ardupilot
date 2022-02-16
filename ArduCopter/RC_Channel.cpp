@@ -45,6 +45,9 @@ bool RC_Channels_Copter::has_valid_input() const
     if (copter.failsafe.radio_counter != 0) {
         return false;
     }
+    if (!copter.ap.rc_receiver_present) {
+        return false;
+    }
     return true;
 }
 

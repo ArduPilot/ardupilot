@@ -17,7 +17,7 @@ void Copter::tuning()
     }
 
     // exit immediately when radio failsafe is invoked or transmitter has not been turned on
-    if (failsafe.radio || failsafe.radio_counter != 0 || rc6->get_radio_in() == 0) {
+    if (!rc().has_valid_input() || rc6->get_radio_in() == 0) {
         return;
     }
 
