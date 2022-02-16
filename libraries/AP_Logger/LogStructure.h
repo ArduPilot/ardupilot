@@ -979,7 +979,7 @@ struct PACKED log_VER {
 // @Field: Name: parameter name
 // @Field: Value: parameter value
 
-// @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS
+// @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS,PIDN,PIDE
 // @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Altitude/Steering
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
