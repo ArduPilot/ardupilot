@@ -216,7 +216,7 @@ void PS_LightWare_SF45B::update_output_scan(const Location &location)
         PackedMessage<DistanceDataCM> packed_distance_data {
             DistanceDataCM(
                 uint16_t(distance*100.0),
-                uint16_t(current_degrees_bf * 100)
+                wrap_180(current_degrees_bf) * 100
                 ), 0x1 };
         packed_distance_data.update_checksum();
         send((char*)&packed_distance_data, sizeof(packed_distance_data));
