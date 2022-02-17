@@ -8,7 +8,7 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
                                              const int16_t _request_last)
 {
     // set variables to help handle the expected receiving of commands from the GCS
-    timelast_receive_ms = AP_HAL::millis();    // set time we last received commands to now
+    timelast_receive_ms = AP_HAL::loop_ms();    // set time we last received commands to now
     receiving = true;              // record that we expect to receive commands
     request_i = _request_first;                 // reset the next expected command number to zero
     request_last = _request_last;         // record how many commands we expect to receive
@@ -18,7 +18,7 @@ void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
 
     link = &_link;
 
-    timelast_request_ms = AP_HAL::millis();
+    timelast_request_ms = AP_HAL::loop_ms();
     link->send_message(next_item_ap_message_id());
 }
 
@@ -256,7 +256,7 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
     }
 
     // update waypoint receiving state machine
-    timelast_receive_ms = AP_HAL::millis();
+    timelast_receive_ms = AP_HAL::loop_ms();
     request_i++;
 
     if (request_i > request_last) {
@@ -322,7 +322,7 @@ void MissionItemProtocol::queued_request_send()
         dest_compid,
         request_i,
         mission_type());
-    timelast_request_ms = AP_HAL::millis();
+    timelast_request_ms = AP_HAL::loop_ms();
 }
 
 void MissionItemProtocol::update()
@@ -336,7 +336,7 @@ void MissionItemProtocol::update()
         return;
     }
     // stop waypoint receiving if timeout
-    const uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::loop_ms();
     if (tnow - timelast_receive_ms > upload_timeout_ms) {
         receiving = false;
         timeout();
