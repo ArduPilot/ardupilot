@@ -2388,7 +2388,7 @@ function'''
             self.context_pop()
         self.reboot_sitl()
 
-    def fly_terrain_mission(self):
+    def TerrainMission(self):
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -3603,9 +3603,9 @@ function'''
              "Test Soaring feature",
              self.fly_soaring),
 
-            ("Terrain",
+            ("TerrainMission",
              "Test terrain following in mission",
-             self.fly_terrain_mission),
+             self.TerrainMission),
 
             ("Terrain-loiter",
              "Test terrain following in loiter",
