@@ -234,7 +234,7 @@ void Copter::heli_set_autorotation(bool autorotation)
 void Copter::update_collective_low_flag(int16_t throttle_control)
 {
     static uint32_t last_nonzero_collective_ms = 0;
-    uint32_t tnow_ms = millis();
+    uint32_t tnow_ms = loop_ms();
 
     if (throttle_control > 0) {
         last_nonzero_collective_ms = tnow_ms;

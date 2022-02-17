@@ -141,7 +141,7 @@ void ModeFollow::run()
     }
 
     // log output at 10hz
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     bool log_request = false;
     if ((now - last_log_ms >= 100) || (last_log_ms == 0)) {
         log_request = true;

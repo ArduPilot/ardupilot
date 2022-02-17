@@ -117,7 +117,7 @@ bool ModeFlowHold::init(bool ignore_checks)
  */
 void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
 
     // get corrected raw flow rate
     Vector2f raw_flow = copter.optflow.flowRate() - copter.optflow.bodyRate();
@@ -318,7 +318,7 @@ void ModeFlowHold::run()
     get_pilot_desired_lean_angles(bf_angles.x, bf_angles.y, angle_max, attitude_control->get_althold_lean_angle_max_cd());
 
     if (quality_filtered >= flow_min_quality &&
-        AP_HAL::millis() - copter.arm_time_ms > 3000) {
+        AP_HAL::loop_ms() - copter.arm_time_ms > 3000) {
         // don't use for first 3s when we are just taking off
         Vector2f flow_angles;
 
@@ -353,7 +353,7 @@ void ModeFlowHold::update_height_estimate(void)
     // assume on ground when disarmed, or if we have only just started spooling the motors up
     if (!hal.util->get_soft_armed() ||
         copter.motors->get_desired_spool_state() != AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED ||
-        AP_HAL::millis() - copter.arm_time_ms < 1500) {
+        AP_HAL::loop_ms() - copter.arm_time_ms < 1500) {
         height_offset = -ins_height;
         last_ins_height = ins_height;
         return;
@@ -375,7 +375,7 @@ void ModeFlowHold::update_height_estimate(void)
 
     if (!copter.optflow.healthy()) {
         // can't update height model with no flow sensor
-        last_flow_ms = AP_HAL::millis();
+        last_flow_ms = AP_HAL::loop_ms();
         delta_velocity_ne.zero();
         return;
     }

@@ -103,7 +103,7 @@ void Mode::AutoYaw::set_mode(autopilot_yaw_mode yaw_mode)
 // set_fixed_yaw - sets the yaw look at heading for auto mode
 void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t direction, bool relative_angle)
 {
-    _last_update_ms = millis();
+    _last_update_ms = loop_ms();
 
     _yaw_angle_cd = copter.attitude_control->get_att_target_euler_cd().z;
     _yaw_rate_cds = 0.0;
@@ -136,7 +136,7 @@ void Mode::AutoYaw::set_fixed_yaw(float angle_deg, float turn_rate_ds, int8_t di
 // set_fixed_yaw - sets the yaw look at heading for auto mode
 void Mode::AutoYaw::set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds)
 {
-    _last_update_ms = millis();
+    _last_update_ms = loop_ms();
 
     _yaw_angle_cd = yaw_angle_d * 100.0;
     _yaw_rate_cds = yaw_rate_ds * 100.0;
@@ -203,7 +203,7 @@ float Mode::AutoYaw::yaw()
     case AUTO_YAW_FIXED: {
         // keep heading pointing in the direction held in fixed_yaw
         // with no pilot input allowed
-        const uint32_t now_ms = millis();
+        const uint32_t now_ms = loop_ms();
         float dt = (now_ms - _last_update_ms) * 0.001;
         _last_update_ms = now_ms;
         float yaw_angle_step = constrain_float(_fixed_yaw_offset_cd, - dt * _fixed_yaw_slewrate_cds, dt * _fixed_yaw_slewrate_cds);
@@ -230,7 +230,7 @@ float Mode::AutoYaw::yaw()
         return wrap_360_cd(copter.attitude_control->get_att_target_euler_cd().z);
 
     case AUTO_YAW_ANGLE_RATE:{
-        const uint32_t now_ms = millis();
+        const uint32_t now_ms = loop_ms();
         float dt = (now_ms - _last_update_ms) * 0.001;
         _last_update_ms = now_ms;
         _yaw_angle_cd += _yaw_rate_cds * dt;

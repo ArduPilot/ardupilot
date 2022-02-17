@@ -60,7 +60,7 @@ bool ModeFlip::init(bool ignore_checks)
 
     // initialise state
     _state = FlipState::Start;
-    start_time_ms = millis();
+    start_time_ms = loop_ms();
 
     roll_dir = pitch_dir = 0;
 
@@ -92,7 +92,7 @@ bool ModeFlip::init(bool ignore_checks)
 void ModeFlip::run()
 {
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((loop_ms() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
     }
 

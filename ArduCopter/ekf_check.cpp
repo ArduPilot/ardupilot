@@ -82,9 +82,9 @@ void Copter::ekf_check()
                 ekf_check_state.bad_variance = true;
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
-                if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
+                if ((AP_HAL::loop_ms() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
-                    ekf_check_state.last_warn_time = AP_HAL::millis();
+                    ekf_check_state.last_warn_time = AP_HAL::loop_ms();
                 }
                 failsafe_ekf_event();
             }
@@ -237,7 +237,7 @@ void Copter::check_ekf_reset()
 // check for high vibrations affecting altitude control
 void Copter::check_vibration()
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
 
     // assume checks will succeed
     bool innovation_checks_valid = true;

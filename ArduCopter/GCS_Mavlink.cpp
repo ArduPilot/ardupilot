@@ -91,7 +91,7 @@ void GCS_MAVLINK_Copter::send_attitude_target()
 
     mavlink_msg_attitude_target_send(
         chan,
-        AP_HAL::millis(),       // time since boot (ms)
+        AP_HAL::loop_ms(),       // time since boot (ms)
         typemask,               // Bitmask that tells the system what control dimensions should be ignored by the vehicle
         quat_out,               // Attitude quaternion [w, x, y, z] order, zero-rotation is [1, 0, 0, 0], unit-length
         ang_vel.x,              // roll rate (rad/s)
@@ -117,7 +117,7 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
                                           POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
     mavlink_msg_position_target_global_int_send(
         chan,
-        AP_HAL::millis(), // time_boot_ms
+        AP_HAL::loop_ms(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
         TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
@@ -180,7 +180,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
 
     mavlink_msg_position_target_local_ned_send(
         chan,
-        AP_HAL::millis(), // time boot ms
+        AP_HAL::loop_ms(), // time boot ms
         MAV_FRAME_LOCAL_NED, 
         type_mask,
         target_pos.x,   // x in metres
@@ -1084,7 +1084,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             break;
         }
 
-        uint32_t tnow = AP_HAL::millis();
+        uint32_t tnow = AP_HAL::loop_ms();
 
         manual_override(copter.channel_roll, packet.y, 1000, 2000, tnow);
         manual_override(copter.channel_pitch, packet.x, 1000, 2000, tnow, true);

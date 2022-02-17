@@ -117,8 +117,8 @@ void Copter::esc_calibration_auto()
     SRV_Channels::push();
 
     // delay for 5 seconds while outputting pulses
-    uint32_t tstart = millis();
-    while (millis() - tstart < 5000) {
+    uint32_t tstart = loop_ms();
+    while (loop_ms() - tstart < 5000) {
         SRV_Channels::cork();
         motors->set_throttle_passthrough_for_esc_calibration(1.0f);
         SRV_Channels::push();
@@ -141,7 +141,7 @@ void Copter::esc_calibration_auto()
 void Copter::esc_calibration_notify()
 {
     AP_Notify::flags.esc_calibration = true;
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     if (now - esc_calibration_notify_update_ms > 20) {
         esc_calibration_notify_update_ms = now;
         notify.update();
@@ -167,7 +167,7 @@ void Copter::esc_calibration_setup()
     // wait for safety switch to be pressed
     uint32_t tstart = 0;
     while (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        const uint32_t tnow = AP_HAL::millis();
+        const uint32_t tnow = AP_HAL::loop_ms();
         if (tnow - tstart >= 5000) {
             gcs().send_text(MAV_SEVERITY_INFO,"ESC calibration: Push safety switch");
             tstart = tnow;

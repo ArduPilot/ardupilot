@@ -6,7 +6,7 @@ void Copter::SurfaceTracking::update_surface_offset()
 {
 #if RANGEFINDER_ENABLED == ENABLED
     // check for timeout
-    const uint32_t now_ms = millis();
+    const uint32_t now_ms = loop_ms();
     const bool timeout = (now_ms - last_update_ms) > SURFACE_TRACKING_TIMEOUT_MS;
 
     // check tracking state and that range finders are healthy
@@ -60,7 +60,7 @@ bool Copter::SurfaceTracking::get_target_alt_cm(float &target_alt_cm) const
         return false;
     }
     // check target has been updated recently
-    if (AP_HAL::millis() - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
+    if (AP_HAL::loop_ms() - last_update_ms > SURFACE_TRACKING_TIMEOUT_MS) {
         return false;
     }
     target_alt_cm = (copter.pos_control->get_pos_target_z_cm() - copter.pos_control->get_pos_offset_z_cm());
@@ -75,7 +75,7 @@ void Copter::SurfaceTracking::set_target_alt_cm(float _target_alt_cm)
         return;
     }
     copter.pos_control->set_pos_offset_z_cm(copter.inertial_nav.get_position_z_up_cm() - _target_alt_cm);
-    last_update_ms = AP_HAL::millis();
+    last_update_ms = AP_HAL::loop_ms();
 }
 
 bool Copter::SurfaceTracking::get_target_dist_for_logging(float &target_dist) const

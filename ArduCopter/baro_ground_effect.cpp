@@ -12,7 +12,7 @@ void Copter::update_ground_effect_detector(void)
     }
 
     // variable initialization
-    uint32_t tnow_ms = millis();
+    uint32_t tnow_ms = loop_ms();
     float xy_des_speed_cms = 0.0f;
     float xy_speed_cms = 0.0f;
     float des_climb_rate_cms = pos_control->get_vel_desired_cms().z;

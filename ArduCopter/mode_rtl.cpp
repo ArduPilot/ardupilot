@@ -204,7 +204,7 @@ void ModeRTL::loiterathome_start()
 {
     _state = SubMode::LOITER_AT_HOME;
     _state_complete = false;
-    _loiter_start_time = millis();
+    _loiter_start_time = loop_ms();
 
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
     if (auto_yaw.default_mode(true) != AUTO_YAW_HOLD) {
@@ -254,7 +254,7 @@ void ModeRTL::loiterathome_run()
     }
 
     // check if we've completed this stage of RTL
-    if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
+    if ((loop_ms() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
         if (auto_yaw.mode() == AUTO_YAW_RESETTOARMEDYAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
             if (abs(wrap_180_cd(ahrs.yaw_sensor-copter.initial_armed_bearing)) <= 200) {
