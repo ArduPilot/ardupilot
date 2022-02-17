@@ -144,7 +144,7 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
         // writing format messages out.  It can always get back to us
         // with more messages later, so let's leave room for other
         // things:
-        const uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::loop_ms();
         const bool must_dribble = (now - last_messagewrite_message_sent) > 100;
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(writebuf.get_size())) {
@@ -822,7 +822,7 @@ bool AP_Logger_Block::logging_failed() const
 bool AP_Logger_Block::io_thread_alive() const
 {
     // if the io thread hasn't had a heartbeat in 3s it is dead
-    return (AP_HAL::millis() - io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
+    return (AP_HAL::loop_ms() - io_timer_heartbeat) < 3000U || !hal.scheduler->is_system_initialized();
 }
 
 /*
@@ -834,7 +834,7 @@ bool AP_Logger_Block::io_thread_alive() const
  */
 void AP_Logger_Block::io_timer(void)
 {
-    uint32_t tnow = AP_HAL::millis();
+    uint32_t tnow = AP_HAL::loop_ms();
     io_timer_heartbeat = tnow;
 
     // don't write anything for the first 2s to give the dataflash chip a chance to be ready
@@ -869,14 +869,14 @@ void AP_Logger_Block::io_timer(void)
         const uint32_t aligned_sector = sectors - (((df_NumPages - df_EraseFrom + 1) / df_PagePerSector) / sectors_in_64k) * sectors_in_64k;
         while (next_sector < aligned_sector) {
             Sector4kErase(next_sector);
-            io_timer_heartbeat = AP_HAL::millis();
+            io_timer_heartbeat = AP_HAL::loop_ms();
             next_sector++;
         }
         uint16_t blocks_erased = 0;
         while (next_sector < sectors) {
             blocks_erased++;
             SectorErase(next_sector / sectors_in_64k);
-            io_timer_heartbeat = AP_HAL::millis();
+            io_timer_heartbeat = AP_HAL::loop_ms();
             next_sector += sectors_in_64k;
         }
         status_msg = StatusMessage::RECOVERY_COMPLETE;
