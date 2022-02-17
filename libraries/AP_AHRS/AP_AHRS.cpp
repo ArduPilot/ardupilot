@@ -445,19 +445,19 @@ void AP_AHRS::update_EKF2(void)
     if (!_ekf2_started) {
         // wait 1 second for DCM to output a valid tilt error estimate
         if (start_time_ms == 0) {
-            start_time_ms = AP_HAL::millis();
+            start_time_ms = AP_HAL::loop_ms();
         }
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
         if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - start_time_ms < 5000) {
+            if (AP_HAL::loop_ms() - start_time_ms < 5000) {
                 if (!AP::logger().allow_start_ekf()) {
                     return;
                 }
             }
         }
 
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        if (AP_HAL::loop_ms() - start_time_ms > startup_delay_ms) {
             _ekf2_started = EKF2.InitialiseFilter();
         }
     }
@@ -523,18 +523,18 @@ void AP_AHRS::update_EKF3(void)
     if (!_ekf3_started) {
         // wait 1 second for DCM to output a valid tilt error estimate
         if (start_time_ms == 0) {
-            start_time_ms = AP_HAL::millis();
+            start_time_ms = AP_HAL::loop_ms();
         }
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
         if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - start_time_ms < 5000) {
+            if (AP_HAL::loop_ms() - start_time_ms < 5000) {
                 if (!AP::logger().allow_start_ekf()) {
                     return;
                 }
             }
         }
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        if (AP_HAL::loop_ms() - start_time_ms > startup_delay_ms) {
             _ekf3_started = EKF3.InitialiseFilter();
         }
     }
@@ -633,7 +633,7 @@ void AP_AHRS::update_SITL(void)
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz
-        uint32_t timeStamp_ms = AP_HAL::millis();
+        uint32_t timeStamp_ms = AP_HAL::loop_ms();
         if (timeStamp_ms - _last_body_odm_update_ms > 50) {
             const float quality = 100.0f;
             const Vector3f posOffset(0.0f, 0.0f, 0.0f);
@@ -2099,13 +2099,13 @@ bool AP_AHRS::initialised(void) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // initialisation complete 10sec after ekf has started
-        return (_ekf2_started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
+        return (_ekf2_started && (AP_HAL::loop_ms() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // initialisation complete 10sec after ekf has started
-        return (_ekf3_started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
+        return (_ekf3_started && (AP_HAL::loop_ms() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
 #endif
 
 #if AP_AHRS_SIM_ENABLED
