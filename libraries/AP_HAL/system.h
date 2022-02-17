@@ -28,4 +28,8 @@ uint64_t native_millis64();
 void dump_stack_trace();
 void dump_core_file();
 
+// millis() at start of this loop, only valid in main thread
+uint32_t loop_ms();
+void set_loop_ms(uint32_t ms);
+
 } // namespace AP_HAL
