@@ -418,6 +418,32 @@ bool Copter::set_circle_rate(float rate_dps)
     return true;
 }
 
+// returns true if mode supports NAV_SCRIPT_TIME mission commands
+bool Copter::nav_scripting_enable(uint8_t mode)
+{
+    return mode == (uint8_t)mode_auto.mode_number();
+}
+
+// lua scripts use this to retrieve the contents of the active command
+bool Copter::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+{
+    if (flightmode != &mode_auto) {
+        return false;
+    }
+
+    return mode_auto.nav_script_time(id, cmd, arg1, arg2);
+}
+
+// lua scripts use this to indicate when they have complete the command
+void Copter::nav_script_time_done(uint16_t id)
+{
+    if (flightmode != &mode_auto) {
+        return;
+    }
+
+    return mode_auto.nav_script_time_done(id);
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 
