@@ -95,6 +95,7 @@ volatile uint64_t v_out_64 = 1;
 
 static void show_timings(void)
 {
+    AP_HAL::set_loop_ms(AP_HAL::millis());
 
     v_f = 1+(AP_HAL::micros() % 5);
     v_out = 1+(AP_HAL::micros() % 3);
@@ -120,6 +121,7 @@ static void show_timings(void)
     TIMEIT("millis()", AP_HAL::millis(), 200);
     TIMEIT("millis16()", AP_HAL::millis16(), 200);
     TIMEIT("micros64()", AP_HAL::micros64(), 200);
+    TIMEIT("loop_ms()", AP_HAL::loop_ms(), 200);
 
     TIMEIT("fadd", v_out += v_f, 100);
     TIMEIT("fsub", v_out -= v_f, 100);
