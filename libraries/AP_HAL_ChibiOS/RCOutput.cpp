@@ -70,6 +70,14 @@ void RCOutput::init()
         // cannot init RCOutput twice
         return;
     }
+
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // with IOMCU the local (FMU) channels start at 8
+        chan_offset = 8;
+    }
+#endif
+
     for (auto &group : pwm_group_list) {
         const uint8_t i = &group - pwm_group_list;
         //Start Pwm groups
@@ -113,8 +121,6 @@ void RCOutput::init()
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         iomcu.init();
-        // with IOMCU the local (FMU) channels start at 8
-        chan_offset = 8;
     }
 #endif
     chMtxObjectInit(&trigger_mutex);
