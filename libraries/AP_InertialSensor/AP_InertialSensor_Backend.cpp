@@ -182,6 +182,45 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle_acc_dt[instance] = 0;
 }
 
+/*
+  apply harmonic notch and low pass gyro filters
+ */
+void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
+{
+    Vector3f gyro_filtered = gyro;
+
+    // apply the harmonic notch filters
+    for (auto &notch : _imu.harmonic_notches) {
+        if (!notch.params.enabled()) {
+            continue;
+        }
+#ifndef HAL_BUILD_AP_PERIPH
+        // by default we only run the expensive notch filters on the
+        // currently active IMU we reset the inactive notch filters so
+        // that if we switch IMUs we're not left with old data
+        if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
+            instance != AP::ahrs().get_primary_gyro_index()) {
+            notch.filter[instance].reset();
+            continue;
+        }
+#endif
+        gyro_filtered = notch.filter[instance].apply(gyro_filtered);
+    }
+
+    // apply the low pass filter last to attentuate any notch induced noise
+    gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
+
+    // if the filtering failed in any way then reset the filters and keep the old value
+    if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
+        _imu._gyro_filter[instance].reset();
+        for (auto &notch : _imu.harmonic_notches) {
+            notch.filter[instance].reset();
+        }
+    } else {
+        _imu._gyro_filtered[instance] = gyro_filtered;
+    }
+}
+
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
                                                             const Vector3f &gyro,
                                                             uint64_t sample_us)
@@ -272,27 +311,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
             _imu._gyro_window[instance][2].push(scaled_gyro.z);
         }
 #endif
-        Vector3f gyro_filtered = gyro;
 
-        // apply the harmonic notch filter
-        for (auto &notch : _imu.harmonic_notches) {
-            if (notch.params.enabled()) {
-                gyro_filtered = notch.filter[instance].apply(gyro_filtered);
-            }
-        }
-
-        // apply the low pass filter last to attentuate any notch induced noise
-        gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
-
-        // if the filtering failed in any way then reset the filters and keep the old value
-        if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
-            _imu._gyro_filter[instance].reset();
-            for (auto &notch : _imu.harmonic_notches) {
-                notch.filter[instance].reset();
-            }
-        } else {
-            _imu._gyro_filtered[instance] = gyro_filtered;
-        }
+        // apply gyro filters
+        apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
@@ -391,27 +412,9 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
             _imu._gyro_window[instance][2].push(scaled_gyro.z);
         }
 #endif
-        Vector3f gyro_filtered = gyro;
 
-        // apply the harmonic notch filters
-        for (auto &notch : _imu.harmonic_notches) {
-            if (notch.params.enabled()) {
-                gyro_filtered = notch.filter[instance].apply(gyro_filtered);
-            }
-        }
-
-        // apply the low pass filter last to attentuate any notch induced noise
-        gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
-
-        // if the filtering failed in any way then reset the filters and keep the old value
-        if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
-            _imu._gyro_filter[instance].reset();
-            for (auto &notch : _imu.harmonic_notches) {
-                notch.filter[instance].reset();
-            }
-        } else {
-            _imu._gyro_filtered[instance] = gyro_filtered;
-        }
+        // apply gyro filters
+        apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
