@@ -328,7 +328,7 @@ void AP_Vehicle::scheduler_delay_callback()
     // don't allow potentially expensive logging calls:
     logger.EnableWrites(false);
 
-    const uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::loop_ms();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
         gcs().send_message(MSG_HEARTBEAT);
@@ -394,7 +394,7 @@ void AP_Vehicle::update_dynamic_notch_at_specified_rate()
     }
 
     // decimated update at 200Hz
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::loop_ms();
 
     if (now - _last_notch_update_ms > 5) {
         _last_notch_update_ms = now;
