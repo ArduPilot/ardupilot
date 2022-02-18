@@ -3355,8 +3355,7 @@ class AutoTest(ABC):
         """Download latest log."""
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
-        mavproxy.send("module load log\n")
-        mavproxy.expect("Loaded module log")
+        self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
         mavproxy.expect("numLogs")
         self.wait_heartbeat()
@@ -3364,8 +3363,7 @@ class AutoTest(ABC):
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
         mavproxy.expect("Finished downloading", timeout=120)
-        mavproxy.send("module unload log\n")
-        mavproxy.expect("Unloaded module log")
+        self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
 
     def log_upload(self):
@@ -7775,7 +7773,7 @@ Also, ignores heartbeats not from our target system'''
             self.wait_ready_to_arm(check_prearm_bit=False)
             mavproxy.send('arm throttle\n')
             mavproxy.expect('PreArm: Logging failed')
-            mavproxy.send("module load dataflash_logger\n")
+            self.mavproxy_load_module(mavproxy, 'dataflash_logger')
             mavproxy.send("dataflash_logger set verbose 1\n")
             mavproxy.expect('logging started')
             mavproxy.send("dataflash_logger set verbose 0\n")
@@ -7806,8 +7804,25 @@ Also, ignores heartbeats not from our target system'''
             self.disarm_vehicle()
             ex = e
         self.context_pop()
-        mavproxy.send("module unload dataflash_logger\n")
-        mavproxy.expect("Unloaded module dataflash_logger")
+        self.mavproxy_unload_module(mavproxy, 'dataflash_logger')
+
+        # the following things won't work - but they shouldn't die either:
+        self.mavproxy_load_module(mavproxy, 'log')
+
+        self.progress("Try log list")
+        mavproxy.send("log list\n")
+        mavproxy.expect("No logs")
+
+        self.progress("Try log erase")
+        mavproxy.send("log erase\n")
+        # no response to this...
+
+        self.progress("Try log download")
+        mavproxy.send("log download 1\n")
+        # no response to this...
+
+        self.mavproxy_unload_module(mavproxy, 'log')
+
         self.stop_mavproxy(mavproxy)
         self.reboot_sitl()
         if ex is not None:
