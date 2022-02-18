@@ -148,6 +148,7 @@ SECTIONS
         lib/lib*.a:vector2.*(.text* .rodata*)
         lib/lib*.a:quaternion.*(.text* .rodata*)
         lib/lib*.a:polygon.*(.text* .rodata*)
+        lib/lib*.a:flash.*(.text* .rodata*) /* flash ops in RAM so that both banks can be erased */
         /* uncomment these to test CPUInfo in FLASH_RAM */
         /*Tools/CPUInfo/CPUInfo.*(.text* .rodata*)
         Tools/CPUInfo/EKF_Maths.*(.text* .rodata*)*/
