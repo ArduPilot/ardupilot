@@ -172,6 +172,9 @@ public:
         DISABLE_FTP = (1<<1),
         ALLOW_SET_INTERNAL_PARM = (1<<2),
         BOARD_OPTION_DEBUG_ENABLE = (1<<3),
+        UNLOCK_FLASH = (1<<4),
+        WRITE_PROTECT_FLASH = (1<<5),
+        WRITE_PROTECT_BOOTLOADER = (1<<6),
     };
 
     // return true if ftp is disabled
@@ -182,6 +185,21 @@ public:
     // return true if watchdog enabled
     static bool watchdog_enabled(void) {
         return _singleton?(_singleton->_options & BOARD_OPTION_WATCHDOG)!=0:HAL_WATCHDOG_ENABLED_DEFAULT;
+    }
+
+    // return true if flash should be unlocked
+    static bool unlock_flash(void) {
+        return _singleton && (_singleton->_options & UNLOCK_FLASH) != 0;
+    }
+
+    // return true if flash should be write protected
+    static bool protect_flash(void) {
+        return _singleton && (_singleton->_options & WRITE_PROTECT_FLASH) != 0;
+    }
+
+    // return true if bootloader should be write protected
+    static bool protect_bootloader(void) {
+        return _singleton && (_singleton->_options & WRITE_PROTECT_BOOTLOADER) != 0;
     }
 
     // return true if we allow setting of internal parameters (for developers)
