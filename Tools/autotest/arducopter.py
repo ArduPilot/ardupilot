@@ -738,6 +738,98 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             raise ex
 
+    def fly_loiter_turns_auto(self, timeout=360):
+        # Test loiter turns in auto mode
+        ex = None
+        try:
+            num_wp = self.load_mission("copter_loiterturns_mission.txt")
+            self.change_mode('LOITER')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode('AUTO')
+            self.set_rc(3, 1550)
+            self.wait_waypoint(0, num_wp-1, timeout=500)
+            self.wait_disarmed()
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.set_rc_default()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def fly_loiter_turns_guided(self, timeout=360):
+        # Test loiter turns in guided
+        ex = None
+        try:
+            self.change_mode('LOITER')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.set_rc(3, 1800)
+            self.delay_sim_time(5)  # let it climb for few seconds
+            self.change_mode('GUIDED')
+            locations = [mavutil.location(-35.36249980, 149.16512400, 25, 0),
+                         mavutil.location(-35.36255880, 149.16393850, 30, 0),
+                         mavutil.location(-35.36249980, 149.16512400, 15, 0)]
+            radius = [10, 20, 5]
+            for i in range(locations.__len__()):
+                loc = locations[i]
+                radius_m = radius[i]
+                self.send_cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                              2,            # no of turns
+                              0,
+                              radius_m,     # radius in m
+                              0,
+                              loc.lat,      # lat
+                              loc.lng,      # lng
+                              loc.alt)      # alt
+                tolerance = max(radius_m * 0.15, 1)
+                # wait for the vehicle to move to the edge of circle
+                self.wait_distance_to_location(loc, radius_m-tolerance, radius_m+tolerance)
+                # check for altitude
+                self.wait_altitude(loc.alt - 1, loc.alt + 1, True)
+                last_heading = -1
+                n = 0
+                avg_distance_from_center = 0
+                self.delay_sim_time(3)  # let the vehicle stablize on orbit
+                tstart = self.get_sim_time()
+                # Get average distance from center over some time.
+                # To be sure if we were circling we check
+                # if it is within acceptable limit and heading is increasing
+                while True:
+                    if self.get_sim_time_cached()-tstart > 15:
+                        break
+                    m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+                    # check if heading is changing
+                    heading_diff = (m.hdg - last_heading)
+                    if heading_diff <= 0 and heading_diff >= -33000:
+                        # heading always increases while circling so we raise an exception if it doesn't
+                        # but if it decreases by such a large value we must have passed 360 degress
+                        # so we ignore that case
+                        raise NotAchievedException("Unexpected heading behaviour")
+                    last_heading = m.hdg
+                    dist_from_center = self.get_distance_accurate(loc, self.mav.location())
+                    avg_distance_from_center = (avg_distance_from_center * n + dist_from_center) / (n + 1)
+                    self.progress("Distance from center: %.2f" % dist_from_center)
+                    n += 1
+                    self.delay_sim_time(0.1)
+
+                if abs(avg_distance_from_center - radius_m) > tolerance:
+                    raise NotAchievedException("Not on radius of circle")
+            self.land_and_disarm()
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
+    def fly_loiter_turns(self, timeout=360):
+        # Test loiter turns in auto and guided mode
+        self.fly_loiter_turns_auto()
+        self.fly_loiter_turns_guided()
+        return
+
     def test_gcs_failsafe(self, side=60, timeout=360):
         # Test double-SmartRTL; ensure we do SmarRTL twice rather than
         # landing (tests fix for actual bug)
@@ -8367,6 +8459,10 @@ class AutoTestCopter(AutoTest):
             ("GCSFailsafe",
              "Test GCS Failsafe",
              self.fly_gcs_failsafe),  # 239s
+
+            ("LoiterTurns",
+             "Fly Loiter Turns",
+             self.fly_loiter_turns),
 
             # this group has the smallest runtime right now at around
             #  5mins, so add more tests here, till its around
