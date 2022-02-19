@@ -355,9 +355,11 @@ bool Location::sanitize(const Location &defaultLoc)
 
     // convert relative alt=0 to mean current alt
     if (alt == 0 && relative_alt) {
-        relative_alt = false;
-        alt = defaultLoc.alt;
-        has_changed = true;
+        int32_t defaultLoc_alt;
+        if (defaultLoc.get_alt_cm(get_alt_frame(), defaultLoc_alt)) {
+            alt = defaultLoc_alt;
+            has_changed = true;
+        }
     }
 
     // limit lat/lng to appropriate ranges
