@@ -887,7 +887,7 @@ bool CANIface::readRxFIFO(uint8_t fifo_index)
     frame.dlc = (frame_ptr[1] & DLC_MASK) >> 16;
     uint8_t *data = (uint8_t*)&frame_ptr[2];
 
-    for (uint8_t i = 0; i < AP_HAL::CANFrame::MaxDataLen; i++) {
+    for (uint8_t i = 0; i < AP_HAL::CANFrame::dlcToDataLength(frame.dlc); i++) {
         frame.data[i] = data[i];
     }
 
