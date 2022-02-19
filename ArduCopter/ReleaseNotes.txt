@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.1.5-rc1 10-Feb-2022
+Copter 4.1.5 19-Feb-2022 / 4.1.5-rc1 10-Feb-2022
 Changes from 4.1.4
 1) Bug fixes
     a) attitude control I-term always reset when landed (previously only reset after spool down)
