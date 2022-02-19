@@ -2139,6 +2139,7 @@ void QuadPlane::log_QPOS(void)
  */
 void QuadPlane::PosControlState::set_state(enum position_control_state s)
 {
+    const uint32_t now = AP_HAL::millis();
     if (state != s) {
         auto &qp = plane.quadplane;
         pilot_correction_done = false;
@@ -2163,14 +2164,17 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             // reset throttle descent control
             qp.thr_ctrl_land = false;
         }
+        // double log to capture the state change
         qp.log_QPOS();
+        state = s;
+        qp.log_QPOS();
+        last_log_ms = now;
     }
-    state = s;
-    last_state_change_ms = AP_HAL::millis();
+    last_state_change_ms = now;
 
     // we consider setting the state to be equivalent to running to
     // prevent code from overriding the state as stale
-    last_run_ms = last_state_change_ms;
+    last_run_ms = now;
 }
 
 /*
