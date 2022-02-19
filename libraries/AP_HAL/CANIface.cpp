@@ -58,8 +58,9 @@ bool AP_HAL::CANFrame::priorityHigherThan(const CANFrame& rhs) const
  */
 int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags)
 {
-    if (frame_callback && (out_flags & IsMAVCAN)==0) {
-        frame_callback(get_iface_num(), out_frame);
+    auto cb = frame_callback;
+    if (cb && (out_flags & IsMAVCAN)==0) {
+        cb(get_iface_num(), out_frame);
     }
     return 1;
 }
@@ -69,9 +70,10 @@ int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotoni
  */
 int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
 {
-    if (frame_callback) {
+    auto cb = frame_callback;
+    if (cb) {
         if ((flags & IsMAVCAN) == 0) {
-            frame_callback(get_iface_num(), frame);
+            cb(get_iface_num(), frame);
         } else {
             CanRxItem rx_item;
             rx_item.frame = frame;
