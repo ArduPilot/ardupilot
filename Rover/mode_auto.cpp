@@ -555,7 +555,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         return verify_nav_guided_enable(cmd);
 
     case MAV_CMD_NAV_DELAY:
-       return verify_nav_delay(cmd);
+        return verify_nav_delay(cmd);
 
 #if AP_SCRIPTING_ENABLED
     case MAV_CMD_NAV_SCRIPT_TIME:
