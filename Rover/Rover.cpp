@@ -165,7 +165,7 @@ bool Rover::set_target_location(const Location& target_loc)
         return false;
     }
 
-    return control_mode->set_desired_location(target_loc);
+    return mode_guided.set_desired_location(target_loc);
 }
 
 // set target velocity (for use by scripting)
