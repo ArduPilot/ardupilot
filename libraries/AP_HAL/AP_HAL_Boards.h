@@ -262,7 +262,7 @@
 #endif
 
 #ifndef HAL_WITH_MCU_MONITORING
-#define HAL_WITH_MCU_MONITORING defined(STM32H7)
+#define HAL_WITH_MCU_MONITORING defined(STM32H7) && STM32_HAS_ADC3
 #endif
 
 #ifndef HAL_HNF_MAX_FILTERS
@@ -282,4 +282,12 @@
 // plus one static notch with one harmonic
 #define HAL_HNF_MAX_FILTERS 18
 #endif
+#endif
+
+#ifndef __RAMFUNC__
+#define __RAMFUNC__
+#endif
+
+#ifndef __FASTRAMFUNC__
+#define __FASTRAMFUNC__
 #endif

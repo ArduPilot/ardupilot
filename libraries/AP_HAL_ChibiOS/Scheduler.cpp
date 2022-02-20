@@ -39,6 +39,7 @@
 #include "hwdef/common/watchdog.h"
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "shared_dma.h"
+#include <AP_Common/ExpandingString.h>
 
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>

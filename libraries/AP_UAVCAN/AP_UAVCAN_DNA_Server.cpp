@@ -527,6 +527,16 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], 
         logged.set(node_id);
         uint64_t uid[2];
         memcpy(uid, unique_id, sizeof(uid));
+        // @LoggerMessage: CAND
+        // @Description: Info from GetNodeInfo request
+        // @Field: TimeUS: Time since system startup
+        // @Field: NodeId: Node ID
+        // @Field: UID1: Hardware ID, part 1
+        // @Field: UID2: Hardware ID, part 2
+        // @Field: Name: Name string
+        // @Field: Major: major revision id
+        // @Field: Minor: minor revision id
+        // @Field: Version: AP_Periph git hash
         AP::logger().Write("CAND", "TimeUS,NodeId,UID1,UID2,Name,Major,Minor,Version",
                            "s#------", "F-------", "QBQQZBBI",
                            AP_HAL::micros64(),

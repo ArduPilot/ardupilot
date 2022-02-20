@@ -501,6 +501,12 @@ float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float ra
         desired_rate = constrain_float(desired_rate, -rate_max_rads, rate_max_rads);
     }
 
+    // if acceleration limit is provided, ensure rate can be slowed to zero in time to stop at heading_rad (i.e. avoid overshoot)
+    if (is_positive(_steer_accel_max)) {
+        const float steer_accel_rate_max_rads = safe_sqrt(2.0 * fabsf(yaw_error) * radians(_steer_accel_max));
+        desired_rate = constrain_float(desired_rate, -steer_accel_rate_max_rads, steer_accel_rate_max_rads);
+    }
+
     return desired_rate;
 }
 

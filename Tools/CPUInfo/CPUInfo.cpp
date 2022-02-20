@@ -10,12 +10,20 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include "EKF_Maths.h"
 
 void setup();
 void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
+
+#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+
+// On H750 we want to measure external flash to ram performance
+#if defined(EXT_FLASH_SIZE_MB) && defined(STM32H7)
+#define DISABLE_CACHES
+#endif
 
 #ifdef STM32_SYS_CK
 static uint32_t sysclk = STM32_SYS_CK;
@@ -28,8 +36,13 @@ static uint32_t sysclk = 0;
 static EKF_Maths ekf;
 
 HAL_Semaphore sem;
+AP_ESC_Telem telem;
 
 void setup() {
+#ifdef DISABLE_CACHES
+    SCB_DisableDCache();
+    SCB_DisableICache();
+#endif
     ekf.init();
 }
 
@@ -86,6 +99,7 @@ static void show_timings(void)
     v_f = 1+(AP_HAL::micros() % 5);
     v_out = 1+(AP_HAL::micros() % 3);
 
+    v_32 = AP_HAL::millis();
     v_32 = 1+(AP_HAL::micros() % 5);
     v_out_32 = 1+(AP_HAL::micros() % 3);
 
@@ -173,5 +187,10 @@ void loop()
     hal.console->printf("\n");
     hal.scheduler->delay(3000);
 }
+
+#else
+void loop() {}
+void setup() {}
+#endif
 
 AP_HAL_MAIN();

@@ -427,7 +427,7 @@ bool AP_InertialSensor_Invensense::get_output_banner(char* banner, uint8_t banne
 /*
   publish any pending data
  */
-bool AP_InertialSensor_Invensense::update()
+bool AP_InertialSensor_Invensense::update() /* front end */
 {
     update_accel(_accel_instance);
     update_gyro(_gyro_instance);

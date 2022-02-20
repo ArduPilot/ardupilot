@@ -376,7 +376,7 @@ bool Util::was_watchdog_reset() const
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
-void Util::thread_info(ExpandingString &str)
+__RAMFUNC__ void Util::thread_info(ExpandingString &str)
 {
 #if HAL_ENABLE_THREAD_STATISTICS
     uint64_t cumulative_cycles = ch.kernel_stats.m_crit_isr.cumulative;
@@ -603,6 +603,14 @@ void Util::uart_info(ExpandingString &str)
     str.printf("IOMCU   ");
     uart_io.uart_info(str);
 #endif
+}
+#endif
+
+// request information on uart I/O
+#if HAL_USE_PWM == TRUE
+void Util::timer_info(ExpandingString &str)
+{
+    hal.rcout->timer_info(str);
 }
 #endif
 

@@ -41,6 +41,8 @@ public:
 
     // set address to custom external buffer
     void set_buffer(char *s, uint32_t total_len, uint32_t used_len);
+    // zero out the string
+    void reset() { used = 0; }
 
     // destructor
     ~ExpandingString();

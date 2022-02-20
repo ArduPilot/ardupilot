@@ -157,6 +157,8 @@ AP_HW_SierraF412                     1055
 AP_HW_BEASTF7v2                      1057
 AP_HW_KakuteH7Mini                   1058
 AP_HW_JHEMCUGSF405A                  1059
+AP_HW_SPRACINGH7                     1060
+AP_HW_DEVEBOXH7                      1061
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401

@@ -1871,13 +1871,11 @@ bool ModeAuto::verify_within_distance()
 // verify_yaw - return true if we have reached the desired heading
 bool ModeAuto::verify_yaw()
 {
-    // set yaw mode if it has been changed (the waypoint controller often retakes control of yaw as it executes a new waypoint command)
-    if (auto_yaw.mode() != AUTO_YAW_FIXED) {
-        auto_yaw.set_mode(AUTO_YAW_FIXED);
-    }
+    // make sure still in fixed yaw mode, the waypoint controller often retakes control of yaw as it executes a new waypoint command
+    auto_yaw.set_mode(AUTO_YAW_FIXED);
 
     // check if we are within 2 degrees of the target heading
-    return (fabsf(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 200);
+    return auto_yaw.fixed_yaw_slew_finished() && (fabsf(wrap_180_cd(ahrs.yaw_sensor-auto_yaw.yaw())) <= 200);
 }
 
 // verify_nav_wp - check if we have reached the next way point

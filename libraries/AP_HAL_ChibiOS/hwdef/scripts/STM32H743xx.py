@@ -29,7 +29,7 @@ mcu = {
         (0x30000000, 256, 0), # SRAM1, SRAM2
         (0x20000000, 128, 2), # DTCM, tightly coupled, no DMA, fast
         (0x24000000, 512, 4), # AXI SRAM. Use this for SDMMC IDMA ops
-        (0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
+		(0x00000400,  63, 2), # ITCM (first 1k removed, to keep address 0 unused)
         (0x30040000,  32, 0), # SRAM3.
         (0x38000000,  64, 1), # SRAM4.
     ],
