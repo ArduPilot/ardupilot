@@ -21,7 +21,25 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
     failsafe.saved_mode_number = control_mode->mode_number();
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
+
+    const char *type_string = "?";
+    switch (fstype) {
+    case FAILSAFE_NONE:
+        type_string = "None";
+        break;
+    case FAILSAFE_SHORT:
+        type_string = "Short";
+        break;
+    case FAILSAFE_LONG:
+        type_string = "Long";
+        break;
+    case FAILSAFE_GCS:
+        type_string = "GCS";
+        break;
+    }
+
+    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%s/reason=%s", type_string, ap_mode_reason_string(reason));
+
     switch (control_mode->mode_number())
     {
     case Mode::Number::MANUAL:
