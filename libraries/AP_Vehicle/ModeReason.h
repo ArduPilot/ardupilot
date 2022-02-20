@@ -67,3 +67,5 @@ enum class ModeReason : uint8_t {
   LOITER_ALT_IN_VTOL = 47,
   RADIO_FAILSAFE_RECOVERY = 48,
 };
+
+const char *ap_mode_reason_string(ModeReason reason);
