@@ -18,6 +18,7 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
+#include <ch.h>
 
 extern const AP_HAL::HAL &hal;
 
