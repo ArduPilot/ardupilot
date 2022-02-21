@@ -16,6 +16,7 @@
  */
 #include <AP_HAL/AP_HAL.h>
 
+#include <hal.h>
 #include "AP_HAL_ChibiOS.h"
 #include "Scheduler.h"
 #include "Util.h"

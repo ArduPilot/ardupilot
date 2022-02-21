@@ -15,6 +15,8 @@
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  * Bi-directional dshot based on Betaflight, code by Andy Piper and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
