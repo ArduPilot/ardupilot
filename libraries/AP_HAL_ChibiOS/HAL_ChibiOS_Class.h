@@ -26,7 +26,6 @@
 #endif
 #include <stdio.h>
 #include "ch.h"
-#include "hal.h"
 
 class HAL_ChibiOS : public AP_HAL::HAL {
 public:
