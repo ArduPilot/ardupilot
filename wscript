@@ -502,7 +502,7 @@ def configure(cfg):
     # Always use system extensions
     cfg.define('_GNU_SOURCE', 1)
 
-    cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'))
+    cfg.write_config_header(os.path.join(cfg.variant, 'ap_config.h'), guard='_AP_CONFIG_H_')
 
     # add in generated flags
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
