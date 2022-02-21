@@ -6,13 +6,13 @@
 #include <cmath>
 #include <AP_Logger/AP_Logger.h>
 
-class AR_ADRC{
+class AP_ADRC{
     public:
        // Constructor for ADRC
-        AR_ADRC();
-        virtual ~AR_ADRC() = default;
+        AP_ADRC();
+        virtual ~AP_ADRC() = default;
 
-        CLASS_NO_COPY(AR_ADRC);
+        CLASS_NO_COPY(AP_ADRC);
 
         //  update_all - set target and measured inputs to ADRC controller and calculate outputs
         //  target and error are filtered
@@ -36,8 +36,10 @@ class AR_ADRC{
 
     private:
 
-        float AR_ADRC::fal(float e, float alpha, float delta);
-        
+        float fal(float e, float alpha, float delta);
+
+        float sign(float x);
+
         // parameters
         AP_Float wc_;          // Response bandwidth in rad/s
         AP_Float wo_;          // State estimation bandwidth in rad/s
@@ -45,7 +47,7 @@ class AR_ADRC{
         AP_Float limit_;
         AP_Float delta_;
         AP_Int8  order_;
-  
+
        // flags
         struct ar_adrc_flags {
             bool reset_filter_ :1; // true when input filter should be reset during next call to set_input
@@ -58,7 +60,7 @@ class AR_ADRC{
         float z1_;
         float z2_;
         float z3_;
-     
+
         AP_Logger::PID_Info _debug_info;
-  
+
 };

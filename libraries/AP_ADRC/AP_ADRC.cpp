@@ -1,37 +1,37 @@
-#include "AR_ADRC.h"
+#include "AP_ADRC.h"
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
-const AP_Param::GroupInfo AR_ADRC::var_info[] = {
+const AP_Param::GroupInfo AP_ADRC::var_info[] = {
 
     // @Param: WC
     // @DisplayName: ADRC control bandwidth(rad/s)
-    AP_GROUPINFO("WC",1,AR_ADRC,wc_,10),
+    AP_GROUPINFO("WC",1,AP_ADRC,wc_,10),
 
     // @Param: WO
     // @DisplayName: ADRC ESO bandwidth(rad/s)
-    AP_GROUPINFO("WO",2,AR_ADRC,wo_,15),
-    
+    AP_GROUPINFO("WO",2,AP_ADRC,wo_,15),
+
     // @Param: B0
     // @DisplayName: ADRC control input gain
-    AP_GROUPINFO("B0",3,AR_ADRC,b0_,10),
+    AP_GROUPINFO("B0",3,AP_ADRC,b0_,10),
 
     // @Param: DELTA
     // @DisplayName: ADRC control linear zone length
-    AP_GROUPINFO("DELTA",4,AR_ADRC,delta_,1.0),
+    AP_GROUPINFO("DELTA",4,AP_ADRC,delta_,1.0),
 
     // @Param: ORDER
     // @DisplayName: ADRC control model order
-    AP_GROUPINFO("ORDER",5,AR_ADRC,order_,1),
+    AP_GROUPINFO("ORDER",5,AP_ADRC,order_,1),
 
     // @Param: LM
     // @DisplayName: ADRC control output limit
-    AP_GROUPINFO("LM",6,AR_ADRC,limit_,1.0f),
+    AP_GROUPINFO("LM",6,AP_ADRC,limit_,1.0f),
 
     AP_GROUPEND
 };
 
-AR_ADRC::AR_ADRC()
+AP_ADRC::AP_ADRC()
 {
     AP_Param::setup_object_defaults(this,var_info);
 
@@ -41,7 +41,7 @@ AR_ADRC::AR_ADRC()
     memset(&_debug_info, 0, sizeof(_debug_info));
 }
 
-float AR_ADRC::update_all(float target,float measurement)
+float AP_ADRC::update_all(float target,float measurement)
 {
     // don't process inf or NaN
     if (!isfinite(target) || !isfinite(measurement)) {
@@ -54,12 +54,12 @@ float AR_ADRC::update_all(float target,float measurement)
 
         // Get controller error
         float e1 = target - z1_;
-        
-        // control derivation error
-        float e2 = -z2_;      
 
-        // state estimation error                
-        float e  = z1_ - measurement;         
+        // control derivation error
+        float e2 = -z2_;
+
+        // state estimation error
+        float e  = z1_ - measurement;
 
         float output = 0.0f;
         float output_limited = 0;
@@ -74,13 +74,13 @@ float AR_ADRC::update_all(float target,float measurement)
                 // Nonlinear control law
                 output = (wc_ * fal(e1,0.5f,delta_)  - sigma * z2_)/b0_;
 
-                // Limit output 
+                // Limit output
                 if(is_zero(limit_.get())){
                     output_limited = output;
                 }else{
                     output_limited = constrain_float(output * dmod,-limit_,limit_);
                 }
-                
+
                 // State estimation
                 float fe = fal(e,0.5,delta_);
                 float beta1 = 2 * wo_;
@@ -102,13 +102,13 @@ float AR_ADRC::update_all(float target,float measurement)
                 // Nonlinear control law
                 output = (kp * fal(e1,0.5f,delta_) + kd * fal(e2,0.25,delta_) - sigma * z3_)/b0_;
 
-                // Limit output 
+                // Limit output
                 if(is_zero(limit_.get())){
                     output_limited = output * dmod;
                 }else{
                     output_limited = constrain_float(output * dmod,-limit_,limit_);
                 }
-                
+
                 // State estimation
                 float beta1 = 3 * wo_;
                 float beta2 = 3 * wo_ * wo_;
@@ -129,7 +129,7 @@ float AR_ADRC::update_all(float target,float measurement)
             output_limited = 0.0f;
             break;
         }
-    
+
 
     // For loggers
     _debug_info.target = target;
@@ -141,19 +141,25 @@ float AR_ADRC::update_all(float target,float measurement)
 
 
 
-void AR_ADRC::set_dt(float dt)
+void AP_ADRC::set_dt(float dt)
 {
     dt_ = dt;
 }
 
-void AR_ADRC::reset_eso(float measurement)
+void AP_ADRC::reset_eso(float measurement)
 {
     z1_ = measurement;
     z2_ = 0.0f;
     z3_ = 0.0f;
 }
 
-float AR_ADRC::fal(float e, float alpha, float delta)
+float AP_ADRC::sign(float x)
+{
+    if (x < 0) return -1;
+    else return 1;
+}
+
+float AP_ADRC::fal(float e, float alpha, float delta)
 {
     if(fabsf(e) < delta){
         return e / (powf(delta, 1.0f-alpha));
