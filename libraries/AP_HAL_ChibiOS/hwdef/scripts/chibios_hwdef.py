@@ -826,6 +826,7 @@ def write_mcu_config(f):
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
         f.write('#define STM32_SDC_USE_SDMMC2 TRUE\n')
+        f.write('#define HAL_USE_SDMMC 1\n')
         build_flags.append('USE_FATFS=yes')
         env_vars['WITH_FATFS'] = "1"
     elif have_type_prefix('SDMMC'):
@@ -833,6 +834,7 @@ def write_mcu_config(f):
         f.write('#define USE_POSIX\n\n')
         f.write('#define HAL_USE_SDC TRUE\n')
         f.write('#define STM32_SDC_USE_SDMMC1 TRUE\n')
+        f.write('#define HAL_USE_SDMMC 1\n')
         build_flags.append('USE_FATFS=yes')
         env_vars['WITH_FATFS'] = "1"
     elif has_sdcard_spi():
