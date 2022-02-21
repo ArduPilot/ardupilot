@@ -38,6 +38,7 @@
  * Code by Siddharth Bharat Purohit
  */
 
+#include <hal.h>
 #include "AP_HAL_ChibiOS.h"
 
 #if HAL_NUM_CAN_IFACES
