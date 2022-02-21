@@ -557,7 +557,6 @@ private:
         uint8_t inverted_flight         : 1;    // 1   // true for inverted flight mode
         uint8_t in_autorotation         : 1;    // 2   // true when heli is in autorotation
         bool coll_stk_low                  ;    // 3   // true when collective stick is on lower limit
-        uint8_t start_engine            : 1;    //3 //true for turbine start condition
     } heli_flags_t;
     heli_flags_t heli_flags;
 
