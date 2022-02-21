@@ -14,6 +14,7 @@
  */
 
 #include "GCS_MAVLink.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 
 #if HAL_GCS_ENABLED
