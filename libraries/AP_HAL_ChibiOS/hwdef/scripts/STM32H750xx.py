@@ -68,8 +68,9 @@ mcu = {
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
 
     'DEFINES' : {
-        'HAL_HAVE_HARDWARE_DOUBLE' : '1'
-    }	
+        'HAL_HAVE_HARDWARE_DOUBLE' : '1',
+        'STM32H7' : '1',
+    }
 }
 
 pincount = {
