@@ -801,6 +801,7 @@ def validate_flash_storage_size():
 
 def write_mcu_config(f):
     '''write MCU config defines'''
+    f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(args.hwdef[0])))
     f.write('// MCU type (ChibiOS define)\n')
     f.write('#define %s_MCUCONF\n' % get_config('MCU'))
     mcu_subtype = get_config('MCU', 1)
