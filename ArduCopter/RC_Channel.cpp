@@ -102,7 +102,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::TURTLE:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:
-	case AUX_FUNC::TURB_START:
+    case AUX_FUNC::TURBINE_START:
         break;
     case AUX_FUNC::ACRO_TRAINER:
     case AUX_FUNC::ATTCON_ACCEL_LIM:
@@ -362,22 +362,21 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #endif
             break;
 			
-			 case AUX_FUNC::TURB_START:
-#if FRAME_CONFIG == HELI_FRAME
-            
+        case AUX_FUNC::TURBINE_START:
+#if FRAME_CONFIG == HELI_FRAME     
            switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     copter.motors->set_turb_start(true);
-                    					
                     break;
                 case AuxSwitchPos::MIDDLE:
                     // nothing
                     break;
                 case AuxSwitchPos::LOW:
-                    copter.motors->set_turb_start(false);	
-            }		
+                    copter.motors->set_turb_start(false);
+                    break;
+           }
 #endif
-         break;
+           break;
 		 
         case AUX_FUNC::BRAKE:
 #if MODE_BRAKE_ENABLED == ENABLED
