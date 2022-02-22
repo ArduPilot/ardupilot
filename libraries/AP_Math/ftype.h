@@ -5,6 +5,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <float.h>
 
 /*
   capital F is used to denote the chosen float type (float or double)
