@@ -77,6 +77,18 @@
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::_singleton;
 
+// constructor
+AP_BoardConfig::AP_BoardConfig()
+#if HAL_HAVE_IMU_HEATER
+    // initialise heater PI controller. Note we do this in the cpp file
+    // for ccache efficiency
+    : heater{{HAL_IMUHEAT_P_DEFAULT, HAL_IMUHEAT_I_DEFAULT, 70},}
+#endif
+{
+    _singleton = this;
+    AP_Param::setup_object_defaults(this, var_info);
+};
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
