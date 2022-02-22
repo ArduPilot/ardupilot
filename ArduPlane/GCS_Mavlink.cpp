@@ -214,6 +214,11 @@ void GCS_MAVLINK_Plane::send_position_target_global_int()
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+    int32_t alt = 0;
+    if (!next_WP_loc.is_zero()) {
+        UNUSED_RESULT(next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt));
+    }
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
@@ -221,7 +226,7 @@ void GCS_MAVLINK_Plane::send_position_target_global_int()
         TYPE_MASK, // ignore everything except the x/y/z components
         next_WP_loc.lat, // latitude as 1e7
         next_WP_loc.lng, // longitude as 1e7
-        next_WP_loc.alt * 0.01f, // altitude is sent as a float
+        alt * 0.01, // altitude is sent as a float
         0.0f, // vx
         0.0f, // vy
         0.0f, // vz
@@ -670,18 +675,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
         return MAV_RESULT_DENIED;
     }
 
-    Location requested_position {};
-    requested_position.lat = packet.x;
-    requested_position.lng = packet.y;
-
-    if (fabsf(packet.z) > LOCATION_ALT_MAX_M) {
+    Location requested_position;
+    if (!location_from_command_t(packet, requested_position)) {
         return MAV_RESULT_DENIED;
     }
-    Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
-        return MAV_RESULT_DENIED; // failed as the location is not valid
-    }
-    requested_position.set_alt_cm((int32_t)(packet.z * 100.0f), frame);
 
     if (is_zero(packet.param4)) {
         requested_position.loiter_ccw = 0;
@@ -997,10 +994,10 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             if (!is_zero(packet.param1)) {
                 return MAV_RESULT_FAILED;
             }
-            Location new_home_loc {};
-            new_home_loc.lat = (int32_t)(packet.param5 * 1.0e7f);
-            new_home_loc.lng = (int32_t)(packet.param6 * 1.0e7f);
-            new_home_loc.alt = (int32_t)(packet.param7 * 100.0f);
+            Location new_home_loc;
+            if (!location_from_command_t(packet, MAV_FRAME_GLOBAL, new_home_loc)) {
+                return MAV_RESULT_DENIED;
+            }
             if (!set_home(new_home_loc, true)) {
                 return MAV_RESULT_FAILED;
             }
@@ -1199,6 +1196,8 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
+        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
+
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(&msg, &packet);
         Location new_home_loc {};

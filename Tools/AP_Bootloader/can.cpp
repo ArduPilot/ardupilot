@@ -16,7 +16,7 @@
   CAN bootloader support
  */
 #include <AP_HAL/AP_HAL.h>
-
+#include <hal.h>
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
@@ -171,7 +171,7 @@ static void handle_get_node_info(CanardInstance* ins,
 static void send_fw_read(void)
 {
     uint32_t now = AP_HAL::millis();
-    if (now - fw_update.last_ms < 250) {
+    if (now - fw_update.last_ms < 750) {
         // the server may still be responding
         return;
     }
@@ -651,7 +651,12 @@ bool can_check_firmware(void)
         return false;
     }
 
-    if (ad->board_id != APJ_BOARD_ID) {
+    bool id_ok = (ad->board_id == APJ_BOARD_ID);
+#ifdef ALT_BOARD_ID
+    id_ok |= (ad->board_id == ALT_BOARD_ID);
+#endif
+
+    if (!id_ok) {
         node_status.vendor_specific_status_code = FAIL_REASON_BAD_BOARD_ID;
         printf("Bad board_id %u should be %u\n", ad->board_id, APJ_BOARD_ID);
         return false;
@@ -678,18 +683,61 @@ bool can_check_firmware(void)
 }
 
 // check for a firmware update marker left by app
-void can_check_update(void)
+bool can_check_update(void)
 {
+    bool ret = false;
 #if HAL_RAM_RESERVE_START >= 256
     struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
     if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC) {
         can_set_node_id(comms->my_node_id);
         fw_update.node_id = comms->server_node_id;
         memcpy(fw_update.path, comms->path, UAVCAN_PROTOCOL_FILE_PATH_PATH_MAX_LENGTH+1);
+        ret = true;
+        // clear comms region
+        memset(comms, 0, sizeof(struct app_bootloader_comms));
     }
-    // clear comms region
-    memset(comms, 0, sizeof(struct app_bootloader_comms));
 #endif
+#if defined(CAN1_BASE) && defined(RCC_APB1ENR_CAN1EN)
+    // check for px4 fw update. px4 uses the filter registers in CAN1
+    // to communicate with the bootloader. This only works on CAN1
+    if (!ret && stm32_was_software_reset()) {
+        uint32_t *fir = (uint32_t *)(CAN1_BASE + 0x240);
+        struct PACKED app_shared {
+            union {
+                uint64_t ull;
+                uint32_t ul[2];
+                uint8_t  valid;
+            } crc;
+            uint32_t signature;
+            uint32_t bus_speed;
+            uint32_t node_id;
+        } *app = (struct app_shared *)&fir[4];
+        /* we need to enable the CAN peripheral in order to look at
+           the FIR registers.
+        */
+        RCC->APB1ENR |= RCC_APB1ENR_CAN1EN;
+        static const uint32_t app_signature = 0xb0a04150;
+        if (app->signature == app_signature &&
+            app->node_id > 0 && app->node_id < 128) {
+            // crc is in reversed word order in FIR registers
+            uint32_t sig[3];
+            memcpy((uint8_t *)&sig[0], (const uint8_t *)&app->signature, sizeof(sig));
+            const uint64_t crc = crc_crc64(sig, 3);
+            const uint32_t *crc32 = (const uint32_t *)&crc;
+            if (crc32[0] == app->crc.ul[1] &&
+                crc32[1] == app->crc.ul[0]) {
+                // reset signature so we don't get in a boot loop
+                app->signature = 0;
+                // setup node ID
+                can_set_node_id(app->node_id);
+                // and baudrate
+                baudrate = app->bus_speed;
+                ret = true;
+            }
+        }
+    }
+#endif
+    return ret;
 }
 
 void can_start()

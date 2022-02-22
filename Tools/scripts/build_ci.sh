@@ -253,6 +253,8 @@ for t in $CI_BUILD_TARGET; do
         # test bi-directional dshot build
         echo "Building KakuteF7Mini"
         $waf configure --Werror --board KakuteF7Mini
+        $waf clean
+        $waf copter
 
         # test bi-directional dshot build and smallest flash
         echo "Building KakuteF7"
@@ -265,6 +267,12 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "stm32h7" ]; then
         echo "Building Durandal"
         $waf configure --board Durandal
+        $waf clean
+        $waf copter
+
+        # test external flash build
+        echo "Building SPRacingH7"
+        $waf configure --Werror --board SPRacingH7
         $waf clean
         $waf copter
         continue
@@ -298,6 +306,7 @@ for t in $CI_BUILD_TARGET; do
         echo "Building navigator"
         $waf configure --board navigator --toolchain=arm-linux-musleabihf
         $waf sub --static
+        ./Tools/scripts/firmware_version_decoder.py -f build/navigator/bin/ardusub --expected-hash $GIT_VERSION
         continue
     fi
 

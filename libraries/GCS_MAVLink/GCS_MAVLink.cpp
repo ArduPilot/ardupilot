@@ -41,6 +41,7 @@ bool gcs_alternative_active[MAVLINK_COMM_NUM_BUFFERS];
 
 // per-channel lock
 static HAL_Semaphore chan_locks[MAVLINK_COMM_NUM_BUFFERS];
+static bool chan_discard[MAVLINK_COMM_NUM_BUFFERS];
 
 mavlink_system_t mavlink_system = {7,1};
 
@@ -90,7 +91,7 @@ uint16_t comm_get_txspace(mavlink_channel_t chan)
  */
 void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 {
-    if (!valid_channel(chan) || mavlink_comm_port[chan] == nullptr) {
+    if (!valid_channel(chan) || mavlink_comm_port[chan] == nullptr || chan_discard[chan]) {
         return;
     }
     if (gcs_alternative_active[chan]) {
@@ -109,16 +110,34 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
 
 /*
   lock a channel for send
+  if there is insufficient space to send size bytes then all bytes
+  written to the channel by the mavlink library will be discarded
+  while the lock is held.
  */
-void comm_send_lock(mavlink_channel_t chan)
+void comm_send_lock(mavlink_channel_t chan_m, uint16_t size)
 {
-    chan_locks[(uint8_t)chan].take_blocking();
+    const uint8_t chan = uint8_t(chan_m);
+    chan_locks[chan].take_blocking();
+    if (mavlink_comm_port[chan]->txspace() < size) {
+        chan_discard[chan] = true;
+    }
 }
 
 /*
   unlock a channel
  */
-void comm_send_unlock(mavlink_channel_t chan)
+void comm_send_unlock(mavlink_channel_t chan_m)
 {
-    chan_locks[(uint8_t)chan].give();
+    const uint8_t chan = uint8_t(chan_m);
+    chan_discard[chan] = false;
+    chan_locks[chan].give();
+}
+
+/*
+  return reference to GCS channel lock, allowing for
+  HAVE_PAYLOAD_SPACE() to be run with a locked channel
+ */
+HAL_Semaphore &comm_chan_lock(mavlink_channel_t chan)
+{
+    return chan_locks[uint8_t(chan)];
 }

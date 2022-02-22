@@ -31,6 +31,8 @@
 
 class ByteBuffer;
 
+class ExpandingString;
+
 class AP_HAL::RCOutput {
 public:
     virtual void init() = 0;
@@ -309,6 +311,13 @@ public:
       trigger send of serial led
      */
     virtual void serial_led_send(const uint16_t chan) {}
+
+    virtual void timer_info(ExpandingString &str) {}
+
+    /*
+     * calculate the prescaler required to achieve the desire bitrate
+     */
+    static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
 
 protected:
 

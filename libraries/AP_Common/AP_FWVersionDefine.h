@@ -34,10 +34,15 @@
 #define ORIGINAL_FWSTR nullptr
 #endif
 
+/**
+ * The version number should be used when the structure is updated
+ * Major: For breaking changes of the structure
+ * Minor: For new fields that does not brake the structure or corrections
+ */
 const AP_FWVersion AP_FWVersion::fwver{
     // Version header struct
     .header = 0x61706677766572fb, // First 7 MSBs: "apfwver", LSB is the checksum of the previous string: 0xfb
-    .header_version = 0x0100U, // Major and minor version
+    .header_version = 0x0200U, // Major and minor version
     .pointer_size = static_cast<uint8_t>(sizeof(void*)),
     .reserved = 0,
     .vehicle_type = static_cast<uint8_t>(APM_BUILD_DIRECTORY),
@@ -59,6 +64,11 @@ const AP_FWVersion AP_FWVersion::fwver{
 #else
     .fw_string = ACTIVE_FWSTR " (" GIT_VERSION ")",
     .fw_hash_str = GIT_VERSION,
+#endif
+#ifndef GIT_VERSION_INT
+    .fw_hash = 0,
+#else
+    .fw_hash = GIT_VERSION_INT,
 #endif
     .fw_string_original = ORIGINAL_FWSTR,
     .fw_short_string = ACTIVE_FWSTR,

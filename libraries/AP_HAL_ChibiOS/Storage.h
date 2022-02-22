@@ -29,7 +29,13 @@
 
 // when using flash storage we use a small line size to make storage
 // compact and minimise the number of erase cycles needed
+#ifdef STORAGE_FLASH_PAGE
 #define CH_STORAGE_LINE_SHIFT 3
+#elif defined(USE_POSIX) && !defined(HAL_WITH_RAMTRON)
+#define CH_STORAGE_LINE_SHIFT 9
+#else
+#define CH_STORAGE_LINE_SHIFT 3
+#endif
 
 #define CH_STORAGE_LINE_SIZE (1<<CH_STORAGE_LINE_SHIFT)
 #define CH_STORAGE_NUM_LINES (CH_STORAGE_SIZE/CH_STORAGE_LINE_SIZE)

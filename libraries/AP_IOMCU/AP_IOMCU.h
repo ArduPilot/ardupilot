@@ -9,9 +9,11 @@
 
 #if HAL_WITH_IO_MCU
 
-#include "ch.h"
 #include "iofirmware/ioprotocol.h"
 #include <AP_RCMapper/AP_RCMapper.h>
+
+typedef uint32_t eventmask_t;
+typedef struct ch_thread thread_t;
 
 class AP_IOMCU {
 public:

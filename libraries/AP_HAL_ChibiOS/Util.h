@@ -91,7 +91,9 @@ public:
     // request information on uart I/O
     virtual void uart_info(ExpandingString &str) override;
 #endif
-
+#if HAL_USE_PWM == TRUE
+    void timer_info(ExpandingString &str) override;
+#endif
     // returns random values
     bool get_random_vals(uint8_t* data, size_t size) override;
 

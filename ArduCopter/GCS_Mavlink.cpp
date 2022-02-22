@@ -666,19 +666,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
         return MAV_RESULT_DENIED;
     }
 
-    Location request_location {};
-    request_location.lat = packet.x;
-    request_location.lng = packet.y;
-
-    if (fabsf(packet.z) > LOCATION_ALT_MAX_M) {
+    Location request_location;
+    if (!location_from_command_t(packet, request_location)) {
         return MAV_RESULT_DENIED;
     }
-
-    Location::AltFrame frame;
-    if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, frame)) {
-        return MAV_RESULT_DENIED; // failed as the location is not valid
-    }
-    request_location.set_alt_cm((int32_t)(packet.z * 100.0f), frame);
 
     if (request_location.sanitize(copter.current_loc)) {
         // if the location wasn't already sane don't load it
@@ -1401,6 +1392,8 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_SET_HOME_POSITION:
     {
+        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
+
         mavlink_set_home_position_t packet;
         mavlink_msg_set_home_position_decode(&msg, &packet);
         if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {

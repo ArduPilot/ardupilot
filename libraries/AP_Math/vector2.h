@@ -242,14 +242,14 @@ struct Vector2
         const T expected_run = seg_end.x-seg_start.x;
         const T intersection_run = point.x-seg_start.x;
         // check slopes are identical:
-        if (fabsf(expected_run) < FLT_EPSILON) {
-            if (fabsf(intersection_run) > FLT_EPSILON) {
+        if (::is_zero(expected_run)) {
+            if (fabsF(intersection_run) > FLT_EPSILON) {
                 return false;
             }
         } else {
             const T expected_slope = (seg_end.y-seg_start.y)/expected_run;
             const T intersection_slope = (point.y-seg_start.y)/intersection_run;
-            if (fabsf(expected_slope - intersection_slope) > FLT_EPSILON) {
+            if (fabsF(expected_slope - intersection_slope) > FLT_EPSILON) {
                 return false;
             }
         }

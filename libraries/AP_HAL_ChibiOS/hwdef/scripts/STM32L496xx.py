@@ -36,6 +36,10 @@ mcu = {
     ],
 
     'EXPECTED_CLOCK' : 80000000,
+
+    'DEFINES' : {
+        'STM32L4' : '1',
+    }
 }
 
 DMA_Map = {

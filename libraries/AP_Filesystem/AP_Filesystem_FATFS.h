@@ -9,19 +9,12 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stddef.h>
-#include <ff.h>
 #include "AP_Filesystem_backend.h"
 
 // Seek offset macros
 #define SEEK_SET 0
 #define SEEK_CUR 1
 #define SEEK_END 2
-
-#if FF_USE_LFN != 0
-#define MAX_NAME_LEN FF_MAX_LFN 
-#else
-#define MAX_NAME_LEN 13
-#endif
 
 class AP_Filesystem_FATFS : public AP_Filesystem_Backend
 {

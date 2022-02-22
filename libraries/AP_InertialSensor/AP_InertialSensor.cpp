@@ -986,9 +986,9 @@ AP_InertialSensor::detect_backends(void)
     }
 #endif
 
-    uint8_t probe_count = 0;
-    uint8_t enable_mask = uint8_t(_enable_mask.get());
-    uint8_t found_mask = 0;
+    uint8_t probe_count __attribute__((unused)) = 0;
+    uint8_t enable_mask __attribute__((unused)) = uint8_t(_enable_mask.get());
+    uint8_t found_mask __attribute__((unused)) = 0;
 
     /*
       use ADD_BACKEND() macro to allow for INS_ENABLE_MASK for enabling/disabling INS backends

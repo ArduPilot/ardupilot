@@ -86,9 +86,7 @@ class AutoTestTracker(AutoTest):
                     0, # pitch rate
                     0, # yaw rate
                     0) # thrust, 0 to 1, translated to a climb/descent rate
-            m = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=2)
-            if m is None:
-                raise NotAchievedException("Did not get ATTITUDE")
+            m = self.assert_receive_message('ATTITUDE', timeout=2)
             if now - last_debug > 1:
                 last_debug = now
                 self.progress("yaw=%f desyaw=%f pitch=%f despitch=%f" %

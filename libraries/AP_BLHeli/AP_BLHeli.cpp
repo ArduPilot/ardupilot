@@ -25,6 +25,10 @@
 
 #ifdef HAVE_AP_BLHELI_SUPPORT
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <hal.h>
+#endif
+
 #include <AP_Math/crc.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)

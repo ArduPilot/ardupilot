@@ -1,3 +1,20 @@
+Release 4.1.7 12th February 2022
+--------------------------------
+
+This is a minor release with some important bug fixes and a couple of
+new features:
+
+ - avoid all opening of log files in main thread
+ - support Benewake CAN Lidars
+ - improved VTOL navigation shaping code
+ - Compass custom orientation is never overwritten during calibration
+ - EKF logging gaps fixed (some messages were occasionally being skipped)
+ - IMU logging fix for IREG message (records IMU register changes)
+ - SERVOx_FUNCTION protection to avoid memory overwrite if set too high
+ - FTP parameter download fix
+
+Happy flying!
+
 Release 4.1.6 3rd January 2022
 ------------------------------
 

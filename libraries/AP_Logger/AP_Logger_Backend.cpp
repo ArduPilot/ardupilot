@@ -2,6 +2,7 @@
 
 #include "LoggerMessageWriter.h"
 
+#include "AP_Common/AP_FWVersion.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 
@@ -518,6 +519,31 @@ bool AP_Logger_Backend::Write_Rally()
     return _startup_messagewriter->writeallrallypoints();
 }
 #endif
+
+
+bool AP_Logger_Backend::Write_VER()
+{
+    const AP_FWVersion &fwver = AP::fwversion();
+
+    log_VER pkt{
+        LOG_PACKET_HEADER_INIT(LOG_VER_MSG),
+        time_us  : AP_HAL::micros64(),
+        board_type : fwver.board_type,
+        board_subtype: fwver.board_subtype,
+        major: fwver.major,
+        minor: fwver.minor,
+        patch: fwver.patch,
+        fw_type: fwver.fw_type,
+        git_hash: fwver.fw_hash,
+    };
+    strncpy(pkt.fw_string, fwver.fw_string, ARRAY_SIZE(pkt.fw_string)-1);
+
+#ifdef APJ_BOARD_ID
+    pkt._APJ_BOARD_ID = APJ_BOARD_ID;
+#endif
+
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
 
 /*
   convert a list entry number back into a log number (which can then

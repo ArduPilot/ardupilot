@@ -150,9 +150,6 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
-    channel_steer(nullptr),
-    channel_throttle(nullptr),
-    channel_lateral(nullptr),
     logger{g.log_bitmask},
     modes(&g.mode1),
     control_mode(&mode_initializing)
@@ -168,7 +165,7 @@ bool Rover::set_target_location(const Location& target_loc)
         return false;
     }
 
-    return control_mode->set_desired_location(target_loc);
+    return mode_guided.set_desired_location(target_loc);
 }
 
 // set target velocity (for use by scripting)
@@ -230,7 +227,7 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
         return true;
     case AP_Vehicle::ControlOutput::Walking_Height:
         control_value = constrain_float(g2.motors.get_walking_height(), -1.0f, 1.0f);
-        return true;    
+        return true;
     case AP_Vehicle::ControlOutput::Throttle:
         control_value = constrain_float(g2.motors.get_throttle() / 100.0f, -1.0f, 1.0f);
         return true;
@@ -250,6 +247,32 @@ bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &
         return false;
     }
     return false;
+}
+
+// returns true if mode supports NAV_SCRIPT_TIME mission commands
+bool Rover::nav_scripting_enable(uint8_t mode)
+{
+    return mode == (uint8_t)mode_auto.mode_number();
+}
+
+// lua scripts use this to retrieve the contents of the active command
+bool Rover::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+{
+    if (control_mode != &mode_auto) {
+        return false;
+    }
+
+    return mode_auto.nav_script_time(id, cmd, arg1, arg2);
+}
+
+// lua scripts use this to indicate when they have complete the command
+void Rover::nav_script_time_done(uint16_t id)
+{
+    if (control_mode != &mode_auto) {
+        return;
+    }
+
+    return mode_auto.nav_script_time_done(id);
 }
 #endif // AP_SCRIPTING_ENABLED
 

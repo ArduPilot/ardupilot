@@ -1534,7 +1534,7 @@ bool NavEKF3_core::learnMagBiasFromGPS(void)
 // Reset states using yaw from EKF-GSF and velocity and position from GPS
 bool NavEKF3_core::EKFGSF_resetMainFilterYaw(bool emergency_reset)
 {
-    // Don't do a reset unless permitted by the EK3_GSF_USE and EK3_GSF_RUN parameter masks
+    // Don't do a reset unless permitted by the EK3_GSF_USE_MASK and EK3_GSF_RUN_MASK parameter masks
     if ((yawEstimator == nullptr)
         || !(frontend->_gsfUseMask & (1U<<core_index))) {
         return false;

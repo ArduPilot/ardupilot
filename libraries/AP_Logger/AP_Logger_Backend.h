@@ -130,6 +130,7 @@ public:
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
                              enum ap_var_type type);
+    bool Write_VER();
 
     uint32_t num_dropped(void) const {
         return _dropped;
