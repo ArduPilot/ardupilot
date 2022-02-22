@@ -660,6 +660,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(ais, "AIS_",  50, ParametersG2, AP_AIS),
 #endif
 
+    // @Param: MIS_NAV_TYP
+    // @DisplayName: Mission navigation type
+    // @Description: Behaviour mission navigation class
+    // @Values: 0:Navigation by lateral acceleration 1: Navigation by yaw 
+    // @User: Standard
+    AP_GROUPINFO("MIS_NAV_TYP", 60, ParametersG2, mis_nav_type, 0),
+
     AP_GROUPEND
 };
 

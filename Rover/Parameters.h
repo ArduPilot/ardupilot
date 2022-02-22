@@ -411,6 +411,8 @@ public:
     // Automatic Identification System - for tracking sea-going vehicles
     AP_AIS ais;
 #endif
+
+    AP_Int8 mis_nav_type;
 };
 
 extern const AP_Param::Info var_info[];
