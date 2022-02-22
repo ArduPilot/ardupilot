@@ -5,17 +5,19 @@ bool ModeLand::init(bool ignore_checks)
 {
     // check if we have GPS and decide which LAND we're going to do
     control_position = copter.position_ok();
-    if (control_position) {
-        // set target to stopping point
-        Vector2f stopping_point;
-        loiter_nav->get_stopping_point_xy(stopping_point);
-        loiter_nav->init_target(stopping_point);
+
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialise the horizontal position controller
+    if (control_position && !pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
     }
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
     pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
-    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -76,8 +78,6 @@ void ModeLand::gps_run()
     // Land State Machine Determination
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
     } else {
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);

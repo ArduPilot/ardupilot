@@ -696,14 +696,6 @@ void Mode::land_run_horizontal_control()
 #endif
 
     if (!copter.ap.prec_land_active) {
-        if (copter.ap.prec_land_active) {
-            // precland isn't active anymore but was active a while back
-            // lets run an init again
-            // set target to stopping point
-            Vector2f stopping_point;
-            loiter_nav->get_stopping_point_xy(stopping_point);
-            loiter_nav->init_target(stopping_point);
-        }
         Vector2f accel;
         pos_control->input_vel_accel_xy(vel_correction, accel);
     }
