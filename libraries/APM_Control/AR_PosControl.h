@@ -43,7 +43,7 @@ public:
     // init should be called once before starting to use these methods
     void input_pos_target(const Vector2p &pos, float dt);
 
-    // set position, velocity and acceleration targets.  These should be from an externally created path and are not "input shaped"
+    // set target position, desired velocity and acceleration.  These should be from an externally created path and are not "input shaped"
     void set_pos_vel_accel_target(const Vector2p &pos, const Vector2f &vel, const Vector2f &accel);
 
     // get outputs for forward-back speed (in m/s), lateral speed (in m/s) and turn rate (in rad/sec)
@@ -54,10 +54,10 @@ public:
     // get position target
     const Vector2p& get_pos_target() const { return _pos_target; }
 
-    // returns desired velocity vector (i.e. feed forward) in m/s in lat and lon direction
+    // returns desired velocity vector (i.e. feed forward) in m/s in NE frame
     Vector2f get_desired_velocity() const;
 
-    // return desired acceleration vector in m/s in lat and lon direction
+    // return desired acceleration vector in m/s in NE frame
     Vector2f get_desired_accel() const;
 
     /// get position error as a vector from the current position to the target position
@@ -96,11 +96,13 @@ private:
 
     // position and velocity targets
     Vector2p _pos_target;           // position target as an offset (in meters) from the EKF origin
+    Vector2f _vel_desired;          // desired velocity in m/s in NE frame.  This is the "feed forward" provided by SCurves
     Vector2f _vel_target;           // velocity target in m/s in NE frame
+    Vector2f _accel_desired;        // desired accel in m/s/s in NE frame.  This is the "feed forward" provided by SCurves
     Vector2f _accel_target;         // accel target in m/s/s in NE frame
     bool _pos_target_valid;         // true if _pos_target is valid
-    bool _vel_target_valid;         // true if _vel_target is valid
-    bool _accel_target_valid;       // true if _accel_target is valid
+    bool _vel_desired_valid;        // true if _vel_desired is valid
+    bool _accel_desired_valid;      // true if _accel_desired is valid
 
     // variables for navigation
     uint32_t _last_update_ms;       // system time of last call to update
