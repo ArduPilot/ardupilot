@@ -273,9 +273,6 @@ void ModeRTL::descent_start()
     _state = SubMode::FINAL_DESCENT;
     _state_complete = false;
 
-    // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
-
     // initialise altitude target to stopping point
     pos_control->init_z_controller_stopping_point();
 
@@ -363,8 +360,14 @@ void ModeRTL::land_start()
     _state = SubMode::LAND;
     _state_complete = false;
 
-    // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialise loiter target destination
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -405,8 +408,6 @@ void ModeRTL::land_run(bool disarm_on_land)
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
         return;
     }
 
