@@ -491,7 +491,19 @@ float AR_AttitudeControl::get_steering_out_heading(float heading_rad, float rate
 // return a desired turn-rate given a desired heading in radians
 float AR_AttitudeControl::get_turn_rate_from_heading(float heading_rad, float rate_max_rads) const
 {
-    const float yaw_error = wrap_PI(heading_rad - AP::ahrs().yaw);
+    // get ground course
+    float ground_course_deg;
+    Vector2f ground_speed_vec = AP::ahrs().groundspeed_vector();
+    const float ground_speed_dir = ground_speed_vec.angle();
+    if (ground_speed_vec.length() < AR_ATTCONTROL_STEER_SPEED_MIN) {
+        // with zero ground speed use vehicle's heading
+        ground_course_deg = AP::ahrs().yaw;
+    } else {
+        ground_course_deg = ground_speed_dir;
+    }
+    ground_course_deg =  wrap_PI(ground_course_deg);
+
+    const float yaw_error = wrap_PI(heading_rad - ground_course_deg);
 
     // Calculate the desired turn rate (in radians) from the angle error (also in radians)
     float desired_rate = _steer_angle_p.get_p(yaw_error);
