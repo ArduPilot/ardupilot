@@ -437,6 +437,20 @@ void Mode::navigate_to_waypoint()
         const float turn_rate = g2.sailboat.tacking() ? g2.wp_nav.get_pivot_rate() : 0.0f;
         calc_steering_to_heading(desired_heading_cd, turn_rate);
     } else {
+        if(g2.mis_nav_type == 1){
+            // retrieve desired yaw from waypoint controller
+            float desired_yaw_cd = g2.wp_nav.nav_bearing_cd();
+
+            // if simple avoidance is active at very low speed do not attempt to turn
+            if (g2.avoid.limits_active() && (fabsf(attitude_control.get_desired_speed()) <= attitude_control.get_stop_speed())) {
+                desired_yaw_cd = ahrs.yaw_sensor;
+            }
+
+            // call steering angle controller
+            calc_steering_to_heading(desired_yaw_cd);
+            return;
+        }
+
         // retrieve turn rate from waypoint controller
         float desired_turn_rate_rads = g2.wp_nav.get_turn_rate_rads();
 
