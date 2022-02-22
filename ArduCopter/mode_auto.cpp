@@ -344,21 +344,20 @@ void ModeAuto::wp_start(const Location& dest_loc)
 // auto_land_start - initialises controller to implement a landing
 void ModeAuto::land_start()
 {
-    // set target to stopping point
-    Vector2f stopping_point;
-    loiter_nav->get_stopping_point_xy(stopping_point);
-
-    // call location specific land start function
-    land_start(stopping_point);
-}
-
-// auto_land_start - initialises controller to implement a landing
-void ModeAuto::land_start(const Vector2f& destination)
-{
     _mode = SubMode::LAND;
 
-    // initialise loiter target destination
-    loiter_nav->init_target(destination);
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialise the vertical position controller
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
+
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -485,12 +484,29 @@ bool ModeAuto::is_taking_off() const
 // auto_payload_place_start - initialises controller to implement a placing
 void ModeAuto::payload_place_start()
 {
-    // set target to stopping point
-    Vector2f stopping_point;
-    loiter_nav->get_stopping_point_xy(stopping_point);
+    _mode = SubMode::NAV_PAYLOAD_PLACE;
+    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
 
-    // call location specific place start function
-    payload_place_start(stopping_point);
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialise the vertical position controller
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
+
+    // set vertical speed and acceleration limits
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+
+    // initialise the vertical position controller
+    if (!pos_control->is_active_z()) {
+        pos_control->init_z_controller();
+    }
+
+    // initialise yaw
+    auto_yaw.set_mode(AUTO_YAW_HOLD);
 }
 
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
@@ -908,8 +924,6 @@ void ModeAuto::land_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
         return;
     }
 
@@ -1015,8 +1029,14 @@ void ModeAuto::loiter_to_alt_run()
     }
 
     if (!loiter_to_alt.loiter_start_done) {
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
+        // set horizontal speed and acceleration limits
+        pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+        pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+        if (!pos_control->is_active_xy()) {
+            pos_control->init_xy_controller();
+        }
+
         _mode = SubMode::LOITER_TO_ALT;
         loiter_to_alt.loiter_start_done = true;
     }
@@ -1054,31 +1074,12 @@ void ModeAuto::loiter_to_alt_run()
     pos_control->update_z_controller();
 }
 
-// auto_payload_place_start - initialises controller to implement placement of a load
-void ModeAuto::payload_place_start(const Vector2f& destination)
-{
-    _mode = SubMode::NAV_PAYLOAD_PLACE;
-    nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover_Start;
-
-    // initialise loiter target destination
-    loiter_nav->init_target(destination);
-
-    // initialise the vertical position controller
-    pos_control->init_z_controller();
-
-    // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
-}
-
 // auto_payload_place_run - places an object in auto mode
 //      called by auto_run at 100hz or more
 void ModeAuto::payload_place_run()
 {
     if (!payload_place_run_should_run()) {
         zero_throttle_and_relax_ac();
-        // set target to current position
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
         return;
     }
 
@@ -1409,6 +1410,7 @@ void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 
     // set vertical speed and acceleration limits
     pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
 }
 
 // do_spline_wp - initiate move to next waypoint
@@ -1685,11 +1687,8 @@ bool ModeAuto::verify_land()
         case State::FlyToLocation:
             // check if we've reached the location
             if (copter.wp_nav->reached_wp_destination()) {
-                // get destination so we can use it for loiter target
-                const Vector2f& dest = copter.wp_nav->get_wp_destination().xy();
-
                 // initialise landing controller
-                land_start(dest);
+                land_start();
 
                 // advance to next state
                 state = State::Descending;
