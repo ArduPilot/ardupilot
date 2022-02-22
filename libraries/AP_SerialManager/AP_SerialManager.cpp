@@ -114,7 +114,6 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL9_PROTOCOL SerialProtocol_None
 #endif // HAL_BUILD_AP_PERIPH
 
-
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
 #if SERIALMANAGER_NUM_PORTS > 0
     // @Param: 0_BAUD
@@ -807,7 +806,7 @@ void AP_SerialManager::disable_passthru(void)
 // accessor for AP_Periph to set baudrate and type
 void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate)
 {
-    if (sernum <= ARRAY_SIZE(state)) {
+    if (sernum < SERIALMANAGER_NUM_PORTS) {
         state[sernum].protocol.set(protocol);
         state[sernum].baud.set(baudrate);
     }
