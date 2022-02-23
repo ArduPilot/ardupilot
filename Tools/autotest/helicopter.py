@@ -5,9 +5,11 @@ AP_FLAKE8_CLEAN
 '''
 
 from __future__ import print_function
+
 from arducopter import AutoTestCopter
-from common import AutoTest
-from common import NotAchievedException, AutoTestTimeoutException
+
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException
 
 from pymavlink import mavutil
 from pysim import vehicleinfo
@@ -801,7 +803,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def tests(self):
         '''return list of all tests'''
-        ret = AutoTest.tests(self)
+        ret = vehicle_test_suite.TestSuite.tests(self)
         ret.extend([
             self.AVCMission,
             self.RotorRunup,
