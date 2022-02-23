@@ -14,15 +14,15 @@ import os
 from pymavlink import mavextra
 from pymavlink import mavutil
 
-from common import AutoTest
-from common import NotAchievedException
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
 
 
-class AutoTestTracker(AutoTest):
+class AutoTestTracker(vehicle_test_suite.TestSuite):
 
     def log_name(self):
         return "AntennaTracker"

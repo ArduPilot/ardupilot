@@ -14,12 +14,13 @@ import os
 import sys
 import time
 
-from common import AutoTest
+import vehicle_test_suite
+
 from pysim import util
 
-from common import AutoTestTimeoutException
-from common import NotAchievedException
-from common import PreconditionFailedException
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import PreconditionFailedException
 
 from pymavlink import mavextra
 from pymavlink import mavutil
@@ -33,7 +34,7 @@ SITL_START_LOCATION = mavutil.location(40.071374969556928,
                                        246)
 
 
-class AutoTestRover(AutoTest):
+class AutoTestRover(vehicle_test_suite.TestSuite):
     @staticmethod
     def get_not_armable_mode_list():
         return ["RTL", "SMART_RTL"]
