@@ -31,6 +31,12 @@ struct PACKED log_BARO {
     uint8_t healthy;
 };
 
-#define LOG_STRUCTURE_FROM_BARO \
-    { LOG_BARO_MSG, sizeof(log_BARO), \
-      "BARO",  "QBffcfIffB", "TimeUS,I,Alt,Press,Temp,CRt,SMS,Offset,GndTemp,Health", "s#mPOnsmO-", "F-00B0C?0-" , true },
+#define LOG_STRUCTURE_FROM_BARO                                         \
+    { LOG_BARO_MSG, sizeof(log_BARO),                                   \
+            "BARO",                                                     \
+            "Q"       "B"  "f"    "f"      "c"     "f"    "I"    "f"       "f"        "B", \
+            "TimeUS," "I," "Alt," "Press," "Temp," "CRt," "SMS," "Offset," "GndTemp," "Health", \
+            "s"       "#"  "m"    "P"      "O"     "n"    "s"    "m"       "O"        "-", \
+            "F"       "-"  "0"    "0"      "B"     "0"    "C"    "?"       "0"        "-", \
+            true                                                        \
+            },
