@@ -2034,7 +2034,8 @@ bool ModeAuto::verify_nav_script_time()
 {
     // if done or timeout then return true
     if (nav_scripting.done ||
-        (AP_HAL::millis() - nav_scripting.start_ms) > (nav_scripting.timeout_s * 1000)) {
+        ((nav_scripting.timeout_s > 0) &&
+         (AP_HAL::millis() - nav_scripting.start_ms) > (nav_scripting.timeout_s * 1000))) {
         return true;
     }
     return false;
