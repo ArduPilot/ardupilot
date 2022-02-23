@@ -11,6 +11,8 @@ APJ_BOARD_ID 1060
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
+MCU_CLOCKRATE_MHZ 480
+
 env OPTIMIZE -O2
 
 STM32_ST_USE_TIMER 2
