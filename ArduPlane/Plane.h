@@ -378,6 +378,12 @@ private:
         return type_string;
     }
 
+    const char *failsafe_onoff_message_format = "Failsafe. %s event %s";
+    const char *failsafe_reason_message_format = "Failsafe reason=%u (%s)";
+    const char *failsafe_on = "ON";
+    const char *failsafe_off = "OFF";
+
+
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
     // before recording our home position (and executing a ground start if we booted with an air start)
     uint8_t ground_start_count = 5;
