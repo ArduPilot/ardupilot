@@ -349,6 +349,10 @@ is bob we will attempt to checkout bob-AVR'''
         '''returns content of filepath as a string'''
         with open(filepath, 'rb') as fh:
             content = fh.read()
+
+        if running_python3:
+            return content.decode('ascii')
+
         return content
 
     def string_in_filepath(self, string, filepath):
