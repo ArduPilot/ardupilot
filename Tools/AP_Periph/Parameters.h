@@ -52,6 +52,8 @@ public:
         k_param_scripting,
         k_param_esc_telem_port,
         k_param_can_fdmode,
+        k_param_can_fdbaudrate0,
+        k_param_can_fdbaudrate1,
     };
 
     AP_Int16 format_version;
@@ -126,6 +128,7 @@ public:
 
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
+    AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
 #else
     static constexpr uint8_t can_fdmode = 0;
 #endif
