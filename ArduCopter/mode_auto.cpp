@@ -282,6 +282,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
         // fall back to altitude above current altitude
         alt_target = copter.current_loc.alt + dest.alt;
     }
+    dest.set_alt_cm(alt_target , Location::AltFrame::ABOVE_HOME);
 
     // sanity check target
     int32_t alt_target_min_cm = copter.current_loc.alt + (copter.ap.land_complete ? 100 : 0);
