@@ -174,6 +174,9 @@ protected:
     // return current axis string
     const char *axis_string() const;
 
+    // report final gains for a given axis to GCS
+    virtual void report_final_gains(AxisType test_axis) const = 0;
+
     // Functions added for heli autotune
 
     // Add additional updating gain functions specific to heli

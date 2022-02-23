@@ -135,7 +135,8 @@ void ModeAuto::run()
         break;
 
     case SubMode::NAVGUIDED:
-#if NAV_GUIDED == ENABLED
+    case SubMode::NAV_SCRIPT_TIME:
+#if NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
         nav_guided_run();
 #endif
         break;
@@ -197,6 +198,31 @@ bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
         AP_Notify::events.user_mode_change_failed = 1;
     }
     return false;
+}
+
+// lua scripts use this to retrieve the contents of the active command
+bool ModeAuto::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+{
+#if AP_SCRIPTING_ENABLED
+    if (_mode == SubMode::NAV_SCRIPT_TIME) {
+        id = nav_scripting.id;
+        cmd = nav_scripting.command;
+        arg1 = nav_scripting.arg1;
+        arg2 = nav_scripting.arg2;
+        return true;
+    }
+#endif
+    return false;
+}
+
+// lua scripts use this to indicate when they have complete the command
+void ModeAuto::nav_script_time_done(uint16_t id)
+{
+#if AP_SCRIPTING_ENABLED
+    if ((_mode == SubMode::NAV_SCRIPT_TIME) && (id == nav_scripting.id)) {
+        nav_scripting.done = true;
+    }
+#endif
 }
 
 // auto_loiter_start - initialises loitering in auto mode
@@ -520,6 +546,12 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_payload_place(cmd);
         break;
 
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        do_nav_script_time(cmd);
+        break;
+#endif
+
     //
     // conditional commands
     //
@@ -749,6 +781,12 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_nav_delay(cmd);
         break;
 
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_NAV_SCRIPT_TIME:
+        cmd_complete = verify_nav_script_time();
+        break;
+#endif
+
     ///
     /// conditional commands
     ///
@@ -904,7 +942,7 @@ void ModeAuto::circle_run()
     }
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED == ENABLED || AP_SCRIPTING_ENABLED
 // auto_nav_guided_run - allows control by external navigation controller
 //      called by auto_run at 100hz or more
 void ModeAuto::nav_guided_run()
@@ -912,7 +950,7 @@ void ModeAuto::nav_guided_run()
     // call regular guided flight mode run function
     copter.mode_guided.run();
 }
-#endif  // NAV_GUIDED
+#endif  // NAV_GUIDED || AP_SCRIPTING_ENABLED
 
 // auto_loiter_run - loiter in AUTO flight mode
 //      called by auto_run at 100hz or more
@@ -1442,6 +1480,28 @@ void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
+#if AP_SCRIPTING_ENABLED
+// start accepting position, velocity and acceleration targets from lua scripts
+void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
+{
+    // call regular guided flight mode initialisation
+    if (copter.mode_guided.init(true)) {
+        _mode = SubMode::NAV_SCRIPT_TIME;
+        nav_scripting.done = false;
+        nav_scripting.id++;
+        nav_scripting.start_ms = millis();
+        nav_scripting.command = cmd.content.nav_script_time.command;
+        nav_scripting.timeout_s = cmd.content.nav_script_time.timeout_s;
+        nav_scripting.arg1 = cmd.content.nav_script_time.arg1;
+        nav_scripting.arg2 = cmd.content.nav_script_time.arg2;
+    } else {
+        // for safety we set nav_scripting to done to protect against the mission getting stuck
+        nav_scripting.done = true;
+    }
+}
+#endif
+
+
 /********************************************************************************/
 // Condition (May) commands
 /********************************************************************************/
@@ -1967,5 +2027,18 @@ bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
     }
     return false;
 }
+
+#if AP_SCRIPTING_ENABLED
+// check if verify_nav_script_time command has completed
+bool ModeAuto::verify_nav_script_time()
+{
+    // if done or timeout then return true
+    if (nav_scripting.done ||
+        (AP_HAL::millis() - nav_scripting.start_ms) > (nav_scripting.timeout_s * 1000)) {
+        return true;
+    }
+    return false;
+}
+#endif
 
 #endif

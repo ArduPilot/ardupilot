@@ -2053,8 +2053,6 @@ void GCS_MAVLINK::service_statustext(void)
 {
     GCS::StatusTextQueue &_statustext_queue = gcs().statustext_queue();
 
-    WITH_SEMAPHORE(comm_chan_lock(chan));
-
     const uint8_t chan_bit = (1U<<chan);
     // note the lack of idx++ here.  We may remove the iteration item
     // from the queue as the last thing we do, in which case we don't

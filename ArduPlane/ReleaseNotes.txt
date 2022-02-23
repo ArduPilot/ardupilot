@@ -1,5 +1,5 @@
-Release 4.1.7beta1 12th February 2022
--------------------------------------
+Release 4.1.7 12th February 2022
+--------------------------------
 
 This is a minor release with some important bug fixes and a couple of
 new features:

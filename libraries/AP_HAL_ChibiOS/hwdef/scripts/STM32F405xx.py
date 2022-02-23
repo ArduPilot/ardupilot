@@ -20,7 +20,12 @@ mcu = {
         (0x10000000,  64, 2), # CCM memory, faster, but not DMA safe
     ],
 
-    'EXPECTED_CLOCK' : 168000000
+    'EXPECTED_CLOCK' : 168000000,
+
+    'DEFINES' : {
+        'STM32F4' : '1',
+    }
+
 }
 
 AltFunction_map = {

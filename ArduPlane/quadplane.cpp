@@ -2145,7 +2145,9 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         // handle resets needed for when the state changes
         if (s == QPOS_POSITION1) {
             reached_wp_speed = false;
-            qp.attitude_control->reset_yaw_target_and_rate();
+            // never do a rate reset, if attitude control is not active it will be automaticaly reset before running, see: last_att_control_ms
+            // if it is active then the rate control should not be reset at all
+            qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_start_speed = plane.ahrs.groundspeed_vector().length();
         } else if (s == QPOS_POSITION2) {
             // POSITION2 changes target speed, so we need to change it

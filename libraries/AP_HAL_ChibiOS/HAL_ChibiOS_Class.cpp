@@ -19,6 +19,7 @@
 
 #include <assert.h>
 
+#include <hal.h>
 #include "HAL_ChibiOS_Class.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
