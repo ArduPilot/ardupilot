@@ -358,6 +358,26 @@ private:
         return failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb;
     }
 
+    const char *failsafe_type_string(enum failsafe_state fstype)
+    {
+        const char *type_string = "?";
+        switch (fstype) {
+        case FAILSAFE_NONE:
+            type_string = "None";
+            break;
+        case FAILSAFE_SHORT:
+            type_string = "Short";
+            break;
+        case FAILSAFE_LONG:
+            type_string = "Long";
+            break;
+        case FAILSAFE_GCS:
+            type_string = "GCS";
+            break;
+        }
+        return type_string;
+    }
+
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
     // before recording our home position (and executing a ground start if we booted with an air start)
     uint8_t ground_start_count = 5;

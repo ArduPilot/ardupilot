@@ -1,5 +1,10 @@
 #include "Plane.h"
 
+const char *failsafe_onoff_message_format = "Failsafe. %s event %s";
+const char *failsafe_reason_message_format = "Failsafe reason=%u (%s)";
+const char *failsafe_on = "ON";
+const char *failsafe_off = "OFF";
+
 // returns true if the vehicle is in landing sequence.  Intended only
 // for use in failsafe code.
 bool Plane::failsafe_in_landing_sequence() const
@@ -22,23 +27,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     failsafe.short_timer_ms = millis();
     failsafe.saved_mode_number = control_mode->mode_number();
 
-    const char *type_string = "?";
-    switch (fstype) {
-    case FAILSAFE_NONE:
-        type_string = "None";
-        break;
-    case FAILSAFE_SHORT:
-        type_string = "Short";
-        break;
-    case FAILSAFE_LONG:
-        type_string = "Long";
-        break;
-    case FAILSAFE_GCS:
-        type_string = "GCS";
-        break;
-    }
-
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%s/reason=%s", type_string, ap_mode_reason_string(reason));
+    gcs().send_text(MAV_SEVERITY_WARNING, failsafe_onoff_message_format, failsafe_type_string(fstype), failsafe_on);
+    gcs().send_text(MAV_SEVERITY_WARNING, failsafe_reason_message_format, fstype, ap_mode_reason_string(reason));
 
     switch (control_mode->mode_number())
     {
@@ -120,8 +110,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a long loss of control signal failsafe.
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
-    //  If the GCS is locked up we allow control to revert to RC
+    gcs().send_text(MAV_SEVERITY_WARNING, failsafe_onoff_message_format, failsafe_type_string(fstype), failsafe_on);
+    gcs().send_text(MAV_SEVERITY_WARNING, failsafe_reason_message_format, fstype, ap_mode_reason_string(reason));
+   //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
     switch (control_mode->mode_number())
@@ -204,7 +195,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 void Plane::failsafe_short_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
+    gcs().send_text(MAV_SEVERITY_WARNING, failsafe_onoff_message_format, failsafe_type_string((enum failsafe_state)failsafe.state), failsafe_off);
     failsafe.state = FAILSAFE_NONE;
     //restore entry mode if desired but check that our current mode is still due to failsafe
     if ( _last_reason == ModeReason::RADIO_FAILSAFE) { 
@@ -216,7 +207,7 @@ void Plane::failsafe_short_off_event(ModeReason reason)
 void Plane::failsafe_long_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event off: reason=%u", static_cast<unsigned>(reason));
+    gcs().send_text(MAV_SEVERITY_WARNING, failsafe_onoff_message_format, failsafe_type_string((enum failsafe_state)failsafe.state), failsafe_off);
     failsafe.state = FAILSAFE_NONE;
 }
 
