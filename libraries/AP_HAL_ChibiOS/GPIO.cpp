@@ -14,6 +14,8 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "GPIO.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>

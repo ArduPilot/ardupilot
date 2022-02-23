@@ -61,15 +61,16 @@ mcu = {
         (0x38000000,  64, 1), # SRAM4.
     ],
 
-    'EXPECTED_CLOCK' : 400000000,
+    'EXPECTED_CLOCK' : 480000000,
 
     # this MCU has M7 instructions and hardware double precision
     'CORTEX'    : 'cortex-m7',
     'CPU_FLAGS' : '-mcpu=cortex-m7 -mfpu=fpv5-d16 -mfloat-abi=hard',
 
     'DEFINES' : {
-        'HAL_HAVE_HARDWARE_DOUBLE' : '1'
-    }	
+        'HAL_HAVE_HARDWARE_DOUBLE' : '1',
+        'STM32H7' : '1',
+    }
 }
 
 pincount = {

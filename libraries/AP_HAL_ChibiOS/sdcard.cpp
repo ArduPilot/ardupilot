@@ -14,6 +14,7 @@
  *
  */
 
+#include <hal.h>
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "hwdef/common/spi_hook.h"

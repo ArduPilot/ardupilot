@@ -19,6 +19,7 @@ import time
 import string
 import subprocess
 import sys
+import traceback
 import gzip
 
 # local imports
@@ -348,6 +349,10 @@ is bob we will attempt to checkout bob-AVR'''
         '''returns content of filepath as a string'''
         with open(filepath, 'rb') as fh:
             content = fh.read()
+
+        if running_python3:
+            return content.decode('ascii')
+
         return content
 
     def string_in_filepath(self, string, filepath):
@@ -508,6 +513,7 @@ is bob we will attempt to checkout bob-AVR'''
                     try:
                         self.copyit(path, ddir, tag, vehicle)
                     except Exception as e:
+                        self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
@@ -517,6 +523,19 @@ is bob we will attempt to checkout bob-AVR'''
                 self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
         self.checkout(vehicle, "latest")
+
+    def get_exception_stacktrace(self, e):
+        if sys.version_info[0] >= 3:
+            ret = "%s\n" % e
+            ret += ''.join(traceback.format_exception(etype=type(e),
+                                                      value=e,
+                                                      tb=e.__traceback__))
+            return ret
+        return traceback.format_exc(e)
+
+    def print_exception_caught(self, e, send_statustext=True):
+        self.progress("Exception caught: %s" %
+                      self.get_exception_stacktrace(e))
 
     def common_boards(self):
         '''returns list of boards common to all vehicles'''

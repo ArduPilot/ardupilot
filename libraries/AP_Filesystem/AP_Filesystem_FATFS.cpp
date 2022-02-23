@@ -9,6 +9,7 @@
 
 #if HAVE_FILESYSTEM_SUPPORT && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
+#include <ff.h>
 #include <AP_HAL_ChibiOS/sdcard.h>
 #include <GCS_MAVLink/GCS.h>
 

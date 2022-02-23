@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 #include "AP_MotorsHeli_RSC.h"
 #include <AP_RPM/AP_RPM.h>
 
@@ -268,6 +269,8 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             governor_reset();
             _autothrottle = false;
             _governor_fault = false;
+            //turbine start flag on
+            _starting = true;
             break;
 
         case ROTOR_CONTROL_IDLE:
@@ -283,14 +286,23 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                 _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
             } else {
                 // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
-                if (_cooldown_time > 0) {
-                    _control_output = get_idle_output() * 1.5f;
-                    _fast_idle_timer += dt;
-                    if (_fast_idle_timer > (float)_cooldown_time) {
-                        _fast_idle_timer = 0.0f;
+                if (_turbine_start && _starting == true ) {
+                    _control_output += 0.001f;
+                    if (_control_output >= 1.0f) {
+                        _control_output = get_idle_output();
+                        gcs().send_text(MAV_SEVERITY_INFO, "Turbine startup");
+                        _starting = false;
                     }
-                } else {
-                    _control_output = get_idle_output();
+                } else{
+                    if (_cooldown_time > 0) {
+                        _control_output = get_idle_output() * 1.5f;
+                        _fast_idle_timer += dt;
+                        if (_fast_idle_timer > (float)_cooldown_time) {
+                            _fast_idle_timer = 0.0f;
+                        }
+                    } else {
+                        _control_output = get_idle_output();
+                    }
                 }
             }
             break;
@@ -298,6 +310,9 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         case ROTOR_CONTROL_ACTIVE:
             // set main rotor ramp to increase to full speed
             update_rotor_ramp(1.0f, dt);
+
+            // if turbine engine started without using start sequence, set starting flag just to be sure it can't be triggered when back in idle
+            _starting = false;
 
             if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
                 // set control rotor speed to ramp slewed value between idle and desired speed

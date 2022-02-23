@@ -17,6 +17,7 @@
  *         Siddharth Bharat Purohit, Cubepilot Pty. Ltd.
  */
 
+#include <hal.h>
 #include "QSPIDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
