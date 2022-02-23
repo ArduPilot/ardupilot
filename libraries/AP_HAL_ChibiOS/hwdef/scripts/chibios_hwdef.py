@@ -686,6 +686,13 @@ def write_mcu_config(f):
         f.write('#define HAL_USE_SDC TRUE\n')
         build_flags.append('USE_FATFS=yes')
         env_vars['WITH_FATFS'] = "1"
+    elif have_type_prefix('SDMMC2'):
+        f.write('// SDMMC2 available, enable POSIX filesystem support\n')
+        f.write('#define USE_POSIX\n\n')
+        f.write('#define HAL_USE_SDC TRUE\n')
+        f.write('#define STM32_SDC_USE_SDMMC2 TRUE\n')
+        build_flags.append('USE_FATFS=yes')
+        env_vars['WITH_FATFS'] = "1"
     elif have_type_prefix('SDMMC'):
         f.write('// SDMMC available, enable POSIX filesystem support\n')
         f.write('#define USE_POSIX\n\n')
@@ -753,6 +760,13 @@ def write_mcu_config(f):
 
     if have_type_prefix('CAN') and not using_chibios_can:
         enable_can(f)
+
+    f.write('''
+#ifndef HAL_NUM_CAN_IFACES
+#define HAL_NUM_CAN_IFACES 0
+#endif
+''')
+
     flash_size = get_config('FLASH_SIZE_KB', type=int)
     f.write('#define BOARD_FLASH_SIZE %u\n' % flash_size)
     env_vars['BOARD_FLASH_SIZE'] = flash_size
