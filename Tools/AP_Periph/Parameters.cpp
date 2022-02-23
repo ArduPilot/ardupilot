@@ -124,6 +124,34 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GARRAY(can_protocol,    2, "CAN3_PROTOCOL", AP_CANManager::Driver_Type_UAVCAN),
 #endif
 
+#if HAL_CANFD_SUPPORTED
+    // @Param: CAN_FDMODE
+    // @DisplayName: Enable CANFD mode
+    // @Description: Enabling this option sets the CAN bus to be in CANFD mode with BRS.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(can_fdmode,     "CAN_FDMODE", 0),
+
+    // @Param: CAN_FDBAUDRATE
+    // @DisplayName: Set up bitrate for data section on CAN1
+    // @Description: This sets the bitrate for the data section of CAN1.
+    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_fdbaudrate,    0, "CAN_FDBAUDRATE", HAL_CANFD_SUPPORTED),
+
+#if HAL_NUM_CAN_IFACES >= 2
+    // @Param: CAN2_FDBAUDRATE
+    // @DisplayName: Set up bitrate for data section on CAN2
+    // @Description: This sets the bitrate for the data section of CAN2.
+    // @Values: 1:1M, 2:2M, 4:4M, 5:5M, 8:8M
+    // @User: Advanced
+    // @RebootRequired: True
+    GARRAY(can_fdbaudrate,    1, "CAN2_FDBAUDRATE", HAL_CANFD_SUPPORTED),
+#endif
+#endif
+
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
     // @Param: FLASH_BOOTLOADER
     // @DisplayName: Trigger bootloader update
@@ -375,10 +403,6 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
 
-#if HAL_CANFD_SUPPORTED
-    // can node FD Out mode
-    GSCALAR(can_fdmode,     "CAN_FDMODE", 0),
-#endif
     AP_VAREND
 };
 

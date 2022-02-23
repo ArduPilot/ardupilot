@@ -1470,7 +1470,11 @@ void AP_Periph_FW::can_start()
         CANSensor::set_periph(i, can_protocol_cached[i], can_iface_periph[i]);
 #endif
         if (can_iface_periph[i] != nullptr) {
+#if HAL_CANFD_SUPPORTED
+            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U, AP_HAL::CANIface::NormalMode);
+#else
             can_iface_periph[i]->init(g.can_baudrate[i], AP_HAL::CANIface::NormalMode);
+#endif
         }
         canardInit(&instances[i].canard, (uint8_t *)instances[i].canard_memory_pool, sizeof(instances[i].canard_memory_pool),
                 onTransferReceived, shouldAcceptTransfer, NULL);
