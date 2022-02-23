@@ -39,6 +39,7 @@
 #include "ProfiLED.h"
 #include "ScriptingLED.h"
 #include "DShotLED.h"
+#include <hal.h>
 
 extern const AP_HAL::HAL& hal;
 
