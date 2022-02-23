@@ -15,15 +15,17 @@ from pymavlink import quaternion
 from pymavlink import mavextra
 from pymavlink import mavutil
 
-from common import AutoTest
-from common import AutoTestTimeoutException
-from common import NotAchievedException
-from common import PreconditionFailedException
-from common import WaitModeTimeout
-from common import OldpymavlinkException
-from common import Test
-
 from pymavlink.rotmat import Vector3
+
+import vehicle_test_suite
+
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import OldpymavlinkException
+from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import Test
+from vehicle_test_suite import WaitModeTimeout
+
 from pysim import vehicleinfo
 from pysim import util
 
@@ -35,7 +37,7 @@ SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 585, 354)
 WIND = "0,180,0.2"  # speed,direction,variance
 
 
-class AutoTestPlane(AutoTest):
+class AutoTestPlane(vehicle_test_suite.TestSuite):
     @staticmethod
     def get_not_armable_mode_list():
         return []

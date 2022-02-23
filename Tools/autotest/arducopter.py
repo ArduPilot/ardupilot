@@ -20,10 +20,11 @@ from pymavlink import rotmat
 from pysim import util
 from pysim import vehicleinfo
 
-from common import AutoTest
-from common import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
-from common import Test
-from common import MAV_POS_TARGET_TYPE_MASK
+import vehicle_test_suite
+
+from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
+from vehicle_test_suite import Test
+from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 
 from pymavlink.rotmat import Vector3
 
@@ -40,7 +41,7 @@ SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 270)
 #   switch 6 = Stabilize
 
 
-class AutoTestCopter(AutoTest):
+class AutoTestCopter(vehicle_test_suite.TestSuite):
     @staticmethod
     def get_not_armable_mode_list():
         return ["AUTO", "AUTOTUNE", "BRAKE", "CIRCLE", "FLIP", "LAND", "RTL", "SMART_RTL", "AVOID_ADSB", "FOLLOW"]
@@ -9874,7 +9875,7 @@ class AutoTestCopter(AutoTest):
 
     def tests1a(self):
         '''return list of all tests'''
-        ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/common.py
+        ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
         ret.extend([
              self.NavDelayTakeoffAbsTime,
              self.NavDelayAbsTime,

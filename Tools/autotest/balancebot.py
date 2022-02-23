@@ -10,9 +10,9 @@ from __future__ import print_function
 import os
 
 from rover import AutoTestRover
-from common import AutoTest
 
-from common import NotAchievedException
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -105,7 +105,7 @@ class AutoTestBalanceBot(AutoTestRover):
 
         '''note that while AutoTestBalanceBot inherits from Rover we don't
 inherit Rover's tests!'''
-        ret = AutoTest.tests(self)
+        ret = vehicle_test_suite.TestSuite.tests(self)
 
         ret.extend([
             self.DriveRTL,

@@ -11,9 +11,9 @@ import time
 
 from pymavlink import mavutil
 
-from common import AutoTest
-from common import NotAchievedException
-from common import AutoTestTimeoutException
+import vehicle_test_suite
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import AutoTestTimeoutException
 
 if sys.version_info[0] < 3:
     ConnectionResetError = AutoTestTimeoutException
@@ -33,7 +33,7 @@ class Joystick():
     Lateral = 6
 
 
-class AutoTestSub(AutoTest):
+class AutoTestSub(vehicle_test_suite.TestSuite):
     @staticmethod
     def get_not_armable_mode_list():
         return []

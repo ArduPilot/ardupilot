@@ -36,7 +36,7 @@ import examples
 from pysim import util
 from pymavlink.generator import mavtemplate
 
-from common import Test
+from vehicle_test_suite import Test
 
 tester = None
 
