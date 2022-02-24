@@ -37,7 +37,7 @@ local PARAM_TABLE_KEY = 75          -- parameter table key must be used by only 
 assert(param:add_table(PARAM_TABLE_KEY, "FDST_", 6), 'could not add param table')
 assert(param:add_param(PARAM_TABLE_KEY, 1, 'ACTIVATE', 0), 'could not add FDST_ACTIVATE param')     -- 0:active in Guided, 1:active in Auto's NAV_SCRIPT_TIME command
 assert(param:add_param(PARAM_TABLE_KEY, 2, 'ALT_MIN', 50), 'could not add FDST_ALT_MIN param')      -- copter will stop at this altitude above home
-assert(param:add_param(PARAM_TABLE_KEY, 3, 'RADIUS', 30), 'could not add FDST_RADIUS parameter')    -- target circle's maximum radius
+assert(param:add_param(PARAM_TABLE_KEY, 3, 'RADIUS', 10), 'could not add FDST_RADIUS parameter')    -- target circle's maximum radius
 assert(param:add_param(PARAM_TABLE_KEY, 4, 'SPEED_XY', 5), 'could not add FDST_SPEED_XY param')     -- max target horizontal speed
 assert(param:add_param(PARAM_TABLE_KEY, 5, 'SPEED_DN', 10), 'could not add FDST_SPEED_DN param')    -- target descent rate
 assert(param:add_param(PARAM_TABLE_KEY, 6, 'YAW_BEHAVE', 0), 'could not add FDST_YAW_BEHAVE param') -- 0:yaw does not change 1:yaw points toward center
