@@ -407,7 +407,7 @@ function path_circle(t, radius, unused)
    local vec = Vector3f()
    vec:x(1.0-math.cos(t))
    vec:y(-math.sin(t))
-   return vec:scale(radius)
+   return vec:scale(radius), 0.0
 end
 
 function path_figure_eight(t, radius, unused)
@@ -415,9 +415,10 @@ function path_figure_eight(t, radius, unused)
    local vec = Vector3f()
    vec:x(math.sin(t))
    vec:y(math.sin(t)*math.cos(t))
-   return vec:scale(radius)
+   return vec:scale(radius), 0.0
 end
 
+--path_vertical_circle returns rate
 function path_vertical_circle(t, radius, unused)
    t = t*math.pi*2
    --TODO: include * overload in lua bindings
@@ -425,7 +426,7 @@ function path_vertical_circle(t, radius, unused)
    vec:x(math.sin(t))
    vec:y(0.0)
    vec:z(-1.0+math.cos(t))
-   return vec:scale(radius)
+   return vec:scale(radius), 0.0
 end
 
 function path_length(path_f, arg1, arg2)
@@ -454,8 +455,10 @@ function rotate_position(position, yaw)
    return rotated_point
 end
 
+
 function rotate_path(path_f, t, arg1, arg2, yaw)
-   return rotate_position(path_f(t, arg1, arg2), yaw)
+   point, roll_rate = path_f(t, arg1, arg2)
+   return rotate_position(point, yaw), roll_rate
 end
 
 
@@ -488,6 +491,7 @@ end
 
 local path_var = {}
 path_var.count = 0
+path_var.positionAndRoll = {}
 path_var.positions = {}
 
 function do_path(path, arg1, arg2)
@@ -512,8 +516,8 @@ function do_path(path, arg1, arg2)
       path_var.init_yaw = wrap_pi(math.atan(init_tangent:y(), init_tangent:x()))
       path_var.init_yaw = -wrap_pi(path_var.init_yaw - math.rad(wp_yaw_deg))
       
-      corrected_position_t0 = rotate_path(path, 0.0, arg1, arg2, path_var.init_yaw)
-      corrected_position_t1 = rotate_path(path, target_dt, arg1, arg2, path_var.init_yaw)
+      local corrected_position_t0 = rotate_path(path, 0, arg1, arg2, path_var.init_yaw)
+      local corrected_position_t1 = rotate_path(path, target_dt, arg1, arg2, path_var.init_yaw)
 
       --path_var.prev_target_pos = corrected_position_t0
 
@@ -532,6 +536,8 @@ function do_path(path, arg1, arg2)
       --path_var.positions[-1] = prev_target_pos
       path_var.positions[0] = corrected_position_t0
       path_var.positions[1] = corrected_position_t1
+
+
       path_var.time_correction = 0.0 
 
       path_var.filtered_target_velocity = Vector3f()
@@ -554,14 +560,24 @@ function do_path(path, arg1, arg2)
    --where we aim to be on the path at this timestamp
    --TODO: make more clear, yaw and initial translation -> SE3 offset of frame
    --rotate from maneuver frame to 'local' EF
-   local current_target_pos = rotate_path(path, t, arg1, arg2, path_var.init_yaw)
-
-   logger.write("TPOS",'t,x,y,z','ffff',t, current_target_pos:x(),current_target_pos:y(),current_target_pos:z())
-
+   local next_target_pos = rotate_path(path, t+dt, arg1, arg2, path_var.init_yaw)
 
    path_var.positions[-1] = path_var.positions[0]:copy()
    path_var.positions[0] = path_var.positions[1]:copy()
-   path_var.positions[1] = current_target_pos:copy()
+   path_var.positions[1] = next_target_pos:copy()
+
+   local current_target_pos = path_var.positions[0]
+
+   logger.write("TPOS",'t,x,y,z','ffff',t, current_target_pos:x(),current_target_pos:y(),current_target_pos:z())
+
+   -- local ori = Quaternion()
+   -- ahrs:get_quat_body_to_ned(ori)
+   -- -- gcs:send_text(0, string.format("logging orientation %.1f %.1f %.1f %.1f", ori:q1(), ori:q2(), ori:q3(), ori:q4()))
+   -- qp = ori:get_euler_pitch()
+   -- qr = ori:get_euler_roll()
+   -- qy = ori:get_euler_yaw()
+
+   -- logger.write("QUAT",'r,p,y','fff',qr, qp, qy)
 
    local current_measured_pos = ahrs:get_relative_position_NED_origin() - path_var.initial_ef_pos
 
@@ -578,19 +594,19 @@ function do_path(path, arg1, arg2)
       end
    end
 
-   -- if(smallest_error_index == 1) then
-   --   path_var.positions[-1] = path_var.positions[0]
-   --   path_var.positions[0] = path_var.positions[1]
-   --   path_var.positions[1] = rotate_path(path, t + dt, arg1, arg2, path_var.init_yaw)
-   -- end
+   if(smallest_error_index == 1) then
+     path_var.positions[-1] = path_var.positions[0]
+     path_var.positions[0] = path_var.positions[1]
+     path_var.positions[1] = rotate_path(path, t + 2*dt, arg1, arg2, path_var.init_yaw)
+   end
 
-   -- if(smallest_error_index == 1) then
-   --   path_var.positions[1] = path_var.positions[0] 
-   --   path_var.positions[0] = path_var.positions[-1]
-   --   path_var.positions[-1] = rotate_path(path, t - dt, arg1, arg2, path_var.init_yaw)
-   -- end
+   if(smallest_error_index == -1) then
+     path_var.positions[1] = path_var.positions[0] 
+     path_var.positions[0] = path_var.positions[-1]
+     path_var.positions[-1] = rotate_path(path, t - 2*dt, arg1, arg2, path_var.init_yaw)
+   end
 
-   --path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
+   path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
 
    local position_error = path_var.positions[0]- current_measured_pos
    --arbitrary time constant larger than dt over which to correct the position error
@@ -659,7 +675,21 @@ function do_path(path, arg1, arg2)
    -- want to correct yaw rate with P control
    local ef_yaw_rate = yaw_error/yaw_tconst  
 
+   -- local orientation = ahrs:get_rotation_body_to_ned()
+
+   -- (cos(pi/2), 0, sin(pi/2), 0)
    local target_pitch_rad = wrap_pi(math.atan(-target_velocity:z(), math.sqrt(target_velocity:x()^2 + target_velocity:y()^2)))
+
+
+   --old
+   -- target rd,pd,yd, derived from vectors (where we're pointing)
+   -- get current r,p,y (converted from global ori est) (gimbal lock)
+   -- form errors (rd - r, pd - p, yd - y)
+
+   --new target rd,pd,yd <- combine into global orientation q_d
+   --current ori q
+   --error orientation q*q_d^{}
+
    local current_pitch_rad = wrap_pi(ahrs:get_pitch())
    local pitch_error = wrap_pi(target_pitch_rad - current_pitch_rad)
    local pitch_tconst = dt
@@ -672,7 +702,8 @@ function do_path(path, arg1, arg2)
    local current_roll_rad = wrap_pi(ahrs:get_roll())
    local roll_error = wrap_pi(target_roll_rad - current_roll_rad)
    local roll_tconst = dt
-   local ef_roll_rate = roll_error/roll_tconst
+   --local ef_roll_rate = roll_error/roll_tconst
+   local ef_roll_rate = 0.0
 
    logger.write("RATS",'roll,pitch,yaw', 'fff',ef_roll_rate, ef_pitch_rate, ef_yaw_rate)
 

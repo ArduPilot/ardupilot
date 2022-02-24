@@ -53,6 +53,7 @@ singleton AP_AHRS method set_home boolean Location
 singleton AP_AHRS method get_origin boolean Location'Null
 singleton AP_AHRS method set_origin boolean Location
 singleton AP_AHRS method initialised boolean
+singleton AP_AHRS method get_quat_body_to_ned void Quaternion
 
 include AP_Arming/AP_Arming.h
 
@@ -135,6 +136,30 @@ userdata Vector2f method rotate void float'skip_check
 userdata Vector2f operator +
 userdata Vector2f operator -
 userdata Vector2f method copy Vector2f
+
+
+userdata Quaternion field q1 float'skip_check read write
+userdata Quaternion field q2 float'skip_check read write
+userdata Quaternion field q3 float'skip_check read write
+userdata Quaternion field q4 float'skip_check read write
+userdata Quaternion method length float
+userdata Quaternion method normalize void
+userdata Quaternion operator *
+userdata Quaternion method get_euler_roll float
+userdata Quaternion method get_euler_pitch float
+userdata Quaternion method get_euler_yaw float
+
+-- userdata Matrix3f method length float
+-- userdata Matrix3f method normalize void
+-- userdata Matrix3f method is_nan boolean
+-- userdata Matrix3f method is_inf boolean
+-- userdata Matrix3f method is_zero boolean
+-- userdata Matrix3f operator +
+-- userdata Matrix3f operator -
+-- userdata Matrix3f method dot float Vector3f
+-- userdata Matrix3f method cross Vector3f Vector3f
+-- userdata Matrix3f method scale Vector3f float'skip_check
+-- userdata Matrix3f method copy Vector3f
 
 
 include AP_Notify/AP_Notify.h
