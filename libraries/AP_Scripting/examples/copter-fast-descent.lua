@@ -13,6 +13,7 @@ local circle_radius_rate_max_ms = 1 -- radius expands at max of this many m/s
 local circle_radius_accel_mss = 1   -- radius expansion speed accelerates at this many m/s/s
 local accel_xy = 1                  -- horizontal acceleration in m/s^2
 local accel_z = 1                   -- target vertical acceleration is 1m/s/s
+local speed_z_slowdown = 0.1        -- target vertical speed during final slowdown
 
 -- timing and state machine variables
 local stage = 0                     -- stage of descent
@@ -123,6 +124,9 @@ function update()
     end
   elseif (stage == 1) then        -- Stage1: descend
 
+    -- get current position
+    local rel_pos_home_NED = ahrs:get_relative_position_NED_home()
+
     -- increase circle radius
     circle_radius_rate_ms = math.min(circle_radius_rate_ms + (circle_radius_accel_mss * dt), circle_radius_rate_max_ms)   -- accelerate radius expansion
     circle_radius = math.min(circle_radius + (circle_radius_rate_ms * dt), circle_radius_max:get())  -- increase radius
@@ -132,8 +136,26 @@ function update()
       speed_xy = math.max(speed_xy - (accel_xy * dt), 0)  -- decelerate horizontal speed to zero
       speed_z = math.max(speed_z - (accel_z * dt), 0)     -- decelerate vertical speed to zero
     else
-      speed_xy = math.min(speed_xy + (accel_xy * dt), speed_xy_max:get())   -- accelerate horizontal speed to max
-      speed_z = math.min(speed_z + (accel_z * dt), speed_z_max:get())       -- accelerate to max descent rate
+      -- determine if below slowdown point
+      local slowdown = false
+      local stopping_distance_z = 0.5 * speed_z_max:get() * speed_z_max:get() / accel_z
+      if (rel_pos_home_NED) then
+        if (-rel_pos_home_NED:z() <= alt_above_home_min:get() + stopping_distance_z) then
+          slowdown = true
+        end
+      end
+
+      if (slowdown) then
+        -- slow down vertical and then horizontal speed
+        speed_z = math.max(speed_z - (accel_z * dt), math.min(speed_z_slowdown, speed_z_max:get())) -- decelerate to 0.1m/s vertically
+        if speed_z <= speed_z_slowdown then
+          speed_xy = math.max(speed_xy - (accel_xy * dt), 0)
+        end
+      else
+        -- normal speed
+        speed_xy = math.min(speed_xy + (accel_xy * dt), speed_xy_max:get())   -- accelerate horizontal speed to max
+        speed_z = math.min(speed_z + (accel_z * dt), speed_z_max:get())       -- accelerate to max descent rate
+      end
     end
 
     -- calculate angular velocity
@@ -184,7 +206,6 @@ function update()
     vehicle:set_target_posvelaccel_NED(target_pos, target_vel, target_accel, true, target_yaw_deg, false, 0, false)
 
     -- advance to stage 2 when below target altitude
-    local rel_pos_home_NED = ahrs:get_relative_position_NED_home()
     if (rel_pos_home_NED) then 
       if (-rel_pos_home_NED:z() <= alt_above_home_min:get()) then
         stage = stage + 1
