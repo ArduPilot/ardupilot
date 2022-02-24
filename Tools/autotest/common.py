@@ -11856,3 +11856,25 @@ switch value'''
         '''load a file from Tools/autotest/default_params'''
         filepath = util.reltopdir(os.path.join("Tools", "autotest", "default_params", filename))
         self.repeatedly_apply_parameter_file(filepath)
+
+    def send_pause_command(self):
+        '''pause AUTO/GUIDED modes'''
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     0, # 0: pause, 1: continue
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7
+
+    def send_resume_command(self):
+        '''resume AUTO/GUIDED modes'''
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
+                     1, # 0: pause, 1: continue
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0) # param7

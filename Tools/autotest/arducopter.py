@@ -4025,6 +4025,47 @@ class AutoTestCopter(AutoTest):
 
         self.progress("Received proper target velocity commands")
 
+    def wait_for_local_velocity(self, vx, vy, vz_up, timeout=10):
+        """ Wait for local target velocity"""
+
+        # debug messages
+        self.progress("Waiting for local NED velocity target: (%f, %f, %f)" % (vx, vy, -vz_up))
+        self.progress("Setting LOCAL_POSITION_NED message rate to 10Hz")
+
+        # set position local ned message stream rate
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 10)
+
+        # wait for position local ned message
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < timeout:
+
+            # get position target local ned message
+            m = self.mav.recv_match(type="LOCAL_POSITION_NED", blocking=True, timeout=1)
+
+            # could not be able to get a valid target local ned message within given time
+            if m is None:
+
+                # raise an error that did not receive a valid target local ned message within given time
+                raise NotAchievedException("Did not receive any position local ned message for 1 second!")
+
+            # got a valid target local ned message within given time
+            else:
+
+                # debug message
+                self.progress("Received local position ned message: %s" % str(m))
+
+                # check if velocity values are in range
+                if vx - m.vx <= 0.1 and vy - m.vy <= 0.1 and vz_up - (-m.vz) <= 0.1:
+
+                    # get out of function
+                    self.progress("Vehicle successfully reached to target velocity!")
+                    return
+
+        # raise an exception
+        error_message = "Did not receive target velocities vx, vy, vz_up, wanted=(%f, %f, %f) got=(%f, %f, %f)"
+        error_message = error_message % (vx, vy, vz_up, m.vx, m.vy, -m.vz)
+        raise NotAchievedException(error_message)
+
     def test_position_target_message_mode(self):
         " Ensure that POSITION_TARGET_LOCAL_NED messages are sent in Guided Mode only "
         self.hover()
@@ -7850,39 +7891,173 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
 
     def PAUSE_CONTINUE(self):
-        self.load_mission("copter_mission.txt", strict=False)
-
-        self.set_parameter("AUTO_OPTIONS", 3)
-        self.change_mode('AUTO')
+        self.load_mission(filename="copter_mission.txt", strict=False)
+        self.set_parameter(name="AUTO_OPTIONS", value=3)
+        self.change_mode(mode="AUTO")
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.wait_waypoint(4, 4)
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
-                     0, # param1
-                     0, # param2
-                     0, # param3
-                     0, # param4
-                     0, # param5
-                     0, # param6
-                     0 # param7
-                     )
+        self.wait_current_waypoint(wpnum=3, timeout=500)
+        self.send_pause_command()
+        self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
+        self.send_resume_command()
 
-        self.wait_groundspeed(0, 1, minimum_duration=5)
+        self.wait_current_waypoint(wpnum=4, timeout=500)
+        self.send_pause_command()
+        self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
+        self.send_resume_command()
 
-        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PAUSE_CONTINUE,
-                     1, # param1
-                     0, # param2
-                     0, # param3
-                     0, # param4
-                     0, # param5
-                     0, # param6
-                     0 # param7
-                     )
+        self.wait_disarmed(timeout=500)
 
-        self.wait_groundspeed(5, 100)
+    def PAUSE_CONTINUE_GUIDED(self):
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with LOCATION!")
+        self.change_mode(mode="GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter(name="GUID_TIMEOUT", value=120)
+        self.user_takeoff(alt_min=30)
 
-        self.wait_disarmed()
+        # send vehicle to global position target
+        location = self.home_relative_loc_ne(n=300, e=0)
+        target_typemask = MAV_POS_TARGET_TYPE_MASK.POS_ONLY
+        self.mav.mav.set_position_target_global_int_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, # relative altitude frame
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE, # target typemask as pos only
+            int(location.lat * 1e7), # lat
+            int(location.lng * 1e7), # lon
+            30, # alt
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0) # yawrate
+
+        self.wait_distance_to_home(distance_min=100, distance_max=150, timeout=120)
+        self.send_pause_command()
+        self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
+        self.send_resume_command()
+        self.wait_location(loc=location, timeout=120)
+
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with LOCATION!")
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with DESTINATION!")
+        self.guided_achieve_heading(heading=270)
+
+        # move vehicle on x direction
+        location = self.offset_location_ne(location=self.mav.location(), metres_north=0, metres_east=-300)
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # system time in milliseconds
+            1, # target system
+            1, # target component
+            mavutil.mavlink.MAV_FRAME_BODY_NED, # coordinate frame MAV_FRAME_BODY_NED
+            MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # type mask (pos only)
+            300, # position x
+            0, # position y
+            0, # position z
+            0, # velocity x
+            0, # velocity y
+            0, # velocity z
+            0, # accel x
+            0, # accel y
+            0, # accel z
+            0, # yaw
+            0) # yaw rate
+
+        self.wait_location(loc=location, accuracy=200, timeout=120)
+        self.send_pause_command()
+        self.wait_groundspeed(speed_min=0, speed_max=1, minimum_duration=5)
+        self.send_resume_command()
+        self.wait_location(loc=location, timeout=120)
+
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with DESTINATION!")
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with VELOCITY!")
+
+        # give velocity command
+        vx, vy, vz_up = (5, 5, 0)
+        self.test_guided_local_velocity_target(vx=vx, vy=vy, vz_up=vz_up, timeout=10)
+
+        self.wait_for_local_velocity(vx=vx, vy=vy, vz_up=vz_up, timeout=10)
+        self.send_pause_command()
+        self.wait_for_local_velocity(vx=0, vy=0, vz_up=0, timeout=10)
+        self.send_resume_command()
+        self.wait_for_local_velocity(vx=vx, vy=vy, vz_up=vz_up, timeout=10)
+        self.test_guided_local_velocity_target(vx=0, vy=0, vz_up=0, timeout=10)
+        self.wait_for_local_velocity(vx=0, vy=0, vz_up=0, timeout=10)
+
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with VELOCITY!")
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with ACCELERATION!")
+
+        # give acceleration command
+        ax, ay, az_up = (1, 1, 0)
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.POS_IGNORE | MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
+            0, # x
+            0, # y
+            0, # z
+            0, # vx
+            0, # vy
+            0, # vz
+            ax, # afx
+            ay, # afy
+            -az_up, # afz
+            0, # yaw
+            0, # yawrate
+        )
+
+        self.wait_for_local_velocity(vx=5, vy=5, vz_up=0, timeout=10)
+        self.send_pause_command()
+        self.wait_for_local_velocity(vx=0, vy=0, vz_up=0, timeout=10)
+        self.send_resume_command()
+        self.wait_for_local_velocity(vx=5, vy=5, vz_up=0, timeout=10)
+        self.test_guided_local_velocity_target(vx=0, vy=0, vz_up=0, timeout=10)
+        self.wait_for_local_velocity(vx=0, vy=0, vz_up=0, timeout=10)
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with ACCELERATION!")
+
+        # start pause/continue subtest with posvelaccel
+        self.start_subtest("Started test for Pause/Continue in GUIDED mode with POSITION and VELOCITY and ACCELERATION!")
+        self.guided_achieve_heading(heading=0)
+
+        # give posvelaccel command
+        x, y, z_up = (-300, 0, 30)
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE | MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # timestamp
+            1, # target system_id
+            1, # target component id
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
+            x, # x
+            y, # y
+            -z_up, # z
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0, # yawrate
+        )
+
+        self.wait_distance_to_local_position(local_position=(x, y, -z_up), distance_min=400, distance_max=450, timeout=120)
+        self.send_pause_command()
+        self.wait_for_local_velocity(0, 0, 0, timeout=10)
+        self.send_resume_command()
+        self.wait_distance_to_local_position(local_position=(x, y, -z_up), distance_min=0, distance_max=10, timeout=120)
+
+        self.end_subtest("Ended test for Pause/Continue in GUIDED mode with POSITION and VELOCITY and ACCELERATION!")
+        self.do_RTL(timeout=120)
 
     def DO_CHANGE_SPEED(self):
         self.load_mission("mission.txt", strict=False)
@@ -8471,8 +8646,12 @@ class AutoTestCopter(AutoTest):
              self.test_altitude_types),
 
             ("PAUSE_CONTINUE",
-             "Test MAV_CMD_PAUSE_CONTINUE",
+             "Test MAV_CMD_DO_PAUSE_CONTINUE in AUTO mode",
              self.PAUSE_CONTINUE),
+
+            ("PAUSE_CONTINUE_GUIDED",
+             "Test MAV_CMD_DO_PAUSE_CONTINUE in GUIDED mode",
+             self.PAUSE_CONTINUE_GUIDED),
 
             ("RichenPower",
              "Test RichenPower generator",
