@@ -1,5 +1,101 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.2.0-rc1 28-Feb-2022
+Changes from 4.1.5
+1) AHRS/EKF improvements
+    a) EKF startup messages reduced
+    b) LORD Microstrain CX5/GX5 external AHRS support
+    c) ModalAI VOXL non-GPS system supported (set VISO_TYPE=3, uses ODOMETRY mavlink msg)
+2) Rover specific enhancements
+    a) AIS support
+    b) Attitude control gains defaults reduced
+        - ATC_STR_ANG_P reduced to 2
+        - ATC_STR_RAT_MAX reduced to 120 deg/sec
+        - ATC_STR_ACC_MAX reduced to 120 deg/sec
+        - ATC_ACCEL_MAX reduced to 1m/s
+    c) Boats loiter by default at end of mission (see MIS_DONE_BEHAVE parameter)
+    d) DPTH message supports multiple rangefinders
+    e) Omni motor saturation improvement (scaling applied evenly to all motors)
+    f) Pivot turn overshoot reduced (would happen with bad combination of ATC_STR_ACC_MAX and ATC_STR_ANG_P)
+    g) Speed control improvement when motor hits limits (especially when MOT_SLEWRATE was set to a low number)
+    h) Speed control PID logging and reporting includes FF
+    i) Stops maintain zero turn rate (previously steering was straight but trim could lead to turning)
+    j) Torqeedo motor support
+3) Custom build server support (see https://custom.ardupilot.org)
+4) Lua scripting improvements
+    a) ahrs::get_location replaces get_position (get_position still works for now)
+    b) Auto support for NAV_SCRIPT_TIME commands (Lua within Auto)
+    c) Frame string support (allows scripting based frame to display custom description after startup)
+    d) Parameter support (no need to always use SCR_USERx)
+    e) Script logged to onboard log (can be disabled by setting SCR_DEBUG_OPTS)
+    f) Set_turn_rate_and_speed control support
+5) New autopilots supported
+    a) AirLink
+    b) BeastF7v2, BeastH7v2
+    c) JHEMCU GSF405A
+    d) KakuteH7, KakuteH7Mini
+    e) MambaF405US-I2C
+    f) MatekF405-TE
+    g) ModalAI fc-v1
+    h) PixC4-Jetson
+    i) Pixhawk5X
+    j) QioTekZealotH743
+    k) RPI-Zero2W
+    l) SPRacingH7 Extreme
+    m) Swan-K1
+6) Safety improvements
+    a) Dijkstra's avoidance performance improvements including converting to A*
+    b) Parachute option to leave servo in open position (see CHUTE_OPTIONS parameter)
+    c) Pre-arm check of IMU heater temp
+    d) Pre-arm check of rangefinder health
+    e) Pre-arm check that not in RC/throttle failsafe
+7) Sensor driver enhancements
+    a) ADIS16470, ADIS16507 and BMI270 IMU support
+    b) AK09918 compass support
+    c) Battery monitor supports voltage offset (see BATTx_VLT_OFFSET)
+    d) Benewake TFMiniPlus I2C address defaults correctly
+    e) Buzzer can be connected to any GPIO on any board
+    f) Compass calibration (in-flight) uses GSF for better accuracy
+    g) CRSFv3 support, CSRF telemetry link reports link quality in RSSI
+    h) Cybot D1 Lidar
+    i) DroneCan (aka UAVCAN) battery monitors support scaling (see BATTx_CURR_MULT)
+    j) DroneCan (aka UAVCAN) GPS-for-yaw support
+    k) Electronic Fuel Injection support incl Lutan EFI
+    l) FETtecOneWire resyncs if EMI causes lost bytes
+    m) Hondex underwater sonar custom message support
+    n) IMU heater params renamed to BRD_HEAT_xxx
+    o) Lightware SF40C ver 0.9 support removed (ver 1.0 and higher still supported)
+    p) Maxbotix serial sonar driver support RNGFNDx_SCALING parameter to support for varieties of sensor
+    q) MPPT solar charge controller support
+    r) MTK GPS driver removed
+    s) Ping200x support
+    t) Proximity sensor min and max range (see PRX_MIN, PRX_MAX)
+    u) QSPI external flash support
+    v) uLanding (aka USD1) radar provides average of last few samples
+    w) Unicore NMEA GPS support for yaw and 3D velocity
+8) Other System enhancements
+    a) Board ID sent in AUTOPILOT_VERSION mavlink message
+    b) DO_SET_CAM_TRIG_DIST supports instantly triggering camera
+    c) DJI FPV OSD multi screen and stats support
+    d) GPIO pin configured by setting SERVOx_FUNCTION to -1 (also see SERVO_GPIO_MASK. BRD_PWM_COUNT removed)
+    e) GPIO pin support on main outputs on boards with IOMCU
+    f) GyroFlow logging (see LOG_BITMASK's "VideoStabilization" option)
+    g) Firmware version logged in VER message
+    h) Log rate limiting to more easily reduce log sizes (see LOG_FILE_RATEMAX parameter)
+    i) SD card format via MAVLink
+    j) Serial port option to disable changes to stream rate (see SERIALx_OPTIONS)
+    k) Serial port passthrough via USB supports baud rate changes (eases UBlox F9P firmware updates)
+    l) VIBE logging units to m/s/s
+9) Bug fixes
+    a) Auto mode infinite loop with nav commands that fail to start fixed
+    b) BLHeli passthrough reliability improvements
+    c) Compass learning (inflight) fixed to ignore unused compasses (e.g. those with COMPASS_USE = 0)
+    d) EKF resets due to bad IMU data occur at most once per second
+    e) GPIO pin fix on CubeOrange, F4BY, mRoControlZeroF7, R9Pilot
+    f) MAVlink2 serial ports always send MAVLink2 messages (previously waited until other side sent MAVLink2)
+    g) Omnibusf4pro bi-directional dshot fix
+    h) Real-Time-Clock (RTC) oldest possible date updated to Jan-2022
+------------------------------------------------------------------
 Rover 4.1.5 19-Feb-2022 / 4.1.5-rc1 10-Feb-2022
 Changes from 4.1.4
 1) Revert SBUS RC frame gap change from 4.1.4
