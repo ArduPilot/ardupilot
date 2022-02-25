@@ -1207,7 +1207,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     // this will be used to remember the time in millis after we reach or pass the WP.
     loiter_time = 0;
     // this is the delay, stored in seconds
-    loiter_time_max = cmd.p1;
+    loiter_time_max = (uint16_t) LOWBYTE(cmd.p1);
 
     // set next destination if necessary
     if (!set_next_wp(cmd, dest_loc)) {
@@ -1941,6 +1941,15 @@ bool ModeAuto::verify_yaw()
 // verify_nav_wp - check if we have reached the next way point
 bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
+    // check if vehicle reached the waypoint within acceptance radius
+    if (loiter_time_max == 0) {
+        uint16_t acc_rad_in_cms = (uint16_t) HIGHBYTE(cmd.p1) * 100;
+        if (wp_distance() <= acc_rad_in_cms && acc_rad_in_cms > copter.wp_nav->get_wp_radius_cm()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i", cmd.index);
+            return true;
+        }
+    }
+
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
         return false;
