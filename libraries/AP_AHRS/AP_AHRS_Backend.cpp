@@ -16,10 +16,13 @@
 */
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
+
+#include <AP_Common/Location.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
 
 extern const AP_HAL::HAL& hal;
 
