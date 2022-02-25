@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS.h>
 
 // This class constantly monitors what the status of the landing target is
 // If it is not in sight, depending on user parameters, it decides what measures can be taken to bring the target back in sight
@@ -17,8 +16,7 @@ public:
     };
 
     // Do not allow copies
-    AC_PrecLand_StateMachine(const AC_PrecLand_StateMachine &other) = delete;
-    AC_PrecLand_StateMachine &operator=(const AC_PrecLand_StateMachine&) = delete;
+    CLASS_NO_COPY(AC_PrecLand_StateMachine);
 
     // Initialize the state machine. This is called everytime vehicle switches mode
     void init();
