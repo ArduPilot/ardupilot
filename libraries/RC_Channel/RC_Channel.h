@@ -17,9 +17,9 @@ public:
     // Constructor
     RC_Channel(void);
 
-    enum ChannelType {
-        RC_CHANNEL_TYPE_ANGLE = 0,
-        RC_CHANNEL_TYPE_RANGE = 1,
+    enum class ControlType {
+        ANGLE = 0,
+        RANGE = 1,
     };
 
     // setup the control preferences
@@ -91,7 +91,7 @@ public:
     // check if any of the trim/min/max param are configured in storage, this would indicate that the user has done a calibration at somepoint
     bool       configured_in_storage() { return radio_min.configured_in_storage() || radio_max.configured_in_storage() || radio_trim.configured_in_storage(); }
 
-    ChannelType get_type(void) const { return type_in; }
+    ControlType get_type(void) const { return type_in; }
 
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
@@ -337,7 +337,7 @@ private:
     AP_Int8     reversed;
     AP_Int16    dead_zone;
 
-    ChannelType type_in;
+    ControlType type_in;
     int16_t     high_in;
 
     // the input channel this corresponds to
