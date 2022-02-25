@@ -17,6 +17,8 @@
 // read wind speed from Modern Device rev p wind sensor
 // https://moderndevice.com/news/calibrating-rev-p-wind-sensor-new-regression/
 
+#include <GCS_MAVLink/GCS.h>
+
 // constructor
 AP_WindVane_ModernDevice::AP_WindVane_ModernDevice(AP_WindVane &frontend) :
     AP_WindVane_Backend(frontend)
