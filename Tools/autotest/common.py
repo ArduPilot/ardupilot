@@ -11443,7 +11443,7 @@ switch value'''
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp list\n")
             some_directory = None
-            for entry in sorted(os.listdir()):
+            for entry in sorted(os.listdir(".")):
                 if os.path.isdir(entry):
                     some_directory = entry
                     break
