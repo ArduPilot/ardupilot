@@ -22,9 +22,11 @@
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
