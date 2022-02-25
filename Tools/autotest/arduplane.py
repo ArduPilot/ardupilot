@@ -898,7 +898,7 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
         self.fly_home_land_and_disarm()
 
-    def test_throttle_failsafe(self):
+    def ThrottleFailsafe(self):
         self.change_mode('MANUAL')
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
@@ -1020,6 +1020,27 @@ class AutoTestPlane(AutoTest):
         self.context_pop()
         if ex is not None:
             raise ex
+
+        self.start_subtest("Not use RC throttle input when THR_FAILSAFE==2")
+        self.takeoff(100)
+        self.set_rc(3, 1800)
+        self.set_rc(1, 2000)
+        self.wait_attitude(desroll=45, timeout=1)
+        self.context_push()
+        self.set_parameters({
+            "THR_FAILSAFE": 2,
+            "SIM_RC_FAIL": 1,  # no pulses
+        })
+        self.delay_sim_time(1)
+        self.wait_attitude(desroll=0, timeout=5)
+        self.assert_servo_channel_value(3, self.get_parameter("RC3_MIN"))
+        self.set_parameters({
+            "SIM_RC_FAIL": 0,  # fix receiver
+        })
+        self.zero_throttle()
+        self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
 
     def test_throttle_failsafe_fence(self):
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
@@ -3504,7 +3525,7 @@ function'''
 
             ("ThrottleFailsafe",
              "Fly throttle failsafe",
-             self.test_throttle_failsafe),
+             self.ThrottleFailsafe),
 
             ("NeedEKFToArm",
              "Ensure we need EKF to be healthy to arm",
