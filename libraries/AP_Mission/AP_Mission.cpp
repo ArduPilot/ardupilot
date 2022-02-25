@@ -907,6 +907,16 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         acp = MIN(0xFF,acp);
 
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
+#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        // hold time in seconds and acceptance radius in meters
+        uint16_t hold = packet.param1; // param 1 is hold time in seconds is held in low p1
+        uint16_t acp = packet.param2; // param 2 is acceptance radius in meters is held in high p1
+
+        // limit to 255 so it does not wrap during the shift or mask operation
+        hold = MIN(0xFF,hold);
+        acp = MIN(0xFF,acp);
+
+        cmd.p1 = (acp << 8) | (hold & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
         cmd.p1 = packet.param1;
@@ -1369,6 +1379,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
         packet.param2 = LOWBYTE(cmd.p1);        // param 2 is acceptance radius in meters is held in low p1
         packet.param3 = HIGHBYTE(cmd.p1);       // param 3 is pass by distance in meters is held in high p1
+#elif APM_BUILD_TYPE(APM_BUILD_ArduCopter)
+        // hold time in seconds and acceptance radius in meters
+        packet.param1 = LOWBYTE(cmd.p1); // param 1 is hold time in seconds is held in low p1
+        packet.param2 = HIGHBYTE(cmd.p1); // param 2 is acceptance radius in meters is held in high p1
 #else
         // delay at waypoint in seconds
         packet.param1 = cmd.p1;
