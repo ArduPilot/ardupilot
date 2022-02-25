@@ -116,13 +116,13 @@ RC_Channel::RC_Channel(void)
 
 void RC_Channel::set_range(uint16_t high)
 {
-    type_in = RC_CHANNEL_TYPE_RANGE;
+    type_in = ControlType::RANGE;
     high_in = high;
 }
 
 void RC_Channel::set_angle(uint16_t angle)
 {
-    type_in = RC_CHANNEL_TYPE_ANGLE;
+    type_in = ControlType::ANGLE;
     high_in = angle;
 }
 
@@ -147,10 +147,10 @@ bool RC_Channel::update(void)
         return false;
     }
 
-    if (type_in == RC_CHANNEL_TYPE_RANGE) {
+    if (type_in == ControlType::RANGE) {
         control_in = pwm_to_range();
     } else {
-        //RC_CHANNEL_TYPE_ANGLE
+        // ControlType::ANGLE
         control_in = pwm_to_angle();
     }
 
@@ -163,7 +163,7 @@ bool RC_Channel::update(void)
  */
 int16_t RC_Channel::get_control_mid() const
 {
-    if (type_in == RC_CHANNEL_TYPE_RANGE) {
+    if (type_in == ControlType::RANGE) {
         int16_t r_in = (radio_min.get() + radio_max.get())/2;
 
         int16_t radio_trim_low  = radio_min + dead_zone;
@@ -248,7 +248,7 @@ int16_t RC_Channel::pwm_to_range() const
 
 int16_t RC_Channel::get_control_in_zero_dz(void) const
 {
-    if (type_in == RC_CHANNEL_TYPE_RANGE) {
+    if (type_in == ControlType::RANGE) {
         return pwm_to_range_dz(0);
     }
     return pwm_to_angle_dz(0);
