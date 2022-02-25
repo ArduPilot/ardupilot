@@ -22,11 +22,8 @@
 
 #include <AP_Math/AP_Math.h>
 #include <inttypes.h>
-#include <AP_Compass/AP_Compass.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <AP_Param/AP_Param.h>
-#include <AP_Common/Location.h>
 
 class OpticalFlow;
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
@@ -204,10 +201,10 @@ public:
     }
 
     //
-    virtual bool set_origin(const Location &loc) {
+    virtual bool set_origin(const struct Location &loc) {
         return false;
     }
-    virtual bool get_origin(Location &ret) const = 0;
+    virtual bool get_origin(struct Location &ret) const = 0;
 
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is

@@ -16,7 +16,7 @@
  */
 
 /*
- *  NavEKF based AHRS (Attitude Heading Reference System) interface for
+ *  AHRS (Attitude Heading Reference System) frontend interface for
  *  ArduPilot
  *
  */
@@ -36,13 +36,9 @@
 #define AP_AHRS_SIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
-#include "AP_AHRS.h"
-
 #if AP_AHRS_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
-
-#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
