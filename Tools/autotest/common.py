@@ -2417,6 +2417,10 @@ class AutoTest(ABC):
                 continue
             for label in docco_ids[name]["labels"]:
                 if label not in code_ids[name]["labels"].split(","):
+                    # "name" was found in the XML, so was found in an
+                    # @LoggerMessage markup line, but was *NOT* found
+                    # in our bodgy parsing of the C++ code (in a
+                    # Log_Write call or in the static structures
                     raise NotAchievedException("documented field %s.%s not found in code" %
                                                (name, label))
         if len(missing) > 0:
