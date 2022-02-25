@@ -4,9 +4,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
-#include <AP_Common/Location.h>
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
@@ -105,7 +103,7 @@ public:
     uint8_t check();
 
     // returns true if the destination is within fence (used to reject waypoints outside the fence)
-    bool check_destination_within_fence(const Location& loc);
+    bool check_destination_within_fence(const class Location& loc);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }
