@@ -165,10 +165,10 @@ void Plane::calc_airspeed_errors()
             const float control_max = channel_throttle->get_range();
             const float control_in = get_throttle_input();
             switch (channel_throttle->get_type()) {
-                case RC_Channel::RC_CHANNEL_TYPE_ANGLE:
+            case RC_Channel::ControlType::ANGLE:
                     control_min = -control_max;
                     break;
-                case RC_Channel::RC_CHANNEL_TYPE_RANGE:
+            case RC_Channel::ControlType::RANGE:
                     control_mid = channel_throttle->get_control_mid();
                     break;
             }
