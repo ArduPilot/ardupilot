@@ -17,21 +17,14 @@
 #include <AP_Mission/AP_Mission.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
-#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
-#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_RTC/JitterCorrection.h>
 #include <AP_Common/Bitmask.h>
 #include <AP_LTM_Telem/AP_LTM_Telem.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
-#include <RC_Channel/RC_Channel.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 
-#include "MissionItemProtocol_Waypoints.h"
-#include "MissionItemProtocol_Rally.h"
-#include "MissionItemProtocol_Fence.h"
 #include "ap_message.h"
 
 #define GCS_DEBUG_SEND_MESSAGE_TIMINGS 0
@@ -611,7 +604,7 @@ protected:
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_disarm_value = 21196.0f;
 
-    void manual_override(RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
+    void manual_override(class RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
     uint8_t receiver_rssi() const;
 
@@ -1051,10 +1044,10 @@ public:
                               ap_var_type param_type,
                               float param_value);
 
-    static MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
-    static MissionItemProtocol_Rally *_missionitemprotocol_rally;
-    static MissionItemProtocol_Fence *_missionitemprotocol_fence;
-    MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
+    static class MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
+    static class MissionItemProtocol_Rally *_missionitemprotocol_rally;
+    static class MissionItemProtocol_Fence *_missionitemprotocol_fence;
+    class MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
     void try_send_queued_message_for_type(MAV_MISSION_TYPE type) const;
 
     void update_send();
@@ -1075,7 +1068,7 @@ public:
     bool out_of_time() const;
 
     // frsky backend
-    AP_Frsky_Telem *frsky;
+    class AP_Frsky_Telem *frsky;
 
 #if !HAL_MINIMIZE_FEATURES
     // LTM backend

@@ -18,6 +18,7 @@
 
 #include <AC_Fence/AC_Fence.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Arming/AP_Arming.h>
@@ -49,6 +50,13 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_AIS/AP_AIS.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Frsky_Telem/AP_Frsky_Telem.h>
+#include <RC_Channel/RC_Channel.h>
+#include <AP_VisualOdom/AP_VisualOdom.h>
+
+#include "MissionItemProtocol_Waypoints.h"
+#include "MissionItemProtocol_Rally.h"
+#include "MissionItemProtocol_Fence.h"
 
 #include <stdio.h>
 
