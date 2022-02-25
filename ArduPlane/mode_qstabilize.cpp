@@ -18,7 +18,15 @@ void ModeQStabilize::update()
     // be correct for tailsitters, so get_control_in() must be used instead.
     // normalize control_input to [-1,1]
     const float roll_input = (float)plane.channel_roll->get_control_in() / plane.channel_roll->get_range();
-    const float pitch_input = (float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
+
+    float pitch_input = (float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
+
+    if (plane.quadplane.rc_fwd_thr_ch != nullptr) {
+      if ((quadplane.options & QuadPlane::OPTION_FWD_THR_ELEV) && (plane.quadplane.rc_fwd_thr_ch->get_aux_switch_pos() != RC_Channel::AuxSwitchPos::LOW)) {
+        // don't allow downward pitch
+        if (pitch_input < 0) pitch_input = 0;
+      }
+    }
 
     // then scale to target angles in centidegrees
     if (plane.quadplane.tailsitter.active()) {
