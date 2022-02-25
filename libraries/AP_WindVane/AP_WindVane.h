@@ -15,8 +15,8 @@
 #pragma once
 
 #include <AP_Param/AP_Param.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_SerialManager/AP_SerialManager.h>
+#include <Filter/Filter.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #ifndef WINDVANE_DEFAULT_PIN
 #define WINDVANE_DEFAULT_PIN -1                     // default wind vane sensor analog pin
@@ -58,7 +58,7 @@ public:
     bool wind_speed_enabled() const;
 
     // Initialize the Wind Vane object and prepare it for use
-    void init(const AP_SerialManager& serial_manager);
+    void init(const class AP_SerialManager& serial_manager);
 
     // update wind vane
     void update();
@@ -88,7 +88,7 @@ public:
     Sailboat_Tack get_current_tack() const { return _current_tack; }
 
     // record home heading for use as wind direction if no sensor is fitted
-    void record_home_heading() { _home_heading = AP::ahrs().yaw; }
+    void record_home_heading();
 
     // start calibration routine
     bool start_direction_calibration();
