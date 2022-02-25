@@ -32,7 +32,6 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
