@@ -20,6 +20,7 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
+#include <RC_Channel/RC_Channel.h>
 
 // very crude debounce method
 #define DEBOUNCE_MS 50
