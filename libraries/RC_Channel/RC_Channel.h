@@ -78,14 +78,10 @@ public:
     int16_t    get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
-    void       set_radio_min(int16_t val) { radio_min = val;}
 
     int16_t    get_radio_max() const {return radio_max.get();}
-    void       set_radio_max(int16_t val) {radio_max = val;}
 
     int16_t    get_radio_trim() const { return radio_trim.get();}
-    void       set_radio_trim(int16_t val) { radio_trim.set(val);}
-    void       save_radio_trim() { radio_trim.save();}
 
     void       set_and_save_trim() { radio_trim.set_and_save_ifchanged(radio_in);}
 
