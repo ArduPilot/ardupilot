@@ -3167,13 +3167,14 @@ float QuadPlane::forward_throttle_pct()
         plane.control_mode == &plane.mode_qstabilize ||
         plane.control_mode == &plane.mode_qhover) {
 
-        if (rc_fwd_thr_ch == nullptr) {
+        // if manual forward throttle option channel is unassigned or OFF, return zero 
+        if (rc_fwd_thr_ch == nullptr || rc_fwd_thr_ch->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::LOW) {
             return 0;
         } else {
-            // calculate fwd throttle demand from manual input
-            float fwd_thr = rc_fwd_thr_ch->percent_input();
+            // use down elevator input as percentage of forward throttle
+            float fwd_thr = -100*(float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
 
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
+            // scale manual input to fwd_thr_max: range [0,100]%
             fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
             return fwd_thr;
         }
