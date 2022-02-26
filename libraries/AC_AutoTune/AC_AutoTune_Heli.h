@@ -201,15 +201,9 @@ private:
     // flag for finding the peak of the gain response
     bool find_peak;
 
-    // updating angle P up yaw
-    // counter value of previous good frequency
-    uint8_t sp_prev_good_frq_cnt;
-
     // updating rate P up
     // counter value of previous good frequency
     uint8_t rp_prev_good_frq_cnt;
-    // previous gain
-    float rp_prev_gain;
 
     // updating rate D up
     // counter value of previous good frequency
