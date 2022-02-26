@@ -1000,11 +1000,11 @@ class AutoTestPlane(AutoTest):
                 "FS_SHORT_ACTN": 3, # 3 means disabled
                 "SIM_RC_FAIL": 1,
             })
-            self.wait_statustext("Long event on", check_context=True)
+            self.wait_statustext("Long failsafe on", check_context=True)
             self.wait_mode("RTL")
 #            self.context_clear_collection("STATUSTEXT")
             self.set_parameter("SIM_RC_FAIL", 0)
-            self.wait_text("Long event off", check_context=True)
+            self.wait_text("Long Failsafe Cleared", check_context=True)
             self.change_mode("MANUAL")
 
             self.progress("Trying again with THR_FS_VALUE")
@@ -1012,7 +1012,7 @@ class AutoTestPlane(AutoTest):
                 "THR_FS_VALUE": 960,
                 "SIM_RC_FAIL": 2,
             })
-            self.wait_statustext("Long event on", check_context=True)
+            self.wait_statustext("Long Failsafe on", check_context=True)
             self.wait_mode("RTL")
         except Exception as e:
             self.print_exception_caught(e)
