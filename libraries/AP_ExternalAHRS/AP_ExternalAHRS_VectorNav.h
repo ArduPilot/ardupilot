@@ -49,7 +49,6 @@ private:
     int8_t port_num;
     bool port_opened;
     uint32_t baudrate;
-    uint16_t rate;
 
     void update_thread();
     bool check_uart();
