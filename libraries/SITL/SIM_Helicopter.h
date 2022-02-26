@@ -62,7 +62,6 @@ private:
     float hover_throttle = 0.5f;
     float terminal_velocity = 80;
     float hover_lean = 3.2f;
-    float yaw_zero = 0.1f;
     float rotor_rot_accel = radians(20);
     float roll_rate_max = radians(1400);
     float pitch_rate_max = radians(1400);
@@ -70,10 +69,8 @@ private:
     float rsc_setpoint = 0.8f;
     float izz = 0.2f;
     float tr_dist = 0.85f;
-    float tr_accel_max = 50.0f; //rad/s/s
     float cyclic_scalar = 7.2; // converts swashplate servo ouputs to cyclic blade pitch
     float thrust_scale;
-    float tail_thrust_scale;
     Vector2f _tpp_angle;
     float torque_scale;
     float torque_mpog;

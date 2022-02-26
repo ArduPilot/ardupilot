@@ -41,10 +41,6 @@ public:
     void update(void);
 
 private:
-    // TODO: make these parameters:
-    const uint8_t system_id = 17;
-    const uint8_t component_id = 18;
-
     uint32_t last_pkt1_us;
     uint32_t last_pkt2_us;
 
