@@ -67,9 +67,6 @@ class build_binaries(object):
     def __init__(self, tags):
         self.tags = tags
         self.dirty = False
-        binaries_history_filepath = os.path.join(self.buildlogs_dirpath(),
-                                                 "build_binaries_history.sqlite")
-        self.history = build_binaries_history.BuildBinariesHistory(binaries_history_filepath)
 
     def progress(self, string):
         '''pretty-print progress'''
@@ -668,6 +665,12 @@ is bob we will attempt to checkout bob-AVR'''
 
     def run(self):
         self.validate()
+
+        self.mkpath(self.buildlogs_dirpath())
+
+        binaries_history_filepath = os.path.join(
+            self.buildlogs_dirpath(), "build_binaries_history.sqlite")
+        self.history = build_binaries_history.BuildBinariesHistory(binaries_history_filepath)
 
         prefix_bin_dirpath = os.path.join(os.environ.get('HOME'),
                                           "prefix", "bin")
