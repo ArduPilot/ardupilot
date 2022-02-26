@@ -21,7 +21,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     failsafe.state = fstype;
     failsafe.short_timer_ms = millis();
     failsafe.saved_mode_number = control_mode->mode_number();
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
+    gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe On");
     switch (control_mode->mode_number())
     {
     case Mode::Number::MANUAL:
@@ -102,7 +102,12 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
     // This is how to handle a long loss of control signal failsafe.
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event on: type=%u/reason=%u", fstype, static_cast<unsigned>(reason));
+    if (reason == ModeReason:: GCS_FAILSAFE) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe On");
+    }
+    else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe On");
+    }
     //  If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
@@ -186,7 +191,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 void Plane::failsafe_short_off_event(ModeReason reason)
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Short event off: reason=%u", static_cast<unsigned>(reason));
+    gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
     failsafe.state = FAILSAFE_NONE;
     //restore entry mode if desired but check that our current mode is still due to failsafe
     if ( _last_reason == ModeReason::RADIO_FAILSAFE) { 
@@ -197,8 +202,13 @@ void Plane::failsafe_short_off_event(ModeReason reason)
 
 void Plane::failsafe_long_off_event(ModeReason reason)
 {
-    // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Failsafe. Long event off: reason=%u", static_cast<unsigned>(reason));
+    // We're back in radio contact with RC or GCS
+    if (reason == ModeReason:: GCS_FAILSAFE) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Off");
+    }
+    else {
+        gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe Cleared");
+    }
     failsafe.state = FAILSAFE_NONE;
 }
 
