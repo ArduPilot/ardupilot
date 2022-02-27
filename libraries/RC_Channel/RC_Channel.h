@@ -232,14 +232,14 @@ public:
         WEATHER_VANE_ENABLE = 160, // enable/disable weathervaning
         TURBINE_START =       161, // initialize turbine start sequence
 
-        // inputs from 200 will eventually used to replace RCMAP
+        // inputs from 200 will eventually be used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
         THROTTLE =           203, // throttle pilot input
         YAW =                204, // yaw pilot input
         MAINSAIL =           207, // mainsail input
         FLAP =               208, // flap input
-        FWD_THR =            209, // VTOL manual forward throttle
+        FWD_THR =            209, // VTOL manual forward throttle input
         AIRBRAKE =           210, // manual airbrake control
         WALKING_HEIGHT =     211, // walking robot height input
 
