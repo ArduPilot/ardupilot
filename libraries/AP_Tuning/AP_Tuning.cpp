@@ -1,7 +1,9 @@
 #include "AP_Tuning.h"
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_Notify/AP_Notify.h>
 
 extern const AP_HAL::HAL& hal;
 
