@@ -57,6 +57,7 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include "AP_UAVCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Notify/AP_Notify.h>
 
 #define LED_DELAY_US 50000
 
