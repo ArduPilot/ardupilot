@@ -22,6 +22,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Notify/AP_Notify.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RCMapper/AP_RCMapper.h>
