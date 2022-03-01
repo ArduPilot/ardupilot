@@ -17,7 +17,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <stdint.h>
 
 // limit number of LEDs, mostly to keep DMA memory consumption within
 // reasonable bounds
