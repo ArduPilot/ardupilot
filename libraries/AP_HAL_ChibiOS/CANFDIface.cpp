@@ -309,6 +309,7 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
         return false;
     }
 
+    out_timings.sample_point_permill = solution.sample_point_permill;
     out_timings.prescaler = uint16_t(prescaler - 1U);
     out_timings.sjw = 0;                                        // Which means one
     out_timings.bs1 = uint8_t(solution.bs1 - 1);
@@ -647,8 +648,6 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
     /*
      * CAN timings for this bitrate
      */
-    Timings timings;
-
     if (!computeTimings(bitrate, timings)) {
         can_->CCCR &= ~FDCAN_CCCR_INIT;
         uint32_t while_start_ms = AP_HAL::millis();
@@ -659,18 +658,18 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
         }
         return false;
     }
+    _bitrate = bitrate;
     Debug("Timings: presc=%u sjw=%u bs1=%u bs2=%u\n",
           unsigned(timings.prescaler), unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
 
     //setup timing register
-    //TODO: Do timing calculations for FDCAN
     can_->NBTP = ((timings.sjw << FDCAN_NBTP_NSJW_Pos)   |
                   (timings.bs1 << FDCAN_NBTP_NTSEG1_Pos) |
                   (timings.bs2 << FDCAN_NBTP_NTSEG2_Pos)  |
                   (timings.prescaler << FDCAN_NBTP_NBRP_Pos));
 
     if (fdbitrate) {
-        if (!computeTimings(fdbitrate, timings)) { // Do 8x fast Data transmission for CAN FD frames
+        if (!computeTimings(fdbitrate, fdtimings)) {
             can_->CCCR &= ~FDCAN_CCCR_INIT;
             uint32_t while_start_ms = AP_HAL::millis();
             while ((can_->CCCR & FDCAN_CCCR_INIT) == 1) {
@@ -680,11 +679,12 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const Oper
             }
             return false;
         }
+        _fdbitrate = fdbitrate;
         Debug("CANFD Timings: presc=%u bs1=%u bs2=%u\n",
-              unsigned(timings.prescaler), unsigned(timings.bs1), unsigned(timings.bs2));
-        can_->DBTP = ((timings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
-                     (timings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
-                     (timings.prescaler << FDCAN_DBTP_DBRP_Pos));
+              unsigned(fdtimings.prescaler), unsigned(fdtimings.bs1), unsigned(fdtimings.bs2));
+        can_->DBTP = ((fdtimings.bs1 << FDCAN_DBTP_DTSEG1_Pos) |
+                     (fdtimings.bs2 << FDCAN_DBTP_DTSEG2_Pos)  |
+                     (fdtimings.prescaler << FDCAN_DBTP_DBRP_Pos));
     }
 
     //RX Config
@@ -1086,7 +1086,14 @@ bool CANIface::select(bool &read, bool &write,
 void CANIface::get_stats(ExpandingString &str)
 {
     CriticalSectionLocker lock;
-    str.printf("tx_requests:    %lu\n"
+    str.printf("------- Clock Config -------\n"
+               "CAN_CLK_FREQ:   %luMHz\n"
+               "Std Timings: bitrate=%lu presc=%u\n"
+               "sjw=%u bs1=%u bs2=%u sample_point=%f%%\n"
+               "FD Timings:  bitrate=%lu presc=%u\n"
+               "sjw=%u bs1=%u bs2=%u sample_point=%f%%\n"
+               "------- CAN Interface Stats -------\n"
+               "tx_requests:    %lu\n"
                "tx_rejected:    %lu\n"
                "tx_overflow:    %lu\n"
                "tx_success:     %lu\n"
@@ -1101,6 +1108,13 @@ void CANIface::get_stats(ExpandingString &str)
                "fdf_rx:         %lu\n"
                "fdf_tx_req:     %lu\n"
                "fdf_tx:         %lu\n",
+               STM32_FDCANCLK/1000000UL,
+               _bitrate, unsigned(timings.prescaler),
+               unsigned(timings.sjw), unsigned(timings.bs1),
+               unsigned(timings.bs2), timings.sample_point_permill/10.0f,
+               _fdbitrate, unsigned(fdtimings.prescaler),
+               unsigned(fdtimings.sjw), unsigned(fdtimings.bs1),
+               unsigned(fdtimings.bs2), timings.sample_point_permill/10.0f,
                stats.tx_requests,
                stats.tx_rejected,
                stats.tx_overflow,
