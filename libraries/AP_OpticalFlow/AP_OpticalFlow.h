@@ -31,7 +31,6 @@
  */
 
 #include <AP_MSP/msp.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_OpticalFlow_Calibrator.h"
