@@ -33,27 +33,6 @@
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
 
-#ifndef UAVCAN_NODE_POOL_SIZE
-#if HAL_CANFD_SUPPORTED
-#define UAVCAN_NODE_POOL_SIZE 16384
-#else
-#define UAVCAN_NODE_POOL_SIZE 8192
-#endif
-#endif
-
-#if HAL_CANFD_SUPPORTED
-#define UAVCAN_STACK_SIZE     8192
-#else
-#define UAVCAN_STACK_SIZE     4096
-#endif
-
-#ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
-#if HAL_CANFD_SUPPORTED
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 128
-#else
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
-#endif
-#endif
 
 #ifndef UAVCAN_SRV_NUMBER
 #define UAVCAN_SRV_NUMBER 18
@@ -232,11 +211,11 @@ public:
     // 0. return true if it was set
     bool check_and_reset_option(Options option);
 
-private:
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
     class RaiiSynchronizer {};
 
+private:
     void loop(void);
 
     ///// SRV output /////
@@ -276,8 +255,6 @@ private:
     bool param_save_request_sent = true;
     HAL_Semaphore _param_save_sem;
     uint8_t param_save_request_node_id;
-
-    uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
     AP_Int8 _uavcan_node;
