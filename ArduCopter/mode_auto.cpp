@@ -285,9 +285,10 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 
     // sanity check target
     int32_t alt_target_min_cm = copter.current_loc.alt + (copter.ap.land_complete ? 100 : 0);
-    if (alt_target < alt_target_min_cm ) {
-        dest.set_alt_cm(alt_target_min_cm , Location::AltFrame::ABOVE_HOME);
-    }
+    alt_target = MAX(alt_target, alt_target_min_cm);
+
+    // set updated altitude in location structure
+    dest.set_alt_cm(alt_target, Location::AltFrame::ABOVE_HOME);
 
     // set waypoint controller target
     if (!wp_nav->set_wp_destination_loc(dest)) {
