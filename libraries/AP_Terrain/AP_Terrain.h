@@ -15,7 +15,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Common/Location.h>
 #include <AP_Filesystem/AP_Filesystem_Available.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
