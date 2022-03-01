@@ -21,7 +21,8 @@
  *
  */
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 
 #ifndef HAL_NAVEKF2_AVAILABLE
 // only default to EK2 enabled on boards with over 1M flash
