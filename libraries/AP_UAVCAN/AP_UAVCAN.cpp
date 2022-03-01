@@ -62,6 +62,29 @@
 
 extern const AP_HAL::HAL& hal;
 
+#ifndef UAVCAN_NODE_POOL_SIZE
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_NODE_POOL_SIZE 16384
+#else
+#define UAVCAN_NODE_POOL_SIZE 8192
+#endif
+#endif
+
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_STACK_SIZE     8192
+#else
+#define UAVCAN_STACK_SIZE     4096
+#endif
+
+
+#ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
+#if HAL_CANFD_SUPPORTED
+#define UAVCAN_NODE_POOL_BLOCK_SIZE 128
+#else
+#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
+#endif
+#endif
+
 #define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
 
 // Translation of all messages from UAVCAN structures into AP structures is done
@@ -164,9 +187,10 @@ static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_stat
 UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
 static uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb> *debug_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
+static uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
-AP_UAVCAN::AP_UAVCAN() :
-    _node_allocator()
+
+AP_UAVCAN::AP_UAVCAN()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -225,7 +249,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
+    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator[driver_index]);
 
     if (_node == nullptr) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node\n\r");
