@@ -14,8 +14,6 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RPM.h"
 
 class AP_RPM_Backend
