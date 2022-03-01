@@ -22,6 +22,10 @@ extern const AP_HAL::HAL& hal;
 
 #define WINDVANE_CALIBRATION_VOLT_DIFF_MIN  1.0f    // calibration routine's min voltage difference required for success
 
+#include <AP_HAL/AP_HAL.h>
+
+extern const AP_HAL::HAL& hal;
+
 // constructor
 AP_WindVane_Analog::AP_WindVane_Analog(AP_WindVane &frontend) :
     AP_WindVane_Backend(frontend)
