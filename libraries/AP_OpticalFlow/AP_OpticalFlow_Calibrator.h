@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 #define AP_OPTICALFLOW_CAL_MAX_SAMPLES 50  // number of samples required before calibration begins
