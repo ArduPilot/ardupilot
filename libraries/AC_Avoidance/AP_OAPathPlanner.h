@@ -3,7 +3,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Semaphores.h>
+
 #include "AP_OABendyRuler.h"
 #include "AP_OADijkstra.h"
 #include "AP_OADatabase.h"
