@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
@@ -10,9 +10,7 @@ public:
 
     AP_OADatabase();
 
-    /* Do not allow copies */
-    AP_OADatabase(const AP_OADatabase &other) = delete;
-    AP_OADatabase &operator=(const AP_OADatabase&) = delete;
+    CLASS_NO_COPY(AP_OADatabase); /* Do not allow copies */
 
     // get singleton instance
     static AP_OADatabase *get_singleton() {
