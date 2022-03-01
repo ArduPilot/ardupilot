@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
