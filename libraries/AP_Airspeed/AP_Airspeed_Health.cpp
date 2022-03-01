@@ -28,8 +28,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         return;
     }
 
-    const float aspeed = get_airspeed();
-    if (aspeed <= 0) {
+    if (state[i].airspeed <= 0) {
         // invalid estimate
         return;
     }
@@ -44,7 +43,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
         }
         return;
     }
-    const float speed_diff = fabsf(aspeed-gps.ground_speed());
+    const float speed_diff = fabsf(state[i].airspeed-gps.ground_speed());
 
     // update health_probability with LowPassFilter
     if (speed_diff > _wind_max) {
