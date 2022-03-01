@@ -21,7 +21,6 @@
   Tom Pittenger, November 2015
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_ADSB_ENABLED
