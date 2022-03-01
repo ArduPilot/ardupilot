@@ -91,13 +91,15 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     } MessageRam_;
 
     struct Timings {
+        uint16_t sample_point_permill;
         uint16_t prescaler;
         uint8_t sjw;
         uint8_t bs1;
         uint8_t bs2;
 
         Timings()
-            : prescaler(0)
+            : sample_point_permill(0)
+            , prescaler(0)
             , sjw(0)
             , bs1(0)
             , bs2(0)
@@ -150,7 +152,8 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     static bool clock_init_;
 
     bool _detected_bus_off;
-
+    Timings timings, fdtimings;
+    uint32_t _bitrate, _fdbitrate;
     struct {
         uint32_t tx_requests;
         uint32_t tx_rejected;
