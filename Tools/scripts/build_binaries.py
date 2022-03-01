@@ -47,7 +47,7 @@ def is_chibios_build(board):
     return False
 
 
-def get_required_compiler(tag, board):
+def get_required_compiler(vehicle, tag, board):
     '''return required compiler for a build tag.
        return format is the version string that waf configure will detect.
        You should setup a link from this name in $HOME/arm-gcc directory pointing at the
@@ -56,11 +56,11 @@ def get_required_compiler(tag, board):
     if not is_chibios_build(board):
         # only override compiler for ChibiOS builds
         return None
-    if tag == 'latest':
-        # use 10.2.1 compiler for master builds
-        return "g++-10.2.1"
-    # for all other builds we use the default compiler in $PATH
-    return None
+    if vehicle == 'Sub' and tag in ['stable', 'beta']:
+        # sub stable and beta is on the old compiler
+        return "g++-6.3.1"
+    # use 10.2.1 compiler for all other builds
+    return "g++-10.2.1"
 
 
 class build_binaries(object):
@@ -454,8 +454,9 @@ is bob we will attempt to checkout bob-AVR'''
                                 "--board", board,
                                 "--out", self.buildroot,
                                 "clean"]
-                    gccstring = get_required_compiler(tag, board)
-                    if gccstring is not None:
+                    gccstring = get_required_compiler(vehicle, tag, board)
+                    if gccstring is not None and gccstring.find("g++-6.3") == -1:
+                        # versions using the old compiler don't have the --assert-cc-version option
                         waf_opts += ["--assert-cc-version", gccstring]
 
                     waf_opts.extend(self.board_options(board))
