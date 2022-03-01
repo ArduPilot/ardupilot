@@ -23,6 +23,10 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 #include <asm/termbits.h>
+#include <stdarg.h>
+
+#include <AP_RCProtocol/AP_RCProtocol.h>
+#include "RCInput.h"
 #include "RCInput_RCProtocol.h"
 #include <GCS_MAVLink/GCS.h>
 
