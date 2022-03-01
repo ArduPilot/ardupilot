@@ -1,6 +1,5 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "vector2.h"
 #include "vector3.h"
