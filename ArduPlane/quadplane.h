@@ -402,6 +402,9 @@ private:
         uint32_t lower_limit_start_ms;
         uint32_t land_start_ms;
         float vpos_start_m;
+
+        // landing detection threshold in meters
+        AP_Float detect_alt_change;
     } landing_detect;
 
     // throttle mix acceleration filter
