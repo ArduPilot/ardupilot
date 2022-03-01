@@ -1,10 +1,9 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
-#include <AP_Notify/AP_Notify.h>      // Notify library
-#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Math/AP_Math.h>
 #include <Filter/Filter.h>         // filter library
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
