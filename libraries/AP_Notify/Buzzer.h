@@ -17,8 +17,6 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "NotifyDevice.h"
 
 class Buzzer: public NotifyDevice
