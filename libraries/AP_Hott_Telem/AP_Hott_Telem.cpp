@@ -34,7 +34,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 
 #define PROT_BINARY   0x80
