@@ -14,8 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_VISUALODOM_ENABLED
 #define HAL_VISUALODOM_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
