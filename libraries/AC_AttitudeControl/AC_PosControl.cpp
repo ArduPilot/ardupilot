@@ -2,6 +2,8 @@
 #include "AC_PosControl.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Motors/AP_Motors.h>    // motors library
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
