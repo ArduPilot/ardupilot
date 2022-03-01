@@ -14,9 +14,7 @@
 */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
-#include <RC_Channel/RC_Channel.h>
 
 #define VTX_MAX_CHANNELS 8
 
