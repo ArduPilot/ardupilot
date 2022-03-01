@@ -1,3 +1,69 @@
+Release 4.2.0beta1 2nd March 2022
+---------------------------------
+
+This is a major release with a lot of changes. We expect at least 4
+weeks of beta testing and several beta updates before 4.2.0 final is
+released.
+
+Changes include:
+
+ - EKF startup messages reduced
+ - LORD Microstrain CX5/GX5 external AHRS support
+ - Auto mode supports up to 100 DO_JUMP commands on high memory boards
+ - Auto support for NAV_SCRIPT_TIME commands (Lua within Auto)
+ - aerobatic scripting from any mode via RC switches
+ - new boards AirLink, BeastF7v2, BeastH7v2, JHEMCU GSF405A, KakuteH7, KakuteH7Mini, MambaF405US-I2C, MatekF405-TE, ModalAI fc-v1, PixC4-Jetson, Pixhawk5X, QioTekZealotH743, RPI-Zero2W, SPRacingH7 Extreme, Swan-K1
+ - Parachute option to leave servo in open position (see CHUTE_OPTIONS parameter)
+ - Parachute released arming check added
+ - Pre-arm check of IMU heater temp
+ - Pre-arm check of rangefinder health
+ - Pre-arm check of throttle position skipped if PILOT_THR_BHV is "Feedback from mid stick"
+ - ADIS16470, ADIS16507 and BMI270 IMU support
+ - AK09918 compass support
+ - Battery monitor supports voltage offset (see BATTx_VLT_OFFSET)
+ - Benewake TFMiniPlus I2C address defaults correctly
+ - Buzzer can be connected to any PWM on any board
+ - Compass calibration (in-flight) uses GSF for better accuracy
+ - CRSFv3 support, CSRF telemetry link reports link quality in RSSI
+ - Cybot D1 Lidar support
+ - DroneCan (aka UAVCAN) battery monitors support scaling (see BATTx_CURR_MULT)
+ - DroneCan (aka UAVCAN) GPS-for-yaw support
+ - Electronic Fuel Injection support incl Lutan EFI
+ - FETtecOneWire resyncs if EMI causes lost bytes
+ - IMU heater params renamed to BRD_HEAT_xxx
+ - Landing gear enable parameter added (see LGR_ENABLE)
+ - Lightware SF40C ver 0.9 support removed (ver 1.0 and higher still supported)
+ - Maxbotix serial sonar driver support RNGFNDx_SCALING parameter to support for varieties of sensor
+ - MPPT solar charge controller support
+ - MTK GPS driver removed
+ - Optical flow in-flight calibration
+ - Ping200x ADSB support
+ - Proximity sensor min and max range (see PRX_MIN, PRX_MAX)
+ - QSPI external flash support
+ - uLanding (aka USD1) radar provides average of last few samples
+ - Unicore NMEA GPS support for yaw and 3D velocity
+ - Board ID sent in AUTOPILOT_VERSION mavlink message
+ - DO_SET_CAM_TRIG_DIST supports instantly triggering camera
+ - DJI FPV OSD multi screen and stats support
+ - GPIO pins configured by setting SERVOx_FUNCTION to -1 (also see SERVO_GPIO_MASK. BRD_PWM_COUNT removed)
+ - GPIO pin support on main outputs on boards with IOMCU
+ - GyroFlow logging (see LOG_BITMASK's "VideoStabilization" option)
+ - Firmware version logged in VER message
+ - SD card format via MAVLink
+ - Serial port option to disable changes to stream rate (see SERIALx_OPTIONS)
+ - VIBE logging units to m/s/s
+ - BLHeli passthrough reliability improvements
+ - Compass learning (inflight) fixed to ignore unused compasses (e.g. those with COMPASS_USE = 0)
+ - EKF optical flow terrain alt reset fixed (large changes in rangefinder alt might never be fused)
+ - EKF resets due to bad IMU data occur at most once per second
+ - GPIO pin fix on CubeOrange, F4BY, mRoControlZeroF7, R9Pilot
+ - MAVlink2 serial ports always send MAVLink2 messages (previously waited until other side sent MAVLink2)
+ - Omnibusf4pro bi-directional dshot fix
+ - Real-Time-Clock (RTC) oldest possible date updated to Jan-2022
+
+Happy flying!
+
+
 Release 4.1.7 12th February 2022
 --------------------------------
 
