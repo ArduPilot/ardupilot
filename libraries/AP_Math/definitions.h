@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifdef M_PI
 # undef M_PI
