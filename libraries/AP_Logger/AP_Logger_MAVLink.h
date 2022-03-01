@@ -5,13 +5,11 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_Logger_Backend.h"
 
 #if HAL_LOGGING_MAVLINK_ENABLED
 
-extern const AP_HAL::HAL& hal;
+#include <AP_HAL/Semaphores.h>
 
 #define DF_MAVLINK_DISABLE_INTERRUPTS 0
 
