@@ -3,7 +3,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_HAL/AP_HAL.h>
 #include "AP_OAVisGraph.h"
 
 /*
@@ -15,9 +14,7 @@ public:
 
     AP_OADijkstra(AP_Int16 &options);
 
-    /* Do not allow copies */
-    AP_OADijkstra(const AP_OADijkstra &other) = delete;
-    AP_OADijkstra &operator=(const AP_OADijkstra&) = delete;
+    CLASS_NO_COPY(AP_OADijkstra);  /* Do not allow copies */
 
     // set fence margin (in meters) used when creating "safe positions" within the polygon fence
     void set_fence_margin(float margin) { _polyfence_margin = MAX(margin, 0.0f); }
