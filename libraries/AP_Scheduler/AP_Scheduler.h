@@ -20,13 +20,15 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
 #ifndef HAL_SCHEDULER_ENABLED
 #define HAL_SCHEDULER_ENABLED 1
 #endif
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Util.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
