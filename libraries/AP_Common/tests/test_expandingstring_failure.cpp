@@ -1,6 +1,7 @@
 #include <AP_gtest.h>
 #include <stdlib.h>
 #include <AP_Common/ExpandingString.h>
+#include <AP_HAL/AP_HAL.h>
 
 /**
  * This file test realloc failure on ExpandingString

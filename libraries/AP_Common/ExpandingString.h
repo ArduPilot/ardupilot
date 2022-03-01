@@ -18,7 +18,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_Common/AP_Common.h>
+
+#include <stdint.h>
 
 class ExpandingString {
 public:
