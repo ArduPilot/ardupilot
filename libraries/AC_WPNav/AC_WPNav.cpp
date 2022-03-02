@@ -150,7 +150,8 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
     
     // sanity check parameters
     // check _wp_accel_cmss is reasonable
-    const float wp_accel_cmss = MIN(_wp_accel_cmss, GRAVITY_MSS * 100.0f * tanf(ToRad(_attitude_control.lean_angle_max_cd() * 0.01f)));
+    _scurve_accel_corner = GRAVITY_MSS * 100.0f * tanf(ToRad(_pos_control.get_lean_angle_max_cd() * 0.01f));
+    const float wp_accel_cmss = MIN(_wp_accel_cmss, _scurve_accel_corner);
     _wp_accel_cmss.set_and_save_ifchanged((_wp_accel_cmss <= 0) ? WPNAV_ACCELERATION : wp_accel_cmss);
     
     // check _wp_radius_cm is reasonable
@@ -497,7 +498,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (!_this_leg_is_spline) {
         // update target position, velocity and acceleration
         target_pos = _origin;
-        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, _flags.fast_waypoint, _track_scalar_dt * vel_time_scalar * dt, target_pos, target_vel, target_accel);
+        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, _scurve_accel_corner, _flags.fast_waypoint, _track_scalar_dt * vel_time_scalar * dt, target_pos, target_vel, target_accel);
     } else {
         // splinetarget_vel
         target_vel = curr_target_vel;
