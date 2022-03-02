@@ -197,8 +197,8 @@ void AP_MotorsUGV::set_steering(float steering, bool apply_scaling)
 // set throttle as a value from -100 to 100
 void AP_MotorsUGV::set_throttle(float throttle)
 {
-    // only allow setting throttle if armed
-    if (!hal.util->get_soft_armed()) {
+    // only allow setting throttle if armed and not emergency stopped
+    if (!hal.util->get_soft_armed() || SRV_Channels::get_emergency_stop()) {
         return;
     }
 
@@ -281,8 +281,8 @@ bool AP_MotorsUGV::has_sail() const
 
 void AP_MotorsUGV::output(bool armed, float ground_speed, float dt)
 {
-    // soft-armed overrides passed in armed status
-    if (!hal.util->get_soft_armed()) {
+    // soft-armed and emergency stop overrides local armed status
+    if (!hal.util->get_soft_armed() || SRV_Channels::get_emergency_stop()) {
         armed = false;
         _throttle = 0.0f;
     }
@@ -999,7 +999,7 @@ float AP_MotorsUGV::get_rate_controlled_throttle(SRV_Channel::Aux_servo_function
 bool AP_MotorsUGV::active() const
 {
     // if soft disarmed, motors not active
-    if (!hal.util->get_soft_armed()) {
+    if (!hal.util->get_soft_armed() || SRV_Channels::get_emergency_stop()) {
         return false;
     }
 
