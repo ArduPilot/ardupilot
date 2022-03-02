@@ -177,7 +177,7 @@ void AC_WPNav::wp_and_spline_init(float speed_cms)
     if (!is_positive(_wp_jerk)) {
         _wp_jerk = _wp_accel_cmss;
     }
-    calc_scurve_jerk_and_jerk_time();
+    calc_scurve_jerk_and_snap();
 
     _scurve_prev_leg.init();
     _scurve_this_leg.init();
@@ -334,7 +334,7 @@ bool AC_WPNav::set_wp_destination(const Vector3f& destination, bool terrain_alt)
         _scurve_this_leg.calculate_track(_origin, _destination,
                                          _pos_control.get_max_speed_xy_cms(), _pos_control.get_max_speed_up_cms(), _pos_control.get_max_speed_down_cms(),
                                          _wp_accel_cmss, _wp_accel_z_cmss,
-                                         _scurve_jerk_time, _scurve_jerk * 100.0f);
+                                         _scurve_snap * 100.0f, _scurve_jerk * 100.0f);
         if (!is_zero(origin_speed)) {
             // rebuild start of scurve if we have a non-zero origin speed
             _scurve_this_leg.set_origin_speed_max(origin_speed);
@@ -362,7 +362,7 @@ bool AC_WPNav::set_wp_destination_next(const Vector3f& destination, bool terrain
     _scurve_next_leg.calculate_track(_destination, destination,
                                      _pos_control.get_max_speed_xy_cms(), _pos_control.get_max_speed_up_cms(), _pos_control.get_max_speed_down_cms(),
                                      _wp_accel_cmss, _wp_accel_z_cmss,
-                                     _scurve_jerk_time, _scurve_jerk * 100.0f);
+                                     _scurve_snap * 100.0f, _scurve_jerk * 100.0);
     if (_this_leg_is_spline) {
         const float this_leg_dest_speed_max = _spline_this_leg.get_destination_speed_max();
         const float next_leg_origin_speed_max = _scurve_next_leg.set_origin_speed_max(this_leg_dest_speed_max);
@@ -857,8 +857,8 @@ bool AC_WPNav::get_vector_NEU(const Location &loc, Vector3f &vec, bool &terrain_
 }
 
 // helper function to calculate scurve jerk and jerk_time values
-// updates _scurve_jerk and _scurve_jerk_time
-void AC_WPNav::calc_scurve_jerk_and_jerk_time()
+// updates _scurve_jerk and _scurve_snap
+void AC_WPNav::calc_scurve_jerk_and_snap()
 {
     // calculate jerk
     _scurve_jerk = MIN(_attitude_control.get_ang_vel_roll_max_rads() * GRAVITY_MSS, _attitude_control.get_ang_vel_pitch_max_rads() * GRAVITY_MSS);
@@ -868,14 +868,14 @@ void AC_WPNav::calc_scurve_jerk_and_jerk_time()
         _scurve_jerk = MIN(_scurve_jerk, _wp_jerk);
     }
 
-    // calculate jerk time
-    // Jounce (the rate of change of jerk) uses the attitude control input time constant because multicopters
+    // calculate maximum snap
+    // Snap (the rate of change of jerk) uses the attitude control input time constant because multicopters
     // lean to accelerate. This means the change in angle is equivalent to the change in acceleration
-    const float jounce = MIN(_attitude_control.get_accel_roll_max_radss() * GRAVITY_MSS, _attitude_control.get_accel_pitch_max_radss() * GRAVITY_MSS);
-    if (is_positive(jounce)) {
-        _scurve_jerk_time = MAX(_attitude_control.get_input_tc(), 0.5f * _scurve_jerk * M_PI / jounce);
-    } else {
-        _scurve_jerk_time = MAX(_attitude_control.get_input_tc(), 0.1f);
+    _scurve_snap = (_scurve_jerk * M_PI) / (2.0 * MAX(_attitude_control.get_input_tc(), 0.1f));
+    const float snap = MIN(_attitude_control.get_accel_roll_max_radss(), _attitude_control.get_accel_pitch_max_radss()) * GRAVITY_MSS;
+    if (is_positive(snap)) {
+        _scurve_snap = MIN(_scurve_snap, snap);
     }
-    _scurve_jerk_time *= 2.0f;
+    // reduce maximum snap by a factor of two from what the aircraft is capable of
+    _scurve_snap *= 0.5;
 }
