@@ -317,13 +317,6 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
     return true;
 }
 
-static uint32_t bytes_to_word(const uint8_t data[]) {
-    return (uint32_t(data[3]) << 24) |
-           (uint32_t(data[2]) << 16) |
-           (uint32_t(data[1]) << 8)  |
-           (uint32_t(data[0]) << 0);
-}
-
 int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
                        CanIOFlags flags)
 {
@@ -378,8 +371,9 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
 
         // Write Frame to the message RAM
         const uint8_t data_length = AP_HAL::CANFrame::dlcToDataLength(frame.dlc);
-        for (uint8_t i = 0, l = 2; i < data_length; i+=4, l++) {
-            buffer[l] = bytes_to_word(&frame.data[i]);
+        uint32_t *data_ptr = &buffer[2];
+        for (uint8_t i = 0; i < (data_length+3)/4; i++) {
+            data_ptr[i] = frame.data_32[i];
         }
 
         //Set Add Request
