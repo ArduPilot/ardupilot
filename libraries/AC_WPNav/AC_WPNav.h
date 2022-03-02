@@ -240,6 +240,7 @@ protected:
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;            // current scurve trajectory
     SCurve _scurve_next_leg;            // next scurve trajectory used to blend with current scurve trajectory
+    float _scurve_accel_corner;         // scurve maximum corner acceleration in m/s/s
     float _scurve_jerk;                 // scurve jerk max in m/s/s/s
     float _scurve_snap;                 // scurve snap in m/s/s/s/s
 
