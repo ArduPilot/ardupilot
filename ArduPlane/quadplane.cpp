@@ -2097,17 +2097,12 @@ void QuadPlane::update_land_positioning(void)
 /*
   run (and possibly init) xy controller
  */
-void QuadPlane::run_xy_controller(void)
+void QuadPlane::run_xy_controller(float accel_limit)
 {
     float accel_cmss = wp_nav->get_wp_acceleration();
-    if (in_vtol_land_sequence() &&
-        (poscontrol.get_state() == QPOS_POSITION1 ||
-         poscontrol.get_state() == QPOS_POSITION2)) {
-        // we allow for a bit higher accel limit than the trans decel,
-        // so if are less likely to overshoot the landing point
-        // if at some stage in the POS1 we are under velocity
-        const float accel_margin = 1.25;
-        accel_cmss = MAX(accel_cmss, accel_margin*transition_decel*100);
+    if (is_positive(accel_limit)) {
+        // allow for accel limit override
+        accel_cmss = MAX(accel_cmss, accel_limit*100);
     }
     const float speed_cms = wp_nav->get_default_speed_xy();
     pos_control->set_max_speed_accel_xy(speed_cms, accel_cmss);
@@ -2154,10 +2149,12 @@ void QuadPlane::poscontrol_init_approach(void)
  */
 void QuadPlane::log_QPOS(void)
 {
-    AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist", "QBf",
+    AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist,TSpd,TAcc", "QBfff",
                                 AP_HAL::micros64(),
                                 poscontrol.get_state(),
-                                plane.auto_state.wp_distance);
+                                plane.auto_state.wp_distance,
+                                poscontrol.target_speed,
+                                poscontrol.target_accel);
 }
 
 /*
@@ -2209,10 +2206,10 @@ void QuadPlane::vtol_position_controller(void)
     uint32_t now_ms = AP_HAL::millis();
 
     // distance that we switch to QPOS_POSITION2
-    const float position2_dist_threshold = 5.0;
+    const float position2_dist_threshold = 10.0;
 
     // target speed when we reach position2 threshold
-    const float position2_target_speed = 2.0;
+    const float position2_target_speed = 3.0;
 
     if (hal.util->get_soft_armed()) {
         poscontrol.last_run_ms = now_ms;
@@ -2402,6 +2399,7 @@ void QuadPlane::vtol_position_controller(void)
 
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
+        const float groundspeed = plane.ahrs.groundspeed();
 
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
@@ -2435,17 +2433,23 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_controller->update_waypoint(plane.current_loc, loc);
 
         Vector2f target_speed_xy_cms;
+        Vector2f target_accel_cms;
+        const float target_accel = accel_needed(distance, sq(groundspeed));
         if (distance > 0.1) {
-            target_speed_xy_cms = diff_wp.normalized() * target_speed * 100;
+            Vector2f diff_wp_norm = diff_wp.normalized();
+            target_speed_xy_cms = diff_wp_norm * target_speed * 100;
+            target_accel_cms = diff_wp_norm * (-target_accel*100);
         }
 
         target_speed_xy_cms += landing_velocity * 100;
+        poscontrol.target_speed = target_speed_xy_cms.length()*0.01;
+        poscontrol.target_accel = target_accel;
 
         // use input shaping and abide by accel and jerk limits
-        pos_control->input_vel_accel_xy(target_speed_xy_cms, Vector2f());
+        pos_control->input_vel_accel_xy(target_speed_xy_cms, target_accel_cms);
 
         // run horizontal velocity controller
-        run_xy_controller();
+        run_xy_controller(MAX(target_accel, transition_decel)*1.5);
 
         // nav roll and pitch are controller by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
@@ -2485,7 +2489,7 @@ void QuadPlane::vtol_position_controller(void)
 
         update_land_positioning();
 
-        run_xy_controller();
+        run_xy_controller(transition_decel*1.5);
 
         // nav roll and pitch are controlled by position controller
         plane.nav_roll_cd = pos_control->get_roll_cd();
@@ -3499,12 +3503,20 @@ bool QuadPlane::in_transition(void) const
 /*
   calculate current stopping distance for a quadplane in fixed wing flight
  */
-float QuadPlane::stopping_distance(float ground_speed_squared)
+float QuadPlane::stopping_distance(float ground_speed_squared) const
 {
     // use v^2/(2*accel). This is only quite approximate as the drag
     // varies with pitch, but it gives something for the user to
     // control the transition distance in a reasonable way
     return ground_speed_squared / (2 * transition_decel);
+}
+
+/*
+  calculate acceleration needed to stop in the given distance given current speed
+ */
+float QuadPlane::accel_needed(float stop_distance, float ground_speed_squared) const
+{
+    return ground_speed_squared / (2 * stop_distance);
 }
 
 /*
