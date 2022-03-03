@@ -110,6 +110,9 @@ protected:
     // send post test updates to user
     void do_post_test_gcs_announcements() override;
 
+    // report final gains for a given axis to GCS
+    void report_final_gains(AxisType test_axis) const override;
+
     // set the tuning test sequence
     void set_tune_sequence() override;
 
@@ -172,6 +175,9 @@ private:
 
     // exceeded_freq_range - ensures tuning remains inside frequency range
     bool exceeded_freq_range(float frequency);
+
+    // report gain formating helper
+    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel) const;
 
     // updating rate FF variables
     // flag for completion of the initial direction for the feedforward test

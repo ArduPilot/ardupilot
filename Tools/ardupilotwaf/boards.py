@@ -827,7 +827,6 @@ class chibios(Board):
             '-mthumb',
             '--specs=nano.specs',
             '--specs=nosys.specs',
-            '-DCHIBIOS_BOARD_NAME="%s"' % self.name,
             '-D__USE_CMSIS',
             '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
@@ -894,6 +893,9 @@ class chibios(Board):
         else:
             cfg.msg("Enabling ChibiOS asserts", "no")
 
+
+        if cfg.env.SAVE_TEMPS:
+            env.CXXFLAGS += [ '-S', '-save-temps=obj' ]
 
         if cfg.options.disable_watchdog:
             cfg.msg("Disabling Watchdog", "yes")

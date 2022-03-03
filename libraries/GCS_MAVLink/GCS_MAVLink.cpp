@@ -94,6 +94,13 @@ void comm_send_buffer(mavlink_channel_t chan, const uint8_t *buf, uint8_t len)
     if (!valid_channel(chan) || mavlink_comm_port[chan] == nullptr || chan_discard[chan]) {
         return;
     }
+#if HAL_HIGH_LATENCY2_ENABLED
+    // if it's a disabled high latency channel, don't send
+    GCS_MAVLINK *link = gcs().chan(chan);
+    if (!link->should_send()) {
+        return;
+    }
+#endif
     if (gcs_alternative_active[chan]) {
         // an alternative protocol is active
         return;
@@ -120,6 +127,7 @@ void comm_send_lock(mavlink_channel_t chan_m, uint16_t size)
     chan_locks[chan].take_blocking();
     if (mavlink_comm_port[chan]->txspace() < size) {
         chan_discard[chan] = true;
+        gcs_out_of_space_to_send_count(chan_m);
     }
 }
 

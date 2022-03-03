@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 #include <canard.h>
 #include <AP_GPS/RTCM3_Parser.h>
@@ -29,6 +30,7 @@
 #include <dronecan_msgs.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <hal.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>

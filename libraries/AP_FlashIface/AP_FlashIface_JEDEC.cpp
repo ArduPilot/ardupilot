@@ -39,8 +39,9 @@ struct supported_device {
 };
 
 static const struct supported_device supported_devices[] = {
-    {"mt25q", 0x20, 0xBA}, // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
-    {"w25q", 0xEF, 0x40}
+    {"mt25q", 0x20, 0xBA},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
+    {"w25q", 0xEF, 0x40},
+    {"w25q-dtr", 0xEF, 0x70}
 };
 
 #ifdef HAL_BOOTLOADER_BUILD

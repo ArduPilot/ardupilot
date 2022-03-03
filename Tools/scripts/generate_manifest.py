@@ -76,6 +76,7 @@ brand_map = {
     'speedybeef4' : ('SpeedyBee F4', 'SpeedyBee'),
     'QioTekZealotF427' : ('ZealotF427', 'QioTek'),
     'BeastH7' : ('Beast H7 55A AIO', 'iFlight'),
+    'BeastH7v2' : ('Beast H7 v2 55A AIO', 'iFlight'),
     'BeastF7' : ('Beast F7 45A AIO', 'iFlight'),
     'BeastF7v2' : ('Beast F7 v2 55A AIO', 'iFlight'),
     'MambaF405US-I2C' : ('Diatone Mamba Basic F405 MK3/MK3.5', 'Diatone'),

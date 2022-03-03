@@ -9,6 +9,9 @@
 
 #include "AP_Volz_Protocol.h"
 #if NUM_SERVO_CHANNELS
+
+#include <AP_SerialManager/AP_SerialManager.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {

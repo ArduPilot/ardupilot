@@ -77,6 +77,18 @@
 extern const AP_HAL::HAL& hal;
 AP_BoardConfig *AP_BoardConfig::_singleton;
 
+// constructor
+AP_BoardConfig::AP_BoardConfig()
+#if HAL_HAVE_IMU_HEATER
+    // initialise heater PI controller. Note we do this in the cpp file
+    // for ccache efficiency
+    : heater{{HAL_IMUHEAT_P_DEFAULT, HAL_IMUHEAT_I_DEFAULT, 70},}
+#endif
+{
+    _singleton = this;
+    AP_Param::setup_object_defaults(this, var_info);
+};
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
@@ -263,7 +275,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Board options
     // @Description: Board specific option flags
-    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins
+    // @Bitmask: 0:Enable hardware watchdog, 1:Disable MAVftp, 2:Enable set of internal parameters, 3:Enable Debug Pins, 4:Unlock flash on reboot, 5:Write protect firmware flash on reboot, 6:Write protect bootloader flash on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 19, AP_BoardConfig, _options, HAL_BRD_OPTIONS_DEFAULT),
 

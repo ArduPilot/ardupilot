@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_Filesystem/posix_compat.h>
+#include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/Scheduler.h>

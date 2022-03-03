@@ -16,9 +16,12 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_EFI_Serial_Lutan.h"
 #include <AP_HAL/utility/sparse-endian.h>
-#include <stdio.h>
 
 #if HAL_EFI_ENABLED
+
+#include <stdio.h>
+
+#include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;

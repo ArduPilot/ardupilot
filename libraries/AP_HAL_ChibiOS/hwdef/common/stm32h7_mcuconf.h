@@ -19,7 +19,9 @@
 #pragma once
 
 // we want to cope with both revision XY chips and newer chips
+#ifndef STM32H750xx
 #define STM32_ENFORCE_H7_REV_XY
+#endif
 
 #ifndef STM32_LSECLK
 #define STM32_LSECLK 32768U
@@ -159,7 +161,11 @@
 
 #elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U)
 // common clock tree for multiples of 8MHz crystals
+#ifdef STM32H750xx
+#define STM32_PLL1_DIVN_VALUE               120
+#else
 #define STM32_PLL1_DIVN_VALUE               100
+#endif
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
@@ -175,7 +181,11 @@
 #define STM32_PLL3_DIVR_VALUE               9
 
 #elif STM32_HSECLK == 24000000U
+#ifdef STM32H750xx
+#define STM32_PLL1_DIVN_VALUE               120
+#else
 #define STM32_PLL1_DIVN_VALUE               100
+#endif
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2

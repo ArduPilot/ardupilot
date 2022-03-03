@@ -16,7 +16,7 @@
  */
 
 /*
- *  NavEKF based AHRS (Attitude Heading Reference System) interface for
+ *  AHRS (Attitude Heading Reference System) frontend interface for
  *  ArduPilot
  *
  */
@@ -36,13 +36,9 @@
 #define AP_AHRS_SIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
-#include "AP_AHRS.h"
-
 #if AP_AHRS_SIM_ENABLED
 #include <SITL/SITL.h>
 #endif
-
-#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
@@ -641,14 +637,6 @@ private:
     AP_Int8 _wind_max;
     AP_Int8 _board_orientation;
     AP_Int8 _ekf_type;
-    AP_Float _custom_roll;
-    AP_Float _custom_pitch;
-    AP_Float _custom_yaw;
-
-    /*
-     * support for custom AHRS orientation, replacing _board_orientation
-     */
-    Matrix3f _custom_rotation;
 
     /*
      * DCM-backend parameters; it takes references to these

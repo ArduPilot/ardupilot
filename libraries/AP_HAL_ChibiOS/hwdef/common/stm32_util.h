@@ -161,6 +161,9 @@ bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32
 unsigned int stm32_rand_generate_nonblocking(unsigned char* output, unsigned int sz);
 #endif
 
+void stm32_flash_protect_flash(bool bootloader, bool protect);
+void stm32_flash_unprotect_flash(void);
+
 // allow stack view code to show free ISR stack
 extern uint32_t __main_stack_base__;
 extern uint32_t __main_stack_end__;

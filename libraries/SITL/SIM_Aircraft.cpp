@@ -418,26 +418,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     if (ahrs_orientation != nullptr) {
         enum Rotation imu_rotation = (enum Rotation)ahrs_orientation->get();
         if (imu_rotation != last_imu_rotation) {
-            // Surprisingly, Matrix3<T>::from_rotation(ROTATION_CUSTOM) is the identity matrix
-            // so we must deal with that here
-            if (imu_rotation == ROTATION_CUSTOM) {
-                if ((custom_roll == nullptr) || (custom_pitch == nullptr) || (custom_yaw == nullptr)) {
-                    enum ap_var_type ptype;
-                    custom_roll = (AP_Float *)AP_Param::find("AHRS_CUSTOM_ROLL", &ptype);
-                    custom_pitch = (AP_Float *)AP_Param::find("AHRS_CUSTOM_PIT", &ptype);
-                    custom_yaw = (AP_Float *)AP_Param::find("AHRS_CUSTOM_YAW", &ptype);
-                }
-                if ((custom_roll != nullptr) && (custom_pitch != nullptr) && (custom_yaw != nullptr)) {
-                    sitl->ahrs_rotation.from_euler(radians(*custom_roll), radians(*custom_pitch), radians(*custom_yaw));
-                    sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
-                } else {
-                    AP_HAL::panic("could not find one or more of parameters AHRS_CUSTOM_ROLL/PITCH/YAW");
-                }
-            } else {
-                sitl->ahrs_rotation.from_rotation(imu_rotation);
-                sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
-                last_imu_rotation = imu_rotation;
-            }
+            sitl->ahrs_rotation.from_rotation(imu_rotation);
+            sitl->ahrs_rotation_inv = sitl->ahrs_rotation.transposed();
+            last_imu_rotation = imu_rotation;
         }
         if (imu_rotation != ROTATION_NONE) {
             Matrix3f m = dcm;

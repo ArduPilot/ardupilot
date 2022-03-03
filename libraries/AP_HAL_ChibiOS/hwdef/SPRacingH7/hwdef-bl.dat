@@ -47,10 +47,11 @@ PB10 QUADSPI_BK1_NCS QUADSPI1
 PB2 QUADSPI_CLK QUADSPI1
 
 # IFace  Device Name  Bus      QSPI Mode  Clk Freq  Size (Pow2)  NCS Delay
-QSPIDEV  w25q         QUADSPI1 MODE3      120*MHZ   24           2
+QSPIDEV  w25q-dtr     QUADSPI1 MODE3      120*MHZ   24           2
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
+DEFAULTGPIO OUTPUT LOW PULLDOWN
 
 # Add CS pins to ensure they are high in bootloader
 PB12 ICM20602_2_CS CS

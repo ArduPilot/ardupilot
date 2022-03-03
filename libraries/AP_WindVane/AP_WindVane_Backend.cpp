@@ -16,6 +16,8 @@
 #include "AP_WindVane.h"
 #include "AP_WindVane_Backend.h"
 
+#include <GCS_MAVLink/GCS.h>
+
 // base class constructor.
 AP_WindVane_Backend::AP_WindVane_Backend(AP_WindVane &frontend) :
         _frontend(frontend)

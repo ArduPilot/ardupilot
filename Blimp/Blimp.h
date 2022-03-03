@@ -34,7 +34,6 @@
 #include <StorageManager/StorageManager.h>
 
 // Application dependencies
-#include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>          // ArduPilot Mega Flash Memory Library
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 // #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
