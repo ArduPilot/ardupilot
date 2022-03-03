@@ -262,12 +262,13 @@ private:
     void update_throttle_suppression(void);
 
     void run_z_controller(void);
-    void run_xy_controller(void);
+    void run_xy_controller(float accel_limit=0.0);
 
     void setup_defaults(void);
 
     // calculate a stopping distance for fixed-wing to vtol transitions
-    float stopping_distance(float ground_speed_squared);
+    float stopping_distance(float ground_speed_squared) const;
+    float accel_needed(float stop_distance, float ground_speed_squared) const;
     float stopping_distance(void);
 
     // distance below which we don't do approach, based on stopping
@@ -446,6 +447,8 @@ private:
         float pos1_start_speed;
         Vector2f velocity_match;
         uint32_t last_velocity_match_ms;
+        float target_speed;
+        float target_accel;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
