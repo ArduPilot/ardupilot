@@ -349,6 +349,8 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             _target_velocity_ned.x = packet.vel[0]; // velocity north
             _target_velocity_ned.y = packet.vel[1]; // velocity east
             _target_velocity_ned.z = packet.vel[2]; // velocity down
+        } else {
+            _target_velocity_ned.zero();
         }
 
         // get a local timestamp with correction for transport jitter
