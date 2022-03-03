@@ -29,6 +29,11 @@
 #define debug(fmt, args...)  do { } while(0)
 #endif
 
+#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
+#pragma GCC diagnostic push
+#pragma GCC diagnostic error "-Wframe-larger-than=2048"
+#endif
+
 // constructor.
 AP_FlashStorage::AP_FlashStorage(uint8_t *_mem_buffer,
                                  uint32_t _flash_sector_size,
@@ -183,7 +188,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
     
     while (length > 0) {
         uint8_t n = max_write;
-#if AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_H7 && AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_G4
+#if AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_H7 && AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_G4 && AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_QSPI
         if (length < n) {
             n = length;
         }
@@ -233,6 +238,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
             return false;
         }
 #elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7 || AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
+        || AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_QSPI
         blk.header.state = BLOCK_STATE_VALID;
         if (!flash_write(current_sector, write_offset, (uint8_t*)&blk, sizeof(blk.header) + max_write)) {
             return false;
@@ -316,6 +322,9 @@ bool AP_FlashStorage::load_sector(uint8_t sector)
 #elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
         // offsets must be advanced to a multiple of 8 on G4
         ofs = (ofs + 7U) & ~7U;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
+        // offsets must be advanced to a multiple of 256 on QSPI
+        ofs = (ofs + 255U) & ~255U;
 #endif
     }
     write_offset = ofs;
@@ -460,7 +469,7 @@ bool AP_FlashStorage::re_initialise(void)
     return write_all();
 }
 
-#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7
+#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7 || AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
 /*
   H7 specific sector header functions
  */
@@ -688,4 +697,9 @@ void AP_FlashStorage::sector_header::set_state(SectorState state)
         break;
     }
 }
+
+#endif
+
+#if AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
+#pragma GCC diagnostic pop
 #endif
