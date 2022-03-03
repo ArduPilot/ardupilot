@@ -2337,6 +2337,7 @@ void QuadPlane::vtol_position_controller(void)
         if (poscontrol.get_state() == QPOS_AIRBRAKE &&
             poscontrol.time_since_state_start_ms() > min_airbrake_ms &&
             (aspeed < aspeed_threshold ||
+             fabsf(degrees(closing_vel.angle(desired_closing_vel))) > 60 ||
              closing_speed > MAX(desired_closing_speed*1.2, desired_closing_speed+2) ||
              labs(plane.ahrs.roll_sensor - plane.nav_roll_cd) > attitude_error_threshold_cd ||
              labs(plane.ahrs.pitch_sensor - plane.nav_pitch_cd) > attitude_error_threshold_cd)) {
