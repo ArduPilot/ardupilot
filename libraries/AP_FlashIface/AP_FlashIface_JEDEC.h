@@ -54,6 +54,11 @@ public:
         return _desc.page_size;
     }
 
+    uint32_t get_page_addr(uint32_t page) const override {
+        if (page > _desc.page_count) return 0;
+        return 0x90000000 + page * _desc.page_size * 1024;
+    }
+
     /**
      * @details Gets number pages, each page can written in one go
      *

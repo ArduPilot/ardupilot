@@ -32,6 +32,12 @@
 extern const AP_HAL::HAL& hal;
 #endif
 
+AP_FlashIface *AP_FlashIface::_singleton = nullptr;
+
+#ifndef HAL_BOOTLOADER_BUILD
+AP_FlashIface_JEDEC ext_flash;
+#endif
+
 struct supported_device {
     const char* name;
     uint8_t manufacturer_id;
