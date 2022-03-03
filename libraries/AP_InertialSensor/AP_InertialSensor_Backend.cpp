@@ -126,11 +126,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     }
 
     // rotate to body frame
-    if (_imu._board_orientation == ROTATION_CUSTOM && _imu._custom_rotation) {
-        accel = *_imu._custom_rotation * accel;
-    } else {
-        accel.rotate(_imu._board_orientation);
-    }
+    accel.rotate(_imu._board_orientation);
 }
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
@@ -155,11 +151,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
         gyro -= _imu._gyro_offset[instance];
     }
 
-    if (_imu._board_orientation == ROTATION_CUSTOM && _imu._custom_rotation) {
-        gyro = *_imu._custom_rotation * gyro;
-    } else {
-        gyro.rotate(_imu._board_orientation);
-    }
+    gyro.rotate(_imu._board_orientation);
 }
 
 /*

@@ -66,6 +66,9 @@ public:
 
     // parameter_check - returns true if helicopter specific parameters are sensible, used for pre-arm check
     virtual bool parameter_check(bool display_msg) const;
+	
+    //set turbine start flag on to initiaize starting sequence
+    void set_turb_start(bool turb_start) { _heliflags.start_engine = turb_start; }
 
     // has_flybar - returns true if we have a mechical flybar
     virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
@@ -222,6 +225,9 @@ protected:
 
     const char* _get_frame_string() const override { return "HELI"; }
 
+    // update turbine start flag
+    void update_turbine_start();
+
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
         HOVER_LEARN_DISABLED = 0,
@@ -243,6 +249,7 @@ protected:
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
         uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
+        uint8_t start_engine            : 1;    // true if turbine start RC option is initiated
     } _heliflags;
 
     // parameters

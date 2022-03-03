@@ -1,6 +1,8 @@
 #include "MissionItemProtocol_Fence.h"
 
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
   public function to format mission item as mavlink_mission_item_int_t

@@ -378,7 +378,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
 
     // set circle radius
     if (!is_zero(radius_m)) {
-        copter.circle_nav->set_radius(radius_m * 100.0f);
+        copter.circle_nav->set_radius_cm(radius_m * 100.0f);
     }
 
     // check our distance from edge of circle
@@ -1980,7 +1980,7 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/M_2PI) >= LOWBYTE(cmd.p1);
+    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline
@@ -2034,7 +2034,8 @@ bool ModeAuto::verify_nav_script_time()
 {
     // if done or timeout then return true
     if (nav_scripting.done ||
-        (AP_HAL::millis() - nav_scripting.start_ms) > (nav_scripting.timeout_s * 1000)) {
+        ((nav_scripting.timeout_s > 0) &&
+         (AP_HAL::millis() - nav_scripting.start_ms) > (nav_scripting.timeout_s * 1000))) {
         return true;
     }
     return false;

@@ -689,7 +689,7 @@ void AP_Airspeed::Log_Airspeed()
             offset        : get_offset(i),
             use           : use(i),
             healthy       : healthy(i),
-            health_prob   : get_health_failure_probability(i),
+            health_prob   : get_health_probability(i),
             primary       : get_primary()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));

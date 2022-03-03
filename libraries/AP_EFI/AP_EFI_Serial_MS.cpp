@@ -17,6 +17,7 @@
 #include "AP_EFI_Serial_MS.h"
 
 #if HAL_EFI_ENABLED
+#include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;

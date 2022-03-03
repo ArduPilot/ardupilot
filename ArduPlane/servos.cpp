@@ -561,7 +561,7 @@ void Plane::set_servos_controlled(void)
                control_mode == &mode_fbwa ||
                control_mode == &mode_autotune) {
         // a manual throttle mode
-        if (failsafe.throttle_counter) {
+        if (!rc().has_valid_input()) {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
         } else if (g.throttle_passthru_stabilize) {
             // manual pass through of throttle while in FBWA or
@@ -615,7 +615,7 @@ void Plane::set_servos_flaps(void)
     int8_t manual_flap_percent = 0;
 
     // work out any manual flap input
-    if (channel_flap != nullptr && !failsafe.rc_failsafe && failsafe.throttle_counter == 0) {
+    if (channel_flap != nullptr && rc().has_valid_input()) {
         manual_flap_percent = channel_flap->percent_input();
     }
 

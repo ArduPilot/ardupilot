@@ -1,8 +1,5 @@
 #pragma once
 
-#include <SITL/SITL.h>
-#include <GCS_MAVLink/GCS.h>
-
 /*
  This is a 'mock' implementation of an INS that does nothing and gives a level HUD, but does it successfully.   
  Its useful for boards that don't have any form of IMU accel/gyro etc connected just yet, but where u want to boot-up "successfully" anyway, 

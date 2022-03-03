@@ -83,11 +83,11 @@ TEST(VectorTest, Rotations)
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    TEST_ROTATION(ROTATION_CUSTOM, 1, 1, 1);
+    TEST_ROTATION(ROTATION_CUSTOM_OLD, 1, 1, 1);
     TEST_ROTATION(ROTATION_MAX, 1, 1, 1);
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     Vector3F v {1, 1, 1};
-    EXPECT_EXIT(v.rotate(ROTATION_CUSTOM), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::flow_of_ctrl");
+    EXPECT_EXIT(v.rotate(ROTATION_CUSTOM_OLD), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
     EXPECT_EXIT(v.rotate(ROTATION_MAX), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
 #endif
 }

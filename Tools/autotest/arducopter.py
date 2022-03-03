@@ -3242,6 +3242,87 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+        self.progress("Test mavlink triggering")
+        self.takeoff(20)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                     mavutil.mavlink.PARACHUTE_DISABLE, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        ok = False
+        try:
+            self.wait_statustext('BANG', timeout=2)
+        except AutoTestTimeoutException:
+            ok = True
+        if not ok:
+            raise NotAchievedException("Disabled parachute fired")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                     mavutil.mavlink.PARACHUTE_ENABLE, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        ok = False
+        try:
+            self.wait_statustext('BANG', timeout=2)
+        except AutoTestTimeoutException:
+            ok = True
+        if not ok:
+            raise NotAchievedException("Enabled parachute fired")
+
+        self.set_rc(9, 1000)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        # parachute should not fire if you go from disabled to release:
+        self.takeoff(20)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                     mavutil.mavlink.PARACHUTE_RELEASE,
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        ok = False
+        try:
+            self.wait_statustext('BANG', timeout=2)
+        except AutoTestTimeoutException:
+            ok = True
+        if not ok:
+            raise NotAchievedException("Parachute fired when going straight from disabled to release")
+
+        # now enable then release parachute:
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                     mavutil.mavlink.PARACHUTE_ENABLE, # param1
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+                     mavutil.mavlink.PARACHUTE_RELEASE,
+                     0, # param2
+                     0, # param3
+                     0, # param4
+                     0, # param5
+                     0, # param6
+                     0 # param7
+                     )
+        self.wait_statustext('BANG! Parachute deployed', timeout=2)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
         self.context_push()
         self.progress("Crashing with 3pos switch in enable position")
         self.takeoff(40)
@@ -3250,7 +3331,7 @@ class AutoTestCopter(AutoTest):
             "SIM_ENGINE_MUL": 0,
             "SIM_ENGINE_FAIL": 1,
         })
-        self.wait_statustext('BANG', timeout=60)
+        self.wait_statustext('BANG! Parachute deployed', timeout=60)
         self.set_rc(9, 1000)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()

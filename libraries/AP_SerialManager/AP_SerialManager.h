@@ -38,6 +38,19 @@
 #define SERIALMANAGER_NUM_PORTS 8
 #endif
 
+/*
+  array size for state[]. This needs to be at least
+  SERIALMANAGER_NUM_PORTS, but we want it to be the same length on
+  similar boards to get the ccache efficiency up. This wastes a small
+  amount of memory, but makes a huge difference to the build times
+ */
+#if SERIALMANAGER_NUM_PORTS > 10 || SERIALMANAGER_NUM_PORTS < 5
+#define SERIALMANAGER_MAX_PORTS SERIALMANAGER_NUM_PORTS
+#else
+#define SERIALMANAGER_MAX_PORTS 10
+#endif
+
+
  // console default baud rates and buffer sizes
 #ifdef HAL_SERIAL0_BAUD_DEFAULT
 # define AP_SERIALMANAGER_CONSOLE_BAUD          HAL_SERIAL0_BAUD_DEFAULT
@@ -156,6 +169,7 @@ public:
         SerialProtocol_AIS = 40,
         SerialProtocol_CoDevESC = 41,
         SerialProtocol_MSP_DisplayPort = 42,
+        SerialProtocol_MAVLinkHL = 43,
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -223,12 +237,13 @@ public:
 private:
     static AP_SerialManager *_singleton;
 
-    // array of uart info
+    // array of uart info. See comment above about
+    // SERIALMANAGER_MAX_PORTS
     struct UARTState {
-        AP_Int8 protocol;
         AP_Int32 baud;
         AP_Int16 options;
-    } state[SERIALMANAGER_NUM_PORTS];
+        AP_Int8 protocol;
+    } state[SERIALMANAGER_MAX_PORTS];
 
     // pass-through serial support
     AP_Int8 passthru_port1;

@@ -2100,6 +2100,7 @@ class AutoTest(ABC):
         return ret
 
     def all_log_format_ids(self):
+        '''parse C++ code to extract definitions of log messages'''
         structure_files = self.find_LogStructureFiles()
         structure_lines = []
         for f in structure_files:
@@ -2155,7 +2156,16 @@ class AutoTest(ABC):
                 if linestate == linestate_within:
                     m = re.match("(.*)}", line)
                     if m is None:
-                        raise NotAchievedException("Bad closing line (%s)" % line)
+                        line = line.rstrip()
+                        newline = re.sub(r"\\$", "", line)
+                        if newline == line:
+                            raise NotAchievedException("Expected backslash at end of line")
+                        line = newline
+                        line = line.rstrip()
+                        # cpp-style string concatenation:
+                        line = re.sub(r'"\s*"', '', line)
+                        partial_line += line
+                        continue
                     message_infos.append(partial_line + m.group(1))
                     linestate = linestate_none
                     continue
@@ -2214,7 +2224,16 @@ class AutoTest(ABC):
                 if linestate == linestate_within:
                     m = re.match("(.*)}", line)
                     if m is None:
-                        raise NotAchievedException("Bad closing line (%s)" % line)
+                        line = line.rstrip()
+                        newline = re.sub(r"\\$", "", line)
+                        if newline == line:
+                            raise NotAchievedException("Expected backslash at end of line")
+                        line = newline
+                        line = line.rstrip()
+                        # cpp-style string concatenation:
+                        line = re.sub(r'"\s*"', '', line)
+                        partial_line += line
+                        continue
                     message_infos.append(partial_line + m.group(1))
                     linestate = linestate_none
                     continue
@@ -2398,6 +2417,10 @@ class AutoTest(ABC):
                 continue
             for label in docco_ids[name]["labels"]:
                 if label not in code_ids[name]["labels"].split(","):
+                    # "name" was found in the XML, so was found in an
+                    # @LoggerMessage markup line, but was *NOT* found
+                    # in our bodgy parsing of the C++ code (in a
+                    # Log_Write call or in the static structures
                     raise NotAchievedException("documented field %s.%s not found in code" %
                                                (name, label))
         if len(missing) > 0:
@@ -5799,6 +5822,21 @@ class AutoTest(ABC):
             if comparator(m_value, value):
                 return m_value
 
+    def assert_servo_channel_value(self, channel, value, comparator=operator.eq):
+        """assert channel value (default condition is equality)"""
+        channel_field = "servo%u_raw" % channel
+        opstring = ("%s" % comparator)[-3:-1]
+        m = self.assert_receive_message('SERVO_OUTPUT_RAW', timeout=1)
+        m_value = getattr(m, channel_field, None)
+        if m_value is None:
+            raise ValueError("message (%s) has no field %s" %
+                             (str(m), channel_field))
+        self.progress("assert SERVO_OUTPUT_RAW.%s=%u %s %u" %
+                      (channel_field, m_value, opstring, value))
+        if comparator(m_value, value):
+            return m_value
+        raise NotAchievedException("Wrong value")
+
     def get_rc_channel_value(self, channel, timeout=2):
         """wait for channel to hit value"""
         channel_field = "chan%u_raw" % channel
@@ -5830,6 +5868,16 @@ class AutoTest(ABC):
                           (channel_field, m_value, value))
             if value == m_value:
                 return
+
+    def assert_rc_channel_value(self, channel, value):
+        channel_field = "chan%u_raw" % channel
+
+        m_value = self.get_rc_channel_value(channel, timeout=1)
+        self.progress("RC_CHANNELS.%s=%u want=%u" %
+                      (channel_field, m_value, value))
+        if value != m_value:
+            raise NotAchievedException("Expected %s to be %u got %u" %
+                                       (channel, value, m_value))
 
     def wait_location(self,
                       loc,
@@ -9912,7 +9960,7 @@ switch value'''
             self.drain_mav()
 
             self.progress("Checking results")
-            accuracy_pct = 0.2
+            accuracy_pct = 0.5
             for (ins_prefix, sim_prefix, pre_value, post_value) in param_map:
                 for axis in axes:
                     pname = ins_prefix+"_"+axis
@@ -11443,7 +11491,7 @@ switch value'''
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp list\n")
             some_directory = None
-            for entry in sorted(os.listdir()):
+            for entry in sorted(os.listdir(".")):
                 if os.path.isdir(entry):
                     some_directory = entry
                     break

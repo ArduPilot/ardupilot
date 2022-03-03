@@ -22,6 +22,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_RTC/AP_RTC.h>
 #include <climits>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 #include "AP_GPS_NOVA.h"
 #include "AP_GPS_ERB.h"

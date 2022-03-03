@@ -52,7 +52,7 @@ void ModeCircle::run()
         const float radius_new = MAX(radius_current + radius_pilot_change,0);   // new radius target
 
         if (!is_equal(radius_current, radius_new)) {
-            copter.circle_nav->set_radius(radius_new);
+            copter.circle_nav->set_radius_cm(radius_new);
         }
 
         // update the orbicular rate target based on pilot roll stick inputs
