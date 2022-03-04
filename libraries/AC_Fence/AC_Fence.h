@@ -6,6 +6,12 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
 
+#ifndef AC_FENCE
+#define AC_FENCE 1
+#endif
+
+#if AC_FENCE
+
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
 #define AC_FENCE_TYPE_CIRCLE                        2       // circular horizontal fence (usually initiates an RTL)
@@ -224,3 +230,5 @@ private:
 namespace AP {
     AC_Fence *fence();
 };
+
+#endif // AC_FENCE
