@@ -543,12 +543,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-#if AC_FENCE == ENABLED
-    // @Group: FENCE_
-    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
-    GOBJECT(fence,      "FENCE_",   AC_Fence),
-#endif
-
 #if AVOIDANCE_ENABLED == ENABLED
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
@@ -742,6 +736,11 @@ void Sub::load_parameters()
     AP_Param::convert_class(info.old_key, &airspeed, airspeed.var_info, old_index, old_top_element, false);
 #endif
 
+
+    // PARAMETER_CONVERSION - Added: Mar-2022
+#if AP_FENCE_ENABLED
+    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, 0, true);
+#endif
 }
 
 void Sub::convert_old_parameters()
