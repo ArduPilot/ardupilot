@@ -236,8 +236,10 @@ bool AP_Filesystem_Mission::get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, 
         }
         return mission->get_item(idx, item);
     }
+#if AC_FENCE
     case MAV_MISSION_TYPE_FENCE:
         return MissionItemProtocol_Fence::get_item_as_mission_item(idx, item);
+#endif
 
     case MAV_MISSION_TYPE_RALLY:
         return MissionItemProtocol_Rally::get_item_as_mission_item(idx, item);
@@ -261,11 +263,15 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
     }
         
     case MAV_MISSION_TYPE_FENCE: {
+#if AC_FENCE
         auto *fence = AP::fence();
         if (fence == nullptr) {
             return 0;
         }
         return fence->polyfence().num_stored_items();
+#else
+        return 0;
+#endif
     }
 
     case MAV_MISSION_TYPE_RALLY: {
