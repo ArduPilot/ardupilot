@@ -185,7 +185,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     Parameters &g = rover.g;
     ParametersG2 &g2 = rover.g2;
 
-    const AP_Logger::PID_Info *pid_info;
+    const AP_PIDInfo *pid_info;
 
     // steering PID
     if (g.gcs_pid_mask & 1) {
