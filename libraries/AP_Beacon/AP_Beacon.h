@@ -104,6 +104,9 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    // a method for vehicles to call to make onboard log messages:
+    void log();
+
 private:
 
     static AP_Beacon *_singleton;
