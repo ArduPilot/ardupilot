@@ -25,6 +25,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AC_Fence/AC_Fence.h>
 
 #include "ap_message.h"
 
@@ -1063,7 +1064,9 @@ public:
 
     static class MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
     static class MissionItemProtocol_Rally *_missionitemprotocol_rally;
+#if AC_FENCE
     static class MissionItemProtocol_Fence *_missionitemprotocol_fence;
+#endif
     class MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
     void try_send_queued_message_for_type(MAV_MISSION_TYPE type) const;
 
