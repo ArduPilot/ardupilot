@@ -21,6 +21,12 @@
 
 #if AP_AIS_ENABLED
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#define AP_AIS_DUMMY_METHODS_ENABLED ((AP_AIS_ENABLED == 2) && !APM_BUILD_TYPE(APM_BUILD_Rover))
+
+#if !AP_AIS_DUMMY_METHODS_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
@@ -69,6 +75,12 @@ AP_AIS::AP_AIS()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// return true if AIS is enabled
+bool AP_AIS::enabled() const
+{ 
+    return AISType(_type.get()) != AISType::NONE;
 }
 
 // Initialize the AIS object and prepare it for use
@@ -808,6 +820,30 @@ bool AP_AIS::decode_latest_term()
     }
     return false;
 }
+
+// get singleton instance
+AP_AIS *AP_AIS::get_singleton() {
+    return _singleton;
+}
+
+#else
+// Dummy methods are required to allow functionality to be enabled for Rover.
+// It is not posible to compile in or out the full code based on vehicle type due to limitations
+// of the handling of `APM_BUILD_TYPE` define.
+// These dummy methods minimise flash cost in that case.
+
+const AP_Param::GroupInfo AP_AIS::var_info[] = { AP_GROUPEND };
+AP_AIS::AP_AIS() {};
+
+bool AP_AIS::enabled() const { return false; }
+
+void AP_AIS::init() {};
+void AP_AIS::update() {};
+void AP_AIS::send(mavlink_channel_t chan) {};
+
+AP_AIS *AP_AIS::get_singleton() { return nullptr; }
+
+#endif // AP_AIS_DUMMY_METHODS_ENABLED
 
 AP_AIS *AP_AIS::_singleton;
 
