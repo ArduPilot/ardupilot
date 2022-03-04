@@ -1,4 +1,11 @@
 #include "AC_PolyFence_loader.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef AC_FENCE_DUMMY_METHODS_ENABLED
+#define AC_FENCE_DUMMY_METHODS_ENABLED  !(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub))
+#endif
+
+#if !AC_FENCE_DUMMY_METHODS_ENABLED
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <GCS_MAVLink/GCS.h>
@@ -1662,3 +1669,32 @@ void AC_PolyFence_loader::update()
         return;
     }
 }
+
+#else  // build type is not appropriate; provide a dummy implementation:
+
+void AC_PolyFence_loader::init() {};
+
+bool AC_PolyFence_loader::get_item(const uint16_t seq, AC_PolyFenceItem &item) { return false; }
+
+Vector2f* AC_PolyFence_loader::get_exclusion_polygon(uint16_t index, uint16_t &num_points) const { return nullptr; }
+Vector2f* AC_PolyFence_loader::get_inclusion_polygon(uint16_t index, uint16_t &num_points) const { return nullptr; }
+
+bool AC_PolyFence_loader::get_exclusion_circle(uint8_t index, Vector2f &center_pos_cm, float &radius) const { return false; }
+bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_pos_cm, float &radius) const { return false; }
+
+void AC_PolyFence_loader::handle_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) {};
+
+bool AC_PolyFence_loader::breached() const { return false; }
+bool AC_PolyFence_loader::breached(const Location& loc) const { return false; }
+
+uint16_t AC_PolyFence_loader::max_items() const { return 0; }
+
+bool AC_PolyFence_loader::write_fence(const AC_PolyFenceItem *new_items, uint16_t count) { return false; }
+
+void AC_PolyFence_loader::update() {};
+
+#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
+bool AC_PolyFence_loader::get_return_point(Vector2l &ret) { return false; }
+#endif
+
+#endif // #if AC_FENCE_DUMMY_METHODS_ENABLED
