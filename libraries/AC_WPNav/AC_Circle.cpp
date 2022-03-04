@@ -3,6 +3,8 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include "AC_Circle.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AC_Circle::var_info[] = {
