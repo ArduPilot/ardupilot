@@ -19,6 +19,8 @@
 
 #include "AC_AutoTune_Heli.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 #define AUTOTUNE_TESTING_STEP_TIMEOUT_MS   5000U     // timeout for tuning mode's testing step
 
 #define AUTOTUNE_RD_STEP                  0.0005f     // minimum increment when increasing/decreasing Rate D term
