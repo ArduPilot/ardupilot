@@ -478,10 +478,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 16, ParametersG2, frame_class, 1),
 
-    // @Group: FENCE_
-    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
-    AP_SUBGROUPINFO(fence, "FENCE_", 17, ParametersG2, AC_Fence),
-
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
     // @Path: ../libraries/AP_Proximity/AP_Proximity.cpp
@@ -847,7 +843,7 @@ void Rover::load_parameters(void)
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 
-#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED
+#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AC_FENCE
     // Find G2's Top Level Key
     AP_Param::ConversionInfo info;
     if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
@@ -865,5 +861,10 @@ void Rover::load_parameters(void)
 // PARAMETER_CONVERSION - Added: MAR-2022
 #if AP_AIS_ENABLED
     AP_Param::convert_class(info.old_key, &ais, ais.var_info, 50, 114, false);
+#endif
+
+// PARAMETER_CONVERSION - Added: Mar-2022
+#if AC_FENCE
+    AP_Param::convert_class(info.old_key, &fence, fence.var_info, 17, 4049, false);
 #endif
 }
