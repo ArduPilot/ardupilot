@@ -26,6 +26,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
@@ -448,13 +449,13 @@ bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
     return true;
 }
 
-const AP_Logger::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
+const AP_PIDInfo& AP_Landing_Deepstall::get_pid_info(void) const
 {
     return ds_PID.get_pid_info();
 }
 
 void AP_Landing_Deepstall::Log(void) const {
-    const AP_Logger::PID_Info& pid_info = ds_PID.get_pid_info();
+    const AP_PIDInfo& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
         time_us          : AP_HAL::micros64(),

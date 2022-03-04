@@ -408,7 +408,7 @@ bool AP_Landing::override_servos(void) {
 
 // returns a PID_Info object if there is one available for the selected landing
 // type, otherwise returns a nullptr, indicating no data to be logged/sent
-const AP_Logger::PID_Info* AP_Landing::get_pid_info(void) const
+const AP_PIDInfo* AP_Landing::get_pid_info(void) const
 {
     switch (type) {
 #if HAL_LANDING_DEEPSTALL_ENABLED
