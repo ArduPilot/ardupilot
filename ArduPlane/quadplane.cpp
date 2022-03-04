@@ -2697,6 +2697,13 @@ void QuadPlane::takeoff_controller(void)
     if (!hal.util->get_soft_armed()) {
         return;
     }
+
+    if (plane.control_mode == &plane.mode_guided && guided_takeoff
+        && tiltrotor.enabled() && !tiltrotor.fully_up()) {
+        // waiting for motors to tilt up
+        return;
+    }
+
     /*
       for takeoff we use the position controller
     */
@@ -2724,7 +2731,7 @@ void QuadPlane::takeoff_controller(void)
                                                                   get_pilot_input_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
 
     float vel_z = wp_nav->get_default_speed_up();
-    if (guided_takeoff) {
+    if (plane.control_mode == &plane.mode_guided && guided_takeoff) {
         // for guided takeoff we aim for a specific height with zero
         // velocity at that height
         Location origin;

@@ -480,6 +480,17 @@ bool Tiltrotor::fully_fwd(void) const
 }
 
 /*
+  return true if the rotors are fully tilted up
+ */
+bool Tiltrotor::fully_up(void) const
+{
+    if (!enabled() || (tilt_mask == 0)) {
+        return false;
+    }
+    return (current_tilt <= 0);
+}
+
+/*
   control vectoring for tilt multicopters
  */
 void Tiltrotor::vectoring(void)
