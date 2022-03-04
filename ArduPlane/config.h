@@ -233,11 +233,6 @@
  # define SCALING_SPEED          15.0
 #endif
 
-// use this to disable geo-fencing
-#ifndef AC_FENCE
- # define AC_FENCE ENABLED
-#endif
-
 // a digital pin to set high when the geo-fence triggers. Defaults
 // to -1, which means don't activate a pin
 #ifndef FENCE_TRIGGERED_PIN

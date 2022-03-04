@@ -350,7 +350,7 @@ public:
         k_param_gcs4,          // stream rates
         k_param_gcs5,          // stream rates
         k_param_gcs6,          // stream rates
-        k_param_fence,         // vehicle fence
+        k_param_fence,         // vehicle fence - unused
         k_param_acro_yaw_rate,
     };
 

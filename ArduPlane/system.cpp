@@ -147,11 +147,6 @@ void Plane::init_ardupilot()
 #if GRIPPER_ENABLED == ENABLED
     g2.gripper.init();
 #endif
-
-    // init fence
-#if AC_FENCE == ENABLED
-    fence.init();
-#endif
 }
 
 //********************************************************************************
