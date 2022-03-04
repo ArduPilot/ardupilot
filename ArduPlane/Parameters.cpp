@@ -950,12 +950,6 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Rally/AP_Rally.cpp
     GOBJECT(rally,  "RALLY_",       AP_Rally),
 
-#if AC_FENCE == ENABLED
-    // @Group: FENCE_
-    // @Path: ../libraries/AC_Fence/AC_Fence.cpp
-    GOBJECT(fence, "FENCE_",        AC_Fence),
-#endif
-
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -1391,6 +1385,7 @@ void Plane::load_parameters(void)
         }
     }
 
+#if AC_FENCE
     enum ap_var_type ptype_fence_type;
     AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
     if (fence_type_new && !fence_type_new->configured()) {
@@ -1475,6 +1470,7 @@ void Plane::load_parameters(void)
             }
         }
     }
+#endif // AC_FENCE
 
 #if AP_TERRAIN_AVAILABLE
     g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
@@ -1526,5 +1522,10 @@ void Plane::load_parameters(void)
     }
 #endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
     
+    // PARAMETER_CONVERSION - Added: Mar-2022
+#if AC_FENCE
+    AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, 0, true);
+#endif
+
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

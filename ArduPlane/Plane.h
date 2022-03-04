@@ -97,10 +97,6 @@
 #include "afs_plane.h"
 #endif
 
-#if AC_FENCE == ENABLED
-#include <AC_Fence/AC_Fence.h>
-#endif
-
 // Local modules
 #include "defines.h"
 #include "mode.h"
@@ -252,10 +248,6 @@ private:
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
-#endif
-
-#if AC_FENCE == ENABLED
-    AC_Fence fence;
 #endif
 
     ModeCircle mode_circle;
