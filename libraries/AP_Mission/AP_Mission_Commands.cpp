@@ -7,6 +7,7 @@
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <RC_Channel/RC_Channel.h>
 
 bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command& cmd)
 {
