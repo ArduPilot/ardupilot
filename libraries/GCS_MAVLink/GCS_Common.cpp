@@ -561,8 +561,10 @@ MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE missi
         return _missionitemprotocol_waypoints;
     case MAV_MISSION_TYPE_RALLY:
         return _missionitemprotocol_rally;
+#if AC_FENCE
     case MAV_MISSION_TYPE_FENCE:
         return _missionitemprotocol_fence;
+#endif
     default:
         return nullptr;
     }
@@ -2194,7 +2196,7 @@ void GCS::send_message(enum ap_message id)
 void GCS::update_send()
 {
     update_send_has_been_called = true;
-#ifndef HAL_BUILD_AP_PERIPH
+#if !defined(HAL_BUILD_AP_PERIPH) && AC_FENCE
     if (!initialised_missionitemprotocol_objects) {
         initialised_missionitemprotocol_objects = true;
         // once-only initialisation of MissionItemProtocol objects:
@@ -6149,9 +6151,11 @@ uint64_t GCS_MAVLINK::capabilities() const
     }
 #endif
 
+#if AC_FENCE
     if (AP::fence()) {
         ret |= MAV_PROTOCOL_CAPABILITY_MISSION_FENCE;
     }
+#endif
 
     if (!AP_BoardConfig::ftp_disabled()){  //if ftp disable board option is not set
         ret |= MAV_PROTOCOL_CAPABILITY_FTP;
