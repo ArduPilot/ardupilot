@@ -540,7 +540,7 @@ void Copter::ten_hz_logging_loop()
         g2.proximity.log();  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
-        logger.Write_Beacon(g2.beacon);
+        g2.beacon.log();
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
