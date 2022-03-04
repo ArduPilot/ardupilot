@@ -48,6 +48,7 @@
 #define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED
 #endif
 
+#include <AC_PID/AC_PID.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_DCM.h>
@@ -326,21 +327,7 @@ public:
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    // This structure provides information on the internal member data of a PID for logging purposes
-    struct PID_Info {
-        float target;
-        float actual;
-        float error;
-        float P;
-        float I;
-        float D;
-        float FF;
-        float Dmod;
-        float slew_rate;
-        bool  limit;
-    };
-
-    void Write_PID(uint8_t msg_type, const PID_Info &info);
+    void Write_PID(uint8_t msg_type, const AP_PIDInfo &info);
 
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;

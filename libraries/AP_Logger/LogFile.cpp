@@ -407,7 +407,7 @@ void AP_Logger::Write_ServoStatus(uint64_t time_us, uint8_t id, float position, 
 
 
 // Write a Yaw PID packet
-void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
+void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {
     const struct log_PID pkt{
         LOG_PACKET_HEADER_INIT(msg_type),
