@@ -4,8 +4,10 @@
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OSD/AP_OSD.h>
+#include <SRV_Channel/SRV_Channel.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/sdcard.h>
 #endif
