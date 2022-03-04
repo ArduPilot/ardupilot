@@ -1,5 +1,7 @@
 #include "AC_AutoTune_Multi.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 /*
  * autotune support for multicopters
  *
