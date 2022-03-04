@@ -7,13 +7,14 @@
 #include <AP_Param/AP_Param.h>
 #include <stdlib.h>
 #include <cmath>
-#include <AP_Logger/AP_Logger.h>
 #include <Filter/SlewLimiter.h>
 
 #define AC_PID_TFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_EFILT_HZ_DEFAULT  0.0f   // default input filter frequency
 #define AC_PID_DFILT_HZ_DEFAULT  20.0f   // default input filter frequency
 #define AC_PID_RESET_TC          0.16f   // Time constant for integrator reset decay to zero
+
+#include "AP_PIDInfo.h"
 
 /// @class	AC_PID
 /// @brief	Copter PID control class
@@ -116,7 +117,7 @@ public:
     // return current slew rate of slew limiter. Will return 0 if SMAX is zero
     float get_slew_rate(void) const { return _slew_limiter.get_slew_rate(); }
 
-    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -155,5 +156,5 @@ protected:
     float _derivative;        // derivative value to enable filtering
     int8_t _slew_limit_scale;
 
-    AP_Logger::PID_Info _pid_info;
+    AP_PIDInfo _pid_info;
 };
