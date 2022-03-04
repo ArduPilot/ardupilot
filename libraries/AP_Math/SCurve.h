@@ -81,14 +81,15 @@ public:
     void set_destination_speed_max(float speed);
 
     // move target location along path from origin to destination
-    // prev_leg and next_leg are the paths before and after this path
-    // wp_radius is max distance from the waypoint at the apex of the turn
-    // fast_waypoint should be true if vehicle will not stop at end of this leg
-    // dt is the time increment the vehicle will move along the path
-    // target_pos should be set to this segment's origin and it will be updated to the current position target
-    // target_vel and target_accel are updated with new targets
-    // returns true if vehicle has passed the apex of the corner
-    bool advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel) WARN_IF_UNUSED;
+    // prev_leg and next_leg - the paths before and after this path
+    // wp_radius - max distance from the waypoint at the apex of the turn
+    // accel_corner - max acceleration that the aircraft may use during the corner
+    // fast_waypoint - true if vehicle will not stop at end of this leg
+    // dt - the time increment the vehicle will move along the path
+    // target_pos - set to this segment's origin and it will be updated to the current position target
+    // target_vel and target_accel - updated with new targets
+    // advance_target_along_track returns true if vehicle has passed the apex of the corner
+    bool advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel) WARN_IF_UNUSED;
 
     // time has reached the end of the sequence
     bool finished() const WARN_IF_UNUSED;
@@ -127,6 +128,12 @@ private:
 
     // return true if the sequence is braking to a stop
     bool braking() const WARN_IF_UNUSED;
+
+    // return time offset used to initiate the turn onto leg
+    float time_turn_in() const WARN_IF_UNUSED;
+
+    // return time offset used to initiate the turn from leg
+    float time_turn_out() const WARN_IF_UNUSED;
 
     // increment the internal time
     void advance_time(float dt);
