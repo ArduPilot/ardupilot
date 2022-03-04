@@ -2,7 +2,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AC_PID/AC_PID.h>
 #include "AP_AutoTune.h"
 
@@ -36,7 +35,7 @@ public:
         _pid_info.I *= 0.995f;
     }
 
-    const AP_Logger::PID_Info& get_pid_info(void) const
+    const AP_PIDInfo& get_pid_info(void) const
     {
         return _pid_info;
     }
@@ -69,5 +68,5 @@ private:
     AP_AutoTune *autotune;
     bool failed_autotune_alloc;
     
-    AP_Logger::PID_Info _pid_info;
+    AP_PIDInfo _pid_info;
 };

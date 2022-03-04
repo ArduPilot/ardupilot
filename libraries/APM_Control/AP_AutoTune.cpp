@@ -163,7 +163,7 @@ const char *AP_AutoTune::axis_string(void) const
 /*
   one update cycle of the autotuner
  */
-void AP_AutoTune::update(AP_Logger::PID_Info &pinfo, float scaler, float angle_err_deg)
+void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
 {
     if (!running) {
         return;
