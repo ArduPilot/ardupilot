@@ -2,6 +2,14 @@
 
 #if AC_FENCE
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef AC_FENCE_DUMMY_METHODS_ENABLED
+#define AC_FENCE_DUMMY_METHODS_ENABLED  !(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub))
+#endif
+
+#if !AC_FENCE_DUMMY_METHODS_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -694,6 +702,46 @@ const AC_PolyFence_loader &AC_Fence::polyfence() const
 {
     return _poly_loader;
 }
+
+
+#else  // build type is not appropriate; provide a dummy implementation:
+const AP_Param::GroupInfo AC_Fence::var_info[] = { AP_GROUPEND };
+
+AC_Fence::AC_Fence() {};
+
+void AC_Fence::enable(bool value) {};
+
+void AC_Fence::disable_floor() {};
+
+void AC_Fence::auto_enable_fence_after_takeoff() {};
+void AC_Fence::auto_disable_fence_for_landing() {};
+
+bool AC_Fence::present() const { return false; }
+
+uint8_t AC_Fence::get_enabled_fences() const { return 0; }
+
+bool AC_Fence::pre_arm_check(const char* &fail_msg) const  { return true; }
+
+uint8_t AC_Fence::check() { return 0; }
+bool AC_Fence::check_destination_within_fence(const Location& loc) { return true; }
+float AC_Fence::get_breach_distance(uint8_t fence_type) const { return 0.0; }
+
+void AC_Fence::manual_recovery_start() {}
+
+bool AC_Fence::sys_status_present() const { return false; }
+bool AC_Fence::sys_status_enabled() const { return false; }
+bool AC_Fence::sys_status_failed() const { return false; }
+
+AC_PolyFence_loader &AC_Fence::polyfence()
+{
+    return _poly_loader;
+}
+const AC_PolyFence_loader &AC_Fence::polyfence() const
+{
+    return _poly_loader;
+}
+
+#endif // #if AC_FENCE_DUMMY_METHODS_ENABLED
 
 // singleton instance
 AC_Fence *AC_Fence::_singleton;
