@@ -24,10 +24,6 @@ void Sub::init_ardupilot()
     g2.gripper.init();
 #endif
 
-#if AC_FENCE == ENABLED
-    fence.init();
-#endif
-
     // initialise notify system
     notify.init();
 

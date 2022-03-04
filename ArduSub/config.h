@@ -230,11 +230,6 @@
     MASK_LOG_MOTBATT
 #endif
 
-// Enable/disable Fence
-#ifndef AC_FENCE
-#define AC_FENCE ENABLED
-#endif
-
 #ifndef AC_RALLY
 #define AC_RALLY   DISABLED
 #endif
