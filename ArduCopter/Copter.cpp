@@ -537,7 +537,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
 #if HAL_PROXIMITY_ENABLED
-        logger.Write_Proximity(g2.proximity);  // Write proximity sensor distances
+        g2.proximity.log();  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
         logger.Write_Beacon(g2.beacon);
