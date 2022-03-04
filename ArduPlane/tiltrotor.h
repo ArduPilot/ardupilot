@@ -49,6 +49,7 @@ public:
     }
 
     bool fully_fwd() const;
+    bool fully_up() const;
     float tilt_max_change(bool up, bool in_flap_range = false) const;
     float get_fully_forward_tilt() const;
     float get_forward_flight_tilt() const;
