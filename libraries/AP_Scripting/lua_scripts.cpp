@@ -16,6 +16,7 @@
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Scripting.h"
+#include <AP_Logger/AP_Logger.h>
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
