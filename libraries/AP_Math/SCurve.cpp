@@ -26,9 +26,11 @@ extern const AP_HAL::HAL &hal;
 
 #define SEG_INIT                0
 #define SEG_ACCEL_MAX           4
+#define SEG_TURN_IN             4
 #define SEG_ACCEL_END           7
 #define SEG_SPEED_CHANGE_END    14
 #define SEG_CONST               15
+#define SEG_TURN_OUT            15
 #define SEG_DECEL_END           22
 
 // constructor
@@ -264,7 +266,6 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     if (!is_equal(vel_max, segment[SEG_ACCEL_END].end_vel)) {
         // add velocity adjustment
         // check there is enough time to make velocity change
- 
         // we use the approximation that the time will be distance/max_vel and 8 jerk segments
         const float L = segment[SEG_CONST].end_pos - segment[SEG_ACCEL_END].end_pos;
         float Jm = 0;
@@ -481,7 +482,7 @@ void SCurve::set_destination_speed_max(float speed)
 // target_pos should be set to this segment's origin and it will be updated to the current position target
 // target_vel and target_accel are updated with new targets
 // returns true if vehicle has passed the apex of the corner
-bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel)
+bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel)
 {
     prev_leg.move_to_pos_vel_accel(dt, target_pos, target_vel, target_accel);
     move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
@@ -489,16 +490,19 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
 
     // check for change of leg on fast waypoint
     const float time_to_destination = get_time_remaining();
-    if (fast_waypoint && braking() && is_zero(next_leg.get_time_elapsed()) && (time_to_destination <= next_leg.get_accel_finished_time())) {
+    if (fast_waypoint 
+        && is_zero(next_leg.get_time_elapsed()) 
+        && (get_time_elapsed() >= time_turn_out() - next_leg.time_turn_in()) 
+        && (position_sq >= 0.25 * track.length_squared())) {
+
         Vector3f turn_pos = -get_track();
         Vector3f turn_vel, turn_accel;
         move_from_time_pos_vel_accel(get_time_elapsed() + time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         next_leg.move_from_time_pos_vel_accel(time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         const float speed_min = MIN(get_speed_along_track(), next_leg.get_speed_along_track());
-        const float accel_min = MIN(get_accel_along_track(), next_leg.get_accel_along_track());
         if ((get_time_remaining() < next_leg.time_end() * 0.5f) && (turn_pos.length() < wp_radius) &&
              (Vector2f{turn_vel.x, turn_vel.y}.length() < speed_min) &&
-             (Vector2f{turn_accel.x, turn_accel.y}.length() < 2.0f*accel_min)) {
+             (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner)) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
     } else if (!is_zero(next_leg.get_time_elapsed())) {
@@ -559,7 +563,7 @@ void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3f &pos, Vector3
 float SCurve::time_end() const
 {
     if (num_segs != segments_max) {
-        return 0.0f;
+        return 0.0;
     }
     return segment[SEG_DECEL_END].end_time;
 }
@@ -568,7 +572,7 @@ float SCurve::time_end() const
 float SCurve::get_time_remaining() const
 {
     if (num_segs != segments_max) {
-        return 0.0f;
+        return 0.0;
     }
     return segment[SEG_DECEL_END].end_time - time;
 }
@@ -577,7 +581,7 @@ float SCurve::get_time_remaining() const
 float SCurve::get_accel_finished_time() const
 {
     if (num_segs != segments_max) {
-        return 0.0f;
+        return 0.0;
     }
     return segment[SEG_ACCEL_END].end_time;
 }
@@ -589,6 +593,24 @@ bool SCurve::braking() const
         return true;
     }
     return time >= segment[SEG_CONST].end_time;
+}
+
+// return time offset used to initiate the turn onto leg
+float SCurve::time_turn_in() const
+{
+    if (num_segs != segments_max) {
+        return 0.0;
+    }
+    return segment[SEG_TURN_IN].end_time;
+}
+
+// return time offset used to initiate the turn from leg
+float SCurve::time_turn_out() const
+{
+    if (num_segs != segments_max) {
+        return 0.0;
+    }
+    return segment[SEG_TURN_OUT].end_time;
 }
 
 // increment the internal time
