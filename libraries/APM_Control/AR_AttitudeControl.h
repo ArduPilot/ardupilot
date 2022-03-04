@@ -82,7 +82,7 @@ public:
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
-    const AP_Logger::PID_Info& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
+    const AP_PIDInfo& get_throttle_speed_pid_info() const { return _throttle_speed_pid_info; }
 
     // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
     bool get_forward_speed(float &speed) const;
@@ -143,7 +143,7 @@ private:
     uint32_t _stop_last_ms;         // system time the vehicle was at a complete stop
     bool     _throttle_limit_low;   // throttle output was limited from going too low (used to reduce i-term buildup)
     bool     _throttle_limit_high;  // throttle output was limited from going too high (used to reduce i-term buildup)
-    AP_Logger::PID_Info _throttle_speed_pid_info;   // local copy of throttle_speed controller's PID info to allow reporting of unusual FF
+    AP_PIDInfo _throttle_speed_pid_info;   // local copy of throttle_speed controller's PID info to allow reporting of unusual FF
 
     // balancebot pitch control
     uint32_t _balance_last_ms = 0;
