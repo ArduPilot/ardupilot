@@ -749,7 +749,7 @@ bool AP_PiccoloCAN::is_servo_channel_active(uint8_t chan)
     SRV_Channel::Aux_servo_function_t function = SRV_Channels::channel_function(chan);
 
     // Ignore if the servo channel does not have a function assigned
-    if (function == SRV_Channel::k_none) {
+    if (function <= SRV_Channel::k_none) {
         return false;
     }
 
