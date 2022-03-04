@@ -17,10 +17,17 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_AIS_ENABLED
-#define AP_AIS_ENABLED !HAL_MINIMIZE_FEATURES
+#if BOARD_FLASH_SIZE <= 1024
+    #define AP_AIS_ENABLED 0
+#else
+    #define AP_AIS_ENABLED 2
+#endif
 #endif
 
 #if AP_AIS_ENABLED
+// 0 fully disabled and compiled out
+// 1 compiled in and enabled
+// 2 compiled in with dummy methods, none functional, except rover which never uses dummy methods functionality
 
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -34,17 +41,13 @@ class AP_AIS
 public:
     AP_AIS();
 
-    /* Do not allow copies */
-    AP_AIS(const AP_AIS &other) = delete;
-    AP_AIS &operator=(const AP_AIS&) = delete;
+    CLASS_NO_COPY(AP_AIS);
 
     // get singleton instance
-    static AP_AIS *get_singleton() {
-        return _singleton;
-    }
+    static AP_AIS *get_singleton();
 
     // return true if AIS is enabled
-    bool enabled() const { return AISType(_type.get()) != AISType::NONE; }
+    bool enabled() const;
 
     // Initialize the AIS object and prepare it for use
     void init();
