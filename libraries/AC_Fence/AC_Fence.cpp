@@ -1,5 +1,7 @@
 #include "AC_Fence.h"
 
+#if AC_FENCE
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -705,3 +707,5 @@ AC_Fence *fence()
 }
 
 }
+
+#endif // AC_FENCE
