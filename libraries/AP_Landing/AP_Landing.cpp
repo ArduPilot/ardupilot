@@ -267,11 +267,12 @@ bool AP_Landing::verify_abort_landing(const Location &prev_WP_loc, Location &nex
              mission.resume();
          }
          // else we're in AUTO with a stopped mission and handle_auto_mode() will set RTL
-
+#if AC_FENCE
         AC_Fence *fence = AP::fence();
         if (fence) {
             fence->auto_enable_fence_after_takeoff();
         }
+#endif
      }
 
      Log();
