@@ -151,9 +151,6 @@ public:
 
     Type get_type(uint8_t instance) const;
 
-    // true if raw distances should be logged
-    bool get_raw_log_enable() const { return _raw_log_enable; }
-
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -167,6 +164,10 @@ public:
 
     // set alt as read from downward facing rangefinder. Tilt is already adjusted for
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
+
+    // method called by vehicle to have AP_Proximity write onboard log
+    // messages:
+    void log();
 
 private:
     static AP_Proximity *_singleton;
@@ -195,6 +196,7 @@ private:
     AP_Float _min_m;                                   // Proximity minimum range
 
     void detect_instance(uint8_t instance);
+
 };
 
 namespace AP {
