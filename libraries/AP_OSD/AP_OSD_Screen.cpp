@@ -2124,7 +2124,7 @@ void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 }
 #endif
 
-
+#if AC_FENCE
 void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
 {
     AC_Fence *fenceptr = AP::fence();
@@ -2137,6 +2137,7 @@ void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%c", SYMBOL(SYM_FENCE_DISABLED));
     }
 }
+#endif
 
 void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 {
@@ -2200,7 +2201,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
+#if AC_FENCE
     DRAW_SETTING(fence);
+#endif
     DRAW_SETTING(roll_angle);
     DRAW_SETTING(pitch_angle);
     DRAW_SETTING(temp);
