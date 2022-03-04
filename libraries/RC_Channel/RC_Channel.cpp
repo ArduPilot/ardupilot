@@ -36,6 +36,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_LandingGear/AP_LandingGear.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Avoidance/AP_Avoidance.h>
