@@ -44,6 +44,7 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
+#include <AP_RPM/AP_RPM.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
