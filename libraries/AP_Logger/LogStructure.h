@@ -120,6 +120,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
 
+#include <AP_Beacon/LogStructure.h>
 #include <AP_DAL/LogStructure.h>
 #include <AP_NavEKF2/LogStructure.h>
 #include <AP_NavEKF3/LogStructure.h>
@@ -514,20 +515,6 @@ struct PACKED log_Rally {
     int16_t altitude;
 };
 
-struct PACKED log_Beacon {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t health;
-    uint8_t count;
-    float dist0;
-    float dist1;
-    float dist2;
-    float dist3;
-    float posx;
-    float posy;
-    float posz;
-};
-
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -737,19 +724,6 @@ struct PACKED log_VER {
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
 // @Field: Pri: True if sensor is the primary sensor
-
-// @LoggerMessage: BCN
-// @Description: Beacon information
-// @Field: TimeUS: Time since system startup
-// @Field: Health: True if beacon sensor is healthy
-// @Field: Cnt: Number of beacons being used
-// @Field: D0: Distance to first beacon
-// @Field: D1: Distance to second beacon
-// @Field: D2: Distance to third beacon
-// @Field: D3: Distance to fourth beacon
-// @Field: PosX: Calculated beacon position, x-axis
-// @Field: PosY: Calculated beacon position, y-axis
-// @Field: PosZ: Calculated beacon position, z-axis
 
 // @LoggerMessage: CMD
 // @Description: Executed mission command information
@@ -1230,8 +1204,7 @@ LOG_STRUCTURE_FROM_CAMERA \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
-    { LOG_BEACON_MSG, sizeof(log_Beacon), \
-      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--0000000", true }, \
+    LOG_STRUCTURE_FROM_BEACON                                       \
     LOG_STRUCTURE_FROM_PROXIMITY                                    \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
       "PM",  "QHHIIHHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "s---b%------s", "F---0A------F" }, \
@@ -1365,7 +1338,7 @@ enum LogMessages : uint8_t {
 
     LOG_IDS_FROM_VISUALODOM,
     LOG_IDS_FROM_AVOIDANCE,
-    LOG_BEACON_MSG,
+    LOG_IDS_FROM_BEACON,
     LOG_IDS_FROM_PROXIMITY,
     LOG_DF_FILE_STATS,
     LOG_SRTL_MSG,

@@ -426,33 +426,6 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write beacon sensor (position) data
-void AP_Logger::Write_Beacon(AP_Beacon &beacon)
-{
-    if (!beacon.enabled()) {
-        return;
-    }
-    // position
-    Vector3f pos;
-    float accuracy = 0.0f;
-    beacon.get_vehicle_position_ned(pos, accuracy);
-
-    const struct log_Beacon pkt_beacon{
-       LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
-       time_us         : AP_HAL::micros64(),
-       health          : (uint8_t)beacon.healthy(),
-       count           : (uint8_t)beacon.count(),
-       dist0           : beacon.beacon_distance(0),
-       dist1           : beacon.beacon_distance(1),
-       dist2           : beacon.beacon_distance(2),
-       dist3           : beacon.beacon_distance(3),
-       posx            : pos.x,
-       posy            : pos.y,
-       posz            : pos.z
-    };
-    WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
-}
-
 void AP_Logger::Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& breadcrumb)
 {
     const struct log_SRTL pkt_srtl{
