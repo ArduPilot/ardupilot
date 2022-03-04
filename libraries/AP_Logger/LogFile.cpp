@@ -426,22 +426,6 @@ void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
-void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
-{
-    float rpm1 = -1, rpm2 = -1;
-
-    rpm_sensor.get_rpm(0, rpm1);
-    rpm_sensor.get_rpm(1, rpm2);
-
-    const struct log_RPM pkt{
-        LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
-        time_us     : AP_HAL::micros64(),
-        rpm1        : rpm1,
-        rpm2        : rpm2
-    };
-    WriteBlock(&pkt, sizeof(pkt));
-}
-
 // Write beacon sensor (position) data
 void AP_Logger::Write_Beacon(AP_Beacon &beacon)
 {
