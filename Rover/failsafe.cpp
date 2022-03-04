@@ -149,6 +149,6 @@ void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
 void Rover::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-    g2.afs.check(g2.fence.get_breaches() != 0, failsafe.last_valid_rc_ms);
+    g2.afs.check(fence.get_breaches() != 0, failsafe.last_valid_rc_ms);
 }
 #endif

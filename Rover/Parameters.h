@@ -334,9 +334,6 @@ public:
     // frame class for vehicle
     AP_Int8 frame_class;
 
-    // fence library
-    AC_Fence fence;
-
 #if HAL_PROXIMITY_ENABLED
     // proximity library
     AP_Proximity proximity;
