@@ -87,7 +87,7 @@ public:
         k_param_pos_control, // Position Control
         k_param_wp_nav, // Waypoint navigation
         k_param_mission, // Mission library
-        k_param_fence, // Fence Library
+        k_param_fence_old, // only used for conversion
         k_param_terrain, // Terrain database
         k_param_rally, // Disabled
         k_param_circle_nav, // Disabled
