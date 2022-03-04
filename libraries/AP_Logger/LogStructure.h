@@ -136,6 +136,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_ESC_Telem/LogStructure.h>
 #include <AP_AIS/LogStructure.h>
 #include <AP_HAL_ChibiOS/LogStructure.h>
+#include <AP_RPM/LogStructure.h>
 
 // structure used to define logging format
 struct PACKED LogStructure {
@@ -500,13 +501,6 @@ struct PACKED log_MAV_Stats {
     // uint8_t state_retry_avg;
     // uint8_t state_retry_min;
     // uint8_t state_retry_max;
-};
-
-struct PACKED log_RPM {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float rpm1;
-    float rpm2;
 };
 
 struct PACKED log_Rally {
@@ -1112,12 +1106,6 @@ struct PACKED log_VER {
 // @Field: Stat: Sensor state
 // @Field: Orient: Sensor orientation
 
-// @LoggerMessage: RPM
-// @Description: Data from RPM sensors
-// @Field: TimeUS: Time since system startup
-// @Field: rpm1: First sensor's data
-// @Field: rpm2: Second sensor's data
-
 // @LoggerMessage: RSSI
 // @Description: Received Signal Strength Indicator for RC receiver
 // @Field: TimeUS: Time since system startup
@@ -1344,10 +1332,9 @@ LOG_STRUCTURE_FROM_NAVEKF3 \
 LOG_STRUCTURE_FROM_NAVEKF \
 LOG_STRUCTURE_FROM_AHRS \
 LOG_STRUCTURE_FROM_HAL_CHIBIOS \
+LOG_STRUCTURE_FROM_RPM \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
-    { LOG_RPM_MSG, sizeof(log_RPM), \
-      "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" , true }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
@@ -1424,7 +1411,7 @@ enum LogMessages : uint8_t {
     LOG_DSTL_MSG,
     LOG_MAG_MSG,
     LOG_ARSP_MSG,
-    LOG_RPM_MSG,
+    LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
