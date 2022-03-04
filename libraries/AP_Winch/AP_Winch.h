@@ -59,7 +59,7 @@ public:
     float get_rate_max() const { return MAX(config.rate_max, 0.0f); }
 
     // send status to ground station
-    void send_status(const GCS_MAVLINK &channel);
+    void send_status(const class GCS_MAVLINK &channel);
 
     // write log
     void write_log();
