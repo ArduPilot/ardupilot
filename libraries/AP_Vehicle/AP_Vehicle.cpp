@@ -93,6 +93,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(ais, "AIS_",  13, AP_Vehicle, AP_AIS),
 #endif
 
+#if AC_FENCE
+    // @Group: FENCE_
+    // @Path: ../AC_Fence/AC_Fence.cpp
+    AP_SUBGROUPINFO(fence, "FENCE_", 14, AP_Vehicle, AC_Fence),
+#endif
+
     AP_GROUPEND
 };
 
@@ -232,6 +238,10 @@ void AP_Vehicle::setup()
     ais.init();
 #endif
 
+#if AC_FENCE
+    fence.init();
+#endif
+
     custom_rotations.init();
 
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
@@ -324,6 +334,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,      10,    100, 245),
+#endif
+#if AC_FENCE
+    SCHED_TASK_CLASS(AC_Fence,     &vehicle.fence,          update,                   10, 100, 248),
 #endif
 #if AP_AIS_ENABLED
     SCHED_TASK_CLASS(AP_AIS,       &vehicle.ais,            update,                    5, 100, 249),
