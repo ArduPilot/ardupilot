@@ -30,7 +30,7 @@ extern const AP_HAL::HAL& hal;
 #define AR_WPNAV_SPEED_UPDATE_MIN_MS    500     // max speed cannot be updated more than once in this many milliseconds
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
 #define AR_WPNAV_OVERSPEED_RATIO_MAX    5.0f    // if _overspeed_enabled the vehicle may travel as quickly as 5x WP_SPEED
-#define AR_WPNAV_JERK_TIME_SEC          0.1     // jerk time (the time taken for jerk to climb to its maximum) is hard-coded to 0.1
+#define AR_WPNAV_SNAP_MAX               15.0f   // scurve snap (change in jerk) in m/s/s/s/s
 #define AR_WPNAV_ACCEL_MAX              20.0    // acceleration used when user has specified no acceleration limit
 
 const AP_Param::GroupInfo AR_WPNav::var_info[] = {
@@ -250,9 +250,9 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
                                          _pos_control.get_speed_max(),
                                          _pos_control.get_speed_max(),  // speed up (not used)
                                          _pos_control.get_speed_max(),  // speed down (not used)
-                                         MIN(_pos_control.get_accel_max(), _pos_control.get_lat_accel_max()),
+                                         _pos_control.get_accel_max(),  // forward back acceleration
                                          _pos_control.get_accel_max(),  // vertical accel (not used)
-                                         AR_WPNAV_JERK_TIME_SEC,        // jerk time
+                                         AR_WPNAV_SNAP_MAX,             // snap
                                          _pos_control.get_jerk_max());
     }
 
@@ -277,9 +277,9 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
                                              _pos_control.get_speed_max(),
                                              _pos_control.get_speed_max(),  // speed up (not used)
                                              _pos_control.get_speed_max(),  // speed down (not used)
-                                             MIN(_pos_control.get_accel_max(), _pos_control.get_lat_accel_max()),
+                                             _pos_control.get_accel_max(),  // forward back acceleration
                                              _pos_control.get_accel_max(),  // vertical accel (not used)
-                                             AR_WPNAV_JERK_TIME_SEC,        // jerk time
+                                             AR_WPNAV_SNAP_MAX,             // snap
                                              _pos_control.get_jerk_max());
 
             // next destination provided so fast waypoint
@@ -439,7 +439,7 @@ void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float 
 
     // update target position, velocity and acceleration
     const float wp_radius = MAX(_radius, _turn_radius);
-    bool s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, wp_radius, _fast_waypoint, _track_scalar_dt * dt, target_pos_3d_ftype, target_vel, target_accel);
+    bool s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, wp_radius, _pos_control.get_lat_accel_max(), _fast_waypoint, _track_scalar_dt * dt, target_pos_3d_ftype, target_vel, target_accel);
 
     // pass new target to the position controller
     init_pos_control_if_necessary();
