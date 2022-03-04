@@ -59,7 +59,6 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Beacon/AP_Beacon.h>
-#include <AP_Proximity/AP_Proximity.h>
 #include <AP_Vehicle/ModeReason.h>
 
 #include <stdint.h>
@@ -308,9 +307,6 @@ public:
                           uint8_t sequence,
                           const RallyLocation &rally_point);
     void Write_Beacon(AP_Beacon &beacon);
-#if HAL_PROXIMITY_ENABLED
-    void Write_Proximity(AP_Proximity &proximity);
-#endif
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
     void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
