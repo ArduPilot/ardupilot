@@ -1,4 +1,6 @@
 #include "AP_Winch_PWM.h"
+
+#include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
