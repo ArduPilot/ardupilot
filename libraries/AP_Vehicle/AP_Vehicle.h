@@ -53,6 +53,7 @@
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
 #include <AP_AIS/AP_AIS.h>
+#include <AC_Fence/AC_Fence.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -395,6 +396,10 @@ protected:
 #if AP_AIS_ENABLED
     // Automatic Identification System - for tracking sea-going vehicles
     AP_AIS ais;
+#endif
+
+#if AC_FENCE
+    AC_Fence fence;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
