@@ -18,6 +18,9 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_HAL.h"
 #include "DSP.h"
+#ifndef HAL_NO_UARTDRIVER
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 #if HAL_WITH_DSP
 
@@ -42,7 +45,7 @@ DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate)
 
     if (_freq_bins == nullptr || _hanning_window == nullptr || _rfft_data == nullptr || _derivative_freq_bins == nullptr) {
         hal.util->free_type(_freq_bins, sizeof(float) * (_window_size), DSP_MEM_REGION);
-        hal.util->free_type(_derivative_freq_bins, sizeof(float) * (_bin_count), DSP_MEM_REGION);
+        hal.util->free_type(_derivative_freq_bins, sizeof(float) * (_bin_count + 1), DSP_MEM_REGION);
         hal.util->free_type(_hanning_window, sizeof(float) * (_window_size), DSP_MEM_REGION);
         hal.util->free_type(_rfft_data, sizeof(float) * (_window_size + 2), DSP_MEM_REGION);
 
@@ -59,7 +62,7 @@ DSP::FFTWindowState::FFTWindowState(uint16_t window_size, uint16_t sample_rate)
         _hanning_window[i] = (0.5f - 0.5f * cosf(2.0f * M_PI * i / ((float)window_size - 1)));
         _window_scale += _hanning_window[i];
     }
-    // Calculate the inverse of the Effective Noise Bandwidth
+    // Calculate the inverse of the Effective Noise Bandwidth - equation 24
     _window_scale = 2.0f / sq(_window_scale);
 }
 
@@ -67,12 +70,14 @@ DSP::FFTWindowState::~FFTWindowState()
 {
     hal.util->free_type(_freq_bins, sizeof(float) * (_window_size), DSP_MEM_REGION);
     _freq_bins = nullptr;
-    hal.util->free_type(_derivative_freq_bins, sizeof(float) * (_bin_count), DSP_MEM_REGION);
+    hal.util->free_type(_derivative_freq_bins, sizeof(float) * (_bin_count + 1), DSP_MEM_REGION);
     _derivative_freq_bins = nullptr;
     hal.util->free_type(_hanning_window, sizeof(float) * (_window_size), DSP_MEM_REGION);
     _hanning_window = nullptr;
     hal.util->free_type(_rfft_data, sizeof(float) * (_window_size + 2), DSP_MEM_REGION);
     _rfft_data = nullptr;
+    hal.util->free_type(_avg_freq_bins, sizeof(float) * (_window_size), DSP_MEM_REGION);
+    _avg_freq_bins = nullptr;
 }
 
 // step 3: find the magnitudes of the complex data
@@ -104,6 +109,12 @@ void DSP::step_cmplx_mag(FFTWindowState* fft, uint16_t start_bin, uint16_t end_b
 
     // scale the power to account for the input window
     vector_scale_float(fft->_freq_bins, fft->_window_scale, fft->_freq_bins, fft->_bin_count);
+
+    // average the FFT data
+    if (fft->_averaging) {
+        vector_add_float(fft->_avg_freq_bins, fft->_freq_bins, fft->_avg_freq_bins, fft->_bin_count);
+        fft->_averaging_samples++;
+    }
 }
 
 // calculate the noise width of a peak based on the input parameters
@@ -207,6 +218,100 @@ float DSP::tau(const float x) const
     float part2 = x + 1.0f + SQRT_2_3;
     float p2 = logf(part1 / part2);
     return (0.25f * p1 - TAU_FACTOR * p2);
+}
+
+// from https://dspguru.com/dsp/howtos/how-to-interpolate-fft-peak/
+// Works on magnitudes only, which is useful when using averaged data
+float DSP::calculate_jains_estimator(const FFTWindowState* fft, const float* real_fft, uint16_t k_max)
+{
+    if (k_max <= 1 || k_max >= fft->_bin_count) {
+        return 0.0f;
+    }
+
+    float y1 = real_fft[k_max-1];
+    float y2 = real_fft[k_max];
+    float y3 = real_fft[k_max+1];
+    float d = 0.0f;
+
+    if (y1 > y3) {
+        float a = y2 / y1;
+        d = a / (1 + a) - 1;
+    } else {
+        float a = y3 / y2;
+        d = a  /  (1 + a);
+    }
+    return constrain_float(d, -0.5f, 0.5f);
+}
+
+// initialize averaging FFT windows as they are calculated
+bool DSP::fft_init_average(FFTWindowState* fft)
+{
+    if (fft->_avg_freq_bins == nullptr) {
+        fft->_avg_freq_bins = (float*)hal.util->malloc_type(sizeof(float) * (fft->_window_size), DSP_MEM_REGION);
+        if (fft->_avg_freq_bins == nullptr) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// start averaging FFT windows as they are calculated
+bool DSP::fft_start_average(FFTWindowState* fft)
+{
+    if (fft->_averaging) {
+        return false;
+    }
+
+    if (!fft_init_average(fft)) {
+        return false;
+    }
+
+    fft->_averaging_samples = 0;
+    fft->_averaging = true;
+    return true;
+}
+
+// start averaging FFT windows as they are calculated
+uint16_t DSP::fft_stop_average(FFTWindowState* fft, uint16_t start_bin, uint16_t end_bin, float* freqs)
+{
+    // ensure the window has been allocated even if we do nothing else
+    if (!fft_init_average(fft)) {
+        return 0;
+    }
+
+    if (!fft->_averaging) {
+        return 0;
+    }
+
+    fft->_averaging = false;
+
+    // scale by the number of samples
+    vector_scale_float(fft->_avg_freq_bins, fft->_averaging_samples, fft->_avg_freq_bins, fft->_bin_count);
+
+    const uint16_t smoothwidth = 1;
+    uint16_t bin_range = (MIN(end_bin + ((smoothwidth + 1) >> 1) + 2, fft->_bin_count) - start_bin) + 1;
+
+    // find the three highest peaks using a zero crossing algorithm
+    // allocate the scratch space locally as we are in a different thread to the regular FFT
+    float* scratch_space = (float*)hal.util->malloc_type(sizeof(float) * (fft->_bin_count + 1), DSP_MEM_REGION);
+    if (scratch_space == nullptr) {
+        return false;
+    }
+    uint16_t peaks[MAX_TRACKED_PEAKS] {};
+    uint16_t numpeaks = find_peaks(&fft->_avg_freq_bins[start_bin], bin_range,
+        scratch_space, peaks, MAX_TRACKED_PEAKS, 0.0f, -1.0f, smoothwidth, 2);
+    hal.util->free_type(scratch_space, sizeof(float) * (fft->_bin_count + 1), DSP_MEM_REGION);
+
+    // now try and find the lowest harmonic
+    for (uint16_t i = 0; i < numpeaks; i++) {
+        const uint16_t bin = peaks[i] + start_bin;
+        float d = calculate_jains_estimator(fft, fft->_avg_freq_bins, bin);
+        freqs[i] = (bin + d) * fft->_bin_resolution;
+    }
+
+    fft->_averaging_samples = 0;
+    return numpeaks;
 }
 
 // find all the peaks in the fft window using https://terpconnect.umd.edu/~toh/spectrum/PeakFindingandMeasurement.htm
