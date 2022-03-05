@@ -456,6 +456,7 @@ float AP_OABendyRuler::calc_avoidance_margin(const Location &start, const Locati
 // on success returns true and updates margin
 bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, const Location &end, float &margin) const
 {
+#if AC_FENCE
     // exit immediately if polygon fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
@@ -476,12 +477,16 @@ bool AP_OABendyRuler::calc_margin_from_circular_fence(const Location &start, con
     // margin is fence radius minus the longer of start or end distance
     margin = fence_radius_plus_margin - sqrtf(MAX(start_dist_sq, end_dist_sq));
     return true;
+#else
+    return false;
+#endif // AC_FENCE
 }
 
 // calculate minimum distance between a path and the altitude fence
 // on success returns true and updates margin
 bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Location &end, float &margin) const
-{   
+{
+#if AC_FENCE
     // exit immediately if polygon fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
@@ -508,12 +513,16 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
     margin = MIN(margin_start,margin_end);
 
     return true;
+#else
+    return false;
+#endif // AC_FENCE
 }
 
 // calculate minimum distance between a path and all inclusion and exclusion polygons
 // on success returns true and updates margin
 bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Location &start, const Location &end, float &margin) const
 {
+#if AC_FENCE
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
         return false;
@@ -574,12 +583,16 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_polygons(const Lo
     }
 
     return margin_updated;
+#else
+    return false;
+#endif // AC_FENCE
 }
 
 // calculate minimum distance between a path and all inclusion and exclusion circles
 // on success returns true and updates margin
 bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Location &start, const Location &end, float &margin) const
 {
+#if AC_FENCE
     // exit immediately if fence is not enabled
     const AC_Fence *fence = AC_Fence::get_singleton();
     if (fence == nullptr) {
@@ -650,6 +663,9 @@ bool AP_OABendyRuler::calc_margin_from_inclusion_and_exclusion_circles(const Loc
     }
 
     return margin_updated;
+#else
+    return false;
+#endif // AC_FENCE
 }
 
 // calculate minimum distance between a path and proximity sensor obstacles
