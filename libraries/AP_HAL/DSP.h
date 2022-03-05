@@ -61,12 +61,18 @@ public:
         float* _derivative_freq_bins;
         // intermediate real FFT data
         float* _rfft_data;
+        // averaged frequency data via Welch's method
+        float* _avg_freq_bins;
         // three highest peaks
         FrequencyPeakData _peak_data[MAX_TRACKED_PEAKS];
         // Hanning window for incoming samples, see https://en.wikipedia.org/wiki/Window_function#Hann_.28Hanning.29_window
         float* _hanning_window;
         // Use in calculating the PS of the signal [Heinz] equations (20) & (21)
         float _window_scale;
+        // averaging is ongoing
+        bool _averaging;
+        // number of samples in the average
+        uint32_t _averaging_samples;
 
         virtual ~FFTWindowState();
         FFTWindowState(uint16_t window_size, uint16_t sample_rate);
@@ -77,6 +83,10 @@ public:
     virtual void fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance) = 0;
     // perform remaining steps of an FFT analysis
     virtual uint16_t fft_analyse(FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff) = 0;
+    // start averaging FFT data
+    bool fft_start_average(FFTWindowState* fft);
+    // finish the averaging process
+    uint16_t fft_stop_average(FFTWindowState* fft, uint16_t start_bin, uint16_t end_bin, float* peaks);
 
 protected:
     // step 3: find the magnitudes of the complex data
@@ -91,8 +101,10 @@ protected:
     virtual void vector_max_float(const float* vin, uint16_t len, float* max_value, uint16_t* max_index) const = 0;
     // find the mean value in an vector of floats
     virtual float vector_mean_float(const float* vin, uint16_t len) const = 0;
-    // multiple an vector of floats by a scale factor
+    // multiply an vector of floats by a scale factor
     virtual void vector_scale_float(const float* vin, float scale, float* vout, uint16_t len) const = 0;
+    // add two vectors together
+    virtual void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const = 0;
     // algorithm for finding peaks in noisy data as per https://terpconnect.umd.edu/~toh/spectrum/PeakFindingandMeasurement.htm
     uint16_t find_peaks(const float* input, uint16_t length, float* output, uint16_t* peaks, uint16_t peaklen, 
         float slopeThreshold, float ampThreshold, uint16_t smoothwidth, uint16_t peakgroup) const;
@@ -100,8 +112,13 @@ protected:
     void derivative(const float* input, float* output, uint16_t n) const;
     void fastsmooth(float* input, uint16_t n, uint16_t smoothwidth) const;
 
-    // quinn's frequency interpolator
+    // Quinn's frequency interpolator
     float calculate_quinns_second_estimator(const FFTWindowState* fft, const float* complex_fft, uint16_t k) const;
     float tau(const float x) const;
+    // Jain's estimator
+    float calculate_jains_estimator(const FFTWindowState* fft, const float* real_fft, uint16_t k_max);
+    // init averaging FFT data
+    bool fft_init_average(FFTWindowState* fft);
+
 #endif // HAL_WITH_DSP
 };
