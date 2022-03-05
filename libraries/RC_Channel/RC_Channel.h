@@ -53,7 +53,7 @@ public:
     float       norm_input_ignore_trim() const;
 
     // returns true if input is within deadzone of min
-    bool        within_min_dz() const;
+    bool        in_min_dz() const;
 
     uint8_t     percent_input() const;
 
