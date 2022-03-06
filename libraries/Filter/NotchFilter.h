@@ -54,6 +54,7 @@ public:
     float bandwidth_hz(void) const { return _bandwidth_hz; }
     float attenuation_dB(void) const { return _attenuation_dB; }
     uint8_t enabled(void) const { return _enable; }
+    void enable() { _enable.set(true); }
     
 protected:
     AP_Int8 _enable;
