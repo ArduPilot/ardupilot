@@ -137,6 +137,13 @@ void DSP::vector_scale_float(const float* vin, float scale, float* vout, uint16_
     }
 }
 
+void DSP::vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const
+{
+    for (uint16_t i = 0; i < len; i++) {
+        vout[i] = vin1[i] + vin2[i];
+    }
+}
+
 float DSP::vector_mean_float(const float* vin, uint16_t len) const
 {
     float mean_value = 0.0f;
