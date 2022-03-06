@@ -5052,9 +5052,11 @@ class AutoTestCopter(AutoTest):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
-    def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None, reverse=None):
+    def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
+                                                   reverse=None, takeoff=True):
         # find a motor peak
-        self.takeoff(10, mode="ALT_HOLD")
+        if takeoff:
+            self.takeoff(10, mode="ALT_HOLD")
 
         hover_time = 15
         tstart = self.get_sim_time()
@@ -5587,6 +5589,158 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
 
         # must reboot after we move away from EKF type 10 to EKF2 or EKF3
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
+    def fly_gyro_fft_average(self):
+        """Use dynamic harmonic notch to control motor noise setup via FFT averaging."""
+        # basic gyro sample rate test
+        self.progress("Flying with gyro FFT harmonic - Gyro sample rate")
+        self.context_push()
+        ex = None
+        try:
+            # Step 1
+            self.start_subtest("Hover to calculate approximate hover frequency and see that it is tracked")
+            # magic tridge EKF type that dramatically speeds up the test
+            self.set_parameters({
+                "AHRS_EKF_TYPE": 10,
+                "EK2_ENABLE": 0,
+                "EK3_ENABLE": 0,
+                "INS_LOG_BAT_MASK": 3,
+                "INS_LOG_BAT_OPT": 2,
+                "INS_GYRO_FILTER": 100,
+                "INS_FAST_SAMPLE": 0,
+                "INS_HNTCH_ATT": 100,
+                "LOG_BITMASK": 958,
+                "LOG_DISARMED": 0,
+                "SIM_DRIFT_SPEED": 0,
+                "SIM_DRIFT_TIME": 0,
+                "SIM_GYR1_RND": 20,  # enable a noisy gyro
+            })
+            # motor peak enabling FFT will also enable the arming
+            # check, self-testing the functionality
+            self.set_parameters({
+                "FFT_ENABLE": 1,
+                "FFT_WINDOW_SIZE": 64,  # not the default, but makes the test more reliable
+                "FFT_SNR_REF": 10,
+            })
+
+            # Step 1: inject actual motor noise and use the FFT to track it
+            self.set_parameters({
+                "SIM_VIB_MOT_MAX": 250, # gives a motor peak at about 175Hz
+                "RC7_OPTION" : 162,   # FFT tune
+            })
+
+            self.reboot_sitl()
+
+            # hover and engage FFT tracker
+            self.takeoff(10, mode="ALT_HOLD")
+
+            hover_time = 60
+            tstart = self.get_sim_time()
+            self.progress("Hovering for %u seconds" % hover_time)
+
+            # start the tune
+            self.set_rc(7, 2000)
+
+            while self.get_sim_time_cached() < tstart + hover_time:
+                self.mav.recv_match(type='ATTITUDE', blocking=True)
+            vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            tend = self.get_sim_time()
+
+            # finish the tune
+            self.set_rc(7, 1000)
+
+            psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
+
+            # batch sampler defaults give 1024 fft and sample rate of 1kz so roughly 1hz/bin
+            freq = psd["F"][numpy.argmax(psd["X"][50:450]) + 50] * (1000. / 1024.)
+
+            detected_ref = self.get_parameter("INS_HNTCH_REF")
+            detected_freq = self.get_parameter("INS_HNTCH_FREQ")
+            self.progress("FFT detected parameters were %fHz, ref %f" % (detected_freq, detected_ref))
+
+            # approximate the scaled frequency
+            scaled_freq_at_hover = math.sqrt((vfr_hud.throttle / 100.) / detected_ref) * detected_freq
+
+            # Check we matched
+            if abs(scaled_freq_at_hover - freq) / scaled_freq_at_hover > 0.05:
+                raise NotAchievedException("Detected frequency %fHz did not match required %fHz" %
+                                           (scaled_freq_at_hover, freq))
+
+            if self.get_parameter("INS_HNTCH_ENABLE") != 1:
+                raise NotAchievedException("Harmonic notch was not enabled")
+
+            # Step 2: now rerun the test and check that the peak is squashed
+            self.start_subtest("Verify that noise is suppressed by the harmonic notch")
+            self.hover_and_check_matched_frequency_with_fft(0, 100, 350, reverse=True, takeoff=False)
+
+            # Step 3: add a second harmonic and check the first is still tracked
+            self.start_subtest("Add a fixed frequency harmonic at twice the hover frequency "
+                               "and check the right harmonic is found")
+            self.set_parameters({
+                "SIM_VIB_FREQ_X": freq * 2,
+                "SIM_VIB_FREQ_Y": freq * 2,
+                "SIM_VIB_FREQ_Z": freq * 2,
+                "SIM_VIB_MOT_MULT": 0.25,  # halve the motor noise so that the higher harmonic dominates
+            })
+            self.reboot_sitl()
+
+            # hover and engage FFT tracker
+            self.takeoff(10, mode="ALT_HOLD")
+
+            hover_time = 60
+            tstart = self.get_sim_time()
+            self.progress("Hovering for %u seconds" % hover_time)
+
+            # start the tune
+            self.set_rc(7, 2000)
+
+            while self.get_sim_time_cached() < tstart + hover_time:
+                self.mav.recv_match(type='ATTITUDE', blocking=True)
+            vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            tend = self.get_sim_time()
+
+            # finish the tune
+            self.set_rc(7, 1000)
+
+            self.do_RTL()
+
+            detected_ref = self.get_parameter("INS_HNTCH_REF")
+            detected_freq = self.get_parameter("INS_HNTCH_FREQ")
+            self.progress("FFT detected parameters were %fHz, ref %f" % (detected_freq, detected_ref))
+
+            # approximate the scaled frequency
+            scaled_freq_at_hover = math.sqrt((vfr_hud.throttle / 100.) / detected_ref) * detected_freq
+
+            # Check we matched
+            if abs(scaled_freq_at_hover - freq) / scaled_freq_at_hover > 0.05:
+                raise NotAchievedException("Detected frequency %fHz did not match required %fHz" %
+                                           (scaled_freq_at_hover, freq))
+
+            if self.get_parameter("INS_HNTCH_ENABLE") != 1:
+                raise NotAchievedException("Harmonic notch was not enabled")
+
+            self.set_parameters({
+                "SIM_VIB_FREQ_X": 0,
+                "SIM_VIB_FREQ_Y": 0,
+                "SIM_VIB_FREQ_Z": 0,
+                "SIM_VIB_MOT_MULT": 1.0,
+            })
+            # prevent update parameters from messing with the settings when we pop the context
+            self.set_parameter("FFT_ENABLE", 0)
+            self.reboot_sitl()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
+
+        # need a final reboot because weird things happen to your
+        # vehicle state when switching back from EKF type 10!
         self.reboot_sitl()
 
         if ex is not None:
@@ -8921,6 +9075,11 @@ class AutoTestCopter(AutoTest):
                  "Fly Gyro FFT Harmonic Matching",
                  self.fly_gyro_fft_harmonic,
                  attempts=8),
+
+            Test("GyroFFTAverage",
+                 "Fly Gyro FFT Averaging",
+                 self.fly_gyro_fft_average,
+                 attempts=1),
 
             Test("CompassReordering",
                  "Test Compass reordering when priorities are changed",
