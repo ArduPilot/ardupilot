@@ -253,6 +253,9 @@ public:
     // get the accel filter rate in Hz
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
+    // setup the notch for throttle based tracking
+    bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float ref);
+
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
 

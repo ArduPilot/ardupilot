@@ -13,6 +13,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_Motors/AP_Motors_Class.h>
 #endif
@@ -874,11 +875,17 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // initialise IMU batch logging
     batchsampler.init();
 
+#if HAL_WITH_DSP
+    AP_GyroFFT* fft = AP::fft();
+    bool fft_enabled = fft != nullptr && fft->enabled();
+#else
+    bool fft_enabled = false;
+#endif
     // the center frequency of the harmonic notch is always taken from the calculated value so that it can be updated
     // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
     // configured value
     for (auto &notch : harmonic_notches) {
-        if (!notch.params.enabled()) {
+        if (!notch.params.enabled() && !fft_enabled) {
             continue;
         }
         notch.calculated_notch_freq_hz[0] = notch.params.center_freq_hz();
@@ -887,18 +894,18 @@ AP_InertialSensor::init(uint16_t loop_rate)
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
 #if HAL_WITH_DSP
-        if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
-            notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
-        } else
+            if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+                notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
+            } else
 #endif
-        {
-            AP_Motors *motors = AP::motors();
-            if (motors != nullptr) {
-                notch.num_dynamic_notches = __builtin_popcount(motors->get_motor_mask());
+            {
+                AP_Motors *motors = AP::motors();
+                if (motors != nullptr) {
+                    notch.num_dynamic_notches = __builtin_popcount(motors->get_motor_mask());
+                }
             }
-        }
-        // avoid harmonics unless actually configured by the user
-        notch.params.set_default_harmonics(1);
+            // avoid harmonics unless actually configured by the user
+            notch.params.set_default_harmonics(1);
         }
 #endif
     }
@@ -911,7 +918,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
     uint8_t num_filters = 0;
     for (auto &notch : harmonic_notches) {
         // calculate number of notches we might want to use for harmonic notch
-        if (notch.params.enabled()) {
+        if (notch.params.enabled() || fft_enabled) {
             const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
             num_filters += __builtin_popcount(notch.params.harmonics())
                 * notch.num_dynamic_notches * (double_notch ? 2 : 1)
@@ -928,7 +935,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
         // only allocate notches for IMUs in use
         if (_use[i]) {
             for (auto &notch : harmonic_notches) {
-                if (notch.params.enabled()) {
+                if (notch.params.enabled() || fft_enabled) {
                     const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
                     notch.filter[i].allocate_filters(notch.num_dynamic_notches,
                                                      notch.params.harmonics(), double_notch);
@@ -2065,6 +2072,25 @@ void AP_InertialSensor::HarmonicNotch::update_frequencies_hz(uint8_t num_freqs, 
     }
     // any uncalculated frequencies will float at the previous value or the initialized freq if none
     num_calculated_notch_frequencies = num_freqs;
+}
+
+// setup the notch for throttle based tracking, called from FFT based tuning
+bool AP_InertialSensor::setup_throttle_gyro_harmonic_notch(float center_freq_hz, float ref)
+{
+    for (auto &notch : harmonic_notches) {
+        if (notch.params.tracking_mode() != HarmonicNotchDynamicMode::UpdateThrottle) {
+            continue;
+        }
+        notch.params.enable();
+        notch.params.set_center_freq_hz(center_freq_hz);
+        notch.params.set_reference(ref);
+        notch.params.set_bandwidth_hz(center_freq_hz / 2.0f);
+        notch.params.save_params();
+        // only enable the first notch
+        return true;
+    }
+
+    return false;
 }
 
 /*
