@@ -224,7 +224,8 @@ public:
         OPTFLOW_CAL =        158, // optical flow calibration
         FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max
         WEATHER_VANE_ENABLE = 160, // enable/disable weathervaning
-        TURBINE_START =       161, // initialize turbine start sequence
+        TURBINE_START =      161, // initialize turbine start sequence
+        FFT_NOTCH_TUNE =     162, // FFT notch tuning function
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -315,6 +316,7 @@ protected:
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
+    void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
