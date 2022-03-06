@@ -156,11 +156,11 @@ void AC_AutoTune_Heli::test_init()
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine_gain function whenever test is initialized
             freqresp_rate.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::RATE);
-            dwell_test_init(start_freq, stop_freq);
+            dwell_test_init(start_freq, stop_freq, RATE);
         } else {
             // initialize determine_gain function whenever test is initialized
             freqresp_rate.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
-            dwell_test_init(start_freq, start_freq);
+            dwell_test_init(start_freq, start_freq, RATE);
         }
         if (!is_zero(start_freq)) {
             // 4 seconds is added to allow aircraft to achieve start attitude.  Then the time to conduct the dwells is added to it.
@@ -186,11 +186,11 @@ void AC_AutoTune_Heli::test_init()
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
             freqresp_angle.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            angle_dwell_test_init(start_freq, stop_freq);
+            dwell_test_init(start_freq, stop_freq, ANGLE);
         } else {
             // initialize determine gain function
             freqresp_angle.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            angle_dwell_test_init(start_freq, start_freq);
+            dwell_test_init(start_freq, start_freq, ANGLE);
         }
 
         // TODO add time limit for sweep test
@@ -910,52 +910,90 @@ void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cd
 
 }
 
-void AC_AutoTune_Heli::dwell_test_init(float start_frq, float filt_freq)
+void AC_AutoTune_Heli::dwell_test_init(float start_frq, float filt_freq, DwellType dwell_type)
 {
-    rotation_rate_filt.reset(0);
-    rotation_rate_filt.set_cutoff_frequency(filt_freq);
-    command_filt.reset(0);
-    command_filt.set_cutoff_frequency(filt_freq);
-    target_rate_filt.reset(0);
-    target_rate_filt.set_cutoff_frequency(filt_freq);
-    filt_target_rate = 0.0f;
     dwell_start_time_ms = 0.0f;
     settle_time = 200;
-    if (!is_equal(start_freq, stop_freq)) {
-        reset_sweep_variables();
-        curr_test.gain = 0.0f;
-        curr_test.phase = 0.0f;
+
+    rotation_rate_filt.set_cutoff_frequency(filt_freq);
+    command_filt.set_cutoff_frequency(filt_freq);
+    target_rate_filt.set_cutoff_frequency(filt_freq);
+
+    if (dwell_type == RATE) {
+        rotation_rate_filt.reset(0);
+        command_filt.reset(0);
+        target_rate_filt.reset(0);
+        rotation_rate = 0.0f;
+        command_out = 0.0f;
+        filt_target_rate = 0.0f;
+    } else {
+        switch (axis) {
+        case ROLL:
+            rotation_rate_filt.reset(((float)ahrs_view->roll_sensor) / 5730.0f);
+            command_filt.reset(motors->get_roll());
+            target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f);
+            rotation_rate = ((float)ahrs_view->roll_sensor) / 5730.0f;
+            command_out = motors->get_roll();
+            filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
+            break;
+        case PITCH:
+            rotation_rate_filt.reset(((float)ahrs_view->pitch_sensor) / 5730.0f);
+            command_filt.reset(motors->get_pitch());
+            target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f);
+            rotation_rate = ((float)ahrs_view->pitch_sensor) / 5730.0f;
+            command_out = motors->get_pitch();
+            filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
+            break;
+        case YAW:
+            // yaw angle will be centered on zero by removing trim heading
+            rotation_rate_filt.reset(0.0f);
+            command_filt.reset(motors->get_yaw());
+            target_rate_filt.reset(0.0f);
+            rotation_rate = 0.0f;
+            command_out = motors->get_yaw();
+            filt_target_rate = 0.0f;
+            break;
+        }
     }
 
     // filter at lower frequency to remove steady state
     filt_command_reading.set_cutoff_frequency(0.2f * start_frq);
     filt_gyro_reading.set_cutoff_frequency(0.2f * start_frq);
     filt_tgt_rate_reading.set_cutoff_frequency(0.2f * start_frq);
-    filt_pit_roll_cd.set_cutoff_frequency(0.2f * start_frq);
-    filt_heading_error_cd.set_cutoff_frequency(0.2f * start_frq);
     filt_att_fdbk_from_velxy_cd.set_cutoff_frequency(0.2f * start_frq);
 
-    // save the trim output from PID controller
-    float ff_term = 0.0f;
-    float p_term = 0.0f;
-    switch (axis) {
-    case ROLL:
-        trim_meas_rate = ahrs_view->get_gyro().x;
-        ff_term = attitude_control->get_rate_roll_pid().get_ff();
-        p_term = attitude_control->get_rate_roll_pid().get_p();
-        break;
-    case PITCH:
-        trim_meas_rate = ahrs_view->get_gyro().y;
-        ff_term = attitude_control->get_rate_pitch_pid().get_ff();
-        p_term = attitude_control->get_rate_pitch_pid().get_p();
-        break;
-    case YAW:
-        trim_meas_rate = ahrs_view->get_gyro().z;
-        ff_term = attitude_control->get_rate_yaw_pid().get_ff();
-        p_term = attitude_control->get_rate_yaw_pid().get_p();
-        break;
+    if (dwell_type == RATE) {
+        filt_pit_roll_cd.set_cutoff_frequency(0.2f * start_frq);
+        filt_heading_error_cd.set_cutoff_frequency(0.2f * start_frq);
+
+        // save the trim output from PID controller
+        float ff_term = 0.0f;
+        float p_term = 0.0f;
+        switch (axis) {
+        case ROLL:
+            trim_meas_rate = ahrs_view->get_gyro().x;
+            ff_term = attitude_control->get_rate_roll_pid().get_ff();
+            p_term = attitude_control->get_rate_roll_pid().get_p();
+            break;
+        case PITCH:
+            trim_meas_rate = ahrs_view->get_gyro().y;
+            ff_term = attitude_control->get_rate_pitch_pid().get_ff();
+            p_term = attitude_control->get_rate_pitch_pid().get_p();
+            break;
+        case YAW:
+            trim_meas_rate = ahrs_view->get_gyro().z;
+            ff_term = attitude_control->get_rate_yaw_pid().get_ff();
+            p_term = attitude_control->get_rate_yaw_pid().get_p();
+            break;
+        }
+        trim_pff_out = ff_term + p_term;
     }
-    trim_pff_out = ff_term + p_term;
+
+    if (!is_equal(start_freq, stop_freq)) {
+        reset_sweep_variables();
+        curr_test.gain = 0.0f;
+        curr_test.phase = 0.0f;
+    }
 }
 
 void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase)
@@ -1160,54 +1198,6 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             // we have passed the maximum stop time
             step = UPDATE_GAINS;
         }
-    }
-}
-
-void AC_AutoTune_Heli::angle_dwell_test_init(float start_frq, float filt_freq)
-{
-    rotation_rate_filt.set_cutoff_frequency(filt_freq);
-    command_filt.set_cutoff_frequency(filt_freq);
-    target_rate_filt.set_cutoff_frequency(filt_freq);
-    dwell_start_time_ms = 0.0f;
-    settle_time = 200;
-    switch (axis) {
-    case ROLL:
-        rotation_rate_filt.reset(((float)ahrs_view->roll_sensor) / 5730.0f);
-        command_filt.reset(motors->get_roll());
-        target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f);
-        rotation_rate = ((float)ahrs_view->roll_sensor) / 5730.0f;
-        command_out = motors->get_roll();
-        filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
-        break;
-    case PITCH:
-        rotation_rate_filt.reset(((float)ahrs_view->pitch_sensor) / 5730.0f);
-        command_filt.reset(motors->get_pitch());
-        target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f);
-        rotation_rate = ((float)ahrs_view->pitch_sensor) / 5730.0f;
-        command_out = motors->get_pitch();
-        filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
-        break;
-    case YAW:
-        // yaw angle will be centered on zero by removing trim heading
-        rotation_rate_filt.reset(0.0f);
-        command_filt.reset(motors->get_yaw());
-        target_rate_filt.reset(0.0f);
-        rotation_rate = 0.0f;
-        command_out = motors->get_yaw();
-        filt_target_rate = 0.0f;
-        break;
-    }
-
-    // filter at lower frequency to remove steady state
-    filt_command_reading.set_cutoff_frequency(0.2f * start_frq);
-    filt_gyro_reading.set_cutoff_frequency(0.2f * start_frq);
-    filt_tgt_rate_reading.set_cutoff_frequency(0.2f * start_frq);
-    filt_att_fdbk_from_velxy_cd.set_cutoff_frequency(0.2f * start_frq);
-
-    if (!is_equal(start_freq, stop_freq)) {
-        reset_sweep_variables();
-        curr_test.gain = 0.0f;
-        curr_test.phase = 0.0f;
     }
 }
 

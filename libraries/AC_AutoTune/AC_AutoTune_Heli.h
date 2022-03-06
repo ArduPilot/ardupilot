@@ -136,16 +136,23 @@ private:
     // max gain data for rate d tuning
     max_gain_data max_rate_d;
 
+    // dwell type identifies whether the dwell is ran on rate or angle
+    enum DwellType {
+        RATE    = 0,
+        ANGLE   = 1,
+    };
+
     // Feedforward test used to determine Rate FF gain
     void rate_ff_test_init();
     void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);
 
+    // initialize dwell test or angle dwell test variables
+    void dwell_test_init(float start_frq, float filt_freq, DwellType dwell_type);
+
     // dwell test used to perform frequency dwells for rate gains
-    void dwell_test_init(float start_frq, float filt_freq);
     void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // dwell test used to perform frequency dwells for angle gains
-    void angle_dwell_test_init(float start_frq, float filt_freq);
     void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
 
     // generates waveform for frequency sweep excitations
