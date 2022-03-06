@@ -340,6 +340,8 @@ private:
     AP_Int8 _harmonic_fit;
     // harmonic peak target
     AP_Int8 _harmonic_peak;
+    // number of output frames to retain for averaging
+    AP_Int8 _num_frames;
     AP_InertialSensor* _ins;
 #if DEBUG_FFT
     uint32_t _last_output_ms;
