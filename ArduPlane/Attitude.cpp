@@ -82,9 +82,8 @@ bool Plane::stick_mixing_enabled(void)
         if (g.stick_mixing != StickMixing::NONE &&
             g.stick_mixing != StickMixing::VTOL_YAW &&
             stickmixing &&
-            failsafe.state == FAILSAFE_NONE &&
             !rc_failsafe_active()) {
-            // we're in an auto mode, and haven't triggered failsafe
+            // we're in an auto mode, and haven't triggered rc failsafe
             return true;
         } else {
             return false;
