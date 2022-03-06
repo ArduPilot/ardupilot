@@ -668,7 +668,7 @@ bool AP_FlashIface_JEDEC::start_sector_erase(uint32_t sector, uint32_t &delay_ms
 bool AP_FlashIface_JEDEC::start_erase_offset(uint32_t offset, uint32_t size, uint32_t &erasing,
         uint32_t &delay_ms, uint32_t &timeout_ms)
 {
-    uint8_t ins;
+    uint8_t ins = 0;
     uint32_t erase_size = 0;
     erasing = 0;
     // Find the maximum size we can erase
