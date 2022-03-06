@@ -80,7 +80,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @Range: 0 4
     // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor
     // @User: Advanced
-    AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, 1),
+    AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, int8_t(HarmonicNotchDynamicMode::UpdateThrottle)),
 
     // @Param: OPTS
     // @DisplayName: Harmonic Notch Filter options
@@ -285,6 +285,19 @@ void HarmonicNotchFilter<T>::reset()
 HarmonicNotchFilterParams::HarmonicNotchFilterParams(void)
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+/*
+  save changed parameters
+ */
+void HarmonicNotchFilterParams::save_params()
+{
+    _enable.save();
+    _center_freq_hz.save();
+    _bandwidth_hz.save();
+    _attenuation_dB.save();
+    _harmonics.save();
+    _reference.save();
 }
 
 /* 
