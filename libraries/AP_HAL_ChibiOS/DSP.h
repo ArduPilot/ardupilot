@@ -61,6 +61,9 @@ protected:
         arm_mean_f32(vin, len, &mean_value);
         return mean_value;
     }
+    void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const override {
+        arm_add_f32(vin1, vin2, vout, len);
+    }
 
 private:
     // following are the six independent steps for calculating an FFT
