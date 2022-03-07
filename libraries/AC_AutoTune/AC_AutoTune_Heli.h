@@ -19,6 +19,7 @@
 #pragma once
 
 #include "AC_AutoTune.h"
+#include <AP_Math/chirp.h>
 
 class AC_AutoTune_Heli : public AC_AutoTune
 {
@@ -147,13 +148,10 @@ private:
     void rate_ff_test_run(float max_angle_cds, float target_rate_cds, float dir_sign);
 
     // initialize dwell test or angle dwell test variables
-    void dwell_test_init(float start_frq, float filt_freq, DwellType dwell_type);
+    void dwell_test_init(float start_frq, float stop_frq, float filt_freq, DwellType dwell_type);
 
     // dwell test used to perform frequency dwells for rate gains
     void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase, DwellType dwell_type);
-
-    // generates waveform for frequency sweep excitations
-    float waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax);
 
     // updating_rate_ff_up - adjust FF to ensure the target is reached
     // FF is adjusted until rate requested is acheived
@@ -275,6 +273,10 @@ private:
     };
     sweep_data sweep;
 
+    // fix the frequency sweep time to 23 seconds
+    const float sweep_time_ms = 23000;
+
+
     // parameters
     AP_Int8  axis_bitmask;        // axes to be tuned
     AP_Int8  seq_bitmask;       // tuning sequence bitmask
@@ -285,4 +287,6 @@ private:
 
     // freqresp object for the frequency response tests
     AC_AutoTune_FreqResp freqresp;
+
+    Chirp chirp_input;
 };
