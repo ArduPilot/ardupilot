@@ -101,6 +101,7 @@ const struct MultiplierStructure log_Multipliers[] = {
     { 'E', 1e-5 },
     { 'F', 1e-6 },
     { 'G', 1e-7 },
+    { 'I', 1e-9 },
 // <leave a gap here, just in case....>
     { '!', 3.6 }, // (ampere*second => milliampere*hour) and (km/h => m/s)
     { '/', 3600 }, // (ampere*second => ampere*hour)
