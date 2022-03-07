@@ -92,10 +92,13 @@ public:
 
     void zero(void);
 
-    // return bearing in centi-degrees from location to loc2
-    int32_t get_bearing_to(const struct Location &loc2) const;
-    // return the bearing in radians
-    ftype get_bearing(const struct Location &loc2) const { return radians(get_bearing_to(loc2) * 0.01); } ;
+    // return the bearing in radians, from 0 to 2*Pi
+    ftype get_bearing(const struct Location &loc2) const;
+
+    // return bearing in centi-degrees from location to loc2, return is 0 to 35999
+    int32_t get_bearing_to(const struct Location &loc2) const {
+        return int32_t(get_bearing(loc2) * DEGX100 + 0.5);
+    }
 
     // check if lat and lng match. Ignore altitude and options
     bool same_latlon_as(const Location &loc2) const;
