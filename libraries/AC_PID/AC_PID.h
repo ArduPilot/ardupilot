@@ -117,7 +117,7 @@ public:
     // return current slew rate of slew limiter. Will return 0 if SMAX is zero
     float get_slew_rate(void) const { return _slew_limiter.get_slew_rate(); }
 
-    const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
+    virtual const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -127,7 +127,7 @@ public:
     // single user of AC_PID by adding the parameter in the param
     // table of the parent class. It is made public for this reason
     AP_Float _slew_rate_tau;
-    
+
 protected:
 
     // parameters
