@@ -156,12 +156,20 @@ void AP_ADRC::reset_eso(float measurement)
 
 float AP_ADRC::sign(float x)
 {
-    if (x < 0) return -1;
-    else return 1;
+    if (x > 0) {
+        return 1;
+    } else if (x < 0) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 float AP_ADRC::fal(float e, float alpha, float delta)
 {
+    if (is_zero(delta)) {
+        return e;
+    }
     if(fabsf(e) < delta){
         return e / (powf(delta, 1.0f-alpha));
     }else{
