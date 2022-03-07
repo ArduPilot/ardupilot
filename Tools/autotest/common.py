@@ -6558,10 +6558,12 @@ Also, ignores heartbeats not from our target system'''
     def get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
             ret = "%s\n" % e
-            ret += ''.join(traceback.format_exception(etype=type(e),
-                                                      value=e,
+            ret += ''.join(traceback.format_exception(type(e),
+                                                      e,
                                                       tb=e.__traceback__))
             return ret
+
+        # Python2:
         return traceback.format_exc(e)
 
     def bin_logs(self):
