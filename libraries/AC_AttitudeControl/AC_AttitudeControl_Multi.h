@@ -80,6 +80,11 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    // enable/disable alternative rate control
+    void set_alt_rate_control(bool enable) override {
+        alt_pid_active.set(enable);
+    }
+    
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
