@@ -95,8 +95,24 @@ Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_ra
         yaw_rate = 0;
         return Vector2f(0,0);
     }
-    Vector2f vel(ship.speed, 0);
-    vel.rotate(radians(ship.heading_deg));
+
+    // find center of the circle that the ship is on
+    Location center = shiploc;
+    const float path_radius = path_size.get()*0.5;
+    center.offset_bearing(ship.heading_deg+(ship.yaw_rate>0?90:-90), path_radius);
+
+    // scale speed for ratio of distances
+    const float p = center.get_distance(loc) / path_radius;
+    const float scaled_speed = ship.speed * p;
+
+    // work out how far around the circle ahead or behind we are for
+    // rotating velocity
+    const float bearing1 = center.get_bearing(loc);
+    const float bearing2 = center.get_bearing(shiploc);
+    const float heading = ship.heading_deg + degrees(bearing1-bearing2);
+
+    Vector2f vel(scaled_speed, 0);
+    vel.rotate(radians(heading));
     yaw_rate = ship.yaw_rate;
     return vel;
 }
