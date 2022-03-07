@@ -8,7 +8,7 @@
 class AP_ADRC : public AC_PID {
     public:
        // Constructor for ADRC
-        AP_ADRC(float dt);
+        AP_ADRC(float B0, float dt);
 
         //virtual ~AP_ADRC() = default;
 
@@ -26,7 +26,7 @@ class AP_ADRC : public AC_PID {
 
         // Reset filter
         void reset_filter(){
-            flags_.reset_filter_ = true;
+            _flags.reset_filter = true;
         }
 
         const AP_Logger::PID_Info& get_pid_info(void) const {
@@ -42,25 +42,25 @@ class AP_ADRC : public AC_PID {
         float sign(float x);
 
         // parameters
-        AP_Float wc_;          // Response bandwidth in rad/s
-        AP_Float wo_;          // State estimation bandwidth in rad/s
-        AP_Float b0_;          // Control gain
-        AP_Float limit_;
-        AP_Float delta_;
-        AP_Int8  order_;
+        AP_Float _wc;          // Response bandwidth in rad/s
+        AP_Float _wo;          // State estimation bandwidth in rad/s
+        AP_Float _b0;          // Control gain
+        AP_Float _limit;
+        AP_Float _delta;
+        AP_Int8  _order;
 
        // flags
         struct ar_adrc_flags {
-            bool reset_filter_ :1; // true when input filter should be reset during next call to set_input
-        } flags_;
+            bool reset_filter :1; // true when input filter should be reset during next call to set_input
+        } _flags;
 
         // internal varibales
-        float dt_;                // timestep in seconds
+        float _dt;                // timestep in seconds
 
         // ESO interal variables
-        float z1_;
-        float z2_;
-        float z3_;
+        float _z1;
+        float _z2;
+        float _z3;
 
         AP_Logger::PID_Info _pid_info;
 
