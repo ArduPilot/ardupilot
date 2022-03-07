@@ -680,6 +680,10 @@ local RC_Channel_ud = {}
 function RC_Channel_ud:norm_input_ignore_trim() end
 
 -- desc
+---@param PWM integer
+function RC_Channel_ud:set_override(PWM) end
+
+-- desc
 ---@return integer
 function RC_Channel_ud:get_aux_switch_pos() end
 
