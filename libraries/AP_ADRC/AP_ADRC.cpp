@@ -1,6 +1,5 @@
-#include "AP_ADRC.h"
+#include <AP_ADRC/AP_ADRC.h>
 #include <AP_Math/AP_Math.h>
-#include <stdio.h>
 
 const AP_Param::GroupInfo AP_ADRC::var_info[] = {
 
@@ -16,13 +15,13 @@ const AP_Param::GroupInfo AP_ADRC::var_info[] = {
     // @DisplayName: ADRC control input gain
     AP_GROUPINFO("B0",3,AP_ADRC,b0_,10),
 
-    // @Param: DELTA
+    // @Param: DELT
     // @DisplayName: ADRC control linear zone length
-    AP_GROUPINFO("DELTA",4,AP_ADRC,delta_,1.0),
+    AP_GROUPINFO("DELT",4,AP_ADRC,delta_,1.0),
 
-    // @Param: ORDER
+    // @Param: ORDR
     // @DisplayName: ADRC control model order
-    AP_GROUPINFO("ORDER",5,AP_ADRC,order_,1),
+    AP_GROUPINFO("ORDR",5,AP_ADRC,order_,1),
 
     // @Param: LM
     // @DisplayName: ADRC control output limit
@@ -31,17 +30,18 @@ const AP_Param::GroupInfo AP_ADRC::var_info[] = {
     AP_GROUPEND
 };
 
-AP_ADRC::AP_ADRC()
+AP_ADRC::AP_ADRC(float dt) : AC_PID(1, 1, 1, 1.0f, 1, 1, 1.0f, 1, dt)
 {
-    AP_Param::setup_object_defaults(this,var_info);
+    AP_Param::setup_object_defaults(this, var_info);
+    dt_ = dt;
 
     // reset input filter to first value received
     flags_.reset_filter_ = true;
 
-    memset(&_debug_info, 0, sizeof(_debug_info));
+    memset(&_pid_info, 0, sizeof(_pid_info));
 }
 
-float AP_ADRC::update_all(float target,float measurement)
+float AP_ADRC::update_all(float target, float measurement, bool limit)
 {
     // don't process inf or NaN
     if (!isfinite(target) || !isfinite(measurement)) {
@@ -88,10 +88,10 @@ float AP_ADRC::update_all(float target,float measurement)
                 z1_ = z1_ + dt_ * (z2_ - beta1*e + b0_ * output_limited);
                 z2_ = z2_ + dt_ * (-beta2 * fe);
 
-                _debug_info.P      = z1_;
-                _debug_info.I      = z2_;
-                _debug_info.D      = z3_;
-                _debug_info.FF     = output_limited;
+                _pid_info.P      = z1_;
+                _pid_info.I      = z2_;
+                _pid_info.D      = z3_;
+                _pid_info.FF     = output_limited;
             }
             break;
         case 2:
@@ -119,10 +119,10 @@ float AP_ADRC::update_all(float target,float measurement)
                 z2_  = z2_ + dt_ * (z3_ - beta2 * fe + b0_ * output_limited);
                 z3_  = z3_ + dt_ * (- beta3 * fe1);
 
-                _debug_info.P      = z1_;
-                _debug_info.I      = z2_;
-                _debug_info.D      = z3_;
-                _debug_info.FF     = output_limited;
+                _pid_info.P      = z1_;
+                _pid_info.I      = z2_;
+                _pid_info.D      = z3_;
+                _pid_info.FF     = output_limited;
             }
             break;
         default:
@@ -132,9 +132,9 @@ float AP_ADRC::update_all(float target,float measurement)
 
 
     // For loggers
-    _debug_info.target = target;
-    _debug_info.actual = measurement;
-    _debug_info.error  = target - measurement;
+    _pid_info.target = target;
+    _pid_info.actual = measurement;
+    _pid_info.error  = target - measurement;
 
     return output_limited;
 }

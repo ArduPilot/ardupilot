@@ -2,21 +2,21 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <stdlib.h>
-#include <cmath>
 #include <AP_Logger/AP_Logger.h>
+#include <AC_PID/AC_PID.h>
 
-class AP_ADRC{
+class AP_ADRC : public AC_PID {
     public:
        // Constructor for ADRC
-        AP_ADRC();
-        virtual ~AP_ADRC() = default;
+        AP_ADRC(float dt);
+
+        //virtual ~AP_ADRC() = default;
 
         CLASS_NO_COPY(AP_ADRC);
 
         //  update_all - set target and measured inputs to ADRC controller and calculate outputs
         //  target and error are filtered
-        float update_all(float target,float measurement);
+        float update_all(float target, float measurement, bool limit = false) override;
 
         // Set time step in seconds
         void set_dt(float dt);
@@ -29,11 +29,12 @@ class AP_ADRC{
             flags_.reset_filter_ = true;
         }
 
-        const AP_Logger::PID_Info& get_debug_info(void) const { return _debug_info; }
+        const AP_Logger::PID_Info& get_pid_info(void) const {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADRC PIDINFO USED.");
+            return _pid_info; }
 
         // parameter var table
-         static const struct AP_Param::GroupInfo var_info[];
-
+        static const struct AP_Param::GroupInfo var_info[];
     private:
 
         float fal(float e, float alpha, float delta);
@@ -61,6 +62,6 @@ class AP_ADRC{
         float z2_;
         float z3_;
 
-        AP_Logger::PID_Info _debug_info;
+        AP_Logger::PID_Info _pid_info;
 
 };
