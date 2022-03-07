@@ -29,9 +29,7 @@ class AP_ADRC : public AC_PID {
             _flags.reset_filter = true;
         }
 
-        const AP_Logger::PID_Info& get_pid_info(void) const {
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADRC PIDINFO USED.");
-            return _pid_info; }
+        const AP_PIDInfo& get_pid_info(void) const override { return _pid_info; }
 
         // parameter var table
         static const struct AP_Param::GroupInfo var_info[];
@@ -50,11 +48,11 @@ class AP_ADRC : public AC_PID {
         AP_Int8  _order;
 
        // flags
-        struct ar_adrc_flags {
+        struct ap_adrc_flags {
             bool reset_filter :1; // true when input filter should be reset during next call to set_input
         } _flags;
 
-        // internal varibales
+        // internal variables
         float _dt;                // timestep in seconds
 
         // ESO interal variables
@@ -62,6 +60,6 @@ class AP_ADRC : public AC_PID {
         float _z2;
         float _z3;
 
-        AP_Logger::PID_Info _pid_info;
+        AP_PIDInfo _pid_info;
 
 };
