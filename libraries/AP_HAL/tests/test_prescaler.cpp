@@ -11,7 +11,7 @@ protected:
         const uint32_t prescaler = AP_HAL::RCOutput::calculate_bitrate_prescaler(clock, target_rate, is_dshot);
         // we would like at most a 1% discrepancy in target versus actual
         const float rate_delta = fabsf(float(clock / prescaler) - target_rate) / target_rate;
-        EXPECT_TRUE(rate_delta < 0.13f);
+        EXPECT_TRUE(rate_delta < 0.20f);
     }
 };
 
