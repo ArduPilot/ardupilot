@@ -236,6 +236,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     AP_SUBGROUPINFO(_pid2_rate_pitch, "RA2_PIT_",  51, AC_AttitudeControl_Multi, AP_ADRC),
     AP_SUBGROUPINFO(_pid2_rate_yaw,   "RA2_YAW_",  52, AC_AttitudeControl_Multi, AP_ADRC),
     AP_GROUPINFO("ALT_ACTIVE", 53, AC_AttitudeControl_Multi, alt_pid_active, 0),
+    AP_GROUPINFO("ALT_MASK",   54, AC_AttitudeControl_Multi, alt_pid_mask, 7),
 
     AP_GROUPEND
 };

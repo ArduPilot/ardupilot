@@ -48,10 +48,11 @@ public:
 
     // pid accessors
     AP_Int8 alt_pid_active;
+    AP_Int8 alt_pid_mask;
 
-    AC_PID& get_rate_roll_pid() override { return alt_pid_active?_pid2_rate_roll:_pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() override { return alt_pid_active?_pid2_rate_pitch:_pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() override { return alt_pid_active?_pid2_rate_yaw:_pid_rate_yaw; }
+    AC_PID& get_rate_roll_pid() override { return (alt_pid_active && (alt_pid_mask&1))?_pid2_rate_roll:_pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return (alt_pid_active && (alt_pid_mask&2))?_pid2_rate_pitch:_pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return (alt_pid_active && (alt_pid_mask&4))?_pid2_rate_yaw:_pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
