@@ -150,10 +150,7 @@ private:
     void dwell_test_init(float start_frq, float filt_freq, DwellType dwell_type);
 
     // dwell test used to perform frequency dwells for rate gains
-    void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
-
-    // dwell test used to perform frequency dwells for angle gains
-    void angle_dwell_test_run(float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase);
+    void dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase, DwellType dwell_type);
 
     // generates waveform for frequency sweep excitations
     float waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax);
@@ -286,8 +283,6 @@ private:
     AP_Float max_resp_gain;     // maximum response gain
     AP_Float vel_hold_gain;     // gain for velocity hold
 
-    // freqresp object for the rate frequency response tests
-    AC_AutoTune_FreqResp freqresp_rate;
-    // freqresp object for the angle frequency response tests
-    AC_AutoTune_FreqResp freqresp_angle;
+    // freqresp object for the frequency response tests
+    AC_AutoTune_FreqResp freqresp;
 };
