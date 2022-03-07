@@ -47,9 +47,11 @@ public:
 	virtual ~AC_AttitudeControl_Multi() {}
 
     // pid accessors
-    AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    AP_Int8 alt_pid_active;
+
+    AC_PID& get_rate_roll_pid() override { return alt_pid_active?_pid2_rate_roll:_pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return alt_pid_active?_pid2_rate_pitch:_pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return alt_pid_active?_pid2_rate_yaw:_pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -94,6 +96,10 @@ protected:
     AC_PID                _pid_rate_pitch;
     AC_PID                _pid_rate_yaw;
 
+    AC_PID                _pid2_rate_roll;
+    AC_PID                _pid2_rate_pitch;
+    AC_PID                _pid2_rate_yaw;
+    
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
