@@ -51,6 +51,7 @@ void AP_Proximity_SITL::update(void)
     current_loc.lng = sitl->state.longitude * 1.0e7;
     current_loc.alt = sitl->state.altitude * 1.0e2;
 
+#if AC_FENCE
     if (!AP::fence()->polyfence().breached()) {
         // only called to prompt polyfence to reload fence if required
     }
@@ -72,11 +73,15 @@ void AP_Proximity_SITL::update(void)
     } else {
         set_status(AP_Proximity::Status::NoData);
     }
+#else
+    set_status(AP_Proximity::Status::NoData);
+#endif
 }
 
 // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
 bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) const
 {
+#if AC_FENCE
     if (!AP::fence()->polyfence().inclusion_boundary_available()) {
         return false;
     }
@@ -106,6 +111,9 @@ bool AP_Proximity_SITL::get_distance_to_fence(float angle_deg, float &distance) 
         return false;
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
