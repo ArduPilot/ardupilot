@@ -96,10 +96,10 @@ protected:
     AC_PID                _pid_rate_pitch;
     AC_PID                _pid_rate_yaw;
 
-    AC_PID                _pid2_rate_roll;
-    AC_PID                _pid2_rate_pitch;
-    AC_PID                _pid2_rate_yaw;
-    
+    AP_ADRC                _pid2_rate_roll;
+    AP_ADRC                _pid2_rate_pitch;
+    AP_ADRC                _pid2_rate_yaw;
+
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
