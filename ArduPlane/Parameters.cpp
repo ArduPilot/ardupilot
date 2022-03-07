@@ -1082,7 +1082,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL, 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor., 7:EnableDefaultAirspeed for takeoff, 8: Remove the TRIM_PITCH_CD on the GCS horizon, 9: Remove the TRIM_PITCH_CD on the OSD horizon, 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL, 11:Disable suppression of fixed wing rate gains in ground mode
+    // @Bitmask: 0:Rudder mixing in direct flight modes only (Manual / Stabilize / Acro),1:Use centered throttle in Cruise or FBWB to indicate trim airspeed, 2:Disable attitude check for takeoff arming, 3:Force target airspeed to trim airspeed in Cruise or FBWB, 4: Climb to ALT_HOLD_RTL before turning for RTL (4.2 and older for 4.3 see RTL_TYPE), 5: Enable yaw damper in acro mode, 6: Surpress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airpseed sensor., 7:EnableDefaultAirspeed for takeoff, 8: Remove the TRIM_PITCH_CD on the GCS horizon, 9: Remove the TRIM_PITCH_CD on the OSD horizon, 10: Adjust mid-throttle to be TRIM_THROTTLE in non-auto throttle modes except MANUAL, 11:Disable suppression of fixed wing rate gains in ground mode, 12: RTL will not descend if above ATL_HOLD_RTL until reaching home
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1184,14 +1184,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_THRESH", 26, ParametersG2, fs_ekf_thresh, FS_EKF_THRESHOLD_DEFAULT),
 
-    // @Param: RTL_CLIMB_MIN
-    // @DisplayName: RTL minimum climb
-    // @Description: The vehicle will climb this many m during the initial climb portion of the RTL. During this time the roll will be limited to LEVEL_ROLL_LIMIT degrees.
+    // @Param: RTL_LEVEL_CLIMB
+    // @DisplayName: RTL level climb
+    // @Description: The vehicle will climb this many meters while limiting to LEVEL_ROLL_LIMIT. The vehicle will not climb above ALT_HOLD_RTL.
     // @Units: m
     // @Range: 0 30
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RTL_CLIMB_MIN", 27, ParametersG2, rtl_climb_min, 0),
+    AP_GROUPINFO("RTL_LEVEL_CLIMB", 27, ParametersG2, rtl_climb_min, 0),
 
 #if OFFBOARD_GUIDED == ENABLED
     // @Group: GUIDED_
@@ -1229,7 +1229,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
     AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
-    
+
+    // @Param: RTL_TYPE
+    // @DisplayName: RTL type
+    // @Description: RTL flight profile types
+    // @Values: 0: climb to ALT_HOLD_RTL on route (defualt), 1: Climb to ALT_HOLD_RTL before turning returning - roll constrained to LEVEL_ROLL_LIMIT, 2: Loiter to ALT_HOLD_RTL at current location before returning
+    // @User: Standard
+    AP_GROUPINFO("RTL_TYPE", 33, ParametersG2, rtl_type, ModeRTL::RTL_type::NONE),
+
     AP_GROUPEND
 };
 
@@ -1492,6 +1499,11 @@ void Plane::load_parameters(void)
         const uint16_t old_index = 0;       // Old parameter index in the tree
         const uint16_t old_top_element = 0; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, old_top_element, true);
+    }
+
+    // convert to new RTL type param from old flight option
+    if (!plane.g2.rtl_type.configured() && (g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN_UNUSED)) {
+        plane.g2.rtl_type.set_and_save(ModeRTL::RTL_type::CLIMB_BEFORE_TURN);
     }
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));

@@ -348,8 +348,6 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
 
     setup_glide_slope();
     setup_turn_angle();
-
-    logger.Write_Mode(control_mode->mode_number(), control_mode_reason);
 }
 
 /*

@@ -145,7 +145,7 @@ enum FlightOptions {
     CRUISE_TRIM_THROTTLE = (1 << 1),
     DISABLE_TOFF_ATTITUDE_CHK = (1 << 2),
     CRUISE_TRIM_AIRSPEED = (1 << 3),
-    CLIMB_BEFORE_TURN = (1 << 4),
+    CLIMB_BEFORE_TURN_UNUSED = (1 << 4),
     ACRO_YAW_DAMPER = (1 << 5),
     SURPRESS_TKOFF_SCALING = (1<<6),
     ENABLE_DEFAULT_AIRSPEED = (1<<7),
@@ -153,6 +153,7 @@ enum FlightOptions {
     OSD_REMOVE_TRIM_PITCH_CD = (1 << 9),
     CENTER_THROTTLE_TRIM = (1<<10),
     DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
+    RTL_NO_DESCENT = (1<<12),
 };
 
 enum CrowFlapOptions {

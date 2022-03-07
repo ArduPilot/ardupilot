@@ -5,15 +5,35 @@ bool ModeRTL::_enter()
 {
     plane.prev_WP_loc = plane.current_loc;
     plane.do_RTL(plane.get_RTL_altitude_cm());
-    plane.rtl.done_climb = false;
+    stage = STAGE::RETURNING;
 #if HAL_QUADPLANE_ENABLED
     plane.vtol_approach_s.approach_stage = Plane::Landing_ApproachStage::RTL;
 #endif
+
+    if (plane.current_loc.alt < plane.next_WP_loc.alt) {
+        // options to get up to RTL altitude if lower
+        if (plane.g2.rtl_climb_min > 0 || plane.g2.rtl_type == RTL_type::CLIMB_BEFORE_TURN) {
+            stage = STAGE::LEVEL_CLIMB;
+
+        } else if (plane.g2.rtl_type == RTL_type::LOITER_TO_ALT) {
+            // loiter at current location
+            plane.next_WP_loc.lat = plane.current_loc.lat;
+            plane.next_WP_loc.lng = plane.current_loc.lng;
+            stage = STAGE::LOITER_TO_ALT;
+        }
+    }
 
     // do not check if we have reached the loiter target if switching from loiter this will trigger as the nav controller has not yet proceeded the new destination
 #if HAL_QUADPLANE_ENABLED
     switch_QRTL(false);
 #endif
+
+    if ((plane.g.rtl_autoland == 2) && plane.mission.jump_to_landing_sequence()) {
+        // Go directly to the landing sequence
+        // switch from RTL -> AUTO
+        plane.mission.set_force_resume(true);
+        plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
+    }
 
     return true;
 }
@@ -24,26 +44,7 @@ void ModeRTL::update()
     plane.calc_nav_pitch();
     plane.calc_throttle();
 
-    bool alt_threshold_reached = false;
-    if (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN) {
-        // Climb to ALT_HOLD_RTL before turning. This overrides RTL_CLIMB_MIN.
-        alt_threshold_reached = plane.current_loc.alt > plane.next_WP_loc.alt;
-    } else if (plane.g2.rtl_climb_min > 0) {
-        /*
-           when RTL first starts limit bank angle to LEVEL_ROLL_LIMIT
-           until we have climbed by RTL_CLIMB_MIN meters
-           */
-        alt_threshold_reached = (plane.current_loc.alt - plane.prev_WP_loc.alt)*0.01 > plane.g2.rtl_climb_min;
-    } else {
-        return;
-    }
-
-    if (!plane.rtl.done_climb && alt_threshold_reached) {
-        plane.prev_WP_loc = plane.current_loc;
-        plane.setup_glide_slope();
-        plane.rtl.done_climb = true;
-    }
-    if (!plane.rtl.done_climb) {
+    if (stage == STAGE::LEVEL_CLIMB) {
         // Constrain the roll limit as a failsafe, that way if something goes wrong the plane will
         // eventually turn back and go to RTL instead of going perfectly straight. This also leaves
         // some leeway for fighting wind.
@@ -54,6 +55,7 @@ void ModeRTL::update()
 
 void ModeRTL::navigate()
 {
+    const bool recent_mode_change = AP_HAL::millis() - plane.last_mode_change_ms < 1000;
 #if HAL_QUADPLANE_ENABLED
     if (plane.control_mode->mode_number() != QRTL) {
         // QRTL shares this navigate function with RTL
@@ -69,40 +71,51 @@ void ModeRTL::navigate()
             return;
         }
 
-        if ((AP_HAL::millis() - plane.last_mode_change_ms > 1000) && switch_QRTL()) {
+        if (!recent_mode_change && switch_QRTL()) {
             return;
         }
     }
 #endif
 
-    if (plane.g.rtl_autoland == 1 &&
-        !plane.auto_state.checked_for_autoland &&
-        plane.reached_loiter_target() && 
-        labs(plane.altitude_error_cm) < 1000) {
-        // we've reached the RTL point, see if we have a landing sequence
-        if (plane.mission.jump_to_landing_sequence()) {
+    if (!recent_mode_change &&
+            stage == STAGE::RETURNING &&
+            plane.reached_loiter_target() &&
+            labs(plane.altitude_error_cm) < 1000) {
+        stage = STAGE::REACHED_HOME;
+
+        if (plane.g.rtl_autoland == 1 && plane.mission.jump_to_landing_sequence()) {
+            // we've reached the RTL point, see if we have a landing sequence
             // switch from RTL -> AUTO
             plane.mission.set_force_resume(true);
             plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
-        }
 
-        // prevent running the expensive jump_to_landing_sequence
-        // on every loop
-        plane.auto_state.checked_for_autoland = true;
-    }
-    else if (plane.g.rtl_autoland == 2 &&
-        !plane.auto_state.checked_for_autoland) {
-        // Go directly to the landing sequence
-        if (plane.mission.jump_to_landing_sequence()) {
-            // switch from RTL -> AUTO
-            plane.mission.set_force_resume(true);
-            plane.set_mode(plane.mode_auto, ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND);
+        } else if (plane.g.RTL_altitude_cm > 0 && (plane.g2.flight_options & FlightOptions::RTL_NO_DESCENT)) {
+            // update target altitude
+            plane.do_RTL(plane.g.RTL_altitude_cm + plane.home.alt);
         }
-
-        // prevent running the expensive jump_to_landing_sequence
-        // on every loop
-        plane.auto_state.checked_for_autoland = true;
     }
+
+    if ((stage != STAGE::RETURNING) && (stage != STAGE::REACHED_HOME) && (plane.current_loc.alt >= plane.next_WP_loc.alt)) {
+        // always return once reached RTL altitude
+        stage = STAGE::RETURNING;
+        plane.do_RTL(plane.get_RTL_altitude_cm());
+    }
+
+    if ((stage == STAGE::LEVEL_CLIMB) &&
+            (plane.g2.rtl_type != RTL_type::CLIMB_BEFORE_TURN) &&
+            (plane.current_loc.alt > (plane.prev_WP_loc.alt + plane.g2.rtl_climb_min * 100))) {
+        // climb min is done
+        plane.do_RTL(plane.get_RTL_altitude_cm());
+        if (plane.g2.rtl_type == RTL_type::LOITER_TO_ALT) {
+            // loiter at current location
+            plane.next_WP_loc.lat = plane.current_loc.lat;
+            plane.next_WP_loc.lng = plane.current_loc.lng;
+            stage = STAGE::LOITER_TO_ALT;
+        } else {
+            stage = STAGE::RETURNING;
+        }
+    }
+
     uint16_t radius = abs(plane.g.rtl_radius);
     if (radius > 0) {
         plane.loiter.direction = (plane.g.rtl_radius < 0) ? -1 : 1;

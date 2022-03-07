@@ -144,6 +144,9 @@ int32_t Plane::get_RTL_altitude_cm() const
     if (g.RTL_altitude_cm < 0) {
         return current_loc.alt;
     }
+    if (g2.flight_options & FlightOptions::RTL_NO_DESCENT) {
+        return MAX(g.RTL_altitude_cm + home.alt, current_loc.alt);
+    }
     return g.RTL_altitude_cm + home.alt;
 }
 
