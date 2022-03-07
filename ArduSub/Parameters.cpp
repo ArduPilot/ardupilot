@@ -734,10 +734,12 @@ void Sub::load_parameters()
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
     AP_Param::set_default_by_name("BARO_PROBE_EXT", 0);
-    AP_Param::set_default_by_name("SR0_EXTRA1", 10);
     AP_Param::set_default_by_name("BATT_MONITOR", 4);
     AP_Param::set_default_by_name("BATT_CAPACITY", 0);
     AP_Param::set_default_by_name("LEAK1_PIN", 27);
+    AP_Param::set_default_by_name("SERVO13_FUNCTION", 59);
+    AP_Param::set_default_by_name("SERVO14_FUNCTION", 60);
+    AP_Param::set_default_by_name("SERVO16_FUNCTION", 7);
 #endif
 }
 
