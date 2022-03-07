@@ -425,8 +425,6 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, floa
         pitch_out *= ratio;
     }
 
-    // do lateral tilt to euler roll conversion
-    roll_out = (18000/M_PI) * atanf(cosf(pitch_out*(M_PI/18000))*tanf(roll_out*(M_PI/18000)));
 
     // roll_out and pitch_out are returned
 }
