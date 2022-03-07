@@ -156,11 +156,11 @@ void AC_AutoTune_Heli::test_init()
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine_gain function whenever test is initialized
             freqresp.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::RATE);
-            dwell_test_init(start_freq, stop_freq, RATE);
+            dwell_test_init(start_freq, stop_freq, stop_freq, RATE);
         } else {
             // initialize determine_gain function whenever test is initialized
             freqresp.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::RATE);
-            dwell_test_init(start_freq, start_freq, RATE);
+            dwell_test_init(start_freq, stop_freq, start_freq, RATE);
         }
         if (!is_zero(start_freq)) {
             // 4 seconds is added to allow aircraft to achieve start attitude.  Then the time to conduct the dwells is added to it.
@@ -186,11 +186,11 @@ void AC_AutoTune_Heli::test_init()
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
             freqresp.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            dwell_test_init(start_freq, stop_freq, ANGLE);
+            dwell_test_init(start_freq, stop_freq, stop_freq, ANGLE);
         } else {
             // initialize determine gain function
             freqresp.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            dwell_test_init(start_freq, start_freq, ANGLE);
+            dwell_test_init(start_freq, stop_freq, start_freq, ANGLE);
         }
 
         // TODO add time limit for sweep test
@@ -910,7 +910,7 @@ void AC_AutoTune_Heli::rate_ff_test_run(float max_angle_cd, float target_rate_cd
 
 }
 
-void AC_AutoTune_Heli::dwell_test_init(float start_frq, float filt_freq, DwellType dwell_type)
+void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float filt_freq, DwellType dwell_type)
 {
     dwell_start_time_ms = 0.0f;
     settle_time = 200;
@@ -989,11 +989,14 @@ void AC_AutoTune_Heli::dwell_test_init(float start_frq, float filt_freq, DwellTy
         trim_pff_out = ff_term + p_term;
     }
 
-    if (!is_equal(start_freq, stop_freq)) {
+    if (!is_equal(start_frq, stop_frq)) {
         reset_sweep_variables();
         curr_test.gain = 0.0f;
         curr_test.phase = 0.0f;
     }
+
+    chirp_input.init(sweep_time_ms * 0.001f, start_frq / M_2PI, stop_frq / M_2PI, 0.0f, 0.0001f * sweep_time_ms, 0.0f);
+
 }
 
 void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, float stop_frq, float &dwell_gain, float &dwell_phase, DwellType dwell_type)
@@ -1005,7 +1008,6 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
     const uint32_t now = AP_HAL::millis();
     float target_angle_cd;
     float target_rate_cds;
-    float sweep_time_ms = 23000;
     float dwell_freq = start_frq;
     float target_rate_mag_cds;
     const float att_hold_gain = 4.5f;
@@ -1040,18 +1042,18 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
     Vector3f attitude_cd = Vector3f((float)ahrs_view->roll_sensor, (float)ahrs_view->pitch_sensor, (float)ahrs_view->yaw_sensor);
     if (settle_time == 0) {
         if (dwell_type == RATE) {
-            target_rate_cds = -waveform((now - dwell_start_time_ms) * 0.001, sweep_time_ms * 0.001f, target_rate_mag_cds, start_frq, stop_frq);
+            target_rate_cds = -chirp_input.update((now - dwell_start_time_ms) * 0.001, target_rate_mag_cds);
             filt_pit_roll_cd.apply(Vector2f(attitude_cd.x,attitude_cd.y), AP::scheduler().get_loop_period_s());
             filt_heading_error_cd.apply(wrap_180_cd(trim_attitude_cd.z - attitude_cd.z), AP::scheduler().get_loop_period_s());
         } else {
-            target_angle_cd = -waveform((now - dwell_start_time_ms) * 0.001, sweep_time_ms * 0.001f, tgt_attitude * 5730.0f, start_frq, stop_frq);
+            target_angle_cd = -chirp_input.update((now - dwell_start_time_ms) * 0.001, tgt_attitude * 5730.0f);
         }
         const Vector2f att_fdbk {
             -5730.0f * vel_hold_gain * velocity_bf.y,
             5730.0f * vel_hold_gain * velocity_bf.x
         };
         filt_att_fdbk_from_velxy_cd.apply(att_fdbk, AP::scheduler().get_loop_period_s());
-        dwell_freq = waveform_freq_rads;
+        dwell_freq = chirp_input.get_frequency_rads();
     } else {
         if (dwell_type == RATE) {
             target_rate_cds = 0.0f;
@@ -1236,45 +1238,6 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             step = UPDATE_GAINS;
         }
     }
-}
-// init_test - initialises the test
-float AC_AutoTune_Heli::waveform(float time, float time_record, float waveform_magnitude, float wMin, float wMax)
-{
-    float time_fade_in = 0.0f;      // Time to reach maximum amplitude of chirp
-    float time_fade_out = 0.1 * time_record;     // Time to reach zero amplitude after chirp finishes
-    float time_const_freq = 0.0f;
-
-    float window;
-    float output;
-
-    float B = logf(wMax / wMin);
-
-    if (time <= 0.0f) {
-        window = 0.0f;
-    } else if (time <= time_fade_in) {
-        window = 0.5 - 0.5 * cosf(M_PI * time / time_fade_in);
-    } else if (time <= time_record - time_fade_out) {
-        window = 1.0;
-    } else if (time <= time_record) {
-        window = 0.5 - 0.5 * cosf(M_PI * (time - (time_record - time_fade_out)) / time_fade_out + M_PI);
-    } else {
-        window = 0.0;
-    }
-
-    if (time <= 0.0f) {
-        waveform_freq_rads = wMin;
-        output = 0.0f;
-    } else if (time <= time_const_freq) {
-        waveform_freq_rads = wMin;
-        output = window * waveform_magnitude * sinf(wMin * time - wMin * time_const_freq);
-    } else if (time <= time_record) {
-        waveform_freq_rads = wMin * expf(B * (time - time_const_freq) / (time_record - time_const_freq));
-        output = window * waveform_magnitude * sinf((wMin * (time_record - time_const_freq) / B) * (expf(B * (time - time_const_freq) / (time_record - time_const_freq)) - 1));
-    } else {
-        waveform_freq_rads = wMax;
-        output = 0.0f;
-    }
-    return output;
 }
 
 // update gains for the rate p up tune type
