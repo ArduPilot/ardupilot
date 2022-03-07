@@ -180,14 +180,14 @@ void Copter::tuning()
         break;
 #endif
 
-     case TUNING_RATE_YAW_FILT:
-         attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
-         break;
+    case TUNING_RATE_YAW_FILT:
+        attitude_control->get_rate_yaw_pid().filt_E_hz(tuning_value);
+        break;
 
-     case TUNING_SYSTEM_ID_MAGNITUDE:
+    case TUNING_SYSTEM_ID_MAGNITUDE:
 #if MODE_SYSTEMID_ENABLED == ENABLED
-         copter.mode_systemid.set_magnitude(tuning_value);
+        copter.mode_systemid.set_magnitude(tuning_value);
 #endif
-         break;
+        break;
     }
 }
