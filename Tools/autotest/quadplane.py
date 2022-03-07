@@ -248,13 +248,25 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to speed up")
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
 
-            self.progress("Disarm/rearm with GCS")
-            self.disarm_vehicle()
+            self.progress("Disarm/rearm with GCS - expect to fail")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                         0,  # DISARM
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         0,
+                         timeout=10,
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+            self.progress("Disarm/rearm with GCS - forced")
+            self.disarm_vehicle(force=True)
             self.arm_vehicle()
 
             self.progress("Verify that airmode is still on")
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
-            self.disarm_vehicle()
+            self.disarm_vehicle(force=True)
             self.wait_ready_to_arm()
 
     def test_motor_mask(self):
