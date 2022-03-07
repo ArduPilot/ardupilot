@@ -86,15 +86,23 @@ uint32_t AP_HAL::RCOutput::calculate_bitrate_prescaler(uint32_t timer_clock, uin
         }
     }
 
-    // find the closest value
     const uint32_t freq = timer_clock / prescaler;
-    const float delta = fabsf(float(freq) - target_frequency);
-    if (freq > target_frequency
-        && delta > fabsf(float(timer_clock / (prescaler+1)) - target_frequency)) {
-        prescaler++;
-    } else if (freq < target_frequency
-        && delta > fabsf(float(timer_clock / (prescaler-1)) - target_frequency)) {
-        prescaler--;
+    // if using dshot then always pick the high value. choosing low seems to not agree with some
+    // ESCs despite the fact that BLHeli32 is supposed not to care what the bitrate is
+    if (is_dshot) {
+        if (freq < target_frequency) {
+            prescaler--;
+        }
+    } else {
+        // find the closest value
+        const float delta = fabsf(float(freq) - target_frequency);
+        if (freq > target_frequency
+            && delta > fabsf(float(timer_clock / (prescaler+1)) - target_frequency)) {
+            prescaler++;
+        } else if (freq < target_frequency
+            && delta > fabsf(float(timer_clock / (prescaler-1)) - target_frequency)) {
+            prescaler--;
+        }
     }
 
     return prescaler;
