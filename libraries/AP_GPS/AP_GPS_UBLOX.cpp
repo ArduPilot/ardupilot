@@ -394,6 +394,15 @@ AP_GPS_UBLOX::_request_next_config(void)
         }
 #endif
         break;
+    case STEP_TIM_TM2:
+#if UBLOX_TIM_TM2_LOGGING
+        if(!_request_message_rate(CLASS_TIM, MSG_TIM_TM2)) {
+            _next_message--;
+        }
+#else
+        _unconfigured_messages &= ~CONFIG_TIM_TM2;
+#endif
+        break;
     default:
         // this case should never be reached, do a full reset if it is hit
         _next_message = STEP_PVT;
@@ -470,6 +479,15 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
         }
         break;
 #endif // UBLOX_RXM_RAW_LOGGING
+#if UBLOX_TIM_TM2_LOGGING
+    case CLASS_TIM:
+        if (msg_id == MSG_TIM_TM2) {
+            desired_rate = RATE_TIM_TM2;
+            config_msg_id = CONFIG_TIM_TM2;
+            break;
+        }
+        return;
+#endif // UBLOX_TIM_TM2_LOGGING
     default:
         return;
     }
@@ -722,6 +740,50 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 #endif
 }
+
+#if UBLOX_TIM_TM2_LOGGING
+void AP_GPS_UBLOX::log_tim_tm2(void)
+{
+#if HAL_LOGGING_ENABLED
+    if (!should_log()) {
+        return;
+    }
+
+// @LoggerMessage: UBXT
+// @Description: uBlox specific UBX-TIM-TM2 logging, see uBlox interface description
+// @Field: TimeUS: Time since system startup
+// @Field: I: GPS instance number
+// @Field: ch: Channel (i.e. EXTINT) upon which the pulse was measured
+// @Field: flags: Bitmask
+// @Field: count: Rising edge counter
+// @Field: wnR: Week number of last rising edge
+// @Field: MsR: Tow of rising edge
+// @Field: SubMsR: Millisecond fraction of tow of rising edge in nanoseconds
+// @Field: wnF: Week number of last falling edge
+// @Field: MsF: Tow of falling edge
+// @Field: SubMsF: Millisecond fraction of tow of falling edge in nanoseconds
+// @Field: accEst: Accuracy estimate
+
+    AP::logger().WriteStreaming("UBXT",
+        "TimeUS,I,ch,flags,count,wnR,MsR,SubMsR,wnF,MsF,SubMsF,accEst",
+        "s#----ss-sss",
+        "F-----CI-CII",
+        "QBBBHHIIHIII",
+        AP_HAL::micros64(),
+        state.instance,
+        _buffer.tim_tm2.ch,
+        _buffer.tim_tm2.flags,
+        _buffer.tim_tm2.count,
+        _buffer.tim_tm2.wnR,
+        _buffer.tim_tm2.towMsR,
+        _buffer.tim_tm2.towSubMsR,
+        _buffer.tim_tm2.wnF,
+        _buffer.tim_tm2.towMsF,
+        _buffer.tim_tm2.towSubMsF,
+        _buffer.tim_tm2.accEst);
+#endif
+}
+#endif // UBLOX_TIM_TM2_LOGGING
 
 #if UBLOX_RXM_RAW_LOGGING
 void AP_GPS_UBLOX::log_rxm_raw(const struct ubx_rxm_raw &raw)
@@ -1198,6 +1260,13 @@ AP_GPS_UBLOX::_parse_gps(void)
         return false;
     }
 #endif // UBLOX_RXM_RAW_LOGGING
+
+#if UBLOX_TIM_TM2_LOGGING
+    if ((_class == CLASS_TIM) && (_msg_id == MSG_TIM_TM2) && (_payload_length == 28)) {
+        log_tim_tm2();
+        return false;
+    }
+#endif // UBLOX_TIM_TM2_LOGGING
 
     if (_class != CLASS_NAV) {
         unexpected_message();
@@ -1828,7 +1897,8 @@ static const char *reasons[] = {"navigation rate",
                                 "time pulse settings",
                                 "TIMEGPS rate",
                                 "Time mode settings",
-                                "RTK MB"};
+                                "RTK MB",
+                                "TIM TM2"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 
