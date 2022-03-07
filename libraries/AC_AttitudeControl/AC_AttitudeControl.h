@@ -165,7 +165,7 @@ public:
 
     // Command euler yaw rate and pitch angle with roll angle specified in body frame
     // (implemented only in AC_AttitudeControl_TS for tailsitter quadplanes)
-    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd, 
+    virtual void input_euler_rate_yaw_euler_angle_pitch_bf_roll(bool plane_controls, float euler_roll_angle_cd,
         float euler_pitch_angle_cd, float euler_yaw_rate_cds) {}
 
     // Command an euler roll, pitch, and yaw rate with angular velocity feedforward and smoothing
@@ -370,7 +370,7 @@ public:
 
     // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
     void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);
-    
+
     // Sets the roll and pitch rate shaping time constant
     void set_roll_pitch_rate_tc(float input_tc) { _rate_rp_tc = input_tc; }
 
