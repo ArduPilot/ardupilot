@@ -66,8 +66,8 @@ bool AP_Declination::get_mag_field_ef(float latitude_deg, float longitude_deg, f
     }
 
     /* find index of nearest low sampling point */
-    uint32_t min_lat_index = static_cast<uint32_t>((-(SAMPLING_MIN_LAT) + min_lat)  / SAMPLING_RES);
-    uint32_t min_lon_index = static_cast<uint32_t>((-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES);
+    uint32_t min_lat_index = constrain_int32(static_cast<uint32_t>((-(SAMPLING_MIN_LAT) + min_lat)  / SAMPLING_RES), 0, LAT_TABLE_SIZE - 2);
+    uint32_t min_lon_index = constrain_int32(static_cast<uint32_t>((-(SAMPLING_MIN_LON) + min_lon) / SAMPLING_RES), 0, LON_TABLE_SIZE -2);
 
     /* calculate intensity */
 

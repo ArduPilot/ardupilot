@@ -35,7 +35,10 @@ private:
     static const float SAMPLING_MIN_LON;
     static const float SAMPLING_MAX_LON;
 
-    static const float declination_table[19][37];
-    static const float inclination_table[19][37];
-    static const float intensity_table[19][37];
+    static const uint32_t LAT_TABLE_SIZE = 19;
+    static const uint32_t LON_TABLE_SIZE = 37;
+
+    static const float declination_table[LAT_TABLE_SIZE][LON_TABLE_SIZE];
+    static const float inclination_table[LAT_TABLE_SIZE][LON_TABLE_SIZE];
+    static const float intensity_table[LAT_TABLE_SIZE][LON_TABLE_SIZE];
 };
