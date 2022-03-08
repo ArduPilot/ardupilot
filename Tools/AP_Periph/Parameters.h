@@ -95,7 +95,7 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_Int8 gps_port;
-#if HAL_NUM_CAN_IFACES >= 2
+#if GPS_MOVING_BASELINE
     AP_Int8 gps_mb_only_can_port;
 #endif
 #endif
