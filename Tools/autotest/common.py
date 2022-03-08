@@ -4361,6 +4361,22 @@ class AutoTest(ABC):
                      timeout=timeout)
         return self.wait_disarmed()
 
+    def disarm_vehicle_expect_fail(self):
+        '''disarm, checking first that non-forced disarm fails, then doing a forced disarm'''
+        self.progress("Disarm - expect to fail")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                     0,  # DISARM
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     timeout=10,
+                     want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.progress("Disarm - forced")
+        self.disarm_vehicle(force=True)
+
     def wait_disarmed_default_wait_time(self):
         return 30
 
@@ -11191,7 +11207,7 @@ switch value'''
         # ok done, stop the engine
         if self.is_plane():
             self.zero_throttle()
-            if not self.disarm_vehicle():
+            if not self.disarm_vehicle(force=True):
                 raise NotAchievedException("Failed to DISARM")
 
     def test_frsky_d(self):
