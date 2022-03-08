@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#define MAV_CMD_NAV_DROP_WP 31016
+
 /********************************************************************************/
 // Command Event Handlers
 /********************************************************************************/
@@ -45,6 +47,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_WAYPOINT:                  // Navigate to Waypoint
         do_nav_wp(cmd);
+        break;
+
+    case MAV_CMD_NAV_DROP_WP:
+        do_nav_drop_wp(cmd);
         break;
 
     case MAV_CMD_NAV_LAND:              // LAND to Waypoint
@@ -214,6 +220,9 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
 
     case MAV_CMD_NAV_WAYPOINT:
         return verify_nav_wp(cmd);
+        
+    case MAV_CMD_NAV_DROP_WP:
+        return verify_nav_drop_wp(cmd);
 
     case MAV_CMD_NAV_LAND:
         if (quadplane.is_vtol_land(cmd.id)) {
@@ -351,6 +360,12 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
 }
 
 void Plane::do_nav_wp(const AP_Mission::Mission_Command& cmd)
+{
+    set_next_WP(cmd.content.location);
+}
+
+// MY MOD //
+void Plane::do_nav_drop_wp(const AP_Mission::Mission_Command& cmd)
 {
     set_next_WP(cmd.content.location);
 }
@@ -635,6 +650,82 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // have we flown past the waypoint?
     if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Passed waypoint #%i dist %um",
+                          (unsigned)mission.get_current_nav_cmd().index,
+                          (unsigned)current_loc.get_distance(flex_next_WP_loc));
+        return true;
+    }
+
+    return false;
+}
+
+// MY MOD //
+bool Plane::verify_nav_drop_wp(const AP_Mission::Mission_Command& cmd)
+{
+    steer_state.hold_course_cd = -1;
+    
+    // depending on the pass by flag either go to waypoint in regular manner or
+    // fly past it for set distance along the line of waypoints
+    Location flex_next_WP_loc = next_WP_loc;
+
+    uint8_t cmd_passby = HIGHBYTE(cmd.p1); // distance in meters to pass beyond the wp
+    uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
+
+    if (cmd_passby > 0) {
+        float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
+
+        if (!is_zero(dist)) {
+            float factor = (dist + cmd_passby) / dist;
+
+            flex_next_WP_loc.lat = flex_next_WP_loc.lat + (flex_next_WP_loc.lat - prev_WP_loc.lat) * (factor - 1.0f);
+            flex_next_WP_loc.lng = flex_next_WP_loc.lng + Location::diff_longitude(flex_next_WP_loc.lng,prev_WP_loc.lng) * (factor - 1.0f);
+        }
+    }
+
+    if (auto_state.crosstrack) {
+        nav_controller->update_waypoint(prev_WP_loc, flex_next_WP_loc);
+    } else {
+        nav_controller->update_waypoint(current_loc, flex_next_WP_loc);
+    }
+
+    // see if the user has specified a maximum distance to waypoint
+    // If override with p3 - then this is not used as it will overfly badly
+    if (g.waypoint_max_radius > 0 &&
+        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+        if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
+            // this is needed to ensure completion of the waypoint
+            if (cmd_passby == 0) {
+                prev_WP_loc = current_loc;
+            }
+        }
+        return false;
+    }
+
+    float acceptance_distance_m = 0; // default to: if overflown - let it fly up to the point
+    if (cmd_acceptance_distance > 0) {
+        // allow user to override acceptance radius
+        acceptance_distance_m = cmd_acceptance_distance;
+    } else if (cmd_passby == 0) {
+        acceptance_distance_m = nav_controller->turn_distance(g.waypoint_radius, auto_state.next_turn_angle);
+    } else {
+
+    }
+    
+    if (auto_state.wp_distance <= acceptance_distance_m) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Reached DROP waypoint #%i dist %um",
+                          (unsigned)mission.get_current_nav_cmd().index,
+                          (unsigned)current_loc.get_distance(flex_next_WP_loc));
+
+        // Виконуємо функцію скидання "подарунків" тут //
+        // з наступними параметрами
+        //
+        // drop_function(cmd.content.drop.package_number, cmd.content.drop.reserve_parameter);
+
+        return true;
+	}
+
+    // have we flown past the waypoint?
+    if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "PASSED DROP waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)current_loc.get_distance(flex_next_WP_loc));
         return true;

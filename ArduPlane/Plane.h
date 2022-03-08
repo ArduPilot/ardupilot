@@ -899,6 +899,9 @@ private:
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
+    // MY MOD //
+    void do_nav_drop_wp(const AP_Mission::Mission_Command& cmd);
+    // ----- //
     void do_land(const AP_Mission::Mission_Command& cmd);
     void do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void loiter_set_direction_wp(const AP_Mission::Mission_Command& cmd);
@@ -911,6 +914,9 @@ private:
     void do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
+    // MY MOD //
+    bool verify_nav_drop_wp(const AP_Mission::Mission_Command& cmd);
+    // ----- //
     bool verify_landing_vtol_approach(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);

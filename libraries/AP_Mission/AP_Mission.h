@@ -54,6 +54,13 @@ class AP_Mission
 {
 
 public:
+    // MY MOD //
+    // drop command structure
+    struct PACKED Drop_Command {
+        uint8_t package_number ;    // number of package (0 or 1)
+        int16_t reserve_parameter;     // reserve parameter
+    };
+
     // jump command structure
     struct PACKED Jump_Command {
         uint16_t target;        // target command id
@@ -216,6 +223,10 @@ public:
     };
 
     union Content {
+        // MY MOD //
+        // params fo dropping
+        Drop_Command drop;
+
         // jump structure
         Jump_Command jump;
 
