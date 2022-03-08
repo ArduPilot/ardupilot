@@ -1,0 +1,105 @@
+# hw definition file for processing by chibios_hwdef.py
+# for H755
+
+# MCU class and specific type
+MCU STM32H7xx STM32H755xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define CORE_CM7
+#this change 
+define SMPS_PWR
+define STM32_HSE_BYPASS
+
+# board ID for firmware load
+APJ_BOARD_ID 139
+
+# the nucleo seems to have trouble with flashing the last sector?
+FLASH_SIZE_KB 2048
+
+FLASH_RESERVE_START_KB 128
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+#define HAL_STORAGE_SIZE 32768
+
+# use last 2 pages for flash storage
+# H743 has 16 pages of 128k each
+define STORAGE_FLASH_PAGE 14
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 EMPTY EMPTY UART7
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# UART7 is debug
+PF6 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+define HAL_SPI_CHECK_CLOCK_FREQ
+
+# sensor CS
+#PA4 MPU_CS CS
+PC7 MPU_CS CS
+
+define HAL_LED_ON 0
+# status LEDs
+PB0 LED OUTPUT HIGH GPIO(0) #Green
+PE1 LED1 OUTPUT HIGH GPIO(2) #Yellow
+PB14 LED2 OUTPUT HIGH GPIO(1) #Red
+define HAL_GPIO_A_LED_PIN 0
+define HAL_GPIO_B_LED_PIN 1
+define HAL_GPIO_C_LED_PIN 2
+define HAL_GPIO_LED_OFF 1
+define HAL_GPIO_LED_ON 0
+#define HAL_HAVE_PIXRACER_LED
+
+# Order of I2C buses
+I2C_ORDER I2C2
+
+define HAL_I2C_INTERNAL_MASK 0
+
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# barometers
+#BARO BMP388 I2C:2:0x76
+BARO BMP388 I2C:0:0x77
+
+# SPI1
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# SPI3
+PB3 SPI3_SCK SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+
+# SPI devices
+#SPIDEV mpu6000        SPI3 DEVID1  MPU_CS    MODE3  2*MHZ  8*MHZ
+#SPIDEV ms5611         SPI3 DEVID1  BARO_CS   MODE3  8*MHZ  8*MHZ
+SPIDEV icm20948       SPI3 DEVID1  MPU_CS   MODE3  4*MHZ  8*MHZ
+
+# analog in
+PA0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA1 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+define ALLOW_ARM_NO_COMPASS
+
+# probe for an invensense IMU
+#IMU Invensense SPI:mpu6000 ROTATION_NONE
+IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+# compass as part of ICM20948 on newer cubes
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
+
+# and ms5611 baro
+#BARO MS56XX SPI:ms56xx
+
+# define HAL_DISABLE_DCACHE
