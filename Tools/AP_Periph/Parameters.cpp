@@ -173,7 +173,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GSCALAR(gps_port, "GPS_PORT", HAL_PERIPH_GPS_PORT_DEFAULT),
 
-#if HAL_NUM_CAN_IFACES >= 2
+#if GPS_MOVING_BASELINE
     // @Param: MB_CAN_PORT
     // @DisplayName: Moving Baseline CAN Port option
     // @Description: Autoselect dedicated CAN port on which moving baseline data will be transmitted.
