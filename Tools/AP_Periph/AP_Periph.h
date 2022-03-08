@@ -247,6 +247,11 @@ public:
 
     static AP_Periph_FW *_singleton;
 
+    enum {
+        DEBUG_SHOW_STACK,
+        DEBUG_AUTOREBOOT
+    };
+
     // show stack as DEBUG msgs
     void show_stack_free();
 
