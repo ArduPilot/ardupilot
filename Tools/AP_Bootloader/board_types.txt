@@ -132,7 +132,7 @@ AP_HW_KAKUTEF4_MINI                  1030
 AP_HW_H31_PIXC4_PI                   1031
 AP_HW_H31_PIXC4_JETSON               1032
 AP_HW_CUBEORANGE_JOEY                1033
-AP_HW_SIERRAF9PGPS_PERIPH            1034
+AP_HW_SierraF9P                      1034
 AP_HW_HolybroGPS                     1035
 AP_HW_QioTekZealotH743               1036
 AP_HW_HEREPRO                        1037
