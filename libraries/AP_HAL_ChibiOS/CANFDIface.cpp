@@ -87,7 +87,13 @@
 
 extern AP_HAL::HAL& hal;
 
-static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz");
+#define STR(x) #x
+#define XSTR(x) STR(x)
+#if defined(STM32H7)
+static_assert(STM32_FDCANCLK == 80U*1000U*1000U, "FDCAN clock must be 80MHz, got " XSTR(STM32_FDCANCLK));
+#else
+static_assert(STM32_FDCANCLK <= 80U*1000U*1000U, "FDCAN clock must be max 80MHz, got " XSTR(STM32_FDCANCLK));
+#endif
 
 using namespace ChibiOS;
 
