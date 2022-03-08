@@ -742,6 +742,9 @@ function periph:get_vehicle_state() end
 ---@return number
 function periph:get_yaw_earth() end
 
+-- desc
+---@param text string
+function periph:can_printf(text) end
 
 -- desc
 ---@class ins
