@@ -61,6 +61,10 @@ float Plane::calc_speed_scaler(void)
  */
 bool Plane::stick_mixing_enabled(void)
 {
+    if (!rc().has_valid_input()) {
+        // never stick mix without valid RC
+        return false;
+    }
 #if AC_FENCE == ENABLED
     const bool stickmixing = fence_stickmixing();
 #else
@@ -81,9 +85,7 @@ bool Plane::stick_mixing_enabled(void)
         // we're in an auto mode. Check the stick mixing flag
         if (g.stick_mixing != StickMixing::NONE &&
             g.stick_mixing != StickMixing::VTOL_YAW &&
-            stickmixing &&
-            !rc_failsafe_active()) {
-            // we're in an auto mode, and haven't triggered rc failsafe
+            stickmixing) {
             return true;
         } else {
             return false;
