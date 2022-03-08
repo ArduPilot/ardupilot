@@ -10,10 +10,12 @@
     #define WVANE_PARAM_ENABLED 1
     #define WVANE_PARAM_SPD_MAX_DEFAULT 0
     #define WVANE_PARAM_VELZ_MAX_DEFAULT 0
+    #define WVANE_PARAM_GAIN_DEFAULT 0
 #else
     #define WVANE_PARAM_ENABLED 0
     #define WVANE_PARAM_SPD_MAX_DEFAULT 2
     #define WVANE_PARAM_VELZ_MAX_DEFAULT 1
+    #define WVANE_PARAM_GAIN_DEFAULT 1
 #endif
 
 
@@ -32,7 +34,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Range: 0.5 4
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("GAIN", 2, AC_WeatherVane, _gain, 1.0),
+    AP_GROUPINFO("GAIN", 2, AC_WeatherVane, _gain, WVANE_PARAM_GAIN_DEFAULT),
 
     // @Param: ANG_MIN
     // @DisplayName: Weathervaning min angle
@@ -98,8 +100,8 @@ AC_WeatherVane::AC_WeatherVane(void)
 bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg, const bool is_takeoff, const bool is_landing)
 {
     Direction dir = (Direction)_direction.get();
-    if ((dir == Direction::OFF) || !allowed || (pilot_yaw != 0)) {
-        // parameter disabled
+    if ((dir == Direction::OFF) || !allowed || (pilot_yaw != 0) || !is_positive(_gain)) {
+        // parameter disabled, or 0 gain
         // disabled temporarily
         // dont't override pilot
         reset();
