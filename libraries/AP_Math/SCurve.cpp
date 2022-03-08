@@ -622,11 +622,12 @@ void SCurve::advance_time(float dt)
 // calculate the jerk, acceleration, velocity and position at the provided time
 void SCurve::get_jerk_accel_vel_pos_at_time(float time_now, float &Jt_out, float &At_out, float &Vt_out, float &Pt_out) const
 {
+    // start with zeros as function is void and we want to guarantee all outputs are initialised
+    Jt_out = 0;
+    At_out = 0;
+    Vt_out = 0;
+    Pt_out = 0;
     if (num_segs != segments_max) {
-        Jt_out = 0;
-        At_out = 0;
-        Vt_out = 0;
-        Pt_out = 0;
         return;
     }
 
