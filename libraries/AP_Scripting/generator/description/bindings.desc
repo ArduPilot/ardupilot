@@ -473,6 +473,7 @@ singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW alias periph
 singleton AP_Periph_FW method get_yaw_earth float
 singleton AP_Periph_FW method get_vehicle_state uint32_t
+singleton AP_Periph_FW method can_printf void "%s"'literal string
 
 include AP_Motors/AP_Motors_Class.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
