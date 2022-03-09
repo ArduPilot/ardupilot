@@ -1321,10 +1321,10 @@ function vehicle:set_target_posvel_NED(target_pos, target_vel) end
 function vehicle:set_target_pos_NED(target_pos, use_yaw, yaw_deg, use_yaw_rate, yaw_rate_degs, yaw_relative, terrain_alt) end
 
 -- desc
----@param param1 Location_ud -- current target
----@param param2 Location_ud -- new target
+---@param current_target Location_ud -- current target, from get_target_location()
+---@param new_target Location_ud -- new target
 ---@return boolean
-function vehicle:update_target_location(param1, param2) end
+function vehicle:update_target_location(current_target, new_target) end
 
 -- desc
 ---@return Location_ud|nil

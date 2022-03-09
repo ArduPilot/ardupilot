@@ -78,27 +78,20 @@ function sq(v)
    return v*v
 end
 
--- return time since boot in seconds
-function time_seconds()
-   return millis():tofloat() * 0.001
-end
-
---[[
-   parameter values which are auto-set on startup
---]]
-local key_params = {
-   FOLL_ENABLE = 1,
-   FOLL_OFS_TYPE = 1,
-   FOLL_ALT_TYPE = 0,
-}
-
 -- check key parameters
 function check_parameters()
+  --[[
+     parameter values which are auto-set on startup
+  --]]
+   local key_params = {
+      FOLL_ENABLE = 1,
+      FOLL_OFS_TYPE = 1,
+      FOLL_ALT_TYPE = 0,
+   }
+
    for p, v in pairs(key_params) do
       local current = param:get(p)
-      if not current then
-         gcs:send_text(0,string.format("Parameter %s not found", p))
-      end
+      assert(current, string.format("Parameter %s not found", p))
       if math.abs(v-current) > 0.001 then
          param:set_and_save(p, v)
          gcs:send_text(0,string.format("Parameter %s set to %.2f was %.2f", p, v, current))
@@ -435,5 +428,20 @@ end
 
 check_parameters()
 
+-- wrapper around update(). This calls update() at 20Hz,
+-- and if update faults then an error is displayed, but the script is not
+-- stopped
+function protected_wrapper()
+  local success, err = pcall(update)
+  if not success then
+     gcs:send_text(0, "Internal Error: " .. err)
+     -- when we fault we run the update function again after 1s, slowing it
+     -- down a bit so we don't flood the console with errors
+     return protected_wrapper, 1000
+  end
+  return protected_wrapper, 50
+end
+
 -- start running update loop
-return loop()
+return protected_wrapper()
+
