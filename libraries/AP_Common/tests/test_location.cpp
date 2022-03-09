@@ -311,7 +311,7 @@ TEST(Location, Distance)
     bearing = test_home.get_bearing_to(test_loc);
     EXPECT_EQ(31503, bearing);
     const float bearing_rad = test_home.get_bearing(test_loc);
-    EXPECT_FLOAT_EQ(radians(315.03), bearing_rad);
+    EXPECT_FLOAT_EQ(5.4982867, bearing_rad);
 
 }
 

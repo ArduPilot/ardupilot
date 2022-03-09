@@ -33,6 +33,14 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_FOLLOW_POS_P_DEFAULT 0.1f    // position error gain default
 
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define AP_FOLLOW_ALT_TYPE_DEFAULT 0
+#else
+#define AP_FOLLOW_ALT_TYPE_DEFAULT AP_FOLLOW_ALTITUDE_TYPE_RELATIVE
+#endif
+
+AP_Follow *AP_Follow::_singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
@@ -117,7 +125,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Description: Follow altitude type
     // @Values: 0:absolute, 1:relative
     // @User: Standard
-    AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALTITUDE_TYPE_RELATIVE),
+    AP_GROUPINFO("_ALT_TYPE", 10, AP_Follow, _alt_type, AP_FOLLOW_ALT_TYPE_DEFAULT),
 #endif
 
     AP_GROUPEND
@@ -131,6 +139,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 AP_Follow::AP_Follow() :
         _p_pos(AP_FOLLOW_POS_P_DEFAULT)
 {
+    _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
 }
 
@@ -478,4 +487,41 @@ void AP_Follow::clear_dist_and_bearing_to_target()
 {
     _dist_to_target = 0.0f;
     _bearing_to_target = 0.0f;
+}
+
+// get target's estimated location and velocity (in NED), with offsets added
+bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned) const
+{
+    Vector3f ofs;
+    if (!get_offsets_ned(ofs) ||
+        !get_target_location_and_velocity(loc, vel_ned)) {
+        return false;
+    }
+    // apply offsets
+    loc.offset(ofs.x, ofs.y);
+    loc.alt -= ofs.z*100;
+    return true;
+}
+
+// return true if we have a target
+bool AP_Follow::have_target(void) const
+{
+    if (!_enabled) {
+        return false;
+    }
+
+    // check for timeout
+    if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
+        return false;
+    }
+    return true;
+}
+
+namespace AP {
+
+AP_Follow &follow()
+{
+    return *AP_Follow::get_singleton();
+}
+
 }

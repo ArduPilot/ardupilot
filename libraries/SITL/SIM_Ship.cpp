@@ -41,6 +41,7 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
+    AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
     AP_GROUPEND
 };
 
@@ -94,8 +95,24 @@ Vector2f ShipSim::get_ground_speed_adjustment(const Location &loc, float &yaw_ra
         yaw_rate = 0;
         return Vector2f(0,0);
     }
-    Vector2f vel(ship.speed, 0);
-    vel.rotate(radians(ship.heading_deg));
+
+    // find center of the circle that the ship is on
+    Location center = shiploc;
+    const float path_radius = path_size.get()*0.5;
+    center.offset_bearing(ship.heading_deg+(ship.yaw_rate>0?90:-90), path_radius);
+
+    // scale speed for ratio of distances
+    const float p = center.get_distance(loc) / path_radius;
+    const float scaled_speed = ship.speed * p;
+
+    // work out how far around the circle ahead or behind we are for
+    // rotating velocity
+    const float bearing1 = center.get_bearing(loc);
+    const float bearing2 = center.get_bearing(shiploc);
+    const float heading = ship.heading_deg + degrees(bearing1-bearing2);
+
+    Vector2f vel(scaled_speed, 0);
+    vel.rotate(radians(heading));
     yaw_rate = ship.yaw_rate;
     return vel;
 }
@@ -117,6 +134,10 @@ void ShipSim::update(void)
         if (home.lat == 0 && home.lng == 0) {
             return;
         }
+        const Vector3f &ofs = offset.get();
+        home.offset(ofs.x, ofs.y);
+        home.alt -= ofs.z*100;
+
         initialised = true;
         ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
         ship.sim = this;
@@ -183,7 +204,7 @@ void ShipSim::send_report(void)
 #if AP_TERRAIN_AVAILABLE
     auto terrain = AP::terrain();
     float height;
-    if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height, true)) {
+    if (terrain != nullptr && terrain->enabled() && terrain->height_amsl(loc, height)) {
         alt_mm = height * 1000;
     }
 #endif
@@ -204,6 +225,19 @@ void ShipSim::send_report(void)
                                               vel.y*100,
                                               0,
                                               ship.heading_deg*100);
+    len = mavlink_msg_to_send_buffer(buf, &msg);
+    if (len > 0) {
+        mav_socket.send(buf, len);
+    }
+
+    // also set ATTITUDE so MissionPlanner can display ship orientation
+    mavlink_msg_attitude_pack_chan(sys_id,
+                                   component_id,
+                                   mavlink_ch,
+                                   &msg,
+                                   now,
+                                   0, 0, radians(ship.heading_deg),
+                                   0, 0, ship.yaw_rate);
     len = mavlink_msg_to_send_buffer(buf, &msg);
     if (len > 0) {
         mav_socket.send(buf, len);

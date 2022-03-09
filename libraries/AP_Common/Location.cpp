@@ -140,7 +140,7 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
         if (terrain == nullptr) {
             return false;
         }
-        if (!terrain->height_amsl(*this, alt_terr_cm, true)) {
+        if (!terrain->height_amsl(*this, alt_terr_cm)) {
             return false;
         }
         // convert terrain alt to cm
@@ -376,14 +376,14 @@ bool Location::sanitize(const Location &defaultLoc)
 assert_storage_size<Location, 16> _assert_storage_size_Location;
 
 
-// return bearing in centi-degrees from location to loc2
-int32_t Location::get_bearing_to(const struct Location &loc2) const
+// return bearing in radians from location to loc2, return is 0 to 2*Pi
+ftype Location::get_bearing(const struct Location &loc2) const
 {
     const int32_t off_x = diff_longitude(loc2.lng,lng);
     const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale((lat+loc2.lat)/2);
-    int32_t bearing = 9000 + atan2F(-off_y, off_x) * DEGX100;
+    ftype bearing = (M_PI*0.5) + atan2F(-off_y, off_x);
     if (bearing < 0) {
-        bearing += 36000;
+        bearing += 2*M_PI;
     }
     return bearing;
 }

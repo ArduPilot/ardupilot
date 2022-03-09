@@ -123,6 +123,8 @@ userdata Vector3f method dot float Vector3f
 userdata Vector3f method cross Vector3f Vector3f
 userdata Vector3f method scale Vector3f float'skip_check
 userdata Vector3f method copy Vector3f
+userdata Vector3f method xy Vector2f
+userdata Vector3f method rotate_xy void float'skip_check
 
 userdata Vector2f field x float'skip_check read write
 userdata Vector2f field y float'skip_check read write
@@ -131,6 +133,7 @@ userdata Vector2f method normalize void
 userdata Vector2f method is_nan boolean
 userdata Vector2f method is_inf boolean
 userdata Vector2f method is_zero boolean
+userdata Vector2f method angle float
 userdata Vector2f method rotate void float'skip_check
 userdata Vector2f operator +
 userdata Vector2f operator -
@@ -173,7 +176,7 @@ singleton AP_Terrain alias terrain
 singleton AP_Terrain method enabled boolean
 singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
 singleton AP_Terrain method status uint8_t
-singleton AP_Terrain method height_amsl boolean Location float'Null boolean
+singleton AP_Terrain method height_amsl boolean Location float'Null
 singleton AP_Terrain method height_terrain_difference_home boolean float'Null boolean
 singleton AP_Terrain method height_above_terrain boolean float'Null boolean
 
@@ -211,6 +214,7 @@ singleton AP_Vehicle method get_control_output boolean AP_Vehicle::ControlOutput
 singleton AP_Vehicle method start_takeoff boolean float (-LOCATION_ALT_MAX_M*100+1) (LOCATION_ALT_MAX_M*100-1)
 singleton AP_Vehicle method set_target_location boolean Location
 singleton AP_Vehicle method get_target_location boolean Location'Null
+singleton AP_Vehicle method update_target_location boolean Location Location
 singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -360 +360 boolean float'skip_check boolean boolean
 singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
@@ -229,7 +233,7 @@ singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
 singleton AP_Vehicle method nav_scripting_enable boolean uint8_t 0 UINT8_MAX
-
+singleton AP_Vehicle method set_velocity_match boolean Vector2f
 
 include AP_SerialLED/AP_SerialLED.h
 singleton AP_SerialLED alias serialLED
@@ -488,4 +492,13 @@ singleton AP::fwversion() field minor uint8_t read
 singleton AP::fwversion() field patch uint8_t read
 singleton AP::fwversion() field fw_hash_str string read
 singleton AP::fwversion() field fw_hash_str alias hash
+
+include AP_Follow/AP_Follow.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP_Follow depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AP_Follow alias follow
+singleton AP_Follow method have_target boolean
+singleton AP_Follow method get_last_update_ms uint32_t
+singleton AP_Follow method get_target_location_and_velocity boolean Location'Null Vector3f'Null
+singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
+singleton AP_Follow method get_target_heading_deg boolean float'Null
 
