@@ -164,6 +164,9 @@ public:
     };
     void set_q_assist_state(Q_ASSIST_STATE_ENUM state) {q_assist_state = state;};
 
+    // called when we change mode (for any mode, not just Q modes)
+    void mode_enter(void);
+
 private:
     AP_AHRS &ahrs;
     AP_Vehicle::MultiCopter aparm;
