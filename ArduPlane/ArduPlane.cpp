@@ -541,7 +541,7 @@ void Plane::update_alt()
 
         float target_alt = relative_target_altitude_cm();
 
-        if (control_mode == &mode_rtl && !rtl.done_climb && (g2.rtl_climb_min > 0 || (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN))) {
+        if (control_mode == &mode_rtl && mode_rtl.climbing()) {
             // ensure we do the initial climb in RTL. We add an extra
             // 10m in the demanded height to push TECS to climb
             // quickly

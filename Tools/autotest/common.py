@@ -5601,6 +5601,29 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def wait_abs_roll(self, roll, timeout=30, **kwargs):
+        """Wait for a given absoulte roll in degrees."""
+        def get_roll(timeout2):
+            msg = self.mav.recv_match(type='ATTITUDE', blocking=True, timeout=timeout2)
+            if msg:
+                p = math.degrees(msg.pitch)
+                r = math.degrees(msg.roll)
+                self.progress("Roll %d Pitch %d" % (r, p))
+                return r
+            raise MsgRcvTimeoutException("Failed to get Roll")
+
+        def validator(value2, target2):
+            return math.fabs(value2) > target2
+
+        self.wait_and_maintain(
+            value_name="Roll",
+            target=roll,
+            current_value_getter=lambda: get_roll(timeout),
+            validator=lambda value2, target2: validator(value2, target2),
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_pitch(self, pitch, accuracy, timeout=30, **kwargs):
         """Wait for a given pitch in degrees."""
         def get_pitch(timeout2):

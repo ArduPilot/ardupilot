@@ -1737,7 +1737,7 @@ class AutoTestPlane(AutoTest):
     def climb_before_turn(self):
         self.wait_ready_to_arm()
         self.set_parameters({
-            "FLIGHT_OPTIONS": 0,
+            "RTL_TYPE": 0,
             "ALT_HOLD_RTL": 8000,
         })
         takeoff_alt = 10
@@ -1766,7 +1766,7 @@ class AutoTestPlane(AutoTest):
 
         self.wait_ready_to_arm()
         self.set_parameters({
-            "FLIGHT_OPTIONS": 16,
+            "RTL_TYPE": 1,
             "ALT_HOLD_RTL": 10000,
         })
         self.takeoff(alt=takeoff_alt)
@@ -1791,8 +1791,8 @@ class AutoTestPlane(AutoTest):
 
     def rtl_climb_min(self):
         self.wait_ready_to_arm()
-        rtl_climb_min = 100
-        self.set_parameter("RTL_CLIMB_MIN", rtl_climb_min)
+        rtl_climb_min = 25
+        self.set_parameter("RTL_LEVEL_CLIMB", rtl_climb_min)
         takeoff_alt = 50
         self.takeoff(alt=takeoff_alt)
         self.change_mode('CRUISE')
@@ -1803,19 +1803,13 @@ class AutoTestPlane(AutoTest):
         if expected_alt == -1:
             expected_alt = self.get_altitude(relative=True)
 
-        # ensure we're about half-way-down at the half-way-home stage:
-        self.wait_distance_to_nav_target(
-            0,
-            500,
-            timeout=120,
-        )
-        alt = self.get_altitude(relative=True)
-        expected_halfway_alt = expected_alt + (post_cruise_alt + rtl_climb_min - expected_alt)/2.0
-        if abs(alt - expected_halfway_alt) > 30:
-            raise NotAchievedException("Not half-way-down and half-way-home (want=%f got=%f" %
-                                       (expected_halfway_alt, alt))
-        self.progress("Half-way-down at half-way-home (want=%f vs got=%f)" %
-                      (expected_halfway_alt, alt))
+        max_roll = self.get_parameter("LEVEL_ROLL_LIMIT")
+        self.wait_abs_roll(max_roll+5)
+
+        if self.get_altitude(relative=True) < post_cruise_alt + rtl_climb_min:
+            raise NotAchievedException(
+                "Expected roll limited to %f deg for %f m" %
+                (max_roll, rtl_climb_min))
 
         rtl_radius = self.get_parameter("RTL_RADIUS")
         if rtl_radius == 0:

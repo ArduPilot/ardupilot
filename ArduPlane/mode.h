@@ -332,11 +332,26 @@ public:
 
     bool does_auto_throttle() const override { return true; }
 
+    bool climbing() const { return stage == STAGE::LEVEL_CLIMB || stage == STAGE::LOITER_TO_ALT; }
+
+    enum RTL_type {
+        NONE,
+        CLIMB_BEFORE_TURN,
+        LOITER_TO_ALT,
+    };
+
 protected:
 
     bool _enter() override;
 
 private:
+
+    enum class STAGE {
+        LEVEL_CLIMB,
+        LOITER_TO_ALT,
+        RETURNING,
+        REACHED_HOME,
+    } stage;
 
     // Switch to QRTL if enabled and within radius
     bool switch_QRTL(bool check_loiter_target = true);
