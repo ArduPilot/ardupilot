@@ -493,7 +493,7 @@ singleton AP::fwversion() field patch uint8_t read
 singleton AP::fwversion() field fw_hash_str string read
 singleton AP::fwversion() field fw_hash_str alias hash
 
-include AP_Follow/AP_Follow.h
+include AP_Follow/AP_Follow.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_Follow depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_Follow alias follow
 singleton AP_Follow method have_target boolean
