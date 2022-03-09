@@ -2179,6 +2179,10 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         } else if (s == QPOS_LAND_DESCEND) {
             // reset throttle descent control
             qp.thr_ctrl_land = false;
+        } else if (s == QPOS_LAND_FINAL) {
+            // remember last pos reset to handle GPS glitch in LAND_FINAL
+            Vector2f rpos;
+            last_pos_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
         }
         // double log to capture the state change
         qp.log_QPOS();
@@ -2514,10 +2518,23 @@ void QuadPlane::vtol_position_controller(void)
         if (should_relax()) {
             pos_control->relax_velocity_controller_xy();
         } else {
-            // we use velocity control in QPOS_LAND_FINAL to allow for GPS glitch handling
             Vector2f zero;
             Vector2f vel_cms = poscontrol.target_vel_cms.xy() + landing_velocity*100;
-            pos_control->input_vel_accel_xy(vel_cms, zero);
+            Vector2f rpos;
+            const uint32_t last_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
+            /* we use velocity control when we may be touching the
+              ground or if we've had a position reset from AHRS. This
+              helps us handle a GPS glitch in the final land phase,
+              and also prevents trying to reposition after touchdown
+            */
+            if (motors->limit.throttle_lower ||
+                motors->get_throttle() < 0.5*motors->get_throttle_hover() ||
+                last_reset_ms != poscontrol.last_pos_reset_ms) {
+                pos_control->input_vel_accel_xy(vel_cms, zero);
+            } else {
+                // otherwise use full pos control
+                pos_control->input_pos_vel_accel_xy(poscontrol.target_cm.xy(), vel_cms, zero);
+            }
         }
 
         run_xy_controller();

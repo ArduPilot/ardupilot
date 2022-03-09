@@ -452,6 +452,7 @@ private:
         uint32_t last_velocity_match_ms;
         float target_speed;
         float target_accel;
+        uint32_t last_pos_reset_ms;
     private:
         uint32_t last_state_change_ms;
         enum position_control_state state;
