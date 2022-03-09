@@ -1901,7 +1901,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_priority_did_list[i] != 0 && use_for_yaw(uint8_t(i))) {
             if (!_get_state(i).registered) {
-                snprintf(failure_msg, failure_msg_len, "Compass %d not Found", uint8_t(i));
+                snprintf(failure_msg, failure_msg_len, "Compass %d not found", uint8_t(i + 1));
                 return false;
             }
             if (_priority_did_list[i] != _priority_did_stored_list[i]) {

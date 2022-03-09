@@ -199,7 +199,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
+            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: no SERVOx_FUNCTION set to Motor%u", motor_num + 1);
         }
     }
 }

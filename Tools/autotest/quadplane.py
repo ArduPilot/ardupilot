@@ -248,13 +248,12 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to speed up")
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
 
-            self.progress("Disarm/rearm with GCS")
-            self.disarm_vehicle()
+            self.disarm_vehicle_expect_fail()
             self.arm_vehicle()
 
             self.progress("Verify that airmode is still on")
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
-            self.disarm_vehicle()
+            self.disarm_vehicle(force=True)
             self.wait_ready_to_arm()
 
     def test_motor_mask(self):

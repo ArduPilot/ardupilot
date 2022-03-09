@@ -62,7 +62,7 @@ def relcurdir(path):
     return os.path.relpath(path, os.getcwd())
 
 def reltopdir(path):
-    """Return a path relative to topdir()."""
+    """Returns the normalized ABSOLUTE path for 'path', where path is a path relative to topdir"""
     return os.path.normpath(os.path.join(topdir(), path))
 
 

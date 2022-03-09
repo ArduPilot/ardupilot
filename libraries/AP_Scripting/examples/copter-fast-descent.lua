@@ -81,8 +81,8 @@ function update()
     -- activate_type 0: reset stage when disarmed or not in Guided mode
     if not arming:is_armed() or (vehicle:get_mode() ~= copter_guided_mode_num) then 
       stage = 0
-      if (update_user) then
-        gcs:send_text(0, "Fast Descent: waiting for Guided")
+      if (update_user and arming:is_armed()) then
+        gcs:send_text(6, "Fast Descent: waiting for Guided")
       end
       return update, interval_ms
     end
@@ -91,8 +91,8 @@ function update()
     auto_last_id, cmd, arg1, arg2 = vehicle:nav_script_time()
     if not arming:is_armed() or not auto_last_id then 
       stage = 0
-      if (update_user) then
-        gcs:send_text(0, "Fast Descent: waiting for NAV_SCRIPT_TIME")
+      if (update_user and arming:is_armed()) then
+        gcs:send_text(6, "Fast Descent: waiting for NAV_SCRIPT_TIME")
       end
       return update, interval_ms
     end
@@ -120,7 +120,7 @@ function update()
       speed_xy = 0
       speed_z = 0
       stage = stage + 1           -- advance to next stage
-      gcs:send_text(0, "Fast Descent: starting")
+      gcs:send_text(5, "Fast Descent: starting")
     end
   elseif (stage == 1) then        -- Stage1: descend
 
@@ -211,16 +211,16 @@ function update()
         stage = stage + 1
       end
       if (update_user) then
-        gcs:send_text(0, string.format("Fast Descent: alt:%d target:%d", math.floor(-rel_pos_home_NED:z()), math.floor(alt_above_home_min:get())))
+        gcs:send_text(5, string.format("Fast Descent: alt:%d target:%d", math.floor(-rel_pos_home_NED:z()), math.floor(alt_above_home_min:get())))
       end
     else
-      gcs:send_text(0, "Fast Descent: lost position estimate, aborting")
+      gcs:send_text(5, "Fast Descent: lost position estimate, aborting")
       stage = stage + 1
     end
 
   elseif (stage == 2) then  -- Stage2: done!
     stage = stage + 1
-    gcs:send_text(0, "Fast Descent: done!")
+    gcs:send_text(5, "Fast Descent: done!")
     if (activate_type:get() == 0) then
       -- if activated from Guided change to RTL mode
       vehicle:set_mode(copter_rtl_mode_num)

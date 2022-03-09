@@ -52,10 +52,17 @@ public:
     ///     speed_cms is the desired max speed to travel between waypoints.  should be a positive value or omitted to use the default speed
     ///     updates target roll, pitch targets and I terms based on vehicle lean angles
     ///     should be called once before the waypoint controller is used but does not need to be called before subsequent updates to destination
-    void wp_and_spline_init(float speed_cms = 0.0f);
+    void wp_and_spline_init(float speed_cms = 0.0f, Vector3f stopping_point = Vector3f{});
 
     /// set current target horizontal speed during wp navigation
     void set_speed_xy(float speed_cms);
+
+    /// set pause or resume during wp navigation
+    void set_pause() { _paused = true; }
+    void set_resume() { _paused = false; }
+
+    /// get paused status
+    bool paused() { return _paused; }
 
     /// set current target climb or descent rate during wp navigation
     void set_speed_up(float speed_up_cms);
@@ -213,8 +220,8 @@ protected:
     } _flags;
 
     // helper function to calculate scurve jerk and jerk_time values
-    // updates _scurve_jerk and _scurve_jerk_time
-    void calc_scurve_jerk_and_jerk_time();
+    // updates _scurve_jerk and _scurve_snap
+    void calc_scurve_jerk_and_snap();
 
     // references and pointers to external libraries
     const AP_InertialNav&   _inav;
@@ -240,8 +247,9 @@ protected:
     SCurve _scurve_prev_leg;            // previous scurve trajectory used to blend with current scurve trajectory
     SCurve _scurve_this_leg;            // current scurve trajectory
     SCurve _scurve_next_leg;            // next scurve trajectory used to blend with current scurve trajectory
+    float _scurve_accel_corner;         // scurve maximum corner acceleration in m/s/s
     float _scurve_jerk;                 // scurve jerk max in m/s/s/s
-    float _scurve_jerk_time;            // scurve jerk time (time in seconds for jerk to increase from zero _scurve_jerk)
+    float _scurve_snap;                 // scurve snap in m/s/s/s/s
 
     // spline curves
     SplineCurve _spline_this_leg;      // spline curve for current segment
@@ -257,8 +265,9 @@ protected:
     Vector3f    _origin;                // starting point of trip to next waypoint in cm from ekf origin
     Vector3f    _destination;           // target destination in cm from ekf origin
     float       _track_scalar_dt;       // time compression multiplier to slow the progress along the track
-    float       _terrain_vel;            // maximum horizontal velocity used to ensure the aircraft can maintain height above terrain
-    float       _terrain_accel;          // acceleration value used to change _terrain_vel
+    float       _offset_vel;            // horizontal velocity reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
+    float       _offset_accel;          // horizontal acceleration reference used to slow the aircraft for pause and to ensure the aircraft can maintain height above terrain
+    bool        _paused;                // flag for pausing waypoint controller
 
     // terrain following variables
     bool        _terrain_alt;   // true if origin and destination.z are alt-above-terrain, false if alt-above-ekf-origin
