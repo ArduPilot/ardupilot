@@ -294,6 +294,7 @@ function update_target()
          arming:set_aux_auth_failed(auth_id, "Ship: no beacon")
       end
       have_target = false
+      return
    end
    if not have_target then
       gcs:send_text(0,"Have beacon")
@@ -356,9 +357,6 @@ end
 -- main update function
 function update()
    if SHIP_ENABLE:get() < 1 then
-      return
-   end
-   if not follow:have_target() then
       return
    end
 
