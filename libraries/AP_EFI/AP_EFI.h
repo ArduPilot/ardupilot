@@ -82,6 +82,7 @@ public:
         Lutan     = 3,
         // LOWEHEISER = 4,
         DroneCAN = 5,
+        CurrawongECU = 6,
     };
 
     static AP_EFI *get_singleton(void) {
