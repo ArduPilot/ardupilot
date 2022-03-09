@@ -185,7 +185,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             targets.y * 0.01,
             targets.z * 0.01,
             degrees(error.angle()),
-            error.length(),
+            MIN(error.length(), UINT16_MAX),
             (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_z_cm() * 0.01 : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             quadplane.wp_nav->crosstrack_error());
