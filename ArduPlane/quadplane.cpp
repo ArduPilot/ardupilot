@@ -2400,7 +2400,8 @@ void QuadPlane::vtol_position_controller(void)
 
         const Vector2f diff_wp = plane.current_loc.get_distance_NE(loc);
         const float distance = diff_wp.length();
-        const float groundspeed = plane.ahrs.groundspeed();
+        const Vector2f rel_groundspeed_vector = landing_closing_velocity();
+        const float rel_groundspeed_sq = rel_groundspeed_vector.length_squared();
 
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
@@ -2411,14 +2412,13 @@ void QuadPlane::vtol_position_controller(void)
 
         // maximum configured VTOL speed
         const float wp_speed = wp_nav->get_default_speed_xy() * 0.01;
-        const float current_speed_sq = plane.ahrs.groundspeed_vector().length_squared();
         const float scaled_wp_speed = get_scaled_wp_speed(degrees(diff_wp.angle()));
 
         // limit target speed to initial pos1 speed, but at least twice the Q_WP_SPEED
         target_speed = MIN(MAX(poscontrol.pos1_start_speed, 2*wp_speed), target_speed);
 
         if (poscontrol.reached_wp_speed ||
-            current_speed_sq < sq(wp_speed) ||
+            rel_groundspeed_sq < sq(wp_speed) ||
             wp_speed > 1.35*scaled_wp_speed) {
             // once we get below the Q_WP_SPEED then we don't want to
             // speed up again. At that point we should fly within the
@@ -2435,7 +2435,7 @@ void QuadPlane::vtol_position_controller(void)
 
         Vector2f target_speed_xy_cms;
         Vector2f target_accel_cms;
-        const float target_accel = accel_needed(distance, sq(groundspeed));
+        const float target_accel = accel_needed(distance, rel_groundspeed_sq);
         if (distance > 0.1) {
             Vector2f diff_wp_norm = diff_wp.normalized();
             target_speed_xy_cms = diff_wp_norm * target_speed * 100;
@@ -3722,14 +3722,16 @@ bool QuadPlane::use_fw_attitude_controllers(void) const
 }
 
 /*
-  calculate our closing velocity vector on the landing point. In the
-  future this will take account of the landing point having a
-  velocity
+  calculate our closing velocity vector on the landing point, taking
+  into account target velocity
 */
 Vector2f QuadPlane::landing_closing_velocity()
 {
-    Vector2f vel = ahrs.groundspeed_vector();
-    return vel;
+    Vector2f landing_velocity;
+    if (AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000) {
+        landing_velocity = poscontrol.velocity_match;
+    }
+    return ahrs.groundspeed_vector() - landing_velocity;
 }
 
 /*
@@ -3925,6 +3927,14 @@ bool QuadPlane::in_vtol_takeoff(void) const
         return true;
     }
     return false;
+}
+
+// called when we change mode (for any mode, not just Q modes)
+void QuadPlane::mode_enter(void)
+{
+    poscontrol.xy_correction.zero();
+    poscontrol.velocity_match.zero();
+    poscontrol.last_velocity_match_ms = 0;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
