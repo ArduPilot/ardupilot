@@ -43,6 +43,9 @@ void ModeSmartRTL::update()
                 _load_point = true;
             }
             // Note: this may lead to an unnecessary 20ms slow down of the vehicle (but it is unlikely)
+            if (rover.is_boat() && start_loiter()) {
+                break;
+            }
             stop_vehicle();
             break;
 
@@ -73,24 +76,24 @@ void ModeSmartRTL::update()
             }
             break;
 
+        case SmartRTL_Loiter:
+            if(_reached_destination || !g2.smart_rtl.request_thorough_cleanup())
+                rover.mode_loiter.update();
+            else {
+                smart_rtl_state = SmartRTL_PathFollow;
+                _load_point = true;
+            }
+            break;
+
         case SmartRTL_StopAtHome:
         case SmartRTL_Failure:
             _reached_destination = true;
             // we have reached the destination
             // boats loiters, rovers stop
-            if (!rover.is_boat()) {
-               stop_vehicle();
-            } else {
-                // if not loitering yet, start loitering
-                if (!_loitering) {
-                    _loitering = rover.mode_loiter.enter();
-                }
-                if (_loitering) {
-                    rover.mode_loiter.update();
-                } else {
-                    stop_vehicle();
-               }
+            if (rover.is_boat() && start_loiter()) {
+                break;
             }
+            stop_vehicle();
             break;
     }
 }
@@ -107,6 +110,7 @@ bool ModeSmartRTL::get_desired_location(Location& destination) const
             return true;
         }
         return false;
+    case SmartRTL_Loiter:
     case SmartRTL_StopAtHome:
     case SmartRTL_Failure:
         return false;
@@ -130,4 +134,14 @@ void ModeSmartRTL::save_position()
 {
     const bool save_pos = (rover.control_mode != &rover.mode_smartrtl);
     g2.smart_rtl.update(true, save_pos);
+}
+
+bool ModeSmartRTL::start_loiter()
+{
+    if (rover.mode_loiter.enter()) {
+        smart_rtl_state = SmartRTL_Loiter;
+        _loitering = true;
+        return _loitering;
+    }
+    return false;
 }

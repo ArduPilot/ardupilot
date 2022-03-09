@@ -620,12 +620,17 @@ protected:
         SmartRTL_WaitForPathCleanup,
         SmartRTL_PathFollow,
         SmartRTL_StopAtHome,
-        SmartRTL_Failure
+        SmartRTL_Failure,
+        SmartRTL_Loiter
     } smart_rtl_state;
 
     bool _enter() override;
     bool _load_point;
     bool _loitering;        // true if loitering at end of SRTL
+
+private:
+
+    bool start_loiter();
 };
 
    
