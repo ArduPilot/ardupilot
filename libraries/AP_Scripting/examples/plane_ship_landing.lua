@@ -46,6 +46,7 @@ TRIM_ARSPD_CM   = bind_param("TRIM_ARSPD_CM")
 TECS_LAND_ARSPD = bind_param("TECS_LAND_ARSPD")
 Q_TRANS_DECEL   = bind_param("Q_TRANS_DECEL")
 WP_LOITER_RAD   = bind_param("WP_LOITER_RAD")
+RTL_RADIUS      = bind_param("RTL_RADIUS")
 FOLL_OFS_X      = bind_param("FOLL_OFS_X")
 FOLL_OFS_Y      = bind_param("FOLL_OFS_Y")
 FOLL_OFS_Z      = bind_param("FOLL_OFS_Z")
@@ -181,8 +182,16 @@ function stopping_distance()
 end
 
 -- get holdoff distance
+function get_holdoff_radius()
+   if RTL_RADIUS:get() ~= 0 then
+      return RTL_RADIUS:get()
+   end
+   return WP_LOITER_RAD:get()
+end
+
+-- get holdoff distance
 function get_holdoff_distance()
-   local radius = WP_LOITER_RAD:get()
+   local radius = get_holdoff_radius()
    local holdoff_dist = math.abs(radius*1.5)
    local stop_distance = stopping_distance()
 
@@ -193,7 +202,7 @@ end
 
 -- get the holdoff position
 function get_holdoff_position()
-   local radius = WP_LOITER_RAD:get()
+   local radius = get_holdoff_radius()
    local heading_deg = target_heading + SHIP_LAND_ANGLE:get()
    local holdoff_dist = get_holdoff_distance()
 
