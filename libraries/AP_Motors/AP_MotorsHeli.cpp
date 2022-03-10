@@ -232,6 +232,8 @@ void AP_MotorsHeli::output()
         output_disarmed();
     }
 
+    update_turbine_start();
+
     output_to_motors();
 
 };
@@ -595,5 +597,15 @@ void AP_MotorsHeli::update_takeoff_collective_flag(float coll_out)
 bool AP_MotorsHeli::heli_option(HeliOption opt) const
 {
     return (_heli_options & (uint8_t)opt);
+}
+
+// updates the turbine start flag
+void AP_MotorsHeli::update_turbine_start()
+{
+    if (_heliflags.start_engine) {
+        _main_rotor.set_turbine_start(true);
+    } else {
+        _main_rotor.set_turbine_start(false);
+    }
 }
 

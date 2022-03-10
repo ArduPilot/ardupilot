@@ -17,6 +17,8 @@
 // Refactored by Jonathan Challinger
 #pragma once
 
+#include "definitions.h"
+#include "matrix3.h"
 #include <cmath>
 #if MATH_CHECK_INDEXES
 #include <assert.h>

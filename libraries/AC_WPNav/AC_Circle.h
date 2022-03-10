@@ -44,8 +44,8 @@ public:
     /// get_radius - returns radius of circle in cm
     float get_radius() const { return is_positive(_radius)?_radius:_radius_parm; }
 
-    /// set_radius - sets circle radius in cm
-    void set_radius(float radius_cm);
+    /// set_radius_cm - sets circle radius in cm
+    void set_radius_cm(float radius_cm);
 
     /// get_rate - returns target rate in deg/sec held in RATE parameter
     float get_rate() const { return _rate; }

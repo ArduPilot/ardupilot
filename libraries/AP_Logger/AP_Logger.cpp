@@ -1296,7 +1296,7 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 void AP_Logger::io_thread(void)
 {
     uint32_t last_run_us = AP_HAL::micros();
-    uint8_t counter = 0;
+    uint32_t last_stack_us = last_run_us;
 
     while (true) {
         uint32_t now = AP_HAL::micros();
@@ -1311,7 +1311,8 @@ void AP_Logger::io_thread(void)
 
         FOR_EACH_BACKEND(io_timer());
 
-        if (++counter % 4 == 0) {
+        if (now - last_stack_us > 100000U) {
+            last_stack_us = now;
             hal.util->log_stack_info();
         }
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
@@ -1416,6 +1417,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@SYS/dma.txt",
         "@SYS/memory.txt",
         "@SYS/threads.txt",
+        "@SYS/timers.txt",
         "@ROMFS/hwdef.dat",
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",

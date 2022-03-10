@@ -39,8 +39,9 @@ struct supported_device {
 };
 
 static const struct supported_device supported_devices[] = {
-    {"mt25q", 0x20, 0xBA}, // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
-    {"w25q", 0xEF, 0x40}
+    {"mt25q", 0x20, 0xBA},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
+    {"w25q", 0xEF, 0x40},
+    {"w25q-dtr", 0xEF, 0x70}
 };
 
 #ifdef HAL_BOOTLOADER_BUILD
@@ -162,6 +163,10 @@ void AP_FlashIface_JEDEC::reset_device()
 {
     // Get chip out of XIP mode
     AP_HAL::QSPIDevice::CommandHeader cmd;
+#ifndef HAL_BOOTLOADER_BUILD // this is required in order to run jedec_test with a regular bootloader
+    _dev->get_semaphore()->take_blocking();
+#endif
+
     /* Single line CMD_RESET_MEMORY command.*/
     cmd.cmd    =  CMD_RESET_ENABLE;
     cmd.cfg    =  AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE;

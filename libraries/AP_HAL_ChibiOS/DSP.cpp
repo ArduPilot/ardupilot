@@ -15,6 +15,7 @@
  * Code by Andy Piper and the betaflight team
  */
 
+#include <hal.h>
 #include "AP_HAL_ChibiOS.h"
 
 #if HAL_WITH_DSP

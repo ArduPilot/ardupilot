@@ -142,6 +142,9 @@ void ModeTurtle::run()
 // actually write values to the motors
 void ModeTurtle::output_to_motors()
 {
+    // check if motor are allowed to spin
+    const bool allow_output = motors->armed() && motors->get_interlock();
+
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
         if (!motors->is_motor_enabled(i)) {
             continue;
@@ -149,7 +152,7 @@ void ModeTurtle::output_to_motors()
 
         const Vector2f output{motors->get_roll_factor(i), motors->get_pitch_factor(i)};
         // if output aligns with input then use this motor
-        if ((motors_input - output).length() > 0.5) {
+        if (!allow_output || (motors_input - output).length() > 0.5) {
             motors->rc_write(i, motors->get_pwm_output_min());
             continue;
         }

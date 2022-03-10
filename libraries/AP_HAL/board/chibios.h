@@ -1,7 +1,6 @@
 #pragma once
 
 #include <hwdef.h>
-#include <hal.h>
 
 #define HAL_BOARD_NAME "ChibiOS"
 
@@ -113,7 +112,7 @@
 #endif
 
 #ifndef HAL_DSHOT_ALARM
-#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD) && HAL_USE_PWM == TRUE
+#if !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD) && HAL_PWM_COUNT > 0
 #define HAL_DSHOT_ALARM 1
 #else
 #define HAL_DSHOT_ALARM 0

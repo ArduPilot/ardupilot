@@ -906,7 +906,7 @@ void SITL_State::set_height_agl(void)
 
         AP_Terrain *_terrain = AP_Terrain::get_singleton();
         if (_terrain != nullptr &&
-            _terrain->height_amsl(location, terrain_height_amsl, false)) {
+            _terrain->height_amsl(location, terrain_height_amsl)) {
             _sitl->height_agl = _sitl->state.altitude - terrain_height_amsl;
             return;
         }

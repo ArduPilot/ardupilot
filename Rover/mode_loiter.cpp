@@ -56,8 +56,20 @@ void ModeLoiter::update()
         _desired_speed *= yaw_error_ratio;
     }
 
+    // 0 turn rate is no limit
+    float turn_rate = 0.0;
+
+    // make sure sailboats don't try and sail directly into the wind
+    if (g2.sailboat.use_indirect_route(_desired_yaw_cd)) {
+        _desired_yaw_cd = g2.sailboat.calc_heading(_desired_yaw_cd);
+        if (g2.sailboat.tacking()) {
+            // use pivot turn rate for tacks
+            turn_rate = g2.wp_nav.get_pivot_rate();
+        }
+    }
+
     // run steering and throttle controllers
-    calc_steering_to_heading(_desired_yaw_cd);
+    calc_steering_to_heading(_desired_yaw_cd, turn_rate);
     calc_throttle(_desired_speed, true);
 }
 

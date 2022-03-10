@@ -23,7 +23,7 @@ void Plane::Log_Write_Attitude(void)
     } else {
         ahrs.Write_Attitude(targets);
     }
-    if (quadplane.in_vtol_mode() || quadplane.in_assisted_flight()) {
+    if (AP_HAL::millis() - quadplane.last_att_control_ms < 100) {
         // log quadplane PIDs separately from fixed wing PIDs
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());

@@ -126,11 +126,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     }
 
     // rotate to body frame
-    if (_imu._board_orientation == ROTATION_CUSTOM && _imu._custom_rotation) {
-        accel = *_imu._custom_rotation * accel;
-    } else {
-        accel.rotate(_imu._board_orientation);
-    }
+    accel.rotate(_imu._board_orientation);
 }
 
 void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) 
@@ -155,17 +151,13 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
         gyro -= _imu._gyro_offset[instance];
     }
 
-    if (_imu._board_orientation == ROTATION_CUSTOM && _imu._custom_rotation) {
-        gyro = *_imu._custom_rotation * gyro;
-    } else {
-        gyro.rotate(_imu._board_orientation);
-    }
+    gyro.rotate(_imu._board_orientation);
 }
 
 /*
   rotate gyro vector and add the gyro offset
  */
-void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro)
+void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &gyro) /* front end */
 {
     if ((1U<<instance) & _imu.imu_kill_mask) {
         return;
@@ -447,7 +439,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
 /*
   rotate accel vector, scale and add the accel offset
  */
-void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel)
+void AP_InertialSensor_Backend::_publish_accel(uint8_t instance, const Vector3f &accel) /* front end */
 {
     if ((1U<<instance) & _imu.imu_kill_mask) {
         return;
@@ -687,17 +679,10 @@ void AP_InertialSensor_Backend::_inc_gyro_error_count(uint8_t instance)
     _imu._gyro_error_count[instance]++;
 }
 
-// return the requested loop rate at which samples will be made available in Hz
-uint16_t AP_InertialSensor_Backend::get_loop_rate_hz(void) const
-{
-    // enum can be directly cast to Hz
-    return (uint16_t)_imu._loop_rate;
-}
-
 /*
   publish a temperature value for an instance
  */
-void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature)
+void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float temperature) /* front end */
 {
     if ((1U<<instance) & _imu.imu_kill_mask) {
         return;
@@ -718,7 +703,7 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
 /*
   common gyro update function for all backends
  */
-void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
+void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 {    
     WITH_SEMAPHORE(_sem);
 
@@ -771,7 +756,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance)
 /*
   common accel update function for all backends
  */
-void AP_InertialSensor_Backend::update_accel(uint8_t instance)
+void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
 {    
     WITH_SEMAPHORE(_sem);
 

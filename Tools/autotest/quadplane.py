@@ -248,13 +248,12 @@ class AutoTestQuadPlane(AutoTest):
             self.progress("Waiting for Motor1 to speed up")
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
 
-            self.progress("Disarm/rearm with GCS")
-            self.disarm_vehicle()
+            self.disarm_vehicle_expect_fail()
             self.arm_vehicle()
 
             self.progress("Verify that airmode is still on")
             self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
-            self.disarm_vehicle()
+            self.disarm_vehicle(force=True)
             self.wait_ready_to_arm()
 
     def test_motor_mask(self):
@@ -324,11 +323,7 @@ class AutoTestQuadPlane(AutoTest):
         return self.enum_state_name("MAV_LANDED_STATE", state, pretrim="MAV_LANDED_STATE_")
 
     def assert_extended_sys_state(self, vtol_state, landed_state):
-        m = self.mav.recv_match(type='EXTENDED_SYS_STATE',
-                                blocking=True,
-                                timeout=1)
-        if m is None:
-            raise NotAchievedException("Did not get extended_sys_state message")
+        m = self.assert_receive_message('EXTENDED_SYS_STATE', timeout=1)
         if m.vtol_state != vtol_state:
             raise ValueError("Bad MAV_VTOL_STATE.  Want=%s got=%s" %
                              (self.vtol_state_name(vtol_state),

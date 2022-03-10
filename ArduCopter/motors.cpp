@@ -161,19 +161,20 @@ void Copter::motors_output()
     // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
 
-    // check if we are performing the motor test
+    // update motors interlock state
+    bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !SRV_Channels::get_emergency_stop();
+    if (!motors->get_interlock() && interlock) {
+        motors->set_interlock(true);
+        AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_ENABLED);
+    } else if (motors->get_interlock() && !interlock) {
+        motors->set_interlock(false);
+        AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_DISABLED);
+    }
+
     if (ap.motor_test) {
+        // check if we are performing the motor test
         motor_test_output();
     } else {
-        bool interlock = motors->armed() && !ap.in_arming_delay && (!ap.using_interlock || ap.motor_interlock_switch) && !SRV_Channels::get_emergency_stop();
-        if (!motors->get_interlock() && interlock) {
-            motors->set_interlock(true);
-            AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_ENABLED);
-        } else if (motors->get_interlock() && !interlock) {
-            motors->set_interlock(false);
-            AP::logger().Write_Event(LogEvent::MOTORS_INTERLOCK_DISABLED);
-        }
-
         // send output signals to motors
         flightmode->output_to_motors();
     }

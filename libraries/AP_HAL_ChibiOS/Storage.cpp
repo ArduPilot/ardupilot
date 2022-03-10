@@ -442,6 +442,12 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
+#ifdef USE_POSIX
+    // SD card storage is really slow
+    if (_initialisedType == StorageBackend::SDCard) {
+        return log_fd != -1 || AP_HAL::millis() - _last_empty_ms < 30000U;
+    }
+#endif
     return ((_initialisedType != StorageBackend::None) &&
             (AP_HAL::millis() - _last_empty_ms < 2000u));
 }

@@ -33,6 +33,13 @@
 // used to mark a function that may be unused in some builds
 #define UNUSED_FUNCTION __attribute__((unused))
 
+// used to mark an attribute that may be unused in some builds
+#ifdef __clang__
+#define UNUSED_PRIVATE_MEMBER __attribute__((unused))
+#else
+#define UNUSED_PRIVATE_MEMBER
+#endif
+
 // this can be used to optimize individual functions
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
@@ -114,6 +121,9 @@
 
 // @}
 
+// STR_VALUE returns the string equivalent for the passed cpp macro, so e.g.
+// printf("%s", STR_VALUE(EINVAL)); will print "EINVAL"
+#define STR_VALUE(x) #x
 
 // assert_storage_size template: assert that the memory used to store an
 // item is of a specific size.

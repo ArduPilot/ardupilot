@@ -176,6 +176,8 @@ public:
         k_trim                  = 135,  // always outputs SERVOn_TRIM
         k_max                   = 136,  // always outputs SERVOn_MAX
         k_mast_rotation         = 137,
+        k_alarm                 = 138,
+        k_alarm_inverted        = 139,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -549,6 +551,16 @@ public:
 
     // return true if a channel is set to type GPIO
     static bool is_GPIO(uint8_t channel);
+
+    // return true if a channel is set to type alarm
+    static bool is_alarm(uint8_t channel) {
+        return channel_function(channel) == SRV_Channel::k_alarm;
+    }
+
+    // return true if a channel is set to type alarm inverted
+    static bool is_alarm_inverted(uint8_t channel) {
+        return channel_function(channel) == SRV_Channel::k_alarm_inverted;
+    }
 
 private:
 

@@ -199,7 +199,7 @@ void AP_Motors::add_motor_num(int8_t motor_num)
         SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(motor_num);
         SRV_Channels::set_aux_channel_default(function, motor_num);
         if (!SRV_Channels::find_channel(function, chan)) {
-            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: unable to setup motor %u", motor_num);
+            gcs().send_text(MAV_SEVERITY_ERROR, "Motors: no SERVOx_FUNCTION set to Motor%u", motor_num + 1);
         }
     }
 }
@@ -255,6 +255,16 @@ void AP_Motors::set_frame_string(const char * str) {
     }
 }
 #endif
+
+// output_test_seq - spin a motor at the pwm value specified
+//  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
+//  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
+void AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
+{
+    if (armed() && _interlock) {
+        _output_test_seq(motor_seq, pwm);
+    }
+}
 
 namespace AP {
     AP_Motors *motors()
