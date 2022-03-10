@@ -15,7 +15,7 @@ class Board(object):
         self.name = name
         self.is_ap_periph = False
         self.autobuild_targets = [
-            'AntennaTracker',
+            'Tracker',
             'Blimp',
             'Copter',
             'Heli',
