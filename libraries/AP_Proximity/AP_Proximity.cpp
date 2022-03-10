@@ -26,6 +26,7 @@
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_AirSimSITL.h"
 #include "AP_Proximity_Cygbot_D1.h"
+#include "AP_Proximity_LeddarVu8.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -355,10 +356,10 @@ void AP_Proximity::detect_instance(uint8_t instance)
     break;
 
     case Type::LEDDAR_VU8:
-#if AP_PROXIMITY_LEDDAR_VU8_ENABLED
-    if (AP_Proximity_Leddar_Vu8::detect()) {
+#if AP_PROXIMITY_LEDDARVU8_ENABLED
+    if (AP_Proximity_LeddarVu8::detect()) {
         state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_Leddar_Vu8(*this, state[instance]);
+        drivers[instance] = new AP_Proximity_LeddarVu8(*this, state[instance]);
         return;
     }
 #endif

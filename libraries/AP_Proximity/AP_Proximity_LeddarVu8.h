@@ -10,6 +10,11 @@
 #include "AP_Proximity_Backend_Serial.h"
 
 #define LEDDARVU8_PAYLOAD_LENGTH (8*2)
+#define LEDDARVU8_ADDR_DEFAULT              0x01        // modbus default device id
+#define LEDDARVU8_DIST_MAX_CM               18500       // maximum possible distance reported by lidar
+#define LEDDARVU8_DIST_MIN_CM               5       // maximum possible distance reported by lidar
+#define LEDDARVU8_OUT_OF_RANGE_ADD_CM       100         // add this many cm to out-of-range values
+#define LEDDARVU8_TIMEOUT_MS                200         // timeout in milliseconds if no distance messages received
 
 class AP_Proximity_LeddarVu8 : public AP_Proximity_Backend_Serial
 {
@@ -18,6 +23,12 @@ public:
 
     using AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial;
 
+    // update the state of the sensor
+    void update(void) override;
+
+    // get maximum and minimum distances (in meters) of sensor
+    float distance_max() const override { return LEDDARVU8_DIST_MAX_CM / 100; }
+    float distance_min() const override { return LEDDARVU8_DIST_MIN_CM / 100; }
 /* protected:
 
     // baudrate used during object construction:
@@ -37,6 +48,18 @@ public:
     uint16_t read_timeout_ms() const override { return 500; }
  */
 private:
+
+    // send message to the sensor to start streaming 2-D data
+    void send_sensor_start();
+
+    // read bytes from the sensor
+    void read_sensor_data();
+
+    // parse one byte from the sensor. Return false on error.
+    bool parse_byte(uint8_t data);
+
+    // parse payload, to pick out distances, and feed them to the correct faces
+    void parse_payload();
 
     // function codes
     enum class FunctionCode : uint8_t {
@@ -93,8 +116,14 @@ private:
         uint16_t payload_recv;                      // number of message's payload bytes received so far
         ParseState state;                           // state of incoming message processing
     } parsed_msg;
+    
+    bool _initialized;
     uint32_t last_distance_ms;                      // system time of last successful distance sensor read
     uint32_t last_distance_request_ms;              // system time of last request to sensor to send distances
+
+    AP_Proximity_Temp_Boundary _temp_boundary; // temporary boundary to store incoming payload
+
+
 };
 
-#endif
+#endif // HAL_PROXIMITY_ENABLED
