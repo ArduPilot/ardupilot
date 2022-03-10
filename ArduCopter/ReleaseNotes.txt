@@ -1,6 +1,22 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.2.0-rc1 28-Feb-2022
+Copter 4.2.0-beta2 10-Mar-2022
+Changes from 4.2.0-beta1
+1) Auto and Guided mode changes
+    a) Delay removed when waypoints are very close together
+    b) Pause and continue support (GCS changes are still pending)
+    c) Takeoff and landing use position controller with slower reposition speed (also affects RTL, Land modes)
+    d) Waypoint navigation will make use of maximum waypoint radius to maximize speed through corners
+2) Follow mode supports FOLLOW_TARGET message (sent by QGC ground station)
+3) Bug fixes
+    a) Arming checks ignore SERVOx_MIN, MAX if setup as GPIO pin
+    b) BeastH7v2 BMI270 baro support
+    c) DShot prescaler fix (ESCs were not initialising correctly)
+    d) EKF3 variance constraint fix used to prevent "ill-conditioning"
+    e) POWR log message MCU voltage fix (min and max voltage were swapped)
+    f) SPRacingH7 firmware install fix
+------------------------------------------------------------------
+Copter 4.2.0-beta1 28-Feb-2022
 Changes from 4.1.5
 1) AHRS/EKF improvements
     a) EKF startup messages reduced
