@@ -138,7 +138,11 @@ fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-  PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
+        PYTHON_PKGS="$PYTHON_PKGS pygame==2.0.3 intelhex"
+    else
+        PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    fi
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
