@@ -50,6 +50,10 @@ void Plane::fence_check()
         // user disables/re-enables using the fence channel switch
         return;
     }
+    
+     if(new_breaches && plane.is_flying()) {
+         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+     }
 
     if (new_breaches || orig_breaches) {
         // if the user wants some kind of response and motors are armed
