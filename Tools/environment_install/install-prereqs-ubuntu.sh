@@ -59,18 +59,24 @@ fi
 
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
-PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
-PIP=pip2
+PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+PIP=pip3
 
 if [ ${RELEASE_CODENAME} == 'xenial' ]; then
     SITLFML_VERSION="2.3v5"
     SITLCFML_VERSION="2.3"
+    PYTHON_V="python2"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'disco' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+    PYTHON_V="python2"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+    PYTHON_V="python2"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
@@ -92,6 +98,8 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
+    PYTHON_V="python2"
+    PIP=pip2
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
