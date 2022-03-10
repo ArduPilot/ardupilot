@@ -98,7 +98,7 @@ BUILD_OPTIONS = [
     Feature('Sensors', 'AIRSPEED', 'AP_AIRSPEED_ENABLED', 'Enable Airspeed Sensors', 1, None),    # Default to enabled to not annoy Plane users
     Feature('Sensors', 'BEACON', 'BEACON_ENABLED', 'Enable Beacon', 0, None),
     Feature('Sensors', 'GPS_MOVING_BASELINE', 'GPS_MOVING_BASELINE', 'Enable GPS Moving Baseline', 0, None),
-    Feature('Rangefinders', 'RANGEFINDERS', 'AP_RANGEFINDER_ENABLED', "Enable Rangefinders', 0, None),
+    Feature('Rangefinders', 'RANGEFINDERS', 'AP_RANGEFINDER_ENABLED', "Enable Rangefinders", 0, None),
 
     Feature('Sensors', 'OPTICALFLOW', 'AP_OPTICALFLOW_ENABLED', 'Enable Optical Flow', 0, None),
     Feature('Sensors', 'OPTICALFLOW_CXOF', 'AP_OPTICALFLOW_CXOF_ENABLED', 'Enable Optical flow CXOF Sensor', 0, "OPTICALFLOW"),
