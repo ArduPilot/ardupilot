@@ -354,6 +354,16 @@ void AP_Proximity::detect_instance(uint8_t instance)
 # endif
     break;
 
+    case Type::LEDDAR_VU8:
+#if AP_PROXIMITY_LEDDAR_VU8_ENABLED
+    if (AP_Proximity_Leddar_Vu8::detect()) {
+        state[instance].instance = instance;
+        drivers[instance] = new AP_Proximity_Leddar_Vu8(*this, state[instance]);
+        return;
+    }
+#endif
+    break;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case Type::SITL:
         state[instance].instance = instance;
