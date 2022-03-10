@@ -59,8 +59,10 @@ static uint32_t system_time_u32_us(void)
 static uint32_t system_time_u32_us(void)
 {
     systime_t now = chVTGetSystemTimeX();
-#if CH_CFG_ST_FREQUENCY != 1000000U
+#if CH_CFG_ST_FREQUENCY < 1000000U
     now *= 1000000U/CH_CFG_ST_FREQUENCY;
+#elif CH_CFG_ST_FREQUENCY > 1000000U
+    now /= CH_CFG_ST_FREQUENCY/1000000U;
 #endif
     return now;
 }
