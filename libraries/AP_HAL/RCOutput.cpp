@@ -68,3 +68,43 @@ bool AP_HAL::RCOutput::is_dshot_protocol(const enum output_mode mode)
         return false;
     }
 }
+
+/*
+ * calculate the prescaler required to achieve the desire bitrate
+ */
+uint32_t AP_HAL::RCOutput::calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot)
+{
+    uint32_t prescaler;
+    if (is_dshot) {
+        // original prescaler calculation from betaflight. bi-dir dshot is incredibly sensitive to the bitrate
+        prescaler = uint32_t(lrintf((float) timer_clock / target_frequency + 0.01f) - 1);
+    } else {
+        // adjust frequency to give an allowed value given the clock, erring on the high side
+        prescaler = timer_clock / target_frequency;
+        while ((timer_clock / prescaler) < target_frequency && prescaler > 1) {
+            prescaler--;
+        }
+    }
+
+    const uint32_t freq = timer_clock / prescaler;
+    // if using dshot then always pick the high value. choosing low seems to not agree with some
+    // ESCs despite the fact that BLHeli32 is supposed not to care what the bitrate is
+    if (is_dshot) {
+        if (freq < target_frequency) {
+            prescaler--;
+        }
+    } else {
+        // find the closest value
+        const float delta = fabsf(float(freq) - target_frequency);
+        if (freq > target_frequency
+            && delta > fabsf(float(timer_clock / (prescaler+1)) - target_frequency)) {
+            prescaler++;
+        } else if (freq < target_frequency
+            && delta > fabsf(float(timer_clock / (prescaler-1)) - target_frequency)) {
+            prescaler--;
+        }
+    }
+
+    return prescaler;
+}
+

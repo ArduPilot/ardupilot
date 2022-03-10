@@ -176,7 +176,7 @@ bool Vector2<T>::segment_intersection(const Vector2<T>& seg1_start, const Vector
     const Vector2<T> ss2_ss1 = seg2_start - seg1_start;
     const T r1xr2 = r1 % r2;
     const T q_pxr = ss2_ss1 % r1;
-    if (fabsf(r1xr2) < FLT_EPSILON) {
+    if (::is_zero(r1xr2)) {
         // either collinear or parallel and non-intersecting
         return false;
     } else {

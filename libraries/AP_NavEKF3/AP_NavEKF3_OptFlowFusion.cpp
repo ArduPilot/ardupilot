@@ -277,7 +277,6 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
 void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse)
 {
     Vector24 H_LOS;
-    Vector3F relVelSensor;
     Vector2 losPred;
 
     // Copy required states to local variable names
@@ -293,22 +292,23 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
 
+    // calculate range from ground plain to centre of sensor fov assuming flat earth
+    ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
+
+    // correct range for flow sensor offset body frame position offset
+    // the corrected value is the predicted range from the sensor focal point to the
+    // centre of the image on the ground assuming flat terrain
+    Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
+    if (!posOffsetBody.is_zero()) {
+        Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
+        range -= posOffsetEarth.z / prevTnb.c.z;
+    }
+
     // Fuse X and Y axis measurements sequentially assuming observation errors are uncorrelated
     for (uint8_t obsIndex=0; obsIndex<=1; obsIndex++) { // fuse X axis data first
-        // calculate range from ground plain to centre of sensor fov assuming flat earth
-        ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
-
-        // correct range for flow sensor offset body frame position offset
-        // the corrected value is the predicted range from the sensor focal point to the
-        // centre of the image on the ground assuming flat terrain
-        Vector3F posOffsetBody = ofDataDelayed.body_offset - accelPosOffset;
-        if (!posOffsetBody.is_zero()) {
-            Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
-            range -= posOffsetEarth.z / prevTnb.c.z;
-        }
 
         // calculate relative velocity in sensor frame including the relative motion due to rotation
-        relVelSensor = (prevTnb * stateStruct.velocity) + (ofDataDelayed.bodyRadXYZ % posOffsetBody);
+        const Vector3F relVelSensor = (prevTnb * stateStruct.velocity) + (ofDataDelayed.bodyRadXYZ % posOffsetBody);
 
         // divide velocity by range to get predicted angular LOS rates relative to X and Y axes
         losPred[0] =  relVelSensor.y/range;

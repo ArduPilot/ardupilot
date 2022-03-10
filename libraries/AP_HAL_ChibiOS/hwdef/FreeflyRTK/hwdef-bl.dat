@@ -10,6 +10,9 @@ FLASH_BOOTLOADER_LOAD_KB 64
 # board ID for firmware load
 APJ_BOARD_ID 1028
 
+# also support px4 firmware with ID 85
+ALT_BOARD_ID 85
+
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 

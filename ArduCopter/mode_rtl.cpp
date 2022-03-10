@@ -273,9 +273,6 @@ void ModeRTL::descent_start()
     _state = SubMode::FINAL_DESCENT;
     _state_complete = false;
 
-    // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
-
     // initialise altitude target to stopping point
     pos_control->init_z_controller_stopping_point();
 
@@ -297,8 +294,7 @@ void ModeRTL::descent_start()
 //      called by rtl_run at 100hz or more
 void ModeRTL::descent_run()
 {
-    float target_roll = 0.0f;
-    float target_pitch = 0.0f;
+    Vector2f vel_correction;
     float target_yaw_rate = 0.0f;
 
     // if not armed set throttle to zero and exit immediately
@@ -321,11 +317,11 @@ void ModeRTL::descent_run()
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
 
-            // convert pilot input to lean angles
-            get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+            // convert pilot input to reposition velocity
+            vel_correction = get_pilot_desired_velocity(wp_nav->get_wp_acceleration() * 0.5);
 
             // record if pilot has overridden roll or pitch
-            if (!is_zero(target_roll) || !is_zero(target_pitch)) {
+            if (!vel_correction.is_zero()) {
                 if (!copter.ap.land_repo_active) {
                     AP::logger().Write_Event(LogEvent::LAND_REPO_ACTIVE);
                 }
@@ -342,11 +338,9 @@ void ModeRTL::descent_run()
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-    // process roll, pitch inputs
-    loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch);
-
-    // run loiter controller
-    loiter_nav->update();
+    Vector2f accel;
+    pos_control->input_vel_accel_xy(vel_correction, accel);
+    pos_control->update_xy_controller();
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
@@ -354,7 +348,7 @@ void ModeRTL::descent_run()
     pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_rate_heading(loiter_nav->get_thrust_vector(), target_yaw_rate);
+    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
 
     // check if we've reached within 20cm of final altitude
     _state_complete = labs(rtl_path.descent_target.alt - copter.current_loc.alt) < 20;
@@ -366,8 +360,14 @@ void ModeRTL::land_start()
     _state = SubMode::LAND;
     _state_complete = false;
 
-    // Set wp navigation target to above home
-    loiter_nav->init_target(wp_nav->get_wp_destination().xy());
+    // set horizontal speed and acceleration limits
+    pos_control->set_max_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(wp_nav->get_default_speed_xy(), wp_nav->get_wp_acceleration());
+
+    // initialise loiter target destination
+    if (!pos_control->is_active_xy()) {
+        pos_control->init_xy_controller();
+    }
 
     // initialise the vertical position controller
     if (!pos_control->is_active_z()) {
@@ -408,8 +408,6 @@ void ModeRTL::land_run(bool disarm_on_land)
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
         return;
     }
 

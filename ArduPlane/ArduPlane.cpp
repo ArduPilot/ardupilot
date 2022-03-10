@@ -738,6 +738,7 @@ bool Plane::get_target_location(Location& target_loc)
     case Mode::Number::GUIDED:
     case Mode::Number::AUTO:
     case Mode::Number::LOITER:
+    case Mode::Number::TAKEOFF:
 #if HAL_QUADPLANE_ENABLED
     case Mode::Number::QLOITER:
     case Mode::Number::QLAND:
@@ -751,6 +752,39 @@ bool Plane::get_target_location(Location& target_loc)
     }
     return false;
 }
+
+/*
+  update_target_location() works in all auto navigation modes
+ */
+bool Plane::update_target_location(const Location &old_loc, const Location &new_loc)
+{
+    if (!old_loc.same_latlon_as(next_WP_loc)) {
+        return false;
+    }
+    ftype alt_diff;
+    if (!old_loc.get_alt_distance(next_WP_loc, alt_diff) ||
+        !is_zero(alt_diff)) {
+        return false;
+    }
+    next_WP_loc = new_loc;
+    next_WP_loc.change_alt_frame(old_loc.get_alt_frame());
+
+    return true;
+}
+
+// allow for velocity matching in VTOL
+bool Plane::set_velocity_match(const Vector2f &velocity)
+{
+#if HAL_QUADPLANE_ENABLED
+    if (quadplane.in_vtol_mode() || quadplane.in_vtol_land_sequence()) {
+        quadplane.poscontrol.velocity_match = velocity;
+        quadplane.poscontrol.last_velocity_match_ms = AP_HAL::millis();
+        return true;
+    }
+#endif
+    return false;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 #if OSD_ENABLED

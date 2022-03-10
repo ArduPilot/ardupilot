@@ -25,7 +25,6 @@
 #include <AP_InternalError/AP_InternalError.h>
 
 // control default definitions
-#define CONTROL_TIME_CONSTANT_RATIO 4.0             // time constant to ensure stable kinematic path generation
 #define CORNER_ACCELERATION_RATIO   1.0/safe_sqrt(2.0)   // acceleration reduction to enable zero overshoot corners
 
 // update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
@@ -164,14 +163,22 @@ void shape_vel_accel(float vel_input, float accel_input,
         return;
     }
 
-    // Calculate time constants and limits to ensure stable operation
-    const float KPa = jerk_max / accel_max;
-
     // velocity error to be corrected
     float vel_error = vel_input - vel;
 
+    // Calculate time constants and limits to ensure stable operation
+    // The direction of acceleration limit is the same as the velocity error.
+    // This is because the velocity error is negative when slowing down while
+    // closing a positive position error.
+    float KPa;
+    if (is_positive(vel_error)) {
+        KPa = jerk_max / accel_max;
+    } else {
+        KPa = jerk_max / (-accel_min);
+    }
+
     // acceleration to correct velocity
-    float accel_target = vel_error * KPa;
+    float accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
 
     // constrain correction acceleration from accel_min to accel_max
     accel_target = constrain_float(accel_target, accel_min, accel_max);
@@ -205,7 +212,7 @@ void shape_vel_accel_xy(const Vector2f& vel_input, const Vector2f& accel_input,
     const Vector2f vel_error = vel_input - vel;
 
     // acceleration to correct velocity
-    Vector2f accel_target = vel_error * KPa;
+    Vector2f accel_target = sqrt_controller(vel_error, KPa, jerk_max, dt);
 
     // limit correction acceleration to accel_max
     if (vel_input.is_zero()) {
@@ -266,12 +273,23 @@ void shape_pos_vel_accel(postype_t pos_input, float vel_input, float accel_input
         return;
     }
 
-    // Calculate time constants and limits to ensure stable operation
-    const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * MAX(-accel_min, accel_max));
-    const float accel_tc_max = MIN(-accel_min, accel_max) * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
 
     // position error to be corrected
     float pos_error = pos_input - pos;
+
+    // Calculate time constants and limits to ensure stable operation
+    // The negative acceleration limit is used here because the square root controller
+    // manages the approach to the setpoint. Therefore the acceleration is in the opposite
+    // direction to the position error.
+    float accel_tc_max;
+    float KPv;
+    if (is_positive(pos_error)) {
+        accel_tc_max = -0.5 * accel_min;
+        KPv = 0.5 * jerk_max / (-accel_min);
+    } else {
+        accel_tc_max = 0.5 * accel_max;
+        KPv = 0.5 * jerk_max / accel_max;
+    }
 
     // velocity to correct position
     float vel_target = sqrt_controller(pos_error, KPv, accel_tc_max, dt);
@@ -300,9 +318,9 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_input, const Vector2f& vel_input
     }
 
     // Calculate time constants and limits to ensure stable operation
-    const float KPv = jerk_max / (CONTROL_TIME_CONSTANT_RATIO * accel_max);
+    const float KPv = 0.5 * jerk_max / accel_max;
     // reduce breaking acceleration to support cornering without overshooting the stopping point
-    const float accel_tc_max = CORNER_ACCELERATION_RATIO * accel_max * (1.0 - 1.0 / CONTROL_TIME_CONSTANT_RATIO);
+    const float accel_tc_max = 0.5 * accel_max;
 
     // position error to be corrected
     Vector2f pos_error = (pos_input - pos).tofloat();

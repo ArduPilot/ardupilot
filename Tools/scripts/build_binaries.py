@@ -19,6 +19,7 @@ import time
 import string
 import subprocess
 import sys
+import traceback
 import gzip
 
 # local imports
@@ -26,7 +27,8 @@ import generate_manifest
 import gen_stable
 import build_binaries_history
 
-from board_list import AUTOBUILD_BOARDS, AP_PERIPH_BOARDS
+import board_list
+from board_list import AP_PERIPH_BOARDS
 
 if sys.version_info[0] < 3:
     running_python3 = False
@@ -46,7 +48,7 @@ def is_chibios_build(board):
     return False
 
 
-def get_required_compiler(tag, board):
+def get_required_compiler(vehicle, tag, board):
     '''return required compiler for a build tag.
        return format is the version string that waf configure will detect.
        You should setup a link from this name in $HOME/arm-gcc directory pointing at the
@@ -55,20 +57,18 @@ def get_required_compiler(tag, board):
     if not is_chibios_build(board):
         # only override compiler for ChibiOS builds
         return None
-    if tag == 'latest':
-        # use 10.2.1 compiler for master builds
-        return "g++-10.2.1"
-    # for all other builds we use the default compiler in $PATH
-    return None
+    if vehicle == 'Sub' and tag in ['stable', 'beta']:
+        # sub stable and beta is on the old compiler
+        return "g++-6.3.1"
+    # use 10.2.1 compiler for all other builds
+    return "g++-10.2.1"
 
 
 class build_binaries(object):
     def __init__(self, tags):
         self.tags = tags
         self.dirty = False
-        binaries_history_filepath = os.path.join(self.buildlogs_dirpath(),
-                                                 "build_binaries_history.sqlite")
-        self.history = build_binaries_history.BuildBinariesHistory(binaries_history_filepath)
+        self.board_list = board_list.BoardList()
 
     def progress(self, string):
         '''pretty-print progress'''
@@ -348,6 +348,10 @@ is bob we will attempt to checkout bob-AVR'''
         '''returns content of filepath as a string'''
         with open(filepath, 'rb') as fh:
             content = fh.read()
+
+        if running_python3:
+            return content.decode('ascii')
+
         return content
 
     def string_in_filepath(self, string, filepath):
@@ -452,8 +456,9 @@ is bob we will attempt to checkout bob-AVR'''
                                 "--board", board,
                                 "--out", self.buildroot,
                                 "clean"]
-                    gccstring = get_required_compiler(tag, board)
-                    if gccstring is not None:
+                    gccstring = get_required_compiler(vehicle, tag, board)
+                    if gccstring is not None and gccstring.find("g++-6.3") == -1:
+                        # versions using the old compiler don't have the --assert-cc-version option
                         waf_opts += ["--assert-cc-version", gccstring]
 
                     waf_opts.extend(self.board_options(board))
@@ -508,6 +513,7 @@ is bob we will attempt to checkout bob-AVR'''
                     try:
                         self.copyit(path, ddir, tag, vehicle)
                     except Exception as e:
+                        self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
@@ -518,18 +524,30 @@ is bob we will attempt to checkout bob-AVR'''
 
         self.checkout(vehicle, "latest")
 
-    def common_boards(self):
-        '''returns list of boards common to all vehicles'''
-        return AUTOBUILD_BOARDS
+    def get_exception_stacktrace(self, e):
+        if sys.version_info[0] >= 3:
+            ret = "%s\n" % e
+            ret += ''.join(traceback.format_exception(type(e),
+                                                      e,
+                                                      tb=e.__traceback__))
+            return ret
+
+        # Python2:
+        return traceback.format_exc(e)
+
+    def print_exception_caught(self, e, send_statustext=True):
+        self.progress("Exception caught: %s" %
+                      self.get_exception_stacktrace(e))
 
     def AP_Periph_boards(self):
         return AP_PERIPH_BOARDS
 
     def build_arducopter(self, tag):
         '''build Copter binaries'''
+
         boards = []
-        boards.extend(["skyviper-v2450", "aerofc-v1", "bebop", "CubeSolo", "CubeGreen-solo", "skyviper-journey"])
-        boards.extend(self.common_boards()[:])
+        boards.extend(["aerofc-v1", "bebop"])
+        boards.extend(self.board_list.find_autobuild_boards('Copter'))
         self.build_vehicle(tag,
                            "ArduCopter",
                            boards,
@@ -539,7 +557,7 @@ is bob we will attempt to checkout bob-AVR'''
 
     def build_arduplane(self, tag):
         '''build Plane binaries'''
-        boards = self.common_boards()[:]
+        boards = self.board_list.find_autobuild_boards('Plane')[:]
         boards.append("disco")
         self.build_vehicle(tag,
                            "ArduPlane",
@@ -549,19 +567,17 @@ is bob we will attempt to checkout bob-AVR'''
 
     def build_antennatracker(self, tag):
         '''build Tracker binaries'''
-        boards = self.common_boards()[:]
         self.build_vehicle(tag,
                            "AntennaTracker",
-                           boards,
+                           self.board_list.find_autobuild_boards('Tracker')[:],
                            "AntennaTracker",
                            "antennatracker")
 
     def build_rover(self, tag):
         '''build Rover binaries'''
-        boards = self.common_boards()
         self.build_vehicle(tag,
                            "Rover",
-                           boards,
+                           self.board_list.find_autobuild_boards('Rover')[:],
                            "Rover",
                            "ardurover")
 
@@ -569,7 +585,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Sub binaries'''
         self.build_vehicle(tag,
                            "ArduSub",
-                           self.common_boards(),
+                           self.board_list.find_autobuild_boards('Sub')[:],
                            "Sub",
                            "ardusub")
 
@@ -584,10 +600,9 @@ is bob we will attempt to checkout bob-AVR'''
 
     def build_blimp(self, tag):
         '''build Blimp binaries'''
-        boards = self.common_boards()
         self.build_vehicle(tag,
                            "Blimp",
-                           boards,
+                           self.board_list.find_autobuild_boards('Blimp')[:],
                            "Blimp",
                            "blimp")
 
@@ -649,6 +664,12 @@ is bob we will attempt to checkout bob-AVR'''
 
     def run(self):
         self.validate()
+
+        self.mkpath(self.buildlogs_dirpath())
+
+        binaries_history_filepath = os.path.join(
+            self.buildlogs_dirpath(), "build_binaries_history.sqlite")
+        self.history = build_binaries_history.BuildBinariesHistory(binaries_history_filepath)
 
         prefix_bin_dirpath = os.path.join(os.environ.get('HOME'),
                                           "prefix", "bin")

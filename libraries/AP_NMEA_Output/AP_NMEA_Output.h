@@ -27,6 +27,10 @@
 
 #if HAL_NMEA_OUTPUT_ENABLED
 
+#ifndef NMEA_MAX_OUTPUTS
+#define NMEA_MAX_OUTPUTS 3
+#endif
+
 #include <AP_SerialManager/AP_SerialManager.h>
 
 class AP_NMEA_Output {
@@ -45,7 +49,7 @@ private:
     uint8_t _nmea_checksum(const char *str);
 
     uint8_t _num_outputs;
-    AP_HAL::UARTDriver* _uart[SERIALMANAGER_NUM_PORTS];
+    AP_HAL::UARTDriver* _uart[NMEA_MAX_OUTPUTS];
 
     uint32_t _last_run_ms;
 };

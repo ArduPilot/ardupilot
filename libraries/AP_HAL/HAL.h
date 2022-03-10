@@ -109,15 +109,15 @@ public:
 private:
     // the uartX ports must be contiguous in ram for the serial() method to work
     AP_HAL::UARTDriver* uartA;
-    AP_HAL::UARTDriver* uartB;
-    AP_HAL::UARTDriver* uartC;
-    AP_HAL::UARTDriver* uartD;
-    AP_HAL::UARTDriver* uartE;
-    AP_HAL::UARTDriver* uartF;
-    AP_HAL::UARTDriver* uartG;
-    AP_HAL::UARTDriver* uartH;
-    AP_HAL::UARTDriver* uartI;
-    AP_HAL::UARTDriver* uartJ;
+    AP_HAL::UARTDriver* uartB UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartC UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartD UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartE UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartF UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartG UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartH UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartI UNUSED_PRIVATE_MEMBER;
+    AP_HAL::UARTDriver* uartJ UNUSED_PRIVATE_MEMBER;
 
 public:
     AP_HAL::I2CDeviceManager* i2c_mgr;

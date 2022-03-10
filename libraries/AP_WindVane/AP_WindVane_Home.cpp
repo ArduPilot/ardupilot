@@ -15,6 +15,8 @@
 
 #include "AP_WindVane_Home.h"
 
+#include <AP_AHRS/AP_AHRS.h>
+
 void AP_WindVane_Home::update_direction()
 {
     float direction_apparent_ef = _frontend._home_heading;

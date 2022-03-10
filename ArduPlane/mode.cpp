@@ -80,6 +80,10 @@ bool Mode::enter()
     // initialize speed variable used in AUTO and GUIDED for DO_CHANGE_SPEED commands
     plane.new_airspeed_cm = -1;
 
+#if HAL_QUADPLANE_ENABLED
+    quadplane.mode_enter();
+#endif
+
     bool enter_result = _enter();
 
     if (enter_result) {

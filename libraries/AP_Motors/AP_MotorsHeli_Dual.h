@@ -48,7 +48,7 @@ public:
     void set_update_rate( uint16_t speed_hz ) override;
 
     // output_test_seq - spin a motor at the pwm value specified
-    virtual void output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+    virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;

@@ -14,6 +14,8 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "shared_dma.h"
 
 /*

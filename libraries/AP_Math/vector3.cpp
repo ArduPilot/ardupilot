@@ -20,6 +20,8 @@
 
 #include "AP_Math.h"
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 // rotate a vector by a standard rotation, attempting
 // to use the minimum number of floating point operations
@@ -255,11 +257,16 @@ void Vector3<T>::rotate(enum Rotation rotation)
         y = tmp;
         return;
     }
-    case ROTATION_CUSTOM: 
-        // Error: caller must perform custom rotations via matrix multiplication
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    case ROTATION_CUSTOM_1:
+    case ROTATION_CUSTOM_2:
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+        // Do not support custom rotations on Periph
+        AP::custom_rotations().rotate(rotation, *this);
         return;
+#endif
     case ROTATION_MAX:
+    case ROTATION_CUSTOM_OLD:
+    case ROTATION_CUSTOM_END:
         break;
     }
     // rotation invalid
@@ -587,7 +594,7 @@ void Vector3<T>::segment_to_segment_closest_point(const Vector3<T>& seg1_start, 
         }
     }
     // finally do the division to get tc
-    tc = (fabsf(tN) < FLT_EPSILON ? 0.0 : tN / tD);
+    tc = (::is_zero(tN) ? 0.0 : tN / tD);
 
     // closest point on seg2
     closest_point = seg2_start + line2*tc;
@@ -603,7 +610,7 @@ bool Vector3<T>::segment_plane_intersect(const Vector3<T>& seg_start, const Vect
     T D = plane_normal * u;
     T N = -(plane_normal * w);
 
-    if (fabsf(D) < FLT_EPSILON) {
+    if (::is_zero(D)) {
         if (::is_zero(N)) {
             // segment lies in this plane
             return true;

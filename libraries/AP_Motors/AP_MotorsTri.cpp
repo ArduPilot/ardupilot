@@ -14,8 +14,11 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+
 #include "AP_MotorsTri.h"
 
 extern const AP_HAL::HAL& hal;
@@ -280,13 +283,8 @@ void AP_MotorsTri::output_armed_stabilizing()
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-void AP_MotorsTri::output_test_seq(uint8_t motor_seq, int16_t pwm)
+void AP_MotorsTri::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
-    // exit immediately if not armed
-    if (!armed()) {
-        return;
-    }
-
     // output to motors and servos
     switch (motor_seq) {
         case 1:

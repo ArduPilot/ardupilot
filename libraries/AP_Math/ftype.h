@@ -5,6 +5,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <float.h>
 
 /*
   capital F is used to denote the chosen float type (float or double)
@@ -27,6 +28,7 @@ typedef double ftype;
 #define ceilF(x) ceil(x)
 #define fminF(x,y) fmin(x,y)
 #define fmodF(x,y) fmod(x,y)
+#define fabsF(x) fabs(x)
 #define toftype todouble
 #else
 typedef float ftype;
@@ -45,6 +47,7 @@ typedef float ftype;
 #define ceilF(x) ceilf(x)
 #define fminF(x,y) fminf(x,y)
 #define fmodF(x,y) fmodf(x,y)
+#define fabsF(x) fabsf(x)
 #define toftype tofloat
 #endif
 
@@ -53,3 +56,21 @@ typedef float ftype;
 #else
 #define ZERO_FARRAY(a) memset(a, 0, sizeof(a))
 #endif
+
+/*
+ * @brief: Check whether a float is zero
+ */
+inline bool is_zero(const float x) {
+    return fabsf(x) < FLT_EPSILON;
+}
+
+/*
+ * @brief: Check whether a double is zero
+ */
+inline bool is_zero(const double x) {
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+  return fabs(x) < FLT_EPSILON;
+#else
+  return fabsf(static_cast<float>(x)) < FLT_EPSILON;
+#endif
+}

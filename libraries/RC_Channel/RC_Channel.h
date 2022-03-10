@@ -17,9 +17,9 @@ public:
     // Constructor
     RC_Channel(void);
 
-    enum ChannelType {
-        RC_CHANNEL_TYPE_ANGLE = 0,
-        RC_CHANNEL_TYPE_RANGE = 1,
+    enum class ControlType {
+        ANGLE = 0,
+        RANGE = 1,
     };
 
     // setup the control preferences
@@ -53,11 +53,9 @@ public:
     float       norm_input_ignore_trim() const;
 
     // returns true if input is within deadzone of min
-    bool        within_min_dz() const;
+    bool        in_min_dz() const;
 
     uint8_t     percent_input() const;
-    int16_t     pwm_to_range() const;
-    int16_t     pwm_to_range_dz(uint16_t dead_zone) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -80,14 +78,10 @@ public:
     int16_t    get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
-    void       set_radio_min(int16_t val) { radio_min = val;}
 
     int16_t    get_radio_max() const {return radio_max.get();}
-    void       set_radio_max(int16_t val) {radio_max = val;}
 
     int16_t    get_radio_trim() const { return radio_trim.get();}
-    void       set_radio_trim(int16_t val) { radio_trim.set(val);}
-    void       save_radio_trim() { radio_trim.save();}
 
     void       set_and_save_trim() { radio_trim.set_and_save_ifchanged(radio_in);}
 
@@ -97,7 +91,7 @@ public:
     // check if any of the trim/min/max param are configured in storage, this would indicate that the user has done a calibration at somepoint
     bool       configured_in_storage() { return radio_min.configured_in_storage() || radio_max.configured_in_storage() || radio_trim.configured_in_storage(); }
 
-    ChannelType get_type(void) const { return type_in; }
+    ControlType get_type(void) const { return type_in; }
 
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
@@ -230,6 +224,7 @@ public:
         OPTFLOW_CAL =        158, // optical flow calibration
         FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max
         WEATHER_VANE_ENABLE = 160, // enable/disable weathervaning
+        TURBINE_START =       161, // initialize turbine start sequence
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -270,8 +265,6 @@ public:
         SCRIPTING,
     };
 
-    bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
-    bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
     AuxSwitchPos get_aux_switch_pos() const;
 
     // wrapper function around do_aux_function which allows us to log
@@ -281,7 +274,7 @@ public:
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
     // pwm value under which we consider that Radio value is invalid
-    static const uint16_t RC_MIN_LIMIT_PWM = 900;
+    static const uint16_t RC_MIN_LIMIT_PWM = 800;
     // pwm value above which we consider that Radio value is invalid
     static const uint16_t RC_MAX_LIMIT_PWM = 2200;
 
@@ -344,7 +337,7 @@ private:
     AP_Int8     reversed;
     AP_Int16    dead_zone;
 
-    ChannelType type_in;
+    ControlType type_in;
     int16_t     high_in;
 
     // the input channel this corresponds to
@@ -356,6 +349,12 @@ private:
 
     int16_t pwm_to_angle() const;
     int16_t pwm_to_angle_dz(uint16_t dead_zone) const;
+
+    int16_t pwm_to_range() const;
+    int16_t pwm_to_range_dz(uint16_t dead_zone) const;
+
+    bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
+    bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
 
     // Structure used to detect and debounce switch changes
     struct {

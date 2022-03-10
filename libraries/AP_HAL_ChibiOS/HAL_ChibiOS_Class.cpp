@@ -19,6 +19,7 @@
 
 #include <assert.h>
 
+#include <hal.h>
 #include "HAL_ChibiOS_Class.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
@@ -238,6 +239,15 @@ static void main_loop()
 
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     utilInstance.apply_persistent_params();
+#endif
+
+#ifdef HAL_FLASH_PROTECTION
+    if (AP_BoardConfig::unlock_flash()) {
+        stm32_flash_unprotect_flash();
+    } else {
+        stm32_flash_protect_flash(false, AP_BoardConfig::protect_flash());
+        stm32_flash_protect_flash(true, AP_BoardConfig::protect_bootloader());
+    }
 #endif
 
 #if !defined(DISABLE_WATCHDOG)

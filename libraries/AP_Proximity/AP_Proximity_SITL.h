@@ -31,9 +31,6 @@ private:
     AP_Float *fence_alt_max;
     Location current_loc;
 
-    // latest sector updated
-    uint8_t last_sector;
-
     // get distance in meters to fence in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
     bool get_distance_to_fence(float angle_deg, float &distance) const;
 

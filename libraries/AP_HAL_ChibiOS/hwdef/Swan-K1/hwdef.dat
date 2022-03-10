@@ -36,3 +36,5 @@ define HAL_WITH_RAMTRON 1
 
 # use a longer frame gap detector for more robust SBUS with H12 controller
 define HAL_SBUS_FRAME_GAP 5000U
+
+AUTOBUILD_TARGETS Plane

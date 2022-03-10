@@ -4,7 +4,6 @@
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <GCS_MAVLink/GCS.h>
 
 // default main rotor speed (ch8 out) as a number from 0 ~ 100
 #define AP_MOTORS_HELI_RSC_SETPOINT             70
@@ -112,6 +111,9 @@ public:
 
     // set the throttle percentage to be sent to external governor to signal that autorotation bailout ramp should be used within this instance of Heli_RSC
     void        set_ext_gov_arot_bail(int16_t pct) { _rsc_arot_bailout_pct = pct; }
+	
+    // turbine start initialize sequence
+    void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
 
     // output - update value to send to ESC/Servo
     void        output(RotorControlState state);
@@ -145,6 +147,8 @@ private:
     float           _thrcrv_poly[4][4];           // spline polynomials for throttle curve interpolation
     float           _collective_in;               // collective in for throttle curve calculation, range 0-1.0f
     float           _rotor_rpm;                   // rotor rpm from speed sensor for governor
+    bool            _turbine_start;               // initiates starting sequence
+    bool            _starting;                    // tracks if starting sequence has been used
     float           _governor_output;             // governor output for rotor speed control
     bool            _governor_engage;             // RSC governor status flag
     bool            _autothrottle;                // autothrottle status flag

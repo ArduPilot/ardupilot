@@ -56,7 +56,7 @@ protected:
     }
 };
 
-#if HAL_WITH_EKF_DOUBLE
+#if HAL_WITH_EKF_DOUBLE && !defined(__clang__)
 // stack frames are larger with double EKF
 #if MATH_CHECK_INDEXES
 #pragma GCC diagnostic error "-Wframe-larger-than=4000"

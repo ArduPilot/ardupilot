@@ -228,8 +228,8 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
     Location current_loc;
     const AP_AHRS &ahrs = AP::ahrs();
     if (ahrs.get_location(current_loc) &&
-        height_amsl(ahrs.get_home(), home_terrain_height, false) &&
-        height_amsl(loc, terrain_height, false)) {
+        height_amsl(ahrs.get_home(), home_terrain_height) &&
+        height_amsl(loc, terrain_height)) {
         // non-zero spacing indicates we have data
         spacing = grid_spacing;
     } else if (extrapolate && have_current_loc_height) {
@@ -238,7 +238,7 @@ void AP_Terrain::send_terrain_report(mavlink_channel_t chan, const Location &loc
         terrain_height = last_current_loc_height;
     } else {
         // report terrain height if we can, but can't give current_height
-        height_amsl(loc, terrain_height, false);
+        height_amsl(loc, terrain_height);
     }
     uint16_t pending, loaded;
     get_statistics(pending, loaded);

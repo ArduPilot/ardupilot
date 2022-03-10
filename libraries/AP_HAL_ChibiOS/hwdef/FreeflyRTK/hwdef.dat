@@ -130,6 +130,7 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 256
 # disable dual GPS and GPS blending to save flash space
 define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
+define GPS_MOVING_BASELINE 1
 define HAL_COMPASS_MAX_SENSORS 1
 
 # GPS+MAG+BARO+Buzzer+NeoPixels

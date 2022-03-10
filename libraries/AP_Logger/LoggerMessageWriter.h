@@ -31,6 +31,7 @@ private:
     enum class Stage : uint8_t {
         FIRMWARE_STRING = 0,
         GIT_VERSIONS,
+        VER,  // i.e. the "VER" message
         SYSTEM_ID,
         PARAM_SPACE_USED,
         RC_PROTOCOL

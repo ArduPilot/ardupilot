@@ -1945,7 +1945,7 @@ void NavEKF3_core::ConstrainVariances()
         zeroCols(P,13,15);
         zeroRows(P,13,15);
         for (uint8_t i=0; i<=2; i++) {
-            const uint8_t stateIndex = 1 + 13;
+            const uint8_t stateIndex = i + 13;
             P[stateIndex][stateIndex] = fmaxF(P[stateIndex][stateIndex], minStateVarTarget);
         }
     }

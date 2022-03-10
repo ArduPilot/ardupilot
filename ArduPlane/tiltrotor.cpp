@@ -480,6 +480,17 @@ bool Tiltrotor::fully_fwd(void) const
 }
 
 /*
+  return true if the rotors are fully tilted up
+ */
+bool Tiltrotor::fully_up(void) const
+{
+    if (!enabled() || (tilt_mask == 0)) {
+        return false;
+    }
+    return (current_tilt <= 0);
+}
+
+/*
   control vectoring for tilt multicopters
  */
 void Tiltrotor::vectoring(void)
@@ -530,8 +541,7 @@ void Tiltrotor::vectoring(void)
         return;
     }
 
-    float tilt_threshold = (max_angle_deg/90.0f);
-    bool no_yaw = (current_tilt > tilt_threshold);
+    const bool no_yaw = tilt_over_max_angle();
     if (no_yaw) {
         // fixed wing  We need to apply inverse scaling with throttle, and remove the surface speed scaling as
         // we don't want tilt impacted by airspeed
@@ -672,6 +682,13 @@ bool Tiltrotor_Transition::show_vtol_view() const
     }
 
     return show_vtol;
+}
+
+// return true if we are tilted over the max angle threshold
+bool Tiltrotor::tilt_over_max_angle(void) const
+{
+    const float tilt_threshold = (max_angle_deg/90.0f);
+    return (current_tilt > MIN(tilt_threshold, get_forward_flight_tilt()));
 }
 
 #endif  // HAL_QUADPLANE_ENABLED

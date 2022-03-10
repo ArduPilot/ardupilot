@@ -138,7 +138,7 @@ void AC_Circle::set_rate(float deg_per_sec)
 }
 
 /// set_circle_rate - set circle rate in degrees per second
-void AC_Circle::set_radius(float radius_cm)
+void AC_Circle::set_radius_cm(float radius_cm)
 {
     _radius = constrain_float(radius_cm, 0, AC_CIRCLE_RADIUS_MAX);
 }
