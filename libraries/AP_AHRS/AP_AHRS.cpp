@@ -22,15 +22,18 @@
 #include "AP_AHRS.h"
 #include "AP_AHRS_View.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
 
 #define ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD radians(10)
 #define ATTITUDE_CHECK_THRESH_YAW_RAD radians(20)
@@ -113,7 +116,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Param: ORIENTATION
     // @DisplayName: Board Orientation
     // @Description: Overall board orientation relative to the standard orientation for the board type. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. The label for each option is specified in the order of rotations for that orientation. This option takes affect on next boot. After changing you will need to re-level your vehicle.
-    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom 4.1 and older,101:Custom 1,102:Custom 2
     // @User: Advanced
     AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
 
@@ -152,7 +155,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("CUSTOM_ROLL", 15, AP_AHRS, _custom_roll, 0),
+
+    // index 15
 
     // @Param: CUSTOM_PIT
     // @DisplayName: Board orientation pitch offset
@@ -161,7 +165,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("CUSTOM_PIT", 16, AP_AHRS, _custom_pitch, 0),
+
+    // index 16
 
     // @Param: CUSTOM_YAW
     // @DisplayName: Board orientation yaw offset
@@ -170,7 +175,8 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @Units: deg
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("CUSTOM_YAW", 17, AP_AHRS, _custom_yaw, 0),
+
+    // index 17
 
     AP_GROUPEND
 };
@@ -225,6 +231,26 @@ void AP_AHRS::init()
 #if HAL_NMEA_OUTPUT_ENABLED
     _nmea_out = AP_NMEA_Output::probe();
 #endif
+
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+    // convert to new custom rotaton
+    // PARAMETER_CONVERSION - Added: Nov-2021
+    if (_board_orientation == ROTATION_CUSTOM_OLD) {
+        _board_orientation.set_and_save(ROTATION_CUSTOM_1);
+        AP_Param::ConversionInfo info;
+        if (AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
+            info.type = AP_PARAM_FLOAT;
+            float rpy[3] = {};
+            AP_Float rpy_param;
+            for (info.old_group_element=15; info.old_group_element<=17; info.old_group_element++) {
+                if (AP_Param::find_old_parameter(&info, &rpy_param)) {
+                    rpy[info.old_group_element-15] = rpy_param.get();
+                }
+            }
+            AP::custom_rotations().convert(ROTATION_CUSTOM_1, rpy[0], rpy[1], rpy[2]);
+        }
+    }
+#endif // !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 }
 
 // updates matrices responsible for rotating vectors from vehicle body

@@ -14,6 +14,8 @@
  *
  * Bi-directional dshot based on Betaflight, code by Andy Piper and Siddharth Bharat Purohit
  */
+
+#include <hal.h>
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
 #include "hwdef/common/stm32_util.h"
@@ -352,7 +354,7 @@ void RCOutput::bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t 
 /*
   unlock DMA channel after a bi-directional dshot transaction completes
  */
-void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
+__RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(void *p)
 {
     pwm_group *group = (pwm_group *)p;
     chSysLockFromISR();
@@ -456,7 +458,7 @@ uint8_t RCOutput::bdshot_find_next_ic_channel(const pwm_group& group)
 /*
   DMA UP channel interrupt handler. Used to mark DMA send completed for DShot
  */
-void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
+__RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
 {
     pwm_group *group = (pwm_group *)p;
     chSysLockFromISR();
@@ -496,7 +498,7 @@ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
 }
 
 // DMA IC channel handler. Used to mark DMA receive completed for DShot
-void RCOutput::bdshot_dma_ic_irq_callback(void *p, uint32_t flags)
+__RAMFUNC__ void RCOutput::bdshot_dma_ic_irq_callback(void *p, uint32_t flags)
 {
     chSysLockFromISR();
 

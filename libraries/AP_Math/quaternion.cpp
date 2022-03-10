@@ -18,8 +18,11 @@
 
 #pragma GCC optimize("O2")
 
+#include "quaternion.h"
 #include "AP_Math.h"
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_CustomRotations/AP_CustomRotations.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define HALF_SQRT_2_PlUS_SQRT_2 0.92387953251128673848313610506011 // sqrt(2 + sqrt(2)) / 2
 #define HALF_SQRT_2_MINUS_SQTR_2 0.38268343236508972626808144923416 // sqrt(2 - sqrt(2)) / 2
@@ -376,12 +379,16 @@ void QuaternionT<T>::from_rotation(enum Rotation rotation)
         q3 = q4 = 0.0;
         return;
 
-    case ROTATION_CUSTOM:
-        // Error; custom rotations not supported
-        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    case ROTATION_CUSTOM_1:
+    case ROTATION_CUSTOM_2:
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
+        // Do not support custom rotations on Periph
+        AP::custom_rotations().from_rotation(rotation, *this);
         return;
-
+#endif
     case ROTATION_MAX:
+    case ROTATION_CUSTOM_OLD:
+    case ROTATION_CUSTOM_END:
         break;
     }
     // rotation invalid
@@ -655,10 +662,7 @@ void QuaternionT<T>::normalize(void)
 // Checks if each element of the quaternion is zero
 template <typename T>
 bool QuaternionT<T>::is_zero(void) const {
-    return (fabsf(q1) < FLT_EPSILON) &&
-            (fabsf(q2) < FLT_EPSILON) &&
-            (fabsf(q3) < FLT_EPSILON) &&
-            (fabsf(q4) < FLT_EPSILON);
+    return ::is_zero(q1) && ::is_zero(q2) && ::is_zero(q3) && ::is_zero(q4);
 }
 
 // zeros the quaternion to [0, 0, 0, 0], an invalid quaternion
@@ -675,7 +679,7 @@ void QuaternionT<T>::zero(void)
 template <typename T>
 bool QuaternionT<T>::is_unit_length(void) const
 {
-    if (fabsf(length_squared() - 1) < 1E-3) {
+    if (fabsF(length_squared() - 1) < 1E-3) {
         return true;
     }
 

@@ -14,7 +14,11 @@
  */
 
 #include "GCS_MAVLink.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#include <hal.h>
+#endif
 
 #if HAL_GCS_ENABLED
 
@@ -65,7 +69,6 @@ uint8_t GCS_Periph::sysid_this_mav() const
 
 MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_long_t &packet)
 {
-    printf("RestartNode\n");
     hal.scheduler->delay(10);
     periph.prepare_reboot();
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

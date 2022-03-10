@@ -32,7 +32,7 @@
 #include "bl_protocol.h"
 #include "can.h"
 #include <stdio.h>
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 
@@ -44,7 +44,7 @@ struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
     .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024,
-    .extf_size = (EXTERNAL_PROG_FLASH_MB * 1024 * 1024)
+    .extf_size = (EXT_FLASH_SIZE_MB * 1024 * 1024) - (EXT_FLASH_RESERVE_START_KB + EXT_FLASH_RESERVE_END_KB) * 1024
 };
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
@@ -55,7 +55,7 @@ struct boardinfo board_info = {
 #define HAL_STAY_IN_BOOTLOADER_VALUE 0
 #endif
 
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
 AP_FlashIface_JEDEC ext_flash;
 #endif
 
@@ -76,6 +76,10 @@ int main(void)
     AFIO->MAPR = mapr | AFIO_MAPR_CAN_REMAP_REMAP2 | AFIO_MAPR_SPI3_REMAP;
 #endif
 
+#ifdef HAL_FLASH_PROTECTION
+    stm32_flash_unprotect_flash();
+#endif
+
 #ifndef NO_FASTBOOT
     enum rtc_boot_magic m = check_fast_reboot();
     bool was_watchdog = stm32_was_watchdog_reset();
@@ -94,7 +98,11 @@ int main(void)
         timeout = 10000;
         can_set_node_id(m & 0xFF);
     }
-    can_check_update();
+    if (can_check_update()) {
+        // trying to update firmware, stay in bootloader
+        try_boot = false;
+        timeout = 0;
+    }
     if (!can_check_firmware()) {
         // bad firmware CRC, don't try and boot
         timeout = 0;
@@ -151,7 +159,7 @@ int main(void)
     flash_init();
 
 
-#if EXTERNAL_PROG_FLASH_MB
+#if EXT_FLASH_SIZE_MB
     while (!ext_flash.init()) {
         // keep trying until we get it working
         // there's no future without it

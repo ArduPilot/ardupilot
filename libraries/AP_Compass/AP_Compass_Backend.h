@@ -19,11 +19,12 @@
  */
 #pragma once
 
-#include "AP_Compass.h"
-
+#include <AP_MSP/msp.h>
 #ifndef HAL_MSP_COMPASS_ENABLED
 #define HAL_MSP_COMPASS_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
+
+#include "AP_Compass.h"
 
 class Compass;  // forward declaration
 class AP_Compass_Backend

@@ -142,9 +142,9 @@ private:
 
     bool _checkHWFilters(const can_frame& frame) const;
 
-    bool _hasReadyTx() const;
+    bool _hasReadyTx();
 
-    bool _hasReadyRx() const;
+    bool _hasReadyRx();
 
     void _poll(bool read, bool write);
 
@@ -190,6 +190,17 @@ private:
         uint32_t num_poll_tx_events;
         uint32_t num_poll_rx_events;
     } stats;
+
+protected:
+    bool add_to_rx_queue(const CanRxItem &rx_item) override {
+        _rx_queue.push(rx_item);
+        return true;
+    }
+
+    int8_t get_iface_num(void) const override {
+        return _self_index;
+    }
+    HAL_Semaphore sem;
 };
 
 }

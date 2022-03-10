@@ -44,8 +44,6 @@ public:
 private:
     void send_table();
 
-    uint32_t time_send_ms;
-
     struct PACKED {
         uint16_t size;
         uint8_t command;

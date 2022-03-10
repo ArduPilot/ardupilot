@@ -89,7 +89,6 @@ private:
     void save_value(uint8_t parm) override;
     void reload_value(uint8_t parm) override;
     void set_value(uint8_t parm, float value) override;
-    float controller_error(uint8_t parm) override;
 
     // tuning set arrays
     static const uint8_t tuning_set_rate_roll_pitch[];

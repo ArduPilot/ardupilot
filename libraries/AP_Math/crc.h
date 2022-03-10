@@ -48,3 +48,5 @@ uint16_t calc_crc_modbus(uint8_t *buf, uint16_t len);
 #define FNV_1_OFFSET_BASIS_64 14695981039346656037UL
 void hash_fnv_1a(uint32_t len, const uint8_t* buf, uint64_t* hash);
 
+// CRC-64-WE using the polynomial of 0x42F0E1EBA9EA3693
+uint64_t crc_crc64(const uint32_t *data, uint16_t num_words);

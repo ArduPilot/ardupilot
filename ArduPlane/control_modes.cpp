@@ -107,9 +107,8 @@ void Plane::read_control_switch()
     // If we get this value we do not want to change modes.
     if(switchPosition == 255) return;
 
-    if (failsafe.rc_failsafe || failsafe.throttle_counter > 0) {
-        // when we are in rc_failsafe mode then RC input is not
-        // working, and we need to ignore the mode switch channel
+    if (!rc().has_valid_input()) {
+        // ignore the mode switch channel if there is no valid RC input
         return;
     }
 

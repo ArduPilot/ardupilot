@@ -19,7 +19,9 @@
 #pragma once
 
 // we want to cope with both revision XY chips and newer chips
+#ifndef STM32H750xx
 #define STM32_ENFORCE_H7_REV_XY
+#endif
 
 #ifndef STM32_LSECLK
 #define STM32_LSECLK 32768U
@@ -47,6 +49,7 @@
 #define STM32H743_MCUCONF
 #define STM32H753_MCUCONF
 #define STM32H745_MCUCONF
+#define STM32H750_MCUCONF
 #define STM32H755_MCUCONF
 #define STM32H747_MCUCONF
 #define STM32H757_MCUCONF
@@ -158,7 +161,11 @@
 
 #elif (STM32_HSECLK == 8000000U) || (STM32_HSECLK == 16000000U)
 // common clock tree for multiples of 8MHz crystals
+#ifdef STM32H750xx
+#define STM32_PLL1_DIVN_VALUE               120
+#else
 #define STM32_PLL1_DIVN_VALUE               100
+#endif
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
@@ -174,7 +181,11 @@
 #define STM32_PLL3_DIVR_VALUE               9
 
 #elif STM32_HSECLK == 24000000U
+#ifdef STM32H750xx
+#define STM32_PLL1_DIVN_VALUE               120
+#else
 #define STM32_PLL1_DIVN_VALUE               100
+#endif
 #define STM32_PLL1_DIVP_VALUE               2
 #define STM32_PLL1_DIVQ_VALUE               8
 #define STM32_PLL1_DIVR_VALUE               2
@@ -312,7 +323,6 @@
 #define STM32_IRQ_FDCAN2_PRIORITY           10
 
 #define STM32_IRQ_MDMA_PRIORITY             9
-
 #define STM32_IRQ_QUADSPI1_PRIORITY         10
 
 #define STM32_IRQ_SDMMC1_PRIORITY           9
@@ -349,7 +359,9 @@
 #define STM32_ADC_DUAL_MODE                 FALSE
 #define STM32_ADC_COMPACT_SAMPLES           FALSE
 #define STM32_ADC_USE_ADC12                 TRUE
+#ifndef STM32H750xx
 #define STM32_ADC_USE_ADC3                  TRUE
+#endif
 #define STM32_ADC_ADC12_DMA_PRIORITY        2
 #define STM32_ADC_ADC3_DMA_PRIORITY         2
 #define STM32_ADC_ADC12_IRQ_PRIORITY        5

@@ -52,6 +52,8 @@ public:
     static void clear_all(void);
     static void clear_bus(uint8_t busidx);
     static uint8_t read_sda(uint8_t busidx);
+    static bool check_select_pins(uint8_t check_pins);
+    static void set_bus_to_floating(uint8_t busidx);
 };
 
 class I2CDevice : public AP_HAL::I2CDevice {
