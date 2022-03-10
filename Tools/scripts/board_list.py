@@ -21,6 +21,7 @@ class Board(object):
             'Heli',
             'Plane',
             'Rover',
+            'Sub',
         ]
 
 
