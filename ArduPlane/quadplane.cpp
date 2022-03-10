@@ -3541,7 +3541,7 @@ float QuadPlane::stopping_distance(float ground_speed_squared) const
  */
 float QuadPlane::accel_needed(float stop_distance, float ground_speed_squared) const
 {
-    return ground_speed_squared / (2 * stop_distance);
+    return ground_speed_squared / (2 * MAX(1,stop_distance));
 }
 
 /*
