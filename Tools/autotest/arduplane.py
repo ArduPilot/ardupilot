@@ -1038,7 +1038,7 @@ class AutoTestPlane(AutoTest):
             "SIM_RC_FAIL": 0,  # fix receiver
         })
         self.zero_throttle()
-        self.disarm_vehicle()
+        self.disarm_vehicle(force=True)
         self.context_pop()
         self.reboot_sitl()
 
@@ -2268,7 +2268,7 @@ function'''
         self.wait_waypoint(4, 4, timeout=1200, max_dist=120)
 
         # Disarm
-        self.disarm_vehicle()
+        self.disarm_vehicle_expect_fail()
 
         self.progress("Mission OK")
 
@@ -2365,7 +2365,7 @@ function'''
             raise NotAchievedException("Airspeed did not reduce with lower SOAR_VSPEED")
 
         # Disarm
-        self.disarm_vehicle()
+        self.disarm_vehicle_expect_fail()
 
         self.progress("Mission OK")
 
@@ -2872,7 +2872,7 @@ function'''
             self.context_clear_collection("STATUSTEXT")
             ###################################################################
 
-            self.disarm_vehicle()
+            self.disarm_vehicle(force=True)
 
         except Exception as e:
             self.print_exception_caught(e)

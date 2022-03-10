@@ -172,20 +172,23 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
     }
 #if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
-    if (quadplane.show_vtol_view()) {
+    if (quadplane.show_vtol_view() && quadplane.using_wp_nav()) {
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
-        bool wp_nav_valid = quadplane.using_wp_nav();
+
+        const Vector2f& curr_pos = quadplane.inertial_nav.get_position_xy_cm();
+        const Vector2f& target_pos = quadplane.pos_control->get_pos_target_cm().xy().tofloat();
+        const Vector2f error = (target_pos - curr_pos) * 0.01;
 
         mavlink_msg_nav_controller_output_send(
             chan,
             targets.x * 0.01,
             targets.y * 0.01,
             targets.z * 0.01,
-            wp_nav_valid ? quadplane.wp_nav->get_wp_bearing_to_destination() : 0,
-            wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination() * 0.01, UINT16_MAX) : 0,
+            degrees(error.angle()),
+            MIN(error.length(), UINT16_MAX),
             (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_z_cm() * 0.01 : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
-            wp_nav_valid ? quadplane.wp_nav->crosstrack_error() : 0);
+            quadplane.wp_nav->crosstrack_error());
         return;
     }
 #endif
@@ -653,6 +656,10 @@ void GCS_MAVLINK_Plane::packetReceived(const mavlink_status_t &status,
 #if HAL_ADSB_ENABLED
     plane.avoidance_adsb.handle_msg(msg);
 #endif
+#if AP_SCRIPTING_ENABLED
+    // pass message to follow library
+    plane.g2.follow.handle_msg(msg);
+#endif
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -884,6 +891,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_GUIDED_CHANGE_HEADING:
         return handle_command_int_guided_slew_commands(packet);
 
+    case MAV_CMD_DO_FOLLOW:
+#if AP_SCRIPTING_ENABLED
+        // param1: sysid of target to follow
+        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+            plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
+            return MAV_RESULT_ACCEPTED;
+        }
+#endif
+        return MAV_RESULT_FAILED;
+        
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
@@ -1085,6 +1102,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
         }
         return MAV_RESULT_ACCEPTED;
 
+#if AP_SCRIPTING_ENABLED
+    case MAV_CMD_DO_FOLLOW:
+        // param1: sysid of target to follow
+        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
+            plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED;
+#endif
+        
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }

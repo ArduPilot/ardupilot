@@ -16,7 +16,7 @@ parser.add_argument('basedir', default=None, help='base directory (binaries dire
 parser.add_argument('--outfile', default="builds.html", help='output file')
 
 build_dirs = ['latest', 'beta', 'stable']
-builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AP_Periph']
+builds = ['Plane', 'Copter', 'Rover', 'Sub', 'Blimp', 'AntennaTracker', 'AP_Periph']
 
 args = parser.parse_args()
 

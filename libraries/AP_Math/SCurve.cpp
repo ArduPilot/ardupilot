@@ -26,9 +26,11 @@ extern const AP_HAL::HAL &hal;
 
 #define SEG_INIT                0
 #define SEG_ACCEL_MAX           4
+#define SEG_TURN_IN             4
 #define SEG_ACCEL_END           7
 #define SEG_SPEED_CHANGE_END    14
 #define SEG_CONST               15
+#define SEG_TURN_OUT            15
 #define SEG_DECEL_END           22
 
 // constructor
@@ -40,7 +42,7 @@ SCurve::SCurve()
 // initialise and clear the path
 void SCurve::init()
 {
-    jerk_time = 0.0f;
+    snap_max = 0.0f;
     jerk_max = 0.0f;
     accel_max = 0.0f;
     vel_max = 0.0f;
@@ -57,7 +59,7 @@ void SCurve::init()
 void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination,
                              float speed_xy, float speed_up, float speed_down,
                              float accel_xy, float accel_z,
-                             float jerk_time_sec, float jerk_maximum)
+                             float snap_maximum, float jerk_maximum)
 {
     init();
 
@@ -67,8 +69,8 @@ void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination
         return;
     }
 
-    // set jerk time and jerk max
-    jerk_time = jerk_time_sec;
+    // set snap_max and jerk max
+    snap_max = snap_maximum;
     jerk_max = jerk_maximum;
 
     // update speed and acceleration limits along path
@@ -77,7 +79,7 @@ void SCurve::calculate_track(const Vector3f &origin, const Vector3f &destination
                          accel_xy, accel_z);
 
     // avoid divide-by zeros. Path will be left as a zero length path
-    if (!is_positive(jerk_time) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
+    if (!is_positive(snap_max) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ::printf("SCurve::calculate_track created zero length path\n");
 #endif
@@ -210,13 +212,13 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         // minimum velocity that can be obtained by shortening SEG_ACCEL_MAX
         const float Vmin = segment[SEG_ACCEL_END].end_vel - segment[SEG_ACCEL_MAX].end_accel * (segment[SEG_ACCEL_MAX].end_time - MAX(time, segment[SEG_ACCEL_MAX-1].end_time));
 
-        float Jm, t2, t4, t6;
-        calculate_path(jerk_time, jerk_max, Vstart, accel_max, MAX(Vmin, vel_max), Pend * 0.5f, Jm, t2, t4, t6);
+        float Jm, tj, t2, t4, t6;
+        calculate_path(snap_max, jerk_max, Vstart, accel_max, MAX(Vmin, vel_max), Pend * 0.5f, Jm, tj, t2, t4, t6);
 
         uint8_t seg = SEG_INIT+1;
-        add_segments_jerk(seg, jerk_time, Jm, t2);
+        add_segments_jerk(seg, tj, Jm, t2);
         add_segment_const_jerk(seg, t4, 0.0f);
-        add_segments_jerk(seg, jerk_time, -Jm, t6);
+        add_segments_jerk(seg, tj, -Jm, t6);
 
         // remove numerical errors
         segment[SEG_ACCEL_END].end_accel = 0.0f;
@@ -231,12 +233,12 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
             segment[i].end_pos = segment[SEG_ACCEL_END].end_pos;
         }
 
-        calculate_path(jerk_time, jerk_max, 0.0f, accel_max, MAX(Vmin, vel_max), Pend * 0.5f, Jm, t2, t4, t6);
+        calculate_path(snap_max, jerk_max, 0.0f, accel_max, MAX(Vmin, vel_max), Pend * 0.5f, Jm, tj, t2, t4, t6);
 
         seg = SEG_CONST + 1;
-        add_segments_jerk(seg, jerk_time, -Jm, t6);
+        add_segments_jerk(seg, tj, -Jm, t6);
         add_segment_const_jerk(seg, t4, 0.0f);
-        add_segments_jerk(seg, jerk_time, Jm, t2);
+        add_segments_jerk(seg, tj, Jm, t2);
 
         // remove numerical errors
         segment[SEG_DECEL_END].end_accel = 0.0f;
@@ -267,24 +269,26 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         // we use the approximation that the time will be distance/max_vel and 8 jerk segments
         const float L = segment[SEG_CONST].end_pos - segment[SEG_ACCEL_END].end_pos;
         float Jm = 0;
+        float tj = 0;
         float t2 = 0;
         float t4 = 0;
         float t6 = 0;
+        float jerk_time = MIN(powf((fabsf(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1/3), jerk_max * M_PI / (2 * snap_max));
         if ((vel_max < segment[SEG_ACCEL_END].end_vel) && (jerk_time*12.0f < L/segment[SEG_ACCEL_END].end_vel)) {
             // we have a problem here with small segments.
-            calculate_path(jerk_time, jerk_max, vel_max, accel_max, segment[SEG_ACCEL_END].end_vel, L * 0.5f, Jm, t6, t4, t2);
+            calculate_path(snap_max, jerk_max, vel_max, accel_max, segment[SEG_ACCEL_END].end_vel, L * 0.5f, Jm, tj, t6, t4, t2);
             Jm = -Jm;
 
         } else if ((vel_max > segment[SEG_ACCEL_END].end_vel) && (L/(jerk_time*12.0f) > segment[SEG_ACCEL_END].end_vel)) {
             float Vm = MIN(vel_max, L/(jerk_time*12.0f));
-            calculate_path(jerk_time, jerk_max, segment[SEG_ACCEL_END].end_vel, accel_max, Vm, L * 0.5f, Jm, t2, t4, t6);
+            calculate_path(snap_max, jerk_max, segment[SEG_ACCEL_END].end_vel, accel_max, Vm, L * 0.5f, Jm, tj, t2, t4, t6);
         }
 
         uint8_t seg = SEG_ACCEL_END + 1;
         if (!is_zero(Jm) && !is_negative(t2) && !is_negative(t4) && !is_negative(t6)) {
-            add_segments_jerk(seg, jerk_time, Jm, t2);
+            add_segments_jerk(seg, tj, Jm, t2);
             add_segment_const_jerk(seg, t4, 0.0f);
-            add_segments_jerk(seg, jerk_time, -Jm, t6);
+            add_segments_jerk(seg, tj, -Jm, t6);
 
             // remove numerical errors
             segment[SEG_SPEED_CHANGE_END].end_accel = 0.0f;
@@ -297,11 +301,11 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     Vend = MIN(Vend, segment[SEG_SPEED_CHANGE_END].end_vel);
     add_segment_const_jerk(seg, 0.0f, 0.0f);
     if (Vend < segment[SEG_SPEED_CHANGE_END].end_vel) {
-        float Jm, t2, t4, t6;
-        calculate_path(jerk_time, jerk_max, Vend, accel_max, segment[SEG_CONST].end_vel, Pend - segment[SEG_CONST].end_pos, Jm, t2, t4, t6);
-        add_segments_jerk(seg, jerk_time, -Jm, t6);
+        float Jm, tj, t2, t4, t6;
+        calculate_path(snap_max, jerk_max, Vend, accel_max, segment[SEG_CONST].end_vel, Pend - segment[SEG_CONST].end_pos, Jm, tj, t2, t4, t6);
+        add_segments_jerk(seg, tj, -Jm, t6);
         add_segment_const_jerk(seg, t4, 0.0f);
-        add_segments_jerk(seg, jerk_time, Jm, t2);
+        add_segments_jerk(seg, tj, Jm, t2);
     } else {
         // No deceleration is required
         for (uint8_t i = SEG_CONST+1; i <= SEG_DECEL_END; i++) {
@@ -355,14 +359,14 @@ float SCurve::set_origin_speed_max(float speed)
     const float track_length = track.length();
     speed = MIN(speed, Vm);
 
-    float Jm, t2, t4, t6;
-    calculate_path(jerk_time, jerk_max, speed, accel_max, Vm, track_length * 0.5f, Jm, t2, t4, t6);
+    float Jm, tj, t2, t4, t6;
+    calculate_path(snap_max, jerk_max, speed, accel_max, Vm, track_length * 0.5f, Jm, tj, t2, t4, t6);
 
     uint8_t seg = SEG_INIT;
     add_segment(seg, 0.0f, SegmentType::CONSTANT_JERK, 0.0f, 0.0f, speed, 0.0f);
-    add_segments_jerk(seg, jerk_time, Jm, t2);
+    add_segments_jerk(seg, tj, Jm, t2);
     add_segment_const_jerk(seg, t4, 0.0f);
-    add_segments_jerk(seg, jerk_time, -Jm, t6);
+    add_segments_jerk(seg, tj, -Jm, t6);
 
     // remove numerical errors
     segment[SEG_ACCEL_END].end_accel = 0.0f;
@@ -388,11 +392,11 @@ float SCurve::set_origin_speed_max(float speed)
     seg = SEG_CONST;
     add_segment_const_jerk(seg, 0.0f, 0.0f);
 
-    calculate_path(jerk_time, jerk_max, 0.0f, accel_max, segment[SEG_CONST].end_vel, track_length * 0.5f, Jm, t2, t4, t6);
+    calculate_path(snap_max, jerk_max, 0.0f, accel_max, segment[SEG_CONST].end_vel, track_length * 0.5f, Jm, tj, t2, t4, t6);
 
-    add_segments_jerk(seg, jerk_time, -Jm, t6);
+    add_segments_jerk(seg, tj, -Jm, t6);
     add_segment_const_jerk(seg, t4, 0.0f);
-    add_segments_jerk(seg, jerk_time, Jm, t2);
+    add_segments_jerk(seg, tj, Jm, t2);
 
     // remove numerical errors
     segment[SEG_DECEL_END].end_accel = 0.0f;
@@ -437,15 +441,15 @@ void SCurve::set_destination_speed_max(float speed)
     const float track_length = track.length();
     speed = MIN(speed, Vm);
 
-    float Jm, t2, t4, t6;
-    calculate_path(jerk_time, jerk_max, speed, accel_max, Vm, track_length * 0.5f, Jm, t2, t4, t6);
+    float Jm, tj, t2, t4, t6;
+    calculate_path(snap_max, jerk_max, speed, accel_max, Vm, track_length * 0.5f, Jm, tj, t2, t4, t6);
 
     uint8_t seg = SEG_CONST;
     add_segment_const_jerk(seg, 0.0f, 0.0f);
 
-    add_segments_jerk(seg, jerk_time, -Jm, t6);
+    add_segments_jerk(seg, tj, -Jm, t6);
     add_segment_const_jerk(seg, t4, 0.0f);
-    add_segments_jerk(seg, jerk_time, Jm, t2);
+    add_segments_jerk(seg, tj, Jm, t2);
 
     // remove numerical errors
     segment[SEG_DECEL_END].end_accel = 0.0f;
@@ -478,7 +482,7 @@ void SCurve::set_destination_speed_max(float speed)
 // target_pos should be set to this segment's origin and it will be updated to the current position target
 // target_vel and target_accel are updated with new targets
 // returns true if vehicle has passed the apex of the corner
-bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel)
+bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, float wp_radius, float accel_corner, bool fast_waypoint, float dt, Vector3f &target_pos, Vector3f &target_vel, Vector3f &target_accel)
 {
     prev_leg.move_to_pos_vel_accel(dt, target_pos, target_vel, target_accel);
     move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
@@ -486,16 +490,19 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
 
     // check for change of leg on fast waypoint
     const float time_to_destination = get_time_remaining();
-    if (fast_waypoint && braking() && is_zero(next_leg.get_time_elapsed()) && (time_to_destination <= next_leg.get_accel_finished_time())) {
+    if (fast_waypoint 
+        && is_zero(next_leg.get_time_elapsed()) 
+        && (get_time_elapsed() >= time_turn_out() - next_leg.time_turn_in()) 
+        && (position_sq >= 0.25 * track.length_squared())) {
+
         Vector3f turn_pos = -get_track();
         Vector3f turn_vel, turn_accel;
         move_from_time_pos_vel_accel(get_time_elapsed() + time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         next_leg.move_from_time_pos_vel_accel(time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         const float speed_min = MIN(get_speed_along_track(), next_leg.get_speed_along_track());
-        const float accel_min = MIN(get_accel_along_track(), next_leg.get_accel_along_track());
         if ((get_time_remaining() < next_leg.time_end() * 0.5f) && (turn_pos.length() < wp_radius) &&
              (Vector2f{turn_vel.x, turn_vel.y}.length() < speed_min) &&
-             (Vector2f{turn_accel.x, turn_accel.y}.length() < 2.0f*accel_min)) {
+             (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner)) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
     } else if (!is_zero(next_leg.get_time_elapsed())) {
@@ -556,7 +563,7 @@ void SCurve::move_from_time_pos_vel_accel(float time_now, Vector3f &pos, Vector3
 float SCurve::time_end() const
 {
     if (num_segs != segments_max) {
-        return 0.0f;
+        return 0.0;
     }
     return segment[SEG_DECEL_END].end_time;
 }
@@ -565,7 +572,7 @@ float SCurve::time_end() const
 float SCurve::get_time_remaining() const
 {
     if (num_segs != segments_max) {
-        return 0.0f;
+        return 0.0;
     }
     return segment[SEG_DECEL_END].end_time - time;
 }
@@ -574,7 +581,7 @@ float SCurve::get_time_remaining() const
 float SCurve::get_accel_finished_time() const
 {
     if (num_segs != segments_max) {
-        return 0.0f;
+        return 0.0;
     }
     return segment[SEG_ACCEL_END].end_time;
 }
@@ -588,6 +595,24 @@ bool SCurve::braking() const
     return time >= segment[SEG_CONST].end_time;
 }
 
+// return time offset used to initiate the turn onto leg
+float SCurve::time_turn_in() const
+{
+    if (num_segs != segments_max) {
+        return 0.0;
+    }
+    return segment[SEG_TURN_IN].end_time;
+}
+
+// return time offset used to initiate the turn from leg
+float SCurve::time_turn_out() const
+{
+    if (num_segs != segments_max) {
+        return 0.0;
+    }
+    return segment[SEG_TURN_OUT].end_time;
+}
+
 // increment the internal time
 void SCurve::advance_time(float dt)
 {
@@ -597,17 +622,18 @@ void SCurve::advance_time(float dt)
 // calculate the jerk, acceleration, velocity and position at the provided time
 void SCurve::get_jerk_accel_vel_pos_at_time(float time_now, float &Jt_out, float &At_out, float &Vt_out, float &Pt_out) const
 {
-    if ((num_segs != segments_max) || !is_positive(jerk_time)) {
-        Jt_out = 0;
-        At_out = 0;
-        Vt_out = 0;
-        Pt_out = 0;
+    // start with zeros as function is void and we want to guarantee all outputs are initialised
+    Jt_out = 0;
+    At_out = 0;
+    Vt_out = 0;
+    Pt_out = 0;
+    if (num_segs != segments_max) {
         return;
     }
 
     SegmentType Jtype;
     uint8_t pnt = num_segs;
-    float Jm, T0, A0, V0, P0;
+    float Jm, tj, T0, A0, V0, P0;
 
     // find active segment at time_now
     for (uint8_t i = 0; i < num_segs; i++) {
@@ -618,6 +644,7 @@ void SCurve::get_jerk_accel_vel_pos_at_time(float time_now, float &Jt_out, float
     if (pnt == 0) {
         Jtype = SegmentType::CONSTANT_JERK;
         Jm = 0.0f;
+        tj = 0.0f;
         T0 = segment[pnt].end_time;
         A0 = segment[pnt].end_accel;
         V0 = segment[pnt].end_vel;
@@ -625,6 +652,7 @@ void SCurve::get_jerk_accel_vel_pos_at_time(float time_now, float &Jt_out, float
     } else if (pnt == num_segs) {
         Jtype = SegmentType::CONSTANT_JERK;
         Jm = 0.0f;
+        tj = 0.0f;
         T0 = segment[pnt - 1].end_time;
         A0 = segment[pnt - 1].end_accel;
         V0 = segment[pnt - 1].end_vel;
@@ -632,6 +660,7 @@ void SCurve::get_jerk_accel_vel_pos_at_time(float time_now, float &Jt_out, float
     } else {
         Jtype = segment[pnt].seg_type;
         Jm = segment[pnt].jerk_ref;
+        tj = segment[pnt].end_time - segment[pnt - 1].end_time;
         T0 = segment[pnt - 1].end_time;
         A0 = segment[pnt - 1].end_accel;
         V0 = segment[pnt - 1].end_vel;
@@ -643,10 +672,10 @@ void SCurve::get_jerk_accel_vel_pos_at_time(float time_now, float &Jt_out, float
         calc_javp_for_segment_const_jerk(time_now - T0, Jm, A0, V0, P0, Jt_out, At_out, Vt_out, Pt_out);
         break;
     case SegmentType::POSITIVE_JERK:
-        calc_javp_for_segment_incr_jerk(time_now - T0, jerk_time, Jm, A0, V0, P0, Jt_out, At_out, Vt_out, Pt_out);
+        calc_javp_for_segment_incr_jerk(time_now - T0, tj, Jm, A0, V0, P0, Jt_out, At_out, Vt_out, Pt_out);
         break;
     case SegmentType::NEGATIVE_JERK:
-        calc_javp_for_segment_decr_jerk(time_now - T0, jerk_time, Jm, A0, V0, P0, Jt_out, At_out, Vt_out, Pt_out);
+        calc_javp_for_segment_decr_jerk(time_now - T0, tj, Jm, A0, V0, P0, Jt_out, At_out, Vt_out, Pt_out);
         break;
     }
     Pt_out = MAX(0.0f, Pt_out);
@@ -664,6 +693,13 @@ void SCurve::calc_javp_for_segment_const_jerk(float time_now, float J0, float A0
 // Calculate the jerk, acceleration, velocity and position at time time_now when running the increasing jerk magnitude time segment based on a raised cosine profile
 void SCurve::calc_javp_for_segment_incr_jerk(float time_now, float tj, float Jm, float A0, float V0, float P0, float &Jt, float &At, float &Vt, float &Pt) const
 {
+    if (!is_positive(tj)) {
+        Jt = 0.0;
+        At = A0;
+        Vt = V0;
+        Pt = P0;
+        return;
+    }
     const float Alpha = Jm * 0.5f;
     const float Beta = M_PI / tj;
     Jt = Alpha * (1.0f - cosf(Beta * time_now));
@@ -675,6 +711,13 @@ void SCurve::calc_javp_for_segment_incr_jerk(float time_now, float tj, float Jm,
 // Calculate the jerk, acceleration, velocity and position at time time_now when running the decreasing jerk magnitude time segment based on a raised cosine profile
 void SCurve::calc_javp_for_segment_decr_jerk(float time_now, float tj, float Jm, float A0, float V0, float P0, float &Jt, float &At, float &Vt, float &Pt) const
 {
+    if (!is_positive(tj)) {
+        Jt = 0.0;
+        At = A0;
+        Vt = V0;
+        Pt = P0;
+        return;
+    }
     const float Alpha = Jm * 0.5f;
     const float Beta = M_PI / tj;
     const float AT = Alpha * tj;
@@ -699,12 +742,12 @@ void SCurve::add_segments(float L)
         return;
     }
 
-    float Jm, t2, t4, t6;
-    calculate_path(jerk_time, jerk_max, 0.0f, accel_max, vel_max, L * 0.5f, Jm, t2, t4, t6);
+    float Jm, tj, t2, t4, t6;
+    calculate_path(snap_max, jerk_max, 0.0f, accel_max, vel_max, L * 0.5f, Jm, tj, t2, t4, t6);
 
-    add_segments_jerk(num_segs, jerk_time, Jm, t2);
+    add_segments_jerk(num_segs, tj, Jm, t2);
     add_segment_const_jerk(num_segs, t4, 0.0f);
-    add_segments_jerk(num_segs, jerk_time, -Jm, t6);
+    add_segments_jerk(num_segs, tj, -Jm, t6);
 
     // remove numerical errors
     segment[SEG_ACCEL_END].end_accel = 0.0f;
@@ -721,9 +764,9 @@ void SCurve::add_segments(float L)
     const float t15 = MAX(0.0f, (L - 2.0f * segment[SEG_SPEED_CHANGE_END].end_pos) / segment[SEG_SPEED_CHANGE_END].end_vel);
     add_segment_const_jerk(num_segs, t15, 0.0f);
 
-    add_segments_jerk(num_segs, jerk_time, -Jm, t6);
+    add_segments_jerk(num_segs, tj, -Jm, t6);
     add_segment_const_jerk(num_segs, t4, 0.0f);
-    add_segments_jerk(num_segs, jerk_time, Jm, t2);
+    add_segments_jerk(num_segs, tj, Jm, t2);
 
     // remove numerical errors
     segment[SEG_DECEL_END].end_accel = 0.0f;
@@ -731,23 +774,24 @@ void SCurve::add_segments(float L)
 }
 
 // calculate the segment times for the trigonometric S-Curve path defined by:
-// tj - duration of the raised cosine jerk profile
+// Sm - duration of the raised cosine jerk profile
 // Jm - maximum value of the raised cosine jerk profile
 // V0 - initial velocity magnitude
 // Am - maximum constant acceleration
 // Vm - maximum constant velocity
 // L - Length of the path
-// t2_out, t4_out, t6_out are the segment durations needed to achieve the kinematic path specified by the input variables
-void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, float L, float &Jm_out, float &t2_out, float &t4_out, float &t6_out)
+// tj_out, t2_out, t4_out, t6_out are the segment durations needed to achieve the kinematic path specified by the input variables
+void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, float L,float &Jm_out, float &tj_out,  float &t2_out, float &t4_out, float &t6_out)
 {
     // init outputs
     Jm_out = 0.0f;
+    tj_out = 0.0f;
     t2_out = 0.0f;
     t4_out = 0.0f;
     t6_out = 0.0f;
 
     // check for invalid arguments
-    if (!is_positive(tj) || !is_positive(Jm) || !is_positive(Am) || !is_positive(Vm) || !is_positive(L)) {
+    if (!is_positive(Sm) || !is_positive(Jm) || !is_positive(Am) || !is_positive(Vm) || !is_positive(L)) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         ::printf("SCurve::calculate_path invalid inputs\n");
 #endif
@@ -760,9 +804,24 @@ void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, fl
         return;
     }
 
-    Am = MIN(MIN(Am, (Vm - V0) / (2.0f * tj)), (L + 4.0f * V0 * tj) / (4.0f * sq(tj)));
-    if (fabsf(Am) < Jm * tj) {
-        Jm = Am / tj;
+    float tj = Jm * M_PI / (2 * Sm);
+    float At = MIN(MIN(Am, 
+        (Vm - V0) / (2.0f * tj) ), 
+        (L + 4.0f * V0 * tj) / (4.0f * sq(tj)) );
+    if (fabsf(At) < Jm * tj) {
+        if (is_zero(V0)) {
+            // we do not have a solution for non-zero initial velocity
+            tj = MIN( MIN( MIN( tj,
+                powf((L * M_PI) / (8.0 * Sm), 1.0/4.0) ), 
+                powf((Vm * M_PI) / (4.0 * Sm), 1.0/3.0) ), 
+                safe_sqrt((Am * M_PI) / (2.0 * Sm)) );
+            Jm = 2.0 * Sm * tj / M_PI;
+            Am = Jm * tj;
+        } else {
+            // When doing speed change we use fixed tj and adjust Jm for small changes
+            Am = At;
+            Jm = Am / tj;
+        }
         if ((Vm <= V0 + 2.0f * Am * tj) || (L <= 4.0f * V0 * tj + 4.0f * Am * sq(tj))) {
             // solution = 0 - t6 t4 t2 = 0 0 0
             t2_out = 0.0f;
@@ -790,10 +849,12 @@ void SCurve::calculate_path(float tj, float Jm, float V0, float Am, float Vm, fl
             t6_out = t2_out;
         }
     }
+    tj_out = tj;
     Jm_out = Jm;
 
     // check outputs and reset back to zero if necessary
     if (!isfinite(Jm_out) || is_negative(Jm_out) ||
+        !isfinite(tj_out) || is_negative(tj_out) ||
         !isfinite(t2_out) || is_negative(t2_out) ||
         !isfinite(t4_out) || is_negative(t4_out) ||
         !isfinite(t6_out) || is_negative(t6_out)) {
@@ -824,7 +885,7 @@ void SCurve::add_segments_jerk(uint8_t &index, float tj, float Jm, float Tcj)
 void SCurve::add_segment_const_jerk(uint8_t &index, float tj, float J0)
 {
     // if no time increase copy previous segment
-    if (is_zero(tj)) {
+    if (!is_positive(tj)) {
         add_segment(index, segment[index - 1].end_time,
                     SegmentType::CONSTANT_JERK,
                     J0,
@@ -847,6 +908,16 @@ void SCurve::add_segment_const_jerk(uint8_t &index, float tj, float J0)
 // the index variable is the position of this segment in the path array and is incremented to reference the next segment in the array
 void SCurve::add_segment_incr_jerk(uint8_t &index, float tj, float Jm)
 {
+    // if no time increase copy previous segment
+    if (!is_positive(tj)) {
+        add_segment(index, segment[index - 1].end_time,
+                    SegmentType::CONSTANT_JERK,
+                    0.0,
+                    segment[index - 1].end_accel,
+                    segment[index - 1].end_vel,
+                    segment[index - 1].end_pos);
+        return;
+    }
     const float Beta = M_PI / tj;
     const float Alpha = Jm * 0.5f;
     const float AT = Alpha * tj;
@@ -866,6 +937,16 @@ void SCurve::add_segment_incr_jerk(uint8_t &index, float tj, float Jm)
 // the index variable is the position of this segment in the path and is incremented to reference the next segment in the array
 void SCurve::add_segment_decr_jerk(uint8_t &index, float tj, float Jm)
 {
+    // if no time increase copy previous segment
+    if (!is_positive(tj)) {
+        add_segment(index, segment[index - 1].end_time,
+                    SegmentType::CONSTANT_JERK,
+                    0.0,
+                    segment[index - 1].end_accel,
+                    segment[index - 1].end_vel,
+                    segment[index - 1].end_pos);
+        return;
+    }
     const float Beta = M_PI / tj;
     const float Alpha = Jm * 0.5f;
     const float AT = Alpha * tj;
@@ -960,8 +1041,8 @@ bool SCurve::valid() const
 // debugging messages
 void SCurve::debug() const
 {
-    ::printf("num_segs:%u, time:%4.2f, jerk_time:%4.2f, jerk_max:%4.2f, accel_max:%4.2f, vel_max:%4.2f\n",
-                        (unsigned)num_segs, (double)time, (double)jerk_time, (double)jerk_max, (double)accel_max, (double)vel_max);
+    ::printf("num_segs:%u, time:%4.2f, snap_max:%4.2f, jerk_max:%4.2f, accel_max:%4.2f, vel_max:%4.2f\n",
+                        (unsigned)num_segs, (double)time, (double)snap_max, (double)jerk_max, (double)accel_max, (double)vel_max);
     ::printf("T, Jt, J, A, V, P \n");
     for (uint8_t i = 0; i < num_segs; i++) {
         ::printf("i:%u, T:%4.2f, Jtype:%4.2f, J:%4.2f, A:%4.2f, V: %4.2f, P: %4.2f\n",

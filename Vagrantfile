@@ -227,5 +227,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     impish.vm.boot_timeout = 1200
   end
 
-end
+  # 22.04 LTS EOL Apr 2032
+  config.vm.define "jammy", autostart: false do |jammy|
+    jammy.vm.box = "ubuntu/jammy64"
+    jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
+    jammy.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (jammy)"
+    end
+    jammy.vm.boot_timeout = 1200
+  end
+  config.vm.define "jammy-desktop", autostart: false do |jammy|
+    jammy.vm.box = "ubuntu/jammy64"
+    jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
+    jammy.vm.provider "virtualbox" do |vb|
+      vb.name = "ArduPilot (jammy-desktop)"
+      vb.gui = true
+    end
+    jammy.vm.boot_timeout = 1200
+  end
 
+end

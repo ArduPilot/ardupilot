@@ -210,6 +210,7 @@ public:
 
     // get target location (for use by scripting)
     virtual bool get_target_location(Location& target_loc) { return false; }
+    virtual bool update_target_location(const Location &old_loc, const Location &new_loc) { return false; }
 
     // circle mode controls (only used by scripting with Copter)
     virtual bool get_circle_radius(float &radius_m) { return false; }
@@ -224,6 +225,9 @@ public:
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
+
+    // allow for VTOL velocity matching of a target
+    virtual bool set_velocity_match(const Vector2f &velocity) { return false; }
 
 
     // control outputs enumeration

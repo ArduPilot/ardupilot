@@ -21,9 +21,17 @@
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
 
+#ifndef AP_RANGEFINDER_ENABLED
+#define AP_RANGEFINDER_ENABLED 1
+#endif
+
 // Maximum number of range finder instances available on this platform
-#ifndef RANGEFINDER_MAX_INSTANCES
-#define RANGEFINDER_MAX_INSTANCES 10
+#ifndef RANGEFINDER_MAX_INSTANCES 
+  #if AP_RANGEFINDER_ENABLED
+  #define RANGEFINDER_MAX_INSTANCES 10
+  #else
+  #define RANGEFINDER_MAX_INSTANCES 1
+  #endif
 #endif
 
 #define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10

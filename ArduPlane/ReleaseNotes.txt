@@ -1,3 +1,28 @@
+Release 4.2.0beta2 10th March 2022
+----------------------------------
+
+This is the 2nd beta of the 4.2.0 major release. This beta should be
+close to the final 4.2.0 release.
+
+ - fixed EKF3 constrain bug
+ - added quadplane ship landing support
+ - added Q_LAND_ALTCHG to adjust landing detection sensitivity
+ - fixed a bug in terrain home compensation
+ - changed quaplane POSITION1 landing controller to use jerk and accel limiting
+ - fixed default gain for weathervaning on quadplanes
+ - fixed health check of airspeed sensor for dual sensors
+ - fixed arming check on servos for GPIO outputs
+ - disable stick mixing when RC input is unavailable
+ - fixed stick mixing during GCS failsafe
+ - disallow mavlink disarm while flying
+ - adjust frequency selection for DShot
+ - fixed logging bug for MCU voltage
+ - added BeastH7v2 support
+ - improvement to AC_WPNav for quadplane waypoint control
+ - simplify RC failsafe messages sent to GCS
+
+Happy flying!
+
 Release 4.2.0beta1 2nd March 2022
 ---------------------------------
 

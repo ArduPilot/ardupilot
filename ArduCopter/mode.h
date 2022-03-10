@@ -90,6 +90,7 @@ public:
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
+    Vector2f get_pilot_desired_velocity(float vel_max) const;
     float get_pilot_desired_yaw_rate(float yaw_in);
     float get_pilot_desired_throttle() const;
 
@@ -108,6 +109,10 @@ public:
 
     // returns true if pilot's yaw input should be used to adjust vehicle's heading
     virtual bool use_pilot_yaw() const {return true; }
+
+    // pause and resume a mode
+    virtual bool pause() { return false; };
+    virtual bool resume() { return false; };
 
 protected:
 
@@ -196,14 +201,22 @@ protected:
 
     virtual bool do_user_takeoff_start(float takeoff_alt_cm);
 
-    // method shared by both Guided and Auto for takeoff.  This is
-    // waypoint navigation but the user can control the yaw.
+    // method shared by both Guided and Auto for takeoff.
+    // position controller controls vehicle but the user can control the yaw.
     void auto_takeoff_run();
-    void auto_takeoff_set_start_alt(void);
+    void auto_takeoff_start(float complete_alt_cm, bool terrain_alt);
+    bool auto_takeoff_get_position(Vector3p& completion_pos);
 
     // altitude above-ekf-origin below which auto takeoff does not control horizontal position
     static bool auto_takeoff_no_nav_active;
     static float auto_takeoff_no_nav_alt_cm;
+
+    // auto takeoff variables
+    static float auto_take_off_start_alt_cm;    // start altitude expressed as cm above ekf origin
+    static float auto_take_off_complete_alt_cm; // completion altitude expressed as cm above ekf origin
+    static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
+    static bool auto_takeoff_complete;          // true when takeoff is complete
+    static Vector3p auto_takeoff_complete_pos;  // target takeoff position as offset from ekf origin in cm
 
 public:
     // Navigation Yaw control
@@ -410,12 +423,15 @@ public:
     // Auto
     SubMode mode() const { return _mode; }
 
+    // pause continue in auto mode
+    bool pause() override;
+    bool resume() override;
+
     bool loiter_start();
     void rtl_start();
     void takeoff_start(const Location& dest_loc);
     void wp_start(const Location& dest_loc);
     void land_start();
-    void land_start(const Vector2f& destination);
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
@@ -486,7 +502,6 @@ private:
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
-    void payload_place_start(const Vector2f& destination);
     void payload_place_run();
     bool payload_place_run_should_run();
     void payload_place_run_loiter();
@@ -939,6 +954,8 @@ public:
 
     bool is_taking_off() const override;
 
+    // initialises position controller to implement take-off
+    // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
 
     enum class SubMode {
@@ -960,6 +977,10 @@ public:
     uint32_t get_timeout_ms() const;
 
     bool use_pilot_yaw() const override;
+
+    // pause continue in guided mode
+    bool pause() override;
+    bool resume() override;
 
 protected:
 
@@ -996,6 +1017,7 @@ private:
     void pos_control_run();
     void accel_control_run();
     void velaccel_control_run();
+    void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
 
@@ -1003,6 +1025,9 @@ private:
     SubMode guided_mode = SubMode::TakeOff;
     bool send_notification;     // used to send one time notification to ground station
     bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
+
+    // guided mode is paused or not
+    bool _paused;
 };
 
 

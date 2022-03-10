@@ -635,11 +635,11 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     // calculate base throttle (protect against divide by zero)
     float throttle_base = 0.0f;
     if (is_positive(cruise_speed) && is_positive(cruise_throttle)) {
-        throttle_base = desired_speed * (cruise_throttle / cruise_speed);
+        throttle_base = _desired_speed * (cruise_throttle / cruise_speed);
     }
 
     // calculate final output
-    float throttle_out = _throttle_speed_pid.update_all(desired_speed, speed, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
+    float throttle_out = _throttle_speed_pid.update_all(_desired_speed, speed, (motor_limit_low || motor_limit_high || _throttle_limit_low || _throttle_limit_high));
     throttle_out += _throttle_speed_pid.get_ff();
     throttle_out += throttle_base;
 
@@ -654,10 +654,10 @@ float AR_AttitudeControl::get_throttle_out_speed(float desired_speed, bool motor
     // protect against reverse output being sent to the motors unless braking has been enabled
     if (!_brake_enable) {
         // if both desired speed and actual speed are positive, do not allow negative values
-        if ((desired_speed >= 0.0f) && (throttle_out <= 0.0f)) {
+        if ((_desired_speed >= 0.0f) && (throttle_out <= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_low = true;
-        } else if ((desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
+        } else if ((_desired_speed <= 0.0f) && (throttle_out >= 0.0f)) {
             throttle_out = 0.0f;
             _throttle_limit_high = true;
         }

@@ -312,6 +312,11 @@ void Tailsitter::output(void)
 
             // in assisted flight this is done in the normal motor output path
             if (!quadplane.assisted_flight) {
+
+                // keep attitude control throttle level upto date, this value should never be output to motors
+                // it is used to re-set the accel Z integrator term allowing for a smooth transfer of control
+                quadplane.attitude_control->set_throttle_out(throttle, false, 0);
+
                 // convert the hover throttle to the same output that would result if used via AP_Motors
                 // apply expo, battery scaling and SPIN min/max.
                 throttle = motors->thrust_to_actuator(throttle);
