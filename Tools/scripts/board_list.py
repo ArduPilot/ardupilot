@@ -117,13 +117,6 @@ class BoardList(object):
         # should probably have a line in the hwdef indicating they
         # shouldn't be auto-built...
         blacklist = [
-            # the following boards are hacked into build_binaries.py
-            # to be built for Copter only:
-            "CubeGreen-solo",
-            "CubeSolo",
-            "skyviper-journey",
-            "skyviper-v2450",
-
             # IOMCU:
             "iomcu",
             'iomcu_f103_8MHz',
