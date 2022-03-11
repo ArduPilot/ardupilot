@@ -287,6 +287,22 @@ private:
         uint8_t reserved[2];
         // variable length data, check buffer length
     };
+    struct PACKED ubx_cfg_tmode3 {
+        uint8_t version;
+        uint8_t reserved1;
+        uint16_t flags;
+        int32_t ecefXOrLat;
+        int32_t ecefYOrLon;
+        int32_t ecefZOrAlt;
+        int8_t ecefXOrLatHP;
+        int8_t ecefYOrLonHP;
+        int8_t ecefZOrAltHP;
+        uint8_t reserved2;
+        uint32_t fixedPosAcc;
+        uint32_t svinMinDur;
+        uint32_t svinAccLimit;
+        uint8_t reserved3[8];
+    };
     struct PACKED ubx_nav_posllh {
         uint32_t itow;                                  // GPS msToW
         int32_t longitude;
@@ -559,6 +575,7 @@ private:
 #endif
         ubx_cfg_sbas sbas;
         ubx_cfg_valget valget;
+        ubx_cfg_tmode3 tmode3;
         ubx_nav_svinfo_header svinfo_header;
         ubx_nav_relposned relposned;
 #if UBLOX_RXM_RAW_LOGGING
@@ -613,6 +630,7 @@ private:
         MSG_CFG_TP5 = 0x31,
         MSG_CFG_VALSET = 0x8A,
         MSG_CFG_VALGET = 0x8B,
+        MSG_CFG_TMODE3 = 0x71,
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
         MSG_MON_VER = 0x04,
