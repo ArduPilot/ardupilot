@@ -203,7 +203,7 @@ float AP_WheelRateControl::get_rate_controlled_throttle(uint8_t instance, float 
     _last_update_ms = now;
 
     // convert desired rate as a percentage to radians/sec
-    float desired_rate = desired_rate_pct / 100.0f * get_rate_max_rads();
+    float desired_rate = desired_rate_pct * 0.01f * get_rate_max_rads();
 
     // get actual rate from wheeel encoder
     float actual_rate = _wheel_encoder.get_rate(instance);
