@@ -302,7 +302,10 @@ void Plane::one_second_loop()
             
             // reset the landing altitude correction
             landing.alt_offset = 0;
+            
     }
+    AP_Baro alt;
+     gcs().send_text(MAV_SEVERITY_CRITICAL,  "Current altitude: %.1fm" ,alt.get_altitude());
 }
 
 void Plane::three_hz_loop()
