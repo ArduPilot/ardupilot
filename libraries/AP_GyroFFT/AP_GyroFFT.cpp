@@ -475,7 +475,7 @@ void AP_GyroFFT::update_parameters()
     // determine the endt FFT bin for all frequency detection
     _config._fft_end_bin = MIN(ceilf(_fft_max_hz.get() / _state->_bin_resolution), _state->_bin_count);
     // actual attenuation from the db value
-    _config._attenuation_cutoff = powf(10.0f, -_attenuation_power_db / 10.0f);
+    _config._attenuation_cutoff = powf(10.0f, -_attenuation_power_db * 0.1f);
 }
 
 // thread for processing gyro data via FFT
@@ -574,7 +574,7 @@ bool AP_GyroFFT::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len)
 
     if (_calibrated) {
         // provide the user with some useful information about what they have configured
-        gcs().send_text(MAV_SEVERITY_INFO, "FFT: calibrated %.1fKHz/%.1fHz/%.1fHz", _fft_sampling_rate_hz / 1000.0f,
+        gcs().send_text(MAV_SEVERITY_INFO, "FFT: calibrated %.1fKHz/%.1fHz/%.1fHz", _fft_sampling_rate_hz * 0.001f,
              _state->_bin_resolution * 0.5, 1000.0f * XYZ_AXIS_COUNT / _frame_time_ms);
     }
 
