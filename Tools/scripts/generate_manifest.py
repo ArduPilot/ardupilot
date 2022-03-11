@@ -31,6 +31,8 @@ brand_map = {
     'KakuteF7Mini' : ('KakuteF7Mini', 'Holybro'),
     'KakuteF4Mini' : ('KakuteF4Mini', 'Holybro'),
     'KakuteH7Mini' : ('KakuteH7Mini', 'Holybro'),
+    'KakuteH7' : ('KakuteH7', 'Holybro'),
+    'KakuteH7-bdshot' : ('KakuteH7', 'Holybro'),
     'CubeBlack' : ('CubeBlack', 'Hex/ProfiCNC'),
     'CubeYellow' : ('CubeYellow', 'Hex/ProfiCNC'),
     'CubeOrange' : ('CubeOrange', 'Hex/ProfiCNC'),
