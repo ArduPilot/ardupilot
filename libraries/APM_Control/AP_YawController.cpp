@@ -173,7 +173,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
         aspd_min = 1;
     }
 
-    float delta_time = (float) dt / 1000.0f;
+    float delta_time = (float) dt * 0.001f;
 
     // Calculate yaw rate required to keep up with a constant height coordinated turn
     float aspeed;
