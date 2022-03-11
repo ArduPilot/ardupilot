@@ -96,7 +96,7 @@ void Copter::esc_calibration_passthrough()
 
         // pass through to motors
         SRV_Channels::cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
         SRV_Channels::push();
     }
 #endif  // FRAME_CONFIG != HELI_FRAME
