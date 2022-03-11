@@ -177,7 +177,7 @@ void AP_BattMonitor_Bebop::read(void)
     }
 
     /* get battery voltage observed by cypress */
-    vbat_raw = (float)data.batt_mv / 1000.0f;
+    vbat_raw = (float)data.batt_mv * 0.001f;
 
     /* do not compute battery status on ramping or braking transition */
     if (data.status == BEBOP_BLDC_STATUS_RAMPING ||
@@ -214,7 +214,7 @@ void AP_BattMonitor_Bebop::read(void)
     _state.voltage = vbat;
     _state.last_time_micros = tnow;
     _state.healthy = true;
-    _state.consumed_mah = capacity - (remaining * capacity) / 100.0f;
+    _state.consumed_mah = capacity - (remaining * capacity) * 0.01f;
 }
 
 #endif
