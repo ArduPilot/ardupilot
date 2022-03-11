@@ -162,7 +162,7 @@ void AP_MotorsSingle::output_armed_stabilizing()
     if (is_zero(rp_thrust_max)) {
         rp_scale = 1.0f;
     } else {
-        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float) _yaw_headroom / 1000.0f)) / rp_thrust_max, 0.0f, 1.0f);
+        rp_scale = constrain_float((1.0f - MIN(fabsf(yaw_thrust), (float) _yaw_headroom * 0.001f)) / rp_thrust_max, 0.0f, 1.0f);
         if (rp_scale < 1.0f) {
             limit.roll = true;
             limit.pitch = true;
