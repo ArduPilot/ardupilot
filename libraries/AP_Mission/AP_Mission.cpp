@@ -1648,7 +1648,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.x = cmd.content.location.lat;
         packet.y = cmd.content.location.lng;
 
-        packet.z = cmd.content.location.alt / 100.0f;   // cmd alt in cm to m
+        packet.z = cmd.content.location.alt * 0.01f;   // cmd alt in cm to m
         if (cmd.content.location.relative_alt) {
             packet.frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         } else {
