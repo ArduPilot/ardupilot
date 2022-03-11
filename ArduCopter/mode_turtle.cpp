@@ -85,7 +85,7 @@ void ModeTurtle::change_motor_direction(bool reverse)
 
 void ModeTurtle::run()
 {
-    const float flip_power_factor = 1.0f - CRASH_FLIP_EXPO / 100.0f;
+    const float flip_power_factor = 1.0f - CRASH_FLIP_EXPO * 0.01f;
     const bool norc = copter.failsafe.radio || !copter.ap.rc_receiver_present;
     const float stick_deflection_pitch = norc ? 0.0f : channel_pitch->norm_input_dz();
     const float stick_deflection_roll = norc ? 0.0f : channel_roll->norm_input_dz();

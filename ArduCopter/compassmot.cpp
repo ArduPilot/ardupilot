@@ -147,7 +147,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
         // pass through throttle to motors
         SRV_Channels::cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() / 1000.0f);
+        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
         SRV_Channels::push();
 
         // read some compass values
@@ -157,7 +157,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         battery.read();
 
         // calculate scaling for throttle
-        throttle_pct = (float)channel_throttle->get_control_in() / 1000.0f;
+        throttle_pct = (float)channel_throttle->get_control_in() * 0.001f;
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
         // record maximum throttle
