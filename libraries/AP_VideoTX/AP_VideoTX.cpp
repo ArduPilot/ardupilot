@@ -161,7 +161,7 @@ void AP_VideoTX::set_power_dbm(uint8_t power) {
         _current_power = 800;
         break;
     default:
-        _current_power = uint16_t(roundf(powf(10, power / 10.0f)));
+        _current_power = uint16_t(roundf(powf(10, power * 0.1f)));
         break;
     }
 }
