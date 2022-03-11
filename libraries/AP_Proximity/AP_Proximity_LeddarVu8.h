@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AP_Proximity.h"
-
 #ifndef AP_PROXIMITY_LEDDARVU8_ENABLED
 #define AP_PROXIMITY_LEDDARVU8_ENABLED HAL_PROXIMITY_ENABLED
 #endif
@@ -29,31 +28,14 @@ public:
     // get maximum and minimum distances (in meters) of sensor
     float distance_max() const override { return LEDDARVU8_DIST_MAX_CM / 100; }
     float distance_min() const override { return LEDDARVU8_DIST_MIN_CM / 100; }
-/* protected:
 
-    // baudrate used during object construction:
-    uint32_t initial_baudrate(uint8_t serial_instance) const override {
-        return 115200;
-    }
-
-    // return sensor type as laser
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
-        return MAV_DISTANCE_SENSOR_LASER;
-    }
-
-    // get a reading, distance returned in reading_cm
-    bool get_reading(float &reading_m) override;
-
-    // maximum time between readings before we change state to NoData:
-    uint16_t read_timeout_ms() const override { return 500; }
- */
 private:
 
     // send message to the sensor to start streaming 2-D data
     void send_sensor_start();
 
     // read bytes from the sensor
-    void read_sensor_data();
+    bool read_sensor_data(float &readings_m);
 
     // parse one byte from the sensor. Return false on error.
     bool parse_byte(uint8_t data);

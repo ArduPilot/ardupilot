@@ -14,14 +14,15 @@
  */
 
 #include "AP_Proximity_LeddarVu8.h"
-
+#include <AP_HAL/AP_HAL.h>
+#include <ctype.h>
 #if HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LEDDARVU8_ENABLED
 
 // update the state of the sensor
 void AP_Proximity_LeddarVu8::update()
 {
     if (!_initialized) {
-        send_sensor_start();
+        request_distances();
         _temp_boundary.reset();
         _initialized = true;
         last_distance_ms = AP_HAL::millis();
@@ -34,7 +35,7 @@ void AP_Proximity_LeddarVu8::update()
     }
 
     // read data
-    read_sensor_data();
+    // read_sensor_data();
 
     if (AP_HAL::millis() - last_distance_ms < LEDDARVU8_TIMEOUT_MS) {
         set_status(AP_Proximity::Status::Good);
@@ -50,7 +51,7 @@ void AP_Proximity_LeddarVu8::update()
 // LeddarVu8 uses the modbus RTU protocol
 // https://autonomoustuff.com/product/leddartech-vu8/
 // distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
-/* bool AP_Proximity_LeddarVu8::get_reading(float &reading_m)
+bool AP_Proximity_LeddarVu8::read_sensor_data(float &readings_m)
 {
     if (_uart == nullptr) {
         return false;
@@ -70,9 +71,9 @@ void AP_Proximity_LeddarVu8::update()
     bool latest_dist_valid = false;
 
     // read any available characters from the lidar
-    int16_t nbytes = uart->available();
+    int16_t nbytes = _uart->available();
     while (nbytes-- > 0) {
-        int16_t r = uart->read();
+        int16_t r = _uart->read();
         if (r < 0) {
             continue;
         }
@@ -93,34 +94,38 @@ void AP_Proximity_LeddarVu8::update()
         request_distances();
 
         if (count > 0) {
-            // return average distance of readings
-            reading_m = (sum_cm * 0.01f) / count;
+            // TODO get all the distances? 
+            readings_m = sum_cm * 0.01f;
         } else {
+            // TODO: just trying to get this to compile
             // if only out of range readings return larger of
             // driver defined maximum range for the model and user defined max range + 1m
-            reading_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)/100.0f;
+            // readings_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)/100.0f;
+            readings_m = 69;
+
         }
         return true;
     }
 
     // no readings so return false
     return false;
-} */
+} 
 
+// TODO: Get sensor address, currently using default hardcoded
 // get sensor address from RNGFNDx_ADDR parameter
-/* uint8_t AP_Proximity_LeddarVu8::get_sensor_address() const
+/*uint8_t AP_Proximity_LeddarVu8::get_sensor_address() const
 {
     if (params.address == 0) {
         return LEDDARVU8_ADDR_DEFAULT;
     }
     return params.address;
-} */
+}*/
 
 // send request to device to provide distances
 void AP_Proximity_LeddarVu8::request_distances()
 {
     uint8_t req_buf[] = {
-            get_sensor_address(),                       // address
+            LEDDARVU8_ADDR_DEFAULT,                       // address
             (uint8_t)FunctionCode::READ_INPUT_REGISTER, // function code low
             0,                                          // function code high
             (uint8_t)RegisterNumber::FIRST_DISTANCE0,   // register number low
@@ -146,13 +151,13 @@ void AP_Proximity_LeddarVu8::request_distances()
 // process one byte received on serial port
 // returns true if successfully parsed a message
 // if distances are valid, valid_readings is set to true and distance is stored in reading_cm
-bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t &reading_cm)
+bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t &readings_cm)
 {
     // process byte depending upon current state
     switch (parsed_msg.state) {
 
     case ParseState::WAITING_FOR_ADDRESS: {
-        if (b == get_sensor_address()) {
+        if (b == LEDDARVU8_ADDR_DEFAULT) {
             parsed_msg.address = b;
             parsed_msg.state = ParseState::WAITING_FOR_FUNCTION_CODE;
         }
@@ -203,17 +208,18 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t
         // check crc
         uint16_t expected_crc = calc_crc_modbus(&parsed_msg.address, 3+parsed_msg.payload_recv);
         if (expected_crc == parsed_msg.crc) {
-            /* // calculate and return shortest distance
-            reading_cm = 0;
+            valid_reading = true;
+            // calculate and return shortest distance
+            readings_cm = 0;
             valid_reading = false;
             for (uint8_t i=0; i<8; i++) {
                 uint8_t ix2 = i*2;
                 const uint16_t dist_cm = (uint16_t)parsed_msg.payload[ix2] << 8 | (uint16_t)parsed_msg.payload[ix2+1];
-                if ((dist_cm > 0) && (!valid_reading || (dist_cm < reading_cm))) {
-                    reading_cm = dist_cm;
+                if ((dist_cm > 0) && (!valid_reading || (dist_cm < readings_cm))) {
+                    readings_cm = dist_cm;
                     valid_reading = true;
                 }
-            } */
+            }
             return true;
         }
         break;
