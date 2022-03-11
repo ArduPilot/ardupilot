@@ -1031,7 +1031,7 @@ int16_t AP_Torqeedo::calc_motor_speed_limited(int16_t desired_motor_speed)
     }
 
     // calculate dt since last update
-    float dt = (now_ms - _motor_speed_limited_ms) / 1000.0f;
+    float dt = (now_ms - _motor_speed_limited_ms) * 0.001f;
     if (dt > 1.0) {
         // after a long delay limit motor output to zero to avoid sudden starts
         lower_limit = 0;
