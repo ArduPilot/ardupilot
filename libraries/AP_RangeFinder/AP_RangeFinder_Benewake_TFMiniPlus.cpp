@@ -16,6 +16,8 @@
  */
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 
+#if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
+
 #include <utility>
 
 #include <GCS_MAVLink/GCS.h>
@@ -219,3 +221,5 @@ void AP_RangeFinder_Benewake_TFMiniPlus::timer()
         accum.count++;
     }
 }
+
+#endif  // AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED

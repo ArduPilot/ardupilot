@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_LeddarOne.h"
 
+#if AP_RANGEFINDER_LEDDARONE_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 
@@ -183,3 +185,5 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
 
     return LEDDARONE_STATE_OK;
 }
+
+#endif  // AP_RANGEFINDER_LEDDARONE_ENABLED

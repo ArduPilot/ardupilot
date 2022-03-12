@@ -14,6 +14,9 @@
  */
 
 #include "AP_RangeFinder_MAVLink.h"
+
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 /*
@@ -73,3 +76,5 @@ void AP_RangeFinder_MAVLink::update(void)
         update_status();
     }
 }
+
+#endif

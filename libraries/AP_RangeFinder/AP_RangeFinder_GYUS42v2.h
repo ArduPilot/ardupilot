@@ -1,6 +1,13 @@
 #pragma once
 
 #include "AP_RangeFinder.h"
+
+#ifndef AP_RANGEFINDER_GYUS42V2_ENABLED
+#define AP_RANGEFINDER_GYUS42V2_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_GYUS42V2_ENABLED
+
 #include "AP_RangeFinder_Backend_Serial.h"
 
 class AP_RangeFinder_GYUS42v2 : public AP_RangeFinder_Backend_Serial
@@ -32,3 +39,5 @@ private:
     uint8_t buffer[7];
     uint8_t buffer_used;
 };
+
+#endif  // AP_RANGEFINDER_GYUS42V2_ENABLED

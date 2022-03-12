@@ -12,12 +12,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include "AP_RangeFinder_Bebop.h"
+
+#if AP_RANGEFINDER_BEBOP_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <utility>
-
-#if (CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP || \
-     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO) &&      \
-    defined(HAVE_LIBIIO)
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -32,7 +33,6 @@
 #include <math.h>
 #include <time.h>
 #include <iio.h>
-#include "AP_RangeFinder_Bebop.h"
 #include <AP_HAL_Linux/Thread.h>
 #include <AP_HAL_Linux/GPIO.h>
 
@@ -474,4 +474,5 @@ int AP_RangeFinder_Bebop::_update_mode(float altitude)
     }
     return _mode;
 }
-#endif
+
+#endif  // AP_RANGEFINDER_BEBOP_ENABLED

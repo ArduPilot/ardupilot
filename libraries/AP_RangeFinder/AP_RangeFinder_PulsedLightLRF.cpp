@@ -14,6 +14,8 @@
  */
 #include "AP_RangeFinder_PulsedLightLRF.h"
 
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
+
 #include <utility>
 #include <stdio.h>
 
@@ -218,3 +220,4 @@ failed:
     return false;
 }
 
+#endif  // AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
