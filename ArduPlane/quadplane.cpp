@@ -1202,7 +1202,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         // must have a non-zero max yaw rate for scaling to work
         max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
     }
-    return plane.channel_rudder->get_control_in() * max_rate / 45;
+    return plane.channel_rudder->get_control_in() * max_rate * (1/45.0);
 }
 
 /*
@@ -3206,7 +3206,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
     float des_alt_m = 0.0f;
     int16_t target_climb_rate_cms = 0;
     if (plane.control_mode != &plane.mode_qstabilize) {
-        des_alt_m = pos_control->get_pos_target_z_cm() / 100.0f;
+        des_alt_m = pos_control->get_pos_target_z_cm() * 0.01f;
         target_climb_rate_cms = pos_control->get_vel_target_z_cms();
     }
 
@@ -3391,7 +3391,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
                                      wp_nav->get_pitch(),
                                      is_takeoff,
                                      in_vtol_land_sequence())) {
-        return constrain_float(wv_output / 45, -100.0, 100.0) * yaw_rate_max * 0.5;
+        return constrain_float(wv_output * (1/45.0), -100.0, 100.0) * yaw_rate_max * 0.5;
     }
 
     return 0.0;

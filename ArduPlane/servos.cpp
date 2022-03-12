@@ -710,7 +710,7 @@ void Plane::set_landing_gear(void)
 void Plane::servos_twin_engine_mix(void)
 {
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    float rud_gain = float(plane.g2.rudd_dt_gain) / 100;
+    float rud_gain = float(plane.g2.rudd_dt_gain) * 0.01f;
     rudder_dt = rud_gain * SRV_Channels::get_output_scaled(SRV_Channel::k_rudder) / SERVO_MAX;
 
 #if ADVANCED_FAILSAFE == ENABLED

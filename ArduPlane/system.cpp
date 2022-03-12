@@ -474,7 +474,7 @@ void Plane::update_dynamic_notch()
             float rpm;
             if (rpm_sensor.get_rpm(0, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
-                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm * ref / 60.0f));
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm * ref * (1/60.0)));
             } else {
                 ins.update_harmonic_notch_freq_hz(ref_freq);
             }
