@@ -380,7 +380,7 @@ void Plane::update_fbwb_speed_height(void)
 
         target_altitude.last_elev_check_us = now;
 
-        float elevator_input = channel_pitch->get_control_in() / 4500.0f;
+        float elevator_input = channel_pitch->get_control_in() * (1/4500.0);
 
         if (g.flybywire_elev_reverse) {
             elevator_input = -elevator_input;
