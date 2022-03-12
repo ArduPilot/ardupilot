@@ -351,3 +351,16 @@ void AP_Arming_Plane::update_soft_armed()
     }
 }
 
+/*
+  extra plane mission checks
+ */
+bool AP_Arming_Plane::mission_checks(bool report)
+{
+    // base checks
+    bool ret = AP_Arming::mission_checks(report);
+    if (plane.mission.get_landing_sequence_start() > 0 && plane.g.rtl_autoland.get() == 0) {
+        ret = false;
+        check_failed(ARMING_CHECK_MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
+    }
+    return ret;
+}
