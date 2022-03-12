@@ -141,7 +141,7 @@ float AP_RSSI::read_receiver_rssi()
         case RssiType::RECEIVER: {
             int16_t rssi = RC_Channels::get_receiver_rssi();
             if (rssi != -1) {
-                return rssi / 255.0;
+                return rssi * (1/255.0);
             }
             return 0.0f;
         }
