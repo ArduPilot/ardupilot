@@ -3,6 +3,12 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+#ifndef AP_RANGEFINDER_USD1_SERIAL_ENABLED
+#define AP_RANGEFINDER_USD1_SERIAL_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_USD1_SERIAL_ENABLED
+
 class AP_RangeFinder_USD1_Serial : public AP_RangeFinder_Backend_Serial
 {
 
@@ -37,3 +43,5 @@ private:
     uint8_t  _header;
     uint8_t  _version;
 };
+
+#endif  // AP_RANGEFINDER_USD1_SERIAL_ENABLED

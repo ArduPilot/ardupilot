@@ -1,9 +1,8 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_CANMANAGER_ENABLED
-
 #include "AP_RangeFinder_UAVCAN.h"
 
+#if AP_RANGEFINDER_UAVCAN_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
@@ -173,5 +172,4 @@ void AP_RangeFinder_UAVCAN::handle_measurement(AP_UAVCAN* ap_uavcan, uint8_t nod
     }
 }
 
-#endif // HAL_CANMANAGER_ENABLED
-
+#endif  // AP_RANGEFINDER_UAVCAN_ENABLED

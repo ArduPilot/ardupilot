@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_PWM.h"
 
+#if AP_RANGEFINDER_PWM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -130,3 +132,5 @@ void AP_RangeFinder_PWM::update(void)
 bool AP_RangeFinder_PWM::out_of_range(void) const {
     return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }
+
+#endif  // AP_RANGEFINDER_PWM_ENABLED

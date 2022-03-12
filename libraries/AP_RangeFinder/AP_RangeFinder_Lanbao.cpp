@@ -15,8 +15,11 @@
 /*
   driver for Lanbao PSK-CM8JL65-CC5 Lidar
  */
-#include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder_Lanbao.h"
+
+#if AP_RANGEFINDER_LANBAO_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
 #include <stdio.h>
 
@@ -80,3 +83,5 @@ bool AP_RangeFinder_Lanbao::get_reading(float &reading_m)
     }
     return false;
 }
+
+#endif  // AP_RANGEFINDER_LANBAO_ENABLED

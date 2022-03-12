@@ -18,6 +18,12 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+#ifndef AP_RANGEFINDER_NMEA_ENABLED
+#define AP_RANGEFINDER_NMEA_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_NMEA_ENABLED
+
 class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
 {
 
@@ -72,3 +78,5 @@ private:
     sentence_types _sentence_type;          // the sentence type currently being processed
     bool _sentence_done;                    // true if this sentence has already been decoded
 };
+
+#endif  // AP_RANGEFINDER_NMEA_ENABLED

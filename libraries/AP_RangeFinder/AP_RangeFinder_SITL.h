@@ -16,13 +16,13 @@
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#ifndef AP_SIM_RANGEFINDER_ENABLED
-#define AP_SIM_RANGEFINDER_ENABLED (AP_SIM_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+#include "AP_RangeFinder_Backend.h"
+
+#ifndef AP_RANGEFINDER_SIM_ENABLED
+#define AP_RANGEFINDER_SIM_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED)
 #endif
 
-#if AP_SIM_RANGEFINDER_ENABLED
-
-#include "AP_RangeFinder_Backend.h"
+#if AP_RANGEFINDER_SIM_ENABLED
 
 #include <SITL/SITL.h>
 
@@ -47,4 +47,4 @@ private:
 
 };
 
-#endif  // AP_SIM_RANGEFINDER_ENABLED
+#endif  // AP_RANGEFINDER_SIM_ENABLED

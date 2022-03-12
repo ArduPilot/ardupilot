@@ -18,12 +18,15 @@
  *
  */
 
+#include "AP_RangeFinder_analog.h"
+
+#if AP_RANGEFINDER_ANALOG_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Params.h"
-#include "AP_RangeFinder_analog.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -118,3 +121,4 @@ void AP_RangeFinder_analog::update(void)
     update_status();
 }
 
+#endif  // AP_RANGEFINDER_ANALOG_ENABLED

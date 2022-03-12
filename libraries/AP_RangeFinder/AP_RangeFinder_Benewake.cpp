@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_Benewake.h"
 
+#if AP_RANGEFINDER_BENEWAKE_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
@@ -132,3 +134,5 @@ bool AP_RangeFinder_Benewake::get_reading(float &reading_m)
     // no readings so return false
     return false;
 }
+
+#endif  // AP_RANGEFINDER_BENEWAKE_ENABLED

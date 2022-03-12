@@ -3,6 +3,12 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend.h"
 
+#ifndef AP_RANGEFINDER_MAVLINK_ENABLED
+#define AP_RANGEFINDER_MAVLINK_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_MAVLINK_ENABLED
+
 // Data timeout
 #define AP_RANGEFINDER_MAVLINK_TIMEOUT_MS 500
 
@@ -45,3 +51,5 @@ private:
 
     MAV_DISTANCE_SENSOR sensor_type = MAV_DISTANCE_SENSOR_UNKNOWN;
 };
+
+#endif
