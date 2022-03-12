@@ -2842,6 +2842,11 @@ def add_apperiph_defaults(f):
 #define AP_AIRSPEED_ANALOG_ENABLED 0
 #endif
 
+// disable various rangefinder backends
+#define AP_RANGEFINDER_ANALOG_ENABLED 0
+#define AP_RANGEFINDER_HC_SR04_ENABLED 0
+#define AP_RANGEFINDER_PWM_ENABLED 0
+
 ''')
 
 
