@@ -88,6 +88,11 @@ class TestBuildOptions(object):
         ret = {}
         target_to_binpath = {
             "copter": "arducopter",
+            "plane": "arduplane",
+            "rover": "ardurover",
+            "antennatracker": "antennatracker",
+            "sub": "ardusub",
+            "blimp": "blimp",
         }
         for target in self.build_targets():
             path = os.path.join("build", self.board(), "bin", "%s.bin" % target_to_binpath[target])
