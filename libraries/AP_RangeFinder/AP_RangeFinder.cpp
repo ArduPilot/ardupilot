@@ -432,7 +432,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::BenewakeTFminiPlus: {
 #if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
-        uint8_t addr = TFMINI_ADDR_DEFAULT;
+        uint8_t addr = TFMINIPLUS_ADDR_DEFAULT;
         if (params[instance].address != 0) {
             addr = params[instance].address;
         }
