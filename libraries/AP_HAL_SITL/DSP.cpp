@@ -35,9 +35,9 @@ extern const AP_HAL::HAL& hal;
 // important as frequency resolution. Referred to as [Heinz] throughout the code.
 
 // initialize the FFT state machine
-AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate)
+AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
 {
-    DSP::FFTWindowStateSITL* fft = new DSP::FFTWindowStateSITL(window_size, sample_rate);
+    DSP::FFTWindowStateSITL* fft = new DSP::FFTWindowStateSITL(window_size, sample_rate, sliding_window_size);
     if (fft == nullptr || fft->_hanning_window == nullptr || fft->_rfft_data == nullptr || fft->_freq_bins == nullptr || fft->_derivative_freq_bins == nullptr) {
         delete fft;
         return nullptr;
@@ -61,8 +61,8 @@ uint16_t DSP::fft_analyse(AP_HAL::DSP::FFTWindowState* state, uint16_t start_bin
 }
 
 // create an instance of the FFT state machine
-DSP::FFTWindowStateSITL::FFTWindowStateSITL(uint16_t window_size, uint16_t sample_rate)
-    : AP_HAL::DSP::FFTWindowState::FFTWindowState(window_size, sample_rate)
+DSP::FFTWindowStateSITL::FFTWindowStateSITL(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
+    : AP_HAL::DSP::FFTWindowState::FFTWindowState(window_size, sample_rate, sliding_window_size)
 {
     if (_freq_bins == nullptr || _hanning_window == nullptr || _rfft_data == nullptr || _derivative_freq_bins == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate window for DSP");
@@ -91,7 +91,7 @@ void DSP::step_hanning(FFTWindowStateSITL* fft, FloatBuffer& samples, uint16_t a
     mult_f32(&fft->_freq_bins[0], &fft->_hanning_window[0], &fft->_freq_bins[0], fft->_window_size);
 }
 
-// step 2: performm an in-place FFT on the windowed data
+// step 2: perform an in-place FFT on the windowed data
 void DSP::step_fft(FFTWindowStateSITL* fft)
 {
     for (uint16_t i = 0; i < fft->_window_size; i++) {
