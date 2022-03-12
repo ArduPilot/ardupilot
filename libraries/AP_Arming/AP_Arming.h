@@ -164,7 +164,7 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 
-    bool mission_checks(bool report);
+    virtual bool mission_checks(bool report);
 
     bool rangefinder_checks(bool report);
 
