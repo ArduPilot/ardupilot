@@ -2,7 +2,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RangeFinder_Benewake_CAN.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
 
 const AP_Param::GroupInfo AP_RangeFinder_Benewake_CAN::var_info[] = {
 
@@ -104,4 +104,4 @@ void Benewake_MultiCAN::handle_frame(AP_HAL::CANFrame &frame)
     }
 }
 
-#endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+#endif  // AP_RANGEFINDER_BENEWAKE_CAN_ENABLED

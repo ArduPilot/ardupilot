@@ -4,7 +4,7 @@
 #include "AP_RangeFinder_Backend_Serial.h"
 
 #ifndef AP_RANGEFINDER_LEDDARVU8_ENABLED
-#define AP_RANGEFINDER_LEDDARVU8_ENABLED 1
+#define AP_RANGEFINDER_LEDDARVU8_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
 #endif
 
 #if AP_RANGEFINDER_LEDDARVU8_ENABLED
@@ -97,4 +97,4 @@ private:
     uint32_t last_distance_request_ms;              // system time of last request to sensor to send distances
 };
 
-#endif
+#endif  // AP_RANGEFINDER_LEDDARVU8_ENABLED

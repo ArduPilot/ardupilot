@@ -17,6 +17,8 @@
  */
 #include "AP_RangeFinder_TeraRangerI2C.h"
 
+#if AP_RANGEFINDER_TRI2C_ENABLED
+
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/crc.h>
@@ -189,3 +191,5 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif  // AP_RANGEFINDER_TRI2C_ENABLED

@@ -205,4 +205,4 @@ bool AP_RangeFinder_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16
     return false;
 }
 
-#endif
+#endif  // AP_RANGEFINDER_LEDDARVU8_ENABLED
