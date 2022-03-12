@@ -108,7 +108,7 @@ int main(void)
         timeout = 0;
         try_boot = false;
     }
-#ifndef BOOTLOADER_DEV_LIST
+#elif !defined(BOOTLOADER_DEV_LIST)
     else if (timeout != 0) {
         // fast boot for good firmware
         try_boot = true;
