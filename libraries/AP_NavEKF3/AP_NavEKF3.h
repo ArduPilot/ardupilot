@@ -319,6 +319,8 @@ public:
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
+    // Get EKF3 enable/disable
+    int8_t get_enable() { return _enable.get(); }
 
     /*
       check if switching lanes will reduce the normalised
