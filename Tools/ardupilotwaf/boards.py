@@ -666,6 +666,7 @@ class sitl_periph_gps(sitl):
             HAL_BUILD_AP_PERIPH = 1,
             PERIPH_FW = 1,
             CAN_APP_NODE_NAME = '"org.ardupilot.ap_periph_gps"',
+            AP_AIRSPEED_ENABLED = 0,
             HAL_PERIPH_ENABLE_GPS = 1,
             HAL_WITH_DSP = 1,
             HAL_CAN_DEFAULT_NODE_ID = 0,
