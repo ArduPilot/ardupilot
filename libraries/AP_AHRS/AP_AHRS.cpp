@@ -221,6 +221,13 @@ void AP_AHRS::init()
         _ekf_type.set(2);
         EKF2.set_enable(true);
     }
+#elif HAL_NAVEKF3_AVAILABLE && HAL_NAVEKF2_AVAILABLE
+    if (_ekf_type.get() == 2 && EKF2.get_enable() == 0) {
+        EKF2.set_enable(true);
+    }
+    if (_ekf_type.get() == 3 && EKF3.get_enable() == 0) {
+        EKF3.set_enable(true);
+    }
 #endif
 
     last_active_ekf_type = (EKFType)_ekf_type.get();
