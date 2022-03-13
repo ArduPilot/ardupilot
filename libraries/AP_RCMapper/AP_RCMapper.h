@@ -36,6 +36,9 @@ public:
     /// lateral - return input channel number for lateral input
     uint8_t lateral() const { return _ch_lateral; }
 
+    /// tune - return input channel number for tune input
+    uint8_t tune() const { return _ch_tune; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -46,6 +49,7 @@ private:
     AP_Int8 _ch_throttle;
     AP_Int8 _ch_forward;
     AP_Int8 _ch_lateral;
+    AP_Int8 _ch_tune;
     static RCMapper *_singleton;
 };
 
