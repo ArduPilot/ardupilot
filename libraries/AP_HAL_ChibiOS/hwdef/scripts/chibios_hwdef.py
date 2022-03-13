@@ -2751,6 +2751,10 @@ def add_apperiph_defaults(f):
 #define HAL_UART_STATS_ENABLED (HAL_GCS_ENABLED || HAL_LOGGING_ENABLED)
 #endif
 
+#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
+#define AP_AIRSPEED_AUTOCAL_ENABLE 0
+#endif
+
 ''')
 
 
