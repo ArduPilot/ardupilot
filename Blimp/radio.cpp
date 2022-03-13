@@ -10,7 +10,7 @@ void Blimp::default_dead_zones()
     channel_front->set_default_dead_zone(20);
     channel_down->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
-    rc().channel(CH_6)->set_default_dead_zone(0);
+    rc().channel(rcmap.tune()-1)->set_default_dead_zone(0);
 }
 
 void Blimp::init_rc_in()
