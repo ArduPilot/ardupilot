@@ -80,6 +80,7 @@ protected:
     AP_Float soar_thermal_airspeed;
     AP_Float soar_cruise_airspeed;
     AP_Float soar_thermal_flap;
+    AP_Float soar_thermal_min_radius;
 
 public:
     SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms);
