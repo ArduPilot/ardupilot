@@ -766,6 +766,7 @@ class AutoTestPlane(AutoTest):
                 "RC%u_OPTION" % flaps_ch: 208, # Flaps RCx_OPTION
                 "LAND_FLAP_PERCNT": 50,
                 "LOG_DISARMED": 1,
+                "RTL_AUTOLAND": 1,
 
                 "RC%u_MIN" % flaps_ch: flaps_ch_min,
                 "RC%u_MAX" % flaps_ch: flaps_ch_max,
