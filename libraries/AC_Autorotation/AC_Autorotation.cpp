@@ -366,7 +366,7 @@ void AC_Autorotation::update_forward_speed_controller(void)
     _accel_out_last = _accel_out;
 
     // update angle targets that will be passed to stabilize controller
-    _pitch_target = atanf(-_accel_out/(GRAVITY_MSS * 100.0f))*(18000.0f/M_PI);
+    _pitch_target = accel_to_angle(-_accel_out*0.01) * 100;
 
 }
 
