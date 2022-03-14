@@ -54,6 +54,8 @@ public:
 
     virtual bool allow_weathervane() { return true; }
 
+    virtual void set_last_fw_pitch(void) {}
+
 protected:
 
     // refences for convenience
@@ -92,6 +94,8 @@ public:
     MAV_VTOL_STATE get_mav_vtol_state() const override;
 
     bool set_VTOL_roll_pitch_limit(int32_t& nav_roll_cd, int32_t& nav_pitch_cd) override;
+
+    void set_last_fw_pitch(void) override;
 
 protected:
 
