@@ -145,3 +145,13 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_pos, float m
 // The input must be in the range of -1 to 1.
 // The expo should be less than 1.0 but limited to be less than 0.95.
 float input_expo(float input, float expo);
+
+/*
+  convert a maximum lean angle in degrees to an accel limit in m/s/s
+ */
+float angle_to_accel(float angle_deg);
+
+/*
+  convert a maximum accel in m/s/s to a lean angle in degrees
+ */
+float accel_to_angle(float accel);

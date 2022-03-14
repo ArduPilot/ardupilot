@@ -507,3 +507,19 @@ float input_expo(float input, float expo)
     }
     return input;
 }
+
+/*
+  convert a maximum lean angle in degrees to an accel limit in m/s/s
+ */
+float angle_to_accel(float angle_deg)
+{
+    return GRAVITY_MSS * tanf(radians(angle_deg));
+}
+
+/*
+  convert a maximum accel in m/s/s to a lean angle in degrees
+ */
+float accel_to_angle(float accel)
+{
+    return degrees(atanf((accel/GRAVITY_MSS)));
+}
