@@ -2109,6 +2109,7 @@ void QuadPlane::run_xy_controller(float accel_limit)
     if (!pos_control->is_active_xy()) {
         pos_control->init_xy_controller();
     }
+    pos_control->set_lean_angle_max_cd(MIN(4500, MAX(accel_to_angle(accel_limit)*100, aparm.angle_max)));
     pos_control->update_xy_controller();
 }
 
@@ -3159,6 +3160,7 @@ bool QuadPlane::verify_vtol_land(void)
             (vel_ned.xy() - target_vel).length() < descend_speed_threshold) {
             poscontrol.set_state(QPOS_LAND_DESCEND);
             poscontrol.pilot_correction_done = false;
+            pos_control->set_lean_angle_max_cd(0);
             poscontrol.xy_correction.zero();
 #if AC_FENCE == ENABLED
             plane.fence.auto_disable_fence_for_landing();
@@ -3909,7 +3911,9 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
     const uint32_t dt = AP_HAL::millis() - last_fw_mode_ms;
     if (last_fw_mode_ms == 0 || dt > limit_time_ms) {
         last_fw_mode_ms = 0;
-        // past transition period, nothing to do
+        // past transition period, only constrain roll
+        int16_t limit_cd = MIN(quadplane.aparm.angle_max,plane.aparm.pitch_limit_max_cd);
+        roll_cd = constrain_int32(roll_cd, -limit_cd, limit_cd);
         return false;
     }
 
@@ -4001,6 +4005,9 @@ bool QuadPlane::in_vtol_takeoff(void) const
 // called when we change mode (for any mode, not just Q modes)
 void QuadPlane::mode_enter(void)
 {
+    if (available()) {
+        pos_control->set_lean_angle_max_cd(0);
+    }
     poscontrol.xy_correction.zero();
     poscontrol.velocity_match.zero();
     poscontrol.last_velocity_match_ms = 0;
