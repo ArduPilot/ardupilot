@@ -80,7 +80,7 @@ public:
     AP_Filesystem() {}
 
     // functions that closely match the equivalent posix calls
-    int open(const char *fname, int flags);
+    int open(const char *fname, int flags, bool allow_absolute_paths = false);
     int close(int fd);
     int32_t read(int fd, void *buf, uint32_t count);
     int32_t write(int fd, const void *buf, uint32_t count);
