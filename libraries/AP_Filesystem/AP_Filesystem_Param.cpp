@@ -26,7 +26,7 @@
 extern const AP_HAL::HAL& hal;
 extern int errno;
 
-int AP_Filesystem_Param::open(const char *fname, int flags)
+int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_path)
 {
     if (!check_file_name(fname)) {
         errno = ENOENT;
