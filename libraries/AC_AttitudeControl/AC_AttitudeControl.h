@@ -309,6 +309,8 @@ public:
     // limits the acceleration and deceleration of a velocity request
     static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt);
 
+    static float input_shaping_rate(float error_rate, float input_tc, float accel_max, float target_ang_vel, float dt);
+
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
     void input_shaping_rate_predictor(const Vector2f &error_angle, Vector2f& target_ang_vel, float dt) const;
@@ -370,6 +372,12 @@ public:
     // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
     void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);
     
+    // Sets the roll and pitch rate shaping time constant
+    void set_roll_pitch_rate_tc(float input_tc) { _rate_rp_tc = input_tc; }
+
+    // Sets the yaw rate shaping time constant
+    void set_yaw_rate_tc(float input_tc) { _rate_y_tc = input_tc; }
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -484,6 +492,10 @@ protected:
 
     // Yaw feed forward percent to allow zero yaw actuator output during extreme roll and pitch corrections
     float               _feedforward_scalar = 1.0f;
+
+    // rate controller input smoothing time constant
+    float               _rate_rp_tc;
+    float               _rate_y_tc;
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
