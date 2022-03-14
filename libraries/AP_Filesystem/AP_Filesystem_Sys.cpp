@@ -60,7 +60,7 @@ int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
     return -1;
 }
 
-int AP_Filesystem_Sys::open(const char *fname, int flags)
+int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     if ((flags & O_ACCMODE) != O_RDONLY) {
         errno = EROFS;
