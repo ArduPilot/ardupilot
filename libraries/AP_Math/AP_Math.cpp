@@ -269,7 +269,7 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
     // the check for NaN as a float prevents propagation of floating point
     // errors through any function that uses constrain_value(). The normal
     // float semantics already handle -Inf and +Inf
-    if (isnan(amt)) {
+    if (isnan(amt)) {     //isnan() 参数为非数字(如0/0) 返回1,否则返回0
         AP::internalerror().error(AP_InternalError::error_t::constraining_nan, line);
         return (low + high) / 2;
     }
@@ -432,9 +432,10 @@ uint16_t float2fixed(const float input, const uint8_t fractional_bits)
 /*
   calculate turn rate in deg/sec given a bank angle and airspeed for a
   fixed wing aircraft
+  给定固定翼的空速和角度（通常为滚转角），计算偏航角的导数
  */
 float fixedwing_turn_rate(float bank_angle_deg, float airspeed)
 {
     bank_angle_deg = constrain_float(bank_angle_deg, -80, 80);
-    return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));
+    return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));//psi_dot=g*tan(phi)/Va
 }

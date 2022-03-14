@@ -433,7 +433,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     // @Param: THROTTLE_EXPO
     // @DisplayName: Throttle expo strength
-    // @Description: Amount of curvature in throttle curve: 0 is linear, 1 is cubic
+    // @Description: Amount of curvature in throttle curve: 0 is linear, 1 is cubic （三次）
     // @Range: 0 1
     // @Increment: .1
     // @User: Advanced
@@ -472,7 +472,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 1.1 5.0
     // @Increment: 5.1
     // @User: Advanced
-    AP_GROUPINFO("TKOFF_FAIL_SCL", 14, QuadPlane, takeoff_failure_scalar, 0),
+    AP_GROUPINFO("TKOFF_FAIL_SCL", 14, QuadPlane, takeoff_failure_scalar, 0),//起飞失败时间指标
 
     // @Param: TKOFF_ARSP_LIM
     // @DisplayName: Takeoff airspeed limit
@@ -634,7 +634,7 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_q_attitude_control, 451,  AP_PARAM_FLOAT, "Q_A_RAT_YAW_FF" },  // Q_A_RAT_YAW_FILT
 };
 
-
+//构造函数声明
 QuadPlane::QuadPlane(AP_AHRS_NavEKF &_ahrs) :
     ahrs(_ahrs)
 {
@@ -928,6 +928,8 @@ void QuadPlane::init_stabilize(void)
   when doing a forward transition of a tilt-vectored quadplane we use
   euler angle control to maintain good yaw. This updates the yaw
   target based on pilot input and target roll
+  在倾转矢量quadplane前向过渡时，使用欧拉角控制来保持偏航叫，这个偏航角根据飞行员输入和目标的滚动角得到
+  讲的就是协调转弯
  */
 void QuadPlane::update_yaw_target(void)
 {
@@ -940,19 +942,19 @@ void QuadPlane::update_yaw_target(void)
         // allows for turns when level transition is not wanted
         tilt.transition_yaw_cd = ahrs.yaw_sensor;
     }
-
     /*
       now calculate the equivalent yaw rate for a coordinated turn for
       the desired bank angle given the airspeed
+      计算给定空速下所需坡度角的协调转弯的等效偏航率
      */
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(aspeed);
-    if (have_airspeed && labs(plane.nav_roll_cd)>1000) {
+    if (have_airspeed && labs(plane.nav_roll_cd)>1000) {    //labs（）返回参数的绝对值
         float dt = (now - tilt.transition_yaw_set_ms) * 0.001;
         // calculate the yaw rate to achieve the desired turn rate
         const float airspeed_min = MAX(plane.aparm.airspeed_min,5);
-        const float yaw_rate_cds = fixedwing_turn_rate(plane.nav_roll_cd*0.01, MAX(aspeed,airspeed_min))*100;
-        tilt.transition_yaw_cd += yaw_rate_cds * dt;
+        const float yaw_rate_cds = fixedwing_turn_rate(plane.nav_roll_cd*0.01, MAX(aspeed,airspeed_min))*100;//psi_dot=g*tan(phi)/Va
+        tilt.transition_yaw_cd += yaw_rate_cds * dt;//偏航角度=偏航的速度（psi_dot）*偏航的时间
     }
     tilt.transition_yaw_set_ms = now;
 }
@@ -960,8 +962,9 @@ void QuadPlane::update_yaw_target(void)
 /*
   ask the multicopter attitude control to match the roll and pitch rates being demanded by the
   fixed wing controller if not in a pure VTOL mode
+  如果不是在纯 VTOL 模式下，要求多旋翼姿态控制匹配固定翼控制器要求的横滚率（phi_dot）和俯仰率(theta_dot)
  */
-void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
+void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)//yaw_rate_cds是psi_dot即偏航角的导数，而不是偏航速率(r)
 {
     check_attitude_relax();
 
@@ -986,21 +989,24 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
             (tailsitter.input_type & TAILSITTER_INPUT_BF_ROLL)) {
 
             if (!(tailsitter.input_type & TAILSITTER_INPUT_PLANE)) {
-                // In multicopter input mode, the roll and yaw stick axes are independent of pitch
+                // In multicopter input mode, the roll and yaw stick axes are independent of pitch 在多旋翼输入模式下，横滚和偏航遥杆与俯仰无关
                 attitude_control->input_euler_rate_yaw_euler_angle_pitch_bf_roll(false,
                                                                                 plane.nav_roll_cd,
                                                                                 plane.nav_pitch_cd,
                                                                                 yaw_rate_cds);
                 return;
             } else {
-                // In plane input mode, the roll and yaw sticks are swapped
+                // In plane input mode, the roll and yaw sticks are swapped 
                 // and their effective axes rotate from yaw to roll and vice versa
                 // as pitch goes from zero to 90.
                 // So it is necessary to also rotate their scaling.
+                //在固定翼输入模式下，滚动和偏航摇杆互换，当俯仰角从0到90度时，他们的有效轴从yaw旋转到roll,因此也需要旋转他们的缩放比例，反之亦然
+                //roll、pitch、yaw油门需要缩放到-1~+1的范围   throttle通常缩放到0~1
 
-                // Get the roll angle and yaw rate limits
+                // Get the roll angle and yaw rate limits units cdeg
                 int16_t roll_limit = aparm.angle_max;
                 // separate limit for tailsitter roll, if set
+                //如果max_roll_angle==0，roll_limit=aparm.angle_max，如果max_roll_angle > 0，则roll_limit= tailsitter.max_roll_angle * 100.0f
                 if (tailsitter.max_roll_angle > 0) {
                     roll_limit = tailsitter.max_roll_angle * 100.0f;
                 }
@@ -1010,8 +1016,8 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)
 
                 // Rotate as a function of Euler pitch and swap roll/yaw
                 float euler_pitch = radians(.01f * plane.nav_pitch_cd);
-                float spitch = fabsf(sinf(euler_pitch));
-                float y2r_scale = linear_interpolate(1, yaw2roll_scale, spitch, 0, 1);
+                float spitch = fabsf(sinf(euler_pitch));//fabsf()求浮点数的绝对值
+                float y2r_scale = linear_interpolate(1, yaw2roll_scale, spitch, 0, 1);//线性插值
 
                 float p_yaw_rate = plane.nav_roll_cd / y2r_scale;
                 float p_roll_angle = -y2r_scale * yaw_rate_cds;
