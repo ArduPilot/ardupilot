@@ -343,6 +343,12 @@ public:
     /// get_lean_angle_max_cd - returns the maximum lean angle the autopilot may request
     float get_lean_angle_max_cd() const;
 
+    /*
+      set_lean_angle_max_cd - set the maximum lean angle. A value of zero means to use the ANGLE_MAX parameter.
+      This is reset to zero on init_xy_controller()
+    */
+    void set_lean_angle_max_cd(float angle_max_cd) { _angle_max_override_cd = angle_max_cd; }
+    
 
     /// Other
 
@@ -465,6 +471,9 @@ protected:
 
     // high vibration handling
     bool        _vibe_comp_enabled;     // true when high vibration compensation is on
+
+    // angle max override, if zero then use ANGLE_MAX parameter
+    float       _angle_max_override_cd;
 
     // return true if on a real vehicle or SITL with lock-step scheduling
     bool has_good_timing(void) const;
