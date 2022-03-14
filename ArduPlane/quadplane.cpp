@@ -1633,16 +1633,14 @@ void SLT_Transition::update()
             quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
             motors->output();
         }
-        last_fw_mode_ms = now;
-        last_fw_nav_pitch_cd = plane.nav_pitch_cd;
+        set_last_fw_pitch();
         in_forced_transition = false;
         return;
     }
 
     quadplane.motors_output();
 
-    last_fw_mode_ms = now;
-    last_fw_nav_pitch_cd = plane.nav_pitch_cd;
+    set_last_fw_pitch();
 }
 
 void SLT_Transition::VTOL_update()
@@ -2130,8 +2128,13 @@ void QuadPlane::poscontrol_init_approach(void)
             if (tailsitter.enabled() || motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL Position1 d=%.1f", dist);
                 poscontrol.set_state(QPOS_POSITION1);
+                transition->set_last_fw_pitch();
             } else {
-                gcs().send_text(MAV_SEVERITY_INFO,"VTOL short d=%.1f", dist);
+                gcs().send_text(MAV_SEVERITY_INFO,"VTOL airbrake v=%.1f d=%.0f sd=%.0f h=%.1f",
+                                plane.ahrs.groundspeed(),
+                                dist,
+                                stopping_distance(),
+                                plane.relative_ground_altitude(plane.g.rangefinder_landing));
                 poscontrol.set_state(QPOS_AIRBRAKE);
             }
         } else {
@@ -2317,6 +2320,7 @@ void QuadPlane::vtol_position_controller(void)
                                 stop_distance,
                                 plane.relative_ground_altitude(plane.g.rangefinder_landing));
                 poscontrol.set_state(QPOS_POSITION1);
+                transition->set_last_fw_pitch();
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL airbrake v=%.1f d=%.0f sd=%.0f h=%.1f",
                                 groundspeed,
@@ -2351,6 +2355,7 @@ void QuadPlane::vtol_position_controller(void)
                             plane.relative_ground_altitude(plane.g.rangefinder_landing),
                             desired_closing_speed);
             poscontrol.set_state(QPOS_POSITION1);
+            transition->set_last_fw_pitch();
 
             // switch to vfwd for throttle control
             vel_forward.integrator = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
@@ -2374,6 +2379,7 @@ void QuadPlane::vtol_position_controller(void)
                     gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 thrust loss as=%.1f at=%.1f",
                                     aspeed, aspeed_threshold);
                     poscontrol.set_state(QPOS_POSITION1);
+                    transition->set_last_fw_pitch();
                 }
             } else {
                 poscontrol.thrust_loss_start_ms = 0;
@@ -2385,6 +2391,7 @@ void QuadPlane::vtol_position_controller(void)
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL pos1 low speed as=%.1f at=%.1f",
                                 aspeed, aspeed_threshold);
                 poscontrol.set_state(QPOS_POSITION1);
+                transition->set_last_fw_pitch();
             }
         }
 
@@ -3871,18 +3878,19 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
         // disabled
         return false;
     }
-    uint32_t limit_time_ms = quadplane.back_trans_pitch_limit_ms;
+    const uint32_t limit_time_ms = quadplane.back_trans_pitch_limit_ms;
 
-    const uint32_t now = AP_HAL::millis();
-    if (now - last_fw_mode_ms > limit_time_ms) {
+    const uint32_t dt = AP_HAL::millis() - last_fw_mode_ms;
+    if (last_fw_mode_ms == 0 || dt > limit_time_ms) {
+        last_fw_mode_ms = 0;
         // past transition period, nothing to do
         return false;
     }
 
     // we limit pitch during initial transition
-    float max_limit_cd = linear_interpolate(MAX(last_fw_nav_pitch_cd,0), MIN(quadplane.aparm.angle_max,plane.aparm.pitch_limit_max_cd),
-                                                now,
-                                                last_fw_mode_ms, last_fw_mode_ms+limit_time_ms);
+    const float max_limit_cd = linear_interpolate(MAX(last_fw_nav_pitch_cd,0), MIN(quadplane.aparm.angle_max,plane.aparm.pitch_limit_max_cd),
+                                            dt,
+                                            0, limit_time_ms);
 
     if (pitch_cd > max_limit_cd) {
         pitch_cd = max_limit_cd;
@@ -3900,9 +3908,9 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
         to prevent inability to progress to position if moving from a loiter
         to landing
     */
-    float min_limit_cd = linear_interpolate(MIN(last_fw_nav_pitch_cd,0), MAX(-quadplane.aparm.angle_max,plane.aparm.pitch_limit_min_cd),
-                                            now,
-                                            last_fw_mode_ms, last_fw_mode_ms+limit_time_ms);
+    const float min_limit_cd = linear_interpolate(MIN(last_fw_nav_pitch_cd,0), MAX(-quadplane.aparm.angle_max,plane.aparm.pitch_limit_min_cd),
+                                                  dt,
+                                                  0, limit_time_ms);
 
     if (plane.nav_pitch_cd < min_limit_cd) {
         plane.nav_pitch_cd = min_limit_cd;
@@ -3912,14 +3920,22 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
     return false;
 }
 
+/*
+  remember last fixed wing pitch for pitch envelope in back transition
+ */
+void SLT_Transition::set_last_fw_pitch()
+{
+    last_fw_mode_ms = AP_HAL::millis();
+    last_fw_nav_pitch_cd = plane.nav_pitch_cd;
+}
+
 void SLT_Transition::force_transistion_complete() {
     transition_state = TRANSITION_DONE; 
     in_forced_transition = false;
     transition_start_ms = 0;
     transition_low_airspeed_ms = 0;
-    last_fw_mode_ms = AP_HAL::millis();
-    last_fw_nav_pitch_cd = plane.nav_pitch_cd;
-};
+    set_last_fw_pitch();
+}
 
 MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 {
