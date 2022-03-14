@@ -211,7 +211,7 @@ void AC_Loiter::calc_desired_velocity(float nav_dt, bool avoidance_on)
     float gnd_speed_limit_cms = MIN(_speed_cms, ekfGndSpdLimit*100.0f);
     gnd_speed_limit_cms = MAX(gnd_speed_limit_cms, LOITER_SPEED_MIN);
 
-    float pilot_acceleration_max = GRAVITY_MSS*100.0f * tanf(radians(get_angle_max_cd()*0.01f));
+    float pilot_acceleration_max = angle_to_accel(get_angle_max_cd()*0.01) * 100;
 
     // range check nav_dt
     if (nav_dt < 0) {
