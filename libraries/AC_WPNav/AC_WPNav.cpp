@@ -150,7 +150,7 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
     
     // sanity check parameters
     // check _wp_accel_cmss is reasonable
-    _scurve_accel_corner = GRAVITY_MSS * 100.0f * tanf(ToRad(_pos_control.get_lean_angle_max_cd() * 0.01f));
+    _scurve_accel_corner = angle_to_accel(_pos_control.get_lean_angle_max_cd() * 0.01) * 100;
     const float wp_accel_cmss = MIN(_wp_accel_cmss, _scurve_accel_corner);
     _wp_accel_cmss.set_and_save_ifchanged((_wp_accel_cmss <= 0) ? WPNAV_ACCELERATION : wp_accel_cmss);
     
