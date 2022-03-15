@@ -56,7 +56,7 @@ void AP_VisualOdom_Backend::handle_vision_position_delta_msg(const mavlink_messa
     _last_update_ms = now_ms;
 
     // send to EKF
-    const float time_delta_sec = packet.time_delta_usec / 1000000.0f;
+    const float time_delta_sec = packet.time_delta_usec * 1.0E-6;
     AP::ahrs().writeBodyFrameOdom(packet.confidence,
                                   position_delta,
                                   angle_delta,
