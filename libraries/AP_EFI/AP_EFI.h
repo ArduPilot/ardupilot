@@ -98,7 +98,7 @@ protected:
     AP_Float coef1;
     AP_Float coef2;
 
-    AP_Float ecu_dn;
+    AP_Float ecu_fuel_density;
 
     EFI_State state;
 
