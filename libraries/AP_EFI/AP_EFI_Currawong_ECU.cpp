@@ -16,26 +16,26 @@
 /*
  * AP_EFI_Currawong_ECU.cpp
  *
- *      Author: Reilly Callaway
+ *      Author: Reilly Callaway / Currawong Engineering Pty Ltd
  */
 
-#include <AP_PiccoloCAN/piccolo_protocol/ECUPackets.h>
-#include <AP_Math/definitions.h>
+#include "AP_EFI_Currawong_ECU.h"
 
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
 
-extern const AP_HAL::HAL& hal;
+#include <AP_Param/AP_Param.h>
+#include <AP_PiccoloCAN/piccolo_protocol/ECUPackets.h>
+#include <AP_Math/definitions.h>
 
-AP_EFI_Currawong_ECU* AP_EFI_Currawong_ECU::singleton;
+AP_EFI_Currawong_ECU* AP_EFI_Currawong_ECU::_singleton;
 
 AP_EFI_Currawong_ECU::AP_EFI_Currawong_ECU(AP_EFI &_frontend) :
     AP_EFI_Backend(_frontend)
 {
-    singleton = this;
-
-    internal_state.oil_pressure_status = Oil_Pressure_Status::OIL_PRESSURE_STATUS_NOT_SUPPORTED;
-    internal_state.debris_status = Debris_Status::NOT_SUPPORTED;
-    internal_state.misfire_status = Misfire_Status::NOT_SUPPORTED;
+    _singleton = this;
+    // Indicate that temperature and fuel pressure are supported
+    internal_state.fuel_pressure_status = Fuel_Pressure_Status::OK;
+    internal_state.temperature_status = Temperature_Status::OK;
 }
 
 void AP_EFI_Currawong_ECU::update()
@@ -49,20 +49,57 @@ bool AP_EFI_Currawong_ECU::handle_message(AP_HAL::CANFrame &frame)
     bool valid  = true;
 
     // There are differences between Ardupilot EFI_State and types/scaling of Piccolo packets.
-    // So we first decode to Piccolo structs, and then store the data we need in EFI_State internal_state with any scaling required.
+    // First decode to Piccolo structs, and then store the data we need in internal_state with any scaling required.
 
     // Structs to decode Piccolo messages into
-    ECU_TelemetryFast_t telemetryFast;
-    ECU_TelemetrySlow0_t telemetrySlow0;
-    ECU_TelemetrySlow1_t telemetrySlow1;
-    ECU_TelemetrySlow2_t telemetrySlow2;
-    ECU_Errors_t errors;
+    ECU_TelemetryFast_t telemetry_fast;
+    ECU_TelemetrySlow0_t telemetry_slow0;
+    ECU_TelemetrySlow1_t telemetry_slow1;
+    ECU_TelemetrySlow2_t telemetry_slow2;
 
     // Throw the message at the decoding functions
+    if (decodeECU_TelemetryFastPacketStructure(&frame, &telemetry_fast)) {
+        internal_state.throttle_position_percent = static_cast<uint8_t>(telemetry_fast.throttle);
+        internal_state.engine_load_percent = static_cast<uint8_t>(telemetry_fast.throttle);
+        internal_state.engine_speed_rpm = static_cast<uint32_t>(telemetry_fast.rpm);
 
+        if (internal_state.engine_speed_rpm > 0) {
+            internal_state.engine_state = Engine_State::RUNNING;
+        } else {
+            internal_state.engine_state = Engine_State::STOPPED;
+        }
 
-    if (valid)
-    {
+        // Prevent div by zero
+        if (get_ecu_fuel_density() > 0.01) {
+            internal_state.estimated_consumed_fuel_volume_cm3 = static_cast<float>(telemetry_fast.fuelUsed) / KG_PER_M3_TO_G_PER_CM3(get_ecu_fuel_density());
+        } else {
+            // If no (reasonable) density is provided
+            internal_state.estimated_consumed_fuel_volume_cm3 = 0.;
+        }
+
+        internal_state.general_error = telemetry_fast.ecuStatusBits.errorIndicator;
+        if (!telemetry_fast.ecuStatusBits.enabled) {
+            internal_state.engine_state = Engine_State::STOPPED;
+        }
+    } else if (decodeECU_TelemetrySlow0PacketStructure(&frame, &telemetry_slow0)) {
+        internal_state.intake_manifold_pressure_kpa = telemetry_slow0.map;
+        internal_state.atmospheric_pressure_kpa = telemetry_slow0.baro;
+        internal_state.cylinder_status[0].cylinder_head_temperature = C_TO_KELVIN(telemetry_slow0.cht);
+    } else if (decodeECU_TelemetrySlow1PacketStructure(&frame, &telemetry_slow1)) {
+        internal_state.intake_manifold_temperature = C_TO_KELVIN(telemetry_slow1.mat);
+        internal_state.fuel_pressure = telemetry_slow1.fuelPressure;
+    } else if (decodeECU_TelemetrySlow2PacketStructure(&frame, &telemetry_slow2)) {
+        internal_state.cylinder_status[0].ignition_timing_deg = telemetry_slow2.ignAngle1;
+        if (ENGINE_MAX_CYLINDERS > 1) {
+            internal_state.cylinder_status[1].ignition_timing_deg = telemetry_slow2.ignAngle2;
+        }
+        
+        internal_state.fuel_consumption_rate_cm3pm = telemetry_slow2.flowRate / KG_PER_M3_TO_G_PER_CM3(get_ecu_fuel_density());
+    } else {
+        valid = false;
+    }
+
+    if (valid) {
         internal_state.last_updated_ms = AP_HAL::millis();
     }
 
