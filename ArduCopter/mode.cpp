@@ -428,7 +428,7 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, floa
     // do lateral tilt to euler roll conversion
     // One would expect a vehicle at full roll and full pitch to shoot off at 45 deg. 
     // Since pitch is the "priority" axis Your more likely to want to go forwards/backwards than left/right.
-    // We reduce roll abit at max pitch.
+    // So we reduce roll a bit at max pitch.
     roll_out = (18000/M_PI) * atanf(cosf(pitch_out*(M_PI/18000))*tanf(roll_out*(M_PI/18000)));
 
     // roll_out and pitch_out are returned
