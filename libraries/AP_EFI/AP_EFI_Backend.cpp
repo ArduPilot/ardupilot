@@ -47,4 +47,8 @@ HAL_Semaphore &AP_EFI_Backend::get_sem(void)
     return frontend.sem;
 }
 
+float AP_EFI_Backend::get_ecu_dn(void) const
+{
+    return frontend.ecu_dn;
+}
 #endif // HAL_EFI_ENABLED
