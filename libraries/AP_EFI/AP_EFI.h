@@ -98,6 +98,8 @@ protected:
     AP_Float coef1;
     AP_Float coef2;
 
+    AP_Float ecu_dn;
+
     EFI_State state;
 
 private:
