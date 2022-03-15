@@ -17,10 +17,12 @@
 
 #if HAL_EFI_ENABLED
 
+#define HAL_EFI_CURRAWONG_ECU_ENABLED 1
 #include "AP_EFI_Serial_MS.h"
 #include "AP_EFI_Serial_Lutan.h"
 #include "AP_EFI_NWPMU.h"
 #include "AP_EFI_DroneCAN.h"
+#include "AP_EFI_Currawong_ECU.h"
 #include <AP_Logger/AP_Logger.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -52,6 +54,14 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Range: 0 10
     // @User: Advanced
     AP_GROUPINFO("_COEF2", 3, AP_EFI, coef2, 0),
+
+    // @Param: ECU_DN
+    // @DisplayName: ECU Fuel Density
+    // @Description: Used to calculate fuel consumption
+    // @Units: kg/m/m/m
+    // @Range: 0 10000
+    // @User: Advanced
+    AP_GROUPINFO("_ECU_DN", 4, AP_EFI, ecu_dn, 0.),
 
     AP_GROUPEND
 };
