@@ -16,7 +16,7 @@
 /*
  * AP_EFI_Currawong_ECU.h
  *
- *      Author: Reilly Callaway
+ *      Author: Reilly Callaway / Currawong Engineering Pty Ltd
  */
  
 #pragma once
@@ -25,12 +25,10 @@
 #include "AP_EFI_Backend.h"
 
 #ifndef HAL_EFI_CURRAWONG_ECU_ENABLED
-#define HAL_EFI_CURRAWONG_ECU_ENABLED HAL_MAX_CAN_PROTOCOL_DRIVERS && BOARD_FLASH_SIZE > 1024
+#define HAL_EFI_CURRAWONG_ECU_ENABLED HAL_MAX_CAN_PROTOCOL_DRIVERS && (BOARD_FLASH_SIZE > 1024)
 #endif
 
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
-
-
 
 class AP_EFI_Currawong_ECU : public AP_EFI_Backend {
 public:
@@ -40,16 +38,16 @@ public:
 
     static AP_EFI_Currawong_ECU* get_instance(void)
     {
-        return singleton;
+        return _singleton;
     }
 
 private:
     bool handle_message(AP_HAL::CANFrame &frame);
 
-    static AP_EFI_Currawong_ECU *singleton;
+    static AP_EFI_Currawong_ECU* _singleton;
 
     friend class AP_PiccoloCAN;
 };
 
-#endif // HAL_EFI_NWPWU_ENABLED
+#endif // HAL_EFI_CURRAWONG_ECU_ENABLED
 
