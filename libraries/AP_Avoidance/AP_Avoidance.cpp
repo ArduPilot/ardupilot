@@ -311,24 +311,24 @@ float closest_approach_z(const Location &my_loc,
                          const uint8_t time_horizon)
 {
 
-    float delta_vel_d = obstacle_vel[2] - my_vel[2];
-    float delta_pos_d = obstacle_loc.alt - my_loc.alt;
+    float delta_vel_d = obstacle_vel[2] - my_vel[2]; //down vel diff from us to obstacle
+    float delta_pos_d = (my_loc.alt - obstacle_loc.alt) * 0.01f; //down pos diff from us to obstacle. location.alt has the units of cm and up positive
 
     float ret;
-    if (delta_pos_d >= 0 && delta_vel_d >= 0) {
+    if (delta_pos_d >= 0 && delta_vel_d >= 0) { //obstacle is lower than us and move away from us
         ret = delta_pos_d;
-    } else if (delta_pos_d <= 0 && delta_vel_d <= 0) {
-        ret = fabsf(delta_pos_d);
+    } else if (delta_pos_d <= 0 && delta_vel_d <= 0) { //obstacle is higher than us and move away from us
+        ret = -delta_pos_d;
     } else {
-        ret = fabsf(delta_pos_d - delta_vel_d * time_horizon);
+        ret = fabsf(delta_pos_d + delta_vel_d * time_horizon);
     }
 
     debug("   time_horizon: (%d)", time_horizon);
-    debug("   delta pos: (%f) metres", delta_pos_d/100.0f);
+    debug("   delta pos: (%f) metres", delta_pos_d);
     debug("   delta vel: (%f) m/s", delta_vel_d);
-    debug("   closest: (%f) metres", ret/100.0f);
+    debug("   closest: (%f) metres", ret);
 
-    return ret/100.0f;
+    return ret;
 }
 
 void AP_Avoidance::update_threat_level(const Location &my_loc,
