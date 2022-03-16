@@ -1365,6 +1365,10 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         armed = false;
     }
 
+    if (armed && do_arming_checks && checks_to_perform == 0) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
+    }
+
     return armed;
 }
 
