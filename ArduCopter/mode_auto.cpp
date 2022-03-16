@@ -24,13 +24,13 @@ bool ModeAuto::init(bool ignore_checks)
 {
     auto_RTL = false;
     if (mission.num_commands() > 1 || ignore_checks) {
-        _mode = SubMode::LOITER;
-
         // reject switching to auto mode if landed with motors armed but first command is not a takeoff (reduce chance of flips)
         if (motors->armed() && copter.ap.land_complete && !mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto: Missing Takeoff Cmd");
             return false;
         }
+
+        _mode = SubMode::LOITER;
 
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
@@ -251,22 +251,26 @@ bool ModeAuto::loiter_start()
 // auto_rtl_start - initialises RTL in AUTO flight mode
 void ModeAuto::rtl_start()
 {
-    _mode = SubMode::RTL;
-
     // call regular rtl flight mode initialisation and ask it to ignore checks
-    copter.mode_rtl.init(true);
+    if (copter.mode_rtl.init(true)) {
+        _mode = SubMode::RTL;
+    } else {
+        // this should never happen because RTL never fails init if argument is true
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
 void ModeAuto::takeoff_start(const Location& dest_loc)
 {
-    _mode = SubMode::TAKEOFF;
-
     if (!copter.current_loc.initialised()) {
-        // vehicle doesn't know where it is ATM.  We should not
-        // initialise our takeoff destination without knowing this!
+        // this should never happen because mission commands are not executed until
+        // the AHRS/EKF origin is set by which time current_loc should also have been set
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return;
     }
+
+    _mode = SubMode::TAKEOFF;
 
     // calculate current and target altitudes
     // by default current_alt_cm and alt_target_cm are alt-above-EKF-origin
@@ -453,10 +457,14 @@ void ModeAuto::circle_start()
 // auto_nav_guided_start - hand over control to external navigation controller in AUTO mode
 void ModeAuto::nav_guided_start()
 {
-    _mode = SubMode::NAVGUIDED;
-
     // call regular guided flight mode initialisation
-    copter.mode_guided.init(true);
+    if (!copter.mode_guided.init(true)) {
+        // this should never happen because guided mode never fails to init
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+    }
+
+    _mode = SubMode::NAVGUIDED;
 
     // initialise guided start time and position as reference for limit checking
     copter.mode_guided.limit_init_time_and_pos();
