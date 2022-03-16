@@ -9,6 +9,7 @@ template <class T>
 DigitalBiquadFilter<T>::DigitalBiquadFilter() {
   _delay_element_1 = T();
   _delay_element_2 = T();
+  _delay_element_3 = T();//added for 3 order
 }
 
 template <class T>
@@ -16,19 +17,26 @@ T DigitalBiquadFilter<T>::apply(const T &sample, const struct biquad_params &par
     if(is_zero(params.cutoff_freq) || is_zero(params.sample_freq)) {
         return sample;
     }
+    // 3 order
+    T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2 - _delay_element_3 * params.a3;
+    T output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2 + _delay_element_3 * params.b3;
+    _delay_element_3 = _delay_element_2;
+    _delay_element_2 = _delay_element_1;
+    _delay_element_1 = delay_element_0;
 
-    T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
+    //original
+    /*T delay_element_0 = sample - _delay_element_1 * params.a1 - _delay_element_2 * params.a2;
     T output = delay_element_0 * params.b0 + _delay_element_1 * params.b1 + _delay_element_2 * params.b2;
 
     _delay_element_2 = _delay_element_1;
-    _delay_element_1 = delay_element_0;
+    _delay_element_1 = delay_element_0;*/
 
     return output;
 }
 
 template <class T>
 void DigitalBiquadFilter<T>::reset() { 
-    _delay_element_1 = _delay_element_2 = T();
+    _delay_element_1 = _delay_element_2 =  _delay_element_3 = T();
 }
 
 template <class T>
@@ -42,13 +50,28 @@ void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq
 
     float fr = sample_freq/cutoff_freq;
     float ohm = tanf(M_PI/fr);
-    float c = 1.0f+2.0f*cosf(M_PI/4.0f)*ohm + ohm*ohm;
+   /* float c = 1.0f+2.0f*cosf(M_PI/4.0f)*ohm + ohm*ohm;
 
     ret.b0 = ohm*ohm/c;
     ret.b1 = 2.0f*ret.b0;
     ret.b2 = ret.b0;
     ret.a1 = 2.0f*(ohm*ohm-1.0f)/c;
-    ret.a2 = (1.0f-2.0f*cosf(M_PI/4.0f)*ohm+ohm*ohm)/c;
+    ret.a2 = (1.0f-2.0f*cosf(M_PI/4.0f)*ohm+ohm*ohm)/c;*/
+
+    //3-order test
+    float c1 = ohm + 1.0f;
+    float c2 = ohm * ohm + 1.0f + ohm;
+    float c3 = ohm - 1.0f;
+    float c4 = 2.0f * (ohm * ohm - 1.0f);
+    float c5 = 1.0f - ohm + ohm * ohm;
+    float c = c1 * c2;
+    ret.b0 = ohm * ohm * ohm / c;
+    ret.b1 = 3.0f * ret.b0;
+    ret.b2 = 3.0f * ret.b0;
+    ret.b3 = ret.b0;
+    ret.a1 = (c3 * c2 + c1 * c4) / c;
+    ret.a2 = (c3 * c4 + c1 * c5) / c;
+    ret.a3 = c3 * c5 / c;
 }
 
 

@@ -30,9 +30,11 @@ public:
         float sample_freq;
         float a1;
         float a2;
+        float a3;//added for 3 order
         float b0;
         float b1;
         float b2;
+        float b3;//added for 3order
     };
   
     DigitalBiquadFilter();
@@ -44,6 +46,7 @@ public:
 private:
     T _delay_element_1;
     T _delay_element_2;
+    T _delay_element_3;//added for 3 order
 };
 
 template <class T>
