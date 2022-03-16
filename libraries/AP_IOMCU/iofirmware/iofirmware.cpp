@@ -301,12 +301,14 @@ void AP_IOMCU_FW::rcin_update()
 {
     ((ChibiOS::RCInput *)hal.rcin)->_timer_tick();
     if (hal.rcin->new_input()) {
+        const auto &rc = AP::RC();
         rc_input.count = hal.rcin->num_channels();
         rc_input.flags_rc_ok = true;
         hal.rcin->read(rc_input.pwm, IOMCU_MAX_CHANNELS);
         rc_last_input_ms = last_ms;
-        rc_input.rc_protocol = (uint16_t)AP::RC().protocol_detected();
-        rc_input.rssi = AP::RC().get_RSSI();
+        rc_input.rc_protocol = (uint16_t)rc.protocol_detected();
+        rc_input.rssi = rc.get_RSSI();
+        rc_input.flags_failsafe = rc.failsafe_active();
     } else if (last_ms - rc_last_input_ms > 200U) {
         rc_input.flags_rc_ok = false;
     }
