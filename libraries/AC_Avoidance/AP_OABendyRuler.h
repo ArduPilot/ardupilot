@@ -4,6 +4,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/hysteresis.h>
 
 /*
  * BendyRuler avoidance algorithm for avoiding the polygon and circular fence and dynamic objects detected by the proximity sensor
@@ -84,4 +85,5 @@ private:
     float _current_lookahead;       // distance (in meters) ahead of the vehicle we are looking for obstacles
     float _bearing_prev;            // stored bearing in degrees 
     Location _destination_prev;     // previous destination, to check if there has been a change in destination
+    Hysteresis _avoidance_required{true}; // hysteresis delay prevent oscilliation of return route
 };
