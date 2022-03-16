@@ -159,8 +159,10 @@ struct page_mixing {
     // enabled needs to be 1 to enable mixing
     uint8_t enabled;
 
-    uint8_t pad; // pad to even size
+    uint8_t pad;
 };
+
+static_assert(sizeof(struct page_mixing) % 2 == 0, "page_mixing must be even size");
 
 struct __attribute__((packed, aligned(2))) page_GPIO {
     uint8_t channel_mask;
