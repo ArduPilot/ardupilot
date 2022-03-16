@@ -112,8 +112,6 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
 // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
 bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
 {
-    guided_mode = SubMode::TakeOff;
-
     // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
@@ -138,6 +136,8 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
             return false;
         }
     }
+
+    guided_mode = SubMode::TakeOff;
 
     // initialise yaw
     auto_yaw.set_mode(AUTO_YAW_HOLD);
@@ -166,9 +166,10 @@ void ModeGuided::wp_control_start()
     // initialise wpnav to stopping point
     Vector3f stopping_point;
     wp_nav->get_wp_stopping_point(stopping_point);
-
-    // no need to check return status because terrain data is not used
-    wp_nav->set_wp_destination(stopping_point, false);
+    if (!wp_nav->set_wp_destination(stopping_point, false)) {
+        // this should never happen because terrain data is not used
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
 
     // initialise yaw
     auto_yaw.set_mode_to_default(false);
