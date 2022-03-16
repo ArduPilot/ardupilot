@@ -40,12 +40,13 @@
 #include <AP_HAL/AP_HAL.h>
 
 /*
-  we support 3 different types of flash which have different restrictions
+  we support 5 different types of flash which have different restrictions
  */
 #define AP_FLASHSTORAGE_TYPE_F1  1 // F1 and F3
 #define AP_FLASHSTORAGE_TYPE_F4  2 // F4 and F7
 #define AP_FLASHSTORAGE_TYPE_H7  3 // H7
 #define AP_FLASHSTORAGE_TYPE_G4  4 // G4
+#define AP_FLASHSTORAGE_TYPE_QSPI 5 // External QSPI flash
 
 #ifndef AP_FLASHSTORAGE_TYPE
 #if defined(STM32F1) || defined(STM32F3)
@@ -66,7 +67,7 @@
 #define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_G4
 #else // F4, F7
 /*
-  STM32HF4 and STM32H7 can update bits from 1 to 0
+  STM32HF4 and STM32F7 can update bits from 1 to 0
  */
 #define AP_FLASHSTORAGE_TYPE AP_FLASHSTORAGE_TYPE_F4
 #endif
@@ -84,6 +85,10 @@ private:
 #elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
     // write in 8 byte chunks, with 2 byte header
     static const uint8_t block_size = 6;
+    static const uint8_t max_write = block_size;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
+    // write in 256 byte chunks, with 2 byte header
+    static const uint8_t block_size = 254;
     static const uint8_t max_write = block_size;
 #else
     static const uint8_t block_size = 8;
@@ -155,6 +160,8 @@ private:
     static const uint32_t signature = 0x51685B62;
 #elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
     static const uint32_t signature = 0x1586B562;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
+    static const uint32_t signature = 0x861565B2;
 #else
 #error "Unknown AP_FLASHSTORAGE_TYPE"
 #endif
@@ -194,6 +201,17 @@ private:
         uint32_t signature2;
         uint32_t state3;
         uint32_t signature3;
+#elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
+        // needs to be 768 bytes on QSPI to support 3 states
+        uint32_t state1;
+        uint32_t signature1;
+        uint32_t pad1[62];
+        uint32_t state2;
+        uint32_t signature2;
+        uint32_t pad2[62];
+        uint32_t state3;
+        uint32_t signature3;
+        uint32_t pad3[62];
 #endif
         bool signature_ok(void) const;
         SectorState get_state() const;

@@ -75,7 +75,7 @@ void Storage::_storage_open(void)
 #endif // HAL_WITH_RAMTRON
 
 // allow for devices with no FRAM chip to fall through to other storage
-#ifdef STORAGE_FLASH_PAGE
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
         // load from storage backend
         _flash_load();
         _save_backup();
@@ -299,7 +299,7 @@ void Storage::_timer_tick(void)
     }
 #endif
 
-#ifdef STORAGE_FLASH_PAGE
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
     if (_initialisedType == StorageBackend::Flash) {
         // save to storage backend
         if (_flash_write(i)) {
@@ -327,8 +327,12 @@ void Storage::_timer_tick(void)
  */
 void Storage::_flash_load(void)
 {
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
+#elif defined(STORAGE_FLASH_QSPI)
+    _flash_page = STORAGE_FLASH_QSPI;
+#endif
 
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
 
@@ -345,7 +349,7 @@ void Storage::_flash_load(void)
 */
 bool Storage::_flash_write(uint16_t line)
 {
-#ifdef STORAGE_FLASH_PAGE
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
     return _flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE);
 #else
     return false;
@@ -357,6 +361,7 @@ bool Storage::_flash_write(uint16_t line)
  */
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
 #ifdef STORAGE_FLASH_PAGE
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
@@ -365,6 +370,17 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
         }
         hal.scheduler->delay(1);
     }
+#endif
+#ifdef STORAGE_FLASH_QSPI
+    size_t base_address = AP::ext_flash()->get_page_addr(_flash_page+sector);
+    for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        uint32_t programming, delay_us, timeout_us;
+        if (AP::ext_flash()->start_program_offset(base_address+offset, data, length, programming, delay_us, timeout_us)) {
+            return true;
+        }
+        hal.scheduler->delay(1);
+    }
+#endif
     if (_flash_erase_ok()) {
         // we are getting flash write errors while disarmed. Try
         // re-writing all of flash
@@ -387,8 +403,12 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
  */
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
 #ifdef STORAGE_FLASH_PAGE
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
+#elif defined(STORAGE_FLASH_QSPI)
+    size_t base_address = AP::ext_flash()->get_page_addr(_flash_page+sector);
+#endif
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
     return true;
@@ -415,6 +435,27 @@ bool Storage::_flash_erase_sector(uint8_t sector)
         ChibiOS::Scheduler *sched = (ChibiOS::Scheduler *)hal.scheduler;
         sched->_expect_delay_ms(1000);
         if (hal.flash->erasepage(_flash_page+sector)) {
+            sched->_expect_delay_ms(0);
+            return true;
+        }
+        sched->_expect_delay_ms(0);
+        hal.scheduler->delay(1);
+    }
+    return false;
+#elif defined(STORAGE_FLASH_QSPI)
+    // erasing a page can take long enough that USB may not initialise properly if it happens
+    // while the host is connecting. Only do a flash erase if we have been up for more than 4s
+    for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        /*
+          a sector erase stops the whole MCU. We need to setup a long
+          expected delay, and not only when running in the main
+          thread.  We can't use EXPECT_DELAY_MS() as it checks we are
+          in the main thread
+         */
+        ChibiOS::Scheduler *sched = (ChibiOS::Scheduler *)hal.scheduler;
+        sched->_expect_delay_ms(1000);
+        uint32_t delay_ms, timeout_ms;
+        if (AP::ext_flash()->start_sector_erase(sector, delay_ms, timeout_ms)) {
             sched->_expect_delay_ms(0);
             return true;
         }
@@ -467,7 +508,7 @@ bool Storage::erase(void)
         return AP_HAL::Storage::erase();
     }
 #endif
-#ifdef STORAGE_FLASH_PAGE
+#if defined(STORAGE_FLASH_PAGE) || defined(STORAGE_FLASH_QSPI)
     return _flash.erase();
 #else
     return false;

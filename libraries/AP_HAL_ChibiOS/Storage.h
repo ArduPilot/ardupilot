@@ -20,6 +20,9 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include <AP_Common/Bitmask.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
+#ifdef STORAGE_FLASH_QSPI
+#include <AP_FlashIface/AP_FlashIface.h>
+#endif
 #include "hwdef/common/flash.h"
 #include <AP_RAMTRON/AP_RAMTRON.h>
 
@@ -79,10 +82,16 @@ private:
     bool _flash_failed;
     uint32_t _last_re_init_ms;
     uint32_t _last_empty_ms;
-
-#ifdef STORAGE_FLASH_PAGE
+#if defined(STORAGE_FLASH_PAGE)
     AP_FlashStorage _flash{_buffer,
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
+            FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
+#elif defined(STORAGE_FLASH_QSPI)
+    AP_FlashStorage _flash{_buffer,
+            AP::ext_flash()->get_page_size(),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),

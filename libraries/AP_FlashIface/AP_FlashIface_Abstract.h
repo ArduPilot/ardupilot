@@ -27,6 +27,15 @@ class AP_FlashIface
 {
 
 public:
+    AP_FlashIface() {
+        if (_singleton) {
+            AP_HAL::panic("Too many AP_FlashIface instances");
+        }
+        _singleton = this;
+    }
+
+    static AP_FlashIface *get_singleton() { return _singleton; }
+
     virtual bool init() = 0;
 
     /**
@@ -49,6 +58,8 @@ public:
      *
      */
     virtual uint32_t get_page_size() const = 0;
+
+    virtual uint32_t get_page_addr(uint32_t page) const = 0;
 
     /**
      * @details Gets number pages, each page can written in one go
@@ -205,4 +216,13 @@ public:
     virtual bool start_xip_mode(void** addr) { return false; }
 
     virtual bool stop_xip_mode() { return false; }
+
+private:
+    static AP_FlashIface *_singleton;
+};
+
+namespace AP {
+    inline AP_FlashIface* ext_flash() {
+        return AP_FlashIface::get_singleton();
+    }
 };
