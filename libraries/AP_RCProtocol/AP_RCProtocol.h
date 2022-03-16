@@ -67,6 +67,13 @@ public:
     void process_handshake(uint32_t baudrate);
     void update(void);
 
+    bool failsafe_active() const {
+        return _failsafe_active;
+    }
+    void set_failsafe_active(bool active) {
+        _failsafe_active = active;
+    }
+
     void disable_for_pulses(enum rcprotocol_t protocol) {
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
@@ -147,6 +154,7 @@ private:
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
     uint32_t _last_input_ms;
+    bool _failsafe_active;
     bool _valid_serial_prot;
 
     // optional additional uart
