@@ -1002,6 +1002,8 @@ void QuadPlane::multicopter_attitude_rate_update(float yaw_rate_cds)//yaw_rate_c
                 // So it is necessary to also rotate their scaling.
                 //在固定翼输入模式下，滚动和偏航摇杆互换，当俯仰角从0到90度时，他们的有效轴从yaw旋转到roll,因此也需要旋转他们的缩放比例，反之亦然
                 //roll、pitch、yaw油门需要缩放到-1~+1的范围   throttle通常缩放到0~1
+                
+                //把phi/psi_dot 从[0,1]缩放到[1,phi_max/psi_dot_max]
 
                 // Get the roll angle and yaw rate limits units cdeg
                 int16_t roll_limit = aparm.angle_max;
@@ -1203,7 +1205,7 @@ float QuadPlane::get_pilot_throttle()
     // normalize to [0,1]
     throttle_in /= plane.channel_throttle->get_range();
 
-    if (is_positive(throttle_expo)) {
+    if (is_positive(throttle_expo)) {     //throttle_expo 油门曲线中的曲率量：0为线性，1为三次
         // get hover throttle level [0,1]
         float thr_mid = motors->get_throttle_hover();
         float thrust_curve_expo = constrain_float(throttle_expo, 0.0f, 1.0f);
@@ -1233,15 +1235,15 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
     pitch_out_cd = plane.channel_pitch->get_control_in();
 
     // limit max lean angle, always allow for 10 degrees
-    angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);
+    angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);  
 
     // scale roll and pitch inputs to ANGLE_MAX parameter range
     float scaler = angle_max_cd/4500.0;
-    roll_out_cd *= scaler;
-    pitch_out_cd *= scaler;
+    roll_out_cd *= scaler;   
+    pitch_out_cd *= scaler;//飞手输入的滚转和俯仰角得到了一定的放大，反过来考虑，相当于减小了允许的最大倾斜角
 
-    // apply circular limit
-    float total_in = norm(pitch_out_cd, roll_out_cd);
+    // apply circular limit   对输入的滚转角和俯仰角进行限制，如果滚转角和俯仰角的2范数大于饱和限制，则执行下面的语句
+    float total_in = norm(pitch_out_cd, roll_out_cd);//total_in=[(pitch_out_cd)^2+(roll_out_cd)^2]^0.5
     if (total_in > angle_limit_cd) {
         float ratio = angle_limit_cd / total_in;
         roll_out_cd *= ratio;
@@ -1700,7 +1702,7 @@ float QuadPlane::desired_auto_yaw_rate_cds(void) const
     if (aspeed < 1) {
         aspeed = 1;
     }
-    float yaw_rate = degrees(GRAVITY_MSS * tanf(radians(plane.nav_roll_cd*0.01f))/aspeed) * 100;
+    float yaw_rate = degrees(GRAVITY_MSS * tanf(radians(plane.nav_roll_cd*0.01f))/aspeed) * 100;//psi_dot=g*tan(phi)/Va
     return yaw_rate;
 }
 
