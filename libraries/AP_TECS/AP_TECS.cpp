@@ -794,8 +794,10 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
         _throttle_dem = nomThr;
     }
 
-    if (_flags.is_gliding)
-    {
+    if (!_flags.reached_speed_takeoff) {
+        _throttle_dem = 1.0f;
+    }
+    else if (_flags.is_gliding) {
         _throttle_dem = 0.0f;
         return;
     }
@@ -1184,6 +1186,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     } else {
         _update_throttle_without_airspeed(throttle_nudge);
     }
+
+    ::printf("throttle demand\n%f", _throttle_dem);
 
     // Detect bad descent due to demanded airspeed being too high
     _detect_bad_descent();
