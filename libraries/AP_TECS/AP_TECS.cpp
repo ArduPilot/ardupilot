@@ -1187,8 +1187,6 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         _update_throttle_without_airspeed(throttle_nudge);
     }
 
-    ::printf("throttle demand\n%f", _throttle_dem);
-
     // Detect bad descent due to demanded airspeed being too high
     _detect_bad_descent();
 
