@@ -175,7 +175,13 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-    if (rcprot.new_input()) {
+    uint32_t now = AP_HAL::millis();
+    const bool have_iocmu_rc = (_rcin_last_iomcu_ms != 0 && now - _rcin_last_iomcu_ms < 400);
+    if (!have_iocmu_rc) {
+        _rcin_last_iomcu_ms = 0;
+    }
+
+    if (!have_iocmu_rc && rcprot.new_input()) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = rcprot.num_channels();
@@ -208,6 +214,7 @@ void RCInput::_timer_tick(void)
         if (AP_BoardConfig::io_enabled() &&
             iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
             _rcin_timestamp_last_signal = last_iomcu_us;
+            _rcin_last_iomcu_ms = now;
 #ifndef HAL_NO_UARTDRIVER
             rc_protocol = iomcu.get_rc_protocol();
             _rssi = iomcu.get_RSSI();
