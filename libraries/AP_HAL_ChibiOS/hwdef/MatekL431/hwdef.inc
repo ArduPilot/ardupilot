@@ -101,3 +101,7 @@ PB11  USART3_RX USART3 SPEED_HIGH NODMA
 
 # allow for reboot command for faster development
 define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
