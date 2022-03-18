@@ -386,8 +386,10 @@ protected:
     void publish_osd_info();
 #endif
 
+#if HAL_INS_ACCELCAL_ENABLED
     // update accel calibration
     void accel_cal_update();
+#endif
 
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
