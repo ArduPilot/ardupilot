@@ -1516,7 +1516,7 @@ void QuadPlane::control_loiter()
 
     // process pilot's roll and pitch input
     float target_roll_cd, target_pitch_cd;
-    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());
+    get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max());//期望滚转和俯仰角限制幅度
     loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
     
     // run loiter controller
