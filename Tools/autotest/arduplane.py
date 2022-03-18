@@ -1028,6 +1028,27 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
+        self.start_subtest("Not use RC throttle input when THR_FAILSAFE==2")
+        self.takeoff(100)
+        self.set_rc(3, 1800)
+        self.set_rc(1, 2000)
+        self.wait_attitude(desroll=45, timeout=1)
+        self.context_push()
+        self.set_parameters({
+            "THR_FAILSAFE": 2,
+            "SIM_RC_FAIL": 1,  # no pulses
+        })
+        self.delay_sim_time(1)
+        self.wait_attitude(desroll=0, timeout=5)
+        self.assert_servo_channel_value(3, self.get_parameter("RC3_MIN"))
+        self.set_parameters({
+            "SIM_RC_FAIL": 0,  # fix receiver
+        })
+        self.zero_throttle()
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_throttle_failsafe_fence(self):
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
@@ -2260,7 +2281,7 @@ function'''
         self.wait_waypoint(4, 4, timeout=1200, max_dist=120)
 
         # Disarm
-        self.disarm_vehicle()
+        self.disarm_vehicle_expect_fail()
 
         self.progress("Mission OK")
 
@@ -2357,7 +2378,7 @@ function'''
             raise NotAchievedException("Airspeed did not reduce with lower SOAR_VSPEED")
 
         # Disarm
-        self.disarm_vehicle()
+        self.disarm_vehicle_expect_fail()
 
         self.progress("Mission OK")
 
@@ -2864,7 +2885,7 @@ function'''
             self.context_clear_collection("STATUSTEXT")
             ###################################################################
 
-            self.disarm_vehicle()
+            self.disarm_vehicle(force=True)
 
         except Exception as e:
             self.print_exception_caught(e)
