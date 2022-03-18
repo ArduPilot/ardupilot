@@ -1960,7 +1960,15 @@ bool AP_InertialSensor::is_still()
 // return true if we are in a calibration
 bool AP_InertialSensor::calibrating() const
 {
-    return _calibrating_accel || _calibrating_gyro || (_acal && _acal->running());
+    if (_calibrating_accel || _calibrating_gyro) {
+        return true;
+    }
+#if HAL_INS_ACCELCAL_ENABLED
+    if (_acal && _acal->running()) {
+        return true;
+    }
+#endif
+    return false;
 }
 
 /// calibrating - returns true if a temperature calibration is running
@@ -1976,6 +1984,7 @@ bool AP_InertialSensor::temperature_cal_running() const
     return false;
 }
 
+#if HAL_INS_ACCELCAL_ENABLED
 // initialise and register accel calibrator
 // called during the startup of accel cal
 void AP_InertialSensor::acal_init()
@@ -2003,6 +2012,7 @@ void AP_InertialSensor::acal_update()
         _acal->cancel();
     }
 }
+#endif
 
 // Update the harmonic notch frequency
 void AP_InertialSensor::update_harmonic_notch_freq_hz(float scaled_freq) {
