@@ -905,7 +905,7 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
         self.fly_home_land_and_disarm()
 
-    def test_throttle_failsafe(self):
+    def ThrottleFailsafe(self):
         self.change_mode('MANUAL')
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
@@ -3538,7 +3538,7 @@ function'''
 
             ("ThrottleFailsafe",
              "Fly throttle failsafe",
-             self.test_throttle_failsafe),
+             self.ThrottleFailsafe),
 
             ("NeedEKFToArm",
              "Ensure we need EKF to be healthy to arm",
