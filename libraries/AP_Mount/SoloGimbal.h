@@ -51,7 +51,9 @@ public:
         _log_del_ang(),
         _log_del_vel()
     {
+#if HAL_INS_ACCELCAL_ENABLED
         AP_AccelCal::register_client(this);
+#endif
     }
 
     void    update_target(const Vector3f &newTarget);
