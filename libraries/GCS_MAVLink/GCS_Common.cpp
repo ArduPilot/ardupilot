@@ -3329,7 +3329,7 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 {
-#if HAL_INS_ENABLED
+#if HAL_INS_ACCELCAL_ENABLED
     AP_AccelCal *accelcal = AP::ins().get_acal();
     if (accelcal != nullptr) {
         accelcal->handleMessage(msg);
@@ -3959,7 +3959,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 
     rc().calibrating(is_positive(packet.param4));
 
-#if HAL_INS_ENABLED
+#if HAL_INS_ACCELCAL_ENABLED
     if (is_equal(packet.param5,1.0f)) {
         // start with gyro calibration
         if (!calibrate_gyros()) {
@@ -3970,7 +3970,9 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         AP::ins().get_acal()->start(this);
         return MAV_RESULT_ACCEPTED;
     }
+#endif
 
+#if HAL_INS_ENABLED
     if (is_equal(packet.param5,2.0f)) {
         if (!calibrate_gyros()) {
             return MAV_RESULT_FAILED;
@@ -4253,18 +4255,16 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 }
 #endif
 
+#if HAL_INS_ACCELCAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
 {
-#if HAL_INS_ENABLED
     if (AP::ins().get_acal() == nullptr ||
         !AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
 }
+#endif  // HAL_INS_ACCELCAL_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packet)
 {
@@ -4339,9 +4339,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     switch (packet.command) {
 
+#if HAL_INS_ACCELCAL_ENABLED
     case MAV_CMD_ACCELCAL_VEHICLE_POS:
         result = handle_command_accelcal_vehicle_pos(packet);
         break;
+#endif
 
     case MAV_CMD_DO_SET_MODE:
         result = handle_command_do_set_mode(packet);
