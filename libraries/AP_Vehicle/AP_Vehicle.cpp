@@ -302,7 +302,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
 #endif
+#if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,      10,    100, 245),
+#endif
 #if HAL_EFI_ENABLED
     SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   10, 200, 250),
 #endif
@@ -482,6 +484,8 @@ void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 
 #endif
 
+#if HAL_INS_ACCELCAL_ENABLED
+
 #ifndef HAL_CAL_ALWAYS_REBOOT
 // allow for forced reboot after accelcal
 #define HAL_CAL_ALWAYS_REBOOT 0
@@ -492,7 +496,6 @@ void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
  */
 void AP_Vehicle::accel_cal_update()
 {
-#if HAL_INS_ENABLED
     if (hal.util->get_soft_armed()) {
         return;
     }
@@ -510,8 +513,8 @@ void AP_Vehicle::accel_cal_update()
         hal.scheduler->reboot(false);
     }
 #endif
-#endif // HAL_INS_ENABLED
 }
+#endif // HAL_INS_ACCELCAL_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 
