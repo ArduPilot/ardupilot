@@ -12,4 +12,6 @@ env DEFAULT_PARAMETERS 'Tools/Frame_params/Solo_Copter-4_GreenCube.param'
 
 define HAL_OREO_LED_ENABLED 1
 
+define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
+
 AUTOBUILD_TARGETS Copter
