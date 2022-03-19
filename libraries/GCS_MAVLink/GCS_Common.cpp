@@ -258,7 +258,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
         // for battery monitors that cannot provide voltages for individual cells the battery's total voltage is put into the first cell
         // if the total voltage cannot fit into a single field, the remainder into subsequent fields.
         // the GCS can then recover the pack voltage by summing all non ignored cell values an we can report a pack up to 655.34 V
-        float voltage = battery.voltage(instance) * 1e3f;
+        float voltage = battery.gcs_voltage(instance) * 1e3f;
         for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN; i++) {
           if (voltage < 0.001f) {
               // too small to send to the GCS, set it to the no cell value
@@ -4919,7 +4919,7 @@ void GCS_MAVLINK::send_sys_status()
         control_sensors_health,
         static_cast<uint16_t>(AP::scheduler().load_average() * 1000),
 #if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
-        battery.voltage() * 1000,  // mV
+        battery.gcs_voltage() * 1000,  // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
 #else
