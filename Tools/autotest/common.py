@@ -2009,12 +2009,15 @@ class AutoTest(ABC):
                 htree[n] = p
         return htree
 
-    def test_adsb_send_threatening_adsb_message(self, here):
+    def test_adsb_send_threatening_adsb_message(self, here, offset_ne=None):
         self.progress("Sending ABSD_VEHICLE message")
+        new = here
+        if offset_ne is not None:
+            new = self.offset_location_ne(new, offset_ne[0], offset_ne[1])
         self.mav.mav.adsb_vehicle_send(
             37, # ICAO address
-            int(here.lat * 1e7),
-            int(here.lng * 1e7),
+            int(new.lat * 1e7),
+            int(new.lng * 1e7),
             mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
             int(here.alt*1000 + 10000), # 10m up
             0, # heading in cdeg
@@ -5367,7 +5370,9 @@ class AutoTest(ABC):
             self.wait_heading(heading)
             self.set_rc(4, 1500)
         if self.is_plane():
-            self.progress("NOT IMPLEMENTED")
+            self.set_rc(1, 1800)
+            self.wait_heading(heading)
+            self.set_rc(1, 1500)
         if self.is_rover():
             steering_pwm = 1700
             if not turn_right:
@@ -7218,6 +7223,11 @@ Also, ignores heartbeats not from our target system'''
                 break
         self.progress("Polled home position (%s)" % str(m))
         return m
+
+    def position_target_loc(self):
+        '''returns target location based on POSITION_TARGET_GLOBAL_INT'''
+        m = self.mav.messages.get("POSITION_TARGET_GLOBAL_INT", None)
+        return mavutil.location(m.lat_int*1e-7, m.lon_int*1e-7, m.alt)
 
     def distance_to_nav_target(self, use_cached_nav_controller_output=False):
         '''returns distance to waypoint navigation target in metres'''
