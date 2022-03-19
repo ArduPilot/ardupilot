@@ -1662,7 +1662,7 @@ bool AP_GPS::calc_blend_weights(void)
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f) {
-                    speed_accuracy_sum_sq += state[i].speed_accuracy * state[i].speed_accuracy;
+                    speed_accuracy_sum_sq += sq(state[i].speed_accuracy);
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
                     speed_accuracy_sum_sq = 0.0f;
@@ -1678,7 +1678,7 @@ bool AP_GPS::calc_blend_weights(void)
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D) {
                 if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f) {
-                    horizontal_accuracy_sum_sq += state[i].horizontal_accuracy * state[i].horizontal_accuracy;
+                    horizontal_accuracy_sum_sq += sq(state[i].horizontal_accuracy);
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
                     horizontal_accuracy_sum_sq = 0.0f;
@@ -1694,7 +1694,7 @@ bool AP_GPS::calc_blend_weights(void)
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f) {
-                    vertical_accuracy_sum_sq += state[i].vertical_accuracy * state[i].vertical_accuracy;
+                    vertical_accuracy_sum_sq += sq(state[i].vertical_accuracy);
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
                     vertical_accuracy_sum_sq = 0.0f;
@@ -1720,7 +1720,7 @@ bool AP_GPS::calc_blend_weights(void)
         float sum_of_hpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D && state[i].horizontal_accuracy >= 0.001f) {
-                hpos_blend_weights[i] = horizontal_accuracy_sum_sq / (state[i].horizontal_accuracy * state[i].horizontal_accuracy);
+                hpos_blend_weights[i] = horizontal_accuracy_sum_sq / sq(state[i].horizontal_accuracy);
                 sum_of_hpos_weights += hpos_blend_weights[i];
             }
         }
@@ -1740,7 +1740,7 @@ bool AP_GPS::calc_blend_weights(void)
         float sum_of_vpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D && state[i].vertical_accuracy >= 0.001f) {
-                vpos_blend_weights[i] = vertical_accuracy_sum_sq / (state[i].vertical_accuracy * state[i].vertical_accuracy);
+                vpos_blend_weights[i] = vertical_accuracy_sum_sq / sq(state[i].vertical_accuracy);
                 sum_of_vpos_weights += vpos_blend_weights[i];
             }
         }
@@ -1760,7 +1760,7 @@ bool AP_GPS::calc_blend_weights(void)
         float sum_of_spd_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D && state[i].speed_accuracy >= 0.001f) {
-                spd_blend_weights[i] = speed_accuracy_sum_sq / (state[i].speed_accuracy * state[i].speed_accuracy);
+                spd_blend_weights[i] = speed_accuracy_sum_sq / sq(state[i].speed_accuracy);
                 sum_of_spd_weights += spd_blend_weights[i];
             }
         }
