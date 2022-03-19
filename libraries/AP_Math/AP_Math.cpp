@@ -180,7 +180,7 @@ template double wrap_180_cd<double>(const double angle);
 
 float wrap_360(const float angle)
 {
-    float res = fmodf(angle, 360.0f);
+    float res = fmodf(angle, 360.0f);// fmodf(x,y)为C++的库函数，函数返回 x/y 的浮点余数。如果分母 y 为零，fmod() 返回 NaN(非数字)。
     if (res < 0) {
         res += 360.0f;
     }

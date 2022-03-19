@@ -283,6 +283,7 @@ void Vector3<T>::rotate_inverse(enum Rotation rotation)
 }
 
 // rotate vector by angle in radians in xy plane leaving z untouched
+// rotate_matrix=[cos_psi -sin_psi 0;sin_psi cos_psi 0; 0 0 1],[xr,yr,zr]=rotate_matrix*[x;y;z]
 template <typename T>
 void Vector3<T>::rotate_xy(T angle_rad)
 {

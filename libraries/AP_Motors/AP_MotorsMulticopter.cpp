@@ -521,7 +521,7 @@ void AP_MotorsMulticopter::set_throttle_range(int16_t radio_min, int16_t radio_m
     hal.rcout->set_esc_scaling(get_pwm_output_min(), get_pwm_output_max());
 }
 
-// update the throttle input filter.  should be called at 100hz
+// update the throttle input filter.  should be called at 100hz，100Hz意味着1秒调用100次，调用一次花费0.01秒，所以dt=0.01
 void AP_MotorsMulticopter::update_throttle_hover(float dt)
 {
     if (_throttle_hover_learn != HOVER_LEARN_DISABLED) {

@@ -2234,6 +2234,7 @@ void QuadPlane::update_throttle_suppression(void)
 //  called at 100hz
 void QuadPlane::update_throttle_hover()
 {
+    //VTOl初始化完成，available()==1
     if (!available()) {
         return;
     }
@@ -2269,7 +2270,7 @@ void QuadPlane::update_throttle_hover()
         labs(ahrs_view->roll_sensor) < 500 && labs(ahrs_view->pitch_sensor) < 500 &&
         ahrs.airspeed_estimate(aspeed) && aspeed < plane.aparm.airspeed_min*0.3) {
         // Can we set the time constant automatically
-        motors->update_throttle_hover(0.01f);
+        motors->update_throttle_hover(0.01f);//意味着以100Hz的频率调用，调用一次花费0.01秒，所以dt=0.01
     }
 }
 /*
