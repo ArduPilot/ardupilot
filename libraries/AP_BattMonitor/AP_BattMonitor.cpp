@@ -438,6 +438,19 @@ float AP_BattMonitor::voltage_resting_estimate(uint8_t instance) const
     }
 }
 
+/// voltage - returns battery voltage in volts for GCS, may be resting voltage if option enabled
+float AP_BattMonitor::gcs_voltage(uint8_t instance) const
+{
+    if ((_params[instance]._options.get() & uint32_t(AP_BattMonitor_Params::Options::GCS_Resting_Voltage)) != 0) {
+        return voltage_resting_estimate(instance);
+    }
+    if (instance < _num_instances) {
+        return state[instance].voltage;
+    } else {
+        return 0.0f;
+    }
+}
+
 /// current_amps - returns the instantaneous current draw in amperes
 bool AP_BattMonitor::current_amps(float &current, uint8_t instance) const {
     if ((instance < _num_instances) && (drivers[instance] != nullptr) && drivers[instance]->has_current()) {
