@@ -257,7 +257,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: quadplane options
     // @Description: Level Transition:Keep wings within LEVEL_ROLL_LIMIT and only use forward motor(s) for climb during transition, Allow FW Takeoff: If bit is not set then NAV_TAKEOFF command on quadplanes will instead perform a NAV_VTOL takeoff, Allow FW Land:If bit is not set then NAV_LAND command on quadplanes will instead perform a NAV_VTOL_LAND, Vtol Takeoff Frame: command NAV_VTOL_TAKEOFF altitude is as set by the command's reference frame rather than a delta above current location, Use FW Approach:Use a fixed wing approach for VTOL landings, USE QRTL:instead of QLAND for rc failsafe when in VTOL modes, Use Governor:Use ICE Idle Governor in MANUAL for forward motor, Force Qassist: on always,Mtrs_Only_Qassist: in tailsitters only, uses VTOL motors and not flying surfaces for QASSIST, Airmode_On_Arm:Airmode enabled when arming by aux switch, Disarmed Yaw Tilt:Enable motor tilt for yaw when disarmed, Delay Spoolup:Delay VTOL spoolup for 2 seconds after arming, ThrLandControl: enable throttle stick control of landing rate, DisableApproach: Disable use of approach and airbrake stages in VTOL landing, EnableLandResposition: enable pilot controlled repositioning in AUTO land. Descent will pause while repositioning. ARMVTOL: Arm only in VTOL or AUTO modes. CompleteTransition: to fixed wing if Q_TRANS_FAIL timer times out instead of QLAND.
-    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition,18:ARMVtol, 19: CompleteTransition if Q_TRANS_FAIL
+    // @Bitmask: 0:Level Transition,1:Allow FW Takeoff,2:Allow FW Land,3:Vtol Takeoff Frame,4:Use FW Approach,5:Use QRTL,6:Use Governor,7:Force Qassist,8:Mtrs_Only_Qassist,10:Disarmed Yaw Tilt,11:Delay Spoolup,12:disable Qassist based on synthetic airspeed,13:Disable Ground Effect Compensation,14:Ignore forward flight angle limits in Qmodes,15:ThrLandControl,16:DisableApproach,17:EnableLandResponsition,18:ARMVtol, 19: CompleteTransition if Q_TRANS_FAIL, 20: VTOL forward throttle on elevator stick
     AP_GROUPINFO("OPTIONS", 58, QuadPlane, options, 0),
 
     AP_SUBGROUPEXTENSION("",59, QuadPlane, var_info2),
@@ -3252,13 +3252,21 @@ float QuadPlane::forward_throttle_pct()
         plane.control_mode == &plane.mode_qstabilize ||
         plane.control_mode == &plane.mode_qhover) {
 
+        // if manual forward throttle option channel is unassigned, return zero
         if (rc_fwd_thr_ch == nullptr) {
             return 0;
         } else {
-            // calculate fwd throttle demand from manual input
+            // take fwd throttle demand directly from manual input channel in QACRO mode
             float fwd_thr = rc_fwd_thr_ch->percent_input();
-
-            // set forward throttle to fwd_thr_max * (manual input + mix): range [0,100]
+            // if mode is QSTABILIZE OR QHOVER, check for OPTION_FWD_THR_ELEV
+            if ((plane.control_mode != &plane.mode_qacro) &&
+                 (options & QuadPlane::OPTION_FWD_THR_ELEV)  &&
+                 (rc_fwd_thr_ch->get_aux_switch_pos() != RC_Channel::AuxSwitchPos::LOW)) {
+                // if forward throttle mode is "elevator", use down elevator input as percentage of forward throttle
+                float down_elevator = -(float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
+                fwd_thr = 100 * constrain_float(down_elevator, 0, 1);
+            }
+            // scale manual input to fwd_thr_max: range [0,100]%
             fwd_thr *= .01f * constrain_float(fwd_thr_max, 0, 100);
             return fwd_thr;
         }
