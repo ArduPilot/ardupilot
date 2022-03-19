@@ -1838,7 +1838,7 @@ void QuadPlane::update_transition(void)
     float aspeed;
     bool have_airspeed = ahrs.airspeed_estimate(aspeed);
 
-    // tailsitters use angle wait, not airspeed wait
+    // tailsitters use angle wait, not airspeed wait   尾坐式垂起 使用角度判断而不是空速
     if (is_tailsitter() && transition_state == TRANSITION_AIRSPEED_WAIT) {
         transition_state = TRANSITION_ANGLE_WAIT_FW;
     }
@@ -1937,6 +1937,7 @@ void QuadPlane::update_transition(void)
             // using vectored yaw for tilt-rotors as the yaw control
             // is needed to maintain good control in forward
             // transitions
+            //倾转旋翼不是使用矢量偏航时，设置期望的偏航速率为当前的偏航速率
             attitude_control->reset_yaw_target_and_rate();
             attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
         }
@@ -1946,6 +1947,7 @@ void QuadPlane::update_transition(void)
         // reset integrators while we are below target airspeed as we
         // may build up too much while still primarily under
         // multicopter control
+        //重置积分器，防止过饱和
         plane.pitchController.reset_I();
         plane.rollController.reset_I();
 
@@ -1988,9 +1990,10 @@ void QuadPlane::update_transition(void)
         // control surfaces at this stage.
         // We disable this for vectored yaw tilt rotors as they do need active
         // yaw control throughout the transition
+        //倾转旋翼不执行
         if (!tilt.is_vectored) {
-            attitude_control->reset_yaw_target_and_rate();
-            attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);
+            attitude_control->reset_yaw_target_and_rate();//设置期望偏航角为机体此时的偏航角，设置偏航速率为0
+            attitude_control->rate_bf_yaw_target(ahrs.get_gyro().z);//设置偏航角速率为此时机体的偏航角速率
         }
         break;
     }
