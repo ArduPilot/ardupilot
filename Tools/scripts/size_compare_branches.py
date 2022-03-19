@@ -149,12 +149,12 @@ class SizeCompareBranches(object):
             "sub"       : "ardusub",
             "heli"      : "arducopter-heli",
             "blimp"     : "blimp",
-            "antennatracker " : "antennatracker",
+            "antennatracker" : "antennatracker",
         }
         if self.vehicle in vehicle_map:
             binary_filename = vehicle_map[self.vehicle]
         else:
-            raise Exception("Vehicle name incorrect")
+            raise Exception("Vehicle name (%s) incorrect" % (self.vehicle))
 
         elf_diff_commandline = [
             "time",
