@@ -1,0 +1,29 @@
+# hw definition file for processing by chibios_hwdef.py
+
+include ../CubeOrange/hwdef.dat
+
+undef USB_STRING_PRODUCT
+undef USB_STRING_MANUFACTURER
+undef APJ_BOARD_ID
+undef USB_PRODUCT
+
+# USB setup
+USB_PRODUCT 0x1058
+USB_STRING_MANUFACTURER "CubePilot"
+USB_STRING_PRODUCT "CubeOrange+"
+
+APJ_BOARD_ID 1063
+
+undef CHECK_ICM42688_EXT
+undef CHECK_IMU0_PRESENT
+undef IMU
+
+SPIDEV icm42688_ext   SPI4 DEVID4  ACCEL_EXT_CS  MODE3  2*MHZ  8*MHZ
+
+IMU Invensensev3 SPI:icm42688_ext ROTATION_ROLL_180_YAW_270
+IMU Invensensev2 SPI:icm20948_ext ROTATION_PITCH_180
+IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
+
+CHECK_ICM42688_EXT      spi_check_register("icm42688_ext", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688)
+
+CHECK_IMU0_PRESENT   $CHECK_ICM42688_EXT
