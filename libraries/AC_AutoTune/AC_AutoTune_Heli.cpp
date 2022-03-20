@@ -919,42 +919,12 @@ void AC_AutoTune_Heli::dwell_test_init(float start_frq, float stop_frq, float fi
     command_filt.set_cutoff_frequency(filt_freq);
     target_rate_filt.set_cutoff_frequency(filt_freq);
 
-    if (dwell_type == RATE) {
-        rotation_rate_filt.reset(0);
-        command_filt.reset(0);
-        target_rate_filt.reset(0);
-        rotation_rate = 0.0f;
-        command_out = 0.0f;
-        filt_target_rate = 0.0f;
-    } else {
-        switch (axis) {
-        case ROLL:
-            rotation_rate_filt.reset(((float)ahrs_view->roll_sensor) / 5730.0f);
-            command_filt.reset(motors->get_roll());
-            target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f);
-            rotation_rate = ((float)ahrs_view->roll_sensor) / 5730.0f;
-            command_out = motors->get_roll();
-            filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
-            break;
-        case PITCH:
-            rotation_rate_filt.reset(((float)ahrs_view->pitch_sensor) / 5730.0f);
-            command_filt.reset(motors->get_pitch());
-            target_rate_filt.reset(((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f);
-            rotation_rate = ((float)ahrs_view->pitch_sensor) / 5730.0f;
-            command_out = motors->get_pitch();
-            filt_target_rate = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
-            break;
-        case YAW:
-            // yaw angle will be centered on zero by removing trim heading
-            rotation_rate_filt.reset(0.0f);
-            command_filt.reset(motors->get_yaw());
-            target_rate_filt.reset(0.0f);
-            rotation_rate = 0.0f;
-            command_out = motors->get_yaw();
-            filt_target_rate = 0.0f;
-            break;
-        }
-    }
+    rotation_rate_filt.reset(0);
+    command_filt.reset(0);
+    target_rate_filt.reset(0);
+    rotation_rate = 0.0f;
+    command_out = 0.0f;
+    filt_target_rate = 0.0f;
 
     // filter at lower frequency to remove steady state
     filt_command_reading.set_cutoff_frequency(0.2f * start_frq);
