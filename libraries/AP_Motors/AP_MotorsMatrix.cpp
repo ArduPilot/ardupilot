@@ -295,7 +295,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 
     // calculate the maximum yaw control that can be used
     // todo: make _yaw_headroom 0 to 1
-    float yaw_allowed_min = (float)_yaw_headroom / 1000.0f;
+    float yaw_allowed_min = (float)_yaw_headroom * 0.001f;
 
     // increase yaw headroom to 50% if thrust boost enabled
     yaw_allowed_min = _thrust_boost_ratio * 0.5f + (1.0f - _thrust_boost_ratio) * yaw_allowed_min;

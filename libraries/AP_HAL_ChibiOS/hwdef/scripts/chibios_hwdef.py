@@ -690,6 +690,15 @@ def enable_can(f):
         f.write('#define CAN1_BASE CAN_BASE\n')
     env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
 
+    if mcu_series.startswith("STM32H7") and not args.bootloader:
+        # set maximum supported canfd bit rate in MBits/sec
+        canfd_supported = int(get_config('CANFD_SUPPORTED', 0, default=4, required=False))
+        f.write('#define HAL_CANFD_SUPPORTED %d\n' % canfd_supported)
+        env_vars['HAL_CANFD_SUPPORTED'] = canfd_supported
+    else:
+        canfd_supported = int(get_config('CANFD_SUPPORTED', 0, default=0, required=False))
+        f.write('#define HAL_CANFD_SUPPORTED %d\n' % canfd_supported)
+        env_vars['HAL_CANFD_SUPPORTED'] = canfd_supported
 
 def has_sdcard_spi():
     '''check for sdcard connected to spi bus'''
@@ -1028,7 +1037,11 @@ def write_mcu_config(f):
 #endif
 ''')
 
-    if get_mcu_config('EXPECTED_CLOCK', required=True):
+    if get_config('MCU_CLOCKRATE_MHZ', required=False):
+        clockrate = int(get_config('MCU_CLOCKRATE_MHZ'))
+        f.write('#define HAL_CUSTOM_MCU_CLOCKRATE %u\n' % (clockrate * 1000000))
+        f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % (clockrate * 1000000))
+    elif get_mcu_config('EXPECTED_CLOCK', required=True):
         f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
 
     env_vars['CORTEX'] = cortex
@@ -2692,12 +2705,15 @@ def add_apperiph_defaults(f):
 #ifndef HAL_SCHEDULER_ENABLED
 #define HAL_SCHEDULER_ENABLED 0
 #endif
+
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 0
 #endif
+
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 0
 #endif
+
 // default to no protocols, AP_Periph enables with params
 #define HAL_SERIAL1_PROTOCOL -1
 #define HAL_SERIAL2_PROTOCOL -1
@@ -2707,17 +2723,22 @@ def add_apperiph_defaults(f):
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
 #define HAL_LOGGING_MAVLINK_ENABLED 0
 #endif
+
 #ifndef HAL_MISSION_ENABLED
 #define HAL_MISSION_ENABLED 0
 #endif
+
 #ifndef HAL_RALLY_ENABLED
 #define HAL_RALLY_ENABLED 0
 #endif
+
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID 0
 #endif
+
 #define PERIPH_FW TRUE
 #define HAL_BUILD_AP_PERIPH
+
 #ifndef HAL_WATCHDOG_ENABLED_DEFAULT
 #define HAL_WATCHDOG_ENABLED_DEFAULT true
 #endif
@@ -2725,14 +2746,19 @@ def add_apperiph_defaults(f):
 #ifndef AP_FETTEC_ONEWIRE_ENABLED
 #define AP_FETTEC_ONEWIRE_ENABLED 0
 #endif
+
 #ifndef HAL_BARO_WIND_COMP_ENABLED
 #define HAL_BARO_WIND_COMP_ENABLED 0
+#endif
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED (HAL_GCS_ENABLED || HAL_LOGGING_ENABLED)
 #endif
 
+#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
+#define AP_AIRSPEED_AUTOCAL_ENABLE 0
 #endif
+
 ''')
 
 

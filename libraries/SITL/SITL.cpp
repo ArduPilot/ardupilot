@@ -17,12 +17,14 @@
     SITL.cpp - software in the loop state
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SITL.h"
+
+#if AP_SIM_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Logger/AP_Logger.h>
@@ -659,4 +661,4 @@ SITL::SIM *sitl()
 
 };
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_SIM_ENABLED

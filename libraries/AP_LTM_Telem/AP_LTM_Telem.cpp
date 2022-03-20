@@ -168,9 +168,9 @@ void AP_LTM_Telem::send_Aframe(void)
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
-        pitch = roundf(ahrs.pitch_sensor / 100.0); // attitude pitch in degrees
-        roll = roundf(ahrs.roll_sensor / 100.0);   // attitude roll in degrees
-        heading = roundf(ahrs.yaw_sensor / 100.0); // heading in degrees
+        pitch = roundf(ahrs.pitch_sensor * 0.01); // attitude pitch in degrees
+        roll = roundf(ahrs.roll_sensor * 0.01);   // attitude roll in degrees
+        heading = roundf(ahrs.yaw_sensor * 0.01); // heading in degrees
     }
 
     uint8_t lt_buff[LTM_AFRAME_SIZE];

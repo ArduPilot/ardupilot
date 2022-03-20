@@ -212,8 +212,8 @@ protected:
     static float auto_takeoff_no_nav_alt_cm;
 
     // auto takeoff variables
-    static float auto_take_off_start_alt_cm;    // start altitude expressed as cm above ekf origin
-    static float auto_take_off_complete_alt_cm; // completion altitude expressed as cm above ekf origin
+    static float auto_takeoff_start_alt_cm;     // start altitude expressed as cm above ekf origin
+    static float auto_takeoff_complete_alt_cm;  // completion altitude expressed in cm above ekf origin or above terrain (depending upon auto_takeoff_terrain_alt)
     static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
     static bool auto_takeoff_complete;          // true when takeoff is complete
     static Vector3p auto_takeoff_complete_pos;  // target takeoff position as offset from ekf origin in cm

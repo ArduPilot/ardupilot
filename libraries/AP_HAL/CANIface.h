@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include "AP_HAL_Namespace.h"
+#include "AP_HAL_Boards.h"
 
 class ExpandingString;
 
@@ -32,31 +33,30 @@ struct AP_HAL::CANFrame {
     static const uint32_t FlagRTR = 1U << 30;                  ///< Remote transmission request
     static const uint32_t FlagERR = 1U << 29;                  ///< Error frame
 
+#if HAL_CANFD_SUPPORTED
+    static const uint8_t NonFDCANMaxDataLen = 8;
+    static const uint8_t MaxDataLen = 64;
+#else
+    static const uint8_t NonFDCANMaxDataLen = 8;
     static const uint8_t MaxDataLen = 8;
-
+#endif
     uint32_t id;                ///< CAN ID with flags (above)
     union {
         uint8_t data[MaxDataLen];
         uint32_t data_32[MaxDataLen/4];
     };
     uint8_t dlc;                ///< Data Length Code
+    bool canfd;
 
     CANFrame() :
         id(0),
-        dlc(0)
+        dlc(0),
+        canfd(false)
     {
         memset(data,0, MaxDataLen);
     }
 
-    CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len) :
-        id(can_id),
-        dlc((data_len > MaxDataLen) ? MaxDataLen : data_len)
-    {
-        if ((can_data == nullptr) || (data_len != dlc) || (dlc == 0)) {
-            return;
-        }
-        memcpy(this->data, can_data, dlc);
-    }
+    CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len, bool canfd_frame = false);
 
     bool operator!=(const CANFrame& rhs) const
     {
@@ -79,7 +79,19 @@ struct AP_HAL::CANFrame {
     {
         return id & FlagERR;
     }
+    void setCanFD(bool canfd_frame)
+    {
+        canfd = canfd_frame;
+    }
 
+    bool isCanFDFrame() const
+    {
+        return canfd;
+    }
+
+    static uint8_t dlcToDataLength(uint8_t dlc);
+
+    static uint8_t dataLengthToDlc(uint8_t data_length);
     /**
      * CAN frame arbitration rules, particularly STD vs EXT:
      *     Marco Di Natale - "Understanding and using the Controller Area Network"
@@ -127,6 +139,7 @@ public:
         bool aborted:1;
         bool pushed:1;
         bool setup:1;
+        bool canfd_frame:1;
 
         bool operator<(const CanTxItem& rhs) const
         {
@@ -149,6 +162,10 @@ public:
             return rhs.id == id && rhs.mask == mask;
         }
     };
+
+    virtual bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) {
+        return init(bitrate, mode);
+    }
 
     // Initialise the interface with hardware configuration required to start comms.
     virtual bool init(const uint32_t bitrate, const OperatingMode mode) = 0;

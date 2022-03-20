@@ -16,12 +16,13 @@
   parent class for aircraft simulators
 */
 
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include "SIM_Aircraft.h"
 
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
-
 
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
 #include <windows.h>
@@ -38,6 +39,8 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 using namespace SITL;
+
+extern const AP_HAL::HAL& hal;
 
 /*
   parent class for all simulator types
@@ -280,7 +283,13 @@ void Aircraft::sync_frame_time(void)
     }
     if (sleep_debt_us > min_sleep_time) {
         // sleep if we have built up a debt of min_sleep_tim
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         usleep(sleep_debt_us);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        hal.scheduler->delay_microseconds(sleep_debt_us);
+#else
+        // ??
+#endif
         sleep_debt_us -= (get_wall_time_us() - now);
     }
     last_wall_time_us = get_wall_time_us();
@@ -536,6 +545,7 @@ float Aircraft::rangefinder_range() const
 }
 
 
+// potentially replace this with a call to AP_HAL::Util::get_hw_rtc
 uint64_t Aircraft::get_wall_time_us() const
 {
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
@@ -549,10 +559,12 @@ uint64_t Aircraft::get_wall_time_us() const
     last_ret_us += (uint64_t)((now - tPrev)*1000UL);
     tPrev = now;
     return last_ret_us;
-#else
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return uint64_t(ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL);
+#else
+    return AP_HAL::micros64();
 #endif
 }
 

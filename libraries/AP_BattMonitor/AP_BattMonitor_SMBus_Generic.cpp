@@ -60,7 +60,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
 
     // read voltage (V)
     if (read_word(BATTMONITOR_SMBUS_VOLTAGE, data)) {
-        _state.voltage = (float)data / 1000.0f;
+        _state.voltage = (float)data * 0.001f;
         _state.last_time_micros = tnow;
         _state.healthy = true;
     }
@@ -113,7 +113,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
 
     // read current (A)
     if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
-        _state.current_amps = -(float)((int16_t)data) / 1000.0f;
+        _state.current_amps = -(float)((int16_t)data) * 0.001f;
         _state.last_time_micros = tnow;
     }
 
