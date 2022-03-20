@@ -8,7 +8,6 @@ MCU STM32H7xx STM32H755xx
 OSCILLATOR_HZ 8000000
 
 define CORE_CM7
-#this change 
 define SMPS_PWR
 
 # board ID for firmware load
