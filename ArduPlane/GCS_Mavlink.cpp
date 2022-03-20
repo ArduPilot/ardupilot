@@ -1242,7 +1242,7 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
         Location new_home_loc {};
         new_home_loc.lat = packet.latitude;
         new_home_loc.lng = packet.longitude;
-        new_home_loc.alt = packet.altitude / 10;
+        new_home_loc.alt = int32_t(packet.altitude * 0.1);
         if (!set_home(new_home_loc, false)) {
             // silently fails...
             break;
@@ -1412,11 +1412,11 @@ uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         bool wp_nav_valid = quadplane.using_wp_nav();
-        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0) / 10;
+        return uint16_t((wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination(), UINT16_MAX) : 0) * 0.1);
     }
     #endif
 
-    return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
+    return uint16_t(MIN(plane.auto_state.wp_distance, UINT16_MAX) * 0.1);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const
