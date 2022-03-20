@@ -10,23 +10,21 @@ OSCILLATOR_HZ 8000000
 define CORE_CM7
 define SMPS_PWR
 
-define STM32_HSE_BYPASS
-
 # board ID for firmware load
 APJ_BOARD_ID 139
 
 # the nucleo seems to have trouble with flashing the last sector?
 FLASH_SIZE_KB 2048
 
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 256
+
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 
-# the location where the bootloader will put the firmware
-# the H743 has 128k sectors
-FLASH_BOOTLOADER_LOAD_KB 128
-
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1
+SERIAL_ORDER OTG1 USART2 USART3 USART7
 
 # UART7 is debug
 PF6 UART7_RX UART7 NODMA
@@ -34,7 +32,6 @@ PE8 UART7_TX UART7 NODMA
 
 PB0 LED_BOOTLOADER OUTPUT
 PB14 LED_ACTIVITY OUTPUT
-
 define HAL_LED_ON 0
 
 define STM32_SERIAL_USE_USART7 TRUE
@@ -49,4 +46,3 @@ PA14 JTCK-SWCLK SWD
 # Add CS pins to ensure they are high in bootloader
 PA4 MPU_CS CS
 PC7 BARO_CS CS
-
