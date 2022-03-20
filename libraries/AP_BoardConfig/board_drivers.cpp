@@ -285,6 +285,10 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
 #define INV2_WHOAMI_ICM20948 0xEA
 #define INV2_WHOAMI_ICM20649 0xE1
 
+#define INV3REG_WHOAMI        0x75
+
+#define INV3_WHOAMI_ICM42688  0x47
+
 /*
   validation of the board type
  */
