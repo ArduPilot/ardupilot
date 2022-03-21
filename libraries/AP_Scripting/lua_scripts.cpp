@@ -93,7 +93,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
     va_end(arg_list);
 
     // print to cosole and GCS
-    hal.console->printf("Lua: %s\n", error_msg_buf);
+    DEV_PRINTF("Lua: %s\n", error_msg_buf);
     print_error(severity);
 }
 
