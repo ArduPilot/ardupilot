@@ -271,7 +271,7 @@ void AP_OSD::init()
         if (backend == nullptr) {
             break;
         }
-        hal.console->printf("Started MAX7456 OSD\n");
+        DEV_PRINTF("Started MAX7456 OSD\n");
 #endif
         break;
     }
@@ -282,7 +282,7 @@ void AP_OSD::init()
         if (backend == nullptr) {
             break;
         }
-        hal.console->printf("Started SITL OSD\n");
+        DEV_PRINTF("Started SITL OSD\n");
         break;
     }
 #endif
@@ -291,7 +291,7 @@ void AP_OSD::init()
         if (backend == nullptr) {
             break;
         }
-        hal.console->printf("Started MSP OSD\n");
+        DEV_PRINTF("Started MSP OSD\n");
         break;
     }
 #if HAL_WITH_MSP_DISPLAYPORT
@@ -300,7 +300,7 @@ void AP_OSD::init()
         if (backend == nullptr) {
             break;
         }
-        hal.console->printf("Started MSP DisplayPort OSD\n");
+        DEV_PRINTF("Started MSP DisplayPort OSD\n");
         break;
     }
 #endif
