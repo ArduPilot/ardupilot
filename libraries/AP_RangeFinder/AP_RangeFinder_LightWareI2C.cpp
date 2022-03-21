@@ -188,14 +188,14 @@ void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const c
 bool AP_RangeFinder_LightWareI2C::init()
 {
     if (sf20_init()) {
-        hal.console->printf("Found SF20 native Lidar\n");
+        DEV_PRINTF("Found SF20 native Lidar\n");
         return true;
     }
     if (legacy_init()) {
-        hal.console->printf("Found SF20 legacy Lidar\n");
+        DEV_PRINTF("Found SF20 legacy Lidar\n");
         return true;
     }
-    hal.console->printf("SF20 not found\n");
+    DEV_PRINTF("SF20 not found\n");
     return false;
 }
 
@@ -242,7 +242,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     sf20_get_version("?P\r\n", "p:", version);
 
     if (version[0]) {
-        hal.console->printf("SF20 Lidar version %s\n", version);
+        DEV_PRINTF("SF20 Lidar version %s\n", version);
     }
 
     // Makes sure that "address tagging" is turned off.
