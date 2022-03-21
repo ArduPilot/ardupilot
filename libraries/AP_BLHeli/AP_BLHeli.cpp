@@ -1468,7 +1468,7 @@ void AP_BLHeli::read_telemetry_packet(void)
                 trpm = trpm * 200 / motor_poles;
             }
         }
-        hal.console->printf("ESC[%u] T=%u V=%f C=%f con=%f RPM=%u e=%.1f t=%u\n",
+        DEV_PRINTF("ESC[%u] T=%u V=%f C=%f con=%f RPM=%u e=%.1f t=%u\n",
                             last_telem_esc,
                             t.temperature_cdeg,
                             t.voltage,
@@ -1490,13 +1490,12 @@ void AP_BLHeli::log_bidir_telemetry(void)
         if (has_bidir_dshot(last_telem_esc)) {
             const uint8_t motor_idx = motor_map[last_telem_esc];
             uint16_t trpm = hal.rcout->get_erpm(motor_idx);
-            const float terr = hal.rcout->get_erpm_error_rate(motor_idx);
             if (trpm != 0xFFFF) {    // don't log invalid values as they are never used
                 trpm = trpm * 200 / motor_poles;
             }
 
             last_log_ms[last_telem_esc] = now;
-            hal.console->printf("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, terr, (unsigned)AP_HAL::millis());
+            DEV_PRINTF("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
         }
     }
 
