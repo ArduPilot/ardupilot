@@ -293,14 +293,14 @@ bool AP_InertialSensor_BMI160::_configure_int1_pin()
 
     r = _dev->write_register(BMI160_REG_INT_EN_1, BMI160_INT_FWM_EN);
     if (!r) {
-        hal.console->printf("BMI160: Unable to enable FIFO watermark interrupt engine\n");
+        DEV_PRINTF("BMI160: Unable to enable FIFO watermark interrupt engine\n");
         return false;
     }
     hal.scheduler->delay(1);
 
     r = _dev->write_register(BMI160_REG_INT_MAP_1, BMI160_INT_MAP_INT1_FWM);
     if (!r) {
-        hal.console->printf("BMI160: Unable to configure interrupt mapping\n");
+        DEV_PRINTF("BMI160: Unable to configure interrupt mapping\n");
         return false;
     }
     hal.scheduler->delay(1);
@@ -308,14 +308,14 @@ bool AP_InertialSensor_BMI160::_configure_int1_pin()
     r = _dev->write_register(BMI160_REG_INT_OUT_CTRL,
                              BMI160_INT1_OUTPUT_EN | BMI160_INT1_LVL);
     if (!r) {
-        hal.console->printf("BMI160: Unable to configure interrupt output\n");
+        DEV_PRINTF("BMI160: Unable to configure interrupt output\n");
         return false;
     }
     hal.scheduler->delay(1);
 
     _int1_pin = hal.gpio->channel(BMI160_INT1_GPIO);
     if (_int1_pin == nullptr) {
-        hal.console->printf("BMI160: Couldn't request data ready GPIO channel\n");
+        DEV_PRINTF("BMI160: Couldn't request data ready GPIO channel\n");
         return false;
     }
     _int1_pin->mode(HAL_GPIO_INPUT);
@@ -331,7 +331,7 @@ bool AP_InertialSensor_BMI160::_configure_fifo()
     r = _dev->write_register(BMI160_REG_FIFO_CONFIG_0,
                              sizeof(struct RawData) / 4);
     if (!r) {
-        hal.console->printf("BMI160: Unable to configure FIFO watermark level\n");
+        DEV_PRINTF("BMI160: Unable to configure FIFO watermark level\n");
         return false;
     }
     hal.scheduler->delay(1);
@@ -339,7 +339,7 @@ bool AP_InertialSensor_BMI160::_configure_fifo()
     r = _dev->write_register(BMI160_REG_FIFO_CONFIG_1,
                              BMI160_FIFO_ACC_EN | BMI160_FIFO_GYR_EN);
     if (!r) {
-        hal.console->printf("BMI160: Unable to enable FIFO\n");
+        DEV_PRINTF("BMI160: Unable to enable FIFO\n");
         return false;
     }
     hal.scheduler->delay(1);
@@ -348,7 +348,7 @@ bool AP_InertialSensor_BMI160::_configure_fifo()
 
     r = _dev->write_register(BMI160_REG_CMD, BMI160_CMD_FIFO_FLUSH);
     if (!r) {
-        hal.console->printf("BMI160: Unable to flush FIFO\n");
+        DEV_PRINTF("BMI160: Unable to flush FIFO\n");
         return false;
     }
 
@@ -399,7 +399,7 @@ read_fifo_read_data:
 
     /* Read again just once */
     if (excess && num_samples) {
-        hal.console->printf("BMI160: dropping %u samples from fifo\n",
+        DEV_PRINTF("BMI160: dropping %u samples from fifo\n",
                             (uint8_t)(excess / sizeof(struct RawData)));
         _dev->write_register(BMI160_REG_CMD, BMI160_CMD_FIFO_FLUSH);
         excess = 0;
@@ -434,7 +434,7 @@ read_fifo_read_data:
 
 read_fifo_end:
     if (!r) {
-        hal.console->printf("BMI160: error on reading FIFO\n");
+        DEV_PRINTF("BMI160: error on reading FIFO\n");
     }
 }
 
@@ -510,7 +510,7 @@ bool AP_InertialSensor_BMI160::_init()
 
     ret = _hardware_init();
     if (!ret) {
-        hal.console->printf("BMI160: failed to init\n");
+        DEV_PRINTF("BMI160: failed to init\n");
     }
 
     return ret;

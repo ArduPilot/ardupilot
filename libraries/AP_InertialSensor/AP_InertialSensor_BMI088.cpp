@@ -184,7 +184,7 @@ bool AP_InertialSensor_BMI088::setup_accel_config(void)
         }
     }
     done_accel_config = true;
-    hal.console->printf("BMI088: accel config OK (%u tries)\n", (unsigned)accel_config_count);
+    DEV_PRINTF("BMI088: accel config OK (%u tries)\n", (unsigned)accel_config_count);
     return true;
 }
 
@@ -218,10 +218,10 @@ bool AP_InertialSensor_BMI088::accel_init()
     }
 
     if (!setup_accel_config()) {
-        hal.console->printf("BMI08x: delaying accel config\n");
+        DEV_PRINTF("BMI08x: delaying accel config\n");
     }
 
-    hal.console->printf("BMI08x: found accel\n");
+    DEV_PRINTF("BMI08x: found accel\n");
 
     return true;
 }
@@ -272,7 +272,7 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    hal.console->printf("BMI088: found gyro\n");    
+    DEV_PRINTF("BMI088: found gyro\n");    
 
     return true;
 }
