@@ -35,7 +35,7 @@ void AP_Proximity_LeddarVu8::update()
     }
 
     // read data
-    // read_sensor_data();
+    read_sensor_data();
 
     if (AP_HAL::millis() - last_distance_ms < LEDDARVU8_TIMEOUT_MS) {
         set_status(AP_Proximity::Status::Good);
@@ -51,10 +51,10 @@ void AP_Proximity_LeddarVu8::update()
 // LeddarVu8 uses the modbus RTU protocol
 // https://autonomoustuff.com/product/leddartech-vu8/
 // distance returned in reading_cm, signal_ok is set to true if sensor reports a strong signal
-bool AP_Proximity_LeddarVu8::read_sensor_data(float &readings_m)
+void AP_Proximity_LeddarVu8::read_sensor_data()
 {
     if (_uart == nullptr) {
-        return false;
+        return;
     }
 
     // check for timeout receiving messages
@@ -63,13 +63,6 @@ bool AP_Proximity_LeddarVu8::read_sensor_data(float &readings_m)
         request_distances();
     }
 
-    // variables for averaging results from multiple messages
-    float sum_cm = 0;
-    uint16_t count = 0;
-    uint16_t count_out_of_range = 0;
-    uint16_t latest_dist_cm = 0;
-    bool latest_dist_valid = false;
-
     // read any available characters from the lidar
     int16_t nbytes = _uart->available();
     while (nbytes-- > 0) {
@@ -77,39 +70,12 @@ bool AP_Proximity_LeddarVu8::read_sensor_data(float &readings_m)
         if (r < 0) {
             continue;
         }
-        if (parse_byte((uint8_t)r, latest_dist_valid, latest_dist_cm)) {
-            if (latest_dist_valid) {
-                sum_cm += latest_dist_cm;
-                count++;
-            } else {
-                count_out_of_range++;
-            }
-
+        if (!parse_byte((uint8_t)r)) {
+            // reset 
+            reset();
         }
     }
-
-    if (count > 0 || count_out_of_range > 0) {
-        // record time of successful read and request another reading
-        last_distance_ms = now_ms;
-        request_distances();
-
-        if (count > 0) {
-            // TODO get all the distances? 
-            readings_m = sum_cm * 0.01f;
-        } else {
-            // TODO: just trying to get this to compile
-            // if only out of range readings return larger of
-            // driver defined maximum range for the model and user defined max range + 1m
-            // readings_m = MAX(LEDDARVU8_DIST_MAX_CM, max_distance_cm() + LEDDARVU8_OUT_OF_RANGE_ADD_CM)/100.0f;
-            readings_m = 69;
-
-        }
-        return true;
-    }
-
-    // no readings so return false
-    return false;
-} 
+}
 
 // TODO: Get sensor address, currently using default hardcoded
 // get sensor address from RNGFNDx_ADDR parameter
@@ -209,17 +175,34 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t
         uint16_t expected_crc = calc_crc_modbus(&parsed_msg.address, 3+parsed_msg.payload_recv);
         if (expected_crc == parsed_msg.crc) {
             valid_reading = true;
-            // calculate and return shortest distance
-            readings_cm = 0;
+            // parse payload, pick out distances, and send to correct faces
+            // only works for 48 deg FOV hardware, mounted with the laser on top
+            // reading left to right or channel 8 to 1
             valid_reading = false;
+            // current horizontal angle in the payload
+            float sampled_angle = LEDDARVU8_START_ANGLE;
             for (uint8_t i=0; i<8; i++) {
                 uint8_t ix2 = i*2;
                 const uint16_t dist_cm = (uint16_t)parsed_msg.payload[ix2] << 8 | (uint16_t)parsed_msg.payload[ix2+1];
-                if ((dist_cm > 0) && (!valid_reading || (dist_cm < readings_cm))) {
-                    readings_cm = dist_cm;
+                float dist_m = dist_cm * 0.01f;
+                if ((dist_m > distance_min()) && (!valid_reading || dist_m < distance_max())) {
+                    if (ignore_reading(sampled_angle, dist_m)) {
+                        // ignore this angle
+                        sampled_angle += LEDDARVU8_ANGLE_STEP;
+                        continue;
+                    }
+                    // convert angle to face
+                    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(sampled_angle);
+                    // push face to temp boundary
+                    _temp_boundary.add_distance(face, sampled_angle, dist_m);
+                    // push to OA_DB
+                    database_push(sampled_angle, dist_m);
                     valid_reading = true;
                 }
+                // increment sampled angle
+                sampled_angle += LEDDARVU8_ANGLE_STEP;
             }
+        
             return true;
         }
         break;
@@ -228,6 +211,12 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t
 
     valid_reading = false;
     return false;
+}
+
+// reset all variables and flags
+void AP_Proximity_LeddarVu8::reset()
+{
+    _temp_boundary.reset();
 }
 
 #endif

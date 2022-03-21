@@ -7,14 +7,16 @@
 
 #if (HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LEDDARVU8_ENABLED)
 #include "AP_Proximity_Backend_Serial.h"
+//#include "AP_Proximity_Backend.h"
 
 #define LEDDARVU8_PAYLOAD_LENGTH (8*2)
-#define LEDDARVU8_ADDR_DEFAULT              0x01        // modbus default device id
-#define LEDDARVU8_DIST_MAX_CM               18500       // maximum possible distance reported by lidar
+#define LEDDARVU8_ADDR_DEFAULT              0x01    // modbus default device id
+#define LEDDARVU8_DIST_MAX_CM               18500   // maximum possible distance reported by lidar
 #define LEDDARVU8_DIST_MIN_CM               5       // maximum possible distance reported by lidar
-#define LEDDARVU8_OUT_OF_RANGE_ADD_CM       100         // add this many cm to out-of-range values
-#define LEDDARVU8_TIMEOUT_MS                200         // timeout in milliseconds if no distance messages received
-
+#define LEDDARVU8_OUT_OF_RANGE_ADD_CM       100     // add this many cm to out-of-range values
+#define LEDDARVU8_TIMEOUT_MS                200     // timeout in milliseconds if no distance messages received
+#define LEDDARVU8_START_ANGLE 		        -24.0f  // hardcoded for 48 deg FOV: Starting 2-D horizontal angle of distances received in payload
+#define LEDDARVU8_ANGLE_STEP		        6.0f    // hardcoded for 48 deg FOV: Angle step size of each distance received. Starts from LEDDARVU8_START_ANGLE
 class AP_Proximity_LeddarVu8 : public AP_Proximity_Backend_Serial
 {
 
@@ -29,19 +31,25 @@ public:
     float distance_max() const override { return LEDDARVU8_DIST_MAX_CM / 100; }
     float distance_min() const override { return LEDDARVU8_DIST_MIN_CM / 100; }
 
+    // get distances for the 8 channels of the leddarvu8
+    bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
+    
 private:
 
     // send message to the sensor to start streaming 2-D data
     void send_sensor_start();
 
     // read bytes from the sensor
-    bool read_sensor_data(float &readings_m);
+    void read_sensor_data();
 
     // parse one byte from the sensor. Return false on error.
     bool parse_byte(uint8_t data);
 
     // parse payload, to pick out distances, and feed them to the correct faces
     void parse_payload();
+
+    // reset certain variables and flags 
+    void reset();
 
     // function codes
     enum class FunctionCode : uint8_t {
