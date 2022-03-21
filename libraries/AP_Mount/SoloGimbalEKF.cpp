@@ -107,7 +107,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         for (uint8_t i=3; i <= 5; i++) Cov[i][i] = sq(Sigma_velNED);
         for (uint8_t i=6; i <= 8; i++) Cov[i][i] = sq(Sigma_dAngBias);
         FiltInit = true;
-        hal.console->printf("\nSoloGimbalEKF Alignment Started\n");
+        DEV_PRINTF("\nSoloGimbalEKF Alignment Started\n");
 
         // Don't run the filter in this timestep because we have already used the delta velocity data to set an initial orientation
         return;
@@ -142,7 +142,7 @@ void SoloGimbalEKF::RunEKF(float delta_time, const Vector3f &delta_angles, const
         //calculate the initial heading using magnetometer, estimated tilt and declination
         alignHeading();
         YawAligned = true;
-        hal.console->printf("\nSoloGimbalEKF Alignment Completed\n");
+        DEV_PRINTF("\nSoloGimbalEKF Alignment Completed\n");
     }
 
     // Fuse magnetometer data if  we have new measurements and an aligned heading
