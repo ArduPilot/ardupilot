@@ -777,7 +777,7 @@ void AP_SerialManager::set_options(uint16_t i)
     struct UARTState &opt = state[i];
     // pass through to HAL
     if (!hal.serial(i)->set_options(opt.options)) {
-        hal.console->printf("Unable to setup options for Serial%u\n", i);
+        DEV_PRINTF("Unable to setup options for Serial%u\n", i);
     }
 }
 
