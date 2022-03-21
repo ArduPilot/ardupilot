@@ -46,7 +46,7 @@ bool AP_RAMTRON::init(void)
 {
     dev = hal.spi->get_device("ramtron");
     if (!dev) {
-        hal.console->printf("No RAMTRON device\n");
+        DEV_PRINTF("No RAMTRON device\n");
         return false;
     }
     WITH_SEMAPHORE(dev->get_semaphore());
@@ -88,7 +88,7 @@ bool AP_RAMTRON::init(void)
     }
 
     if (id == UINT8_MAX) {
-        hal.console->printf("Unknown RAMTRON device\n");
+        DEV_PRINTF("Unknown RAMTRON device\n");
         return false;
     }
 
