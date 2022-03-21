@@ -73,7 +73,7 @@ void AP_Hott_Telem::init()
         if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Hott_Telem::loop, void),
                                           "Hott",
                                           1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
-            hal.console->printf("Failed to create Hott thread\n");
+            DEV_PRINTF("Failed to create Hott thread\n");
         }
     }
 }
