@@ -451,16 +451,16 @@ SPIDeviceManager::get_device(const char *name)
 void SPIDevice::test_clock_freq(void)
 {
     // delay for USB to come up
-    hal.console->printf("Waiting for USB\n");
+    DEV_PRINTF("Waiting for USB\n");
     for (uint8_t i=0; i<3; i++) {
         hal.scheduler->delay(1000);
-        hal.console->printf("Waiting %u\n", (unsigned)AP_HAL::millis());
+        DEV_PRINTF("Waiting %u\n", (unsigned)AP_HAL::millis());
     }
-    hal.console->printf("CLOCKS=\n");
+    DEV_PRINTF("CLOCKS=\n");
     for (uint8_t i=0; i<ARRAY_SIZE(bus_clocks); i++) {
-        hal.console->printf("%u:%u ", unsigned(i+1), unsigned(bus_clocks[i]));
+        DEV_PRINTF("%u:%u ", unsigned(i+1), unsigned(bus_clocks[i]));
     }
-    hal.console->printf("\n");
+    DEV_PRINTF("\n");
 
     // we will send 1024 bytes without any CS asserted and measure the
     // time it takes to do the transfer
@@ -485,7 +485,7 @@ void SPIDevice::test_clock_freq(void)
         chSysUnlock();
         if (msg == MSG_TIMEOUT) {
             spiAbort(spi_devices[i].driver);
-            hal.console->printf("SPI[%u] FAIL %p %p\n", spi_devices[i].busid, buf1, buf2);
+            DEV_PRINTF("SPI[%u] FAIL %p %p\n", spi_devices[i].busid, buf1, buf2);
             spiStop(spi_devices[i].driver);
             spiReleaseBus(spi_devices[i].driver);
             continue;
@@ -493,7 +493,7 @@ void SPIDevice::test_clock_freq(void)
         uint32_t t1 = AP_HAL::micros();
         spiStop(spi_devices[i].driver);
         spiReleaseBus(spi_devices[i].driver);
-        hal.console->printf("SPI[%u] clock=%u\n", unsigned(spi_devices[i].busid), unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
+        DEV_PRINTF("SPI[%u] clock=%u\n", unsigned(spi_devices[i].busid), unsigned(1000000ULL * len * 8ULL / uint64_t(t1 - t0)));
     }
     hal.util->free_type(buf1, len, AP_HAL::Util::MEM_DMA_SAFE);
     hal.util->free_type(buf2, len, AP_HAL::Util::MEM_DMA_SAFE);
