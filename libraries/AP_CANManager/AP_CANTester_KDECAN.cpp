@@ -201,12 +201,12 @@ void AP_CANTester_KDECAN::loop(void)
 
 void AP_CANTester_KDECAN::print_stats(void)
 {
-    hal.console->printf("KDECANTester: TimeStamp: %u\n", (unsigned)AP_HAL::micros());
+    DEV_PRINTF("KDECANTester: TimeStamp: %u\n", (unsigned)AP_HAL::micros());
     for (uint16_t i=0; i<100; i++) {
         if (counters[i].frame_id == 0) {
             break;
         }
-        hal.console->printf("0x%08x: %u\n", (unsigned)counters[i].frame_id, (unsigned)counters[i].count);
+        DEV_PRINTF("0x%08x: %u\n", (unsigned)counters[i].frame_id, (unsigned)counters[i].count);
         counters[i].count = 0;
     }
 }
