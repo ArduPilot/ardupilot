@@ -492,7 +492,7 @@ bool AP_InertialSensor_LSM9DS0::_hardware_init()
 #endif
     }
     if (tries == 5) {
-        hal.console->printf("Failed to boot LSM9DS0 5 times\n\n");
+        DEV_PRINTF("Failed to boot LSM9DS0 5 times\n\n");
         goto fail_tries;
     }
 

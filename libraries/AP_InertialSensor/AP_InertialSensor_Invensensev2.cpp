@@ -724,7 +724,7 @@ bool AP_InertialSensor_Invensensev2::_hardware_init(void)
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     if (tries == 5) {
-        hal.console->printf("Failed to boot Invensense 5 times\n");
+        DEV_PRINTF("Failed to boot Invensense 5 times\n");
         return false;
     }
 
@@ -771,7 +771,7 @@ int AP_Invensensev2_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *bu
                                                    uint8_t size)
 {
     if (_registered) {
-        hal.console->printf("Error: can't passthrough when slave is already configured\n");
+        DEV_PRINTF("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -797,7 +797,7 @@ int AP_Invensensev2_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *bu
 int AP_Invensensev2_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 {
     if (_registered) {
-        hal.console->printf("Error: can't passthrough when slave is already configured\n");
+        DEV_PRINTF("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -820,7 +820,7 @@ int AP_Invensensev2_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t va
 int AP_Invensensev2_AuxiliaryBusSlave::read(uint8_t *buf)
 {
     if (!_registered) {
-        hal.console->printf("Error: can't read before configuring slave\n");
+        DEV_PRINTF("Error: can't read before configuring slave\n");
         return -1;
     }
 
