@@ -1113,7 +1113,7 @@ void AP_Radio_cc2500::irq_handler_thd(void *arg)
         switch (evt) {
         case EVT_IRQ:
             if (radio_singleton->protocolState == STATE_FCCTEST) {
-                hal.console->printf("IRQ FCC\n");
+                DEV_PRINTF("IRQ FCC\n");
             }
             radio_singleton->irq_handler();
             break;
