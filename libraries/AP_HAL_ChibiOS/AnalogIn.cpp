@@ -529,7 +529,7 @@ AP_HAL::AnalogSource* AnalogIn::channel(int16_t pin)
             return _channels[j];
         }
     }
-    hal.console->printf("Out of analog channels\n");
+    DEV_PRINTF("Out of analog channels\n");
     return nullptr;
 }
 
