@@ -154,4 +154,11 @@ public:
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
     AP_HAL::SIMState *simstate;
 #endif
+
+#ifndef HAL_CONSOLE_DISABLED
+# define DEV_PRINTF(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while(0)
+#else
+# define DEV_PRINTF(fmt, args ...)
+#endif
+
 };
