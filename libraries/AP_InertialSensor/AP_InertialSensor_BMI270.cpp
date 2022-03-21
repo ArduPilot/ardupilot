@@ -533,7 +533,7 @@ bool AP_InertialSensor_BMI270::hardware_init()
 
         if ((status & 1) == 1) {
             ret = true;
-            hal.console->printf("BMI270 initialized after %d retries\n", i+1);
+            DEV_PRINTF("BMI270 initialized after %d retries\n", i+1);
             break;
         }
     }
@@ -551,7 +551,7 @@ bool AP_InertialSensor_BMI270::init()
 
     ret = hardware_init();
     if (!ret) {
-        hal.console->printf("BMI270: failed to init\n");
+        DEV_PRINTF("BMI270: failed to init\n");
     }
 
     return ret;
