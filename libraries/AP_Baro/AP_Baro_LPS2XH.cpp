@@ -117,7 +117,7 @@ bool AP_Baro_LPS2XH::_imu_i2c_init(uint8_t imu_address)
 
     uint8_t whoami=0;
     _dev->read_registers(MPUREG_WHOAMI, &whoami, 1);
-    hal.console->printf("IMU: whoami 0x%02x old_address=%02x\n", whoami, old_address);
+    DEV_PRINTF("IMU: whoami 0x%02x old_address=%02x\n", whoami, old_address);
 
     _dev->write_register(MPUREG_FIFO_EN, 0x00);
     _dev->write_register(MPUREG_PWR_MGMT_1, BIT_PWR_MGMT_1_CLK_XGYRO);
@@ -194,7 +194,7 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
     if (!_dev->read_registers(REG_ID, &whoami, 1)) {
 	   return false;
     }
-    hal.console->printf("LPS2XH whoami 0x%02x\n", whoami);
+    DEV_PRINTF("LPS2XH whoami 0x%02x\n", whoami);
 
     switch(whoami){
     case LPS22HB_WHOAMI:
