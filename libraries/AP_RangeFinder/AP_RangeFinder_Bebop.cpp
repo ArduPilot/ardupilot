@@ -245,12 +245,12 @@ void AP_RangeFinder_Bebop::_loop(void)
         _capture();
 
         if (_apply_averaging_filter() < 0) {
-            hal.console->printf(
+            DEV_PRINTF(
                     "AR_RangeFinder_Bebop: could not apply averaging filter");
         }
 
         if (_search_local_maxima() < 0) {
-            hal.console->printf("Did not find any local maximum");
+            DEV_PRINTF("Did not find any local maximum");
         }
 
         max_index = _search_maximum_with_max_amplitude();
@@ -296,7 +296,7 @@ void AP_RangeFinder_Bebop::_configure_gpio(int value)
         _gpio->write(LINUX_GPIO_ULTRASOUND_VOLTAGE, 0);
         break;
     default:
-        hal.console->printf("bad gpio value (%d)", value);
+        DEV_PRINTF("bad gpio value (%d)", value);
         break;
     }
 }
@@ -310,10 +310,10 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
     /* configure the output buffer for a purge */
     /* perform a purge */
     if (_launch_purge() < 0) {
-        hal.console->printf("purge could not send data overspi");
+        DEV_PRINTF("purge could not send data overspi");
     }
     if (_capture() < 0) {
-        hal.console->printf("purge could not capture data");
+        DEV_PRINTF("purge could not capture data");
     }
 
     _tx_buf = _tx[_mode];
@@ -325,7 +325,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
         _configure_gpio(1);
         break;
     default:
-        hal.console->printf("WARNING, invalid value to configure gpio\n");
+        DEV_PRINTF("WARNING, invalid value to configure gpio\n");
         break;
     }
 }
@@ -355,13 +355,13 @@ int AP_RangeFinder_Bebop::_configure_capture()
     _adc.device = iio_context_find_device(_iio, adcname);
 
     if (!_adc.device) {
-        hal.console->printf("Unable to find %s", adcname);
+        DEV_PRINTF("Unable to find %s", adcname);
         goto error_destroy_context;
     }
     _adc.channel = iio_device_find_channel(_adc.device, adcchannel,
             false);
     if (!_adc.channel) {
-        hal.console->printf("Fail to init adc channel %s", adcchannel);
+        DEV_PRINTF("Fail to init adc channel %s", adcchannel);
         goto error_destroy_context;
     }
 
@@ -374,13 +374,13 @@ int AP_RangeFinder_Bebop::_configure_capture()
     /* Create input buffer */
     _adc.buffer_size = RNFD_BEBOP_P7_COUNT;
     if (iio_device_set_kernel_buffers_count(_adc.device, 1)) {
-        hal.console->printf("cannot set buffer count");
+        DEV_PRINTF("cannot set buffer count");
         goto error_destroy_context;
     }
     _adc.buffer = iio_device_create_buffer(_adc.device,
             _adc.buffer_size, false);
     if (!_adc.buffer) {
-        hal.console->printf("Fail to create buffer : %s", strerror(errno));
+        DEV_PRINTF("Fail to create buffer : %s", strerror(errno));
         goto error_destroy_context;
     }
 
