@@ -814,7 +814,7 @@ bool AP_IOMCU::check_crc(void)
 
     fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
-        hal.console->printf("failed to find %s\n", fw_name);
+        DEV_PRINTF("failed to find %s\n", fw_name);
         return false;
     }
     uint32_t crc = crc32_small(0, fw, fw_size);
@@ -833,13 +833,13 @@ bool AP_IOMCU::check_crc(void)
         }
     }
     if (io_crc == crc) {
-        hal.console->printf("IOMCU: CRC ok\n");
+        DEV_PRINTF("IOMCU: CRC ok\n");
         crc_is_ok = true;
         AP_ROMFS::free(fw);
         fw = nullptr;
         return true;
     } else {
-        hal.console->printf("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", (unsigned)crc, (unsigned)io_crc);
+        DEV_PRINTF("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", (unsigned)crc, (unsigned)io_crc);
     }
 
     const uint16_t magic = REBOOT_BL_MAGIC;
@@ -1011,7 +1011,7 @@ void AP_IOMCU::check_iomcu_reset(void)
     if (last_iocmu_timestamp_ms == 0) {
         // initialisation
         last_iocmu_timestamp_ms = reg_status.timestamp_ms;
-        hal.console->printf("IOMCU startup\n");
+        DEV_PRINTF("IOMCU startup\n");
         return;
     }
     uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
