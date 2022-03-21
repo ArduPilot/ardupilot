@@ -1203,7 +1203,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
 void Copter::load_parameters(void)
 {
     if (!AP_Param::check_var_info()) {
-        hal.console->printf("Bad var table\n");
+        DEV_PRINTF("Bad var table\n");
         AP_HAL::panic("Bad var table");
     }
 
@@ -1213,13 +1213,13 @@ void Copter::load_parameters(void)
         g.format_version != Parameters::k_format_version) {
 
         // erase all parameters
-        hal.console->printf("Firmware change: erasing EEPROM...\n");
+        DEV_PRINTF("Firmware change: erasing EEPROM...\n");
         StorageManager::erase();
         AP_Param::erase_all();
 
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
-        hal.console->printf("done.\n");
+        DEV_PRINTF("done.\n");
     }
 
     uint32_t before = micros();
