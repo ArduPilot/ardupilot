@@ -107,13 +107,13 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
         goto fail;
     }
 
-    hal.console->printf(DRIVER ": found fw version %u.%u.%u\n",
+    DEV_PRINTF(DRIVER ": found fw version %u.%u.%u\n",
                         val[5], val[4], val[3]);
 
     for (i = 0; i < ARRAY_SIZE(cmds); i++) {
         ret = _dev->transfer(cmds[i], cmds[i][1], nullptr, 0);
         if (!ret) {
-            hal.console->printf(DRIVER ": Unable to set configuration register %u\n",
+            DEV_PRINTF(DRIVER ": Unable to set configuration register %u\n",
                                 cmds[i][2]);
             goto fail;
         }
