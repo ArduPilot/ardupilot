@@ -267,7 +267,7 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
 #endif
-        hal.console->printf("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
+        DEV_PRINTF("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
     }
 }
 
@@ -298,7 +298,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
                          uint8_t *recv, uint32_t recv_len)
 {
     if (!bus.semaphore.check_owner()) {
-        hal.console->printf("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
+        DEV_PRINTF("I2C: not owner of 0x%x for addr 0x%02x\n", (unsigned)get_bus_id(), _address);
         return false;
     }
 
