@@ -328,10 +328,10 @@ bool CANTester::test_loopback(uint32_t loop_rate)
     }
 
     for (uint8_t i = 0; i < _num_ifaces; i++) {
-        hal.console->printf("Loopback Test Results %d->%d:\n", i, (i+1)%2);
-        hal.console->printf("num_tx: %lu, failed_tx: %lu\n",
+        DEV_PRINTF("Loopback Test Results %d->%d:\n", i, (i+1)%2);
+        DEV_PRINTF("num_tx: %lu, failed_tx: %lu\n",
                             (long unsigned int)_loopback_stats[i].num_tx, (long unsigned int)_loopback_stats[i].failed_tx);
-        hal.console->printf("num_rx: %lu, flushed_rx: %lu, bad_rx_data: %lu, bad_rx_seq: %lu\n",
+        DEV_PRINTF("num_rx: %lu, flushed_rx: %lu, bad_rx_data: %lu, bad_rx_seq: %lu\n",
                             (long unsigned int)_loopback_stats[i].num_rx, (long unsigned int)_loopback_stats[i].num_flushed_rx,
                             (long unsigned int)_loopback_stats[i].bad_rx_data, (long unsigned int)_loopback_stats[i].bad_rx_seq);
         if (_loopback_stats[i].num_rx < 0.9f * _loopback_stats[i].num_tx ||
