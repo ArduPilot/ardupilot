@@ -28,8 +28,8 @@
 #define REGA_STATUS        0x03
 #define REGA_X_LSB         0x12
 #define REGA_INT_STATUS_1  0x1D
-#define REGA_TEMP_LSB      0x22
-#define REGA_TEMP_MSB      0x23
+#define REGA_TEMP_MSB      0x22
+#define REGA_TEMP_LSB      0x23
 #define REGA_CONF          0x40
 #define REGA_RANGE         0x41
 #define REGA_PWR_CONF      0x7C
@@ -97,7 +97,7 @@ AP_InertialSensor_BMI088::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_BMI088::start()
 {
-    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI088)) ||
+    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(_accel_devtype)) ||
         !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI088))) {
         return;
     }
@@ -161,7 +161,7 @@ static const struct {
     { REGA_PWR_CONF, 0 },
     { REGA_PWR_CTRL, 0x04 },
     // setup FIFO for streaming X,Y,Z
-    { REGA_FIFO_CONFIG0, 0x00 },
+    { REGA_FIFO_CONFIG0, 0x02 },
     { REGA_FIFO_CONFIG1, 0x50 },
 };
 
@@ -200,15 +200,28 @@ bool AP_InertialSensor_BMI088::accel_init()
     // dummy ready on accel ChipID to init accel (see section 3 of datasheet)
     read_accel_registers(REGA_CHIPID, &v, 1);
 
-    if (!read_accel_registers(REGA_CHIPID, &v, 1) || v != 0x1E) {
+    if (!read_accel_registers(REGA_CHIPID, &v, 1)) {
         return false;
     }
 
-    if (!setup_accel_config()) {
-        hal.console->printf("BMI088: delaying accel config\n");
+    switch (v) {
+        case 0x1E:
+            _accel_devtype = DEVTYPE_INS_BMI088;
+            hal.console->printf("BMI088: Found device\n");
+            break;
+        case 0x1F:
+            _accel_devtype = DEVTYPE_INS_BMI085;
+            hal.console->printf("BMI085: Found device\n");
+            break;
+        default:
+            return false;
     }
 
-    hal.console->printf("BMI088: found accel\n");
+    if (!setup_accel_config()) {
+        hal.console->printf("BMI08x: delaying accel config\n");
+    }
+
+    hal.console->printf("BMI08x: found accel\n");
 
     return true;
 }
@@ -353,7 +366,7 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
     if (temperature_counter++ == 100) {
         temperature_counter = 0;
         uint8_t tbuf[2];
-        if (!read_accel_registers(REGA_TEMP_LSB, tbuf, 2)) {
+        if (!read_accel_registers(REGA_TEMP_MSB, tbuf, 2)) {
             _inc_accel_error_count(accel_instance);
         } else {
             uint16_t temp_uint11 = (tbuf[0]<<3) | (tbuf[1]>>5);
