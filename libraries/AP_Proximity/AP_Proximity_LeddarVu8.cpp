@@ -70,10 +70,10 @@ void AP_Proximity_LeddarVu8::read_sensor_data()
         if (r < 0) {
             continue;
         }
-        if (!parse_byte((uint8_t)r)) {
-            // reset 
-            reset();
-        }
+        //if (!parse_byte((uint8_t)r)) {
+        //    // reset 
+        //    reset();
+        //}
     }
 }
 
@@ -117,7 +117,7 @@ void AP_Proximity_LeddarVu8::request_distances()
 // process one byte received on serial port
 // returns true if successfully parsed a message
 // if distances are valid, valid_readings is set to true and distance is stored in reading_cm
-bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t &readings_cm)
+bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading)
 {
     // process byte depending upon current state
     switch (parsed_msg.state) {

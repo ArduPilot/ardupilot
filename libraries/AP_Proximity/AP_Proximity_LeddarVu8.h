@@ -43,7 +43,7 @@ private:
     void read_sensor_data();
 
     // parse one byte from the sensor. Return false on error.
-    bool parse_byte(uint8_t data);
+    bool parse_byte(uint8_t data, bool &valid_reading);
 
     // parse payload, to pick out distances, and feed them to the correct faces
     void parse_payload();
