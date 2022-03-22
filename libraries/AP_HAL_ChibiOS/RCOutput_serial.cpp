@@ -98,7 +98,7 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
 
     DshotCommandPacket pkt;
     pkt.command = command;
-    pkt.chan = chan + chan_offset;
+    pkt.chan = chan - chan_offset;
     if (command_timeout_ms == 0) {
         pkt.cycle = MAX(10, repeat_count);
     } else {
@@ -137,10 +137,10 @@ void RCOutput::update_channel_masks() {
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         switch (_dshot_esc_type) {
             case DSHOT_ESC_BLHELI:
-                if (_reversible_mask & (1U<<i)) {
+                if ((_reversible_mask<<chan_offset) & (1U<<i)) {
                     send_dshot_command(DSHOT_3D_ON, i, 0, 10, true);
                 }
-                if (_reversed_mask & (1U<<i)) {
+                if ((_reversed_mask<<chan_offset) & (1U<<i)) {
                     send_dshot_command(DSHOT_REVERSE, i, 0, 10, true);
                 }
                 break;
