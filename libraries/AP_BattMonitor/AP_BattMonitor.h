@@ -162,6 +162,10 @@ public:
     float voltage(uint8_t instance) const;
     float voltage() const { return voltage(AP_BATT_PRIMARY_INSTANCE); }
 
+    // voltage for a GCS, may be resistance compensated
+    float gcs_voltage(uint8_t instance) const;
+    float gcs_voltage(void) const { return gcs_voltage(AP_BATT_PRIMARY_INSTANCE); }
+
     /// get voltage with sag removed (based on battery current draw and resistance)
     /// this will always be greater than or equal to the raw voltage
     float voltage_resting_estimate(uint8_t instance) const;
