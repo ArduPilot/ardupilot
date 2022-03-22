@@ -207,6 +207,10 @@ ftype sq(const T val)
     ftype v = static_cast<ftype>(val);
     return v*v;
 }
+static inline constexpr float sq(const float val)
+{
+    return val*val;
+}
 
 /*
  * Variadic template for calculating the square norm of a vector of any
