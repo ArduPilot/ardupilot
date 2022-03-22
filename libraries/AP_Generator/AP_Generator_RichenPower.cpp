@@ -129,8 +129,8 @@ bool AP_Generator_RichenPower::get_reading()
     last_reading.seconds_until_maintenance = be16toh(u.packet.seconds_until_maintenance_high) * 65536 + be16toh(u.packet.seconds_until_maintenance_low);
     last_reading.errors = be16toh(u.packet.errors);
     last_reading.rpm = be16toh(u.packet.rpm);
-    last_reading.output_voltage = be16toh(u.packet.output_voltage) / 100.0f;
-    last_reading.output_current = be16toh(u.packet.output_current) / 100.0f;
+    last_reading.output_voltage = be16toh(u.packet.output_voltage) * 0.01f;
+    last_reading.output_current = be16toh(u.packet.output_current) * 0.01f;
     last_reading.mode = (Mode)u.packet.mode;
 
     last_reading_ms = AP_HAL::millis();

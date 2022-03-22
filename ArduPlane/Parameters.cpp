@@ -924,7 +924,7 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(can_mgr,        "CAN_",       AP_CANManager),
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     // @Group: SIM_
     // @Path: ../libraries/SITL/SITL.cpp
     GOBJECT(sitl, "SIM_", SITL::SIM),
@@ -1492,6 +1492,7 @@ void Plane::load_parameters(void)
     }
 #endif
 
+#if AP_AIRSPEED_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2022
     {
         const uint16_t old_key = g.k_param_airspeed;
@@ -1499,6 +1500,7 @@ void Plane::load_parameters(void)
         const uint16_t old_top_element = 0; // Old group element in the tree for the first subgroup element (see AP_PARAM_KEY_DUMP)
         AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, old_top_element, true);
     }
+#endif
 
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

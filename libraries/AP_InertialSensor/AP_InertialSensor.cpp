@@ -746,7 +746,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
 
     _accel_id[_accel_count].set((int32_t) id);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_SIM_ENABLED)
         // assume this is the same sensor and save its ID to allow seamless
         // transition from when we didn't have the IDs.
         _accel_id_ok[_accel_count] = true;
@@ -1960,7 +1960,15 @@ bool AP_InertialSensor::is_still()
 // return true if we are in a calibration
 bool AP_InertialSensor::calibrating() const
 {
-    return _calibrating_accel || _calibrating_gyro || (_acal && _acal->running());
+    if (_calibrating_accel || _calibrating_gyro) {
+        return true;
+    }
+#if HAL_INS_ACCELCAL_ENABLED
+    if (_acal && _acal->running()) {
+        return true;
+    }
+#endif
+    return false;
 }
 
 /// calibrating - returns true if a temperature calibration is running
@@ -1976,6 +1984,7 @@ bool AP_InertialSensor::temperature_cal_running() const
     return false;
 }
 
+#if HAL_INS_ACCELCAL_ENABLED
 // initialise and register accel calibrator
 // called during the startup of accel cal
 void AP_InertialSensor::acal_init()
@@ -2003,6 +2012,7 @@ void AP_InertialSensor::acal_update()
         _acal->cancel();
     }
 }
+#endif
 
 // Update the harmonic notch frequency
 void AP_InertialSensor::update_harmonic_notch_freq_hz(float scaled_freq) {

@@ -20,8 +20,8 @@
 #include <AP_Common/AP_Common.h>
 
 #include "AP_CANManager.h"
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
 #include "AP_CANTester.h"
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED && HAL_ENABLE_CANTESTER
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -39,9 +39,10 @@ const AP_Param::GroupInfo CANTester::var_info[] = {
     // @DisplayName: CAN Test Index
     // @Description: Selects the Index of Test that needs to be run recursively, this value gets reset to 0 at boot.
     // @Range: 0 4
-    // @Values: 0:TEST_NONE, 1:TEST_LOOPBACK,2:TEST_BUSOFF_RECOVERY,3:TEST_UAVCAN_DNA,4:TEST_TOSHIBA_CAN, 5:TEST_KDE_CAN, 6:TEST_UAVCAN_ESC
+    // @Values: 0:TEST_NONE, 1:TEST_LOOPBACK,2:TEST_BUSOFF_RECOVERY,3:TEST_UAVCAN_DNA,4:TEST_TOSHIBA_CAN, 5:TEST_KDE_CAN, 6:TEST_UAVCAN_ESC,  7:TEST_UAVCAN_FD_ESC
     // @User: Advanced
     AP_GROUPINFO("ID", 1, CANTester, _test_id, 0),
+
     // @Param: LPR8
     // @DisplayName: CANTester LoopRate
     // @Description: Selects the Looprate of Test methods
@@ -219,13 +220,25 @@ void CANTester::main_thread()
         case CANTester::TEST_UAVCAN_ESC:
             if (_can_ifaces[1] == nullptr) {
                 gcs().send_text(MAV_SEVERITY_ALERT, "********Running UAVCAN ESC Test********");
-                if (test_uavcan_esc()) {
+                if (test_uavcan_esc(false)) {
                     gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN ESC Test Pass********");
                 } else {
                     gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN ESC Test Fail********");
                 }
             } else {
                 gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for UAVCAN_ESC_TEST");
+            }
+            break;
+        case CANTester::TEST_UAVCAN_FD_ESC:
+            if (_can_ifaces[1] == nullptr) {
+                gcs().send_text(MAV_SEVERITY_ALERT, "********Running UAVCAN FD ESC Test********");
+                if (test_uavcan_esc(true)) {
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN FD ESC Test Pass********");
+                } else {
+                    gcs().send_text(MAV_SEVERITY_ALERT, "********UAVCAN FD ESC Test Fail********");
+                }
+            } else {
+                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for UAVCAN_FD_ESC_TEST");
             }
             break;
         default:
@@ -340,7 +353,8 @@ void CANTester::reset_frame(AP_HAL::CANFrame& frame)
 void CANTester::create_loopback_frame(CANTester::loopback_stats_s &stats, AP_HAL::CANFrame& frame)
 {
     frame.id = 13 | AP_HAL::CANFrame::FlagEFF;
-    frame.dlc = AP_HAL::CANFrame::MaxDataLen;
+    frame.dlc = 8;
+    frame.setCanFD(stats.tx_seq%2); //every other frame is canfd if supported
     memcpy(frame.data, &stats.tx_seq, sizeof(stats.tx_seq));
     uint32_t loopback_magic = LOOPBACK_MAGIC;
     memcpy(&frame.data[4], &loopback_magic, sizeof(loopback_magic));
@@ -349,7 +363,7 @@ void CANTester::create_loopback_frame(CANTester::loopback_stats_s &stats, AP_HAL
 
 void CANTester::check_loopback_frame(CANTester::loopback_stats_s &stats, AP_HAL::CANFrame& frame)
 {
-    if (frame.dlc != AP_HAL::CANFrame::MaxDataLen) {
+    if (frame.dlc != 8) {
         stats.bad_rx_data++;
     }
 
@@ -380,7 +394,7 @@ bool CANTester::test_busoff_recovery()
     AP_HAL::CANFrame bo_frame;
     bo_frame.id = (10 | AP_HAL::CANFrame::FlagEFF);
     memset(bo_frame.data, 0xA, sizeof(bo_frame.data));
-    bo_frame.dlc = AP_HAL::CANFrame::MaxDataLen;
+    bo_frame.dlc =8;//AP_HAL::CANFrame::MaxDataLen;
     bool bus_off_detected = false;
     // Bus Fault can be introduced by shorting CANH and CANL
     gcs().send_text(MAV_SEVERITY_ERROR, "Introduce Bus Off Fault on the bus.");
@@ -746,12 +760,12 @@ void handle_raw_command(const uavcan::ReceivedDataStructure<uavcan::equipment::e
     num_received++;
     // update rate every 50 packets
     if (num_received == 50) {
-        uavcan_esc_command_rate = 100000/(AP_HAL::millis() - last_millis);
+        uavcan_esc_command_rate = 50000/(AP_HAL::millis() - last_millis);
         num_received = 0;
     }
 }
 
-bool CANTester::test_uavcan_esc()
+bool CANTester::test_uavcan_esc(bool enable_canfd)
 {
     bool ret = true;
     uavcan::CanIfaceMgr _uavcan_iface_mgr {};
@@ -847,6 +861,12 @@ bool CANTester::test_uavcan_esc()
         }
         esc_status_publisher->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
         esc_status_publisher->setPriority(uavcan::TransferPriority::OneLowerThanHighest);
+
+        if (enable_canfd) {
+            node->enableCanFd();
+        } else {
+            node->disableCanFd();
+        }
         node->setNodeID(client.getAllocatedNodeID());
         node->setModeOperational();
     }

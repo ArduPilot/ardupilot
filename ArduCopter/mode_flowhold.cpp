@@ -179,7 +179,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles, bool stick_input)
         for (uint8_t i=0; i<2; i++) {
             float &velocity = sensor_flow[i];
             float abs_vel_cms = fabsf(velocity)*100;
-            const float brake_gain = (15.0f * brake_rate_dps.get() + 95.0f) / 100.0f;
+            const float brake_gain = (15.0f * brake_rate_dps.get() + 95.0f) * 0.01f;
             float lean_angle_cd = brake_gain * abs_vel_cms * (1.0f+500.0f/(abs_vel_cms+60.0f));
             if (velocity < 0) {
                 lean_angle_cd = -lean_angle_cd;

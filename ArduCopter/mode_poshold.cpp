@@ -41,7 +41,7 @@ bool ModePosHold::init(bool ignore_checks)
     pilot_pitch = 0.0f;
 
     // compute brake_gain
-    brake.gain = (15.0f * (float)g.poshold_brake_rate + 95.0f) / 100.0f;
+    brake.gain = (15.0f * (float)g.poshold_brake_rate + 95.0f) * 0.01f;
 
     if (copter.ap.land_complete) {
         // if landed begin in loiter mode

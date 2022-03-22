@@ -1,3 +1,20 @@
+Release 4.2.0beta3 18th March 2022
+----------------------------------
+
+This is the 3rd beta of the 4.2.0 major release. This beta should be
+close to the final 4.2.0 release.
+
+ - fixed pitch envelope constraint after AIRBRAKE
+ - improvements to POSITION1 quadplane landing controller
+ - added arming check for Q_ASSIST_SPEED
+ - added warning if arming with ARMING_CHECK=0
+ - added arming check for DO_LAND_START with RTL_AUTOLAND=0
+ - improved throttle mix for quadplane autoland
+ - added fence breach message on GCS
+ - constrain indexing on declination tables
+
+Happy flying!
+
 Release 4.2.0beta2 10th March 2022
 ----------------------------------
 

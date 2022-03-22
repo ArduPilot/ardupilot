@@ -66,7 +66,7 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
     // read current
     if (read_block(BATTMONITOR_SMBUS_SOLO_CURRENT, buff, 4) == 4) {
-        _state.current_amps = -(float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) / 1000.0f;
+        _state.current_amps = -(float)((int32_t)((uint32_t)buff[3]<<24 | (uint32_t)buff[2]<<16 | (uint32_t)buff[1]<<8 | (uint32_t)buff[0])) * 0.001f;
         _state.last_time_micros = tnow;
     }
 

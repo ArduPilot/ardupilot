@@ -33,13 +33,6 @@
 #include <uavcan/helpers/heap_based_pool_allocator.hpp>
 
 
-#ifndef UAVCAN_NODE_POOL_SIZE
-#define UAVCAN_NODE_POOL_SIZE 8192
-#endif
-
-#ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
-#endif
 
 #ifndef UAVCAN_SRV_NUMBER
 #define UAVCAN_SRV_NUMBER 18
@@ -116,7 +109,7 @@ public:
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
-    
+
     uavcan::Node<0>* get_node() { return _node; }
     uint8_t get_driver_index() const { return _driver_index; }
 
@@ -206,6 +199,7 @@ public:
     enum class Options : uint16_t {
         DNA_CLEAR_DATABASE        = (1U<<0),
         DNA_IGNORE_DUPLICATE_NODE = (1U<<1),
+        CANFD_ENABLED             = (1U<<2),
     };
 
     // check if a option is set
@@ -217,11 +211,11 @@ public:
     // 0. return true if it was set
     bool check_and_reset_option(Options option);
 
-private:
     // This will be needed to implement if UAVCAN is used with multithreading
     // Such cases will be firmware update, etc.
     class RaiiSynchronizer {};
 
+private:
     void loop(void);
 
     ///// SRV output /////
@@ -261,8 +255,6 @@ private:
     bool param_save_request_sent = true;
     HAL_Semaphore _param_save_sem;
     uint8_t param_save_request_node_id;
-
-    uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator;
 
     // UAVCAN parameters
     AP_Int8 _uavcan_node;

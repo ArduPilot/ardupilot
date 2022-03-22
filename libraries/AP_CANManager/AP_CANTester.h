@@ -18,7 +18,11 @@
 #include "AP_CANDriver.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED
+#ifndef HAL_ENABLE_CANTESTER
+#define HAL_ENABLE_CANTESTER 0
+#endif
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_CANMANAGER_ENABLED && HAL_ENABLE_CANTESTER
 
 class CANTester : public AP_CANDriver
 {
@@ -51,6 +55,7 @@ private:
         TEST_TOSHIBA_CAN,
         TEST_KDE_CAN,
         TEST_UAVCAN_ESC,
+        TEST_UAVCAN_FD_ESC,
         TEST_END,
     };
 
@@ -79,7 +84,7 @@ private:
 
     bool test_kdecan();
 
-    bool test_uavcan_esc();
+    bool test_uavcan_esc(bool enable_canfd);
 
     // write frame on CAN bus, returns true on success
     bool write_frame(uint8_t iface, AP_HAL::CANFrame &out_frame, uint64_t timeout);
