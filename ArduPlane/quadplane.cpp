@@ -3853,6 +3853,13 @@ float QuadPlane::get_land_airspeed(void)
 void QuadPlane::set_desired_spool_state(AP_Motors::DesiredSpoolState state)
 {
     if (motors->get_desired_spool_state() != state) {
+        if (state == AP_Motors::DesiredSpoolState::SHUT_DOWN) {
+            // also request zero throttle, so we avoid the slow ramp down
+            motors->set_roll(0);
+            motors->set_pitch(0);
+            motors->set_yaw(0);
+            motors->set_throttle(0);
+        }
         motors->set_desired_spool_state(state);
     }
 }
