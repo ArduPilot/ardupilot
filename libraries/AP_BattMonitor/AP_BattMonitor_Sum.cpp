@@ -73,13 +73,22 @@ AP_BattMonitor_Sum::read()
             current_count++;
         }
     }
+    const uint32_t tnow_us = AP_HAL::micros();
+    const uint32_t dt_us = tnow_us - _state.last_time_micros;
+
     if (voltage_count > 0) {
         _state.voltage = voltage_sum / voltage_count;
-        _state.last_time_micros = AP_HAL::micros();
     }
     if (current_count > 0) {
         _state.current_amps = current_sum;
     }
+
+    update_consumed(_state, dt_us);
+
     _has_current = (current_count > 0);
     _state.healthy = (voltage_count > 0);
+
+    if (_state.healthy) {
+        _state.last_time_micros = tnow_us;
+    }
 }
