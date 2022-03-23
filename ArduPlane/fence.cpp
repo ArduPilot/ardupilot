@@ -65,6 +65,12 @@ void Plane::fence_check()
         case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
         case AC_FENCE_ACTION_RTL_AND_LAND:
             if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
+                if (control_mode == &mode_auto &&
+                    mission.get_in_landing_sequence_flag() &&
+                    (g.rtl_autoland == 1 || g.rtl_autoland == 2)) {
+                    // already landing
+                    return;
+                }
                 set_mode(mode_rtl, ModeReason::FENCE_BREACHED);
             } else {
                 set_mode(mode_guided, ModeReason::FENCE_BREACHED);
