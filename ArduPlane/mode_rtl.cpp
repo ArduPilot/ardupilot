@@ -75,7 +75,7 @@ void ModeRTL::navigate()
     }
 #endif
 
-    if (plane.g.rtl_autoland == 1 &&
+    if (plane.g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START &&
         !plane.auto_state.checked_for_autoland &&
         plane.reached_loiter_target() && 
         labs(plane.altitude_error_cm) < 1000) {
@@ -90,7 +90,7 @@ void ModeRTL::navigate()
         // on every loop
         plane.auto_state.checked_for_autoland = true;
     }
-    else if (plane.g.rtl_autoland == 2 &&
+    else if (plane.g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START &&
         !plane.auto_state.checked_for_autoland) {
         // Go directly to the landing sequence
         if (plane.mission.jump_to_landing_sequence()) {
