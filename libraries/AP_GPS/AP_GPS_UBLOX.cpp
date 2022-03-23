@@ -1728,7 +1728,7 @@ AP_GPS_UBLOX::_save_cfg()
     _last_cfg_sent_time = AP_HAL::millis();
     _num_cfg_save_tries++;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                     "GPS: u-blox %d saving config",
+                                     "GPS %d: u-blox saving config",
                                      state.instance + 1);
 }
 
