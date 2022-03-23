@@ -90,6 +90,7 @@ protected:
 
     // checks what failsafes could be triggered
     void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
+    void update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us);
 
 private:
     // resistance estimate

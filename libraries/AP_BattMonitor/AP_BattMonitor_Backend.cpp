@@ -253,3 +253,16 @@ bool AP_BattMonitor_Backend::reset_remaining(float percentage)
 
     return true;
 }
+
+/*
+  update consumed mAh and Wh
+ */
+void AP_BattMonitor_Backend::update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us)
+{
+    // update total current drawn since startup
+    if (state.last_time_micros != 0 && dt_us < 2000000) {
+        const float mah = calculate_mah(state.current_amps, dt_us);
+        state.consumed_mah += mah;
+        state.consumed_wh  += 0.001 * mah * state.voltage;
+    }
+}
