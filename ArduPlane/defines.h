@@ -50,6 +50,15 @@ enum class StickMixing {
     VTOL_YAW = 3,
 };
 
+// values for RTL_AUTOLAND
+enum class RtlAutoland {
+    RTL_DISABLE = 0,
+    RTL_THEN_DO_LAND_START = 1,
+    RTL_IMMEDIATE_DO_LAND_START = 2,
+    NO_RTL_GO_AROUND = 3,
+};
+    
+
 enum ChannelMixing {
     MIXING_DISABLED = 0,
     MIXING_UPUP     = 1,
