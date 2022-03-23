@@ -1174,8 +1174,10 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
     bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
     if (!manual_air_mode &&
-        !is_positive(plane.get_throttle_input()) && !plane.control_mode->does_auto_throttle() &&
-        plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED && !(inertial_nav.get_velocity_z_up_cms() < -0.5 * get_pilot_velocity_z_max_dn())) {
+        !is_positive(plane.get_throttle_input()) &&
+        (!plane.control_mode->does_auto_throttle() || motors->limit.throttle_lower) &&
+        plane.arming.get_rudder_arming_type() != AP_Arming::RudderArming::IS_DISABLED &&
+        fabsf(inertial_nav.get_velocity_z_up_cms()) < 0.5 * get_pilot_velocity_z_max_dn()) {
         // the user may be trying to disarm
         return 0;
     }
