@@ -3460,6 +3460,54 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def Landing(self):
+        """Test landing the aircraft."""
+
+        def check_landing_speeds(land_speed_high, land_speed_low, land_alt_low, land_speed_high_accuracy=0.1):
+            self.progress("Checking landing speeds (speed_high=%f speed_low=%f alt_low=%f" %
+                          (land_speed_high, land_speed_low, land_alt_low))
+            land_high_maintain = 5
+            land_low_maintain = land_alt_low / land_speed_low / 2
+
+            takeoff_alt = (land_high_maintain * land_speed_high + land_alt_low) + 20
+            # this is pretty rough, but takes *so much longer* in LOITER
+            self.takeoff(takeoff_alt, mode='STABILIZE', timeout=200, takeoff_throttle=2000)
+            # check default landing speeds:
+            self.change_mode('LAND')
+            # ensure higher-alt descent rate:
+            self.wait_descent_rate(land_speed_high,
+                                   minimum_duration=land_high_maintain,
+                                   accuracy=land_speed_high_accuracy)
+            self.wait_descent_rate(land_speed_low)
+            # ensure we transition to low descent rate at correct height:
+            self.assert_altitude(land_alt_low, relative=True)
+            # now make sure we maintain that descent rate:
+            self.wait_descent_rate(land_speed_low, minimum_duration=land_low_maintain)
+            self.wait_disarmed()
+
+        # test the defaults.  By default LAND_SPEED_HIGH is 0 so
+        # WPNAV_SPEED_DN is used
+        check_landing_speeds(
+            self.get_parameter("WPNAV_SPEED_DN") / 100,  # cm/s -> m/s
+            self.get_parameter("LAND_SPEED") / 100,  # cm/s -> m/s
+            self.get_parameter("LAND_ALT_LOW") / 100 # cm -> m
+        )
+
+        def test_landing_speeds(land_speed_high, land_speed_low, land_alt_low, **kwargs):
+            self.set_parameters({
+                "LAND_SPEED_HIGH": land_speed_high * 100,  # m/s -> cm/s
+                "LAND_SPEED": land_speed_low * 100,  # m/s -> cm/s
+                "LAND_ALT_LOW": land_alt_low * 100,  # m -> cm
+            })
+            check_landing_speeds(land_speed_high, land_speed_low, land_alt_low, **kwargs)
+
+        test_landing_speeds(
+            5,  # descent speed high
+            1,  # descent speed low
+            30,  # transition altitude
+            land_speed_high_accuracy=0.5
+        )
+
     def get_system_clock_utc(self, time_seconds):
         # this is a copy of ArduPilot's AP_RTC function!
         # separate time into ms, sec, min, hour and days but all expressed
@@ -8322,6 +8370,10 @@ class AutoTestCopter(AutoTest):
             ("PrecisionLoiterCompanion",
              "Precision Loiter (Companion)",
              self.fly_precision_companion),  # 29s
+
+            ("Landing",
+             "Test landing",
+             self.Landing),
 
             ("PrecisionLandingSITL",
              "Precision Landing drivers (SITL)",
