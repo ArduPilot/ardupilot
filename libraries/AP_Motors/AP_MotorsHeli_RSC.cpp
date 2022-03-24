@@ -137,7 +137,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("GOV_RANGE", 17, AP_MotorsHeli_RSC, _governor_range, AP_MOTORS_HELI_RSC_GOVERNOR_RANGE_DEFAULT),
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // @Param: AROT_PCT
     // @DisplayName: Autorotation Throttle Percentage for External Governor
     // @Description: The throttle percentage sent to external governors, signaling to enable fast spool-up, when bailing out of an autorotation.  Set 0 to disable. If also using a tail rotor of type DDVP with external governor then this value must lie within the autorotation window of both governors.
@@ -145,8 +144,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Units: %
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, 0),
-#endif
+    AP_GROUPINFO("AROT_PCT", 18, AP_MotorsHeli_RSC, _ext_gov_arot_pct, AP_MOTORS_HELI_RSC_AROT_PCT),
 
     // @Param: CLDWN_TIME
     // @DisplayName: Cooldown Time
@@ -201,6 +199,15 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("GOV_TORQUE", 24, AP_MotorsHeli_RSC, _governor_torque, 30),
+	
+    // @Param: BLOUT_TIME
+    // @DisplayName: Time for in-flight power re-engagement
+    // @Description: amount of seconds to move throttle output from idle to throttle curve position during manual autorotations  
+    // @Range: 0 10
+    // @Units: %
+    // @Increment: 0.5
+    // @User: Standard
+    AP_GROUPINFO("BLOUT_TIME", 25, AP_MotorsHeli_RSC, _rsc_bailout_time, AP_MOTORS_HELI_RSC_BAILOUT_TIME),
 
     AP_GROUPEND
 };
@@ -275,6 +282,8 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             _governor_fault = false;
             //turbine start flag on
             _starting = true;
+            _autorotating = false;
+            _bailing_out = false;
             break;
 
         case ROTOR_CONTROL_IDLE:
@@ -287,7 +296,11 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
             _governor_fault = false;
             if (_in_autorotation) {
                 // if in autorotation and using an external governor, set the output to tell the governor to use bailout ramp
-                _control_output = constrain_float( _rsc_arot_bailout_pct/100.0f , 0.0f, 0.4f);
+                _control_output = constrain_float( _ext_gov_arot_pct/100.0f , 0.0f, 0.4f);
+                if(!_autorotating){
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "Autorotation");
+                    _autorotating =true;				
+                }
             } else {
                 // set rotor control speed to idle speed parameter, this happens instantly and ignores ramping
                 if (_turbine_start && _starting == true ) {
@@ -307,6 +320,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
                     } else {
                         _control_output = get_idle_output();
                     }
+                    _use_bailout_ramp = false;			 
                 }
             }
             break;
@@ -317,6 +331,7 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 
             // if turbine engine started without using start sequence, set starting flag just to be sure it can't be triggered when back in idle
             _starting = false;
+            _autorotating = false;
 
             if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
                 // set control rotor speed to ramp slewed value between idle and desired speed
@@ -348,23 +363,35 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
 void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
 {
     int8_t ramp_time;
+    int8_t bailout_time;
     // sanity check ramp time and enable bailout if set
-    if (_use_bailout_ramp || _ramp_time <= 0) {
+    if (_ramp_time <= 0) {
         ramp_time = 1;
     } else {
         ramp_time = _ramp_time;
     }
 
+    if (_rsc_bailout_time <= 0) {
+        bailout_time = 1;
+    } else {
+        bailout_time = _rsc_bailout_time;
+    }
+
     // ramp output upwards towards target
     if (_rotor_ramp_output < rotor_ramp_input) {
-        // allow control output to jump to estimated speed
-        if (_rotor_ramp_output < _rotor_runup_output) {
-            _rotor_ramp_output = _rotor_runup_output;
+        if (_use_bailout_ramp){
+            if(!_bailing_out){
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "bailing_out");
+                _bailing_out = true;
+            }
+            _rotor_ramp_output += (dt / bailout_time);			 
+        }else{
+            _rotor_ramp_output += (dt / ramp_time);		
         }
-        // ramp up slowly to target
-        _rotor_ramp_output += (dt / ramp_time);
         if (_rotor_ramp_output > rotor_ramp_input) {
-            _rotor_ramp_output = rotor_ramp_input;
+            _rotor_ramp_output = rotor_ramp_input;	
+            _bailing_out = false;
+            _use_bailout_ramp = false;		
         }
     }else{
         // ramping down happens instantly
@@ -396,10 +423,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
             _rotor_runup_output = _rotor_ramp_output;
         }
     }else{
-        _rotor_runup_output -= runup_increment;
-        if (_rotor_runup_output < _rotor_ramp_output) {
-            _rotor_runup_output = _rotor_ramp_output;
-        }
+        _rotor_runup_output = _rotor_ramp_output;
     }
 
     // update run-up complete flag
