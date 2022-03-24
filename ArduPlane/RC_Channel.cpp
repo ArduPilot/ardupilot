@@ -268,6 +268,7 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
 
     case AUX_FUNC::FLAP:
     case AUX_FUNC::FBWA_TAILDRAGGER:
+    case AUX_FUNC::AIRBRAKE:
         break; // input labels, nothing to do
 
 #if HAL_QUADPLANE_ENABLED
