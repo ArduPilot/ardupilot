@@ -16,6 +16,7 @@
 #define AUTOROTATE_ENTRY_TIME          2.0f    // (s) number of seconds that the entry phase operates for
 #define BAILOUT_MOTOR_RAMP_TIME        1.0f    // (s) time set on bailout ramp up timer for motors - See AC_MotorsHeli_Single
 #define HEAD_SPEED_TARGET_RATIO        1.0f    // Normalised target main rotor head speed (unit: -)
+#define TOUCHDOWN_TIME                 5.0f    // time in seconds after land complete flag until aircraft is disarmed 
 
 bool ModeAutorotate::init(bool ignore_checks)
 {
@@ -36,10 +37,16 @@ bool ModeAutorotate::init(bool ignore_checks)
         return false;
     }
 
+    // zero thrust collective is set in library.  Must be set before init_hs_controller is called.
+    g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
+
     // Initialise controllers
     // This must be done before RPM value is fetched
     g2.arot.init_hs_controller();
     g2.arot.init_fwd_spd_controller();
+
+    // initialize radar altitude estimator
+    g2.arot.init_est_radar_alt();
 
     // Retrieve rpm and start rpm sensor health checks
     _initial_rpm = g2.arot.get_rpm(true);
@@ -57,6 +64,15 @@ bool ModeAutorotate::init(bool ignore_checks)
     _flags.straight_ahead_initial = true;
     _flags.bail_out_initial = true;
     _msg_flags.bad_rpm = true;
+	initial_energy_check = true;
+	g2.arot._using_rfnd = false;
+	g2.arot.init_avg_acc_z();
+	g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
+	g2.arot.set_collective_hover(motors->get_coll_hover());
+	g2.arot.set_collective_max(motors->get_coll_max_pitch());
+	g2.arot.set_collective_min(motors->get_coll_min_pitch());
+	g2.arot.get_gov_rpm(motors->get_rpm_setpoint());
+	g2.arot.initial_flare_estimate();
 
     // Setting default starting switches
     phase_switch = Autorotation_Phase::ENTRY;
@@ -85,25 +101,62 @@ void ModeAutorotate::run()
     // Current time
     uint32_t now = millis(); //milliseconds
 
+    // set dt in library
+    float const last_loop_time_s = AP::scheduler().get_last_loop_time_s();
+    g2.arot.set_dt(last_loop_time_s);
+
+    float alt = g2.arot.get_ground_distance();
+    // have autorotation library update estimated radar altitude
+    g2.arot.update_est_radar_alt();
+    if(alt < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)){
+        g2.arot._using_rfnd = true;
+    }else{
+        g2.arot._using_rfnd = false;
+    }
+
     // Initialise internal variables
     float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent
+    //calculate time to impact
+    if(phase_switch != Autorotation_Phase::TOUCH_DOWN){
+    g2.arot.time_to_ground();
+    time_to_impact = g2.arot.get_time_to_ground();
+	last_tti=time_to_impact;
+    }else {
+	time_to_impact = last_tti;	
+	}	
+
 
     //----------------------------------------------------------------
     //                  State machine logic
     //----------------------------------------------------------------
+	
+	if(initial_energy_check){
+	//initial check for total energy monitoring
+	if ( inertial_nav.get_speed_xy_cms() < 250.0f && g2.arot.get_ground_distance() < g2.arot.get_flare_alt()){
+    		hover_autorotation = true;
+    	}else{
+    		hover_autorotation = false;
+    	}
+		initial_energy_check=false;
+	}
 
-     // Setting default phase switch positions
-     nav_pos_switch = Navigation_Decision::USER_CONTROL_STABILISED;
-
-    // Timer from entry phase to progress to glide phase
-    if (phase_switch == Autorotation_Phase::ENTRY){
-
-        if ((now - _entry_time_start_ms)/1000.0f > AUTOROTATE_ENTRY_TIME) {
-            // Flight phase can be progressed to steady state glide
-            phase_switch = Autorotation_Phase::SS_GLIDE;
-        }
-
-    }
+     //total energy check     
+    if(hover_autorotation){
+		if(_flags.entry_initial == false  && time_to_impact <= g2.arot.get_t_touchdown()){
+		    phase_switch = Autorotation_Phase::TOUCH_DOWN;
+	    }
+	} else {
+		if ( _flags.ss_glide_initial == true  && _flags.flare_initial == true && _flags.touch_down_initial == true && g2.arot.get_est_alt() > g2.arot.get_flare_alt() ){
+            if ((now - _entry_time_start_ms)/1000.0f > AUTOROTATE_ENTRY_TIME )  {
+                // Flight phase can be progressed to steady state glide
+                phase_switch = Autorotation_Phase::SS_GLIDE;
+            }
+        }else if( g2.arot.get_est_alt()<=g2.arot.get_flare_alt() && g2.arot.get_est_alt()>g2.arot.get_cushion_alt() && !g2.arot.get_flare_status() ){
+		    phase_switch = Autorotation_Phase::FLARE;
+	    }else if(time_to_impact <= g2.arot.get_t_touchdown() && _flags.flare_initial == false ){
+			phase_switch = Autorotation_Phase::TOUCH_DOWN;
+        }			
+	}
 
 
     //----------------------------------------------------------------
@@ -115,10 +168,8 @@ void ModeAutorotate::run()
         {
             // Entry phase functions to be run only once
             if (_flags.entry_initial == true) {
-
-                #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                    gcs().send_text(MAV_SEVERITY_INFO, "Entry Phase");
-                #endif
+                
+                gcs().send_text(MAV_SEVERITY_INFO, "Entry Phase");
 
                 // Set following trim low pass cut off frequency
                 g2.arot.set_col_cutoff_freq(g2.arot.get_col_entry_freq());
@@ -134,25 +185,29 @@ void ModeAutorotate::run()
 
             }
 
-            // Slowly change the target head speed until the target head speed matches the parameter defined value
-            if (g2.arot.get_rpm() > HEAD_SPEED_TARGET_RATIO*1.005f  ||  g2.arot.get_rpm() < HEAD_SPEED_TARGET_RATIO*0.995f) {
-                _target_head_speed -= _hs_decay*G_Dt;
+            if(!hover_autorotation){ 
+			// Slowly change the target head speed until the target head speed matches the parameter defined value
+           float norm_rpm = g2.arot.get_rpm()/g2.arot.get_hs_set_point();
+           if (norm_rpm > HEAD_SPEED_TARGET_RATIO*1.005f  ||  norm_rpm < HEAD_SPEED_TARGET_RATIO*0.995f) {
+                _target_head_speed -= _hs_decay * last_loop_time_s;
             } else {
                 _target_head_speed = HEAD_SPEED_TARGET_RATIO;
             }
-
-            // Set target head speed in head speed controller
-            g2.arot.set_target_head_speed(_target_head_speed);
-
-            // Run airspeed/attitude controller
-            g2.arot.set_dt(G_Dt);
-            g2.arot.update_forward_speed_controller();
-
-            // Retrieve pitch target
-            _pitch_target = g2.arot.get_pitch();
-
-            // Update controllers
-            _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt); //run head speed/ collective controller
+               // Set target head speed in head speed controller
+               g2.arot.set_target_head_speed(_target_head_speed);
+               // Run airspeed/attitude controller
+               g2.arot.update_forward_speed_controller();
+               // Retrieve pitch target
+               _pitch_target = g2.arot.get_pitch();
+               // Update controllers
+              _flags.bad_rpm = g2.arot.update_hs_glide_controller(); //run head speed/ collective controller
+                }else{
+            	_pitch_target = 0.0f;
+                g2.arot.update_hover_autorotation_controller(); //run head speed/ collective controller
+            	g2.arot.set_collective_minimum_drag(motors->get_coll_mid());
+				g2.arot.set_entry_sink_rate(curr_vel_z);
+				g2.arot.set_entry_alt(g2.arot.get_ground_distance());
+            }
 
             break;
         }
@@ -162,9 +217,7 @@ void ModeAutorotate::run()
             // Steady state glide functions to be run only once
             if (_flags.ss_glide_initial == true) {
 
-                #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                    gcs().send_text(MAV_SEVERITY_INFO, "SS Glide Phase");
-                #endif
+                gcs().send_text(MAV_SEVERITY_INFO, "SS Glide Phase");
 
                 // Set following trim low pass cut off frequency
                 g2.arot.set_col_cutoff_freq(g2.arot.get_col_glide_freq());
@@ -173,7 +226,7 @@ void ModeAutorotate::run()
                 g2.arot.set_desired_fwd_speed();
 
                 // Set target head speed in head speed controller
-                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs has not reached target for glide
+                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide in case hs hasn't reached target for glide
                 g2.arot.set_target_head_speed(_target_head_speed);
 
                 // Prevent running the initial glide functions again
@@ -181,22 +234,79 @@ void ModeAutorotate::run()
             }
 
             // Run airspeed/attitude controller
-            g2.arot.set_dt(G_Dt);
             g2.arot.update_forward_speed_controller();
+
+            //update sink rate derivative
+            g2.arot.calc_sink_d_avg();
+
+            //update flare altitude estimate
+            g2.arot.update_flare_alt();
 
             // Retrieve pitch target 
             _pitch_target = g2.arot.get_pitch();
 
             // Update head speed/ collective controller
-            _flags.bad_rpm = g2.arot.update_hs_glide_controller(G_Dt); 
+            _flags.bad_rpm = g2.arot.update_hs_glide_controller(); 
             // Attitude controller is updated in navigation switch-case statements
+            g2.arot.calc_avg_acc_z();
 
             break;
         }
 
         case Autorotation_Phase::FLARE:
-        case Autorotation_Phase::TOUCH_DOWN:
         {
+            // Steady state glide functions to be run only once
+            if (_flags.flare_initial == true) {
+                gcs().send_text(MAV_SEVERITY_INFO, "Flare_Phase");
+
+                // Set following trim low pass cut off frequency
+                g2.arot.set_col_cutoff_freq(g2.arot.get_col_glide_freq());
+
+                // Set target head speed in head speed controller
+                _target_head_speed = HEAD_SPEED_TARGET_RATIO;  //Ensure target hs is set to glide incase hs has not reached target for glide
+                g2.arot.set_target_head_speed(_target_head_speed);
+                g2.arot.get_entry_speed();
+                // Prevent running the initial flare functions again
+                _flags.flare_initial = false;
+            }
+            // Run flare controller
+            g2.arot.flare_controller();
+
+            //update sink rate derivative
+            g2.arot.calc_sink_d_avg();
+
+			// Update head speed/ collective controller
+            _flags.bad_rpm = g2.arot.update_hs_glide_controller();
+            // Retrieve pitch target 
+            _pitch_target = g2.arot.get_pitch();
+
+			//calc average acceleration on z axis for estimating flare effectiveness
+			g2.arot.calc_avg_acc_z();
+
+            break;
+        }
+        case Autorotation_Phase::TOUCH_DOWN:
+        { 
+            if (_flags.touch_down_initial == true) {                
+                gcs().send_text(MAV_SEVERITY_INFO, "Touchdown_Phase");
+                // Prevent running the initial touchdown functions again
+                _flags.touch_down_initial = false;
+                _touchdown_time_ms = millis();
+				g2.arot.set_col_cutoff_freq(g2.arot.get_col_cushion_freq());
+				g2.arot.set_entry_sink_rate(curr_vel_z);
+				g2.arot.set_entry_alt(g2.arot.get_ground_distance());
+				g2.arot.set_ground_clearance(copter.rangefinder.ground_clearance_cm_orient(ROTATION_PITCH_270));
+            }
+            g2.arot.touchdown_controller();
+            _pitch_target = g2.arot.get_pitch();
+
+            if(fabsf(inertial_nav.get_velocity_z_up_cms()) < 10) {
+                copter.ap.land_complete = true;
+            }	
+            if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE && ((now -  _touchdown_time_ms)/1000.0f > TOUCHDOWN_TIME )) {
+                copter.arming.disarm(AP_Arming::Method::LANDED);
+            }
+
             break;
         }
 
@@ -204,10 +314,7 @@ void ModeAutorotate::run()
         {
         if (_flags.bail_out_initial == true) {
                 // Functions and settings to be done once are done here.
-
-                #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-                    gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");
-                #endif
+                gcs().send_text(MAV_SEVERITY_INFO, "Bailing Out of Autorotation");            
 
                 // Set bail out timer remaining equal to the parameter value, bailout time 
                 // cannot be less than the motor spool-up time: BAILOUT_MOTOR_RAMP_TIME.
@@ -248,8 +355,8 @@ void ModeAutorotate::run()
 
         if ((now - _bail_time_start_ms)/1000.0f >= BAILOUT_MOTOR_RAMP_TIME) {
             // Update desired vertical speed and pitch target after the bailout motor ramp timer has completed
-            _desired_v_z -= _target_climb_rate_adjust*G_Dt;
-            _pitch_target -= _target_pitch_adjust*G_Dt;
+            _desired_v_z -= _target_climb_rate_adjust * last_loop_time_s;
+            _pitch_target -= _target_pitch_adjust * last_loop_time_s;
         }
         // Set position controller
         pos_control->set_pos_target_z_from_climb_rate_cm(_desired_v_z);
@@ -271,31 +378,36 @@ void ModeAutorotate::run()
         }
     }
 
+    float pilot_roll, pilot_pitch, pilot_yaw_rate;
+    // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch 
+    // is controlled by speed-height controller.	
+    get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);						
+		
+    float target_roll;
 
-    switch (nav_pos_switch) {
+    // Grab inertial velocity
+    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
 
-        case Navigation_Decision::USER_CONTROL_STABILISED:
-        {
-            // Operator is in control of roll and yaw.  Controls act as if in stabilise flight mode.  Pitch 
-            // is controlled by speed-height controller.
-            float pilot_roll, pilot_pitch;
-            get_pilot_desired_lean_angles(pilot_roll, pilot_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    float roll_vel =  vel.y * ahrs.cos_yaw() - vel.x * ahrs.sin_yaw(); // body roll vel
+    float pitch_vel = vel.y * ahrs.sin_yaw() + vel.x * ahrs.cos_yaw(); // body pitch vel
 
-            // Get pilot's desired yaw rate
-            float pilot_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+    // gain scheduling for yaw
+    float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
+    pilot_yaw_rate = ((float)pilot_roll/1.0f) * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_pilot.get_rate() / 45.0; 
 
-            // Pitch target is calculated in autorotation phase switch above
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(pilot_roll, _pitch_target, pilot_yaw_rate);
-            break;
-        }
+    roll_vel = constrain_float(roll_vel, -560.0f, 560.0f);
+    pitch_vel = constrain_float(pitch_vel, -560.0f, 560.0f);
 
-        case Navigation_Decision::STRAIGHT_AHEAD:
-        case Navigation_Decision::INTO_WIND:
-        case Navigation_Decision::NEAREST_RALLY:
-        {
-            break;
-        }
-    }
+    // convert user input into desired roll velocity
+    float roll_vel_error = roll_vel - (pilot_roll / 0.8f);
+
+    // roll velocity is feed into roll acceleration to minimize slip
+    target_roll = roll_vel_error * -0.8f;
+    target_roll = constrain_float(target_roll, -4500.0f, 4500.0f);
+			
+    // Pitch target is calculated in autorotation phase switch above
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, _pitch_target, pilot_yaw_rate);
 
     // Output warning messaged if rpm signal is bad
     if (_flags.bad_rpm) {

@@ -1934,6 +1934,11 @@ private:
     uint32_t _bail_time_start_ms;   // Time at start of bail out
     float _target_climb_rate_adjust;// Target vertical acceleration used during bail out phase
     float _target_pitch_adjust;     // Target pitch rate used during bail out phase
+    uint32_t _touchdown_time_ms;
+	bool hover_autorotation;
+	bool initial_energy_check;
+	float last_tti;
+	float time_to_impact;
 
     enum class Autorotation_Phase {
         ENTRY,

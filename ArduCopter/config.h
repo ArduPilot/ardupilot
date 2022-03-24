@@ -279,17 +279,13 @@
 //////////////////////////////////////////////////////////////////////////////
 // Autorotate - autonomous auto-rotation - helicopters only
 #ifndef MODE_AUTOROTATE_ENABLED
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    #if FRAME_CONFIG == HELI_FRAME
-        #ifndef MODE_AUTOROTATE_ENABLED
-        # define MODE_AUTOROTATE_ENABLED ENABLED
-        #endif
-    #else
-        # define MODE_AUTOROTATE_ENABLED DISABLED
-    #endif
-#else
-    # define MODE_AUTOROTATE_ENABLED DISABLED
-#endif
+  #if FRAME_CONFIG == HELI_FRAME
+      #ifndef MODE_AUTOROTATE_ENABLED
+      # define MODE_AUTOROTATE_ENABLED ENABLED
+      #endif
+  #else
+      # define MODE_AUTOROTATE_ENABLED DISABLED
+  #endif
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
