@@ -2,22 +2,30 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 //Autorotation controller defaults
 #define AROT_BAIL_OUT_TIME                            2.0f     // Default time for bail out controller to run (unit: s)
+#define ROT_SOLIDITY                                 0.05f    // Main rotor solidity
+#define ROT_DIAMETER                                 1.25f    // Main rotor diameter
 
 // Head Speed (HS) controller specific default definitions
 #define HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ          2.0f     // low-pass filter on accel error (unit: hz)
 #define HS_CONTROLLER_HEADSPEED_P                     0.7f     // Default P gain for head speed controller (unit: -)
 #define HS_CONTROLLER_ENTRY_COL_FILTER                0.7f    // Default low pass filter frequency during the entry phase (unit: Hz)
 #define HS_CONTROLLER_GLIDE_COL_FILTER                0.1f    // Default low pass filter frequency during the glide phase (unit: Hz)
+#define HS_CONTROLLER_CUSHION_COL_FILTER           0.5f
 
 // Speed Height controller specific default definitions for autorotation use
 #define FWD_SPD_CONTROLLER_GND_SPEED_TARGET           1100     // Default target ground speed for speed height controller (unit: cm/s)
 #define FWD_SPD_CONTROLLER_MAX_ACCEL                  60      // Default acceleration limit for speed height controller (unit: cm/s/s)
 #define AP_FW_VEL_P                       0.9f
+#define TCH_P                                    0.1f
 #define AP_FW_VEL_FF                      0.15f
 
+// flare controller default definitions
+#define AP_ALPHA_TPP                         20.0f
+#define AP_T_TO_G                            0.55f
 
 const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
@@ -114,14 +122,60 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("FW_V_FF", 11, AC_Autorotation, _param_fwd_k_ff, AP_FW_VEL_FF),
+	
+    // @Param: TCH_P
+    // @DisplayName: P gain for vertical touchdown controller
+    // @Description: proportional term based on sink rate error
+    // @Range: 0.3 1
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_SUBGROUPINFO(_p_coll_tch, "TCH_", 12, AC_Autorotation, AC_P),
+	
+    // @Param: COL_FILT_C
+    // @DisplayName: Touchdown Phase Collective Filter
+    // @Description: Cut-off frequency for collective low pass filter.  For the touchdown phase.  Acts as a following trim.  
+    // @Units: Hz
+    // @Range: 0.2 0.8
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("COL_FILT_C", 13, AC_Autorotation, _param_col_cushion_cutoff_freq, HS_CONTROLLER_CUSHION_COL_FILTER),
+
+    // @Param: SOLIDITY
+    // @DisplayName: rotor solidity
+    // @Description: helicopter specific main rotor solidity
+    // @Range: 0.001 0.01
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("ROT_SOL", 14, AC_Autorotation, _param_solidity, ROT_SOLIDITY),
+
+    // @Param: ROT_DIAM
+    // @DisplayName: rotor diameter
+    // @Description: helicopter specific main rotor diameter
+    // @Units: m
+    // @Range: 0.001 0.01
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("ROT_DIAM", 15, AC_Autorotation, _param_diameter, ROT_DIAMETER),
+
+    // @Param: time touchdown
+    // @DisplayName: time touchdown
+    // @Description: time touchdown
+    // @Units: s
+    // @Range: 0.001 0.01
+    // @Increment: 0.001
+    // @User: Advanced
+    AP_GROUPINFO("T_TCH", 16, AC_Autorotation, _t_tch, AP_T_TO_G),
 
     AP_GROUPEND
 };
 
 // Constructor
-AC_Autorotation::AC_Autorotation() :
+AC_Autorotation::AC_Autorotation(AP_InertialNav& inav, AP_AHRS& ahrs) :
+    _inav(inav),
+	_ahrs(ahrs),
     _p_hs(HS_CONTROLLER_HEADSPEED_P),
-    _p_fw_vel(AP_FW_VEL_P)
+    _p_fw_vel(AP_FW_VEL_P),
+    _p_coll_tch(TCH_P)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -130,7 +184,7 @@ AC_Autorotation::AC_Autorotation() :
 void AC_Autorotation::init_hs_controller()
 {
     // Set initial collective position to be the collective position on initialisation
-    _collective_out = 0.4f;
+    _collective_out = _col_mid;
 
     // Reset feed forward filter
     col_trim_lpf.reset(_collective_out);
@@ -144,10 +198,11 @@ void AC_Autorotation::init_hs_controller()
 
     // Protect against divide by zero
     _param_head_speed_set_point.set(MAX(_param_head_speed_set_point,500));
+
 }
 
-
-bool AC_Autorotation::update_hs_glide_controller(float dt)
+// Rotor Speed controller for entry, glide and flare phases of autorotation
+bool AC_Autorotation::update_hs_glide_controller(void)
 {
     // Reset rpm health flag
     _flags.bad_rpm = false;
@@ -170,24 +225,40 @@ bool AC_Autorotation::update_hs_glide_controller(float dt)
         _p_term_hs = _p_hs.get_p(_head_speed_error);
 
         // Adjusting collective trim using feed forward (not yet been updated, so this value is the previous time steps collective position)
-        _ff_term_hs = col_trim_lpf.apply(_collective_out, dt);
+        _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
 
         // Calculate collective position to be set
-        _collective_out = _p_term_hs + _ff_term_hs;
+        _collective_out = constrain_value((_p_term_hs + _ff_term_hs), 0.0f, 1.0f) ;
 
     } else {
         // RPM sensor is bad set collective to minimum
-        _collective_out = -1.0f;
+        _collective_out = 0.0f;
 
         _flags.bad_rpm_warning = true;
     }
 
     // Send collective to setting to motors output library
     set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
+	
 
     return _flags.bad_rpm_warning;
 }
 
+void AC_Autorotation::update_hover_autorotation_controller()
+{
+
+    // Set collective trim low pass filter cut off frequency
+    col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
+
+    // use zero thrust collective to minimize rotor speed loss
+    _ff_term_hs = col_trim_lpf.apply(_col_mid, _dt);
+
+    // Calculate collective position to be set
+    _collective_out = constrain_value(_ff_term_hs, 0.0f, 1.0f) ;
+
+    // Send collective to setting to motors output library
+    set_collective(_col_cutoff_freq);
+}
 
 // Function to set collective and collective filter in motor library
 void AC_Autorotation::set_collective(float collective_filter_cutoff) const
@@ -198,7 +269,6 @@ void AC_Autorotation::set_collective(float collective_filter_cutoff) const
         motors->set_throttle(_collective_out);
     }
 }
-
 
 //function that gets rpm and does rpm signal checking to ensure signal is reliable
 //before using it in the controller
@@ -251,6 +321,74 @@ float AC_Autorotation::get_rpm(bool update_counter)
     return current_rpm;
 }
 
+void AC_Autorotation::initial_flare_estimate()
+{
+	//estimate hover thrust
+	float _col_hover_rad = radians(_col_min + (_col_max - _col_min)*_col_hover);
+	float b = _param_solidity*6.28f;
+	_disc_area=3.14*sq(_param_diameter*0.5f);
+	float lambda = (-(b/8.0f) + safe_sqrt((sq(b))/64.0f +((b/3.0f)*_col_hover_rad)))*0.5f;
+	float freq=_governed_rpm/60.0f;
+	float tip_speed= freq*6.28f*_param_diameter*0.5f;
+	_lift_hover = ((1.225f*sq(tip_speed)*(_param_solidity*_disc_area))*((_col_hover_rad/3.0f) - (lambda/2.0f))*5.8f)*0.5f;
+
+	//estimate rate of descent
+	float omega_auto=(_param_head_speed_set_point/60.0f)*6.28f;
+	float tip_speed_auto = omega_auto*_param_diameter*0.5f;
+	float c_t = _lift_hover/(0.6125f*_disc_area*sq(tip_speed));
+	_est_rod=((0.25f*(_param_solidity*0.011f/c_t)*tip_speed_auto)+((sq(c_t)/(_param_solidity*0.011f))*tip_speed_auto));
+
+	//estimate rotor C_d
+	_c=(_lift_hover/(sq(_est_rod)*0.5f*1.225f*_disc_area))*1.15f;
+	_c=constrain_float(_c, 0.7f, 1.4f);
+
+    //calc flare altitude
+	float des_spd_fwd=_param_target_speed*0.01f;
+	calc_flare_alt(-_est_rod,des_spd_fwd);
+
+	//initialize sink rate monitor and flare bools
+	 _flare_complete = false;
+	 _flare_update_check = false;
+	 _avg_sink_deriv = 0.0f;
+	 _avg_sink_deriv_sum = 0.0f;
+	 _index_sink_rate = 0;
+	 memset(_curr_sink_deriv, 0, sizeof(_curr_sink_deriv));
+
+	gcs().send_text(MAV_SEVERITY_INFO, "Ct/σ=%f W=%f kg flare_alt=%f C=%f", c_t/_param_solidity, _lift_hover/9.8065f, _flare_alt_calc*0.01f, _c);
+
+}
+
+
+
+void AC_Autorotation::calc_flare_alt(float sink_rate, float fwd_speed)
+{
+	//compute speed module and glide path angle during descent
+	float speed_module=norm(sink_rate,fwd_speed);
+	float glide_angle=safe_asin(3.14/2-(fwd_speed/speed_module));
+
+	//estimate inflow velocity at beginning of flare
+	float inflow= -speed_module*sinf(glide_angle+radians(AP_ALPHA_TPP));
+
+	//estimate flare duration
+	float k_1=fabsf((-sink_rate+0.001f-safe_sqrt(_lift_hover/_c))/(-sink_rate+0.001f+safe_sqrt(_lift_hover/_c)));
+	float k_2=fabsf((inflow-safe_sqrt(_lift_hover/_c))/(inflow+safe_sqrt(_lift_hover/_c)));
+	float delta_t_flare=(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1))-(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_2));
+
+	//estimate flare delta altitude
+	float a=(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*delta_t_flare + (2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1));
+	float x=1-expf(a);
+	float s=1-expf((2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1)));
+	float d=safe_sqrt(_lift_hover/_c);
+	float flare_distance=((2*d/(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065))))*(a-logf(fabsf(x))-(2*safe_sqrt(_c*9.8065/(_lift_hover/9.8065)))*(0.5f*(_lift_hover/(9.8065*_c))*safe_sqrt(_c/_lift_hover)*logf(k_1)) +logf(fabsf(s))))-d*delta_t_flare;
+	float delta_h= -flare_distance*cosf(radians(AP_ALPHA_TPP));
+
+	//estimate altitude to begin collective pull
+    _cushion_alt = (-(sink_rate*cosf(radians(AP_ALPHA_TPP)))*_t_tch)*100.0f;
+	gcs().send_text(MAV_SEVERITY_INFO, "vs_final_est=%f ", sink_rate*cosf(radians(20)));
+	//total delta altitude to ground
+	_flare_alt_calc = _cushion_alt+delta_h*100.0f;
+}
+
 
 #if HAL_LOGGING_ENABLED
 void AC_Autorotation::Log_Write_Autorotation(void) const
@@ -260,35 +398,35 @@ void AC_Autorotation::Log_Write_Autorotation(void) const
 // @Description: Helicopter AutoRotation information
 // @Field: TimeUS: Time since system startup
 // @Field: P: P-term for headspeed controller response
-// @Field: hserr: head speed error; difference between current and desired head speed
-// @Field: ColOut: Collective Out
+// @Field: hs_e: head speed error; difference between current and desired head speed
+// @Field: C_Out: Collective Out
 // @Field: FFCol: FF-term for headspeed controller response
-// @Field: CRPM: current headspeed RPM
 // @Field: SpdF: current forward speed
-// @Field: CmdV: desired forward speed
+// @Field: DH: desired forward speed
 // @Field: p: p-term of velocity response
 // @Field: ff: ff-term of velocity response
-// @Field: AccO: forward acceleration output
-// @Field: AccT: forward acceleration target
-// @Field: PitT: pitch target
+// @Field: AccZ: average z acceleration
+// @Field: DesV: Desired Sink Rate
+// @Field: Rfnd: rangefinder altitude
+// @Field: Hest: estimated altitude
 
     //Write to data flash log
     AP::logger().WriteStreaming("AROT",
-                       "TimeUS,P,hserr,ColOut,FFCol,CRPM,SpdF,CmdV,p,ff,AccO,AccT,PitT",
+                       "TimeUS,P,hs_e,C_Out,FFCol,SpdF,DH,p,ff,AccZ,DesV,Rfnd,Hest",
                          "Qffffffffffff",
                         AP_HAL::micros64(),
                         (double)_p_term_hs,
                         (double)_head_speed_error,
                         (double)_collective_out,
                         (double)_ff_term_hs,
-                        (double)_current_rpm,
-                        (double)_speed_forward,
-                        (double)_cmd_vel,
+                        (double)(_speed_forward*0.01f),
+                        (double)(_cmd_vel*0.01f),
                         (double)_vel_p,
                         (double)_vel_ff,
-                        (double)_accel_out,
-                        (double)_accel_target,
-                        (double)_pitch_target);
+                        (double)_avg_acc_z,
+                        (double)_desired_sink_rate,
+                        (double)(_radar_alt*0.01f),
+						(double)(_est_alt*0.01f)) ;
 }
 #endif  // HAL_LOGGING_ENABLED
 
@@ -299,7 +437,7 @@ void AC_Autorotation::init_fwd_spd_controller(void)
     _accel_target = 0.0f;
     
     // Ensure parameter acceleration doesn't exceed hard-coded limit
-    _accel_max = MIN(_param_accel_max, 60.0f);
+    _accel_max = MIN(_param_accel_max, 500.0f);
 
     // Reset cmd vel and last accel to sensible values
     _cmd_vel = calc_speed_forward(); //(cm/s)
@@ -370,9 +508,46 @@ void AC_Autorotation::update_forward_speed_controller(void)
     }
     _accel_out_last = _accel_out;
 
-    // update angle targets that will be passed to stabilize controller
-    _pitch_target = accel_to_angle(-_accel_out*0.01) * 100;
+    if (_est_alt >= _flare_alt_calc*1.25f){
+    	_pitch_target = accel_to_angle(-_accel_out*0.01) * 100;
+    }else{
+    	_pitch_target = 0.0f;
+    }
+}
 
+void AC_Autorotation::calc_sink_d_avg()
+{
+	float vertical_speed = _inav.get_velocity_z_up_cms();
+	_sink_deriv= ((vertical_speed - _last_vertical_speed)*0.01f)/_dt;
+	_last_vertical_speed = vertical_speed;
+
+	if(_index_sink_rate < 20){
+	  	_avg_sink_deriv_sum -= _curr_sink_deriv[_index_sink_rate];
+	   	_curr_sink_deriv[_index_sink_rate]= _sink_deriv;
+	   	_avg_sink_deriv_sum += _curr_sink_deriv[_index_sink_rate];
+	   	_index_sink_rate = _index_sink_rate+1;
+	   	}else{
+		_index_sink_rate = 0;
+	}
+	_avg_sink_deriv = _avg_sink_deriv_sum/20.0f;
+	_avg_sink_deriv = constrain_float( _avg_sink_deriv, -10.0f,10.0f);
+}
+
+void AC_Autorotation::update_flare_alt()
+{
+     if(!_flare_update_check){
+		float delta_v_z = fabsf((_inav.get_velocity_z_up_cms())*0.01f+_est_rod);
+
+		if(_speed_forward >= 0.8f*_param_target_speed && delta_v_z<=1 && fabsf(_avg_sink_deriv)<=0.005 ){
+		    float vel_z=_inav.get_velocity_z_up_cms()*0.01f;
+		    float spd_fwd=_speed_forward*0.01f;
+		    _c=(_lift_hover/(sq(vel_z)*0.5f*1.225f*_disc_area))*1.15f;
+		    _c=constrain_float(_c, 0.7f, 1.4f);
+		    calc_flare_alt(vel_z,spd_fwd);
+		    _flare_update_check = true;
+		    gcs().send_text(MAV_SEVERITY_INFO, "Flare_alt_updated=%f C_updated=%f",  _flare_alt_calc*0.01f, _c);
+		}
+     }
 }
 
 
@@ -383,5 +558,162 @@ float AC_Autorotation::calc_speed_forward(void)
     Vector2f groundspeed_vector = ahrs.groundspeed_vector();
     float speed_forward = (groundspeed_vector.x*ahrs.cos_yaw() + groundspeed_vector.y*ahrs.sin_yaw())* 100; //(c/s)
     return speed_forward;
+}
+
+void AC_Autorotation::flare_controller()
+{
+		
+  // Specify forward velocity component and determine delta velocity with respect to time
+    _speed_forward = calc_speed_forward(); //(cm/s)
+    _delta_speed_fwd = _speed_forward - _speed_forward_last; //(cm/s)
+    _speed_forward_last = _speed_forward; //(cm/s)
+    _desired_speed = linear_interpolate(0.0f, _flare_entry_speed, _est_alt, _cushion_alt, _flare_alt_calc);
+
+	// get p
+	_vel_p = _p_fw_vel.get_p(_desired_speed - _speed_forward);
+
+    //calculate acceleration target based on PI controller
+    _accel_target = _vel_p ;
+
+    // filter correction acceleration
+    _accel_target_filter.set_cutoff_frequency(10.0f);
+    _accel_target_filter.apply(_accel_target, _dt);
+
+    //Limits the maximum change in pitch attitude based on acceleration
+    if (_accel_target > _accel_out_last + _accel_max) {
+		        _accel_target = _accel_out_last + _accel_max;
+      } else if (_accel_target < _accel_out_last - _accel_max) {
+		        _accel_target = _accel_out_last - _accel_max;
+	 }
+
+	//Limiting acceleration based on velocity gained during the previous time step 
+	if (fabsf(_delta_speed_fwd) > _accel_max * _dt) {
+		        _flag_limit_accel = true;
+	   } else {
+	            _flag_limit_accel = false;
+		}
+
+	 if ((_flag_limit_accel && fabsf(_accel_target) < fabsf(_accel_out_last)) || !_flag_limit_accel) {
+	       _accel_out = _accel_target;
+	    } else {
+	       _accel_out = _accel_out_last;
+	    }
+	       _accel_out_last = _accel_out;
+				
+
+
+	 //estimate flare effectiveness
+
+	  if(_speed_forward <= (0.6*_flare_entry_speed) && fabsf(_avg_sink_deriv)<=0.005f && _avg_acc_z>= -(1.1*9.80665f) ){
+		if(!_flare_complete){
+			_flare_complete = true;
+			gcs().send_text(MAV_SEVERITY_INFO, "Flare_complete");
+		}
+	  }
+
+	  if(!_flare_complete){
+		  _pitch_target = atanf(-_accel_out/(GRAVITY_MSS * 100.0f))*(18000.0f/M_PI);
+		  _pitch_target = constrain_float(_pitch_target, 0.0f, AP_ALPHA_TPP*100.0f);
+	  }else{
+		  _pitch_target *= 0.95f;
+	  }
+
+
+}
+
+void AC_Autorotation::touchdown_controller()
+{
+	    float _current_sink_rate = _inav.get_velocity_z_up_cms();
+	     if(_radar_alt>=_ground_clearance){
+	             _desired_sink_rate = linear_interpolate(0.0f, _entry_sink_rate, _radar_alt, _ground_clearance, _entry_alt);
+	    }else{
+	            _desired_sink_rate = 0.0f;
+	    }
+    // update forward speed for logging
+    _speed_forward = calc_speed_forward(); //(cm/s)
+
+	    _collective_out =  constrain_value((_p_coll_tch.get_p(_desired_sink_rate - _current_sink_rate))*0.01f + _ff_term_hs, 0.0f, 1.0f);
+	    col_trim_lpf.set_cutoff_frequency(_col_cutoff_freq);
+	    _ff_term_hs = col_trim_lpf.apply(_collective_out, _dt);
+	    set_collective(HS_CONTROLLER_COLLECTIVE_CUTOFF_FREQ);
+	    _pitch_target *= 0.95f;
+}
+
+void AC_Autorotation::get_entry_speed()
+{
+		_flare_entry_speed = calc_speed_forward();
+}
+
+void AC_Autorotation::time_to_ground()		
+{
+   if(_inav.get_velocity_z_up_cms() < 0.0f ) {
+			_time_to_ground = -(_radar_alt/_inav.get_velocity_z_up_cms());
+   }else{
+       _time_to_ground = _t_tch +1.0f;
+   }
+}	
+
+void AC_Autorotation::init_est_radar_alt()
+{
+    // set descent rate filter cutoff frequency
+    descent_rate_lpf.set_cutoff_frequency(40.0f);
+
+    // Reset feed descent rate filter
+    descent_rate_lpf.reset(_inav.get_velocity_z_up_cms());
+
+    _radar_alt_calc = _radar_alt;
+    _radar_alt_prev = _radar_alt;
+    _est_alt = _radar_alt;
+
+}
+
+void AC_Autorotation::update_est_radar_alt()
+{
+	if(_using_rfnd) {
+        // continue calculating radar altitude based on the most recent update and descent rate
+        if (is_equal(_radar_alt, _radar_alt_prev)) {
+            _radar_alt_calc += (_inav.get_velocity_z_up_cms() * _dt);
+        } else {
+            _radar_alt_calc = _radar_alt;
+            _radar_alt_prev = _radar_alt;
+        }
+        // determine the error between a calculated radar altitude based on each update at 20 hz and the estimated update
+        float alt_error = _radar_alt_calc - _est_alt;
+        // drive the estimated altitude to the actual altitude with a proportional altitude error feedback
+        float descent_rate_corr = _inav.get_velocity_z_up_cms() + alt_error * 2.0f;
+        // update descent rate filter
+        _descent_rate_filtered = descent_rate_lpf.apply(descent_rate_corr);
+        _est_alt += (_descent_rate_filtered * _dt);
+	} else {
+		_est_alt = _radar_alt;
+        // Reset feed descent rate filter
+        descent_rate_lpf.reset(_inav.get_velocity_z_up_cms());
+        // reset variables until using rangefinder
+        _radar_alt_calc = _radar_alt;
+        _radar_alt_prev = _radar_alt;
+        _est_alt = _radar_alt;
+    }
+}
+
+void AC_Autorotation::init_avg_acc_z()
+{
+	_avg_acc_z = 0.0f;
+	_acc_z_sum = 0.0f;
+	_index = 0;
+	memset(_curr_acc_z, 0, sizeof(_curr_acc_z));
+
+}
+
+void AC_Autorotation::calc_avg_acc_z()
+{
+	if(_index < 10){
+		_acc_z_sum -= _curr_acc_z[_index];
+	    _curr_acc_z[_index]= _ahrs.get_accel_ef().z;
+	    _acc_z_sum += _curr_acc_z[_index];
+	    _index = _index+1;
+	}else{
+		_index = 0;
+	}
+	_avg_acc_z = _acc_z_sum/10.0f;
 }
 
