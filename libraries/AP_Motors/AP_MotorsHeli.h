@@ -144,6 +144,9 @@ public:
 
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
+	
+	//return zero lift collective position
+    float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
     // enum for heli optional features
     enum class HeliOption {
