@@ -289,22 +289,26 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
     }
-
-    // set bailout ramp time
-    _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-
-    // allow use of external governor autorotation bailout
-    if (_main_rotor._ext_gov_arot_pct.get() > 0) {
-        // RSC only needs to know that the vehicle is in an autorotation if using the bailout window on an external governor
-        if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_SETPOINT  ||  _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_PASSTHROUGH) {
-            _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        }
-        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
-            _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        }
+	
+    if (_heliflags.start_engine) {
+        _main_rotor.set_turbine_start(true);
+    } else {
+        _main_rotor.set_turbine_start(false);
     }
 
+    // allow use of external governor autorotation bailout
+    if (_heliflags.in_autorotation) {        
+        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
+        // set bailout ramp time
+        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+        _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+        if (_tail_type == AP_MOTORS_HELI_SINGLE_TAILTYPE_DIRECTDRIVE_VARPIT_EXT_GOV) {
+            _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
+            _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
+        }
+    }else { 
+        _main_rotor.set_autorotation_flag(false);
+    }
 }
 
 // calculate_scalars - recalculates various scalers used.
