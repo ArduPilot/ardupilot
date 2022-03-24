@@ -185,7 +185,7 @@ void Copter::heli_update_rotor_speed_targets()
     // when rotor_runup_complete changes to true, log event
     if (!rotor_runup_complete_last && motors->rotor_runup_complete()){
         AP::logger().Write_Event(LogEvent::ROTOR_RUNUP_COMPLETE);
-    } else if (rotor_runup_complete_last && !motors->rotor_runup_complete()){
+    } else if (rotor_runup_complete_last && !motors->rotor_runup_complete() && !heli_flags.in_autorotation){
         AP::logger().Write_Event(LogEvent::ROTOR_SPEED_BELOW_CRITICAL);
     }
     rotor_runup_complete_last = motors->rotor_runup_complete();
@@ -205,30 +205,15 @@ void Copter::heli_update_autorotation()
         }
         // set flag to facilitate both auto and manual autorotations
         heli_flags.in_autorotation = true;
-    } else {
-        heli_flags.in_autorotation = false;
-    }
-
-    // sets autorotation flags through out libraries
-    heli_set_autorotation(heli_flags.in_autorotation);
-    if (!ap.land_complete && g2.arot.is_enable()) {
+        motors->set_in_autorotation(heli_flags.in_autorotation);
         motors->set_enable_bailout(true);
     } else {
+        heli_flags.in_autorotation = false;
+        motors->set_in_autorotation(heli_flags.in_autorotation);
         motors->set_enable_bailout(false);
     }
-#else
-    heli_flags.in_autorotation = false;
-    motors->set_enable_bailout(false);
 #endif
 }
-
-#if MODE_AUTOROTATE_ENABLED == ENABLED
-// heli_set_autorotation - set the autorotation flag throughout libraries
-void Copter::heli_set_autorotation(bool autorotation)
-{
-    motors->set_in_autorotation(autorotation);
-}
-#endif
 
 // update collective low flag.  Use a debounce time of 400 milliseconds.
 void Copter::update_collective_low_flag(int16_t throttle_control)
