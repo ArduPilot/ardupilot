@@ -258,7 +258,7 @@ void GCS_MAVLINK::send_battery_status(const uint8_t instance) const
         // for battery monitors that cannot provide voltages for individual cells the battery's total voltage is put into the first cell
         // if the total voltage cannot fit into a single field, the remainder into subsequent fields.
         // the GCS can then recover the pack voltage by summing all non ignored cell values an we can report a pack up to 655.34 V
-        float voltage = battery.voltage(instance) * 1e3f;
+        float voltage = battery.gcs_voltage(instance) * 1e3f;
         for (uint8_t i = 0; i < MAVLINK_MSG_BATTERY_STATUS_FIELD_VOLTAGES_LEN; i++) {
           if (voltage < 0.001f) {
               // too small to send to the GCS, set it to the no cell value
@@ -3329,7 +3329,7 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 {
-#if HAL_INS_ENABLED
+#if HAL_INS_ACCELCAL_ENABLED
     AP_AccelCal *accelcal = AP::ins().get_acal();
     if (accelcal != nullptr) {
         accelcal->handleMessage(msg);
@@ -3733,6 +3733,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         break;
 
     case MAVLINK_MSG_ID_CAN_FRAME:
+    case MAVLINK_MSG_ID_CANFD_FRAME:
         handle_can_frame(msg);
         break;
 
@@ -3851,7 +3852,7 @@ void GCS_MAVLINK::send_banner()
 
 void GCS_MAVLINK::send_simstate() const
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
@@ -3862,7 +3863,7 @@ void GCS_MAVLINK::send_simstate() const
 
 void GCS_MAVLINK::send_sim_state() const
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_SIM_ENABLED
     SITL::SIM *sitl = AP::sitl();
     if (sitl == nullptr) {
         return;
@@ -3958,7 +3959,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 
     rc().calibrating(is_positive(packet.param4));
 
-#if HAL_INS_ENABLED
+#if HAL_INS_ACCELCAL_ENABLED
     if (is_equal(packet.param5,1.0f)) {
         // start with gyro calibration
         if (!calibrate_gyros()) {
@@ -3969,7 +3970,9 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
         AP::ins().get_acal()->start(this);
         return MAV_RESULT_ACCEPTED;
     }
+#endif
 
+#if HAL_INS_ENABLED
     if (is_equal(packet.param5,2.0f)) {
         if (!calibrate_gyros()) {
             return MAV_RESULT_FAILED;
@@ -4060,7 +4063,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
             }
             case AP_CANManager::Driver_Type_CANTester: {
 // To be replaced with macro saying if KDECAN library is included
-#if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)) && (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES)
+#if (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)) && (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1 && !HAL_MINIMIZE_FEATURES && HAL_ENABLE_CANTESTER)
                 CANTester *cantester = CANTester::get_cantester(i);
 
                 if (cantester != nullptr) {
@@ -4252,18 +4255,16 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_sprayer(const mavlink_command_long_t &
 }
 #endif
 
+#if HAL_INS_ACCELCAL_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_accelcal_vehicle_pos(const mavlink_command_long_t &packet)
 {
-#if HAL_INS_ENABLED
     if (AP::ins().get_acal() == nullptr ||
         !AP::ins().get_acal()->gcs_vehicle_position(packet.param1)) {
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_ACCEPTED;
-#else
-    return MAV_RESULT_UNSUPPORTED;
-#endif
 }
+#endif  // HAL_INS_ACCELCAL_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_long_t &packet)
 {
@@ -4338,9 +4339,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
 
     switch (packet.command) {
 
+#if HAL_INS_ACCELCAL_ENABLED
     case MAV_CMD_ACCELCAL_VEHICLE_POS:
         result = handle_command_accelcal_vehicle_pos(packet);
         break;
+#endif
 
     case MAV_CMD_DO_SET_MODE:
         result = handle_command_do_set_mode(packet);
@@ -4916,7 +4919,7 @@ void GCS_MAVLINK::send_sys_status()
         control_sensors_health,
         static_cast<uint16_t>(AP::scheduler().load_average() * 1000),
 #if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
-        battery.voltage() * 1000,  // mV
+        battery.gcs_voltage() * 1000,  // mV
         battery_current,        // in 10mA units
         battery_remaining,      // in %
 #else

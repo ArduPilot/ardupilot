@@ -10,6 +10,10 @@
 
 #if HAL_SIM_GPS_ENABLED
 
+#include <time.h>
+
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
+
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
 #include <SITL/SITL.h>

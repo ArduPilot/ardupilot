@@ -50,6 +50,10 @@ void Plane::fence_check()
         // user disables/re-enables using the fence channel switch
         return;
     }
+    
+     if(new_breaches && plane.is_flying()) {
+         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+     }
 
     if (new_breaches || orig_breaches) {
         // if the user wants some kind of response and motors are armed
@@ -61,44 +65,51 @@ void Plane::fence_check()
         case AC_FENCE_ACTION_GUIDED_THROTTLE_PASS:
         case AC_FENCE_ACTION_RTL_AND_LAND:
             if (fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
+                if (control_mode == &mode_auto &&
+                    mission.get_in_landing_sequence_flag() &&
+                    (g.rtl_autoland == RtlAutoland::RTL_THEN_DO_LAND_START ||
+                     g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START)) {
+                    // already landing
+                    return;
+                }
                 set_mode(mode_rtl, ModeReason::FENCE_BREACHED);
             } else {
                 set_mode(mode_guided, ModeReason::FENCE_BREACHED);
             }
 
+            Location loc;
             if (fence.get_return_rally() != 0 || fence_act == AC_FENCE_ACTION_RTL_AND_LAND) {
-                guided_WP_loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());
+                loc = rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude_cm());
             } else {
                 //return to fence return point, not a rally point
-                guided_WP_loc = {};
                 if (fence.get_return_altitude() > 0) {
                     // fly to the return point using _retalt
-                    guided_WP_loc.alt = home.alt + 100.0f * fence.get_return_altitude();
+                    loc.alt = home.alt + 100.0f * fence.get_return_altitude();
                 } else if (fence.get_safe_alt_min() >= fence.get_safe_alt_max()) {
                     // invalid min/max, use RTL_altitude
-                    guided_WP_loc.alt = home.alt + g.RTL_altitude_cm;
+                    loc.alt = home.alt + g.RTL_altitude_cm;
                 } else {
                     // fly to the return point, with an altitude half way between
                     // min and max
-                    guided_WP_loc.alt = home.alt + 100.0f * (fence.get_safe_alt_min() + fence.get_safe_alt_max()) / 2;
+                    loc.alt = home.alt + 100.0f * (fence.get_safe_alt_min() + fence.get_safe_alt_max()) / 2;
                 }
 
                 Vector2l return_point;
                 if(fence.polyfence().get_return_point(return_point)) {
-                    guided_WP_loc.lat = return_point[0];
-                    guided_WP_loc.lng = return_point[1];
+                    loc.lat = return_point[0];
+                    loc.lng = return_point[1];
                 } else {
                     // When no fence return point is found (ie. no inclusion fence uploaded, but exclusion is)
                     // we fail to obtain a valid fence return point. In this case, home is considered a safe
                     // return point.
-                    guided_WP_loc.lat = home.lat;
-                    guided_WP_loc.lng = home.lng;
+                    loc.lat = home.lat;
+                    loc.lng = home.lng;
                 }
             }
 
             if (fence.get_action() != AC_FENCE_ACTION_RTL_AND_LAND) {
-                setup_terrain_target_alt(guided_WP_loc);
-                set_guided_WP();
+                setup_terrain_target_alt(loc);
+                set_guided_WP(loc);
             }
 
             if (fence.get_action() == AC_FENCE_ACTION_GUIDED_THROTTLE_PASS) {

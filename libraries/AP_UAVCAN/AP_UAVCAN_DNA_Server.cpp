@@ -276,7 +276,7 @@ bool AP_UAVCAN_DNA_Server::init(AP_UAVCAN *ap_uavcan)
     server_state = HEALTHY;
 
     //Setup publisher for this driver index
-    allocation_pub[driver_index] = new uavcan::Publisher<uavcan::protocol::dynamic_node_id::Allocation>(*_node);
+    allocation_pub[driver_index] = new uavcan::Publisher<uavcan::protocol::dynamic_node_id::Allocation>(*_node, true);
     if (allocation_pub[driver_index] == nullptr) {
         AP_BoardConfig::allocation_error("AP_UAVCAN_DNA: allocation_pub[%d]", driver_index);
     }

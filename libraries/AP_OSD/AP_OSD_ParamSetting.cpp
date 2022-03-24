@@ -380,7 +380,7 @@ void AP_OSD_ParamSetting::guess_ranges(bool force)
             float floatp = p->get();
             if (digits < 1) {
                 if (!is_zero(floatp)) {
-                    incr = floatp / 100.0f; // move in 1% increments
+                    incr = floatp * 0.01f; // move in 1% increments
                 } else {
                     incr = 0.01f; // move in absolute 1% increments
                 }
@@ -388,7 +388,7 @@ void AP_OSD_ParamSetting::guess_ranges(bool force)
                 min = 0.0f;
             } else {
                 if (!is_zero(floatp)) {
-                    incr = floatp / 100.0f; // move in 1% increments
+                    incr = floatp * 0.01f; // move in 1% increments
                 } else {
                     incr = MAX(1, powf(10, digits - 2));
                 }

@@ -48,7 +48,7 @@
 #include <AP_Math/polyfit.h>
 
 #ifndef AP_SIM_INS_ENABLED
-#define AP_SIM_INS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#define AP_SIM_INS_ENABLED AP_SIM_ENABLED
 #endif
 
 class AP_InertialSensor_Backend;
@@ -326,12 +326,14 @@ public:
     // Returns newly calculated trim values if calculated
     bool get_new_trim(Vector3f &trim_rad);
 
+#if HAL_INS_ACCELCAL_ENABLED
     // initialise and register accel calibrator
     // called during the startup of accel cal
     void acal_init();
 
     // update accel calibrator
     void acal_update();
+#endif
 
     // simple accel calibration
 #if HAL_GCS_ENABLED

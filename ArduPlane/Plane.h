@@ -31,6 +31,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
 #include <AP_Math/AP_Math.h>        // ArduPilot Mega Vector/Matrix math Library
@@ -728,9 +729,6 @@ private:
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
     Location next_WP_loc {};
 
-    // The location of the active waypoint in Guided mode.
-    struct Location guided_WP_loc {};
-
     // Altitude control
     struct {
         // target altitude above sea level in cm. Used for barometric
@@ -954,7 +952,7 @@ private:
 #endif
 
     // commands.cpp
-    void set_guided_WP(void);
+    void set_guided_WP(const Location &loc);
     void update_home();
     // set home location and store it persistently:
     bool set_home_persistently(const Location &loc) WARN_IF_UNUSED;

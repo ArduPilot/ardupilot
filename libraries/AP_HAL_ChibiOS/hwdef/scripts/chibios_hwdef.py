@@ -690,6 +690,15 @@ def enable_can(f):
         f.write('#define CAN1_BASE CAN_BASE\n')
     env_vars['HAL_NUM_CAN_IFACES'] = str(len(base_list))
 
+    if mcu_series.startswith("STM32H7") and not args.bootloader:
+        # set maximum supported canfd bit rate in MBits/sec
+        canfd_supported = int(get_config('CANFD_SUPPORTED', 0, default=4, required=False))
+        f.write('#define HAL_CANFD_SUPPORTED %d\n' % canfd_supported)
+        env_vars['HAL_CANFD_SUPPORTED'] = canfd_supported
+    else:
+        canfd_supported = int(get_config('CANFD_SUPPORTED', 0, default=0, required=False))
+        f.write('#define HAL_CANFD_SUPPORTED %d\n' % canfd_supported)
+        env_vars['HAL_CANFD_SUPPORTED'] = canfd_supported
 
 def has_sdcard_spi():
     '''check for sdcard connected to spi bus'''
@@ -701,9 +710,16 @@ def has_sdcard_spi():
 
 def get_ram_map():
     '''get RAM_MAP. May be different for bootloader'''
+    env_vars['APP_RAM_START'] = None
     if args.bootloader:
         ram_map = get_mcu_config('RAM_MAP_BOOTLOADER', False)
         if ram_map is not None:
+            app_ram_map = get_mcu_config('RAM_MAP', True)
+            if app_ram_map[0][0] != ram_map[0][0]:
+                # we need to find the location of app_ram_map[0] in ram_map
+                for i in range(len(ram_map)):
+                    if app_ram_map[0][0] == ram_map[i][0]:
+                        env_vars['APP_RAM_START'] = i
             return ram_map
     elif env_vars['EXT_FLASH_SIZE_MB']:
         ram_map = get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
@@ -971,14 +987,21 @@ def write_mcu_config(f):
     cc_regions = []
     total_memory = 0
     for (address, size, flags) in ram_map:
-        regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
         cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size*1024))
+        if env_vars['APP_RAM_START'] is not None and address == ram_map[env_vars['APP_RAM_START']][0]:
+            ram_reserve_start = get_ram_reserve_start()
+            address += ram_reserve_start
+            size -= ram_reserve_start
+        regions.append('{(void*)0x%08x, 0x%08x, 0x%02x }' % (address, size*1024, flags))
         total_memory += size
     f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
     f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
     f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % total_memory)
 
-    f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
+    if env_vars['APP_RAM_START'] is not None:
+        f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[env_vars['APP_RAM_START']][0])
+    else:
+        f.write('#define HAL_RAM0_START 0x%08x\n' % ram_map[0][0])
     ram_reserve_start = get_ram_reserve_start()
     if ram_reserve_start > 0:
         f.write('#define HAL_RAM_RESERVE_START 0x%08x\n' % ram_reserve_start)
@@ -1028,7 +1051,11 @@ def write_mcu_config(f):
 #endif
 ''')
 
-    if get_mcu_config('EXPECTED_CLOCK', required=True):
+    if get_config('MCU_CLOCKRATE_MHZ', required=False):
+        clockrate = int(get_config('MCU_CLOCKRATE_MHZ'))
+        f.write('#define HAL_CUSTOM_MCU_CLOCKRATE %u\n' % (clockrate * 1000000))
+        f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % (clockrate * 1000000))
+    elif get_mcu_config('EXPECTED_CLOCK', required=True):
         f.write('#define HAL_EXPECTED_SYSCLOCK %u\n' % get_mcu_config('EXPECTED_CLOCK'))
 
     env_vars['CORTEX'] = cortex
@@ -1184,11 +1211,12 @@ def write_ldscript(fname):
     f = open(fname, 'w')
     ram0_start = ram_map[0][0]
     ram0_len = ram_map[0][1] * 1024
-
-    # possibly reserve some memory for app/bootloader comms
-    ram_reserve_start = get_ram_reserve_start()
-    ram0_start += ram_reserve_start
-    ram0_len -= ram_reserve_start
+    if env_vars['APP_RAM_START'] is None:
+        # default to start of ram for shared ram
+        # possibly reserve some memory for app/bootloader comms
+        ram_reserve_start = get_ram_reserve_start()
+        ram0_start += ram_reserve_start
+        ram0_len -= ram_reserve_start
     if ext_flash_length == 0 or args.bootloader:
         env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 0
         f.write('''/* generated ldscript.ld */
@@ -2692,12 +2720,15 @@ def add_apperiph_defaults(f):
 #ifndef HAL_SCHEDULER_ENABLED
 #define HAL_SCHEDULER_ENABLED 0
 #endif
+
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 0
 #endif
+
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 0
 #endif
+
 // default to no protocols, AP_Periph enables with params
 #define HAL_SERIAL1_PROTOCOL -1
 #define HAL_SERIAL2_PROTOCOL -1
@@ -2707,17 +2738,22 @@ def add_apperiph_defaults(f):
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
 #define HAL_LOGGING_MAVLINK_ENABLED 0
 #endif
+
 #ifndef HAL_MISSION_ENABLED
 #define HAL_MISSION_ENABLED 0
 #endif
+
 #ifndef HAL_RALLY_ENABLED
 #define HAL_RALLY_ENABLED 0
 #endif
+
 #ifndef HAL_CAN_DEFAULT_NODE_ID
 #define HAL_CAN_DEFAULT_NODE_ID 0
 #endif
+
 #define PERIPH_FW TRUE
 #define HAL_BUILD_AP_PERIPH
+
 #ifndef HAL_WATCHDOG_ENABLED_DEFAULT
 #define HAL_WATCHDOG_ENABLED_DEFAULT true
 #endif
@@ -2725,14 +2761,19 @@ def add_apperiph_defaults(f):
 #ifndef AP_FETTEC_ONEWIRE_ENABLED
 #define AP_FETTEC_ONEWIRE_ENABLED 0
 #endif
+
 #ifndef HAL_BARO_WIND_COMP_ENABLED
 #define HAL_BARO_WIND_COMP_ENABLED 0
+#endif
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED (HAL_GCS_ENABLED || HAL_LOGGING_ENABLED)
 #endif
 
+#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
+#define AP_AIRSPEED_AUTOCAL_ENABLE 0
 #endif
+
 ''')
 
 

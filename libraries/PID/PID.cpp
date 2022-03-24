@@ -52,7 +52,7 @@ float PID::get_pid(float error, float scaler)
     }
     _last_t = tnow;
 
-    delta_time = (float)dt / 1000.0f;
+    delta_time = (float)dt * 0.001f;
 
     // Compute proportional component
     _pid_info.P = error * _kp;

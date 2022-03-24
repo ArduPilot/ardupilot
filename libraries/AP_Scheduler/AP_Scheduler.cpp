@@ -27,6 +27,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Common/ExpandingString.h>
+#include <AP_HAL/SIMState.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
@@ -400,6 +401,10 @@ void AP_Scheduler::loop()
     perf_info.check_loop_time(sample_time_us - _loop_timer_start_us);
         
     _loop_timer_start_us = sample_time_us;
+
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    hal.simstate->update();
+#endif
 }
 
 void AP_Scheduler::update_logging()

@@ -27,71 +27,43 @@ using namespace Linux;
 
 UtilRPI::UtilRPI()
 {
-    _check_rpi_version();
+    _check_rpi_version_by_rev();
 }
 
-int UtilRPI::_check_rpi_version()
+int UtilRPI::_check_rpi_version_by_rev()
 {
-    const unsigned int MAX_SIZE_LINE = 50;
-    char buffer[MAX_SIZE_LINE];
-    int hw;
+    // assume 2 if unknown
+    _rpi_version = 2;
+    const char *SOC[]= {"Broadcom BCM2835","Broadcom BCM2836","Broadcom BCM2837","Broadcom BCM2711"};
+    const char *revision_file_ = "/proc/device-tree/system/linux,revision";
+    uint8_t revision[4] = { 0 };
+    uint32_t cpu = 0;
+    FILE *fd;
 
-    memset(buffer, 0, MAX_SIZE_LINE);
-    FILE *f = fopen("/sys/firmware/devicetree/base/model", "r");
-    if (f != nullptr && fgets(buffer, MAX_SIZE_LINE, f) != nullptr) {
-        fclose(f);
-        
-        int ret = strncmp(buffer, "Raspberry Pi Compute Module 4", 28);
-        if (ret == 0) {
-             _rpi_version = 4; // compute module 4 e.g. Raspberry Pi Compute Module 4 Rev 1.0.
-             printf("%s. (intern: %d)\n", buffer, _rpi_version);
-             return _rpi_version;
-        }
-        
-        ret = strncmp(buffer, "Raspberry Pi Zero 2", 19);
-        if (ret == 0) {
-             _rpi_version = 2; // Raspberry PI Zero 2 W e.g. Raspberry Pi Zero 2 Rev 1.0.
-             printf("%s. (intern: %d)\n", buffer, _rpi_version);
-             return _rpi_version;
-        }
-        
-        ret = sscanf(buffer + 12, "%d", &_rpi_version);
-        if (ret != EOF) {
-            if (_rpi_version > 3)  {
-                _rpi_version = 4;
-            } else if (_rpi_version > 2) {
-                // Preserving old behavior.
-                _rpi_version = 2;
-            } else if (_rpi_version == 0) {
-                // RPi 1 doesn't have a number there, so sscanf() won't have read anything.
-                _rpi_version = 1;
+    if ((fd = fopen(revision_file_, "rb")) == NULL) {
+        printf("Can't open '%s'\n", revision_file_);
+    }
+    else {
+        if (fread(revision, 1, sizeof(revision), fd) == 4) {
+            cpu = (revision[2] >> 4) & 0xf;
+            
+            _rpi_version = cpu;
+            
+            if (_rpi_version==0) {
+                _rpi_version=1; //RPI-Zero
             }
 
-            printf("%s. (intern: %d)\n", buffer, _rpi_version);
-
-            return _rpi_version;
+            printf("SOC: %s    use intern: %d \r\n",SOC[cpu], _rpi_version);
         }
+        else {
+            printf("Revision data too short\n");
+        }
+        fclose(fd);
     }
 
-    // Attempting old method if the version couldn't be read with the new one.
-    hw = Util::from(hal.util)->get_hw_arm32();
-
-    if (hw == UTIL_HARDWARE_RPI4) {
-        printf("Raspberry Pi 4 with BCM2711!\n");
-        _rpi_version = 4;
-    } else if (hw == UTIL_HARDWARE_RPI2) {
-        printf("Raspberry Pi 2/3 with BCM2709!\n");
-        _rpi_version = 2;
-    } else if (hw == UTIL_HARDWARE_RPI1) {
-        printf("Raspberry Pi 1 with BCM2708!\n");
-        _rpi_version = 1;
-    } else {
-        /* defaults to RPi version 2/3 */
-        fprintf(stderr, "Could not detect RPi version, defaulting to 2/3\n");
-        _rpi_version = 2;
-    }
     return _rpi_version;
 }
+
 
 int UtilRPI::get_rpi_version() const
 {

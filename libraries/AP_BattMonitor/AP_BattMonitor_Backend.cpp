@@ -75,7 +75,7 @@ void AP_BattMonitor_Backend::update_resistance_estimate()
 
     // calculate time since last update
     uint32_t now = AP_HAL::millis();
-    float loop_interval = (now - _resistance_timer_ms) / 1000.0f;
+    float loop_interval = (now - _resistance_timer_ms) * 0.001f;
     _resistance_timer_ms = now;
 
     // estimate short-term resistance
@@ -252,4 +252,17 @@ bool AP_BattMonitor_Backend::reset_remaining(float percentage)
     _state.failsafe = update_failsafes();
 
     return true;
+}
+
+/*
+  update consumed mAh and Wh
+ */
+void AP_BattMonitor_Backend::update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us)
+{
+    // update total current drawn since startup
+    if (state.last_time_micros != 0 && dt_us < 2000000) {
+        const float mah = calculate_mah(state.current_amps, dt_us);
+        state.consumed_mah += mah;
+        state.consumed_wh  += 0.001 * mah * state.voltage;
+    }
 }

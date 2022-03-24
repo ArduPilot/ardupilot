@@ -61,6 +61,9 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     static constexpr unsigned long EXID_MASK = (0x1FFFFFFFU); // Extended Identifier Mask
     static constexpr unsigned long RTR       = (0x20000000U); // Remote Transmission Request
     static constexpr unsigned long DLC_MASK  = (0x000F0000U); // Data Length Code
+    static constexpr unsigned long FDF       = (0x00200000U); // CAN FD Frame
+    static constexpr unsigned long BRS       = (0x00100000U); // Bit Rate Switching
+    
 
     /**
      * CANx register sets
@@ -88,13 +91,15 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     } MessageRam_;
 
     struct Timings {
+        uint16_t sample_point_permill;
         uint16_t prescaler;
         uint8_t sjw;
         uint8_t bs1;
         uint8_t bs2;
 
         Timings()
-            : prescaler(0)
+            : sample_point_permill(0)
+            , prescaler(0)
             , sjw(0)
             , bs1(0)
             , bs2(0)
@@ -147,10 +152,12 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
     static bool clock_init_;
 
     bool _detected_bus_off;
-
+    Timings timings, fdtimings;
+    uint32_t _bitrate, _fdbitrate;
     struct {
         uint32_t tx_requests;
         uint32_t tx_rejected;
+        uint32_t tx_overflow;
         uint32_t tx_success;
         uint32_t tx_timedout;
         uint32_t tx_abort;
@@ -160,6 +167,9 @@ class ChibiOS::CANIface : public AP_HAL::CANIface
         uint32_t num_busoff_err;
         uint32_t num_events;
         uint32_t ecr;
+        uint32_t fdf_tx_requests;
+        uint32_t fdf_tx_success;
+        uint32_t fdf_rx_received;
     } stats;
 
 public:
@@ -171,7 +181,11 @@ public:
     static uint8_t next_interface;
 
     // Initialise CAN Peripheral
-    bool init(const uint32_t bitrate, const OperatingMode mode) override;
+    bool init(const uint32_t bitrate, const OperatingMode mode) override {
+        return init(bitrate, 0, mode);
+    }
+
+    bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
     // 1 on successfully pushing a frame into FIFO

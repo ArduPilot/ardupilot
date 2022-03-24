@@ -362,7 +362,7 @@ public:
     AP_Int16 sysid_my_gcs;
     AP_Int8 telem_delay;
 
-    AP_Int8  rtl_autoland;
+    AP_Enum<RtlAutoland> rtl_autoland;
 
     AP_Int8  crash_accel_threshold;
 

@@ -43,6 +43,9 @@ public:
         AP_HAL::Util*       _util,
         AP_HAL::OpticalFlow*_opticalflow,
         AP_HAL::Flash*      _flash,
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        class AP_HAL::SIMState*   _simstate,
+#endif
         AP_HAL::DSP*        _dsp,
 #if HAL_NUM_CAN_IFACES > 0
         AP_HAL::CANIface* _can_ifaces[HAL_NUM_CAN_IFACES])
@@ -73,6 +76,9 @@ public:
         util(_util),
         opticalflow(_opticalflow),
         flash(_flash),
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+        simstate(_simstate),
+#endif
         dsp(_dsp)
     {
 #if HAL_NUM_CAN_IFACES > 0
@@ -144,4 +150,8 @@ public:
     UARTDriver* serial(uint8_t sernum) const;
 
     static constexpr uint8_t num_serial = 10;
+
+#if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+    AP_HAL::SIMState *simstate;
+#endif
 };
