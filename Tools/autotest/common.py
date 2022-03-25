@@ -7534,6 +7534,7 @@ Also, ignores heartbeats not from our target system'''
                     else:
                         continue
                 if m is not None:
+                    self.progress("Mag CAL progress: %s" % str(m))
                     cid = m.compass_id
                     new_pct = int(m.completion_pct)
                     if new_pct != reached_pct[cid]:
@@ -7599,6 +7600,7 @@ Also, ignores heartbeats not from our target system'''
                         self.progress("All Mag report failure")
                         break
                 if m is not None and m.get_type() == "MAG_CAL_PROGRESS":
+                    self.progress("Mag CAL progress: %s" % str(m))
                     cid = m.compass_id
                     new_pct = int(m.completion_pct)
                     if new_pct != reached_pct[cid]:
