@@ -208,6 +208,8 @@ void SRV_Channels::enable_aux_servos()
         // see if it is a valid function
         if (c.valid_function()) {
             hal.rcout->enable_ch(c.ch_num);
+        } else {
+            hal.rcout->disable_ch(c.ch_num);
         }
 
         // output some servo functions before we fiddle with the
