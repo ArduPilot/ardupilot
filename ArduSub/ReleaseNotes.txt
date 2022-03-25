@@ -1,6 +1,11 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta4 25-Mar-2022
+
+ - Set default loop rate for Navigator
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.0-beta3 3-Mar-2022
 
  - Set default parameters for Navigator for camera tilt and lights
