@@ -201,6 +201,16 @@ void RCOutput::rcout_thread()
 
         // process any pending RC output requests
         timer_tick(time_out_us);
+#if RCOU_DSHOT_TIMING_DEBUG
+        static bool output_masks = true;
+        if (AP_HAL::millis() > 5000 && output_masks) {
+            output_masks = false;
+            hal.console->printf("bdmask 0x%x, en_mask 0x%lx, 3dmask 0x%x:\n", _bdshot.mask, en_mask, _reversible_mask);
+            for (auto &group : pwm_group_list) {
+                hal.console->printf("  timer %u: ch_mask 0x%x, en_mask 0x%x\n", group.timer_id, group.ch_mask, group.en_mask);
+            }
+        }
+#endif
     }
 }
 
@@ -1338,8 +1348,9 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
     // assume that we won't be able to get the input capture lock
     group.bdshot.enabled = false;
 
+    uint16_t active_channels = group.ch_mask & group.en_mask;
     // now grab the input capture lock if we are able, we can only enable bi-dir on a group basis
-    if (((_bdshot.mask & group.ch_mask) == group.ch_mask) && group.has_ic()) {
+    if (((_bdshot.mask & active_channels) == active_channels) && group.has_ic()) {
         if (group.has_shared_ic_up_dma()) {
             // no locking required
             group.bdshot.enabled = true;
@@ -1398,18 +1409,19 @@ void RCOutput::dshot_send(pwm_group &group, uint32_t time_out_us)
 #endif
             _bdshot.erpm[chan] = erpm;
 #endif
+            if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
+                // safety is on, don't output anything
+                continue;
+            }
+
             uint16_t pwm = period[chan];
 
-            if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
-                // safety is on, overwride pwm
-                pwm = 0;
+            if (pwm == 0) {
+                // no pwm, don't output anything
+                continue;
             }
 
             const uint16_t chan_mask = (1U<<chan);
-            if (pwm == 0) {
-                // no output
-                continue;
-            }
 
             pwm = constrain_int16(pwm, 1000, 2000);
             uint16_t value = MIN(2 * (pwm - 1000), 1999);

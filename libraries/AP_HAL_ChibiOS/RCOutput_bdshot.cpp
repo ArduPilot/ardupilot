@@ -62,17 +62,11 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
         return true;
     }
 
-    bool set_curr_chan = false;
-
+    // allocate input capture DMA handles
     for (uint8_t i = 0; i < 4; i++) {
         if (!group.is_chan_enabled(i) ||
             !group.dma_ch[i].have_dma || !(_bdshot.mask & (1 << group.chan[i]))) {
             continue;
-        }
-        // make sure we don't start on a disabled channel
-        if (!set_curr_chan) {
-            group.bdshot.curr_telem_chan = i;
-            set_curr_chan = true;
         }
         pwmmode_t mode = group.pwm_cfg.channels[i].mode;
         if (mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW ||
@@ -99,6 +93,15 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
     // We might need to do sharing of timers for telemetry feedback
     // due to lack of available DMA channels
     for (uint8_t i = 0; i < 4; i++) {
+        // we must pull all the allocated channels high to prevent them going low
+        // when the pwm peripheral is stopped
+        if (group.chan[i] != CHAN_DISABLED && _bdshot.mask & group.ch_mask) {
+            // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
+            // when switching from output to input
+            palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
+                | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_MID1);
+        }
+
         if (!group.is_chan_enabled(i) || !(_bdshot.mask & (1 << group.chan[i]))) {
             continue;
         }
@@ -137,10 +140,14 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             group.bdshot.telem_tim_ch[i] = curr_chan;
             group.dma_ch[i] = group.dma_ch[curr_chan];
         }
-        // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
-        // when switching from output to input
-        palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
-            | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_MID1);
+    }
+
+    // now allocate the starting channel
+    for (uint8_t i = 0; i < 4; i++) {
+        if (group.chan[i] != CHAN_DISABLED && group.bdshot.ic_dma_handle[i] != nullptr) {
+            group.bdshot.curr_telem_chan = i;
+            break;
+        }
     }
 
     return true;
