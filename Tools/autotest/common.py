@@ -2564,7 +2564,7 @@ class AutoTest(ABC):
             os.link(self.logfile, self.buildlog)
         except OSError as error:
             self.progress("OSError [%d]: %s" % (error.errno, error.strerror))
-            self.progress("WARN: Failed to create symlink: %s => %s, "
+            self.progress("WARN: Failed to create link: %s => %s, "
                           "will copy tlog manually to target location" %
                           (self.logfile, self.buildlog))
             self.copy_tlog = True
