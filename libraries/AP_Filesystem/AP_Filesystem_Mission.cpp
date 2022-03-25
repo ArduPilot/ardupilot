@@ -30,7 +30,7 @@ extern int errno;
 
 #define IDLE_TIMEOUT_MS 30000
 
-int AP_Filesystem_Mission::open(const char *fname, int flags)
+int AP_Filesystem_Mission::open(const char *fname, int flags, bool allow_absolute_paths)
 {
     enum MAV_MISSION_TYPE mtype;
 

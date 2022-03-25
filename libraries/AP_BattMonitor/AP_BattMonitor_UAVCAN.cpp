@@ -154,14 +154,10 @@ void AP_BattMonitor_UAVCAN::update_interim_state(const float voltage, const floa
     const uint32_t tnow = AP_HAL::micros();
 
     if (!_has_battery_info_aux || _mppt.is_detected) {
-        uint32_t dt = tnow - _interim_state.last_time_micros;
+        const uint32_t dt_us = tnow - _interim_state.last_time_micros;
 
         // update total current drawn since startup
-        if (_interim_state.last_time_micros != 0 && dt < 2000000) {
-            float mah = calculate_mah(_interim_state.current_amps, dt);
-            _interim_state.consumed_mah += mah;
-            _interim_state.consumed_wh  += 0.001f * mah * _interim_state.voltage;
-        }
+        update_consumed(_interim_state, dt_us);
     }
 
     // record time

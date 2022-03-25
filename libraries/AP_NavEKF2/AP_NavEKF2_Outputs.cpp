@@ -285,9 +285,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
 
     if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
-        loc.alt =  origin.alt - posD*100;
-        loc.relative_alt = 0;
-        loc.terrain_alt = 0;
+        loc.set_alt_cm(origin.alt - posD*100, Location::AltFrame::ABSOLUTE);
 
         // there are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no aiding)
         if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
@@ -322,10 +320,7 @@ bool NavEKF2_core::getLLH(struct Location &loc) const
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
         // GPS reading if available and return false
         if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
-            const struct Location &gpsloc = gps.location();
-            loc = gpsloc;
-            loc.relative_alt = 0;
-            loc.terrain_alt = 0;
+            loc = gps.location();
         }
         return false;
     }

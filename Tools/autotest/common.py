@@ -5433,6 +5433,12 @@ class AutoTest(ABC):
             return msg.relative_alt / 1000.0  # mm -> m
         return msg.alt / 1000.0  # mm -> m
 
+    def assert_altitude(self, alt, accuracy=1, **kwargs):
+        got_alt = self.get_altitude(**kwargs)
+        if abs(alt - got_alt) > accuracy:
+            raise NotAchievedException("Incorrect alt; want=%f got=%f" %
+                                       (alt, got_alt))
+
     def assert_rangefinder_distance_between(self, dist_min, dist_max):
         m = self.assert_receive_message('RANGEFINDER')
 
@@ -5646,18 +5652,34 @@ class AutoTest(ABC):
             last_value = current_value_getter()
             if called_function is not None:
                 called_function(last_value, target)
-            if self.get_sim_time_cached() - last_print_time > 1:
-                if type(target) is Vector3:
-                    self.progress("%s=(%s) (want (%s) +- %f)" %
-                                  (value_name, str(last_value), str(target), accuracy))
-                else:
-                    self.progress("%s=%0.2f (want %f +- %f)" %
-                                  (value_name, last_value, target, accuracy))
-                last_print_time = self.get_sim_time_cached()
             if validator is not None:
                 is_value_valid = validator(last_value, target)
             else:
                 is_value_valid = math.fabs(last_value - target) <= accuracy
+            if self.get_sim_time_cached() - last_print_time > 1:
+                if is_value_valid:
+                    want_or_got = "got"
+                else:
+                    want_or_got = "want"
+                achieved_duration_bit = ""
+                if achieving_duration_start is not None:
+                    so_far = self.get_sim_time_cached() - achieving_duration_start
+                    achieved_duration_bit = " (maintain=%.1f/%.1f)" % (so_far, minimum_duration)
+
+                if type(target) is Vector3:
+                    self.progress(
+                        "%s=(%s) (%s (%s) +- %f)%s" %
+                        (value_name,
+                         str(last_value),
+                         want_or_got,
+                         str(target),
+                         accuracy,
+                         achieved_duration_bit)
+                    )
+                else:
+                    self.progress("%s=%0.2f (%s %f +- %f)%s" %
+                                  (value_name, last_value, want_or_got, target, accuracy, achieved_duration_bit))
+                last_print_time = self.get_sim_time_cached()
             if is_value_valid:
                 sum_of_achieved_values += last_value
                 count_of_achieved_values += 1.0
@@ -5726,14 +5748,13 @@ class AutoTest(ABC):
             **kwargs
         )
 
-    def wait_speed_vector(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
-        """Wait for a given speed vector."""
-        def get_speed_vector(timeout2):
-            msg = self.mav.recv_match(type='LOCAL_POSITION_NED', blocking=True, timeout=timeout2)
-            if msg:
-                return Vector3(msg.vx, msg.vy, msg.vz)
-            raise MsgRcvTimeoutException("Failed to get local speed vector")
+    def get_speed_vector(self, timeout=1):
+        '''return speed vector, NED'''
+        msg = self.assert_receive_message('LOCAL_POSITION_NED', timeout=timeout)
+        return Vector3(msg.vx, msg.vy, msg.vz)
 
+    """Wait for a given speed vector."""
+    def wait_speed_vector(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
         def validator(value2, target2):
             return (math.fabs(value2.x - target2.x) <= accuracy and
                     math.fabs(value2.y - target2.y) <= accuracy and
@@ -5742,10 +5763,28 @@ class AutoTest(ABC):
         self.wait_and_maintain(
             value_name="SpeedVector",
             target=speed_vector,
-            current_value_getter=lambda: get_speed_vector(timeout),
+            current_value_getter=lambda: self.get_speed_vector(timeout=timeout),
             validator=lambda value2, target2: validator(value2, target2),
             accuracy=accuracy,
             timeout=timeout,
+            **kwargs
+        )
+
+    def get_descent_rate(self):
+        '''get descent rate - a positive number if you are going down'''
+        return abs(self.get_speed_vector().z)
+
+    def wait_descent_rate(self, rate, accuracy=0.1, **kwargs):
+        '''wait for descent rate rate, a positive number if going down'''
+        def validator(value, target):
+            return math.fabs(value - target) <= accuracy
+
+        self.wait_and_maintain(
+            value_name="DescentRate",
+            target=rate,
+            current_value_getter=lambda: self.get_descent_rate(),
+            validator=lambda value, target: validator(value, target),
+            accuracy=accuracy,
             **kwargs
         )
 

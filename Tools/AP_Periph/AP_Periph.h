@@ -53,6 +53,10 @@ void stm32_watchdog_pat();
  */
 extern const struct app_descriptor app_descriptor;
 
+extern "C" {
+void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
+}
+
 class AP_Periph_FW {
 public:
     AP_Periph_FW();
@@ -257,6 +261,7 @@ public:
     void show_stack_free();
 
     static bool no_iface_finished_dna;
+    static constexpr auto can_printf = ::can_printf;
 };
 
 namespace AP
@@ -266,7 +271,4 @@ namespace AP
 
 extern AP_Periph_FW periph;
 
-extern "C" {
-void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
-}
 

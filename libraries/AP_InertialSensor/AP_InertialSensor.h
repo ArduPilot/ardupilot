@@ -326,12 +326,14 @@ public:
     // Returns newly calculated trim values if calculated
     bool get_new_trim(Vector3f &trim_rad);
 
+#if HAL_INS_ACCELCAL_ENABLED
     // initialise and register accel calibrator
     // called during the startup of accel cal
     void acal_init();
 
     // update accel calibrator
     void acal_update();
+#endif
 
     // simple accel calibration
 #if HAL_GCS_ENABLED
