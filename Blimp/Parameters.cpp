@@ -102,7 +102,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FS_GCS_ENABLE
     // @DisplayName: Ground Station Failsafe Enable
     // @Description: Controls whether failsafe will be invoked (and what action to take) when connection with Ground station is lost for at least 5 seconds. See FS_OPTIONS param for additional actions, or for cases allowing Mission continuation, when GCS failsafe is enabled.
-    // @Values: 0:Disabled/NoAction,1:RTL,2:RTL or Continue with Mission in Auto Mode (Removed in 4.0+-see FS_OPTIONS),3:SmartRTL or RTL,4:SmartRTL or Land,5:Land (4.0+ Only)
+    // @Values: 0:Disabled/NoAction,5:Land
     // @User: Standard
     GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISABLED),
 
@@ -116,7 +116,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
-    // @Values:  0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode (Removed in 4.0+),3:Enabled always Land,4:Enabled always SmartRTL or RTL,5:Enabled always SmartRTL or Land
+    // @Values:  0:Disabled,3:Enabled always Land
     // @User: Standard
     GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_ENABLED_ALWAYS_RTL),
 
@@ -141,7 +141,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate
+    // @Values: 0:LAND,1:MANUAL,2:VELOCITY,3:LOITER
     // @User: Standard
     GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
 
@@ -189,7 +189,7 @@ const AP_Param::Info Blimp::var_info[] = {
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
-    // @Description: This selects the mode to start in on boot. This is useful for when you want to start in AUTO mode on boot without a receiver.
+    // @Description: This selects the mode to start in on boot.
     // @CopyValuesFrom: FLTMODE1
     // @User: Advanced
     GSCALAR(initial_mode,        "INITIAL_MODE",     (uint8_t)Mode::Number::MANUAL),
@@ -200,21 +200,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Bitmask: 0:ATTITUDE_FAST,1:ATTITUDE_MED,2:GPS,3:PM,4:CTUN,5:NTUN,6:RCIN,7:IMU,8:CMD,9:CURRENT,10:RCOUT,11:OPTFLOW,12:PID,13:COMPASS,14:INAV,15:CAMERA,17:MOTBATT,18:IMU_FAST,19:IMU_RAW
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
-
-    // @Param: TUNE
-    // @DisplayName: Channel 6 Tuning
-    // @Description: Controls which parameters (normally PID gains) are being tuned with transmitter's channel 6 knob
-    // @User: Standard
-    // @Values: 0:None,1:Stab Roll/Pitch kP,4:Rate Roll/Pitch kP,5:Rate Roll/Pitch kI,21:Rate Roll/Pitch kD,3:Stab Yaw kP,6:Rate Yaw kP,26:Rate Yaw kD,56:Rate Yaw Filter,55:Motor Yaw Headroom,14:AltHold kP,7:Throttle Rate kP,34:Throttle Accel kP,35:Throttle Accel kI,36:Throttle Accel kD,12:Loiter Pos kP,22:Velocity XY kP,28:Velocity XY kI,10:WP Speed,25:Acro RollPitch kP,40:Acro Yaw kP,45:RC Feel,13:Heli Ext Gyro,38:Declination,39:Circle Rate,41:RangeFinder Gain,46:Rate Pitch kP,47:Rate Pitch kI,48:Rate Pitch kD,49:Rate Roll kP,50:Rate Roll kI,51:Rate Roll kD,52:Rate Pitch FF,53:Rate Roll FF,54:Rate Yaw FF,58:SysID Magnitude
-    GSCALAR(radio_tuning, "TUNE",                   0),
-
-    // @Param: FRAME_TYPE
-    // @DisplayName: Frame Type (+, X, V, etc)
-    // @Description: Controls motor mixing for multiblimps.  Not used for Tri or Traditional Heliblimps.
-    // @Values: 0:Plus, 1:X, 2:V, 3:H, 4:V-Tail, 5:A-Tail, 10:Y6B, 11:Y6F, 12:BetaFlightX, 13:DJIX, 14:ClockwiseX, 15: I, 18: BetaFlightXReversed
-    // @User: Standard
-    // @RebootRequired: True
-    GSCALAR(frame_type, "FRAME_TYPE", HAL_FRAME_TYPE_DEFAULT),
 
     // @Group: ARMING_
     // @Path: ../libraries/AP_Arming/AP_Arming.cpp
@@ -231,7 +216,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
-    // @Values: 1:Land, 2:AltHold, 3:Land even in Stabilize
+    // @Values: 1:Land, 3:Land even in MANUAL
     // @User: Advanced
     GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    FS_EKF_ACTION_DEFAULT),
 
@@ -574,13 +559,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Units: Hz
     // @User: Advanced
 
-    // @Param: VELYAW_FLTE
-    // @DisplayName: Velocity (yaw) input filter
-    // @Description: Velocity (yaw) input filter.  This filter (in Hz) is applied to the input for D term
-    // @Range: 0 100
-    // @Units: Hz
-    // @User: Advanced
-
     // @Param: VELYAW_FF
     // @DisplayName: Velocity (yaw) feed forward gain
     // @Description: Velocity (yaw) feed forward gain.  Converts the difference between desired velocity to a target acceleration
@@ -822,18 +800,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(scripting, "SCR_", 30, ParametersG2, AP_Scripting),
 #endif
 
-    // @Param: TUNE_MIN
-    // @DisplayName: Tuning minimum
-    // @Description: Minimum value that the parameter currently being tuned with the transmitter's channel 6 knob will be set to
-    // @User: Standard
-    AP_GROUPINFO("TUNE_MIN", 31, ParametersG2, tuning_min, 0),
-
-    // @Param: TUNE_MAX
-    // @DisplayName: Tuning maximum
-    // @Description: Maximum value that the parameter currently being tuned with the transmitter's channel 6 knob will be set to
-    // @User: Standard
-    AP_GROUPINFO("TUNE_MAX", 32, ParametersG2, tuning_max, 0),
-
     // @Param: FS_VIBE_ENABLE
     // @DisplayName: Vibration Failsafe enable
     // @Description: This enables the vibration failsafe which will use modified altitude estimation and control during high vibrations
@@ -844,8 +810,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe options bitmask
     // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 (default) disables all options.
-    // @Values: 0:Disabled, 1:Continue if in Auto on RC failsafe only, 2:Continue if in Auto on GCS failsafe only, 3:Continue if in Auto on RC and/or GCS failsafe, 4:Continue if in Guided on RC failsafe only, 8:Continue if landing on any failsafe, 16:Continue if in pilot controlled modes on GCS failsafe, 19:Continue if in Auto on RC and/or GCS failsafe and continue if in pilot controlled modes on GCS failsafe
-    // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe, 5:Release Gripper
+    // @Values: 0:Disabled, 16:Continue if in pilot controlled modes on GCS failsafe
+    // @Bitmask: 4:Continue if in pilot controlled modes on GCS failsafe
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, (float)Blimp::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL),
 
