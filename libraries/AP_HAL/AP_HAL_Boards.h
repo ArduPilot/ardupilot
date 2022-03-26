@@ -284,7 +284,9 @@
 #endif
 #endif // HAL_HNF_MAX_FILTERS
 
-#ifndef HAL_CANFD_SUPPORTED
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL // allow SITL to have all the CANFD options
+#define HAL_CANFD_SUPPORTED 8
+#elif !defined(HAL_CANFD_SUPPORTED)
 #define HAL_CANFD_SUPPORTED 0
 #endif
 
