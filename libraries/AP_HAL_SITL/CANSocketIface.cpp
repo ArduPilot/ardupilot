@@ -71,19 +71,50 @@ static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
     return sockcan_frame;
 }
 
-static AP_HAL::CANFrame makeUavcanFrame(const can_frame& sockcan_frame)
+static canfd_frame makeSocketCanFDFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
-    AP_HAL::CANFrame uavcan_frame(sockcan_frame.can_id & CAN_EFF_MASK, sockcan_frame.data, sockcan_frame.can_dlc);
+    canfd_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), CANFD_BRS, 0, 0, { } };
+    std::copy(uavcan_frame.data, uavcan_frame.data + AP_HAL::CANFrame::dlcToDataLength(uavcan_frame.dlc), sockcan_frame.data);
+    if (uavcan_frame.isExtended()) {
+        sockcan_frame.can_id |= CAN_EFF_FLAG;
+    }
+    if (uavcan_frame.isErrorFrame()) {
+        sockcan_frame.can_id |= CAN_ERR_FLAG;
+    }
+    if (uavcan_frame.isRemoteTransmissionRequest()) {
+        sockcan_frame.can_id |= CAN_RTR_FLAG;
+    }
+    return sockcan_frame;
+}
+
+static AP_HAL::CANFrame makeCanFrame(const can_frame& sockcan_frame)
+{
+    AP_HAL::CANFrame can_frame(sockcan_frame.can_id & CAN_EFF_MASK, sockcan_frame.data, sockcan_frame.can_dlc);
     if (sockcan_frame.can_id & CAN_EFF_FLAG) {
-        uavcan_frame.id |= AP_HAL::CANFrame::FlagEFF;
+        can_frame.id |= AP_HAL::CANFrame::FlagEFF;
     }
     if (sockcan_frame.can_id & CAN_ERR_FLAG) {
-        uavcan_frame.id |= AP_HAL::CANFrame::FlagERR;
+        can_frame.id |= AP_HAL::CANFrame::FlagERR;
     }
     if (sockcan_frame.can_id & CAN_RTR_FLAG) {
-        uavcan_frame.id |= AP_HAL::CANFrame::FlagRTR;
+        can_frame.id |= AP_HAL::CANFrame::FlagRTR;
     }
-    return uavcan_frame;
+    return can_frame;
+}
+
+static AP_HAL::CANFrame makeCanFDFrame(const canfd_frame& sockcan_frame)
+{
+    AP_HAL::CANFrame can_frame(sockcan_frame.can_id & CAN_EFF_MASK, sockcan_frame.data, sockcan_frame.len);
+    if (sockcan_frame.can_id & CAN_EFF_FLAG) {
+        can_frame.id |= AP_HAL::CANFrame::FlagEFF;
+    }
+    if (sockcan_frame.can_id & CAN_ERR_FLAG) {
+        can_frame.id |= AP_HAL::CANFrame::FlagERR;
+    }
+    if (sockcan_frame.can_id & CAN_RTR_FLAG) {
+        can_frame.id |= AP_HAL::CANFrame::FlagRTR;
+    }
+    return can_frame;
 }
 
 bool CANIface::is_initialized() const
@@ -133,6 +164,10 @@ int CANIface::_openSocket(const std::string& iface_name)
         }
         // Socket loopback
         if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, &on, sizeof(on)) < 0) {
+            return -1;
+        }
+        // Allow CANFD
+        if (setsockopt(s, SOL_CAN_RAW, CAN_RAW_FD_FRAMES, &on, sizeof(on)) < 0) {
             return -1;
         }
         // Non-blocking
@@ -308,7 +343,12 @@ bool CANIface::_pollRead()
         CanRxItem rx;
         rx.timestamp_us = AP_HAL::native_micros64();  // Monotonic timestamp is not required to be precise (unlike UTC)
         bool loopback = false;
-        const int res = _read(rx.frame, rx.timestamp_us, loopback);
+        int res;
+        if (iterations_count % 2 == 0) {
+            res = _read(rx.frame, rx.timestamp_us, loopback);
+        } else {
+            res = _readfd(rx.frame, rx.timestamp_us, loopback);
+        }
         if (res == 1) {
             bool accept = true;
             if (loopback) {           // We receive loopback for all CAN frames
@@ -339,18 +379,26 @@ int CANIface::_write(const AP_HAL::CANFrame& frame) const
         return -1;
     }
     errno = 0;
+    int res = 0;
 
-    const can_frame sockcan_frame = makeSocketCanFrame(frame);
-
-    const int res = write(_fd, &sockcan_frame, sizeof(sockcan_frame));
+    if (frame.isCanFDFrame()) {
+        const canfd_frame sockcan_frame = makeSocketCanFDFrame(frame);
+        res = write(_fd, &sockcan_frame, sizeof(sockcan_frame));
+        if (res > 0 && res != sizeof(sockcan_frame)) {
+            return -1;
+        }
+    } else {
+        const can_frame sockcan_frame = makeSocketCanFrame(frame);
+        res = write(_fd, &sockcan_frame, sizeof(sockcan_frame));
+        if (res > 0 && res != sizeof(sockcan_frame)) {
+            return -1;
+        }
+    }
     if (res <= 0) {
         if (errno == ENOBUFS || errno == EAGAIN) {  // Writing is not possible atm, not an error
             return 0;
         }
         return res;
-    }
-    if (res != sizeof(sockcan_frame)) {
-        return -1;
     }
     return 1;
 }
@@ -389,7 +437,48 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
         return 0;
     }
 
-    frame = makeUavcanFrame(sockcan_frame);
+    frame = makeCanFrame(sockcan_frame);
+    /*
+     * Timestamp
+     */
+    timestamp_us = AP_HAL::native_micros64();
+    return 1;
+}
+
+int CANIface::_readfd(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopback) const
+{
+    if (_fd < 0) {
+        return -1;
+    }
+    auto iov = iovec();
+    auto sockcan_frame = canfd_frame();
+    iov.iov_base = &sockcan_frame;
+    iov.iov_len  = sizeof(sockcan_frame);
+    union {
+        uint8_t data[CMSG_SPACE(sizeof(::timeval))];
+        struct cmsghdr align;
+    } control;
+
+    auto msg = msghdr();
+    msg.msg_iov    = &iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = control.data;
+    msg.msg_controllen = sizeof(control.data);
+
+    const int res = recvmsg(_fd, &msg, MSG_DONTWAIT);
+    if (res <= 0) {
+        return (res < 0 && errno == EWOULDBLOCK) ? 0 : res;
+    }
+    /*
+     * Flags
+     */
+    loopback = (msg.msg_flags & static_cast<int>(MSG_CONFIRM)) != 0;
+
+    if (!loopback && !_checkHWFilters(sockcan_frame)) {
+        return 0;
+    }
+
+    frame = makeCanFDFrame(sockcan_frame);
     /*
      * Timestamp
      */
@@ -450,6 +539,20 @@ bool CANIface::_checkHWFilters(const can_frame& frame) const
     }
 }
 
+bool CANIface::_checkHWFilters(const canfd_frame& frame) const
+{
+    if (!_hw_filters_container.empty()) {
+        for (auto& f : _hw_filters_container) {
+            if (((frame.can_id & f.can_mask) ^ f.can_id) == 0) {
+                return true;
+            }
+        }
+        return false;
+    } else {
+        return true;
+    }
+}
+
 void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 {
     if (!_down && (pfd.revents & POLLERR)) {
@@ -461,6 +564,12 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
         stats.num_downs++;
         Debug("Iface %d is dead; error %d", _fd, error);
     }
+}
+
+bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode)
+{
+    // we are using vcan, so bitrate is irrelevant
+    return init(bitrate, mode);
 }
 
 bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)

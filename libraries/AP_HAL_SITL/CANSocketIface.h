@@ -67,6 +67,7 @@ public:
     ~CANIface() { }
 
     // Initialise CAN Peripheral
+    bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) override;
     bool init(const uint32_t bitrate, const OperatingMode mode) override;
 
     // Put frame into Tx FIFO returns negative on error, 0 on buffer full, 
@@ -136,6 +137,8 @@ private:
 
     int _read(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
 
+    int _readfd(AP_HAL::CANFrame& frame, uint64_t& ts_usec, bool& loopback) const;
+
     void _incrementNumFramesInSocketTxQueue();
 
     void _confirmSentFrame();
@@ -143,6 +146,7 @@ private:
     bool _wasInPendingLoopbackSet(const AP_HAL::CANFrame& frame);
 
     bool _checkHWFilters(const can_frame& frame) const;
+    bool _checkHWFilters(const canfd_frame& frame) const;
 
     bool _hasReadyTx();
 
