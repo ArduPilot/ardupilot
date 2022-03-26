@@ -552,6 +552,7 @@ class sitl(Board):
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
             cfg.define('UAVCAN_EXCEPTIONS', 0)
+            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
 
         env.CXXFLAGS += [
             '-Werror=float-equal'
@@ -679,7 +680,7 @@ class sitl_periph_gps(sitl):
             HAL_MISSION_ENABLED = 0,
             HAL_RALLY_ENABLED = 0,
             HAL_SCHEDULER_ENABLED = 0,
-            CANARD_ENABLE_TAO_OPTION = 1,
+            CANARD_ENABLE_CANFD = 1,
         )
         # libcanard is written for 32bit platforms
         env.CXXFLAGS += [
