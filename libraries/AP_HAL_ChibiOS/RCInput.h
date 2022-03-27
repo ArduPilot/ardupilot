@@ -72,6 +72,15 @@ private:
     uint32_t _rcin_last_iomcu_ms;
     bool _init;
     const char *last_protocol;
+
+    enum class RCSource {
+        NONE = 0,
+        IOMCU = 1,
+        RCPROT_PULSES = 2,
+        RCPROT_BYTES = 3,
+        APRADIO = 4,
+    } last_source;
+
     bool pulse_input_enabled;
 
 #if HAL_RCINPUT_WITH_AP_RADIO
