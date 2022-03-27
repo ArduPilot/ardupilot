@@ -351,6 +351,8 @@ void AP_Terrain::io_timer(void)
         return;
     }
 
+    update_reference_offset();
+
     switch (disk_io_state) {
     case DiskIoIdle:
     case DiskIoDoneRead:
