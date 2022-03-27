@@ -1369,6 +1369,17 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
 
+#if AP_TERRAIN_AVAILABLE
+    if (armed) {
+        // tell terrain we have just armed, so it can setup
+        // a reference location for terrain adjustment
+        auto *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->set_reference_location();
+        }
+    }
+#endif
+
     return armed;
 }
 
