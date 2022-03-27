@@ -181,7 +181,7 @@ void RCInput::_timer_tick(void)
         _rcin_last_iomcu_ms = 0;
     }
 
-    if (!have_iocmu_rc && rcprot.new_input()) {
+    if (rcprot.new_input() && !have_iocmu_rc) {
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = AP_HAL::micros();
         _num_channels = rcprot.num_channels();
