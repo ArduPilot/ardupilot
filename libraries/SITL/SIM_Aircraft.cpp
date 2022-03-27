@@ -111,8 +111,8 @@ float Aircraft::ground_height_difference() const
     if (sitl &&
         terrain != nullptr &&
         sitl->terrain_enable &&
-        terrain->height_amsl(home, h1) &&
-        terrain->height_amsl(location, h2)) {
+        terrain->height_amsl(home, h1, false) &&
+        terrain->height_amsl(location, h2, false)) {
         h2 += local_ground_level;
         return h2 - h1;
     }
