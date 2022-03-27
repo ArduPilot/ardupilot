@@ -1,8 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
-# for H755 bootloader
+# for H755 bootloader - H755 is almost identical to H757, so utilizing its STM32H757xx.py file
 
 # MCU class and specific type
-MCU STM32H7xx STM32H755xx
+MCU STM32H7xx STM32H757xx
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -17,25 +17,19 @@ APJ_BOARD_ID 139
 FLASH_SIZE_KB 2048
 
 # the location where the bootloader will put the firmware
-# the H743 has 128k sectors
+# the H755 has 128k sectors
 FLASH_BOOTLOADER_LOAD_KB 256
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
 
 # order of UARTs (and USB)
-SERIAL_ORDER OTG1 USART2 USART3 USART7
+SERIAL_ORDER OTG1
 
-# UART7 is debug
-PF6 UART7_RX UART7 NODMA
-PE8 UART7_TX UART7 NODMA
-
-PB0 LED_BOOTLOADER OUTPUT
-PB14 LED_ACTIVITY OUTPUT
+#LED setup
+PB0 LED_BOOTLOADER OUTPUT LOW
+PB14 LED_ACTIVITY OUTPUT LOW
 define HAL_LED_ON 0
-
-define STM32_SERIAL_USE_USART7 TRUE
-define HAL_USE_SERIAL TRUE
 
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -46,3 +40,4 @@ PA14 JTCK-SWCLK SWD
 # Add CS pins to ensure they are high in bootloader
 PA4 MPU_CS CS
 PC7 BARO_CS CS
+
