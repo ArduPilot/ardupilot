@@ -150,6 +150,7 @@ void RCInput::_timer_tick(void)
     }
 #ifndef HAL_NO_UARTDRIVER
     const char *rc_protocol = nullptr;
+    RCSource source = last_source;
 #endif
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -191,12 +192,13 @@ void RCInput::_timer_tick(void)
         _rx_link_quality = rcprot.get_rx_link_quality();
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = rcprot.protocol_name();
+        source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
 #endif
     }
 #endif // HAL_BUILD_AP_PERIPH
 
 #if HAL_RCINPUT_WITH_AP_RADIO
-    if (radio && radio->last_recv_us() != last_radio_us) {
+    if (radio && radio->last_recv_us() != last_radio_us && !have_iocmu_rc) {
         last_radio_us = radio->last_recv_us();
         WITH_SEMAPHORE(rcin_mutex);
         _rcin_timestamp_last_signal = last_radio_us;
@@ -205,6 +207,9 @@ void RCInput::_timer_tick(void)
         for (uint8_t i=0; i<_num_channels; i++) {
             _rc_values[i] = radio->read(i);
         }
+#ifndef HAL_NO_UARTDRIVER
+        source = RCSource::APRADIO;
+#endif
     }
 #endif
 
@@ -218,15 +223,17 @@ void RCInput::_timer_tick(void)
 #ifndef HAL_NO_UARTDRIVER
             rc_protocol = iomcu.get_rc_protocol();
             _rssi = iomcu.get_RSSI();
+            source = RCSource::IOMCU;
 #endif
         }
     }
 #endif
 
 #ifndef HAL_NO_UARTDRIVER
-    if (rc_protocol && rc_protocol != last_protocol) {
+    if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
-        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s", last_protocol);
+        last_source = source;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "RCInput: decoding %s(%u)", last_protocol, unsigned(source));
     }
 #endif
 
