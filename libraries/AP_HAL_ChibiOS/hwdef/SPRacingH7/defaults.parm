@@ -5,3 +5,6 @@ NTF_LED_TYPES 257
 # setup SERIAL2 for RCIN
 SERIAL2_BAUD 115
 SERIAL2_OPTIONS 8
+
+# currently using both IMUs is too CPU intensive
+INS_ENABLE_MASK 1
