@@ -1500,8 +1500,9 @@ function terrain:height_terrain_difference_home(extrapolate) end
 
 -- desc
 ---@param loc Location_ud
+---@param corrected boolean
 ---@return number|nil
-function terrain:height_amsl(loc) end
+function terrain:height_amsl(loc, corrected) end
 
 -- desc
 ---@return integer
