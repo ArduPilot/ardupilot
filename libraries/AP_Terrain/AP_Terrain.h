@@ -122,7 +122,7 @@ public:
 
       return false if not available
      */
-    bool height_amsl(const Location &loc, float &height);
+    bool height_amsl(const Location &loc, float &height, bool corrected = true);
 
     /* 
        find difference between home terrain height and the terrain
@@ -188,6 +188,12 @@ public:
       returns true if initialisation failed because out-of-memory
      */
     bool init_failed() const { return memory_alloc_failed; }
+
+    /*
+      setup a reference location for terrain adjustment. This should
+      be called when the vehicle is definately on the ground
+     */
+    void set_reference_location(void);
 
 private:
     // allocate the terrain subsystem data
@@ -344,12 +350,18 @@ private:
      */
     void update_rally_data(void);
 
+    /*
+      calculate reference offset if needed
+     */
+    void update_reference_offset(void);
+
 
     // parameters
     AP_Int8  enable;
     AP_Float margin;
     AP_Int16 grid_spacing; // meters between grid points
     AP_Int16 options; // option bits
+    AP_Float offset_max;
 
     enum class Options {
         DisableDownload = (1U<<0),
@@ -395,6 +407,15 @@ private:
     // cache the home altitude, as it is needed so often
     float home_height;
     Location home_loc;
+
+    // reference position for terrain adjustment, set at arming
+    bool have_reference_loc;
+    Location reference_loc;
+
+    // calculated reference offset
+    bool have_reference_offset;
+    float reference_offset;
+
 
     // cache the last terrain height (AMSL) of the AHRS current
     // location. This is used for extrapolation when terrain data is
