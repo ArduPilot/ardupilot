@@ -29,6 +29,7 @@
 #if !defined(HAL_BOOTLOADER_BUILD)
 #include "Semaphores.h"
 #endif
+#include "hwdef/common/stm32_util.h"
 
 #include "Scheduler.h"
 #include "Device.h"

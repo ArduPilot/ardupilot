@@ -27,7 +27,6 @@
 #include "Util.h"
 #include "Scheduler.h"
 #include <stdio.h>
-#include "hwdef/common/stm32_util.h"
 
 #if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
 
