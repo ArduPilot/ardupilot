@@ -176,7 +176,7 @@ singleton AP_Terrain alias terrain
 singleton AP_Terrain method enabled boolean
 singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
 singleton AP_Terrain method status uint8_t
-singleton AP_Terrain method height_amsl boolean Location float'Null
+singleton AP_Terrain method height_amsl boolean Location float'Null boolean
 singleton AP_Terrain method height_terrain_difference_home boolean float'Null boolean
 singleton AP_Terrain method height_above_terrain boolean float'Null boolean
 
