@@ -509,7 +509,7 @@ Vector3<T> Vector3<T>::point_on_line_closest_to_other_point(const Vector3<T> &w1
     const T line_vec_len = line_vec.length();
     // protection against divide by zero
     if(::is_zero(line_vec_len)) {
-        return {0.0f, 0.0f, 0.0f};
+        return w1;
     }
 
     const T scale = 1/line_vec_len;
