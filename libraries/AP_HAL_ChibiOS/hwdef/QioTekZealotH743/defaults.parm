@@ -2,10 +2,10 @@
 BRD_HEAT_TARG 45
 
 # setup serial2 port defaults for ESP8266
-define HAL_SERIAL2_PROTOCOL SerialProtocol_MAVLink2
-define HAL_SERIAL2_BAUD 921600
+SERIAL2_BAUD 921600
 
 # setup the parameter for the ADC power module
+BATT_MONITOR 4
 BATT_VOLT_PIN 16
 BATT_CURR_PIN 17
 BATT_VOLT_MULT 20.000
@@ -16,5 +16,5 @@ BATT2_VOLT_MULT 20.000
 BATT2_AMP_PERVLT 17.000
 
 # setup the parameter for the two Relays GPIO others for reserve
-define RELAY1_PIN_DEFAULT 1
-define RELAY2_PIN_DEFAULT 2
+RELAY_PIN 1
+RELAY_PIN2 2
