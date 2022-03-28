@@ -757,6 +757,7 @@ void AC_PosControl::init_z_controller()
     // initialise vertical offsets
     _pos_offset_target_z = 0.0;
     _pos_offset_z = 0.0;
+    _pos_tune_offset_z = 0.0;
     _vel_offset_z = 0.0;
     _accel_offset_z = 0.0;
 

@@ -310,10 +310,13 @@ public:
     void set_pos_offset_target_z_cm(float pos_offset_target_z) { _pos_offset_target_z = pos_offset_target_z; }
 
     /// set_pos_offset_z_cm - set altitude offset in cm above the EKF origin
-    void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset_z = pos_offset_z; }
+    void set_pos_offset_z_cm(float pos_offset_z) { _pos_offset_z = pos_offset_z + _pos_tune_offset_z; }
 
     /// get_pos_offset_z_cm - returns altitude offset in cm above the EKF origin
-    float get_pos_offset_z_cm() const { return _pos_offset_z; }
+    float get_pos_offset_z_cm() const { return _pos_offset_z + _pos_tune_offset_z; }
+
+    /// set_pos_tune_offset_z_cm - set altitude tune offset in cm above the EKF origin
+    void set_pos_tune_offset_z_cm(float pos_tune_offset_z) { _pos_tune_offset_z = pos_tune_offset_z; }
 
     /// get_vel_offset_z_cm - returns current vertical offset speed in cm/s
     float get_vel_offset_z_cms() const { return _vel_offset_z; }
@@ -462,6 +465,7 @@ protected:
 
     float       _pos_offset_target_z;   // vertical position offset target, frame NEU in cm relative to the EKF origin
     float       _pos_offset_z;          // vertical position offset, frame NEU in cm relative to the EKF origin
+    float       _pos_tune_offset_z;     // vertical position tune offset, frame NEU in cm relative to the EKF origin
     float       _vel_offset_z;          // vertical velocity offset in NEU cm/s calculated by pos_to_rate step
     float       _accel_offset_z;        // vertical acceleration offset in NEU cm/s/s
 
