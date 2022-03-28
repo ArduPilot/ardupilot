@@ -451,6 +451,7 @@ struct PACKED log_TERRAIN {
     float current_height;
     uint16_t pending;
     uint16_t loaded;
+    float reference_offset;
 };
 
 struct PACKED log_CSRV {
@@ -1171,6 +1172,7 @@ struct PACKED log_VER {
 // @Field: CHeight: Vehicle height above terrain
 // @Field: Pending: Number of tile requests outstanding
 // @Field: Loaded: Number of tiles in memory
+// @Field: ROfs: terrain reference offset for arming altitude
 
 // @LoggerMessage: TSYN
 // @Description: Time synchronisation response information
@@ -1327,7 +1329,7 @@ LOG_STRUCTURE_FROM_AVOIDANCE \
     { LOG_SIMSTATE_MSG, sizeof(log_AHRS), \
       "SIM","QccCfLLffff","TimeUS,Roll,Pitch,Yaw,Alt,Lat,Lng,Q1,Q2,Q3,Q4", "sddhmDU????", "FBBB0GG????", true }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
-      "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded", "s-DU-mm--", "F-GG-00--", true }, \
+      "TERR","QBLLHffHHf","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded,ROfs", "s-DU-mm--m", "F-GG-00--0", true }, \
 LOG_STRUCTURE_FROM_ESC_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
       "CSRV","QBfffB","TimeUS,Id,Pos,Force,Speed,Pow", "s#---%", "F-0000", true }, \
