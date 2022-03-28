@@ -1951,6 +1951,10 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
         }
 
         AP_Param *ap2 = (AP_Param *)(group_info[i].offset + (uint8_t *)object_pointer);
+        if (ap2->configured_in_storage()) {
+            // user has already set a value, or previous conversion was done
+            continue;
+        }
         memcpy(ap2, ap, sizeof(old_value));
         // and save
         ap2->save();
