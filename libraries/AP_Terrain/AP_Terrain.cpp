@@ -69,7 +69,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     AP_GROUPINFO("MARGIN",   3, AP_Terrain, margin, 0.05),
 
     // @Param: OFS_MAX
-    // @DisplayName: Maximum reference offset
+    // @DisplayName: Terrain reference offset maximum
     // @Description: The maximum adjustment of terrain altitude based on the assumption that the vehicle is on the ground when it is armed. When the vehicle is armed the location of the vehicle is recorded, and when terrain data is available for that location a height adjustment for terrain data is calculated that aligns the terrain height at that location with the altitude recorded at arming. This height adjustment is applied to all terrain data. This parameter clamps the amount of adjustment. A value of zero disables the use of terrain height adjustment.
     // @Units: m
     // @Range: 0 50
@@ -392,7 +392,8 @@ void AP_Terrain::log_terrain_data()
         terrain_height : terrain_height,
         current_height : current_height,
         pending        : pending,
-        loaded         : loaded
+        loaded         : loaded,
+        reference_offset : have_reference_offset?reference_offset:0,
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
