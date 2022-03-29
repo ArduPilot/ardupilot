@@ -1,5 +1,22 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.2.0-beta3 30-Mar-2022
+Changes from 4.2.0-beta2
+1) Minor Enhancements
+    a) BATT_OPTIONS supports sending resting voltage (corrected for internal resistance) to the ground station
+    b) KakuteH7-bdshot support
+    c) MatekH743 uses a 32 bit timer to resolve occasional 68ms timing glitch
+    d) RC input protocol text message sent to GCS (helps pilot awareness during RC handover)
+2) Bug fixes
+    a) Balance bot stands in acro mode even with no GPS
+    b) Battery remaining percentage fixed when using Sum battery
+    c) DShot reversal bug with IOMCU based boards (see SERVO_BLH_RVMASK)
+    d) DShot commands fixed (could cause random motor movements)
+    e) GPS blending fix that could have resulted in the wrong GPS being used for a short time
+    f) Param conversion bug (impacted airspeed enable)
+    g) RC handover between IOMCU RC input and a secondary RC input on a serial port fixed
+    h) QioTek Zealot H743 SLCAN port and relays fixed
+------------------------------------------------------------------
 Rover 4.2.0-beta2 10-Mar-2022
 Changes from 4.2.0-beta1
 1) Follow mode supports FOLLOW_TARGET message (sent by QGC ground station) 
