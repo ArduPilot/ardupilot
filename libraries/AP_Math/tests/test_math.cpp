@@ -277,6 +277,12 @@ TEST(MathTest, Square)
     AP_Float t_sqfloat;
     t_sqfloat = sq(2);
     EXPECT_EQ(4.f, t_sqfloat);
+
+    EXPECT_FLOAT_EQ(sq(2.3), 5.289999999999999);  // uses template sq
+    EXPECT_FLOAT_EQ(sq(2.3f), 5.29); // uses sq(float v)
+    EXPECT_EQ(sq(4294967295), 18446744065119617025U);  // uses template sq
+    EXPECT_FLOAT_EQ(sq(4294967295.0), 1.8446744e+19);  // uses template sq
+    EXPECT_FLOAT_EQ(sq(pow(2,25)), pow(2,50));
 }
 
 TEST(MathTest, Norm)
