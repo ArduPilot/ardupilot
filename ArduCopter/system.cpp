@@ -261,7 +261,7 @@ void Copter::update_dynamic_notch()
                 const uint8_t num_notches = rpm_sensor.get_motor_frequencies_hz(ins.get_num_gyro_dynamic_notches(), notches);
 
                 for (uint8_t i = 0; i < num_notches; i++) {
-                    notches[i] =  MAX(ref_freq, notches[i]);
+                    notches[i] =  MAX(ref_freq, notches[i] * ref / 60.0f);
                 }
                 if (num_notches > 0) {
                     ins.update_harmonic_notch_frequencies_hz(num_notches, notches);
