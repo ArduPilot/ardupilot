@@ -1059,4 +1059,71 @@ uint32_t getServoPacketID(const void* pkt)
     return (uint32_t) ((frame->id >> 16) & 0xFF);
 }
 
+/* Piccolo Glue Logic
+ * The following functions are required by the auto-generated protogen code.
+ */
+
+
+//! \return the packet data pointer from the packet
+uint8_t* getECUPacketData(void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (uint8_t*) frame->data;
+}
+
+//! \return the packet data pointer from the packet, const
+const uint8_t* getECUPacketDataConst(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (const uint8_t*) frame->data;
+}
+
+//! Complete a packet after the data have been encoded
+void finishECUPacket(void* pkt, int size, uint32_t packetID)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    if (size > AP_HAL::CANFrame::MaxDataLen) {
+        size = AP_HAL::CANFrame::MaxDataLen;
+    }
+
+    frame->dlc = size;
+
+    /* Encode the CAN ID
+     * 0x09mmdddd
+     * - 07 = ECU_IN (to and ECU) group ID
+     * - mm = Message ID
+     * - dd = Device ID
+     *
+     * Note: The Device ID (lower 16 bits of the frame ID) will have to be inserted later
+     */
+
+    uint32_t id = (((uint8_t) AP_PiccoloCAN::MessageGroup::ECU_IN) << 24) |       // CAN Group ID
+                  ((packetID & 0xFF) << 16);                                       // Message ID
+
+    // Extended frame format
+    id |= AP_HAL::CANFrame::FlagEFF;
+
+    frame->id = id;
+}
+
+//! \return the size of a packet from the packet header
+int getECUPacketSize(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    return (int) frame->dlc;
+}
+
+//! \return the ID of a packet from the packet header
+uint32_t getECUPacketID(const void* pkt)
+{
+    AP_HAL::CANFrame* frame = (AP_HAL::CANFrame*) pkt;
+
+    // Extract the message ID field from the 29-bit ID
+    return (uint32_t) ((frame->id >> 16) & 0xFF);
+}
+
 #endif // HAL_PICCOLO_CAN_ENABLE
