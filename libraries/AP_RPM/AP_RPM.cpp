@@ -262,19 +262,19 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 float AP_RPM::get_average_rpm() const
 {
     float rpm_avg = 0.0f;
-    uint8_t valid_escs = 0;
+    uint8_t valid_sensors = 0;
 
     // average the rpm of each motor
     for (uint8_t i = 0; i < num_instances; i++) {
         float rpm;
         if (get_rpm(i, rpm)) {
             rpm_avg += rpm;
-            valid_escs++;
+            valid_sensors++;
         }
     }
 
-    if (valid_escs > 0) {
-        rpm_avg /= valid_escs;
+    if (valid_sensors > 0) {
+        rpm_avg /= valid_sensors;
     }
 
     return rpm_avg;
@@ -282,15 +282,15 @@ float AP_RPM::get_average_rpm() const
 
 uint8_t AP_RPM::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const
 {
-    uint8_t valid_rpms = 0;
+    uint8_t valid_sensors = 0;
     for (uint8_t ii = 0; ii < num_instances && ii < nfreqs; ii++) {
         float rpm;
         if (get_rpm(ii, rpm)) {
-            freqs[valid_rpms++] = fabsf(rpm * (1.0f / 60.0f));
+            freqs[valid_sensors++] = fabsf(rpm * (1.0f / 60.0f));
         }
     }
 
-    return MIN(valid_rpms, nfreqs);
+    return MIN(valid_sensors, nfreqs);
 }
 
 // singleton instance
