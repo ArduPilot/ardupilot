@@ -94,6 +94,12 @@ public:
     // check settings are valid
     bool arming_checks(size_t buflen, char *buffer) const;
 
+    float get_average_rpm() const;
+
+    float get_average_motor_frequency_hz() const { return get_average_rpm() * (1.0f / 60.0f); };
+
+    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
+
 private:
     void convert_params(void);
 

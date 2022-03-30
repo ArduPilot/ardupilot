@@ -256,12 +256,20 @@ void Copter::update_dynamic_notch()
 
 #if RPM_ENABLED == ENABLED
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
-            float rpm;
-            if (rpm_sensor.get_rpm(0, rpm)) {
-                // set the harmonic notch filter frequency from the main rotor rpm
-                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm * ref / 60.0f));
+            if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+                float notches[INS_MAX_NOTCHES];
+                const uint8_t num_notches = rpm_sensor.get_motor_frequencies_hz(ins.get_num_gyro_dynamic_notches(), notches);
+
+                for (uint8_t i = 0; i < num_notches; i++) {
+                    notches[i] =  MAX(ref_freq, notches[i]);
+                }
+                if (num_notches > 0) {
+                    ins.update_harmonic_notch_frequencies_hz(num_notches, notches);
+                } else {    // throttle fallback
+                    ins.update_harmonic_notch_freq_hz(throttle_freq);
+                }
             } else {
-                ins.update_harmonic_notch_freq_hz(ref_freq);
+                ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm_sensor.get_average_motor_frequency_hz() * ref));
             }
             break;
 #endif
