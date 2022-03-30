@@ -28,6 +28,8 @@
 
 #include "piccolo_protocol/ServoPackets.h"
 
+#include <AP_EFI/AP_EFI_Currawong_ECU.h>
+
 // maximum number of ESC allowed on CAN bus simultaneously
 #define PICCOLO_CAN_MAX_NUM_ESC 16
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
@@ -130,6 +132,11 @@ private:
 
     // interpret a servo message received over CAN
     bool handle_servo_message(AP_HAL::CANFrame &frame);
+    
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+    // interpret an ECU message received over CAN
+    bool handle_ecu_message(AP_HAL::CANFrame &frame);
+#endif
 
     bool _initialized;
     char _thread_name[16];
@@ -206,6 +213,8 @@ private:
 
     AP_Int32 _srv_bm;       //! Servo selection bitmask
     AP_Int16 _srv_hz;       //! Servo update rate (Hz)
+
+    AP_Int8 _ecu_en;        //! ECU Enable
 
     HAL_Semaphore _telem_sem;
 };
