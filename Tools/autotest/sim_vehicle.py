@@ -902,6 +902,7 @@ vehicle_choices.append("Sub")  # should change to Sub at some stage
 vehicle_choices.append("copter")  # should change to ArduCopter at some stage
 vehicle_choices.append("plane")  # should change to ArduPlane at some stage
 vehicle_choices.append("sub")  # should change to Sub at some stage
+vehicle_choices.append("blimp")  # should change to Blimp at some stage
 
 parser.add_option("-v", "--vehicle",
                   type='choice',
@@ -1305,6 +1306,7 @@ vehicle_map = {
     "copter": "ArduCopter",  # will switch eventually
     "plane": "ArduPlane",  # will switch eventually
     "sub": "ArduSub",  # will switch eventually
+    "blimp" : "Blimp", # will switch eventually
 }
 if cmd_opts.vehicle in vehicle_map:
     progress("%s is now known as %s" %
