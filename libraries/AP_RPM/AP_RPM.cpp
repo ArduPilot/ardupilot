@@ -268,7 +268,7 @@ float AP_RPM::get_average_rpm() const
     for (uint8_t i = 0; i < num_instances; i++) {
         float rpm;
         if (get_rpm(i, rpm)) {
-            rpm_avg += rpm;
+            rpm_avg += fabsf(rpm);
             valid_sensors++;
         }
     }
