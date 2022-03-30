@@ -33,6 +33,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_EFI/AP_EFI_Currawong_ECU.h>
+
 #include <stdio.h>
 
 // Protocol files for the Velocity ESC
@@ -233,6 +235,13 @@ void AP_PiccoloCAN::loop()
                     break;
                 }
 
+                break;
+            case MessageGroup::ECU_OUT:
+            #if HAL_EFI_CURRAWONG_ECU_ENABLED
+                if (handle_ecu_message(rxFrame)) {
+                    // Returns true if the message was successfully decoded
+                }
+            #endif
                 break;
             default:
                 break;
@@ -735,6 +744,18 @@ bool AP_PiccoloCAN::handle_esc_message(AP_HAL::CANFrame &frame)
 
     return result;
 }
+
+#if HAL_EFI_CURRAWONG_ECU_ENABLED
+bool AP_PiccoloCAN::handle_ecu_message(AP_HAL::CANFrame &frame)
+{
+    // Get the ecu instance
+    AP_EFI_Currawong_ECU* ecu = AP_EFI_Currawong_ECU::get_instance();
+    if (ecu != nullptr) {
+        return ecu->handle_message(frame);
+    }
+    return false;
+}
+#endif
 
 /**
  * Check if a given servo channel is "active" (has been configured for Piccolo control output)
