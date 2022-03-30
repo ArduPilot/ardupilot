@@ -117,3 +117,6 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 // Amps microseconds to milliamp hours
 #define AUS_TO_MAH 0.0000002778f
+
+// kg/m^3 to g/cm^3
+#define KG_PER_M3_TO_G_PER_CM3(x) (0.001 * x)
