@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Oliver Walters
+ * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
 #pragma once
@@ -46,6 +46,8 @@
 #define PICCOLO_MSG_RATE_HZ_MIN 1
 #define PICCOLO_MSG_RATE_HZ_MAX 500
 #define PICCOLO_MSG_RATE_HZ_DEFAULT 50
+
+#define PICCOLO_CAN_ECU_ID_DEFAULT 0
 
 class AP_PiccoloCAN : public AP_CANDriver, public AP_ESC_Telem_Backend
 {
@@ -134,6 +136,8 @@ private:
     bool handle_servo_message(AP_HAL::CANFrame &frame);
     
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
+    void send_ecu_messages(void);
+
     // interpret an ECU message received over CAN
     bool handle_ecu_message(AP_HAL::CANFrame &frame);
 #endif
@@ -207,6 +211,11 @@ private:
 
     } _esc_info[PICCOLO_CAN_MAX_NUM_ESC];
 
+    struct CurrawongECU_Info_t {
+        float command;
+        bool newCommand;
+    } _ecu_info;
+
     // Piccolo CAN parameters
     AP_Int32 _esc_bm;       //! ESC selection bitmask
     AP_Int16 _esc_hz;       //! ESC update rate (Hz)
@@ -214,7 +223,8 @@ private:
     AP_Int32 _srv_bm;       //! Servo selection bitmask
     AP_Int16 _srv_hz;       //! Servo update rate (Hz)
 
-    AP_Int8 _ecu_en;        //! ECU Enable
+    AP_Int16 _ecu_id;        //! ECU Node ID
+    AP_Int16 _ecu_hz;       //! ECU update rate (Hz)
 
     HAL_Semaphore _telem_sem;
 };
