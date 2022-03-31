@@ -921,6 +921,9 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
         Debug("XIP mode unsupported on this chip");
         return false;
     }
+
+    bool success = false;
+
     switch(_desc.entry_method) {
         case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_1:
         {
@@ -937,7 +940,8 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
             cmd.addr = 0;
             cmd.dummy = _desc.fast_read_dummy_cycles;
             _dev->set_cmd_header(cmd);
-            return _dev->enter_xip_mode(addr);
+            success = _dev->enter_xip_mode(addr);
+            break;
         }
         case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_2:
         {
@@ -965,7 +969,8 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
             // correct dummy bytes because of addition of alt bytes
             cmd.dummy = _desc.fast_read_dummy_cycles - 1;
             _dev->set_cmd_header(cmd);
-            return _dev->enter_xip_mode(addr);
+            success = _dev->enter_xip_mode(addr);
+            break;
         }
         default:
         {
@@ -973,6 +978,9 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
             return false;
         }
     }
+    // make sure that the flash is ready once we enter XIP
+    DELAY_MICROS(100);
+    return success;
 }
 
 bool AP_FlashIface_JEDEC::stop_xip_mode()
