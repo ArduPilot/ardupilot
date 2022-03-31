@@ -729,6 +729,7 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
     AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
     AP_Param::set_default_by_name("BRD_RTC_TYPE", 3);
+    AP_Param::set_default_by_name("BARO_PROBE_EXT", 768);
     AP_Param::set_by_name("MNT_RC_IN_PAN", 7);
     AP_Param::set_by_name("MNT_RC_IN_TILT", 8);
     // We should ignore this parameter since ROVs are neutral buoyancy
