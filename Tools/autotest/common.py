@@ -2306,6 +2306,8 @@ class AutoTest(ABC):
                             continue
                         if state == state_inside:
                             line = re.sub("//.*", "", line) # trim comments
+                            # cpp-style string concatenation:
+                            line = re.sub(r'"\s*"', '', line)
                             log_write_statement += line
                             if re.match(r".*\);", line):
                                 log_write_statements.append(log_write_statement)
