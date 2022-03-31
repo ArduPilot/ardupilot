@@ -269,6 +269,17 @@ void Copter::update_dynamic_notch()
                     ins.update_harmonic_notch_freq_hz(throttle_freq);
                 }
             } else {
+                if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_HELI)
+                {
+                    float rpm;
+                    if (rpm_sensor.get_rpm(0, rpm)) {
+                        // set the harmonic notch filter frequency from the main rotor rpm
+                        ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm * ref / 60.0f));
+                    } else {
+                        ins.update_harmonic_notch_freq_hz(ref_freq);
+                    }
+                    break;
+                }
                 ins.update_harmonic_notch_freq_hz(MAX(ref_freq, rpm_sensor.get_average_motor_frequency_hz() * ref));
             }
             break;
