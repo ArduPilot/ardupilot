@@ -644,6 +644,9 @@ def _build_dynamic_sources(bld):
             name='uavcan',
             export_includes=[
                 bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
+                bld.srcnode.find_dir('modules/uavcan_v1/libcanard/libcanard').abspath(),
+                bld.srcnode.find_dir('modules/uavcan_v1/o1heap/o1heap').abspath(),
+                bld.srcnode.find_dir('modules/uavcan_v1/nunavut_c_headers').abspath(),
                 bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )

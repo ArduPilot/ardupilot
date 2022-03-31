@@ -34,3 +34,15 @@
 [submodule "modules/DroneCAN/libcanard"]
 	path = modules/DroneCAN/libcanard
 	url = https://github.com/DroneCAN/libcanard
+[submodule "modules/uavcan_v1/libcanard"]
+	path = modules/uavcan_v1/libcanard
+	url = https://github.com/UAVCAN/libcanard.git
+[submodule "modules/uavcan_v1/o1heap"]
+	path = modules/uavcan_v1/o1heap
+	url = https://github.com/pavel-kirienko/o1heap.git
+[submodule "modules/uavcan_v1/public_regulated_data_types"]
+	path = modules/uavcan_v1/public_regulated_data_types
+	url = https://github.com/UAVCAN/public_regulated_data_types.git
+[submodule "modules/uavcan_v1/nunavut_c_headers"]
+	path = modules/uavcan_v1/nunavut_c_headers
+	url = git@github.com:PonomarevDA/nunavut_c_headers.git
