@@ -15,6 +15,8 @@ MCU_CLOCKRATE_MHZ 480
 
 env OPTIMIZE -O2
 
+define HAL_WITH_EKF_DOUBLE 0
+
 STM32_ST_USE_TIMER 2
 
 # internal flash is off limits
