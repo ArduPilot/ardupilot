@@ -40,4 +40,8 @@ ENV BUILDLOGS=/tmp/buildlogs
 RUN sudo apt-get clean \
     && sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN echo "#!/bin/bash\nsource <(grep PATH ~/.bashrc)\nexec \"\$@\"" > /ardupilot/ep.sh
+RUN chmod +x /ardupilot/ep.sh
+
 ENV CCACHE_MAXSIZE=1G
+ENTRYPOINT [ "/ardupilot/ep.sh" ]
