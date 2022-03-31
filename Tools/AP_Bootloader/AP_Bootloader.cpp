@@ -163,7 +163,7 @@ int main(void)
     while (!ext_flash.init()) {
         // keep trying until we get it working
         // there's no future without it
-        chThdSleep(1000);
+        chThdSleep(chTimeMS2I(20));
     }
 #endif
 
