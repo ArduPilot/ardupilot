@@ -168,8 +168,13 @@ void AC_Fence::auto_enable_fence_after_takeoff(void)
     switch(auto_enabled()) {
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
-            enable(true);
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
+            if(AC_Fence::present()) {
+                enable(true);
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Fence enabled (auto enabled)");
+            }
+            else {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Enable fence failed (no fence found)");
+            }
             break;
         default:
             // fence does not auto-enable in other takeoff conditions
@@ -184,8 +189,13 @@ void AC_Fence::auto_disable_fence_for_landing(void)
 {
     switch (auto_enabled()) {
         case AC_Fence::AutoEnable::ALWAYS_ENABLED:
-            enable(false);
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
+            if(AC_Fence::present()) {
+                enable(false);
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Fence disabled (auto disable)");
+            }
+            else {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Disable fence failed (no fence found)");
+            }
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             disable_floor();
@@ -281,7 +291,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     fail_msg = nullptr;
 
     // if fences are enabled but none selected fail pre-arm check
-    if (enabled() && !present()) {
+    if ((enabled() || _auto_enabled) && !present()) {
         fail_msg = "Fences enabled, but none selected";
         return false;
     }
