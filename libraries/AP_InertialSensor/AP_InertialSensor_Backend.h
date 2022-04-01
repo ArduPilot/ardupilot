@@ -137,7 +137,7 @@ protected:
     void _rotate_and_correct_gyro(uint8_t instance, Vector3f &gyro) __RAMFUNC__;
 
     // rotate gyro vector, offset and publish
-    void _publish_gyro(uint8_t instance, const Vector3f &gyro); /* front end */
+    void _publish_gyro(uint8_t instance, const Vector3f &gyro) __RAMFUNC__; /* front end */
 
     // this should be called every time a new gyro raw sample is
     // available - be it published or not the sample is raw in the
@@ -151,7 +151,7 @@ protected:
     void _notify_new_delta_angle(uint8_t instance, const Vector3f &dangle);
     
     // rotate accel vector, scale, offset and publish
-    void _publish_accel(uint8_t instance, const Vector3f &accel); /* front end */
+    void _publish_accel(uint8_t instance, const Vector3f &accel) __RAMFUNC__; /* front end */
 
     // this should be called every time a new accel raw sample is available -
     // be it published or not
@@ -286,10 +286,10 @@ protected:
     bool gyro_harmonic_notch_enabled(void) const { return _imu._harmonic_notch_filter.enabled(); }
 
     // common gyro update function for all backends
-    void update_gyro(uint8_t instance); /* front end */
+    void update_gyro(uint8_t instance) __RAMFUNC__; /* front end */
 
     // common accel update function for all backends
-    void update_accel(uint8_t instance); /* front end */
+    void update_accel(uint8_t instance) __RAMFUNC__; /* front end */
 
     // support for updating filter at runtime
     uint16_t _last_accel_filter_hz;
