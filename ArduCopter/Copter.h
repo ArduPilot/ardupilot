@@ -640,7 +640,6 @@ private:
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
-    void fast_loop() override;
 #if AP_SCRIPTING_ENABLED
     bool start_takeoff(float alt) override;
     bool set_target_location(const Location& target_loc) override;
@@ -680,6 +679,7 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
+    void run_rate_controller() { attitude_control->rate_controller_run(); }
 
     // avoidance.cpp
     void low_alt_avoidance();
@@ -802,6 +802,7 @@ private:
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
     void Log_Sensor_Health();
+    void Log_Video_Stabilisation();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);
 #endif

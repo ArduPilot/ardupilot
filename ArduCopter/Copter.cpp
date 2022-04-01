@@ -83,10 +83,10 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, _interval_ticks, _max_time_micros, _prio)
+#define FAST_TASK(func) FAST_TASK_CLASS(Copter, &copter, func)
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here.
+  scheduler table - all tasks should be listed here.
 
   All entries in this table must be ordered by priority.
 
@@ -110,6 +110,38 @@ SCHED_TASK_CLASS arguments:
 
  */
 const AP_Scheduler::Task Copter::scheduler_tasks[] = {
+    // update INS immediately to get current gyro data populated
+    FAST_TASK_CLASS(AP_InertialSensor, &copter.ins, update),
+    // run low level rate controllers that only require IMU data
+    FAST_TASK(run_rate_controller),
+    // send outputs to the motors library immediately
+    FAST_TASK(motors_output),
+     // run EKF state estimator (expensive)
+    FAST_TASK(read_AHRS),
+#if FRAME_CONFIG == HELI_FRAME
+    FAST_TASK(update_heli_control_dynamics),
+    #if MODE_AUTOROTATE_ENABLED == ENABLED
+    FAST_TASK(heli_update_autorotation),
+    #endif
+#endif //HELI_FRAME
+    // Inertial Nav
+    FAST_TASK(read_inertia),
+    // check if ekf has reset target heading or position
+    FAST_TASK(check_ekf_reset),
+    // run the attitude controllers
+    FAST_TASK(update_flight_mode),
+    // update home from EKF if necessary
+    FAST_TASK(update_home_from_EKF),
+    // check if we've landed or crashed
+    FAST_TASK(update_land_and_crash_detectors),
+#if HAL_MOUNT_ENABLED
+    // camera mount's fast update
+    FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
+#endif
+    // log sensor health
+    FAST_TASK(Log_Sensor_Health),
+    FAST_TASK(Log_Video_Stabilisation),
+
     SCHED_TASK(rc_loop,              100,    130,  3),
     SCHED_TASK(throttle_loop,         50,     75,  6),
     SCHED_TASK_CLASS(AP_GPS,               &copter.gps,                 update,          50, 200,   9),
@@ -236,62 +268,6 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 }
 
 constexpr int8_t Copter::_failsafe_priorities[7];
-
-// Main loop - 400hz
-void Copter::fast_loop()
-{
-    // update INS immediately to get current gyro data populated
-    ins.update();
-
-    // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
-
-    // send outputs to the motors library immediately
-    motors_output();
-
-    // run EKF state estimator (expensive)
-    // --------------------
-    read_AHRS();
-
-#if FRAME_CONFIG == HELI_FRAME
-    update_heli_control_dynamics();
-    #if MODE_AUTOROTATE_ENABLED == ENABLED
-        heli_update_autorotation();
-    #endif
-#endif //HELI_FRAME
-
-    // Inertial Nav
-    // --------------------
-    read_inertia();
-
-    // check if ekf has reset target heading or position
-    check_ekf_reset();
-
-    // run the attitude controllers
-    update_flight_mode();
-
-    // update home from EKF if necessary
-    update_home_from_EKF();
-
-    // check if we've landed or crashed
-    update_land_and_crash_detectors();
-
-#if HAL_MOUNT_ENABLED
-    // camera mount's fast update
-    camera_mount.update_fast();
-#endif
-
-    // log sensor health
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Sensor_Health();
-    }
-
-    AP_Vehicle::fast_loop();
-
-    if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
-        ahrs.write_video_stabilisation();
-    }
-}
 
 #if AP_SCRIPTING_ENABLED
 // start takeoff to given altitude (for use by scripting)

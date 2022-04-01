@@ -223,6 +223,10 @@ void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float t
 // logs when baro or compass becomes unhealthy
 void Copter::Log_Sensor_Health()
 {
+    if (!should_log(MASK_LOG_ANY)) {
+        return;
+    }
+
     // check baro
     if (sensor_health.baro != barometer.healthy()) {
         sensor_health.baro = barometer.healthy();
@@ -235,6 +239,14 @@ void Copter::Log_Sensor_Health()
         sensor_health.compass = compass.healthy();
         AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
     }
+}
+
+void Copter::Log_Video_Stabilisation()
+{
+    if (!should_log(MASK_LOG_VIDEO_STABILISATION)) {
+        return;
+    }
+    ahrs.write_video_stabilisation();
 }
 
 struct PACKED log_SysIdD {
