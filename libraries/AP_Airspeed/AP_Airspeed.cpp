@@ -114,7 +114,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _USE
     // @DisplayName: Airspeed use
-    // @Description: Enables airspeed use for automatic throttle modes and replaces control from THR_TRIM. Continues to display and log airspeed if set to 0. Uses airspeed for control if set to 1. Only uses airspeed when throttle = 0 if set to 2 (useful for gliders with airspeed sensors behind propellers).
+    // @Description{Plane}: Enables airspeed use for automatic throttle modes and replaces control from THR_TRIM. Continues to display and log airspeed if set to 0. Uses airspeed for control if set to 1. Only uses airspeed when throttle = 0 if set to 2 (useful for gliders with airspeed sensors behind propellers).
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter is not used by this vehicle. Always set to 0.
     // @Values: 0:DoNotUse,1:Use,2:UseWhenZeroThrottle
     // @User: Standard
     AP_GROUPINFO("_USE",    1, AP_Airspeed, param[0].use, 0),
@@ -142,7 +143,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     // @Param: _AUTOCAL
-    // @DisplayName: Automatic airspeed ratio calibration
+    // @DisplayName{Plane}: Automatic airspeed ratio calibration
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Description: Enables automatic adjustment of ARSPD_RATIO during a calibration flight based on estimation of ground speed and true airspeed. New ratio saved every 2 minutes if change is > 5%. Should not be left enabled.
     // @User: Advanced
     AP_GROUPINFO("_AUTOCAL",  5, AP_Airspeed, param[0].autocal, 0),
@@ -157,7 +159,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _SKIP_CAL
-    // @DisplayName: Skip airspeed calibration on startup
+    // @DisplayName: Skip airspeed offset calibration on startup
     // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
@@ -191,7 +193,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _OPTIONS
     // @DisplayName: Airspeed options bitmask
-    // @Description: Bitmask of options to use with airspeed. 0:Disable use based on airspeed/groundspeed mismatch (see ARSPD_WIND_MAX), 1:Automatically reenable use based on airspeed/groundspeed mismatch recovery (see ARSPD_WIND_MAX) 2:Disable voltage correction
+    // @Description{Plane}: Bitmask of options to use with airspeed. 0:Disable use based on airspeed/groundspeed mismatch (see ARSPD_WIND_MAX), 1:Automatically reenable use based on airspeed/groundspeed mismatch recovery (see ARSPD_WIND_MAX) 2:Disable voltage correction
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Bitmask: 0:SpeedMismatchDisable, 1:AllowSpeedMismatchRecovery, 2:DisableVoltageCorrection
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, OPTIONS_DEFAULT),
@@ -199,6 +202,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _WIND_MAX
     // @DisplayName: Maximum airspeed and ground speed difference
     // @Description: If the difference between airspeed and ground speed is greater than this value the sensor will be marked unhealthy. Using ARSPD_OPTION this health value can be used to disable the sensor.
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("_WIND_MAX", 22, AP_Airspeed, _wind_max, 0),
@@ -206,6 +210,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _WIND_WARN
     // @DisplayName: Airspeed and ground speed difference that gives a warning
     // @Description: If the difference between airspeed and ground speed is greater than this value the sensor will issue a warning. If 0 ARSPD_WIND_MAX is used.
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("_WIND_WARN", 23, AP_Airspeed, _wind_warn, 0),
@@ -221,7 +226,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: 2_USE
     // @DisplayName: Enable use of 2nd airspeed sensor
-    // @Description: use airspeed for flight control. When set to 0 airspeed sensor can be logged and displayed on a GCS but won't be used for flight. When set to 1 it will be logged and used. When set to 2 it will be only used when the throttle is zero, which can be useful in gliders with airspeed sensors behind a propeller
+    // @Description{Plane}: use airspeed for flight control. When set to 0 airspeed sensor can be logged and displayed on a GCS but won't be used for flight. When set to 1 it will be logged and used. When set to 2 it will be only used when the throttle is zero, which can be useful in gliders with airspeed sensors behind a propeller
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Values: 0:Don't Use,1:use,2:UseWhenZeroThrottle
     // @User: Standard
     AP_GROUPINFO("2_USE",    12, AP_Airspeed, param[1].use, 0),
@@ -248,7 +254,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: 2_AUTOCAL
     // @DisplayName: Automatic airspeed ratio calibration for 2nd airspeed sensor
-    // @Description: If this is enabled then the autopilot will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
+    // @Description{Plane}: If this is enabled then the autopilot will automatically adjust the ARSPD_RATIO during flight, based upon an estimation filter using ground speed and true airspeed. The automatic calibration will save the new ratio to EEPROM every 2 minutes if it changes by more than 5%. This option should be enabled for a calibration flight then disabled again when calibration is complete. Leaving it enabled all the time is not recommended.
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @User: Advanced
     AP_GROUPINFO("2_AUTOCAL",  16, AP_Airspeed, param[1].autocal, 0),
 
@@ -260,7 +267,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPINFO("2_TUBE_ORDR",  17, AP_Airspeed, param[1].tube_order, 2),
 
     // @Param: 2_SKIP_CAL
-    // @DisplayName: Skip airspeed calibration on startup for 2nd sensor
+    // @DisplayName: Skip airspeed offset calibration on startup for 2nd sensor
     // @Description: This parameter allows you to skip airspeed offset calibration on startup, instead using the offset from the last calibration. This may be desirable if the offset variance between flights for your sensor is low and you want to avoid having to cover the pitot tube on each boot.
     // @Values: 0:Disable,1:Enable
     // @User: Advanced
