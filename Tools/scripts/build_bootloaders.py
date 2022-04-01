@@ -55,7 +55,7 @@ for board in get_board_list():
         failed_boards.add(board)
         continue
     shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
-    if not run_program(["Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_bl.bin' % board, 'Tools/bootloaders/%s_bl.hex' % board]):
+    if not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_bl.bin' % board, 'Tools/bootloaders/%s_bl.hex' % board]):
         failed_boards.add(board)
         continue
     shutil.copy('build/%s/bootloader/AP_Bootloader' % board, 'Tools/bootloaders/%s_bl.elf' % board)
