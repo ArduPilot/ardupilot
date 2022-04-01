@@ -1181,8 +1181,15 @@ class AutoTestPlane(AutoTest):
     def test_fence_static(self):
         ex = None
         try:
+            self.start_subtest("Plane Fence - Present")
             self.progress("Checking for bizarre healthy-when-not-present-or-enabled")
+            # If we try to enable before setting any type of fence the fence - it should fail
+            self.do_fence_enable(want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_fence_sys_status(False, False, True)
             self.set_parameter("FENCE_TYPE", 4) # Start by only setting polygon fences, otherwise fence will report present
+            self.assert_fence_sys_status(False, False, True)
+            # If we try to enable before populating the fence - it should fail
+            self.do_fence_enable(want_result=mavutil.mavlink.MAV_RESULT_FAILED)
             self.assert_fence_sys_status(False, False, True)
             self.load_fence("CMAC-fence.txt")
             m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
@@ -1211,8 +1218,12 @@ class AutoTestPlane(AutoTest):
             self.assert_fence_sys_status(False, False, True)
             self.progress("Trying to enable fence with no points")
             self.do_fence_enable(want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            # enabling a fence with no points should fail
+            self.progress("Fence should not be enabled")
+            self.assert_fence_sys_status(False, False, True)
 
             # test a rather unfortunate behaviour:
+            self.start_subtest("Plane Fence - Killing a live fence")
             self.progress("Killing a live fence with fence-clear")
             self.load_fence("CMAC-fence.txt")
             self.set_parameter("FENCE_ACTION", 1) # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
@@ -1223,18 +1234,35 @@ class AutoTestPlane(AutoTest):
             if self.get_parameter("FENCE_TOTAL") != 0:
                 raise NotAchievedException("Expected zero points remaining")
             self.assert_fence_sys_status(False, False, True)
-            self.do_fence_disable()
 
-            # ensure that a fence is present if it is tin can, min alt or max alt
+            # ensure that a fence is present and enabled if it is tin can, min alt or max alt
+            self.start_subtest("Plane Fence - Non-Polygon Fence Types")
             self.progress("Test other fence types (tin-can, min alt, max alt")
+            # Maximum Altitude fence
             self.set_parameter("FENCE_TYPE", 1) # max alt
+            # Setting Fence to type 1 enables the fence - no enable message required
+            self.assert_fence_sys_status(True, True, True)
+            self.do_fence_disable()
             self.assert_fence_sys_status(True, False, True)
+            # Minimum Altitude Fence
             self.set_parameter("FENCE_TYPE", 8) # min alt
+            # Setting Fence to type 8 does NOT enable the fence - enable message IS required
             self.assert_fence_sys_status(True, False, True)
+            self.do_fence_enable()
+            self.assert_fence_sys_status(True, True, True)
+            self.do_fence_disable()
+            self.assert_fence_sys_status(True, False, True)
+            # Tin Can fence
             self.set_parameter("FENCE_TYPE", 2) # tin can
+            # Setting Fence to type 2 nos NOT the fence - enable message IS required
+            self.assert_fence_sys_status(True, False, True)
+            self.do_fence_enable()
+            self.assert_fence_sys_status(True, True, True)
+            self.do_fence_disable()
             self.assert_fence_sys_status(True, False, True)
 
             # Test cannot arm if outside of fence and fence is enabled
+            self.start_subtest("Plane Fence - Arming")
             self.progress("Test Arming while vehicle below FENCE_ALT_MIN")
             default_fence_alt_min = self.get_parameter("FENCE_ALT_MIN")
             self.set_parameter("FENCE_ALT_MIN", 50)
@@ -3579,7 +3607,7 @@ function'''
              self.test_rangefinder),
 
             ("FenceStatic",
-             "Test Basic Fence Functionality",
+             "Test Basic Plane Fence Functionality",
              self.test_fence_static),
 
             ("FenceRTL",

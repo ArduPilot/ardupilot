@@ -126,31 +126,29 @@ AC_Fence::AC_Fence()
 /// enable the Fence code generally; a master switch for all fences
 void AC_Fence::enable(bool new_enabled)
 {
-    // Only do this if the state is changing - otherwise ignore it
-    if(_enabled != new_enabled) {
-        if(new_enabled) {
+    // There must be a fence to enable - otherwise notify the pilot!
+    if(AC_Fence::present()) {
+        // Only log if something changed.
+        if(new_enabled && !_enabled) {
             AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
-        }
-        else {
+        } else if (!new_enabled && _enabled) {
             AP::logger().Write_Event(LogEvent::FENCE_DISABLE);
         }
-        // What if we try to enable or disable a fence that doesn't exist?
-        if(AC_Fence::present()) {
-            if(new_enabled) {
-                enable_floor();
-            }
-            else {
-                clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
-                disable_floor();
-            }
+        _enabled = new_enabled;
+        if(new_enabled) {
+            enable_floor();
         }
         else {
-            if(new_enabled) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Enable fence failed (no fence found)");
-            }
-            else {
-                gcs().send_text(MAV_SEVERITY_WARNING, "Disable fence failed (no fence found)");
-            }
+            clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
+            disable_floor();
+        }
+    }
+    else {
+        if(new_enabled) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Enable fence failed (no fence found)");
+        }
+        else {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Disable fence failed (no fence found)");
         }
     }
 }
@@ -206,7 +204,7 @@ void AC_Fence::auto_disable_fence_for_landing(void)
             break;
         case AC_Fence::AutoEnable::ENABLE_DISABLE_FLOOR_ONLY:
             disable_floor();
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence floor disabled (auto disable)");
             break;
         default:
             // fence does not auto-disable in other landing conditions
@@ -299,7 +297,7 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
 
     // if fences are enabled but none selected fail pre-arm check
     if ((enabled() || _auto_enabled) && !present()) {
-        fail_msg = "Fence enabled, but none selected";
+        fail_msg = "Fence enabled, but no fence found";
         return false;
     }
 

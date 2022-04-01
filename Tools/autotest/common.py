@@ -6991,7 +6991,7 @@ Also, ignores heartbeats not from our target system'''
         remaining_to_send = set(range(0, len(items)))
         sent = set()
         while True:
-            if self.get_sim_time_cached() - tstart > (10 + len(items)/10):
+            if self.get_sim_time_cached() - tstart > (20 + len(items)/10):
                 raise NotAchievedException("timeout uploading %s" % str(mission_type))
             if len(remaining_to_send) == 0:
                 self.progress("All sent")
@@ -7046,7 +7046,7 @@ Also, ignores heartbeats not from our target system'''
                                        (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name),)
         self.progress("Upload of all %u items succeeded" % len(items))
 
-    def download_using_mission_protocol(self, mission_type, verbose=False, timeout=10):
+    def download_using_mission_protocol(self, mission_type, verbose=False, timeout=20):
         '''mavlink2 required'''
         target_system = 1
         target_component = 1
@@ -7083,7 +7083,7 @@ Also, ignores heartbeats not from our target system'''
         tstart = self.get_sim_time_cached()
         remaining_to_receive = set(range(0, m.count))
         next_to_request = 0
-        timeout = (10 + m.count/10)
+        timeout = (timeout + 50 + m.count/10)
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("timeout downloading type=%s" %
