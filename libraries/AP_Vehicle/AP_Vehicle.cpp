@@ -247,16 +247,6 @@ void AP_Vehicle::loop()
 }
 
 /*
- fast loop callback for all vehicles. This will get called at the end of any vehicle-specific fast loop.
- */
-void AP_Vehicle::fast_loop()
-{
-#if HAL_GYROFFT_ENABLED
-    gyro_fft.sample_gyros();
-#endif
-}
-
-/*
   scheduler table - all regular tasks apart from the fast_loop()
   should be listed here.
 
@@ -283,6 +273,9 @@ SCHED_TASK_CLASS arguments:
 
  */
 const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
+#if HAL_GYROFFT_ENABLED
+    FAST_TASK_CLASS(AP_GyroFFT,    &vehicle.gyro_fft,       sample_gyros),
+#endif
 #if AP_AIRSPEED_ENABLED
     SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors
 #endif
