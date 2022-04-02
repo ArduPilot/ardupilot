@@ -97,7 +97,7 @@ public:
     /*
       timer push (for oneshot min rate)
      */
-    void timer_tick(uint32_t last_run_us);
+    void timer_tick(uint32_t cycle_start_us, uint32_t timeout_period_us);
 
     /*
       setup for serial output to a set of ESCs, using the given
@@ -590,13 +590,13 @@ private:
     uint16_t create_dshot_packet(const uint16_t value, bool telem_request, bool bidir_telem);
     void fill_DMA_buffer_dshot(uint32_t *buffer, uint8_t stride, uint16_t packet, uint16_t clockmul);
 
-    void dshot_send_groups(uint32_t time_out_us);
-    void dshot_send(pwm_group &group, uint32_t time_out_us);
+    void dshot_send_groups(uint32_t cycle_start_us, uint32_t timeout_us);
+    void dshot_send(pwm_group &group, uint32_t cycle_start_us, uint32_t timeout_us);
     bool dshot_send_command(pwm_group &group, uint8_t command, uint8_t chan);
     static void dshot_update_tick(void* p);
     static void dshot_send_next_group(void* p);
     // release locks on the groups that are pending in reverse order
-    void dshot_collect_dma_locks(uint32_t last_run_us);
+    void dshot_collect_dma_locks(uint32_t cycle_start_us, uint32_t timeout_period_us);
     static void dma_up_irq_callback(void *p, uint32_t flags);
     static void dma_unlock(void *p);
     void dma_cancel(pwm_group& group);
@@ -608,6 +608,36 @@ private:
     void set_group_mode(pwm_group &group);
     static uint32_t protocol_bitrate(const enum output_mode mode);
     void print_group_setup_error(pwm_group &group, const char* error_string);
+
+    // wrap safe calculation of remaining timeout
+    uint32_t timeout_remaining(uint32_t now_us, uint32_t cycle_start_us, uint32_t timeout_period_us) {
+      const uint32_t timeout_us = cycle_start_us + timeout_period_us;
+      if (now_us >= cycle_start_us && timeout_us >= cycle_start_us) { // nothing has wrapped
+          return  now_us < timeout_us ? timeout_us - now_us : 0;
+      }
+      if (now_us >= cycle_start_us) { // time has not wrapped but the timeout has, so timeout in the future
+          return (UINT32_MAX - now_us) + timeout_us;
+      }
+      // time has wrapped but the timeout hasn't, so timeout in the past
+      return 0;
+    }
+
+    // wrap safe timeout handling
+    bool has_timed_out(uint32_t now_us, uint32_t cycle_start_us, uint32_t timeout_period_us) {
+#ifdef HAL_CHIBIOS_ENABLE_ASSERTS
+      // slightly less efficient but a useful sanity check
+      return timeout_remaining(now_us, cycle_start_us, timeout_period_us) == 0;
+#else
+      if (now_us >= cycle_start_us && (cycle_start_us + timeout_period_us) >= cycle_start_us) { // nothing has wrapped
+          return now_us >= cycle_start_us + timeout_period_us;
+      }
+      if (now_us >= cycle_start_us) { // time has not wrapped but the timeout has
+          return false; // trivially true that the timeout is in the future
+      }
+      // time has wrapped but the timeout hasn't
+      return true; // trivially true that the timeout is in the past
+#endif
+    }
 
     /*
       Support for bi-direction dshot
