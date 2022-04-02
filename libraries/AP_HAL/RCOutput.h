@@ -324,6 +324,21 @@ public:
      */
     static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
 
+    /*
+     * bit width values for different protocols
+     */
+    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS = 8;
+    static constexpr uint32_t DSHOT_BIT_0_TICKS = 3;
+    static constexpr uint32_t DSHOT_BIT_1_TICKS = 6;
+
+    // See WS2812B spec for expected pulse widths
+    static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 20;
+    static constexpr uint32_t NEOP_BIT_0_TICKS = 7;
+    static constexpr uint32_t NEOP_BIT_1_TICKS = 14;
+    // neopixel does not use pulse widths at all
+    static constexpr uint32_t PROFI_BIT_0_TICKS = 7;
+    static constexpr uint32_t PROFI_BIT_1_TICKS = 14;
+
 protected:
 
     // helper functions for implementation of get_output_mode_banner
