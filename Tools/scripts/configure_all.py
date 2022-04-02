@@ -22,6 +22,7 @@ parser.add_argument('--pattern', default='*')
 parser.add_argument('--start', default=None, type=int, help='continue from specified build number')
 parser.add_argument('--python', default='python')
 parser.add_argument('--copy-hwdef-incs-to-directory', default=None, help='directory hwdefs should be copied to')
+parser.add_argument('--periph-only', action='store_true', default=False, help='only build peripherals')
 args = parser.parse_args()
 
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -76,6 +77,9 @@ def is_ap_periph(board):
 
 if args.copy_hwdef_incs_to_directory is not None:
     os.makedirs(args.copy_hwdef_incs_to_directory)
+
+if args.periph_only:
+    board_list = [ b for b in board_list if is_ap_periph(b) ]
 
 for board in board_list:
     done.append(board)
