@@ -405,33 +405,28 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd
         pitch_out_cd = 0.0;
         return;
     }
-    // fetch roll and pitch stick positions
-    float thrust_angle_x_cd = - channel_pitch->get_control_in();
-    float thrust_angle_y_cd = channel_roll->get_control_in();
 
-    // limit max lean angle
+    float rc_2_rad = radians(angle_max_cd * 0.01) / (float)ROLL_PITCH_YAW_INPUT_MAX;
+
+    // fetch roll and pitch stick positions and convert them to normalised horizontal thrust
+    Vector2f thrust;
+    thrust.x = - tanf(rc_2_rad * channel_pitch->get_control_in());
+    thrust.y = tanf(rc_2_rad * channel_roll->get_control_in());
+
+    // calculate the horizontal thrust limit based on the angle limit
     angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);
+    float thrust_limit = tanf(radians(angle_limit_cd * 0.01));
 
-    // scale roll and pitch inputs to +- angle_max
-    float scaler = angle_max_cd/(float)ROLL_PITCH_YAW_INPUT_MAX;
-    thrust_angle_x_cd *= scaler;
-    thrust_angle_y_cd *= scaler;
-
-    // convert square mapping to circular mapping with maximum magnitude of angle_limit
-    float total_in = norm(thrust_angle_x_cd, thrust_angle_y_cd);
-    if (total_in > angle_limit_cd) {
-        float ratio = angle_limit_cd / total_in;
-        thrust_angle_x_cd *= ratio;
-        thrust_angle_y_cd *= ratio;
-    }
-
-    // thrust_angle_x and thrust_angle_y represents a level body frame thrust vector in the
-    // direction of [thrust_angle_x, thrust_angle_y] and a magnitude
-    // tan(mag([thrust_angle_x, thrust_angle_y])) * 9.81 * aircraft mass.
+    // apply horizontal thrust limit
+    thrust.limit_length(thrust_limit);
 
     // Conversion from angular thrust vector to euler angles.
-    roll_out_cd = (18000/M_PI) * atanf(cosf(thrust_angle_x_cd*(M_PI/18000))*tanf(thrust_angle_y_cd*(M_PI/18000)));
-    pitch_out_cd = - thrust_angle_x_cd;
+    float pitch_rad = - atanf(thrust.x);
+    float roll_rad = atanf(cosf(pitch_rad) * thrust.y);
+
+    // Convert to centi-degrees
+    roll_out_cd = degrees(roll_rad) * 100.0;
+    pitch_out_cd = degrees(pitch_rad) * 100.0;
 }
 
 // transform pilot's roll or pitch input into a desired velocity
