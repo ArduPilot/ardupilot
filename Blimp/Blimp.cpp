@@ -289,7 +289,6 @@ Blimp::Blimp(void)
     : logger(g.log_bitmask),
       flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
-      land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
       rc_throttle_control_in_filter(1.0f),
       inertial_nav(ahrs),
       param_loader(var_info),
