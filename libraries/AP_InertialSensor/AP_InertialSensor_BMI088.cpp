@@ -254,8 +254,8 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    // setup FIFO for streaming X,Y,Z
-    if (!dev_gyro->write_register(REGG_FIFO_CONFIG_1, 0x80, true)) {
+    // setup FIFO for streaming X,Y,Z, with stop-at-full
+    if (!dev_gyro->write_register(REGG_FIFO_CONFIG_1, 0x40, true)) {
         return false;
     }
 
@@ -374,38 +374,41 @@ void AP_InertialSensor_BMI088::read_fifo_gyro(void)
         _inc_gyro_error_count(gyro_instance);
         return;
     }
+    const float scale = radians(2000.0f) / 32767.0f;
+    const uint8_t max_frames = 8;
+    Vector3i data[max_frames];
+
+    if (num_frames & 0x80) {
+        // fifo overrun, reset, likely caused by scheduling error
+        dev_gyro->write_register(REGG_FIFO_CONFIG_1, 0x40, true);
+        goto check_next;
+    }
+
     num_frames &= 0x7F;
     
     // don't read more than 8 frames at a time
-    if (num_frames > 8) {
-        num_frames = 8;
-    }
+    num_frames = MIN(num_frames, max_frames);
     if (num_frames == 0) {
-        return;
+        goto check_next;
     }
-    uint8_t data[6*num_frames];
-    if (!dev_gyro->read_registers(REGG_FIFO_DATA, data, num_frames*6)) {
+
+    if (!dev_gyro->read_registers(REGG_FIFO_DATA, (uint8_t *)data, num_frames*6)) {
         _inc_gyro_error_count(gyro_instance);
-        return;
+        goto check_next;
     }
 
     // data is 16 bits with 2000dps range
-    const float scale = radians(2000.0f) / 32767.0f;
     for (uint8_t i = 0; i < num_frames; i++) {
-        const uint8_t *d = &data[i*6];
-        int16_t xyz[3] {
-                    int16_t(uint16_t(d[0] | d[1]<<8)),
-                    int16_t(uint16_t(d[2] | d[3]<<8)),
-                    int16_t(uint16_t(d[4] | d[5]<<8)) };
-        Vector3f gyro(xyz[0], xyz[1], xyz[2]);
+        Vector3f gyro(data[i].x, data[i].y, data[i].z);
         gyro *= scale;
 
         _rotate_and_correct_gyro(gyro_instance, gyro);
         _notify_new_gyro_raw_sample(gyro_instance, gyro);
     }
 
+check_next:
     AP_HAL::Device::checkreg reg;
-    if (!dev_gyro->check_next_register()) {
+    if (!dev_gyro->check_next_register(reg)) {
         log_register_change(dev_gyro->get_bus_id(), reg);
         _inc_gyro_error_count(gyro_instance);
     }
