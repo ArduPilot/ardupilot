@@ -606,7 +606,7 @@ void AP_AHRS::update_EKF3(void)
             // update _accel_ef_ekf
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
                 Vector3f accel = _ins.get_accel(i);
-                if (i==_ins.get_primary_accel()) {
+                if (i == primary_imu) {
                     accel -= abias;
                 }
                 if (_ins.get_accel_health(i)) {
