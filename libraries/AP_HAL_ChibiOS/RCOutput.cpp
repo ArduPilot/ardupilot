@@ -59,18 +59,6 @@ static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
 static const eventmask_t EVT_PWM_SEND_NEXT  = EVENT_MASK(14);
 static const eventmask_t EVT_LED_SEND  = EVENT_MASK(15);
 
-static const uint32_t DSHOT_BIT_WIDTH_TICKS = 8;
-static const uint32_t DSHOT_BIT_0_TICKS = 3;
-static const uint32_t DSHOT_BIT_1_TICKS = 6;
-
-// See WS2812B spec for expected pulse widths
-static const uint32_t NEOP_BIT_WIDTH_TICKS = 11;
-static const uint32_t NEOP_BIT_0_TICKS = 4;
-static const uint32_t NEOP_BIT_1_TICKS = 9;
-// neopixel does not use pulse widths at all
-static const uint32_t PROFI_BIT_0_TICKS = 4;
-static const uint32_t PROFI_BIT_1_TICKS = 9;
-
 // #pragma GCC optimize("Og")
 
 /*
