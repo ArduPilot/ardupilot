@@ -253,13 +253,16 @@ void RCOutput::dshot_collect_dma_locks(uint32_t time_out_us)
             // if we have time left wait for the event
             eventmask_t mask = 0;
             const uint32_t pulse_elapsed_us = now - group.last_dmar_send_us;
+            uint32_t wait_us = 0;
             if (now < time_out_us) {
-                mask = chEvtWaitOneTimeout(group.dshot_event_mask,
-                    chTimeUS2I(MAX(time_out_us - now, group.dshot_pulse_send_time_us - pulse_elapsed_us)));
+                wait_us = MAX(time_out_us - now, group.dshot_pulse_send_time_us - pulse_elapsed_us);
             } else if (pulse_elapsed_us < group.dshot_pulse_send_time_us) {
                 // better to let the burst write in progress complete rather than cancelling mid way through
-                mask = chEvtWaitOneTimeout(group.dshot_event_mask,
-                    chTimeUS2I(group.dshot_pulse_send_time_us - pulse_elapsed_us));
+                wait_us = group.dshot_pulse_send_time_us - pulse_elapsed_us;
+            }
+            wait_us = MIN(group.dshot_pulse_time_us, wait_us);
+            if (wait_us > 0) {
+                mask = chEvtWaitOneTimeout(group.dshot_event_mask, chTimeUS2I(wait_us));
             }
             // no time left cancel and restart
             if (!mask) {
