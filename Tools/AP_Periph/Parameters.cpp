@@ -168,6 +168,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     GSCALAR(debug, "DEBUG", 0),
 
+    // @Param: SYSINFO
+    // @DisplayName: SYSINFO
+    // @Description: Show system information as log messages. When a value is selected it is shown as text via DroneCAN LogMessage messages then the parameter will be reset to zero.
+    // @Values: 0:Disable, 1:Timers, 2:Memory, 3:UARTs, 4:DMA, 5:Threads
+    // @User: Advanced
+    GSCALAR(sysinfo, "SYSINFO", 0),
 
     // @Param: BRD_SERIAL_NUM
     // @DisplayName: Serial number of device
