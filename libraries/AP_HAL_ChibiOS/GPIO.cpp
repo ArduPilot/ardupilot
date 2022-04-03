@@ -28,6 +28,7 @@
 #include <GCS_MAVLink/GCS.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Math/AP_Math.h>
 
 using namespace ChibiOS;
 
@@ -462,8 +463,7 @@ static void pal_interrupt_wait(void *arg)
 }
 
 /*
-  block waiting for a pin to change. A timeout of 0 means wait
-  forever. Return true on pin change, false on timeout
+  block waiting for a pin to change. Return true on pin change, false on timeout
 */
 bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us)
 {
@@ -486,8 +486,11 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
         osalSysUnlock();
         return false;
     }
-        
-    msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, TIME_US2I(timeout_us));
+
+    // don't allow for very long timeouts, or below the delta
+    timeout_us = constrain_uint32(TIME_US2I(timeout_us), CH_CFG_ST_TIMEDELTA, TIME_US2I(30000U));
+
+    msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, timeout_us);
     _attach_interruptI(g->pal_line,
                        palcallback_t(nullptr),
                        nullptr,

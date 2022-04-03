@@ -1,4 +1,5 @@
 #include "EventSource.h"
+#include <AP_Math/AP_Math.h>
 
 using namespace ChibiOS;
 
@@ -13,7 +14,7 @@ bool EventSource::wait(uint64_t duration, AP_HAL::EventHandle *evt_handle)
     if (duration == 0) {
         ret = chEvtWaitAnyTimeout(evt_mask, TIME_IMMEDIATE);
     } else {
-        ret = chEvtWaitAnyTimeout(evt_mask, chTimeUS2I(duration));
+        ret = chEvtWaitAnyTimeout(evt_mask, MAX(CH_CFG_ST_TIMEDELTA, chTimeUS2I(duration)));
     }
     ch_evt_src_.unregister(&evt_listener);
     return ret == MSG_OK;
