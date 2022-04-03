@@ -179,12 +179,27 @@ inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16
     return constrain_value(amt, low, high);
 }
 
+inline uint16_t constrain_uint16(const uint16_t amt, const uint16_t low, const uint16_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
 inline int32_t constrain_int32(const int32_t amt, const int32_t low, const int32_t high)
 {
     return constrain_value(amt, low, high);
 }
 
+inline uint32_t constrain_uint32(const uint32_t amt, const uint32_t low, const uint32_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
 inline int64_t constrain_int64(const int64_t amt, const int64_t low, const int64_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
+inline uint64_t constrain_uint64(const uint64_t amt, const uint64_t low, const uint64_t high)
 {
     return constrain_value(amt, low, high);
 }
