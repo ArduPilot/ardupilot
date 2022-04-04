@@ -17,6 +17,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include "canard.h"
 
 #include "uavcan/node/Heartbeat_1_0.h"
@@ -119,3 +122,5 @@ public:
 private:
     void makeResponse(const CanardRxTransfer* transfer);
 };
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

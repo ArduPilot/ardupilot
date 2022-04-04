@@ -17,6 +17,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include <SRV_Channel/SRV_Channel.h>
 
 #include "reg/udral/service/actuator/common/sp/Scalar_0_1.h"
@@ -205,3 +208,5 @@ private:
 
     void publish();
 };
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

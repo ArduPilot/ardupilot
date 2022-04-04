@@ -16,6 +16,9 @@
  */
 
 #include "AP_UAVCAN_V1_registers.h"
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include "AP_UAVCAN_V1.h"
 #include <AP_Param/AP_Param.h>
 
@@ -215,3 +218,5 @@ void UavcanRegisterListRequest::makeResponse(const CanardRxTransfer* transfer, u
         push_response(buf_size, buf);
     }
 }
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

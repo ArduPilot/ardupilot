@@ -16,6 +16,9 @@
  */
 
 #include "AP_UAVCAN_V1.h"
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include <AP_CANManager/AP_CANManager.h>
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -398,3 +401,5 @@ void AP_UAVCAN_V1::set_ESC_status()
         update_rpm(esc_index, rpm);
     }
 }
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

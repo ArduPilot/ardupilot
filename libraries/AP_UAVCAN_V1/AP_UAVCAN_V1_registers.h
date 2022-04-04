@@ -17,6 +17,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include <AP_Param/AP_Param.h>
 #include "AP_UAVCAN_V1_subscriber.h"
 
@@ -118,3 +121,5 @@ private:
     uint16_t parseRequest(const CanardRxTransfer* transfer);
     void makeResponse(const CanardRxTransfer* transfer, uint16_t index);
 };
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

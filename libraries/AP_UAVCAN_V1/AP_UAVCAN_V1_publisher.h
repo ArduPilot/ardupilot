@@ -17,6 +17,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include "canard.h"
 
 #include "uavcan/node/Heartbeat_1_0.h"
@@ -99,3 +102,5 @@ private:
 
     void publish();
 };
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

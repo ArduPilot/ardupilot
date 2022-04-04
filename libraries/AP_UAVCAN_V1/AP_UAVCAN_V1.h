@@ -17,6 +17,9 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+
 #include <AP_Param/AP_Param.h>
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_IfaceMgr.h>
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_subscriber.h>
@@ -86,3 +89,5 @@ private:
 
     UavcanEscController _esc_controller;
 };
+
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
