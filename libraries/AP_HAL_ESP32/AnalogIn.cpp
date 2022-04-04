@@ -38,12 +38,10 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#define ANALOGIN_DEBUGGING 0
-
 // base voltage scaling for 12 bit 3.3V ADC
 #define VOLTAGE_SCALING (3.3f/4096.0f)
 
-#if ANALOGIN_DEBUGGING
+#if ESP32_ANALOGIN_DEBUG
 # define Debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
 # define Debug(fmt, args ...)
