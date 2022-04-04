@@ -1021,7 +1021,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             if (tx_len > 0) {
                 _last_write_completed_us = AP_HAL::micros();
             }
-            chEvtGetAndClearEvents(EVT_TRANSMIT_DMA_COMPLETE);
+            chEvtGetAndClearEventsI(EVT_TRANSMIT_DMA_COMPLETE);
             chSysUnlock();
         }
         // clean up pending locks
