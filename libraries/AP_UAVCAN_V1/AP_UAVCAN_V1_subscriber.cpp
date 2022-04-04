@@ -101,9 +101,9 @@ void UavcanRequestSubscriber::push_response(size_t buf_size, uint8_t* buf)
     // never occur for a given application if the heap is sized correctly; for background,
     // refer to the Robson's Proof and the documentation for O1Heap.
     if (result == -CANARD_ERROR_OUT_OF_MEMORY) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "v1: response err: OUT_OF_MEMORY");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: response err: OUT_OF_MEMORY");
     } else if (result < 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "v1: response err");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: response err");
     }
 }
 
@@ -183,7 +183,7 @@ void UavcanNodeExecuteCommandRequest::handler(const CanardRxTransfer* transfer)
 
 void UavcanNodeExecuteCommandRequest::makeResponse(const CanardRxTransfer* transfer)
 {
-    gcs().send_text(MAV_SEVERITY_WARNING, "v1: ExecuteCommand not implemented yet");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: ExecuteCommand not implemented yet");
 }
 
 #endif // HAL_ENABLE_LIBUAVCAN_DRIVERS

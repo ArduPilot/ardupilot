@@ -247,7 +247,7 @@ void AP_UAVCAN_V1::init(uint8_t driver_index, bool enable_filters)
 
     my_allocator = o1heapInit(base, UAVCAN_HEAP_SIZE);
     if (NULL == my_allocator) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "v1: o1heapInit() failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: o1heapInit() failed");
         return;
     }
 
@@ -304,12 +304,12 @@ bool AP_UAVCAN_V1::add_interface(AP_HAL::CANIface* new_can_iface)
     _can_iface = new_can_iface;
 
     if (_can_iface == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "v1: CAN driver not found");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: CAN driver not found");
         return false;
     }
 
     if (!_can_iface->is_initialized()) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "v1: Driver not initialized");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: Driver not initialized");
         return false;
     }
 
@@ -332,7 +332,7 @@ void AP_UAVCAN_V1::spinReceive()
         CanardRxTransfer transfer;
         auto result = canardRxAccept(&_canard, AP_HAL::micros64(), &canard_frame, 0, &transfer, NULL);
         if (result < 0) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "v1: recv err: %d", result);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: recv err: %d", result);
             // An error has occurred: either an argument is invalid or we've ran out of memory.
             // It is possible to statically prove that an out-of-memory will never occur for a given
             // application if the heap is sized correctly; for background, refer to the Robson's Proof

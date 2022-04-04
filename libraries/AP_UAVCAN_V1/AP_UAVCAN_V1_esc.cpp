@@ -93,7 +93,7 @@ void UavcanEscController::SRV_push_servos()
     if (!_is_inited) {
         if (AP_HAL::millis() > last_log_ts_ms + 5000) {
             last_log_ts_ms = AP_HAL::millis();
-            gcs().send_text(MAV_SEVERITY_WARNING, "v1: esc is not inited.");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: esc is not inited.");
         }
         return;
     }
