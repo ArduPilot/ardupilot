@@ -51,7 +51,11 @@ extern const AP_HAL::HAL &hal;
 extern AP_Periph_FW periph;
 
 #ifndef HAL_CAN_POOL_SIZE
-#define HAL_CAN_POOL_SIZE 4000
+#if HAL_CANFD_SUPPORTED
+    #define HAL_CAN_POOL_SIZE 16000
+#else
+    #define HAL_CAN_POOL_SIZE 4000
+#endif
 #endif
 
 #ifndef HAL_PERIPH_LOOP_DELAY_US
@@ -1301,7 +1305,7 @@ static void process1HzTasks(uint64_t timestamp_usec)
          */
         for (auto &ins : instances) {
             if (pool_peak_percent(ins) > 70) {
-                printf("WARNING: ENLARGE MEMORY POOL on Iface %d\n", ins.index);
+                printf("WARNING: ENLARGE MEMORY POOL on Iface %d Peak Usage: %u%%\n", ins.index, pool_peak_percent(ins));
             }
         }
     }
