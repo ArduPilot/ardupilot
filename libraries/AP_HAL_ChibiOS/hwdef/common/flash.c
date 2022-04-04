@@ -75,7 +75,7 @@
 
 // optionally disable interrupts during flash writes
 #ifndef STM32_FLASH_DISABLE_ISR
-#define STM32_FLASH_DISABLE_ISR 0
+#define STM32_FLASH_DISABLE_ISR 1
 #endif
 
 // the 2nd bank of flash needs to be handled differently
