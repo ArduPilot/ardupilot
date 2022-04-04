@@ -1,0 +1,65 @@
+# hw definition file for processing by chibios_pins.py
+# for iFlight Beast F7 v2 hardware, based on Beast F7 v1
+# thanks to betaflight for pin information
+
+include ../BeastF7/hwdef.dat
+undef APJ_BOARD_ID
+undef HAL_SERIAL3_PROTOCOL
+undef BARO
+undef PD15
+undef PE9 PE11 PB11 PB10 PA10 PA9 PA3 PA2
+undef HAL_DEFAULT_INS_FAST_SAMPLE DMA_PRIORITY DMA_NOSHARE
+undef STM32_PWM_USE_ADVANCED
+
+# board ID for firmware load
+APJ_BOARD_ID 1057
+
+# V2 has different motor mapping
+PB4 TIM3_CH1 TIM3 PWM(2) GPIO(51)  BIDIR   # 2
+PB5 TIM3_CH2 TIM3 PWM(3) GPIO(52)          # 3
+
+I2C_ORDER I2C1 I2C2
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY EMPTY UART7
+
+# Buzzer - DMA timer channel use by LEDs
+PD2 BUZZER OUTPUT GPIO(80) LOW
+
+# USART1 (DJI)
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1 NODMA
+
+# USART2 (DJI RCIN)
+PA3 USART2_RX USART2
+PA2 USART2_TX USART2 NODMA
+define HAL_SERIAL2_PROTOCOL SerialProtocol_RCIN
+
+# USART3 (RCIN)
+PB11 USART3_RX USART3
+PB10 USART3_TX USART3
+
+# I2C2 for compass. These pins can also be used as USART3
+PB10 I2C2_SCL I2C2 ALT(1)
+PB11 I2C2_SDA I2C2 ALT(1)
+
+DMA_PRIORITY USART1* TIM3*
+
+# no built-in compass
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+
+# one BARO
+BARO DPS310 I2C:0:0x76
+
+# save some flash
+define HAL_GENERATOR_ENABLED 0
+define AC_OAPATHPLANNER_ENABLED 0
+define PRECISION_LANDING 0
+define HAL_BARO_WIND_COMP_ENABLED 0
+define GRIPPER_ENABLED 0
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+define AP_BATTMON_SMBUS_ENABLE 0
+define AP_BATTMON_FUEL_ENABLE 0
+define AP_OPTICALFLOW_ENABLED 0
