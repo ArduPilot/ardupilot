@@ -19,6 +19,8 @@
 #include "esp32s3empty.h"
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY
 #include "esp32s3m5stampfly.h" // https://shop.m5stack.com/products/m5stamp-fly-with-m5stamps3
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_IMU_MODULE_V11
+#include "esp32imu_module_v11.h" //makerfabs esp32 imu module v1.1
 #else
 #error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
 #endif
