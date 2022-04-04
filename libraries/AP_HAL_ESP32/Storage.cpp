@@ -17,7 +17,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "Storage.h"
 
-//#define STORAGEDEBUG 1
+//#define ESP32_STORAGE_DEBUG 1
 
 using namespace ESP32;
 
@@ -28,7 +28,7 @@ void Storage::_storage_open(void)
     if (_initialised) {
         return;
     }
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d _storage_open \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     _dirty_mask.clearall();
@@ -47,7 +47,7 @@ void Storage::_storage_open(void)
 */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     uint16_t end = loc + length;
@@ -61,7 +61,7 @@ void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
         printf("%s:%d read_block failed \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
         return;
@@ -73,7 +73,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
 void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
     if (loc >= sizeof(_buffer)-(n-1)) {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
         printf("%s:%d write_block failed \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
         return;
@@ -117,7 +117,7 @@ void Storage::_timer_tick(void)
  */
 void Storage::_flash_load(void)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     if (!_flash.init()) {
@@ -130,7 +130,7 @@ void Storage::_flash_load(void)
 */
 void Storage::_flash_write(uint16_t line)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     if (_flash.write(line*STORAGE_LINE_SIZE, STORAGE_LINE_SIZE)) {
@@ -144,7 +144,7 @@ void Storage::_flash_write(uint16_t line)
  */
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     size_t address = sector * STORAGE_SECTOR_SIZE + offset;
@@ -158,7 +158,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
             bool ok = _flash.re_initialise();
             hal.console->printf("Storage: failed at %u:%u for %u - re-init %u\n",
                                 (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
             printf("Storage: failed at %u:%u for %u - re-init %u\n",
                    (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
 #endif
@@ -173,7 +173,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
     size_t address = sector * STORAGE_SECTOR_SIZE + offset;
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d  -> sec:%u off:%d len:%d addr:%d\n", __PRETTY_FUNCTION__, __LINE__,sector,offset,length,address);
 #endif
     esp_partition_read(p, address, data, length);
@@ -185,7 +185,7 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
  */
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     size_t address = sector * STORAGE_SECTOR_SIZE;
@@ -197,7 +197,7 @@ bool Storage::_flash_erase_sector(uint8_t sector)
  */
 bool Storage::_flash_erase_ok(void)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     // only allow erase while disarmed
@@ -210,7 +210,7 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
-#ifdef STORAGEDEBUG
+#ifdef ESP32_STORAGE_DEBUG
     printf("%s:%d  \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     return _initialised && AP_HAL::millis() - _last_empty_ms < 2000;
