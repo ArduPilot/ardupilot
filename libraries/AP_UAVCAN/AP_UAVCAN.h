@@ -23,7 +23,7 @@
 #include <uavcan/uavcan.hpp>
 #include "AP_UAVCAN_IfaceMgr.h"
 #include "AP_UAVCAN_Clock.h"
-#include <AP_CANManager/AP_CANDriver.h>
+#include <AP_CANManager/AP_CANManager.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
