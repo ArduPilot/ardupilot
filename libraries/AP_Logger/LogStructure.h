@@ -135,6 +135,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_Avoidance/LogStructure.h>
 #include <AP_ESC_Telem/LogStructure.h>
 #include <AP_AIS/LogStructure.h>
+#include <AP_HAL_ChibiOS/LogStructure.h>
 
 // structure used to define logging format
 struct PACKED LogStructure {
@@ -1356,6 +1357,7 @@ LOG_STRUCTURE_FROM_NAVEKF2 \
 LOG_STRUCTURE_FROM_NAVEKF3 \
 LOG_STRUCTURE_FROM_NAVEKF \
 LOG_STRUCTURE_FROM_AHRS \
+LOG_STRUCTURE_FROM_HAL_CHIBIOS \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
@@ -1422,6 +1424,7 @@ enum LogMessages : uint8_t {
     LOG_CSRV_MSG,
     LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
+    LOG_IDS_FROM_HAL_CHIBIOS,
 
     LOG_IDS_FROM_GPS,
 
