@@ -410,19 +410,22 @@ void Scheduler::_monitor_thread(void *arg)
 #if HAL_LOGGING_ENABLED
             const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
             if (AP_Logger::get_singleton()) {
-                AP::logger().Write("MON", "TimeUS,LDelay,Task,IErr,IErrCnt,IErrLn,MavMsg,MavCmd,SemLine,SPICnt,I2CCnt", "QIbIHHHHHII",
-                                   AP_HAL::micros64(),
-                                   loop_delay,
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.internal_error_last_line,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line,
-                                   pd.spi_count,
-                                   pd.i2c_count);
-                }
+                const struct log_MON mon{
+                    LOG_PACKET_HEADER_INIT(LOG_MON_MSG),
+                    time_us               : AP_HAL::micros64(),
+                    loop_delay            : loop_delay,
+                    current_task          : pd.scheduler_task,
+                    internal_error_mask   : pd.internal_errors,
+                    internal_error_count  : pd.internal_error_count,
+                    internal_error_line   : pd.internal_error_last_line,
+                    mavmsg                : pd.last_mavlink_msgid,
+                    mavcmd                : pd.last_mavlink_cmd,
+                    semline               : pd.semaphore_line,
+                    spicnt                : pd.spi_count,
+                    i2ccnt                : pd.i2c_count
+                };
+                AP::logger().WriteCriticalBlock(&mon, sizeof(mon));
+            }
 #endif
         }
         if (loop_delay >= 500 && !sched->in_expected_delay()) {
@@ -435,22 +438,26 @@ void Scheduler::_monitor_thread(void *arg)
         log_wd_counter = 0;
         // log watchdog message once a second
         const AP_HAL::Util::PersistentData &pd = hal.util->last_persistent_data;
-        AP::logger().WriteCritical("WDOG", "TimeUS,Tsk,IE,IEC,IEL,MvMsg,MvCmd,SmLn,FL,FT,FA,FP,ICSR,LR,TN", "QbIHHHHHHHIBIIn",
-                                   AP_HAL::micros64(),
-                                   pd.scheduler_task,
-                                   pd.internal_errors,
-                                   pd.internal_error_count,
-                                   pd.internal_error_last_line,
-                                   pd.last_mavlink_msgid,
-                                   pd.last_mavlink_cmd,
-                                   pd.semaphore_line,
-                                   pd.fault_line,
-                                   pd.fault_type,
-                                   pd.fault_addr,
-                                   pd.fault_thd_prio,
-                                   pd.fault_icsr,
-                                   pd.fault_lr,
-                                   pd.thread_name4);
+        struct log_WDOG wdog{
+            LOG_PACKET_HEADER_INIT(LOG_WDOG_MSG),
+            time_us                  : AP_HAL::micros64(),
+            scheduler_task           : pd.scheduler_task,
+            internal_errors          : pd.internal_errors,
+            internal_error_count     : pd.internal_error_count,
+            internal_error_last_line : pd.internal_error_last_line,
+            last_mavlink_msgid       : pd.last_mavlink_msgid,
+            last_mavlink_cmd         : pd.last_mavlink_cmd,
+            semaphore_line           : pd.semaphore_line,
+            fault_line               : pd.fault_line,
+            fault_type               : pd.fault_type,
+            fault_addr               : pd.fault_addr,
+            fault_thd_prio           : pd.fault_thd_prio,
+            fault_icsr               : pd.fault_icsr,
+            fault_lr                 : pd.fault_lr
+        };
+        memcpy(wdog.thread_name4, pd.thread_name4, ARRAY_SIZE(wdog.thread_name4));
+
+        AP::logger().WriteCriticalBlock(&wdog, sizeof(wdog));
     }
 #endif // HAL_LOGGING_ENABLED
 
