@@ -20,7 +20,7 @@
 #if HAVE_FILESYSTEM_SUPPORT
 #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
-#define FSDEBUG 0
+#define ESP32_FS_DEBUG 0
 
 #include <utime.h>
 
@@ -28,7 +28,7 @@ extern const AP_HAL::HAL& hal;
 
 int AP_Filesystem_ESP32::open(const char *fname, int flags, bool allow_absolute_paths)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO open %s \n", fname);
 #endif
     // we automatically add O_CLOEXEC as we always want it for ArduPilot FS usage
@@ -37,7 +37,7 @@ int AP_Filesystem_ESP32::open(const char *fname, int flags, bool allow_absolute_
 
 int AP_Filesystem_ESP32::close(int fd)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO close \n");
 #endif
     return ::close(fd);
@@ -45,7 +45,7 @@ int AP_Filesystem_ESP32::close(int fd)
 
 ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO read \n");
 #endif
     return ::read(fd, buf, count);
@@ -53,7 +53,7 @@ ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
 
 ssize_t AP_Filesystem_ESP32::write(int fd, const void *buf, size_t count)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO write \n");
 #endif
     return ::write(fd, buf, count);
@@ -61,7 +61,7 @@ ssize_t AP_Filesystem_ESP32::write(int fd, const void *buf, size_t count)
 
 int AP_Filesystem_ESP32::fsync(int fd)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO fsync \n");
 #endif
     return ::fsync(fd);
@@ -69,7 +69,7 @@ int AP_Filesystem_ESP32::fsync(int fd)
 
 int32_t AP_Filesystem_ESP32::lseek(int fd, int32_t offset, int seek_from)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO lseek \n");
 #endif
     return ::lseek(fd, offset, seek_from);
@@ -77,7 +77,7 @@ int32_t AP_Filesystem_ESP32::lseek(int fd, int32_t offset, int seek_from)
 
 int AP_Filesystem_ESP32::stat(const char *pathname, struct stat *stbuf)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO stat %s \n", pathname);
 #endif
     return ::stat(pathname, stbuf);
@@ -85,7 +85,7 @@ int AP_Filesystem_ESP32::stat(const char *pathname, struct stat *stbuf)
 
 int AP_Filesystem_ESP32::unlink(const char *pathname)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO unlink %s \n", pathname);
 #endif
     return ::unlink(pathname);
@@ -93,7 +93,7 @@ int AP_Filesystem_ESP32::unlink(const char *pathname)
 
 int AP_Filesystem_ESP32::mkdir(const char *pathname)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO mkdir %s \n", pathname);
 #endif
     return ::mkdir(pathname, 0777);
@@ -101,7 +101,7 @@ int AP_Filesystem_ESP32::mkdir(const char *pathname)
 
 void* AP_Filesystem_ESP32::opendir(const char *pathname)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO opendir %s \n", pathname);
 #endif
 
@@ -111,7 +111,7 @@ void* AP_Filesystem_ESP32::opendir(const char *pathname)
 
 struct dirent *AP_Filesystem_ESP32::readdir(void *dirp)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO readdir \n");
 #endif
     return ::readdir((DIR*)dirp);
@@ -120,7 +120,7 @@ struct dirent *AP_Filesystem_ESP32::readdir(void *dirp)
 
 int AP_Filesystem_ESP32::closedir(void *dirp)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO closedir \n");
 #endif
 
@@ -132,7 +132,7 @@ int AP_Filesystem_ESP32::closedir(void *dirp)
 int64_t AP_Filesystem_ESP32::disk_free(const char *path)
 {
 
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO free disk %s \n", path);
 #endif
     FATFS *fs;
@@ -155,7 +155,7 @@ int64_t AP_Filesystem_ESP32::disk_free(const char *path)
 // return total disk space in bytes
 int64_t AP_Filesystem_ESP32::disk_space(const char *path)
 {
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO usage disk %s \n", path);
 #endif
     FATFS *fs;
@@ -181,7 +181,7 @@ int64_t AP_Filesystem_ESP32::disk_space(const char *path)
 bool AP_Filesystem_ESP32::set_mtime(const char *filename, const uint32_t mtime_sec)
 {
 
-#if FSDEBUG
+#if ESP32_FS_DEBUG
     printf("DO time %s \n", filename);
 #endif
     struct utimbuf times {};

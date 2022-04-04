@@ -102,7 +102,7 @@
 //#define INSEDEBUG 1
 //#define STORAGEDEBUG 1
 //#define SCHEDDEBUG 1
-//#define FSDEBUG 1
+//#define ESP32_FS_DEBUG 1
 //#define BUSDEBUG 1
 
 #define HAL_INS_PROBE_LIST PROBE_IMU_SPI( Invensense, HAL_INS_MPU9250_NAME, ROTATION_NONE)
