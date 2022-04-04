@@ -17,7 +17,7 @@
 
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_IfaceMgr.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include <string.h>
 
@@ -108,4 +108,4 @@ bool UavcanFirstTransportIface::send(const CanardTxQueueItem* transfer)
     return result;
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS

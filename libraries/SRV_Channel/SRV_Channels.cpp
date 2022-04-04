@@ -569,6 +569,7 @@ void SRV_Channels::push()
                 break;
             }
 #endif
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
             case AP_CANManager::Driver_Type_UAVCAN_V1: {
                 AP_UAVCAN_V1 *ap_uavcan_v1 = AP_UAVCAN_V1::get_uavcan(i);
                 if (ap_uavcan_v1 == nullptr) {
@@ -577,6 +578,7 @@ void SRV_Channels::push()
                 ap_uavcan_v1->SRV_push_servos();
                 break;
             }
+#endif
 
             case AP_CANManager::Driver_Type_CANTester:
             case AP_CANManager::Driver_Type_None:

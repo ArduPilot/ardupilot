@@ -59,9 +59,11 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     AP_SUBGROUPPTR(_piccolocan, "PC_", 5, AP_CANManager::CANDriver_Params, AP_PiccoloCAN),
 #endif
 
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
     // @Group: UC1_
     // @Path: ../AP_UAVCAN_V1/AP_UAVCAN_V1.cpp
     AP_SUBGROUPPTR(_uavcan_v1, "UC1_", 6, AP_CANManager::CANDriver_Params, AP_UAVCAN_V1),
+#endif
 
     AP_GROUPEND
 };

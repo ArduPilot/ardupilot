@@ -17,7 +17,7 @@
 
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_publisher.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_registers.h>
 
@@ -146,4 +146,4 @@ void UavcanPortListPublisher::publish()
     // _transfer_metadata.transfer_id++;
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS

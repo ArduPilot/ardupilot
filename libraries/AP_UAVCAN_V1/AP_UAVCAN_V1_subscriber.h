@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include "canard.h"
 
@@ -123,4 +123,4 @@ private:
     void makeResponse(const CanardRxTransfer* transfer);
 };
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS

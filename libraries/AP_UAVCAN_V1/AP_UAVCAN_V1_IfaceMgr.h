@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include "canard.h"
 
@@ -35,4 +35,4 @@ private:
     AP_HAL::CANIface* _can_iface = nullptr;
 };
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS

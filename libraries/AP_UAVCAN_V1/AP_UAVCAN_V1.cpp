@@ -17,7 +17,7 @@
 
 #include "AP_UAVCAN_V1.h"
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -402,4 +402,4 @@ void AP_UAVCAN_V1::set_ESC_status()
     }
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS

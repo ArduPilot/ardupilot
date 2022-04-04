@@ -17,7 +17,7 @@
 
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_subscriber.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_registers.h>
 #include <AP_Param/AP_Param.h>
@@ -186,4 +186,4 @@ void UavcanNodeExecuteCommandRequest::makeResponse(const CanardRxTransfer* trans
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: ExecuteCommand not implemented yet");
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS

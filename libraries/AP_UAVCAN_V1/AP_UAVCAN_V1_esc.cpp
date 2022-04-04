@@ -17,7 +17,7 @@
 
 #include <AP_UAVCAN_V1/AP_UAVCAN_V1_esc.h>
 
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
 
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -350,4 +350,4 @@ void UavcanReadinessPublisher::publish()
     _transfer_metadata.transfer_id++;
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
