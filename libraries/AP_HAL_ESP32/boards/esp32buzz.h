@@ -99,7 +99,7 @@
 #define HAL_INS_MPU9250_NAME "mpu9250"
 
 // uncommenting one or more of these will give more console debug in certain areas..
-//#define INSEDEBUG 1
+//#define INSEDEBUG 1 // doesn't seem to be used anywhere?
 //#define STORAGEDEBUG 1
 //#define SCHEDDEBUG 1
 //#define ESP32_FS_DEBUG 1
