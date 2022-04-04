@@ -33,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
     thread_priority(_thread_priority), semaphore()
 {
-#ifdef BUSDEBUG
+#ifdef ESP32_BUS_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 }
@@ -43,7 +43,7 @@ DeviceBus::DeviceBus(uint8_t _thread_priority) :
 */
 void IRAM_ATTR DeviceBus::bus_thread(void *arg)
 {
-#ifdef BUSDEBUG
+#ifdef ESP32_BUS_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     struct DeviceBus *binfo = (struct DeviceBus *)arg;
@@ -97,7 +97,7 @@ void IRAM_ATTR DeviceBus::bus_thread(void *arg)
 
 AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb, AP_HAL::Device *_hal_device)
 {
-#ifdef BUSDEBUG
+#ifdef ESP32_BUS_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     if (!thread_started) {
@@ -118,7 +118,7 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
         default:
             break;
         }
-#ifdef BUSDEBUG
+#ifdef ESP32_BUS_DEBUG
         printf("%s:%d Thread Start\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
         xTaskCreate(DeviceBus::bus_thread, name, Scheduler::DEVICE_SS,
