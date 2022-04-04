@@ -1069,7 +1069,8 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_UAVCAN:
                 {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-                    if (!AP::uavcan_dna_server().prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
+                    AP_UAVCAN *ap_uavcan = AP_UAVCAN::get_uavcan(i);
+                    if (ap_uavcan != nullptr && !ap_uavcan->prearm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
                         check_failed(ARMING_CHECK_SYSTEM, report, "UAVCAN: %s", fail_msg);
                         return false;
                     }
