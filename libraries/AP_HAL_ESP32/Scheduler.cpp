@@ -61,7 +61,7 @@ void disableCore1WDT()
 void Scheduler::init()
 {
 
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
@@ -99,7 +99,7 @@ void Scheduler::thread_create_trampoline(void *ctx)
 */
 bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_t stack_size, priority_base base, int8_t priority)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
 
@@ -129,7 +129,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     };
     for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
         if (priority_map[i].base == base) {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
             printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
             thread_priority = constrain_int16(priority_map[i].p + priority, 1, 25);
@@ -171,7 +171,7 @@ void Scheduler::delay_microseconds(uint16_t us)
 
 void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     for (uint8_t i = 0; i < _num_timer_procs; i++) {
@@ -191,7 +191,7 @@ void Scheduler::register_timer_process(AP_HAL::MemberProc proc)
 
 void Scheduler::register_io_process(AP_HAL::MemberProc proc)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     _io_sem.take_blocking();
@@ -230,7 +230,7 @@ bool Scheduler::in_main_thread() const
 
 void Scheduler::set_system_initialized()
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     if (_initialized) {
@@ -247,14 +247,14 @@ bool Scheduler::is_system_initialized()
 
 void Scheduler::_timer_thread(void *arg)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
         sched->delay_microseconds(1000);
     }
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d initialised\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     while (true) {
@@ -356,7 +356,7 @@ void Scheduler::_run_io(void)
 
 void Scheduler::_io_thread(void* arg)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     mount_sdcard();
@@ -364,7 +364,7 @@ void Scheduler::_io_thread(void* arg)
     while (!sched->_initialized) {
         sched->delay_microseconds(1000);
     }
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d initialised \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     uint32_t last_sd_start_ms = AP_HAL::millis();
@@ -388,14 +388,14 @@ void Scheduler::_io_thread(void* arg)
 
 void Scheduler::_storage_thread(void* arg)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
         sched->delay_microseconds(10000);
     }
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d initialised \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     while (true) {
@@ -422,14 +422,14 @@ void Scheduler::_print_profile(void* arg)
 
 void Scheduler::_uart_thread(void *arg)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
     while (!_initialized) {
         sched->delay_microseconds(2000);
     }
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d initialised\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     while (true) {
@@ -468,7 +468,7 @@ void Scheduler::print_stats(void)
 
 void IRAM_ATTR Scheduler::_main_thread(void *arg)
 {
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d start\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     Scheduler *sched = (Scheduler *)arg;
@@ -487,7 +487,7 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
 
     sched->set_system_initialized();
 
-#ifdef SCHEDDEBUG
+#ifdef ESP32_SCHED_DEBUG
     printf("%s:%d initialised\n", __PRETTY_FUNCTION__, __LINE__);
 #endif
     while (true) {
