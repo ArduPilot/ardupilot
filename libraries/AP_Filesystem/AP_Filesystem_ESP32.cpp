@@ -26,7 +26,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-int AP_Filesystem_ESP32::open(const char *fname, int flags)
+int AP_Filesystem_ESP32::open(const char *fname, int flags, bool allow_absolute_paths)
 {
 #if FSDEBUG
     printf("DO open %s \n", fname);
