@@ -322,8 +322,14 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
+    _dna_server = new AP_UAVCAN_DNA_Server(this, StorageAccess(StorageManager::StorageCANDNA));
+    if (_dna_server == nullptr) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate DNA server\n\r");
+        return;
+    }
+
     //Start Servers
-    if (!AP::uavcan_dna_server().init(this)) {
+    if (!_dna_server->init()) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: Failed to start DNA Server\n\r");
         return;
     }
@@ -483,7 +489,7 @@ void AP_UAVCAN::loop(void)
         notify_state_send();
         send_parameter_request();
         send_parameter_save_request();
-        AP::uavcan_dna_server().verify_nodes(this);
+        _dna_server->verify_nodes();
     }
 }
 
@@ -1196,6 +1202,13 @@ bool AP_UAVCAN::check_and_reset_option(Options option)
         _options.set_and_save(int16_t(_options.get() & ~uint16_t(option)));
     }
     return ret;
+}
+
+// handle prearm check
+bool AP_UAVCAN::prearm_check(char* fail_msg, uint8_t fail_msg_len) const
+{
+    // forward this to DNA_Server
+    return _dna_server->prearm_check(fail_msg, fail_msg_len);
 }
 
 #endif // HAL_NUM_CAN_IFACES
