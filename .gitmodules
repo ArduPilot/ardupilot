@@ -45,4 +45,4 @@
 	url = https://github.com/UAVCAN/public_regulated_data_types.git
 [submodule "modules/uavcan_v1/nunavut_c_headers"]
 	path = modules/uavcan_v1/nunavut_c_headers
-	url = git@github.com:PonomarevDA/nunavut_c_headers.git
+	url = https://github.com/PonomarevDA/nunavut_c_headers.git
