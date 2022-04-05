@@ -31,6 +31,7 @@ const AP_Param::GroupInfo AP_Compass_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_ID",  4, AP_Compass_Params, dev_id, 0),
 
+#if COMPASS_CAL_ENABLED
     // @Param: OFS_X
     // @DisplayName: Compass offsets in milligauss on the X axis
     // @Description: Offset to be added to the compass x-axis values to compensate for metal in the frame
@@ -57,6 +58,7 @@ const AP_Param::GroupInfo AP_Compass_Params::var_info[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("OFS",    5, AP_Compass_Params, offset, 0),
+#endif // COMPASS_CAL_ENABLED
 
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: DIA_X

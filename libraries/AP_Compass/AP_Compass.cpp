@@ -495,7 +495,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("_CAL_FIT", 30, Compass, _calibration_threshold, AP_COMPASS_CALIBRATION_FITNESS_DEFAULT),
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if COMPASS_CAL_ENABLED
     // @Param: _OFFS_MAX
     // @DisplayName: Compass maximum offset
     // @Description: This sets the maximum allowed compass offset in calibration and arming checks
@@ -585,12 +585,14 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // index 42
 
+#if COMPASS_CAL_ENABLED // currently only used in calibration
     // @Param: _OPTIONS
     // @DisplayName: Compass options
     // @Description: This sets options to change the behaviour of the compass
     // @Bitmask: 0:CalRequireGPS
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 43, Compass, _options, 0),
+#endif
 
 #if COMPASS_MAX_UNREG_DEV > 0
     // @Param: _DEV_ID4
@@ -715,11 +717,11 @@ void Compass::init()
         return;
     }
 
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     convert_per_instance();
 
     // convert to new custom rotation method
     // PARAMETER_CONVERSION - Added: Nov-2021
-#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_state[i].params.orientation != ROTATION_CUSTOM_OLD) {
             continue;
@@ -849,7 +851,7 @@ void Compass::init()
 }
 
 // convet params to per instance param table
-// PARAMETER_CONVERSION - Added: Nov-2021
+// PARAMETER_CONVERSION - Added: April-2022
 void Compass::convert_per_instance()
 {
     AP_Param::ConversionInfo info;

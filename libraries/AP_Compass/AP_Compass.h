@@ -330,9 +330,11 @@ public:
     }
     
     // return maximum allowed compass offsets
+#if COMPASS_CAL_ENABLED
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
     }
+#endif
 
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
 
@@ -540,15 +542,17 @@ private:
     RestrictIDTypeArray<AP_Int32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
     RestrictIDTypeArray<int32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
 #endif
-
+#if COMPASS_CAL_ENABLED
     AP_Int16 _offset_max;
+#endif
 
     // bitmask of options
+#if COMPASS_CAL_ENABLED
     enum class Option : uint16_t {
         CAL_REQUIRE_GPS = (1U<<0),
     };
     AP_Int16 _options;
-
+#endif
 #if COMPASS_CAL_ENABLED
     RestrictIDTypeArray<CompassCalibrator*, COMPASS_MAX_INSTANCES, Priority> _calibrator;
 #endif
