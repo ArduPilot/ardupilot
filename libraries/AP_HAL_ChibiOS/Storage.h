@@ -20,7 +20,7 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include <AP_Common/Bitmask.h>
 #include <AP_FlashStorage/AP_FlashStorage.h>
-#ifdef STORAGE_FLASH_QSPI
+#ifdef STORAGE_FLASH_PAGE_QSPI
 #include <AP_FlashIface/AP_FlashIface.h>
 #endif
 #include "hwdef/common/flash.h"
@@ -89,7 +89,7 @@ private:
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_ok, bool)};
-#elif defined(STORAGE_FLASH_QSPI)
+#elif defined(STORAGE_FLASH_PAGE_QSPI)
     AP_FlashStorage _flash{_buffer,
             AP::ext_flash()->get_page_size(),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
