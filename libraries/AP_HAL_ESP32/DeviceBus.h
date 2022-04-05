@@ -45,7 +45,7 @@ private:
         uint64_t next_usec;
     } *callbacks;
     uint8_t thread_priority;
-    void* bus_thread_handle;
+    tskTaskControlBlock *bus_thread_handle;
     bool thread_started;
     AP_HAL::Device *hal_device;
 };

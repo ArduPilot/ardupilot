@@ -20,6 +20,10 @@
 #include <AP_HAL_ESP32/AP_HAL_ESP32.h>
 #include <AP_HAL_ESP32/Semaphores.h>
 
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #ifndef WIFI_MAX_CONNECTION
 #define WIFI_MAX_CONNECTION 5
 #endif
@@ -68,7 +72,7 @@ private:
     ConnectionState _state;
     short accept_socket;
     short socket_list[WIFI_MAX_CONNECTION];
-    void *_wifi_task_handle;
+    tskTaskControlBlock *_wifi_task_handle;
     void initialize_wifi();
     bool read_data();
     bool write_data();

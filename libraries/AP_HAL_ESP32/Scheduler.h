@@ -18,6 +18,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include "HAL_ESP32_Namespace.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #define ESP32_SCHEDULER_MAX_TIMER_PROCS 10
 #define ESP32_SCHEDULER_MAX_IO_PROCS 10
 
@@ -88,14 +91,14 @@ private:
 
 
 
-    void *_main_task_handle;
-    void *_timer_task_handle;
-    void *_rcin_task_handle;
-    void *_rcout_task_handle;
-    void *_uart_task_handle;
-    void *_io_task_handle;
-    void *test_task_handle;
-    void *_storage_task_handle;
+    tskTaskControlBlock *_main_task_handle;
+    tskTaskControlBlock *_timer_task_handle;
+    tskTaskControlBlock *_rcin_task_handle;
+    tskTaskControlBlock *_rcout_task_handle;
+    tskTaskControlBlock *_uart_task_handle;
+    tskTaskControlBlock *_io_task_handle;
+    tskTaskControlBlock *test_task_handle;
+    tskTaskControlBlock *_storage_task_handle;
 
     static void _main_thread(void *arg);
     static void _timer_thread(void *arg);
