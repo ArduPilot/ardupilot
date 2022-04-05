@@ -569,7 +569,7 @@ void AP_AHRS::update_EKF3(void)
         if (active_EKF_type() == EKFType::THREE) {
             Vector3f eulers;
             EKF3.getRotationBodyToNED(_dcm_matrix);
-            EKF3.getEulerAngles(-1,eulers);
+            EKF3.getEulerAngles(eulers);
             roll  = eulers.x;
             pitch = eulers.y;
             yaw   = eulers.z;
@@ -615,7 +615,7 @@ void AP_AHRS::update_EKF3(void)
             }
             _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
             nav_filter_status filt_state;
-            EKF3.getFilterStatus(-1,filt_state);
+            EKF3.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
         }
     }
@@ -828,7 +828,7 @@ Vector3f AP_AHRS::wind_estimate(void) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getWind(-1,wind);
+        EKF3.getWind(wind);
         break;
 #endif
 
@@ -918,7 +918,7 @@ bool AP_AHRS::airspeed_estimate(float &airspeed_ret) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        ret = EKF3.getWind(-1,wind_vel);
+        ret = EKF3.getWind(wind_vel);
         break;
 #endif
 
@@ -992,7 +992,7 @@ bool AP_AHRS::airspeed_vector_true(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.getAirSpdVec(-1, vec);
+        return EKF3.getAirSpdVec(vec);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -1071,7 +1071,7 @@ bool AP_AHRS::get_quaternion(Quaternion &quat) const
         if (!_ekf3_started) {
             return false;
         }
-        EKF3.getQuaternion(-1, quat);
+        EKF3.getQuaternion(quat);
         break;
 #endif
 #if AP_AHRS_SIM_ENABLED
@@ -1123,7 +1123,7 @@ bool AP_AHRS::get_secondary_attitude(Vector3f &eulers) const
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // EKF3 is secondary
-        EKF3.getEulerAngles(-1, eulers);
+        EKF3.getEulerAngles(eulers);
         return _ekf3_started;
 #endif
 
@@ -1184,7 +1184,7 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
         if (!_ekf3_started) {
             return false;
         }
-        EKF3.getQuaternion(-1, quat);
+        EKF3.getQuaternion(quat);
         break;
 #endif
 
@@ -1269,7 +1269,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getVelNED(-1,vec);
+        EKF3.getVelNED(vec);
         return Vector2f(vec.x, vec.y);
 #endif
 
@@ -1382,7 +1382,7 @@ bool AP_AHRS::get_velocity_NED(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getVelNED(-1,vec);
+        EKF3.getVelNED(vec);
         return true;
 #endif
 
@@ -1419,7 +1419,7 @@ bool AP_AHRS::get_mag_field_NED(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getMagNED(-1,vec);
+        EKF3.getMagNED(vec);
         return true;
 #endif
 
@@ -1450,7 +1450,7 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getMagXYZ(-1,vec);
+        EKF3.getMagXYZ(vec);
         return true;
 #endif
 
@@ -1483,7 +1483,7 @@ bool AP_AHRS::get_vert_pos_rate(float &velocity) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        velocity = EKF3.getPosDownDerivative(-1);
+        velocity = EKF3.getPosDownDerivative();
         return true;
 #endif
 
@@ -1570,7 +1570,7 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
     case EKFType::THREE: {
             Vector2f posNE;
             float posD;
-            if (EKF3.getPosNE(-1,posNE) && EKF3.getPosD(-1,posD)) {
+            if (EKF3.getPosNE(posNE) && EKF3.getPosD(posD)) {
                 // position is valid
                 vec.x = posNE.x;
                 vec.y = posNE.y;
@@ -1653,7 +1653,7 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
-        bool position_is_valid = EKF3.getPosNE(-1,posNE);
+        bool position_is_valid = EKF3.getPosNE(posNE);
         return position_is_valid;
     }
 #endif
@@ -1723,7 +1723,7 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE: {
-        bool position_is_valid = EKF3.getPosD(-1,posD);
+        bool position_is_valid = EKF3.getPosD(posD);
         return position_is_valid;
     }
 #endif
@@ -1860,7 +1860,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
         }
         if (always_use_EKF()) {
             uint16_t ekf3_faults;
-            EKF3.getFilterFaults(-1,ekf3_faults);
+            EKF3.getFilterFaults(ekf3_faults);
             if (ekf3_faults == 0) {
                 ret = EKFType::THREE;
             }
@@ -1903,7 +1903,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
 #endif
 #if HAL_NAVEKF3_AVAILABLE
         if (ret == EKFType::THREE) {
-            EKF3.getFilterStatus(-1,filt_state);
+            EKF3.getFilterStatus(filt_state);
             should_use_gps = EKF3.configuredToUseGPSForPosXY();
         }
 #endif
@@ -2161,7 +2161,7 @@ bool AP_AHRS::get_filter_status(nav_filter_status &status) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        EKF3.getFilterStatus(-1,status);
+        EKF3.getFilterStatus(status);
         return true;
 #endif
 
@@ -2711,7 +2711,7 @@ bool AP_AHRS::get_origin(Location &ret) const
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        if (!EKF3.getOriginLLH(-1,ret)) {
+        if (!EKF3.getOriginLLH(ret)) {
             return false;
         }
         return true;
@@ -2817,7 +2817,7 @@ bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // use EKF to get innovations
-        return EKF3.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        return EKF3.getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -2845,7 +2845,7 @@ bool AP_AHRS::is_vibration_affected() const
     switch (ekf_type()) {
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.isVibrationAffected(-1);
+        return EKF3.isVibrationAffected();
 #endif
     case EKFType::NONE:
 #if HAL_NAVEKF2_AVAILABLE
@@ -2885,7 +2885,7 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
     case EKFType::THREE: {
         // use EKF to get variance
         Vector2f offset;
-        return EKF3.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
+        return EKF3.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     }
 #endif
 
@@ -2926,7 +2926,7 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // use EKF to get variance
-        return EKF3.getVelInnovationsAndVariancesForSource(-1, (AP_NavEKF_Source::SourceXY)source, innovations, variances);
+        return EKF3.getVelInnovationsAndVariancesForSource((AP_NavEKF_Source::SourceXY)source, innovations, variances);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -2956,7 +2956,7 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 // we only have affinity for EKF3 as of now
 #if HAL_NAVEKF3_AVAILABLE
     if (active_EKF_type() == EKFType::THREE) {
-        uint8_t ret = EKF3.getActiveAirspeed(get_primary_core_index());
+        uint8_t ret = EKF3.getActiveAirspeed();
         if (ret != 255 && airspeed->healthy(ret)) {
             return ret;
         }
