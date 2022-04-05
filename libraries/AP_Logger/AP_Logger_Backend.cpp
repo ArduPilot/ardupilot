@@ -412,7 +412,7 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
         return false;
     }
     if (StartNewLogOK()) {
-        start_new_log();
+        // start_new_log();
     }
     if (!WritesOK()) {
         return false;

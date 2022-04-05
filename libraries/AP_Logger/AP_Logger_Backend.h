@@ -56,6 +56,9 @@ public:
     virtual void start_new_log() { }
     virtual void stop_logging(void) = 0;
 
+    // called by PrepForArming to actually start logging
+    virtual void PrepForArming_start_logging(void);
+
     // erase handling
     virtual void EraseAll() = 0;
 
@@ -215,11 +218,6 @@ protected:
     bool ShouldLog(bool is_critical);
     virtual bool WritesOK() const = 0;
     virtual bool StartNewLogOK() const;
-
-    // called by PrepForArming to actually start logging
-    virtual void PrepForArming_start_logging(void) {
-        start_new_log();
-    }
 
     /*
       read a block

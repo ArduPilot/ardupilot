@@ -756,31 +756,13 @@ void AP_Logger_File::stop_logging(void)
 /*
   does start_new_log in the logger thread
  */
-void AP_Logger_File::PrepForArming_start_logging()
+void LoggerBackendThread::PrepForArming_start_logging()
 {
     if (logging_started()) {
         return;
     }
 
-    uint32_t start_ms = AP_HAL::millis();
-    const uint32_t open_limit_ms = 1000;
-
-    /*
-      log open happens in the io_timer thread. We allow for a maximum
-      of 1s to complete the open
-     */
-    start_new_log_pending = true;
-    EXPECT_DELAY_MS(1000);
-    while (AP_HAL::millis() - start_ms < open_limit_ms) {
-        if (logging_started()) {
-            break;
-        }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !defined(HAL_BUILD_AP_PERIPH)
-        // keep the EKF ticking over
-        AP::ahrs().update();
-#endif
-        hal.scheduler->delay(1);
-    }
+    start_new_log();
 }
 
 /*

@@ -15,6 +15,7 @@
 #define HAL_LOGGING_DATAFLASH_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
+#define HAL_LOGGING_MAVLINK_ENABLED 0
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
     #define HAL_LOGGING_MAVLINK_ENABLED HAL_LOGGING_ENABLED
 #endif
@@ -344,6 +345,10 @@ public:
     static AP_Logger *get_singleton(void) {
         return _singleton;
     }
+
+    // FIXME: only accessor is AP_Arming.  Normal implementation is
+    // commented out...
+    bool in_log_download() const { return false; }
 
     // initialisation
     void Init(const struct LogStructure *structure, uint8_t num_types);
