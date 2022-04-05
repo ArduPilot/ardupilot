@@ -238,7 +238,7 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
             return false;
         }
 #elif AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_H7 || AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_G4
-        || AP_FLASHSTORAGE_TYPE != AP_FLASHSTORAGE_TYPE_QSPI
+        || AP_FLASHSTORAGE_TYPE == AP_FLASHSTORAGE_TYPE_QSPI
         blk.header.state = BLOCK_STATE_VALID;
         if (!flash_write(current_sector, write_offset, (uint8_t*)&blk, sizeof(blk.header) + max_write)) {
             return false;
