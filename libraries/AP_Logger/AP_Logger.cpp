@@ -1532,14 +1532,15 @@ void AP_Logger::file_content_update(FileContent &file_content)
         return;
     }
 
-    /* this function is called at max 1kHz. We don't want to saturate
-       the logging with file data, so we reduce the frequency of 64
-       byte file writes by a factor of 100. For the file
-       crash_dump.bin we dump 10x faster so we get it in a reasonable
-       time (full dump of 450k in about 1 minute)
+    /* this function is called at around 100Hz on average (tested on
+       400Hz copter). We don't want to saturate the logging with file
+       data, so we reduce the frequency of 64 byte file writes by a
+       factor of 10. For the file crash_dump.bin we dump 10x faster so
+       we get it in a reasonable time (full dump of 450k in about 1
+       minute)
     */
     file_content.counter++;
-    const uint8_t frequency = file_content.fast?10:100;
+    const uint8_t frequency = file_content.fast?1:10;
     if (file_content.counter % frequency != 0) {
         return;
     }
@@ -1565,6 +1566,7 @@ void AP_Logger::file_content_update(FileContent &file_content)
     const auto length = AP::FS().read(file_content.fd, pkt.data, sizeof(pkt.data));
     if (length <= 0) {
         AP::FS().close(file_content.fd);
+        file_content.fd = -1;
         file_content.remove_and_free(file);
         return;
     }
