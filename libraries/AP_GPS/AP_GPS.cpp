@@ -891,7 +891,7 @@ void AP_GPS::update_instance(uint8_t instance)
             // set the timestamp for this messages based on
             // set_uart_timestamp() or per specific transport in backend
             // , if available
-            tnow = state[instance].last_corrected_gps_time_us/1000U;
+         //   tnow = state[instance].last_corrected_gps_time_us/1000U;
             state[instance].corrected_timestamp_updated = false;
         }
         // delta will only be correct after parsing two messages
