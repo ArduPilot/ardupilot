@@ -2135,8 +2135,12 @@ class AutoTest(ABC):
             linestate_none = 45
             linestate_within = 46
             linestate = linestate_none
+            debug = False
+            if f == "/home/pbarker/rc/ardupilot/libraries/AP_HAL_ChibiOS/LogStructure.h":
+                debug = True
             for line in open(f).readlines():
-                #            print("line: %s" % line)
+                if debug:
+                    print("line: %s" % line)
                 if type(line) == bytes:
                     line = line.decode("utf-8")
                 line = re.sub("//.*", "", line) # trim comments
@@ -2146,7 +2150,8 @@ class AutoTest(ABC):
                 if state == state_outside:
                     if ("#define LOG_COMMON_STRUCTURES" in line or
                             re.match("#define LOG_STRUCTURE_FROM_.*", line)):
-                        #                    self.progress("Moving inside")
+                        if debug:
+                            self.progress("Moving inside")
                         state = state_inside
                     continue
                 if state == state_inside:
@@ -2162,19 +2167,28 @@ class AutoTest(ABC):
                         m = re.match(r"\s*{(.*)},\s*", line)
                         if m is not None:
                             # complete line
-                            # print("Complete line: %s" % str(line))
+                            if debug:
+                                print("Complete line: %s" % str(line))
                             message_infos.append(m.group(1))
                             continue
                         m = re.match(r"\s*{(.*)\\", line)
                         if m is None:
+                            if debug:
+                                self.progress("Moving outside")
                             state = state_outside
                             continue
                         partial_line = m.group(1)
+                        if debug:
+                            self.progress("partial line")
                         linestate = linestate_within
                         continue
                     if linestate == linestate_within:
+                        if debug:
+                            self.progress("Looking for close-brace")
                         m = re.match("(.*)}", line)
                         if m is None:
+                            if debug:
+                                self.progress("no close-brace")
                             line = line.rstrip()
                             newline = re.sub(r"\\$", "", line)
                             if newline == line:
@@ -2182,9 +2196,13 @@ class AutoTest(ABC):
                             line = newline
                             line = line.rstrip()
                             # cpp-style string concatenation:
+                            if debug:
+                                self.progress("more partial line")
                             line = re.sub(r'"\s*"', '', line)
                             partial_line += line
                             continue
+                        if debug:
+                            self.progress("found close-brace")
                         message_infos.append(partial_line + m.group(1))
                         linestate = linestate_none
                         continue
@@ -2262,10 +2280,12 @@ class AutoTest(ABC):
             raise NotAchievedException("Should not be in state_inside at end")
 
         for message_info in message_infos:
+            print("message_info: %s" % str(message_info))
             for define in defines:
                 message_info = re.sub(define, defines[define], message_info)
             m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*true)?\s*$', message_info)  # noqa
             if m is None:
+                print("NO MATCH")
                 continue
             (name, fmt, labels, units, multipliers) = (m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
             if name in ids:
