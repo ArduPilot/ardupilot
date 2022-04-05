@@ -942,20 +942,6 @@ struct PACKED log_VER {
 // @Field: ModeNum: alias for Mode
 // @Field: Rsn: reason for entering this mode; enumeration value
 
-// @LoggerMessage: MON
-// @Description: Main loop stuck data
-// @Field: TimeUS: Time since system startup
-// @Field: LDelay: Time main loop has been stuck for
-// @Field: Task: Current scheduler task number
-// @Field: IErr: Internal error mask; which internal errors have been detected
-// @Field: IErrCnt: Internal error count; how many internal errors have been detected
-// @Field: IErrLn: Line on which internal error ocurred
-// @Field: MavMsg: Id of the last mavlink message processed
-// @Field: MavCmd: Id of the last mavlink command processed
-// @Field: SemLine: Line number of semaphore most recently taken
-// @Field: SPICnt: Number of SPI transactions processed
-// @Field: I2CCnt: Number of i2c transactions processed
-
 // @LoggerMessage: MSG
 // @Description: Textual messages
 // @Field: TimeUS: Time since system startup
