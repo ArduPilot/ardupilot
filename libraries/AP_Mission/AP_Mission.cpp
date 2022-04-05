@@ -1645,7 +1645,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_WAYPOINT_USER_1:
         packet.param1 = cmd.p1;
         break;
-        
+
     default:
         // unrecognised command
         return false;
