@@ -1174,7 +1174,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_DO_PAUSE_CONTINUE:
         cmd.p1 = packet.param1;
         break;
-        
+
+    case MAV_CMD_WAYPOINT_USER_1:
+        cmd.p1 = packet.param1;
+        break;
+
     default:
         // unrecognised command
         return MAV_MISSION_UNSUPPORTED;
@@ -1635,6 +1639,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_DO_PAUSE_CONTINUE:
+        packet.param1 = cmd.p1;
+        break;
+
+    case MAV_CMD_WAYPOINT_USER_1:
         packet.param1 = cmd.p1;
         break;
         
