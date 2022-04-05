@@ -1,3 +1,21 @@
+Release 4.2.0beta5 5th April 2022
+---------------------------------
+
+This is the 5th beta of the 4.2.0 major release
+
+ - fixed a timer bug that could cause boards using flash storage to watchdog
+ - added OTG2 USB on QioTekZealotH743
+ - increased stack size on log and monitor threads
+ - fixed rudder control when ARMING_RUDDER != 2 on quadplanes
+ - fixed accel bias when an IMU is disabled in EKF3
+ - improved QSPI support for SPro H7 Extreme
+ - fixed @SYS file logging
+ - fixed buzzer on MatekH743, going back to 16 bit timer
+ - fixed H7 flash storage bug that caused re-init on overflow
+ - fixed incorrect lock class in UART driver
+
+Happy flying!
+
 Release 4.2.0beta4 28th March 2022
 ----------------------------------
 
