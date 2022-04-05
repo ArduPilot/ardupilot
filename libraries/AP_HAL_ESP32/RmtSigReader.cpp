@@ -9,7 +9,7 @@ void RmtSigReader::init()
 {
     rmt_config_t config;
     config.rmt_mode = RMT_MODE_RX;
-    config.channel = RMT_CHANNEL_0;
+    config.channel = RMT_CHANNEL_4;
     config.clk_div = 80;   //80MHZ APB clock to the 1MHZ target frequency
     config.gpio_num = HAL_ESP32_RCIN;
     config.mem_block_num = 2; //each block could store 64 pulses
