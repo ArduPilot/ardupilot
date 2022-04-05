@@ -255,19 +255,19 @@ for t in $CI_BUILD_TARGET; do
     
     if [ "$t" == "stm32f7" ]; then
         echo "Building mRoX21-777/"
-        $waf configure --Werror --board mRoX21-777
+        $waf configure --board mRoX21-777
         $waf clean
         $waf plane
 
         # test bi-directional dshot build
         echo "Building KakuteF7Mini"
-        $waf configure --Werror --board KakuteF7Mini
+        $waf configure --board KakuteF7Mini
         $waf clean
         $waf copter
 
         # test bi-directional dshot build and smallest flash
         echo "Building KakuteF7"
-        $waf configure --Werror --board KakuteF7
+        $waf configure --board KakuteF7
         $waf clean
         $waf copter
         continue
@@ -281,7 +281,7 @@ for t in $CI_BUILD_TARGET; do
 
         # test external flash build
         echo "Building SPRacingH7"
-        $waf configure --Werror --board SPRacingH7
+        $waf configure --board SPRacingH7
         $waf clean
         $waf copter
         continue
