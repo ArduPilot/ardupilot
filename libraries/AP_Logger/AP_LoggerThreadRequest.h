@@ -3,19 +3,24 @@
 // TODO: optimise RAM taken up by these structures
 class PACKED LoggerThreadRequest {
 public:
+
+    // State - request lifecycle state
     enum class State : uint8_t {
-        FREE = 0,  // FREE must be value 0
-        PENDING = 1,
-        PROCESSING = 2,
-        ABANDONED = 3,
-        PROCESSED = 4,
+        FREE       = 0,  // FREE must be value 0
+        PENDING    = 1,  // request filled by main thread, as-yet unseen by logger thread
+        PROCESSING = 2,  // now owned by the logger thread
+        ABANDONED  = 3,  // main thread has abandoned this request; logger thread will free
+        PROCESSED  = 4,  // logger thread has completed this request
     };
+
+    // Type - request type.  This determines what action the
+    // LoggerThread will undertake, and which member of the Parameters
+    // union is valid.
     enum class Type : uint8_t {
-        // IDs for all backends:
-        EraseAll,
-        Flush,
-        HandleLogRequest_List,
-        HandleLogRequest_Data,
+        EraseAll,                 // Erase all log files in storage
+        Flush,                    // flush pending writes to storage
+        HandleLogRequest_List,    // process GCS request for log list
+        HandleLogRequest_Data,    // process GCS request for log data
         HandleLogRequest_Erase,
         HandleLogRequest_End,
         StartWriteEntireMission,
