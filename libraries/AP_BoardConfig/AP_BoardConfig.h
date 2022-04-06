@@ -227,7 +227,7 @@ public:
 private:
     static AP_BoardConfig *_singleton;
     
-    AP_Int16 vehicleSerialNumber;
+    AP_Int32 vehicleSerialNumber;
 
     struct {
         AP_Int8 safety_enable;
