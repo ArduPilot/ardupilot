@@ -32,7 +32,7 @@ bool AP_BattMonitor_Generator_FuelLevel::has_current(void) const
     return has_consumed_energy();
 }
 
-// This is where we tell the battery monitor 'we have consummed energy' if we want to report a fuel level remaining
+// This is where we tell the battery monitor 'we have consumed energy' if we want to report a fuel used/remaining
 bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
 {
     // Get pointer to generator singleton
