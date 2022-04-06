@@ -255,17 +255,18 @@ void RCOutput::dshot_collect_dma_locks(uint32_t time_out_us)
             const uint32_t pulse_elapsed_us = now - group.last_dmar_send_us;
             uint32_t wait_us = 0;
             if (now < time_out_us) {
-                wait_us = MAX(time_out_us - now, group.dshot_pulse_send_time_us - pulse_elapsed_us);
-            } else if (pulse_elapsed_us < group.dshot_pulse_send_time_us) {
+                wait_us = time_out_us - now;
+            }
+            if (pulse_elapsed_us < group.dshot_pulse_send_time_us) {
                 // better to let the burst write in progress complete rather than cancelling mid way through
-                wait_us = group.dshot_pulse_send_time_us - pulse_elapsed_us;
+                wait_us = MAX(wait_us, group.dshot_pulse_send_time_us - pulse_elapsed_us);
             }
 
             // waiting for a very short period of time can cause a
             // timer wrap with ChibiOS timers. Use CH_CFG_ST_TIMEDELTA
-            // as minimum. Don't allow for a very long delay (over 1200us)
+            // as minimum. Don't allow for a very long delay (over _dshot_period_us)
             // to prevent bugs in handling timer wrap
-            const uint32_t max_delay_us = 1200;
+            const uint32_t max_delay_us = _dshot_period_us;
             const uint32_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
             wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
             mask = chEvtWaitOneTimeout(group.dshot_event_mask, chTimeUS2I(wait_us));
@@ -1566,7 +1567,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 
     dmaStreamEnable(group.dma);
     // record when the transaction was started
-    group.last_dmar_send_us = AP_HAL::micros64();
+    group.last_dmar_send_us = AP_HAL::micros();
 #endif //#ifndef DISABLE_DSHOT
 }
 
