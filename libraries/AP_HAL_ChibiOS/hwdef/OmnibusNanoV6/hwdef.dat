@@ -150,3 +150,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define HAL_MOUNT_ENABLED 0
+
+# minimal GPS drivers to reduce flash usage
+include ../include/minimal_GPS.inc
