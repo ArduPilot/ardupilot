@@ -78,7 +78,11 @@ void AP_BattMonitor_Generator_FuelLevel::read()
     _state.voltage = 1.0f;
 
     // This is a bodge to display tank level as a percentage on GCS.  Users should set _params.pack_capacity == 100 to get a clear percentage in GCS
-    _state.consumed_mah = (1 - generator->get_fuel_remaining_pct()) * _params._pack_capacity.get();
+    if (generator->has_fuel_remaining_pct()) {
+        _state.consumed_mah = (1 - generator->get_fuel_remaining_pct()) * _params._pack_capacity.get();
+    } else {
+        _state.consumed_mah = generator->get_batt_consumed();
+    }
 
     // If we got this far then must be healthy
     _state.healthy = true;
