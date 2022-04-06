@@ -104,6 +104,13 @@ bool ModeSystemId::init(bool ignore_checks)
     return true;
 }
 
+// systemId_exit - clean up systemId controller before exiting
+void ModeSystemId::exit()
+{
+    // reset the feedfoward enabled parameter to the initialized state
+    attitude_control->bf_feedforward(att_bf_feedforward);
+}
+
 // systemId_run - runs the systemId controller
 // should be called at 100hz or more
 void ModeSystemId::run()
@@ -179,9 +186,9 @@ void ModeSystemId::run()
 
     switch (systemid_state) {
         case SystemIDModeState::SYSTEMID_STATE_STOPPED:
+            attitude_control->bf_feedforward(att_bf_feedforward);
             break;
         case SystemIDModeState::SYSTEMID_STATE_TESTING:
-            attitude_control->bf_feedforward(att_bf_feedforward);
 
             if (copter.ap.land_complete) {
                 systemid_state = SystemIDModeState::SYSTEMID_STATE_STOPPED;
