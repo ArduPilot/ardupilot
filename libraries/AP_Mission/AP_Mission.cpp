@@ -2368,6 +2368,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "NavScriptTime";
     case MAV_CMD_DO_PAUSE_CONTINUE:
         return "PauseContinue";
+    case MAV_CMD_WAYPOINT_USER_1:
+        return "mode \"k\"";
 
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

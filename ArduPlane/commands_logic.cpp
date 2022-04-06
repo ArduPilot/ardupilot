@@ -203,6 +203,9 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_script_time(cmd);
         break;
 #endif
+    case MAV_CMD_WAYPOINT_USER_1:
+        // todo: start mode "k";
+        break;
         
     default:
         // unable to use the command, allow the vehicle to try the next command
@@ -318,6 +321,8 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_VTOL_TRANSITION:
     case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
+    case MAV_CMD_WAYPOINT_USER_1:
+        return false;
 
     default:
         // error message
