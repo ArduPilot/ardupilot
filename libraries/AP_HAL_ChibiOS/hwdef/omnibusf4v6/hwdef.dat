@@ -149,3 +149,6 @@ define STM32_PWM_USE_ADVANCED TRUE
 define OSD_ENABLED 1
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal GPS drivers to reduce flash usage
+include ../include/minimal_GPS.inc

@@ -1,5 +1,7 @@
 # hw definition file for processing by chibios_pins.py
 
+AUTOBUILD_TARGETS None
+
 # MCU class and specific type
 MCU STM32G491 STM32G491xx
 

@@ -2121,74 +2121,95 @@ class AutoTest(ABC):
         structure_lines = []
         for f in structure_files:
             structure_lines.extend(open(f).readlines())
-        ids = {}
-        state_outside = 0
-        state_inside = 1
-        state = state_outside
 
         defines = self.find_format_defines(structure_lines)
 
-        linestate_none = 45
-        linestate_within = 46
-        linestate = linestate_none
+        ids = {}
         message_infos = []
-        for line in structure_lines:
-            #            print("line: %s" % line)
-            if type(line) == bytes:
-                line = line.decode("utf-8")
-            line = re.sub("//.*", "", line) # trim comments
-            if re.match(r"\s*$", line):
-                # blank line
-                continue
-            if state == state_outside:
-                if ("#define LOG_COMMON_STRUCTURES" in line or
-                        re.match("#define LOG_STRUCTURE_FROM_.*", line)):
-                    #                    self.progress("Moving inside")
-                    state = state_inside
-                continue
-            if state == state_inside:
-                if linestate == linestate_none:
-                    allowed_list = ['LOG_STRUCTURE_FROM_']
+        for f in structure_files:
+            self.progress("structure file: %s" % f)
+            state_outside = 0
+            state_inside = 1
+            state = state_outside
 
-                    allowed = False
-                    for a in allowed_list:
-                        if a in line:
-                            allowed = True
-                    if allowed:
-                        continue
-                    m = re.match(r"\s*{(.*)},\s*", line)
-                    if m is not None:
-                        # complete line
-                        # print("Complete line: %s" % str(line))
-                        message_infos.append(m.group(1))
-                        continue
-                    m = re.match(r"\s*{(.*)\\", line)
-                    if m is None:
-                        state = state_outside
-                        continue
-                    partial_line = m.group(1)
-                    linestate = linestate_within
+            linestate_none = 45
+            linestate_within = 46
+            linestate = linestate_none
+            debug = False
+            if f == "/home/pbarker/rc/ardupilot/libraries/AP_HAL_ChibiOS/LogStructure.h":
+                debug = True
+            for line in open(f).readlines():
+                if debug:
+                    print("line: %s" % line)
+                if type(line) == bytes:
+                    line = line.decode("utf-8")
+                line = re.sub("//.*", "", line) # trim comments
+                if re.match(r"\s*$", line):
+                    # blank line
                     continue
-                if linestate == linestate_within:
-                    m = re.match("(.*)}", line)
-                    if m is None:
-                        line = line.rstrip()
-                        newline = re.sub(r"\\$", "", line)
-                        if newline == line:
-                            raise NotAchievedException("Expected backslash at end of line")
-                        line = newline
-                        line = line.rstrip()
-                        # cpp-style string concatenation:
-                        line = re.sub(r'"\s*"', '', line)
-                        partial_line += line
-                        continue
-                    message_infos.append(partial_line + m.group(1))
-                    linestate = linestate_none
+                if state == state_outside:
+                    if ("#define LOG_COMMON_STRUCTURES" in line or
+                            re.match("#define LOG_STRUCTURE_FROM_.*", line)):
+                        if debug:
+                            self.progress("Moving inside")
+                        state = state_inside
                     continue
-                raise NotAchievedException("Bad line (%s)")
+                if state == state_inside:
+                    if linestate == linestate_none:
+                        allowed_list = ['LOG_STRUCTURE_FROM_']
 
-        if linestate != linestate_none:
-            raise NotAchievedException("Must be linestate-none at end of file")
+                        allowed = False
+                        for a in allowed_list:
+                            if a in line:
+                                allowed = True
+                        if allowed:
+                            continue
+                        m = re.match(r"\s*{(.*)},\s*", line)
+                        if m is not None:
+                            # complete line
+                            if debug:
+                                print("Complete line: %s" % str(line))
+                            message_infos.append(m.group(1))
+                            continue
+                        m = re.match(r"\s*{(.*)\\", line)
+                        if m is None:
+                            if debug:
+                                self.progress("Moving outside")
+                            state = state_outside
+                            continue
+                        partial_line = m.group(1)
+                        if debug:
+                            self.progress("partial line")
+                        linestate = linestate_within
+                        continue
+                    if linestate == linestate_within:
+                        if debug:
+                            self.progress("Looking for close-brace")
+                        m = re.match("(.*)}", line)
+                        if m is None:
+                            if debug:
+                                self.progress("no close-brace")
+                            line = line.rstrip()
+                            newline = re.sub(r"\\$", "", line)
+                            if newline == line:
+                                raise NotAchievedException("Expected backslash at end of line")
+                            line = newline
+                            line = line.rstrip()
+                            # cpp-style string concatenation:
+                            if debug:
+                                self.progress("more partial line")
+                            line = re.sub(r'"\s*"', '', line)
+                            partial_line += line
+                            continue
+                        if debug:
+                            self.progress("found close-brace")
+                        message_infos.append(partial_line + m.group(1))
+                        linestate = linestate_none
+                        continue
+                    raise NotAchievedException("Bad line (%s)")
+
+            if linestate != linestate_none:
+                raise NotAchievedException("Must be linestate-none at end of file")
 
         # now look in the vehicle-specific logfile:
         filepath = os.path.join(self.vehicle_code_dirpath(), "Log.cpp")
@@ -2259,10 +2280,12 @@ class AutoTest(ABC):
             raise NotAchievedException("Should not be in state_inside at end")
 
         for message_info in message_infos:
+            print("message_info: %s" % str(message_info))
             for define in defines:
                 message_info = re.sub(define, defines[define], message_info)
-            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*true)?\s*$', message_info)  # noqa
+            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*(true|false))?\s*$', message_info)  # noqa
             if m is None:
+                print("NO MATCH")
                 continue
             (name, fmt, labels, units, multipliers) = (m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
             if name in ids:
@@ -2306,6 +2329,8 @@ class AutoTest(ABC):
                             continue
                         if state == state_inside:
                             line = re.sub("//.*", "", line) # trim comments
+                            # cpp-style string concatenation:
+                            line = re.sub(r'"\s*"', '', line)
                             log_write_statement += line
                             if re.match(r".*\);", line):
                                 log_write_statements.append(log_write_statement)
