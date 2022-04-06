@@ -161,5 +161,8 @@ define HAL_BATT_CURR_PIN 12
 define HAL_BATT_VOLT_SCALE 11
 define HAL_BATT_CURR_SCALE 25
 
+# minimal GPS drivers to reduce flash usage
+include ../include/minimal_GPS.inc
+
 # enable IMU fast sampling
 define HAL_DEFAULT_INS_FAST_SAMPLE 1
