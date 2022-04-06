@@ -1,6 +1,8 @@
 # hw definition file for processing by chibios_hwdef.py
 # for H757
 
+AUTOBUILD_TARGETS None
+
 # MCU class and specific type
 MCU STM32H7xx STM32H757xx
 
