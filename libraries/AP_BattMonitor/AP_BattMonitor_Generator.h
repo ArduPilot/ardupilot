@@ -24,7 +24,7 @@ public:
 
     bool has_consumed_energy(void) const override;
 
-    // Override backend update_failsafes.  No point in failsafing twice so generator failsafes are only updated from the electrical instance of the generator drivers
+    // Override backend update_failsafes
     AP_BattMonitor::Failsafe update_failsafes() override;
 };
 
@@ -46,5 +46,29 @@ public:
 
     // This is where we tell the battery monitor 'we have consumed energy' if we want to report a fuel level remaining
     bool has_consumed_energy(void) const override;
+
+    // reset remaining percentage to given value
+    bool reset_remaining(float percentage) override;
+
+    // capacity_remaining_pct - returns true if the percentage is valid and writes to percentage argument
+    bool capacity_remaining_pct(uint8_t &percentage) const override;
+
+    // Override backend update_failsafes
+    AP_BattMonitor::Failsafe update_failsafes() override;
+
+private:
+
+    // capacity_remaining_ml - returns true if the capacity remaining in (mL) is valid and writes to capacity_ml
+    bool capacity_remaining_ml(float &capacity_ml) const;
+
+    // By default we asume 100% full tank.  MAV_CMD_BATTERY_RESET
+    // mavlink command to specify otherwise.  This is only used in
+    // case the generator doesn't provide a fuel percentage on its
+    // own. This variable is needed to support tank refills or
+    // different than 100% initial fuel level.  This is a scalar
+    // between 0 (the user emptied the fuel tank) to 1 - the user
+    // filled the fuel tank.
+    float _initial_fuel_scaler = 1;
+
 };
 #endif
