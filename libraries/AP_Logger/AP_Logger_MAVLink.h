@@ -16,141 +16,50 @@ extern const AP_HAL::HAL& hal;
 #define DF_MAVLINK_DISABLE_INTERRUPTS 0
 
 // not actually a thread, but called by the thread created in AP_Logger
-class LoggerThread_MAVLink : LoggerThread {
+class LoggerThread_MAVLink : public LoggerBackendThread {
+
 public:
 
+    LoggerThread_MAVLink(uint8_t bufsize_kb) :
+        LoggerBackendThread() {
+        // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
+    }
+
+    bool Init(uint8_t bufsize_kb);
+
     void timer(void) override;
-    // do we have a recent open error?
-    bool recent_open_error(void) const;
-    bool logging_started() const override { return _write_fd != -1; }
+    // in actual fact, we throw away everything until a client connects.
+    // This stops calls to start_new_log from the vehicles
+    bool logging_started() const override { return true; }
+    bool logging_failed() const;
 
-    void EraseAll();
-    void stop_logging(void);
+    void EraseAll() override { }
+    void stop_logging(void) override;
 
-    /* construct a file name given a log number. Caller must free. */
-    char *_log_file_name(const uint16_t log_num) const;
-    char *_log_file_name_long(const uint16_t log_num) const;
-    char *_log_file_name_short(const uint16_t log_num) const;
-    char *_lastlog_file_name() const;
-
-    uint16_t find_last_log() override;
-    uint16_t find_oldest_log() override;
-    int64_t disk_space_avail() override;
-    int64_t disk_space() override;
-    void start_new_log(void) override;
+    /* we currently ignore requests to start a new log.  Notionally we
+     * could close the currently logging session and hope the client
+     * re-opens one */
+    void start_new_log(void) override {
+        return;
+    }
     bool WritesOK() const;
-    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
-    uint16_t get_num_logs() override;
-
-    const char *_log_directory;
-    int64_t min_bytes_free;
-    class AP_Logger_File *_backend;
-
-    uint32_t _heartbeat;
-    bool _last_write_failed;
 
     void PrepForArming() override {}
 
-private:
+    // high level interface
+    uint16_t find_last_log(void) override { return 0; }
+    void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override {}
+    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
+    int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
+    uint16_t get_num_logs(void) override { return 0; }
 
-    // log-writing state:
-    int _write_fd = -1;
-    char *_write_filename;
-    uint32_t _write_offset;
-    uint32_t _last_write_ms;
-    uint32_t _last_write_time;
-
-    // log-reading state:
-    int _read_fd = -1;
-    uint16_t _read_fd_log_num;
-    uint32_t _read_offset;
-    void get_log_boundaries(const uint16_t list_entry,
-                            uint32_t & start_page,
-                            uint32_t & end_page) override;
-
-    uint16_t log_num_from_list_entry(const uint16_t list_entry);
-    void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override;
-
-    volatile uint32_t _open_error_ms;
-
-    bool file_exists(const char *filename) const;
-    bool log_exists(const uint16_t lognum) const;
-
-    void ensure_log_directory_exists();
-
-    uint32_t _get_log_size(const uint16_t log_num);
-    uint32_t _get_log_time(const uint16_t log_num);
-
-    // possibly time-consuming preparations handling
-    void Prep_MinSpace();
-    bool space_cleared;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    void flush(void);
-#endif
-
-    void check_message_queue();
-    void retry_logging_open();
-
-    // free-space checks; filling up SD cards under NuttX leads to
-    // corrupt filesystems which cause loss of data, failure to gather
-    // data and failures-to-boot.
-    uint32_t _free_space_last_check_time; // milliseconds
-    const uint32_t _free_space_check_interval = 1000UL; // milliseconds
-    const uint32_t _free_space_min_avail = 8388608; // bytes
-};
-
-
-class AP_Logger_MAVLink : public AP_Logger_Backend
-{
-public:
-    // constructor
-    AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
-        AP_Logger_Backend(front, writer),
-        _max_blocks_per_send_blocks(8)
-        {
-            _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
-            // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
-        }
-
-    static AP_Logger_Backend  *probe(AP_Logger &front,
-                                     LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_MAVLink(front, ls);
-    }
-
-    // initialisation
-    void Init() override;
-
-    // in actual fact, we throw away everything until a client connects.
-    // This stops calls to start_new_log from the vehicles
-    bool logging_started() const override { return _initialised; }
-
-    void stop_logging() override;
+    uint32_t bufferspace_available();
 
     /* Write a block of data at current offset */
     bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
-                               bool is_critical) override;
+                                bool is_critical);
 
-    // initialisation
-    bool CardInserted(void) const override { return true; }
-
-    // erase handling
-    void EraseAll() override {}
-
-    // high level interface
-    // uint16_t find_last_log(void) override { return 0; }
-    // void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override {}
-    // void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
-    // int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
-    // uint16_t get_num_logs(void) override { return 0; }
-
-    void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
-    void vehicle_was_disarmed() override {}
-
-protected:
-
-    void push_log_blocks() override;
-    bool WritesOK() const override;
+    HAL_Semaphore semaphore;
 
 private:
 
@@ -204,10 +113,6 @@ private:
         uint8_t state_sent_max;
     } stats;
 
-    // this method is used when reporting system status over mavlink
-    bool logging_enabled() const override { return true; }
-    bool logging_failed() const override;
-
     const GCS_MAVLINK *_link;
 
     uint8_t _target_system_id;
@@ -221,8 +126,8 @@ private:
     // _max_blocks_per_send_blocks has to be high enough to push all
     // of the logs, but low enough that we don't spend way too much
     // time packing messages in any one loop
-    const uint8_t _max_blocks_per_send_blocks;
-    
+    const uint8_t _max_blocks_per_send_blocks = 8;
+
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
     uint32_t _last_response_time;
@@ -230,9 +135,8 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    void Write_logger_MAV(AP_Logger_MAVLink &logger);
+    void Write_MAV();
 
-    uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block() const;
     // write buffer
     uint8_t _blockcount_free;
@@ -240,10 +144,8 @@ private:
     struct dm_block *_blocks;
     struct dm_block *_current_block;
     struct dm_block *next_block();
+    bool _blocks_initialised;
 
-    void periodic_10Hz(uint32_t now) override;
-    void periodic_1Hz() override;
-    
     void stats_init();
     void stats_reset();
     void stats_collect();
@@ -252,14 +154,57 @@ private:
     uint32_t _stats_last_logged_time;
     uint8_t mavlink_seq;
 
-    /* we currently ignore requests to start a new log.  Notionally we
-     * could close the currently logging session and hope the client
-     * re-opens one */
-    void start_new_log(void) override {
-        return;
+};
+
+
+class AP_Logger_MAVLink : public AP_Logger_Backend
+{
+public:
+    // constructor
+    AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+        _iothread_mavlink{(uint8_t)_front._params.mav_bufsize},
+        AP_Logger_Backend(front, _iothread_mavlink, writer)
+        {
+        }
+
+    static AP_Logger_Backend  *probe(AP_Logger &front,
+                                     LoggerMessageWriter_DFLogStart *ls) {
+        return new AP_Logger_MAVLink(front, ls);
     }
 
-    HAL_Semaphore semaphore;
+    // initialisation
+    void Init() override;
+
+    void stop_logging() override;
+
+    /* Write a block of data at current offset */
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+                               bool is_critical) override;
+
+    // initialisation
+    bool CardInserted(void) const override { return true; }
+
+    void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
+
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const override { return true; }
+    bool logging_failed() const override;
+
+protected:
+
+    void push_log_blocks() override;
+    bool WritesOK() const override;
+
+private:
+
+    uint32_t bufferspace_available() override; // in bytes
+
+    void periodic_10Hz(uint32_t now) override;
+    void periodic_1Hz() override;
+
+    // not actually a thread, but rather an object with methods called
+    // on a thread:
+    LoggerThread_MAVLink _iothread_mavlink;
 };
 
 #endif // HAL_LOGGING_MAVLINK_ENABLED

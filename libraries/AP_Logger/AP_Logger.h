@@ -15,7 +15,6 @@
 #define HAL_LOGGING_DATAFLASH_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
-#define HAL_LOGGING_MAVLINK_ENABLED 0
 #ifndef HAL_LOGGING_MAVLINK_ENABLED
     #define HAL_LOGGING_MAVLINK_ENABLED HAL_LOGGING_ENABLED
 #endif
@@ -282,8 +281,6 @@ private:
     // uint16_t find_last_log();
     uint16_t get_num_logs();
     // uint16_t find_oldest_log();
-    // int64_t disk_space_avail();
-    // int64_t disk_space();
     void start_new_log() { }
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc);
 

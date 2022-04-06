@@ -23,9 +23,17 @@
 extern const AP_HAL::HAL& hal;
 
 
-// initialisation
-void AP_Logger_MAVLink::Init()
+void LoggerThread_MAVLink::timer(void)
 {
+    if (!_blocks_initialised) {
+        return;
+    }
+}
+
+bool LoggerThread_MAVLink::Init(uint8_t bufsize_kb)
+{
+    _blockcount = (1024*bufsize_kb) / sizeof(struct dm_block);
+
     _blocks = nullptr;
     while (_blockcount >= 8) { // 8 is a *magic* number
         _blocks = (struct dm_block *) calloc(_blockcount, sizeof(struct dm_block));
@@ -36,30 +44,57 @@ void AP_Logger_MAVLink::Init()
     }
 
     if (_blocks == nullptr) {
-        return;
+        return false;
     }
 
     free_all_blocks();
     stats_init();
+
+    // let the timer() call start to do works
+    _blocks_initialised = true;
+
+    return true;
+}
+
+// initialisation
+void AP_Logger_MAVLink::Init()
+{
+    if (!_iothread_mavlink.Init((uint8_t)_front._params.mav_bufsize)) {
+        return;
+    }
 
     _initialised = true;
 }
 
 bool AP_Logger_MAVLink::logging_failed() const
 {
+    return _iothread_mavlink.logging_failed();
+}
+
+bool LoggerThread_MAVLink::logging_failed() const
+{
+    // FIXME: protect access?!
     return !_sending_to_client;
 }
 
-uint32_t AP_Logger_MAVLink::bufferspace_available() {
+uint32_t LoggerThread_MAVLink::bufferspace_available()
+{
+    // FIXME: why doesn't WITH_SEMAPHORE work here?!
+    WITH_SEMAPHORE(semaphore);
     return (_blockcount_free * 200 + remaining_space_in_current_block());
 }
 
-uint8_t AP_Logger_MAVLink::remaining_space_in_current_block() const {
+uint32_t AP_Logger_MAVLink::bufferspace_available()
+{
+    return _iothread_mavlink.bufferspace_available();
+}
+
+uint8_t LoggerThread_MAVLink::remaining_space_in_current_block() const {
     // note that _current_block *could* be NULL ATM.
     return (MAVLINK_MSG_REMOTE_LOG_DATA_BLOCK_FIELD_DATA_LEN - _latest_block_len);
 }
 
-void AP_Logger_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *block)
+void LoggerThread_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *block)
 {
     if (queue.youngest != nullptr) {
         queue.youngest->next = block;
@@ -69,7 +104,7 @@ void AP_Logger_MAVLink::enqueue_block(dm_block_queue_t &queue, struct dm_block *
     queue.youngest = block;
 }
 
-struct AP_Logger_MAVLink::dm_block *AP_Logger_MAVLink::dequeue_seqno(AP_Logger_MAVLink::dm_block_queue_t &queue, uint32_t seqno)
+struct LoggerThread_MAVLink::dm_block *LoggerThread_MAVLink::dequeue_seqno(LoggerThread_MAVLink::dm_block_queue_t &queue, uint32_t seqno)
 {
     struct dm_block *prev = nullptr;
     for (struct dm_block *block=queue.oldest; block != nullptr; block=block->next) {
@@ -95,7 +130,7 @@ struct AP_Logger_MAVLink::dm_block *AP_Logger_MAVLink::dequeue_seqno(AP_Logger_M
     return nullptr;
 }
 
-bool AP_Logger_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &queue)
+bool LoggerThread_MAVLink::free_seqno_from_queue(uint32_t seqno, LoggerThread_MAVLink::dm_block_queue_t &queue)
 {
     struct dm_block *block = dequeue_seqno(queue, seqno);
     if (block != nullptr) {
@@ -108,7 +143,7 @@ bool AP_Logger_MAVLink::free_seqno_from_queue(uint32_t seqno, dm_block_queue_t &
 }
     
 
-bool AP_Logger_MAVLink::WritesOK() const
+bool LoggerThread_MAVLink::WritesOK() const
 {
     if (!_sending_to_client) {
         return false;
@@ -116,27 +151,40 @@ bool AP_Logger_MAVLink::WritesOK() const
     return true;
 }
 
+bool AP_Logger_MAVLink::WritesOK() const
+{
+    return _iothread_mavlink.WritesOK();
+}
+
 /* Write a block of data at current offset */
 
-// DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
 bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
 {
-    if (!semaphore.take_nonblocking()) {
-        _dropped++;
+    if (!_iothread_mavlink.semaphore.take_nonblocking()) {
+        _iothread_mavlink.dropped++;
         return false;
     }
 
     if (! WriteBlockCheckStartupMessages()) {
-        semaphore.give();
+        _iothread_mavlink.semaphore.give();
         return false;
     }
 
+    bool ret = _iothread_mavlink._WritePrioritisedBlock(pBuffer, size, is_critical);
+
+    _iothread_mavlink.semaphore.give();
+
+    return ret;
+}
+
+// DM_write: 70734 events, 0 overruns, 167806us elapsed, 2us avg, min 1us max 34us 0.620us rms
+bool LoggerThread_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical)
+{
     if (bufferspace_available() < size) {
-        if (_startup_messagewriter->finished()) {
+        if (startup_messagewriter->finished()) {
             // do not count the startup packets as being dropped...
-            _dropped++;
+            dropped++;
         }
-        semaphore.give();
         return false;
     }
 
@@ -148,7 +196,6 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
             if (_current_block == nullptr) {
                 // should not happen - there's a sanity check above
                 INTERNAL_ERROR(AP_InternalError::error_t::logger_bad_current_block);
-                semaphore.give();
                 return false;
             }
         }
@@ -165,15 +212,13 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
         }
     }
 
-    semaphore.give();
-
     return true;
 }
 
 //Get a free block
-struct AP_Logger_MAVLink::dm_block *AP_Logger_MAVLink::next_block()
+struct LoggerThread_MAVLink::dm_block *LoggerThread_MAVLink::next_block()
 {
-    AP_Logger_MAVLink::dm_block *ret = _blocks_free;
+    LoggerThread_MAVLink::dm_block *ret = _blocks_free;
     if (ret != nullptr) {
         _blocks_free = ret->next;
         _blockcount_free--;
@@ -185,7 +230,7 @@ struct AP_Logger_MAVLink::dm_block *AP_Logger_MAVLink::next_block()
     return ret;
 }
 
-void AP_Logger_MAVLink::free_all_blocks()
+void LoggerThread_MAVLink::free_all_blocks()
 {
     _blocks_free = nullptr;
     _current_block = nullptr;
@@ -212,7 +257,7 @@ void AP_Logger_MAVLink::free_all_blocks()
     _latest_block_len = 0;
 }
 
-void AP_Logger_MAVLink::stop_logging()
+void LoggerThread_MAVLink::stop_logging()
 {
     if (_sending_to_client) {
         _sending_to_client = false;
@@ -220,9 +265,9 @@ void AP_Logger_MAVLink::stop_logging()
     }
 }
 
-void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
-                                   const mavlink_message_t &msg,
-                                   uint32_t seqno)
+void LoggerThread_MAVLink::handle_ack(const GCS_MAVLINK &link,
+                                      const mavlink_message_t &msg,
+                                      uint32_t seqno)
 {
     if (!_initialised) {
         return;
@@ -266,8 +311,46 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
     }
 }
 
-void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
-                                                    const mavlink_message_t& msg)
+void AP_Logger_MAVLink::handle_remote_log_block_status_msg(const GCS_MAVLINK &link,
+                                                           const mavlink_message_t& msg)
+{
+    LoggerThreadRequest *request;
+    WITH_SEMAPHORE(loggerthread.requests_semaphore);
+    request = claim_free_request();
+    if (request == nullptr) {
+        return;
+    }
+
+    const bool synchronous = false; // FIXME
+
+    request->state = LoggerThreadRequest::State::PENDING;
+    loggerthread.requests_count++;
+    if (!synchronous) {
+        request->free_after_processing = true;
+    }
+
+    mavlink_remote_log_block_status_t packet;
+    mavlink_msg_remote_log_block_status_decode(&msg, &packet);
+
+    request->type = LoggerThreadRequest::Type::HandleRemoteLogBlockStatus;
+    request->parameters.HandleRemoteLogBlockStatus = {
+        &link,
+        packet.status,
+        packet.seqno,
+        packet.sysid,
+        packet.compid
+    };
+
+    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
+        handle_retry(packet.seqno);
+    } else {
+        handle_ack(link, msg, packet.seqno);
+    }
+    semaphore.give();
+}
+
+void LoggerThread_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
+                                                       const mavlink_message_t& msg)
 {
     mavlink_remote_log_block_status_t packet;
     mavlink_msg_remote_log_block_status_decode(&msg, &packet);
@@ -316,8 +399,9 @@ void AP_Logger_MAVLink::stats_reset() {
     stats.collection_count = 0;
 }
 
-void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
+void LoggerThread_MAVLink::Write_MAV()
 {
+    logger_mav = *this;
     if (logger_mav.stats.collection_count == 0) {
         return;
     }
@@ -341,7 +425,7 @@ void AP_Logger_MAVLink::Write_logger_MAV(AP_Logger_MAVLink &logger_mav)
     WriteBlock(&pkt,sizeof(pkt));
 }
 
-void AP_Logger_MAVLink::stats_log()
+void LoggerThread_MAVLink::stats_log()
 {
     if (!_initialised) {
         return;
@@ -349,7 +433,7 @@ void AP_Logger_MAVLink::stats_log()
     if (stats.collection_count == 0) {
         return;
     }
-    Write_logger_MAV(*this);
+    Write_MAV();
 #if REMOTE_LOG_DEBUGGING
     printf("D:%d Retry:%d Resent:%d SF:%d/%d/%d SP:%d/%d/%d SS:%d/%d/%d SR:%d/%d/%d\n",
            _dropped,
@@ -536,7 +620,6 @@ void AP_Logger_MAVLink::periodic_1Hz()
         _sending_to_client = false;
         return;
     }
-    stats_log();
 }
 
 //TODO: handle full txspace properly

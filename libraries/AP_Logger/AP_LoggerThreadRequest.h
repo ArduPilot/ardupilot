@@ -27,6 +27,8 @@ public:
         StartWriteEntireRally,
         PrepForArming,
         VehicleWasDisarmed,  // FIXME: remove this and just look at the armed state in the thread
+        HandleRemoteLogBlockStatus,
+
         // FindLastLog,
         // FindOldestLog,
         // GetLogBoundaries,
@@ -38,6 +40,10 @@ public:
         KillWriteFD,
     };
 
+    // each Type of request has a unique set of parameters.  This is a
+    // union containing those parameters.  If a Request obviously
+    // requires a return value of some description then it will be
+    // present in these parmaeters.
     union Parameters {
         struct PACKED {
             GCS_MAVLINK *link;
@@ -57,12 +63,6 @@ public:
             GCS_MAVLINK *link;
         } HandleLogRequest_End;
     } parameters;
-
-    // union Results {
-    //     struct SomeTypeThingy {
-    //         uint8_t return_value;
-    //     };
-    // };
 
     Type type;
 

@@ -44,7 +44,7 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
     }
     _warned_log_disarm = false;
 
-    const bool synchronous = false;
+    const bool synchronous = false;  // FIXME
 
     LoggerThreadRequest *request;
     {

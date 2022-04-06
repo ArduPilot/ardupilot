@@ -51,8 +51,6 @@ public:
     virtual int16_t get_log_data(uint16_t list_entry, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) = 0;
     virtual uint16_t get_num_logs() = 0;
     virtual uint16_t find_oldest_log();
-    virtual int64_t disk_space_avail() = 0;
-    virtual int64_t disk_space() = 0;
     virtual void start_new_log() { }
     virtual void stop_logging(void) = 0;
 
