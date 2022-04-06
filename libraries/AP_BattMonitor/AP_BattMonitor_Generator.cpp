@@ -43,7 +43,7 @@ bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
     }
 
     // Use consumed_mAh in BattMonitor to display fuel remaining
-    return generator->has_fuel_remaining_pct();
+    return generator->has_consumed_energy();
 }
 
 void AP_BattMonitor_Generator_FuelLevel::init()
