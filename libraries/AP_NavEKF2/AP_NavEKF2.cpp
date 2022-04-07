@@ -913,74 +913,59 @@ int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosNE(int8_t instance, Vector2f &posNE) const
+bool NavEKF2::getPosNE(Vector2f &posNE) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosNE(posNE);
+    return core[primary].getPosNE(posNE);
 }
 
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosD(int8_t instance, float &posD) const
+bool NavEKF2::getPosD(float &posD) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosD(posD);
+    return core[primary].getPosD(posD);
 }
 
 // return NED velocity in m/s
-void NavEKF2::getVelNED(int8_t instance, Vector3f &vel) const
+void NavEKF2::getVelNED(Vector3f &vel) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getVelNED(vel);
+        core[primary].getVelNED(vel);
     }
 }
 
 // return estimate of true airspeed vector in body frame in m/s for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance
 // returns false if estimate is unavailable
-bool NavEKF2::getAirSpdVec(int8_t instance, Vector3f &vel) const
+bool NavEKF2::getAirSpdVec(Vector3f &vel) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        return core[instance].getAirSpdVec(vel);
+        return core[primary].getAirSpdVec(vel);
     }
     return false;
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
-float NavEKF2::getPosDownDerivative(int8_t instance) const
+float NavEKF2::getPosDownDerivative() const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
-        return core[instance].getPosDownDerivative();
+        return core[primary].getPosDownDerivative();
     }
     return 0.0f;
 }
 
 // return body axis gyro bias estimates in rad/sec
-void NavEKF2::getGyroBias(int8_t instance, Vector3f &gyroBias) const
+void NavEKF2::getGyroBias(Vector3f &gyroBias) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getGyroBias(gyroBias);
-    }
-}
-
-// return body axis gyro scale factor error as a percentage
-void NavEKF2::getGyroScaleErrorPercentage(int8_t instance, Vector3f &gyroScale) const
-{
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        core[instance].getGyroScaleErrorPercentage(gyroScale);
+        core[primary].getGyroBias(gyroBias);
     }
 }
 
@@ -1031,38 +1016,34 @@ void NavEKF2::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 }
 
 // return the individual Z-accel bias estimates in m/s^2
-void NavEKF2::getAccelZBias(int8_t instance, float &zbias) const
+void NavEKF2::getAccelZBias(float &zbias) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getAccelZBias(zbias);
+        core[primary].getAccelZBias(zbias);
     }
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
-void NavEKF2::getWind(int8_t instance, Vector3f &wind) const
+void NavEKF2::getWind(Vector3f &wind) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getWind(wind);
+        core[primary].getWind(wind);
     }
 }
 
 // return earth magnetic field estimates in measurement units / 1000
-void NavEKF2::getMagNED(int8_t instance, Vector3f &magNED) const
+void NavEKF2::getMagNED(Vector3f &magNED) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getMagNED(magNED);
+        core[primary].getMagNED(magNED);
     }
 }
 
 // return body magnetic field estimates in measurement units / 1000
-void NavEKF2::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
+void NavEKF2::getMagXYZ(Vector3f &magXYZ) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getMagXYZ(magXYZ);
+        core[primary].getMagXYZ(magXYZ);
     }
 }
 
@@ -1101,13 +1082,12 @@ bool NavEKF2::getLLH(struct Location &loc) const
 // An out of range instance (eg -1) returns data for the primary instance
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF2::getOriginLLH(int8_t instance, struct Location &loc) const
+bool NavEKF2::getOriginLLH(struct Location &loc) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getOriginLLH(loc);
+    return core[primary].getOriginLLH(loc);
 }
 
 // set the latitude and longitude and height used to set the NED origin
@@ -1148,11 +1128,10 @@ bool NavEKF2::getHAGL(float &HAGL) const
 }
 
 // return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF2::getEulerAngles(int8_t instance, Vector3f &eulers) const
+void NavEKF2::getEulerAngles(Vector3f &eulers) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getEulerAngles(eulers);
+        core[primary].getEulerAngles(eulers);
     }
 }
 
@@ -1176,35 +1155,31 @@ void NavEKF2::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
-void NavEKF2::getQuaternion(int8_t instance, Quaternion &quat) const
+void NavEKF2::getQuaternion(Quaternion &quat) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getQuaternion(quat);
+        core[primary].getQuaternion(quat);
     }
 }
 
 // return the innovations for the specified instance
-bool NavEKF2::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+bool NavEKF2::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     if (core == nullptr) {
         return false;
     }
 
-    if (instance < 0 || instance >= num_cores) instance = primary;
-
-    return core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    return core[primary].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-bool NavEKF2::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF2::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     if (core == nullptr) {
         return false;
     }
-    if (instance < 0 || instance >= num_cores) instance = primary;
 
-    return core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    return core[primary].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
 // should we use the compass? This is public so it can be used for
@@ -1265,11 +1240,10 @@ void NavEKF2::setTerrainHgtStable(bool val)
   6 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF2::getFilterFaults(int8_t instance, uint16_t &faults) const
+void NavEKF2::getFilterFaults(uint16_t &faults) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterFaults(faults);
+        core[primary].getFilterFaults(faults);
     } else {
         faults = 0;
     }
@@ -1278,11 +1252,10 @@ void NavEKF2::getFilterFaults(int8_t instance, uint16_t &faults) const
 /*
   return filter status flags
 */
-void NavEKF2::getFilterStatus(int8_t instance, nav_filter_status &status) const
+void NavEKF2::getFilterStatus(nav_filter_status &status) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterStatus(status);
+        core[primary].getFilterStatus(status);
     } else {
         memset(&status, 0, sizeof(status));
     }
@@ -1291,11 +1264,10 @@ void NavEKF2::getFilterStatus(int8_t instance, nav_filter_status &status) const
 /*
 return filter gps quality check status
 */
-void  NavEKF2::getFilterGpsStatus(int8_t instance, nav_gps_status &status) const
+void  NavEKF2::getFilterGpsStatus(nav_gps_status &status) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterGpsStatus(status);
+        core[primary].getFilterGpsStatus(status);
     } else {
         memset(&status, 0, sizeof(status));
     }
@@ -1601,7 +1573,7 @@ void NavEKF2::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
     }
 }
 
-// get a yaw estimator instance
+// get yaw estimator instance
 const EKFGSF_yaw *NavEKF2::get_yawEstimator(void) const
 {
     if (core) {
