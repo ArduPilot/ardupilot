@@ -579,18 +579,6 @@ uint16_t LoggerBackendThread::find_oldest_log()
     return _cached_oldest_log;
 }
 
-// void LoggerBackendThread::check_message_queue()
-// {
-//     LoggerThreadRequest *request;
-//     if (!requests.pop(request)) {
-//         return;
-
-//     }
-
-//     handle_request(*request);
-//     // request->complete = true;
-// }
-
 void LoggerBackendThread::process_request(LoggerThreadRequest &request)
 {
     switch (request.type) {
