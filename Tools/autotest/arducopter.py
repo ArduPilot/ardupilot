@@ -6042,12 +6042,17 @@ class AutoTestCopter(AutoTest):
             self.set_parameters({
                 "FENCE_ENABLE": 1,
                 "PRX_TYPE": 10,
+                "PRX_LOG_RAW": 1,
                 "RC10_OPTION": 40, # proximity-enable
             })
             self.reboot_sitl()
             self.progress("Enabling proximity")
             self.set_rc(10, 2000)
             self.check_avoidance_corners()
+
+            self.assert_current_onboard_log_contains_message("PRX")
+            self.assert_current_onboard_log_contains_message("PRXR")
+
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
@@ -6385,6 +6390,8 @@ class AutoTestCopter(AutoTest):
             self.change_mode("LOITER")
             self.wait_groundspeed(0, 0.3, timeout=120)
             self.land_and_disarm()
+
+            self.assert_current_onboard_log_contains_message("BCN")
 
         except Exception as e:
             self.print_exception_caught(e)
