@@ -640,6 +640,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             gdb_commands_file.write("b %s\n" % (breakpoint,))
         if opts.disable_breakpoints:
             gdb_commands_file.write("disable\n")
+        gdb_commands_file.write("set pagination off\n")
         if not opts.gdb_stopped:
             gdb_commands_file.write("r\n")
         gdb_commands_file.close()
