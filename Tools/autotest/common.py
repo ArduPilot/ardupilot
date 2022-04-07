@@ -11267,6 +11267,8 @@ switch value'''
             self.set_rc(3, 1050)
             self.wait_rpm1(timeout=10, min_rpm=200)
 
+        self.assert_current_onboard_log_contains_message("RPM")
+
         self.drain_mav_unparsed()
         # anything with a lambda in here needs a proper test written.
         # This, at least makes sure we're getting some of each
