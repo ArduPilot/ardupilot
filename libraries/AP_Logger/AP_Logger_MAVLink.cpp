@@ -287,9 +287,10 @@ void LoggerThread_MAVLink::handle_ack(LoggerThreadRequest &request)
     }
     const uint32_t seqno = request.parameters.HandleRemoteLogBlockStatus.seqno;
     const GCS_MAVLINK &link = *(request.parameters.HandleRemoteLogBlockStatus.link);
-    const uint8_t sysid = request.parameters.HandleRemoteLogBlockStatus.seqno;
+    const uint8_t sysid = request.parameters.HandleRemoteLogBlockStatus.sysid;
     const uint8_t compid = request.parameters.HandleRemoteLogBlockStatus.compid;
 
+    WITH_SEMAPHORE(semaphore);
     if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_STOP) {
         Debug("Received stop-logging packet");
         stop_logging();
@@ -369,6 +370,7 @@ void LoggerThread_MAVLink::handle_retry(LoggerThreadRequest &request)
         return;
     }
 
+    WITH_SEMAPHORE(semaphore);
     struct dm_block *victim = dequeue_seqno(_blocks_sent, seqno);
     if (victim != nullptr) {
         _last_response_time = AP_HAL::millis();
@@ -542,6 +544,26 @@ void LoggerThread_MAVLink::timer(void)
         return;
     }
 
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // if we're sending but not receiving then timeout:
+    if (now_ms - _last_send_time < 1000) {
+        if (now_ms - _last_response_time > 10000) {
+            // other end appears to have timed out!
+            gcs().send_text(MAV_SEVERITY_WARNING, "timeout");
+            Debug("Client timed out");
+            _sending_to_client = false;
+            return;
+        }
+    } else {
+        // if we're not sending blocks to the client it is
+        // unreasonable to expect a response from the client.  In the
+        // case we stop sending blocks for a while then restart we
+        // don't want the client-timeout code above to trigger - so
+        // we'll lie about the last response time:
+        _last_response_time = AP_HAL::millis();
+    }
+
     if (!semaphore.take_nonblocking()) {
         return;
     }
@@ -556,19 +578,10 @@ void LoggerThread_MAVLink::timer(void)
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
-    if (now - last_10Hz_ms > 100) {
-        last_10Hz_ms = now;
-        do_resends(now);
+    if (now_ms - last_10Hz_ms > 100) {
+        last_10Hz_ms = now_ms;
+        do_resends(now_ms);
         stats_collect();
-
-        if (_sending_to_client &&
-            _last_response_time + 10000 < _last_send_time) {
-            // other end appears to have timed out!
-            Debug("Client timed out");
-            _sending_to_client = false;
-            return;
-        }
     }
 
     semaphore.give();
