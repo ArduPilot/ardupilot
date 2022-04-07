@@ -48,12 +48,6 @@ bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
 
 void AP_BattMonitor_Generator_FuelLevel::init()
 {
-    // Set params for users:
-    // Fuel level is only reported as a percentage
-    _params._pack_capacity.set(100);
-    // Fuel only reports a fixed 1v, don't want batt monitor failsafes on this instance
-    _params._low_voltage.set(0);
-    _params._critical_voltage.set(0);
 }
 
 // Read the fuel level.  Should be called at 10hz
@@ -71,6 +65,15 @@ void AP_BattMonitor_Generator_FuelLevel::read()
 
     if (!generator->healthy()) {
         return;
+    }
+
+    if (generator->has_fuel_remaining_pct()) {
+        // Set params for users:
+        // Fuel level is only reported as a percentage
+        _params._pack_capacity.set(100);
+        // Fuel only reports a fixed 1v, don't want batt monitor failsafes on this instance
+        _params._low_voltage.set(0);
+        _params._critical_voltage.set(0);
     }
 
     // As this is a battery monitor instance report voltage
