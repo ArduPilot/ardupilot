@@ -17,6 +17,8 @@
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 
+#include "AP_BattMonitor_GP9301.h"
+
 #include <AP_HAL/AP_HAL.h>
 
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
@@ -298,6 +300,12 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
                 break;
 #endif
+#if HAL_BATTMON_PWM_ENABLE 
+            case Type::PWM_VOLTAGE_ONLY:
+            case Type::PWM_VOLTAGE_AND_CURRENT: 
+                drivers[instance] = new AP_BattMonitor_GP9301(*this, state[instance], _params[instance]);
+                break;
+#endif // HAL_BATTMON_PWM_ENABLE
             case Type::NONE:
             default:
                 break;
