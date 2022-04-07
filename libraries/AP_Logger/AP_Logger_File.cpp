@@ -376,14 +376,14 @@ char *LoggerBackendThread_File::_log_file_name(const uint16_t log_num) const
     return _log_file_name_long(log_num);
 }
 
-void LoggerBackendThread_File::handle_request(LoggerThreadRequest &request)
+void LoggerBackendThread_File::process_request(LoggerThreadRequest &request)
 {
     switch (request.type) {
     case LoggerThreadRequest::Type::KillWriteFD:
         _write_fd = -1;
         break;
     default:
-        LoggerBackendThread::handle_request(request);
+        LoggerBackendThread::process_request(request);
     }
 }
 

@@ -245,6 +245,7 @@ public:
 
     HAL_Semaphore _log_send_sem;  // FIXME: not needed now?
 
+    LoggerThreadRequest * claim_free_request();
 
     void PrepForArming();
     void vehicle_was_disarmed();
@@ -561,6 +562,10 @@ public:
     // add a filename to list of files to log. The name must be a constant string, not allocated
     void log_file_content(const char *name);
 
+    LoggerThread &get_loggerthread() {
+        return loggerthread;
+    }
+
 protected:
 
     const struct LogStructure *_structures;
@@ -679,7 +684,6 @@ private:
     LoggerThread loggerthread;
 
     bool complete_iothread_request(LoggerThreadRequest *request);
-    LoggerThreadRequest * claim_free_request();
     bool complete_simple_iothread_request(LoggerThreadRequest::Type type, const char *name);
     LoggerThreadRequest *make_simple_iothread_request(LoggerThreadRequest::Type type);
     bool async_simple_iothread_request(LoggerThreadRequest::Type type, const char *name);

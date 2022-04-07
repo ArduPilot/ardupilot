@@ -49,7 +49,7 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
     LoggerThreadRequest *request;
     {
         WITH_SEMAPHORE(loggerthread.requests_semaphore);
-        request = claim_free_request();
+        request = loggerthread.claim_free_request();
         if (request == nullptr) {
             return;
         }

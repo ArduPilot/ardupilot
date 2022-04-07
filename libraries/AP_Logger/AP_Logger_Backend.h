@@ -74,6 +74,8 @@ public:
 
     virtual void vehicle_was_disarmed();
 
+    virtual void process_request(LoggerThreadRequest &request);
+
 protected:
 
     // must be called when a new log is being started:
@@ -84,8 +86,6 @@ protected:
 
     uint16_t _cached_oldest_log;
 
-    virtual void handle_request(LoggerThreadRequest &request);
-
     uint32_t log_file_size_bytes;
     // should we rotate when we next stop logging
 
@@ -93,7 +93,7 @@ protected:
     bool should_be_logging() const;
 
 private:
-    void check_message_queue();
+    // void check_message_queue();
 
     // we continue to log for some period of time after the vehicle is
     // disarmed.  _rotate_pending is true while we are in this state.
@@ -146,7 +146,7 @@ public:
     void Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
      // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(const GCS_MAVLINK &link,
+    virtual void remote_log_block_status_msg(GCS_MAVLINK &link,
                                              const mavlink_message_t &msg) { }
     // end for Logger_MAVlink
 

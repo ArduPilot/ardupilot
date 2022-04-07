@@ -44,7 +44,7 @@ public:
     bool WritesOK() const;
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override;
     uint16_t get_num_logs() override;
-    void handle_request(LoggerThreadRequest &request) override;
+    void process_request(LoggerThreadRequest &request) override;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     void flush(void) override;

@@ -62,6 +62,13 @@ public:
         struct PACKED {
             GCS_MAVLINK *link;
         } HandleLogRequest_End;
+        struct PACKED {
+            GCS_MAVLINK *link;
+            uint8_t sysid;
+            uint8_t compid;
+            uint32_t seqno;
+            uint8_t status;
+        } HandleRemoteLogBlockStatus;
     } parameters;
 
     Type type;

@@ -759,9 +759,9 @@ void AP_Logger::EraseAll() {
 
 // find a freee request slot.  *MUST* be called with the
 // loggerthreadrequest.requests_semaphore held!
-LoggerThreadRequest * AP_Logger::claim_free_request()
+LoggerThreadRequest * LoggerThread::claim_free_request()
 {
-    for (LoggerThreadRequest &r : loggerthread.requests) {
+    for (LoggerThreadRequest &r : requests) {
         if (r.state == LoggerThreadRequest::State::FREE) {
             return &r;
         }
@@ -773,7 +773,7 @@ LoggerThreadRequest * AP_Logger::claim_free_request()
 // reserve a request slot and fill it in a bit
 LoggerThreadRequest *AP_Logger::make_simple_iothread_request(LoggerThreadRequest::Type type)
 {
-    LoggerThreadRequest *request = claim_free_request();
+    LoggerThreadRequest *request = loggerthread.claim_free_request();
     if (request == nullptr) {
         return nullptr;
     }
@@ -915,6 +915,18 @@ void LoggerThread::check_message_queue(void)
 }
 
 // should this be a method on the request?
+
+// process_request takes a request and either:
+
+// - handles it itself (for example, processing log-transfer requests)
+
+// - calls a method on each backend thread to accomplish some action
+// - (e.g. erasing all logs)
+
+// - calls process_request on each backend with the same request; this
+// - allows each different backend type to enqueue requests only it
+// - will know how to handle (e.g. HandleRemoteLogBlockStatus) , or
+// - that involves internal state to the backend (
 void LoggerThread::process_request(LoggerThreadRequest &request)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "Processing type=%u", (unsigned)(request.type));
@@ -943,10 +955,15 @@ void LoggerThread::process_request(LoggerThreadRequest &request)
         FOR_EACH_BACKEND_THREAD(stop_logging());
         break;
     }
+    // the following cases are handled in the backend-specific
+    // subclasses such as LoggerThread_File:
     case LoggerThreadRequest::Type::KillWriteFD:
     case LoggerThreadRequest::Type::StartWriteEntireMission:
     case LoggerThreadRequest::Type::StartWriteEntireRally:
-        // backend requests
+    case LoggerThreadRequest::Type::HandleRemoteLogBlockStatus:
+        for (uint8_t i=0; i<AP::logger()._next_backend; i++) {
+            AP::logger().backends[i]->_iothread->process_request(request);
+        }
         break;
     }
 }
@@ -1005,7 +1022,7 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        handle_remote_log_block_status(link, msg);
+        FOR_EACH_BACKEND(remote_log_block_status_msg(link, msg));
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         FALLTHROUGH;

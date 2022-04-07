@@ -579,66 +579,30 @@ uint16_t LoggerBackendThread::find_oldest_log()
     return _cached_oldest_log;
 }
 
-void LoggerBackendThread::check_message_queue()
-{
-    LoggerThreadRequest *request;
-    if (!requests.pop(request)) {
-        return;
+// void LoggerBackendThread::check_message_queue()
+// {
+//     LoggerThreadRequest *request;
+//     if (!requests.pop(request)) {
+//         return;
 
-    }
+//     }
 
-    handle_request(*request);
-    // request->complete = true;
-}
+//     handle_request(*request);
+//     // request->complete = true;
+// }
 
-void LoggerBackendThread::handle_request(LoggerThreadRequest &request)
+void LoggerBackendThread::process_request(LoggerThreadRequest &request)
 {
     switch (request.type) {
-    case LoggerThreadRequest::Type::EraseAll:
-        EraseAll();
-        break;
-    case LoggerThreadRequest::Type::Flush:
-        flush();
-        break;
     case LoggerThreadRequest::Type::StartWriteEntireMission:
         startup_messagewriter->writeentiremission();
         break;
     case LoggerThreadRequest::Type::StartWriteEntireRally:
         startup_messagewriter->writeallrallypoints();
         break;
-    // case LoggerThreadRequest::Type::FindOldestLog: {
-    //     *((uint16_t*)request.data) = find_oldest_log();
-    //     break;
-    // }
-    // case LoggerThreadRequest::Type::FindLastLog: {
-    //     *((uint16_t*)request.data) = find_last_log();
-    //     break;
-    // }
-    // case LoggerThreadRequest::Type::GetLogBoundaries: {
-    //     get_log_boundaries_parameters *foo = (get_log_boundaries_parameters*)(request.data);
-    //     get_log_boundaries(foo->list_entry, foo->start_page, foo->end_page);
-    //     break;
-    // }
-    // case LoggerThreadRequest::Type::GetLogData: {
-    //     get_log_data_parameters *foo = (get_log_data_parameters*)(request.data);
-    //     foo->ret = get_log_data(foo->list_entry, foo->page, foo->offset, foo->len, foo->data);
-    //     break;
-    // }
-    // case LoggerThreadRequest::Type::GetLogInfo: {
-    //     get_log_info_parameters *foo = (get_log_info_parameters*)(request.data);
-    //     get_log_info(foo->list_entry, foo->size, foo->time_utc);
-    //     break;
-    // }
-    // case LoggerThreadRequest::Type::GetNumLogs: {
-    //     *((uint16_t*)request.data) = get_num_logs();
-    //     break;
-    // }
-    case LoggerThreadRequest::Type::StopLogging: {
-        stop_logging();
-        break;
-    }
     default:
         // INTERNAL_ERROR(AP_InternalError::error_t::logger_unhandled_queue);  // FIXME
+        gcs().send_text(MAV_SEVERITY_WARNING, "Unhandled message (%u)", (unsigned)request.type);
         break;
     }
 }

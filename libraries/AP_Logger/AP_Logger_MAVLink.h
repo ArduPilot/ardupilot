@@ -20,11 +20,6 @@ class LoggerThread_MAVLink : public LoggerBackendThread {
 
 public:
 
-    LoggerThread_MAVLink(uint8_t bufsize_kb) :
-        LoggerBackendThread() {
-        // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
-    }
-
     bool Init(uint8_t bufsize_kb);
 
     void timer(void) override;
@@ -61,6 +56,8 @@ public:
 
     HAL_Semaphore semaphore;
 
+    void process_request(LoggerThreadRequest &request) override;
+
 private:
 
     struct dm_block {
@@ -70,8 +67,8 @@ private:
         struct dm_block *next;
     };
     bool send_log_block(struct dm_block &block);
-    void handle_ack(const GCS_MAVLINK &link, const mavlink_message_t &msg, uint32_t seqno);
-    void handle_retry(uint32_t block_num);
+    void handle_ack(LoggerThreadRequest &request);
+    void handle_retry(LoggerThreadRequest &request);
     void do_resends(uint32_t now);
     void free_all_blocks();
 
@@ -144,7 +141,7 @@ private:
     struct dm_block *_blocks;
     struct dm_block *_current_block;
     struct dm_block *next_block();
-    bool _blocks_initialised;
+    bool _initialised;
 
     void stats_init();
     void stats_reset();
@@ -154,6 +151,8 @@ private:
     uint32_t _stats_last_logged_time;
     uint8_t mavlink_seq;
 
+    // we run some processes more slowly in our timer function:
+    uint32_t last_10Hz_ms;
 };
 
 
@@ -162,7 +161,6 @@ class AP_Logger_MAVLink : public AP_Logger_Backend
 public:
     // constructor
     AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
-        _iothread_mavlink{(uint8_t)_front._params.mav_bufsize},
         AP_Logger_Backend(front, _iothread_mavlink, writer)
         {
         }
@@ -184,7 +182,7 @@ public:
     // initialisation
     bool CardInserted(void) const override { return true; }
 
-    void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
+    void remote_log_block_status_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) override;
 
     // this method is used when reporting system status over mavlink
     bool logging_enabled() const override { return true; }
@@ -192,14 +190,13 @@ public:
 
 protected:
 
-    void push_log_blocks() override;
     bool WritesOK() const override;
 
 private:
 
     uint32_t bufferspace_available() override; // in bytes
 
-    void periodic_10Hz(uint32_t now) override;
+    void periodic_fullrate() override;
     void periodic_1Hz() override;
 
     // not actually a thread, but rather an object with methods called

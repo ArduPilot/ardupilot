@@ -23,13 +23,6 @@
 extern const AP_HAL::HAL& hal;
 
 
-void LoggerThread_MAVLink::timer(void)
-{
-    if (!_blocks_initialised) {
-        return;
-    }
-}
-
 bool LoggerThread_MAVLink::Init(uint8_t bufsize_kb)
 {
     _blockcount = (1024*bufsize_kb) / sizeof(struct dm_block);
@@ -51,7 +44,7 @@ bool LoggerThread_MAVLink::Init(uint8_t bufsize_kb)
     stats_init();
 
     // let the timer() call start to do works
-    _blocks_initialised = true;
+    _initialised = true;
 
     return true;
 }
@@ -265,13 +258,38 @@ void LoggerThread_MAVLink::stop_logging()
     }
 }
 
-void LoggerThread_MAVLink::handle_ack(const GCS_MAVLINK &link,
-                                      const mavlink_message_t &msg,
-                                      uint32_t seqno)
+void AP_Logger_MAVLink::stop_logging(void)
+{
+    if (!complete_iothread_request(LoggerThreadRequest::Type::StopLogging)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "stop_logging failed");
+    }
+}
+
+void LoggerThread_MAVLink::process_request(LoggerThreadRequest &request)
+{
+    switch (request.type) {
+    case LoggerThreadRequest::Type::HandleRemoteLogBlockStatus:
+        if(request.parameters.HandleRemoteLogBlockStatus.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
+            handle_retry(request);
+        } else {
+            handle_ack(request);
+        }
+        break;
+    default:
+        LoggerBackendThread::process_request(request);
+    }
+}
+
+void LoggerThread_MAVLink::handle_ack(LoggerThreadRequest &request)
 {
     if (!_initialised) {
         return;
     }
+    const uint32_t seqno = request.parameters.HandleRemoteLogBlockStatus.seqno;
+    const GCS_MAVLINK &link = *(request.parameters.HandleRemoteLogBlockStatus.link);
+    const uint8_t sysid = request.parameters.HandleRemoteLogBlockStatus.seqno;
+    const uint8_t compid = request.parameters.HandleRemoteLogBlockStatus.compid;
+
     if(seqno == MAV_REMOTE_LOG_DATA_BLOCK_STOP) {
         Debug("Received stop-logging packet");
         stop_logging();
@@ -288,8 +306,8 @@ void LoggerThread_MAVLink::handle_ack(const GCS_MAVLINK &link,
             // }
             stats_init();
             _sending_to_client = true;
-            _target_system_id = msg.sysid;
-            _target_component_id = msg.compid;
+            _target_system_id = sysid;
+            _target_component_id = compid;
             _link = &link;
             _next_seq_num = 0;
             start_new_log_reset_variables();
@@ -311,12 +329,13 @@ void LoggerThread_MAVLink::handle_ack(const GCS_MAVLINK &link,
     }
 }
 
-void AP_Logger_MAVLink::handle_remote_log_block_status_msg(const GCS_MAVLINK &link,
-                                                           const mavlink_message_t& msg)
+void AP_Logger_MAVLink::remote_log_block_status_msg(GCS_MAVLINK &link,
+                                                    const mavlink_message_t& msg)
 {
     LoggerThreadRequest *request;
+    LoggerThread &loggerthread{AP::logger().get_loggerthread()};
     WITH_SEMAPHORE(loggerthread.requests_semaphore);
-    request = claim_free_request();
+    request = loggerthread.claim_free_request();
     if (request == nullptr) {
         return;
     }
@@ -335,38 +354,17 @@ void AP_Logger_MAVLink::handle_remote_log_block_status_msg(const GCS_MAVLINK &li
     request->type = LoggerThreadRequest::Type::HandleRemoteLogBlockStatus;
     request->parameters.HandleRemoteLogBlockStatus = {
         &link,
-        packet.status,
+        msg.sysid,
+        msg.compid,
         packet.seqno,
-        packet.sysid,
-        packet.compid
+        packet.status,
     };
-
-    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
-        handle_retry(packet.seqno);
-    } else {
-        handle_ack(link, msg, packet.seqno);
-    }
-    semaphore.give();
 }
 
-void LoggerThread_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
-                                                       const mavlink_message_t& msg)
+void LoggerThread_MAVLink::handle_retry(LoggerThreadRequest &request)
 {
-    mavlink_remote_log_block_status_t packet;
-    mavlink_msg_remote_log_block_status_decode(&msg, &packet);
-    if (!semaphore.take_nonblocking()) {
-        return;
-    }
-    if(packet.status == MAV_REMOTE_LOG_DATA_BLOCK_NACK) {
-        handle_retry(packet.seqno);
-    } else {
-        handle_ack(link, msg, packet.seqno);
-    }
-    semaphore.give();
-}
+    const uint8_t seqno = request.parameters.HandleRemoteLogBlockStatus.seqno;
 
-void AP_Logger_MAVLink::handle_retry(uint32_t seqno)
-{
     if (!_initialised || !_sending_to_client) {
         return;
     }
@@ -378,12 +376,12 @@ void AP_Logger_MAVLink::handle_retry(uint32_t seqno)
     }
 }
 
-void AP_Logger_MAVLink::stats_init() {
-    _dropped = 0;
+void LoggerThread_MAVLink::stats_init() {
+    dropped = 0;
     stats.resends = 0;
     stats_reset();
 }
-void AP_Logger_MAVLink::stats_reset() {
+void LoggerThread_MAVLink::stats_reset() {
     stats.state_free = 0;
     stats.state_free_min = -1; // unsigned wrap
     stats.state_free_max = 0;
@@ -401,7 +399,7 @@ void AP_Logger_MAVLink::stats_reset() {
 
 void LoggerThread_MAVLink::Write_MAV()
 {
-    logger_mav = *this;
+    LoggerThread_MAVLink &logger_mav = *this;
     if (logger_mav.stats.collection_count == 0) {
         return;
     }
@@ -409,7 +407,7 @@ void LoggerThread_MAVLink::Write_MAV()
         LOG_PACKET_HEADER_INIT(LOG_MAV_STATS),
         timestamp         : AP_HAL::micros64(),
         seqno             : logger_mav._next_seq_num-1,
-        dropped           : logger_mav._dropped,
+        dropped           : logger_mav.dropped,
         retries           : logger_mav._blocks_retry.sent_count,
         resends           : logger_mav.stats.resends,
         state_free_avg    : (uint8_t)(logger_mav.stats.state_free/logger_mav.stats.collection_count),
@@ -422,7 +420,7 @@ void LoggerThread_MAVLink::Write_MAV()
         state_sent_min    : logger_mav.stats.state_sent_min,
         state_sent_max    : logger_mav.stats.state_sent_max,
     };
-    WriteBlock(&pkt,sizeof(pkt));
+    AP::logger().WriteBlock(&pkt,sizeof(pkt));
 }
 
 void LoggerThread_MAVLink::stats_log()
@@ -456,7 +454,7 @@ void LoggerThread_MAVLink::stats_log()
     stats_reset();
 }
 
-uint8_t AP_Logger_MAVLink::stack_size(struct dm_block *stack)
+uint8_t LoggerThread_MAVLink::stack_size(struct dm_block *stack)
 {
     uint8_t ret = 0;
     for (struct dm_block *block=stack; block != nullptr; block=block->next) {
@@ -464,19 +462,14 @@ uint8_t AP_Logger_MAVLink::stack_size(struct dm_block *stack)
     }
     return ret;
 }
-uint8_t AP_Logger_MAVLink::queue_size(dm_block_queue_t queue)
+uint8_t LoggerThread_MAVLink::queue_size(dm_block_queue_t queue)
 {
     return stack_size(queue.oldest);
 }
 
-void AP_Logger_MAVLink::stats_collect()
+// must be called only when initialised and semaphore held:
+void LoggerThread_MAVLink::stats_collect()
 {
-    if (!_initialised) {
-        return;
-    }
-    if (!semaphore.take_nonblocking()) {
-        return;
-    }
     uint8_t pending = queue_size(_blocks_pending);
     uint8_t sent = queue_size(_blocks_sent);
     uint8_t retry = queue_size(_blocks_retry);
@@ -485,7 +478,6 @@ void AP_Logger_MAVLink::stats_collect()
     if (sfree != _blockcount_free) {
         INTERNAL_ERROR(AP_InternalError::error_t::logger_blockcount_mismatch);
     }
-    semaphore.give();
 
     stats.state_pending += pending;
     stats.state_sent += sent;
@@ -523,7 +515,7 @@ void AP_Logger_MAVLink::stats_collect()
 /* while we "successfully" send log blocks from a queue, move them to
  * the sent list. DO NOT call this for blocks already sent!
 */
-bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
+bool LoggerThread_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
 {
     uint8_t sent_count = 0;
     while (queue.oldest != nullptr) {
@@ -534,7 +526,7 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
             return false;
         }
         queue.sent_count++;
-        struct AP_Logger_MAVLink::dm_block *tmp = dequeue_seqno(queue,queue.oldest->seqno);
+        struct dm_block *tmp = dequeue_seqno(queue,queue.oldest->seqno);
         if (tmp != nullptr) { // should never be nullptr
             enqueue_block(_blocks_sent, tmp);
         } else {
@@ -544,13 +536,11 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
     return true;
 }
 
-void AP_Logger_MAVLink::push_log_blocks()
+void LoggerThread_MAVLink::timer(void)
 {
     if (!_initialised || !_sending_to_client) {
         return;
     }
-
-    AP_Logger_Backend::WriteMoreStartupMessages();
 
     if (!semaphore.take_nonblocking()) {
         return;
@@ -565,65 +555,65 @@ void AP_Logger_MAVLink::push_log_blocks()
         semaphore.give();
         return;
     }
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - last_10Hz_ms > 100) {
+        last_10Hz_ms = now;
+        do_resends(now);
+        stats_collect();
+
+        if (_sending_to_client &&
+            _last_response_time + 10000 < _last_send_time) {
+            // other end appears to have timed out!
+            Debug("Client timed out");
+            _sending_to_client = false;
+            return;
+        }
+    }
+
     semaphore.give();
 }
 
-void AP_Logger_MAVLink::do_resends(uint32_t now)
+// must be called only when initialised and while semaphore held:
+void LoggerThread_MAVLink::do_resends(uint32_t now)
 {
-    if (!_initialised || !_sending_to_client) {
-        return;
-    }
-
     uint8_t count_to_send = 5;
     if (_blockcount < count_to_send) {
         count_to_send = _blockcount;
     }
     uint32_t oldest = now - 100; // 100 milliseconds before resend.  Hmm.
     while (count_to_send-- > 0) {
-        if (!semaphore.take_nonblocking()) {
-            return;
-        }
         for (struct dm_block *block=_blocks_sent.oldest; block != nullptr; block=block->next) {
             // only want to send blocks every now-and-then:
             if (block->last_sent < oldest) {
                 if (! send_log_block(*block)) {
                     // failed to send the block; try again later....
-                    semaphore.give();
                     return;
                 }
                 stats.resends++;
             }
         }
-        semaphore.give();
     }
 }
 
 // NOTE: any functions called from these periodic functions MUST
 // handle locking of the blocks structures by taking the semaphore
 // appropriately!
-void AP_Logger_MAVLink::periodic_10Hz(const uint32_t now)
-{
-    do_resends(now);
-    stats_collect();
-}
 void AP_Logger_MAVLink::periodic_1Hz()
 {
     if (rate_limiter == nullptr && _front._params.mav_ratemax > 0) {
         // setup rate limiting
         rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax);
     }
+}
 
-    if (_sending_to_client &&
-        _last_response_time + 10000 < _last_send_time) {
-        // other end appears to have timed out!
-        Debug("Client timed out");
-        _sending_to_client = false;
-        return;
-    }
+void AP_Logger_MAVLink::periodic_fullrate()
+{
+    AP_Logger_Backend::push_log_blocks();
 }
 
 //TODO: handle full txspace properly
-bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
+bool LoggerThread_MAVLink::send_log_block(struct dm_block &block)
 {
     if (!_initialised) {
        return false;
