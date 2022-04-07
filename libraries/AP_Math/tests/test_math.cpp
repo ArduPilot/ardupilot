@@ -383,6 +383,10 @@ TEST(MathTest, Constrain)
     EXPECT_EQ(19.9, constrain_value(19.8, 19.9, 20.1));
     EXPECT_EQ(19.9f, constrain_value(19.8f, 19.9f, 20.1f));
 
+    // test that constrain on 32 bit integer works correctly. Note the asymmetry
+    EXPECT_EQ(10,    constrain_int32( 0xFFFFFFFFU, 10U, 1200U));
+    EXPECT_EQ(1200U, constrain_uint32(0xFFFFFFFFU, 10U, 1200U));
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     EXPECT_EQ(1.0f, constrain_float(nanf("0x4152"), 1.0f, 1.0f));
     EXPECT_EQ(1.0f, constrain_value(nanf("0x4152"), 1.0f, 1.0f));

@@ -101,6 +101,7 @@ const struct MultiplierStructure log_Multipliers[] = {
     { 'E', 1e-5 },
     { 'F', 1e-6 },
     { 'G', 1e-7 },
+    { 'I', 1e-9 },
 // <leave a gap here, just in case....>
     { '!', 3.6 }, // (ampere*second => milliampere*hour) and (km/h => m/s)
     { '/', 3600 }, // (ampere*second => ampere*hour)
@@ -134,6 +135,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AC_Avoidance/LogStructure.h>
 #include <AP_ESC_Telem/LogStructure.h>
 #include <AP_AIS/LogStructure.h>
+#include <AP_HAL_ChibiOS/LogStructure.h>
 
 // structure used to define logging format
 struct PACKED LogStructure {
@@ -940,20 +942,6 @@ struct PACKED log_VER {
 // @Field: ModeNum: alias for Mode
 // @Field: Rsn: reason for entering this mode; enumeration value
 
-// @LoggerMessage: MON
-// @Description: Main loop stuck data
-// @Field: TimeUS: Time since system startup
-// @Field: LDelay: Time main loop has been stuck for
-// @Field: Task: Current scheduler task number
-// @Field: IErr: Internal error mask; which internal errors have been detected
-// @Field: IErrCnt: Internal error count; how many internal errors have been detected
-// @Field: IErrLn: Line on which internal error ocurred
-// @Field: MavMsg: Id of the last mavlink message processed
-// @Field: MavCmd: Id of the last mavlink command processed
-// @Field: SemLine: Line number of semaphore most recently taken
-// @Field: SPICnt: Number of SPI transactions processed
-// @Field: I2CCnt: Number of i2c transactions processed
-
 // @LoggerMessage: MSG
 // @Description: Textual messages
 // @Field: TimeUS: Time since system startup
@@ -1355,6 +1343,7 @@ LOG_STRUCTURE_FROM_NAVEKF2 \
 LOG_STRUCTURE_FROM_NAVEKF3 \
 LOG_STRUCTURE_FROM_NAVEKF \
 LOG_STRUCTURE_FROM_AHRS \
+LOG_STRUCTURE_FROM_HAL_CHIBIOS \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RPM_MSG, sizeof(log_RPM), \
@@ -1421,6 +1410,7 @@ enum LogMessages : uint8_t {
     LOG_CSRV_MSG,
     LOG_IDS_FROM_ESC_TELEM,
     LOG_IDS_FROM_BATTMONITOR,
+    LOG_IDS_FROM_HAL_CHIBIOS,
 
     LOG_IDS_FROM_GPS,
 

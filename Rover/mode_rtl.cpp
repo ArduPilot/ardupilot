@@ -8,6 +8,9 @@ bool ModeRTL::_enter()
         return false;
     }
 
+    // initialise waypoint navigation library
+    g2.wp_nav.init(MAX(0, g2.rtl_speed));
+
     // set target to the closest rally point or home
 #if AP_RALLY == ENABLED
     if (!g2.wp_nav.set_desired_location(g2.rally.calc_best_rally_or_home_location(rover.current_loc, ahrs.get_home().alt))) {
@@ -19,13 +22,6 @@ bool ModeRTL::_enter()
         return false;
     }
 #endif
-
-    // initialise waypoint speed
-    if (is_positive(g2.rtl_speed)) {
-        g2.wp_nav.set_desired_speed(g2.rtl_speed);
-    } else {
-        g2.wp_nav.set_desired_speed_to_default();
-    }
 
     send_notification = true;
     _loitering = false;
@@ -85,9 +81,5 @@ bool ModeRTL::reached_destination() const
 // set desired speed in m/s
 bool ModeRTL::set_desired_speed(float speed)
 {
-    if (is_negative(speed)) {
-        return false;
-    }
-    g2.wp_nav.set_desired_speed(speed);
-    return true;
+    return g2.wp_nav.set_speed_max(speed);
 }

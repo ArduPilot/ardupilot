@@ -2121,74 +2121,95 @@ class AutoTest(ABC):
         structure_lines = []
         for f in structure_files:
             structure_lines.extend(open(f).readlines())
-        ids = {}
-        state_outside = 0
-        state_inside = 1
-        state = state_outside
 
         defines = self.find_format_defines(structure_lines)
 
-        linestate_none = 45
-        linestate_within = 46
-        linestate = linestate_none
+        ids = {}
         message_infos = []
-        for line in structure_lines:
-            #            print("line: %s" % line)
-            if type(line) == bytes:
-                line = line.decode("utf-8")
-            line = re.sub("//.*", "", line) # trim comments
-            if re.match(r"\s*$", line):
-                # blank line
-                continue
-            if state == state_outside:
-                if ("#define LOG_COMMON_STRUCTURES" in line or
-                        re.match("#define LOG_STRUCTURE_FROM_.*", line)):
-                    #                    self.progress("Moving inside")
-                    state = state_inside
-                continue
-            if state == state_inside:
-                if linestate == linestate_none:
-                    allowed_list = ['LOG_STRUCTURE_FROM_']
+        for f in structure_files:
+            self.progress("structure file: %s" % f)
+            state_outside = 0
+            state_inside = 1
+            state = state_outside
 
-                    allowed = False
-                    for a in allowed_list:
-                        if a in line:
-                            allowed = True
-                    if allowed:
-                        continue
-                    m = re.match(r"\s*{(.*)},\s*", line)
-                    if m is not None:
-                        # complete line
-                        # print("Complete line: %s" % str(line))
-                        message_infos.append(m.group(1))
-                        continue
-                    m = re.match(r"\s*{(.*)\\", line)
-                    if m is None:
-                        state = state_outside
-                        continue
-                    partial_line = m.group(1)
-                    linestate = linestate_within
+            linestate_none = 45
+            linestate_within = 46
+            linestate = linestate_none
+            debug = False
+            if f == "/home/pbarker/rc/ardupilot/libraries/AP_HAL_ChibiOS/LogStructure.h":
+                debug = True
+            for line in open(f).readlines():
+                if debug:
+                    print("line: %s" % line)
+                if type(line) == bytes:
+                    line = line.decode("utf-8")
+                line = re.sub("//.*", "", line) # trim comments
+                if re.match(r"\s*$", line):
+                    # blank line
                     continue
-                if linestate == linestate_within:
-                    m = re.match("(.*)}", line)
-                    if m is None:
-                        line = line.rstrip()
-                        newline = re.sub(r"\\$", "", line)
-                        if newline == line:
-                            raise NotAchievedException("Expected backslash at end of line")
-                        line = newline
-                        line = line.rstrip()
-                        # cpp-style string concatenation:
-                        line = re.sub(r'"\s*"', '', line)
-                        partial_line += line
-                        continue
-                    message_infos.append(partial_line + m.group(1))
-                    linestate = linestate_none
+                if state == state_outside:
+                    if ("#define LOG_COMMON_STRUCTURES" in line or
+                            re.match("#define LOG_STRUCTURE_FROM_.*", line)):
+                        if debug:
+                            self.progress("Moving inside")
+                        state = state_inside
                     continue
-                raise NotAchievedException("Bad line (%s)")
+                if state == state_inside:
+                    if linestate == linestate_none:
+                        allowed_list = ['LOG_STRUCTURE_FROM_']
 
-        if linestate != linestate_none:
-            raise NotAchievedException("Must be linestate-none at end of file")
+                        allowed = False
+                        for a in allowed_list:
+                            if a in line:
+                                allowed = True
+                        if allowed:
+                            continue
+                        m = re.match(r"\s*{(.*)},\s*", line)
+                        if m is not None:
+                            # complete line
+                            if debug:
+                                print("Complete line: %s" % str(line))
+                            message_infos.append(m.group(1))
+                            continue
+                        m = re.match(r"\s*{(.*)\\", line)
+                        if m is None:
+                            if debug:
+                                self.progress("Moving outside")
+                            state = state_outside
+                            continue
+                        partial_line = m.group(1)
+                        if debug:
+                            self.progress("partial line")
+                        linestate = linestate_within
+                        continue
+                    if linestate == linestate_within:
+                        if debug:
+                            self.progress("Looking for close-brace")
+                        m = re.match("(.*)}", line)
+                        if m is None:
+                            if debug:
+                                self.progress("no close-brace")
+                            line = line.rstrip()
+                            newline = re.sub(r"\\$", "", line)
+                            if newline == line:
+                                raise NotAchievedException("Expected backslash at end of line")
+                            line = newline
+                            line = line.rstrip()
+                            # cpp-style string concatenation:
+                            if debug:
+                                self.progress("more partial line")
+                            line = re.sub(r'"\s*"', '', line)
+                            partial_line += line
+                            continue
+                        if debug:
+                            self.progress("found close-brace")
+                        message_infos.append(partial_line + m.group(1))
+                        linestate = linestate_none
+                        continue
+                    raise NotAchievedException("Bad line (%s)")
+
+            if linestate != linestate_none:
+                raise NotAchievedException("Must be linestate-none at end of file")
 
         # now look in the vehicle-specific logfile:
         filepath = os.path.join(self.vehicle_code_dirpath(), "Log.cpp")
@@ -2259,10 +2280,12 @@ class AutoTest(ABC):
             raise NotAchievedException("Should not be in state_inside at end")
 
         for message_info in message_infos:
+            print("message_info: %s" % str(message_info))
             for define in defines:
                 message_info = re.sub(define, defines[define], message_info)
-            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*true)?\s*$', message_info)  # noqa
+            m = re.match(r'\s*LOG_\w+\s*,\s*sizeof\([^)]+\)\s*,\s*"(\w+)"\s*,\s*"(\w+)"\s*,\s*"([\w,]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*(,\s*(true|false))?\s*$', message_info)  # noqa
             if m is None:
+                print("NO MATCH")
                 continue
             (name, fmt, labels, units, multipliers) = (m.group(1), m.group(2), m.group(3), m.group(4), m.group(5))
             if name in ids:
@@ -2306,6 +2329,8 @@ class AutoTest(ABC):
                             continue
                         if state == state_inside:
                             line = re.sub("//.*", "", line) # trim comments
+                            # cpp-style string concatenation:
+                            line = re.sub(r'"\s*"', '', line)
                             log_write_statement += line
                             if re.match(r".*\);", line):
                                 log_write_statements.append(log_write_statement)
@@ -3283,20 +3308,43 @@ class AutoTest(ABC):
         if not temp_ok:
             raise NotAchievedException("target temperature")
 
-    def assert_message_field_values(self, m, fieldvalues, verbose=True):
+    def message_has_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
         for (fieldname, value) in fieldvalues.items():
             got = getattr(m, fieldname)
-            if got != value:
-                raise NotAchievedException("Expected %s.%s to be %s, got %s" %
-                                           (m.get_type(), fieldname, value, got))
+            if math.isnan(value) or math.isnan(got):
+                equal = math.isnan(value) and math.isnan(got)
+            elif epsilon is not None:
+                equal = abs(got - value) <= epsilon
+            else:
+                equal = got == value
+
+            if not equal:
+                self.progress("Expected %s.%s to be %s, got %s" %
+                              (m.get_type(), fieldname, value, got))
+                return False
             if verbose:
                 self.progress("%s.%s has expected value %s" %
                               (m.get_type(), fieldname, value))
+        return True
 
-    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False):
+    def assert_message_field_values(self, m, fieldvalues, verbose=True, epsilon=None):
+        if self.message_has_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon):
+            return
+        raise NotAchievedException("Did not get expected field values")
+
+    def assert_received_message_field_values(self, message, fieldvalues, verbose=True, very_verbose=False, epsilon=None):
         m = self.assert_receive_message(message, verbose=verbose, very_verbose=very_verbose)
-        self.assert_message_field_values(m, fieldvalues, verbose=verbose)
+        self.assert_message_field_values(m, fieldvalues, verbose=verbose, epsilon=epsilon)
         return m
+
+    def wait_message_field_values(self, message, fieldvalues, timeout=10, epsilon=None):
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Field never reached values")
+            m = self.assert_receive_message(message)
+            if self.message_has_field_values(m, fieldvalues, epsilon=epsilon):
+                break
 
     def onboard_logging_not_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-false behaviour")
@@ -3670,6 +3718,21 @@ class AutoTest(ABC):
         if m is None:
             raise NotAchievedException("Did not get %s" % type)
         return m
+
+    def assert_receive_named_value_float(self, name, timeout=10):
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not get NAMED_VALUE_FLOAT %s" % name)
+            m = self.assert_receive_message('NAMED_VALUE_FLOAT', verbose=1, very_verbose=1, timeout=timeout)
+            if m.name != name:
+                continue
+            return m
+
+    def assert_receive_named_value_float_value(self, name, value, epsilon=0.0001, timeout=10):
+        m = self.assert_receive_named_value_float_value(name, timeout=timeout)
+        if abs(m.value - value) > epsilon:
+            raise NotAchievedException("Bad %s want=%f got=%f" % (name, value, m.value))
 
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
@@ -4076,6 +4139,9 @@ class AutoTest(ABC):
 
     def set_rc_from_map(self, _map, timeout=20):
         map_copy = _map.copy()
+        for v in map_copy.values():
+            if type(v) != int:
+                raise NotAchievedException("RC values must be integers")
         self.rc_queue.put(map_copy)
 
         if self.rc_thread is None:
@@ -9748,6 +9814,10 @@ switch value'''
         m = dfreader.recv_match(type=messagetype)
         print("m=%s" % str(m))
         return m is not None
+
+    def assert_current_onboard_log_contains_message(self, messagetype):
+        if not self.current_onboard_log_contains_message(messagetype):
+            raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""

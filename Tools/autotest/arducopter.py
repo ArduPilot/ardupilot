@@ -1093,6 +1093,126 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def assert_dataflash_message_field_level_at(self,
+                                                mtype,
+                                                field,
+                                                level,
+                                                maintain=1,
+                                                tolerance=0.05,
+                                                timeout=30,
+                                                condition=None,
+                                                dfreader_start_timestamp=None,
+                                                verbose=False):
+        '''wait for EKF's accel bias to reach a level and maintain it'''
+
+        if verbose:
+            self.progress("current onboard log filepath: %s" % self.current_onboard_log_filepath())
+        dfreader = self.dfreader_for_current_onboard_log()
+
+        achieve_start = None
+        current_value = None
+        while True:
+            m = dfreader.recv_match(type=mtype, condition=condition)
+            if m is None:
+                raise NotAchievedException("%s.%s did not maintain %f" %
+                                           (mtype, field, level))
+            if dfreader_start_timestamp is not None:
+                if m.TimeUS < dfreader_start_timestamp:
+                    continue
+            if verbose:
+                print("m=%s" % str(m))
+            current_value = getattr(m, field)
+
+            if abs(current_value - level) > tolerance:
+                if achieve_start is not None:
+                    self.progress("Achieve stop at %u" % m.TimeUS)
+                    achieve_start = None
+                continue
+
+            dfreader_now = m.TimeUS
+            if achieve_start is None:
+                self.progress("Achieve start at %u (got=%f want=%f)" %
+                              (dfreader_now, current_value, level))
+                if maintain is None:
+                    return
+                achieve_start = m.TimeUS
+                continue
+
+            # we're achieving....
+            if dfreader_now - achieve_start > maintain*1e6:
+                return dfreader_now
+
+    # Tests any EK3 accel bias is subtracted from the correct IMU data
+    def EK3AccelBias(self):
+
+        self.context_push()
+
+        self.start_test("Test zero bias")
+        dfreader_tstart = self.assert_dataflash_message_field_level_at(
+            "XKF2",
+            "AZ",
+            0.0,
+            condition="XKF2.C==1",
+        )
+
+        # Add 2m/s/s bias to the second IMU
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+
+        self.start_subtest("Ensuring second core has bias")
+        self.delay_sim_time(30)
+        dfreader_tstart = self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+        )
+
+        self.start_subtest("Ensuring earth frame is compensated")
+        self.assert_dataflash_message_field_level_at(
+            "RATE", "A", 0,
+            maintain=1,
+            tolerance=2,    # RATE.A is in cm/s/s
+            dfreader_start_timestamp=dfreader_tstart,
+        )
+
+        # now switch the EKF to only using the second core:
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.0,
+            "EK3_IMU_MASK": 0b10,
+        })
+        self.reboot_sitl()
+
+        self.delay_sim_time(30)
+        dfreader_tstart = self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.0,
+            condition="XKF2.C==0",
+        )
+
+        # Add 2m/s/s bias to the second IMU
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+
+        self.start_subtest("Ensuring first core now has bias")
+        self.delay_sim_time(30)
+        dfreader_tstart = self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==0",
+        )
+
+        self.start_subtest("Ensuring earth frame is compensated")
+        self.assert_dataflash_message_field_level_at(
+            "RATE", "A", 0,
+            maintain=1,
+            tolerance=2,  # RATE.A is in cm/s/s
+            dfreader_start_timestamp=dfreader_tstart,
+            verbose=True,
+        )
+
+        # revert simulated accel bias and reboot to restore EKF health
+        self.context_pop()
+        self.reboot_sitl()
+
     # fly_stability_patch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
     def fly_stability_patch(self,
@@ -8436,6 +8556,10 @@ class AutoTestCopter(AutoTest):
             ("VibrationFailsafe",
              "Test Vibration Failsafe",
              self.test_vibration_failsafe),
+
+            ("EK3AccelBias",
+             "Test EK3 Accel Bias data",
+             self.EK3AccelBias),
 
             ("StabilityPatch",
              "Fly stability patch",
