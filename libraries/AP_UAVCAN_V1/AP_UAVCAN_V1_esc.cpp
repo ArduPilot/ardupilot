@@ -100,8 +100,7 @@ void UavcanEscController::SRV_push_servos()
 
     WITH_SEMAPHORE(SRV_sem);
 
-    uint8_t src_idx = 0;
-    for (src_idx = 0; src_idx < NUM_SERVO_CHANNELS; src_idx++) {
+    for (uint8_t src_idx = 0; src_idx < NUM_SERVO_CHANNELS; src_idx++) {
         // Check if this channels has any function assigned
         if (SRV_Channels::channel_function(src_idx)) {
             _SRV_conf[src_idx].pulse = SRV_Channels::srv_channel(src_idx)->get_output_pwm();
