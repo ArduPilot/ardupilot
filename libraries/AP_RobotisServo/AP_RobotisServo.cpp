@@ -34,14 +34,14 @@
 * limitations under the License.
 */
 
+#include "AP_RobotisServo.h"
+
+#if AP_ROBOTISSERVO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <SRV_Channel/SRV_Channel.h>
-
-#include "AP_RobotisServo.h"
-
-#if NUM_SERVO_CHANNELS
 
 extern const AP_HAL::HAL& hal;
 
@@ -406,4 +406,5 @@ void AP_RobotisServo::update()
         send_command(i+1, REG_GOAL_POSITION, value, 4);
     }
 }
-#endif //NUM_SERVO_CHANNELS
+
+#endif  // AP_ROBOTISSERVO_ENABLED
