@@ -381,6 +381,9 @@ void NavEKF3_core::setAidingMode()
             meaHgtAtTakeOff = baroDataDelayed.hgt;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
             stateStruct.position.z = -meaHgtAtTakeOff;
+            // store the current height to be used to keep reporting
+            // the last known position
+            lastKnownPositionD = stateStruct.position.z;
             // reset relative aiding sensor fusion activity status
             flowFusionActive = false;
             bodyVelFusionActive = false;
