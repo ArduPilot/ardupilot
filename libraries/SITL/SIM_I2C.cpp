@@ -78,11 +78,11 @@ struct i2c_device_at_address {
     { 1, 0x38, ignored }, // NCP5623
     { 1, 0x39, ignored }, // NCP5623C
     { 1, 0x40, ignored }, // KellerLD
-    { 1, 0x76, ms5525 },  // MS5525: ARSPD_TYPE = 4
+    { 1, 0x76, ms5525 },  // MS5525: ARSPD1_TYPE = 4
     { 1, 0x77, tsys01 },
     { 1, 0x0B, rotoye },  // Rotoye: BATTx_MONITOR 19
     { 2, 0x0B, maxell },  // Maxell: BATTx_MONITOR 16
-    { 2, 0x28, airspeed_dlvr }, // ARSPD_TYPE = 7 5inch H2O sensor
+    { 2, 0x28, airspeed_dlvr }, // ARSPD1_TYPE = 7 5inch H2O sensor
     { 2, 0x77, ms5611 },        // MS5611: BARO_PROBE_EXT = 2
 };
 

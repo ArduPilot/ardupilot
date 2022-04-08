@@ -38,7 +38,7 @@ static const struct {
     { "INS_GYR_CAL", 0 },
     { "EK2_ENABLE", 0 },
     { "ARSPD_ENABLE", 1 },
-    { "ARSPD_USE", 1 },
+    { "ARSPD1_USE", 1 },
     { "INS_ACC2OFFS_X",    0.001 },
     { "INS_ACC2OFFS_Y",    0.001 },
     { "INS_ACC2OFFS_Z",    0.001 },
