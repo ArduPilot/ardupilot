@@ -409,6 +409,7 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
     // NAV commands all have ids below MAV_CMD_NAV_LAST, plus some exceptions
     return (cmd.id <= MAV_CMD_NAV_LAST ||
             cmd.id == MAV_CMD_NAV_SET_YAW_SPEED ||
+            cmd.id == MAV_CMD_WAYPOINT_USER_1 ||
             cmd.id == MAV_CMD_NAV_SCRIPT_TIME);
 }
 
