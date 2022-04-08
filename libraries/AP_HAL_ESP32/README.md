@@ -203,7 +203,7 @@ eg, set ardupilot params like this:
 RSSI_ANA_PIN  = 3  - and it will attempt to read the adc value on GPIO39 for rssi data
 BATT_CURR_PIN = 2  - and it will attempt to read the adc value on GPIO34 for battery current
 BATT_VOLT_PIN = 1  - and it will attempt to read the adc value on GPIO35 for  battery voltage
-ARSPD_PIN =     4  - and it will attempt to read the adc value on GPIO36 for analog airspeed data
+ARSPD1_PIN =     4  - and it will attempt to read the adc value on GPIO36 for analog airspeed data
 
 
 if HAL_ESP32_ADC_PINS == HAL_ESP32_ADC_PINS_OPTION2:
@@ -219,7 +219,7 @@ eg, set ardupilot params like this:
 RSSI_ANA_PIN =  39  - and it will attempt to read the adc value on GPIO39 for rssi data
 BATT_CURR_PIN = 34  - and it will attempt to read the adc value on GPIO34 for battery current
 BATT_VOLT_PIN = 35  - and it will attempt to read the adc value on GPIO35 for  battery voltage
-ARSPD_PIN =     36  - and it will attempt to read the adc value on GPIO36 for analog airspeed data
+ARSPD1_PIN =     36  - and it will attempt to read the adc value on GPIO36 for analog airspeed data
 
 
 
