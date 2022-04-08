@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_ROBOTISSERVO_ENABLED
+#define AP_ROBOTISSERVO_ENABLED 1
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -65,3 +73,5 @@ private:
     uint32_t last_send_us;
     uint32_t delay_time_us;
 };
+
+#endif  // AP_ROBOTISSERVO_ENABLED
