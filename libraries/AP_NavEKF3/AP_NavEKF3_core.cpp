@@ -237,6 +237,7 @@ void NavEKF3_core::InitialiseVariables()
     dt = 0;
     velDotNEDfilt.zero();
     lastKnownPositionNE.zero();
+    lastKnownPositionD = 0;
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
     memset(&KH[0][0], 0, sizeof(KH));
