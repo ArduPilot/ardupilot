@@ -2778,6 +2778,10 @@ def add_apperiph_defaults(f):
 #define AP_VOLZ_ENABLED 0
 #endif
 
+#ifndef AP_ROBOTISSERVO_ENABLED
+#define AP_ROBOTISSERVO_ENABLED 0
+#endif
+
 ''')
 
 
