@@ -214,15 +214,11 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
-
 #if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
 #endif
-
-#endif // HAL_BUILD_AP_PERIPH
 
     // @Param: _DSHOT_RATE
     // @DisplayName: Servo DShot output rate
