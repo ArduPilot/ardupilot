@@ -52,7 +52,8 @@ class AP_Airspeed
 {
 public:
     friend class AP_Airspeed_Backend;
-    
+    friend class AP_Airspeed_UAVCAN;
+
     // constructor
     AP_Airspeed();
 

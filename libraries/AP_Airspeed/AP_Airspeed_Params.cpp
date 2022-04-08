@@ -112,6 +112,13 @@ const AP_Param::GroupInfo AP_Airspeed_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO_FLAGS("DEVID", 10, AP_Airspeed_Params, bus_id, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
+    // @Param: CAN_OVRD
+    // @DisplayName: CAN Node ID override
+    // @Description: Set the CAN node ID that you want to be associated with this airspeed sensor instance. This is useful if the position of the airspeed sensor matters on your setup, to ensure that the same airspeed sensor is used for flight for example. Set the CAN node ID as a static node on the device if you are using this override parameter.
+    // @Values: 0:Disabled,1-125:Node ID
+    // @User: Advanced
+    AP_GROUPINFO("CAN_OVRD", 11, AP_Airspeed_Params, override_node_id, 0),
+
     AP_GROUPEND
 };
 

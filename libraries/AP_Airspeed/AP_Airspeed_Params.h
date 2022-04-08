@@ -33,6 +33,7 @@ public:
     AP_Int8  tube_order;
     AP_Int8  skip_cal;
     AP_Int32 bus_id;
+    AP_Int8 override_node_id;
 
     static const struct AP_Param::GroupInfo var_info[];
 
