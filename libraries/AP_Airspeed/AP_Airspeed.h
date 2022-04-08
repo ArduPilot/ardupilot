@@ -7,6 +7,34 @@
 
 class AP_Airspeed_Backend;
 
+class AP_Airspeed_Params {
+public:
+    // Constructor
+    AP_Airspeed_Params(void);
+
+    // parameters for each instance
+    AP_Int32 bus_id;
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Float offset;
+    AP_Float ratio;
+#endif
+    AP_Float psi_range;
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Int8  use;
+    AP_Int8  pin;
+    AP_Int8  skip_cal;
+    AP_Int8  tube_order;
+#endif
+    AP_Int8  type;
+    AP_Int8  bus;
+#if AP_AIRSPEED_AUTOCAL_ENABLE
+    AP_Int8  autocal;
+#endif
+
+    static const struct AP_Param::GroupInfo var_info[];
+};
+
+
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
@@ -183,25 +211,7 @@ private:
     AP_Float _wind_warn;
     AP_Float _wind_gate;
 
-    struct {
-        AP_Int32 bus_id;
-#ifndef HAL_BUILD_AP_PERIPH
-        AP_Float offset;
-        AP_Float ratio;
-#endif
-        AP_Float psi_range;
-#ifndef HAL_BUILD_AP_PERIPH
-        AP_Int8  use;
-        AP_Int8  pin;
-        AP_Int8  skip_cal;
-#endif
-        AP_Int8  type;
-        AP_Int8  bus;
-#if AP_AIRSPEED_AUTOCAL_ENABLE
-        AP_Int8  autocal;
-#endif
-        AP_Int8  tube_order;
-    } param[AIRSPEED_MAX_SENSORS];
+    AP_Airspeed_Params param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {
         float   raw_airspeed;
