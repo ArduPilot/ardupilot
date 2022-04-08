@@ -575,11 +575,13 @@ private:
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // support for Volz protocol
     AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
