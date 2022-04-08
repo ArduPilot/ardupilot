@@ -4,7 +4,6 @@
  Gain and phase determination algorithm
 */
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 #define AUTOTUNE_DWELL_CYCLES                6

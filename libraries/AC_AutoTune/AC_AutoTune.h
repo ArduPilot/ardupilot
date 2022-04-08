@@ -18,7 +18,6 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_Math/AP_Math.h>
