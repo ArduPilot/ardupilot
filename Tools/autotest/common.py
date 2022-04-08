@@ -2800,8 +2800,8 @@ class AutoTest(ABC):
         '''test sending of HIGH_LATENCY2'''
 
         # set airspeed sensor type to DLVR for air temperature message testing
-        self.set_parameter("ARSPD_BUS", 2)
-        self.set_parameter("ARSPD_TYPE", 7)
+        self.set_parameter("ARSPD1_BUS", 2)
+        self.set_parameter("ARSPD1_TYPE", 7)
         self.reboot_sitl()
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True, verbose=True, timeout=30)
@@ -4704,7 +4704,7 @@ class AutoTest(ABC):
         return False  # FIXME: if we allow MAVProxy then allow this
         if fnmatch.fnmatch(param_name, "*_ENABLE") or fnmatch.fnmatch(param_name, "*_ENABLED"):
             return True
-        if param_name in ["ARSPD_TYPE",
+        if param_name in ["ARSPD1_TYPE",
                           "ARSPD2_TYPE",
                           "BATT2_MONITOR",
                           "CAN_DRIVER",

@@ -1650,7 +1650,7 @@ class AutoTestPlane(AutoTest):
     def airspeed_autocal(self):
         self.progress("Ensure no AIRSPEED_AUTOCAL on ground")
         self.set_parameters({
-            "ARSPD_AUTOCAL": 1,
+            "ARSPD1_AUTOCAL": 1,
             "RTL_AUTOLAND": 1,
         })
         m = self.mav.recv_match(type='AIRSPEED_AUTOCAL',
@@ -1707,7 +1707,7 @@ class AutoTestPlane(AutoTest):
             # light winds:
             self.set_parameter("SIM_WIND_SPD", 10)
             if disable_airspeed_sensor:
-                self.set_parameter("ARSPD_USE", 0)
+                self.set_parameter("ARSPD1_USE", 0)
 
             self.takeoff(50)
             loc = self.mav.location()
