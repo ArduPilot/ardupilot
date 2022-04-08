@@ -1,0 +1,57 @@
+# hw definition file for processing by chibios_hwdef.py
+# for CUAV-X7 board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# board ID for firmware load
+APJ_BOARD_ID 1010
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# reserve space for flash storage in last 2 sectors
+FLASH_RESERVE_END_KB 256
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 5
+
+PB13 LED_BOOTLOADER OUTPUT LOW
+PB12 LED_ACTIVITY OUTPUT LOW
+define HAL_LED_ON 0
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+# Add CS pins to ensure they are high in bootloader
+PE1 BMI088_A_CS CS
+PE2 BMI088_G_CS CS
+PE3 ICM20602_CS CS
+PC3 LSM6DS3-CS  CS
+
+PC5 MS5611_CS   CS
+PC4 SPL06_CS    CS
+PC0 BMP388_CS   CS
+
+PE7 RM3100_CS   CS
+
+PE0 FLASH_CS   CS

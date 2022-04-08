@@ -17,7 +17,7 @@
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
 
-#include "AP_BattMonitor_GP9301.h"
+#include "AP_BattMonitor_APC.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -301,9 +301,8 @@ AP_BattMonitor::init()
                 break;
 #endif
 #if HAL_BATTMON_PWM_ENABLE 
-            case Type::PWM_VOLTAGE_ONLY:
-            case Type::PWM_VOLTAGE_AND_CURRENT: 
-                drivers[instance] = new AP_BattMonitor_GP9301(*this, state[instance], _params[instance]);
+            case Type::APC: 
+                drivers[instance] = new AP_BattMonitor_APC(*this, state[instance], _params[instance]);
                 break;
 #endif // HAL_BATTMON_PWM_ENABLE
             case Type::NONE:

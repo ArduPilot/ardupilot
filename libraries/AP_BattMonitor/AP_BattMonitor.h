@@ -52,7 +52,7 @@ class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
-class AP_BattMonitor_GP9301;
+class AP_BattMonitor_APC;
 
 class AP_BattMonitor
 {
@@ -72,7 +72,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_LTC2946;
 
     friend class AP_BattMonitor_Torqeedo;
-    friend class AP_BattMonitor_GP9301;
+    friend class AP_BattMonitor_APC;
 
 public:
 
@@ -107,8 +107,7 @@ public:
         INA2XX                     = 21,
         LTC2946                    = 22,
         Torqeedo                   = 23,
-        PWM_VOLTAGE_ONLY           = 26,
-        PWM_VOLTAGE_AND_CURRENT    = 27,
+        APC                        = 24,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
