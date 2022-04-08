@@ -49,8 +49,11 @@ AP_Volz_Protocol *SRV_Channels::volz_ptr;
 
 #ifndef HAL_BUILD_AP_PERIPH
 AP_SBusOut *SRV_Channels::sbus_ptr;
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
 AP_RobotisServo *SRV_Channels::robotis_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
@@ -205,10 +208,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_ROBOTISSERVO_ENABLED
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
+#endif
+
+#ifndef HAL_BUILD_AP_PERIPH
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
@@ -269,8 +275,12 @@ SRV_Channels::SRV_Channels(void)
 
 #ifndef HAL_BUILD_AP_PERIPH
     sbus_ptr = &sbus;
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
     robotis_ptr = &robotis;
-#endif // HAL_BUILD_AP_PERIPH
+#endif // AP_ROBOTISSERVO_ENABLED
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -398,11 +408,12 @@ void SRV_Channels::push()
 #ifndef HAL_BUILD_AP_PERIPH
     // give sbus library a chance to update
     sbus_ptr->update();
+#endif // HAL_BUILD_AP_PERIPH
 
+#if AP_ROBOTISSERVO_ENABLED
     // give robotis library a chance to update
     robotis_ptr->update();
-
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update
