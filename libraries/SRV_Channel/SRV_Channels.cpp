@@ -43,8 +43,11 @@ extern const AP_HAL::HAL& hal;
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::_singleton;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
+#endif
+
+#ifndef HAL_BUILD_AP_PERIPH
 AP_SBusOut *SRV_Channels::sbus_ptr;
 AP_RobotisServo *SRV_Channels::robotis_ptr;
 #endif // HAL_BUILD_AP_PERIPH
@@ -184,11 +187,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // @Group: _VOLZ_
     // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
     AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
@@ -258,8 +263,11 @@ SRV_Channels::SRV_Channels(void)
     fetteconwire_ptr = &fetteconwire;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     volz_ptr = &volz;
+#endif
+
+#ifndef HAL_BUILD_AP_PERIPH
     sbus_ptr = &sbus;
     robotis_ptr = &robotis;
 #endif // HAL_BUILD_AP_PERIPH
@@ -382,10 +390,12 @@ void SRV_Channels::push()
 {
     hal.rcout->push();
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // give volz library a chance to update
     volz_ptr->update();
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // give sbus library a chance to update
     sbus_ptr->update();
 
