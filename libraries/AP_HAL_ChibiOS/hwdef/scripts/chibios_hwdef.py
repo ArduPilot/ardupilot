@@ -2774,6 +2774,10 @@ def add_apperiph_defaults(f):
 #define AP_AIRSPEED_AUTOCAL_ENABLE 0
 #endif
 
+#ifndef AP_VOLZ_ENABLED
+#define AP_VOLZ_ENABLED 0
+#endif
+
 ''')
 
 
