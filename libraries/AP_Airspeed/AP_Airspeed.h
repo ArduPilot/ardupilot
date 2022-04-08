@@ -6,6 +6,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_MSP/msp.h>
+#include "AP_Airspeed_Params.h"
 
 #ifndef AP_AIRSPEED_ENABLED
 #define AP_AIRSPEED_ENABLED 1
@@ -204,19 +205,7 @@ private:
     AP_Float _wind_max;
     AP_Float _wind_warn;
 
-    struct {
-        AP_Float offset;
-        AP_Float ratio;
-        AP_Float psi_range;
-        AP_Int8  use;
-        AP_Int8  type;
-        AP_Int8  pin;
-        AP_Int8  bus;
-        AP_Int8  autocal;
-        AP_Int8  tube_order;
-        AP_Int8  skip_cal;
-        AP_Int32 bus_id;
-    } param[AIRSPEED_MAX_SENSORS];
+    AP_Airspeed_Params param[AIRSPEED_MAX_SENSORS];
 
     struct airspeed_state {
         float   raw_airspeed;
