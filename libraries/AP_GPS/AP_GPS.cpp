@@ -632,13 +632,11 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
-#ifndef HAL_BUILD_AP_PERIPH
 #if AP_GPS_MAV_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
 #endif //AP_GPS_MAV_ENABLED
-#endif
         break;
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
@@ -676,8 +674,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
 
-    // don't build the less common GPS drivers on F1 AP_Periph
-#if !defined(HAL_BUILD_AP_PERIPH) || !defined(STM32F1)
     switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
@@ -705,7 +701,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     default:
         break;
     }
-#endif // HAL_BUILD_AP_PERIPH
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
@@ -762,7 +757,6 @@ void AP_GPS::detect_instance(uint8_t instance)
             }
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
-#ifndef HAL_BUILD_AP_PERIPH
 #if AP_GPS_SBP2_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
@@ -796,7 +790,6 @@ void AP_GPS::detect_instance(uint8_t instance)
         }
 #endif //AP_GPS_NMEA_ENABLED
 
-#endif // HAL_BUILD_AP_PERIPH
         if (new_gps) {
             goto found_gps;
         }
