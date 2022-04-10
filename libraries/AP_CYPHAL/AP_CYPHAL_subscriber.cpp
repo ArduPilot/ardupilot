@@ -15,11 +15,11 @@
  * Author: Dmitry Ponomarev
  */
 
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_subscriber.h>
+#include <AP_CYPHAL/AP_CYPHAL_subscriber.h>
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_registers.h>
+#include <AP_CYPHAL/AP_CYPHAL_registers.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -186,4 +186,4 @@ void UavcanNodeExecuteCommandRequest::makeResponse(const CanardRxTransfer* trans
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: ExecuteCommand not implemented yet");
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS

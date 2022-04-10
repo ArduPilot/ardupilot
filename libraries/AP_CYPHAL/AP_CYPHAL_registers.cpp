@@ -15,11 +15,11 @@
  * Author: Dmitry Ponomarev
  */
 
-#include "AP_UAVCAN_V1_registers.h"
+#include "AP_CYPHAL_registers.h"
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
-#include "AP_UAVCAN_V1.h"
+#include "AP_CYPHAL.h"
 #include <AP_Param/AP_Param.h>
 
 
@@ -219,4 +219,4 @@ void UavcanRegisterListRequest::makeResponse(const CanardRxTransfer* transfer, u
     }
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS

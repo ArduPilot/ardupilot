@@ -68,7 +68,7 @@ public:
         Driver_Type_Scripting = 10,
         Driver_Type_Benewake = 11,
         Driver_Type_Scripting2 = 12,
-        Driver_Type_UAVCAN_V1 = 13,
+        Driver_Type_CYPHAL = 13,
     };
 
     void init(void);
@@ -156,7 +156,7 @@ private:
         AP_Int8 _driver_type;
         AP_CANDriver* _testcan;
         AP_CANDriver* _uavcan;
-        AP_CANDriver* _uavcan_v1;
+        AP_CANDriver* _cyphal;
         AP_CANDriver* _kdecan;
         AP_CANDriver* _piccolocan;
     };

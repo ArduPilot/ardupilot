@@ -25,7 +25,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1.h>
+#include <AP_CYPHAL/AP_CYPHAL.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
@@ -237,16 +237,16 @@ void AP_CANManager::init()
             }
             AP_Param::load_object_from_eeprom((CANTester*)_drivers[drv_num], CANTester::var_info);
 #endif
-        } else if (drv_type[drv_num] == Driver_Type_UAVCAN_V1) {
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
-            _drivers[drv_num] = _drv_param[drv_num]._uavcan_v1 = new AP_UAVCAN_V1;
+        } else if (drv_type[drv_num] == Driver_Type_CYPHAL) {
+#if HAL_ENABLE_CYPHAL_DRIVERS
+            _drivers[drv_num] = _drv_param[drv_num]._cyphal = new AP_CYPHAL;
 
             if (_drivers[drv_num] == nullptr) {
                 AP_BoardConfig::allocation_error("uavcan v1 %d", i + 1);
                 continue;
             }
 
-            AP_Param::load_object_from_eeprom((AP_UAVCAN_V1*)_drivers[drv_num], AP_UAVCAN_V1::var_info);
+            AP_Param::load_object_from_eeprom((AP_CYPHAL*)_drivers[drv_num], AP_CYPHAL::var_info);
 #endif
         } else {
             continue;

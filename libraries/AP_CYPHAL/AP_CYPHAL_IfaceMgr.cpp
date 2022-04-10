@@ -15,9 +15,9 @@
  * Author: Dmitry Ponomarev
  */
 
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_IfaceMgr.h>
+#include <AP_CYPHAL/AP_CYPHAL_IfaceMgr.h>
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
 #include <string.h>
 
@@ -25,12 +25,12 @@
 extern const AP_HAL::HAL& hal;
 
 
-void UavcanFirstTransportIface::attach_can_iface(AP_HAL::CANIface* new_can_iface)
+void CyphalTransportIface::attach_can_iface(AP_HAL::CANIface* new_can_iface)
 {
     _can_iface = new_can_iface;
 }
 
-bool UavcanFirstTransportIface::receive(CanardFrame* canard_frame)
+bool CyphalTransportIface::receive(CanardFrame* canard_frame)
 {
     if (_can_iface == nullptr) {
         return false;
@@ -61,7 +61,7 @@ bool UavcanFirstTransportIface::receive(CanardFrame* canard_frame)
 }
 
 
-bool UavcanFirstTransportIface::send(const CanardTxQueueItem* transfer)
+bool CyphalTransportIface::send(const CanardTxQueueItem* transfer)
 {
     if (_can_iface == nullptr || transfer->frame.payload_size == 0) {
         return false;
@@ -108,4 +108,4 @@ bool UavcanFirstTransportIface::send(const CanardTxQueueItem* transfer)
     return result;
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS

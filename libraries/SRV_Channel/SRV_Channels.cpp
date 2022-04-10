@@ -28,7 +28,7 @@
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_UAVCAN/AP_UAVCAN.h>
-  #include <AP_UAVCAN_V1/AP_UAVCAN_V1.h>
+  #include <AP_CYPHAL/AP_CYPHAL.h>
 
   // To be replaced with macro saying if KDECAN library is included
   #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -569,13 +569,13 @@ void SRV_Channels::push()
                 break;
             }
 #endif
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
-            case AP_CANManager::Driver_Type_UAVCAN_V1: {
-                AP_UAVCAN_V1 *ap_uavcan_v1 = AP_UAVCAN_V1::get_uavcan(i);
-                if (ap_uavcan_v1 == nullptr) {
+#if HAL_ENABLE_CYPHAL_DRIVERS
+            case AP_CANManager::Driver_Type_CYPHAL: {
+                AP_CYPHAL *ap_cyphal = AP_CYPHAL::get_uavcan(i);
+                if (ap_cyphal == nullptr) {
                     continue;
                 }
-                ap_uavcan_v1->SRV_push_servos();
+                ap_cyphal->SRV_push_servos();
                 break;
             }
 #endif

@@ -18,7 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -30,9 +30,9 @@
 #include "reg/udral/service/actuator/common/Status_0_1.h"
 #include "reg/udral/physics/dynamics/rotation/PlanarTs_0_1.h"
 
-#include "AP_UAVCAN_V1_publisher.h"
-#include "AP_UAVCAN_V1_subscriber.h"
-#include "AP_UAVCAN_V1_registers.h"
+#include "AP_CYPHAL_publisher.h"
+#include "AP_CYPHAL_subscriber.h"
+#include "AP_CYPHAL_registers.h"
 
 
 #ifndef UAVCAN_V1_SRV_NUMBER
@@ -187,4 +187,4 @@ private:
     void publish();
 };
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS

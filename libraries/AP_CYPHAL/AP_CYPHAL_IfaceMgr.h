@@ -18,15 +18,15 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
 #include "canard.h"
 
 
-class UavcanFirstTransportIface
+class CyphalTransportIface
 {
 public:
-    UavcanFirstTransportIface() {};
+    CyphalTransportIface() {};
     void attach_can_iface(AP_HAL::CANIface* new_can_iface);
     bool receive(CanardFrame* can_frame);
     bool send(const CanardTxQueueItem* transfer);
@@ -35,4 +35,4 @@ private:
     AP_HAL::CANIface* _can_iface = nullptr;
 };
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS

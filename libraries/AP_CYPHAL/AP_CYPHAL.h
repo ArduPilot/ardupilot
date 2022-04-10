@@ -18,14 +18,14 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
 #include <AP_Param/AP_Param.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_IfaceMgr.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_subscriber.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_publisher.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_registers.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1_esc.h>
+#include <AP_CYPHAL/AP_CYPHAL_IfaceMgr.h>
+#include <AP_CYPHAL/AP_CYPHAL_subscriber.h>
+#include <AP_CYPHAL/AP_CYPHAL_publisher.h>
+#include <AP_CYPHAL/AP_CYPHAL_registers.h>
+#include <AP_CYPHAL/AP_CYPHAL_esc.h>
 #include <AP_CANManager/AP_CANDriver.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include "canard.h"
@@ -47,16 +47,16 @@
 #endif
 
 
-class AP_UAVCAN_V1 : public AP_CANDriver, public AP_ESC_Telem_Backend
+class AP_CYPHAL : public AP_CANDriver, public AP_ESC_Telem_Backend
 {
 public:
-    AP_UAVCAN_V1(): _registers(_parameters_table), _esc_controller(_registers) {};
-    ~AP_UAVCAN_V1() {};
+    AP_CYPHAL(): _registers(_parameters_table), _esc_controller(_registers) {};
+    ~AP_CYPHAL() {};
 
     static const struct AP_Param::GroupInfo var_info[];
 
     // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
-    static AP_UAVCAN_V1 *get_uavcan(uint8_t driver_index);
+    static AP_CYPHAL *get_uavcan(uint8_t driver_index);
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
@@ -66,10 +66,10 @@ public:
     void SRV_push_servos(void);
 
 private:
-    char _thread_name[10] = "uavcan_v1";
+    char _thread_name[10] = "cyphal";
     bool _initialized = false;
 
-    UavcanFirstTransportIface _transport_iface;
+    CyphalTransportIface _transport_iface;
     AP_HAL::CANIface* _can_iface;
 
     CanardInstance _canard;
@@ -95,4 +95,4 @@ private:
     UavcanEscController _esc_controller;
 };
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS

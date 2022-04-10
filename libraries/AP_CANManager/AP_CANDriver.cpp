@@ -20,7 +20,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_UAVCAN_V1/AP_UAVCAN_V1.h>
+#include <AP_CYPHAL/AP_CYPHAL.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include "AP_CANTester.h"
 #include <AP_KDECAN/AP_KDECAN.h>
@@ -59,10 +59,10 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     AP_SUBGROUPPTR(_piccolocan, "PC_", 5, AP_CANManager::CANDriver_Params, AP_PiccoloCAN),
 #endif
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
     // @Group: UC1_
-    // @Path: ../AP_UAVCAN_V1/AP_UAVCAN_V1.cpp
-    AP_SUBGROUPPTR(_uavcan_v1, "UC1_", 6, AP_CANManager::CANDriver_Params, AP_UAVCAN_V1),
+    // @Path: ../AP_CYPHAL/AP_CYPHAL.cpp
+    AP_SUBGROUPPTR(_cyphal, "UC1_", 6, AP_CANManager::CANDriver_Params, AP_CYPHAL),
 #endif
 
     AP_GROUPEND

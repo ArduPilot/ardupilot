@@ -4296,7 +4296,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_preflight_can(const mavlink_command_long_
                 break;
             case AP_CANManager::Driver_Type_UAVCAN:
             case AP_CANManager::Driver_Type_None:
-            case AP_CANManager::Driver_Type_UAVCAN_V1:
+            case AP_CANManager::Driver_Type_CYPHAL:
             default:
                 break;
         }

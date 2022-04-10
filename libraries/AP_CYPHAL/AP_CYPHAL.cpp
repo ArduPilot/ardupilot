@@ -15,9 +15,9 @@
  * Author: Dmitry Ponomarev
  */
 
-#include "AP_UAVCAN_V1.h"
+#include "AP_CYPHAL.h"
 
-#if HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#if HAL_ENABLE_CYPHAL_DRIVERS
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -30,34 +30,34 @@ extern const AP_HAL::HAL& hal;
 
 
 // table of user settable CAN bus parameters
-const AP_Param::GroupInfo AP_UAVCAN_V1::var_info[] = {
+const AP_Param::GroupInfo AP_CYPHAL::var_info[] = {
     // @Param: NODE
     // @DisplayName: UAVCAN node that is used for this network
     // @Description: UAVCAN node should be set implicitly
     // @Range: 1 250
     // @User: Advanced
-    AP_GROUPINFO("NODE",    1, AP_UAVCAN_V1, _parameters_table[0], 10),
+    AP_GROUPINFO("NODE",    1, AP_CYPHAL, _parameters_table[0], 10),
 
     // @Param: NOTE
     // @DisplayName: Note response subject id
     // @Description: Note response subject id
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("NOTE",    2, AP_UAVCAN_V1, _parameters_table[1], 0),
+    AP_GROUPINFO("NOTE",    2, AP_CYPHAL, _parameters_table[1], 0),
 
     // @Param: SP
     // @DisplayName: Setpoint subject id
     // @Description: Setpoint subject id
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("SP",      3, AP_UAVCAN_V1, _parameters_table[2], 0),
+    AP_GROUPINFO("SP",      3, AP_CYPHAL, _parameters_table[2], 0),
 
     // @Param: READ
     // @DisplayName: Readiness subject id
     // @Description: reg.udral.service.common.Readiness_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("READ",    4, AP_UAVCAN_V1, _parameters_table[3], 0),
+    AP_GROUPINFO("READ",    4, AP_CYPHAL, _parameters_table[3], 0),
 
 
     // @Param: EH1
@@ -65,35 +65,35 @@ const AP_Param::GroupInfo AP_UAVCAN_V1::var_info[] = {
     // @Description: reg.udral.service.common.Heartbeat_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("EH1",     5, AP_UAVCAN_V1, _parameters_table[4], 0),
+    AP_GROUPINFO("EH1",     5, AP_CYPHAL, _parameters_table[4], 0),
 
     // @Param: FB1
     // @DisplayName: Feedback subject id
     // @Description: reg.udral.service.actuator.common.Feedback_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("FB1",     6, AP_UAVCAN_V1, _parameters_table[5], 0),
+    AP_GROUPINFO("FB1",     6, AP_CYPHAL, _parameters_table[5], 0),
 
     // @Param: POW1
     // @DisplayName: PowerTs subject id
     // @Description: reg.udral.physics.electricity.PowerTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("POW1",    7, AP_UAVCAN_V1, _parameters_table[6], 0),
+    AP_GROUPINFO("POW1",    7, AP_CYPHAL, _parameters_table[6], 0),
 
     // @Param: ST1
     // @DisplayName: Status subject id
     // @Description: reg.udral.service.actuator.common.Status_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("ST1",     8, AP_UAVCAN_V1, _parameters_table[7], 0),
+    AP_GROUPINFO("ST1",     8, AP_CYPHAL, _parameters_table[7], 0),
 
     // @Param: DYN1
     // @DisplayName: Dynamics subject id
     // @Description: reg.udral.physics.dynamics.rotation.PlanarTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("DYN1",    9, AP_UAVCAN_V1, _parameters_table[8], 0),
+    AP_GROUPINFO("DYN1",    9, AP_CYPHAL, _parameters_table[8], 0),
 
 
     // @Param: EH2
@@ -101,35 +101,35 @@ const AP_Param::GroupInfo AP_UAVCAN_V1::var_info[] = {
     // @Description: reg.udral.service.common.Heartbeat_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("EH2",     10, AP_UAVCAN_V1, _parameters_table[9], 0),
+    AP_GROUPINFO("EH2",     10, AP_CYPHAL, _parameters_table[9], 0),
 
     // @Param: FB2
     // @DisplayName: Feedback subject id
     // @Description: reg.udral.service.actuator.common.Feedback_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("FB2",     11, AP_UAVCAN_V1, _parameters_table[10], 0),
+    AP_GROUPINFO("FB2",     11, AP_CYPHAL, _parameters_table[10], 0),
 
     // @Param: POW2
     // @DisplayName: PowerTs subject id
     // @Description: reg.udral.physics.electricity.PowerTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("POW2",    12, AP_UAVCAN_V1, _parameters_table[11], 0),
+    AP_GROUPINFO("POW2",    12, AP_CYPHAL, _parameters_table[11], 0),
 
     // @Param: ST2
     // @DisplayName: Status subject id
     // @Description: reg.udral.service.actuator.common.Status_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("ST2",     13, AP_UAVCAN_V1, _parameters_table[12], 0),
+    AP_GROUPINFO("ST2",     13, AP_CYPHAL, _parameters_table[12], 0),
 
     // @Param: DYN2
     // @DisplayName: Dynamics subject id
     // @Description: reg.udral.physics.dynamics.rotation.PlanarTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("DYN2",    14, AP_UAVCAN_V1, _parameters_table[13], 0),
+    AP_GROUPINFO("DYN2",    14, AP_CYPHAL, _parameters_table[13], 0),
 
 
     // @Param: EH3
@@ -137,35 +137,35 @@ const AP_Param::GroupInfo AP_UAVCAN_V1::var_info[] = {
     // @Description: reg.udral.service.common.Heartbeat_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("EH3",     15, AP_UAVCAN_V1, _parameters_table[14], 0),
+    AP_GROUPINFO("EH3",     15, AP_CYPHAL, _parameters_table[14], 0),
 
     // @Param: FB3
     // @DisplayName: Feedback subject id
     // @Description: reg.udral.service.actuator.common.Feedback_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("FB3",     16, AP_UAVCAN_V1, _parameters_table[15], 0),
+    AP_GROUPINFO("FB3",     16, AP_CYPHAL, _parameters_table[15], 0),
 
     // @Param: POW3
     // @DisplayName: PowerTs subject id
     // @Description: reg.udral.physics.electricity.PowerTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("POW3",    17, AP_UAVCAN_V1, _parameters_table[16], 0),
+    AP_GROUPINFO("POW3",    17, AP_CYPHAL, _parameters_table[16], 0),
 
     // @Param: ST3
     // @DisplayName: Status subject id
     // @Description: reg.udral.service.actuator.common.Status_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("ST3",     18, AP_UAVCAN_V1, _parameters_table[17], 0),
+    AP_GROUPINFO("ST3",     18, AP_CYPHAL, _parameters_table[17], 0),
 
     // @Param: DYN3
     // @DisplayName: Dynamics subject id
     // @Description: reg.udral.physics.dynamics.rotation.PlanarTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("DYN3",    19, AP_UAVCAN_V1, _parameters_table[18], 0),
+    AP_GROUPINFO("DYN3",    19, AP_CYPHAL, _parameters_table[18], 0),
 
 
     // @Param: EH4
@@ -173,35 +173,35 @@ const AP_Param::GroupInfo AP_UAVCAN_V1::var_info[] = {
     // @Description: reg.udral.service.common.Heartbeat_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("EH4",     20, AP_UAVCAN_V1, _parameters_table[19], 0),
+    AP_GROUPINFO("EH4",     20, AP_CYPHAL, _parameters_table[19], 0),
 
     // @Param: FB4
     // @DisplayName: Feedback subject id
     // @Description: reg.udral.service.actuator.common.Feedback_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("FB4",     21, AP_UAVCAN_V1, _parameters_table[20], 0),
+    AP_GROUPINFO("FB4",     21, AP_CYPHAL, _parameters_table[20], 0),
 
     // @Param: POW4
     // @DisplayName: PowerTs subject id
     // @Description: reg.udral.physics.electricity.PowerTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("POW4",    22, AP_UAVCAN_V1, _parameters_table[21], 0),
+    AP_GROUPINFO("POW4",    22, AP_CYPHAL, _parameters_table[21], 0),
 
     // @Param: ST4
     // @DisplayName: Status subject id
     // @Description: reg.udral.service.actuator.common.Status_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("ST4",     23, AP_UAVCAN_V1, _parameters_table[22], 0),
+    AP_GROUPINFO("ST4",     23, AP_CYPHAL, _parameters_table[22], 0),
 
     // @Param: DYN4
     // @DisplayName: Dynamics subject id
     // @Description: reg.udral.physics.dynamics.rotation.PlanarTs_0_1
     // @Range: 0 6143
     // @User: Advanced
-    AP_GROUPINFO("DYN4",    24, AP_UAVCAN_V1, _parameters_table[23], 0),
+    AP_GROUPINFO("DYN4",    24, AP_CYPHAL, _parameters_table[23], 0),
 
     AP_GROUPEND
 };
@@ -230,16 +230,16 @@ void memFree(CanardInstance* const canard_, void* const pointer)
 
 
 
-AP_UAVCAN_V1 *AP_UAVCAN_V1::get_uavcan(uint8_t driver_index)
+AP_CYPHAL *AP_CYPHAL::get_uavcan(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
-        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_UAVCAN_V1) {
+        AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_CYPHAL) {
         return nullptr;
     }
-    return static_cast<AP_UAVCAN_V1*>(AP::can().get_driver(driver_index));
+    return static_cast<AP_CYPHAL*>(AP::can().get_driver(driver_index));
 }
 
-void AP_UAVCAN_V1::init(uint8_t driver_index, bool enable_filters)
+void AP_CYPHAL::init(uint8_t driver_index, bool enable_filters)
 {
     if (_initialized) {
         return;
@@ -261,7 +261,7 @@ void AP_UAVCAN_V1::init(uint8_t driver_index, bool enable_filters)
     _registers.init(subscriber_manager, _canard, _tx_queue);
     _esc_controller.init(subscriber_manager, publisher_manager, _canard, _tx_queue);
 
-    bool is_thread_created = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_UAVCAN_V1::loop, void),
+    bool is_thread_created = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CYPHAL::loop, void),
                              _thread_name,
                              UAVCAN_STACK_SIZE,
                              AP_HAL::Scheduler::PRIORITY_CAN,
@@ -273,7 +273,7 @@ void AP_UAVCAN_V1::init(uint8_t driver_index, bool enable_filters)
     _initialized = true;
 }
 
-void AP_UAVCAN_V1::loop(void)
+void AP_CYPHAL::loop(void)
 {
     while (true) {
         if (!_initialized || _can_iface == nullptr) {
@@ -289,7 +289,7 @@ void AP_UAVCAN_V1::loop(void)
     }
 }
 
-bool AP_UAVCAN_V1::add_interface(AP_HAL::CANIface* new_can_iface)
+bool AP_CYPHAL::add_interface(AP_HAL::CANIface* new_can_iface)
 {
     if (_can_iface != nullptr) {
         return false;
@@ -312,7 +312,7 @@ bool AP_UAVCAN_V1::add_interface(AP_HAL::CANIface* new_can_iface)
 }
 
 
-int8_t AP_UAVCAN_V1::spinReceive(uint16_t duration_us)
+int8_t AP_CYPHAL::spinReceive(uint16_t duration_us)
 {
     uint64_t deadline_us = AP_HAL::micros64() + duration_us;
     while (AP_HAL::micros64() <= deadline_us) {
@@ -345,7 +345,7 @@ int8_t AP_UAVCAN_V1::spinReceive(uint16_t duration_us)
     return 0;
 }
 
-void AP_UAVCAN_V1::spinTransmit()
+void AP_CYPHAL::spinTransmit()
 {
     for (const CanardTxQueueItem* ti = NULL; (ti = canardTxPeek(&_tx_queue)) != NULL;) {
         if ((0U == ti->tx_deadline_usec) || (ti->tx_deadline_usec > AP_HAL::micros())) {
@@ -358,15 +358,15 @@ void AP_UAVCAN_V1::spinTransmit()
 }
 
 
-void AP_UAVCAN_V1::processReceivedTransfer(const uint8_t iface_index, const CanardRxTransfer* transfer)
+void AP_CYPHAL::processReceivedTransfer(const uint8_t iface_index, const CanardRxTransfer* transfer)
 {
     subscriber_manager.process_all(transfer);
 }
 
 
-void AP_UAVCAN_V1::SRV_push_servos()
+void AP_CYPHAL::SRV_push_servos()
 {
     _esc_controller.SRV_push_servos();
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
+#endif // HAL_ENABLE_CYPHAL_DRIVERS
