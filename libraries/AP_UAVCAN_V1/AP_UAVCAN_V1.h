@@ -64,7 +64,6 @@ public:
     void loop(void);
 
     void SRV_push_servos(void);
-    void set_ESC_status();
 
 private:
     char _thread_name[10] = "uavcan_v1";

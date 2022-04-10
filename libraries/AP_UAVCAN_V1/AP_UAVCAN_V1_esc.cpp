@@ -65,19 +65,19 @@ bool UavcanEscController::init(UavcanSubscriberManager &sub_manager,
     int16_t port_id;
     for (auto esc_idx = 0; esc_idx < 4; esc_idx++) {
         port_id = _registers.getPortIdByIndex(power_register_indexes[esc_idx]);
-        _sub_power[esc_idx] = new UavcanElectricityPowerTsSubscriber(ins, tx_queue, port_id);
+        _sub_power[esc_idx] = new UavcanElectricityPowerTsSubscriber(ins, tx_queue, port_id, esc_idx);
         if (!sub_manager.add_subscriber(_sub_power[esc_idx])) {
             return false;
         }
 
         port_id = _registers.getPortIdByIndex(dynamics_register_indexes[esc_idx]);
-        _sub_dynamics[esc_idx] = new UavcanDynamicsSubscriber(ins, tx_queue, port_id);
+        _sub_dynamics[esc_idx] = new UavcanDynamicsSubscriber(ins, tx_queue, port_id, esc_idx);
         if (!sub_manager.add_subscriber(_sub_dynamics[esc_idx])) {
             return false;
         }
 
         port_id = _registers.getPortIdByIndex(status_register_indexes[esc_idx]);
-        _sub_status[esc_idx] = new UavcanStatusSubscriber(ins, tx_queue, port_id);
+        _sub_status[esc_idx] = new UavcanStatusSubscriber(ins, tx_queue, port_id, esc_idx);
         if (!sub_manager.add_subscriber(_sub_status[esc_idx])) {
             return false;
         }
@@ -113,47 +113,6 @@ void UavcanEscController::SRV_push_servos()
     _pub_readiness->update_readiness();
 }
 
-float UavcanEscController::get_voltage(uint8_t esc_idx)
-{
-    return (esc_idx < 4) ? _sub_power[esc_idx]->get_voltage() : 0;
-}
-
-float UavcanEscController::get_current(uint8_t esc_idx)
-{
-    return (esc_idx < 4) ? _sub_power[esc_idx]->get_current() : 0;
-}
-
-uint16_t UavcanEscController::get_rpm(uint8_t esc_idx)
-{
-    if (esc_idx >= 4 || _sub_dynamics[esc_idx]->get_last_recv_timestamp() + 1000 < AP_HAL::millis()) {
-        return 0;
-    }
-    return _sub_dynamics[esc_idx]->get_angular_velocity() * 9.5493;
-}
-
-float UavcanEscController::get_temperature(uint8_t esc_idx)
-{
-    return (esc_idx < 4) ? _sub_status[esc_idx]->get_motor_temperature() : 0;
-}
-
-uint16_t UavcanEscController::get_avaliable_data_mask(uint8_t esc_idx)
-{
-    uint16_t telem_data_mask = 0;
-
-    if (esc_idx < 4) {
-        if (_sub_power[esc_idx]->get_last_recv_timestamp() + 1000 > AP_HAL::millis()) {
-            telem_data_mask |= AP_ESC_Telem_Backend::TelemetryType::CURRENT;
-            telem_data_mask |= AP_ESC_Telem_Backend::TelemetryType::VOLTAGE;
-        }
-
-        if (_sub_status[esc_idx]->get_last_recv_timestamp() + 1000 > AP_HAL::millis()) {
-            telem_data_mask |= AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE;
-        }
-    }
-
-    return telem_data_mask;
-}
-
 
 /**
  * @note reg.udral.physics.dynamics.rotation.PlanarTs_0_1
@@ -165,35 +124,16 @@ void UavcanDynamicsSubscriber::subscribe()
 
 void UavcanDynamicsSubscriber::handler(const CanardRxTransfer* transfer)
 {
-    _last_recv_ts_ms = AP_HAL::millis();
     const uint8_t* payload = static_cast<const uint8_t*>(transfer->payload);
     size_t payload_len = transfer->payload_size;
-    reg_udral_physics_dynamics_rotation_PlanarTs_0_1_deserialize_(&msg, payload, &payload_len);
-}
+    reg_udral_physics_dynamics_rotation_PlanarTs_0_1 msg;
+    if (reg_udral_physics_dynamics_rotation_PlanarTs_0_1_deserialize_(&msg, payload, &payload_len) < 0) {
+        return;
+    }
 
-uint32_t UavcanDynamicsSubscriber::get_last_recv_timestamp()
-{
-    return _last_recv_ts_ms;
-}
-
-float UavcanDynamicsSubscriber::get_angular_position()
-{
-    return msg.value.kinematics.angular_position.radian;
-}
-
-float UavcanDynamicsSubscriber::get_angular_velocity()
-{
-    return msg.value.kinematics.angular_velocity.radian_per_second;
-}
-
-float UavcanDynamicsSubscriber::get_angular_acceleration()
-{
-    return msg.value.kinematics.angular_acceleration.radian_per_second_per_second;
-}
-
-float UavcanDynamicsSubscriber::get_torque()
-{
-    return msg.value._torque.newton_meter;
+    constexpr float RAD_PER_SEC_TO_RPM = 60.0f / (3.14159f * 2.0f);
+    uint16_t rpm = msg.value.kinematics.angular_velocity.radian_per_second * RAD_PER_SEC_TO_RPM;
+    update_rpm(_esc_idx, rpm);
 }
 
 
@@ -207,25 +147,18 @@ void UavcanElectricityPowerTsSubscriber::subscribe()
 
 void UavcanElectricityPowerTsSubscriber::handler(const CanardRxTransfer* transfer)
 {
-    _last_recv_ts_ms = AP_HAL::millis();
     const uint8_t* payload = static_cast<const uint8_t*>(transfer->payload);
     size_t payload_len = transfer->payload_size;
-    reg_udral_physics_electricity_PowerTs_0_1_deserialize_(&msg, payload, &payload_len);
-}
+    reg_udral_physics_electricity_PowerTs_0_1 msg;
+    if (reg_udral_physics_electricity_PowerTs_0_1_deserialize_(&msg, payload, &payload_len) < 0) {
+        return;
+    }
 
-uint32_t UavcanElectricityPowerTsSubscriber::get_last_recv_timestamp()
-{
-    return _last_recv_ts_ms;
-}
-
-float UavcanElectricityPowerTsSubscriber::get_voltage()
-{
-    return msg.value.voltage.volt;
-}
-
-float UavcanElectricityPowerTsSubscriber::get_current()
-{
-    return msg.value.current.ampere;
+    uint16_t telem_data_mask = TelemetryType::CURRENT | TelemetryType::VOLTAGE;
+    TelemetryData telemetry_data;
+    telemetry_data.voltage = msg.value.voltage.volt;
+    telemetry_data.current = msg.value.current.ampere;
+    update_telem_data(_esc_idx, telemetry_data, telem_data_mask);
 }
 
 
@@ -239,20 +172,17 @@ void UavcanStatusSubscriber::subscribe()
 
 void UavcanStatusSubscriber::handler(const CanardRxTransfer* transfer)
 {
-    _last_recv_ts_ms = AP_HAL::millis();
     const uint8_t* payload = static_cast<const uint8_t*>(transfer->payload);
     size_t payload_len = transfer->payload_size;
-    reg_udral_service_actuator_common_Status_0_1_deserialize_(&_msg, payload, &payload_len);
-}
+    reg_udral_service_actuator_common_Status_0_1 msg;
+    if (reg_udral_service_actuator_common_Status_0_1_deserialize_(&msg, payload, &payload_len) < 0) {
+        return;
+    }
 
-uint32_t UavcanStatusSubscriber::get_last_recv_timestamp()
-{
-    return _last_recv_ts_ms;
-}
-
-float UavcanStatusSubscriber::get_motor_temperature()
-{
-    return _msg.motor_temperature.kelvin;
+    uint16_t telem_data_mask = TelemetryType::TEMPERATURE;
+    TelemetryData telemetry_data;
+    telemetry_data.temperature_cdeg = int16_t((KELVIN_TO_C(msg.motor_temperature.kelvin) * 100));
+    update_telem_data(_esc_idx, telemetry_data, telem_data_mask);
 }
 
 

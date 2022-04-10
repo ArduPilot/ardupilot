@@ -76,12 +76,6 @@ public:
               CanardTxQueue& tx_queue);
     void SRV_push_servos(void);
 
-    float get_voltage(uint8_t esc_idx);
-    float get_current(uint8_t esc_idx);
-    uint16_t get_rpm(uint8_t esc_idx);
-    float get_temperature(uint8_t esc_idx);
-    uint16_t get_avaliable_data_mask(uint8_t esc_idx);
-
 private:
     SrvConfig _SRV_conf[UAVCAN_V1_SRV_NUMBER];
 
@@ -106,67 +100,51 @@ private:
 /**
  * @note reg.udral.physics.dynamics.rotation.PlanarTs_0_1
  */
-class UavcanDynamicsSubscriber: public UavcanBaseSubscriber
+class UavcanDynamicsSubscriber: public UavcanBaseSubscriber, AP_ESC_Telem_Backend
 {
 public:
-    UavcanDynamicsSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, int16_t port_id) :
-        UavcanBaseSubscriber(ins, tx_queue, port_id) { };
+    UavcanDynamicsSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, int16_t port_id, uint8_t esc_idx) :
+        UavcanBaseSubscriber(ins, tx_queue, port_id), _esc_idx(esc_idx) { };
 
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 
-    uint32_t get_last_recv_timestamp();
-    float get_angular_position();
-    float get_angular_velocity();
-    float get_angular_acceleration();
-    float get_torque();
-
 private:
-    reg_udral_physics_dynamics_rotation_PlanarTs_0_1 msg;
-    uint32_t _last_recv_ts_ms{0};
+    uint8_t _esc_idx;
 };
 
 
 /**
  * @note reg.udral.physics.electricity.PowerTs_0_1
  */
-class UavcanElectricityPowerTsSubscriber: public UavcanBaseSubscriber
+class UavcanElectricityPowerTsSubscriber: public UavcanBaseSubscriber, AP_ESC_Telem_Backend
 {
 public:
-    UavcanElectricityPowerTsSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, int16_t port_id) :
-        UavcanBaseSubscriber(ins, tx_queue, port_id) { };
+    UavcanElectricityPowerTsSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, int16_t port_id, uint8_t esc_idx) :
+        UavcanBaseSubscriber(ins, tx_queue, port_id), _esc_idx(esc_idx) { };
 
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 
-    uint32_t get_last_recv_timestamp();
-    float get_voltage();
-    float get_current();
-
 private:
-    reg_udral_physics_electricity_PowerTs_0_1 msg;
-    uint32_t _last_recv_ts_ms{0};
+    uint8_t _esc_idx;
 };
 
 
 /**
  * @note reg.udral.service.actuator.common.Status_0_1
  */
-class UavcanStatusSubscriber: public UavcanBaseSubscriber
+class UavcanStatusSubscriber: public UavcanBaseSubscriber, AP_ESC_Telem_Backend
 {
 public:
-    UavcanStatusSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, int16_t port_id) :
-        UavcanBaseSubscriber(ins, tx_queue, port_id) { };
+    UavcanStatusSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, int16_t port_id, uint8_t esc_idx) :
+        UavcanBaseSubscriber(ins, tx_queue, port_id), _esc_idx(esc_idx) { };
 
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 
-    uint32_t get_last_recv_timestamp();
-    float get_motor_temperature();
-
 private:
-    reg_udral_service_actuator_common_Status_0_1 _msg;
-    uint32_t _last_recv_ts_ms{0};
+    uint8_t _esc_idx;
 };
 
 

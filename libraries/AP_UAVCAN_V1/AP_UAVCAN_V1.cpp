@@ -286,12 +286,6 @@ void AP_UAVCAN_V1::loop(void)
         spinReceive();
         spinTransmit();
         publisher_manager.process_all();
-
-        static uint32_t next_pub_time_ts = 1000;
-        if (AP_HAL::millis() > next_pub_time_ts) {
-            next_pub_time_ts += 1000;
-            set_ESC_status();
-        }
     }
 }
 
@@ -371,35 +365,6 @@ void AP_UAVCAN_V1::processReceivedTransfer(const uint8_t iface_index, const Cana
 void AP_UAVCAN_V1::SRV_push_servos()
 {
     _esc_controller.SRV_push_servos();
-}
-
-void AP_UAVCAN_V1::set_ESC_status()
-{
-    for (uint_fast8_t esc_index = 0; esc_index < 4; esc_index++) {
-        uint16_t telem_data_mask = _esc_controller.get_avaliable_data_mask(esc_index);
-
-        if (telem_data_mask) {
-            TelemetryData telemetry_data = {};
-
-            if (telem_data_mask & AP_ESC_Telem_Backend::TelemetryType::CURRENT) {
-                telemetry_data.current = _esc_controller.get_current(esc_index);
-            }
-
-            if (telem_data_mask & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE) {
-                telemetry_data.voltage = _esc_controller.get_voltage(esc_index);
-            }
-
-            if (telem_data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) {
-                float temperature_kelvin = _esc_controller.get_temperature(esc_index);
-                telemetry_data.temperature_cdeg = int16_t((KELVIN_TO_C(temperature_kelvin) * 100));
-            }
-
-            update_telem_data(esc_index, telemetry_data, telem_data_mask);
-        }
-
-        uint16_t rpm = _esc_controller.get_rpm(esc_index);
-        update_rpm(esc_index, rpm);
-    }
 }
 
 #endif // HAL_ENABLE_LIBUAVCAN_V1_DRIVERS
