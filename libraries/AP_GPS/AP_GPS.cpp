@@ -554,29 +554,38 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
 }
 
 /*
-  initialise state for sending binary blob initialisation strings
+  initialise state for sending binary blob initialisation strings.  We
+  may choose different blobs not just based on type but also based on
+  parameters.
  */
 void AP_GPS::send_blob_start(uint8_t instance)
 {
-        if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
-            static const char blob[] = UBLOX_SET_BINARY_115200;
-            send_blob_start(instance, blob, sizeof(blob));
-        } else if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
-                    _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
-                   ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
-            // we use 460800 when doing moving baseline as we need
-            // more bandwidth. We don't do this if using UART2, as
-            // in that case the RTCMv3 data doesn't go over the
-            // link to the flight controller
-            static const char blob[] = UBLOX_SET_BINARY_460800;
-            send_blob_start(instance, blob, sizeof(blob));
+    if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
+        static const char blob[] = UBLOX_SET_BINARY_115200;
+        send_blob_start(instance, blob, sizeof(blob));
+        return;
+    }
+
+    if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+         _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
+        ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
+        // we use 460800 when doing moving baseline as we need
+        // more bandwidth. We don't do this if using UART2, as
+        // in that case the RTCMv3 data doesn't go over the
+        // link to the flight controller
+        static const char blob[] = UBLOX_SET_BINARY_460800;
+        send_blob_start(instance, blob, sizeof(blob));
+        return;
+    }
+
 #if AP_GPS_NMEA_ENABLED
-        } else if (_type[instance] == GPS_TYPE_HEMI) {
-            send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+    if (_type[instance] == GPS_TYPE_HEMI) {
+        send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+        return;
+    }
 #endif // AP_GPS_NMEA_ENABLED
-        } else {
-            send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
-        }
+
+    send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
 }
 
 /*
