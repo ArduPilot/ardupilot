@@ -279,14 +279,12 @@ float RC_Channel::norm_input_dz() const
 {
     int16_t dz_min = radio_trim - dead_zone;
     int16_t dz_max = radio_trim + dead_zone;
-    float ret;
+    float ret = 0;
     int16_t reverse_mul = (reversed?-1:1);
     if (radio_in < dz_min && dz_min > radio_min) {
         ret = reverse_mul * (float)(radio_in - dz_min) / (float)(dz_min - radio_min);
     } else if (radio_in > dz_max && radio_max > dz_max) {
         ret = reverse_mul * (float)(radio_in - dz_max) / (float)(radio_max  - dz_max);
-    } else {
-        ret = 0;
     }
     return constrain_float(ret, -1.0f, 1.0f);
 }
