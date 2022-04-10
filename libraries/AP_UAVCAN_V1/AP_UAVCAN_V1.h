@@ -75,7 +75,13 @@ private:
     CanardInstance _canard;
     CanardTxQueue _tx_queue;
 
-    void spinReceive();
+    /**
+     * @note Runs the node.
+     * Normally your application should not block anywhere else.
+     * @return 0 if no errors occurred, or negative if something failed.
+     */
+    int8_t spinReceive(uint16_t us);
+
     void spinTransmit();
     void processReceivedTransfer(const uint8_t iface_index, const CanardRxTransfer* transfer);
 

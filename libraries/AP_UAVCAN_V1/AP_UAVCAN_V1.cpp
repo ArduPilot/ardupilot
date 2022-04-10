@@ -276,16 +276,16 @@ void AP_UAVCAN_V1::init(uint8_t driver_index, bool enable_filters)
 void AP_UAVCAN_V1::loop(void)
 {
     while (true) {
-        hal.scheduler->delay_microseconds(500); // it should be enough to handle max frame rate
-
-        // do nothing until interface initialization is complete
-        if (_can_iface == nullptr) {
+        if (!_initialized || _can_iface == nullptr) {
+            hal.scheduler->delay_microseconds(500);
             continue;
         }
 
-        spinReceive();
-        spinTransmit();
+        if (spinReceive(1000) < 0) {
+            hal.scheduler->delay_microseconds(100);
+        }
         publisher_manager.process_all();
+        spinTransmit();
     }
 }
 
@@ -312,26 +312,26 @@ bool AP_UAVCAN_V1::add_interface(AP_HAL::CANIface* new_can_iface)
 }
 
 
-void AP_UAVCAN_V1::spinReceive()
+int8_t AP_UAVCAN_V1::spinReceive(uint16_t duration_us)
 {
-    // Here we want to spin until fifo is not empty (while True), but typically fifo size is 3
-    constexpr uint8_t CAN_RECEIVE_FIFO_SIZE = 3;
-    for (uint_fast8_t frame_idx = 0; frame_idx < CAN_RECEIVE_FIFO_SIZE; frame_idx++) {
+    uint64_t deadline_us = AP_HAL::micros64() + duration_us;
+    while (AP_HAL::micros64() <= deadline_us) {
         CanardFrame canard_frame;
         if (!_transport_iface.receive(&canard_frame)) {
             // There is no avaliable data means fifo is empty
-            break;
+            hal.scheduler->delay_microseconds(100);
+            continue;
         }
 
         CanardRxTransfer transfer;
-        auto result = canardRxAccept(&_canard, AP_HAL::micros64(), &canard_frame, 0, &transfer, NULL);
+        int8_t result = canardRxAccept(&_canard, AP_HAL::micros64(), &canard_frame, 0, &transfer, NULL);
         if (result < 0) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: recv err: %d", result);
             // An error has occurred: either an argument is invalid or we've ran out of memory.
             // It is possible to statically prove that an out-of-memory will never occur for a given
             // application if the heap is sized correctly; for background, refer to the Robson's Proof
             // and the documentation for O1Heap. Reception of an invalid frame is NOT an error.
-            break;
+            return result;
         } else if (result == 1) {
             processReceivedTransfer(0, &transfer);
             _canard.memory_free(&_canard, transfer.payload);
@@ -341,6 +341,8 @@ void AP_UAVCAN_V1::spinReceive()
             // Reception of an invalid frame is NOT reported as an error because it is not an error.
         }
     }
+
+    return 0;
 }
 
 void AP_UAVCAN_V1::spinTransmit()
