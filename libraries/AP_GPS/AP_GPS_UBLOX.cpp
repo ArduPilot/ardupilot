@@ -18,8 +18,11 @@
 //	Origin code by Michael Smith, Jordi Munoz and Jose Julio, DIYDrones.com
 //  Substantially rewritten for new GPS driver structure by Andrew Tridgell
 //
-#include "AP_GPS.h"
 #include "AP_GPS_UBLOX.h"
+
+#if AP_GPS_UBLOX_ENABLED
+
+#include "AP_GPS.h"
 #include <AP_HAL/Util.h>
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
@@ -2033,3 +2036,5 @@ bool AP_GPS_UBLOX::supports_F9_config(void) const
 {
     return _hardware_generation == UBLOX_F9 && _hardware_generation != UBLOX_UNKNOWN_HARDWARE_GENERATION;
 }
+
+#endif

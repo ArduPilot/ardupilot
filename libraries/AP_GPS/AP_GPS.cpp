@@ -73,12 +73,15 @@ extern const AP_HAL::HAL &hal;
 const uint32_t AP_GPS::_baudrates[] = {9600U, 115200U, 4800U, 19200U, 38400U, 57600U, 230400U, 460800U};
 
 // initialisation blobs to send to the GPS to try to get it into the
-// right mode
+// right mode.
 const char AP_GPS::_initialisation_blob[] =
+#if AP_GPS_UBLOX_ENABLED
     UBLOX_SET_BINARY_230400
+#endif
 #if AP_GPS_SIRF_ENABLED
     SIRF_SET_BINARY
 #endif
+    ""   // to compile we need *some_initialiser if all backends compiled out
     ;
 
 AP_GPS *AP_GPS::_singleton;
@@ -560,13 +563,15 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
  */
 void AP_GPS::send_blob_start(uint8_t instance)
 {
+#if AP_GPS_UBLOX_ENABLED
     if (_type[instance] == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
     }
+#endif // AP_GPS_UBLOX_ENABLED
 
-#if GPS_MOVING_BASELINE
+#if GPS_MOVING_BASELINE && AP_GPS_UBLOX_ENABLED
     if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
          _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
         !option_set(DriverOptions::UBX_MBUseUart2)) {
@@ -587,6 +592,9 @@ void AP_GPS::send_blob_start(uint8_t instance)
     }
 #endif // AP_GPS_NMEA_ENABLED
 
+    // send combined initialisation blob, on the assumption that the
+    // GPS units will parse what they need and ignore the data they
+    // don't understand:
     send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
 }
 
@@ -746,6 +754,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
           for.
         */
 
+#if AP_GPS_UBLOX_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
@@ -768,6 +777,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             }
             return new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
+#endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
