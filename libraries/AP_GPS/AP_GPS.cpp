@@ -566,6 +566,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
         return;
     }
 
+#if GPS_MOVING_BASELINE
     if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
          _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
         ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
@@ -577,6 +578,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
         send_blob_start(instance, blob, sizeof(blob));
         return;
     }
+#endif
 
 #if AP_GPS_NMEA_ENABLED
     if (_type[instance] == GPS_TYPE_HEMI) {
