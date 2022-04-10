@@ -217,7 +217,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
        (tune_type == RD_UP && max_rate_d.max_allowed <= 0.0f) ||
        ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq))){
 
-        load_gains(GAIN_INTRA_TEST);
+        load_gains(GAIN_ORIGINAL);
 
         attitude_control->use_sqrt_controller(true);
 
@@ -227,14 +227,15 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
 
         if ((tune_type == RP_UP && max_rate_p.max_allowed <= 0.0f) || (tune_type == RD_UP && max_rate_d.max_allowed <= 0.0f)) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Gains Failed, Skip Rate P/D Tuning");
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            step = UPDATE_GAINS;
+            gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Gain Determination Failed");
+            mode = FAILED;
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_FAILED);
+            update_gcs(AUTOTUNE_MESSAGE_FAILED);
         } else if ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq)){
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Exceeded frequency range");
-            AP::logger().Write_Event(LogEvent::AUTOTUNE_REACHED_LIMIT);
-            counter = AUTOTUNE_SUCCESS_COUNT;
-            step = UPDATE_GAINS;
+            mode = FAILED;
+            AP::logger().Write_Event(LogEvent::AUTOTUNE_FAILED);
+            update_gcs(AUTOTUNE_MESSAGE_FAILED);
         } else if (tune_type == TUNE_COMPLETE) {
             counter = AUTOTUNE_SUCCESS_COUNT;
             step = UPDATE_GAINS;
