@@ -150,6 +150,7 @@ class SizeCompareBranches(object):
             "heli"      : "arducopter-heli",
             "blimp"     : "blimp",
             "antennatracker" : "antennatracker",
+            "AP_Periph" : "AP_Periph",
         }
         if self.vehicle in vehicle_map:
             binary_filename = vehicle_map[self.vehicle]
