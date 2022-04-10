@@ -3602,3 +3602,27 @@ function visual_odom:healthy() end
 -- visual odometry quality as a percentage from 1 to 100 or 0 if unknown
 ---@return integer
 function visual_odom:quality() end
+
+-- desc
+---@class airspeed
+airspeed = {}
+
+-- desc
+---@return boolean
+---@param i integer
+function airspeed:enabled(i) end
+
+-- desc
+---@return boolean
+---@param i integer
+function airspeed:healthy(i) end
+
+-- desc
+---@return number
+---@param i integer
+function airspeed:get_airspeed(i) end
+
+-- desc
+---@return number
+---@param i integer
+function airspeed:get_raw_airspeed(i) end
