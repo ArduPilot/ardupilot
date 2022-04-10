@@ -22,6 +22,12 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+#ifndef AP_GPS_UBLOX_ENABLED
+  #define AP_GPS_UBLOX_ENABLED 1
+#endif
+
+#if AP_GPS_UBLOX_ENABLED
+
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
@@ -809,3 +815,5 @@ private:
     RTCM3_Parser *rtcm3_parser;
 #endif // GPS_MOVING_BASELINE
 };
+
+#endif
