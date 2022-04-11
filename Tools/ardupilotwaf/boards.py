@@ -843,7 +843,7 @@ class esp32s3(Board):
 
 
         env.INCLUDES += [
-                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/hwdef/esp32'+tt).abspath(),
             ]
         env.AP_PROGRAM_AS_STLIB = True
         #if cfg.options.enable_profile:
