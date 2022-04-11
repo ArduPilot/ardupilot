@@ -471,7 +471,8 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
     if (ret <= 0) {
         if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
 #if HAL_LOGGING_ENABLED
-            //stop logging
+            // StopLogging is synchronous — blocks until the logger thread has
+            // flushed and closed all log files; may take several seconds on SD card.
             if (AP_Logger::get_singleton()) {
                 AP::logger().StopLogging();
             }
@@ -539,7 +540,8 @@ void AP_InertialSensor_SITL::read_accel_from_file()
     if (ret <= 0) {
         if (sitl->accel_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
 #if HAL_LOGGING_ENABLED
-            //stop logging
+            // StopLogging is synchronous — blocks until the logger thread has
+            // flushed and closed all log files; may take several seconds on SD card.
             if (AP_Logger::get_singleton()) {
                 AP::logger().StopLogging();
             }

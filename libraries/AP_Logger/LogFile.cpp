@@ -305,14 +305,13 @@ void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
     return WriteBlock(&pkt, sizeof(pkt));
 }
 
-bool AP_Logger_Backend::Write_Mission_Cmd(const AP_Mission &mission,
-                                          const AP_Mission::Mission_Command &cmd,
-                                          LogMessages msgid)
+bool AP_Logger_Backend::Write_CMD(const AP_Mission &mission,
+                                  const AP_Mission::Mission_Command &cmd)
 {
     mavlink_mission_item_int_t mav_cmd = {};
     AP_Mission::mission_cmd_to_mavlink_int(cmd,mav_cmd);
     const struct log_CMD pkt{
-        LOG_PACKET_HEADER_INIT(msgid),
+        LOG_PACKET_HEADER_INIT(LOG_CMD_MSG),
         time_us         : AP_HAL::micros64(),
         command_total   : mission.num_commands(),
         sequence        : mav_cmd.seq,
@@ -431,21 +430,6 @@ void AP_Logger::Write_Radio(const mavlink_radio_status_t &packet)
     };
     WriteBlock(&pkt, sizeof(pkt));
 }
-
-// Write a mode packet.
-bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
-{
-    static_assert(sizeof(ModeReason) <= sizeof(uint8_t), "Logging expects the ModeReason to fit in 8 bits");
-    const struct log_Mode pkt{
-        LOG_PACKET_HEADER_INIT(LOG_MODE_MSG),
-        time_us  : AP_HAL::micros64(),
-        mode     : mode,
-        mode_num : mode,
-        mode_reason : static_cast<uint8_t>(reason)
-    };
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
-}
-
 
 // emit an RTC message to the onboard logs
 #if AP_RTC_LOGGING_ENABLED

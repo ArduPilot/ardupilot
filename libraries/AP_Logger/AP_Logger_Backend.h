@@ -11,20 +11,23 @@
 #include <AP_Vehicle/ModeReason.h>
 #include "LogStructure.h"
 
+class AP_LoggerThread;
+class GCS_MAVLINK;
+
 class LoggerMessageWriter_DFLogStart;
 
 // class to handle rate limiting of log messages
 class AP_Logger_RateLimiter
 {
 public:
-    AP_Logger_RateLimiter(const class AP_Logger &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz);
+    AP_Logger_RateLimiter(const class AP_LoggerThread &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz);
 
     // return true if message passes the rate limit test
     bool should_log(uint8_t msgid, bool writev_streaming);
     bool should_log_streaming(uint8_t msgid, float rate_hz);
 
 private:
-    const AP_Logger &front;
+    const AP_LoggerThread &front;
     const AP_Float &rate_limit_hz;
     const AP_Float &disarm_rate_limit_hz;
 
@@ -50,11 +53,12 @@ class AP_Logger_Backend
 public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
-    AP_Logger_Backend(AP_Logger &front,
+    AP_Logger_Backend(AP_LoggerThread &front,
                       class LoggerMessageWriter_DFLogStart *writer);
 
     vehicle_startup_message_Writer vehicle_message_writer() const;
 
+    // Called from the main thread (not via the request queue) — must not block.
     virtual bool CardInserted(void) const = 0;
 
     // erase handling
@@ -103,15 +107,10 @@ public:
     void Fill_Format(const struct LogStructure *structure, struct log_Format &pkt);
     void Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if AP_LOGGER_FLUSH_SUPPORTED
     // currently only AP_Logger_File support this:
     virtual void flush(void) { }
 #endif
-
-     // for Logger_MAVlink
-    virtual void remote_log_block_status_msg(const class GCS_MAVLINK &link,
-                                             const mavlink_message_t &msg) { }
-    // end for Logger_MAVlink
 
    virtual void periodic_tasks();
 
@@ -142,10 +141,7 @@ public:
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq);
-    bool Write_Mission_Cmd(const AP_Mission &mission,
-                           const AP_Mission::Mission_Command &cmd,
-                           LogMessages id);
-    bool Write_Mode(uint8_t mode, const ModeReason reason);
+    bool Write_CMD(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd);
     bool Write_Parameter(const char *name, float value, float default_val);
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
@@ -187,9 +183,11 @@ public:
 
     virtual void io_timer(void) {}
 
+    virtual void process_request(class AP_LoggerThreadRequest &request) {}
+
 protected:
 
-    AP_Logger &_front;
+    AP_LoggerThread &_front;
 
     virtual void periodic_10Hz(const uint32_t now);
     virtual void periodic_1Hz();

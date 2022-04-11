@@ -17,9 +17,9 @@ class AP_Logger_MAVLink : public AP_Logger_Backend
 {
 public:
     // constructor
-    AP_Logger_MAVLink(class AP_Logger &front, LoggerMessageWriter_DFLogStart *writer);
+    AP_Logger_MAVLink(class AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer);
 
-    static AP_Logger_Backend  *probe(AP_Logger &front,
+    static AP_Logger_Backend  *probe(AP_LoggerThread &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
         return NEW_NOTHROW AP_Logger_MAVLink(front, ls);
     }
@@ -38,7 +38,7 @@ public:
                                bool is_critical) override;
 
     // initialisation
-    bool CardInserted(void) const override { return true; }
+    bool CardInserted(void) const override { return true; } // must not block; called from main thread
 
     // erase handling
     void EraseAll() override {}
@@ -53,7 +53,7 @@ public:
     void end_log_transfer() override { };
     uint16_t get_num_logs(void) override { return 0; }
 
-    void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
+    void process_request(AP_LoggerThreadRequest &request) override;
     void vehicle_was_disarmed() override {}
 
 protected:
@@ -70,7 +70,7 @@ private:
         struct dm_block *next;
     };
     bool send_log_block(struct dm_block &block);
-    void handle_ack(const GCS_MAVLINK &link, const mavlink_message_t &msg, uint32_t seqno);
+    void handle_ack(const GCS_MAVLINK &link, uint32_t sysid, uint8_t compid, uint32_t seqno);
     void handle_retry(uint32_t block_num);
     void do_resends(uint32_t now);
     void free_all_blocks();

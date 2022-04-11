@@ -25,7 +25,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Logger_MAVLink::AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+AP_Logger_MAVLink::AP_Logger_MAVLink(AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer) :
     AP_Logger_Backend(front, writer),
     _max_blocks_per_send_blocks(8)
 {
@@ -226,7 +226,8 @@ void AP_Logger_MAVLink::stop_logging()
 }
 
 void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
-                                   const mavlink_message_t &msg,
+                                   uint32_t sysid,
+                                   uint8_t compid,
                                    uint32_t seqno)
 {
     if (!_initialised) {
@@ -248,8 +249,8 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
             // }
             stats_init();
             _sending_to_client = true;
-            _target_system_id = msg.sysid;
-            _target_component_id = msg.compid;
+            _target_system_id = sysid;
+            _target_component_id = compid;
             _link = &link;
             _next_seq_num = 0;
             start_new_log_reset_variables();
@@ -271,20 +272,21 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
     }
 }
 
-void AP_Logger_MAVLink::remote_log_block_status_msg(const GCS_MAVLINK &link,
-                                                    const mavlink_message_t& msg)
+void AP_Logger_MAVLink::process_request(AP_LoggerThreadRequest &request)
 {
-    mavlink_remote_log_block_status_t packet;
-    mavlink_msg_remote_log_block_status_decode(&msg, &packet);
+    if (request.type != AP_LoggerThreadRequest::Type::HandleRemoteLogBlockStatus) {
+        return;
+    }
     if (!semaphore.take_nonblocking()) {
         return;
     }
+    const auto &packet = request.parameters.HandleRemoteLogBlockStatus;
     switch ((MAV_REMOTE_LOG_DATA_BLOCK_STATUSES)packet.status) {
         case MAV_REMOTE_LOG_DATA_BLOCK_NACK:
             handle_retry(packet.seqno);
             break;
         case MAV_REMOTE_LOG_DATA_BLOCK_ACK:
-            handle_ack(link, msg, packet.seqno);
+            handle_ack(*packet.link, packet.sysid, packet.compid, packet.seqno);
             break;
         // we apparently have to handle an END enum entry, just drop it so we catch future additions
         case MAV_REMOTE_LOG_DATA_BLOCK_STATUSES_ENUM_END:

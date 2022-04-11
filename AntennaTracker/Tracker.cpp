@@ -59,7 +59,6 @@ const AP_Scheduler::Task Tracker::scheduler_tasks[] = {
     SCHED_TASK_CLASS(GCS,              (GCS*)&tracker._gcs, update_send,    50, 3000, 50),
 #if HAL_LOGGING_ENABLED
     SCHED_TASK(ten_hz_logging_loop,    10,    300, 60),
-    SCHED_TASK_CLASS(AP_Logger,   &tracker.logger, periodic_tasks, 50,  300, 65),
 #endif
     SCHED_TASK_CLASS(AP_InertialSensor, &tracker.ins,       periodic,       50,   50, 70),
     SCHED_TASK(one_second_loop,         1,   3900, 80),

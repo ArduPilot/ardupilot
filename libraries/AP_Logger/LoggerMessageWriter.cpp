@@ -39,6 +39,7 @@ void LoggerMessageWriter::reset()
 
 bool LoggerMessageWriter::out_of_time_for_writing_messages() const
 {
+    return false;
 #if AP_SCHEDULER_ENABLED
     return AP::scheduler().time_available_usec() < MIN_LOOP_TIME_REMAINING_FOR_MESSAGE_WRITE_US;
 #else
@@ -74,6 +75,8 @@ void LoggerMessageWriter_DFLogStart::reset()
 
 bool LoggerMessageWriter_DFLogStart::out_of_time_for_writing_messages_df() const
 {
+    return false;
+
     if (stage == Stage::FORMATS) {
         // write out the FMT messages as fast as we can
 #if AP_SCHEDULER_ENABLED
@@ -100,9 +103,9 @@ bool LoggerMessageWriter_DFLogStart::check_process_limit(uint32_t start_us)
 
 void LoggerMessageWriter_DFLogStart::process()
 {
-    if (out_of_time_for_writing_messages_df()) {
-        return;
-    }
+    // if (out_of_time_for_writing_messages_df()) {
+    //     return;
+    // }
     // allow any stage to run for max 1ms, to prevent a long loop on arming
     const uint32_t start_us = AP_HAL::micros();
 
@@ -454,7 +457,7 @@ void LoggerMessageWriter_WriteEntireMission::process() {
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
             if (_mission.read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_logger_backend->Write_Mission_Cmd(_mission, cmd, LOG_CMD_MSG)) {
+                if (!_logger_backend->Write_CMD(_mission, cmd)) {
                     return; // call me again
                 }
             }

@@ -297,7 +297,8 @@ void Scheduler::reboot(bool hold_in_bootloader)
 #endif
 
 #if HAL_LOGGING_ENABLED
-    //stop logging
+    // StopLogging is synchronous — blocks until the logger thread has
+    // flushed and closed all log files; may take several seconds on SD card.
     if (AP_Logger::get_singleton()) {
         AP::logger().StopLogging();
     }

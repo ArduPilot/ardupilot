@@ -540,9 +540,6 @@ void AP_Periph_FW::update()
     }
 #endif
 
-#if HAL_LOGGING_ENABLED
-    logger.periodic_tasks();
-#endif
 
     can_update();
 

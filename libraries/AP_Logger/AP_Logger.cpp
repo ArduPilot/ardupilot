@@ -15,6 +15,8 @@
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#include <AP_AHRS/AP_AHRS.h>
+
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
 #endif
@@ -71,13 +73,13 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
 # if HAL_LOGGING_FILESYSTEM_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend_Type::FILESYSTEM
 # elif HAL_LOGGING_DATAFLASH_ENABLED
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::BLOCK
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend_Type::BLOCK
 # elif HAL_LOGGING_FILESYSTEM_ENABLED
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend_Type::FILESYSTEM
 # elif HAL_LOGGING_MAVLINK_ENABLED
-#  define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::MAVLINK
+#  define HAL_LOGGING_BACKENDS_DEFAULT AP_Logger_Backend_Type::MAVLINK
 # else
 #  define HAL_LOGGING_BACKENDS_DEFAULT 0
 # endif
@@ -219,17 +221,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
 #define streq(x, y) (!strcmp(x, y))
 
-AP_Logger::AP_Logger()
+AP_LoggerThread::AP_LoggerThread(struct AP_LoggerParams &params, AP_LoggerThreadRequestQueue &_request_queue)
+    : _params{params},
+      request_queue{_request_queue}
 {
-    AP_Param::setup_object_defaults(this, var_info);
-    if (_singleton != nullptr) {
-        AP_HAL::panic("AP_Logger must be singleton");
-    }
-
-    _singleton = this;
+    // parameters will not be initialised here!
 }
 
-void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
+void AP_LoggerThread::init(const AP_UInt32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
     _log_bitmask = &log_bitmask;
 
@@ -247,17 +246,17 @@ void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *st
     // the "main" logging type needs to come before mavlink so that
     // index 0 is correct
     static const struct {
-        Backend_Type type;
-        AP_Logger_Backend* (*probe_fn)(AP_Logger&, LoggerMessageWriter_DFLogStart*);
+        AP_Logger_Backend_Type type;
+        AP_Logger_Backend* (*probe_fn)(AP_LoggerThread&, LoggerMessageWriter_DFLogStart*);
     } backend_configs[] {
 #if HAL_LOGGING_FILESYSTEM_ENABLED
-        { Backend_Type::FILESYSTEM, AP_Logger_File::probe },
+        { AP_Logger_Backend_Type::FILESYSTEM, AP_Logger_File::probe },
 #endif
 #if HAL_LOGGING_DATAFLASH_ENABLED
-        { Backend_Type::BLOCK, HAL_LOGGING_DATAFLASH_DRIVER::probe },
+        { AP_Logger_Backend_Type::BLOCK, HAL_LOGGING_DATAFLASH_DRIVER::probe },
 #endif
 #if HAL_LOGGING_MAVLINK_ENABLED
-        { Backend_Type::MAVLINK, AP_Logger_MAVLink::probe },
+        { AP_Logger_Backend_Type::MAVLINK, AP_Logger_MAVLink::probe },
 #endif
 };
 
@@ -293,10 +292,6 @@ void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *st
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
     }
-
-    start_io_thread();
-
-    EnableWrites(true);
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -320,7 +315,7 @@ static uint8_t count_commas(const char *string)
 }
 
 /// return a unit name given its ID
-const char* AP_Logger::unit_name(const uint8_t unit_id)
+const char* AP_LoggerThread::unit_name(const uint8_t unit_id)
 {
     for (uint8_t i=0; i<_num_units; i++) {
         if (_units[i].ID == unit_id) {
@@ -331,7 +326,7 @@ const char* AP_Logger::unit_name(const uint8_t unit_id)
 }
 
 /// return a multiplier value given its ID
-double AP_Logger::multiplier_name(const uint8_t multiplier_id)
+double AP_LoggerThread::multiplier_name(const uint8_t multiplier_id)
 {
     for (uint8_t i=0; i<_num_multipliers; i++) {
         if (_multipliers[i].ID == multiplier_id) {
@@ -343,14 +338,14 @@ double AP_Logger::multiplier_name(const uint8_t multiplier_id)
 }
 
 /// pretty-print field information from a log structure
-void AP_Logger::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
+void AP_LoggerThread::dump_structure_field(const struct LogStructure *logstructure, const char *label, const uint8_t fieldnum)
 {
     ::fprintf(stderr, "  %s (%s)*(%f)\n", label, unit_name(logstructure->units[fieldnum]), multiplier_name(logstructure->multipliers[fieldnum]));
 }
 
 /// pretty-print log structures
 /// @note structures MUST be well-formed
-void AP_Logger::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
+void AP_LoggerThread::dump_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
 #if DEBUG_LOG_STRUCTURES
     for (uint16_t i=0; i<num_types; i++) {
@@ -379,7 +374,7 @@ void AP_Logger::dump_structures(const struct LogStructure *logstructures, const 
 #endif
 }
 
-bool AP_Logger::labels_string_is_good(const char *labels) const
+bool AP_LoggerThread::labels_string_is_good(const char *labels) const
 {
     bool passed = true;
     if (strlen(labels) >= LS_LABELS_SIZE) {
@@ -421,7 +416,7 @@ bool AP_Logger::labels_string_is_good(const char *labels) const
     return passed;
 }
 
-bool AP_Logger::validate_structure(const struct LogStructure *logstructure, const int16_t offset)
+bool AP_LoggerThread::validate_structure(const struct LogStructure *logstructure, const int16_t offset)
 {
     bool passed = true;
 
@@ -465,7 +460,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     }
 
     // check that the structure is of an appropriate length to take fields
-    const int16_t msg_len = Write_calc_msg_len(logstructure->format);
+    const int16_t msg_len = AP_Logger::Write_calc_msg_len(logstructure->format);
     if (msg_len != logstructure->msg_len) {
         Debug("  Calculated message length for (%s) based on format field (%s) does not match structure size (%d != %u)", logstructure->name, logstructure->format, msg_len, logstructure->msg_len);
         passed = false;
@@ -541,7 +536,7 @@ bool AP_Logger::validate_structure(const struct LogStructure *logstructure, cons
     return passed;
 }
 
-void AP_Logger::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
+void AP_LoggerThread::validate_structures(const struct LogStructure *logstructures, const uint8_t num_types)
 {
     Debug("Validating structures");
     bool passed = true;
@@ -596,16 +591,16 @@ void AP_Logger::validate_structures(const struct LogStructure *logstructures, co
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
-const struct LogStructure *AP_Logger::structure(uint16_t num) const
+const struct LogStructure *AP_LoggerThread::structure(uint16_t num) const
 {
     return &_structures[num];
 }
 
-bool AP_Logger::logging_present() const
+bool AP_LoggerThread::logging_present() const
 {
     return _next_backend != 0;
 }
-bool AP_Logger::logging_enabled() const
+bool AP_LoggerThread::logging_enabled() const
 {
     if (_next_backend == 0) {
         return false;
@@ -617,7 +612,7 @@ bool AP_Logger::logging_enabled() const
     }
     return false;
 }
-bool AP_Logger::logging_failed() const
+bool AP_LoggerThread::logging_failed() const
 {
     if (_next_backend < 1) {
         // we should not have been called!
@@ -640,15 +635,15 @@ void AP_Logger::Write_MessageF(const char *fmt, ...)
     hal.util->vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
 
-    Write_Message(msg);
+    thread.Write_Message(msg);
 }
 
-void AP_Logger::backend_starting_new_log(const AP_Logger_Backend *backend)
+void AP_LoggerThread::backend_starting_new_log(const AP_Logger_Backend *backend)
 {
     _log_start_count++;
 }
 
-bool AP_Logger::should_log(const uint32_t mask) const
+bool AP_LoggerThread::should_log(const uint32_t mask) const
 {
     bool armed = vehicle_is_armed();
 
@@ -670,9 +665,9 @@ bool AP_Logger::should_log(const uint32_t mask) const
 /*
   return true if in log download which should prevent logging
  */
-bool AP_Logger::in_log_download() const
+bool AP_LoggerThread::in_log_download() const
 {
-    if (_params.backend_types & uint8_t(Backend_Type::BLOCK)) {
+    if (_params.backend_types & uint8_t(AP_Logger_Backend_Type::BLOCK)) {
         // when we have a BLOCK backend then listing completely prevents logging
         return transfer_activity != TransferActivity::IDLE;
     }
@@ -680,12 +675,12 @@ bool AP_Logger::in_log_download() const
     return transfer_activity == TransferActivity::SENDING;
 }
 
-const struct UnitStructure *AP_Logger::unit(uint16_t num) const
+const struct UnitStructure *AP_LoggerThread::unit(uint16_t num) const
 {
     return &_units[num];
 }
 
-const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
+const struct MultiplierStructure *AP_LoggerThread::multiplier(uint16_t num) const
 {
     return &log_Multipliers[num];
 }
@@ -697,25 +692,12 @@ const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
         }                                         \
     } while (0)
 
-void AP_Logger::PrepForArming()
-{
-    FOR_EACH_BACKEND(PrepForArming());
-}
-
-void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
+void AP_LoggerThread::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
 {
     _vehicle_messages = writer;
 }
 
-#if AP_RTC_LOGGING_ENABLED
-// Write RTC data
-void AP_Logger::Write_RTC()
-{
-    FOR_EACH_BACKEND(Write_RTC());
-}
-#endif  // AP_RTC_LOGGING_ENABLED
-
-void AP_Logger::set_vehicle_armed(const bool armed_state)
+void AP_LoggerThread::set_vehicle_armed(const bool armed_state)
 {
     if (armed_state == _armed) {
         // no change in status
@@ -730,17 +712,27 @@ void AP_Logger::set_vehicle_armed(const bool armed_state)
         file_content_prepare_for_arming = true;
 #endif
     } else {
-        // went from armed to disarmed
-        FOR_EACH_BACKEND(vehicle_was_disarmed());
+        // went from armed to disarmed — enqueue to run on the IO thread
+        enqueue_simple_thread_request(AP_LoggerThreadRequest::Type::VehicleWasDisarmed);
     }
 }
+
+void AP_LoggerThread::enqueue_simple_thread_request(AP_LoggerThreadRequest::Type type)
+{
+    AP_LoggerThreadRequest *request = request_queue.claim_thread_request(type);
+    if (request != nullptr) {
+        request->free_after_processing = true;
+        request_queue.mark_as_pending(*request);
+    }
+}
+
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 /*
   remember formats for replay. This allows WriteV() to work within
   replay
 */
-void AP_Logger::save_format_Replay(const void *pBuffer)
+void AP_LoggerThread::save_format_Replay(const void *pBuffer)
 {
     if (((uint8_t *)pBuffer)[2] == LOG_FORMAT_MSG) {
         struct log_Format *fmt = (struct log_Format *)pBuffer;
@@ -757,8 +749,14 @@ void AP_Logger::save_format_Replay(const void *pBuffer)
 #endif
 
 
-// start functions pass straight through to backend:
-void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
+// The WriteBlock family and the Write_* helpers below are safe to call
+// from the main thread.  They bottom out in _WritePrioritisedBlock which
+// serialises under the backend's semaphore before writing into _writebuf.
+// The IO thread also writes to _writebuf (startup messages, mission/rally
+// dumps, etc. via process_request), so the buffer has multiple producers;
+// the semaphore ensures at most one concurrent writer, making ByteBuffer's
+// atomic head/tail sufficient.  The IO thread is the sole reader (io_timer).
+void AP_LoggerThread::WriteBlock(const void *pBuffer, uint16_t size) {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     save_format_Replay(pBuffer);
 #endif
@@ -766,7 +764,7 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
 }
 
 // only the first backend write need succeed for us to be successful
-bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size) 
+bool AP_LoggerThread::WriteBlock_first_succeed(const void *pBuffer, uint16_t size)
 {
     if (_next_backend == 0) {
         return false;
@@ -781,7 +779,7 @@ bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size)
 
 // write a replay block. This differs from other as it returns false if a backend doesn't
 // have space for the msg
-bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size) {
+bool AP_LoggerThread::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t size) {
     bool ret = true;
     if (log_replay()) {
         uint8_t buf[3+size];
@@ -806,20 +804,16 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
     return ret;
 }
 
-void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+void AP_LoggerThread::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
     FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
 
-void AP_Logger::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
+void AP_LoggerThread::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
     FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
 }
 
-// change me to "DoTimeConsumingPreparations"?
-void AP_Logger::EraseAll() {
-    FOR_EACH_BACKEND(EraseAll());
-}
 // change me to "LoggingAvailable"?
-bool AP_Logger::CardInserted(void) {
+bool AP_LoggerThread::CardInserted(void) {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->CardInserted()) {
             return true;
@@ -828,43 +822,40 @@ bool AP_Logger::CardInserted(void) {
     return false;
 }
 
-void AP_Logger::StopLogging()
-{
-    FOR_EACH_BACKEND(stop_logging());
-}
 
-uint16_t AP_Logger::find_last_log() const {
-    if (_next_backend == 0) {
-        return 0;
-    }
-    return backends[0]->find_last_log();
-}
-void AP_Logger::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
+void AP_LoggerThread::get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) {
     if (_next_backend == 0) {
         return;
     }
     backends[0]->get_log_boundaries(log_num, start_page, end_page);
 }
-void AP_Logger::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
+void AP_LoggerThread::get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) {
     if (_next_backend == 0) {
         return;
     }
     backends[0]->get_log_info(log_num, size, time_utc);
 }
-int16_t AP_Logger::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
+int16_t AP_LoggerThread::get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) {
     if (_next_backend == 0) {
         return 0;
     }
     return backends[0]->get_log_data(log_num, page, offset, len, data);
 }
-uint16_t AP_Logger::get_num_logs(void) {
+uint16_t AP_LoggerThread::get_num_logs(void) {
     if (_next_backend == 0) {
         return 0;
     }
     return backends[0]->get_num_logs();
 }
+bool AP_LoggerThread::erase(void) {
+    if (_next_backend == 0) {
+        return false;
+    }
+    backends[0]->EraseAll();
+    return true;
+}
 
-uint16_t AP_Logger::get_max_num_logs() {
+uint16_t AP_LoggerThread::get_max_num_logs() {
     const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
     if (_params.max_log_files.get() != max_logs) {
         _params.max_log_files.set_and_save_ifchanged(max_logs);
@@ -873,7 +864,7 @@ uint16_t AP_Logger::get_max_num_logs() {
 }
 
 /* we're started if any of the backends are started */
-bool AP_Logger::logging_started(void) const {
+bool AP_LoggerThread::logging_started(void) const {
     for (uint8_t i=0; i< _next_backend; i++) {
         if (backends[i]->logging_started()) {
             return true;
@@ -882,11 +873,31 @@ bool AP_Logger::logging_started(void) const {
     return false;
 }
 
+void AP_LoggerThread::remote_log_block_status_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
+{
+    AP_LoggerThreadRequest *request = request_queue.claim_thread_request(
+        AP_LoggerThreadRequest::Type::HandleRemoteLogBlockStatus);
+    if (request == nullptr) {
+        return;
+    }
+    mavlink_remote_log_block_status_t packet;
+    mavlink_msg_remote_log_block_status_decode(&msg, &packet);
+    request->parameters.HandleRemoteLogBlockStatus = {
+        &link,
+        msg.sysid,
+        msg.compid,
+        packet.seqno,
+        packet.status
+    };
+    request->free_after_processing = true;
+    request_queue.mark_as_pending(*request);
+}
+
 void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
-        FOR_EACH_BACKEND(remote_log_block_status_msg(link, msg));
+        thread.remote_log_block_status_msg(link, msg);
         break;
     case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
         FALLTHROUGH;
@@ -900,71 +911,28 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
     }
 }
 
-void AP_Logger::periodic_tasks() {
-#ifndef HAL_BUILD_AP_PERIPH
-    handle_log_send();
-#endif
-    FOR_EACH_BACKEND(periodic_tasks());
-}
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only AP_Logger_File support this:
-void AP_Logger::flush(void) {
-     FOR_EACH_BACKEND(flush());
-}
-#endif
-
-
-void AP_Logger::Write_EntireMission()
-{
-    FOR_EACH_BACKEND(Write_EntireMission());
-}
-
-void AP_Logger::Write_Message(const char *message)
+void AP_LoggerThread::Write_Message(const char *message)
 {
     FOR_EACH_BACKEND(Write_Message(message));
 }
-void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq)
+void AP_LoggerThread::Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq)
 {
     FOR_EACH_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
 }
 
-void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason)
+void AP_LoggerThread::Write_Parameter(const char *name, float value)
 {
-    FOR_EACH_BACKEND(Write_Mode(mode, reason));
-}
-
-void AP_Logger::Write_Parameter(const char *name, float value)
-{
-    FOR_EACH_BACKEND(Write_Parameter(name, value, quiet_nanf()));
-}
-
-void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
-                                  const AP_Mission::Mission_Command &cmd,
-                                  LogMessages id)
-{
-    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd, id));
+    FOR_EACH_BACKEND(Write_Parameter(name, value, AP_Logger::quiet_nanf()));
 }
 
 #if HAL_RALLY_ENABLED
-void AP_Logger::Write_RallyPoint(uint8_t total,
+void AP_LoggerThread::Write_RallyPoint(uint8_t total,
                                  uint8_t sequence,
                                  const RallyLocation &rally_point)
 {
     FOR_EACH_BACKEND(Write_RallyPoint(total, sequence, rally_point));
 }
 
-void AP_Logger::Write_Rally()
-{
-    FOR_EACH_BACKEND(Write_Rally());
-}
-#endif
-
-#if HAL_LOGGER_FENCE_ENABLED
-void AP_Logger::Write_Fence()
-{
-    FOR_EACH_BACKEND(Write_Fence());
-}
 #endif
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
@@ -982,14 +950,14 @@ void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 }
 
 // output a FMT message for each backend if not already done so
-void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
+void AP_LoggerThread::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Safe_Write_Emit_FMT(f->msg_type);
     }
 }
 
-uint32_t AP_Logger::num_dropped() const
+uint32_t AP_LoggerThread::num_dropped() const
 {
     if (_next_backend == 0) {
         return 0;
@@ -1058,6 +1026,12 @@ void AP_Logger::WriteCritical(const char *name, const char *labels, const char *
 void AP_Logger::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list,
                        bool is_critical, bool is_streaming)
 {
+    thread.WriteV(name, labels, units, mults, fmt, arg_list, is_critical, is_streaming);
+}
+
+void AP_LoggerThread::WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list,
+                       bool is_critical, bool is_streaming)
+{
     // WriteV is not safe in replay as we can re-use IDs
     const bool direct_comp = APM_BUILD_TYPE(APM_BUILD_Replay);
     struct log_write_fmt *f = msg_fmt_for_name(name, labels, units, mults, fmt, direct_comp);
@@ -1083,7 +1057,7 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
   until after the headers are out so that on replay all parameter
   values are available
  */
-bool AP_Logger::allow_start_ekf() const
+bool AP_LoggerThread::allow_start_ekf() const
 {
     if (!log_replay() || !log_while_disarmed()) {
         return true;
@@ -1099,7 +1073,7 @@ bool AP_Logger::allow_start_ekf() const
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-bool AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
+bool AP_LoggerThread::assert_same_fmt_for_name(const AP_LoggerThread::log_write_fmt *f,
                                                const char *name,
                                                const char *labels,
                                                const char *units,
@@ -1147,7 +1121,7 @@ bool AP_Logger::assert_same_fmt_for_name(const AP_Logger::log_write_fmt *f,
 }
 #endif
 
-AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp, const bool copy_strings)
+AP_LoggerThread::log_write_fmt *AP_LoggerThread::msg_fmt_for_name(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, const bool direct_comp, const bool copy_strings)
 {
     WITH_SEMAPHORE(log_write_fmts_sem);
     struct log_write_fmt *f;
@@ -1223,7 +1197,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
         f->mults = mults;
     }
 
-    int16_t tmp = Write_calc_msg_len(fmt);
+    int16_t tmp = AP_Logger::Write_calc_msg_len(fmt);
     if (tmp == -1) {
         free(f);
         return nullptr;
@@ -1275,7 +1249,7 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
     return f;
 }
 
-const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_type) const
+const struct LogStructure *AP_LoggerThread::structure_for_msg_type(const uint8_t msg_type) const
 {
     for (uint16_t i=0; i<_num_types;i++) {
         const struct LogStructure *s = structure(i);
@@ -1287,7 +1261,7 @@ const struct LogStructure *AP_Logger::structure_for_msg_type(const uint8_t msg_t
     return nullptr;
 }
 
-const struct AP_Logger::log_write_fmt *AP_Logger::log_write_fmt_for_msg_type(const uint8_t msg_type) const
+const struct AP_LoggerThread::log_write_fmt *AP_LoggerThread::log_write_fmt_for_msg_type(const uint8_t msg_type) const
 {
     struct log_write_fmt *f;
     for (f = log_write_fmts; f; f=f->next) {
@@ -1300,7 +1274,7 @@ const struct AP_Logger::log_write_fmt *AP_Logger::log_write_fmt_for_msg_type(con
 
 
 // returns true if the msg_type is already taken
-bool AP_Logger::msg_type_in_use(const uint8_t msg_type) const
+bool AP_LoggerThread::msg_type_in_use(const uint8_t msg_type) const
 {
     // check static list of messages (e.g. from LOG_COMMON_STRUCTURES)
     // check the write format types to see if we've used this one
@@ -1321,7 +1295,7 @@ bool AP_Logger::msg_type_in_use(const uint8_t msg_type) const
 }
 
 // find a free message type
-int16_t AP_Logger::find_free_msg_type() const
+int16_t AP_LoggerThread::find_free_msg_type() const
 {
     const uint8_t start = LOGGING_FIRST_DYNAMIC_MSGID;
     // avoid using 255 here; perhaps we want to use it to extend things later
@@ -1337,7 +1311,7 @@ int16_t AP_Logger::find_free_msg_type() const
  * It is assumed that logstruct's char* variables are valid strings of
  * maximum lengths for those fields (given in LogStructure.h e.g. LS_NAME_SIZE)
  */
-bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
+bool AP_LoggerThread::fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const
 {
     // check the static lists first...
     const LogStructure *found = structure_for_msg_type(msg_type);
@@ -1388,7 +1362,7 @@ bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t 
  * returns an int16_t; if it returns -1 then an error has occurred.
  * This was mechanically converted from init_field_types in
  * Tools/Replay/MsgHandler.cpp */
-int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
+int16_t AP_Logger::Write_calc_msg_len(const char *fmt)
 {
     size_t len = LOG_PACKET_HEADER_LEN;
     for (size_t i=0; i<strlen(fmt); i++) {
@@ -1432,7 +1406,7 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
   dump available or we have saved it to sdcard. This is called
   continuously until success to account for late mount of the microSD
  */
-bool AP_Logger::check_crash_dump_save(void)
+bool AP_LoggerThread::check_crash_dump_save(void)
 {
 #if defined(AP_CRASHDUMP_FATFS_ENABLED) && AP_CRASHDUMP_FATFS_ENABLED
     if (hal.util->last_crash_dump_size() > 0) {
@@ -1469,11 +1443,12 @@ bool AP_Logger::check_crash_dump_save(void)
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
 // and the thread will sleep while this completes preventing other tasks from running, it therefore
 // is necessary to run the IO in it's own thread
-void AP_Logger::io_thread(void)
+void AP_LoggerThread::run(void)
 {
     uint32_t last_run_us = AP_HAL::micros();
     uint32_t last_stack_us = last_run_us;
     uint32_t last_crash_check_us = last_run_us;
+    uint32_t last_periodic_tasks_us = last_run_us;
     bool done_crash_dump_save = false;
 
     while (true) {
@@ -1485,9 +1460,19 @@ void AP_Logger::io_thread(void)
         }
         hal.scheduler->delay_microseconds(delay);
 
+        process_request_queue();
+
         last_run_us = AP_HAL::micros();
 
         FOR_EACH_BACKEND(io_timer());
+
+        if (now - last_periodic_tasks_us >= 2500U) {
+            last_periodic_tasks_us = now;
+#if HAL_GCS_ENABLED
+            handle_log_send();
+#endif
+            FOR_EACH_BACKEND(periodic_tasks());
+        }
 
         if (now - last_stack_us > 100000U) {
             last_stack_us = now;
@@ -1509,23 +1494,199 @@ void AP_Logger::io_thread(void)
 // start the update thread
 void AP_Logger::start_io_thread(void)
 {
-    WITH_SEMAPHORE(_log_send_sem);
-
-    if (_io_thread_started) {
-        return;
-    }
-
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Logger::io_thread, void), "log_io", HAL_LOGGING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_IO, 1)) {
         AP_HAL::panic("Failed to start Logger IO thread");
     }
-
-    _io_thread_started = true;
-    return;
 }
 
-/* End of Write support */
+// should this be a method on the request?
+
+// process_request takes a request and either:
+
+// - handles it itself (for example, processing log-transfer requests)
+
+// - calls a method on each backend thread to accomplish some action
+// - (e.g. erasing all logs)
+
+// - calls process_request on each backend with the same request; this
+// - allows each different backend type to enqueue requests only it
+// - will know how to handle (e.g. HandleRemoteLogBlockStatus) , or
+// - that involves internal state to the backend (
+
+void AP_LoggerThread::process_request(AP_LoggerThreadRequest &request)
+{
+    gcs().send_text(MAV_SEVERITY_WARNING, "Processing type=%u", (unsigned)(request.type));
+
+    switch (request.type) {
+    case AP_LoggerThreadRequest::Type::HandleLogRequest_List:
+    case AP_LoggerThreadRequest::Type::HandleLogRequest_Data:
+    case AP_LoggerThreadRequest::Type::HandleLogRequest_Erase:
+    case AP_LoggerThreadRequest::Type::HandleLogRequest_End:
+        handle_log_request_message(request);
+        break;
+    case AP_LoggerThreadRequest::Type::VehicleWasDisarmed:
+        FOR_EACH_BACKEND(vehicle_was_disarmed());
+        break;
+    case AP_LoggerThreadRequest::Type::PrepForArming:
+        FOR_EACH_BACKEND(PrepForArming());
+        break;
+#if AP_LOGGER_FLUSH_SUPPORTED
+    case AP_LoggerThreadRequest::Type::Flush: {
+        FOR_EACH_BACKEND(flush());
+        break;
+    }
+#endif
+    case AP_LoggerThreadRequest::Type::StopLogging: {
+        FOR_EACH_BACKEND(stop_logging());
+        break;
+    }
+    case AP_LoggerThreadRequest::Type::FindLastLog: {
+        request.parameters.FindLastLog.returned_last_log_number = backends[0]->find_last_log();
+        break;
+    }
+
+    case AP_LoggerThreadRequest::Type::StartWriteEntireMission:
+        FOR_EACH_BACKEND(Write_EntireMission());
+        break;
+    case AP_LoggerThreadRequest::Type::StartWriteEntireRally:
+        FOR_EACH_BACKEND(Write_Rally());
+        break;
+#if HAL_LOGGER_FENCE_ENABLED
+    case AP_LoggerThreadRequest::Type::StartWriteEntireFence:
+        FOR_EACH_BACKEND(Write_Fence());
+        break;
+#endif
+#if AP_RTC_LOGGING_ENABLED
+    case AP_LoggerThreadRequest::Type::StartWriteRTC:
+        FOR_EACH_BACKEND(Write_RTC());
+        break;
+#endif
+
+    // the following cases are handled in the backend-specific
+    // subclasses such as AP_LoggerThreadMethods_File:
+    case AP_LoggerThreadRequest::Type::KillWriteFD:
+    case AP_LoggerThreadRequest::Type::HandleRemoteLogBlockStatus:
+        for (uint8_t i=0; i<_next_backend; i++) {
+            backends[i]->process_request(request);
+        }
+        break;
+    }
+}
+
+void AP_LoggerThread::process_request_queue(void)
+{
+    // optimise for the no-requests case (don't take/release semaphore):
+    if (request_queue.requests_count == 0) {
+        return;
+    }
+
+    // keep track of how many requests we turn from pending to
+    // processed to avoid looping over all requests.
+    uint8_t pending = 0;
+
+    {  // take ownership of any pending requests / handle abandoned requests
+        // FIXME: should we only do a single message queue entry per iteration?
+        // FIXME: semaphore per request?!
+        WITH_SEMAPHORE(request_queue.requests_semaphore);
+        for (uint8_t i=0; i<ARRAY_SIZE(request_queue.requests) && pending < request_queue.requests_count; i++) {
+            switch (request_queue.requests[i].state) {
+            case AP_LoggerThreadRequest::State::ABANDONED:
+                request_queue.requests[i].state = AP_LoggerThreadRequest::State::FREE;
+                request_queue.requests_count--;
+                break;
+            case AP_LoggerThreadRequest::State::PENDING:
+                request_queue.requests[i].state = AP_LoggerThreadRequest::State::PROCESSING;
+                pending++;
+                break;
+            case AP_LoggerThreadRequest::State::FREE:
+            case AP_LoggerThreadRequest::State::PROCESSING:
+            case AP_LoggerThreadRequest::State::PROCESSED:
+            case AP_LoggerThreadRequest::State::CLAIMED:
+                break;
+            }
+        }
+    }
+
+    // process pending request:
+    uint8_t processed = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(request_queue.requests) && processed < pending; i++) {
+        if (request_queue.requests[i].state != AP_LoggerThreadRequest::State::PROCESSING) {
+            continue;
+        }
+        process_request(request_queue.requests[i]);
+
+        // mark request has having been processed:
+        WITH_SEMAPHORE(request_queue.requests_semaphore);
+        if (request_queue.requests[i].free_after_processing) {
+            request_queue.requests[i].state = AP_LoggerThreadRequest::State::FREE;
+            request_queue.requests_count--;
+        } else {
+            request_queue.requests[i].state = AP_LoggerThreadRequest::State::PROCESSED;
+        }
+    }
+}
 
 #undef FOR_EACH_BACKEND
+
+// completes simple thread request synchronously
+bool AP_Logger::synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type type, const char *name, uint16_t limit_ms)
+{
+    AP_LoggerThreadRequest *request = request_queue.claim_thread_request(type);
+    if (request == nullptr) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "%s failed (no request)", name);
+        return false;
+    }
+    const bool ok = synchronously_complete_thread_request(*request, limit_ms);
+    if (!ok) {
+        // this is debug only; the thread may swipe this at any time
+        if (request->state == AP_LoggerThreadRequest::State::ABANDONED) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "%s failed (abandoned)", name);
+        } else {
+            gcs().send_text(MAV_SEVERITY_WARNING, "%s failed", name);
+        }
+    }
+    return ok;
+}
+
+bool AP_Logger::synchronously_complete_thread_request(AP_LoggerThreadRequest &request, uint16_t limit_ms)
+{
+    uint32_t tstart_ms = AP_HAL::millis();
+    request.free_after_processing = false;
+    request.state = AP_LoggerThreadRequest::State::PENDING;
+#if AP_AHRS_ENABLED
+    uint32_t last_ahrs_update_ms = AP_HAL::millis();
+#endif  // AP_AHRS_ENABLED
+    while (true) {
+        if (AP_HAL::millis() - tstart_ms > limit_ms) {
+            // too slow!  Abandon the request.  Thread must free!
+            request.state = AP_LoggerThreadRequest::State::ABANDONED;
+            break;
+        }
+        if (request.state == AP_LoggerThreadRequest::State::PROCESSED) {
+            // pulled one down, passed it around, 98 bottles of
+            // request on the wall
+            request_queue.free_request(request);
+            return true;
+        }
+#if AP_AHRS_ENABLED
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_ahrs_update_ms > 1) {
+            // every 1ms we poke the AHRS to keep it happy:
+            last_ahrs_update_ms = now_ms;
+            AP::ahrs().update();
+        }
+#endif  // AP_AHRS_ENABLED
+        hal.scheduler->delay_microseconds(100);
+    }
+
+    return false;
+}
+
+void AP_Logger::PrepForArming()
+{
+    const uint16_t open_limit_ms = 1000;
+    synchronously_complete_simple_thread_request(AP_LoggerThreadRequest::Type::PrepForArming, "PrepForArming", open_limit_ms);
+}
 
 // Wrote an event packet
 void AP_Logger::Write_Event(LogEvent id)
@@ -1551,11 +1712,12 @@ void AP_Logger::Write_Error(LogErrorSubsystem sub_system,
   WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
+
 /*
   return true if we are in a logging persistance state, where we keep
   logging after a disarm or an arming failure
  */
-bool AP_Logger::in_log_persistance(void) const
+bool AP_LoggerThread::in_log_persistance(void) const
 {
     uint32_t now = AP_HAL::millis();
     uint32_t persist_ms = HAL_LOGGER_ARM_PERSIST*1000U;
@@ -1582,7 +1744,7 @@ bool AP_Logger::in_log_persistance(void) const
 /*
   return true if we should log while disarmed
  */
-bool AP_Logger::log_while_disarmed(void) const
+bool AP_LoggerThread::log_while_disarmed(void) const
 {
     if (_force_log_disarmed) {
         return true;
@@ -1597,7 +1759,7 @@ bool AP_Logger::log_while_disarmed(void) const
 }
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
-void AP_Logger::prepare_at_arming_sys_file_logging()
+void AP_LoggerThread::prepare_at_arming_sys_file_logging()
 {
     // free existing content:
     at_arm_file_content.reset();
@@ -1629,7 +1791,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
     }
 }
 
-void AP_Logger::FileContent::reset()
+void AP_LoggerThread::FileContent::reset()
 {
     WITH_SEMAPHORE(sem);
     file_list *next = nullptr;
@@ -1650,7 +1812,7 @@ void AP_Logger::FileContent::reset()
 }
 
 // removes victim from FileContent ***and delete()s it***
-void AP_Logger::FileContent::remove_and_free(file_list *victim)
+void AP_LoggerThread::FileContent::remove_and_free(file_list *victim)
 {
     WITH_SEMAPHORE(sem);
 
@@ -1676,12 +1838,12 @@ void AP_Logger::FileContent::remove_and_free(file_list *victim)
 /*
   log the content of a file in FILE log messages
  */
-void AP_Logger::log_file_content(const char *filename)
+void AP_LoggerThread::log_file_content(const char *filename)
 {
     log_file_content(normal_file_content, filename);
 }
 
-void AP_Logger::log_file_content(FileContent &file_content, const char *filename)
+void AP_LoggerThread::log_file_content(FileContent &file_content, const char *filename)
 {
     WITH_SEMAPHORE(file_content.sem);
     auto *file = NEW_NOTHROW file_list;
@@ -1716,7 +1878,7 @@ void AP_Logger::log_file_content(FileContent &file_content, const char *filename
 /*
   periodic call to log file content
  */
-void AP_Logger::file_content_update(void)
+void AP_LoggerThread::file_content_update(void)
 {
     if (file_content_prepare_for_arming) {
         file_content_prepare_for_arming = false;
@@ -1727,7 +1889,7 @@ void AP_Logger::file_content_update(void)
     file_content_update(normal_file_content);
 }
 
-void AP_Logger::file_content_update(FileContent &file_content)
+void AP_LoggerThread::file_content_update(FileContent &file_content)
 {
     auto *file = file_content.head;
     if (file == nullptr) {
@@ -1783,6 +1945,22 @@ void AP_Logger::file_content_update(FileContent &file_content)
     }
 }
 #endif // HAL_LOGGER_FILE_CONTENTS_ENABLED
+
+void AP_Logger::init(const AP_UInt32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
+{
+    thread.init(log_bitmask, structures, num_types);
+    start_io_thread();
+}
+
+AP_Logger::AP_Logger() :
+    thread{_params, request_queue}
+{
+    if (_singleton != nullptr) {
+        AP_HAL::panic("AP_Logger must be singleton");
+    }
+    _singleton = this;
+    AP_Param::setup_object_defaults(this, var_info);
+}
 
 namespace AP {
 
