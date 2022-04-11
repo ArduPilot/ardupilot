@@ -14,6 +14,8 @@
  */
 #pragma once
 
+ #include <soc/adc_channel.h>
+
 // make sensor selection clearer
 #define PROBE_IMU_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,GET_I2C_DEVICE(bus, addr),##args))
 #define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
@@ -28,7 +30,13 @@
 #define PROBE_MAG_IMU_I2C(driver, imudev, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(GET_I2C_DEVICE(bus,addr),##args))
 //------------------------------------
 
-#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_ESP32_BUZZ
+//- these are missing from esp-idf......will not be needed later
+#define RTC_WDT_STG_SEL_OFF             0
+#define RTC_WDT_STG_SEL_INT             1
+#define RTC_WDT_STG_SEL_RESET_CPU       2
+#define RTC_WDT_STG_SEL_RESET_SYSTEM    3
+#define RTC_WDT_STG_SEL_RESET_RTC       4
+
 
 //#define CONFIG_HAL_BOARD 12
 //#define HAL_BOARD_ESP32 12
@@ -43,7 +51,7 @@
 //#define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
 
 // BARO choices:
-#define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
+#define HAL_BARO_DEFAULT HAL_BARO_BMP280_I2C
 #define HAL_BARO_BMP280_NAME "BMP280"
 // or one of these:
 //#define HAL_BARO_DEFAULT HAL_BARO_MS5837_I2C
@@ -74,23 +82,38 @@
 #define HAL_USE_ADC TRUE
 
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
-//
 // two different pin numbering schemes, both are ok, but only one at a time:
-#define HAL_ESP32_ADC_PINS_OPTION1 {\
-	{ADC1_GPIO35_CHANNEL, 11, 1},\
-	{ADC1_GPIO34_CHANNEL, 11, 2},\
-	{ADC1_GPIO39_CHANNEL, 11, 3},\
-	{ADC1_GPIO36_CHANNEL, 11, 4}\
+// #define HAL_ESP32_ADC_PINS_OPTION1 {
+// 	{ADC1_GPIO35_CHANNEL, 11, 1},
+// 	{ADC1_GPIO34_CHANNEL, 11, 2},
+// 	{ADC1_GPIO39_CHANNEL, 11, 3},
+// 	{ADC1_GPIO36_CHANNEL, 11, 4}
+// }
+// #define HAL_ESP32_ADC_PINS_OPTION2 {
+// 	{ADC1_GPIO35_CHANNEL, 11, 35},
+// 	{ADC1_GPIO34_CHANNEL, 11, 34},
+// 	{ADC1_GPIO39_CHANNEL, 11, 39},
+// 	{ADC1_GPIO36_CHANNEL, 11, 36}
+// }
+//s3
+#define HAL_ESP32_ADC_PINS_OPTION3 {\
+	{ADC1_GPIO1_CHANNEL, 11, 34},\
+	{ADC1_GPIO2_CHANNEL, 11, 35},\
 }
-#define HAL_ESP32_ADC_PINS_OPTION2 {\
-	{ADC1_GPIO35_CHANNEL, 11, 35},\
-	{ADC1_GPIO34_CHANNEL, 11, 34},\
-	{ADC1_GPIO39_CHANNEL, 11, 39},\
-	{ADC1_GPIO36_CHANNEL, 11, 36}\
-}
+	// {ADC1_GPIO3_CHANNEL, 11, 36},
+	// {ADC1_GPIO4_CHANNEL, 11, 37}
+	// {ADC1_GPIO5_CHANNEL, 11, 38}
+	// {ADC1_GPIO6_CHANNEL, 11, 49}
+	// {ADC1_GPIO7_CHANNEL, 11, 40}
+	// {ADC1_GPIO8_CHANNEL, 11, 41}
+	// {ADC1_GPIO9_CHANNEL, 11, 42}
+	// {ADC1_GPIO10_CHANNEL, 11, 43}
+
 // pick one:
 //#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION1
-#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION2
+//#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION2
+// this one is for esp32s3 , which only has ADC1_GPIOX_CHANNEL with X from 1-10
+#define HAL_ESP32_ADC_PINS HAL_ESP32_ADC_PINS_OPTION3
 
 
 
@@ -102,7 +125,7 @@
 // uncommenting one or more of these will give more console debug in certain areas..
 //#define INSEDEBUG 1
 //#define STORAGEDEBUG 1
-//#define SCHEDDEBUG 1
+#define SCHEDDEBUG 1
 //#define FSDEBUG 1
 //#define BUSDEBUG 1
 
@@ -131,21 +154,40 @@
 #define WIFI_SSID "ardupilot123"
 #define WIFI_PWD "ardupilot123"
 
+// on esp32s3, some pins aren't defined, such as 'GPIO_NUM_23', just pick a different pin. disallowed:0,3, 19,20,  22,23,24,25, 26,27,28,29,30,31,32, 39,40,41,42 , 43,44, 45,46  esp32s3 - range 0-48. 
+// 22,23,24,25 - these are totally absent.
+// 19,20  - these are D+/D- for the integrated USB port/peripheral that does CDC or OTG etc.   the 'USB' labled one near the reset button.
+// 43(u0tx),44(u0rx) , also has 15(u0rts),16(u0cts) - these are D+/D- for the 'uart' port, that is not smart, and the flow control lines, these are also known as U0TXD,U0RXD the 'USB' labled one near the reset button.
+//  26,27,28,29,30,31,32 - GPIO26-32 are usually used for SPI flash and PSRAM and not recommended for other uses.
+//  try to avoid 0,3,45,46 as GPIO0, GPIO3, GPIO45 and GPIO46 are strapping pins, and they might, in some cases be used, only if u are careful.
+//'JTAG communication will likely fail, if configuration of JTAG pins is changed by user application.' / GPIO39 GPIO40 GPIO41 GPIO42
+// https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html
+
+
 //RCOUT which pins are used?
 
-#define HAL_ESP32_RCOUT { GPIO_NUM_25,GPIO_NUM_27, GPIO_NUM_33, GPIO_NUM_32, GPIO_NUM_22, GPIO_NUM_21 }
+#define HAL_ESP32_RCOUT { GPIO_NUM_47,GPIO_NUM_37, GPIO_NUM_33, GPIO_NUM_38, GPIO_NUM_36, GPIO_NUM_21 }
 
 // SPI BUS setup, including gpio, dma, etc
-// note... we use 'vspi' for the bmp280 and mpu9250
+// note... we use 'SPI3' for the bmp280 and mpu9250
 #define HAL_ESP32_SPI_BUSES \
-    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
-// tip:  VSPI_HOST  is an alternative name for esp's SPI3
+    {.host=SPI3_HOST, .dma_ch=SPI_DMA_CH_AUTO, .mosi=GPIO_NUM_8, .miso=GPIO_NUM_48, .sclk=GPIO_NUM_18} 
+
+	//s3..
+	//'SPI2 has 6 CS lines. SPI3 has 3 CS lines. Each CS line can be used to drive one SPI slave.'
+	// see https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/spi_master.html?highlight=spi
+	// .. but also any other gpio can be used as CS pin, thru the matrix , a bit slower.
+
+// tip:  SPI0_HOST   - do not use, its reserved and wont work
+// tip:  SPI1_HOST   - do not use, its reserved and wont work
+// tip:  SPI2_HOST  is an alternative name for classic esp's HSPI
+// tip:  SPI3_HOST  is an alternative name for classic esp's VSPI
 //#define HAL_ESP32_SPI_BUSES {}
 
 // SPI per-device setup, including speeds, etc.
 #define HAL_ESP32_SPI_DEVICES \
-    {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_26, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, \
-    {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_5,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+    {.name="mpu9250", .bus=0, .device=0, .cs=GPIO_NUM_7,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+//    {.name= "bmp280", .bus=0, .device=1, .cs=GPIO_NUM_26, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, 
 //#define HAL_ESP32_SPI_DEVICES {}
 
 //I2C bus list
@@ -158,17 +200,18 @@
 #define HAL_ESP32_RCIN GPIO_NUM_4
 
 
-//HARDWARE UARTS
+//HARDWARE UARTS  esp32s3 uart0-5/6 , uart1 = 19/20
 #define HAL_ESP32_UART_DEVICES \
-  {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },{.port=UART_NUM_1, .rx=GPIO_NUM_16, .tx=GPIO_NUM_17 }
+  {.port=UART_NUM_0, .rx=GPIO_NUM_5, .tx=GPIO_NUM_6 }
+  //,{.port=UART_NUM_1, .rx=GPIO_NUM_20, .tx=GPIO_NUM_19 } don't tryto use second uart when using gdb over usb
 
 #define HAVE_FILESYSTEM_SUPPORT 1
 
 // Do u want to use mmc or spi mode for the sd card, this is board specific ,
 //  as mmc uses specific pins but is quicker,
 #define HAL_ESP32_SDMMC 1
-// and spi is more flexible pinouts....  dont forget vspi/hspi should be selected to NOT conflict with SPI_BUSES above
-//#define HAL_ESP32_SDSPI {.host=VSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_14, .cs=GPIO_NUM_21}
+// and spi is more flexible pinouts....  dont forget SPI3/SPI2 should be selected to NOT conflict with SPI_BUSES above
+//#define HAL_ESP32_SDSPI {.host=SPI3_HOST, .dma_ch=2, .mosi=GPIO_NUM_2, .miso=GPIO_NUM_15, .sclk=GPIO_NUM_14, .cs=GPIO_NUM_21}
 
 #define HAL_ESP32_SDCARD 1
 #define LOGGER_MAVLINK_SUPPORT 1
@@ -176,6 +219,8 @@
 #define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
 #define HAL_BOARD_STORAGE_DIRECTORY "/SDCARD/APM/STORAGE"
 #define HAL_OS_POSIX_IO 1
+
+#define HAL_LOGGING_STACK_SIZE 4096
 
 // this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
 // setting to 2 means log-over-mavlink to a companion computer etc.
