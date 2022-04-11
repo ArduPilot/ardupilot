@@ -4,7 +4,7 @@
 
 class LoggerMessageWriter_DFLogStart;
 
-#define MAX_LOG_FILES 500
+#define MAX_LOG_FILES 120
 
 class AP_Logger_Backend
 {
