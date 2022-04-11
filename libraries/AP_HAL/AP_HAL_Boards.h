@@ -68,6 +68,7 @@
 #define HAL_BOARD_SUBTYPE_ESP32_IMU_MODULE_V11  6006
 #define HAL_BOARD_SUBTYPE_ESP32_S3BUZZ          6007
 
+
 /* InertialSensor driver types */
 #define HAL_INS_NONE         0
 #define HAL_INS_MPU60XX_SPI  2
