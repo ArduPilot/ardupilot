@@ -460,7 +460,15 @@ def add_dynamic_boards_esp32():
             continue
         hwdef = os.path.join(dirname, d, 'hwdef.dat')
         if os.path.exists(hwdef):
-            newclass = type(d, (esp32,), {'name': d})
+            with open(hwdef, "r") as f:
+                content = f.read()
+                if 'S3' in content:
+                    print(hwdef,"ESP32: located S3 variant")
+                    newclass = type(d, (esp32s3,), {'name': d})
+                else:
+                    print(hwdef,"ESP32: located old/classic ESP32 variant")
+                    newclass = type(d, (esp32,), {'name': d})
+            
 
 def get_boards_names():
     add_dynamic_boards_chibios()
@@ -778,6 +786,82 @@ class esp32(Board):
     def build(self, bld):
         super(esp32, self).build(bld)
         bld.load('esp32')
+
+class esp32s3(Board):
+    toolchain = 'xtensa-esp32s3-elf'
+
+    def configure_env(self, cfg, env):
+        def expand_path(p):
+            print("USING EXPRESSIF IDF:"+str(env.idf))
+            return cfg.root.find_dir(env.IDF+p).abspath()
+        try:
+            env.IDF = os.environ['IDF_PATH'] 
+        except:
+            env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
+
+        super(esp32s3, self).configure_env(cfg, env)
+        cfg.load('esp32s3')
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32'
+        )
+
+        tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
+        
+        # this makes sure we get the correct subtype
+        env.DEFINES.update(
+            ENABLE_HEAP = 0,
+            CONFIG_HAL_S3 = '1' ,
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
+            ALLOW_DOUBLE_MATH_FUNCTIONS = '1',
+        )
+
+        env.AP_LIBRARIES += [
+            'AP_HAL_ESP32',
+        ]
+
+        env.CFLAGS += [
+            '-fno-inline-functions',
+            '-mlongcalls',
+        ]
+        env.CFLAGS.remove('-Werror=undef')
+
+        env.CXXFLAGS += ['-mlongcalls',
+                         '-Os',
+                         '-g',
+                         '-ffunction-sections',
+                         '-fdata-sections',
+                         '-fno-exceptions',
+                         '-fno-rtti',
+                         '-nostdlib',
+                         '-fstrict-volatile-bitfields',
+                         '-Wno-sign-compare',
+                         '-fno-inline-functions',
+                         '-mlongcalls',
+                         '-DCYGWIN_BUILD']
+        env.CXXFLAGS.remove('-Werror=undef')
+        env.CXXFLAGS.remove('-Werror=shadow')
+
+
+        env.INCLUDES += [
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
+            ]
+        env.AP_PROGRAM_AS_STLIB = True
+        #if cfg.options.enable_profile:
+        #    env.CXXFLAGS += ['-pg',
+        #                     '-DENABLE_PROFILE=1']
+
+    def pre_build(self, bld):
+        '''pre-build hook that gets called before dynamic sources'''
+        from waflib.Context import load_tool
+        module = load_tool('esp32s3', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
+        super(esp32s3, self).pre_build(bld)
+
+    def build(self, bld):
+        super(esp32s3, self).build(bld)
+        bld.load('esp32s3')
 
 
 class chibios(Board):

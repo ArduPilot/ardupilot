@@ -220,7 +220,7 @@ def size_summary(bld, nodes):
 
     for d in l:
         if bld.env.SIZE:
-            if bld.env.get_flat('SIZE').endswith("xtensa-esp32-elf-size"):
+            if bld.env.get_flat('SIZE').find("xtensa-esp32") != -1:
                 cmd = [bld.env.get_flat('SIZE')] + ["-t"] + [d['binary_path']]
             else:
                 cmd = [bld.env.get_flat('SIZE')] + [d['binary_path']]

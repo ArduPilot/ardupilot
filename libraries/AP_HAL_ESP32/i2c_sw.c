@@ -35,7 +35,13 @@
 #include <stdio.h>
 
 #include "esp_attr.h"
+
+//#include "esp32/rom/ets_sys.h"
+#if CONFIG_HAL_S3 == 1
+#include "esp32s3/rom/ets_sys.h"
+#else
 #include "esp32/rom/ets_sys.h"
+#endif
 
 #include "soc/gpio_reg.h"
 #include "soc/gpio_struct.h"
