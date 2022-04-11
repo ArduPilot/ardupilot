@@ -463,10 +463,10 @@ def add_dynamic_boards_esp32():
             with open(hwdef, "r") as f:
                 content = f.read()
                 if 'S3' in content:
-                    print(hwdef,"ESP32: located S3 variant")
+                    print(hwdef,"ESP32: ESP32S3")
                     newclass = type(d, (esp32s3,), {'name': d})
                 else:
-                    print(hwdef,"ESP32: located old/classic ESP32 variant")
+                    print(hwdef,"ESP32: ESP32 classic")
                     newclass = type(d, (esp32,), {'name': d})
             
 
