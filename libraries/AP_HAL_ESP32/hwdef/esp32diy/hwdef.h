@@ -93,6 +93,10 @@
 	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
 	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
 
+
+#define WIFI_SSID "ardupilot123"
+#define WIFI_PWD "ardupilot123"
+
 #define HAVE_FILESYSTEM_SUPPORT 1
 #define HAL_ESP32_SDCARD 1
 #define LOGGER_MAVLINK_SUPPORT 1

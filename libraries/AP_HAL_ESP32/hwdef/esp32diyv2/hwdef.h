@@ -43,7 +43,7 @@
 #define HAL_ESP32_SPI_DEVICES \
     {.name="imu", .bus=0, .device=1, .cs=GPIO_NUM_27,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
     //{.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_27,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
-//    {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_14, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, \
+//    {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_14, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, 
 //#define HAL_ESP32_SPI_DEVICES {}
 
 #define HAL_ESP32_I2C_BUSES \
@@ -68,7 +68,7 @@
 //MPU9250
 #define HAL_INS_MPU9250_NAME "imu"
 #define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, HAL_INS_MPU9250_NAME, ROTATION_YAW_270)
-#define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_YAW_270);
+//#define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_YAW_270);
 
 /*
 //ICM20948
@@ -78,6 +78,8 @@
 */
 
 
+#define WIFI_SSID "ardupilot123"
+#define WIFI_PWD "ardupilot123"
 
 //#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensensev2, 0, 0x68, ROTATION_ROLL_180)
 
