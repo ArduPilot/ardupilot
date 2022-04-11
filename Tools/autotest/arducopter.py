@@ -8440,15 +8440,11 @@ class AutoTestCopter(AutoTest):
         self.delay_sim_time(5)
         content = self.fetch_file_via_ftp("@SYS/tasks.txt")
         self.progress("Got content (%s)" % str(content))
-        if "fast_loop" not in content:
-            raise NotAchievedException("Did not find fast_loop in content")
 
         lines = content.split("\n")
 
         if not lines[0].startswith("TasksV2"):
             raise NotAchievedException("Expected TasksV2 as first line first not (%s)" % lines[0])
-        if not lines[1].startswith("fast_loop"):
-            raise NotAchievedException("Expected fast_loop first, not (%s)" % lines[1])
         # last line is empty, so -2 here
         if not lines[-2].startswith("AP_EFI::update"):
             raise NotAchievedException("Expected EFI last not (%s)" % lines[-2])
