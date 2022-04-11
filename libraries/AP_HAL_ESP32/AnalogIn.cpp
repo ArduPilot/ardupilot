@@ -290,7 +290,7 @@ void AnalogIn::_timer_tick()
         ESP32::AnalogSource *c = _channels[j];
         if (c != nullptr) {
             // add a value
-            //c->_add_value();
+            c->_add_value();
         }
     }
 
