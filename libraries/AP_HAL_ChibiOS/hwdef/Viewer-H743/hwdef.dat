@@ -198,8 +198,8 @@ define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
 DMA_PRIORITY SPI1*
 
+define HAL_STORAGE_SIZE 16384
+
 # use last 2 pages for flash storage
 # H743 has 16 pages of 128k each
-define HAL_STORAGE_SIZE 16384
-define STORAGE_FLASH_PAGE 14
-
+STORAGE_FLASH_PAGE 14
