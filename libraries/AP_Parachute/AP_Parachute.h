@@ -82,6 +82,9 @@ public:
     /// update - shuts off the trigger should be called at about 10hz
     void update();
 
+    /// send user command long updating the parchute status
+    void send_chute_msg(mavlink_command_long_t &pkg_msg);
+
     /// alt_min - returns the min altitude above home the vehicle should have before parachute is released
     ///   0 = altitude check disabled
     int16_t alt_min() const { return _alt_min; }
@@ -110,9 +113,6 @@ public:
     static AP_Parachute *get_singleton() { return _singleton; }
 
 private:
-
-    // send user command long updating the parchute status
-    void send_msg();
 
     // Set servo or relay to off position
     void release_off();

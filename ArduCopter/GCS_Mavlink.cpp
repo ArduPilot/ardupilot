@@ -312,6 +312,16 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_CHUTE: {
+#if PARACHUTE == ENABLED
+        CHECK_PAYLOAD_SIZE(COMMAND_LONG);
+        mavlink_command_long_t pkt_msg{};
+        copter.parachute.send_chute_msg(pkt_msg);
+        GCS_MAVLINK::send_message(MAVLINK_MSG_ID_COMMAND_LONG, (char*) &pkt_msg);
+        break;
+#endif
+    }
+
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
         send_wind();
@@ -504,6 +514,7 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_ESC_TELEMETRY,
     MSG_GENERATOR_STATUS,
     MSG_WINCH_STATUS,
+    MSG_CHUTE,
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM

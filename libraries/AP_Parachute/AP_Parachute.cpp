@@ -185,8 +185,6 @@ void AP_Parachute::release(release_reason reason)
         _cancel_timeout_ms = now + _cancel_delay;
     }
 
-    send_msg();
-
     const char *string = string_for_release(reason);
 
     const uint32_t time_till_deploy = _cancel_timeout_ms - now;
@@ -198,16 +196,14 @@ void AP_Parachute::release(release_reason reason)
 }
 
 // send user command long updating the parchute status
-void AP_Parachute::send_msg()
+void AP_Parachute::send_chute_msg(mavlink_command_long_t &pkt_msg)
 {
-    mavlink_command_long_t cmd_msg{};
-    cmd_msg.command = MAV_CMD_USER_1;
-    cmd_msg.param1 = _release_reasons; // bitmask of reason to release, see release_reason enum
-    cmd_msg.param2 = ((_cancel_timeout_ms == 0) || _release_initiated) ? -1.0f : (_cancel_timeout_ms - AP_HAL::millis()); // ms until release
-    cmd_msg.param3 = AP::vehicle()->get_standby(); // standby states
-    cmd_msg.param4 = _enabled; // 0 or less for disabled, otherwise enabled
-    cmd_msg.param5 = _release_initiated; // 0 for not, 1 if released or relasing
-    gcs().send_to_active_channels(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg);
+    pkt_msg.command = MAV_CMD_USER_1;
+    pkt_msg.param1 = _release_reasons; // bitmask of reason to release, see release_reason enum
+    pkt_msg.param2 = ((_cancel_timeout_ms == 0) || _release_initiated) ? -1.0f : (_cancel_timeout_ms - AP_HAL::millis()); // ms until release
+    pkt_msg.param3 = AP::vehicle()->get_standby(); // standby states
+    pkt_msg.param4 = _enabled; // 0 or less for disabled, otherwise enabled
+    pkt_msg.param5 = _release_initiated; // 0 for not, 1 if released or relasing
 }
 
 MAV_RESULT AP_Parachute::handle_cmd(const mavlink_command_long_t &packet)
@@ -241,17 +237,12 @@ MAV_RESULT AP_Parachute::handle_cmd(const mavlink_command_long_t &packet)
 /// update - shuts off the trigger should be called at about 10hz
 void AP_Parachute::update()
 {
-    const uint32_t now = AP_HAL::millis();
-    if (now > _last_msg_send_ms + 100) {
-        // stream at hard coded 10hz, cant do anything clever with stream rates because its not a dedicated mesage, just a commnad long
-        _last_msg_send_ms = now;
-        send_msg();
-    }
-
-    // exit immediately if not enabled 
+    // exit immediately if not enabled
     if (_enabled <= 0) {
         return;
     }
+
+    const uint32_t now = AP_HAL::millis();
 
     // parachute not to be released or waiting for a possible cancel
     if ( (_cancel_timeout_ms == 0) || (now < _cancel_timeout_ms)) {
