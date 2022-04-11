@@ -714,12 +714,9 @@ class esp32(Board):
             AP_SIM_ENABLED = 0,
         )
 
-        tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
-        
         # this makes sure we get the correct subtype
         env.DEFINES.update(
             ENABLE_HEAP = 0,
-            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_ESP32_%s' %  tt.upper() ,
             ALLOW_DOUBLE_MATH_FUNCTIONS = '1',
         )
 
@@ -751,8 +748,19 @@ class esp32(Board):
 
 
         env.INCLUDES += [
-                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
+                #cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/boards').abspath(),
+                cfg.srcnode.find_dir('libraries/AP_HAL_ESP32/hwdef/%s' % self.name).abspath()
             ]
+        defaults_file = 'libraries/AP_HAL_ESP32/hwdef/%s/defaults.parm' % self.name
+        if os.path.exists(defaults_file):
+            env.ROMFS_FILES += [('defaults.parm', defaults_file)]
+            env.DEFINES.update(
+                HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
+            )
+        if len(env.ROMFS_FILES) > 0:
+            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+
+
         env.AP_PROGRAM_AS_STLIB = True
         #if cfg.options.enable_profile:
         #    env.CXXFLAGS += ['-pg',

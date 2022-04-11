@@ -28,6 +28,44 @@
 #define PROBE_MAG_IMU_I2C(driver, imudev, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe_ ## imudev(GET_I2C_DEVICE(bus,addr),##args))
 //------------------------------------
 
+#define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_ESP32_DIY_V2
+
+#define HAL_ESP32_SDSPI \
+   {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+
+
+#define HAL_ESP32_SPI_BUSES \
+    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+// tip:  VSPI_HOST  is an alternative name for esp's SPI3
+//#define HAL_ESP32_SPI_BUSES {}
+
+// SPI per-device setup, including speeds, etc.
+#define HAL_ESP32_SPI_DEVICES \
+    {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_26, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, \
+    {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_5,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+//#define HAL_ESP32_SPI_DEVICES {}
+
+#define HAL_ESP32_I2C_BUSES \
+	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_18, .speed=400*KHZ, .internal=true, .soft=true},\
+	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true, .soft=false}
+
+// the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
+#define HAL_ESP32_ADC_PINS {\
+	{ADC1_GPIO36_CHANNEL, 11, 1},\
+	{ADC1_GPIO32_CHANNEL, 11, 2}\
+}
+
+#define HAL_ESP32_RCIN GPIO_NUM_17
+
+//TODO RCOUT config
+#define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
+
+#define HAL_ESP32_UART_DEVICES \
+    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },\
+	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
+	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
+
+
 #define HAL_INS_DEFAULT HAL_INS_ICM20XXX_I2C
 #define HAL_INS_ICM20XXX_I2C_BUS 0
 #define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
@@ -51,17 +89,6 @@
 
 #define HAL_ESP32_WIFI 1 //To define tcp wifi
 
-//TODO RCOUT config
-#define HAL_ESP32_RCOUT {GPIO_NUM_15, GPIO_NUM_2, GPIO_NUM_0, GPIO_NUM_4}
-
-#define HAL_ESP32_SPI_BUSES {}
-
-#define HAL_ESP32_SPI_DEVICES {}
-
-#define HAL_ESP32_I2C_BUSES \
-	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_18, .speed=400*KHZ, .internal=true, .soft=true},\
-	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true, .soft=false}
-
 // GPIO36
 #define HAL_BATT_VOLT_PIN (0)
 #define HAL_BATT_VOLT_SCALE (18.1)
@@ -78,19 +105,6 @@
 #define ENABLE_HEAP 0
 #endif
 
-// the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
-#define HAL_ESP32_ADC_PINS {\
-	{ADC1_GPIO36_CHANNEL, 11, 1},\
-	{ADC1_GPIO32_CHANNEL, 11, 2}\
-}
-
-#define HAL_ESP32_RCIN GPIO_NUM_17
-
-#define HAL_ESP32_UART_DEVICES \
-    {.port=UART_NUM_0, .rx=GPIO_NUM_3, .tx=GPIO_NUM_1 },\
-	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
-	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
-
 #define HAVE_FILESYSTEM_SUPPORT 1
 #define HAL_ESP32_SDCARD 1
 #define LOGGER_MAVLINK_SUPPORT 1
@@ -100,14 +114,4 @@
 #define HAL_OS_POSIX_IO 1
 
 #define HAL_LOGGING_BACKENDS_DEFAULT 2
-
-
-#define HAL_ESP32_SDSPI \
-   {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
-
-
-#define HAL_LOGGING_BACKENDS_DEFAULT 2
-
-
-
 
