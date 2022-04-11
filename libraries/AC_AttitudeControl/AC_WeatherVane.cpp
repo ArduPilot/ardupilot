@@ -104,7 +104,7 @@ AC_WeatherVane::AC_WeatherVane(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, float pitch_cdeg, const bool is_takeoff, const bool is_landing)
+bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, const float hgt, const float roll_cdeg, const float pitch_cdeg, const bool is_takeoff, const bool is_landing)
 {
     Direction dir = (Direction)_direction.get();
     if ((dir == Direction::OFF) || !allowed || (pilot_yaw != 0) || !is_positive(_gain)) {
@@ -176,8 +176,8 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
             return false;
 
         case Direction::NOSE_IN:
-            if (pitch_enable && is_positive(pitch_cdeg)) {
-                output = fabsf(roll_cdeg) + pitch_cdeg;
+            if (pitch_enable && is_positive(pitch_cdeg - deadzone_cdeg)) {
+                output = fabsf(roll_cdeg) + (pitch_cdeg - deadzone_cdeg);
             } else {
                 output = MAX(fabsf(roll_cdeg) - deadzone_cdeg, 0.0);
             }
@@ -204,8 +204,8 @@ bool AC_WeatherVane::get_yaw_out(float &yaw_output, const int16_t pilot_yaw, con
             break;
 
         case Direction::TAIL_IN:
-            if (pitch_enable && is_negative(pitch_cdeg)) {
-                output = fabsf(roll_cdeg) - pitch_cdeg;
+            if (pitch_enable && is_negative(pitch_cdeg + deadzone_cdeg)) {
+                output = fabsf(roll_cdeg) - (pitch_cdeg + deadzone_cdeg);
             } else {
                 output = MAX(fabsf(roll_cdeg) - deadzone_cdeg, 0.0);
             }
