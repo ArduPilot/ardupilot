@@ -37,7 +37,7 @@
 #if CONFIG_IDF_TARGET_ESP32S2 ||CONFIG_IDF_TARGET_ESP32C3
 #define SPI_DMA_CHAN    host.slot
 #else
-#define SPI_DMA_CHAN    1
+#define SPI_DMA_CHAN    2
 #endif
 
 sdmmc_card_t* card = nullptr;
@@ -212,22 +212,26 @@ void mount_sdcard_spi()
         .allocation_unit_size = 16 * 1024
     };
 
+    static bool initialized = false;
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    //TODO change to sdspi_host_init_device for spi sharing
-    spi_bus_config_t bus_cfg = {
-        .mosi_io_num = bus_.mosi,
-        .miso_io_num = bus_.miso,
-        .sclk_io_num = bus_.sclk,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 4000,
-    };
-    ret = spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CHAN);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize bus.");
-        return;
+    if (!initialized) {
+        initialized = true;
+        //TODO change to sdspi_host_init_device for spi sharing
+        spi_bus_config_t bus_cfg = {
+            .mosi_io_num = bus_.mosi,
+            .miso_io_num = bus_.miso,
+            .sclk_io_num = bus_.sclk,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+            .max_transfer_sz = 4000,
+        };
+        ret = spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CHAN);
+        if (ret != ESP_OK) {
+            initialized = false;
+            ESP_LOGE(TAG, "Failed to initialize bus.");
+            return;
+        }
     }
-
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
     slot_config.gpio_cs = bus_.cs;
     slot_config.host_id = (spi_host_device_t)host.slot;
@@ -249,6 +253,7 @@ void mount_sdcard_spi()
         sdcard_running = false;
     }
 }
+
 void mount_sdcard()
 {
     mount_sdcard_spi();

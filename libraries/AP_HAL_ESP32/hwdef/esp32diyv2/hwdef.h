@@ -30,24 +30,24 @@
 
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_ESP32_DIY_V2
 
-#define HAL_ESP32_SDSPI \
-   {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
-
-
 #define HAL_ESP32_SPI_BUSES \
-    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_23, .miso=GPIO_NUM_19, .sclk=GPIO_NUM_18}
+    {.host=VSPI_HOST, .dma_ch=1, .mosi=GPIO_NUM_18, .miso=GPIO_NUM_26, .sclk=GPIO_NUM_5}
 // tip:  VSPI_HOST  is an alternative name for esp's SPI3
 //#define HAL_ESP32_SPI_BUSES {}
 
+//#define HAL_ESP32_SDSPI  {}
+#define HAL_ESP32_SDSPI \
+   {.host=HSPI_HOST, .dma_ch=2, .mosi=GPIO_NUM_19, .miso=GPIO_NUM_35, .sclk=GPIO_NUM_12, .cs=GPIO_NUM_21}
+
 // SPI per-device setup, including speeds, etc.
 #define HAL_ESP32_SPI_DEVICES \
-    {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_26, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, \
-    {.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_5,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+    {.name="imu", .bus=0, .device=1, .cs=GPIO_NUM_27,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+    //{.name="mpu9250", .bus=0, .device=1, .cs=GPIO_NUM_27,  .mode = 0, .lspeed=2*MHZ, .hspeed=8*MHZ}
+//    {.name= "bmp280", .bus=0, .device=0, .cs=GPIO_NUM_14, .mode = 3, .lspeed=1*MHZ, .hspeed=1*MHZ}, \
 //#define HAL_ESP32_SPI_DEVICES {}
 
 #define HAL_ESP32_I2C_BUSES \
-	{.port=I2C_NUM_0, .sda=GPIO_NUM_5, .scl=GPIO_NUM_18, .speed=400*KHZ, .internal=true, .soft=true},\
-	{.port=I2C_NUM_1, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=true, .soft=false}
+	{.port=I2C_NUM_0, .sda=GPIO_NUM_22, .scl=GPIO_NUM_23, .speed=400*KHZ, .internal=false, .soft=false}
 
 // the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
 #define HAL_ESP32_ADC_PINS {\
@@ -65,27 +65,50 @@
 	{.port=UART_NUM_1, .rx=GPIO_NUM_39, .tx=GPIO_NUM_33 },\
 	{.port=UART_NUM_2, .rx=GPIO_NUM_34, .tx=GPIO_NUM_25 }
 
+//MPU9250
+#define HAL_INS_MPU9250_NAME "imu"
+#define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensense, HAL_INS_MPU9250_NAME, ROTATION_YAW_270)
+#define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_YAW_270);
 
-#define HAL_INS_DEFAULT HAL_INS_ICM20XXX_I2C
-#define HAL_INS_ICM20XXX_I2C_BUS 0
-#define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
+/*
+//ICM20948
+#define HAL_INS_ICM20948_NAME "imu"
+#define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensensev2, HAL_INS_ICM20948_NAME, ROTATION_YAW_270)
+#define HAL_MAG_PROBE_LIST ADD_BACKEND(DRIVER_AK09916, AP_Compass_AK09916::probe_ICM20948(0, ROTATION_YAW_180));
+*/
+
+
+
+//#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensensev2, 0, 0x68, ROTATION_ROLL_180)
 
 #define HAL_LOGGING_STACK_SIZE 4096
 
-//#define HAL_BARO_DEFAULT HAL_BARO_MS5837_I2C
-//GPIO 34
-//#define HAL_BARO_ANALOG_PIN (6)
+//#define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_NONE);
+
+//#define HAL_COMPASS_ICM20948_I2C_ADDR (0x68)
+//#define HAL_COMPASS_AK09916_I2C_BUS 0
+//#define HAL_COMPASS_AK09916_I2C_ADDR (0x0C)
+#define HAL_MAG_PROBE_LIST PROBE_MAG_IMU(AK8963, mpu9250, 0, ROTATION_YAW_180);
+//#define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
 
 #define HAL_COMPASS_ICM20948_I2C_ADDR (0x68)
 #define HAL_COMPASS_AK09916_I2C_BUS 0
 #define HAL_COMPASS_AK09916_I2C_ADDR (0x0C)
 #define HAL_COMPASS_MAX_SENSORS 3
+#define HAL_PROBE_EXTERNAL_I2C_COMPASSES 1
 
-#define HAL_INS_PROBE_LIST PROBE_IMU_I2C(Invensensev2, 0, 0x68, ROTATION_ROLL_180)
+// allow boot without a baro
+#define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
-#define HAL_MAG_PROBE_LIST ADD_BACKEND(DRIVER_ICM20948, AP_Compass_AK09916::probe_ICM20948_I2C(0, ROTATION_ROLL_180_YAW_270));
+//#define HAL_BARO_DEFAULT HAL_BARO_BMP280_SPI
+//#define HAL_BARO_BMP280_NAME "BMP280"
 
-#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x77)
+//#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(BMP280, 0, 0x77)
+//#define HAL_BARO_PROBE_LIST PROBE_BARO_SPI(BMP280, "bmp280")
+
+//#define HAL_BARO_DEFAULT HAL_BARO_MS5837_I2C
+//GPIO 34
+//#define HAL_BARO_ANALOG_PIN (6)
 
 #define HAL_ESP32_WIFI 1 //To define tcp wifi
 
@@ -106,7 +129,7 @@
 #endif
 
 #define HAVE_FILESYSTEM_SUPPORT 1
-#define HAL_ESP32_SDCARD 1
+//#define HAL_ESP32_SDCARD 0
 #define LOGGER_MAVLINK_SUPPORT 1
 #define HAL_BOARD_LOG_DIRECTORY "/SDCARD/APM/LOGS"
 #define HAL_BOARD_TERRAIN_DIRECTORY "/SDCARD/APM/TERRAIN"
