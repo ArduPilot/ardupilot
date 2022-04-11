@@ -137,7 +137,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         }
     }
 
-    void* xhandle;
+    tskTaskControlBlock* xhandle;
     BaseType_t xReturned = xTaskCreate(thread_create_trampoline, name, stack_size, tproc, thread_priority, &xhandle);
     if (xReturned != pdPASS) {
         free(tproc);
