@@ -10508,10 +10508,16 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
             log_num = int(mavproxy.match.group(1))
             numlogs = int(mavproxy.match.group(2))
-            lastlog = int(mavproxy.match.group(3))
+            # lastlog = int(mavproxy.match.group(3))
             size = int(mavproxy.match.group(4))
-            if numlogs != 2 or log_num != 1 or size <= 0:
-                raise NotAchievedException("Unexpected log information %d %d %d" % (log_num, numlogs, lastlog))
+            expected_numlogs = 2
+            expected_log_num = 1
+            if numlogs != expected_numlogs:
+                raise NotAchievedException(f"Bad numlogs {expected_numlogs=} {numlogs=}")
+            if log_num != expected_log_num:
+                raise NotAchievedException(f"Unexpected log_num {expected_log_num=} {log_num=}")
+            if size <= 0:
+                raise NotAchievedException(f"Expected positive log size got={size}")
             self.progress("Log size: %d" % size)
             self.reboot_sitl()
             # This starts a new log with a time of 0, wait for arm so that we can insert the correct time

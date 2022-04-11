@@ -703,13 +703,6 @@ void AP_Vehicle::scheduler_delay_callback()
 
     static uint32_t last_1hz, last_50hz, last_5s;
 
-#if HAL_LOGGING_ENABLED
-    AP_Logger &logger = AP::logger();
-
-    // don't allow potentially expensive logging calls:
-    logger.EnableWrites(false);
-#endif
-
     const uint32_t tnow = AP_HAL::millis();
     if (tnow - last_1hz > 1000) {
         last_1hz = tnow;
@@ -732,10 +725,6 @@ void AP_Vehicle::scheduler_delay_callback()
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Initialising ArduPilot");
         }
     }
-
-#if HAL_LOGGING_ENABLED
-    logger.EnableWrites(true);
-#endif
 }
 #endif  // AP_SCHEDULER_ENABLED
 

@@ -21,7 +21,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
+AP_Logger_Backend::AP_Logger_Backend(AP_LoggerThread &front,
                                      class LoggerMessageWriter_DFLogStart *writer) :
     _front(front),
     _startup_messagewriter(writer)
@@ -165,7 +165,7 @@ bool AP_Logger_Backend::Write_Emit_FMT(uint8_t msg_type)
 #endif
 
     // get log structure from front end:
-    struct AP_Logger::log_write_fmt_strings ls = {};
+    struct AP_LoggerThread::log_write_fmt_strings ls = {};
     struct LogStructure logstruct = {
         // these will be overwritten, but need to keep the compiler happy:
         0,
@@ -201,7 +201,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
     // abstraction we could do WriteBytes() here instead?
     const char *fmt  = nullptr;
     uint8_t msg_len;
-    AP_Logger::log_write_fmt *f;
+    AP_LoggerThread::log_write_fmt *f;
     for (f = _front.log_write_fmts; f; f=f->next) {
         if (f->msg_type == msg_type) {
             fmt = f->fmt;
@@ -387,7 +387,7 @@ void AP_Logger_Backend::validate_WritePrioritisedBlock(const void *pBuffer,
     const char *name_src;
     const struct LogStructure *s = _front.structure_for_msg_type(type);
     if (s == nullptr) {
-        const struct AP_Logger::log_write_fmt *t = _front.log_write_fmt_for_msg_type(type);
+        const struct AP_LoggerThread::log_write_fmt *t = _front.log_write_fmt_for_msg_type(type);
         if (t == nullptr) {
             AP_HAL::panic("No structure for msg_type=%u", type);
         }
@@ -470,9 +470,6 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
 
 bool AP_Logger_Backend::ShouldLog(bool is_critical)
 {
-    if (!_front.WritesEnabled()) {
-        return false;
-    }
     if (!_initialised) {
         return false;
     }
@@ -725,7 +722,7 @@ void AP_Logger_Backend::df_stats_log() {
 
 
 // class to handle rate limiting of log messages
-AP_Logger_RateLimiter::AP_Logger_RateLimiter(const AP_Logger &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz)
+AP_Logger_RateLimiter::AP_Logger_RateLimiter(const AP_LoggerThread &_front, const AP_Float &_limit_hz, const AP_Float &_disarm_limit_hz)
     : front(_front),
       rate_limit_hz(_limit_hz),
       disarm_rate_limit_hz(_disarm_limit_hz)

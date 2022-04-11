@@ -17,9 +17,9 @@ class AP_Logger_MAVLink : public AP_Logger_Backend
 {
 public:
     // constructor
-    AP_Logger_MAVLink(class AP_Logger &front, LoggerMessageWriter_DFLogStart *writer);
+    AP_Logger_MAVLink(class AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer);
 
-    static AP_Logger_Backend  *probe(AP_Logger &front,
+    static AP_Logger_Backend  *probe(AP_LoggerThread &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
         return NEW_NOTHROW AP_Logger_MAVLink(front, ls);
     }
@@ -53,6 +53,7 @@ public:
     void end_log_transfer() override { };
     uint16_t get_num_logs(void) override { return 0; }
 
+    // remote_log_block_status_msg is called on the main thread
     void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
     void vehicle_was_disarmed() override {}
 

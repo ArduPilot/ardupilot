@@ -25,7 +25,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Logger_MAVLink::AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+AP_Logger_MAVLink::AP_Logger_MAVLink(AP_LoggerThread &front, LoggerMessageWriter_DFLogStart *writer) :
     AP_Logger_Backend(front, writer),
     _max_blocks_per_send_blocks(8)
 {
