@@ -478,8 +478,8 @@ void AP_Logger::Write_Proximity(AP_Proximity &proximity)
         return;
     }
 
-    AP_Proximity::Proximity_Distance_Array dist_array{}; // raw distances stored here
-    AP_Proximity::Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
+    AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D dist_array{}; // raw distances stored here
+    AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D filt_dist_array{}; //filtered distances stored here
     for (uint8_t i = 0; i < proximity.get_num_layers(); i++) {
         const bool active = proximity.get_active_layer_distances(i, dist_array, filt_dist_array);
         if (!active) {
