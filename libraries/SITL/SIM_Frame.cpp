@@ -453,10 +453,10 @@ void Frame::init(const char *frame_str, Battery *_battery)
     if (momentum_drag > drag_force) {
         model.mdrag_coef *= drag_force / momentum_drag;
         areaCd = 0.0;
-        ::printf("Suggested EK3_BCOEF_* = 0, EK3_MCOEF = %.3f\n", (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+        ::printf("Suggested EK3_DRAG_BCOEF_* = 0, EK3_DRAG_MCOEF = %.3f\n", (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
     } else {
         areaCd = (drag_force - momentum_drag) / (0.5f * ref_air_density * sq(model.refSpd));
-        ::printf("Suggested EK3_BCOEF_* = %.3f, EK3_MCOEF = %.3f\n", model.mass / areaCd, (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+        ::printf("Suggested EK3_DRAG_BCOEF_* = %.3f, EK3_DRAG_MCOEF = %.3f\n", model.mass / areaCd, (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
     }
 
     terminal_rotation_rate = model.refRotRate;
