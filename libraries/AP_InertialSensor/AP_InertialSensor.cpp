@@ -533,8 +533,60 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
 
-    // @Group: NOTCH_
-    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    // @Param: NOTCH_ENABLE
+    // @DisplayName: Static Harmonic Notch Filter enable
+    // @Description: Static Harmonic Notch Filter enable
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+
+    // @Param: NOTCH_FREQ
+    // @DisplayName: Static Harmonic Notch Filter base frequency
+    // @Description: Static Harmonic Notch Filter base center frequency in Hz. This should be set at most half the backend gyro rate (which is typically 1Khz). For helicopters using RPM sensor to dynamically set the notch frequency, use this parameter to provide a lower limit to the dynamic notch filter.  Recommend setting it to half the operating rotor speed in Hz.
+    // @Range: 10 495
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: NOTCH_BW
+    // @DisplayName: Static Harmonic Notch Filter bandwidth
+    // @Description: Static Harmonic Notch Filter bandwidth in Hz. This is typically set to half the base frequency. The ratio of base frequency to bandwidth determines the notch quality factor and is fixed across harmonics.
+    // @Range: 5 250
+    // @Units: Hz
+    // @User: Advanced
+
+    // @Param: NOTCH_ATT
+    // @DisplayName: Static Harmonic Notch Filter attenuation
+    // @Description: Static Harmonic Notch Filter attenuation in dB. Values greater than 40dB will typically produce a hard notch rather than a modest attenuation of motor noise.
+    // @Range: 5 50
+    // @Units: dB
+    // @User: Advanced
+
+    // @Param: NOTCH_HMNCS
+    // @DisplayName: Static Harmonic Notch Filter harmonics
+    // @Description: Bitmask of harmonic frequencies to apply Static Harmonic Notch Filter to. This option takes effect on the next reboot.
+    // @Bitmask: 0:1st harmonic,1:2nd harmonic,2:3rd harmonic,3:4th hamronic,4:5th harmonic,5:6th harmonic,6:7th harmonic,7:8th harmonic
+    // @User: Advanced
+    // @RebootRequired: True
+
+    // @Param: NOTCH_REF
+    // @DisplayName: This parameter has no effect on the Static Harmonic Notch
+    // @Description: This parameter has no effect on the Static Harmonic Notch
+    // @User: Advanced
+    // @Range: 0.0 1.0
+    // @RebootRequired: True
+
+    // @Param: NOTCH_MODE
+    // @DisplayName: This parameter has no effect on the Static Harmonic Notch
+    // @Description: This parameter has no effect on the Static Harmonic Notch
+    // @Range: 0 4
+    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT
+    // @User: Advanced
+
+    // @Param: NOTCH_OPTS
+    // @DisplayName: Static Harmonic Notch Filter options
+    // @Description: Static Harmonic Notch Filter options. Double-notches can provide deeper attenuation across a wider bandwidth than single notches and are suitable for larger aircraft. 
+    // @Bitmask: 0:Double notch
+    // @User: Advanced
+    // @RebootRequired: True
     AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, HarmonicNotchFilterParams),
 
     // @Group: LOG_
