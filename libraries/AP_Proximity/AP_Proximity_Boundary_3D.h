@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "AP_Proximity.h"
+#include "AP_Proximity_Utils.h"
 
 #if HAL_PROXIMITY_ENABLED
 
@@ -68,8 +68,8 @@ public:
     // This method will also mark the sector and layer to be "valid",
     // This distance can then be used for Obstacle Avoidance
     // Assume detected obstacle is horizontal (zero pitch), if no pitch is passed
-    void set_face_attributes(const Face &face, float pitch, float yaw, float distance);
-    void set_face_attributes(const Face &face, float yaw, float distance) { set_face_attributes(face, 0, yaw, distance); }
+    void set_face_attributes(uint8_t instance, const Face &face, float pitch, float yaw, float distance);
+    void set_face_attributes(uint8_t instance, const Face &face, float yaw, float distance) { set_face_attributes(instance, face, 0, yaw, distance); }
 
     // update boundary points used for simple avoidance based on a single sector and pitch distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
@@ -108,11 +108,27 @@ public:
     uint8_t get_horizontal_object_count() const;
     bool get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
+
+    // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
+    struct Proximity_Distance_Array_2D {
+        uint8_t orientation[PROXIMITY_NUM_SECTORS]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
+        float distance[PROXIMITY_NUM_SECTORS];      // distance in meters
+        bool valid(uint8_t offset) const {
+            // returns true if the distance stored at offset is valid
+            return (offset < 8 && (offset_valid & (1U<<offset)));
+        };
+
+        uint8_t offset_valid; // bitmask
+    };
+
+    // check for update timeouts
+    void boundary_3D_checks();
+
     // get number of layers
     uint8_t get_num_layers() const { return PROXIMITY_NUM_LAYERS; }
 
     // get raw and filtered distances in 8 directions per layer.
-    bool get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+    bool get_layer_distances(uint8_t layer_number, float dist_max, Proximity_Distance_Array_2D &prx_dist_array, Proximity_Distance_Array_2D &prx_filt_dist_array) const;
 
     // pass down filter cut-off freq from params
     void set_filter_freq(float filt_freq) { _filter_freq = filt_freq; }
@@ -134,6 +150,8 @@ private:
     
     // get the prev sector which is CCW to the passed sector 
     uint8_t get_prev_sector(uint8_t sector) const {return ((sector <= 0) ? PROXIMITY_NUM_SECTORS-1 : sector-1); }
+
+    bool check_if_closest_dist(uint8_t instance, const Face &face, float distance);
 
     // Converts obstacle_num passed from avoidance library into appropriate face of the boundary
     // Returns false if the face is invalid
@@ -160,7 +178,9 @@ private:
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
     uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
     LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
+    uint8_t _last_updated_by_instance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // instance which updated this face
     float _filter_freq;                                                 // cutoff freq of low pass filter
+    uint32_t _last_timeout_check_ms;                                    // time when boundary was checked for non-updated valid faces
 };
 
 // This class gives an easy way of making a temporary boundary, used for "sorting" distances.
@@ -178,10 +198,10 @@ public:
     // add a distance to the temp boundary if it is shorter than any other provided distance since the last time the boundary was reset
     // pitch and yaw are in degrees, distance is in meters
     void add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch, float yaw, float distance);
-    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, PID_TUNING_YAW, distance); }
+    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, yaw, distance); }
 
     // fill the original 3D boundary with the contents of this temporary boundary
-    void update_3D_boundary(AP_Proximity_Boundary_3D &boundary);
+    void update_3D_boundary(uint8_t instance, AP_Proximity_Boundary_3D &boundary);
 
 private:
 

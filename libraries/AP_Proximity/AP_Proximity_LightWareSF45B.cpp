@@ -144,7 +144,7 @@ void AP_Proximity_LightWareSF45B::process_message()
         const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
         if (face != _face) {
             if (_face_distance_valid) {
-                boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                boundary.set_face_attributes(state.instance, _face, _face_yaw_deg, _face_distance);
             } else {
                 // mark previous face invalid
                 boundary.reset_face(_face);
@@ -160,7 +160,7 @@ void AP_Proximity_LightWareSF45B::process_message()
         const uint8_t minisector = convert_angle_to_minisector(angle_deg);
         if (minisector != _minisector) {
             if ((_minisector != UINT8_MAX) && _minisector_distance_valid) {
-                database_push(_minisector_angle, _minisector_distance);
+                utility.database_push(_minisector_angle, _minisector_distance);
             }
             // init mini sector
             _minisector = minisector;

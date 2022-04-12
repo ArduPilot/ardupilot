@@ -14,12 +14,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_PROXIMITY_ENABLED
-#define HAL_PROXIMITY_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
-#endif
+#include "AP_Proximity_Utils.h"
 
 #if HAL_PROXIMITY_ENABLED
 
@@ -27,11 +22,13 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include "AP_Proximity_Boundary_3D.h"
 
-#define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
+#define PROXIMITY_MAX_INSTANCES             2   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
 #define PROXIMITY_MAX_DIRECTION 8
 #define PROXIMITY_SENSOR_ID_START 10
+#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 750 // we should check the 3D boundary faces after every this many ms
 
 class AP_Proximity_Backend;
 
@@ -69,18 +66,6 @@ public:
         Good
     };
 
-    // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
-    struct Proximity_Distance_Array {
-        uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
-        float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
-        bool valid(uint8_t offset) const {
-            // returns true if the distance stored at offset is valid
-            return (offset < 8 && (offset_valid & (1U<<offset)));
-        };
-
-        uint8_t offset_valid; // bitmask
-    };
-
     // detect and initialise any available proximity sensors
     void init(void);
 
@@ -90,7 +75,6 @@ public:
     // return sensor orientation and yaw correction
     uint8_t get_orientation(uint8_t instance) const;
     int16_t get_yaw_correction(uint8_t instance) const;
-    float get_filter_freq() const { return _filt_freq; }
 
     // return sensor health
     Status get_status(uint8_t instance) const;
@@ -102,10 +86,10 @@ public:
     }
 
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
-    bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
+    bool get_horizontal_distances(AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D &prx_dist_array) const;
 
     // get raw and filtered distances in 8 directions per layer. used for logging
-    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+    bool get_active_layer_distances(uint8_t layer, AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D &prx_dist_array, AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D &prx_filt_dist_array) const;
 
     // get total number of obstacles, used in GPS based Simple Avoidance
     uint8_t get_obstacle_count() const;
@@ -174,6 +158,12 @@ private:
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
     uint8_t primary_instance;
     uint8_t num_instances;
+
+    // Methods to manipulate 3D boundary in this class
+    AP_Proximity_Boundary_3D boundary;
+
+    // convenience functions in this class
+    AP_Proximity_Utils utility;
 
     bool valid_instance(uint8_t i) const {
         if (drivers[i] == nullptr) {

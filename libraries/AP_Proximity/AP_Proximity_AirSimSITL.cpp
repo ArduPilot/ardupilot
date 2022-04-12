@@ -69,7 +69,7 @@ void AP_Proximity_AirSimSITL::update(void)
             // check distance from previous point to reduce amount of data sent to object database
             if (!prev_pos_valid || ((new_pos - prev_pos).length_squared() >= accuracy_sq)) {
                 // update OA database
-                database_push(yaw_angle_deg, safe_sqrt(distance_sq));
+                utility.database_push(yaw_angle_deg, safe_sqrt(distance_sq));
                 // store point
                 prev_pos_valid = true;
                 prev_pos = new_pos;
@@ -77,7 +77,7 @@ void AP_Proximity_AirSimSITL::update(void)
         }
     }
     // copy temp boundary to real boundary
-    temp_boundary.update_3D_boundary(boundary);
+    temp_boundary.update_3D_boundary(state.instance, boundary);
 }
 
 // get maximum and minimum distances (in meters) of primary sensor

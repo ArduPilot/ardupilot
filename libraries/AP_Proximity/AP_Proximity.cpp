@@ -190,6 +190,29 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_MAX", 20, AP_Proximity, _max_m, 0.0f),
 
+    // @Param: 2_TYPE
+    // @DisplayName: Second Proximity type
+    // @Description: What type of proximity sensor is connected
+    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("2_TYPE", 21, AP_Proximity, _type[1], 0),
+
+    // @Param: 2_ORIENT
+    // @DisplayName: Second Proximity sensor orientation
+    // @Description: Second Proximity sensor orientation
+    // @Values: 0:Default,1:Upside Down
+    // @User: Standard
+    AP_GROUPINFO("2_ORIENT", 22, AP_Proximity, _orientation[1], 0),
+
+    // @Param: 2_YAW_CORR
+    // @DisplayName: Second Proximity sensor yaw correction
+    // @Description: Second Proximity sensor yaw correction
+    // @Units: deg
+    // @Range: -180 180
+    // @User: Standard
+    AP_GROUPINFO("2_YAW_CORR", 23, AP_Proximity, _yaw_correction[1], 0),
+
     AP_GROUPEND
 };
 
@@ -233,7 +256,11 @@ void AP_Proximity::update(void)
             continue;
         }
         drivers[i]->update();
-        drivers[i]->boundary_3D_checks();
+
+        // set filter freq
+        boundary.set_filter_freq(_filt_freq);
+        // check for update timeouts
+        boundary.boundary_3D_checks();
     }
 
     // work out primary instance - first sensor returning good data
@@ -297,58 +324,58 @@ void AP_Proximity::detect_instance(uint8_t instance)
     case Type::None:
         return;
     case Type::RPLidarA2:
-        if (AP_Proximity_RPLidarA2::detect()) {
+        if (AP_Proximity_RPLidarA2::detect(instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance]);
+            drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], boundary, utility);
             return;
         }
         break;
     case Type::MAV:
         state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_MAV(*this, state[instance]);
+        drivers[instance] = new AP_Proximity_MAV(*this, state[instance], boundary, utility);
         return;
 
     case Type::TRTOWER:
-        if (AP_Proximity_TeraRangerTower::detect()) {
+        if (AP_Proximity_TeraRangerTower::detect(instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance]);
+            drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], boundary, utility);
             return;
         }
         break;
     case Type::TRTOWEREVO:
-        if (AP_Proximity_TeraRangerTowerEvo::detect()) {
+        if (AP_Proximity_TeraRangerTowerEvo::detect(instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance]);
+            drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance], boundary, utility);
             return;
         }
         break;
 
     case Type::RangeFinder:
         state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_RangeFinder(*this, state[instance]);
+        drivers[instance] = new AP_Proximity_RangeFinder(*this, state[instance], boundary, utility);
         return;
 
     case Type::SF40C:
-        if (AP_Proximity_LightWareSF40C::detect()) {
+        if (AP_Proximity_LightWareSF40C::detect(instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance]);
+            drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance], boundary, utility);
             return;
         }
         break;
 
     case Type::SF45B:
-        if (AP_Proximity_LightWareSF45B::detect()) {
+        if (AP_Proximity_LightWareSF45B::detect(instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF45B(*this, state[instance]);
+            drivers[instance] = new AP_Proximity_LightWareSF45B(*this, state[instance], boundary, utility);
             return;
         }
         break;
 
     case Type::CYGBOT_D1:
 #if AP_PROXIMITY_CYGBOT_ENABLED
-    if (AP_Proximity_Cygbot_D1::detect()) {
+    if (AP_Proximity_Cygbot_D1::detect(instance)) {
         state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance]);
+        drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance], boundary, utility);
         return;
     }
 # endif
@@ -357,12 +384,12 @@ void AP_Proximity::detect_instance(uint8_t instance)
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     case Type::SITL:
         state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_SITL(*this, state[instance]);
+        drivers[instance] = new AP_Proximity_SITL(*this, state[instance], boundary, utility);
         return;
 
     case Type::AirSimSITL:
         state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance]);
+        drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], boundary, utility);
         return;
 
 #endif
@@ -370,7 +397,7 @@ void AP_Proximity::detect_instance(uint8_t instance)
 }
 
 // get distances in 8 directions. used for sending distances to ground station
-bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const
+bool AP_Proximity::get_horizontal_distances(AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D &prx_dist_array) const
 {
     if (!valid_instance(primary_instance)) {
         return false;
@@ -380,7 +407,7 @@ bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_a
 }
 
 // get raw and filtered distances in 8 directions per layer. used for logging
-bool AP_Proximity::get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const
+bool AP_Proximity::get_active_layer_distances(uint8_t layer, AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D &prx_dist_array,AP_Proximity_Boundary_3D::Proximity_Distance_Array_2D &prx_filt_dist_array) const
 {
     if (!valid_instance(primary_instance)) {
         return false;
@@ -391,11 +418,11 @@ bool AP_Proximity::get_active_layer_distances(uint8_t layer, AP_Proximity::Proxi
 
 // get total number of obstacles, used in GPS based Simple Avoidance
 uint8_t AP_Proximity::get_obstacle_count() const
-{   
+{
     if (!valid_instance(primary_instance)) {
         return 0;
     }
-    return drivers[primary_instance]->get_obstacle_count();
+    return boundary.get_obstacle_count();
 }
 
 // get number of layers.
@@ -404,7 +431,7 @@ uint8_t AP_Proximity::get_num_layers() const
     if (!valid_instance(primary_instance)) {
         return 0;
     }
-    return drivers[primary_instance]->get_num_layers();
+    return boundary.get_num_layers();
 }
 
 // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
@@ -413,7 +440,7 @@ bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle)
     if (!valid_instance(primary_instance)) {
         return false;
     }
-    return drivers[primary_instance]->get_obstacle(obstacle_num, vec_to_obstacle);
+    return boundary.get_obstacle(obstacle_num, vec_to_obstacle);
 }
 
 // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
@@ -423,7 +450,7 @@ bool AP_Proximity::closest_point_from_segment_to_obstacle(uint8_t obstacle_num, 
     if (!valid_instance(primary_instance)) {
         return false;
     }
-    return drivers[primary_instance]->closest_point_from_segment_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
+    return boundary.closest_point_from_segment_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
 }
 
 // get distance and angle to closest object (used for pre-arm check)
@@ -434,7 +461,7 @@ bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
         return false;
     }
     // get closest object from backend
-    return drivers[primary_instance]->get_closest_object(angle_deg, distance);
+    return boundary.get_closest_object(angle_deg, distance);
 }
 
 // get number of objects, used for non-GPS avoidance
@@ -444,7 +471,7 @@ uint8_t AP_Proximity::get_object_count() const
         return 0;
     }
     // get count from backend
-    return drivers[primary_instance]->get_horizontal_object_count();
+    return boundary.get_horizontal_object_count();
 }
 
 // get an object's angle and distance, used for non-GPS avoidance
@@ -455,8 +482,9 @@ bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& a
         return false;
     }
     // get angle and distance from backend
-    return drivers[primary_instance]->get_horizontal_object_angle_and_distance(object_number, angle_deg, distance);
+    return boundary.get_horizontal_object_angle_and_distance(object_number, angle_deg, distance);
 }
+
 
 // get maximum and minimum distances (in meters) of primary sensor
 float AP_Proximity::distance_max() const
@@ -515,11 +543,8 @@ bool AP_Proximity::sensor_failed() const
 // set alt as read from dowward facing rangefinder. Tilt is already adjusted for.
 void AP_Proximity::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
 {
-    if (!valid_instance(primary_instance)) {
-        return;
-    }
     // store alt at the backend
-    drivers[primary_instance]->set_rangefinder_alt(use, healthy, alt_cm);
+    utility.set_rangefinder_alt(use, healthy, alt_cm);
 }
 
 

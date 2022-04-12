@@ -14,7 +14,7 @@ class AP_Proximity_SITL : public AP_Proximity_Backend
 
 public:
     // constructor
-    AP_Proximity_SITL(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
+    AP_Proximity_SITL(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state, AP_Proximity_Boundary_3D &_boundary, AP_Proximity_Utils &_utility);
 
     // update state
     void update(void) override;

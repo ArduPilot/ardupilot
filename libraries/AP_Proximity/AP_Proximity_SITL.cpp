@@ -33,8 +33,10 @@ extern const AP_HAL::HAL& hal;
    The constructor also initialises the proximity sensor. 
 */
 AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
-                                     AP_Proximity::Proximity_State &_state):
-    AP_Proximity_Backend(_frontend, _state),
+                                     AP_Proximity::Proximity_State &_state,
+                                     AP_Proximity_Boundary_3D &_boundary,
+                                     AP_Proximity_Utils &_utility):
+    AP_Proximity_Backend(_frontend, _state, _boundary, _utility),
     sitl(AP::sitl())
 {
     ap_var_type ptype;
@@ -62,9 +64,9 @@ void AP_Proximity_SITL::update(void)
             AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
             float fence_distance;
             if (get_distance_to_fence(yaw_angle_deg, fence_distance)) {
-                boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
+                boundary.set_face_attributes(state.instance, face, yaw_angle_deg, fence_distance);
                 // update OA database
-                database_push(yaw_angle_deg, fence_distance);
+                utility.database_push(yaw_angle_deg, fence_distance);
             } else {
                 boundary.reset_face(face);
             }

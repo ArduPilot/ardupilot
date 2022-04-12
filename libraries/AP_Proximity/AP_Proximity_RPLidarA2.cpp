@@ -319,7 +319,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                     if (face != _last_face) {
                         // distance is for a new face, the previous one can be updated now
                         if (_last_distance_valid) {
-                            boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m);
+                            boundary.set_face_attributes(state.instance, _last_face, _last_angle_deg, _last_distance_m);
                         } else {
                             // reset distance from last face
                             boundary.reset_face(face);
@@ -337,7 +337,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                             _last_angle_deg = angle_deg;
                         }
                         // update OA database
-                        database_push(_last_angle_deg, _last_distance_m);
+                        utility.database_push(_last_angle_deg, _last_distance_m);
                     }
                 }
             } else {

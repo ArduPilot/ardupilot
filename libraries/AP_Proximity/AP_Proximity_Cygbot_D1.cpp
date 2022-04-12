@@ -118,7 +118,7 @@ bool AP_Proximity_Cygbot_D1::parse_byte(uint8_t data)
         // checksum is valid, parse payload
         _last_distance_received_ms = AP_HAL::millis();
         parse_payload();
-        _temp_boundary.update_3D_boundary(boundary);
+        _temp_boundary.update_3D_boundary(state.instance, boundary);
         reset();
         return true;
     }
@@ -152,7 +152,7 @@ void AP_Proximity_Cygbot_D1::parse_payload()
             // push face to temp boundary
             _temp_boundary.add_distance(face, sampled_angle, distance_m);
             // push to OA_DB
-            database_push(sampled_angle, distance_m);
+            utility.database_push(sampled_angle, distance_m);
         }
         // increment sampled angle
         sampled_angle += CYGBOT_2D_ANGLE_STEP;

@@ -86,7 +86,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         // provided we got the new obstacle in less than PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS
         if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
             // push data from temp boundary to the main 3-D proximity boundary
-            temp_boundary.update_3D_boundary(boundary);
+            temp_boundary.update_3D_boundary(state.instance, boundary);
             // clear temp boundary for new data
             temp_boundary.reset();
         }
@@ -102,7 +102,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         if (in_range && !ignore_reading(yaw_angle_deg, distance, false)) {
             temp_boundary.add_distance(face, yaw_angle_deg, distance);
             // update OA database
-            database_push(yaw_angle_deg, distance);
+            utility.database_push(yaw_angle_deg, distance);
         }
     }
 
@@ -149,7 +149,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
 
     Vector3f current_pos;
     Matrix3f body_to_ned;
-    const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
+    const bool database_ready = utility.database_prepare_for_push(current_pos, body_to_ned);
 
     // variables to calculate closest angle and distance for each face
     AP_Proximity_Boundary_3D::Face face;
@@ -178,7 +178,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
         if (latest_face != face) {
             // store previous face
             if (face_distance_valid) {
-                boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+                boundary.set_face_attributes(state.instance, face, face_yaw_deg, face_distance);
             } else {
                 boundary.reset_face(face);
             }
@@ -196,13 +196,13 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
 
         // update Object Avoidance database with Earth-frame point
         if (database_ready) {
-            database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, body_to_ned);
+            utility.database_push(mid_angle, packet_distance_m, _last_update_ms, current_pos, body_to_ned);
         }
     }
 
     // process the last face
     if (face_distance_valid) {
-        boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+        boundary.set_face_attributes(state.instance, face, face_yaw_deg, face_distance);
     } else {
         boundary.reset_face(face);
     }
@@ -231,7 +231,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
         // push data from temp boundary to the main 3-D proximity boundary because a new timestamp has arrived
-        temp_boundary.update_3D_boundary(boundary);
+        temp_boundary.update_3D_boundary(state.instance, boundary);
         // clear temp boundary for new data
         temp_boundary.reset();
     }
@@ -241,7 +241,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     Vector3f current_pos;
     Matrix3f body_to_ned;
-    const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
+    const bool database_ready = utility.database_prepare_for_push(current_pos, body_to_ned);
 
     const Vector3f obstacle_FRD(packet.x, packet.y, packet.z);
     const float obstacle_distance = obstacle_FRD.length();
@@ -267,7 +267,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
     temp_boundary.add_distance(face, pitch, yaw, obstacle.length());
 
     if (database_ready) {
-        database_push(yaw, pitch, obstacle.length(),_last_update_ms, current_pos, body_to_ned);
+        utility.database_push(yaw, pitch, obstacle.length(),_last_update_ms, current_pos, body_to_ned);
     }
     return;
 }

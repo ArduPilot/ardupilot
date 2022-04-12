@@ -38,6 +38,7 @@ void AP_Proximity_Boundary_3D::init()
             const float angle_rad = ((float)_sector_middle_deg[sector]+(PROXIMITY_SECTOR_WIDTH_DEG/2.0f));
             _sector_edge_vector[layer][sector].offset_bearing(angle_rad, pitch, 100.0f);
             _boundary_points[layer][sector] = _sector_edge_vector[layer][sector] * PROXIMITY_BOUNDARY_DIST_DEFAULT;
+            _last_updated_by_instance[layer][sector] = UINT8_MAX;
         }
     }
 }
@@ -46,18 +47,42 @@ void AP_Proximity_Boundary_3D::init()
 // pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle)
 // yaw is the horizontal body-frame angle (in degrees) to the obstacle (0=directly ahead of the vehicle, 90 is to the right of the vehicle)
 AP_Proximity_Boundary_3D::Face AP_Proximity_Boundary_3D::get_face(float pitch, float yaw) const
-{   
+{
     const uint8_t sector = wrap_360(yaw + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;
     const float pitch_limited = constrain_float(pitch, -75.0f, 74.9f);
     const uint8_t layer = (pitch_limited + 75.0f)/PROXIMITY_PITCH_WIDTH_DEG;
     return Face{layer, sector};
 }
 
+bool AP_Proximity_Boundary_3D::check_if_closest_dist(uint8_t instance, const Face &face, float distance)
+{
+    if (instance == _last_updated_by_instance[face.layer][face.sector] || _last_updated_by_instance[face.layer][face.sector] == UINT8_MAX) {
+        // assume its the best dist available
+        return true;
+    }
+
+    // instance isn't the same as what this face was updated with last
+    if (AP_HAL::millis() - _last_update_ms[face.layer][face.sector] < 200) {
+        // face was updated recently
+        if (distance > _filtered_distance[face.layer][face.sector].get()) {
+            // this distance is further away than some other sensor's sight
+            // lets not use this
+            return false;
+        }
+    }
+    return true;
+}
+
 // Set the actual body-frame angle(yaw), pitch, and distance of the detected object.
 // This method will also mark the sector and layer to be "valid", so this distance can be used for Obstacle Avoidance
-void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch, float angle, float distance)
+void AP_Proximity_Boundary_3D::set_face_attributes(uint8_t instance, const Face &face, float pitch, float angle, float distance)
 {
     if (!face.valid()) {
+        return;
+    }
+
+    if (!check_if_closest_dist(instance, face, distance)) {
+        //  some other sensor has recently reported a smaller distance
         return;
     }
 
@@ -65,6 +90,7 @@ void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch
     _pitch[face.layer][face.sector] = pitch;
     _distance[face.layer][face.sector] = distance;
     _distance_valid[face.layer][face.sector] = true;
+    _last_updated_by_instance[face.layer][face.sector] = instance;
 
     // apply filter
     set_filtered_distance(face, distance);
@@ -180,6 +206,18 @@ void AP_Proximity_Boundary_3D::reset_face(const Face &face)
 
     // update simple avoidance boundary
     update_boundary(face);
+}
+
+// check for update timeouts
+void AP_Proximity_Boundary_3D::boundary_3D_checks()
+{
+    // check if any face has valid distance when it should not
+    const uint32_t now_ms = AP_HAL::millis();
+    // run this check every PROXIMITY_BOUNDARY_3D_TIMEOUT_MS
+    if ((now_ms - _last_timeout_check_ms) > PROXIMITY_BOUNDARY_3D_TIMEOUT_MS) {
+        _last_timeout_check_ms = now_ms;
+        check_face_timeout();
+    }
 }
 
 // check if a face has valid distance even if it was updated a long time back
@@ -363,7 +401,7 @@ bool AP_Proximity_Boundary_3D::get_filtered_distance(const Face &face, float &di
 }
 
 // Get raw and filtered distances in 8 directions per layer
-bool AP_Proximity_Boundary_3D::get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const
+bool AP_Proximity_Boundary_3D::get_layer_distances(uint8_t layer_number, float dist_max, Proximity_Distance_Array_2D &prx_dist_array, Proximity_Distance_Array_2D &prx_filt_dist_array) const
 {
     // cycle through all sectors filling in distances and orientations
     // see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
@@ -411,13 +449,13 @@ void AP_Proximity_Temp_Boundary::add_distance(const AP_Proximity_Boundary_3D::Fa
 }
 
 // fill the original 3D boundary with the contents of this temporary boundary
-void AP_Proximity_Temp_Boundary::update_3D_boundary(AP_Proximity_Boundary_3D &boundary)
+void AP_Proximity_Temp_Boundary::update_3D_boundary(uint8_t instance, AP_Proximity_Boundary_3D &boundary)
 {
     for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             if (_distances[layer][sector] < FLT_MAX) {
                 AP_Proximity_Boundary_3D::Face face{layer, sector};
-                boundary.set_face_attributes(face, _pitch[layer][sector], _angle[layer][sector], _distances[layer][sector]);
+                boundary.set_face_attributes(instance, face, _pitch[layer][sector], _angle[layer][sector], _distances[layer][sector]);
             }
         }
     }
