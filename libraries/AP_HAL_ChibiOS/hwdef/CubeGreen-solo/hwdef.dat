@@ -10,6 +10,10 @@ include ../CubeBlack/hwdef.dat
 # these are parameters the Solo requires for proper operation that are different from the 4 standard defaults.
 env DEFAULT_PARAMETERS 'Tools/Frame_params/Solo_Copter-4_GreenCube.param'
 
+undef HAL_OREO_LED_ENABLED
 define HAL_OREO_LED_ENABLED 1
+
+undef HAL_SOLO_GIMBAL_ENABLED
+define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
 
 AUTOBUILD_TARGETS Copter

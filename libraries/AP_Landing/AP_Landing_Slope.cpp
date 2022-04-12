@@ -23,6 +23,7 @@
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Logger/AP_Logger.h>
 
 void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
 {

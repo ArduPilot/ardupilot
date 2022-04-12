@@ -120,7 +120,7 @@ void Blimp::failsafe_gcs_check()
     } else if (last_gcs_update_ms > gcs_timeout_ms && !failsafe.gcs) {
         // New GCS failsafe event, trigger events
         set_failsafe_gcs(true);
-        // failsafe_gcs_on_event();
+        arming.disarm(AP_Arming::Method::GCSFAILSAFE); // failsafe_gcs_on_event() should replace this when written
     }
 }
 

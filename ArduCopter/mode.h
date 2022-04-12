@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Copter.h"
+#include <AP_Math/chirp.h>
 class Parameters;
 class ParametersG2;
 
@@ -89,7 +90,7 @@ public:
     int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
-    void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
+    void get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const;
     Vector2f get_pilot_desired_velocity(float vel_max) const;
     float get_pilot_desired_yaw_rate(float yaw_in);
     float get_pilot_desired_throttle() const;
@@ -1481,6 +1482,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
+    Chirp chirp_input;
+
 protected:
 
     const char *name() const override { return "SYSTEMID"; }
@@ -1489,7 +1492,6 @@ protected:
 private:
 
     void log_data() const;
-    float waveform(float time);
 
     enum class AxisType {
         NONE = 0,           // none

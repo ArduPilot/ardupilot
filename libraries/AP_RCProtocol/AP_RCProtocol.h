@@ -142,6 +142,11 @@ public:
         bool invert_rx;
     };
 
+    // return true if we are decoding a byte stream, instead of pulses
+    bool using_uart(void) const {
+        return _detected_with_bytes;
+    }
+
 private:
     void check_added_uart(void);
 

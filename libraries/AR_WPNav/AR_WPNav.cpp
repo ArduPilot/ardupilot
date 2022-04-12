@@ -13,19 +13,26 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AR_WPNav.h"
+#include <GCS_MAVLink/GCS.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <stdio.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
 #define AR_WPNAV_TIMEOUT_MS             100
 #define AR_WPNAV_SPEED_DEFAULT          2.0f
+#define AR_WPNAV_SPEED_MIN              0.05f   // minimum speed between waypoints in m/s
+#define AR_WPNAV_SPEED_UPDATE_MIN_MS    500     // max speed cannot be updated more than once in this many milliseconds
 #define AR_WPNAV_RADIUS_DEFAULT         2.0f
-#define AR_WPNAV_OVERSHOOT_DEFAULT      2.0f
-#define AR_WPNAV_PIVOT_ANGLE_DEFAULT    60
-#define AR_WPNAV_PIVOT_ANGLE_ACCURACY   5   // vehicle will pivot to within this many degrees of destination
-#define AR_WPNAV_PIVOT_RATE_DEFAULT     90
+#define AR_WPNAV_OVERSPEED_RATIO_MAX    5.0f    // if _overspeed_enabled the vehicle may travel as quickly as 5x WP_SPEED
+#define AR_WPNAV_SNAP_MAX               15.0f   // scurve snap (change in jerk) in m/s/s/s/s
+#define AR_WPNAV_ACCEL_MAX              20.0    // acceleration used when user has specified no acceleration limit
 
 const AP_Param::GroupInfo AR_WPNav::var_info[] = {
 
@@ -47,59 +54,86 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RADIUS", 2, AR_WPNav, _radius, AR_WPNAV_RADIUS_DEFAULT),
 
-    // @Param: OVERSHOOT
-    // @DisplayName: Waypoint overshoot maximum
-    // @Description: Waypoint overshoot maximum in meters.  The vehicle will attempt to stay within this many meters of the track as it completes one waypoint and moves to the next.
-    // @Units: m
-    // @Range: 0 10
-    // @Increment: 0.1
-    // @User: Standard
-    AP_GROUPINFO("OVERSHOOT", 3, AR_WPNav, _overshoot, AR_WPNAV_OVERSHOOT_DEFAULT),
+    // 3 was OVERSHOOT
 
-    // @Param: PIVOT_ANGLE
-    // @DisplayName: Waypoint Pivot Angle
-    // @Description: Pivot when the difference between the vehicle's heading and its target heading is more than this many degrees. Set to zero to disable pivot turns. Note: This parameter should be greater than 10 degrees for pivot turns to work.
-    // @Units: deg
-    // @Range: 0 360
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("PIVOT_ANGLE", 4, AR_WPNav, _pivot_angle, AR_WPNAV_PIVOT_ANGLE_DEFAULT),
+    // 4 was PIVOT_ANGLE
+    // 5 was PIVOT_RATE
+    // 6 was SPEED_MIN
+    // 7 was PIVOT_DELAY
 
-    // @Param: PIVOT_RATE
-    // @DisplayName: Waypoint Pivot Turn Rate
-    // @Description: Turn rate during pivot turns
-    // @Units: deg/s
-    // @Range: 0 360
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("PIVOT_RATE", 5, AR_WPNav, _pivot_rate, AR_WPNAV_PIVOT_RATE_DEFAULT),
+    // @Group: PIVOT_
+    // @Path: AR_PivotTurn.cpp
+    AP_SUBGROUPINFO(_pivot, "PIVOT_", 8, AR_WPNav, AR_PivotTurn),
 
-    // @Param: SPEED_MIN
-    // @DisplayName: Waypoint speed minimum
-    // @Description: Vehicle will not slow below this speed for corners.  Should be set to boat's plane speed.  Does not apply to pivot turns.
-    // @Units: m/s
+    // @Param: ACCEL
+    // @DisplayName: Waypoint acceleration
+    // @Description: Waypoint acceleration.  If zero then ATC_ACCEL_MAX is used
+    // @Units: m/s/s
     // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("SPEED_MIN", 6, AR_WPNav, _speed_min, 0),
+    AP_GROUPINFO("ACCEL", 9, AR_WPNav, _accel_max, 0),
 
-    // @Param: PIVOT_DELAY
-    // @DisplayName: Delay after pivot turn
-    // @Description: Waiting time after pivot turn
-    // @Units: s
-    // @Range: 0 60
+    // @Param: JERK
+    // @DisplayName: Waypoint jerk
+    // @Description: Waypoint jerk (change in acceleration).  If zero then jerk is same as acceleration
+    // @Units: m/s/s/s
+    // @Range: 0 100
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("PIVOT_DELAY", 7, AR_WPNav, _pivot_delay, 0),
+    AP_GROUPINFO("JERK", 10, AR_WPNav, _jerk_max, 0),
 
     AP_GROUPEND
 };
 
-AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AP_Navigation& nav_controller) :
+AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control) :
     _atc(atc),
-    _nav_controller(nav_controller)
+    _pos_control(pos_control),
+    _pivot(atc)
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// initialise waypoint controller.  speed_max should be set to the maximum speed in m/s (or left at zero to use the default speed)
+void AR_WPNav::init(float speed_max)
+{
+    // determine max speed, acceleration and jerk
+    if (is_positive(speed_max)) {
+        _base_speed_max = speed_max;
+    } else {
+        _base_speed_max = _speed_max;
+    }
+    _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _base_speed_max);
+    float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
+    if (!is_positive(atc_accel_max)) {
+        // accel_max of zero means no limit so use maximum acceleration
+        atc_accel_max = AR_WPNAV_ACCEL_MAX;
+    }
+    const float accel_max = is_positive(_accel_max) ? MIN(_accel_max, atc_accel_max) : atc_accel_max;
+    const float jerk_max = is_positive(_jerk_max) ? _jerk_max : accel_max;
+
+    // initialise position controller
+    _pos_control.set_limits(_base_speed_max, accel_max, _atc.get_turn_lat_accel_max(), jerk_max);
+
+    _scurve_prev_leg.init();
+    _scurve_this_leg.init();
+    _scurve_next_leg.init();
+    _track_scalar_dt = 1.0f;
+
+    // init some flags
+    _reached_destination = false;
+    _fast_waypoint = false;
+
+    // ensure pivot turns are deactivated
+    _pivot.deactivate();
+    _pivot_at_next_wp = false;
+
+    // initialise origin and destination to stopping point
+    _orig_and_dest_valid = false;
+    set_origin_and_destination_to_stopping_point();
+
+    // initialise nudge speed to zero
+    set_nudge_speed_max(0);
 }
 
 // update navigation
@@ -110,7 +144,9 @@ void AR_WPNav::update(float dt)
     float speed;
     if (!hal.util->get_soft_armed() || !_orig_and_dest_valid || !AP::ahrs().get_location(current_loc) || !_atc.get_forward_speed(speed)) {
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
+        _desired_lat_accel = 0.0f;
         _desired_turn_rate_rads = 0.0f;
+        _cross_track_error = 0;
         return;
     }
 
@@ -120,117 +156,142 @@ void AR_WPNav::update(float dt)
     }
     _last_update_ms = AP_HAL::millis();
 
-    // run path planning around obstacles
-    bool stop_vehicle = false;
-   
-    // true if OA has been recently active;
-    bool _oa_was_active = _oa_active;
-
-    AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
-    if (oa != nullptr) {
-        AP_OAPathPlanner::OAPathPlannerUsed path_planner_used;
-        const AP_OAPathPlanner::OA_RetState oa_retstate = oa->mission_avoidance(current_loc, _origin, _destination, _oa_origin, _oa_destination, path_planner_used);
-        switch (oa_retstate) {
-        case AP_OAPathPlanner::OA_NOT_REQUIRED:
-            _oa_active = false;
-            break;
-        case AP_OAPathPlanner::OA_PROCESSING:
-        case AP_OAPathPlanner::OA_ERROR:
-            // during processing or in case of error, slow vehicle to a stop
-            stop_vehicle = true;
-            _oa_active = false;
-            break;
-        case AP_OAPathPlanner::OA_SUCCESS:
-            _oa_active = true;
-            break;
-        }
-    }
-    if (!_oa_active) {
-        _oa_origin = _origin;
-        _oa_destination = _destination;
-    }
-
     update_distance_and_bearing_to_destination();
 
-    // if object avoidance is active check if vehicle should pivot towards destination
-    if (_oa_active) {
-        update_pivot_active_flag();
-    }
+    // handle change in max speed
+    update_speed_max();
 
-    // check if vehicle is in recovering state after switching off OA
-    if (!_oa_active && _oa_was_active) {
-        if (oa->get_options() & AP_OAPathPlanner::OA_OPTION_WP_RESET) {
-            //reset wp origin to vehicles current location
-            _origin = current_loc;
+    // advance target along path unless vehicle is pivoting
+    if (!_pivot.active()) {
+        switch (_nav_control_type) {
+        case NavControllerType::NAV_SCURVE:
+            advance_wp_target_along_track(current_loc, dt);
+            break;
+        case NavControllerType::NAV_PSC_INPUT_SHAPING:
+            update_psc_input_shaping(dt);
+            break;
         }
     }
 
-    // check if vehicle has reached the destination
-    const bool near_wp = _distance_to_destination <= _radius;
-    const bool past_wp = !_oa_active && current_loc.past_interval_finish_line(_origin, _destination);
-    if (!_reached_destination && (near_wp || past_wp)) {
-       _reached_destination = true;
-    }
-
-    // handle stopping vehicle if avoidance has failed
-    if (stop_vehicle) {
-        // decelerate to speed to zero and set turn rate to zero
-        _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
-        _desired_lat_accel = 0.0f;
-        _desired_turn_rate_rads = 0.0f;
-        return;
-    }
-
-    // calculate the required turn of the wheels
-    update_steering(current_loc, speed);
-
-    // calculate desired speed
-    update_desired_speed(dt);
+    // update_steering_and_speed
+    update_steering_and_speed(current_loc, dt);
 }
 
-// set desired location
-bool AR_WPNav::set_desired_location(const struct Location& destination, float next_leg_bearing_cd)
+// set maximum speed in m/s.  returns true on success
+// this should not be called at more than 3hz or else SCurve path planning may not advance properly
+bool AR_WPNav::set_speed_max(float speed_max)
 {
-    // set origin to last destination if waypoint controller active
-    if (is_active() && _orig_and_dest_valid && _reached_destination) {
-        _origin = _destination;
-    } else {
-        // otherwise use reasonable stopping point
-        if (!get_stopping_location(_origin)) {
+    // range check target speed
+    if (speed_max < AR_WPNAV_SPEED_MIN) {
+        return false;
+    }
+
+    _base_speed_max = speed_max;
+    return true;
+}
+
+// set speed nudge in m/s.  this will have no effect unless nudge_speed_max > speed_max
+// nudge_speed_max should always be positive regardless of whether the vehicle is travelling forward or reversing
+void AR_WPNav::set_nudge_speed_max(float nudge_speed_max)
+{
+    _nudge_speed_max = nudge_speed_max;
+}
+
+// set desired location and (optionally) next_destination
+// next_destination should be provided if known to allow smooth cornering
+bool AR_WPNav::set_desired_location(const struct Location& destination, Location next_destination)
+{
+    // re-initialise if inactive, previous destination has been interrupted or different controller was used
+    if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
+        if (!set_origin_and_destination_to_stopping_point()) {
             return false;
         }
+        // clear scurves
+        _scurve_prev_leg.init();
+        _scurve_this_leg.init();
+        _scurve_next_leg.init();
     }
+
+    // shift this leg to previous leg
+    _scurve_prev_leg = _scurve_this_leg;
 
     // initialise some variables
-    _oa_origin = _origin;
-    _oa_destination = _destination = destination;
+    _origin = _destination;
+    _destination = destination;
     _orig_and_dest_valid = true;
     _reached_destination = false;
+
     update_distance_and_bearing_to_destination();
 
-    // determine if we should pivot immediately
-    update_pivot_active_flag();
+    // check if vehicle should pivot if vehicle stopped at previous waypoint
+    // or journey to previous waypoint was interrupted or navigation has just started
+    if (!_fast_waypoint) {
+        _pivot.deactivate();
+        _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01, _pivot_at_next_wp);
+    }
 
-    // set final desired speed and whether vehicle should pivot
-    _desired_speed_final = 0.0f;
-    if (!is_equal(next_leg_bearing_cd, AR_WPNAV_HEADING_UNKNOWN)) {
-        const float curr_leg_bearing_cd = _origin.get_bearing_to(_destination);
-        const float turn_angle_cd = wrap_180_cd(next_leg_bearing_cd - curr_leg_bearing_cd);
-        if (fabsf(turn_angle_cd) < 10.0f) {
-            // if turning less than 0.1 degrees vehicle can continue at full speed
-            // we use 0.1 degrees instead of zero to avoid divide by zero in calcs below
-            _desired_speed_final = _desired_speed;
-        } else if (use_pivot_steering_at_next_WP(turn_angle_cd)) {
-            // pivoting so we will stop
-            _desired_speed_final = 0.0f;
-        } else {
-            // calculate maximum speed that keeps overshoot within bounds
-            const float radius_m = fabsf(_overshoot / (cosf(radians(turn_angle_cd * 0.01f)) - 1.0f));
-            _desired_speed_final = MIN(_desired_speed, safe_sqrt(_atc.get_turn_lat_accel_max() * radius_m));
-            // ensure speed does not fall below minimum
-            apply_speed_min(_desired_speed_final);
+    // convert origin and destination to offset from EKF origin
+    Vector2f origin_NE;
+    Vector2f destination_NE;
+    if (!_origin.get_vector_xy_from_origin_NE(origin_NE) ||
+        !_destination.get_vector_xy_from_origin_NE(destination_NE)) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return false;
+    }
+    origin_NE *= 0.01f;
+    destination_NE *= 0.01f;
+
+    // calculate track to destination
+    if (_fast_waypoint && !_scurve_next_leg.finished()) {
+        // skip recalculating this leg by simply shifting next leg
+        _scurve_this_leg = _scurve_next_leg;
+    } else {
+        _scurve_this_leg.calculate_track(Vector3f{origin_NE.x, origin_NE.y, 0.0f},              // origin
+                                         Vector3f{destination_NE.x, destination_NE.y, 0.0f},    // destination
+                                         _pos_control.get_speed_max(),
+                                         _pos_control.get_speed_max(),  // speed up (not used)
+                                         _pos_control.get_speed_max(),  // speed down (not used)
+                                         _pos_control.get_accel_max(),  // forward back acceleration
+                                         _pos_control.get_accel_max(),  // vertical accel (not used)
+                                         AR_WPNAV_SNAP_MAX,             // snap
+                                         _pos_control.get_jerk_max());
+    }
+
+    // handle next destination
+    _scurve_next_leg.init();
+    _fast_waypoint = false;
+    _pivot_at_next_wp = false;
+    if (next_destination.initialised()) {
+        // check if vehicle should pivot at next waypoint
+        const float next_wp_yaw_change = get_corner_angle(_origin, destination, next_destination);
+        _pivot_at_next_wp = _pivot.would_activate(next_wp_yaw_change);
+        if (!_pivot_at_next_wp) {
+            // convert next_destination to offset from EKF origin
+            Vector2f next_destination_NE;
+            if (!next_destination.get_vector_xy_from_origin_NE(next_destination_NE)) {
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                return false;
+            }
+            next_destination_NE *= 0.01f;
+            _scurve_next_leg.calculate_track(Vector3f{destination_NE.x, destination_NE.y, 0.0f},
+                                             Vector3f{next_destination_NE.x, next_destination_NE.y, 0.0f},
+                                             _pos_control.get_speed_max(),
+                                             _pos_control.get_speed_max(),  // speed up (not used)
+                                             _pos_control.get_speed_max(),  // speed down (not used)
+                                             _pos_control.get_accel_max(),  // forward back acceleration
+                                             _pos_control.get_accel_max(),  // vertical accel (not used)
+                                             AR_WPNAV_SNAP_MAX,             // snap
+                                             _pos_control.get_jerk_max());
+
+            // next destination provided so fast waypoint
+            _fast_waypoint = true;
         }
     }
+
+    // scurves used for navigation to destination
+    _nav_control_type = NavControllerType::NAV_SCURVE;
+
+    update_distance_and_bearing_to_destination();
 
     return true;
 }
@@ -246,7 +307,7 @@ bool AR_WPNav::set_desired_location_to_stopping_location()
 }
 
 // set desired location as offset from the EKF origin, return true on success
-bool AR_WPNav::set_desired_location_NED(const Vector3f& destination, float next_leg_bearing_cd)
+bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
 {
     // initialise destination to ekf origin
     Location destination_ned;
@@ -256,7 +317,50 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f& destination, float next_
 
     // apply offset
     destination_ned.offset(destination.x, destination.y);
-    return set_desired_location(destination_ned, next_leg_bearing_cd);
+    return set_desired_location(destination_ned);
+}
+
+bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination)
+{
+    // initialise destination to ekf origin
+    Location dest_loc, next_dest_loc;
+    if (!AP::ahrs().get_origin(dest_loc)) {
+        return false;
+    }
+    next_dest_loc = dest_loc;
+
+    // apply offsets
+    dest_loc.offset(destination.x, destination.y);
+    next_dest_loc.offset(next_destination.x, next_destination.y);
+    return set_desired_location(dest_loc, next_dest_loc);
+}
+
+// set desired location but expect the destination to be updated again in the near future
+// position controller input shaping will be used for navigation instead of scurves
+// Note: object avoidance is not supported if this method is used
+bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destination)
+{
+    // initialise if not active
+    if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
+        if (!set_origin_and_destination_to_stopping_point()) {
+            return false;
+        }
+    }
+
+    // initialise some variables
+    _origin = _destination;
+    _destination = destination;
+    _orig_and_dest_valid = true;
+    _reached_destination = false;
+
+    update_distance_and_bearing_to_destination();
+
+    // check if vehicle should pivot
+    _pivot.check_activation((_reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd()) * 0.01);
+
+    // position controller input shaping used for navigation to destination
+    _nav_control_type = NavControllerType::NAV_PSC_INPUT_SHAPING;
+    return true;
 }
 
 // calculate vehicle stopping point using current location, velocity and maximum acceleration
@@ -288,61 +392,98 @@ bool AR_WPNav::get_stopping_location(Location& stopping_loc)
     return true;
 }
 
-// returns true if vehicle should pivot turn at next waypoint
-bool AR_WPNav::use_pivot_steering_at_next_WP(float yaw_error_cd) const
-{
-    // check cases where we clearly cannot use pivot steering
-    if (!_pivot_possible || _pivot_angle <= AR_WPNAV_PIVOT_ANGLE_ACCURACY) {
-        return false;
-    }
-
-    // if error is larger than _pivot_angle then use pivot steering at next WP
-    if (fabsf(yaw_error_cd) * 0.01f > _pivot_angle) {
-        return true;
-    }
-
-    return false;
-}
-
-// updates _pivot_active flag based on heading error to destination
-// relies on update_distance_and_bearing_to_destination having been called first
-// to update _oa_wp_bearing and _reversed variables
-void AR_WPNav::update_pivot_active_flag()
-{
-    // check cases where we clearly cannot use pivot steering
-    if (!_pivot_possible || (_pivot_angle <= AR_WPNAV_PIVOT_ANGLE_ACCURACY)) {
-        _pivot_active = false;
-        return;
-    }
-
-    // calc yaw error
-    const float yaw_cd = _reversed ? wrap_360_cd(_oa_wp_bearing_cd + 18000) : _oa_wp_bearing_cd;
-    const float yaw_error = fabsf(wrap_180_cd(yaw_cd - AP::ahrs().yaw_sensor)) * 0.01f;
-
-    // if error is larger than _pivot_angle start pivot steering
-    if (yaw_error > _pivot_angle) {
-        _pivot_active = true;
-        return;
-    }
-
-    uint32_t now = AP_HAL::millis();
-
-    // if within 5 degrees of the target heading, set start time of pivot steering
-    if (_pivot_active && yaw_error < AR_WPNAV_PIVOT_ANGLE_ACCURACY && _pivot_start_ms == 0) {
-        _pivot_start_ms = now;
-    }
-
-    // exit pivot steering after the time set by pivot_delay has elapsed
-    if (_pivot_start_ms > 0 && now - _pivot_start_ms >= constrain_float(_pivot_delay.get(), 0.0f, 60.0f) * 1000.0f) {
-        _pivot_active = false;
-        _pivot_start_ms = 0;
-    }
-}
-
 // true if update has been called recently
 bool AR_WPNav::is_active() const
 {
     return ((AP_HAL::millis() - _last_update_ms) < AR_WPNAV_TIMEOUT_MS);
+}
+
+// move target location along track from origin to destination using SCurves navigation
+void AR_WPNav::advance_wp_target_along_track(const Location &current_loc, float dt)
+{
+    // exit immediately if no current location, destination or disarmed
+    Vector2f curr_pos_NE;
+    Vector3f curr_vel_NED;
+    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE) || !AP::ahrs().get_velocity_NED(curr_vel_NED)) {
+        return;
+    }
+
+    // exit immediately if we can't convert waypoint origin to offset from ekf origin
+    Vector2f origin_NE;
+    if (!_origin.get_vector_xy_from_origin_NE(origin_NE)) {
+        return;
+    }
+    // convert from cm to meters
+    origin_NE *= 0.01f;
+
+    // use _track_scalar_dt to slow down S-Curve time to prevent target moving too far in front of vehicle
+    Vector2f curr_target_vel = _pos_control.get_desired_velocity();
+    float track_scaler_dt = 1.0f;
+    if (is_positive(curr_target_vel.length())) {
+        Vector2f track_direction = curr_target_vel.normalized();
+        const float track_error = _pos_control.get_pos_error().tofloat().dot(track_direction);
+        float track_velocity = curr_vel_NED.xy().dot(track_direction);
+        // set time scaler to be consistent with the achievable vehicle speed with a 5% buffer for short term variation.
+        const float time_scaler_dt_max = _overspeed_enabled ? AR_WPNAV_OVERSPEED_RATIO_MAX : 1.0f;
+        track_scaler_dt = constrain_float(0.05f + (track_velocity - _pos_control.get_pos_p().kP() * track_error) / curr_target_vel.length(), 0.1f, time_scaler_dt_max);
+    }
+    // change s-curve time speed with a time constant of maximum acceleration / maximum jerk
+    float track_scaler_tc = 1.0f;
+    if (is_positive(_pos_control.get_jerk_max())) {
+        track_scaler_tc = _pos_control.get_accel_max() / _pos_control.get_jerk_max();
+    }
+    _track_scalar_dt += (track_scaler_dt - _track_scalar_dt) * (dt / track_scaler_tc);
+
+    // target position, velocity and acceleration from straight line or spline calculators
+    Vector3f target_pos_3d_ftype{origin_NE.x, origin_NE.y, 0.0f};
+    Vector3f target_vel, target_accel;
+
+    // update target position, velocity and acceleration
+    const float wp_radius = MAX(_radius, _turn_radius);
+    bool s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, wp_radius, _pos_control.get_lat_accel_max(), _fast_waypoint, _track_scalar_dt * dt, target_pos_3d_ftype, target_vel, target_accel);
+
+    // pass new target to the position controller
+    init_pos_control_if_necessary();
+    Vector2p target_pos_ptype{target_pos_3d_ftype.x, target_pos_3d_ftype.y};
+    _pos_control.set_pos_vel_accel_target(target_pos_ptype, target_vel.xy(), target_accel.xy());
+
+    // check if we've reached the waypoint
+    if (!_reached_destination && s_finished) {
+        // "fast" waypoints are complete once the intermediate point reaches the destination
+        if (_fast_waypoint) {
+            _reached_destination = true;
+        } else {
+            // regular waypoints also require the vehicle to be within the waypoint radius or past the "finish line"
+            const bool near_wp = current_loc.get_distance(_destination) <= _radius;
+            const bool past_wp = current_loc.past_interval_finish_line(_origin, _destination);
+            _reached_destination = near_wp || past_wp;
+        }
+    }
+}
+
+// update psc input shaping navigation controller
+void AR_WPNav::update_psc_input_shaping(float dt)
+{
+    // convert destination location to offset from EKF origin (in meters)
+    Vector2f pos_target_cm;
+    if (!_destination.get_vector_xy_from_origin_NE(pos_target_cm)) {
+        return;
+    }
+
+    // initialise position controller if not called recently
+    init_pos_control_if_necessary();
+
+    // convert to meters and update target
+    const Vector2p pos_target = pos_target_cm.topostype() * 0.01;
+    _pos_control.input_pos_target(pos_target, dt);
+
+    // update reached_destination
+    if (!_reached_destination) {
+        // calculate position difference between destination and position controller input shaped target
+        Vector2p pos_target_diff = pos_target - _pos_control.get_pos_target();
+        // vehicle has reached destination when the target is within 1cm of the destination and vehicle is within waypoint radius
+        _reached_destination = (pos_target_diff.length_squared() < sq(0.01)) && (_pos_control.get_pos_error().length_squared() < sq(_radius));
+    }
 }
 
 // update distance from vehicle's current position to destination
@@ -353,145 +494,133 @@ void AR_WPNav::update_distance_and_bearing_to_destination()
     if (!_orig_and_dest_valid || !AP::ahrs().get_location(current_loc)) {
         _distance_to_destination = 0.0f;
         _wp_bearing_cd = 0.0f;
-
-        // update OA adjusted values
-        _oa_distance_to_destination = 0.0f;
-        _oa_wp_bearing_cd = 0.0f;
         return;
     }
     _distance_to_destination = current_loc.get_distance(_destination);
     _wp_bearing_cd = current_loc.get_bearing_to(_destination);
-
-    // update OA adjusted values
-    if (_oa_active) {
-        _oa_distance_to_destination = current_loc.get_distance(_oa_destination);
-        _oa_wp_bearing_cd = current_loc.get_bearing_to(_oa_destination);
-    } else {
-        _oa_distance_to_destination = _distance_to_destination;
-        _oa_wp_bearing_cd = _wp_bearing_cd;
-    }
 }
 
-// calculate steering output to drive along line from origin to destination waypoint
-// relies on update_distance_and_bearing_to_destination being called first so _wp_bearing_cd has been updated
-void AR_WPNav::update_steering(const Location& current_loc, float current_speed)
+// calculate steering and speed to drive along line from origin to destination waypoint
+void AR_WPNav::update_steering_and_speed(const Location &current_loc, float dt)
 {
-    // calculate desired turn rate and update desired heading
-    if (_pivot_active) {
-        _cross_track_error = calc_crosstrack_error(current_loc);
-        _desired_heading_cd = _reversed ? wrap_360_cd(_oa_wp_bearing_cd + 18000) : _oa_wp_bearing_cd;;
-        _desired_lat_accel = 0.0f;
-        _desired_turn_rate_rads = _atc.get_turn_rate_from_heading(radians(_desired_heading_cd * 0.01f), radians(_pivot_rate));
+    _cross_track_error = calc_crosstrack_error(current_loc);
 
-        // update flag so that it can be cleared
-        update_pivot_active_flag();
-    } else {
-        // run L1 controller
-        _nav_controller.set_reverse(_reversed);
-        _nav_controller.update_waypoint(_reached_destination ? current_loc : _oa_origin, _oa_destination, _radius);
-
-        // retrieve lateral acceleration, heading back towards line and crosstrack error
-        _desired_lat_accel = constrain_float(_nav_controller.lateral_acceleration(), -_atc.get_turn_lat_accel_max(), _atc.get_turn_lat_accel_max());
-        _desired_heading_cd = wrap_360_cd(_nav_controller.nav_bearing_cd());
-        if (_reversed) {
-            _desired_lat_accel *= -1.0f;
-            _desired_heading_cd = wrap_360_cd(_desired_heading_cd + 18000);
-        }
-        _cross_track_error = _nav_controller.crosstrack_error();
-        _desired_turn_rate_rads = _atc.get_turn_rate_from_lat_accel(_desired_lat_accel, current_speed);
-    }
-}
-
-// calculated desired speed(in m/s) based on yaw error and lateral acceleration and/or distance to a waypoint
-// relies on update_distance_and_bearing_to_destination and update_steering being run so these internal members
-// have been updated: _oa_wp_bearing_cd, _cross_track_error, _oa_distance_to_destination
-void AR_WPNav::update_desired_speed(float dt)
-{
-    // reduce speed to zero during pivot turns
-    if (_pivot_active) {
+    // handle pivot turns
+    if (_pivot.active()) {
         // decelerate to zero
         _desired_speed_limited = _atc.get_desired_speed_accel_limited(0.0f, dt);
+        _desired_heading_cd = _reversed ? wrap_360_cd(oa_wp_bearing_cd() + 18000) : oa_wp_bearing_cd();
+        _desired_turn_rate_rads = is_zero(_desired_speed_limited) ? _pivot.get_turn_rate_rads(_desired_heading_cd * 0.01, dt) : 0;
+        _desired_lat_accel = 0.0f;
         return;
     }
 
-    // accelerate desired speed towards max
-    float des_speed_lim = _atc.get_desired_speed_accel_limited(_reversed ? -_desired_speed : _desired_speed, dt);
-
-    // reduce speed to limit overshoot from line between origin and destination
-    // calculate number of degrees vehicle must turn to face waypoint
-    float ahrs_yaw_sensor = AP::ahrs().yaw_sensor;
-    const float heading_cd = is_negative(des_speed_lim) ? wrap_180_cd(ahrs_yaw_sensor + 18000) : ahrs_yaw_sensor;
-    const float wp_yaw_diff_cd = wrap_180_cd(_oa_wp_bearing_cd - heading_cd);
-    const float turn_angle_rad = fabsf(radians(wp_yaw_diff_cd * 0.01f));
-
-    // calculate distance from vehicle to line + wp_overshoot
-    const float line_yaw_diff = wrap_180_cd(_oa_origin.get_bearing_to(_oa_destination) - heading_cd);
-    const float dist_from_line = fabsf(_cross_track_error);
-    const bool heading_away = is_positive(line_yaw_diff) == is_positive(_cross_track_error);
-    const float wp_overshoot_adj = heading_away ? -dist_from_line : dist_from_line;
-
-    // calculate radius of circle that touches vehicle's current position and heading and target position and heading
-    float radius_m = 999.0f;
-    const float radius_calc_denom = fabsf(1.0f - cosf(turn_angle_rad));
-    if (!is_zero(radius_calc_denom)) {
-        radius_m = MAX(0.0f, _overshoot + wp_overshoot_adj) / radius_calc_denom;
-    }
-
-    // calculate and limit speed to allow vehicle to stay on circle
-    // ensure limit does not force speed below minimum
-    float overshoot_speed_max = safe_sqrt(_atc.get_turn_lat_accel_max() * MAX(_turn_radius, radius_m));
-    apply_speed_min(overshoot_speed_max);
-    des_speed_lim = constrain_float(des_speed_lim, -overshoot_speed_max, overshoot_speed_max);
-
-    // limit speed based on distance to waypoint and max acceleration/deceleration
-    if (is_positive(_oa_distance_to_destination) && is_positive(_atc.get_decel_max())) {
-        const float dist_speed_max = safe_sqrt(2.0f * _oa_distance_to_destination * _atc.get_decel_max() + sq(_desired_speed_final));
-        des_speed_lim = constrain_float(des_speed_lim, -dist_speed_max, dist_speed_max);
-    }
-
-    _desired_speed_limited = des_speed_lim;
+    _pos_control.set_reversed(_reversed);
+    _pos_control.update(dt);
+    _desired_speed_limited = _pos_control.get_desired_speed();
+    _desired_turn_rate_rads = _pos_control.get_desired_turn_rate_rads();
+    _desired_lat_accel = _pos_control.get_desired_lat_accel();
 }
 
 // settor to allow vehicle code to provide turn related param values to this library (should be updated regularly)
 void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 {
-    _turn_radius = turn_radius;
-    _pivot_possible = pivot_possible;
+    _turn_radius = pivot_possible ? 0.0 : turn_radius;
+    _pivot.enable(pivot_possible);
 }
 
-// adjust speed to ensure it does not fall below value held in SPEED_MIN
-// desired_speed should always be positive (or zero)
-void AR_WPNav::apply_speed_min(float &desired_speed) const
-{
-    if (!is_positive(_speed_min) || (_speed_min > _speed_max)) {
-        return;
-    }
-
-    // ensure speed does not fall below minimum
-    desired_speed = MAX(desired_speed, _speed_min);
-}
-
-// calculate the crosstrack error (does not rely on L1 controller)
+// calculate the crosstrack error
 float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 {
     if (!_orig_and_dest_valid) {
         return 0.0f;
     }
 
-    // calculate the NE position of destination relative to origin
-    Vector2f dest_from_origin = _oa_origin.get_distance_NE(_oa_destination);
+    // get object avoidance adjusted origin and destination
+    const Location &orig = get_oa_origin();
+    const Location &dest = get_oa_destination();
 
-    // return distance to origin if length of track is very small
+    // calculate the NE position of destination relative to origin
+    Vector2f dest_from_origin = orig.get_distance_NE(dest);
+
+    // return distance to destination if length of track is very small
     if (dest_from_origin.length() < 1.0e-6f) {
-        return current_loc.get_distance_NE(_oa_destination).length();
+        return current_loc.get_distance_NE(dest).length();
     }
 
     // convert to a vector indicating direction only
     dest_from_origin.normalize();
 
     // calculate the NE position of the vehicle relative to origin
-    const Vector2f veh_from_origin = _oa_origin.get_distance_NE(current_loc);
+    const Vector2f veh_from_origin = orig.get_distance_NE(current_loc);
 
     // calculate distance to target track, for reporting
     return veh_from_origin % dest_from_origin;
+}
+
+// calculate yaw change at next waypoint in degrees
+// returns zero if the angle cannot be calculated because some points are on top of others
+float AR_WPNav::get_corner_angle(const Location& loc1, const Location& loc2, const Location& loc3) const
+{
+    // sanity check
+    if (!loc1.initialised() || !loc2.initialised() || !loc3.initialised()) {
+        return 0;
+    }
+    const float loc1_to_loc2_deg = loc1.get_bearing_to(loc2) * 0.01;
+    const float loc2_to_loc3_deg = loc2.get_bearing_to(loc3) * 0.01;
+    const float diff_yaw_deg = wrap_180(loc2_to_loc3_deg - loc1_to_loc2_deg);
+    return diff_yaw_deg;
+}
+
+// helper function to initialise position controller if it hasn't been called recently
+// this should be called before updating the position controller with new targets but after the EKF has a good position estimate
+void AR_WPNav::init_pos_control_if_necessary()
+{
+    // initialise position controller if not called recently
+    if (!_pos_control.is_active()) {
+        if (!_pos_control.init()) {
+            // this should never fail because we should always have a valid position estimate at this point
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            return;
+        }
+    }
+}
+
+// set origin and destination to stopping point
+bool AR_WPNav::set_origin_and_destination_to_stopping_point()
+{
+    // initialise origin and destination to stopping point
+    Location stopping_loc;
+    if (!get_stopping_location(stopping_loc)) {
+        return false;
+    }
+    _origin = _destination = stopping_loc;
+    _orig_and_dest_valid = true;
+    return true;
+}
+
+// check for changes in _base_speed_max or _nudge_speed_max
+// updates position controller limits and recalculate scurve path if required
+void AR_WPNav::update_speed_max()
+{
+    const float speed_max = MAX(_base_speed_max, _nudge_speed_max);
+
+    // ignore calls that do not change the speed
+    if (is_equal(speed_max, _pos_control.get_speed_max())) {
+        return;
+    }
+
+    // protect against rapid updates
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_speed_update_ms < AR_WPNAV_SPEED_UPDATE_MIN_MS) {
+        return;
+    }
+    _last_speed_update_ms = now_ms;
+
+    // update position controller max speed
+    _pos_control.set_limits(speed_max, _pos_control.get_accel_max(), _pos_control.get_lat_accel_max(), _pos_control.get_jerk_max());
+
+    // change track speed
+    _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+    _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
 }

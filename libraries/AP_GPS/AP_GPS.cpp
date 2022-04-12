@@ -363,7 +363,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
     // @Param: _CAN_NODEID1
     // @DisplayName: GPS Node ID 1
-    // @Description: GPS Node id for discovered first.
+    // @Description: GPS Node id for first-discovered GPS.
     // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("_CAN_NODEID1", 28, AP_GPS, _node_id[0], 0),
@@ -371,21 +371,21 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: _CAN_NODEID2
     // @DisplayName: GPS Node ID 2
-    // @Description: GPS Node id for discovered second.
+    // @Description: GPS Node id for second-discovered GPS.
     // @ReadOnly: True
     // @User: Advanced
     AP_GROUPINFO("_CAN_NODEID2", 29, AP_GPS, _node_id[1], 0),
 #endif // GPS_MAX_RECEIVERS > 1
     // @Param: 1_CAN_OVRIDE
     // @DisplayName: First DroneCAN GPS NODE ID
-    // @Description: GPS Node id for first GPS. If 0 the gps will be automatically selected on first come basis.
+    // @Description: GPS Node id for first GPS. If 0 the gps will be automatically selected on a first-come-first-GPS basis.
     // @User: Advanced
     AP_GROUPINFO("1_CAN_OVRIDE", 30, AP_GPS, _override_node_id[0], 0),
 
 #if GPS_MAX_RECEIVERS > 1
     // @Param: 2_CAN_OVRIDE
     // @DisplayName: Second DroneCAN GPS NODE ID
-    // @Description: GPS Node id for second GPS. If 0 the gps will be automatically selected on first come basis.
+    // @Description: GPS Node id for second GPS. If 0 the gps will be automatically selected on a second-come-second-GPS basis.
     // @User: Advanced
     AP_GROUPINFO("2_CAN_OVRIDE", 31, AP_GPS, _override_node_id[1], 0),
 #endif // GPS_MAX_RECEIVERS > 1
@@ -554,6 +554,43 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
 }
 
 /*
+  initialise state for sending binary blob initialisation strings.  We
+  may choose different blobs not just based on type but also based on
+  parameters.
+ */
+void AP_GPS::send_blob_start(uint8_t instance)
+{
+    if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
+        static const char blob[] = UBLOX_SET_BINARY_115200;
+        send_blob_start(instance, blob, sizeof(blob));
+        return;
+    }
+
+#if GPS_MOVING_BASELINE
+    if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+         _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
+        ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
+        // we use 460800 when doing moving baseline as we need
+        // more bandwidth. We don't do this if using UART2, as
+        // in that case the RTCMv3 data doesn't go over the
+        // link to the flight controller
+        static const char blob[] = UBLOX_SET_BINARY_460800;
+        send_blob_start(instance, blob, sizeof(blob));
+        return;
+    }
+#endif
+
+#if AP_GPS_NMEA_ENABLED
+    if (_type[instance] == GPS_TYPE_HEMI) {
+        send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+        return;
+    }
+#endif // AP_GPS_NMEA_ENABLED
+
+    send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+}
+
+/*
   send some more initialisation string bytes if there is room in the
   UART transmit buffer
  */
@@ -684,25 +721,7 @@ void AP_GPS::detect_instance(uint8_t instance)
         dstate->last_baud_change_ms = now;
 
         if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY && new_gps == nullptr) {
-            if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
-                static const char blob[] = UBLOX_SET_BINARY_115200;
-                send_blob_start(instance, blob, sizeof(blob));
-            } else if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
-                        _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
-                       ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
-                // we use 460800 when doing moving baseline as we need
-                // more bandwidth. We don't do this if using UART2, as
-                // in that case the RTCMv3 data doesn't go over the
-                // link to the flight controller
-                static const char blob[] = UBLOX_SET_BINARY_460800;
-                send_blob_start(instance, blob, sizeof(blob));
-#if AP_GPS_NMEA_ENABLED
-            } else if (_type[instance] == GPS_TYPE_HEMI) {
-                send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
-#endif // AP_GPS_NMEA_ENABLED        
-            } else {
-                send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
-            }
+            send_blob_start(instance);
         }
     }
 
@@ -1662,7 +1681,7 @@ bool AP_GPS::calc_blend_weights(void)
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 if (state[i].have_speed_accuracy && state[i].speed_accuracy > 0.0f) {
-                    speed_accuracy_sum_sq += state[i].speed_accuracy * state[i].speed_accuracy;
+                    speed_accuracy_sum_sq += sq(state[i].speed_accuracy);
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
                     speed_accuracy_sum_sq = 0.0f;
@@ -1678,7 +1697,7 @@ bool AP_GPS::calc_blend_weights(void)
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D) {
                 if (state[i].have_horizontal_accuracy && state[i].horizontal_accuracy > 0.0f) {
-                    horizontal_accuracy_sum_sq += state[i].horizontal_accuracy * state[i].horizontal_accuracy;
+                    horizontal_accuracy_sum_sq += sq(state[i].horizontal_accuracy);
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
                     horizontal_accuracy_sum_sq = 0.0f;
@@ -1694,7 +1713,7 @@ bool AP_GPS::calc_blend_weights(void)
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D) {
                 if (state[i].have_vertical_accuracy && state[i].vertical_accuracy > 0.0f) {
-                    vertical_accuracy_sum_sq += state[i].vertical_accuracy * state[i].vertical_accuracy;
+                    vertical_accuracy_sum_sq += sq(state[i].vertical_accuracy);
                 } else {
                     // not all receivers support this metric so set it to zero and don't use it
                     vertical_accuracy_sum_sq = 0.0f;
@@ -1715,12 +1734,12 @@ bool AP_GPS::calc_blend_weights(void)
 
     // calculate a weighting using the reported horizontal position
     float hpos_blend_weights[GPS_MAX_RECEIVERS] = {};
-    if (horizontal_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_HPOS_ACC)) {
+    if (horizontal_accuracy_sum_sq > 0.0f) {
         // calculate the weights using the inverse of the variances
         float sum_of_hpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_2D && state[i].horizontal_accuracy >= 0.001f) {
-                hpos_blend_weights[i] = horizontal_accuracy_sum_sq / (state[i].horizontal_accuracy * state[i].horizontal_accuracy);
+                hpos_blend_weights[i] = horizontal_accuracy_sum_sq / sq(state[i].horizontal_accuracy);
                 sum_of_hpos_weights += hpos_blend_weights[i];
             }
         }
@@ -1735,12 +1754,12 @@ bool AP_GPS::calc_blend_weights(void)
 
     // calculate a weighting using the reported vertical position accuracy
     float vpos_blend_weights[GPS_MAX_RECEIVERS] = {};
-    if (vertical_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_VPOS_ACC)) {
+    if (vertical_accuracy_sum_sq > 0.0f) {
         // calculate the weights using the inverse of the variances
         float sum_of_vpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D && state[i].vertical_accuracy >= 0.001f) {
-                vpos_blend_weights[i] = vertical_accuracy_sum_sq / (state[i].vertical_accuracy * state[i].vertical_accuracy);
+                vpos_blend_weights[i] = vertical_accuracy_sum_sq / sq(state[i].vertical_accuracy);
                 sum_of_vpos_weights += vpos_blend_weights[i];
             }
         }
@@ -1755,12 +1774,12 @@ bool AP_GPS::calc_blend_weights(void)
 
     // calculate a weighting using the reported speed accuracy
     float spd_blend_weights[GPS_MAX_RECEIVERS] = {};
-    if (speed_accuracy_sum_sq > 0.0f && (_blend_mask & BLEND_MASK_USE_SPD_ACC)) {
+    if (speed_accuracy_sum_sq > 0.0f) {
         // calculate the weights using the inverse of the variances
         float sum_of_spd_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
             if (state[i].status >= GPS_OK_FIX_3D && state[i].speed_accuracy >= 0.001f) {
-                spd_blend_weights[i] = speed_accuracy_sum_sq / (state[i].speed_accuracy * state[i].speed_accuracy);
+                spd_blend_weights[i] = speed_accuracy_sum_sq / sq(state[i].speed_accuracy);
                 sum_of_spd_weights += spd_blend_weights[i];
             }
         }

@@ -206,7 +206,7 @@ public:
         k_param_ins,
         k_param_compass,
         k_param_rcmap,
-        k_param_L1_controller,
+        k_param_L1_controller,          // unused
         k_param_steerController_old,    // unused
         k_param_barometer,
         k_param_notify,
@@ -385,7 +385,7 @@ public:
 #endif // AP_SCRIPTING_ENABLED
 
     // waypoint navigation
-    AR_WPNav wp_nav;
+    AR_WPNav_OA wp_nav;
 
     // Sailboat functions
     Sailboat sailboat;
@@ -411,6 +411,12 @@ public:
     // Automatic Identification System - for tracking sea-going vehicles
     AP_AIS ais;
 #endif
+
+    // position controller
+    AR_PosControl pos_control;
+
+    // guided options bitmask
+    AP_Int32 guided_options;
 };
 
 extern const AP_Param::Info var_info[];

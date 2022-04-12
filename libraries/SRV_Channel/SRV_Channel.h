@@ -183,7 +183,7 @@ public:
 
     // check if a function is valid for indexing into functions
     static bool valid_function(Aux_servo_function_t fn) {
-        return fn >= 0 && fn < k_nr_aux_servo_functions;
+        return fn > k_none && fn < k_nr_aux_servo_functions;
     }
     bool valid_function(void) const {
         return valid_function(function);
@@ -575,19 +575,23 @@ private:
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // support for Volz protocol
     AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
+#endif // HAL_BUILD_AP_PERIPH
 
+#if AP_ROBOTISSERVO_ENABLED
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
     static AP_RobotisServo *robotis_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol

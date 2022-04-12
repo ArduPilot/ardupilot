@@ -1,3 +1,42 @@
+Release 4.2.0beta5 5th April 2022
+---------------------------------
+
+This is the 5th beta of the 4.2.0 major release
+
+ - fixed a timer bug that could cause boards using flash storage to watchdog
+ - added OTG2 USB on QioTekZealotH743
+ - increased stack size on log and monitor threads
+ - fixed rudder control when ARMING_RUDDER != 2 on quadplanes
+ - fixed accel bias when an IMU is disabled in EKF3
+ - improved QSPI support for SPro H7 Extreme
+ - fixed @SYS file logging
+ - fixed buzzer on MatekH743, going back to 16 bit timer
+ - fixed H7 flash storage bug that caused re-init on overflow
+ - fixed incorrect lock class in UART driver
+
+Happy flying!
+
+Release 4.2.0beta4 28th March 2022
+----------------------------------
+
+This is the 4th beta of the 4.2.0 major release.
+
+ - added BATT_OPTIONS option to send resting voltage (corrected for internal resistance) to the ground station
+ - fixed a bug when a blended GPS is lost, where the wrong GPS could be used for a short time
+ - prevent rapid RTL/AUTO switching with DO_LAND_START and fence breach
+ - added RTL_AUTOLAND=3 to prevent arming check about DO_LAND_START with no RTL_AUTOLAND
+ - fixed yaw in AUTO mode on the ground on quadplanes when using rudder to disarm
+ - fixed failover between IOMCU RC input and a secondary RC input on a uart
+ - display source of RC input with protocol
+ - fixed DShot reversal bugs with IOMCU based boards
+ - fixed battery remaining percentage with sum battery backend
+ - added KakuteH7-bdshot
+ - added terrain reference adjustment and TERRAIN_OFS_MAX parameter
+ - fixed param conversion bug (impacts airspeed enable)
+ - changed MatekH743 to use a 32 bit timer
+
+Happy flying!
+
 Release 4.2.0beta3 18th March 2022
 ----------------------------------
 

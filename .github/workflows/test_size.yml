@@ -69,9 +69,9 @@ jobs:
 
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf AP_Periph
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf AP_Periph
           else
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf
           fi
           cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
 
@@ -114,9 +114,9 @@ jobs:
 
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf AP_Periph
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf AP_Periph
           else
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" ./waf
+            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf
           fi
           cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
 

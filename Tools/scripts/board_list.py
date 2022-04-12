@@ -89,9 +89,13 @@ class BoardList(object):
                 # a hwdef can specify which vehicles this target is valid for:
                 match = re.match(r"AUTOBUILD_TARGETS\s*(.*)", line)
                 if match is not None:
-                    board.autobuild_targets = [
-                        x.rstrip().lstrip().lower() for x in match.group(1).split(",")
-                    ]
+                    mname = match.group(1)
+                    if mname.lower() == 'none':
+                        board.autobuild_targets = []
+                    else:
+                        board.autobuild_targets = [
+                            x.rstrip().lstrip().lower() for x in mname.split(",")
+                        ]
 
     def read_hwdef(self, filepath):
         fh = open(filepath)
@@ -120,12 +124,6 @@ class BoardList(object):
             # IOMCU:
             "iomcu",
             'iomcu_f103_8MHz',
-
-            # evaluation boards
-            'H757I_EVAL',
-            'H757I_EVAL_intf',
-            "Nucleo-G491",
-            "NucleoH743",
 
             # bdshot
             "CubeYellow-bdshot",
@@ -168,11 +166,6 @@ class BoardList(object):
             "G4-ESC",
             "HereID",
             "HerePro",
-
-            # evaluation boards
-            "H757I_EVAL",
-            "Nucleo-L476",
-            "Nucleo-L496",
         ]
         ret = []
         for x in self.boards:
@@ -186,3 +179,11 @@ class BoardList(object):
 
 AUTOBUILD_BOARDS = BoardList().find_autobuild_boards()
 AP_PERIPH_BOARDS = BoardList().find_ap_periph_boards()
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: board_list.py TARGET")
+        sys.exit(1)
+    board_list = BoardList()
+    print(sorted(board_list.find_autobuild_boards(sys.argv[1])))

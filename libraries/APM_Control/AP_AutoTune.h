@@ -5,6 +5,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AC_PID/AC_PID.h>
+#include <Filter/ModeFilter.h>
 
 class AP_AutoTune
 {
@@ -54,7 +55,7 @@ public:
 
     // update called whenever autotune mode is active. This is
     // called at the main loop rate
-    void update(AP_Logger::PID_Info &pid_info, float scaler, float angle_err_deg);
+    void update(AP_PIDInfo &pid_info, float scaler, float angle_err_deg);
 
     // are we running?
     bool running;
