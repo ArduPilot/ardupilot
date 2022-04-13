@@ -744,7 +744,14 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         send_blob_update(instance);
     }
 
-    while (initblob_state[instance].remaining == 0 && _port[instance]->available() > 0) {
+    if (initblob_state[instance].remaining != 0) {
+        // don't run detection engines if we haven't sent out the initblobs
+        return nullptr;
+    }
+
+    uint16_t bytecount = MIN(8192U, _port[instance]->available());
+
+    while (bytecount-- > 0) {
         uint8_t data = _port[instance]->read();
         /*
           running a uBlox at less than 38400 will lead to packet
