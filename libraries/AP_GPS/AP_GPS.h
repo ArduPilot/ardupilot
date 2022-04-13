@@ -665,6 +665,10 @@ private:
     static const char _initialisation_raw_blob[];
 
     void detect_instance(uint8_t instance);
+    // run detection step for one GPS instance. If this finds a GPS then it
+    // will return it - otherwise nullptr
+    AP_GPS_Backend *_detect_instance(uint8_t instance);
+
     void update_instance(uint8_t instance);
 
     /*
