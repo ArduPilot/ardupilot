@@ -1655,6 +1655,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     default:
         // unrecognised command
+        //idi nahui xyecoc
         return false;
     }
 
