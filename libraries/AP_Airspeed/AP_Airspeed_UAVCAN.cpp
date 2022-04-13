@@ -13,6 +13,8 @@ extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "AirSpeed"
 
+bool AP_Airspeed_UAVCAN::_probe_has_run;
+
 // UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(AirspeedCb, uavcan::equipment::air_data::RawAirData);
 
@@ -71,6 +73,8 @@ AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _
         }
     }
 
+    _probe_has_run = true;
+
     return backend;
 }
 
@@ -97,12 +101,25 @@ AP_Airspeed_UAVCAN* AP_Airspeed_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan,
         }
     }
 
-    if (!detected) {
+    if (!detected && !_probe_has_run) {
+
+        AP_UAVCAN* ap_uavcan_to_fit = ap_uavcan;
+        uint8_t node_id_to_fit = node_id; 
+
         for (uint8_t i = 0; i < AIRSPEED_MAX_SENSORS; i++) {
             if (_detected_modules[i].ap_uavcan == nullptr) {
-                _detected_modules[i].ap_uavcan = ap_uavcan;
-                _detected_modules[i].node_id = node_id;
-                break;
+                _detected_modules[i].ap_uavcan = ap_uavcan_to_fit;
+                _detected_modules[i].node_id = node_id_to_fit;
+                break
+                
+            }
+            else if (_detected_modules[i].node_id > node_id_to_fit){
+                AP_UAVCAN* temp_can = ap_uavcan_to_fit;
+                uint8_t temp_node = node_id_to_fit; 
+                ap_uavcan_to_fit = _detected_modules[i].ap_uavcan;
+                node_id_to_fit = _detected_modules[i].node_id;
+                _detected_modules[i].ap_uavcan = temp_can;
+                _detected_modules[i].node_id = temp_node;
             }
         }
     }
