@@ -23,10 +23,7 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
-#define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
-#if USE_PICOJSON
-#include "picojson.h"
-#endif
+
 
 using namespace SITL;
 
@@ -384,11 +381,13 @@ void Frame::load_frame_params(const char *model_json)
         JSON_VECTOR3F,
     };
 
-    struct {
+    struct json_search {
         const char *label;
         void *ptr;
         JSON_TYPE t;
-    } vars[] = {
+    };
+    
+    json_search vars[] = {
 #define FRAME_VAR(s) { #s, &model.s, JSON_TYPE::JSON_FLOAT }
         FRAME_VAR(mass),
         FRAME_VAR(diagonal_size),
@@ -421,28 +420,52 @@ void Frame::load_frame_params(const char *model_json)
             continue;
         }
         if (vars[i].t == JSON_TYPE::JSON_FLOAT) {
-            if (!v.is<double>()) {
-                AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
-            }
-            *((float *)vars[i].ptr) = v.get<double>();
+            parse_float(v, vars[i].label, *((float *)vars[i].ptr));
 
         } else if (vars[i].t == JSON_TYPE::JSON_VECTOR3F) {
-            if (!v.is<picojson::array>() || !v.contains(2) || v.contains(3)) {
-                AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
+            parse_vector3(v, vars[i].label, *(Vector3f *)vars[i].ptr);
+
+        }
+    }
+
+    json_search per_motor_vars[] = {
+        {"position", &model.motor_pos, JSON_TYPE::JSON_VECTOR3F},
+        {"vector", &model.motor_thrust_vec, JSON_TYPE::JSON_VECTOR3F},
+    };
+    char label_name[20];
+    for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
+        for (uint8_t j=0; j<12; j++) {
+            sprintf(label_name, "motor%i_%s", j+1, per_motor_vars[i].label);
+            auto v = obj.get(label_name);
+            if (v.is<picojson::null>()) {
+                // use default value
+                continue;
             }
-            Vector3f &vec = *(Vector3f *)vars[i].ptr;
-            for (uint8_t j=0; j<3; j++) {
-                auto array_item = v.get(j);
-                if (!array_item.is<double>()) {
-                    AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
-                }
-                vec[j] = array_item.get<double>();
+            if (per_motor_vars[i].t == JSON_TYPE::JSON_VECTOR3F) {
+                parse_vector3(v, label_name, *(((Vector3f *)per_motor_vars[i].ptr) + j));
             }
         }
     }
 
     ::printf("Loaded model params from %s\n", model_json);
 }
+
+void Frame::parse_float(picojson::value val, const char* label, float &param) {
+    if (!val.is<double>()) {
+        AP_HAL::panic("Bad json type for %s: %s", label, val.to_str().c_str());
+    }
+    param = val.get<double>();
+}
+
+void Frame::parse_vector3(picojson::value val, const char* label, Vector3f &param) {
+    if (!val.is<picojson::array>() || !val.contains(2) || val.contains(3)) {
+        AP_HAL::panic("Bad json type for %s: %s", label, val.to_str().c_str());
+    }
+    for (uint8_t j=0; j<3; j++) {
+        parse_float(val.get(j), label, param[j]);
+    }
+}
+
 #endif
 
 /*
@@ -497,7 +520,8 @@ void Frame::init(const char *frame_str, Battery *_battery)
 
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
-                               model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max);
+                               model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max,
+                               model.motor_pos[i], model.motor_thrust_vec[i]);
     }
 
     if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
