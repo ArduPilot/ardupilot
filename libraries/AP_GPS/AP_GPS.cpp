@@ -1163,6 +1163,32 @@ void AP_GPS::update(void)
 #endif
 }
 
+bool AP_GPS::is_rtk_base_type(uint8_t type) const
+{
+    if (type == GPS_TYPE_UBLOX_RTK_BASE) {
+        return true;
+    }
+
+    if (type == GPS_TYPE_UAVCAN_RTK_BASE) {
+        return true;
+    }
+
+    return false;
+}
+
+bool AP_GPS::is_rtk_rover_type(uint8_t type) const
+{
+    if (type == GPS_TYPE_UBLOX_RTK_ROVER) {
+        return true;
+    }
+
+    if (type == GPS_TYPE_UAVCAN_RTK_ROVER) {
+        return true;
+    }
+
+    return false;
+}
+
 /*
   update primary GPS instance
  */
@@ -1232,8 +1258,8 @@ void AP_GPS::update_primary(void)
     // rover as it typically is in fix type 6 (RTK) whereas base is
     // usually fix type 3
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-        if (((_type[i] == GPS_TYPE_UBLOX_RTK_BASE) || (_type[i] == GPS_TYPE_UAVCAN_RTK_BASE)) &&
-            ((_type[i^1] == GPS_TYPE_UBLOX_RTK_ROVER) || (_type[i^1] == GPS_TYPE_UAVCAN_RTK_ROVER)) &&
+        if (is_rtk_base_type(_type[i]) &&
+            is_rtk_rover_type(_type[i^1]) &&
             ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
