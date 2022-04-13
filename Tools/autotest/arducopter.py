@@ -2679,10 +2679,11 @@ class AutoTestCopter(AutoTest):
             # now add a notch and check that post-filter the peak is squashed below 40dB
             self.set_parameters({
                 "INS_LOG_BAT_OPT": 2,
-                "INS_NOTCH_ENABLE": 1,
-                "INS_NOTCH_FREQ": freq,
-                "INS_NOTCH_ATT": 50,
-                "INS_NOTCH_BW": freq/2,
+                "INS_HNTC2_ENABLE": 1,
+                "INS_HNTC2_FREQ": freq,
+                "INS_HNTC2_ATT": 50,
+                "INS_HNTC2_BW": freq/2,
+                "INS_HNTC2_MODE": 0,
                 "SIM_VIB_MOT_MAX": 350,
             })
             self.reboot_sitl()
