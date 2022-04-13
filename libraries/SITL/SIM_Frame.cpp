@@ -379,11 +379,17 @@ void Frame::load_frame_params(const char *model_json)
         exit(1);
     }
 
+    enum JSON_TYPE {
+        JSON_FLOAT,
+        JSON_VECTOR3F,
+    };
+
     struct {
         const char *label;
-        float &v;
+        void *ptr;
+        JSON_TYPE t;
     } vars[] = {
-#define FRAME_VAR(s) { #s, model.s }
+#define FRAME_VAR(s) { #s, &model.s, JSON_TYPE::JSON_FLOAT }
         FRAME_VAR(mass),
         FRAME_VAR(diagonal_size),
         FRAME_VAR(refSpd),
@@ -405,8 +411,8 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(slew_max),
         FRAME_VAR(disc_area),
         FRAME_VAR(mdrag_coef),
+        {"moment_inertia", &model.moment_of_inertia, JSON_TYPE::JSON_VECTOR3F},
     };
-    static_assert(sizeof(model) == sizeof(float)*ARRAY_SIZE(vars), "incorrect model vars");
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
         auto v = obj.get(vars[i].label);
@@ -414,10 +420,25 @@ void Frame::load_frame_params(const char *model_json)
             // use default value
             continue;
         }
-        if (!v.is<double>()) {
-            AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
+        if (vars[i].t == JSON_TYPE::JSON_FLOAT) {
+            if (!v.is<double>()) {
+                AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
+            }
+            *((float *)vars[i].ptr) = v.get<double>();
+
+        } else if (vars[i].t == JSON_TYPE::JSON_VECTOR3F) {
+            if (!v.is<picojson::array>() || !v.contains(2) || v.contains(3)) {
+                AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
+            }
+            Vector3f &vec = *(Vector3f *)vars[i].ptr;
+            for (uint8_t j=0; j<3; j++) {
+                auto array_item = v.get(j);
+                if (!array_item.is<double>()) {
+                    AP_HAL::panic("Bad json type for %s: %s", vars[i].label, v.to_str().c_str());
+                }
+                vec[j] = array_item.get<double>();
+            }
         }
-        vars[i].v = v.get<double>();
     }
 
     ::printf("Loaded model params from %s\n", model_json);
@@ -479,10 +500,12 @@ void Frame::init(const char *frame_str, Battery *_battery)
                                model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max);
     }
 
-    // assume 50% of mass on ring around center
-    model.moment_of_inertia.x = model.mass * 0.25 * sq(model.diagonal_size*0.5);
-    model.moment_of_inertia.y = model.moment_of_inertia.x;
-    model.moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
+    if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
+        // if no inertia provided, assume 50% of mass on ring around center
+        model.moment_of_inertia.x = model.mass * 0.25 * sq(model.diagonal_size*0.5);
+        model.moment_of_inertia.y = model.moment_of_inertia.x;
+        model.moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
+    }
 
 
 #if 0
