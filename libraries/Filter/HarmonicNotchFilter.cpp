@@ -78,7 +78,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode
     // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.
     // @Range: 0 4
-    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT
+    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor
     // @User: Advanced
     AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, 1),
 
