@@ -398,17 +398,18 @@ bool AP_Vehicle::is_crashed() const
 // run notch update at either loop rate or 200Hz
 void AP_Vehicle::update_dynamic_notch_at_specified_rate()
 {
-    if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
-        update_dynamic_notch();
-        return;
-    }
+    for (uint8_t i=0; i<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; i++) {
+        if (ins.has_harmonic_option(i, HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
+            update_dynamic_notch(i);
+        } else {
+            // decimated update at 200Hz
+            const uint32_t now = AP_HAL::millis();
 
-    // decimated update at 200Hz
-    const uint32_t now = AP_HAL::millis();
-
-    if (now - _last_notch_update_ms > 5) {
-        _last_notch_update_ms = now;
-        update_dynamic_notch();
+            if (now - _last_notch_update_ms[i] > 5) {
+                _last_notch_update_ms[i] = now;
+                update_dynamic_notch(i);
+            }
+        }
     }
 }
 
