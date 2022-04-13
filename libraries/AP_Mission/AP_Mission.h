@@ -228,8 +228,14 @@ public:
         float arg1;
         float arg2;
     };
-    
+
     union Content {
+        // k
+        struct {
+            int32_t lat;
+            int32_t lng;
+            uint16_t a;
+        } k;
         // jump structure
         Jump_Command jump;
 
@@ -301,7 +307,7 @@ public:
 
         // nav scripting
         nav_script_time_Command nav_script_time;
-        
+
         // location
         Location location{};      // Waypoint location
     };
