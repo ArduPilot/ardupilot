@@ -27,7 +27,7 @@ public:
 private:
     bool init_sensor(void);
     void timer_update();
-    float gyro_drift(void);
+    float gyro_drift(void) const;
     void generate_accel();
     void generate_gyro();
     float get_temperature(void);
