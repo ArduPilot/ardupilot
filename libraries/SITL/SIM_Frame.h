@@ -127,6 +127,9 @@ private:
         // momentum drag coefficient
         float mdrag_coef = 0.2;
 
+        // if zero value will be estimated from mass
+        Vector3f moment_of_inertia;
+
     } default_model;
 
     struct Model model;
