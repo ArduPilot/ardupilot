@@ -403,7 +403,7 @@ bool ModeZigZag::reached_destination()
     }
 
     // wait at time which is set in zigzag_wp_delay
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     if (reach_wp_time_ms == 0) {
         reach_wp_time_ms = now;
     }

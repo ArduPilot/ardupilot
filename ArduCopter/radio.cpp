@@ -87,7 +87,7 @@ void Copter::enable_motor_output()
 
 void Copter::read_radio()
 {
-    const uint32_t tnow_ms = millis();
+    const uint32_t tnow_ms = loop_ms();
 
     if (rc().read_input()) {
         ap.new_radio_frame = true;
@@ -180,7 +180,7 @@ void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 void Copter::set_throttle_zero_flag(int16_t throttle_control)
 {
     static uint32_t last_nonzero_throttle_ms = 0;
-    uint32_t tnow_ms = millis();
+    uint32_t tnow_ms = loop_ms();
 
     // if not using throttle interlock and non-zero throttle and not E-stopped,
     // or using motor interlock and it's enabled, then motors are running, 

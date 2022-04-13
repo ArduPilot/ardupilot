@@ -128,19 +128,19 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     hal.util->set_soft_armed(true);
 
     // initialise run time
-    last_run_time = millis();
-    last_send_time = millis();
+    last_run_time = loop_ms();
+    last_send_time = loop_ms();
 
     // main run while there is no user input and the compass is healthy
     while (command_ack_start == command_ack_counter && compass.healthy() && motors->armed()) {
         EXPECT_DELAY_MS(5000);
 
         // 50hz loop
-        if (millis() - last_run_time < 20) {
+        if (loop_ms() - last_run_time < 20) {
             hal.scheduler->delay(5);
             continue;
         }
-        last_run_time = millis();
+        last_run_time = loop_ms();
 
         // read radio input
         read_radio();
@@ -216,8 +216,8 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
             }
         }
 
-        if (AP_HAL::millis() - last_send_time > 500) {
-            last_send_time = AP_HAL::millis();
+        if (AP_HAL::loop_ms() - last_send_time > 500) {
+            last_send_time = AP_HAL::loop_ms();
             mavlink_msg_compassmot_status_send(gcs_chan.get_chan(),
                                                channel_throttle->get_control_in(),
                                                current,

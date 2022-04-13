@@ -69,7 +69,7 @@ bool AP_Terrain::request_missing(mavlink_channel_t chan, struct grid_cache &gcac
       ask the GCS to send a set of 4x4 grids
      */
     mavlink_msg_terrain_request_send(chan, grid.lat, grid.lon, grid_spacing, bitmap_mask & ~grid.bitmap);
-    last_request_time_ms[chan] = AP_HAL::millis();
+    last_request_time_ms[chan] = AP_HAL::loop_ms();
 
     return true;
 }
@@ -126,7 +126,7 @@ void AP_Terrain::send_request(mavlink_channel_t chan)
     send_terrain_report(chan, loc, true);
 
     // did we request recently?
-    if (AP_HAL::millis() - last_request_time_ms[chan] < 2000) {
+    if (AP_HAL::loop_ms() - last_request_time_ms[chan] < 2000) {
         // too soon to request again
         return;
     }

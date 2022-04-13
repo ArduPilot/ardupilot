@@ -238,7 +238,7 @@ AP_AHRS_View *AP_AHRS::create_view(enum Rotation rotation, float pitch_trim_deg)
 void AP_AHRS::update_AOA_SSA(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::loop_ms();
     if (now - _last_AOA_update_ms < 50) {
         // don't update at more than 20Hz
         return;
@@ -326,13 +326,13 @@ Vector3f AP_AHRS::get_vibration(void) const
 void AP_AHRS::set_takeoff_expected(bool b)
 {
     takeoff_expected = b;
-    takeoff_expected_start_ms = AP_HAL::millis();
+    takeoff_expected_start_ms = AP_HAL::loop_ms();
 }
 
 void AP_AHRS::set_touchdown_expected(bool b)
 {
     touchdown_expected = b;
-    touchdown_expected_start_ms = AP_HAL::millis();
+    touchdown_expected_start_ms = AP_HAL::loop_ms();
 }
 
 /*
@@ -341,10 +341,10 @@ void AP_AHRS::set_touchdown_expected(bool b)
 void AP_AHRS::update_flags(void)
 {
     const uint32_t timeout_ms = 1000;
-    if (takeoff_expected && AP_HAL::millis() - takeoff_expected_start_ms > timeout_ms) {
+    if (takeoff_expected && AP_HAL::loop_ms() - takeoff_expected_start_ms > timeout_ms) {
         takeoff_expected = false;
     }
-    if (touchdown_expected && AP_HAL::millis() - touchdown_expected_start_ms > timeout_ms) {
+    if (touchdown_expected && AP_HAL::loop_ms() - touchdown_expected_start_ms > timeout_ms) {
         touchdown_expected = false;
     }
 }

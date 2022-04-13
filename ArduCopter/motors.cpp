@@ -56,7 +56,7 @@ void Copter::arm_motors_check()
             auto_trim_counter = 250;
             auto_trim_started = false;
             // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
+            auto_disarm_begin = loop_ms();
         }
 
     // full left and rudder disarming is enabled
@@ -85,7 +85,7 @@ void Copter::arm_motors_check()
 // auto_disarm_check - disarms the copter if it has been sitting on the ground in manual mode with throttle low for at least 15 seconds
 void Copter::auto_disarm_check()
 {
-    uint32_t tnow_ms = millis();
+    uint32_t tnow_ms = loop_ms();
     uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, 127);
 
     // exit immediately if we are already disarmed, or if auto
@@ -148,7 +148,7 @@ void Copter::motors_output()
 #endif
 
     // Update arming delay state
-    if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || flightmode->mode_number() == Mode::Number::THROW)) {
+    if (ap.in_arming_delay && (!motors->armed() || loop_ms()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || flightmode->mode_number() == Mode::Number::THROW)) {
         ap.in_arming_delay = false;
     }
 

@@ -194,7 +194,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     // if the caller wants us to try to recover to the current
     // attitude then calculate the dcm matrix from the current
     // roll/pitch/yaw values
-    if (hal.util->was_watchdog_reset() && AP_HAL::millis() < 10000) {
+    if (hal.util->was_watchdog_reset() && AP_HAL::loop_ms() < 10000) {
         const AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
         roll = pd.roll_rad;
         pitch = pd.pitch_rad;
@@ -241,7 +241,7 @@ AP_AHRS_DCM::reset(bool recover_eulers)
     _cos_yaw = cosf(yaw);
     _sin_yaw = sinf(yaw);
 
-    _last_startup_ms = AP_HAL::millis();
+    _last_startup_ms = AP_HAL::loop_ms();
 }
 
 /*
@@ -345,7 +345,7 @@ AP_AHRS_DCM::normalize(void)
             !renorm(t2, _dcm_matrix.c)) {
         // Our solution is blowing up and we will force back
         // to last euler angles
-        _last_failure_ms = AP_HAL::millis();
+        _last_failure_ms = AP_HAL::loop_ms();
         AP_AHRS_DCM::reset(true);
     }
 }
@@ -435,7 +435,7 @@ bool AP_AHRS_DCM::have_gps(void) const
  */
 bool AP_AHRS_DCM::use_fast_gains(void) const
 {
-    return !hal.util->get_soft_armed() && (AP_HAL::millis() - _last_startup_ms) < 20000U;
+    return !hal.util->get_soft_armed() && (AP_HAL::loop_ms() - _last_startup_ms) < 20000U;
 }
 
 
@@ -463,13 +463,13 @@ bool AP_AHRS_DCM::use_compass(void)
     // prevent flyaways with very bad compass offsets
     const float error = fabsf(wrap_180(degrees(yaw) - AP::gps().ground_course()));
     if (error > 45 && _wind.length() < AP::gps().ground_speed()*0.8f) {
-        if (AP_HAL::millis() - _last_consistent_heading > 2000) {
+        if (AP_HAL::loop_ms() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
             return false;
         }
     } else {
-        _last_consistent_heading = AP_HAL::millis();
+        _last_consistent_heading = AP_HAL::loop_ms();
     }
 
     // use the compass
@@ -733,7 +733,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // add in wind estimate
         velocity += _wind;
 
-        last_correction_time = AP_HAL::millis();
+        last_correction_time = AP_HAL::loop_ms();
         _have_gps_lock = false;
     } else {
         if (_gps.last_fix_time_ms() == _ra_sum_start) {
@@ -764,7 +764,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         // use GPS for positioning with any fix, even a 2D fix
         _last_lat = _gps.location().lat;
         _last_lng = _gps.location().lng;
-        _last_pos_ms = AP_HAL::millis();
+        _last_pos_ms = AP_HAL::loop_ms();
         _position_offset_north = 0;
         _position_offset_east = 0;
 
@@ -804,7 +804,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         GA_e.normalize();
         if (GA_e.is_inf()) {
             // wait for some non-zero acceleration information
-            _last_failure_ms = AP_HAL::millis();
+            _last_failure_ms = AP_HAL::loop_ms();
             return;
         }
         using_gps_corrections = true;
@@ -863,7 +863,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
 
     if (besti == -1) {
         // no healthy accelerometers!
-        _last_failure_ms = AP_HAL::millis();
+        _last_failure_ms = AP_HAL::loop_ms();
         return;
     }
 
@@ -913,7 +913,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     if (error[besti].is_nan() || error[besti].is_inf()) {
         // don't allow bad values
         check_matrix();
-        _last_failure_ms = AP_HAL::millis();
+        _last_failure_ms = AP_HAL::loop_ms();
         return;
     }
 
@@ -988,7 +988,7 @@ void AP_AHRS_DCM::estimate_wind(void)
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
     const Vector3f fuselageDirection = _dcm_matrix.colx();
     const Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::loop_ms();
 
     // scrap our data and start over if we're taking too long to get a direction change
     if (now - _last_wind_time > 10000) {
@@ -1062,7 +1062,7 @@ bool AP_AHRS_DCM::get_location(struct Location &loc) const
     loc.terrain_alt = 0;
     loc.offset(_position_offset_north, _position_offset_east);
     if (_have_position) {
-        const uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::loop_ms();
         float dt = 0;
         gps.get_lag(dt);
         dt += constrain_float((now - _last_pos_ms) * 0.001, 0, 0.5);
@@ -1189,7 +1189,7 @@ bool AP_AHRS::set_home(const Location &loc)
 bool AP_AHRS_DCM::healthy(void) const
 {
     // consider ourselves healthy if there have been no failures for 5 seconds
-    return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
+    return (_last_failure_ms == 0 || AP_HAL::loop_ms() - _last_failure_ms > 5000);
 }
 
 /*

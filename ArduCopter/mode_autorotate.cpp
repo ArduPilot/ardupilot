@@ -62,7 +62,7 @@ bool ModeAutorotate::init(bool ignore_checks)
     phase_switch = Autorotation_Phase::ENTRY;
 
     // Set entry timer
-    _entry_time_start_ms = millis();
+    _entry_time_start_ms = loop_ms();
 
     // The decay rate to reduce the head speed from the current to the target
     _hs_decay = ((_initial_rpm/g2.arot.get_hs_set_point()) - HEAD_SPEED_TARGET_RATIO) / AUTOROTATE_ENTRY_TIME;
@@ -83,7 +83,7 @@ void ModeAutorotate::run()
     }
 
     // Current time
-    uint32_t now = millis(); //milliseconds
+    uint32_t now = loop_ms(); //milliseconds
 
     // Initialise internal variables
     float curr_vel_z = inertial_nav.get_velocity_z_up_cms();   // Current vertical descent

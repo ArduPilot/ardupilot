@@ -300,7 +300,7 @@ void ModeGuided::angle_control_start()
     }
 
     // initialise targets
-    guided_angle_state.update_time_ms = millis();
+    guided_angle_state.update_time_ms = loop_ms();
     guided_angle_state.attitude_quat.initialise();
     guided_angle_state.ang_vel.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
@@ -377,7 +377,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
     guided_pos_terrain_alt = terrain_alt;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
-    update_time_ms = millis();
+    update_time_ms = loop_ms();
 
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
@@ -478,7 +478,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
     guided_pos_terrain_alt = terrain_alt;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss.zero();
-    update_time_ms = millis();
+    update_time_ms = loop_ms();
 
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
@@ -504,7 +504,7 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
     guided_pos_terrain_alt = false;
     guided_vel_target_cms.zero();
     guided_accel_target_cmss = acceleration;
-    update_time_ms = millis();
+    update_time_ms = loop_ms();
 
     // log target
     if (log_request) {
@@ -534,7 +534,7 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
     guided_pos_terrain_alt = false;
     guided_vel_target_cms = velocity;
     guided_accel_target_cmss = acceleration;
-    update_time_ms = millis();
+    update_time_ms = loop_ms();
 
     // log target
     if (log_request) {
@@ -569,7 +569,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     // set yaw state
     set_yaw_state(use_yaw, yaw_cd, use_yaw_rate, yaw_rate_cds, relative_yaw);
 
-    update_time_ms = millis();
+    update_time_ms = loop_ms();
     guided_pos_target_cm = destination.topostype();
     guided_pos_terrain_alt = false;
     guided_vel_target_cms = velocity;
@@ -630,7 +630,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
         guided_angle_state.climb_rate_cms = climb_rate_cms_or_thrust;
     }
 
-    guided_angle_state.update_time_ms = millis();
+    guided_angle_state.update_time_ms = loop_ms();
 
     // convert quaternion to euler angles
     float roll_rad, pitch_rad, yaw_rad;
@@ -692,7 +692,7 @@ void ModeGuided::pos_control_run()
     guided_vel_target_cms.zero();
 
     // stop rotating if no updates received within timeout_ms
-    if (millis() - update_time_ms > get_timeout_ms()) {
+    if (loop_ms() - update_time_ms > get_timeout_ms()) {
         if ((auto_yaw.mode() == AUTO_YAW_RATE) || (auto_yaw.mode() == AUTO_YAW_ANGLE_RATE)) {
             auto_yaw.set_rate(0.0f);
         }
@@ -746,7 +746,7 @@ void ModeGuided::accel_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
-    uint32_t tnow = millis();
+    uint32_t tnow = loop_ms();
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
@@ -810,7 +810,7 @@ void ModeGuided::velaccel_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
-    uint32_t tnow = millis();
+    uint32_t tnow = loop_ms();
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
@@ -916,7 +916,7 @@ void ModeGuided::posvelaccel_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set velocity to zero and stop rotating if no updates received for 3 seconds
-    uint32_t tnow = millis();
+    uint32_t tnow = loop_ms();
     if (tnow - update_time_ms > get_timeout_ms()) {
         guided_vel_target_cms.zero();
         guided_accel_target_cmss.zero();
@@ -986,7 +986,7 @@ void ModeGuided::angle_control_run()
     }
 
     // check for timeout - set lean angles and climb rate to zero if no updates received for 3 seconds
-    uint32_t tnow = millis();
+    uint32_t tnow = loop_ms();
     if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
         guided_angle_state.attitude_quat.initialise();
         guided_angle_state.ang_vel.zero();
@@ -1089,7 +1089,7 @@ void ModeGuided::limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_
 void ModeGuided::limit_init_time_and_pos()
 {
     // initialise start time
-    guided_limit.start_time = AP_HAL::millis();
+    guided_limit.start_time = AP_HAL::loop_ms();
 
     // initialise start position from current position
     guided_limit.start_pos = inertial_nav.get_position_neu_cm();
@@ -1100,7 +1100,7 @@ void ModeGuided::limit_init_time_and_pos()
 bool ModeGuided::limit_check()
 {
     // check if we have passed the timeout
-    if ((guided_limit.timeout_ms > 0) && (millis() - guided_limit.start_time >= guided_limit.timeout_ms)) {
+    if ((guided_limit.timeout_ms > 0) && (loop_ms() - guided_limit.start_time >= guided_limit.timeout_ms)) {
         return true;
     }
 

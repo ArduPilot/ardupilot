@@ -26,7 +26,7 @@ void Copter::motor_test_output()
     EXPECT_DELAY_MS(2000);
 
     // check for test timeout
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     if ((now - motor_test_start_ms) >= motor_test_timeout_ms) {
         if (motor_test_count > 1) {
             if (now - motor_test_start_ms < motor_test_timeout_ms*1.5) {
@@ -169,7 +169,7 @@ MAV_RESULT Copter::mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, uint8_t
     }
 
     // set timeout
-    motor_test_start_ms = AP_HAL::millis();
+    motor_test_start_ms = AP_HAL::loop_ms();
     motor_test_timeout_ms = MIN(timeout_sec, MOTOR_TEST_TIMEOUT_SEC) * 1000;
 
     // store required output

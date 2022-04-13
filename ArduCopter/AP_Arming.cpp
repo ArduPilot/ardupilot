@@ -830,7 +830,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     in_arm_motors = false;
 
     // Log time stamp of arming event
-    copter.arm_time_ms = millis();
+    copter.arm_time_ms = loop_ms();
 
     // Start the arming delay
     copter.ap.in_arming_delay = true;

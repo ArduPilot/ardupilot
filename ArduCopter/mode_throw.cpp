@@ -200,7 +200,7 @@ void ModeThrow::run()
     }
 
     // log at 10hz or if stage changes
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     if ((stage != prev_stage) || (now - last_log_ms) > 100) {
         prev_stage = stage;
         last_log_ms = now;
@@ -275,13 +275,13 @@ bool ModeThrow::throw_detected()
     bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
 
     // Record time and vertical velocity when we detect the possible throw
-    if (possible_throw_detected && ((AP_HAL::millis() - free_fall_start_ms) > 500)) {
-        free_fall_start_ms = AP_HAL::millis();
+    if (possible_throw_detected && ((AP_HAL::loop_ms() - free_fall_start_ms) > 500)) {
+        free_fall_start_ms = AP_HAL::loop_ms();
         free_fall_start_velz = inertial_nav.get_velocity_z_up_cms();
     }
 
     // Once a possible throw condition has been detected, we check for 2.5 m/s of downwards velocity change in less than 0.5 seconds to confirm
-    bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((inertial_nav.get_velocity_z_up_cms() - free_fall_start_velz) < -250.0f));
+    bool throw_condition_confirmed = ((AP_HAL::loop_ms() - free_fall_start_ms < 500) && ((inertial_nav.get_velocity_z_up_cms() - free_fall_start_velz) < -250.0f));
 
     // start motors and enter the control mode if we are in continuous freefall
     return throw_condition_confirmed;

@@ -74,11 +74,11 @@ void Copter::read_rangefinder(void)
             // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
             rf_state.glitch_count = 0;
             rf_state.alt_cm_glitch_protected = rf_state.alt_cm;
-            rf_state.glitch_cleared_ms = AP_HAL::millis();
+            rf_state.glitch_cleared_ms = AP_HAL::loop_ms();
         }
 
         // filter rangefinder altitude
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::loop_ms();
         const bool timed_out = now - rf_state.last_healthy_ms > RANGEFINDER_TIMEOUT_MS;
         if (rf_state.alt_healthy) {
             if (timed_out) {

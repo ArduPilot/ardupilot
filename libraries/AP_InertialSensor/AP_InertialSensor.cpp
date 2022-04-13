@@ -1616,7 +1616,7 @@ void AP_InertialSensor::update(void)
 
             if (_startup_ms == 0) {
                 _startup_ms = AP_HAL::millis();
-            } else if (AP_HAL::millis()-_startup_ms > 2000) {
+            } else if (AP_HAL::loop_ms()-_startup_ms > 2000) {
                 _startup_error_counts_set = true;
             }
         }
@@ -1807,6 +1807,7 @@ check_sample:
     now = AP_HAL::micros();
     _delta_time = (now - _last_sample_usec) * 1.0e-6f;
     _last_sample_usec = now;
+    AP_HAL::set_loop_ms(AP_HAL::millis());
 
 #if 0
     {

@@ -200,7 +200,7 @@ protected:
     void _update_sensor_rate(uint16_t &count, uint32_t &start_us, float &rate_hz) const __RAMFUNC__;
 
     // return true if the sensors are still converging and sampling rates could change significantly
-    bool sensors_converging() const { return AP_HAL::millis() < 30000; }
+    bool sensors_converging() const { return AP_HAL::loop_ms() < 30000; }
 
     // set accelerometer max absolute offset for calibration
     void _set_accel_max_abs_offset(uint8_t instance, float offset);

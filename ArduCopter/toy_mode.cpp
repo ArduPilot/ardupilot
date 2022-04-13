@@ -239,7 +239,7 @@ void ToyMode::update()
         return;
     }
 
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     
     if (is_v2450_buttons()) {
         // V2450 button mapping from cypress radio. It maps the
@@ -445,7 +445,7 @@ void ToyMode::update()
                     }
                 }
             } else {
-                throttle_arm_ms = AP_HAL::millis();
+                throttle_arm_ms = AP_HAL::loop_ms();
             }
         }
     } else {
@@ -729,7 +729,7 @@ void ToyMode::trim_update(void)
         }
     }
 
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     
     if (trim.start_ms == 0) {
         // start timer
@@ -835,7 +835,7 @@ void ToyMode::action_arm(void)
 */
 void ToyMode::throttle_adjust(float &throttle_control)
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     const uint32_t soft_start_ms = 5000;
     const uint16_t throttle_start = 600 + copter.g.throttle_deadzone;
     if (!copter.motors->armed() && (flags & FLAG_THR_ARM)) {
@@ -888,7 +888,7 @@ void ToyMode::blink_update(void)
     }
 
     // let the TX know we are recording video
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     if (now - last_video_ms < 1000) {
         AP_Notify::flags.video_recording = 1;
     } else {
@@ -952,7 +952,7 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
         }
         green_blink_pattern = BLINK_2;
         green_blink_count = 1;
-        last_video_ms = AP_HAL::millis();
+        last_video_ms = AP_HAL::loop_ms();
         // immediately update AP_Notify recording flag
         AP_Notify::flags.video_recording = 1;
     } else if (strncmp(m.name, "WIFICHAN", 10) == 0) {
@@ -976,7 +976,7 @@ void ToyMode::handle_message(const mavlink_message_t &msg)
  */
 void ToyMode::send_named_int(const char *name, int32_t value)
 {
-    mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::millis(), name, value);
+    mavlink_msg_named_value_int_send(MAVLINK_COMM_1, AP_HAL::loop_ms(), name, value);
 }
 
 /*

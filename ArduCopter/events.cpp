@@ -135,7 +135,7 @@ void Copter::failsafe_gcs_check()
 
     // calc time since last gcs update
     // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
-    const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
+    const uint32_t last_gcs_update_ms = loop_ms() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
     // Determine which event to trigger
@@ -255,7 +255,7 @@ void Copter::failsafe_terrain_check()
 // set terrain data status (found or not found)
 void Copter::failsafe_terrain_set_status(bool data_ok)
 {
-    uint32_t now = millis();
+    uint32_t now = loop_ms();
 
     // record time of first and latest failures (i.e. duration of failures)
     if (!data_ok) {

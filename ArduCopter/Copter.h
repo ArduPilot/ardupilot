@@ -1002,4 +1002,5 @@ public:
 extern Copter copter;
 
 using AP_HAL::millis;
+using AP_HAL::loop_ms;
 using AP_HAL::micros;

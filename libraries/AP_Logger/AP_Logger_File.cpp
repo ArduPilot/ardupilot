@@ -177,7 +177,7 @@ bool AP_Logger_File::recent_open_error(void) const
     if (_open_error_ms == 0) {
         return false;
     }
-    return AP_HAL::millis() - _open_error_ms < LOGGER_FILE_REOPEN_MS;
+    return AP_HAL::loop_ms() - _open_error_ms < LOGGER_FILE_REOPEN_MS;
 }
 
 // return true for CardInserted() if we successfully initialized
@@ -464,7 +464,7 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
         // writing format messages out.  It can always get back to us
         // with more messages later, so let's leave room for other
         // things:
-        const uint32_t now = AP_HAL::millis();
+        const uint32_t now = AP_HAL::loop_ms();
         const bool must_dribble = (now - last_messagewrite_message_sent) > 100;
         if (!must_dribble &&
             space < non_messagewriter_message_reserved_space(_writebuf.get_size())) {
@@ -613,7 +613,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         EXPECT_DELAY_MS(3000);
         _read_fd = AP::FS().open(fname, O_RDONLY);
         if (_read_fd == -1) {
-            _open_error_ms = AP_HAL::millis();
+            _open_error_ms = AP_HAL::loop_ms();
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
@@ -713,7 +713,7 @@ void AP_Logger_File::PrepForArming_start_logging()
         return;
     }
 
-    uint32_t start_ms = AP_HAL::millis();
+    uint32_t start_ms = AP_HAL::loop_ms();
     const uint32_t open_limit_ms = 1000;
 
     /*
@@ -722,7 +722,7 @@ void AP_Logger_File::PrepForArming_start_logging()
      */
     start_new_log_pending = true;
     EXPECT_DELAY_MS(1000);
-    while (AP_HAL::millis() - start_ms < open_limit_ms) {
+    while (AP_HAL::loop_ms() - start_ms < open_limit_ms) {
         if (logging_started()) {
             break;
         }
@@ -760,7 +760,7 @@ void AP_Logger_File::start_new_log(void)
     // (for example), you will end up recursing if we don't take
     // precautions.  We will reset _open_error if we actually manage
     // to open the log...
-    _open_error_ms = AP_HAL::millis();
+    _open_error_ms = AP_HAL::loop_ms();
 
     stop_logging();
 
@@ -821,7 +821,7 @@ void AP_Logger_File::start_new_log(void)
         }
         return;
     }
-    _last_write_ms = AP_HAL::millis();
+    _last_write_ms = AP_HAL::loop_ms();
     _open_error_ms = 0;
     _write_offset = 0;
     _writebuf.clear();
@@ -834,7 +834,7 @@ void AP_Logger_File::start_new_log(void)
     int fd = AP::FS().open(fname, O_WRONLY|O_CREAT);
     free(fname);
     if (fd == -1) {
-        _open_error_ms = AP_HAL::millis();
+        _open_error_ms = AP_HAL::loop_ms();
         return;
     }
 
@@ -845,7 +845,7 @@ void AP_Logger_File::start_new_log(void)
     AP::FS().close(fd);
 
     if (written < to_write) {
-        _open_error_ms = AP_HAL::millis();
+        _open_error_ms = AP_HAL::loop_ms();
         return;
     }
 
@@ -857,7 +857,7 @@ void AP_Logger_File::start_new_log(void)
 void AP_Logger_File::flush(void)
 #if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 {
-    uint32_t tnow = AP_HAL::millis();
+    uint32_t tnow = AP_HAL::loop_ms();
     while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {
         // convince the IO timer that it really is OK to write out
         // less than _writebuf_chunk bytes:
@@ -1019,7 +1019,7 @@ bool AP_Logger_File::io_thread_alive() const
         timeout_ms *= sitl->speedup;
     }
 #endif
-    return (AP_HAL::millis() - _io_timer_heartbeat) < timeout_ms;
+    return (AP_HAL::loop_ms() - _io_timer_heartbeat) < timeout_ms;
 }
 
 bool AP_Logger_File::logging_failed() const

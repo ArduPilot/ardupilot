@@ -355,7 +355,7 @@ void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, con
 
     mavlink_msg_distance_sensor_send(
         chan,
-        AP_HAL::millis(),                        // time since system boot TODO: take time of measurement
+        AP_HAL::loop_ms(),                        // time since system boot TODO: take time of measurement
         sensor->min_distance_cm(),               // minimum distance the sensor can measure in centimeters
         sensor->max_distance_cm(),               // maximum distance the sensor can measure in centimeters
         sensor->distance_cm(),                   // current distance reading
@@ -457,7 +457,7 @@ void GCS_MAVLINK::send_proximity()
                 }
                 mavlink_msg_distance_sensor_send(
                         chan,
-                        AP_HAL::millis(),                               // time since system boot
+                        AP_HAL::loop_ms(),                               // time since system boot
                         dist_min,                                       // minimum distance the sensor can measure in centimeters
                         dist_max,                                       // maximum distance the sensor can measure in centimeters
                         (uint16_t)(dist_array.distance[i] * 100.0f),    // current distance reading
@@ -478,7 +478,7 @@ void GCS_MAVLINK::send_proximity()
         }
         mavlink_msg_distance_sensor_send(
                 chan,
-                AP_HAL::millis(),                                         // time since system boot
+                AP_HAL::loop_ms(),                                         // time since system boot
                 dist_min,                                                 // minimum distance the sensor can measure in centimeters
                 dist_max,                                                 // maximum distance the sensor can measure in centimeters
                 (uint16_t)(dist_up * 100.0f),                             // current distance reading
@@ -711,7 +711,7 @@ void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
 
 float GCS_MAVLINK::telemetry_radio_rssi()
 {
-    if (AP_HAL::millis() - last_radio_status.received_ms > 5000) {
+    if (AP_HAL::loop_ms() - last_radio_status.received_ms > 5000) {
         // telemetry radio has disappeared?!
         return 0;
     }
@@ -727,7 +727,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
     mavlink_radio_t packet;
     mavlink_msg_radio_decode(&msg, &packet);
 
-    const uint32_t now = AP_HAL::millis();
+    const uint32_t now = AP_HAL::loop_ms();
 
     last_radio_status.received_ms = now;
     last_radio_status.rssi = packet.rssi;
@@ -973,7 +973,7 @@ uint16_t GCS_MAVLINK::get_reschedule_interval_ms(const deferred_message_bucket_t
         // we are sending requests for waypoints, penalize streams:
         interval_ms *= 4;
     }
-    if (ftp.replies && AP_HAL::millis() - ftp.last_send_ms < 500) {
+    if (ftp.replies && AP_HAL::loop_ms() - ftp.last_send_ms < 500) {
         // we are sending ftp replies
         interval_ms *= 4;
     }
@@ -1164,9 +1164,9 @@ void GCS_MAVLINK::update_send()
     uint32_t retry_deferred_body_start = AP_HAL::micros();
 #endif
 
-    const uint32_t start = AP_HAL::millis();
+    const uint32_t start = AP_HAL::loop_ms();
     const uint16_t start16 = start & 0xFFFF;
-    while (AP_HAL::millis() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
+    while (AP_HAL::loop_ms() - start < 5) { // spend a max of 5ms sending messages.  This should never trigger - out_of_time() should become true
         if (gcs().out_of_time()) {
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
             try_send_message_stats.out_of_time++;
@@ -1472,7 +1472,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     mavlink_message_t msg;
     mavlink_status_t status;
     uint32_t tstart_us = AP_HAL::micros();
-    uint32_t now_ms = AP_HAL::millis();
+    uint32_t now_ms = AP_HAL::loop_ms();
 
     status.packet_rx_drop_count = 0;
 
@@ -1523,7 +1523,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         }
     }
 
-    const uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::loop_ms();
 
     // send a timesync message every 10 seconds; this is for data
     // collection purposes
@@ -1678,7 +1678,7 @@ void GCS_MAVLINK::send_system_time() const
     mavlink_msg_system_time_send(
         chan,
         time_unix,
-        AP_HAL::millis());
+        AP_HAL::loop_ms());
 }
 
 
@@ -1692,7 +1692,7 @@ void GCS_MAVLINK::send_rc_channels() const
 
     mavlink_msg_rc_channels_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         RC_Channels::get_valid_channel_count(),
         values[0],
         values[1],
@@ -1738,7 +1738,7 @@ void GCS_MAVLINK::send_rc_channels_raw() const
 
     mavlink_msg_rc_channels_raw_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         0,
         values[0],
         values[1],
@@ -1812,7 +1812,7 @@ void GCS_MAVLINK::send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_chan
     }
     send_fn(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         accel.x * 1000.0f / GRAVITY_MSS,
         accel.y * 1000.0f / GRAVITY_MSS,
         accel.z * 1000.0f / GRAVITY_MSS,
@@ -1869,7 +1869,7 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
 
     send_fn(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         press_abs, // hectopascal
         press_diff, // hectopascal
         temperature, // 0.01 degrees C
@@ -2035,7 +2035,7 @@ void GCS::service_statustext(void)
 void GCS::StatusTextQueue::prune(void)
 {
     // consider pruning the statustext queue of ancient entries
-    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::loop_ms();
     if (now_ms - last_prune_ms < 1000) {
         return;
     }
@@ -2359,7 +2359,7 @@ void GCS_MAVLINK::send_opticalflow()
     // populate and send message
     mavlink_msg_optical_flow_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         0, // sensor id is zero
         flowRate.x,
         flowRate.y,
@@ -2454,7 +2454,7 @@ void GCS_MAVLINK::send_local_position() const
 
     mavlink_msg_local_position_ned_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         local_position.x,
         local_position.y,
         local_position.z,
@@ -2489,7 +2489,7 @@ void GCS_MAVLINK::send_named_float(const char *name, float value) const
 {
     char float_name[MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN+1] {};
     strncpy(float_name, name, MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN);
-    mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
+    mavlink_msg_named_value_float_send(chan, AP_HAL::loop_ms(), float_name, value);
 }
 
 void GCS_MAVLINK::send_home_position() const
@@ -2699,7 +2699,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_message_interval(const mavlink_comman
 // are we still delaying telemetry to try to avoid Xbee bricking?
 bool GCS_MAVLINK::telemetry_delayed() const
 {
-    uint32_t tnow = AP_HAL::millis() >> 10;
+    uint32_t tnow = AP_HAL::loop_ms() >> 10;
     if (tnow > telem_delay()) {
         return false;
     }
@@ -3346,7 +3346,7 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
         return; // Only accept control from our gcs
     }
 
-    const uint32_t tnow = AP_HAL::millis();
+    const uint32_t tnow = AP_HAL::loop_ms();
 
     mavlink_rc_channels_override_t packet;
     mavlink_msg_rc_channels_override_decode(&msg, &packet);
@@ -3501,7 +3501,7 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
     if (msg.sysid == sysid_my_gcs()) {
-        gcs().sysid_myggcs_seen(AP_HAL::millis());
+        gcs().sysid_myggcs_seen(AP_HAL::loop_ms());
     }
 }
 
@@ -4947,7 +4947,7 @@ void GCS_MAVLINK::send_attitude() const
     const Vector3f omega = ahrs.get_gyro();
     mavlink_msg_attitude_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         ahrs.roll,
         ahrs.pitch,
         ahrs.yaw,
@@ -4967,7 +4967,7 @@ void GCS_MAVLINK::send_attitude_quaternion() const
     const float repr_offseq_q[] {0,0,0,0};  // unused, but probably should correspond to the AHRS view?
     mavlink_msg_attitude_quaternion_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         quat.q1,
         quat.q2,
         quat.q3,
@@ -5001,7 +5001,7 @@ void GCS_MAVLINK::send_global_position_int()
 
     mavlink_msg_global_position_int_send(
         chan,
-        AP_HAL::millis(),
+        AP_HAL::loop_ms(),
         global_position_current_loc.lat, // in 1E7 degrees
         global_position_current_loc.lng, // in 1E7 degrees
         global_position_int_alt(),       // millimeters above ground/sea level
@@ -5049,7 +5049,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
 
     mavlink_msg_set_position_target_global_int_send(
             chan,
-            AP_HAL::millis(),
+            AP_HAL::loop_ms(),
             target_system,
             target_component,
             MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
@@ -5108,7 +5108,7 @@ void GCS_MAVLINK::send_water_depth() const
 
         mavlink_msg_water_depth_send(
             chan,
-            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            AP_HAL::loop_ms(),   // time since system boot TODO: take time of measurement
             i,                  // rangefinder instance
             sensor_healthy,     // sensor healthy
             loc.lat,            // latitude of vehicle
@@ -5142,7 +5142,7 @@ void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message
         return;
     }
 
-    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::loop_ms();
     if (last_deprecation_warning_send_time_ms - now_ms < 30000) {
         return;
     }
@@ -5180,7 +5180,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_HEARTBEAT:
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
-        last_heartbeat_time = AP_HAL::millis();
+        last_heartbeat_time = AP_HAL::loop_ms();
         send_heartbeat();
         break;
 
@@ -5827,7 +5827,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
 void GCS::update_passthru(void)
 {
     WITH_SEMAPHORE(_passthru.sem);
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     uint32_t baud1, baud2;
     bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
                                                     baud1, baud2);
@@ -5890,7 +5890,7 @@ void GCS::passthru_timer(void)
         return;
     }
     if (_passthru.start_ms != 0) {
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = AP_HAL::loop_ms();
         if (now - _passthru.start_ms < 1000) {
             // delay for 1s so the reply for the SERIAL0_PASSTHRU param set can be seen by GCS
             return;
@@ -5930,7 +5930,7 @@ void GCS::passthru_timer(void)
         buf[nbytes++] = b;
     }
     if (nbytes > 0) {
-        _passthru.last_port1_data_ms = AP_HAL::millis();
+        _passthru.last_port1_data_ms = AP_HAL::loop_ms();
         _passthru.port2->write_locked(buf, nbytes, lock_key);
     }
 
@@ -6089,7 +6089,7 @@ void GCS_MAVLINK::send_high_latency2() const
     //send_text(MAV_SEVERITY_INFO, "Yaw: %u", (((uint16_t)ahrs.yaw_sensor / 100) % 360));
 
     mavlink_msg_high_latency2_send(chan, 
-        AP_HAL::millis(), //[ms] Timestamp (milliseconds since boot or Unix epoch)
+        AP_HAL::loop_ms(), //[ms] Timestamp (milliseconds since boot or Unix epoch)
         gcs().frame_type(), // Type of the MAV (quadrotor, helicopter, etc.)
         MAV_AUTOPILOT_ARDUPILOTMEGA, // Autopilot type / class. Use MAV_AUTOPILOT_INVALID for components that are not flight controllers.
         gcs().custom_mode(), // A bitfield for use for autopilot-specific flags (2 byte version).

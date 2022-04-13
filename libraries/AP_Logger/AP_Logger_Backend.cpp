@@ -71,7 +71,7 @@ void AP_Logger_Backend::periodic_fullrate()
 
 void AP_Logger_Backend::periodic_tasks()
 {
-    uint32_t now = AP_HAL::millis();
+    uint32_t now = AP_HAL::loop_ms();
     if (now - _last_periodic_1Hz > 1000) {
         periodic_1Hz();
         _last_periodic_1Hz = now;
@@ -442,7 +442,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
 
     if (_front.in_log_download() &&
         _front._last_mavlink_log_transfer_message_handled_ms != 0) {
-        if (AP_HAL::millis() - _front._last_mavlink_log_transfer_message_handled_ms < 10000) {
+        if (AP_HAL::loop_ms() - _front._last_mavlink_log_transfer_message_handled_ms < 10000) {
             if (!_front.vehicle_is_armed()) {
                 // user is transfering files via mavlink
                 return false;
