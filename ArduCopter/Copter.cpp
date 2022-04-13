@@ -291,6 +291,8 @@ void Copter::fast_loop()
     if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
         ahrs.write_video_stabilisation();
     }
+
+    indi_control->calculate_torque_thrust_est();
 }
 
 #if AP_SCRIPTING_ENABLED
@@ -501,6 +503,9 @@ void Copter::fourhundred_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
+        if (indi_control->enabled()) {
+            indi_control->write_log();
+        }        
     }
 }
 

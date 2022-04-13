@@ -1,5 +1,6 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
+#include <AC_INDI_Control/AC_INDI_Control.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -709,6 +710,11 @@ void AC_AttitudeControl::attitude_controller_run_quat()
         _ang_vel_body.z += ang_vel_body_feedforward.z;
         _ang_vel_body.z = _ahrs.get_gyro().z * (1.0 - _feedforward_scalar) + _ang_vel_body.z * _feedforward_scalar;
     } else {
+        _ang_vel_body += ang_vel_body_feedforward;
+    }
+
+    if (AP::indi_control().enabled()) {
+        _ang_vel_body = AP::indi_control().run_attitude_controller(_attitude_target, attitude_body);
         _ang_vel_body += ang_vel_body_feedforward;
     }
 

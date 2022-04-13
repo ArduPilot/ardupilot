@@ -742,6 +742,10 @@ const AP_Param::Info Copter::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
 
+    // @Group: INDI
+    // @Path: ../libraries/AC_INDI_Control/AC_INDI_Control.cpp
+    GOBJECTPTR(indi_control, "INDI", AC_INDI_Control),
+
     // @Group:
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),

@@ -639,6 +639,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     
 #endif // HAL_INS_TEMPERATURE_CAL_ENABLE
 
+    AP_GROUPINFO("ANG_ACC_FILT", 53, AP_InertialSensor, _ang_accel_filter_cuttoff, 30),
     /*
       NOTE: parameter indexes have gaps above. When adding new
       parameters check for conflicts carefully
@@ -1667,6 +1668,14 @@ void AP_InertialSensor::update(void)
                 break;
             }
         }
+
+    // Calculate angular acceleration using backward euler method
+    // TODO: investigate how precise delta_time is
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _ang_accel_filter[i].set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _ang_accel_filter_cuttoff);
+        _ang_accel[i] = _ang_accel_filter[i].apply((_gyro[i] - _gyro_prev[i])/AP::scheduler().get_loop_period_s());
+        _gyro_prev[i] = _gyro[i];
+    }
 
     _last_update_usec = AP_HAL::micros();
     
