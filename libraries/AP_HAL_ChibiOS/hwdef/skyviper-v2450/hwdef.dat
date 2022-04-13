@@ -67,7 +67,6 @@ env BUILD_ABIN True
 
 # Disable un-needed hardware drivers
 define AP_AIRSPEED_ENABLED 0
-define AP_FETTEC_ONEWIRE_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 define BEACON_ENABLED 0
 define GPS_MOVING_BASELINE 0
@@ -92,13 +91,17 @@ define HAL_RUNCAM_ENABLED 0
 define HAL_SMARTAUDIO_ENABLED 0
 define HAL_SPEKTRUM_TELEM_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
-define HAL_SUPPORT_RCOUT_SERIAL 0
-define HAL_TORQEEDO_ENABLED 0
-define HAL_WITH_ESC_TELEM 0
 define HAL_WITH_ESC_TELEM 0
 define LANDING_GEAR_ENABLED 0
 define MODE_TURTLE_ENABLED 0
 define WINCH_ENABLED 0
+
+# serially-attached actuators aren't relevant on SkyViper:
+define AP_FETTEC_ONEWIRE_ENABLED 0
+define AP_ROBOTISSERVO_ENABLED 0
+define AP_VOLZ_ENABLED 0
+define HAL_SUPPORT_RCOUT_SERIAL 0
+define HAL_TORQEEDO_ENABLED 0
 
 # SkyViper has only one physical GPS but can also take from mavlink:
 define AP_GPS_BACKEND_DEFAULT_ENABLED 0
