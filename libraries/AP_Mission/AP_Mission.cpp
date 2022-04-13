@@ -760,6 +760,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_PAYLOAD_PLACE:
+//    case MAV_CMD_WAYPOINT_USER_1:
         return true;
     default:
         return false;
@@ -1177,7 +1178,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_WAYPOINT_USER_1:
-        cmd.p1 = packet.param1;
+        cmd.content.k.a = (int)(packet.z * 100) & 0x0000ffff;
+        cmd.p1 = (int)(packet.z * 100) >> 16;
+        cmd.content.k.lat = packet.x;
+        cmd.content.k.lng = packet.y;
         break;
 
     default:
@@ -1644,7 +1648,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         break;
 
     case MAV_CMD_WAYPOINT_USER_1:
-        packet.param1 = cmd.p1;
+        packet.z = (float)(cmd.content.k.a | cmd.p1 << 16)/100.0f;
+        packet.x = cmd.content.k.lat;
+        packet.y = cmd.content.k.lng;
         break;
 
     default:
