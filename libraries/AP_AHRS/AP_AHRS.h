@@ -206,6 +206,12 @@ public:
     const Vector3f &get_accel(void) const {
         return AP::ins().get_accel();
     }
+
+    // return primary accels bias estimate from EKF
+    // this should be subtracted to get best estimate
+    const Vector3f &get_accel_bias(void) const {
+        return _accel_bias;
+    }
     
     // return a smoothed and corrected gyro vector in radians/second using the latest ins data (which may not have been consumed by the EKF yet)
     Vector3f get_gyro_latest(void) const;
@@ -690,6 +696,7 @@ protected:
 
     // accelerometer values in the earth frame in m/s/s
     Vector3f        _accel_ef[INS_MAX_INSTANCES];
+    Vector3f        _accel_bias;
     Vector3f        _accel_ef_blended;
 
     // Declare filter states for HPF and LPF used by complementary
