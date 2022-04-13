@@ -8,6 +8,8 @@
 
 set -x
 
+git config --global --add safe.directory /cygdrive/d/a/ardupilot/ardupilot
+
 rm -rf artifacts
 mkdir artifacts
 
