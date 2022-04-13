@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:Brushed,4:DShot150,5:DShot300,6:DShot600,7:DShot1200,8:PWMRange
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, PWM_TYPE_NORMAL),
+    AP_GROUPINFO("PWM_TYPE", 15, AP_MotorsMulticopter, _pwm_type, int8_t(pwm_type::NORMAL)),
 
     // @Param: PWM_MIN
     // @DisplayName: PWM output minimum
@@ -517,7 +517,7 @@ void AP_MotorsMulticopter::update_throttle_range()
 {
     // if all outputs are digital adjust the range. We also do this for type PWM_RANGE, as those use the
     // scaled output, which is then mapped to PWM via the SRV_Channel library
-    if (SRV_Channels::have_digital_outputs(get_motor_mask()) || (_pwm_type == PWM_TYPE_PWM_RANGE)) {
+    if (SRV_Channels::have_digital_outputs(get_motor_mask()) || (_pwm_type == int8_t(pwm_type::PWM_RANGE))) {
         _pwm_min = 1000;
         _pwm_max = 2000;
     }

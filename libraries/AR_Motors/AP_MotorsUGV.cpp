@@ -32,7 +32,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Values: 0:Normal,1:OneShot,2:OneShot125,3:BrushedWithRelay,4:BrushedBiPolar,5:DShot150,6:DShot300,7:DShot600,8:DShot1200
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, PWM_TYPE_NORMAL),
+    AP_GROUPINFO("PWM_TYPE", 1, AP_MotorsUGV, _pwm_type, int8_t(pwm_type::NORMAL)),
 
     // @Param: PWM_FREQ
     // @DisplayName: Motor Output PWM freq for brushed motors
@@ -143,7 +143,7 @@ void AP_MotorsUGV::init(uint8_t frtype)
 // setup output in case of main CPU failure
 void AP_MotorsUGV::setup_safety_output()
 {
-    if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
+    if (_pwm_type == int8_t(pwm_type::BRUSHED_WITH_RELAY)) {
         // set trim to min to set duty cycle range (0 - 100%) to servo range
         // ignore servo revese flag, it is used by the relay
         SRV_Channels::set_trim_to_min_for(SRV_Channel::k_throttle, true);
@@ -512,28 +512,28 @@ void AP_MotorsUGV::setup_pwm_type()
         _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channels::get_motor_function(i));
     }
 
-    switch (_pwm_type) {
-    case PWM_TYPE_ONESHOT:
+    switch (pwm_type(_pwm_type.get())) {
+    case pwm_type::ONESHOT:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT);
         break;
-    case PWM_TYPE_ONESHOT125:
+    case pwm_type::ONESHOT125:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_ONESHOT125);
         break;
-    case PWM_TYPE_BRUSHED_WITH_RELAY:
-    case PWM_TYPE_BRUSHED_BIPOLAR:
+    case pwm_type::BRUSHED_WITH_RELAY:
+    case pwm_type::BRUSHED_BIPOLAR:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_BRUSHED);
         hal.rcout->set_freq(_motor_mask, uint16_t(_pwm_freq * 1000));
         break;
-    case PWM_TYPE_DSHOT150:
+    case pwm_type::DSHOT150:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT150);
         break;
-    case PWM_TYPE_DSHOT300:
+    case pwm_type::DSHOT300:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT300);
         break;
-    case PWM_TYPE_DSHOT600:
+    case pwm_type::DSHOT600:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT600);
         break;
-    case PWM_TYPE_DSHOT1200:
+    case pwm_type::DSHOT1200:
         hal.rcout->set_output_mode(_motor_mask, AP_HAL::RCOutput::MODE_PWM_DSHOT1200);
         break;
     default:
@@ -858,7 +858,7 @@ void AP_MotorsUGV::output_throttle(SRV_Channel::Aux_servo_function_t function, f
     throttle = get_rate_controlled_throttle(function, throttle, dt);
 
     // set relay if necessary
-    if (_pwm_type == PWM_TYPE_BRUSHED_WITH_RELAY) {
+    if (_pwm_type == int8_t(pwm_type::BRUSHED_WITH_RELAY)) {
         // find the output channel, if not found return
         const SRV_Channel *out_chan = SRV_Channels::get_channel_for(function);
         if (out_chan == nullptr) {
@@ -1019,17 +1019,17 @@ bool AP_MotorsUGV::active() const
 // returns true if the configured PWM type is digital and should have fixed endpoints
 bool AP_MotorsUGV::is_digital_pwm_type() const
 {
-    switch (_pwm_type) {
-        case PWM_TYPE_DSHOT150:
-        case PWM_TYPE_DSHOT300:
-        case PWM_TYPE_DSHOT600:
-        case PWM_TYPE_DSHOT1200:
+    switch (pwm_type(_pwm_type.get())) {
+        case pwm_type::DSHOT150:
+        case pwm_type::DSHOT300:
+        case pwm_type::DSHOT600:
+        case pwm_type::DSHOT1200:
             return true;
-        case PWM_TYPE_NORMAL:
-        case PWM_TYPE_ONESHOT:
-        case PWM_TYPE_ONESHOT125:
-        case PWM_TYPE_BRUSHED_WITH_RELAY:
-        case PWM_TYPE_BRUSHED_BIPOLAR:
+        case pwm_type::NORMAL:
+        case pwm_type::ONESHOT:
+        case pwm_type::ONESHOT125:
+        case pwm_type::BRUSHED_WITH_RELAY:
+        case pwm_type::BRUSHED_BIPOLAR:
             break;
     }
     return false;

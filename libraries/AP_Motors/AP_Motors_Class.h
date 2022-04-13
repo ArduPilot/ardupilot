@@ -248,10 +248,10 @@ public:
     bool is_digital_pwm_type() const;
 
     // returns true is pwm type is brushed
-    bool is_brushed_pwm_type() const { return _pwm_type == PWM_TYPE_BRUSHED; }
+    bool is_brushed_pwm_type() const { return _pwm_type == int8_t(pwm_type::BRUSHED); }
 
     // returns true is pwm type is normal
-    bool is_normal_pwm_type() const { return (_pwm_type == PWM_TYPE_NORMAL) || (_pwm_type == PWM_TYPE_PWM_RANGE); }
+    bool is_normal_pwm_type() const { return (_pwm_type == int8_t(pwm_type::NORMAL)) || (_pwm_type == int8_t(pwm_type::PWM_RANGE)); }
 
     MAV_TYPE get_frame_mav_type() const { return _mav_type; }
 
@@ -330,15 +330,16 @@ protected:
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
-    enum pwm_type { PWM_TYPE_NORMAL     = 0,
-                    PWM_TYPE_ONESHOT    = 1,
-                    PWM_TYPE_ONESHOT125 = 2,
-                    PWM_TYPE_BRUSHED    = 3,
-                    PWM_TYPE_DSHOT150   = 4,
-                    PWM_TYPE_DSHOT300   = 5,
-                    PWM_TYPE_DSHOT600   = 6,
-                    PWM_TYPE_DSHOT1200  = 7,
-                    PWM_TYPE_PWM_RANGE  = 8 };
+    enum class pwm_type : int8_t {
+                    NORMAL     = 0,
+                    ONESHOT    = 1,
+                    ONESHOT125 = 2,
+                    BRUSHED    = 3,
+                    DSHOT150   = 4,
+                    DSHOT300   = 5,
+                    DSHOT600   = 6,
+                    DSHOT1200  = 7,
+                    PWM_RANGE  = 8 };
 
     // return string corresponding to frame_class
     virtual const char* _get_frame_string() const = 0;
