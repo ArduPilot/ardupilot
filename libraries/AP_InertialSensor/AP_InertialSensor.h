@@ -35,6 +35,9 @@
 #define HAL_INS_TEMPERATURE_CAL_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
 #endif
 
+#ifndef HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
+#define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 2
+#endif
 
 #include <stdint.h>
 
@@ -241,9 +244,9 @@ public:
     uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
     // Update the harmonic notch frequency
-    void update_harmonic_notch_freq_hz(float scaled_freq);
+    void update_harmonic_notch_freq_hz(uint8_t idx, float scaled_freq);
     // Update the harmonic notch frequencies
-    void update_harmonic_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
+    void update_harmonic_notch_frequencies_hz(uint8_t idx, uint8_t num_freqs, const float scaled_freq[]);
 
     // get the gyro filter rate in Hz
     uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
@@ -252,32 +255,32 @@ public:
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
     // harmonic notch current center frequency
-    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
+    float get_gyro_dynamic_notch_center_freq_hz(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_calculated_harmonic_notch_freq_hz[idx][0]:0; }
 
     // number of dynamic harmonic notches
-    uint8_t get_num_gyro_dynamic_notches(void) const { return _num_dynamic_harmonic_notches; }
+    uint8_t get_num_gyro_dynamic_notches(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_num_dynamic_harmonic_notches[idx]:0; }
 
     // set of harmonic notch current center frequencies
-    const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
+    const float* get_gyro_dynamic_notch_center_frequencies_hz(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_calculated_harmonic_notch_freq_hz[idx]:nullptr; }
 
     // number of harmonic notch current center frequencies
-    uint8_t get_num_gyro_dynamic_notch_center_frequencies(void) const { return _num_calculated_harmonic_notch_frequencies; }
+    uint8_t get_num_gyro_dynamic_notch_center_frequencies(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_num_calculated_harmonic_notch_frequencies[idx]:0; }
 
     // harmonic notch reference center frequency
-    float get_gyro_harmonic_notch_center_freq_hz(void) const { return _harmonic_notch_filter.center_freq_hz(); }
+    float get_gyro_harmonic_notch_center_freq_hz(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_harmonic_notch_filter[idx].center_freq_hz():0; }
 
     // harmonic notch reference scale factor
-    float get_gyro_harmonic_notch_reference(void) const { return _harmonic_notch_filter.reference(); }
+    float get_gyro_harmonic_notch_reference(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_harmonic_notch_filter[idx].reference():0; }
 
     // harmonic notch tracking mode
-    HarmonicNotchDynamicMode get_gyro_harmonic_notch_tracking_mode(void) const { return _harmonic_notch_filter.tracking_mode(); }
+    HarmonicNotchDynamicMode get_gyro_harmonic_notch_tracking_mode(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_harmonic_notch_filter[idx].tracking_mode():HarmonicNotchDynamicMode::Fixed; }
 
     // harmonic notch harmonics
-    uint8_t get_gyro_harmonic_notch_harmonics(void) const { return _harmonic_notch_filter.harmonics(); }
+    uint8_t get_gyro_harmonic_notch_harmonics(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_harmonic_notch_filter[idx].harmonics():0; }
 
     // harmonic notch options
-    bool has_harmonic_option(HarmonicNotchFilterParams::Options option) {
-        return _harmonic_notch_filter.hasOption(option);
+    bool has_harmonic_option(uint8_t idx, HarmonicNotchFilterParams::Options option) {
+        return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_harmonic_notch_filter[idx].hasOption(option):false;
     }
 
     // write out harmonic notch log messages
@@ -307,7 +310,7 @@ public:
     bool gyro_notch_enabled(void) const { return _notch_filter.enabled(); }
 
     // return true if harmonic notch enabled
-    bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.enabled(); }
+    bool gyro_harmonic_notch_enabled(uint8_t idx) const { return idx<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS?_harmonic_notch_filter[idx].enabled():false; }
 
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
@@ -509,18 +512,14 @@ private:
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
 
-    // optional notch filter on gyro
-    HarmonicNotchFilterParams _notch_filter;
-    HarmonicNotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
-
     // optional harmonic notch filter on gyro
-    HarmonicNotchFilterParams _harmonic_notch_filter;
-    HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
+    HarmonicNotchFilterParams _harmonic_notch_filter[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
+    HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS][INS_MAX_INSTANCES];
     // number of independent notches in the filter
-    uint8_t _num_dynamic_harmonic_notches;
+    uint8_t _num_dynamic_harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
     // the current center frequency for the notch
-    float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
-    uint8_t _num_calculated_harmonic_notch_frequencies;
+    float _calculated_harmonic_notch_freq_hz[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS][INS_MAX_NOTCHES];
+    uint8_t _num_calculated_harmonic_notch_frequencies[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];
