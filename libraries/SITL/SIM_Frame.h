@@ -21,6 +21,11 @@
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
 
+#define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#if USE_PICOJSON
+#include "picojson.h"
+#endif
+
 namespace SITL {
 
 /*
@@ -130,6 +135,10 @@ private:
         // if zero value will be estimated from mass
         Vector3f moment_of_inertia;
 
+        // if zero will no be used
+        Vector3f motor_pos[12];
+        Vector3f motor_thrust_vec[12];
+
     } default_model;
 
     struct Model model;
@@ -146,6 +155,8 @@ private:
 
     // load frame parameters from a json model file
     void load_frame_params(const char *model_json);
+    void parse_float(picojson::value val, const char* label, float &param);
+    void parse_vector3(picojson::value val, const char* label, Vector3f &param);
 
 };
 }

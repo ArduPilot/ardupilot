@@ -143,7 +143,7 @@ float Motor::get_current(void) const
 // setup PWM ranges for this motor
 void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                          float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
-                         float _velocity_max)
+                         float _velocity_max, Vector3f _position, Vector3f _thrust_vector)
 {
     mot_pwm_min = _pwm_min;
     mot_pwm_max = _pwm_max;
@@ -156,9 +156,17 @@ void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, 
     effective_prop_area = _effective_prop_area;
     max_outflow_velocity = _velocity_max;
 
-    position.x = cosf(radians(angle)) * _diagonal_size;
-    position.y =  sinf(radians(angle)) * _diagonal_size;
-    position.z = 0;
+    if (!_position.is_zero()) {
+        position = _position;
+    } else {
+        position.x = cosf(radians(angle)) * _diagonal_size;
+        position.y =  sinf(radians(angle)) * _diagonal_size;
+        position.z = 0;
+    }
+
+    if (!_thrust_vector.is_zero()) {
+        thrust_vector = _thrust_vector;
+    }
 }
 
 /*

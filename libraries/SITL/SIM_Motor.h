@@ -104,7 +104,7 @@ public:
     // setup motor key parameters
     void setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                       float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
-                      float _velocity_max);
+                      float _velocity_max, Vector3f _position, Vector3f _thrust_vector);
 
     // override slew limit
     void set_slew_max(float _slew_max) {
