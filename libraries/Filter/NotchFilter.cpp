@@ -100,54 +100,7 @@ void NotchFilter<T>::reset()
     signal2 = signal1 = T();
 }
 
-// table of user settable parameters
-const AP_Param::GroupInfo NotchFilterParams::var_info[] = {
-
-    // @Param: ENABLE
-    // @DisplayName: Enable
-    // @Description: Enable notch filter
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, NotchFilterParams, _enable, 0, AP_PARAM_FLAG_ENABLE),
-
-    // Slots 2 and 3 are reserved - they were integer versions of FREQ and BW which have since been converted to float
-
-    // @Param: ATT
-    // @DisplayName: Attenuation
-    // @Description: Notch attenuation in dB
-    // @Range: 5 30
-    // @Units: dB
-    // @User: Advanced
-    AP_GROUPINFO("ATT", 4, NotchFilterParams, _attenuation_dB, 15),
-
-    // @Param: FREQ
-    // @DisplayName: Frequency
-    // @Description: Notch center frequency in Hz
-    // @Range: 10 400
-    // @Units: Hz
-    // @User: Advanced
-    AP_GROUPINFO("FREQ", 5, NotchFilterParams, _center_freq_hz, 80),
-
-    // @Param: BW
-    // @DisplayName: Bandwidth
-    // @Description: Notch bandwidth in Hz
-    // @Range: 5 100
-    // @Units: Hz
-    // @User: Advanced
-    AP_GROUPINFO("BW", 6, NotchFilterParams, _bandwidth_hz, 20),
-
-    AP_GROUPEND
-};
-
 /*
-  a notch filter with enable and filter parameters - constructor
- */
-NotchFilterParams::NotchFilterParams(void)
-{
-    AP_Param::setup_object_defaults(this, var_info);    
-}
-
-/* 
    instantiate template classes
  */
 template class NotchFilter<float>;
