@@ -32,11 +32,14 @@ AP_RPM_HarmonicNotch::AP_RPM_HarmonicNotch(AP_RPM &_ap_rpm, uint8_t _instance, A
 void AP_RPM_HarmonicNotch::update(void)
 {
     AP_InertialSensor& ins = AP::ins();
-    if (ins.get_gyro_harmonic_notch_tracking_mode() != HarmonicNotchDynamicMode::Fixed) {
-        state.rate_rpm = ins.get_gyro_dynamic_notch_center_freq_hz() * 60.0f;
-        state.rate_rpm *= ap_rpm._params[state.instance].scaling;
-        state.signal_quality = 0.5f;
-        state.last_reading_ms = AP_HAL::millis();
+    for (uint8_t i=0; i<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; i++) {
+        if (ins.gyro_harmonic_notch_enabled(i) &&
+            ins.get_gyro_harmonic_notch_tracking_mode(i) != HarmonicNotchDynamicMode::Fixed) {
+            state.rate_rpm = ins.get_gyro_dynamic_notch_center_freq_hz(i) * 60.0f;
+            state.rate_rpm *= ap_rpm._params[state.instance].scaling;
+            state.signal_quality = 0.5f;
+            state.last_reading_ms = AP_HAL::millis();
+        }
     }
 }
 
