@@ -134,9 +134,7 @@ private:
     // exposed area times coefficient of drag
     float areaCd;
     float mass;
-    float velocity_max;
     float thrust_max;
-    float effective_prop_area;
     Battery *battery;
     float last_param_voltage;
 

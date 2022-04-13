@@ -75,8 +75,6 @@ public:
                           Vector3f &body_thrust, // Z is down
                           const Vector3f &velocity_air_bf,
                           float air_density,
-                          float velocity_max,
-                          float effective_prop_area,
                           float voltage);
 
     uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value) const;
@@ -89,7 +87,8 @@ public:
 
     // setup motor key parameters
     void setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
-                      float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max);
+                      float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
+                      float _velocity_max);
 
     // override slew limit
     void set_slew_max(float _slew_max) {
@@ -101,7 +100,7 @@ public:
     }
 
     // calculate thrust of motor
-    float calc_thrust(float command, float air_density, float effective_prop_area, float velocity_in, float velocity_max) const;
+    float calc_thrust(float command, float air_density, float velocity_in, float voltage_scale) const;
 
 private:
     float mot_pwm_min;
@@ -116,6 +115,8 @@ private:
     float power_factor;
     float voltage_max;
     Vector3f moment_of_inertia;
+    float effective_prop_area;
+    float max_outflow_velocity;
 
     float last_command;
     uint64_t last_calc_us;
