@@ -249,7 +249,7 @@ public:
 #endif // AP_SCRIPTING_ENABLED
 
     // update the harmonic notch
-    virtual void update_dynamic_notch() {};
+    virtual void update_dynamic_notch(uint8_t idx) {};
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
@@ -412,7 +412,7 @@ private:
 
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
-    uint32_t _last_notch_update_ms; // last time update_dynamic_notch() was run
+    uint32_t _last_notch_update_ms[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS]; // last time update_dynamic_notch() was run
 
     static AP_Vehicle *_singleton;
 
