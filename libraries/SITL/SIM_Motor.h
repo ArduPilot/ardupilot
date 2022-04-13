@@ -49,7 +49,15 @@ public:
         angle(_angle), // angle in degrees from front
         yaw_factor(_yaw_factor), // positive is clockwise
         display_order(_display_order) // order for clockwise display
-    {}
+    {
+        position.x = cosf(radians(angle));
+        position.y =  sinf(radians(angle));
+        position.z = 0;
+
+        thrust_vector.x = 0;
+        thrust_vector.y = 0;
+        thrust_vector.z = -1;
+    }
 
     /*
       alternative constructor for tiltable motors
@@ -67,7 +75,15 @@ public:
         pitch_servo(_pitch_servo),
         pitch_min(_pitch_min),
         pitch_max(_pitch_max)
-    {}
+    {
+        position.x = cosf(radians(angle));
+        position.y =  sinf(radians(angle));
+        position.z = 0;
+
+        thrust_vector.x = 0;
+        thrust_vector.y = 0;
+        thrust_vector.z = -1;
+    }
 
     void calculate_forces(const struct sitl_input &input,
                           uint8_t motor_offset,
@@ -109,7 +125,6 @@ private:
     float mot_spin_max;
     float mot_expo;
     float slew_max;
-    float diagonal_size;
     float current;
     float power_factor;
     float voltage_max;
@@ -118,6 +133,9 @@ private:
 
     float last_command;
     uint64_t last_calc_us;
+
+    Vector3f position;
+    Vector3f thrust_vector;
 };
 
 }

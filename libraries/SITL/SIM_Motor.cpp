@@ -56,20 +56,16 @@ void Motor::calculate_forces(const struct sitl_input &input,
     last_command = command;
 
     // the yaw torque of the motor
-    Vector3f rotor_torque(0, 0, yaw_factor * command * yaw_scale * voltage_scale);
+    Vector3f rotor_torque = thrust_vector * yaw_factor * command * yaw_scale * voltage_scale * -1.0;
 
     // calculate velocity into prop, clipping at zero, assumes zero roll/pitch
-    float velocity_in = MAX(0, -velocity_air_bf.z);
+    float velocity_in = MAX(0, -velocity_air_bf.projected(thrust_vector).z);
 
     // get thrust for untilted motor
     float motor_thrust = calc_thrust(command, air_density, velocity_in, voltage_scale);
 
     // thrust in NED
-    thrust = {0, 0, -motor_thrust};
-
-    // define the arm position relative to center of mass
-    Vector3f arm(cosf(radians(angle)), sinf(radians(angle)), 0);
-    arm *= diagonal_size;
+    thrust = thrust_vector * motor_thrust;
 
     // work out roll and pitch of motor relative to it pointing straight up
     float roll = 0, pitch = 0;
@@ -96,7 +92,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
     last_change_usec = now;
 
     // calculate torque in newton-meters
-    torque = (arm % thrust) + rotor_torque;
+    torque = (position % thrust) + rotor_torque;
 
     // possibly rotate the thrust vector and the rotor torque
     if (!is_zero(roll) || !is_zero(pitch)) {
@@ -155,11 +151,14 @@ void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, 
     mot_spin_max = _spin_max;
     mot_expo = _expo;
     slew_max = _slew_max;
-    diagonal_size = _diagonal_size;
     power_factor = _power_factor;
     voltage_max = _voltage_max;
     effective_prop_area = _effective_prop_area;
     max_outflow_velocity = _velocity_max;
+
+    position.x = cosf(radians(angle)) * _diagonal_size;
+    position.y =  sinf(radians(angle)) * _diagonal_size;
+    position.z = 0;
 }
 
 /*
