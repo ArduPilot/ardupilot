@@ -476,8 +476,13 @@ void Frame::init(const char *frame_str, Battery *_battery)
 
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
-                               model.mass, model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max);
+                               model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max);
     }
+
+    // assume 50% of mass on ring around center
+    model.moment_of_inertia.x = model.mass * 0.25 * sq(model.diagonal_size*0.5);
+    model.moment_of_inertia.y = model.moment_of_inertia.x;
+    model.moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
 
 
 #if 0
@@ -530,6 +535,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
                              bool use_drag)
 {
     Vector3f thrust; // newtons
+    Vector3f torque;
 
     const float air_density = get_air_density(aircraft.get_location().alt*0.01);
 
@@ -537,16 +543,21 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
     float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
-        Vector3f mraccel, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mraccel, mthrust, vel_air_bf, air_density, battery->get_voltage());
+        Vector3f mtorque, mthrust;
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, air_density, battery->get_voltage());
         current += motors[i].get_current();
-        rot_accel += mraccel;
+        torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
         if (!is_zero(AP::sitl()->vibe_motor)) {
             rpm[i] = motors[i].get_command() * AP::sitl()->vibe_motor * 60.0f;
         }
     }
+
+    // calculate total rotational acceleration
+    rot_accel.x = torque.x / model.moment_of_inertia.x;
+    rot_accel.y = torque.y / model.moment_of_inertia.y;
+    rot_accel.z = torque.z / model.moment_of_inertia.z;
 
     body_accel = thrust/aircraft.gross_mass();
 

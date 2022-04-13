@@ -24,7 +24,7 @@ using namespace SITL;
 // calculate rotational accel and thrust for a motor
 void Motor::calculate_forces(const struct sitl_input &input,
                              uint8_t motor_offset,
-                             Vector3f &rot_accel,
+                             Vector3f &torque,
                              Vector3f &thrust,
                              const Vector3f &velocity_air_bf,
                              float air_density,
@@ -39,7 +39,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
 
     if (voltage_scale < 0.1) {
         // battery is dead
-        rot_accel.zero();
+        torque.zero();
         thrust.zero();
         current = 0;
         return;
@@ -96,7 +96,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
     last_change_usec = now;
 
     // calculate torque in newton-meters
-    Vector3f torque = (arm % thrust) + rotor_torque;
+    torque = (arm % thrust) + rotor_torque;
 
     // possibly rotate the thrust vector and the rotor torque
     if (!is_zero(roll) || !is_zero(pitch)) {
@@ -105,11 +105,6 @@ void Motor::calculate_forces(const struct sitl_input &input,
         thrust = rotation * thrust;
         torque = rotation * torque;
     }
-
-    // calculate total rotational acceleration
-    rot_accel.x = torque.x / moment_of_inertia.x;
-    rot_accel.y = torque.y / moment_of_inertia.y;
-    rot_accel.z = torque.z / moment_of_inertia.z;
 
     // calculate current
     float power = power_factor * fabsf(motor_thrust);
@@ -151,7 +146,7 @@ float Motor::get_current(void) const
 
 // setup PWM ranges for this motor
 void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
-                         float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
+                         float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
                          float _velocity_max)
 {
     mot_pwm_min = _pwm_min;
@@ -160,17 +155,11 @@ void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, 
     mot_spin_max = _spin_max;
     mot_expo = _expo;
     slew_max = _slew_max;
-    vehicle_mass = _vehicle_mass;
     diagonal_size = _diagonal_size;
     power_factor = _power_factor;
     voltage_max = _voltage_max;
     effective_prop_area = _effective_prop_area;
     max_outflow_velocity = _velocity_max;
-
-    // assume 50% of mass on ring around center
-    moment_of_inertia.x = vehicle_mass * 0.25 * sq(diagonal_size*0.5);
-    moment_of_inertia.y = moment_of_inertia.x;
-    moment_of_inertia.z = vehicle_mass * 0.5 * sq(diagonal_size*0.5);
 }
 
 /*
