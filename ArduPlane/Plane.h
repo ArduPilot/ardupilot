@@ -936,6 +936,9 @@ private:
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;
+    // User cmds.
+    void do_naw_user1(const AP_Mission::Mission_Command& cmd);
+    bool verify_user1(const AP_Mission::Mission_Command& cmd);
 
 #if AP_SCRIPTING_ENABLED
     // nav scripting support

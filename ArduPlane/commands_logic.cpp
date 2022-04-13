@@ -204,7 +204,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
     case MAV_CMD_WAYPOINT_USER_1:
-        // todo: start mode "k";
+        do_naw_user1(cmd);
         break;
         
     default:
@@ -322,7 +322,7 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_DO_ENGINE_CONTROL:
         return true;
     case MAV_CMD_WAYPOINT_USER_1:
-        return false;
+        return verify_user1(cmd);
 
     default:
         // error message
