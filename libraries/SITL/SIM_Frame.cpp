@@ -465,9 +465,9 @@ void Frame::init(const char *frame_str, Battery *_battery)
     float hover_power = model.refCurrent * model.refVoltage;
     float hover_velocity_out = 2 * hover_power / hover_thrust;
     float effective_disc_area = hover_thrust / (0.5 * ref_air_density * sq(hover_velocity_out));
-    velocity_max = hover_velocity_out / sqrtf(model.hoverThrOut);
+    float velocity_max = hover_velocity_out / sqrtf(model.hoverThrOut);
     thrust_max = 0.5 * ref_air_density * effective_disc_area * sq(velocity_max);
-    effective_prop_area = effective_disc_area / num_motors;
+    float effective_prop_area = effective_disc_area / num_motors;
 
     // power_factor is ratio of power consumed per newton of thrust
     float power_factor = hover_power / hover_thrust;
@@ -476,7 +476,7 @@ void Frame::init(const char *frame_str, Battery *_battery)
 
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
-                               model.mass, model.diagonal_size, power_factor, model.maxVoltage);
+                               model.mass, model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max);
     }
 
 
@@ -491,7 +491,7 @@ void Frame::init(const char *frame_str, Battery *_battery)
             Vector3f rot_accel {}, thrust {};
             Vector3f vel_air_bf {};
             motors[0].calculate_forces(input, motor_offset, rot_accel, thrust, vel_air_bf,
-                                       ref_air_density, velocity_max, effective_prop_area, battery->get_voltage());
+                                       ref_air_density, battery->get_voltage());
             ::printf("pwm[%u] cmd=%.3f thrust=%.3f hovthst=%.3f\n",
                      pwm, motors[0].pwm_to_command(pwm), -thrust.z*num_motors, hover_thrust);
         }
@@ -538,8 +538,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mraccel, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mraccel, mthrust, vel_air_bf, air_density, velocity_max,
-                                   effective_prop_area, battery->get_voltage());
+        motors[i].calculate_forces(input, motor_offset, mraccel, mthrust, vel_air_bf, air_density, battery->get_voltage());
         current += motors[i].get_current();
         rot_accel += mraccel;
         thrust += mthrust;

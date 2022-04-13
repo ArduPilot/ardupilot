@@ -28,8 +28,6 @@ void Motor::calculate_forces(const struct sitl_input &input,
                              Vector3f &thrust,
                              const Vector3f &velocity_air_bf,
                              float air_density,
-                             float velocity_max,
-                             float effective_prop_area,
                              float voltage)
 {
     // fudge factors
@@ -64,7 +62,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
     float velocity_in = MAX(0, -velocity_air_bf.z);
 
     // get thrust for untilted motor
-    float motor_thrust = calc_thrust(command, air_density, effective_prop_area, velocity_in, velocity_max * voltage_scale);
+    float motor_thrust = calc_thrust(command, air_density, velocity_in, voltage_scale);
 
     // thrust in NED
     thrust = {0, 0, -motor_thrust};
@@ -153,7 +151,8 @@ float Motor::get_current(void) const
 
 // setup PWM ranges for this motor
 void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
-                         float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max)
+                         float _vehicle_mass, float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
+                         float _velocity_max)
 {
     mot_pwm_min = _pwm_min;
     mot_pwm_max = _pwm_max;
@@ -165,6 +164,8 @@ void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, 
     diagonal_size = _diagonal_size;
     power_factor = _power_factor;
     voltage_max = _voltage_max;
+    effective_prop_area = _effective_prop_area;
+    max_outflow_velocity = _velocity_max;
 
     // assume 50% of mass on ring around center
     moment_of_inertia.x = vehicle_mass * 0.25 * sq(diagonal_size*0.5);
@@ -186,14 +187,14 @@ float Motor::pwm_to_command(float pwm) const
 /*
   calculate thrust given a command value
 */
-float Motor::calc_thrust(float command, float air_density, float effective_prop_area, float velocity_in, float velocity_max) const
+float Motor::calc_thrust(float command, float air_density, float velocity_in, float voltage_scale) const
 {
-    float velocity_out = velocity_max * sqrtf((1-mot_expo)*command + mot_expo*sq(command));
+    float velocity_out = voltage_scale * max_outflow_velocity * sqrtf((1-mot_expo)*command + mot_expo*sq(command));
     float ret = 0.5 * air_density * effective_prop_area * (sq(velocity_out) - sq(velocity_in));
 #if 0
     if (command > 0) {
         ::printf("air_density=%f effective_prop_area=%f velocity_in=%f velocity_max=%f\n",
-                 air_density, effective_prop_area, velocity_in, velocity_max);
+                 air_density, effective_prop_area, velocity_in, voltage_scale * max_outflow_velocity);
         ::printf("calc_thrust %.3f %.3f\n", command, ret);
     }
 #endif
