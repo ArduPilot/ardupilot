@@ -73,6 +73,7 @@ public:
 
     void init();
     void update();
+    void dump_sysinfo();
 
     Parameters g;
 

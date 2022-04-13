@@ -54,6 +54,7 @@ public:
         k_param_can_fdmode,
         k_param_can_fdbaudrate0,
         k_param_can_fdbaudrate1,
+        k_param_sysinfo,
     };
 
     AP_Int16 format_version;
@@ -115,6 +116,7 @@ public:
 #endif
 
     AP_Int8 debug;
+    AP_Int8 sysinfo;
 
     AP_Int32 serial_number;
 
