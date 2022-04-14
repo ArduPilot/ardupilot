@@ -151,5 +151,5 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define HAL_MOUNT_ENABLED 0
 
-# minimal GPS drivers to reduce flash usage
-include ../include/minimal_GPS.inc
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
