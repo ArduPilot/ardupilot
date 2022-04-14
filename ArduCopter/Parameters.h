@@ -11,6 +11,9 @@
 #if MODE_FOLLOW_ENABLED == ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
+#if WEATHERVANE_ENABLED == ENABLED
+ #include <AC_AttitudeControl/AC_WeatherVane.h>
+#endif
 
 // Global parameter class.
 //
@@ -673,6 +676,10 @@ public:
     AP_Float takeoff_throttle_slew_time;
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     AP_Int16 takeoff_rpm_min;
+#endif
+
+#if WEATHERVANE_ENABLED == ENABLED
+    AC_WeatherVane weathervane;
 #endif
 };
 

@@ -199,6 +199,13 @@ bool ModeAuto::allows_arming(AP_Arming::Method method) const
     return ((copter.g2.auto_options & (uint32_t)Options::AllowArming) != 0) && !auto_RTL;
 };
 
+#if WEATHERVANE_ENABLED == ENABLED
+bool ModeAuto::allows_weathervaning() const
+{
+    return (copter.g2.auto_options & (uint32_t)Options::AllowWeatherVaning) != 0;
+}
+#endif
+
 // Go straight to landing sequence via DO_LAND_START, if succeeds pretend to be Auto RTL mode
 bool ModeAuto::jump_to_landing_sequence_auto_RTL(ModeReason reason)
 {
