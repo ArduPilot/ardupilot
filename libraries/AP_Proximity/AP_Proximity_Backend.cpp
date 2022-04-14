@@ -117,7 +117,6 @@ bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance
 // store rangefinder values
 void AP_Proximity_Backend::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
 {
-    _last_downward_update_ms = AP_HAL::millis();
     _rangefinder_use = use;
     _rangefinder_healthy = healthy;
     _rangefinder_alt = alt_cm * 0.01f;
@@ -128,11 +127,6 @@ bool AP_Proximity_Backend::get_rangefinder_alt(float &alt_m) const
 {
     if (!_rangefinder_use || !_rangefinder_healthy) {
         // range finder is not healthy
-        return false;
-    }
-
-    const uint32_t dt = AP_HAL::millis() - _last_downward_update_ms;
-    if (dt > PROXIMITY_ALT_DETECT_TIMEOUT_MS) {
         return false;
     }
 
