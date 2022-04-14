@@ -181,5 +181,5 @@ define HAL_SPEKTRUM_TELEM_ENABLED 0
 define HAL_SOARING_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 
-# minimal GPS drivers to reduce flash usage
-include ../include/minimal_GPS.inc
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc
