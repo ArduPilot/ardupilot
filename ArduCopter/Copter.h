@@ -68,6 +68,7 @@
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 #include <AP_ADSB/AP_ADSB.h>                // ADS-B RF based collision avoidance module library
 #include <AP_Proximity/AP_Proximity.h>      // ArduPilot proximity sensor library
+#include <AC_SurfaceDistance/AC_SurfaceDistance.h>
 
 // Configuration
 #include "defines.h"
@@ -243,18 +244,8 @@ private:
     AP_Int8 *flight_modes;
     const uint8_t num_flight_modes = 6;
 
-    struct RangeFinderState {
-        bool enabled:1;
-        bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
-        int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
-        float inertial_alt_cm; // inertial alt at time of last rangefinder sample
-        uint32_t last_healthy_ms;
-        LowPassFilterFloat alt_cm_filt; // altitude filter
-        int16_t alt_cm_glitch_protected;    // last glitch protected altitude
-        int8_t glitch_count;    // non-zero number indicates rangefinder is glitching
-        uint32_t glitch_cleared_ms; // system time glitch cleared
-    } rangefinder_state, rangefinder_up_state;
-
+    AC_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, inertial_nav};
+    AC_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, inertial_nav};
     /*
       return rangefinder height interpolated using inertial altitude
      */

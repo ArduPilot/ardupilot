@@ -15,7 +15,7 @@ void Copter::SurfaceTracking::update_surface_offset()
 
         // calculate surfaces height above the EKF origin
         // e.g. if vehicle is 10m above the EKF origin and rangefinder reports alt of 3m.  curr_surface_alt_above_origin_cm is 7m (or 700cm)
-        RangeFinderState &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
+        AC_SurfaceDistance &rf_state = (surface == Surface::GROUND) ? copter.rangefinder_state : copter.rangefinder_up_state;
         const float dir = (surface == Surface::GROUND) ? 1.0f : -1.0f;
         const float curr_surface_alt_above_origin_cm = copter.inertial_nav.get_position_z_up_cm() - dir * rf_state.alt_cm;
 
