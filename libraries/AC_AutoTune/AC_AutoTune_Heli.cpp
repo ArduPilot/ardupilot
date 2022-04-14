@@ -213,8 +213,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
 {
     // if tune complete or beyond frequency range or no max allowed gains then exit testing
     if (tune_type == TUNE_COMPLETE ||
-       (tune_type == RP_UP && max_rate_p.max_allowed <= 0.0f) ||
-       (tune_type == RD_UP && max_rate_d.max_allowed <= 0.0f) ||
+       ((tune_type == RP_UP || tune_type == RD_UP) && (max_rate_p.max_allowed <= 0.0f || max_rate_d.max_allowed <= 0.0f)) ||
        ((tune_type == MAX_GAINS || tune_type == RP_UP || tune_type == RD_UP || tune_type == SP_UP) && exceeded_freq_range(start_freq))){
 
         load_gains(GAIN_ORIGINAL);
@@ -226,7 +225,7 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         // hold level attitude
         attitude_control->input_euler_angle_roll_pitch_yaw(roll_cd, pitch_cd, desired_yaw_cd, true);
 
-        if ((tune_type == RP_UP && max_rate_p.max_allowed <= 0.0f) || (tune_type == RD_UP && max_rate_d.max_allowed <= 0.0f)) {
+        if ((tune_type == RP_UP || tune_type == RD_UP) && (max_rate_p.max_allowed <= 0.0f || max_rate_d.max_allowed <= 0.0f)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Max Gain Determination Failed");
             mode = FAILED;
             AP::logger().Write_Event(LogEvent::AUTOTUNE_FAILED);
