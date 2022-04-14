@@ -675,7 +675,7 @@ JSButton* Sub::get_button(uint8_t index)
 void Sub::default_js_buttons()
 {
     JSButton::button_function_t defaults[16][2] = {
-        {JSButton::button_function_t::k_none,                   JSButton::button_function_t::k_none},
+        {JSButton::button_function_t::k_shift,                  JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mode_manual,            JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mode_depth_hold,        JSButton::button_function_t::k_none},
         {JSButton::button_function_t::k_mode_stabilize,         JSButton::button_function_t::k_none},
@@ -686,8 +686,8 @@ void Sub::default_js_buttons()
         {JSButton::button_function_t::k_mount_center,           JSButton::button_function_t::k_none},
 
         {JSButton::button_function_t::k_input_hold_set,         JSButton::button_function_t::k_none},
-        {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_mount_pan_left},
-        {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_mount_pan_right},
+        {JSButton::button_function_t::k_mount_tilt_up,          JSButton::button_function_t::k_servo_2_max_momentary},
+        {JSButton::button_function_t::k_mount_tilt_down,        JSButton::button_function_t::k_servo_2_min_momentary},
         {JSButton::button_function_t::k_gain_inc,               JSButton::button_function_t::k_trim_pitch_dec},
 
         {JSButton::button_function_t::k_gain_dec,               JSButton::button_function_t::k_trim_pitch_inc},

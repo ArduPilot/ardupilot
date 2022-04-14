@@ -730,11 +730,11 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("MNT_JSTICK_SPD", 100);
     AP_Param::set_default_by_name("BRD_RTC_TYPE", 3);
     AP_Param::set_default_by_name("BARO_PROBE_EXT", 768);
+
     AP_Param::set_by_name("MNT_RC_IN_PAN", 7);
     AP_Param::set_by_name("MNT_RC_IN_TILT", 8);
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
-
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
     AP_Param::set_default_by_name("BARO_PROBE_EXT", 0);
     AP_Param::set_default_by_name("BATT_MONITOR", 4);
