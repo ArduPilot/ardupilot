@@ -983,7 +983,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: AUTO_OPTIONS
     // @DisplayName: Auto mode options
     // @Description: A range of options that can be applied to change auto mode behaviour. Allow Arming allows the copter to be armed in Auto. Allow Takeoff Without Raising Throttle allows takeoff without the pilot having to raise the throttle. Ignore pilot yaw overrides the pilot's yaw stick being used while in auto.
-    // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle,2:Ignore pilot yaw
+    // @Bitmask: 0:Allow Arming,1:Allow Takeoff Without Raising Throttle,2:Ignore pilot yaw,7:Allow weathervaning
     // @User: Advanced
     AP_GROUPINFO("AUTO_OPTIONS", 40, ParametersG2, auto_options, 0),
 #endif
@@ -992,7 +992,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: GUID_OPTIONS
     // @DisplayName: Guided mode options
     // @Description: Options that can be applied to change guided mode behaviour
-    // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget interprets Thrust As Thrust,4:Do not stabilize PositionXY,5:Do not stabilize VelocityXY,6:Waypoint navigation used for position targets
+    // @Bitmask: 0:Allow Arming from Transmitter,2:Ignore pilot yaw,3:SetAttitudeTarget interprets Thrust As Thrust,4:Do not stabilize PositionXY,5:Do not stabilize VelocityXY,6:Waypoint navigation used for position targets,7:Allow weathervaning
     // @User: Advanced
     AP_GROUPINFO("GUID_OPTIONS", 41, ParametersG2, guided_options, 0),
 #endif
@@ -1160,6 +1160,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("TKOFF_RPM_MIN", 58, ParametersG2, takeoff_rpm_min, 0),
 #endif
 
+#if WEATHERVANE_ENABLED == ENABLED
+    // @Group: WVANE_
+    // @Path: ../libraries/AC_AttitudeControl/AC_WeatherVane.cpp
+    AP_SUBGROUPINFO(weathervane, "WVANE_", 59, ParametersG2, AC_WeatherVane),
+#endif
+
     // ID 60 is reserved for the SHIP_OPS
 
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
@@ -1219,6 +1225,10 @@ ParametersG2::ParametersG2(void)
 #endif
 
     ,command_model_pilot(PILOT_Y_RATE_DEFAULT, PILOT_Y_EXPO_DEFAULT, 0.0f)
+
+#if WEATHERVANE_ENABLED == ENABLED
+    ,weathervane()
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
