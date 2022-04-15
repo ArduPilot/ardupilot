@@ -1387,14 +1387,22 @@ void Copter::convert_pid_parameters(void)
         AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[i], 1.0f);
     }
 
-    // notch filter parameter conversions (changed position and type) for Copter-3.7
-    const AP_Param::ConversionInfo notchfilt_conversion_info[] = {
-        { Parameters::k_param_ins, 165, AP_PARAM_INT16, "INS_NOTCH_FREQ" },
-        { Parameters::k_param_ins, 229, AP_PARAM_INT16, "INS_NOTCH_BW" },
-    };
-    uint8_t notchfilt_table_size = ARRAY_SIZE(notchfilt_conversion_info);
-    for (uint8_t i=0; i<notchfilt_table_size; i++) {
-        AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
+    if (!ins.gyro_notch_enabled()) {
+        // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
+        const AP_Param::ConversionInfo notchfilt_conversion_info[] {
+            { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
+            { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
+            { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
+            { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
+        };
+        uint8_t notchfilt_table_size = ARRAY_SIZE(notchfilt_conversion_info);
+        for (uint8_t i=0; i<notchfilt_table_size; i++) {
+            AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
+        }
+        if (ins.gyro_notch_enabled()) {
+            AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
+            AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
+        }
     }
 
     // ACRO_RP_P and ACRO_Y_P replaced with ACRO_RP_RATE and ACRO_Y_RATE for Copter-4.2
