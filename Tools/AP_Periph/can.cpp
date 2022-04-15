@@ -59,7 +59,7 @@ extern AP_Periph_FW periph;
 #if defined(STM32H7)
 #define HAL_PERIPH_LOOP_DELAY_US 64
 #else
-#define HAL_PERIPH_LOOP_DELAY_US 512
+#define HAL_PERIPH_LOOP_DELAY_US 1024
 #endif
 #endif
 
