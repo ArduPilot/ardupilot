@@ -248,7 +248,7 @@ public:
 #endif // AP_SCRIPTING_ENABLED
 
     // update the harmonic notch
-    virtual void update_dynamic_notch(uint8_t idx) {};
+    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
