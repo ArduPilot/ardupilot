@@ -254,9 +254,8 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     uint8_t num_notches = 0;
     for (auto &notch : _ins->harmonic_notches) {
         if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
-            harmonics = notch.params.harmonics();
-            num_notches = notch.num_dynamic_notches;
-            break;
+            harmonics |= notch.params.harmonics();
+            num_notches = MAX(num_notches, notch.num_dynamic_notches);
         }
     }
     // count the number of active harmonics or dynamic notchs
