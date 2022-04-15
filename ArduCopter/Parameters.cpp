@@ -1388,7 +1388,7 @@ void Copter::convert_pid_parameters(void)
     }
 
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    if (!ins.gyro_harmonic_notch_enabled(1)) {
+    if (!ins.harmonic_notches[1].params.enabled()) {
         // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
         const AP_Param::ConversionInfo notchfilt_conversion_info[] {
             { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
@@ -1400,10 +1400,8 @@ void Copter::convert_pid_parameters(void)
         for (uint8_t i=0; i<notchfilt_table_size; i++) {
             AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
         }
-        if (ins.gyro_harmonic_notch_enabled(1)) {
-            AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-            AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-        }
+        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
+        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
     }
 #endif
 
