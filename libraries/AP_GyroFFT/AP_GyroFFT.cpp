@@ -252,10 +252,10 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     // note that we only allow one harmonic notch filter linked to the FFT code
     uint8_t harmonics = 0;
     uint8_t num_notches = 0;
-    for (uint8_t i=0; i<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; i++) {
-        if (_ins->get_gyro_harmonic_notch_tracking_mode(i) == HarmonicNotchDynamicMode::UpdateGyroFFT) {
-            harmonics = _ins->get_gyro_harmonic_notch_harmonics(i);
-            num_notches = _ins->get_num_gyro_dynamic_notches(i);
+    for (auto &notch : _ins->harmonic_notches) {
+        if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+            harmonics = notch.params.harmonics();
+            num_notches = notch.num_dynamic_notches;
             break;
         }
     }
@@ -385,8 +385,8 @@ void AP_GyroFFT::update()
         _health = 0;
     } else {
         uint8_t num_notches = 0;
-        for (uint8_t i=0; i<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; i++) {
-            num_notches = MAX(num_notches, _ins->get_num_gyro_dynamic_notches(i));
+        for (auto &notch : _ins->harmonic_notches) {
+            num_notches = MAX(num_notches, notch.num_dynamic_notches);
         }
         _health = MIN(_global_state._health, num_notches);
     }
