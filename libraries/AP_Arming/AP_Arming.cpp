@@ -392,14 +392,6 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(ARMING_CHECK_INS, report, "%s", failure_msg);
             return false;
         }
-#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-        if (ins.gyro_harmonic_notch_enabled(0) &&
-            ins.gyro_harmonic_notch_enabled(1) &&
-            ins.get_gyro_harmonic_notch_tracking_mode(0) != HarmonicNotchDynamicMode::Fixed &&
-            ins.get_gyro_harmonic_notch_tracking_mode(0) != ins.get_gyro_harmonic_notch_tracking_mode(1)) {
-            check_failed(ARMING_CHECK_INS, report, "conflicting notch filters");
-        }
-#endif
     }
 
 #if HAL_GYROFFT_ENABLED
