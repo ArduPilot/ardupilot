@@ -6,14 +6,19 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
-AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
-                                     class LoggerMessageWriter_DFLogStart *writer) :
-    _front(front),
-    _startup_messagewriter(writer)
+AP_Logger_Backend::AP_Logger_Backend(
+    AP_Logger &front,
+    LoggerBackendThread &loggerbackendthread,
+    class LoggerMessageWriter_DFLogStart *writer) :
+    _front(front)
 {
     writer->set_logger_backend(this);
+    _iothread = &loggerbackendthread;  // FIXME; make this a reference?
+    _iothread->startup_messagewriter = writer;
 }
 
 uint8_t AP_Logger_Backend::num_types() const
@@ -56,11 +61,12 @@ void AP_Logger_Backend::periodic_10Hz(const uint32_t now)
 
 void AP_Logger_Backend::periodic_1Hz()
 {
-    if (_rotate_pending && !logging_enabled()) {
-        _rotate_pending = false;
-        // handle log rotation once we stop logging
-        stop_logging_async();
-    }
+    //FIXME: vaguing out here, but what does this do again?
+    // if (_rotate_pending && !logging_enabled()) {
+    //     _rotate_pending = false;
+    //     // handle log rotation once we stop logging
+    //     stop_logging_async();
+    // }
     df_stats_log();
 }
 
@@ -83,24 +89,24 @@ void AP_Logger_Backend::periodic_tasks()
     periodic_fullrate();
 }
 
-void AP_Logger_Backend::start_new_log_reset_variables()
+void LoggerBackendThread::start_new_log_reset_variables()
 {
-    _dropped = 0;
-    _startup_messagewriter->reset();
-    _front.backend_starting_new_log(this);
-    _log_file_size_bytes = 0;
+    dropped = 0;
+    startup_messagewriter->reset();
+    AP::logger().backend_starting_new_log(this);
+    log_file_size_bytes = 0;
 }
 
 // We may need to make sure data is loggable before starting the
 // EKF; when allow_start_ekf we should be able to log that data
 bool AP_Logger_Backend::allow_start_ekf() const
 {
-    if (!_startup_messagewriter->fmt_done()) {
+    if (!_iothread->startup_messagewriter->fmt_done()) {
         return false;
     }
     // we need to push all startup messages out, or the code in
     // WriteBlockCheckStartupMessages bites us.
-    if (!_startup_messagewriter->finished()) {
+    if (!_iothread->startup_messagewriter->finished()) {
         return false;
     }
     return true;
@@ -120,16 +126,16 @@ bool AP_Logger_Backend::WriteBlockCheckStartupMessages()
     return true;
 #endif
 
-    if (_startup_messagewriter->fmt_done()) {
+    if (_iothread->startup_messagewriter->fmt_done()) {
         return true;
     }
 
-    if (_writing_startup_messages) {
+    if (_iothread->writing_startup_messages) {
         // we have been called by a messagewriter, so writing is OK
         return true;
     }
 
-    if (!_startup_messagewriter->finished() &&
+    if (!_iothread->startup_messagewriter->finished() &&
         !hal.scheduler->in_main_thread()) {
         // only the main thread may write startup messages out
         return false;
@@ -155,13 +161,13 @@ void AP_Logger_Backend::WriteMoreStartupMessages()
     return;
 #endif
 
-    if (_startup_messagewriter->finished()) {
+    if (_iothread->startup_messagewriter->finished()) {
         return;
     }
 
-    _writing_startup_messages = true;
-    _startup_messagewriter->process();
-    _writing_startup_messages = false;
+    _iothread->writing_startup_messages = true;
+    _iothread->startup_messagewriter->process();
+    _iothread->writing_startup_messages = false;
 }
 
 /*
@@ -344,9 +350,6 @@ bool AP_Logger_Backend::StartNewLogOK() const
     if (_front._log_bitmask == 0) {
         return false;
     }
-    if (_front.in_log_download()) {
-        return false;
-    }
     if (!hal.scheduler->in_main_thread()) {
         return false;
     }
@@ -409,7 +412,7 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
         return false;
     }
     if (StartNewLogOK()) {
-        start_new_log();
+        // start_new_log();
     }
     if (!WritesOK()) {
         return false;
@@ -434,22 +437,10 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         return false;
     }
 
-    if (!_startup_messagewriter->finished() &&
+    if (!_iothread->startup_messagewriter->finished() &&
         !hal.scheduler->in_main_thread()) {
         // only the main thread may write startup messages out
         return false;
-    }
-
-    if (_front.in_log_download() &&
-        _front._last_mavlink_log_transfer_message_handled_ms != 0) {
-        if (AP_HAL::millis() - _front._last_mavlink_log_transfer_message_handled_ms < 10000) {
-            if (!_front.vehicle_is_armed()) {
-                // user is transfering files via mavlink
-                return false;
-            }
-        } else {
-            _front._last_mavlink_log_transfer_message_handled_ms = 0;
-        }
     }
 
     if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
@@ -470,7 +461,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
     return true;
 }
 
-void AP_Logger_Backend::PrepForArming()
+void LoggerBackendThread::PrepForArming()
 {
     if (_rotate_pending) {
         _rotate_pending = false;
@@ -516,7 +507,11 @@ bool AP_Logger_Backend::Write_RallyPoint(uint8_t total,
 bool AP_Logger_Backend::Write_Rally()
 {
     // kick off asynchronous write:
-    return _startup_messagewriter->writeallrallypoints();
+    if (!complete_iothread_request(LoggerThreadRequest::Type::StartWriteEntireRally)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "StartWriteEntireRally failed");
+        return false;
+    }
+    return true;
 }
 #endif
 
@@ -552,7 +547,7 @@ bool AP_Logger_Backend::Write_VER()
   and so on.  Thus the highest list entry number is equal to the
   number of logs.
 */
-uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
+uint16_t LoggerBackendThread::log_num_from_list_entry(const uint16_t list_entry)
 {
     uint16_t oldest_log = find_oldest_log();
     if (oldest_log == 0) {
@@ -568,7 +563,7 @@ uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
 
 // find_oldest_log - find oldest log
 // returns 0 if no log was found
-uint16_t AP_Logger_Backend::find_oldest_log()
+uint16_t LoggerBackendThread::find_oldest_log()
 {
     if (_cached_oldest_log != 0) {
         return _cached_oldest_log;
@@ -584,9 +579,43 @@ uint16_t AP_Logger_Backend::find_oldest_log()
     return _cached_oldest_log;
 }
 
-void AP_Logger_Backend::vehicle_was_disarmed()
+void LoggerBackendThread::process_request(LoggerThreadRequest &request)
 {
-    if (_front._params.file_disarm_rot) {
+    switch (request.type) {
+    case LoggerThreadRequest::Type::StartWriteEntireMission:
+        startup_messagewriter->writeentiremission();
+        break;
+    case LoggerThreadRequest::Type::StartWriteEntireRally:
+        startup_messagewriter->writeallrallypoints();
+        break;
+    default:
+        // INTERNAL_ERROR(AP_InternalError::error_t::logger_unhandled_queue);  // FIXME
+        gcs().send_text(MAV_SEVERITY_WARNING, "Unhandled message (%u)", (unsigned)request.type);
+        break;
+    }
+}
+
+bool AP_Logger_Backend::complete_iothread_request(LoggerThreadRequest::Type type, void *data)
+{
+    // LoggerThreadRequest request{
+    //     type: type,
+    //     data: data,
+    //     complete: false,
+    // };
+    // _iothread->requests.push(&request);
+    // uint32_t tstart = AP_HAL::micros();
+    // while (!request.complete) {
+    //     if (AP_HAL::micros() - tstart > 1000) {
+    //         return false;
+    //     }
+    //     hal.scheduler->delay_microseconds(100);
+    // }
+    return true;
+}
+
+void LoggerBackendThread::vehicle_was_disarmed()
+{
+    if (AP::logger().disarm_rotate()) {
         // rotate our log.  Closing the current one and letting the
         // logging restart naturally based on log_disarmed should do
         // the trick:
@@ -594,14 +623,24 @@ void AP_Logger_Backend::vehicle_was_disarmed()
     }
 }
 
-// this sensor is enabled if we should be logging at the moment
-bool AP_Logger_Backend::logging_enabled() const
+// FIXME: thread safety?
+bool LoggerBackendThread::should_be_logging() const
 {
-    if (hal.util->get_soft_armed() ||
-        _front.log_while_disarmed()) {
+    if (hal.util->get_soft_armed()) {
+        return true;
+    }
+    if (AP::logger().log_while_disarmed()) {
         return true;
     }
     return false;
+}
+
+
+// this sensor is enabled if we should be logging at the moment
+bool AP_Logger_Backend::logging_enabled() const
+{
+    // FIXME: thread safety?
+    return _iothread->should_be_logging();
 }
 
 void AP_Logger_Backend::Write_AP_Logger_Stats_File(const struct df_stats &_stats)
@@ -609,7 +648,7 @@ void AP_Logger_Backend::Write_AP_Logger_Stats_File(const struct df_stats &_stats
     const struct log_DSF pkt {
         LOG_PACKET_HEADER_INIT(LOG_DF_FILE_STATS),
         time_us         : AP_HAL::micros64(),
-        dropped         : _dropped,
+        dropped         : _iothread->dropped,
         blocks          : _stats.blocks,
         bytes           : _stats.bytes,
         buf_space_min   : _stats.buf_space_min,
@@ -629,7 +668,7 @@ void AP_Logger_Backend::df_stats_gather(const uint16_t bytes_written, uint32_t s
     }
     stats.buf_space_sigma += space_remaining;
     stats.bytes += bytes_written;
-    _log_file_size_bytes += bytes_written;
+    _iothread->log_file_size_bytes += bytes_written;
     stats.blocks++;
 }
 

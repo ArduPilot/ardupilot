@@ -15,58 +15,49 @@ extern const AP_HAL::HAL& hal;
 
 #define DF_MAVLINK_DISABLE_INTERRUPTS 0
 
-class AP_Logger_MAVLink : public AP_Logger_Backend
-{
+// not actually a thread, but called by the thread created in AP_Logger
+class LoggerThread_MAVLink : public LoggerBackendThread {
+
 public:
-    // constructor
-    AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
-        AP_Logger_Backend(front, writer),
-        _max_blocks_per_send_blocks(8)
-        {
-            _blockcount = 1024*((uint8_t)_front._params.mav_bufsize) / sizeof(struct dm_block);
-            // ::fprintf(stderr, "DM: Using %u blocks\n", _blockcount);
-        }
 
-    static AP_Logger_Backend  *probe(AP_Logger &front,
-                                     LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_MAVLink(front, ls);
-    }
+    bool Init(uint8_t bufsize_kb);
 
-    // initialisation
-    void Init() override;
-
+    void timer(void) override;
     // in actual fact, we throw away everything until a client connects.
     // This stops calls to start_new_log from the vehicles
-    bool logging_started() const override { return _initialised; }
+    bool logging_started() const override { return true; }
+    bool logging_failed() const;
 
-    void stop_logging() override;
+    void EraseAll() override { }
+    void stop_logging(void) override;
 
-    /* Write a block of data at current offset */
-    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
-                               bool is_critical) override;
-
-    // initialisation
-    bool CardInserted(void) const override { return true; }
-
-    // erase handling
-    void EraseAll() override {}
+    /* we currently ignore requests to start a new log.  Notionally we
+     * could close the currently logging session and hope the client
+     * re-opens one */
+    void start_new_log(void) override {
+        return;
+    }
+    bool WritesOK() const;
 
     void PrepForArming() override {}
 
-    // high level interface
+    // log download to GCS support (or  lack thereof, in fact):
     uint16_t find_last_log(void) override { return 0; }
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page) override {}
     void get_log_info(uint16_t log_num, uint32_t &size, uint32_t &time_utc) override {}
     int16_t get_log_data(uint16_t log_num, uint16_t page, uint32_t offset, uint16_t len, uint8_t *data) override { return 0; }
     uint16_t get_num_logs(void) override { return 0; }
+    // end log download to GCS support (or  lack thereof):
 
-    void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
-    void vehicle_was_disarmed() override {}
+    uint32_t bufferspace_available();
 
-protected:
+    /* Write a block of data at current offset */
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+                                bool is_critical);
 
-    void push_log_blocks() override;
-    bool WritesOK() const override;
+    HAL_Semaphore semaphore;
+
+    void process_request(LoggerThreadRequest &request) override;
 
 private:
 
@@ -77,8 +68,8 @@ private:
         struct dm_block *next;
     };
     bool send_log_block(struct dm_block &block);
-    void handle_ack(const GCS_MAVLINK &link, const mavlink_message_t &msg, uint32_t seqno);
-    void handle_retry(uint32_t block_num);
+    void handle_ack(LoggerThreadRequest &request);
+    void handle_retry(LoggerThreadRequest &request);
     void do_resends(uint32_t now);
     void free_all_blocks();
 
@@ -120,10 +111,6 @@ private:
         uint8_t state_sent_max;
     } stats;
 
-    // this method is used when reporting system status over mavlink
-    bool logging_enabled() const override { return true; }
-    bool logging_failed() const override;
-
     const GCS_MAVLINK *_link;
 
     uint8_t _target_system_id;
@@ -137,8 +124,8 @@ private:
     // _max_blocks_per_send_blocks has to be high enough to push all
     // of the logs, but low enough that we don't spend way too much
     // time packing messages in any one loop
-    const uint8_t _max_blocks_per_send_blocks;
-    
+    const uint8_t _max_blocks_per_send_blocks = 8;
+
     uint32_t _next_seq_num;
     uint16_t _latest_block_len;
     uint32_t _last_response_time;
@@ -146,9 +133,8 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    void Write_logger_MAV(AP_Logger_MAVLink &logger);
+    void Write_MAV();
 
-    uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block() const;
     // write buffer
     uint8_t _blockcount_free;
@@ -156,10 +142,8 @@ private:
     struct dm_block *_blocks;
     struct dm_block *_current_block;
     struct dm_block *next_block();
+    bool _initialised;
 
-    void periodic_10Hz(uint32_t now) override;
-    void periodic_1Hz() override;
-    
     void stats_init();
     void stats_reset();
     void stats_collect();
@@ -168,14 +152,57 @@ private:
     uint32_t _stats_last_logged_time;
     uint8_t mavlink_seq;
 
-    /* we currently ignore requests to start a new log.  Notionally we
-     * could close the currently logging session and hope the client
-     * re-opens one */
-    void start_new_log(void) override {
-        return;
+    // we run some processes more slowly in our timer function:
+    uint32_t last_10Hz_ms;
+};
+
+
+class AP_Logger_MAVLink : public AP_Logger_Backend
+{
+public:
+    // constructor
+    AP_Logger_MAVLink(AP_Logger &front, LoggerMessageWriter_DFLogStart *writer) :
+        AP_Logger_Backend(front, _iothread_mavlink, writer)
+        {
+        }
+
+    static AP_Logger_Backend  *probe(AP_Logger &front,
+                                     LoggerMessageWriter_DFLogStart *ls) {
+        return new AP_Logger_MAVLink(front, ls);
     }
 
-    HAL_Semaphore semaphore;
+    // initialisation
+    void Init() override;
+
+    void stop_logging() override;
+
+    /* Write a block of data at current offset */
+    bool _WritePrioritisedBlock(const void *pBuffer, uint16_t size,
+                               bool is_critical) override;
+
+    // initialisation
+    bool CardInserted(void) const override { return true; }
+
+    void remote_log_block_status_msg(GCS_MAVLINK &link, const mavlink_message_t& msg) override;
+
+    // this method is used when reporting system status over mavlink
+    bool logging_enabled() const override { return true; }
+    bool logging_failed() const override;
+
+protected:
+
+    bool WritesOK() const override;
+
+private:
+
+    uint32_t bufferspace_available() override; // in bytes
+
+    void periodic_fullrate() override;
+    void periodic_1Hz() override;
+
+    // not actually a thread, but rather an object with methods called
+    // on a thread:
+    LoggerThread_MAVLink _iothread_mavlink;
 };
 
 #endif // HAL_LOGGING_MAVLINK_ENABLED

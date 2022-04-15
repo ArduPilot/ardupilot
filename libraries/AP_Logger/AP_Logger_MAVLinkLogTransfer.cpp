@@ -43,19 +43,99 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
         return;
     }
     _warned_log_disarm = false;
-    _last_mavlink_log_transfer_message_handled_ms = AP_HAL::millis();
-    switch (msg.msgid) {
-    case MAVLINK_MSG_ID_LOG_REQUEST_LIST:
-        handle_log_request_list(link, msg);
+
+    const bool synchronous = false;  // FIXME
+
+    LoggerThreadRequest *request;
+    {
+        WITH_SEMAPHORE(loggerthread.requests_semaphore);
+        request = loggerthread.claim_free_request();
+        if (request == nullptr) {
+            return;
+        }
+        request->state = LoggerThreadRequest::State::PENDING;
+        loggerthread.requests_count++;
+        if (!synchronous) {
+            request->free_after_processing = true;
+        }
+        switch (msg.msgid) {
+        case MAVLINK_MSG_ID_LOG_REQUEST_LIST: {
+            mavlink_log_request_list_t packet;
+            mavlink_msg_log_request_list_decode(
+                &msg,
+                &packet);
+            request->type = LoggerThreadRequest::Type::HandleLogRequest_List;
+            request->parameters.HandleLogRequest_List = {
+                &link,
+                packet.start,
+                packet.end
+            };
+            break;
+        }
+        case MAVLINK_MSG_ID_LOG_REQUEST_DATA: {
+            mavlink_log_request_data_t packet;
+            mavlink_msg_log_request_data_decode(
+                &msg,
+                &packet);
+            request->type = LoggerThreadRequest::Type::HandleLogRequest_Data;
+            request->parameters.HandleLogRequest_Data = {
+                &link,
+                packet.ofs,
+                packet.count,
+                packet.id
+            };
+            break;
+        }
+        case MAVLINK_MSG_ID_LOG_ERASE:
+            request->type = LoggerThreadRequest::Type::HandleLogRequest_Erase;
+            request->parameters.HandleLogRequest_Erase.link = &link;
+            break;
+        case MAVLINK_MSG_ID_LOG_REQUEST_END:
+            request->type = LoggerThreadRequest::Type::HandleLogRequest_End;
+            request->parameters.HandleLogRequest_End.link = &link;
+            break;
+        default:
+            return;
+        }
+    }
+
+    // synchronous completion:
+    if (synchronous) {
+        if (!complete_iothread_request(request)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "%s failed", "HandleLogMessage");
+        }
+    }
+}
+
+
+void LoggerThread::handle_log_request_message(LoggerThreadRequest &request)
+{
+    // link is transported as a pointer to avoid having to create a
+    // constructor on parameters.HandleLogMessage
+    switch (request.type) {
+    case LoggerThreadRequest::Type::HandleLogRequest_List:
+        handle_log_request_list(
+            *(request.parameters.HandleLogRequest_List.link),
+            request.parameters.HandleLogRequest_List.start,
+            request.parameters.HandleLogRequest_List.end
+            );
         break;
-    case MAVLINK_MSG_ID_LOG_REQUEST_DATA:
-        handle_log_request_data(link, msg);
+    case LoggerThreadRequest::Type::HandleLogRequest_Data:
+        handle_log_request_data(
+            *request.parameters.HandleLogRequest_Data.link,
+            request.parameters.HandleLogRequest_Data.id,
+            request.parameters.HandleLogRequest_Data.ofs,
+            request.parameters.HandleLogRequest_Data.count
+            );
         break;
-    case MAVLINK_MSG_ID_LOG_ERASE:
-        handle_log_request_erase(link, msg);
+    case LoggerThreadRequest::Type::HandleLogRequest_Erase:
+        handle_log_request_erase(*request.parameters.HandleLogRequest_Erase.link);
         break;
-    case MAVLINK_MSG_ID_LOG_REQUEST_END:
-        handle_log_request_end(link, msg);
+    case LoggerThreadRequest::Type::HandleLogRequest_End:
+        handle_log_request_end(*request.parameters.HandleLogRequest_End.link);
+        break;
+    default:
+        // hope caller did correct thing....
         break;
     }
 }
@@ -63,7 +143,7 @@ void AP_Logger::handle_log_message(GCS_MAVLINK &link, const mavlink_message_t &m
 /**
    handle all types of log download requests from the GCS
  */
-void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, const mavlink_message_t &msg)
+void LoggerThread::handle_log_request_list(GCS_MAVLINK &link, uint16_t start, uint16_t end)
 {
     WITH_SEMAPHORE(_log_send_sem);
 
@@ -72,17 +152,14 @@ void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, const mavlink_message
         return;
     }
 
-    mavlink_log_request_list_t packet;
-    mavlink_msg_log_request_list_decode(&msg, &packet);
-
     _log_num_logs = get_num_logs();
 
     if (_log_num_logs == 0) {
         _log_next_list_entry = 0;
         _log_last_list_entry = 0;        
     } else {
-        _log_next_list_entry = packet.start;
-        _log_last_list_entry = packet.end;
+        _log_next_list_entry = start;
+        _log_last_list_entry = end;
 
         if (_log_last_list_entry > _log_num_logs) {
             _log_last_list_entry = _log_num_logs;
@@ -102,7 +179,7 @@ void AP_Logger::handle_log_request_list(GCS_MAVLINK &link, const mavlink_message
 /**
    handle request for log data
  */
-void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message_t &msg)
+void LoggerThread::handle_log_request_data(GCS_MAVLINK &link, uint16_t id, uint32_t ofs, uint32_t count)
 {
     WITH_SEMAPHORE(_log_send_sem);
 
@@ -117,36 +194,33 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
         return;
     }
 
-    mavlink_log_request_data_t packet;
-    mavlink_msg_log_request_data_decode(&msg, &packet);
-
     // consider opening or switching logs:
-    if (transfer_activity != TransferActivity::SENDING || _log_num_data != packet.id) {
+    if (transfer_activity != TransferActivity::SENDING || _log_num_data != id) {
 
         uint16_t num_logs = get_num_logs();
-        if (packet.id > num_logs || packet.id < 1) {
+        if (id > num_logs || id < 1) {
             // request for an invalid log; cancel any current download
             transfer_activity = TransferActivity::IDLE;
             return;
         }
 
         uint32_t time_utc, size;
-        get_log_info(packet.id, size, time_utc);
-        _log_num_data = packet.id;
+        get_log_info(id, size, time_utc);
+        _log_num_data = id;
         _log_data_size = size;
 
         uint32_t end;
-        get_log_boundaries(packet.id, _log_data_page, end);
+        get_log_boundaries(id, _log_data_page, end);
     }
 
-    _log_data_offset = packet.ofs;
+    _log_data_offset = ofs;
     if (_log_data_offset >= _log_data_size) {
         _log_data_remaining = 0;
     } else {
         _log_data_remaining = _log_data_size - _log_data_offset;
     }
-    if (_log_data_remaining > packet.count) {
-        _log_data_remaining = packet.count;
+    if (_log_data_remaining > count) {
+        _log_data_remaining = count;
     }
 
     transfer_activity = TransferActivity::SENDING;
@@ -158,7 +232,7 @@ void AP_Logger::handle_log_request_data(GCS_MAVLINK &link, const mavlink_message
 /**
    handle request to erase log data
  */
-void AP_Logger::handle_log_request_erase(GCS_MAVLINK &link, const mavlink_message_t &msg)
+void LoggerThread::handle_log_request_erase(GCS_MAVLINK &link)
 {
     // mavlink_log_erase_t packet;
     // mavlink_msg_log_erase_decode(&msg, &packet);
@@ -169,11 +243,9 @@ void AP_Logger::handle_log_request_erase(GCS_MAVLINK &link, const mavlink_messag
 /**
    handle request to stop transfer and resume normal logging
  */
-void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, const mavlink_message_t &msg)
+void LoggerThread::handle_log_request_end(GCS_MAVLINK &link)
 {
     WITH_SEMAPHORE(_log_send_sem);
-    mavlink_log_request_end_t packet;
-    mavlink_msg_log_request_end_decode(&msg, &packet);
 
     transfer_activity = TransferActivity::IDLE;
     _log_sending_link = nullptr;
@@ -182,7 +254,7 @@ void AP_Logger::handle_log_request_end(GCS_MAVLINK &link, const mavlink_message_
 /**
    trigger sending of log messages if there are some pending
  */
-void AP_Logger::handle_log_send()
+void LoggerThread::handle_log_send()
 {
     WITH_SEMAPHORE(_log_send_sem);
 
@@ -205,7 +277,7 @@ void AP_Logger::handle_log_send()
     }
 }
 
-void AP_Logger::handle_log_sending()
+void LoggerThread::handle_log_sending()
 {
     WITH_SEMAPHORE(_log_send_sem);
 
@@ -240,7 +312,7 @@ void AP_Logger::handle_log_sending()
 /**
    trigger sending of log messages if there are some pending
  */
-void AP_Logger::handle_log_send_listing()
+void LoggerThread::handle_log_send_listing()
 {
     WITH_SEMAPHORE(_log_send_sem);
 
@@ -277,7 +349,7 @@ void AP_Logger::handle_log_send_listing()
 /**
    trigger sending of log data if there are some pending
  */
-bool AP_Logger::handle_log_send_data()
+bool LoggerThread::handle_log_send_data()
 {
     WITH_SEMAPHORE(_log_send_sem);
 
