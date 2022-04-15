@@ -20,8 +20,10 @@ bool Sub::althold_init()
     // initialise position and desired velocity
     pos_control.init_z_controller_stopping_point();
 
-    last_roll = 0;
-    last_pitch = 0;
+    if(prev_control_mode != control_mode_t::STABILIZE) {
+        last_roll = 0;
+        last_pitch = 0;
+    }
     last_pilot_heading = ahrs.yaw_sensor;
     last_input_ms = AP_HAL::millis();
 

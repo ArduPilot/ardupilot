@@ -5,8 +5,10 @@ bool Sub::stabilize_init()
 {
     // set target altitude to zero for reporting
     pos_control.set_pos_target_z_cm(0);
-    last_roll = 0;
-    last_pitch = 0;
+    if(prev_control_mode != control_mode_t::ALT_HOLD) {
+        last_roll = 0;
+        last_pitch = 0;
+    }
     last_pilot_heading = ahrs.yaw_sensor;
     return true;
 }
