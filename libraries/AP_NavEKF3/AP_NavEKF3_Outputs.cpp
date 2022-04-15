@@ -236,10 +236,10 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
                 posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
                 return false;
 #if EK3_FEATURE_BEACON_FUSION
-            } else if (rngBcnAlignmentStarted) {
+            } else if (rngBcn.alignmentStarted) {
                 // If we are attempting alignment using range beacon data, then report the position
-                posNE.x = receiverPos.x;
-                posNE.y = receiverPos.y;
+                posNE.x = rngBcn.receiverPos.x;
+                posNE.y = rngBcn.receiverPos.y;
                 return false;
 #endif
             } else {
