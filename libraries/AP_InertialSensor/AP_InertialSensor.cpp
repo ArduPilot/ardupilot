@@ -548,12 +548,12 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Group: HNTCH_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
-    AP_SUBGROUPINFO(_harmonic_notch_filter[0], "HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
+    AP_SUBGROUPINFO(harmonic_notches[0].params, "HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
 
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
     // @Group: HNTC2_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
-    AP_SUBGROUPINFO(_harmonic_notch_filter[1], "HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
+    AP_SUBGROUPINFO(harmonic_notches[1].params, "HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
 #endif
 
     // @Param: GYRO_RATE
@@ -876,28 +876,25 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // the center frequency of the harmonic notch is always taken from the calculated value so that it can be updated
     // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
     // configured value
-    uint8_t num_filters = 0;
-    bool double_notch[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS] {};
-    for (uint8_t i=0; i<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; i++) {
-        _calculated_harmonic_notch_freq_hz[i][0] = _harmonic_notch_filter[i].center_freq_hz();
-        _num_calculated_harmonic_notch_frequencies[i] = 1;
-        _num_dynamic_harmonic_notches[i] = 1;
-        double_notch[i] = _harmonic_notch_filter[i].hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+    for (auto &notch : harmonic_notches) {
+        notch.calculated_notch_freq_hz[0] = notch.params.center_freq_hz();
+        notch.num_calculated_notch_frequencies = 1;
+        notch.num_dynamic_notches = 1;
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-        if (_harmonic_notch_filter[i].hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+        if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
 #if HAL_WITH_DSP
-        if (get_gyro_harmonic_notch_tracking_mode(i) == HarmonicNotchDynamicMode::UpdateGyroFFT) {
-            _num_dynamic_harmonic_notches[i] = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
+        if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+            notch.num_dynamic_notches = AP_HAL::DSP::MAX_TRACKED_PEAKS; // only 3 peaks supported currently
         } else
 #endif
         {
             AP_Motors *motors = AP::motors();
             if (motors != nullptr) {
-                _num_dynamic_harmonic_notches[i] = __builtin_popcount(motors->get_motor_mask());
+                notch.num_dynamic_notches = __builtin_popcount(motors->get_motor_mask());
             }
         }
         // avoid harmonics unless actually configured by the user
-        _harmonic_notch_filter[i].set_default_harmonics(1);
+        notch.params.set_default_harmonics(1);
         }
 #endif
     }
@@ -907,11 +904,13 @@ AP_InertialSensor::init(uint16_t loop_rate)
         sensors_used += _use[i];
     }
 
-    for (uint8_t i=0; i<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; i++) {
+    uint8_t num_filters = 0;
+    for (auto &notch : harmonic_notches) {
         // calculate number of notches we might want to use for harmonic notch
-        if (_harmonic_notch_filter[i].enabled()) {
-            num_filters += __builtin_popcount( _harmonic_notch_filter[i].harmonics())
-                * _num_dynamic_harmonic_notches[i] * (double_notch[i] ? 2 : 1)
+        if (notch.params.enabled()) {
+            const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+            num_filters += __builtin_popcount(notch.params.harmonics())
+                * notch.num_dynamic_notches * (double_notch ? 2 : 1)
                 * sensors_used;
         }
     }
@@ -924,13 +923,14 @@ AP_InertialSensor::init(uint16_t loop_rate)
     for (uint8_t i=0; i<get_gyro_count(); i++) {
         // only allocate notches for IMUs in use
         if (_use[i]) {
-            for (uint8_t j=0; j<HAL_INS_NUM_HARMONIC_NOTCH_FILTERS; j++) {
-                if (_harmonic_notch_filter[j].enabled()) {
-                    _gyro_harmonic_notch_filter[j][i].allocate_filters(_num_dynamic_harmonic_notches[j],
-                                                                       _harmonic_notch_filter[j].harmonics(), double_notch[j]);
+            for (auto &notch : harmonic_notches) {
+                if (notch.params.enabled()) {
+                    const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+                    notch.filter[i].allocate_filters(notch.num_dynamic_notches,
+                                                     notch.params.harmonics(), double_notch);
                     // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
-                    _gyro_harmonic_notch_filter[j][i].init(_gyro_raw_sample_rates[i], _calculated_harmonic_notch_freq_hz[j][0],
-                                                           _harmonic_notch_filter[j].bandwidth_hz(), _harmonic_notch_filter[j].attenuation_dB());
+                    notch.filter[i].init(_gyro_raw_sample_rates[i], notch.calculated_notch_freq_hz[0],
+                                         notch.params.bandwidth_hz(), notch.params.attenuation_dB());
                 }
             }
         }
@@ -1584,6 +1584,31 @@ void AP_InertialSensor::_save_gyro_calibration()
     }
 }
 
+/*
+  update harmonic notch parameters
+ */
+void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool converging, float gyro_rate)
+{
+    const float center_freq = calculated_notch_freq_hz[0];
+    if (!is_equal(last_bandwidth_hz, params.bandwidth_hz()) ||
+        !is_equal(last_attenuation_dB, params.attenuation_dB()) ||
+        converging) {
+        filter[instance].init(gyro_rate,
+                              center_freq,
+                              params.bandwidth_hz(),
+                              params.attenuation_dB());
+        last_center_freq_hz = center_freq;
+        last_bandwidth_hz = params.bandwidth_hz();
+        last_attenuation_dB = params.attenuation_dB();
+    } else if (!is_equal(last_center_freq_hz, center_freq)) {
+        if (num_calculated_notch_frequencies > 1) {
+            filter[instance].update(num_calculated_notch_frequencies, calculated_notch_freq_hz);
+        } else {
+            filter[instance].update(center_freq);
+        }
+        last_center_freq_hz = center_freq;
+    }
+}
 
 /*
   update gyro and accel values from backends
@@ -1605,6 +1630,13 @@ void AP_InertialSensor::update(void)
         }
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
+        }
+        for (uint8_t i=0; i<_gyro_count; i++) {
+            const bool converging = AP_HAL::millis() < HAL_INS_CONVERGANCE_MS;
+            const float gyro_rate = _gyro_raw_sample_rates[i];
+            for (auto &notch : harmonic_notches) {
+                notch.update_params(i, converging, gyro_rate);
+            }
         }
 
         if (!_startup_error_counts_set) {
@@ -2014,30 +2046,25 @@ void AP_InertialSensor::acal_update()
 #endif
 
 // Update the harmonic notch frequency
-void AP_InertialSensor::update_harmonic_notch_freq_hz(uint8_t idx, float scaled_freq) {
-    if (idx >= HAL_INS_NUM_HARMONIC_NOTCH_FILTERS) {
-        return;
-    }
+void AP_InertialSensor::HarmonicNotch::update_freq_hz(float scaled_freq)
+{
     // protect against zero as the scaled frequency
     if (is_positive(scaled_freq)) {
-        _calculated_harmonic_notch_freq_hz[idx][0] = scaled_freq;
+        calculated_notch_freq_hz[0] = scaled_freq;
     }
-    _num_calculated_harmonic_notch_frequencies[idx] = 1;
+    num_calculated_notch_frequencies = 1;
 }
 
 // Update the harmonic notch frequency
-void AP_InertialSensor::update_harmonic_notch_frequencies_hz(uint8_t idx, uint8_t num_freqs, const float scaled_freq[]) {
-    if (idx >= HAL_INS_NUM_HARMONIC_NOTCH_FILTERS) {
-        return;
-    }
+void AP_InertialSensor::HarmonicNotch::update_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]) {
     // protect against zero as the scaled frequency
     for (uint8_t i = 0; i < num_freqs; i++) {
         if (is_positive(scaled_freq[i])) {
-            _calculated_harmonic_notch_freq_hz[idx][i] = scaled_freq[i];
+            calculated_notch_freq_hz[i] = scaled_freq[i];
         }
     }
     // any uncalculated frequencies will float at the previous value or the initialized freq if none
-    _num_calculated_harmonic_notch_frequencies[idx] = num_freqs;
+    num_calculated_notch_frequencies = num_freqs;
 }
 
 /*
