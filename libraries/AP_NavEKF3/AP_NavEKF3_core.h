@@ -1316,53 +1316,56 @@ private:
 
     // Range Beacon Sensor Fusion
 #if EK3_FEATURE_BEACON_FUSION
-    EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
-    rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
-    uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
-    ftype rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
-    bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check
-    ftype varInnovRngBcn;               // range beacon observation innovation variance (m^2)
-    ftype innovRngBcn;                  // range beacon observation innovation (m)
-    uint32_t lastTimeRngBcn_ms[4];      // last time we received a range beacon measurement (msec)
-    bool rngBcnDataToFuse;              // true when there is new range beacon data to fuse
-    Vector3F beaconVehiclePosNED;       // NED position estimate from the beacon system (NED)
-    ftype beaconVehiclePosErr;          // estimated position error from the beacon system (m)
-    uint32_t rngBcnLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
-    bool rngBcnGoodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
-    uint8_t lastRngBcnChecked;          // index of the last range beacon checked for data
-    Vector3F receiverPos;               // receiver NED position (m) - alignment 3 state filter
-    ftype receiverPosCov[3][3];         // Receiver position covariance (m^2) - alignment 3 state filter (
-    bool rngBcnAlignmentStarted;        // True when the initial position alignment using range measurements has started
-    bool rngBcnAlignmentCompleted;      // True when the initial position alignment using range measurements has finished
-    uint8_t lastBeaconIndex;            // Range beacon index last read -  used during initialisation of the 3-state filter
-    Vector3F rngBcnPosSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
-    uint8_t numBcnMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
-    ftype rngSum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
-    uint8_t N_beacons;                  // Number of range beacons in use
-    ftype maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
-    ftype minBcnPosD;                   // minimum position of all beacons in the down direction (m)
-    bool usingMinHypothesis;            // true when the min beacon constellation offset hypothesis is being used
+    class BeaconFusion {
+    public:
+        EKF_obs_buffer_t<rng_bcn_elements> storedRange; // Beacon range buffer
+        rng_bcn_elements dataDelayed; // Range beacon data at the fusion time horizon
+        uint32_t lastPassTime_ms;     // time stamp when the range beacon measurement last passed innovation consistency checks (msec)
+        ftype testRatio;              // Innovation test ratio for range beacon measurements
+        bool health;                  // boolean true if range beacon measurements have passed innovation consistency check
+        ftype varInnov;               // range beacon observation innovation variance (m^2)
+        ftype innov;                  // range beacon observation innovation (m)
+        uint32_t lastTime_ms[4];      // last time we received a range beacon measurement (msec)
+        bool dataToFuse;              // true when there is new range beacon data to fuse
+        Vector3F vehiclePosNED;       // NED position estimate from the beacon system (NED)
+        ftype vehiclePosErr;          // estimated position error from the beacon system (m)
+        uint32_t last3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
+        bool goodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
+        uint8_t lastChecked;          // index of the last range beacon checked for data
+        Vector3F receiverPos;               // receiver NED position (m) - alignment 3 state filter
+        ftype receiverPosCov[3][3];         // Receiver position covariance (m^2) - alignment 3 state filter (
+        bool alignmentStarted;        // True when the initial position alignment using range measurements has started
+        bool alignmentCompleted;      // True when the initial position alignment using range measurements has finished
+        uint8_t lastIndex;            // Range beacon index last read -  used during initialisation of the 3-state filter
+        Vector3F posSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
+        uint8_t numMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
+        ftype sum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
+        uint8_t N;                  // Number of range beacons in use
+        ftype maxPosD;                   // maximum position of all beacons in the down direction (m)
+        ftype minPosD;                   // minimum position of all beacons in the down direction (m)
+        bool usingMinHypothesis;            // true when the min beacon constellation offset hypothesis is being used
 
-    ftype bcnPosDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
-    ftype bcnPosOffsetMaxVar;           // Variance of the bcnPosDownOffsetMax state (m)
-    ftype maxOffsetStateChangeFilt;     // Filtered magnitude of the change in bcnPosOffsetHigh
+        ftype posDownOffsetMax;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+        ftype posOffsetMaxVar;           // Variance of the PosDownOffsetMax state (m)
+        ftype maxOffsetStateChangeFilt;     // Filtered magnitude of the change in PosOffsetHigh
 
-    ftype bcnPosDownOffsetMin;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
-    ftype bcnPosOffsetMinVar;           // Variance of the bcnPosDownOffsetMin state (m)
-    ftype minOffsetStateChangeFilt;     // Filtered magnitude of the change in bcnPosOffsetLow
+        ftype posDownOffsetMin;          // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+        ftype posOffsetMinVar;           // Variance of the PosDownOffsetMin state (m)
+        ftype minOffsetStateChangeFilt;     // Filtered magnitude of the change in PosOffsetLow
 
-    Vector3F bcnPosOffsetNED;           // NED position of the beacon origin in earth frame (m)
-    bool bcnOriginEstInit;              // True when the beacon origin has been initialised
+        Vector3F posOffsetNED;           // NED position of the beacon origin in earth frame (m)
+        bool originEstInit;              // True when the beacon origin has been initialised
 
-    // Range Beacon Fusion Debug Reporting
-    uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
-    struct rngBcnFusionReport_t {
-        ftype rng;          // measured range to beacon (m)
-        ftype innov;        // range innovation (m)
-        ftype innovVar;     // innovation variance (m^2)
-        ftype testRatio;    // innovation consistency test ratio
-        Vector3F beaconPosNED; // beacon NED position
-    } *rngBcnFusionReport;
+        // Range Beacon Fusion Debug Reporting
+        uint8_t fuseDataReportIndex;// index of range beacon fusion data last reported
+        struct FusionReport {
+            ftype rng;          // measured range to beacon (m)
+            ftype innov;        // range innovation (m)
+            ftype innovVar;     // innovation variance (m^2)
+            ftype testRatio;    // innovation consistency test ratio
+            Vector3F beaconPosNED; // beacon NED position
+        } *fusionReport;
+    } rngBcn;
 #endif  // if EK3_FEATURE_BEACON_FUSION
 
 #if EK3_FEATURE_DRAG_FUSION
