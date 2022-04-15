@@ -528,7 +528,7 @@ private:
         void reset();
         void remove_and_free(file_list *victim);
         struct file_list *head, *tail;
-        int fd;
+        int fd{-1};
         uint32_t offset;
         bool fast;
         uint8_t counter;
