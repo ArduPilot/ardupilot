@@ -533,9 +533,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
     AP_GROUPINFO("FAST_SAMPLE",  36, AP_InertialSensor, _fast_sampling_mask,   HAL_DEFAULT_INS_FAST_SAMPLE),
 
-    // @Group: NOTCH_
-    // @Path: ../Filter/HarmonicNotchFilter.cpp
-    AP_SUBGROUPINFO(_notch_filter, "NOTCH_",  37, AP_InertialSensor, HarmonicNotchFilterParams),
+    // index 37 was NOTCH_
 
     // @Group: LOG_
     // @Path: ../AP_InertialSensor/BatchSampler.cpp
@@ -551,6 +549,10 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @Group: HNTCH_
     // @Path: ../Filter/HarmonicNotchFilter.cpp
     AP_SUBGROUPINFO(_harmonic_notch_filter, "HNTCH_",  41, AP_InertialSensor, HarmonicNotchFilterParams),
+
+    // @Group: HNTC2_
+    // @Path: ../Filter/HarmonicNotchFilter.cpp
+    AP_SUBGROUPINFO(_notch_filter, "HNTC2_",  53, AP_InertialSensor, HarmonicNotchFilterParams),
 
     // @Param: GYRO_RATE
     // @DisplayName: Gyro rate for IMUs with Fast Sampling enabled

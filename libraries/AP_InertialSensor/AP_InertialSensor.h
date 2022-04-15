@@ -302,6 +302,9 @@ public:
     // check for vibration movement. True when all axis show nearly zero movement
     bool is_still();
 
+    // return true if notch enabled
+    bool gyro_notch_enabled(void) const { return _notch_filter.enabled(); }
+
     // return true if harmonic notch enabled
     bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.enabled(); }
 
