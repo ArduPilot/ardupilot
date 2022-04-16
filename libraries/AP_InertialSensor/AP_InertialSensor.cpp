@@ -877,6 +877,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
     // dynamically, the calculated value is always some multiple of the configured center frequency, so start with the
     // configured value
     for (auto &notch : harmonic_notches) {
+        if (!notch.params.enabled()) {
+            continue;
+        }
         notch.calculated_notch_freq_hz[0] = notch.params.center_freq_hz();
         notch.num_calculated_notch_frequencies = 1;
         notch.num_dynamic_notches = 1;
@@ -1635,7 +1638,9 @@ void AP_InertialSensor::update(void)
             const bool converging = AP_HAL::millis() < HAL_INS_CONVERGANCE_MS;
             const float gyro_rate = _gyro_raw_sample_rates[i];
             for (auto &notch : harmonic_notches) {
-                notch.update_params(i, converging, gyro_rate);
+                if (notch.params.enabled()) {
+                    notch.update_params(i, converging, gyro_rate);
+                }
             }
         }
 
