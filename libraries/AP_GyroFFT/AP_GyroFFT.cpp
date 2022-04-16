@@ -253,7 +253,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     uint8_t harmonics = 0;
     uint8_t num_notches = 0;
     for (auto &notch : _ins->harmonic_notches) {
-        if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+        if (notch.params.enabled() && notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
             harmonics |= notch.params.harmonics();
             num_notches = MAX(num_notches, notch.num_dynamic_notches);
         }
@@ -385,7 +385,9 @@ void AP_GyroFFT::update()
     } else {
         uint8_t num_notches = 0;
         for (auto &notch : _ins->harmonic_notches) {
-            num_notches = MAX(num_notches, notch.num_dynamic_notches);
+            if (notch.params.enabled()) {
+                num_notches = MAX(num_notches, notch.num_dynamic_notches);
+            }
         }
         _health = MIN(_global_state._health, num_notches);
     }
