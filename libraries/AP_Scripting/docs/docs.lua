@@ -1277,10 +1277,8 @@ function vehicle:get_circle_radius() end
 ---@param pitch_deg number
 ---@param yaw_deg number
 ---@param climb_rate_ms number
----@param use_yaw_rate boolean
----@param yaw_rate_degs number
 ---@return boolean
-function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms, use_yaw_rate, yaw_rate_degs) end
+function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, climb_rate_ms) end
 
 -- desc
 ---@param vel_ned Vector3f_ud
