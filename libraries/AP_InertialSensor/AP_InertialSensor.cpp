@@ -1670,6 +1670,12 @@ void AP_InertialSensor::update(void)
             }
         }
 
+    // Calculate angular acceleration using backward euler method
+    for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        _ang_accel[i] = (_gyro[i] - _gyro_prev[i])/get_delta_time();
+        _gyro_prev[i] = _gyro[i];
+    }
+
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
