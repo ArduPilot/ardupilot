@@ -18,6 +18,7 @@
 #include <AP_LTM_Telem/AP_LTM_Telem.h>
 #include <AP_Devo_Telem/AP_Devo_Telem.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
+#include <AP_Frsky_Telem/AP_Frsky_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Mount/AP_Mount.h>
@@ -1098,8 +1099,10 @@ public:
 
     bool out_of_time() const;
 
+#if AP_FRSKY_TELEM_ENABLED
     // frsky backend
     class AP_Frsky_Telem *frsky;
+#endif
 
 #if AP_LTM_TELEM_ENABLED
     // LTM backend
