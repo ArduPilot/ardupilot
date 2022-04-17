@@ -2060,10 +2060,12 @@ void GCS::send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, u
         logger->Write_Message(first_piece_of_text);
     }
 
+#if AP_FRSKY_TELEM_ENABLED
     frsky = AP::frsky_telem();
     if (frsky != nullptr) {
         frsky->queue_message(severity, first_piece_of_text);
     }
+#endif
 #if HAL_SPEKTRUM_TELEM_ENABLED
     AP_Spektrum_Telem* spektrum = AP::spektrum_telem();
     if (spektrum != nullptr) {
@@ -2316,6 +2318,7 @@ void GCS::setup_uarts()
         create_gcs_mavlink_backend(chan_parameters[i], *uart);
     }
 
+#if AP_FRSKY_TELEM_ENABLED
     if (frsky == nullptr) {
         frsky = new AP_Frsky_Telem();
         if (frsky == nullptr || !frsky->init()) {
@@ -2323,6 +2326,8 @@ void GCS::setup_uarts()
             frsky = nullptr;
         }
     }
+#endif
+
 #if AP_LTM_TELEM_ENABLED
     ltm_telemetry.init();
 #endif
