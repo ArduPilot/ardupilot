@@ -9,7 +9,7 @@ float Plane::calc_speed_scaler(void)
 {
     float aspeed, speed_scaler;
     if (ahrs.airspeed_estimate(aspeed)) {
-        if (aspeed > auto_state.highest_airspeed) {
+        if (aspeed > auto_state.highest_airspeed && hal.util->get_soft_armed()) {
             auto_state.highest_airspeed = aspeed;
         }
         if (aspeed > 0.0001f) {
