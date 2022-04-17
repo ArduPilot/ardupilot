@@ -6569,19 +6569,9 @@ class AutoTestCopter(AutoTest):
 
         self.wait_generator_speed_and_state(0, 0, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_OFF)
 
-        messages = []
-
-        def my_message_hook(mav, m):
-            if m.get_type() != 'STATUSTEXT':
-                return
-            messages.append(m)
-        self.install_message_hook(my_message_hook)
-        try:
-            self.set_rc(9, 2000) # remember this is a switch position - run
-        finally:
-            self.remove_message_hook(my_message_hook)
-        if "Generator HIGH" not in [x.text for x in messages]:
-            self.wait_statustext("Generator HIGH", timeout=60)
+        self.context_collect('STATUSTEXT')
+        self.set_rc(9, 2000) # remember this is a switch position - run
+        self.wait_statustext("Generator HIGH", check_context=True)
         self.set_rc(9, 1000) # remember this is a switch position - stop
         self.wait_statustext("requested state is not RUN", timeout=200)
 
