@@ -55,6 +55,7 @@ public:
         float                  rate_rpm;        // measured rate in revs per minute
         uint32_t               last_reading_ms; // time of last reading
         float                  signal_quality;  // synthetic quality metric 
+        float                  rpm[4];          //        
     };
 
     // parameters for each instance
@@ -77,6 +78,11 @@ public:
       return RPM for a sensor. Return -1 if not healthy
      */
     bool get_rpm(uint8_t instance, float &rpm_value) const;
+
+    /*
+      return RPM for a sensor. Return -1 if not healthy
+     */
+    bool get_rpms(uint8_t instance, float* rpm_value);
 
     /*
       return signal quality for a sensor.
