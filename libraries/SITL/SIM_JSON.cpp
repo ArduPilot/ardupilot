@@ -210,6 +210,33 @@ uint32_t JSON::parse_sensors(const char *json)
                 //printf("%s/%s = %i\n", key.section, key.key, *((unit8_t *)key.ptr));
                 break;
 
+            case DATA_FLOAT_ARRAY: {
+                // example: [18.0, 12.694079399108887]
+                if (*p++ != '[') {
+                    return received_bitmask;
+                }
+                uint16_t n = 0;
+                struct float_array *v = (struct float_array *)key.ptr;
+                while (true) {
+                    if (n >= v->length) {
+                        float *d = (float *)realloc(v->data, sizeof(float)*(n+1));
+                        if (d == nullptr) {
+                            return false;
+                        }
+                        v->data = d;
+                        v->length = n+1;
+                    }
+                    v->data[n] = atof(p);
+                    n++;
+                    p = strchr(p,',');
+                    if (!p) {
+                        break;
+                    }
+                    p++;
+                }
+                v->length = n;
+                break;
+            }
         }
     }
 
@@ -317,6 +344,8 @@ void JSON::recv_fdm(const struct sitl_input &input)
         // airspeed as seen by a fwd pitot tube (limited to 120m/s)
         airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
     }
+
+    memcpy(rpm, state.motor.rpm.data, MIN(state.motor.rpm.length*sizeof(float), sizeof(rpm)));
 
     // Convert from a meters from origin physics to a lat long alt
     update_position();

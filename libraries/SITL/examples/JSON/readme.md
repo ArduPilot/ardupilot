@@ -72,6 +72,13 @@ Airspeed:
     airspeed (m/s)
 ```
 
+Motor RPM:
+```
+    motor:
+        rpm (rev/min) per motor in a single array. Limited to 12 motors. 
+```
+for example: ```"motor":{"rpm":[1000,1000,1000,...]}```
+
 When first connecting you will see a message reporting what fields were successfully received. If any of the mandatory fields are missing SITL will stop, however it will run without the optional fields. This message can be used to double check SITL is receiving everything being sent by the physics backend.
 
 For example:
