@@ -724,9 +724,17 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
 
     // possibly update filter frequency
+    const float gyro_rate = _gyro_raw_sample_rate(instance);
+
     if (_last_gyro_filter_hz != _gyro_filter_cutoff() || sensors_converging()) {
-        _imu._gyro_filter[instance].set_cutoff_frequency(_gyro_raw_sample_rate(instance), _gyro_filter_cutoff());
+        _imu._gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
         _last_gyro_filter_hz = _gyro_filter_cutoff();
+    }
+
+    for (auto &notch : _imu.harmonic_notches) {
+        if (notch.params.enabled()) {
+            notch.update_params(instance, sensors_converging(), gyro_rate);
+        }
     }
 }
 
