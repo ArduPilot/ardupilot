@@ -1593,23 +1593,23 @@ void AP_InertialSensor::_save_gyro_calibration()
 void AP_InertialSensor::HarmonicNotch::update_params(uint8_t instance, bool converging, float gyro_rate)
 {
     const float center_freq = calculated_notch_freq_hz[0];
-    if (!is_equal(last_bandwidth_hz, params.bandwidth_hz()) ||
-        !is_equal(last_attenuation_dB, params.attenuation_dB()) ||
+    if (!is_equal(last_bandwidth_hz[instance], params.bandwidth_hz()) ||
+        !is_equal(last_attenuation_dB[instance], params.attenuation_dB()) ||
         converging) {
         filter[instance].init(gyro_rate,
                               center_freq,
                               params.bandwidth_hz(),
                               params.attenuation_dB());
-        last_center_freq_hz = center_freq;
-        last_bandwidth_hz = params.bandwidth_hz();
-        last_attenuation_dB = params.attenuation_dB();
-    } else if (!is_equal(last_center_freq_hz, center_freq)) {
+        last_center_freq_hz[instance] = center_freq;
+        last_bandwidth_hz[instance] = params.bandwidth_hz();
+        last_attenuation_dB[instance] = params.attenuation_dB();
+    } else if (!is_equal(last_center_freq_hz[instance], center_freq)) {
         if (num_calculated_notch_frequencies > 1) {
             filter[instance].update(num_calculated_notch_frequencies, calculated_notch_freq_hz);
         } else {
             filter[instance].update(center_freq);
         }
-        last_center_freq_hz = center_freq;
+        last_center_freq_hz[instance] = center_freq;
     }
 }
 
