@@ -17,10 +17,13 @@
 
 #pragma once
 
-#include <AP_Frsky_Telem/AP_Frsky_SPort.h>
+#include "AP_RCProtocol_config.h"
+
+#if AP_RCPROTOCOL_FPORT2_ENABLED
 
 #include "AP_RCProtocol.h"
 #include "SoftSerial.h"
+#include <AP_Frsky_Telem/AP_Frsky_SPort.h>
 
 #define FPORT2_CONTROL_FRAME_SIZE 38
 
@@ -58,3 +61,5 @@ private:
         AP_Frsky_SPort::sport_packet_t packet;
     } telem_data;
 };
+
+#endif  // AP_RCPROTOCOL_FPORT2_ENABLED
