@@ -370,6 +370,40 @@ void AP_OAPathPlanner::avoidance_thread()
     }
 }
 
+// returns the number of points in the current solution path
+uint16_t AP_OAPathPlanner::get_path_count() const
+{
+    switch (_type) {
+    case OA_PATHPLAN_DIJKSTRA:
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
+        if (_oadijkstra == nullptr) {
+            return 0;
+        }
+        return _oadijkstra->get_path_length();
+
+    default:
+        return 0;
+    }
+}
+
+// returns a location in the current solution path
+bool AP_OAPathPlanner::get_path_point(uint8_t point_num, Location& Loc) const
+{
+    switch (_type) {
+    case OA_PATHPLAN_DIJKSTRA:
+    case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
+        if (_oadijkstra == nullptr || !_oadijkstra->get_shortest_path_location(point_num, Loc)) {
+            return false;
+        }
+        // note that altitude in Location is wrong, it is not calculated as part of the Dijkstra's solution.
+        // Copter interpolates the altitude and rover does not. Possibly in the future altitude will be included in the solution
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 // singleton instance
 AP_OAPathPlanner *AP_OAPathPlanner::_singleton;
 

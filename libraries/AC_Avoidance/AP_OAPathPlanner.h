@@ -32,6 +32,9 @@ public:
     /// returns true if all pre-takeoff checks have completed successfully
     bool pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const;
 
+    // returns true if OA has been active and found a solution
+    bool active() const { return avoidance_result.ret_state == OA_SUCCESS; }
+
     // object avoidance processing return status enum
     enum OA_RetState : uint8_t {
         OA_NOT_REQUIRED = 0,            // object avoidance is not required
@@ -74,6 +77,12 @@ public:
     };
 
     uint16_t get_options() const { return _options;}
+
+    // returns the number of points in the current solution path
+    uint16_t get_path_count() const;
+
+    // returns a location in the current solution path
+    bool get_path_point(uint8_t point_num, Location& Loc) const;
 
     static const struct AP_Param::GroupInfo var_info[];
 
