@@ -1059,6 +1059,7 @@ public:
     static class MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
     static class MissionItemProtocol_Rally *_missionitemprotocol_rally;
     static class MissionItemProtocol_Fence *_missionitemprotocol_fence;
+    static class MissionItemProtocol_PathPlanning *_missionitemprotocol_path_planning;
     class MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
     void try_send_queued_message_for_type(MAV_MISSION_TYPE type) const;
 
