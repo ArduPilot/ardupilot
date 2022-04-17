@@ -33,6 +33,12 @@ public:
     // returns DIJKSTRA_STATE_SUCCESS and populates origin_new and destination_new if avoidance is required
     AP_OADijkstra_State update(const Location &current_loc, const Location &destination, Location& origin_new, Location& destination_new);
 
+    // get the length of the final path
+    uint16_t get_path_length() const  { return _shortest_path_ok?_path_numpoints:0; }
+
+    // return location point from final path
+    bool get_shortest_path_location(uint8_t point_num, Location& Loc) const;
+
 private:
 
     // returns true if at least one inclusion or exclusion zone is enabled
@@ -182,7 +188,7 @@ private:
     Vector2f _path_destination;                         // destination position used in shortest path calculations (offset in cm from EKF origin)
 
     // return point from final path as an offset (in cm) from the ekf origin
-    bool get_shortest_path_point(uint8_t point_num, Vector2f& pos);
+    bool get_shortest_path_point(uint8_t point_num, Vector2f& pos) const;
 
     // find the position of a node as an offset (in cm) from the ekf origin
     // returns true if successful and pos is updated
