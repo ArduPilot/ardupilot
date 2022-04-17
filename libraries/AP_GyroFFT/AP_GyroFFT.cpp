@@ -253,10 +253,14 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     uint8_t harmonics = 0;
     uint8_t num_notches = 0;
     for (auto &notch : _ins->harmonic_notches) {
-        if (notch.params.enabled() && notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+        if (notch.params.enabled()) {
             harmonics |= notch.params.harmonics();
             num_notches = MAX(num_notches, notch.num_dynamic_notches);
         }
+    }
+    if (harmonics == 0) {
+        // this allows use of FFT to find peaks with all notch filters disabled
+        harmonics = 3;
     }
     // count the number of active harmonics or dynamic notchs
     _tracked_peaks = constrain_int16(MAX(__builtin_popcount(harmonics),
@@ -383,7 +387,7 @@ void AP_GyroFFT::update()
     if (!_rpy_health.x && !_rpy_health.y) {
         _health = 0;
     } else {
-        uint8_t num_notches = 0;
+        uint8_t num_notches = 1;
         for (auto &notch : _ins->harmonic_notches) {
             if (notch.params.enabled()) {
                 num_notches = MAX(num_notches, notch.num_dynamic_notches);
