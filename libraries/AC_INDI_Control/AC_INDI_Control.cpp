@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @Units: N/(rad/s)²
     // @Range: 0.000001 0.0001
     // @User: Standard
-    AP_GROUPINFO("_THR_COEF",                       16, AC_INDI_Control, _thrust_coefficient, 1.339e-6f),
+    AP_GROUPINFO("_THR_COEF",                       16, AC_INDI_Control, _thrust_coefficient, 1.489e-6f),
 
     // @Param: _TRQ_COEF
     // @DisplayName: Torque coefficent in Nm/(rad/s)²
@@ -164,7 +164,7 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @Units: N/(rad/s)²
     // @Range: 0.000001 0.0001
     // @User: Standard
-    AP_GROUPINFO("_TRQ_COEF",                       17, AC_INDI_Control, _torque_coefficient, 1.192e-8f),
+    AP_GROUPINFO("_TRQ_COEF",                       17, AC_INDI_Control, _torque_coefficient, 1.523e-8f),
 
     // @Param: _MOT_INER
     // @DisplayName: Moment of inertia of the motor and propellar in kg.m² 
@@ -179,7 +179,7 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @Description: Defines relation from scaled throttle command(between 0-1) to motor speed in rad/s. Relation between throttle command and motor speed assumed to be linear.
     // @Range: 100 4000
     // @User: Standard
-    AP_GROUPINFO("_THR2RTRSPD",                     19, AC_INDI_Control, _throttle2motor_speed, 1947.7f),
+    AP_GROUPINFO("_THR2RTRSPD",                     19, AC_INDI_Control, _throttle2motor_speed, 3251.0f),
 
     // @Param: _MOTSPD_FILT
     // @DisplayName: RPM filter cutoff
@@ -195,7 +195,7 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @Units: Hz
     // @Range: 2 20
     // @User: Standard    
-    AP_GROUPINFO("_STHRST_FILT",                    21, AC_INDI_Control, _spec_thrust_cmd_filter_cutoff, 2.0f),
+    AP_GROUPINFO("_STHRST_FILT",                    21, AC_INDI_Control, _spec_thrust_cmd_filter_cutoff, 5.0f),
 
 
     // @Param: _YAW_FILT
@@ -282,8 +282,7 @@ void AC_INDI_Control::run_pos_vel_z_controller(float target_alt_m, float meas_al
 */
 void AC_INDI_Control::indi_linear_accel(bool enable_xy, float accel_max_xy_mpss)
 {
-    Vector3f acc_flt;
-    acc_flt = _ahrs.get_accel_ef_blended() + Vector3f(0, 0, GRAVITY_MSS);
+    const Vector3f acc_flt = _ahrs.get_accel_ef_blended() + Vector3f(0, 0, GRAVITY_MSS);
     _spec_thrust_cmd_ned_mpss = _spec_thrust_est_ned_mpss + _lin_acc_target_ned_mpss - acc_flt;
 
     // do not reject disturbance in xy axis if position controller is not active. 
@@ -293,7 +292,7 @@ void AC_INDI_Control::indi_linear_accel(bool enable_xy, float accel_max_xy_mpss)
     }
 
     limit_specific_thrust(accel_max_xy_mpss);
-    
+
     _spec_thrust_cmd_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _spec_thrust_cmd_filter_cutoff);
     _spec_thrust_cmd_ned_mpss = _spec_thrust_cmd_filter.apply(_spec_thrust_cmd_ned_mpss);
 }
@@ -306,22 +305,25 @@ void AC_INDI_Control::limit_specific_thrust(float accel_max_xy)
     float spec_thrust_max;
     spec_thrust_max = sq(_throttle2motor_speed) * _thrust_coefficient * 4.0f / _mass_kg;
 
-    // do not allow magnitude of commanded specific thrust to be greater than maximum specific thrust
-    float sp_th_xyz_len = _spec_thrust_cmd_ned_mpss.length();
-    if ((sp_th_xyz_len > spec_thrust_max) && is_positive(sp_th_xyz_len)) {
-        _spec_thrust_cmd_ned_mpss *= spec_thrust_max / sp_th_xyz_len;
-    }
+    // do not allow z axis acceleration to be bigger than zero
+    // z axis of specific thrust should always be negative in NED frame
+    _spec_thrust_cmd_ned_mpss.z = MIN(_spec_thrust_cmd_ned_mpss.z, -0.001f);
+    
+    // adjust maximum xy accel based on z accel
+    accel_max_xy = MIN(accel_max_xy, fabsf(_spec_thrust_cmd_ned_mpss.z)*accel_max_xy/GRAVITY_MSS);
 
     // scale xy axis command to maximum limit
-    float sp_th_xy_len = norm(_spec_thrust_cmd_ned_mpss.x, _spec_thrust_cmd_ned_mpss.y);
+    float sp_th_xy_len = norm(_spec_thrust_cmd_ned_mpss.x, _spec_thrust_cmd_ned_mpss.y);    
     if ((sp_th_xy_len > accel_max_xy) && is_positive(sp_th_xy_len)) {
         _spec_thrust_cmd_ned_mpss.x *= (accel_max_xy / sp_th_xy_len);
         _spec_thrust_cmd_ned_mpss.y *= (accel_max_xy / sp_th_xy_len);
     }
 
-    // do not allow z axis acceleration to be bigger than zero
-    // z axis of specific thrust should always be negative in NED frame
-    _spec_thrust_cmd_ned_mpss.z = MIN(_spec_thrust_cmd_ned_mpss.z, -GRAVITY_MSS * 0.25f);
+    // do not allow magnitude of commanded specific thrust to be greater than maximum specific thrust
+    float sp_th_xyz_len = _spec_thrust_cmd_ned_mpss.length();
+    if ((sp_th_xyz_len > spec_thrust_max) && is_positive(sp_th_xyz_len)) {
+        _spec_thrust_cmd_ned_mpss *= spec_thrust_max / sp_th_xyz_len;
+    }
 }
 
 // convert specific thrust command to the total thrust 
@@ -457,8 +459,7 @@ void AC_INDI_Control::run_angvel_controller(Vector3f target, Vector3f measurment
 // conceptually this function behaves like an integrator
 void AC_INDI_Control::indi_angular_accel(void)
 {
-    Vector3f ang_acc_flt;
-    ang_acc_flt = _ahrs.get_ang_accel_latest();
+    const Vector3f ang_acc_flt = _ahrs.get_ang_accel_latest();
 
     Matrix3f moment_of_inertia_xyz (
         _moment_inertia_xy_kgm2, 0.0f, 0.0f,
@@ -479,7 +480,14 @@ void AC_INDI_Control::indi_angular_accel(void)
 // TODO: apply scaling to the torque command to correct scaling due to the arducopter control allocation
 void AC_INDI_Control::scale_torque_cmd(void)
 {
-    _torque_cmd_scaled = _torque_cmd_body_Nm;
+    float xy_scale = 2.0f / (4.0f * sq(_throttle2motor_speed) * _thrust_coefficient * _arm_length_m * HALF_SQRT_2);
+    float z_scale = 2.0f / (4.0f * sq(_throttle2motor_speed) * _torque_coefficient );
+
+    z_scale *= 0.1f;    
+
+    _torque_cmd_scaled.x = _torque_cmd_body_Nm.x * xy_scale;
+    _torque_cmd_scaled.y = _torque_cmd_body_Nm.y * xy_scale;
+    _torque_cmd_scaled.z = _torque_cmd_body_Nm.z * z_scale;
 }
 
 // NOT USED: Arducopter control allocation used at the moment.
@@ -614,7 +622,6 @@ void AC_INDI_Control::write_log(void)
 {
     const Vector3f &pos_target = get_pos_target();
     const Vector3f &vel_target = get_vel_target();
-    const Vector3f &lin_accel_target = get_lin_accel_target();
     const Vector3f &position = _inav.get_position()*0.01f;
     const Vector3f &velocity = _inav.get_velocity()*0.01f;
 
@@ -638,10 +645,10 @@ void AC_INDI_Control::write_log(void)
 // @Field: TAZ: Target acceleration, Z-axis
 
     AP::logger().Write("IND1",
-                        "TimeUS,TPX,TPY,TPZ,PX,PY,PZ,TVX,TVY,TVZ,VX,VY,VZ,TAX,TAY,TAZ",
-                        "smmmmmmnnnnnnooo",
-                        "F000000000000000",
-                        "Qfffffffffffffff",
+                        "TimeUS,TPX,TPY,TPZ,PX,PY,PZ,TVX,TVY,TVZ,VX,VY,VZ",
+                        "smmmmmmnnnnnn",
+                        "F000000000000",
+                        "Qffffffffffff",
                         AP_HAL::micros64(),
                         double(pos_target.x),
                         double(pos_target.y),
@@ -654,22 +661,38 @@ void AC_INDI_Control::write_log(void)
                         double(vel_target.z),
                         double(velocity.x),
                         double(velocity.y),
-                        double(velocity.z),
+                        double(velocity.z));
+
+
+    const Vector3f &lin_accel_target = get_lin_accel_target();
+    const Vector3f acc_flt = _ahrs.get_accel_ef_blended() + Vector3f(0, 0, GRAVITY_MSS);
+    AP::logger().Write("IND2",
+                        "TimeUS,TAX,TAY,TAZ,DAX,DAY,DAZ,AX,AY,AZ",
+                        "sooooooooo",
+                        "F000000000",
+                        "Qfffffffff",
+                        AP_HAL::micros64(),
                         double(lin_accel_target.x),
                         double(lin_accel_target.y),
-                        double(lin_accel_target.z));
+                        double(lin_accel_target.z),
+                        double(_lin_acc_desired_ned_mpss.x),
+                        double(_lin_acc_desired_ned_mpss.y),
+                        double(_lin_acc_desired_ned_mpss.z),
+                        double(acc_flt.x),
+                        double(acc_flt.y),
+                        double(acc_flt.z));
+
 
     // log attitude controller  
     // const float &att_target = get_attitude_quad_target().to_euler();
     const Vector3f &ang_vel_target = get_ang_vel_target();
     const Vector3f &ang_acc_target = get_ang_acc_target();
     const Vector3f &ang_vel = _ahrs.get_gyro();
-
-    AP::logger().Write("IND2",
-                        "TimeUS,TPX,TPY,TPZ,PX,PY,PZ,TVX,TVY,TVZ,VX,VY,VZ,TAX,TAY,TAZ",
-                        "smmmmmmnnnnnnLLL",
-                        "F000000000000000",
-                        "Qfffffffffffffff",
+    AP::logger().Write("IND3",
+                        "TimeUS,TPX,TPY,TPZ,PX,PY,PZ,TVX,TVY,TVZ,VX,VY,VZ",
+                        "smmmmmmnnnnnn",
+                        "F000000000000",
+                        "Qffffffffffff",
                         AP_HAL::micros64(),
                         double(get_attitude_quad_target().get_euler_roll() * RAD_TO_DEG),
                         double(get_attitude_quad_target().get_euler_pitch() * RAD_TO_DEG),
@@ -682,15 +705,30 @@ void AC_INDI_Control::write_log(void)
                         double(ang_vel_target.z),
                         double(ang_vel.x),
                         double(ang_vel.y),
-                        double(ang_vel.z),
+                        double(ang_vel.z));
+
+
+    const Vector3f ang_acc_flt = _ahrs.get_ang_accel_latest();
+    AP::logger().Write("IND4",
+                        "TimeUS,TAX,TAY,TAZ,DAX,DAY,DAZ,AX,AY,AZ",
+                        "sLLLLLLLLL",
+                        "F000000000",
+                        "Qfffffffff",
+                        AP_HAL::micros64(),
                         double(ang_acc_target.x),
                         double(ang_acc_target.y),
-                        double(ang_acc_target.z));
+                        double(ang_acc_target.z),
+                        double(_ang_acc_desired_radpss.x),
+                        double(_ang_acc_desired_radpss.y),
+                        double(_ang_acc_desired_radpss.z),
+                        double(ang_acc_flt.x),
+                        double(ang_acc_flt.y),
+                        double(ang_acc_flt.z));
 
 
     // log commanded and estimated specific thrust and torque values
-    AP::logger().Write("IND3",
-                    "TimeUS,sTCx,sTCy,sTCz,sTEx,sTEy,sTEz,TqCx,TqCy,TqCz,TqEx,Tqy,Tqz",
+    AP::logger().Write("IND5",
+                    "TimeUS,STCX,STCY,STCZ,STEX,STEY,STEZ,TCX,TCY,TCZ,TEX,TEY,TEZ",
                     "soooooo------",
                     "F000000000000",
                     "Qffffffffffff",
