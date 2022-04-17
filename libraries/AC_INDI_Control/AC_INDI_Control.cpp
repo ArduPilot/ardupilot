@@ -622,8 +622,8 @@ void AC_INDI_Control::write_log(void)
 {
     const Vector3f &pos_target = get_pos_target();
     const Vector3f &vel_target = get_vel_target();
-    const Vector3f &position = _inav.get_position()*0.01f;
-    const Vector3f &velocity = _inav.get_velocity()*0.01f;
+    const Vector3f &position = _inav.get_position_neu_cm()*0.01f;
+    const Vector3f &velocity = _inav.get_velocity_neu_cms()*0.01f;
 
 // @LoggerMessage: IND1
 // @Description: INDI controller
@@ -690,7 +690,7 @@ void AC_INDI_Control::write_log(void)
     const Vector3f &ang_vel = _ahrs.get_gyro();
     AP::logger().Write("IND3",
                         "TimeUS,TPX,TPY,TPZ,PX,PY,PZ,TVX,TVY,TVZ,VX,VY,VZ",
-                        "smmmmmmnnnnnn",
+                        "sddddddEEEEEE",
                         "F000000000000",
                         "Qffffffffffff",
                         AP_HAL::micros64(),
