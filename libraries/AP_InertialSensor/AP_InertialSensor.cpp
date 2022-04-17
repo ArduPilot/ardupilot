@@ -1634,15 +1634,6 @@ void AP_InertialSensor::update(void)
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
         }
-        for (uint8_t i=0; i<_gyro_count; i++) {
-            const bool converging = AP_HAL::millis() < HAL_INS_CONVERGANCE_MS;
-            const float gyro_rate = _gyro_raw_sample_rates[i];
-            for (auto &notch : harmonic_notches) {
-                if (notch.params.enabled()) {
-                    notch.update_params(i, converging, gyro_rate);
-                }
-            }
-        }
 
         if (!_startup_error_counts_set) {
             for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
