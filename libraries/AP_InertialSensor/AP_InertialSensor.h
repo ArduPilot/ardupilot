@@ -446,9 +446,9 @@ public:
         
     private:
         // support for updating harmonic filter at runtime
-        float last_center_freq_hz;
-        float last_bandwidth_hz;
-        float last_attenuation_dB;
+        float last_center_freq_hz[INS_MAX_INSTANCES];
+        float last_bandwidth_hz[INS_MAX_INSTANCES];
+        float last_attenuation_dB[INS_MAX_INSTANCES];
     } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
 
 private:
