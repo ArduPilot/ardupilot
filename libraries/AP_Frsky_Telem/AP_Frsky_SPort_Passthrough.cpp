@@ -1,5 +1,7 @@
 #include "AP_Frsky_SPort_Passthrough.h"
 
+#if AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -966,3 +968,5 @@ AP_Frsky_SPort_Passthrough *frsky_passthrough_telem()
     return AP_Frsky_SPort_Passthrough::get_singleton();
 }
 };
+
+#endif  // AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
