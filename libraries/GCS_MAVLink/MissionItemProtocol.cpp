@@ -54,6 +54,11 @@ void MissionItemProtocol::handle_mission_count(
         return;
     }
 
+    if (read_only()) {
+        send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+        return;
+    }
+
     if (receiving) {
         // someone is already uploading a mission.  If we are
         // receiving from someone then we will allow them to restart -
@@ -193,6 +198,10 @@ void MissionItemProtocol::handle_mission_write_partial_list(GCS_MAVLINK &_link,
                                                             const mavlink_message_t &msg,
                                                             const mavlink_mission_write_partial_list_t &packet)
 {
+    if (read_only()) {
+        send_mission_ack(_link, msg, MAV_MISSION_DENIED);
+        return;
+    }
 
     // start waypoint receiving
     if ((unsigned)packet.start_index > item_count() ||
@@ -216,6 +225,11 @@ void MissionItemProtocol::handle_mission_item(const mavlink_message_t &msg, cons
 {
     if (link == nullptr) {
         INTERNAL_ERROR(AP_InternalError::error_t::gcs_bad_missionprotocol_link);
+        return;
+    }
+
+    if (read_only()) {
+        send_mission_ack(msg, MAV_MISSION_DENIED);
         return;
     }
 
@@ -327,7 +341,7 @@ void MissionItemProtocol::queued_request_send()
 
 void MissionItemProtocol::update()
 {
-    if (!receiving) {
+    if (!receiving || read_only()) {
         // we don't need to do anything unless we're sending requests
         return;
     }
