@@ -139,7 +139,7 @@ protected:
     AP_Float    _torque_coefficient;            // torque coefficient in Nm/(rad/s)²
     AP_Float    _motor_moment_inertia_kgm2;     // moment of inertia of motor and propellar !!! became redundant check _yaw_rate_filter 
     AP_Float    _throttle2motor_speed;          // coefficient between scaled throttle(between 0-1) command and motor speed in rad/s 
-    AP_Float    _rpm_filter_cutoff;             // rpm filter cutoff frequency in Hz
+    AP_Float    _motor_speed_filter_cutoff;             // rpm filter cutoff frequency in Hz
     AP_Float    _spec_thrust_cmd_filter_cutoff; // specific thrust command filter cutoff frequency in Hz
     AP_Float    _yaw_rate_filter_cutoff;        // torque command filter cutoff frequency in Hz
 
@@ -166,7 +166,7 @@ protected:
     float _motor_cmd_scaled[4];                 // scaled motor command 0-1 !!!NOT USED
     float _motor_speed_meas_radps[4];           // current motor speed in rad/s
 
-    LowPassFilter2pFloat _rpm_filter[4];
+    LowPassFilter2pFloat _motor_speed_filter[4];
     LowPassFilterVector3f _spec_thrust_cmd_filter;
     LowPassFilterFloat _yaw_rate_filter;
 private:

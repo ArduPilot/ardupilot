@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_BLHeli/AP_BLHeli.h>
 
 #include "AC_INDI_Control.h"
 
@@ -180,13 +181,13 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_THR2RTRSPD",                     19, AC_INDI_Control, _throttle2motor_speed, 1947.7f),
 
-    // @Param: _RPM_FILTER
+    // @Param: _MOTSPD_FILT
     // @DisplayName: RPM filter cutoff
     // @Description: Second order low pass filter applied to the each motor rpm measurment
     // @Units: Hz
     // @Range: 50 1000
     // @User: Standard
-    AP_GROUPINFO("_RPM_FILTER",                     20, AC_INDI_Control, _rpm_filter_cutoff, 1000.0f),
+    AP_GROUPINFO("_MOTSPD_FILT",                     20, AC_INDI_Control, _motor_speed_filter_cutoff, 40.0f),
 
     // @Param: _STHRST_FILT
     // @DisplayName: Specific thrust command filter
@@ -197,13 +198,13 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     AP_GROUPINFO("_STHRST_FILT",                    21, AC_INDI_Control, _spec_thrust_cmd_filter_cutoff, 2.0f),
 
 
-    // @Param: _YAW_FILTER
+    // @Param: _YAW_FILT
     // @DisplayName: Toruqe command z axis filter
     // @Description: First order low pass filter applied to the z axis of toruqe command. This is compansate for the mechanical D-term of yaw axis. 
     // @Units: Hz
     // @Range: 2 20
     // @User: Standard    
-    AP_GROUPINFO("_YAW_FILTER",                     22, AC_INDI_Control, _yaw_rate_filter_cutoff, 3.0f),
+    AP_GROUPINFO("_YAW_FILT",                     22, AC_INDI_Control, _yaw_rate_filter_cutoff, 3.0f),
     
     AP_GROUPEND
 };
@@ -524,15 +525,41 @@ void AC_INDI_Control::control_allocation(void)
 }
 
 // get current rotation speed of each motor in rad/s
-// TODO: add access to AP_RPM library for SITL, BlHeli
-// and UAVCAN ESC for real flight test
 void AC_INDI_Control::get_motor_speed(void) 
 {
-    float motor_speed_rpm[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // somehow firs element of this variable assigned nan value at start
-    AP::rpm()->get_rpms(0, motor_speed_rpm);
+    float motor_speed_hz[4] = {0.0f, 0.0f, 0.0f, 0.0f}; // somehow firs element of this variable assigned nan value at start
+
+#ifdef HAVE_AP_BLHELI_SUPPORT
+    // get motor rotation speed telemetry
+    float esc_freq_hz[4] = {0.0f, 0.0f, 0.0f, 0.0f};    
+    AP_BLHeli::get_singleton()->get_motor_frequencies_hz(4, esc_freq_hz);
+
+    // map esc servo order to quad x frame order
+    float temp[4] = {0.0f, 0.0f, 0.0f, 0.0f};
     for (uint8_t i=0; i < 4; i++) {
-        _rpm_filter[i].set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _rpm_filter_cutoff);
-        _motor_speed_meas_radps[i] = _rpm_filter[i].apply(motor_speed_rpm[i]) * M_2PI / 60.0f ;
+        uint8_t chan;
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        SRV_Channels::find_channel(function, chan);
+        temp[i] = esc_freq_hz[chan];
+    }
+
+    // change quad x frame order so that motor order start from top right and increases counter clockwise
+    // TODO: add support for different frame type and configuration
+    motor_speed_hz[0] = temp[0];
+    motor_speed_hz[1] = temp[3];
+    motor_speed_hz[2] = temp[1];
+    motor_speed_hz[3] = temp[2];
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    float motor_speed_rpm[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    AP::rpm()->get_rpms(0, motor_speed_rpm);
+    for (int i=0; i<4; i++) {
+        motor_speed_hz[i] = motor_speed_rpm[i] / 60.0f;
+    }
+#endif
+    for (uint8_t i=0; i < 4; i++) {
+        _motor_speed_filter[i].set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _motor_speed_filter_cutoff);
+        _motor_speed_meas_radps[i] = _motor_speed_filter[i].apply(motor_speed_hz[i]) * M_2PI;
     }    
 }
 
