@@ -181,13 +181,21 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_THR2RTRSPD",                     19, AC_INDI_Control, _throttle2motor_speed, 3251.0f),
 
-    // @Param: _MOTSPD_FILT
-    // @DisplayName: RPM filter cutoff
-    // @Description: Second order low pass filter applied to the each motor rpm measurment
+    // @Param: _TRQEST_FILT
+    // @DisplayName: Torque estimate cutoff frequency in Hz
+    // @Description: First order low pass filter applied to the torque estimation
     // @Units: Hz
-    // @Range: 50 1000
+    // @Range: 20 100
     // @User: Standard
-    AP_GROUPINFO("_MOTSPD_FILT",                     20, AC_INDI_Control, _motor_speed_filter_cutoff, 40.0f),
+    AP_GROUPINFO("_TRQEST_FILT",                     20, AC_INDI_Control, _torque_est_filter_cutoff, 30.0f),
+
+    // @Param: _STHEST_FILT
+    // @DisplayName: Specific thrust cutoff frequency in Hz
+    // @Description: Second order low pass filter applied to the specific thrust estimation
+    // @Units: Hz
+    // @Range: 10 50
+    // @User: Standard
+    AP_GROUPINFO("_STHEST_FILT",                     20, AC_INDI_Control, _spec_thrust_est_filter_cutoff, 20.0f),
 
     // @Param: _STHRST_FILT
     // @DisplayName: Specific thrust command filter
@@ -195,7 +203,7 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
     // @Units: Hz
     // @Range: 2 20
     // @User: Standard    
-    AP_GROUPINFO("_STHRST_FILT",                    21, AC_INDI_Control, _spec_thrust_cmd_filter_cutoff, 5.0f),
+    AP_GROUPINFO("_STHRST_FILT",                    21, AC_INDI_Control, _spec_thrust_cmd_filter_cutoff, 3.0f),
 
 
     // @Param: _YAW_FILT
@@ -212,16 +220,16 @@ const AP_Param::GroupInfo AC_INDI_Control::var_info[] = {
 AC_INDI_Control::AC_INDI_Control(AP_AHRS_View& ahrs, const AP_InertialNav& inav) :
     _ahrs(ahrs),
     _inav(inav),
-    _p_pos_xy(1.5),
-    _p_vel_xy(6),
-    _p_pos_z(2.25),
-    _p_vel_z(9),
-    _p_angle_x(10),
-    _p_ang_rate_x(40),
-    _p_angle_y(10),
-    _p_ang_rate_y(40),
-    _p_angle_z(5),
-    _p_ang_rate_z(20)
+    _p_pos_xy(1),
+    _p_vel_xy(4),
+    _p_pos_z(1),
+    _p_vel_z(4),
+    _p_angle_x(7.5),
+    _p_ang_rate_x(30),
+    _p_angle_y(7.5),
+    _p_ang_rate_y(30),
+    _p_angle_z(6),
+    _p_ang_rate_z(24)
 {
     if (_singleton) {
         AP_HAL::panic("Too many AC_INDI_Control instances");
@@ -566,8 +574,7 @@ void AC_INDI_Control::get_motor_speed(void)
     }
 #endif
     for (uint8_t i=0; i < 4; i++) {
-        _motor_speed_filter[i].set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _motor_speed_filter_cutoff);
-        _motor_speed_meas_radps[i] = _motor_speed_filter[i].apply(motor_speed_hz[i]) * M_2PI;
+        _motor_speed_meas_radps[i] = motor_speed_hz[i] * M_2PI;
     }    
 }
 
@@ -611,10 +618,13 @@ void AC_INDI_Control::calculate_torque_thrust_est(void)
        cmd[i] *= _thrust_coefficient;
     }
 
-    _torque_est_body_Nm = Vector3f(cmd[0], cmd[1], cmd[2]);
+    // filter torque estimate
+    _torque_est_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _torque_est_filter_cutoff);
+    _torque_est_body_Nm = _torque_est_filter.apply(Vector3f(cmd[0], cmd[1], cmd[2]));
     
-    // rotate thrust vector from body to NED frame
-    _spec_thrust_est_ned_mpss = _ahrs.get_rotation_body_to_ned() * Vector3f(0, 0, cmd[3] / _mass_kg) ;
+    // filter specific thrust estimate and rotate specific thrust vector from body to NED frame
+    _spec_thrust_est_filter.set_cutoff_frequency(AP::scheduler().get_loop_rate_hz(), _spec_thrust_est_filter_cutoff);
+    _spec_thrust_est_ned_mpss = _ahrs.get_rotation_body_to_ned() * Vector3f(0, 0, _spec_thrust_est_filter.apply(cmd[3] / _mass_kg)) ;
 }
 
 
