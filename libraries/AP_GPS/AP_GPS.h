@@ -594,6 +594,7 @@ protected:
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
         HeightEllipsoid   = (1U << 4),
+        Forward_RTCM_over_MAVLINK = (1 << 5U),
     };
 
     // check if an option is set
@@ -744,6 +745,12 @@ private:
 
     // logging support
     void Write_GPS(uint8_t instance);
+
+    // send RTCM data over mavlink
+#if GPS_MOVING_BASELINE && !defined(HAL_BUILD_AP_PERIPH)
+    void send_mavlink_RTCM(const uint8_t *data, uint16_t len);
+    uint8_t rtcm_output_sequence;
+#endif
 
 };
 

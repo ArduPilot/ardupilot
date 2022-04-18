@@ -309,7 +309,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL for uBlox driver
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL for uBlox driver,5: Broadcast RTCM corrections over MAVLink (may use lots of bandwidth)
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
@@ -928,10 +928,15 @@ void AP_GPS::update_instance(uint8_t instance)
                 if (i != instance && _type[i] == GPS_TYPE_UBLOX_RTK_ROVER) {
                     // pass the data to the rover
                     inject_data(i, rtcm_data, rtcm_len);
-                    drivers[instance]->clear_RTCMV3();
                     break;
                 }
             }
+#if GPS_MOVING_BASELINE && !defined(HAL_BUILD_AP_PERIPH)
+            if (option_set(DriverOptions::Forward_RTCM_over_MAVLINK)) {
+                send_mavlink_RTCM(rtcm_data, rtcm_len);
+            }
+#endif
+            drivers[instance]->clear_RTCMV3();
         }
     }
 #endif
@@ -2162,6 +2167,47 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     }
     return true;
 }
+
+#if GPS_MOVING_BASELINE && !defined(HAL_BUILD_AP_PERIPH)
+void AP_GPS::send_mavlink_RTCM(const uint8_t *data, uint16_t len)
+{
+    // Based on Mission Planner implmentation
+    // https://github.com/ArduPilot/MissionPlanner/blob/f64a63ff440b68987be91acd892ca55ba84d83e8/ExtLibs/ArduPilot/Mavlink/MAVLinkInterface.cs#L3637
+
+    uint8_t packets = (len / MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) + 1;
+    if ((len % MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) == 0) {
+        packets -= 1;
+    }
+
+    uint16_t offest = 0;
+    for (uint8_t i = 0; i<packets; i++) {
+        mavlink_gps_rtcm_data_t packet {};
+
+        if (packets > 1) {
+            // multiple messages
+            packet.flags |= 1U;
+        }
+
+        // fragment number
+        packet.flags |= i << 1U;
+
+        // sequence number
+        packet.flags |= rtcm_output_sequence << 3U;
+
+        // copy data and set lenght
+        packet.len = MIN(MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN, len-offest);
+        memcpy(packet.data, data+offest, packet.len);
+        offest += packet.len;
+
+        gcs().send_to_active_channels(MAVLINK_MSG_ID_GPS_RTCM_DATA, (const char *)&packet);
+    }
+
+    rtcm_output_sequence += 1;
+    if (rtcm_output_sequence > 0b11111) {
+        rtcm_output_sequence = 0;
+    }
+}
+#endif // GPS_MOVING_BASELINE && !defined(HAL_BUILD_AP_PERIPH)
 
 namespace AP {
 
