@@ -83,10 +83,7 @@ PD15 VDD_3V3_SENSORS2_EN OUTPUT HIGH
 PE7 VDD_3V3_SENSORS3_EN OUTPUT HIGH
 PG8 VDD_3V3_SENSORS4_EN OUTPUT HIGH
 
-# start peripheral power off, then enable after init
-# this prevents a problem with radios that use RTS for
-# bootloader hold
-PF12 nVDD_5V_HIPOWER_EN OUTPUT HIGH
+PF12 VDD_5V_HIPOWER_EN OUTPUT HIGH
 
 # drdy pins
 PF2  DRDY4_ICM20602 INPUT
