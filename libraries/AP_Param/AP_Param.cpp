@@ -2855,7 +2855,7 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
     invalidate_count();
 
     // save the CRC
-    AP_Int32 *crc_param = const_cast<AP_Int32 *>((AP_Int32 *)info.ptr);
+    AP_Int32 *crc_param = const_cast<AP_Int32 *>((const AP_Int32 *)info.ptr);
     crc_param->set(crc);
     crc_param->save(true);
 
