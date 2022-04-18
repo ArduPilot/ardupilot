@@ -195,7 +195,7 @@ bool AC_PolyFence_loader::load_point_from_eeprom(uint16_t i, Vector2l& point) co
 
 bool AC_PolyFence_loader::breached() const
 {
-    struct Location loc;
+    class Location loc;
     if (!AP::ahrs().get_location(loc)) {
         return false;
     }
@@ -637,7 +637,7 @@ bool AC_PolyFence_loader::load_from_eeprom()
         return _load_time_ms != 0;
     }
 
-    struct Location ekf_origin{};
+    class Location ekf_origin{};
     if (!AP::ahrs().get_origin(ekf_origin)) {
 //        Debug("fence load requires origin");
         return false;
