@@ -2763,7 +2763,7 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
     // find existing key (allows for script reload)
     uint8_t i;
     for (i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
-        auto &info = _var_info_dynamic[i];
+        auto const &info = _var_info_dynamic[i];
         if (info.type != AP_PARAM_NONE && info.key == key) {
             if (_dynamic_table_sizes[i] != 0 &&
                 num_params > _dynamic_table_sizes[i]) {
@@ -2782,7 +2782,7 @@ bool AP_Param::add_table(uint8_t _key, const char *prefix, uint8_t num_params)
     if (i == AP_PARAM_MAX_DYNAMIC) {
         // find an unused slot
         for (i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
-            auto &info = _var_info_dynamic[i];
+            auto const &info = _var_info_dynamic[i];
             if (info.type == AP_PARAM_NONE ) {
                 break;
             }
@@ -2899,7 +2899,7 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     // find the info
     uint8_t i;
     for (i=0; i<AP_PARAM_MAX_DYNAMIC; i++) {
-        auto &info = _var_info_dynamic[i];
+        auto const &info = _var_info_dynamic[i];
         if (info.key == key) {
             break;
         }
