@@ -24,7 +24,7 @@ void Location::zero(void)
     memset(this, 0, sizeof(*this));
 }
 
-// Construct location using position (NEU) from ekf_origin for the given altitude frame
+// Conclass Location using position (NEU) from ekf_origin for the given altitude frame
 Location::Location(int32_t latitude, int32_t longitude, int32_t alt_in_cm, AltFrame frame)
 {
     zero();
@@ -237,7 +237,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
 }
 
 // return distance in meters between two locations
-ftype Location::get_distance(const struct Location &loc2) const
+ftype Location::get_distance(const class Location &loc2) const
 {
     ftype dlat = (ftype)(loc2.lat - lat);
     ftype dlng = ((ftype)diff_longitude(loc2.lng,lng)) * longitude_scale((lat+loc2.lat)/2);
@@ -245,7 +245,7 @@ ftype Location::get_distance(const struct Location &loc2) const
 }
 
 // return the altitude difference in meters taking into account alt frame.
-bool Location::get_alt_distance(const struct Location &loc2, ftype &distance) const
+bool Location::get_alt_distance(const class Location &loc2, ftype &distance) const
 {
     int32_t alt1, alt2;
     if (!get_alt_cm(AltFrame::ABSOLUTE, alt1) || !loc2.get_alt_cm(AltFrame::ABSOLUTE, alt2)) {
@@ -377,7 +377,7 @@ assert_storage_size<Location, 16> _assert_storage_size_Location;
 
 
 // return bearing in radians from location to loc2, return is 0 to 2*Pi
-ftype Location::get_bearing(const struct Location &loc2) const
+ftype Location::get_bearing(const class Location &loc2) const
 {
     const int32_t off_x = diff_longitude(loc2.lng,lng);
     const int32_t off_y = (loc2.lat - lat) / loc2.longitude_scale((lat+loc2.lat)/2);
