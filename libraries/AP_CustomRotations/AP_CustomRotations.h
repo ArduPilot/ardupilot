@@ -32,7 +32,7 @@ public:
 
 class AP_CustomRotation {
 public:
-    AP_CustomRotation(AP_CustomRotation_params _params);
+    AP_CustomRotation(AP_CustomRotation_params &_params);
 
     void init();
 
