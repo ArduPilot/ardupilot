@@ -43,6 +43,6 @@
 [submodule "modules/cyphal/o1heap"]
 	path = modules/cyphal/o1heap
 	url = https://github.com/pavel-kirienko/o1heap.git
-[submodule "modules/cyphal/nunavut_c_headers"]
-	path = modules/cyphal/nunavut_c_headers
-	url = https://github.com/PonomarevDA/nunavut_c_headers.git
+[submodule "modules/cyphal/nunavut"]
+	path = modules/cyphal/nunavut
+	url = https://github.com/OpenCyphal/nunavut.git

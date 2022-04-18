@@ -451,6 +451,7 @@ def configure(cfg):
         cfg.load('dronecangen')
     else:
         cfg.load('uavcangen')
+    cfg.load('cyphalgen')
 
     cfg.env.SUBMODULE_UPDATE = cfg.options.submodule_update
 
@@ -638,15 +639,23 @@ def _build_dynamic_sources(bld):
 
     if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
         bld(
+            features='cyphalgen',
+            source=bld.srcnode.ant_glob('modules/cyphal/public_regulated_data_types/reg', dir=True, src=False),
+            output_dir='modules/cyphal/nunavut_out',
+            name='cyphal',
+            export_includes=[
+                bld.bldnode.make_node('modules/cyphal/nunavut_out').abspath(),
+                bld.srcnode.find_dir('modules/cyphal/libcanard/libcanard').abspath(),
+                bld.srcnode.find_dir('modules/cyphal/o1heap/o1heap').abspath(),
+            ]
+        )
+        bld(
             features='uavcangen',
             source=bld.srcnode.ant_glob('modules/DroneCAN/DSDL/* libraries/AP_UAVCAN/dsdl/*', dir=True, src=False),
             output_dir='modules/uavcan/libuavcan/include/dsdlc_generated',
             name='uavcan',
             export_includes=[
                 bld.bldnode.make_node('modules/uavcan/libuavcan/include/dsdlc_generated').abspath(),
-                bld.srcnode.find_dir('modules/cyphal/libcanard/libcanard').abspath(),
-                bld.srcnode.find_dir('modules/cyphal/o1heap/o1heap').abspath(),
-                bld.srcnode.find_dir('modules/cyphal/nunavut_c_headers').abspath(),
                 bld.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
             ]
         )
@@ -786,6 +795,7 @@ def build(bld):
 
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['cyphal']
     if bld.env.AP_PERIPH:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
