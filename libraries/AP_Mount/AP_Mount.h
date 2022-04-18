@@ -121,8 +121,8 @@ public:
     void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
-    void set_roi_target(uint8_t instance, const struct Location &target_loc);
+    void set_roi_target(const class Location &target_loc) { set_roi_target(_primary,target_loc); }
+    void set_roi_target(uint8_t instance, const class Location &target_loc);
 
     // point at system ID sysid
     void set_target_sysid(uint8_t instance, const uint8_t sysid);
@@ -183,7 +183,7 @@ protected:
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
-        struct Location _roi_target;        // roi target location
+        class Location _roi_target;        // roi target location
         bool _roi_target_set;
 
         uint8_t _target_sysid;           // sysid to track
