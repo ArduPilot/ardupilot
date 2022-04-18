@@ -113,7 +113,7 @@ public:
 
     // get our current position estimate. Return true if a position is available,
     // otherwise false. This call fills in lat, lng and alt
-    virtual bool get_location(struct Location &loc) const WARN_IF_UNUSED = 0;
+    virtual bool get_location(class Location &loc) const WARN_IF_UNUSED = 0;
 
     // get latest altitude estimate above ground level in meters and validity flag
     virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
@@ -201,10 +201,10 @@ public:
     }
 
     //
-    virtual bool set_origin(const struct Location &loc) {
+    virtual bool set_origin(const class Location &loc) {
         return false;
     }
-    virtual bool get_origin(struct Location &ret) const = 0;
+    virtual bool get_origin(class Location &ret) const = 0;
 
     // return a position relative to origin in meters, North/East/Down
     // order. This will only be accurate if have_inertial_nav() is
