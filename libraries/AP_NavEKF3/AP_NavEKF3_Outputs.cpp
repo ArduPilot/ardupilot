@@ -216,7 +216,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
             auto &gps = dal.gps();
             if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const struct Location &gpsloc = gps.location(selected_gps);
+                const class Location &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
                 return false;
             } else if (rngBcnAlignmentStarted) {
@@ -271,7 +271,7 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 // If a calculated location isn't available, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
-bool NavEKF3_core::getLLH(struct Location &loc) const
+bool NavEKF3_core::getLLH(class Location &loc) const
 {
     Location origin;
     if (getOriginLLH(origin)) {
@@ -317,7 +317,7 @@ bool NavEKF3_core::getLLH(struct Location &loc) const
     }
 }
 
-bool NavEKF3_core::getGPSLLH(struct Location &loc) const
+bool NavEKF3_core::getGPSLLH(class Location &loc) const
 {
     const auto &gps = dal.gps();
     if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
@@ -350,7 +350,7 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 
 
 // return the LLH location of the filters NED origin
-bool NavEKF3_core::getOriginLLH(struct Location &loc) const
+bool NavEKF3_core::getOriginLLH(class Location &loc) const
 {
     if (validOrigin) {
         loc = public_origin;
