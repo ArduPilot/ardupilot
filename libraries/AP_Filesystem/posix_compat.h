@@ -50,7 +50,9 @@ long apfs_ftell(APFS_FILE *stream);
 APFS_FILE *apfs_freopen(const char *pathname, const char *mode, APFS_FILE *stream);
 int apfs_remove(const char *pathname);
 int apfs_rename(const char *oldpath, const char *newpath);
+#if (!(defined(__APPLE__) || defined(__linux__) || defined(__unix__)))
 char *tmpnam(char *s);
+#endif
 
 #undef stdin
 #undef stdout
