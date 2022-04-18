@@ -17,7 +17,7 @@
  */
 
 /*
- *  this module deals with calculations involving struct Location
+ *  this module deals with calculations involving class Location
  */
 #include <stdlib.h>
 #include "AP_Math.h"
