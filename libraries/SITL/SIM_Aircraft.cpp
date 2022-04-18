@@ -483,11 +483,19 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 // is bouncing off:
 float Aircraft::perpendicular_distance_to_rangefinder_surface() const
 {
-    return sitl->height_agl;
+    switch ((Rotation)sitl->sonar_rot.get()) {
+    case Rotation::ROTATION_PITCH_270:
+        return sitl->height_agl;
+    case ROTATION_NONE ... ROTATION_YAW_315:
+        return sitl->measure_distance_at_angle_bf(location, sitl->sonar_rot.get()*45);
+    default:
+        AP_BoardConfig::config_error("Bad simulated sonar rotation");
+    }
 }
 
 float Aircraft::rangefinder_range() const
 {
+
     float roll = sitl->state.rollDeg;
     float pitch = sitl->state.pitchDeg;
 
@@ -524,6 +532,7 @@ float Aircraft::rangefinder_range() const
     // sensor position offset in body frame
     const Vector3f relPosSensorBF = sitl->rngfnd_pos_offset;
 
+    // n.b. the following code is assuming rotation-pitch-270:
     // adjust altitude for position of the sensor on the vehicle if position offset is non-zero
     if (!relPosSensorBF.is_zero()) {
         // get a rotation matrix following DCM conventions (body to earth)

@@ -181,6 +181,7 @@ public:
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
+    AP_Int8 sonar_rot;  // from rotations enumeration
 
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
@@ -446,6 +447,8 @@ public:
 
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);
+
+    float measure_distance_at_angle_bf(const Location &location, float angle) const;
 
     // get the apparent wind speed and direction as set by external physics backend
     float get_apparent_wind_dir() const{return state.wind_vane_apparent.direction;}
