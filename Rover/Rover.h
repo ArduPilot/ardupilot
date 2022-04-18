@@ -173,7 +173,7 @@ private:
     RC_Channels_Rover &rc() { return g2.rc_channels; }
 
     // The rover's current location
-    struct Location current_loc;
+    class Location current_loc;
 
     // Camera
 #if CAMERA == ENABLED
