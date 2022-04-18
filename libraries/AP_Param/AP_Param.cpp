@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <string.h>
+#include <memory>
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -2919,8 +2920,8 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
     }
 
     // check CRC
-    auto &hinfo = const_cast<GroupInfo*>(info.group_info)[0];
-    const int32_t crc = *(const int32_t *)(&hinfo.def_value);
+    auto &hinfo = (info.group_info)[0];
+    const auto crc = *(const int32_t *)std::addressof(hinfo.def_value);
 
     int32_t current_crc;
     if (load_int32(key, 0, current_crc) && current_crc != crc) {
