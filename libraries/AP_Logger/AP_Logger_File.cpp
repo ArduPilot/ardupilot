@@ -201,6 +201,29 @@ int64_t AP_Logger_File::disk_space()
     return AP::FS().disk_space(_log_directory);
 }
 
+/*
+  convert a dirent to a log number
+ */
+bool AP_Logger_File::dirent_to_log_num(const dirent *de, uint16_t &log_num) const
+{
+    uint8_t length = strlen(de->d_name);
+    if (length < 5) {
+        return false;
+    }
+    if (strncmp(&de->d_name[length-4], ".BIN", 4) != 0) {
+        // doesn't end in .BIN
+        return false;
+    }
+
+    uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
+    if (thisnum > MAX_LOG_FILES) {
+        return false;
+    }
+    log_num = thisnum;
+    return true;
+}
+
+
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
 uint16_t AP_Logger_File::find_oldest_log()
@@ -230,19 +253,9 @@ uint16_t AP_Logger_File::find_oldest_log()
     EXPECT_DELAY_MS(3000);
     for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
         EXPECT_DELAY_MS(3000);
-        uint8_t length = strlen(de->d_name);
-        if (length < 5) {
-            // not long enough for \d+[.]BIN
-            continue;
-        }
-        if (strncmp(&de->d_name[length-4], ".BIN", 4) != 0) {
-            // doesn't end in .BIN
-            continue;
-        }
-
-        uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
-        if (thisnum > MAX_LOG_FILES) {
-            // ignore files above our official maximum...
+        uint16_t thisnum;
+        if (!dirent_to_log_num(de, thisnum)) {
+            // not a log filename
             continue;
         }
         if (current_oldest_log == 0) {
@@ -661,29 +674,39 @@ void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
 }
 
 
-
 /*
   get the number of logs - note that the log numbers must be consecutive
  */
 uint16_t AP_Logger_File::get_num_logs()
 {
-    uint16_t ret = 0;
+    auto *d = AP::FS().opendir(_log_directory);
+    if (d == nullptr) {
+        return 0;
+    }
     uint16_t high = find_last_log();
-    uint16_t i;
-    for (i=high; i>0; i--) {
-        if (! log_exists(i)) {
-            break;
+    uint16_t ret = high;
+    uint16_t smallest = high;
+    uint16_t smallest_above_last = 0;
+
+    EXPECT_DELAY_MS(2000);
+    for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
+        EXPECT_DELAY_MS(100);
+        uint16_t thisnum;
+        if (!dirent_to_log_num(de, thisnum)) {
+            // not a log filename
+            continue;
         }
-        ret++;
-    }
-    if (i == 0) {
-        for (i=MAX_LOG_FILES; i>high; i--) {
-            if (! log_exists(i)) {
-                break;
-            }
-            ret++;
+        smallest = MIN(smallest, thisnum);
+        if (thisnum > high && (smallest_above_last != 0 || thisnum < smallest_above_last)) {
+            smallest_above_last = thisnum;
         }
     }
+    AP::FS().closedir(d);
+    if (smallest_above_last != 0) {
+        // we have wrapped, add in the logs with high numbers
+        ret += (MAX_LOG_FILES - smallest_above_last) + 1;
+    }
+
     return ret;
 }
 
