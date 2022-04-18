@@ -2081,7 +2081,7 @@ bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const
 void AP_GPS::Write_GPS(uint8_t i)
 {
     const uint64_t time_us = AP_HAL::micros64();
-    const struct Location &loc = location(i);
+    const class Location &loc = location(i);
 
     float yaw_deg=0, yaw_accuracy_deg=0;
     uint32_t yaw_time_ms;
