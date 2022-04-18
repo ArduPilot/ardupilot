@@ -247,7 +247,7 @@ void AP_Scripting::thread(void) {
             }
             // must be enabled to get this far
             if (cleared || _restart) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restated");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restarted");
                 break;
             }
             if ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {
