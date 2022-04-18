@@ -491,7 +491,7 @@ void GCS_MAVLINK_Tracker::handleMessage(const mavlink_message_t &msg)
 
         mavlink_msg_mission_item_decode(&msg, &packet);
 
-        struct Location tell_command;
+        class Location tell_command;
 
         switch (packet.frame)
         {
