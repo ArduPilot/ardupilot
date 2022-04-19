@@ -509,6 +509,33 @@ RCOutput::pwm_group *RCOutput::find_chan(uint8_t chan, uint8_t &group_idx)
     return nullptr;
 }
 
+/*
+ * return mask of channels that must be disabled because they share a group with a digital channel
+ */
+uint16_t RCOutput::get_disabled_channels(uint16_t digital_mask)
+{
+    uint16_t dmask = (digital_mask >> chan_offset);
+    uint16_t disabled_chan_mask = 0;
+    for (auto &group : pwm_group_list) {
+        bool digital_group = false;
+        for (uint8_t j = 0; j < 4; j++) {
+            if ((1U << group.chan[j]) & dmask) {
+                digital_group = true;
+            }
+        }
+        if (digital_group) {
+            for (uint8_t j = 0; j < 4; j++) {
+                if (!((1U << group.chan[j]) & dmask)) {
+                    disabled_chan_mask |= (1U << group.chan[j]);
+                }
+            }
+        }
+    }
+
+    disabled_chan_mask <<= chan_offset;
+    return disabled_chan_mask;
+}
+
 uint16_t RCOutput::get_freq(uint8_t chan)
 {
 #if HAL_WITH_IO_MCU
