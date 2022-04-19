@@ -3207,14 +3207,6 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 #endif
 }
 
-/*
-  get the current view's rotation, or ROTATION_NONE
- */
-enum Rotation AP_AHRS::get_view_rotation(void) const
-{
-    return _view?_view->get_rotation():ROTATION_NONE;
-}
-
 // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
 const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
 {

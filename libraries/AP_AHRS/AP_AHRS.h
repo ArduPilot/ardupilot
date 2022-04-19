@@ -609,8 +609,8 @@ public:
         _vehicle_class = vclass;
     }
 
-    // get the view's rotation, or ROTATION_NONE
-    enum Rotation get_view_rotation(void) const;
+    // get the view
+    AP_AHRS_View *get_view(void) const { return _view; };
 
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
