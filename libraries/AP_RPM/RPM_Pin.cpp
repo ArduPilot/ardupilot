@@ -50,22 +50,24 @@ void AP_RPM_Pin::update(void)
 {
     if (last_pin != get_pin()) {
         // detach from last pin
-        if (last_pin != (uint8_t)-1 &&
-            !hal.gpio->detach_interrupt(last_pin)) {
-            gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to detach from pin %u", last_pin);
-            // ignore this failure or the user may be stuck
+        if (interrupt_attached) {
+            // ignore this failure of the user may be stuck
+            IGNORE_RETURN(hal.gpio->detach_interrupt(last_pin));
+            interrupt_attached = false;
         }
         irq_state[state.instance].dt_count = 0;
         irq_state[state.instance].dt_sum = 0;
         // attach to new pin
         last_pin = get_pin();
-        if (last_pin) {
+        if (last_pin > 0) {
             hal.gpio->pinMode(last_pin, HAL_GPIO_INPUT);
-            if (!hal.gpio->attach_interrupt(
+            if (hal.gpio->attach_interrupt(
                     last_pin,
                     FUNCTOR_BIND_MEMBER(&AP_RPM_Pin::irq_handler, void, uint8_t, bool, uint32_t),
                     AP_HAL::GPIO::INTERRUPT_RISING)) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %u", last_pin);
+                interrupt_attached = true;
+            } else {
+                gcs().send_text(MAV_SEVERITY_WARNING, "RPM: Failed to attach to pin %d", last_pin);
             }
         }
     }
