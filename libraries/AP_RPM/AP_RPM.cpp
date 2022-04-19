@@ -248,11 +248,16 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
         case RPM_TYPE_PWM:
         case RPM_TYPE_PIN:
             if (_params[i].pin == -1) {
-                hal.util->snprintf(buffer, buflen, "RPM[%u] no pin set", i + 1);
+                hal.util->snprintf(buffer, buflen, "RPM%u_PIN not set", unsigned(i + 1));
                 return false;
             }
             if (!hal.gpio->valid_pin(_params[i].pin)) {
-                hal.util->snprintf(buffer, buflen, "RPM[%u] pin %d invalid", unsigned(i + 1), int(_params[i].pin.get()));
+                uint8_t servo_ch;
+                if (hal.gpio->pin_to_servo_channel(_params[i].pin, servo_ch)) {
+                    hal.util->snprintf(buffer, buflen, "RPM%u_PIN=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(_params[i].pin.get()), unsigned(servo_ch+1));
+                } else {
+                    hal.util->snprintf(buffer, buflen, "RPM%u_PIN=%d invalid", unsigned(i + 1), int(_params[i].pin.get()));
+                }
                 return false;
             }
             break;
