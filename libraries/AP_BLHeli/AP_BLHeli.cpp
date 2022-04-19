@@ -485,6 +485,7 @@ void AP_BLHeli::msp_process_command(void)
             // set the output to each motor
             uint8_t nmotors = msp.dataSize / 2;
             debug("MSP_SET_MOTOR %u", nmotors);
+            motors_disabled_mask = SRV_Channels::get_disabled_channel_mask();
             SRV_Channels::set_disabled_channel_mask(0xFFFF);
             motors_disabled = true;
             EXPECT_DELAY_MS(1000);
@@ -946,7 +947,7 @@ void AP_BLHeli::blheli_process_command(void)
         serial_start_ms = 0;
         if (motors_disabled) {
             motors_disabled = false;
-            SRV_Channels::set_disabled_channel_mask(0);            
+            SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
         }
         if (uart_locked) {
             debug("Unlocked UART");
@@ -1244,7 +1245,7 @@ void AP_BLHeli::run_connection_test(uint8_t chan)
         }
     }
     hal.rcout->serial_end();
-    SRV_Channels::set_disabled_channel_mask(0);
+    SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
     motors_disabled = false;
     serial_start_ms = 0;
     blheli.chan = saved_chan;
@@ -1277,7 +1278,7 @@ void AP_BLHeli::update(void)
         }
         if (motors_disabled) {
             motors_disabled = false;
-            SRV_Channels::set_disabled_channel_mask(0);
+            SRV_Channels::set_disabled_channel_mask(motors_disabled_mask);
         }
         if (uart != nullptr) {
             debug("Unlocked UART");
