@@ -16,6 +16,8 @@
 #include "AP_Proximity_LeddarVu8.h"
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
+#include <GCS_MAVLink/GCS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #if HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LEDDARVU8_ENABLED
 
 // update the state of the sensor
@@ -23,6 +25,7 @@ void AP_Proximity_LeddarVu8::update()
 {
     if (!_initialized) {
         request_distances();
+        gcs().send_text(MAV_SEVERITY_WARNING,"requested distances");
         _temp_boundary.reset();
         _initialized = true;
         last_distance_ms = AP_HAL::millis();
@@ -31,19 +34,23 @@ void AP_Proximity_LeddarVu8::update()
     if ((AP_HAL::millis() - last_distance_ms) < LEDDARVU8_TIMEOUT_MS) {
         // just initialized
         set_status(AP_Proximity::Status::NoData);
+        gcs().send_text(MAV_SEVERITY_WARNING,"no data");
         return;
     }
 
     // read data
     read_sensor_data();
+    gcs().send_text(MAV_SEVERITY_WARNING,"reading data");
 
     if (AP_HAL::millis() - last_distance_ms < LEDDARVU8_TIMEOUT_MS) {
         set_status(AP_Proximity::Status::Good);
+        gcs().send_text(MAV_SEVERITY_WARNING,"good data");
     } else {
         // long time since we received any valid sensor data
         // try sending the sensor the "send data" message
         _initialized = false;
         set_status(AP_Proximity::Status::NoData);
+        gcs().send_text(MAV_SEVERITY_WARNING,"no data in the else");
     }
 }
 // extern const AP_HAL::HAL& hal;
