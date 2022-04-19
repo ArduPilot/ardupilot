@@ -250,6 +250,11 @@ public:
     virtual bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const { return false; }
 
     /*
+     * return mask of channels that must be disabled because they share a group with a digital channel
+     */
+    virtual uint16_t get_disabled_channels(uint16_t digital_mask) { return 0; }
+
+    /*
       set default update rate
      */
     virtual void    set_default_rate(uint16_t rate_hz) {}
