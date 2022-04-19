@@ -37,6 +37,12 @@
 // include generated config
 #include "hwdef.h"
 
+#ifdef HAL_CHIBIOS_ENABLE_ASSERTS
+#define STM32_DMA_ERROR_HOOK(devp) osalSysHalt("DMA failure")
+#else
+#define STM32_DMA_ERROR_HOOK(devp) do {} while(0)
+#endif
+
 #if defined(STM32F1)
 #include "stm32f1_mcuconf.h"
 #elif defined(STM32F3)
