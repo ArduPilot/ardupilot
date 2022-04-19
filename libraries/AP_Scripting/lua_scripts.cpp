@@ -37,6 +37,10 @@ lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, co
     _heap = hal.util->allocate_heap_memory(heap_size);
 }
 
+lua_scripts::~lua_scripts() {
+    free(_heap);
+}
+
 void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
     lua_scripts::overtime = true;
 
@@ -534,5 +538,20 @@ void lua_scripts::run(void) {
                 error_msg_buf = nullptr;
             }
         }
+    }
+
+    // make sure all scripts have been removed
+    while (scripts != nullptr) {
+        remove_script(lua_state, scripts);
+    }
+
+    if (lua_state != nullptr) {
+        lua_close(lua_state); // shutdown the old state
+        lua_state = nullptr;
+    }
+
+    if (error_msg_buf != nullptr) {
+        hal.util->heap_realloc(_heap, error_msg_buf, 0);
+        error_msg_buf = nullptr;
     }
 }
