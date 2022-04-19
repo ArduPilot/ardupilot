@@ -511,6 +511,37 @@ bool GPIO::valid_pin(uint8_t pin) const
     return gpio_by_pin_num(pin) != nullptr;
 }
 
+// return servo channel associated with GPIO pin.  Returns true on success and fills in servo_ch argument
+// servo_ch uses zero-based indexing
+bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
+{
+    uint8_t fmu_chan_offset = 0;
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // check if this is one of the main pins
+        uint8_t main_servo_ch = pin;
+        if (iomcu.convert_pin_number(main_servo_ch)) {
+            servo_ch = main_servo_ch;
+            return true;
+        }
+        // with IOMCU the local (FMU) channels start at 8
+        fmu_chan_offset = 8;
+    }
+#endif
+
+    // search _gpio_tab for matching pin
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        if (_gpio_tab[i].pin_num == pin) {
+            if (_gpio_tab[i].pwm_num == 0) {
+                return false;
+            }
+            servo_ch = _gpio_tab[i].pwm_num-1+fmu_chan_offset;
+            return true;
+        }
+    }
+    return false;
+}
+
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)
 
 // allow for save and restore of pin settings
