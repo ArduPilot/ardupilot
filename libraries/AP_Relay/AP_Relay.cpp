@@ -156,8 +156,18 @@ void AP_Relay::toggle(uint8_t instance)
 bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
-        if (_pin[i] != -1 && !hal.gpio->valid_pin(_pin[i])) {
-            hal.util->snprintf(buffer, buflen, "Relay[%u] pin %d invalid", i + 1, int(_pin[i].get()));
+        int8_t pin = _pin[i].get();
+        if (pin != -1 && !hal.gpio->valid_pin(pin)) {
+            char param_name_buf[11] = "RELAY_PIN";
+            if (i > 0) {
+                hal.util->snprintf(param_name_buf, ARRAY_SIZE(param_name_buf), "RELAY_PIN%u", unsigned(i+1));
+            }
+            uint8_t servo_ch;
+            if (hal.gpio->pin_to_servo_channel(pin, servo_ch)) {
+                hal.util->snprintf(buffer, buflen, "%s=%d, set SERVO%u_FUNCTION=-1", param_name_buf, int(pin), unsigned(servo_ch+1));
+            } else {
+                hal.util->snprintf(buffer, buflen, "%s=%d invalid", param_name_buf, int(pin));
+            }
             return false;
         }
     }
