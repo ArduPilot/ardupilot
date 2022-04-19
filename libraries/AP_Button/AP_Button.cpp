@@ -388,7 +388,12 @@ bool AP_Button::arming_checks(size_t buflen, char *buffer) const
     }
     for (uint8_t i=0; i<AP_BUTTON_NUM_PINS; i++) {
         if (pin[i] != -1 && !hal.gpio->valid_pin(pin[i])) {
-            hal.util->snprintf(buffer, buflen, "BTN_PIN%u %d invalid", unsigned(i + 1), int(pin[i].get()));
+            uint8_t servo_ch;
+            if (hal.gpio->pin_to_servo_channel(pin[i], servo_ch)) {
+                hal.util->snprintf(buffer, buflen, "BTN_PIN%u=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(pin[i].get()), unsigned(servo_ch+1));
+            } else {
+                hal.util->snprintf(buffer, buflen, "BTN_PIN%u=%d invalid", unsigned(i + 1), int(pin[i].get()));
+            }
             return false;
         }
     }
