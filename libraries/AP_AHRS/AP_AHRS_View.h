@@ -187,9 +187,13 @@ public:
 
 
     // get current rotation
+    // note that this may not be the rotation were actually using, see _pitch_trim_deg
     enum Rotation get_rotation(void) const {
         return rotation;
     }
+
+    // get pitch trim (deg)
+    float get_pitch_trim() const { return _pitch_trim_deg; }
 
 private:
     const enum Rotation rotation;
