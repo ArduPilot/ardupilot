@@ -25,7 +25,7 @@ void AP_Proximity_LeddarVu8::update()
 {
     if (!_initialized) {
         request_distances();
-        gcs().send_text(MAV_SEVERITY_WARNING,"requested distances");
+        // gcs().send_text(MAV_SEVERITY_WARNING,"requested distances");
         _temp_boundary.reset();
         _initialized = true;
         last_distance_ms = AP_HAL::millis();
@@ -33,24 +33,25 @@ void AP_Proximity_LeddarVu8::update()
 
     if ((AP_HAL::millis() - last_distance_ms) < LEDDARVU8_TIMEOUT_MS) {
         // just initialized
+        set_status(AP_Proximity::Status::Good);
+    } else {
         set_status(AP_Proximity::Status::NoData);
         gcs().send_text(MAV_SEVERITY_WARNING,"no data");
-        return;
     }
 
     // read data
     read_sensor_data();
-    gcs().send_text(MAV_SEVERITY_WARNING,"reading data");
+    // gcs().send_text(MAV_SEVERITY_WARNING,"reading data");
 
     if (AP_HAL::millis() - last_distance_ms < LEDDARVU8_TIMEOUT_MS) {
         set_status(AP_Proximity::Status::Good);
-        gcs().send_text(MAV_SEVERITY_WARNING,"good data");
+        // gcs().send_text(MAV_SEVERITY_WARNING,"good data");
     } else {
         // long time since we received any valid sensor data
         // try sending the sensor the "send data" message
         _initialized = false;
         set_status(AP_Proximity::Status::NoData);
-        gcs().send_text(MAV_SEVERITY_WARNING,"no data in the else");
+        // gcs().send_text(MAV_SEVERITY_WARNING,"no data in the else");
     }
 }
 // extern const AP_HAL::HAL& hal;
@@ -77,11 +78,18 @@ void AP_Proximity_LeddarVu8::read_sensor_data()
         if (r < 0) {
             continue;
         }
-        //if (!parse_byte((uint8_t)r)) {
-        //    // reset 
-        //    reset();
-        //}
+        bool valid_reading;
+        uint16_t dist_cm = 0;
+        if (parse_byte((uint8_t)r, valid_reading, dist_cm)) {
+            // reset 
+            // reset();
+            last_distance_ms = AP_HAL::millis();
+            gcs().send_text(MAV_SEVERITY_WARNING,"distance read:%d" , dist_cm);
+        }
+        
+        
     }
+    
 }
 
 // TODO: Get sensor address, currently using default hardcoded
@@ -119,12 +127,13 @@ void AP_Proximity_LeddarVu8::request_distances()
 
     // record time of request
     last_distance_request_ms = AP_HAL::millis();
+    
 }
 
 // process one byte received on serial port
 // returns true if successfully parsed a message
 // if distances are valid, valid_readings is set to true and distance is stored in reading_cm
-bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading)
+bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t &reading_cm)
 {
     // process byte depending upon current state
     switch (parsed_msg.state) {
@@ -188,10 +197,12 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading)
             valid_reading = false;
             // current horizontal angle in the payload
             float sampled_angle = LEDDARVU8_START_ANGLE;
+            // gcs().send_text(MAV_SEVERITY_WARNING,"READING DATA, or so anthony thinks");
             for (uint8_t i=0; i<8; i++) {
                 uint8_t ix2 = i*2;
                 const uint16_t dist_cm = (uint16_t)parsed_msg.payload[ix2] << 8 | (uint16_t)parsed_msg.payload[ix2+1];
                 float dist_m = dist_cm * 0.01f;
+                gcs().send_text(MAV_SEVERITY_WARNING,"valid reading www %d %f", dist_cm, sampled_angle);
                 if ((dist_m > distance_min()) && (!valid_reading || dist_m < distance_max())) {
                     if (ignore_reading(sampled_angle, dist_m)) {
                         // ignore this angle
@@ -204,14 +215,18 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading)
                     _temp_boundary.add_distance(face, sampled_angle, dist_m);
                     // push to OA_DB
                     database_push(sampled_angle, dist_m);
+                    
+                    reading_cm = dist_cm;
                     valid_reading = true;
                 }
                 // increment sampled angle
                 sampled_angle += LEDDARVU8_ANGLE_STEP;
             }
-        
+            _temp_boundary.update_3D_boundary(boundary);
+            reset();
             return true;
         }
+
         break;
     }
     }
