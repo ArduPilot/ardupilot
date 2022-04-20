@@ -590,13 +590,14 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     Vector3f torque;
 
     const float air_density = get_air_density(aircraft.get_location().alt*0.01);
+    const Vector3f gyro = aircraft.get_gyro();
 
     Vector3f vel_air_bf = aircraft.get_dcm().transposed() * aircraft.get_velocity_air_ef();
 
     float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, air_density, battery->get_voltage());
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage());
         current += motors[i].get_current();
         torque += mtorque;
         thrust += mthrust;
@@ -615,7 +616,6 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance
-        const Vector3f &gyro = aircraft.get_gyro();
         rot_accel.x -= gyro.x * radians(400.0) / terminal_rotation_rate;
         rot_accel.y -= gyro.y * radians(400.0) / terminal_rotation_rate;
         rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
