@@ -158,7 +158,6 @@ private:
     // exposed area times coefficient of drag
     float areaCd;
     float mass;
-    float thrust_max;
     float last_param_voltage;
 #if AP_SIM_ENABLED
     Battery *battery;
