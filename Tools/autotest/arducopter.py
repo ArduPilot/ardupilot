@@ -8624,6 +8624,72 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def TakeoffCommandInt(self):
+        '''Test MAV_CMD_NAV_TAKEOFF in GUIDED mode with COMMAND_INT'''
+        self.start_subtest("Started test for MAV_CMD_NAV_TAKEOFF as COMMAND_INT with GLOBAL_RELATIVE_ALT!")
+        self.change_mode(mode="GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(command=mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                         p1=0,
+                         p2=0,
+                         p3=0,
+                         p4=0,
+                         x=0,
+                         y=0,
+                         z=30,
+                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                         timeout=10,
+                         target_sysid=1,
+                         target_compid=1,
+                         frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        self.wait_altitude(altitude_min=29.5, altitude_max=30.5, relative=True, timeout=30)
+        self.watch_altitude_maintained(altitude_min=29.5, altitude_max=30.5, minimum_duration=10)
+        self.land_and_disarm(timeout=30)
+
+        self.start_subtest("Started test for MAV_CMD_NAV_TAKEOFF as COMMAND_INT with GLOBAL!")
+        self.change_mode(mode="GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(command=mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                         p1=0,
+                         p2=0,
+                         p3=0,
+                         p4=0,
+                         x=0,
+                         y=0,
+                         z=614,
+                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                         timeout=10,
+                         target_sysid=1,
+                         target_compid=1,
+                         frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        self.wait_altitude(altitude_min=613.5, altitude_max=614.5, relative=False, timeout=30)
+        self.watch_altitude_maintained(altitude_min=29.5, altitude_max=30.5, minimum_duration=10)
+        self.land_and_disarm(timeout=30)
+
+        self.install_terrain_handlers_context()
+        self.start_subtest("Started test for MAV_CMD_NAV_TAKEOFF as COMMAND_INT with GLOBAL_TERRAIN_ALT!")
+        self.change_mode(mode="GUIDED")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(command=mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                         p1=0,
+                         p2=0,
+                         p3=0,
+                         p4=0,
+                         x=0,
+                         y=0,
+                         z=30,
+                         want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                         timeout=10,
+                         target_sysid=1,
+                         target_compid=1,
+                         frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_altitude(altitude_min=29.5, altitude_max=30.5, relative=True, timeout=30)
+        self.watch_altitude_maintained(altitude_min=29.5, altitude_max=30.5, minimum_duration=10)
+        self.land_and_disarm(timeout=30)
+
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITDE_FAST is set we get many messages'''
         self.context_push()
@@ -8986,6 +9052,7 @@ class AutoTestCopter(AutoTest):
              self.RichenPower,
              self.IE24,
              self.MAVLandedStateTakeoff,
+             self.TakeoffCommandInt,
         ])
         return ret
 
