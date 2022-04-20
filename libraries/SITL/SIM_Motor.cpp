@@ -27,6 +27,7 @@ void Motor::calculate_forces(const struct sitl_input &input,
                              Vector3f &torque,
                              Vector3f &thrust,
                              const Vector3f &velocity_air_bf,
+                             const Vector3f &gyro,
                              float air_density,
                              float voltage)
 {
@@ -58,13 +59,19 @@ void Motor::calculate_forces(const struct sitl_input &input,
     // the yaw torque of the motor
     Vector3f rotor_torque = thrust_vector * yaw_factor * command * yaw_scale * voltage_scale * -1.0;
 
-    // calculate velocity into prop, clipping at zero, assumes zero roll/pitch
-    float velocity_in = MAX(0, -velocity_air_bf.projected(thrust_vector).z);
+    // velocity of motor through air
+    Vector3f motor_vel = velocity_air_bf;
+
+    // add velocity of motor about center due to vehicle rotation
+    motor_vel += -(position % gyro);
+
+    // calculate velocity into prop, clipping at zero
+    float velocity_in = MAX(0, -motor_vel.projected(thrust_vector).z);
 
     // get thrust for untilted motor
     float motor_thrust = calc_thrust(command, air_density, velocity_in, voltage_scale);
 
-    // thrust in NED
+    // thrust in bodyframe NED
     thrust = thrust_vector * motor_thrust;
 
     // work out roll and pitch of motor relative to it pointing straight up
