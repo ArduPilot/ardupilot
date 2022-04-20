@@ -611,8 +611,6 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     rot_accel.y = torque.y / model.moment_of_inertia.y;
     rot_accel.z = torque.z / model.moment_of_inertia.z;
 
-    body_accel = thrust/aircraft.gross_mass();
-
     if (terminal_rotation_rate > 0) {
         // rotational air resistance
         rot_accel.x -= gyro.x * radians(400.0) / terminal_rotation_rate;
@@ -625,13 +623,13 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         Vector3f drag_bf;
         drag_bf.x = areaCd * 0.5f * air_density * sq(vel_air_bf.x) +
                     model.mdrag_coef * fabsf(vel_air_bf.x) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
-        if (is_positive(vel_air_bf.x)) {
+        if (is_negative(vel_air_bf.x)) {
             drag_bf.x = -drag_bf.x;
         }
 
         drag_bf.y = areaCd * 0.5f * air_density * sq(vel_air_bf.y) +
                     model.mdrag_coef * fabsf(vel_air_bf.y) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
-        if (is_positive(vel_air_bf.y)) {
+        if (is_negative(vel_air_bf.y)) {
             drag_bf.y = -drag_bf.y;
         }
 
@@ -641,13 +639,14 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         // the Motor class with one based on DC motor, mometum disc and blade elemnt theory.
         drag_bf.z = areaCd * 0.5f * air_density * sq(vel_air_bf.z) +
                     model.mdrag_coef * fabsf(vel_air_bf.z) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
-        if (is_positive(vel_air_bf.z)) {
+        if (is_negative(vel_air_bf.z)) {
             drag_bf.z = -drag_bf.z;
         }
 
-        body_accel += drag_bf / mass;
+        thrust -= drag_bf;
     }
 
+    body_accel = thrust/aircraft.gross_mass();
 }
 
 
