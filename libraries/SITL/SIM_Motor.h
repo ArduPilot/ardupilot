@@ -88,9 +88,10 @@ public:
 
     void calculate_forces(const struct sitl_input &input,
                           uint8_t motor_offset,
-                          Vector3f &rot_accel, // rad/sec
-                          Vector3f &body_thrust, // Z is down
+                          Vector3f &torque, // Newton meters
+                          Vector3f &thrust, // Z is down, Newtons
                           const Vector3f &velocity_air_bf,
+                          const Vector3f &gyro, // rad/sec
                           float air_density,
                           float voltage);
 
