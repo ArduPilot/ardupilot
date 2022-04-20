@@ -737,6 +737,24 @@ bool AP_Airspeed::all_healthy(void) const
     return true;
 }
 
+// return true if airspeed is enabled
+bool AP_Airspeed::enabled(uint8_t i) const {
+    if (i < AIRSPEED_MAX_SENSORS) {
+        return param[i].type.get() != TYPE_NONE;
+    }
+    return false;
+}
+
+// return health status of sensor
+bool AP_Airspeed::healthy(uint8_t i) const {
+    bool ok = state[i].healthy && enabled(i);
+#ifndef HAL_BUILD_AP_PERIPH
+    // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
+    ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
+#endif
+    return ok;
+}
+
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
@@ -744,6 +762,8 @@ void AP_Airspeed::update() {};
 bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
 bool AP_Airspeed::use(uint8_t i) const { return false; }
+bool AP_Airspeed::enabled(uint8_t i) const { return false; }
+bool AP_Airspeed::healthy(uint8_t i) const { return false; }
 
 #if HAL_MSP_AIRSPEED_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}

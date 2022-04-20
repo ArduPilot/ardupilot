@@ -110,12 +110,7 @@ public:
     }
 
     // return true if airspeed is enabled
-    bool enabled(uint8_t i) const {
-        if (i < AIRSPEED_MAX_SENSORS) {
-            return param[i].type.get() != TYPE_NONE;
-        }
-        return false;
-    }
+    bool enabled(uint8_t i) const;
     bool enabled(void) const { return enabled(primary); }
 
     // return the differential pressure in Pascal for the last airspeed reading
@@ -128,14 +123,7 @@ public:
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
     // return health status of sensor
-    bool healthy(uint8_t i) const {
-        bool ok = state[i].healthy && enabled(i);
-#ifndef HAL_BUILD_AP_PERIPH
-        // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
-        ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
-#endif
-        return ok;
-    }
+    bool healthy(uint8_t i) const;
     bool healthy(void) const { return healthy(primary); }
 
     // return true if all enabled sensors are healthy
