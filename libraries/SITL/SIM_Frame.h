@@ -142,6 +142,7 @@ private:
         // if zero will no be used
         Vector3f motor_pos[12];
         Vector3f motor_thrust_vec[12];
+        float yaw_factor[12] = {0};
 
     } default_model;
 
