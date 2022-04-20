@@ -171,6 +171,10 @@ void Sub::Log_Write_Data(LogDataID id, float value)
 // logs when baro or compass becomes unhealthy
 void Sub::Log_Sensor_Health()
 {
+    if (!should_log(MASK_LOG_ANY)) {
+        return;
+    }
+
     // check baro
     if (sensor_health.baro != barometer.healthy()) {
         sensor_health.baro = barometer.healthy();
