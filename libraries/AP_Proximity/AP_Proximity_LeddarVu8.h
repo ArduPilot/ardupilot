@@ -15,8 +15,8 @@
 #define LEDDARVU8_DIST_MIN_CM               5       // maximum possible distance reported by lidar
 #define LEDDARVU8_OUT_OF_RANGE_ADD_CM       100     // add this many cm to out-of-range values
 #define LEDDARVU8_TIMEOUT_MS                200     // timeout in milliseconds if no distance messages received
-#define LEDDARVU8_START_ANGLE 		        -24.0f  // hardcoded for 48 deg FOV: Starting 2-D horizontal angle of distances received in payload
-#define LEDDARVU8_ANGLE_STEP		        6.0f    // hardcoded for 48 deg FOV: Angle step size of each distance received. Starts from LEDDARVU8_START_ANGLE
+#define LEDDARVU8_START_ANGLE 		        0.0f  // hardcoded for 48 deg FOV: Starting 2-D horizontal angle of distances received in payload
+#define LEDDARVU8_ANGLE_STEP		        45.0f    // hardcoded for 48 deg FOV: Angle step size of each distance received. Starts from LEDDARVU8_START_ANGLE
 class AP_Proximity_LeddarVu8 : public AP_Proximity_Backend_Serial
 {
 

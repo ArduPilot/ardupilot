@@ -120,6 +120,7 @@ public:
     // sectors
     static_assert(PROXIMITY_NUM_SECTORS == 8, "PROXIMITY_NUM_SECTOR must be 8");
     const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
+    // const uint16_t _sector_middle_deg[PROXIMITY_NUM_SECTORS] {339, 345, 351, 357, 3, 9, 15, 21};    // middle angle of each sector
     // layers
     static_assert(PROXIMITY_NUM_LAYERS == 5, "PROXIMITY_NUM_LAYERS must be 5");
     const int16_t _pitch_middle_deg[PROXIMITY_NUM_LAYERS] {-60, -30, 0, 30, 60};

@@ -36,7 +36,7 @@ void AP_Proximity_LeddarVu8::update()
         set_status(AP_Proximity::Status::Good);
     } else {
         set_status(AP_Proximity::Status::NoData);
-        gcs().send_text(MAV_SEVERITY_WARNING,"no data");
+        // gcs().send_text(MAV_SEVERITY_WARNING,"no data");
     }
 
     // read data
@@ -84,7 +84,8 @@ void AP_Proximity_LeddarVu8::read_sensor_data()
             // reset 
             // reset();
             last_distance_ms = AP_HAL::millis();
-            gcs().send_text(MAV_SEVERITY_WARNING,"distance read:%d" , dist_cm);
+            // _temp_boundary.update_3D_boundary(boundary);
+            // gcs().send_text(MAV_SEVERITY_WARNING,"distance read:%d" , dist_cm);
         }
         
         
@@ -202,7 +203,7 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t
                 uint8_t ix2 = i*2;
                 const uint16_t dist_cm = (uint16_t)parsed_msg.payload[ix2] << 8 | (uint16_t)parsed_msg.payload[ix2+1];
                 float dist_m = dist_cm * 0.01f;
-                gcs().send_text(MAV_SEVERITY_WARNING,"valid reading www %d %f", dist_cm, sampled_angle);
+                // gcs().send_text(MAV_SEVERITY_WARNING,"valid reading www %d %f", dist_cm, sampled_angle);
                 if ((dist_m > distance_min()) && (!valid_reading || dist_m < distance_max())) {
                     if (ignore_reading(sampled_angle, dist_m)) {
                         // ignore this angle
@@ -211,6 +212,8 @@ bool AP_Proximity_LeddarVu8::parse_byte(uint8_t b, bool &valid_reading, uint16_t
                     }
                     // convert angle to face
                     const AP_Proximity_Boundary_3D::Face face = boundary.get_face(sampled_angle);
+                    // set face attributes
+                    boundary.set_face_attributes(face, sampled_angle, dist_m);
                     // push face to temp boundary
                     _temp_boundary.add_distance(face, sampled_angle, dist_m);
                     // push to OA_DB
