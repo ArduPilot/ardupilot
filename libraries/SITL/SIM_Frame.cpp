@@ -515,7 +515,6 @@ void Frame::init(const char *frame_str, Battery *_battery)
     float hover_velocity_out = 2 * hover_power / hover_thrust;
     float effective_disc_area = hover_thrust / (0.5 * ref_air_density * sq(hover_velocity_out));
     float velocity_max = hover_velocity_out / sqrtf(model.hoverThrOut);
-    thrust_max = 0.5 * ref_air_density * effective_disc_area * sq(velocity_max);
     float effective_prop_area = effective_disc_area / num_motors;
 
     // power_factor is ratio of power consumed per newton of thrust
@@ -649,16 +648,6 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         body_accel += drag_bf / mass;
     }
 
-    // add some noise
-    const float gyro_noise = radians(0.1);
-    const float accel_noise = 0.3;
-    const float noise_scale = thrust.length() / thrust_max;
-    rot_accel += Vector3f(aircraft.rand_normal(0, 1),
-                          aircraft.rand_normal(0, 1),
-                          aircraft.rand_normal(0, 1)) * gyro_noise * noise_scale;
-    body_accel += Vector3f(aircraft.rand_normal(0, 1),
-                           aircraft.rand_normal(0, 1),
-                           aircraft.rand_normal(0, 1)) * accel_noise * noise_scale;
 }
 
 
