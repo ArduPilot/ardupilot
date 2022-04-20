@@ -384,7 +384,7 @@ private:
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
 
-    void fast_loop() override;
+    void run_rate_controller();
     void fifty_hz_loop();
     void update_batt_compass(void);
     void ten_hz_logging_loop();
