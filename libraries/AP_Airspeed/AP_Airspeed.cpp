@@ -755,6 +755,40 @@ bool AP_Airspeed::healthy(uint8_t i) const {
     return ok;
 }
 
+// return the current airspeed in m/s
+float AP_Airspeed::get_airspeed(uint8_t i) const {
+    if (!enabled(i)) {
+        // we can't have negative airspeed so sending an obviously invalid value
+        return -1.0;
+    }
+    return state[i].airspeed;
+}
+
+// return the unfiltered airspeed in m/s
+float AP_Airspeed::get_raw_airspeed(uint8_t i) const {
+    if (!enabled(i)) {
+        // we can't have negative airspeed so sending an obviously invalid value
+        return -1.0;
+    }
+    return state[i].raw_airspeed;
+}
+
+// return the differential pressure in Pascal for the last airspeed reading
+float AP_Airspeed::get_differential_pressure(uint8_t i) const {
+    if (!enabled(i)) {
+        return 0.0;
+    }
+    return state[i].last_pressure;
+}
+
+// return the current corrected pressure
+float AP_Airspeed::get_corrected_pressure(uint8_t i) const {
+    if (!enabled(i)) {
+        return 0.0;
+    }
+    return state[i].corrected_pressure;
+}
+
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
@@ -764,6 +798,8 @@ void AP_Airspeed::calibrate(bool in_startup) {}
 bool AP_Airspeed::use(uint8_t i) const { return false; }
 bool AP_Airspeed::enabled(uint8_t i) const { return false; }
 bool AP_Airspeed::healthy(uint8_t i) const { return false; }
+float AP_Airspeed::get_airspeed(uint8_t i) const { return 0.0; }
+float AP_Airspeed::get_differential_pressure(uint8_t i) const { return 0.0; }
 
 #if HAL_MSP_AIRSPEED_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}

@@ -73,15 +73,11 @@ public:
     void calibrate(bool in_startup);
 
     // return the current airspeed in m/s
-    float get_airspeed(uint8_t i) const {
-        return state[i].airspeed;
-    }
+    float get_airspeed(uint8_t i) const;
     float get_airspeed(void) const { return get_airspeed(primary); }
 
     // return the unfiltered airspeed in m/s
-    float get_raw_airspeed(uint8_t i) const {
-        return state[i].raw_airspeed;
-    }
+    float get_raw_airspeed(uint8_t i) const;
     float get_raw_airspeed(void) const { return get_raw_airspeed(primary); }
 
     // return the current airspeed ratio (dimensionless)
@@ -114,9 +110,7 @@ public:
     bool enabled(void) const { return enabled(primary); }
 
     // return the differential pressure in Pascal for the last airspeed reading
-    float get_differential_pressure(uint8_t i) const {
-        return state[i].last_pressure;
-    }
+    float get_differential_pressure(uint8_t i) const;
     float get_differential_pressure(void) const { return get_differential_pressure(primary); }
 
     // update airspeed ratio calibration
@@ -173,9 +167,7 @@ public:
     static AP_Airspeed *get_singleton() { return _singleton; }
 
     // return the current corrected pressure, public for AP_Periph
-    float get_corrected_pressure(uint8_t i) const {
-        return state[i].corrected_pressure;
-    }
+    float get_corrected_pressure(uint8_t i) const;
     float get_corrected_pressure(void) const {
         return get_corrected_pressure(primary);
     }
