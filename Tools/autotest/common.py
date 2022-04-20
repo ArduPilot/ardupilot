@@ -5837,6 +5837,14 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def watch_altitude_maintained(self, altitude_min, altitude_max, minimum_duration=5, relative=True):
+        """Watch altitude is maintained or not between altitude_min and altitude_max during minimum_duration"""
+        return self.wait_altitude(altitude_min=altitude_min,
+                                  altitude_max=altitude_max,
+                                  relative=relative,
+                                  minimum_duration=minimum_duration,
+                                  timeout=minimum_duration + 1)
+
     def wait_climbrate(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given vertical rate."""
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
