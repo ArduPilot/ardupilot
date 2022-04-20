@@ -178,7 +178,7 @@ public:
     // add a distance to the temp boundary if it is shorter than any other provided distance since the last time the boundary was reset
     // pitch and yaw are in degrees, distance is in meters
     void add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch, float yaw, float distance);
-    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, PID_TUNING_YAW, distance); }
+    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, yaw, distance); }
 
     // fill the original 3D boundary with the contents of this temporary boundary
     void update_3D_boundary(AP_Proximity_Boundary_3D &boundary);
