@@ -264,27 +264,17 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def watch_altitude_maintained(self, min_alt, max_alt, timeout=10):
-        '''watch alt, relative alt must remain between min_alt and max_alt'''
-        tstart = self.get_sim_time_cached()
-        while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                return
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            if m.alt <= min_alt:
-                raise NotAchievedException("Altitude not maintained: want >%f got=%f" % (min_alt, m.alt))
-
     def ModeAltHold(self):
         '''Test AltHold Mode'''
         self.takeoff(10, mode="ALT_HOLD")
-        self.watch_altitude_maintained(9, 11, timeout=5)
+        self.watch_altitude_maintained(altitude_min=9, altitude_max=11)
         # feed in full elevator and aileron input and make sure we
         # retain altitude:
         self.set_rc_from_map({
             1: 1000,
             2: 1000,
         })
-        self.watch_altitude_maintained(9, 11, timeout=5)
+        self.watch_altitude_maintained(altitude_min=9, altitude_max=11)
         self.set_rc_from_map({
             1: 1500,
             2: 1500,
@@ -4572,7 +4562,7 @@ class AutoTestCopter(AutoTest):
         self.change_mode("STABILIZE")
         self.change_mode("GUIDED")
         self.set_rc(3, 1700)
-        self.watch_altitude_maintained(-1, 0.2) # should not take off in guided
+        self.watch_altitude_maintained(altitude_min=-1, altitude_max=0.2) # should not take off in guided
         self.run_cmd_do_set_mode(
             "ACRO",
             want_result=mavutil.mavlink.MAV_RESULT_FAILED)
