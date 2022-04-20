@@ -376,19 +376,19 @@ void Frame::load_frame_params(const char *model_json)
         exit(1);
     }
 
-    enum JSON_TYPE {
-        JSON_FLOAT,
-        JSON_VECTOR3F,
+    enum class VarType {
+        FLOAT,
+        VECTOR3F,
     };
 
     struct json_search {
         const char *label;
         void *ptr;
-        JSON_TYPE t;
+        VarType t;
     };
     
     json_search vars[] = {
-#define FRAME_VAR(s) { #s, &model.s, JSON_TYPE::JSON_FLOAT }
+#define FRAME_VAR(s) { #s, &model.s, VarType::FLOAT }
         FRAME_VAR(mass),
         FRAME_VAR(diagonal_size),
         FRAME_VAR(refSpd),
@@ -410,7 +410,7 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(slew_max),
         FRAME_VAR(disc_area),
         FRAME_VAR(mdrag_coef),
-        {"moment_inertia", &model.moment_of_inertia, JSON_TYPE::JSON_VECTOR3F},
+        {"moment_inertia", &model.moment_of_inertia, VarType::VECTOR3F},
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
@@ -419,18 +419,19 @@ void Frame::load_frame_params(const char *model_json)
             // use default value
             continue;
         }
-        if (vars[i].t == JSON_TYPE::JSON_FLOAT) {
+        if (vars[i].t == VarType::FLOAT) {
             parse_float(v, vars[i].label, *((float *)vars[i].ptr));
 
-        } else if (vars[i].t == JSON_TYPE::JSON_VECTOR3F) {
+        } else if (vars[i].t == VarType::VECTOR3F) {
             parse_vector3(v, vars[i].label, *(Vector3f *)vars[i].ptr);
 
         }
     }
 
     json_search per_motor_vars[] = {
-        {"position", &model.motor_pos, JSON_TYPE::JSON_VECTOR3F},
-        {"vector", &model.motor_thrust_vec, JSON_TYPE::JSON_VECTOR3F},
+        {"position", &model.motor_pos, VarType::VECTOR3F},
+        {"vector", &model.motor_thrust_vec, VarType::VECTOR3F},
+        {"yaw", &model.yaw_factor, VarType::FLOAT},
     };
     char label_name[20];
     for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
@@ -441,7 +442,10 @@ void Frame::load_frame_params(const char *model_json)
                 // use default value
                 continue;
             }
-            if (per_motor_vars[i].t == JSON_TYPE::JSON_VECTOR3F) {
+            if (vars[i].t == VarType::FLOAT) {
+                parse_float(v, label_name, *(((float *)per_motor_vars[i].ptr) + j));
+
+            } else if (per_motor_vars[i].t == VarType::VECTOR3F) {
                 parse_vector3(v, label_name, *(((Vector3f *)per_motor_vars[i].ptr) + j));
             }
         }
@@ -522,7 +526,7 @@ void Frame::init(const char *frame_str, Battery *_battery)
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
                                model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max,
-                               model.motor_pos[i], model.motor_thrust_vec[i]);
+                               model.motor_pos[i], model.motor_thrust_vec[i], model.yaw_factor[i]);
     }
 
     if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
