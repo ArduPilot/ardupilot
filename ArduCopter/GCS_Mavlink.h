@@ -36,6 +36,7 @@ protected:
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_pause_continue(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_nav_takeoff(const mavlink_command_int_t &packet);
 
 #if HAL_MOUNT_ENABLED
     void handle_mount_message(const mavlink_message_t &msg) override;

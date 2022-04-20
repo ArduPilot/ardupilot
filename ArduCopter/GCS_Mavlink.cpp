@@ -706,6 +706,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_int_t &packet)
 {
     switch(packet.command) {
+
+    case MAV_CMD_NAV_TAKEOFF:
+        return handle_command_nav_takeoff(packet);
+
     case MAV_CMD_DO_FOLLOW:
 #if MODE_FOLLOW_ENABLED == ENABLED
         // param1: sysid of target to follow
@@ -752,18 +756,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
 
     case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF: {
-        // param3 : horizontal navigation by pilot acceptable
-        // param4 : yaw angle   (not supported)
-        // param5 : latitude    (not supported)
-        // param6 : longitude   (not supported)
-        // param7 : altitude [metres]
-
-        float takeoff_alt = packet.param7 * 100;      // Convert m to cm
-
-        if (!copter.flightmode->do_user_takeoff(takeoff_alt, is_zero(packet.param3))) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
+        mavlink_command_int_t packet_int;
+        GCS_MAVLINK_Copter::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
+        return handle_command_nav_takeoff(packet_int);
     }
 
 #if MODE_AUTO_ENABLED == ENABLED
@@ -955,7 +950,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
             if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
-                copter.flightmode->do_user_takeoff(packet.param1*100, true);
+                copter.flightmode->do_user_takeoff(packet.param1*100);
             }
         } else {
             // if flying, land
@@ -1028,6 +1023,34 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
         return MAV_RESULT_FAILED;
     }
     return MAV_RESULT_DENIED;
+}
+
+MAV_RESULT GCS_MAVLINK_Copter::handle_command_nav_takeoff(const mavlink_command_int_t &packet)
+{
+    // create takeoff location from command int
+    Location takeoff_loc;
+    if (!location_from_command_t(packet, takeoff_loc)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // sanitize the location for terrain frame
+    takeoff_loc.lat = copter.current_loc.lat;
+    takeoff_loc.lng = copter.current_loc.lng;
+
+    // takeoff altitude in centimeters above home
+    int32_t takeoff_alt_cm;
+
+    // get takeoff altitude above home
+    if (!(takeoff_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, takeoff_alt_cm))) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // try to takeoff
+    if (!copter.flightmode->do_user_takeoff(takeoff_alt_cm)) {
+        return MAV_RESULT_FAILED;
+    }
+
+    return MAV_RESULT_ACCEPTED;
 }
 
 #if HAL_MOUNT_ENABLED
