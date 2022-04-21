@@ -1073,13 +1073,10 @@ bool AP_IOMCU::valid_GPIO_pin(uint8_t pin) const
 // convert external pin numbers 101 to 108 to internal 0 to 7
 bool AP_IOMCU::convert_pin_number(uint8_t& pin) const
 {
-    if (pin < 101) {
+    if (pin < 101 || pin > 108) {
         return false;
     }
     pin -= 101;
-    if (pin > 7) {
-        return false;
-    }
     return true;
 }
 
