@@ -397,6 +397,9 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             break;
         case BATTERY: // BATTERY
             calc_battery();
+            break;    
+        case VARIO:
+            calc_vario();
             break;
         case GPS: // GPS
             calc_gps();
@@ -823,6 +826,34 @@ void AP_CRSF_Telem::calc_battery()
 
     _telem_size = sizeof(BatteryFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR;
+
+    _telem_pending = true;
+}
+
+float AP_CRSF_Telem::get_vspeed_ms(void)
+{
+
+    {
+        // release semaphore as soon as possible
+        AP_AHRS &_ahrs = AP::ahrs();
+        Vector3f v;
+        WITH_SEMAPHORE(_ahrs.get_semaphore());
+        if (_ahrs.get_velocity_NED(v)) {
+            return -v.z;
+        }
+    }
+
+    auto &_baro = AP::baro();
+    WITH_SEMAPHORE(_baro.get_semaphore());
+    return _baro.get_climb_rate();
+}
+
+// prepare vario data
+void AP_CRSF_Telem::calc_vario()
+{
+    _telem.bcast.vario.vario_speed = htobe16(roundf(get_vspeed_ms()*100));
+    _telem_size = sizeof(AP_CRSF_Telem::VarioSensorFrame);
+    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
 
     _telem_pending = true;
 }

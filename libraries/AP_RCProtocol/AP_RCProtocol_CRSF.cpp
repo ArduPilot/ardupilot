@@ -91,6 +91,8 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
         return "GPS";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR:
         return "BATTERY";
+    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO:
+        return "VARIO";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_HEARTBEAT:
         return "HEARTBEAT";
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
