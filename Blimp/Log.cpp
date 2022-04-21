@@ -235,6 +235,10 @@ tuning_max     : tune_max
 // logs when baro or compass becomes unhealthy
 void Blimp::Log_Sensor_Health()
 {
+    if (!should_log(MASK_LOG_ANY)) {
+        return;
+    }
+
     // check baro
     if (sensor_health.baro != barometer.healthy()) {
         sensor_health.baro = barometer.healthy();
