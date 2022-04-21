@@ -232,11 +232,15 @@ public:
     };
     // nominal ELRS air rates
     static constexpr uint16_t elrs_air_rates[8] = {4, 25, 50, 100, 150, 200, 250, 500};
+    static constexpr uint16_t tx_powers[] = { 0, 10, 25, 100, 500, 1000, 2000, 250, 50 };
 
     struct LinkStatus {
         int16_t rssi = -1;
         int16_t link_quality = -1;
-        uint8_t rf_mode;
+        int8_t rf_mode = -1;
+        int16_t tx_power = -1;
+        int8_t snr = INT8_MIN;
+        int8_t active_antenna = -1;
     };
 
     // this will be used by AP_CRSF_Telem to access link status data

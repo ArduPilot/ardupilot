@@ -155,6 +155,8 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 
 
 constexpr uint16_t AP_RCProtocol_CRSF::elrs_air_rates[8];
+constexpr uint16_t AP_RCProtocol_CRSF::tx_powers[];
+
 AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_singleton;
 
 AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
@@ -254,7 +256,7 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         _last_frame_time_us = timestamp_us;
         // decode here
         if (decode_crsf_packet()) {
-            add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality);
+            add_input(MAX_CHANNELS, _channels, false, _link_status.rssi, _link_status.link_quality, _link_status.rf_mode, _link_status.tx_power, _link_status.snr, _link_status.active_antenna);
         }
     }
 }
@@ -506,7 +508,10 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         }
     }
 
-    _link_status.rf_mode = MIN(link->rf_mode, 7U);
+    _link_status.rf_mode = MIN(link->rf_mode, ((uint8_t)(AP_RCProtocol_CRSF::RFMode::RF_MODE_UNKNOWN) - (uint8_t)(AP_RCProtocol_CRSF::RFMode::ELRS_RF_MODE_4HZ) - 1));
+    _link_status.tx_power = link->uplink_tx_power < sizeof(AP_RCProtocol_CRSF::tx_powers) ? AP_RCProtocol_CRSF::tx_powers[link->uplink_tx_power] : -1;
+    _link_status.snr = link->uplink_snr;
+    _link_status.active_antenna = link->active_antenna;
 }
 
 // process link statistics to get RX RSSI
