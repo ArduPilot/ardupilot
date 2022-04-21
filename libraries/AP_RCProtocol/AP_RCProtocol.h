@@ -110,7 +110,10 @@ public:
     void start_bind(void);
     int16_t get_RSSI(void) const;
     int16_t get_rx_link_quality(void) const;
-
+    int8_t get_rfmode(void) const;
+    int16_t get_tx_power(void) const;
+    int8_t get_snr(void) const;
+    int8_t get_active_antenna(void) const;
     // return protocol name as a string
     static const char *protocol_name_from_protocol(rcprotocol_t protocol);
 
