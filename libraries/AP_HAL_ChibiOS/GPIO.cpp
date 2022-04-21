@@ -90,7 +90,7 @@ void GPIO::init()
         chan_offset = 8;
     }
 #endif
-    // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
+    // auto-disable pins being used for PWM output
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
