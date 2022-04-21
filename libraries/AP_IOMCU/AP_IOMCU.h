@@ -107,7 +107,7 @@ public:
     bool setup_mixing(RCMapper *rcmap, int8_t override_chan,
                       float mixing_gain, uint16_t manual_rc_mask);
 
-    // Check if pin number is valid for GPIO
+    // Check if pin number is valid and configured for GPIO
     bool valid_GPIO_pin(uint8_t pin) const;
 
     // convert external pin numbers 101 to 108 to internal 0 to 7
