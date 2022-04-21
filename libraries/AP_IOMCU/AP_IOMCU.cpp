@@ -1064,10 +1064,16 @@ void AP_IOMCU::check_iomcu_reset(void)
     last_rc_protocols = 0;
 }
 
-// Check if pin number is valid for GPIO
+// Check if pin number is valid and configured for GPIO
 bool AP_IOMCU::valid_GPIO_pin(uint8_t pin) const
 {
-    return convert_pin_number(pin);
+    // sanity check pin number
+    if (!convert_pin_number(pin)) {
+        return false;
+    }
+
+    // check pin is enabled as GPIO
+    return ((GPIO.channel_mask & (1U << pin)) != 0);
 }
 
 // convert external pin numbers 101 to 108 to internal 0 to 7
