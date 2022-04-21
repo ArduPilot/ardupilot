@@ -7,7 +7,6 @@
 
 #if (HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LEDDARVU8_ENABLED)
 #include "AP_Proximity_Backend_Serial.h"
-//#include "AP_Proximity_Backend.h"
 
 #define LEDDARVU8_PAYLOAD_LENGTH (8*2)
 #define LEDDARVU8_ADDR_DEFAULT              0x01    // modbus default device id
@@ -28,8 +27,8 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override { return LEDDARVU8_DIST_MAX_CM / 100; }
-    float distance_min() const override { return LEDDARVU8_DIST_MIN_CM / 100; }
+    float distance_max() const override { return LEDDARVU8_DIST_MAX_CM * 0.01; }
+    float distance_min() const override { return LEDDARVU8_DIST_MIN_CM * 0.01; }
 
     // get distances for the 8 channels of the leddarvu8
     bool get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const;
@@ -113,7 +112,6 @@ private:
 
     AP_Proximity_Temp_Boundary _temp_boundary; // temporary boundary to store incoming payload
 
-
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif // HAL_PROXIMITY_ENABLED && AP_PROXIMITY_LEDDARVU8_ENABLED
