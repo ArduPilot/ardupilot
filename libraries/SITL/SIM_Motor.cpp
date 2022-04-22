@@ -29,7 +29,8 @@ void Motor::calculate_forces(const struct sitl_input &input,
                              const Vector3f &velocity_air_bf,
                              const Vector3f &gyro,
                              float air_density,
-                             float voltage)
+                             float voltage,
+                             bool use_drag)
 {
     // fudge factors
     const float yaw_scale = radians(40);
@@ -109,6 +110,21 @@ void Motor::calculate_forces(const struct sitl_input &input,
         torque = rotation * torque;
     }
 
+    if (use_drag) {
+        // calculate momentum drag per motor
+        const float momentum_drag_factor = momentum_drag_coefficient * sqrtf(air_density * true_prop_area);
+        Vector3f momentum_drag;
+        momentum_drag.x = momentum_drag_factor * motor_vel.x * (sqrtf(fabsf(thrust.y)) + sqrtf(fabsf(thrust.z)));
+        momentum_drag.y = momentum_drag_factor * motor_vel.y * (sqrtf(fabsf(thrust.x)) + sqrtf(fabsf(thrust.z)));
+        // The application of momentum drag to the Z axis is a 'hack' to compensate for incorrect modelling
+        // of the variation of thust with inflow velocity. If not applied, the vehicle will
+        // climb at an unrealistic rate during operation in STABILIZE. TODO replace prop and motor model in
+        // with one based on DC motor, momentum disc and blade element theory.
+        momentum_drag.z = momentum_drag_factor * motor_vel.z * (sqrtf(fabsf(thrust.x)) + sqrtf(fabsf(thrust.y)) + sqrtf(fabsf(thrust.z)));
+
+        thrust -= momentum_drag;
+    }
+
     // calculate current
     float power = power_factor * fabsf(motor_thrust);
     current = power / MAX(voltage, 0.1);
@@ -150,7 +166,8 @@ float Motor::get_current(void) const
 // setup PWM ranges for this motor
 void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                          float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
-                         float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor)
+                         float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor, 
+                         float _true_prop_area, float _momentum_drag_coefficient)
 {
     mot_pwm_min = _pwm_min;
     mot_pwm_max = _pwm_max;
@@ -162,6 +179,8 @@ void Motor::setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, 
     voltage_max = _voltage_max;
     effective_prop_area = _effective_prop_area;
     max_outflow_velocity = _velocity_max;
+    true_prop_area = _true_prop_area;
+    momentum_drag_coefficient = _momentum_drag_coefficient;
 
     if (!_position.is_zero()) {
         position = _position;
