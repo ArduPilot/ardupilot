@@ -21,7 +21,10 @@
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
 
+#ifndef USE_PICOJSON
 #define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #if USE_PICOJSON
 #include "picojson.h"
 #endif
@@ -142,8 +145,15 @@ private:
 
     } default_model;
 
+protected:
+#if USE_PICOJSON
+    // load frame parameters from a json model file
+    void load_frame_params(const char *model_json);
+#endif
+
     struct Model model;
 
+private:
     // exposed area times coefficient of drag
     float areaCd;
     float mass;
@@ -156,9 +166,8 @@ private:
     // get air density in kg/m^3
     float get_air_density(float alt_amsl) const;
 
+    // json parsing helpers
 #if USE_PICOJSON
-    // load frame parameters from a json model file
-    void load_frame_params(const char *model_json);
     void parse_float(picojson::value val, const char* label, float &param);
     void parse_vector3(picojson::value val, const char* label, Vector3f &param);
 #endif
