@@ -1021,7 +1021,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
-
+#ifdef RSSI_EXTENSIONS_ENABLED
     // @Param: TX_PWR_EN
     // @DisplayName: CRSFPWR_EN
     // @Description: Displays the TX power when using the CRSF RC protocol
@@ -1085,10 +1085,9 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(rf_mode, "RFMODE", 6, AP_OSD_Screen, AP_OSD_Setting),
-
+#endif
     AP_GROUPEND
 };
-
 
 
 uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
@@ -1401,6 +1400,7 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
     }
 }
 
+#ifdef RSSI_EXTENSIONS_ENABLED
 void AP_OSD_Screen::draw_rf_mode(uint8_t x, uint8_t y)
 {
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
@@ -1442,6 +1442,7 @@ void AP_OSD_Screen::draw_rx_antenna(uint8_t x, uint8_t y)
         backend->write(x, y, false, "%d", active_antennav);
     }
 }
+#endif
 
 void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
@@ -2293,10 +2294,12 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(restvolt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(link_quality);
+#ifdef RSSI_EXTENSIONS_ENABLED
     DRAW_SETTING(rf_mode);
     DRAW_SETTING(tx_power);
     DRAW_SETTING(rx_snr);
     DRAW_SETTING(rx_antenna);
+#endif
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);
