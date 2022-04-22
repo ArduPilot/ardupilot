@@ -20,11 +20,11 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: RPM type
     // @Description: What type of RPM sensor is connected
-    // @Values: 0:None,1:Not Used,2:AUXPIN,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
+    // @Values: 0:None,1:Not Used,2:GPIO,3:EFI,4:Harmonic Notch,5:ESC Telemetry Motors Bitmask
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RPM_Params, type, 0, AP_PARAM_FLAG_ENABLE),
     // Note, 1 was previously for type = PWM. This has been removed from docs to make setup less confusing for users.
-    // However, 1 is reserved as it does still fallthrough to type = AUXPIN.
+    // However, 1 is reserved as it does still fallthrough to type = GPIO.
 
     // @Param: SCALING
     // @DisplayName: RPM scaling
@@ -35,14 +35,14 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
 
     // @Param: MAX
     // @DisplayName: Maximum RPM
-    // @Description: Maximum RPM to report. Only used on type = PWM.
+    // @Description: Maximum RPM to report. Only used on type = GPIO.
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MAX", 3, AP_RPM_Params, maximum, 100000),
 
     // @Param: MIN
     // @DisplayName: Minimum RPM
-    // @Description: Minimum RPM to report. Only used on type = PWM.
+    // @Description: Minimum RPM to report. Only used on type = GPIO.
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MIN", 4, AP_RPM_Params, minimum, 10),
@@ -56,7 +56,7 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
 
     // @Param: PIN
     // @DisplayName: Input pin number
-    // @Description: Which pin to use. Only used on type = PWM.
+    // @Description: Which digital GPIO pin to use. Only used on type = GPIO. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     AP_GROUPINFO("PIN", 6, AP_RPM_Params, pin, -1),
