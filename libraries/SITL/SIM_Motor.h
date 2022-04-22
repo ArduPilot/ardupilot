@@ -93,7 +93,8 @@ public:
                           const Vector3f &velocity_air_bf,
                           const Vector3f &gyro, // rad/sec
                           float air_density,
-                          float voltage);
+                          float voltage,
+                          bool use_drag);
 
     uint16_t update_servo(uint16_t demand, uint64_t time_usec, float &last_value) const;
 
@@ -106,7 +107,8 @@ public:
     // setup motor key parameters
     void setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                       float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
-                      float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor);
+                      float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor,
+                      float _true_prop_area, float _momentum_drag_coefficient);
 
     // override slew limit
     void set_slew_max(float _slew_max) {
@@ -132,6 +134,8 @@ private:
     float voltage_max;
     float effective_prop_area;
     float max_outflow_velocity;
+    float true_prop_area;
+    float momentum_drag_coefficient;
 
     float last_command;
     uint64_t last_calc_us;

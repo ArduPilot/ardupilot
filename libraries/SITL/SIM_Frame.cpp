@@ -516,6 +516,7 @@ void Frame::init(const char *frame_str, Battery *_battery)
     float effective_disc_area = hover_thrust / (0.5 * ref_air_density * sq(hover_velocity_out));
     float velocity_max = hover_velocity_out / sqrtf(model.hoverThrOut);
     float effective_prop_area = effective_disc_area / num_motors;
+    float true_prop_area = model.disc_area / num_motors;
 
     // power_factor is ratio of power consumed per newton of thrust
     float power_factor = hover_power / hover_thrust;
@@ -525,7 +526,8 @@ void Frame::init(const char *frame_str, Battery *_battery)
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
                                model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max,
-                               model.motor_pos[i], model.motor_thrust_vec[i], model.yaw_factor[i]);
+                               model.motor_pos[i], model.motor_thrust_vec[i], model.yaw_factor[i], true_prop_area,
+                               model.mdrag_coef);
     }
 
     if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
@@ -596,7 +598,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage());
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
         current += motors[i].get_current();
         torque += mtorque;
         thrust += mthrust;
@@ -621,24 +623,17 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     if (use_drag) {
         // use the model params to calculate drag
         Vector3f drag_bf;
-        drag_bf.x = areaCd * 0.5f * air_density * sq(vel_air_bf.x) +
-                    model.mdrag_coef * fabsf(vel_air_bf.x) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
+        drag_bf.x = areaCd * 0.5f * air_density * sq(vel_air_bf.x);
         if (is_negative(vel_air_bf.x)) {
             drag_bf.x = -drag_bf.x;
         }
 
-        drag_bf.y = areaCd * 0.5f * air_density * sq(vel_air_bf.y) +
-                    model.mdrag_coef * fabsf(vel_air_bf.y) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
+        drag_bf.y = areaCd * 0.5f * air_density * sq(vel_air_bf.y);
         if (is_negative(vel_air_bf.y)) {
             drag_bf.y = -drag_bf.y;
         }
 
-        // The application of momentum drag to the Z axis is a 'hack' to compensate for incorrect modelling
-        // of the variation of thust with vel_air_bf.z in SIM_Motor.cpp. If nmot applied, the vehicle will
-        // climb at an unrealistic rate during operation in STABILIZE. TODO replace prop and motor model in
-        // the Motor class with one based on DC motor, mometum disc and blade elemnt theory.
-        drag_bf.z = areaCd * 0.5f * air_density * sq(vel_air_bf.z) +
-                    model.mdrag_coef * fabsf(vel_air_bf.z) * sqrtf(fabsf(thrust.z) * air_density * model.disc_area);
+        drag_bf.z = areaCd * 0.5f * air_density * sq(vel_air_bf.z);
         if (is_negative(vel_air_bf.z)) {
             drag_bf.z = -drag_bf.z;
         }
