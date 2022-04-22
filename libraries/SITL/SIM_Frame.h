@@ -44,7 +44,7 @@ public:
           num_motors(_num_motors),
           motors(_motors) {}
 
-
+#if AP_SIM_ENABLED
     // find a frame by name
     static Frame *find_frame(const char *name);
     
@@ -56,7 +56,8 @@ public:
                           const struct sitl_input &input,
                           Vector3f &rot_accel, Vector3f &body_accel, float* rpm,
                           bool use_drag=true);
-    
+#endif // AP_SIM_ENABLED
+
     float terminal_velocity;
     float terminal_rotation_rate;
     uint8_t motor_offset;
@@ -147,8 +148,10 @@ private:
     float areaCd;
     float mass;
     float thrust_max;
-    Battery *battery;
     float last_param_voltage;
+#if AP_SIM_ENABLED
+    Battery *battery;
+#endif
 
     // get air density in kg/m^3
     float get_air_density(float alt_amsl) const;
