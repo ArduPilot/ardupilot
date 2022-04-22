@@ -129,7 +129,7 @@ private:
     uint16_t _pwm_values[MAX_RCIN_CHANNELS];
     uint8_t  _num_channels;
     int16_t rssi = -1;
-    int8_t rfmode;
+    int8_t rfmode = -1;
     int16_t rx_link_quality = -1;
     int16_t tx_power = -1;
     int8_t snr = INT8_MIN;

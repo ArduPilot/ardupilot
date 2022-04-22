@@ -364,42 +364,55 @@ int16_t AP_RCProtocol::get_RSSI(void) const
     }
     return -1;
 }
+
 int16_t AP_RCProtocol::get_rx_link_quality(void) const
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->get_rx_link_quality();
-
     }
     return -1;
 }
+
 int8_t AP_RCProtocol::get_rfmode(void) const
 {
+#ifdef RSSI_EXTENSIONS_ENABLED
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->get_rfmode();
     }
+#endif
     return -1; // RF_MODE_UNKNOWN from AP_RCProtocol_CRSF::RFMode
 }
+
 int16_t AP_RCProtocol::get_tx_power(void) const
 {
+#ifdef RSSI_EXTENSIONS_ENABLED
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->get_rfmode();
     }
-    return -1; // RF_MODE_UNKNOWN from AP_RCProtocol_CRSF::RFMode
+#endif
+    return -1;
 }
+
 int8_t AP_RCProtocol::get_snr(void) const
 {
+#ifdef RSSI_EXTENSIONS_ENABLED
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->get_rfmode();
     }
-    return -1; // RF_MODE_UNKNOWN from AP_RCProtocol_CRSF::RFMode
+#endif
+    return -1;
 }
+
 int8_t AP_RCProtocol::get_active_antenna(void) const
 {
+#ifdef RSSI_EXTENSIONS_ENABLED
     if (_detected_protocol != AP_RCProtocol::NONE) {
         return backend[_detected_protocol]->get_rfmode();
     }
-    return -1; // RF_MODE_UNKNOWN from AP_RCProtocol_CRSF::RFMode
+#endif
+    return -1;
 }
+
 /*
   ask for bind start on supported receivers (eg spektrum satellite)
  */

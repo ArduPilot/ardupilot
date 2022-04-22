@@ -29,6 +29,10 @@
   #endif
 #endif
 
+#ifndef RSSI_EXTENSIONS_ENABLED
+#define RSSI_EXTENSIONS_ENABLED (BOARD_FLASH_SIZE>1024)
+#endif
+
 class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
