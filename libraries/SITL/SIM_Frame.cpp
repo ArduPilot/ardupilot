@@ -471,6 +471,7 @@ void Frame::parse_vector3(picojson::value val, const char* label, Vector3f &para
 /*
   initialise the frame
  */
+#if AP_SIM_ENABLED
 void Frame::init(const char *frame_str, Battery *_battery)
 {
     model = default_model;
@@ -671,3 +672,4 @@ void Frame::current_and_voltage(float &voltage, float &current)
         current += motors[i].get_current();
     }
 }
+#endif // AP_SIM_ENABLED

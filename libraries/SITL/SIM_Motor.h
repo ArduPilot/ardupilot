@@ -19,6 +19,7 @@
 #pragma once
 
 #include "SIM_Aircraft.h"
+#include <AP_Math/AP_Math.h>
 
 namespace SITL {
 
