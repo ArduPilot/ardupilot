@@ -12,7 +12,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: PIN
     // @DisplayName: Rangefinder pin
-    // @Description: Analog or PWM input pin that rangefinder is connected to. Airspeed ports can be used for Analog input, AUXOUT can be used for PWM input. When using analog pin 103, the maximum value of the input in 3.3V.
+    // @Description: Analog or PWM input pin that rangefinder is connected to. Airspeed ports can be used for Analog input, AUXOUT can be used for PWM input. When using analog pin 103, the maximum value of the input in 3.3V. For PWM input, the pin must be configured as a digital GPIO, see the Wiki's "GPIOs" section for details.
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @User: Standard
     AP_GROUPINFO("PIN",     2, AP_RangeFinder_Params, pin, -1),
@@ -58,7 +58,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: STOP_PIN
     // @DisplayName: Rangefinder stop pin
-    // @Description: Digital pin that enables/disables rangefinder measurement for the pwm rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This is used to enable powersaving when out of range.
+    // @Description: Digital pin that enables/disables rangefinder measurement for the pwm rangefinder. A value of -1 means no pin. If this is set, then the pin is set to 1 to enable the rangefinder and set to 0 to disable it. This is used to enable powersaving when out of range. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Not Used,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,111:PX4 FMU Relay1,112:PX4 FMU Relay2,113:PX4IO Relay1,114:PX4IO Relay2,115:PX4IO ACC1,116:PX4IO ACC2
     // @User: Standard
     AP_GROUPINFO("STOP_PIN", 8, AP_RangeFinder_Params, stop_pin, -1),
