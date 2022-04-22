@@ -463,6 +463,7 @@ void AP_AHRS::update_notify_from_filter_status(const nav_filter_status &status)
     AP_Notify::flags.gps_fusion = status.flags.using_gps; // Drives AP_Notify flag for usable GPS.
     AP_Notify::flags.gps_glitching = status.flags.gps_glitching;
     AP_Notify::flags.have_pos_abs = status.flags.horiz_pos_abs;
+    AP_Notify::flags.compass_glitch = status.flags.compass_glitch;
 }
 
 #if HAL_NAVEKF2_AVAILABLE
