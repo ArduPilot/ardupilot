@@ -39,6 +39,7 @@ union nav_filter_status {
         bool gps_quality_good   : 1; // 15 - true if we can use GPS for navigation
         bool initalized         : 1; // 16 - true if the EKF has ever been healthy
         bool rejecting_airspeed : 1; // 17 - true if we are rejecting airspeed data
+        bool compass_glitch     : 1; // 18 - true if there is a compass glitch
     } flags;
     uint32_t value;
 };
