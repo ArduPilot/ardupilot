@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: DEPLOY_PIN
     // @DisplayName: Chassis deployment feedback pin
-    // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled.
+    // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
@@ -43,7 +43,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: WOW_PIN
     // @DisplayName: Weight on wheels feedback pin
-    // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled.
+    // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
     // @User: Standard
     // @RebootRequired: True
