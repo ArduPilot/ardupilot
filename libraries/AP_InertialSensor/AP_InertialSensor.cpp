@@ -11,6 +11,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_AHRS/AP_AHRS_View.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_Motors/AP_Motors_Class.h>
@@ -1189,48 +1190,51 @@ void AP_InertialSensor::periodic()
 */
 bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &trim)
 {
-    // allow multiple rotations, this allows us to cope with tailsitters
-    const enum Rotation rotations[] = {ROTATION_NONE,
-#ifndef HAL_BUILD_AP_PERIPH
-                                       AP::ahrs().get_view_rotation()
-#endif
-    };
-    bool good_trim = false;
-    Vector3f newtrim;
-    for (const auto r : rotations) {
-        newtrim = trim;
-        switch (r) {
-        case ROTATION_NONE:
-            newtrim.y = atan2f(accel_sample.x, norm(accel_sample.y, accel_sample.z));
-            newtrim.x = atan2f(-accel_sample.y, -accel_sample.z);
-            break;
-
-        case ROTATION_PITCH_90: {
-            newtrim.y = atan2f(accel_sample.z, norm(accel_sample.y, -accel_sample.x));
-            newtrim.z = atan2f(-accel_sample.y, accel_sample.x);
-            break;
-        }
-        default:
-            // unsupported
-            continue;
-        }
-        if (fabsf(newtrim.x) <= radians(HAL_INS_TRIM_LIMIT_DEG) &&
-            fabsf(newtrim.y) <= radians(HAL_INS_TRIM_LIMIT_DEG) &&
-            fabsf(newtrim.z) <= radians(HAL_INS_TRIM_LIMIT_DEG)) {
-            good_trim = true;
-            break;
+    Rotation rotation = ROTATION_NONE;
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    AP_AHRS_View *view = AP::ahrs().get_view();
+    if (view != nullptr) {
+        // Use pitch to guess which axis the user is trying to trim
+        // 5 deg buffer to favor normal AHRS and avoid floating point funny business
+        if (fabsf(view->pitch) < (fabsf(AP::ahrs().pitch)+radians(5)) ) {
+            // user is trying to calibrate view
+            rotation = view->get_rotation();
+            if (!is_zero(view->get_pitch_trim())) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Cannot calibrate with Q_TRIM_PITCH set");
+                return false;
+            }
         }
     }
-    if (!good_trim) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "trim over maximum of 10 degrees");
+#endif
+
+    Vector3f newtrim = trim;
+    switch (rotation) {
+    case ROTATION_NONE:
+        newtrim.y = atan2f(accel_sample.x, norm(accel_sample.y, accel_sample.z));
+        newtrim.x = atan2f(-accel_sample.y, -accel_sample.z);
+        break;
+
+    case ROTATION_PITCH_90: {
+        newtrim.y = atan2f(accel_sample.z, norm(accel_sample.y, -accel_sample.x));
+        newtrim.z = atan2f(-accel_sample.y, accel_sample.x);
+        break;
+    }
+    default:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "unsupported trim rotation");
         return false;
     }
-    trim = newtrim;
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trim OK: roll=%.2f pitch=%.2f yaw=%.2f",
-                  (double)degrees(trim.x),
-                  (double)degrees(trim.y),
-                  (double)degrees(trim.z));
-    return true;
+    if (fabsf(newtrim.x) <= radians(HAL_INS_TRIM_LIMIT_DEG) &&
+        fabsf(newtrim.y) <= radians(HAL_INS_TRIM_LIMIT_DEG) &&
+        fabsf(newtrim.z) <= radians(HAL_INS_TRIM_LIMIT_DEG)) {
+        trim = newtrim;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Trim OK: roll=%.2f pitch=%.2f yaw=%.2f",
+                        (double)degrees(trim.x),
+                        (double)degrees(trim.y),
+                        (double)degrees(trim.z));
+        return true;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "trim over maximum of 10 degrees");
+    return false;
 }
 
 void
