@@ -236,7 +236,7 @@ bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
     return true;
 }
 
-// return distance in meters between two locations
+// return horizontal distance in meters between two locations
 ftype Location::get_distance(const struct Location &loc2) const
 {
     ftype dlat = (ftype)(loc2.lat - lat);
