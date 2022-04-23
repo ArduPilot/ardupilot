@@ -23,7 +23,7 @@ userdata Location method copy Location
 
 include AP_AHRS/AP_AHRS.h
 
-singleton AP_AHRS alias ahrs
+singleton AP_AHRS rename ahrs
 singleton AP_AHRS semaphore
 singleton AP_AHRS method get_roll float
 singleton AP_AHRS method get_pitch float
@@ -56,7 +56,7 @@ singleton AP_AHRS method initialised boolean
 
 include AP_Arming/AP_Arming.h
 
-singleton AP_Arming alias arming
+singleton AP_Arming rename arming
 singleton AP_Arming method disarm boolean AP_Arming::Method::SCRIPTING'literal
 singleton AP_Arming method is_armed boolean
 singleton AP_Arming method arm boolean AP_Arming::Method::SCRIPTING'literal
@@ -66,7 +66,7 @@ singleton AP_Arming method set_aux_auth_failed void uint8_t 0 UINT8_MAX string
 
 include AP_BattMonitor/AP_BattMonitor.h
 
-singleton AP_BattMonitor alias battery
+singleton AP_BattMonitor rename battery
 singleton AP_BattMonitor method num_instances uint8_t
 singleton AP_BattMonitor method healthy boolean uint8_t 0 ud->num_instances()
 singleton AP_BattMonitor method voltage float uint8_t 0 ud->num_instances()
@@ -84,7 +84,7 @@ singleton AP_BattMonitor method reset_remaining boolean uint8_t 0 ud->num_instan
 
 include AP_GPS/AP_GPS.h
 
-singleton AP_GPS alias gps
+singleton AP_GPS rename gps
 singleton AP_GPS enum NO_GPS NO_FIX GPS_OK_FIX_2D GPS_OK_FIX_3D GPS_OK_FIX_3D_DGPS GPS_OK_FIX_3D_RTK_FLOAT GPS_OK_FIX_3D_RTK_FIXED
 singleton AP_GPS method num_sensors uint8_t
 singleton AP_GPS method primary_sensor uint8_t
@@ -141,7 +141,7 @@ userdata Vector2f method copy Vector2f
 
 
 include AP_Notify/AP_Notify.h
-singleton AP_Notify alias notify
+singleton AP_Notify rename notify
 singleton AP_Notify method play_tune void string
 singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 singleton AP_Notify method handle_rgb_id void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
@@ -149,7 +149,7 @@ singleton AP_Notify method handle_rgb_id void uint8_t 0 UINT8_MAX uint8_t 0 UINT
 include AP_Proximity/AP_Proximity.h
 
 singleton AP_Proximity depends HAL_PROXIMITY_ENABLED == 1
-singleton AP_Proximity alias proximity
+singleton AP_Proximity rename proximity
 singleton AP_Proximity method get_status uint8_t
 singleton AP_Proximity method num_sensors uint8_t
 singleton AP_Proximity method get_object_count uint8_t
@@ -158,7 +158,7 @@ singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t 0 UI
 
 include AP_RangeFinder/AP_RangeFinder.h
 
-singleton RangeFinder alias rangefinder
+singleton RangeFinder rename rangefinder
 singleton RangeFinder method num_sensors uint8_t
 singleton RangeFinder method has_orientation boolean Rotation'enum ROTATION_NONE ROTATION_MAX-1
 singleton RangeFinder method distance_cm_orient uint16_t Rotation'enum ROTATION_NONE ROTATION_MAX-1
@@ -172,7 +172,7 @@ singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATI
 include AP_Terrain/AP_Terrain.h
 
 singleton AP_Terrain depends defined(AP_TERRAIN_AVAILABLE) && AP_TERRAIN_AVAILABLE == 1
-singleton AP_Terrain alias terrain
+singleton AP_Terrain rename terrain
 singleton AP_Terrain method enabled boolean
 singleton AP_Terrain enum TerrainStatusDisabled TerrainStatusUnhealthy TerrainStatusOK
 singleton AP_Terrain method status uint8_t
@@ -182,28 +182,28 @@ singleton AP_Terrain method height_above_terrain boolean float'Null boolean
 
 include AP_Relay/AP_Relay.h
 
-singleton AP_Relay alias relay
+singleton AP_Relay rename relay
 singleton AP_Relay method on void uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method off void uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method enabled boolean uint8_t 0 AP_RELAY_NUM_RELAYS
 singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
 
 include GCS_MAVLink/GCS.h
-singleton GCS alias gcs
+singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
 singleton AP_ONVIF depends ENABLE_ONVIF == 1
-singleton AP_ONVIF alias onvif
+singleton AP_ONVIF rename onvif
 singleton AP_ONVIF method start boolean string string string
 singleton AP_ONVIF method set_absolutemove boolean float'skip_check float'skip_check float'skip_check
 singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
 singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 
 include AP_Vehicle/AP_Vehicle.h
-singleton AP_Vehicle alias vehicle
+singleton AP_Vehicle rename vehicle
 singleton AP_Vehicle scheduler-semaphore
 singleton AP_Vehicle method set_mode boolean uint8_t 0 UINT8_MAX ModeReason::SCRIPTING'literal
 singleton AP_Vehicle method get_mode uint8_t
@@ -236,14 +236,14 @@ singleton AP_Vehicle method nav_scripting_enable boolean uint8_t 0 UINT8_MAX
 singleton AP_Vehicle method set_velocity_match boolean Vector2f
 
 include AP_SerialLED/AP_SerialLED.h
-singleton AP_SerialLED alias serialLED
+singleton AP_SerialLED rename serialLED
 singleton AP_SerialLED method set_num_neopixel boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_num_profiled boolean uint8_t 1 16 uint8_t 0 AP_SERIALLED_MAX_LEDS
 singleton AP_SerialLED method set_RGB void uint8_t 1 16 int8_t -1 INT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 singleton AP_SerialLED method send void uint8_t 1 16
 
 include SRV_Channel/SRV_Channel.h
-singleton SRV_Channels alias SRV_Channels
+singleton SRV_Channels rename SRV_Channels
 singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
 singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
 singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX
@@ -261,14 +261,14 @@ ap_object RC_Channel method norm_input_ignore_trim float
 ap_object RC_Channel method set_override void uint16_t 0 2200 0'literal
 
 include RC_Channel/RC_Channel.h
-singleton RC_Channels alias rc
+singleton RC_Channels rename rc
 singleton RC_Channels scheduler-semaphore
 singleton RC_Channels method get_pwm boolean uint8_t 1 NUM_RC_CHANNELS uint16_t'Null
 singleton RC_Channels method find_channel_for_option RC_Channel RC_Channel::AUX_FUNC'enum 0 UINT16_MAX
 singleton RC_Channels method run_aux_function boolean RC_Channel::AUX_FUNC'enum 0 UINT16_MAX RC_Channel::AuxSwitchPos'enum RC_Channel::AuxSwitchPos::LOW RC_Channel::AuxSwitchPos::HIGH RC_Channel::AuxFuncTriggerSource::SCRIPTING'literal
 singleton RC_Channels method has_valid_input boolean
 singleton RC_Channels method lua_rc_channel RC_Channel uint8_t 1 NUM_RC_CHANNELS
-singleton RC_Channels method lua_rc_channel alias get_channel
+singleton RC_Channels method lua_rc_channel rename get_channel
 
 include AP_SerialManager/AP_SerialManager.h
 
@@ -278,25 +278,25 @@ ap_object AP_HAL::UARTDriver method write uint32_t uint8_t 0 UINT8_MAX
 ap_object AP_HAL::UARTDriver method available uint32_t
 ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
 
-singleton AP_SerialManager alias serial
+singleton AP_SerialManager rename serial
 singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t 0 UINT8_MAX
 
 include AP_Baro/AP_Baro.h
-singleton AP_Baro alias baro
+singleton AP_Baro rename baro
 singleton AP_Baro method get_pressure float
 singleton AP_Baro method get_temperature float
 singleton AP_Baro method get_external_temperature float
 
 include AP_OpticalFlow/AP_OpticalFlow.h
 singleton OpticalFlow depends AP_OPTICALFLOW_ENABLED
-singleton OpticalFlow alias optical_flow
+singleton OpticalFlow rename optical_flow
 singleton OpticalFlow method enabled boolean
 singleton OpticalFlow method healthy boolean
 singleton OpticalFlow method quality uint8_t
 
 include AP_ESC_Telem/AP_ESC_Telem.h
 singleton AP_ESC_Telem depends HAL_WITH_ESC_TELEM == 1
-singleton AP_ESC_Telem alias esc_telem
+singleton AP_ESC_Telem rename esc_telem
 singleton AP_ESC_Telem method get_rpm boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_temperature boolean uint8_t 0 NUM_SERVO_CHANNELS int16_t'Null
 singleton AP_ESC_Telem method get_motor_temperature boolean uint8_t 0 NUM_SERVO_CHANNELS int16_t'Null
@@ -306,14 +306,14 @@ singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t 0 NUM_SERVO_CH
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
 
 include AP_Param/AP_Param.h
-singleton AP_Param alias param
+singleton AP_Param rename param
 singleton AP_Param method get boolean string float'Null
 singleton AP_Param method set_by_name boolean string float'skip_check
-singleton AP_Param method set_by_name alias set
+singleton AP_Param method set_by_name rename set
 singleton AP_Param method set_and_save_by_name boolean string float'skip_check
-singleton AP_Param method set_and_save_by_name alias set_and_save
+singleton AP_Param method set_and_save_by_name rename set_and_save
 singleton AP_Param method set_default_by_name boolean string float'skip_check
-singleton AP_Param method set_default_by_name alias set_default
+singleton AP_Param method set_default_by_name rename set_default
 singleton AP_Param method add_table boolean uint8_t 0 200 string uint8_t 1 63
 singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string float'skip_check
 
@@ -328,7 +328,7 @@ userdata Parameter method set_default boolean float'skip_check
 
 
 include AP_Mission/AP_Mission.h
-singleton AP_Mission alias mission
+singleton AP_Mission rename mission
 singleton AP_Mission scheduler-semaphore
 singleton AP_Mission enum MISSION_STOPPED MISSION_RUNNING MISSION_COMPLETE
 singleton AP_Mission method state uint8_t
@@ -359,39 +359,39 @@ userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MA
 
 
 include AP_RPM/AP_RPM.h
-singleton AP_RPM alias RPM
+singleton AP_RPM rename RPM
 singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 
 include AP_Button/AP_Button.h
 singleton AP_Button depends HAL_BUTTON_ENABLED == 1
-singleton AP_Button alias button
+singleton AP_Button rename button
 singleton AP_Button method get_button_state boolean uint8_t 1 AP_BUTTON_NUM_PINS
 
 include AP_Notify/ScriptingLED.h
-singleton ScriptingLED alias LED
+singleton ScriptingLED rename LED
 singleton ScriptingLED method get_rgb void uint8_t'Ref uint8_t'Ref uint8_t'Ref
 
 include ../ArduPlane/quadplane.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-singleton QuadPlane alias quadplane
+singleton QuadPlane rename quadplane
 singleton QuadPlane depends APM_BUILD_TYPE(APM_BUILD_ArduPlane) && HAL_QUADPLANE_ENABLED
 singleton QuadPlane method in_vtol_mode boolean
 singleton QuadPlane method in_assisted_flight boolean
 
 include AP_Motors/AP_MotorsMatrix.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AP_MotorsMatrix alias MotorsMatrix
+singleton AP_MotorsMatrix rename MotorsMatrix
 singleton AP_MotorsMatrix method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method add_motor_raw void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float 0 FLT_MAX
 
 include AP_Frsky_Telem/AP_Frsky_SPort.h
-singleton AP_Frsky_SPort alias frsky_sport
+singleton AP_Frsky_SPort rename frsky_sport
 singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint16_t 0 UINT16_MAX int32_t -INT32_MAX INT32_MAX
 singleton AP_Frsky_SPort method prep_number uint16_t int32_t INT32_MIN INT32_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
 include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AC_AttitudeControl_Multi_6DoF alias attitude_control
+singleton AC_AttitudeControl_Multi_6DoF rename attitude_control
 singleton AC_AttitudeControl_Multi_6DoF method set_lateral_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_forward_enable void boolean
 singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float'skip_check float'skip_check
@@ -399,7 +399,7 @@ singleton AC_AttitudeControl_Multi_6DoF method set_offset_roll_pitch void float'
 
 include AP_Motors/AP_MotorsMatrix_6DoF_Scripting.h  depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AP_MotorsMatrix_6DoF_Scripting depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
-singleton AP_MotorsMatrix_6DoF_Scripting alias Motors_6DoF
+singleton AP_MotorsMatrix_6DoF_Scripting rename Motors_6DoF
 singleton AP_MotorsMatrix_6DoF_Scripting method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_6DoF_Scripting method add_motor void int8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check float'skip_check boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 
@@ -416,38 +416,38 @@ ap_object AP_HAL::AnalogSource method voltage_average float
 ap_object AP_HAL::AnalogSource method voltage_latest float
 ap_object AP_HAL::AnalogSource method voltage_average_ratiometric float
 
-userdata AP_HAL::PWMSource alias PWMSource
+userdata AP_HAL::PWMSource rename PWMSource
 userdata AP_HAL::PWMSource method set_pin boolean uint8_t 0 UINT8_MAX "Scripting"'literal
 userdata AP_HAL::PWMSource method get_pwm_us uint16_t
 userdata AP_HAL::PWMSource method get_pwm_avg_us uint16_t
 
-singleton hal.gpio alias gpio
+singleton hal.gpio rename gpio
 singleton hal.gpio literal
 singleton hal.gpio method read boolean uint8_t 0 UINT8_MAX
 singleton hal.gpio method write void uint8_t 0 UINT8_MAX uint8_t 0 1
 singleton hal.gpio method toggle void uint8_t 0 UINT8_MAX
 singleton hal.gpio method pinMode void uint8_t 0 UINT8_MAX uint8_t 0 1
 
-singleton hal.analogin alias analog
+singleton hal.analogin rename analog
 singleton hal.analogin literal
 singleton hal.analogin method channel AP_HAL::AnalogSource ANALOG_INPUT_NONE'literal
 
 include AP_Motors/AP_MotorsMatrix_Scripting_Dynamic.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_MotorsMatrix_Scripting_Dynamic depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AP_MotorsMatrix_Scripting_Dynamic alias Motors_dynamic
+singleton AP_MotorsMatrix_Scripting_Dynamic rename Motors_dynamic
 singleton AP_MotorsMatrix_Scripting_Dynamic method init boolean uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method add_motor void uint8_t 0 (AP_MOTORS_MAX_NUM_MOTORS-1) uint8_t 0 AP_MOTORS_MAX_NUM_MOTORS
 singleton AP_MotorsMatrix_Scripting_Dynamic method load_factors void AP_MotorsMatrix_Scripting_Dynamic::factor_table
 
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table alias motor_factor_table
+userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table rename motor_factor_table
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field roll'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field pitch'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field yaw'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 userdata AP_MotorsMatrix_Scripting_Dynamic::factor_table field throttle'array AP_MOTORS_MAX_NUM_MOTORS float'skip_check read write
 
 include AP_InertialSensor/AP_InertialSensor.h
-singleton AP_InertialSensor alias ins
+singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
 
 
@@ -455,7 +455,7 @@ include AP_Scripting/AP_Scripting_CANSensor.h depends HAL_MAX_CAN_PROTOCOL_DRIVE
 include AP_HAL/AP_HAL.h
 
 userdata AP_HAL::CANFrame depends HAL_MAX_CAN_PROTOCOL_DRIVERS
-userdata AP_HAL::CANFrame alias CANFrame
+userdata AP_HAL::CANFrame rename CANFrame
 userdata AP_HAL::CANFrame field id uint32_t read write 0U UINT32_MAX
 userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t read write 0 UINT8_MAX
 userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
@@ -470,7 +470,7 @@ ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 
 include ../Tools/AP_Periph/AP_Periph.h depends defined(HAL_BUILD_AP_PERIPH)
 singleton AP_Periph_FW depends defined(HAL_BUILD_AP_PERIPH)
-singleton AP_Periph_FW alias periph
+singleton AP_Periph_FW rename periph
 singleton AP_Periph_FW method get_yaw_earth float
 singleton AP_Periph_FW method get_vehicle_state uint32_t
 singleton AP_Periph_FW method can_printf void "%s"'literal string
@@ -478,26 +478,26 @@ singleton AP_Periph_FW method can_printf void "%s"'literal string
 include AP_Motors/AP_Motors_Class.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP::motors() depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP::motors() literal
-singleton AP::motors() alias motors
+singleton AP::motors() rename motors
 singleton AP::motors() method set_frame_string void string
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal
 singleton AP::fwversion() reference
-singleton AP::fwversion() alias FWVersion
+singleton AP::fwversion() rename FWVersion
 singleton AP::fwversion() field fw_short_string string read
-singleton AP::fwversion() field fw_short_string alias string
+singleton AP::fwversion() field fw_short_string rename string
 singleton AP::fwversion() field vehicle_type uint8_t read
-singleton AP::fwversion() field vehicle_type alias type
+singleton AP::fwversion() field vehicle_type rename type
 singleton AP::fwversion() field major uint8_t read
 singleton AP::fwversion() field minor uint8_t read
 singleton AP::fwversion() field patch uint8_t read
 singleton AP::fwversion() field fw_hash_str string read
-singleton AP::fwversion() field fw_hash_str alias hash
+singleton AP::fwversion() field fw_hash_str rename hash
 
 include AP_Follow/AP_Follow.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AP_Follow depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
-singleton AP_Follow alias follow
+singleton AP_Follow rename follow
 singleton AP_Follow method have_target boolean
 singleton AP_Follow method get_last_update_ms uint32_t
 singleton AP_Follow method get_target_location_and_velocity boolean Location'Null Vector3f'Null
