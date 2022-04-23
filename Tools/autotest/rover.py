@@ -5789,10 +5789,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # the following magic numbers correspond to the post locations in SITL
         home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 315)
 
-        self.set_parameters({
+        rangefinder_params = {
             "SIM_SONAR_ROT": 6,
-            **(self.analog_rangefinder_parameters()),
-        })
+        }
+        rangefinder_params.update(self.analog_rangefinder_parameters())
+
+        self.set_parameters(rangefinder_params)
         self.customise_SITL_commandline([
             "--home", home_string,
         ])
