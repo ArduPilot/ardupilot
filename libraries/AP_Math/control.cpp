@@ -508,18 +508,45 @@ float input_expo(float input, float expo)
     return input;
 }
 
-/*
-  convert a maximum lean angle in degrees to an accel limit in m/s/s
- */
+// angle_to_accel converts a maximum lean angle in degrees to an accel limit in m/s/s
 float angle_to_accel(float angle_deg)
 {
     return GRAVITY_MSS * tanf(radians(angle_deg));
 }
 
-/*
-  convert a maximum accel in m/s/s to a lean angle in degrees
- */
+// accel_to_angle converts a maximum accel in m/s/s to a lean angle in degrees
 float accel_to_angle(float accel)
 {
     return degrees(atanf((accel/GRAVITY_MSS)));
+}
+
+// rc_input_to_roll_pitch - transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+// roll_in_unit and pitch_in_unit - are normalised roll and pitch stick input
+// angle_max_deg - maximum lean angle from the z axis
+// angle_limit_deg - provides the ability to reduce the maximum output lean angle to less than angle_max_deg
+// returns roll and pitch angle in degrees
+void rc_input_to_roll_pitch(float roll_in_unit, float pitch_in_unit, float angle_max_deg, float angle_limit_deg, float &roll_out_deg, float &pitch_out_deg)
+{
+    angle_max_deg = MIN(angle_max_deg, 85.0);
+    float rc_2_rad = radians(angle_max_deg);
+
+    // fetch roll and pitch stick positions and convert them to normalised horizontal thrust
+    Vector2f thrust;
+    thrust.x = - tanf(rc_2_rad * pitch_in_unit);
+    thrust.y = tanf(rc_2_rad * roll_in_unit);
+
+    // calculate the horizontal thrust limit based on the angle limit
+    angle_limit_deg = constrain_float(angle_limit_deg, 10.0f, angle_max_deg);
+    float thrust_limit = tanf(radians(angle_limit_deg));
+
+    // apply horizontal thrust limit
+    thrust.limit_length(thrust_limit);
+
+    // Conversion from angular thrust vector to euler angles.
+    float pitch_rad = - atanf(thrust.x);
+    float roll_rad = atanf(cosf(pitch_rad) * thrust.y);
+
+    // Convert to degrees
+    roll_out_deg = degrees(roll_rad);
+    pitch_out_deg = degrees(pitch_rad);
 }
