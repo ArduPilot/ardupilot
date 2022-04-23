@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <getopt.h>
 
+char keyword_alias[]               = "alias";
 char keyword_rename[]              = "rename";
 char keyword_ap_object[]           = "ap_object";
 char keyword_comment[]             = "--";
@@ -55,6 +56,7 @@ enum error_codes {
   ERROR_GENERAL         = 6, // general error
   ERROR_SINGLETON       = 7, // singletons
   ERROR_DEPENDS         = 8, // dependencies
+  ERROR_DOCS            = 9, // Documentation
 };
 
 struct header {
@@ -343,6 +345,13 @@ struct method {
   uint32_t flags; // filled out with TYPE_FLAGS
 };
 
+struct method_alias {
+  struct method_alias *next;
+  char *name;
+  char *alias;
+  int line;
+};
+
 struct userdata_field {
   struct userdata_field * next;
   char * name;
@@ -373,6 +382,7 @@ struct userdata {
   char *rename; // (optional) used for scripting access
   struct userdata_field *fields;
   struct method *methods;
+  struct method_alias *method_aliases;
   struct userdata_enum *enums;
   enum userdata_type ud_type;
   uint32_t operations; // bitset of enum operation_types
@@ -700,8 +710,9 @@ void handle_userdata_field(struct userdata *data) {
   field->access_flags = parse_access_flags(&(field->type));
 }
 
-void handle_method(char *parent_name, struct method **methods) {
+void handle_method(struct userdata *node) {
   trace(TRACE_USERDATA, "Adding a method");
+  char * parent_name = node->name;
 
   // find the field name
   char * name = next_token();
@@ -709,24 +720,52 @@ void handle_method(char *parent_name, struct method **methods) {
     error(ERROR_USERDATA, "Missing method name for %s", parent_name);
   }
   
-  struct method * method = *methods;
+  struct method * method = node->methods;
   while (method != NULL && strcmp(method->name, name)) {
     method = method-> next;
   }
   if (method != NULL) {
     char *token = next_token();
-    if (strcmp(token, keyword_rename) != 0) {
-      error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
+    if (strcmp(token, keyword_rename) == 0) {
+      char *rename = next_token();
+      string_copy(&(method->rename), rename);
+      return;
+
+    } else if (strcmp(token, keyword_alias) == 0) {
+      char *alias_name = next_token();
+
+      struct method * method = node->methods;
+      while (method != NULL && strcmp(method->name, alias_name)) {
+        method = method-> next;
+      }
+      if (method != NULL) {
+        error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d) cannot alias to %s", alias_name, parent_name, method->line, name);
+      }
+
+
+      struct method_alias *alias = allocate(sizeof(struct method_alias));
+      string_copy(&(alias->name), name);
+      string_copy(&(alias->alias), alias_name);
+      alias->line = state.line_num;
+      alias->next = node->method_aliases;
+      node->method_aliases = alias;
+      return;
     }
-    char *rename = next_token();
-    string_copy(&(method->rename), rename);
-    return;
+    error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
+  }
+
+  struct method_alias * alias = node->method_aliases;
+  while (alias != NULL && strcmp(alias->alias, name)) {
+    alias = alias-> next;
+  }
+  if (alias != NULL) {
+    error(ERROR_USERDATA, "alias %s already exists for %s (declared on %d)", name, alias->name, alias->line);
   }
 
   trace(TRACE_USERDATA, "Adding method %s", name);
   method = allocate(sizeof(struct method));
-  method->next = *methods;
-  *methods = method;
+  method->next = node->methods;
+  node->methods = method;
   string_copy(&(method->name), name);
   sanatize_name(&(method->sanatized_name), name);
   method->line = state.line_num;
@@ -830,7 +869,7 @@ void handle_userdata(void) {
     node->next = parsed_userdata;
     parsed_userdata = node;
   } else {
-    trace(TRACE_USERDATA, "Found exsisting userdata for %s", name);
+    trace(TRACE_USERDATA, "Found existing userdata for %s", name);
   }
 
   // read type
@@ -845,7 +884,7 @@ void handle_userdata(void) {
   } else if (strcmp(type, keyword_operator) == 0) {
     handle_operator(node);
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(node->name, &(node->methods));
+    handle_method(node);
   } else if (strcmp(type, keyword_enum) == 0) {
     handle_userdata_enum(node);
   } else if (strcmp(type, keyword_rename) == 0) {
@@ -922,7 +961,7 @@ void handle_singleton(void) {
   } else if (strcmp(type, keyword_semaphore_pointer) == 0) {
     node->flags |= UD_FLAG_SCHEDULER_SEMAPHORE;
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(node->name, &(node->methods));
+    handle_method(node);
   } else if (strcmp(type, keyword_enum) == 0) {
     handle_userdata_enum(node);
   } else if (strcmp(type, keyword_depends) == 0) {
@@ -998,7 +1037,7 @@ void handle_ap_object(void) {
   } else if (strcmp(type, keyword_semaphore_pointer) == 0) {
     node->flags |= UD_FLAG_SEMAPHORE_POINTER;
   } else if (strcmp(type, keyword_method) == 0) {
-    handle_method(node->name, &(node->methods));
+    handle_method(node);
   } else if (strcmp(type, keyword_depends) == 0) {
       if (node->dependency != NULL) {
         error(ERROR_SINGLETON, "AP_Objects only support a single depends");
@@ -2025,6 +2064,12 @@ void emit_index(struct userdata *head) {
       field = field->next;
     }
 
+    struct method_alias *alias = node->method_aliases;
+    while(alias) {
+      fprintf(source, "    {\"%s\", %s_%s},\n", alias->alias, node->sanatized_name, alias->name);
+      alias = alias->next;
+    }
+
     fprintf(source, "};\n\n");
 
     if (node->operations) {
@@ -2269,6 +2314,53 @@ void emit_docs_type(struct type type, const char *prefix, const char *suffix) {
   }
 }
 
+void emit_docs_method(const char *name, const char *method_name, struct method *method) {
+
+  fprintf(docs, "-- desc\n");
+
+  struct argument *arg = method->arguments;
+  int count = 1;
+  // input arguments
+  while (arg != NULL) {
+    if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0) {
+      char *param_name = (char *)allocate(20);
+      sprintf(param_name, "---@param param%i", count);
+      emit_docs_type(arg->type, param_name, "\n");
+      free(param_name);
+      count++;
+    }
+    arg = arg->next;
+  }
+
+  // return type
+  if ((method->flags & TYPE_FLAGS_NULLABLE) == 0) {
+    emit_docs_type(method->return_type, "---@return", "\n");
+  }
+
+  arg = method->arguments;
+  // nulable and refences returns
+  while (arg != NULL) {
+    if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
+      if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
+        emit_docs_type(arg->type, "---@return", "|nil\n");
+      } else {
+        emit_docs_type(arg->type, "---@return", "\n");
+      }
+    }
+    arg = arg->next;
+  }
+
+  // function name
+  fprintf(docs, "function %s:%s(", name, method_name);
+  for (int i = 1; i < count; ++i) {
+    fprintf(docs, "param%i", i);
+    if (i < count-1) {
+      fprintf(docs, ", ");
+    }
+  }
+  fprintf(docs, ") end\n\n");
+}
+
 void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
   while(node) {
     char *name = (char *)allocate(strlen(node->rename ? node->rename : node->sanatized_name) + 5);
@@ -2344,51 +2436,28 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     // methods
     struct method *method = node->methods;
     while(method) {
-      fprintf(docs, "-- desc\n");
+      emit_docs_method(name, method->rename ? method->rename : method->name, method);
 
-      struct argument *arg = method->arguments;
-      int count = 1;
-      // input arguments
-      while (arg != NULL) {
-        if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) == 0) {
-          char *param_name = (char *)allocate(20);
-          sprintf(param_name, "---@param param%i", count);
-          emit_docs_type(arg->type, param_name, "\n");
-          free(param_name);
-          count++;
-        }
-        arg = arg->next;
-      }
-
-      // return type
-      if ((method->flags & TYPE_FLAGS_NULLABLE) == 0) {
-        emit_docs_type(method->return_type, "---@return", "\n");
-      }
-
-      arg = method->arguments;
-      // nulable and refences returns
-      while (arg != NULL) {
-        if ((arg->type.type != TYPE_LITERAL) && (arg->type.flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE))) {
-          if (arg->type.flags & TYPE_FLAGS_NULLABLE) {
-            emit_docs_type(arg->type, "---@return", "|nil\n");
-          } else {
-            emit_docs_type(arg->type, "---@return", "\n");
-          }
-        }
-        arg = arg->next;
-      }
-
-      // function name
-      fprintf(docs, "function %s:%s(", name, method->rename ? method->rename : method->name);
-      for (int i = 1; i < count; ++i) {
-        fprintf(docs, "param%i", i);
-        if (i < count-1) {
-          fprintf(docs, ", ");
-        }
-      }
-      fprintf(docs, ") end\n\n");
       method = method->next;
     }
+
+    // aliases
+    struct method_alias *alias = node->method_aliases;
+    while(alias) {
+      // find the method this is a alias of
+      struct method * method = node->methods;
+      while (method != NULL && strcmp(method->name, alias->name)) {
+        method = method-> next;
+      }
+      if (method == NULL) {
+        error(ERROR_DOCS, "Could not fine Method %s to alias to %s", alias->name, alias->alias);
+      }
+
+      emit_docs_method(name, alias->alias, method);
+
+      alias = alias->next;
+    }
+
     fprintf(docs, "\n");
     free(name);
     node = node->next;
