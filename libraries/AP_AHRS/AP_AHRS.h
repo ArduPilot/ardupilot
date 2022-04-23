@@ -102,10 +102,6 @@ public:
 
     // dead-reckoning support
     bool get_location(struct Location &loc) const;
-    // for scripting until aliases get sorted out:
-    bool get_position(struct Location &loc) const {
-        return get_location(loc);
-    }
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
