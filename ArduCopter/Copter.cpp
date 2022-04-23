@@ -444,6 +444,12 @@ void Copter::nav_script_time_done(uint16_t id)
     return mode_auto.nav_script_time_done(id);
 }
 
+// returns true if the EKF failsafe has triggered.  Only used by Lua scripts
+bool Copter::has_ekf_failsafed() const
+{
+    return failsafe.ekf;
+}
+
 #endif // AP_SCRIPTING_ENABLED
 
 
