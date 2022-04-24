@@ -7,6 +7,14 @@ SITL::Rotoye::Rotoye() :
     add_register("External Temperature", SMBusBattRotoyeDevReg::TEMP_EXT, SITL::I2CRegisters::RegMode::RDONLY);
 
     set_register(SMBusBattRotoyeDevReg::SERIAL, (uint16_t)39);
+
+    const char *manufacturer_name = "Rotoye";
+    set_block(SMBusBattDevReg::MANUFACTURE_NAME, manufacturer_name);
+
+    const char *device_name = "SITL_BatMon v4.03";
+    set_block(SMBusBattDevReg::DEVICE_NAME, device_name);
+
+    set_register(SMBusBattGenericDevReg::SERIAL, (uint16_t) 278);
 }
 
 void SITL::Rotoye::update(const class Aircraft &aircraft)

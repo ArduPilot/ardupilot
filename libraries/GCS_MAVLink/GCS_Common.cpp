@@ -3848,6 +3848,10 @@ void GCS_MAVLINK::send_banner()
         }
     }
 #endif
+
+    // send smart_battery_info MAVLink message for each battery monitor
+    // this could be removed if GCSs are updated to request the smart_batt_info_message
+    send_smart_battery_info();
 }
 
 
@@ -5062,6 +5066,33 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
+// returns true if all battery instances were reported
+bool GCS_MAVLINK::send_smart_battery_info()
+{
+#if HAL_SMART_BATTERY_INFO_ENABLED
+    const AP_BattMonitor &battery = AP::battery();
+
+    for (uint8_t i = 0; i < battery.num_instances(); i++) {
+        const uint8_t battery_id = (last_smart_battery_info_idx + 1) % battery.num_instances();
+        AP_BattMonitor::Type batt_type = battery.get_type(battery_id);
+        if (batt_type != AP_BattMonitor::Type::NONE &&
+            batt_type != AP_BattMonitor::Type::ANALOG_VOLTAGE_ONLY &&
+            batt_type != AP_BattMonitor::Type::ANALOG_VOLTAGE_AND_CURRENT) {
+
+            CHECK_PAYLOAD_SIZE(SMART_BATTERY_INFO);
+            if (!AP::battery().send_mavlink_smart_battery_info(battery_id, chan)) {
+                return false;
+            }
+            last_smart_battery_info_idx = battery_id;
+        } else {
+            last_smart_battery_info_idx = battery_id;
+        }
+    }
+#endif
+    return true;
+}
+
+
 void GCS_MAVLINK::send_generator_status() const
 {
 #if HAL_GENERATOR_ENABLED
@@ -5233,6 +5264,13 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_BATTERY2:
         CHECK_PAYLOAD_SIZE(BATTERY2);
         send_battery2();
+        break;
+
+    case MSG_SMART_BATTERY_INFO:
+#if HAL_SMART_BATTERY_INFO_ENABLED
+        CHECK_PAYLOAD_SIZE(SMART_BATTERY_INFO);
+        ret = send_smart_battery_info();
+#endif
         break;
 
     case MSG_EKF_STATUS_REPORT:
