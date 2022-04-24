@@ -14,7 +14,14 @@ fi
 
 apt-get update
 
-apt-get install -y ubuntu-desktop
+RELEASE_CODENAME=$(lsb_release -c -s)
+
+PACKAGES="ubuntu-desktop"
+if [ ${RELEASE_CODENAME} == 'jammy' ]; then
+    PACKAGES="$PACKAGES dbus-x11"
+fi
+
+apt-get install -y $PACKAGES
 
 GDB_CONF="/etc/gdm3/custom.conf"
 perl -pe 's/#  AutomaticLoginEnable = true/AutomaticLoginEnable = true/'  -i "$GDB_CONF"
