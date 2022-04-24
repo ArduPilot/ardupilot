@@ -665,6 +665,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
         // should probably use SITL variables...
         return 0.0f;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     static uint64_t count = 0;
 
     if (count == 0) {
@@ -681,6 +683,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     if (write_debug_files) {
         rayfile = fopen("/tmp/rayfile.scr", "a");
     }
+#endif
+
     // cast a ray from location out 200m...
     Location location2 = location;
     location2.offset_bearing(wrap_180(angle + state.yawDeg), 200);
@@ -689,6 +693,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
         // should probably use SITL variables...
         return 0.0f;
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (rayfile != nullptr) {
         ::fprintf(rayfile, "map icon %f %f barrell\n", location2.lat*1e-7, location2.lng*1e-7);
         fclose(rayfile);
@@ -706,6 +711,8 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
         }
         intersectionsfile = fopen("/tmp/intersections.scr", "a");
     }
+#endif
+
     const float radius_cm = 100.0f;
     float min_dist_cm = 1000000.0;
     const uint8_t num_post_offset = 10;
@@ -713,9 +720,11 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
         for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
             Location post_location = post_origin;
             post_location.offset(x*10+3, y*10+2);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             if (postfile != nullptr) {
                 ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
             }
+#endif
             Vector2f post_position_cm;
             if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
                 // should probably use SITL variables...
@@ -724,6 +733,7 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
             Vector2f intersection_point_cm;
             if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
                 float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
                 if (intersectionsfile != nullptr) {
                     Location intersection_point = location;
                     intersection_point.offset(intersection_point_cm.x/100.0,
@@ -733,18 +743,21 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
                               intersection_point.lat*1e-7,
                               intersection_point.lng*1e-7);
                 }
+#endif
                 if (dist_cm < min_dist_cm) {
                     min_dist_cm = dist_cm;
                 }
             }
         }
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (postfile != nullptr) {
         fclose(postfile);
     }
     if (intersectionsfile != nullptr) {
         fclose(intersectionsfile);
     }
+#endif
 
     // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
     return min_dist_cm / 100.0f;
