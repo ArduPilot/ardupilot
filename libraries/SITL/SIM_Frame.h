@@ -153,10 +153,11 @@ private:
     // get air density in kg/m^3
     float get_air_density(float alt_amsl) const;
 
+#if USE_PICOJSON
     // load frame parameters from a json model file
     void load_frame_params(const char *model_json);
     void parse_float(picojson::value val, const char* label, float &param);
     void parse_vector3(picojson::value val, const char* label, Vector3f &param);
-
+#endif
 };
 }
