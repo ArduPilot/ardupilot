@@ -7,6 +7,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Relay.h"
+#include <AP_Logger/AP_Logger.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #define RELAY1_PIN_DEFAULT 13
@@ -140,6 +141,18 @@ void AP_Relay::set(const uint8_t instance, const bool value)
     if (_pin[instance] == -1) {
         return;
     }
+    const uint32_t now = AP_HAL::millis();
+    _pin_states = value ? _pin_states | (1U<<instance) : _pin_states & ~(1U<<instance);
+    if ((_pin_states != _last_logged_pin_states) && (now - _last_log_ms > 10)) {
+       AP::logger().Write("RELY", "TimeUS,State", "s-", "F-", "QB",
+                                        AP_HAL::micros64(),
+                                        _pin_states);
+       _last_log_ms = now;
+       _last_logged_pin_states = _pin_states;
+    }
+#if AP_SIM_ENABLED && (CONFIG_HAL_BOARD != HAL_BOARD_SITL)
+    return;
+#endif
     hal.gpio->pinMode(_pin[instance], HAL_GPIO_OUTPUT);
     hal.gpio->write(_pin[instance], value);
 }
