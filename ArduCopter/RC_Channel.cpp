@@ -200,7 +200,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             if (ch_flag == RC_Channel::AuxSwitchPos::HIGH) {
 
                 // do not allow saving new waypoints while we're in auto or disarmed
-                if (copter.flightmode == &copter.mode_auto || !copter.motors->armed()) {
+                if (copter.flightmode->mode_number() == Mode::Number::AUTO || !copter.motors->armed()) {
                     break;
                 }
 
@@ -474,7 +474,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
         case AUX_FUNC::ZIGZAG_SaveWP:
 #if MODE_ZIGZAG_ENABLED == ENABLED
-            if (copter.flightmode == &copter.mode_zigzag) {
+            if (copter.flightmode->mode_number() ==  Mode::Number::ZIGZAG) {
                 // initialize zigzag auto
                 copter.mode_zigzag.init_auto();
                 switch (ch_flag) {
@@ -563,7 +563,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
         case AUX_FUNC::ZIGZAG_Auto:
 #if MODE_ZIGZAG_ENABLED == ENABLED
-            if (copter.flightmode == &copter.mode_zigzag) {
+            if (copter.flightmode->mode_number() == Mode::Number::ZIGZAG) {
                 switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     copter.mode_zigzag.run_auto();
@@ -672,7 +672,7 @@ void Copter::auto_trim_cancel()
 void Copter::auto_trim()
 {
     if (auto_trim_counter > 0) {
-        if (copter.flightmode != &copter.mode_stabilize ||
+        if (copter.flightmode->mode_number() != Mode::Number::STABILIZE ||
             !copter.motors->armed()) {
             auto_trim_cancel();
             return;
