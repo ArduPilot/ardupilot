@@ -26,6 +26,7 @@ char keyword_userdata[]            = "userdata";
 char keyword_write[]               = "write";
 char keyword_literal[]             = "literal";
 char keyword_reference[]           = "reference";
+char keyword_deprecate[]           = "deprecate";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -339,6 +340,7 @@ struct method {
   char *name;
   char *sanatized_name;  // sanatized name of the C++ singleton
   char *rename; // (optional) used for scripting access
+  char *deprecate; // (optional) issue deprecateion warning string on first call
   int line; // line declared on
   struct type return_type;
   struct argument * arguments;
@@ -749,6 +751,14 @@ void handle_method(struct userdata *node) {
       alias->line = state.line_num;
       alias->next = node->method_aliases;
       node->method_aliases = alias;
+      return;
+
+    } else if (strcmp(token, keyword_deprecate) == 0) {
+      char *deprecate = strtok(NULL, "");
+      if (deprecate == NULL) {
+        error(ERROR_USERDATA, "Expected a deprecate string for %s %s on line", parent_name, name, state.line_num);
+      }
+      string_copy(&(method->deprecate), deprecate);
       return;
     }
     error(ERROR_USERDATA, "Method %s already exists for %s (declared on %d)", name, parent_name, method->line);
@@ -1664,6 +1674,16 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    }\n\n");
   }
 
+  // emit warning if configured
+  if (method->deprecate != NULL) {
+    fprintf(source, "    static bool warned = false;\n");
+    fprintf(source, "    if (!warned) {\n");
+    fprintf(source, "        lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, \"%s:%s %s\");\n", data->rename, method->rename ? method->rename : method->name, method->deprecate);
+    fprintf(source, "        warned = true;\n");
+    fprintf(source, "    }\n\n");
+  }
+
+
   // sanity check number of args called with
   arg_count = 1;
   while (arg != NULL) {
@@ -2318,6 +2338,10 @@ void emit_docs_method(const char *name, const char *method_name, struct method *
 
   fprintf(docs, "-- desc\n");
 
+  if (method->deprecate != NULL) {
+    fprintf(docs, "---@deprecated %s\n", method->deprecate);
+  }
+
   struct argument *arg = method->arguments;
   int count = 1;
   // input arguments
@@ -2588,6 +2612,9 @@ int main(int argc, char **argv) {
   fprintf(source, "#pragma GCC optimize(\"Os\")\n");
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
   fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
+
+  // for set_and_print_new_error_message deprecate warning
+  fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
 
   trace(TRACE_GENERAL, "Starting emission");
 
