@@ -64,8 +64,13 @@ public:
         _aparm(aparm),
         _motors(motors)
         {
+            _singleton = this;
             AP_Param::setup_object_defaults(this, var_info);
         }
+
+    static AC_AttitudeControl *get_singleton(void) {
+        return _singleton;
+    }
 
     // Empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl() {}
@@ -362,7 +367,10 @@ public:
 
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
-    
+
+    // get the PDmod value for roll, pitch and yaw, for oscillation detection in lua scripts
+    void get_rpy_PDmod(float &roll_dmod, float &pitch_dmod, float &yaw_dmod);
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -482,6 +490,8 @@ protected:
     const AP_AHRS_View&  _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+    static AC_AttitudeControl *_singleton;
 
 protected:
     /*
