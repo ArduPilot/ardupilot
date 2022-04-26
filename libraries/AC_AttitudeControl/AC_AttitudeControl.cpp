@@ -11,6 +11,8 @@ extern const AP_HAL::HAL& hal;
  # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f   // Medium
 #endif
 
+AC_AttitudeControl *AC_AttitudeControl::_singleton;
+
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
@@ -1128,4 +1130,15 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
         }
     }
     return true;
+}
+
+/*
+  get the slew rate for roll, pitch and yaw, for oscillation
+  detection in lua scripts
+*/
+void AC_AttitudeControl::get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate)
+{
+    roll_srate = get_rate_roll_pid().get_pid_info().slew_rate;
+    pitch_srate = get_rate_pitch_pid().get_pid_info().slew_rate;
+    yaw_srate = get_rate_yaw_pid().get_pid_info().slew_rate;
 }
