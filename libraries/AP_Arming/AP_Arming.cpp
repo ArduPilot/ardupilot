@@ -1523,8 +1523,7 @@ bool AP_Arming::disarm_switch_checks(bool display_failure) const
 {
     const RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::DISARM);
     if (chan != nullptr &&
-        chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH &&
-        (checks_to_perform & ARMING_CHECK_ALL)) {
+        chan->get_aux_switch_pos() == RC_Channel::AuxSwitchPos::HIGH) {
         check_failed(display_failure, "Disarm Switch on");
         return false;
     }
