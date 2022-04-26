@@ -187,6 +187,7 @@ void RangeFinder::convert_params(void) {
     };
 
     const struct ConversionTable conversionTable[] = {
+        // PARAMETER_CONVERSION - Added: Feb-2019
             // rangefinder 1
             {0, 0, 0}, //0, TYPE 1
             {1, 1, 0}, //1, PIN 1
