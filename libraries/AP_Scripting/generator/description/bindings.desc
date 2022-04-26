@@ -256,6 +256,7 @@ singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'e
 singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
 
 ap_object RC_Channel method norm_input float
+ap_object RC_Channel method norm_input_dz float
 ap_object RC_Channel method get_aux_switch_pos uint8_t
 ap_object RC_Channel method norm_input_ignore_trim float
 
@@ -502,3 +503,6 @@ singleton AP_Follow method get_target_location_and_velocity boolean Location'Nul
 singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_heading_deg boolean float'Null
 
+include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
