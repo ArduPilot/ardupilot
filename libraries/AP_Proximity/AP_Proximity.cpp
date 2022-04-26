@@ -26,6 +26,7 @@
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_AirSimSITL.h"
 #include "AP_Proximity_Cygbot_D1.h"
+#include "AP_Proximity_ARS408_CAN.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -367,6 +368,14 @@ void AP_Proximity::detect_instance(uint8_t instance)
         drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance]);
         return;
 
+#endif
+
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+    case Type::ARS408_CAN:
+        state[instance].instance = instance;
+        drivers[instance] = new AP_Proximity_ARS408_CAN(*this, state[instance]);
+        return;
+    break;
 #endif
     }
 }
