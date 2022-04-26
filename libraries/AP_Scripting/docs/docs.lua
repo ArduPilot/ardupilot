@@ -1956,6 +1956,16 @@ function ahrs:get_pitch() end
 function ahrs:get_roll() end
 
 -- desc
+---@class AC_AttitudeControl
+AC_AttitudeControl = {}
+
+-- return PD modifier for VTOL controller
+---@return number -- roll PDmod
+---@return number -- pitch PDmod
+---@return number -- yaw PDmod
+function AC_AttitudeControl:get_rpy_PDmod() end
+
+-- desc
 ---@class follow
 follow = {}
 
