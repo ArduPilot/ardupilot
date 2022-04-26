@@ -683,9 +683,13 @@ function RC_Channel_ud:norm_input_ignore_trim() end
 ---@return integer
 function RC_Channel_ud:get_aux_switch_pos() end
 
--- desc
+-- desc return input on a channel from -1 to 1, centered on the trim. Ignores the deadzone
 ---@return number
 function RC_Channel_ud:norm_input() end
+
+-- desc return input on a channel from -1 to 1, centered on the trim. Returns zero when within deadzone of the trim
+---@return number
+function RC_Channel_ud:norm_input_dz() end
 
 
 -- desc
@@ -1947,6 +1951,16 @@ function ahrs:get_pitch() end
 -- desc
 ---@return number
 function ahrs:get_roll() end
+
+-- desc
+---@class AC_AttitudeControl
+AC_AttitudeControl = {}
+
+-- return slew rates for VTOL controller
+---@return number -- roll slew rate
+---@return number -- pitch slew rate
+---@return number -- yaw slew rate
+function AC_AttitudeControl:get_rpy_srate() end
 
 -- desc
 ---@class follow
