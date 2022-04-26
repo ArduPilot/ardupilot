@@ -506,3 +506,7 @@ singleton AP_Follow method get_target_location_and_velocity boolean Location'Nul
 singleton AP_Follow method get_target_location_and_velocity_ofs boolean Location'Null Vector3f'Null
 singleton AP_Follow method get_target_heading_deg boolean float'Null
 
+include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AC_AttitudeControl method get_rpy_PDmod void float'Ref float'Ref float'Ref
+
