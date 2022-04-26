@@ -830,9 +830,9 @@ const AP_Param::Info Plane::var_info[] = {
 
 	// variables not in the g class which contain EEPROM saved variables
 
-    // @Group: COMPASS_
+    // @Group: COMPASS
     // @Path: ../libraries/AP_Compass/AP_Compass.cpp
-    GOBJECT(compass,                "COMPASS_",     Compass),
+    GOBJECT(compass,                "COMPASS",     Compass),
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp

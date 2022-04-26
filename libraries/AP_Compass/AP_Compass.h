@@ -14,6 +14,7 @@
 #include "AP_Compass_Backend.h"
 #include "Compass_PerMotor.h"
 #include <AP_Common/TSIndex.h>
+#include "AP_Compass_Params.h"
 
 // motor compensation types (for use with motor_comp_enabled)
 #define AP_COMPASS_MOT_COMP_DISABLED    0x00
@@ -210,13 +211,13 @@ public:
     ///
     /// @returns                    The current compass offsets in milligauss.
     ///
-    const Vector3f &get_offsets(uint8_t i) const { return _get_state(Priority(i)).offset; }
+    const Vector3f &get_offsets(uint8_t i) const { return _get_state(Priority(i)).params.offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(_first_usable); }
 
-    const Vector3f &get_diagonals(uint8_t i) const { return _get_state(Priority(i)).diagonals; }
+    const Vector3f &get_diagonals(uint8_t i) const { return _get_state(Priority(i)).params.diagonals; }
     const Vector3f &get_diagonals(void) const { return get_diagonals(_first_usable); }
 
-    const Vector3f &get_offdiagonals(uint8_t i) const { return _get_state(Priority(i)).offdiagonals; }
+    const Vector3f &get_offdiagonals(uint8_t i) const { return _get_state(Priority(i)).params.offdiagonals; }
     const Vector3f &get_offdiagonals(void) const { return get_offdiagonals(_first_usable); }
 
     // learn offsets accessor
@@ -260,7 +261,7 @@ public:
     void set_motor_compensation(uint8_t i, const Vector3f &motor_comp_factor);
 
     /// get motor compensation factors as a vector
-    const Vector3f& get_motor_compensation(uint8_t i) const { return _get_state(Priority(i)).motor_compensation; }
+    const Vector3f& get_motor_compensation(uint8_t i) const { return _get_state(Priority(i)).params.motor_compensation; }
     const Vector3f& get_motor_compensation(void) const { return get_motor_compensation(_first_usable); }
 
     /// Saves the current motor compensation x/y/z values.
@@ -329,9 +330,11 @@ public:
     }
     
     // return maximum allowed compass offsets
+#if COMPASS_CAL_ENABLED
     uint16_t get_offsets_max(void) const {
         return (uint16_t)_offset_max.get();
     }
+#endif
 
     uint8_t get_filter_range() const { return uint8_t(_filter_range.get()); }
 
@@ -475,27 +478,14 @@ private:
     float       _thr;
 
     struct mag_state {
-        AP_Int8     external;
         bool        healthy;
         bool        registered;
         Compass::Priority priority;
-        AP_Int8     orientation;
-        AP_Vector3f offset;
-        AP_Vector3f diagonals;
-        AP_Vector3f offdiagonals;
-        AP_Float    scale_factor;
 
-        // device id detected at init.
-        // saved to eeprom when offsets are saved allowing ram &
-        // eeprom values to be compared as consistency check
-        AP_Int32    dev_id;
         // Initialised when compass is detected
         int32_t detected_dev_id;
         // Initialised at boot from saved devid
         int32_t expected_dev_id;
-
-        // factors multiplied by throttle and added to compass outputs
-        AP_Vector3f motor_compensation;
 
         // latest compensation added to compass
         Vector3f    motor_offset;
@@ -515,6 +505,8 @@ private:
         uint32_t accum_count;
         // We only copy persistent params
         void copy_from(const mag_state& state);
+
+        AP_Compass_Params params;
     };
 
     //Create an Array of mag_state to be accessible by StateIndex only
@@ -546,20 +538,21 @@ private:
 
     void _reset_compass_id();
     //Create Arrays to be accessible by Priority only
-    RestrictIDTypeArray<AP_Int8, COMPASS_MAX_INSTANCES, Priority> _use_for_yaw;
 #if COMPASS_MAX_INSTANCES > 1
     RestrictIDTypeArray<AP_Int32, COMPASS_MAX_INSTANCES, Priority> _priority_did_stored_list;
     RestrictIDTypeArray<int32_t, COMPASS_MAX_INSTANCES, Priority> _priority_did_list;
 #endif
-
+#if COMPASS_CAL_ENABLED
     AP_Int16 _offset_max;
+#endif
 
     // bitmask of options
+#if COMPASS_CAL_ENABLED
     enum class Option : uint16_t {
         CAL_REQUIRE_GPS = (1U<<0),
     };
     AP_Int16 _options;
-
+#endif
 #if COMPASS_CAL_ENABLED
     RestrictIDTypeArray<CompassCalibrator*, COMPASS_MAX_INSTANCES, Priority> _calibrator;
 #endif
@@ -601,6 +594,9 @@ private:
     bool init_done;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
+
+    // convet params to per instance param table
+    void convert_per_instance();
 };
 
 namespace AP {

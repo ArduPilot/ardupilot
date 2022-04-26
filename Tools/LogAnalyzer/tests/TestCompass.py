@@ -30,9 +30,9 @@ class TestCompass(Test):
             warnOffset = 300
             failOffset = 500
             param_offsets = (
-                logdata.parameters["COMPASS_OFS_X"],
-                logdata.parameters["COMPASS_OFS_Y"],
-                logdata.parameters["COMPASS_OFS_Z"]
+                logdata.parameters["COMPASS1_OFS_X"],
+                logdata.parameters["COMPASS1_OFS_Y"],
+                logdata.parameters["COMPASS1_OFS_Z"]
                 )
 
             if vec_len(param_offsets) > failOffset:
