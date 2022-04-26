@@ -813,6 +813,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
 */
 void SRV_Channels::upgrade_parameters(void)
 {
+    // PARAMETER_CONVERSION - Added: Jan-2020
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // convert from AP_Int8 to AP_Int16
