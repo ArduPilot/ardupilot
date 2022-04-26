@@ -1310,7 +1310,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
         // todo: do we need to check for supported coordinate frames
 
-        bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+        bool pos_ignore      = (packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE) == MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
         bool yaw_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
@@ -1326,8 +1326,9 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         // extract location from message
         Location loc;
         if (!pos_ignore) {
+            bool latlng_ignore = packet.type_mask & (POSITION_TARGET_TYPEMASK_X_IGNORE | POSITION_TARGET_TYPEMASK_Y_IGNORE);
             // sanity check location
-            if (!check_latlng(packet.lat_int, packet.lon_int)) {
+            if (!latlng_ignore && !check_latlng(packet.lat_int, packet.lon_int)) {
                 // input is not valid so stop
                 copter.mode_guided.init(true);
                 break;
@@ -1339,7 +1340,19 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 copter.mode_guided.init(true);
                 break;
             }
-            loc = {packet.lat_int, packet.lon_int, int32_t(packet.alt*100), frame};
+
+            Location current_target;
+            if (latlng_ignore) {
+                if (!copter.mode_guided.get_wp(current_target)) {
+                    // this may happen if we have just entered guided mode
+                    // but haven't set any wp yet
+                    loc = {copter.current_loc.lat, copter.current_loc.lng, int32_t(packet.alt*100), frame};
+                } else {
+                    loc = {current_target.lat, current_target.lng, int32_t(packet.alt*100), frame};
+                } 
+            } else {
+                loc = {packet.lat_int, packet.lon_int, int32_t(packet.alt*100), frame};
+            }
         }
 
         // prepare velocity
@@ -1392,7 +1405,6 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
             // input is not valid so stop
             copter.mode_guided.init(true);
         }
-
         break;
     }
 #endif
