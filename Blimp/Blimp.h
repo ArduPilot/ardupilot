@@ -189,7 +189,6 @@ private:
 
     // sensor health for logging
     struct {
-        uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
