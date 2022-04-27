@@ -147,7 +147,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: YAW_SV_ANGLE
     // @DisplayName: Yaw Servo Max Lean Angle
-    // @Description: Yaw servo's maximum lean angle
+    // @Description: Yaw servo's maximum lean angle (Tricopter only)
     // @Range: 5 80
     // @Units: deg
     // @Increment: 1
