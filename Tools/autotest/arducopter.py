@@ -7245,6 +7245,31 @@ class AutoTestCopter(AutoTest):
         self.drain_mav()
         self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
 
+    def SensorErrorFlags(self):
+        self.reboot_sitl()
+
+        for (param_value, expected_ecode, desc) in [
+                (1, 4, 'unhealthy'),
+                (0, 0, 'healthy')
+        ]:
+            self.set_parameters({
+                "SIM_BARO_DISABLE": param_value,
+                "SIM_BAR2_DISABLE": param_value,
+            })
+            self.delay_sim_time(1)
+            mlog = self.dfreader_for_current_onboard_log()
+            success = False
+            while True:
+                m = mlog.recv_match(type='ERR')
+                print("Got (%s)" % str(m))
+                if m is None:
+                    break
+                if m.Subsys == 18 and m.ECode == expected_ecode:  # baro / ecode
+                    success = True
+                    break
+            if not success:
+                raise NotAchievedException("Did not find %s log message" % desc)
+
     def test_alt_estimate_prearm(self):
         self.context_push()
         ex = None
@@ -7254,6 +7279,7 @@ class AutoTestCopter(AutoTest):
                 "SIM_BARO_DISABLE": 1,
                 "SIM_BARO2_DISABL": 1,
             })
+
             self.wait_gps_disable(position_vertical=True)
 
             # turn off arming checks (mandatory arming checks will still be run)
@@ -8987,6 +9013,10 @@ class AutoTestCopter(AutoTest):
             Test("WPNAV_SPEED_DN",
                  "Change speed (down) during misison",
                  self.WPNAV_SPEED_DN),
+
+            Test("SensorErrorFlags",
+                 "Test we get ERR messages when sensors have issues",
+                 self.SensorErrorFlags),
 
             Test("GPSForYaw",
                  "Moving baseline GPS yaw",
