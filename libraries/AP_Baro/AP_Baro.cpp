@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_EXT_BUS", 7, AP_Baro, _ext_bus, HAL_BARO_EXTERNAL_BUS_DEFAULT),
 
-    // @Param: _SPEC_GRAV
+    // @Param{Sub}: _SPEC_GRAV
     // @DisplayName: Specific Gravity (For water depth measurement)
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV.
     // @Values: 1.0:Freshwater,1.024:Saltwater
