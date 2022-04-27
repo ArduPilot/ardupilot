@@ -62,9 +62,8 @@ void Copter::failsafe_radio_on_event()
         announce_failsafe("Radio", "Continuing Auto");
         desired_action = FailsafeAction::NONE;
 
-    } else if ((flightmode->in_guided_mode()) &&
-      (failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) && (g.failsafe_gcs != FS_GCS_DISABLED)) {
-        // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode.  Only if the GCS failsafe is enabled.
+    } else if ((flightmode->in_guided_mode()) && failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) {
+        // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode
         announce_failsafe("Radio", "Continuing Guided Mode");
         desired_action = FailsafeAction::NONE;
 
