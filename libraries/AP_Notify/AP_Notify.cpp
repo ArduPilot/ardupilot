@@ -112,7 +112,11 @@ AP_Notify *AP_Notify::_singleton;
 #endif
 
 #ifndef NOTIFY_LED_OVERRIDE_DEFAULT
-#define NOTIFY_LED_OVERRIDE_DEFAULT 0       // rgb_source_t::standard
+#ifdef HAL_BUILD_AP_PERIPH
+    #define NOTIFY_LED_OVERRIDE_DEFAULT 1       // rgb_source_t::mavlink
+#else
+    #define NOTIFY_LED_OVERRIDE_DEFAULT 0       // rgb_source_t::standard
+#endif
 #endif
 
 #ifndef NOTIFY_LED_LEN_DEFAULT
