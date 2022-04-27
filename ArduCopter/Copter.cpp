@@ -744,7 +744,6 @@ Copter::Copter(void)
     flightmode(&mode_stabilize)
 {
     // init sensor error logging flags
-    sensor_health.baro = true;
     sensor_health.compass = true;
 }
 
