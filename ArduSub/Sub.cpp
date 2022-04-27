@@ -40,7 +40,6 @@ Sub::Sub()
           param_loader(var_info)
 {
     // init sensor error logging flags
-    sensor_health.baro = true;
     sensor_health.compass = true;
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
