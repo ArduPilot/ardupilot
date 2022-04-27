@@ -278,7 +278,6 @@ Blimp::Blimp(void)
       flightmode(&mode_manual)
 {
     // init sensor error logging flags
-    sensor_health.baro = true;
     sensor_health.compass = true;
 }
 
