@@ -59,7 +59,13 @@ void AP_Periph_FW::rcout_init()
     }
 
     // setup ESCs with the desired PWM type, allowing for DShot
-    hal.rcout->set_output_mode(esc_mask, (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get());
+    const auto esc_type = (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get();
+    hal.rcout->set_output_mode(esc_mask, esc_type);
+
+    if (esc_type >= AP_HAL::RCOutput::MODE_PWM_DSHOT150 &&
+        esc_type <= AP_HAL::RCOutput::MODE_PWM_DSHOT1200) {
+        SRV_Channels::set_digital_outputs(esc_mask, 0);
+    }
 
     // run this once and at 1Hz to configure aux and esc ranges
     rcout_init_1Hz();
