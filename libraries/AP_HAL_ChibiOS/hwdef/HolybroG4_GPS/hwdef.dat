@@ -150,5 +150,12 @@ define HAL_PERIPH_ENABLE_BARO
 define HAL_PERIPH_ENABLE_NOTIFY
 define HAL_PERIPH_ENABLE_RC_OUT
 
+# single baro
+define BARO_MAX_INSTANCES 1
+
 # GPS on 2nd port
 define HAL_PERIPH_GPS_PORT_DEFAULT 1
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
