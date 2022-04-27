@@ -67,7 +67,7 @@ void ModeGuided::run()
 
     case SubMode::WP:
         // run waypoint controller
-        wp_control_run();
+        wp_run();
         if (send_notification && wp_nav->reached_wp_destination()) {
             send_notification = false;
             gcs().send_mission_item_reached_message(0);
@@ -94,8 +94,18 @@ void ModeGuided::run()
     case SubMode::Angle:
         angle_control_run();
         break;
+
+    case SubMode::Circle:
+        circling.update();
+
+        if (circling.is_completed()) {
+            // switch back to WP mode once we complete loiter turns
+            // is_completed initialses the wp controllter with location of final point on the edge of circle
+            // this point is actually the point on edge where we started off
+            guided_mode = SubMode::WP;
+        }
     }
- }
+}
 
 bool ModeGuided::allows_arming(AP_Arming::Method method) const
 {
@@ -154,6 +164,14 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     return true;
 }
 
+// do_circle - initiate moving in a circle
+void ModeGuided::do_circle(const Location &circle_center_loc, float circle_radius_m, uint8_t turns) {
+    // set submode to cirlce
+    guided_mode = SubMode::Circle;
+    // initialise loiter turns
+    circling.initialise(circle_center_loc, circle_radius_m, turns);
+}
+
 // initialise guided mode's waypoint navigation controller
 void ModeGuided::wp_control_start()
 {
@@ -175,36 +193,14 @@ void ModeGuided::wp_control_start()
     auto_yaw.set_mode_to_default(false);
 }
 
-// run guided mode's waypoint navigation controller
-void ModeGuided::wp_control_run()
+void ModeGuided::wp_run_handle_disarmed_or_landed()
 {
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
+    // do not spool down tradheli when on the ground with motor interlock enabled
+    make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
+}
 
-    // if not armed set throttle to zero and exit immediately
-    if (is_disarmed_or_landed()) {
-        // do not spool down tradheli when on the ground with motor interlock enabled
-        make_safe_ground_handling(copter.is_tradheli() && motors->get_interlock());
-        return;
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    // call z-axis position controller (wpnav should have already updated it's alt target)
-    pos_control->update_z_controller();
-
-    // call attitude controller
+void ModeGuided::wp_run_attitude_control(float target_yaw_rate)
+{
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
@@ -1153,6 +1149,8 @@ uint32_t ModeGuided::wp_distance() const
         return get_horizontal_distance_cm(inertial_nav.get_position_xy_cm(), guided_pos_target_cm.tofloat().xy());
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_xy_cm();
+    case SubMode::Circle:
+        return circling.get_distance_to_destination();
         break;
     default:
         return 0;
@@ -1169,6 +1167,8 @@ int32_t ModeGuided::wp_bearing() const
     case SubMode::PosVelAccel:
         return pos_control->get_bearing_to_target_cd();
         break;
+    case SubMode::Circle:
+        return circling.get_bearing_to_destination();
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:
@@ -1192,6 +1192,7 @@ float ModeGuided::crosstrack_error() const
     case SubMode::PosVelAccel:
         return pos_control->crosstrack_error();
     case SubMode::Angle:
+    case SubMode::Circle:
         // no track to have a crosstrack to
         return 0;
     }

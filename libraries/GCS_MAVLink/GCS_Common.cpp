@@ -4562,6 +4562,7 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     case MAV_CMD_DO_SET_ROI_LOCATION:
     case MAV_CMD_NAV_TAKEOFF:
     case MAV_CMD_DO_REPOSITION:
+    case MAV_CMD_NAV_LOITER_TURNS:
         return true;
     default:
         return false;

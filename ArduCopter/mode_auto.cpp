@@ -118,7 +118,6 @@ void ModeAuto::run()
         break;
 
     case SubMode::WP:
-    case SubMode::CIRCLE_MOVE_TO_EDGE:
         wp_run();
         break;
 
@@ -131,7 +130,7 @@ void ModeAuto::run()
         break;
 
     case SubMode::CIRCLE:
-        circle_run();
+        circling.update();
         break;
 
     case SubMode::NAVGUIDED:
@@ -388,9 +387,9 @@ void ModeAuto::land_start()
     copter.ap.prec_land_active = false;
 }
 
-// auto_circle_movetoedge_start - initialise waypoint controller to move to edge of a circle with it's center at the specified location
-//  we assume the caller has performed all required GPS_ok checks
-void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radius_m)
+Mode::_Circling Mode::circling;
+
+void Mode::_Circling::initialise(const Location &circle_center, float radius_m, uint8_t turns)
 {
     // set circle center
     copter.circle_nav->set_center(circle_center);
@@ -399,57 +398,121 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     if (!is_zero(radius_m)) {
         copter.circle_nav->set_radius_cm(radius_m * 100.0f);
     }
+    _total_turns = turns;
 
-    // check our distance from edge of circle
     Vector3f circle_edge_neu;
     copter.circle_nav->get_closest_point_on_circle(circle_edge_neu);
-    float dist_to_edge = (inertial_nav.get_position_neu_cm() - circle_edge_neu).length();
+    float dist_to_edge_squared = (copter.inertial_nav.get_position_neu_cm() - circle_edge_neu).length_squared();
+
+    // convert circle_edge_neu to Location
+    _circle_edge = Location{circle_edge_neu, circle_center.get_alt_frame()};
+    
+    // convert altitude to same as command
+    _circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
 
     // if more than 3m then fly to edge
-    if (dist_to_edge > 300.0f) {
-        // set the state to move to the edge of the circle
-        _mode = SubMode::CIRCLE_MOVE_TO_EDGE;
-
-        // convert circle_edge_neu to Location
-        Location circle_edge(circle_edge_neu, Location::AltFrame::ABOVE_ORIGIN);
-
-        // convert altitude to same as command
-        circle_edge.set_alt_cm(circle_center.alt, circle_center.get_alt_frame());
-
-        // initialise wpnav to move to edge of circle
-        if (!wp_nav->set_wp_destination_loc(circle_edge)) {
-            // failure to set destination can only be because of missing terrain data
-            copter.failsafe_terrain_on_event();
-        }
-
-        // if we are outside the circle, point at the edge, otherwise hold yaw
-        const float dist_to_center = get_horizontal_distance_cm(inertial_nav.get_position_xy_cm().topostype(), copter.circle_nav->get_center().xy());
-        // initialise yaw
-        // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
-        if (auto_yaw.mode() != AUTO_YAW_ROI) {
-            if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
-                auto_yaw.set_mode_to_default(false);
-            } else {
-                // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
-                auto_yaw.set_mode(AUTO_YAW_HOLD);
-            }
-        }
+    if (dist_to_edge_squared > 300.0f*300.0f) {
+        movetoedge_start();
     } else {
-        circle_start();
+        circling_start();
     }
 }
 
-// auto_circle_start - initialises controller to fly a circle in AUTO flight mode
-//   assumes that circle_nav object has already been initialised with circle center and radius
-void ModeAuto::circle_start()
+// movetoedge_start - initialise waypoint controller to move to edge of a circle with its center at the specified location
+// we assume the caller has performed all required GPS_ok checks
+void Mode::_Circling::movetoedge_start()
 {
-    _mode = SubMode::CIRCLE;
+    // set the state to move to the edge of the circle
+    _state = State::MOVING_TO_EDGE;
 
+    // initialise wpnav to move to edge of circle
+    if (!copter.wp_nav->set_wp_destination_loc(_circle_edge)) {
+        // failure to set destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+    }
+
+    // if we are outside the circle, point at the edge, otherwise hold yaw
+    const float dist_to_center = get_horizontal_distance_cm(copter.inertial_nav.get_position_xy_cm().topostype(), copter.circle_nav->get_center().xy());
+    // initialise yaw
+    // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
+    if (auto_yaw.mode() != AUTO_YAW_ROI) {
+        if (dist_to_center > copter.circle_nav->get_radius() && dist_to_center > 500) {
+            auto_yaw.set_mode_to_default(false);
+        } else {
+            // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
+            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+    }
+}
+
+// circling_start - initialises controller to fly a circle
+// assumes that circle_nav object has already been initialised with circle center and radius
+void Mode::_Circling::circling_start()
+{
+    _state = State::CIRCLING;
     // initialise circle controller
     copter.circle_nav->init(copter.circle_nav->get_center(), copter.circle_nav->center_is_terrain_alt());
 
     if (auto_yaw.mode() != AUTO_YAW_ROI) {
         auto_yaw.set_mode(AUTO_YAW_CIRCLE);
+    }
+}
+
+// returns true when we have completed doing loiter turns
+bool Mode::_Circling::is_completed()
+{
+    return _state == State::FINISHED;
+}
+
+float Mode::_Circling::get_distance_to_destination() const
+{
+    switch (_state) {
+    case State::CIRCLING:
+        return copter.circle_nav->get_distance_to_target();
+    case State::MOVING_TO_EDGE:
+        return copter.wp_nav->get_wp_distance_to_destination();
+    case State::FINISHED:
+        break;
+    }
+    return 0;
+}
+
+int32_t Mode::_Circling::get_bearing_to_destination() const
+{
+    switch (_state) {
+    case State::CIRCLING:
+        return copter.circle_nav->get_bearing_to_target();
+    case State::MOVING_TO_EDGE:
+        return copter.wp_nav->get_wp_bearing_to_destination();
+    case State::FINISHED:
+        break;
+    }
+    return 0;
+}
+
+// This calls the right navigation controller based on current state and flight mode
+void Mode::_Circling::update() 
+{
+    switch (_state) {
+    case State::MOVING_TO_EDGE:
+        if (!copter.wp_nav->reached_wp_destination()) {
+            copter.flightmode->wp_run();
+            return;
+        }
+        circling_start();   // changes state to CIRCLING
+        FALLTHROUGH;
+    case State::CIRCLING:
+        // check if we have completed circling
+        if (fabsf(copter.circle_nav->get_angle_total()/M_2PI) < _total_turns) {
+            circling.circle_run();
+            return;
+        }
+        // stop at circle edge where we started
+        copter.wp_nav->set_wp_destination_loc(_circle_edge);
+        _state = State::FINISHED;
+        FALLTHROUGH;
+    case State::FINISHED:
+        break;
     }
 }
 
@@ -715,9 +778,8 @@ uint32_t ModeAuto::wp_distance() const
 {
     switch (_mode) {
     case SubMode::CIRCLE:
-        return copter.circle_nav->get_distance_to_target();
+        return circling.get_distance_to_destination();
     case SubMode::WP:
-    case SubMode::CIRCLE_MOVE_TO_EDGE:
     default:
         return wp_nav->get_wp_distance_to_destination();
     }
@@ -727,9 +789,8 @@ int32_t ModeAuto::wp_bearing() const
 {
     switch (_mode) {
     case SubMode::CIRCLE:
-        return copter.circle_nav->get_bearing_to_target();
+        return circling.get_bearing_to_destination();
     case SubMode::WP:
-    case SubMode::CIRCLE_MOVE_TO_EDGE:
     default:
         return wp_nav->get_wp_bearing_to_destination();
     }
@@ -883,9 +944,9 @@ void ModeAuto::takeoff_run()
     auto_takeoff_run();
 }
 
-// auto_wp_run - runs the auto waypoint controller
-//      called by auto_run at 100hz or more
-void ModeAuto::wp_run()
+// wp_run - runs the auto waypoint controller
+// called at 100hz or more
+void Mode::wp_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
@@ -899,8 +960,7 @@ void ModeAuto::wp_run()
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
-        make_safe_ground_handling();
-        wp_nav->wp_and_spline_init();
+        wp_run_handle_disarmed_or_landed();
         return;
     }
 
@@ -915,6 +975,17 @@ void ModeAuto::wp_run()
     pos_control->update_z_controller();
 
     // call attitude controller
+    wp_run_attitude_control(target_yaw_rate);
+}
+
+void ModeAuto::wp_run_handle_disarmed_or_landed()
+{
+    make_safe_ground_handling();
+    wp_nav->wp_and_spline_init();
+}
+
+void ModeAuto::wp_run_attitude_control(float target_yaw_rate)
+{
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
@@ -950,15 +1021,16 @@ void ModeAuto::rtl_run()
     copter.mode_rtl.run(false);
 }
 
-// auto_circle_run - circle in AUTO flight mode
-//      called by auto_run at 100hz or more
-void ModeAuto::circle_run()
+
+// circle_run - circle in AUTO/GUIDED flight mode
+// called at 100hz or more
+void Mode::_Circling::circle_run()
 {
     // process pilot's yaw input
     float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
+    if (!copter.failsafe.radio && copter.flightmode->use_pilot_yaw()) {
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+        target_yaw_rate = copter.flightmode->get_pilot_desired_yaw_rate(copter.flightmode->channel_yaw->norm_input_dz());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
@@ -969,14 +1041,14 @@ void ModeAuto::circle_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    pos_control->update_z_controller();
+    copter.pos_control->update_z_controller();
 
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(copter.circle_nav->get_thrust_vector(), target_yaw_rate);
+        copter.attitude_control->input_thrust_vector_rate_heading(copter.circle_nav->get_thrust_vector(), target_yaw_rate);
     } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(copter.circle_nav->get_thrust_vector(), auto_yaw.yaw());
+        copter.attitude_control->input_thrust_vector_heading(copter.circle_nav->get_thrust_vector(), auto_yaw.yaw());
     }
 }
 
@@ -1373,8 +1445,12 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
     // calculate radius
     uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
 
-    // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
-    circle_movetoedge_start(circle_center, circle_radius_m);
+    // calculate turns
+    uint8_t turns = LOWBYTE(cmd.p1); // turns are stored in lowbyte of p1
+
+    _mode = SubMode::CIRCLE;
+    // initialise loiter turns, verify_circle will make sure we jump to the next states after completing the current state. 
+    circling.initialise(circle_center, circle_radius_m, turns);
 }
 
 // do_loiter_time - initiate loitering at a point for a given time period
@@ -2002,17 +2078,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 // verify_circle - check if we have circled the point enough
 bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
 {
-    // check if we've reached the edge
-    if (mode() == SubMode::CIRCLE_MOVE_TO_EDGE) {
-        if (copter.wp_nav->reached_wp_destination()) {
-            // start circling
-            circle_start();
-        }
-        return false;
-    }
-
-    // check if we have completed circling
-    return fabsf(copter.circle_nav->get_angle_total()/float(M_2PI)) >= LOWBYTE(cmd.p1);
+    return circling.is_completed();
 }
 
 // verify_spline_wp - check if we have reached the next way point using spline

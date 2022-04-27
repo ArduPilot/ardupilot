@@ -148,7 +148,8 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
 
     switch (guided_mode) {
     case ModeGuided::SubMode::Angle:
-        // we don't have a local target when in angle mode
+    case ModeGuided::SubMode::Circle:
+        // we don't have a local target when in angle/circle mode
         return;
     case ModeGuided::SubMode::TakeOff:
     case ModeGuided::SubMode::WP:
@@ -849,6 +850,22 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         }
         return MAV_RESULT_FAILED;
 #endif
+
+#if MODE_GUIDED_ENABLED == ENABLED
+     case MAV_CMD_NAV_LOITER_TURNS:
+        if (copter.flightmode == &copter.mode_guided) {
+            Location circle_center;
+            if (!location_from_command_t(packet, MAV_FRAME_GLOBAL_RELATIVE_ALT, circle_center)) {
+                return MAV_RESULT_DENIED;
+            }
+            circle_center.sanitize(copter.current_loc);
+            const float circle_radius_m = packet.param3;
+            const uint8_t turns = constrain_float(packet.param1, 0, 255);
+            copter.mode_guided.do_circle(circle_center, circle_radius_m, turns);
+            return MAV_RESULT_ACCEPTED;
+        }
+        return MAV_RESULT_FAILED; 
+ #endif
 
 #if PARACHUTE == ENABLED
     case MAV_CMD_DO_PARACHUTE:

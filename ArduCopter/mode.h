@@ -67,6 +67,8 @@ public:
     virtual bool allows_save_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
     virtual bool allows_flip() const { return false; }
+    virtual void wp_run_handle_disarmed_or_landed() { }
+    virtual void wp_run_attitude_control(float target_yaw_rate) { }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
@@ -75,6 +77,7 @@ public:
     bool do_user_takeoff(float takeoff_alt_cm, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
+    void wp_run();
 
     virtual bool is_landing() const { return false; }
 
@@ -218,6 +221,30 @@ protected:
     static bool auto_takeoff_terrain_alt;       // true if altitudes are above terrain
     static bool auto_takeoff_complete;          // true when takeoff is complete
     static Vector3p auto_takeoff_complete_pos;  // target takeoff position as offset from ekf origin in cm
+    // _Circling  is circle mode within auto/guided mode
+    class _Circling {
+        public:
+            void initialise(const Location &circle_center_loc, float circle_radius_m, uint8_t turns);
+            bool is_completed();
+            float get_distance_to_destination() const;
+            int32_t get_bearing_to_destination() const;
+            void circle_run();
+            void update();
+
+        private:
+            enum class State : uint8_t {
+                MOVING_TO_EDGE,
+                CIRCLING,
+                FINISHED,
+            };
+            State _state;
+            uint8_t _total_turns;
+            Location _circle_edge;
+            void movetoedge_start();
+            void circling_start();
+    };
+
+    static _Circling circling;
 
 public:
     // Navigation Yaw control
@@ -412,7 +439,6 @@ public:
         WP,
         LAND,
         RTL,
-        CIRCLE_MOVE_TO_EDGE,
         CIRCLE,
         NAVGUIDED,
         LOITER,
@@ -435,7 +461,10 @@ public:
     void land_start();
     void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
+    void land_start(const Vector2f& destination);
     void nav_guided_start();
+    void wp_run_handle_disarmed_or_landed() override;
+    void wp_run_attitude_control(float target_yaw_rate) override;
 
     bool is_landing() const override;
 
@@ -493,7 +522,6 @@ private:
     bool check_for_mission_change();    // detect external changes to mission
 
     void takeoff_run();
-    void wp_run();
     void land_run();
     void rtl_run();
     void circle_run();
@@ -958,6 +986,7 @@ public:
     // initialises position controller to implement take-off
     // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
     bool do_user_takeoff_start(float takeoff_alt_cm) override;
+    void do_circle(const Location &circle_center_loc, float circle_radius_m, uint8_t turns);
 
     enum class SubMode {
         TakeOff,
@@ -967,6 +996,7 @@ public:
         VelAccel,
         Accel,
         Angle,
+        Circle,
     };
 
     SubMode submode() const { return guided_mode; }
@@ -978,6 +1008,8 @@ public:
     uint32_t get_timeout_ms() const;
 
     bool use_pilot_yaw() const override;
+    void wp_run_handle_disarmed_or_landed() override;
+    void wp_run_attitude_control(float target_yaw_rate) override;
 
     // pause continue in guided mode
     bool pause() override;
@@ -1007,7 +1039,6 @@ private:
 
     // wp controller
     void wp_control_start();
-    void wp_control_run();
 
     void pva_control_start();
     void pos_control_start();
