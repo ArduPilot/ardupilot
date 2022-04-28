@@ -59,9 +59,9 @@ void ModeQLoiter::run()
     pos_control->set_max_speed_accel_z(-quadplane.get_pilot_velocity_z_max_dn(), quadplane.pilot_velocity_z_max_up, quadplane.pilot_accel_z);
 
     // process pilot's roll and pitch input
-    float target_roll_cd, target_pitch_cd;
-    quadplane.get_pilot_desired_lean_angles(target_roll_cd, target_pitch_cd, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
-    loiter_nav->set_pilot_desired_acceleration(target_roll_cd, target_pitch_cd);
+    float target_roll, target_pitch;
+    quadplane.get_pilot_desired_lean_angles(target_roll, target_pitch, loiter_nav->get_angle_max_cd(), attitude_control->get_althold_lean_angle_max_cd());
+    loiter_nav->set_pilot_desired_acceleration(100 * target_roll, 100 * target_pitch);
     
     // run loiter controller
     if (!pos_control->is_active_xy()) {
