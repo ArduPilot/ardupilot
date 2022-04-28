@@ -491,8 +491,6 @@ private:
     bool verify_command(const AP_Mission::Mission_Command& cmd);
     void exit_mission();
 
-    bool check_for_mission_change();    // detect external changes to mission
-
     void takeoff_run();
     void wp_run();
     void land_run();
