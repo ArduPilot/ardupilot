@@ -409,6 +409,15 @@ void QuaternionT<T>::earth_to_body(Vector3<T> &v) const
     v = m * v;
 }
 
+template <typename T>
+Vector3<T> QuaternionT<T>::rotate_vector(const Vector3<T> &v) const
+{
+    Matrix3<T> m;
+    rotation_matrix(m);
+    return m * v;
+}
+
+
 // create a quaternion from Euler angles
 template <typename T>
 void QuaternionT<T>::from_euler(T roll, T pitch, T yaw)
@@ -490,11 +499,28 @@ template <typename T>
 void QuaternionT<T>::to_axis_angle(Vector3<T> &v) const
 {
     const T l = sqrtF(sq(q2)+sq(q3)+sq(q4));
+
     v = Vector3<T>(q2,q3,q4);
     if (!::is_zero(l)) {
-        v /= l;
-        v *= wrap_PI(2.0f * atan2F(l,q1));
+        v /= l; //axis
+        v *= wrap_PI(2.0f * atan2F(l,q1)); //multiply axis by angle
     }
+}
+
+template <typename T>
+T QuaternionT<T>::to_axis_angle2(Vector3<T> &v_unit) const
+{
+    //Vector3<T> axis_angle;
+    const T l = sqrtF(sq(q2)+sq(q3)+sq(q4));
+
+    v_unit = Vector3<T>(q2,q3,q4);
+    if (!::is_zero(l)) {
+        v_unit /= l; //axis
+        return 2.0f * atan2F(l,q1);
+    }
+
+    v_unit = Vector3<T>(0.0, 0.0, 0.0);
+    return 0.0;
 }
 
 // create a quaternion from its axis-angle representation

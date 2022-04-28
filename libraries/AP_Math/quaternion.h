@@ -79,6 +79,8 @@ public:
     // convert a vector from earth to body frame
     void        earth_to_body(Vector3<T> &v) const;
 
+    Vector3<T>    rotate_vector(const Vector3<T> &v) const;
+
     // create a quaternion from Euler angles
     void        from_euler(T roll, T pitch, T yaw);
     void        from_euler(const Vector3<T> &v);
@@ -90,6 +92,10 @@ public:
     // convert this quaternion to a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation
     void        to_axis_angle(Vector3<T> &v) const;
+
+    // convert this quaternion to a unit vector and angle, where the unit vector represents
+    // the axis of rotation and the angle represents the angle of rotation
+    T        to_axis_angle2(Vector3<T> &v_unit) const;
 
     // create a quaternion from a rotation vector where the direction of the vector represents
     // the axis of rotation and the length of the vector represents the angle of rotation

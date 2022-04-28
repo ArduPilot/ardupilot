@@ -7,7 +7,7 @@ local roll_stage = 0
 local ROLL_TCONST = param:get('RLL2SRV_TCONST') * 0.5
 local PITCH_TCONST = param:get('PTCH2SRV_TCONST') * 0.5
 
-local LOOP_RATE = 100 --Hz
+local LOOP_RATE = 10 --Hz
 
 DO_JUMP = 177
 NAV_WAYPOINT = 16
@@ -49,6 +49,7 @@ local last_id = 0
 local initial_yaw_deg = 0
 local wp_yaw_deg = 0
 local initial_height = 0
+local MIN_SPEED = 0.1
 
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
@@ -403,21 +404,18 @@ end
 
 function path_circle(t, radius, unused)
    t = t*math.pi*2
-   --TODO: include * overload in lua bindings
-   local vec = Vector3f()
-   vec:x(1.0-math.cos(t))
-   vec:y(-math.sin(t))
-   return vec:scale(radius), 0.0
+   local vec = makeVector3f(math.sin(t), 1.0-math.cos(t), 0)
+   return vec:scale(radius)
 end
 
-function path_figure_eight(t, radius, unused)
+--TODO: fix this to have initial tangent 0
+function path_figure_eight(t, radius)
    t = t*math.pi*2
-   local vec = Vector3f()
-   vec:x(math.sin(t))
-   vec:y(math.sin(t)*math.cos(t))
-   return vec:scale(radius), 0.0
+   local vec = makeVector3f(math.sin(t), math.sin(t)*math.cos(t), 0)
+   return vec:scale(radius)
 end
 
+--TODO: fix this to have initial tangent 0
 --path_vertical_circle returns rate
 function path_vertical_circle(t, radius, unused)
    t = t*math.pi*2
@@ -456,11 +454,10 @@ function rotate_position(position, yaw)
 end
 
 
-function rotate_path(path_f, t, arg1, arg2, yaw)
-   point, roll_rate = path_f(t, arg1, arg2)
-   return rotate_position(point, yaw), roll_rate
+function rotate_path(path_f, t, arg1, arg2, rot)
+   point = path_f(t, arg1, arg2)
+   return rot:rotate_vector(point)
 end
-
 
 --look for where this is used 
 -- float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
@@ -489,14 +486,79 @@ function calc_lowpass_alpha_dt(dt, cutoff_freq)
    return drc
 end
 
+function makeVector3f(x, y, z)
+   local vec = Vector3f()
+   vec:x(x)
+   vec:y(y)
+   vec:z(z)
+   return vec
+end
+
+function vectors_to_rotation(vector1, vector2)
+   axis = vector1:cross(vector2)
+   if axis:length() < 0.00001 then
+      local vec = Vector3f()
+      vec:x(1)
+      return vec, 0
+   end
+   axis:normalize()
+   angle = vector1:angle(vector2)
+   return axis, angle
+end
+
+function vectors_to_angular_rate(vector1, vector2, time_constant)
+   axis, angle = vectors_to_rotation(vector1, vector2)
+   angular_velocity = angle/time_constant
+   return axis:scale(angular_velocity)
+end
+
+function test_angular_rate()
+   local vector1 = makeVector3f(1.0, 0.0, 0.0)
+   local vector2 = makeVector3f(1.0, 1.0, 0.0)
+   local angular_rate = vectors_to_angular_rate(vector1, vector2, 1.0)
+   gcs:send_text(0, string.format("angular rate: %.1f %.1f %.1f", math.deg(angular_rate:x()), math.deg(angular_rate:y()), math.deg(angular_rate:z())))
+end
+
+--returns body-fixed angular rate as Vec3f
+function path_error_correction(current_pos, target_pos, forward_velocity)
+   
+   if forward_velocity <= MIN_SPEED then
+      return makeVector3f(0.0, 0.0, 0.0)
+   end
+   --assert forward_velocity > 0
+   
+   --time over which to correct position error
+   local time_const_pos_to_vel = 5.0
+   --time over which to achieve desired velocity
+   local time_const_vel_to_acc = 1.0
+
+   local pos_error = target_pos - current_pos
+   local vel_error = pos_error:scale(1.0/time_const_pos_to_vel)
+
+   local vel_error_bf = ahrs:earth_to_body(vel_error)
+   --TODO: can't change throttle at the moment
+   vel_error_bf:x(0.0)
+   local acc_err_bf = vel_error_bf:scale(1.0/time_const_vel_to_acc)
+
+   return makeVector3f(0.0, -acc_err_bf:z()/forward_velocity, acc_err_bf:y()/forward_velocity)
+end
+
+test_angular_rate()
+
 local path_var = {}
 path_var.count = 0
 path_var.positionAndRoll = {}
 path_var.positions = {}
+path_var.initial_ori = Quaternion()
+path_var.initial_position = Vector3f()
 
-function do_path(path, arg1, arg2)
+last_time = 0.0
+
+function do_path(path, initial_yaw_deg, arg1, arg2)
 
    local now = millis():tofloat() * 0.001
+
+   last_time = now
 
    path_var.count = path_var.count + 1
    local target_dt = 1.0/LOOP_RATE
@@ -510,19 +572,37 @@ function do_path(path, arg1, arg2)
       path_var.total_time = path_var.length/speed
       path_var.start_time = now
       path_var.last_time = now
-      path_var.last_pos = path(0.0, arg1, arg2)
-      local path_delta = path(target_dt, arg1, arg2)
-      local init_tangent = path_delta - path_var.last_pos
-      path_var.init_yaw = wrap_pi(math.atan(init_tangent:y(), init_tangent:x()))
-      path_var.init_yaw = -wrap_pi(path_var.init_yaw - math.rad(wp_yaw_deg))
+      path_var.last_pos = path(0.0, arg1, arg2) --position at t0
+
+      local path_delta = path(target_dt, arg1, arg2) --position at t1
+
+      --rather than account for the initial tangent, just check trajectory, init tangent angle should be 0
+
+      --local init_tangent = path_delta - path_var.last_pos --direction from t0 to 1
       
-      local corrected_position_t0 = rotate_path(path, 0, arg1, arg2, path_var.init_yaw)
-      local corrected_position_t1 = rotate_path(path, target_dt, arg1, arg2, path_var.init_yaw)
+      --TODO: check with tridge what we want to do here. Either enforce trajectories have initial tangent 0, or have an extra reference frame
+      --in the control logic.
+      
+      --path_var.init_yaw = wrap_pi(math.atan(init_tangent:y(), init_tangent:x()))
+      --path_var.init_yaw = -wrap_pi(path_var.init_yaw - math.rad(wp_yaw_deg))
+
+      --TODO: check if we want the wp_yaw or just an initial measured orientation
+      --path_var.init_yaw = math.rad(wp_yaw_deg)
+      path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
+
+      --ahrs:get_quat_body_to_ned(path_var.initial_ori)
+
+      gcs:send_text(0, string.format("Initial orientation %.1f %.1f %1.f ", path_var.initial_ori:get_euler_roll(), path_var.initial_ori:get_euler_pitch(), path_var.initial_ori:get_euler_yaw()))
+      gcs:send_text(0, string.format("yaw heading: =%.1f", wp_yaw_deg))
+
+      
+      local corrected_position_t0 = rotate_path(path, 0, arg1, arg2, path_var.initial_ori)
+      local corrected_position_t1 = rotate_path(path, target_dt, arg1, arg2, path_var.initial_ori)
 
       --path_var.prev_target_pos = corrected_position_t0
 
-      local tangent = corrected_position_t1 - corrected_position_t0
-      local corrected_yaw = wrap_pi(math.atan(tangent:y(), tangent:x()))
+      --TODO: construct pose from yaw derived from ground course between waypoints.
+      --TODO: assume level?
 
       path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
       path_var.start_pos = ahrs:get_position()
@@ -560,7 +640,9 @@ function do_path(path, arg1, arg2)
    --where we aim to be on the path at this timestamp
    --TODO: make more clear, yaw and initial translation -> SE3 offset of frame
    --rotate from maneuver frame to 'local' EF
-   local next_target_pos = rotate_path(path, t+dt, arg1, arg2, path_var.init_yaw)
+   local next_target_pos = rotate_path(path, t+dt, arg1, arg2, path_var.initial_ori)
+
+   local unrotated_next_target_pos = path(t+dt, arg1, arg2)
 
    path_var.positions[-1] = path_var.positions[0]:copy()
    path_var.positions[0] = path_var.positions[1]:copy()
@@ -570,15 +652,6 @@ function do_path(path, arg1, arg2)
 
    logger.write("TPOS",'t,x,y,z','ffff',t, current_target_pos:x(),current_target_pos:y(),current_target_pos:z())
 
-   -- local ori = Quaternion()
-   -- ahrs:get_quat_body_to_ned(ori)
-   -- -- gcs:send_text(0, string.format("logging orientation %.1f %.1f %.1f %.1f", ori:q1(), ori:q2(), ori:q3(), ori:q4()))
-   -- qp = ori:get_euler_pitch()
-   -- qr = ori:get_euler_roll()
-   -- qy = ori:get_euler_yaw()
-
-   -- logger.write("QUAT",'r,p,y','fff',qr, qp, qy)
-
    local current_measured_pos = ahrs:get_relative_position_NED_origin() - path_var.initial_ef_pos
 
    local path_error = {}
@@ -586,145 +659,96 @@ function do_path(path, arg1, arg2)
    path_error[0] = (current_measured_pos - path_var.positions[0]):length() 
    path_error[1] = (current_measured_pos - path_var.positions[1]):length()
 
-   local smallest_error_index = -1
-   for i = 0,1,1
-   do
-      if(path_error[i] < path_error[smallest_error_index]) then
-         smallest_error_index = i
-      end
-   end
+   -- local smallest_error_index = -1
+   -- for i = 0,1,1
+   -- do
+   --    if(path_error[i] < path_error[smallest_error_index]) then
+   --       smallest_error_index = i
+   --    end
+   -- end
 
-   if(smallest_error_index == 1) then
-     path_var.positions[-1] = path_var.positions[0]
-     path_var.positions[0] = path_var.positions[1]
-     path_var.positions[1] = rotate_path(path, t + 2*dt, arg1, arg2, path_var.init_yaw)
-   end
+   -- if(smallest_error_index == 1) then
+   --   path_var.positions[-1] = path_var.positions[0]
+   --   path_var.positions[0] = path_var.positions[1]
+   --   path_var.positions[1] = rotate_path(path, t + 2*dt, arg1, arg2, path_var.initial_ori)
+   -- end
 
-   if(smallest_error_index == -1) then
-     path_var.positions[1] = path_var.positions[0] 
-     path_var.positions[0] = path_var.positions[-1]
-     path_var.positions[-1] = rotate_path(path, t - 2*dt, arg1, arg2, path_var.init_yaw)
-   end
+   -- if(smallest_error_index == -1) then
+   --   path_var.positions[1] = path_var.positions[0] 
+   --   path_var.positions[0] = path_var.positions[-1]
+   --   path_var.positions[-1] = rotate_path(path, t - 2*dt, arg1, arg2, path_var.initial_ori)
+   -- end
 
-   path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
+   -- path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
 
    local position_error = path_var.positions[0]- current_measured_pos
-   --arbitrary time constant larger than dt over which to correct the position error
    
    local path_loc = path_var.start_pos:copy()
    path_loc:offset(path_var.positions[0]:x(), path_var.positions[0]:y())
-   --gcs:send_text(0, string.format("path loc alt %.1f %.1f", path_loc:alt(), path_var.positions[0]:z()))
-
    path_loc:alt(path_loc:alt() - math.floor(path_var.positions[0]:z()*100))
 
-   --gcs:send_text(0, string.format("position: %d", smallest_error_index))
    logger.write("POSM",'x,y,z','fff',current_measured_pos:x(),current_measured_pos:y(),current_measured_pos:z())
    logger.write("PERR",'x,y,z,tc,Lat,Lng,Alt','ffffLLf',position_error:x(),position_error:y(),position_error:z(), path_var.time_correction, path_loc:lat(), path_loc:lng(), path_loc:alt()*0.01)
 
    --turn into AERO_PATH_TCONST
-   local correction_time = 0.75
+   --local correction_time = 0.3
    --velocity required to correct current position error
-   local position_error_velocity = (position_error):scale(1.0/correction_time)
+   --local position_error_velocity = (position_error):scale(1.0/correction_time)
    --velocity required to travel along trajectory
    local trajectory_velocity = (path_var.positions[1] - path_var.positions[-1]):scale(0.5/dt) --derivative from -dt to dt for more accuracy
-   --local trajectory_velocity = (path_var.positions[1] - path_var.positions[0]):scale(1.0/dt) --derivative from -dt to dt for more accuracy
+   local tangent1 = (path_var.positions[0] - path_var.positions[-1])
+   local tangent2 = (path_var.positions[1] - path_var.positions[0])
+   local path_rate_rads = vectors_to_angular_rate(tangent1, tangent2, 2*dt)
+   logger.write("DT",'dt','f',dt)
 
-   --gcs:send_text(0, string.format("position_error_velocity %.1f %.1f %.1f", position_error_velocity:x(), position_error_velocity:y(), position_error_velocity:z()))
-
-   logger.write("VTRA",'x,y,z','fff',trajectory_velocity:x(),trajectory_velocity:y(),trajectory_velocity:z())
-
-   local target_velocity = position_error_velocity + trajectory_velocity
-   --gcs:send_text(0, string.format("VTAR %.1f %.1f %.1f", target_velocity:x(),target_velocity:y(),target_velocity:z()))
-
-   local cutoff_hz = 2.0;
-   local alpha = calc_lowpass_alpha_dt(dt, cutoff_hz);
-   --if (is_positive(_RISI[i].delta_angle_dt)) {
-   --gyro_filtered[i] += ((_RISI[i].delta_angle/_RISI[i].delta_angle_dt) - gyro_filtered[i]) * alpha;
-   --local alpha = 0.1
-   --gcs:send_text(0, string.format("alpha value %.1f ", alpha))
-
-   local filtered_target_velocity_x = path_var.filtered_target_velocity:x()
-   local filtered_target_velocity_y = path_var.filtered_target_velocity:y()
-   local filtered_target_velocity_z = path_var.filtered_target_velocity:z()
-
-   filtered_target_velocity_x = filtered_target_velocity_x + (target_velocity:x() - filtered_target_velocity_x) * alpha
-   filtered_target_velocity_y = filtered_target_velocity_y + (target_velocity:y() - filtered_target_velocity_y) * alpha
-   filtered_target_velocity_z = filtered_target_velocity_z + (target_velocity:z() - filtered_target_velocity_z) * alpha
-
-
-   path_var.filtered_target_velocity:x(filtered_target_velocity_x)
-   path_var.filtered_target_velocity:y(filtered_target_velocity_y)
-   path_var.filtered_target_velocity:z(filtered_target_velocity_z)
-
-   logger.write("VTAR",'t,x,y,z','ffff',t,target_velocity:x(),target_velocity:y(),target_velocity:z())
-   logger.write("VTFI",'x,y,z','fff',path_var.filtered_target_velocity:x(),path_var.filtered_target_velocity:y(),path_var.filtered_target_velocity:z())
-
-
-   --smooth velocity with LPF
-
-   --smooth dt with LPF. tc of 1Hz
 
    path_var.prev_target_pos = current_target_pos
    path_var.last_measured_pos = current_pos
    path_var.last_time = now
 
-   local target_yaw_rad = wrap_pi(math.atan(target_velocity:y(), target_velocity:x()))   
-   local current_yaw_rad = wrap_pi(ahrs:get_yaw())
-   local yaw_error = wrap_pi(target_yaw_rad - current_yaw_rad)
-   local yaw_tconst = dt
-   -- want to correct yaw rate with P control
-   local ef_yaw_rate = yaw_error/yaw_tconst  
+   local angular_velocity = path_rate_rads:scale(math.deg(1))
+   logger.write("AV",'x,y,z','fff',angular_velocity:x(),angular_velocity:y(),angular_velocity:z())
+   
+   local vel_length = ahrs:get_velocity_NED():length()
 
-   -- local orientation = ahrs:get_rotation_body_to_ned()
+   local err_corr_rate = path_error_correction(current_measured_pos, current_target_pos, vel_length)
+   local err_corr_rate_deg = err_corr_rate:scale(math.deg(1))
+   angular_velocity = angular_velocity + err_corr_rate_deg
 
-   -- (cos(pi/2), 0, sin(pi/2), 0)
-   local target_pitch_rad = wrap_pi(math.atan(-target_velocity:z(), math.sqrt(target_velocity:x()^2 + target_velocity:y()^2)))
+   logger.write("AVEC",'x,y,z','fff',err_corr_rate_deg:x(),err_corr_rate_deg:y(),err_corr_rate_deg:z())
 
+   logger.write("CAV",'x,y,z','fff',angular_velocity:x(),angular_velocity:y(),angular_velocity:z())
 
-   --old
-   -- target rd,pd,yd, derived from vectors (where we're pointing)
-   -- get current r,p,y (converted from global ori est) (gimbal lock)
-   -- form errors (rd - r, pd - p, yd - y)
-
-   --new target rd,pd,yd <- combine into global orientation q_d
-   --current ori q
-   --error orientation q*q_d^{}
-
-   local current_pitch_rad = wrap_pi(ahrs:get_pitch())
-   local pitch_error = wrap_pi(target_pitch_rad - current_pitch_rad)
-   local pitch_tconst = dt
-   local ef_pitch_rate = pitch_error/pitch_tconst
-
-   logger.write("TPR",'rad,error,error_rate','fff',target_pitch_rad, pitch_error, ef_pitch_rate)
-
-   --assume roll 0 for now, should work for 2D paths like circle and figure eight
-   local target_roll_rad = 0.0
-   local current_roll_rad = wrap_pi(ahrs:get_roll())
-   local roll_error = wrap_pi(target_roll_rad - current_roll_rad)
-   local roll_tconst = dt
-   --local ef_roll_rate = roll_error/roll_tconst
-   local ef_roll_rate = 0.0
-
-   logger.write("RATS",'roll,pitch,yaw', 'fff',ef_roll_rate, ef_pitch_rate, ef_yaw_rate)
-
-   --convert ef rates to bf rates, I assume there is a function we can bind in Ardupilot to do this already, but couldn't find it.
-   bf_roll_rate, bf_pitch_rate, bf_yaw_rate = convert_ef_rates_to_bf_rates(current_roll_rad,
-                                                                        current_pitch_rad,
-                                                                        current_yaw_rad,
-                                                                        ef_roll_rate, 
-                                                                        ef_pitch_rate, 
-                                                                        ef_yaw_rate)
-
-   vel = ahrs:get_velocity_NED()
    local target_speed = TRIM_ARSPD_CM:get()*0.01
-   throttle = speed_PI.update(target_speed, vel:length())
+   throttle = speed_PI.update(target_speed, vel_length)
    throttle = constrain(throttle, 0, 100.0)
-   vehicle:set_target_throttle_rate_rpy(throttle, bf_roll_rate, bf_pitch_rate, bf_yaw_rate)
+   --vehicle:set_target_throttle_rate_rpy(throttle, bf_roll_rate, bf_pitch_rate, bf_yaw_rate)
+   vehicle:set_target_throttle_rate_rpy(throttle, angular_velocity:x(), angular_velocity:y(), angular_velocity:z())
+
 end
 
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
    --gcs:send_text(0, string.format("user args arg1=%.1f arg2=%.1f", arg1, arg2))
+
+   local ang = 3.1415/2  + 0.001
+   local vec = makeVector3f(math.cos(ang), math.sin(ang), 0)
+   local quat = Quaternion()
+   --quat:from_euler(0, 90, 0)
+   quat:q1(math.cos(math.pi/4))
+   quat:q2(math.sin(math.pi/4)*vec:x())
+   quat:q3(math.sin(math.pi/4)*vec:y())
+   quat:q4(math.sin(math.pi/4)*vec:z())
+
+   local quat2 = Quaternion()
+   quat2:from_euler(0.5, 0.2, 0)
+
+
+   --gcs:send_text(0, string.format("quat %.1f %.1f %.1f %.1f", quat:q1(), quat:q2(), quat:q3(), quat:q4()))
+   --gcs:send_text(0, string.format("get euler roll2 %.2f", quat:get_euler_roll()))
+   --gcs:send_text(0, string.format("quat2 %.1f %.1f %.1f %.1f", quat2:q1(), quat2:q2(), quat2:q3(), quat2:q4()))
+
+
 
    if id then
       if id ~= last_id then
@@ -749,11 +773,11 @@ function update()
       elseif cmd == 3 then
          do_rolling_circle(arg1, arg2)
       elseif cmd == 4 then
-         do_path(path_circle, arg1, arg2)
+         do_path(path_circle, initial_yaw_deg, arg1, arg2)
       elseif cmd == 5 then
-         do_path(path_figure_eight, arg1, arg2)
+         do_path(path_figure_eight, initial_yaw_deg, arg1, arg2)
       elseif cmd == 6 then
-         do_path(path_vertical_circle, arg1, arg2)
+         do_path(path_vertical_circle, initial_yaw_deg, arg1, arg2)
       end
    else
       running = false

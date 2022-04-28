@@ -124,6 +124,7 @@ userdata Vector3f method dot float Vector3f
 userdata Vector3f method cross Vector3f Vector3f
 userdata Vector3f method scale Vector3f float'skip_check
 userdata Vector3f method copy Vector3f
+userdata Vector3f method angle float Vector3f
 
 userdata Vector2f field x float'skip_check read write
 userdata Vector2f field y float'skip_check read write
@@ -145,9 +146,14 @@ userdata Quaternion field q4 float'skip_check read write
 userdata Quaternion method length float
 userdata Quaternion method normalize void
 userdata Quaternion operator *
+-- userdata Quaternion operator / Quaternion Quaternion
 userdata Quaternion method get_euler_roll float
 userdata Quaternion method get_euler_pitch float
 userdata Quaternion method get_euler_yaw float
+userdata Quaternion method from_euler void float'skip_check float'skip_check float'skip_check 
+userdata Quaternion method inverse Quaternion
+userdata Quaternion method rotate_vector Vector3f Vector3f
+userdata Quaternion method to_axis_angle2 float Vector3f
 
 -- userdata Matrix3f method length float
 -- userdata Matrix3f method normalize void
