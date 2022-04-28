@@ -54,6 +54,9 @@ void Sub::handle_attitude()
         target_roll = 100 * degrees(target_roll);
         target_pitch = 100 * degrees(target_pitch);
         target_yaw = 100 * degrees(target_yaw);
+        last_roll = target_roll;
+        last_pitch = target_pitch;
+        last_pilot_heading = target_yaw;
         attitude_control.input_euler_angle_roll_pitch_yaw(target_roll, target_pitch, target_yaw, true);
     } else {
         // If we don't have a mavlink attitude target, we use the pilot's input instead
