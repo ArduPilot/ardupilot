@@ -1,3 +1,29 @@
+Release 4.2.0beta6 28th April 2022
+----------------------------------
+
+This is the 6th beta of the 4.2.0 major release
+
+ - fix FIFO overruns on the BMI088 IMU
+ - fix plane avoidance behaviour when in AvoidADSB mode
+ - disable fatal exceptions on DMA errors on STM32
+ - changed quadplane weathervaning to make pitch input optional for nose-in and tail-in
+ - increased default scripting heap size on F7/H7 to 100k
+ - added ICM42688 option on MatekH743
+ - added ICM4xxxx option on QiotekZealotH743
+ - rename INS_NOTCH parameters to INS_HNTC2
+ - added Q_OPTION for RTL on failsafe in Q modes, for ship operation
+ - disabled setting of highest airspeed when disarmed
+ - fixed init of file descriptor in logging
+ - cope with gaps in log listing, and reduce impact of log listing on EKF and ESCs
+ - avoided repeated message on "failed to detach from pin" for RPM
+ - improved error messages on GPIO pin configuration conflict
+ - use narrower bitwidths for dshot, giving more accurate timing
+ - added MatekF765-Wing-bdshot target
+ - fixed use of DO_SET_SERVO with SERVOn_FUNCTION=0
+ - several improvements to SPRacingH7 support
+
+Happy flying!
+
 Release 4.2.0beta5 5th April 2022
 ---------------------------------
 
