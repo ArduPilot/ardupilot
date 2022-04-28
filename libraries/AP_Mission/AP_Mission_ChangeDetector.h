@@ -23,14 +23,15 @@ class AP_Mission_ChangeDetector
 
 public:
 
-    // check for changes to mission. returns true if mission has been changed since last check
-    bool check_for_mission_change() WARN_IF_UNUSED;
+    // check for changes to mission
+    // returns true if mission has been changed since last check and set first_changed_cmd_idx (e.g. 0=current command changed, 1=next command, etc)
+    bool check_for_mission_change(uint8_t& first_changed_cmd_idx) WARN_IF_UNUSED;
 
-private:
+protected:
 
     // number of upcoming commands to monitor for changes
     static const uint8_t mis_change_detect_cmd_max = 3;
-    struct {
+    struct MissionCommandList {
         uint32_t last_change_time_ms;       // local copy of last time mission was changed
         uint16_t curr_cmd_index;            // local copy of AP_Mission's current command index
         uint8_t cmd_count;                  // number of commands in the cmd array

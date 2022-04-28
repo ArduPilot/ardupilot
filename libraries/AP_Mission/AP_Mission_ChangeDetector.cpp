@@ -6,7 +6,8 @@
 #if HAL_MISSION_ENABLED
 
 // detect external changes to mission
-bool AP_Mission_ChangeDetector::check_for_mission_change()
+// returns true if mission has been changed since last check and set first_changed_cmd_idx (e.g. 0=current command changed, 1=next command, etc)
+bool AP_Mission_ChangeDetector::check_for_mission_change(uint8_t& first_changed_cmd_idx)
 {
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
@@ -39,8 +40,11 @@ bool AP_Mission_ChangeDetector::check_for_mission_change()
     while ((num_cmds < ARRAY_SIZE(cmd)) && mission->get_next_nav_cmd(cmd_idx, cmd[num_cmds])) {
         num_cmds++;
         if ((num_cmds > mis_change_detect.cmd_count) || (cmd[num_cmds-1] != mis_change_detect.cmd[num_cmds-1])) {
-            cmds_changed = true;
             mis_change_detect.cmd[num_cmds-1] = cmd[num_cmds-1];
+            if (!cmds_changed) {
+                cmds_changed = true;
+                first_changed_cmd_idx = cmd_idx;
+            }
         }
         cmd_idx = cmd[num_cmds-1].index+1;
     }
@@ -48,6 +52,7 @@ bool AP_Mission_ChangeDetector::check_for_mission_change()
     // mission has changed if number of upcoming commands does not match mis_change_detect
     if (num_cmds != mis_change_detect.cmd_count) {
         cmds_changed = true;
+        first_changed_cmd_idx = MIN(cmd_idx, mis_change_detect.cmd_count) + 1;
     }
 
     // update mis_change_detect with last change time, command index and number of commands
