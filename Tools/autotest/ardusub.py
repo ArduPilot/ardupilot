@@ -12,6 +12,8 @@ import sys
 import time
 
 from pymavlink import mavutil
+from pymavlink import mavextra
+import math
 
 from common import AutoTest
 from common import NotAchievedException
@@ -76,7 +78,7 @@ class AutoTestSub(AutoTest):
         return SITL_START_LOCATION
 
     def default_frame(self):
-        return 'vectored'
+        return 'vectored_6dof'
 
     def is_sub(self):
         return True
@@ -104,6 +106,19 @@ class AutoTestSub(AutoTest):
                 raise NotAchievedException(
                     "Altitude not maintained: want %.2f (+/- %.2f) got=%.2f" %
                     (previous_altitude, delta, m.alt))
+
+    def set_attitude(self, roll, pitch, yaw):
+        """
+        angles in eulers
+        """
+        msg = self.mav.mav.set_attitude_target_send(
+        0,
+        0, 0,
+        1<<6, #
+        mavextra.euler_to_quat([math.radians(roll), math.radians(pitch), math.radians(yaw)]),
+        0, #roll rate
+        0, #pitch rate
+        0, 0) # yaw rate, thrust
 
     def test_alt_hold(self):
         """Test ALT_HOLD mode
@@ -154,6 +169,7 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(1)
         self.watch_altitude_maintained()
 
+        self.progress("Testing if depth is controlled with large buoyancies")
         # Make sure the code can handle buoyancy changes
         self.set_parameter("SIM_BUOYANCY", 10)
         self.watch_altitude_maintained()
@@ -167,7 +183,33 @@ class AutoTestSub(AutoTest):
 
         self.set_rc(Joystick.Throttle, 1500)
         self.watch_altitude_maintained()
+
+        self.delay_sim_time(1)
+
+        self.progress("Testing depth hold can dive by pointing down and moving forwards")
+        # point down, drive forwards
+        self.set_attitude(0, -90, 0)
+        self.delay_sim_time(2)
+        self.set_attitude(0, -90, 0)
+        self.set_rc(Joystick.Forward, 1900)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9)
+        self.set_rc(Joystick.Forward, 1500)
+
+        self.progress("Testing depth hold can dive by rolling clockwise and moving right")
+        # point down, drive forwards
+        self.set_attitude(90, 0, 0)
+        self.delay_sim_time(2)
+        self.set_attitude(90, 0, 0)
+        self.set_rc(Joystick.Lateral, 1900)
+        self.wait_altitude(altitude_min=-15, altitude_max=-14)
+        self.set_rc(Joystick.Lateral, 1500)
+
+        # got to depth, can we keep it?
+        self.set_rc(Joystick.Forward, 1500)
+        self.delay_sim_time(2)
+        self.watch_altitude_maintained()
         self.disarm_vehicle()
+
 
     def test_pos_hold(self):
         """Test POSHOLD mode"""
