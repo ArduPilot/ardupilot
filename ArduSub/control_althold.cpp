@@ -100,7 +100,7 @@ void Sub::althold_run()
 void Sub::control_depth() {
     // We rotate the RC inputs to the earth frame to check if the user is giving an input that would change the depth.
     // Output the Z controller + pilot input to all motors.
-    Vector3f earth_frame_rc_inputs = ahrs.get_rotation_body_to_ned() * Vector3f(channel_forward->norm_input(), channel_lateral->norm_input(), (2.0f*(-0.5f+channel_throttle->norm_input())));
+    Vector3f earth_frame_rc_inputs = ahrs.get_rotation_body_to_ned() * Vector3f(-channel_forward->norm_input(), -channel_lateral->norm_input(), (2.0f*(-0.5f+channel_throttle->norm_input())));
     float target_climb_rate_cm_s = get_pilot_desired_climb_rate(500 + g.pilot_speed_up * earth_frame_rc_inputs.z);
     target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
@@ -117,7 +117,7 @@ void Sub::control_depth() {
     // Read the output of the z controller and rotate it so it always points up
     Vector3f throttle_vehicle_frame = ahrs.get_rotation_body_to_ned().transposed() * Vector3f(0, 0, motors.get_throttle_in_bidirectional());
     //TODO: scale throttle with the ammount of thrusters in the given direction
-    motors.set_throttle(0.5+throttle_vehicle_frame.z + channel_throttle->norm_input()-0.5);
+    attitude_control.set_throttle_out(throttle_vehicle_frame.z + channel_throttle->norm_input(), false, g.throttle_filt);
     motors.set_forward(-throttle_vehicle_frame.x + channel_forward->norm_input());
     motors.set_lateral(-throttle_vehicle_frame.y + channel_lateral->norm_input());
 }

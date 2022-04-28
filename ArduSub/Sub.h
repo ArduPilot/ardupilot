@@ -388,7 +388,7 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-    uint32_t last_pilot_heading;
+    int32_t last_pilot_heading;
     uint32_t last_input_ms;
     int32_t last_roll;
     int32_t last_pitch;
