@@ -55,11 +55,13 @@ void ModeAuto::update()
             waiting_to_start = false;
 
             // initialise mission change check
-            IGNORE_RETURN(mis_change_detector.check_for_mission_change());
+            uint8_t first_changed_cmd_idx;
+            IGNORE_RETURN(mis_change_detector.check_for_mission_change(first_changed_cmd_idx));
         }
     } else {
         // check for mission changes
-        if (mis_change_detector.check_for_mission_change()) {
+        uint8_t first_changed_cmd_idx;
+        if (mis_change_detector.check_for_mission_change(first_changed_cmd_idx)) {
             // if mission is running restart the current command if it is a waypoint command
             if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_submode == AutoSubMode::Auto_WP)) {
                 if (mission.restart_current_nav_cmd()) {
