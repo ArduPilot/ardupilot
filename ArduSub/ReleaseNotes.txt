@@ -1,6 +1,12 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta7 29-Apr-2022
+
+ - Tweak depth hold at arbitrary attitudes
+ - Add autotest for depth hold at arbitrary attitudes
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.0-beta6 19-Apr-2022
 
  - Update Navigator I2C masks
