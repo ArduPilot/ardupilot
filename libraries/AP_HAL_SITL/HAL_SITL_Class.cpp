@@ -193,6 +193,13 @@ uint8_t HAL_SITL::get_instance() const
     return _sitl_state->get_instance();
 }
 
+#if defined(HAL_BUILD_AP_PERIPH)
+bool HAL_SITL::run_in_maintenance_mode() const
+{
+    return _sitl_state->run_in_maintenance_mode();
+}
+#endif
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);
