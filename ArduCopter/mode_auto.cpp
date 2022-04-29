@@ -45,7 +45,7 @@ bool ModeAuto::init(bool ignore_checks)
         waiting_to_start = true;
 
         // initialise mission change check (ignore results)
-        IGNORE_RETURN(mis_change_detector.check_for_mission_change());
+        IGNORE_RETURN(mis_change_detector.check_for_mission_change(false));
 
         // clear guided limits
         copter.mode_guided.limit_clear();
@@ -91,11 +91,11 @@ void ModeAuto::run()
             waiting_to_start = false;
 
             // initialise mission change check (ignore results)
-            IGNORE_RETURN(mis_change_detector.check_for_mission_change());
+            IGNORE_RETURN(mis_change_detector.check_for_mission_change(false));
         }
     } else {
         // check for mission changes
-        if (mis_change_detector.check_for_mission_change()) {
+        if (mis_change_detector.check_for_mission_change(wp_nav->using_next_waypoint()) != AP_Mission_ChangeDetector_Copter::ChangeResponseType::NONE) {
             // if mission is running restart the current command if it is a waypoint or spline command
             if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
                 if (mission.restart_current_nav_cmd()) {

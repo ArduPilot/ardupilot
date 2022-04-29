@@ -467,7 +467,7 @@ public:
         FUNCTOR_BIND_MEMBER(&ModeAuto::exit_mission, void)};
 
     // Mission change detector
-    AP_Mission_ChangeDetector mis_change_detector;
+    AP_Mission_ChangeDetector_Copter mis_change_detector;
 
 protected:
 
