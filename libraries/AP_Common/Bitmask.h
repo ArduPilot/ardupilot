@@ -37,6 +37,18 @@ public:
         return *this;
     }
 
+    bool operator==(const Bitmask&other) {
+        if (other.numbits != numbits) {
+            return false;
+        } else {
+            return memcmp(bits, other.bits, sizeof(bits[0])*numwords) == 0;
+        }
+    }
+
+    bool operator!=(const Bitmask&other) {
+        return !(*this == other);
+    }
+
     Bitmask(const Bitmask &other) = delete;
 
     // set given bitnumber
