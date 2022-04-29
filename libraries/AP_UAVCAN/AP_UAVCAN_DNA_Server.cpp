@@ -349,6 +349,7 @@ bool AP_UAVCAN_DNA_Server::init()
     if any duplicates are on the bus carrying our Node ID */
     addToSeenNodeMask(node_id);
     setVerificationMask(node_id);
+    node_healthy_mask.set(node_id);
     self_node_id[driver_index] = node_id;
     return true;
 }
@@ -473,6 +474,18 @@ void AP_UAVCAN_DNA_Server::handleNodeStatus(uint8_t node_id, const NodeStatusCb 
 {
     if (node_id > MAX_NODE_ID) {
         return;
+    }
+    if (cb.msg->health != uavcan::protocol::NodeStatus::HEALTH_OK ||
+        cb.msg->mode != uavcan::protocol::NodeStatus::MODE_OPERATIONAL) {
+        //if node is not healthy or operational, clear resp health mask, and set fault_node_id
+        fault_node_id = node_id;
+        server_state = NODE_STATUS_UNHEALTHY;
+        node_healthy_mask.clear(node_id);
+    } else {
+        node_healthy_mask.set(node_id);
+        if (node_healthy_mask == verified_mask) {
+            server_state = HEALTHY;
+        }
     }
     if (!isNodeIDVerified(node_id)) {
         //immediately begin verification of the node_id
@@ -698,6 +711,10 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
     }
     case FAILED_TO_ADD_NODE: {
         snprintf(fail_msg, fail_msg_len, "Failed to add Node %d!", fault_node_id);
+        return false;
+    }
+    case NODE_STATUS_UNHEALTHY: {
+        snprintf(fail_msg, fail_msg_len, "Node %d unhealthy!", fault_node_id);
         return false;
     }
     }
