@@ -208,8 +208,18 @@ class AutoTestSub(AutoTest):
         self.set_rc(Joystick.Forward, 1500)
         self.delay_sim_time(2)
         self.watch_altitude_maintained()
-        self.disarm_vehicle()
 
+        self.progress("Testing depth hold WHILE changing attitude")
+        # but can we keep it while changing attitude?
+        self.set_attitude(0, 0, 0)
+        self.delay_sim_time(2)
+        self.set_attitude(180, 0, 0)
+        self.watch_altitude_maintained()
+        self.delay_sim_time(5)
+        self.set_attitude(0, 90, 0)
+        self.watch_altitude_maintained()
+        self.delay_sim_time(5)
+        self.disarm_vehicle()
 
     def test_pos_hold(self):
         """Test POSHOLD mode"""
