@@ -94,6 +94,9 @@ public:
     // time has reached the end of the sequence
     bool finished() const WARN_IF_UNUSED;
 
+    // time has started the sequence
+    bool started() const WARN_IF_UNUSED { return is_positive(get_time_elapsed()); }
+
 private:
 
     // increment time and return the position, velocity and acceleration vectors relative to the origin

@@ -491,7 +491,7 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
     // check for change of leg on fast waypoint
     const float time_to_destination = get_time_remaining();
     if (fast_waypoint 
-        && is_zero(next_leg.get_time_elapsed()) 
+        && !next_leg.started()
         && (get_time_elapsed() >= time_turn_out() - next_leg.time_turn_in()) 
         && (position_sq >= 0.25 * track.length_squared())) {
 
@@ -505,7 +505,7 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
              (Vector2f{turn_accel.x, turn_accel.y}.length() < accel_corner)) {
             next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         }
-    } else if (!is_zero(next_leg.get_time_elapsed())) {
+    } else if (next_leg.started()) {
         next_leg.move_from_pos_vel_accel(dt, target_pos, target_vel, target_accel);
         if (next_leg.get_time_elapsed() >= get_time_remaining()) {
             s_finished = true;
