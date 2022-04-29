@@ -47,7 +47,13 @@
 #include <AP_CANManager/AP_CANSensor.h>
 #endif
 
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+extern const HAL_SITL &hal;
+#else
 extern const AP_HAL::HAL &hal;
+#endif
+
 extern AP_Periph_FW periph;
 
 #ifndef HAL_CAN_POOL_SIZE
@@ -1351,7 +1357,14 @@ static void process1HzTasks(uint64_t timestamp_usec)
     }
 #endif
 
-    node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (hal.run_in_maintenance_mode()) {
+        node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
+    } else
+#endif
+    {
+        node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+    }
 
 #if 0
     // test code for watchdog reset
@@ -1658,36 +1671,42 @@ void AP_Periph_FW::can_update()
         last_1Hz_ms = now;
         process1HzTasks(AP_HAL::native_micros64());
     }
-    can_mag_update();
-    can_gps_update();
-    can_battery_update();
-    can_baro_update();
-    can_airspeed_update();
-    can_rangefinder_update();
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
-    can_buzzer_update();
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!hal.run_in_maintenance_mode())
 #endif
-#ifdef HAL_GPIO_PIN_SAFE_LED
-    can_safety_LED_update();
-#endif
-#ifdef HAL_GPIO_PIN_SAFE_BUTTON
-    can_safety_button_update();
-#endif
-#ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
-    pwm_hardpoint_update();
-#endif
-#ifdef HAL_PERIPH_ENABLE_HWESC
-    hwesc_telem_update();
-#endif
-#ifdef HAL_PERIPH_ENABLE_MSP
-    msp_sensor_update();
-#endif
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
-    rcout_update();
-#endif
-#ifdef HAL_PERIPH_ENABLE_EFI
-    can_efi_update();
-#endif
+    {
+        can_mag_update();
+        can_gps_update();
+        can_battery_update();
+        can_baro_update();
+        can_airspeed_update();
+        can_rangefinder_update();
+    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+        can_buzzer_update();
+    #endif
+    #ifdef HAL_GPIO_PIN_SAFE_LED
+        can_safety_LED_update();
+    #endif
+    #ifdef HAL_GPIO_PIN_SAFE_BUTTON
+        can_safety_button_update();
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+        pwm_hardpoint_update();
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_HWESC
+        hwesc_telem_update();
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_MSP
+        msp_sensor_update();
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_RC_OUT
+        rcout_update();
+    #endif
+    #ifdef HAL_PERIPH_ENABLE_EFI
+        can_efi_update();
+    #endif
+    }
     const uint32_t now_us = AP_HAL::micros();
     while ((AP_HAL::micros() - now_us) < 1000) {
         hal.scheduler->delay_microseconds(HAL_PERIPH_LOOP_DELAY_US);
