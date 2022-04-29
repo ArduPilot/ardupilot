@@ -7262,6 +7262,55 @@ Also, ignores heartbeats not from our target system'''
     def get_suplementary_programs(self):
         return self.sup_prog
 
+    def stop_sup_program(self, instance=None):
+        self.progress("Stopping supplementary program")
+        if instance is None:
+            # close all sup programs
+            for prog in self.sup_prog:
+                self.expect_list_remove(prog)
+                self.sup_prog.remove(prog)
+                util.pexpect_close(prog)
+        else:
+            # close only the instance passed
+            prog = self.sup_prog[instance]
+            self.expect_list_remove(prog)
+            self.sup_prog[instance] = None
+            util.pexpect_close(prog)
+
+    def start_sup_program(self, instance=None, args=None):
+        self.progress("Starting supplementary program")
+        start_sitl_args = {
+            "breakpoints": self.breakpoints,
+            "disable_breakpoints": self.disable_breakpoints,
+            "gdb": self.gdb,
+            "gdb_no_tui": self.gdb_no_tui,
+            "gdbserver": self.gdbserver,
+            "lldb": self.lldb,
+            "home": self.sitl_home(),
+            "speedup": self.speedup,
+            "valgrind": self.valgrind,
+            "callgrind": self.callgrind,
+            "wipe": True,
+        }
+        if instance is None:
+            for sup_binary in self.sup_binaries:
+                start_sitl_args["customisations"] = [sup_binary[1]]
+                if args is not None:
+                    start_sitl_args["customisations"] = [sup_binary[1], args]
+                start_sitl_args["supplementary"] = True
+                sup_prog_link = util.start_SITL(sup_binary[0], **start_sitl_args)
+                self.sup_prog.append(sup_prog_link) # add to list
+                self.expect_list_add(sup_prog_link) # add to expect list
+        else:
+            # start only the instance passed
+            start_sitl_args["customisations"] = [self.sup_binaries[instance][1]]
+            if args is not None:
+                start_sitl_args["customisations"] = [self.sup_binaries[instance][1], args]
+            start_sitl_args["supplementary"] = True
+            sup_prog_link = util.start_SITL(self.sup_binaries[instance][0], **start_sitl_args)
+            self.sup_prog[instance] = sup_prog_link # add to list
+            self.expect_list_add(sup_prog_link) # add to expect list
+
     def sitl_is_running(self):
         if self.sitl is None:
             return False
