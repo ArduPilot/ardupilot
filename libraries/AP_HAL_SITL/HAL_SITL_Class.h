@@ -37,6 +37,10 @@ public:
 
     uint8_t get_instance() const;
 
+#if defined(HAL_BUILD_AP_PERIPH)
+    bool run_in_maintenance_mode() const;
+#endif
+
 private:
     HALSITL::SITL_State *_sitl_state;
 
