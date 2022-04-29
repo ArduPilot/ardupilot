@@ -25,6 +25,7 @@ class AP_UAVCAN_DNA_Server
     };
 
     enum ServerState {
+        NODE_STATUS_UNHEALTHY = -5,
         STORAGE_FAILURE = -3,
         DUPLICATE_NODES = -2,
         FAILED_TO_ADD_NODE = -1,
@@ -40,6 +41,7 @@ class AP_UAVCAN_DNA_Server
     Bitmask<128> verified_mask;
     Bitmask<128> node_seen_mask;
     Bitmask<128> logged;
+    Bitmask<128> node_healthy_mask;
 
     uint8_t last_logging_count;
 
