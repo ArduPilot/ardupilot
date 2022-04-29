@@ -1830,6 +1830,10 @@ function arming:is_armed() end
 
 -- desc
 ---@return boolean
+function arming:pre_arm_checks() end
+
+-- desc
+---@return boolean
 function arming:disarm() end
 
 
