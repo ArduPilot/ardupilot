@@ -156,6 +156,9 @@ public:
     // returns true if update_wpnav has been run very recently
     bool is_active() const;
 
+    /// using_next_waypoint - true when in a turn using S-Curves
+    virtual bool using_next_waypoint() const { return _scurve_next_leg.started(); }
+
     ///
     /// spline methods
     ///
