@@ -8,20 +8,35 @@
 -- If the aircraft drops below a predetermined minimum altitude, QLAND mode is engaged and the aircraft lands at its current position.
 -- If the aircraft arrives within Q_FW_LND_APR_RAD of the return point before dropping below the minimum altitude, it should loiter down to the minimum altitude before switching to QRTL and landing.
 
+-- setup param block for VTOL failsafe params
+local PARAM_TABLE_KEY = 77
+local PARAM_TABLE_PREFIX = "VTFS_"
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 4), 'could not add param table')
+
+-- bind a parameter to a variable
+function bind_param(name)
+   local p = Parameter()
+   assert(p:init(name), string.format('could not find %s parameter', name))
+   return p
+end
+
+-- add a parameter and bind it to a variable
+function bind_add_param(name, idx, default_value)
+   assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
+   return bind_param(PARAM_TABLE_PREFIX .. name)
+end
+
 -- consider engine stopped when vibe is low and RPM low for more than 4s
-local ENGINE_STOPPED_MS = 4000
+ENGINE_STOPPED_MS = bind_add_param('ENG_STOP_MS', 1, 4000)
 
 -- RPM threshold below which engine may be stopped
-local RPM_LOW_THRESH = 500
+RPM_LOW_THRESH = bind_add_param('RPM_THRESH',     2, 500)
 
 -- vibration threshold below which engine may be stopped
-local VIBE_LOW_THRESH = 2
+VIBE_LOW_THRESH = bind_add_param('VIBE_LOW',      3,  2)
 
 -- altitude threshold for QLAND
-local LOW_ALT_THRESH = 70
-
--- when below MIN_AIRSPEED assume we are not in forward flight
-local MIN_AIRSPEED = 5
+LOW_ALT_THRESH = bind_add_param('LOW_ALT',        4,  70)
 
 -- time when engine stopped
 local engine_stop_ms = -1
@@ -48,7 +63,7 @@ function check_engine()
   local vibe = ahrs:get_vibration():length()
 
   -- if either RPM is high or vibe is high then assume engine is running
-  if (rpm and (rpm > RPM_LOW_THRESH)) or (vibe > VIBE_LOW_THRESH) then
+  if (rpm and (rpm > RPM_LOW_THRESH:get())) or (vibe > VIBE_LOW_THRESH:get()) then
      -- engine is definately running
      engine_stop_ms = -1
      if engine_stopped then
@@ -65,7 +80,7 @@ function check_engine()
      engine_stop_ms = now
      return true
   end
-  if now - engine_stop_ms < ENGINE_STOPPED_MS then
+  if now - engine_stop_ms < ENGINE_STOPPED_MS:get() then
      return false
   end
   -- engine has been stopped for ENGINE_STOPPED_MS milliseconds, notify user
@@ -104,10 +119,10 @@ function check_qland()
   local dist = target:get_distance(pos)
   local terrain_height = terrain:height_above_terrain(true)
   local threshold = param:get('Q_FW_LND_APR_RAD')
-  if dist < threshold and (terrain_height and (terrain_height < LOW_ALT_THRESH)) then
+  if dist < threshold and (terrain_height and (terrain_height < LOW_ALT_THRESH:get())) then
     gcs:send_text(0, "Failsafe: LANDING QRTL")
     vehicle:set_mode(MODE_QRTL)
-  elseif terrain_height and terrain_height < LOW_ALT_THRESH then
+  elseif terrain_height and terrain_height < LOW_ALT_THRESH:get() then
     gcs:send_text(0, "Failsafe: LANDING QLAND")
     vehicle:set_mode(MODE_QLAND)
   end
