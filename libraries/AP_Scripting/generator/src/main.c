@@ -1496,10 +1496,12 @@ void emit_userdata_fields() {
   struct userdata * node = parsed_userdata;
   while(node) {
     struct userdata_field *field = node->fields;
-    start_dependency(source, node->dependency);
-    while(field) {
-      emit_userdata_field(node, field);
-      field = field->next;
+    if (field) {
+      start_dependency(source, node->dependency);
+      while(field) {
+        emit_userdata_field(node, field);
+        field = field->next;
+      }
     }
     end_dependency(source, node->dependency);
     node = node->next;
@@ -1594,12 +1596,14 @@ void emit_singleton_fields() {
   struct userdata * node = parsed_singletons;
   while(node) {
     struct userdata_field *field = node->fields;
-    start_dependency(source, node->dependency);
-    while(field) {
-      emit_singleton_field(node, field);
-      field = field->next;
+    if (field) {
+      start_dependency(source, node->dependency);
+      while(field) {
+        emit_singleton_field(node, field);
+        field = field->next;
+      }
+      end_dependency(source, node->dependency);
     }
-    end_dependency(source, node->dependency);
     node = node->next;
   }
 }
