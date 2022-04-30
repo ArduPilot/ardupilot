@@ -1963,11 +1963,11 @@ function ahrs:get_roll() end
 ---@class AC_AttitudeControl
 AC_AttitudeControl = {}
 
--- return PD modifier for VTOL controller
----@return number -- roll PDmod
----@return number -- pitch PDmod
----@return number -- yaw PDmod
-function AC_AttitudeControl:get_rpy_PDmod() end
+-- return slew rates for VTOL controller
+---@return number -- roll slew rate
+---@return number -- pitch slew rate
+---@return number -- yaw slew rate
+function AC_AttitudeControl:get_rpy_srate() end
 
 -- desc
 ---@class follow
