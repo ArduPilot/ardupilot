@@ -368,9 +368,9 @@ public:
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
 
-    // get the PDmod value for roll, pitch and yaw, for oscillation detection in lua scripts
-    void get_rpy_PDmod(float &roll_dmod, float &pitch_dmod, float &yaw_dmod);
-
+    // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
+    void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);
+    
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

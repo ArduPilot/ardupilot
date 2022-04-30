@@ -1133,12 +1133,12 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
 }
 
 /*
-  get the PDmod value for roll, pitch and yaw, for oscillation
-   detection in lua scripts
+  get the slew rate for roll, pitch and yaw, for oscillation
+  detection in lua scripts
 */
-void AC_AttitudeControl::get_rpy_PDmod(float &roll_dmod, float &pitch_dmod, float &yaw_dmod)
+void AC_AttitudeControl::get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate)
 {
-    roll_dmod = get_rate_roll_pid().get_pid_info().Dmod;
-    pitch_dmod = get_rate_pitch_pid().get_pid_info().Dmod;
-    yaw_dmod = get_rate_yaw_pid().get_pid_info().Dmod;
+    roll_srate = get_rate_roll_pid().get_pid_info().slew_rate;
+    pitch_srate = get_rate_pitch_pid().get_pid_info().slew_rate;
+    yaw_srate = get_rate_yaw_pid().get_pid_info().slew_rate;
 }
