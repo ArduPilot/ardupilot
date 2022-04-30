@@ -19,9 +19,10 @@
 #include <setjmp.h>
 
 #include <AP_Filesystem/posix_compat.h>
-#include "lua_bindings.h"
 #include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS.h>
+
+#include "lua/src/lua.hpp"
 
 #ifndef REPL_DIRECTORY
   #if HAL_OS_FATFS_IO
