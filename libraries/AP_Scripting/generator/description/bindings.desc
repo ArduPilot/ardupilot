@@ -454,6 +454,8 @@ include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
 
+singleton CAN manual get_device lua_get_CAN_device
+singleton CAN depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 include AP_Scripting/AP_Scripting_CANSensor.h depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 include AP_HAL/AP_HAL.h
@@ -511,3 +513,14 @@ singleton AP_Follow method get_target_heading_deg boolean float'Null
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
+
+
+
+singleton AP_Logger rename logger
+singleton AP_Logger manual write AP_Logger_Write
+
+singleton i2c manual get_device lua_get_i2c_device
+
+global manual millis lua_millis
+global manual micros lua_micros
+global manual mission_receive lua_mission_receive
