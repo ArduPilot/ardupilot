@@ -27,6 +27,7 @@ char keyword_write[]               = "write";
 char keyword_literal[]             = "literal";
 char keyword_reference[]           = "reference";
 char keyword_deprecate[]           = "deprecate";
+char keyword_manual[]              = "manual";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -352,6 +353,7 @@ struct method_alias {
   char *name;
   char *alias;
   int line;
+  int is_manual;
 };
 
 struct userdata_field {
@@ -819,6 +821,24 @@ void handle_method(struct userdata *node) {
   }
 }
 
+void handle_manual(struct userdata *node) {
+  char *name = next_token();
+  if (name == NULL) {
+    error(ERROR_SINGLETON, "Expected a lua name for manual %s method",node->name);
+  }
+  char *cpp_function_name = next_token();
+  if (cpp_function_name == NULL) {
+    error(ERROR_SINGLETON, "Expected a cpp name for manual %s method",node->name);
+  }
+  struct method_alias *alias = allocate(sizeof(struct method_alias));
+  string_copy(&(alias->name), cpp_function_name);
+  string_copy(&(alias->alias), name);
+  alias->line = state.line_num;
+  alias->is_manual = 1;
+  alias->next = node->method_aliases;
+  node->method_aliases = alias;
+}
+
 void handle_operator(struct userdata *data) {
   trace(TRACE_USERDATA, "Adding a operator");
 
@@ -989,8 +1009,10 @@ void handle_singleton(void) {
     handle_userdata_field(node);
   } else if (strcmp(type, keyword_reference) == 0) {
     node->flags |= UD_FLAG_REFERENCE;
+  } else if (strcmp(type, keyword_manual) == 0) {
+    handle_manual(node);
   } else {
-    error(ERROR_SINGLETON, "Singletons only support renames, methods, semaphore, depends or literal keywords (got %s)", type);
+    error(ERROR_SINGLETON, "Singletons only support renames, methods, semaphore, depends, literal or manual keywords (got %s)", type);
   }
 
   // ensure no more tokens on the line
@@ -2090,7 +2112,11 @@ void emit_index(struct userdata *head) {
 
     struct method_alias *alias = node->method_aliases;
     while(alias) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", alias->alias, node->sanatized_name, alias->name);
+      if (alias->is_manual) {
+        fprintf(source, "    {\"%s\", %s},\n", alias->alias, alias->name);
+      } else {
+        fprintf(source, "    {\"%s\", %s_%s},\n", alias->alias, node->sanatized_name, alias->name);
+      }
       alias = alias->next;
     }
 
@@ -2472,22 +2498,25 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     // aliases
     struct method_alias *alias = node->method_aliases;
     while(alias) {
-      // find the method this is a alias of
-      struct method * method = node->methods;
-      while (method != NULL && strcmp(method->name, alias->name)) {
-        method = method-> next;
-      }
-      if (method == NULL) {
-        error(ERROR_DOCS, "Could not fine Method %s to alias to %s", alias->name, alias->alias);
+      // dont do manual bindings
+      if (alias->is_manual == 0) {
+        // find the method this is a alias of
+        struct method * method = node->methods;
+        while (method != NULL && strcmp(method->name, alias->name)) {
+          method = method-> next;
+        }
+        if (method == NULL) {
+          error(ERROR_DOCS, "Could not fine Method %s to alias to %s", alias->name, alias->alias);
+        }
+
+        emit_docs_method(name, alias->alias, method);
+
+        alias = alias->next;
       }
 
-      emit_docs_method(name, alias->alias, method);
-
-      alias = alias->next;
+      fprintf(docs, "\n");
+      free(name);
     }
-
-    fprintf(docs, "\n");
-    free(name);
     node = node->next;
   }
 }
@@ -2616,6 +2645,7 @@ int main(int argc, char **argv) {
   fprintf(source, "#pragma GCC optimize(\"Os\")\n");
   fprintf(source, "#include \"lua_generated_bindings.h\"\n");
   fprintf(source, "#include <AP_Scripting/lua_boxed_numerics.h>\n");
+  fprintf(source, "#include <AP_Scripting/lua_bindings.h>\n");
 
   // for set_and_print_new_error_message deprecate warning
   fprintf(source, "#include <AP_Scripting/lua_scripts.h>\n");
