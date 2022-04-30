@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "SIM_Aircraft.h"
 #include <AP_Math/AP_Math.h>
+#include <SITL/SITL_Input.h>
 
 namespace SITL {
 
