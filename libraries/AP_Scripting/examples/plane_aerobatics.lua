@@ -402,6 +402,8 @@ function resolve_jump(i)
    return i
 end
 
+
+--------Trajectory definitions---------------------
 function path_circle(t, radius, unused)
    t = t*math.pi*2
    local vec = makeVector3f(math.sin(t), 1.0-math.cos(t), 0)
@@ -415,18 +417,14 @@ function path_figure_eight(t, radius)
    return vec:scale(radius)
 end
 
---TODO: fix this to have initial tangent 0
---path_vertical_circle returns rate
 function path_vertical_circle(t, radius, unused)
    t = t*math.pi*2
-   --TODO: include * overload in lua bindings
-   local vec = Vector3f()
-   vec:x(math.sin(t))
-   vec:y(0.0)
-   vec:z(-1.0+math.cos(t))
-   return vec:scale(radius), 0.0
+   local vec = makeVector3f(math.sin(t), 0.0, -1.0 + math.cost(t))
+   return vec:scale(radius)
 end
+---------------------------------------------------
 
+--Estimate the length of the path in metres
 function path_length(path_f, arg1, arg2)
    local dt = 0.01
    local total = 0.0
@@ -442,35 +440,23 @@ function path_length(path_f, arg1, arg2)
    return total
 end
 
-function rotate_position(position, yaw)
-   local rotated_point = Vector3f()
-   local cs = math.cos(yaw)
-   local sn = math.sin(yaw)
 
-   rotated_point:x(position:x() * cs - position:y() * sn)
-   rotated_point:y(position:x() * sn + position:y() * cs)
-   rotated_point:z(position:z())
-   return rotated_point
-end
-
-
-function rotate_path(path_f, t, arg1, arg2, rot)
+--args: 
+--  path_f: path function returning position 
+--  t: normalised [0, 1] time
+--  arg1, arg2: arguments for path function
+--  orientation: maneuver frame orientation
+--returns: requested position in maneuver frame
+function rotate_path(path_f, t, arg1, arg2, orientation)
    point = path_f(t, arg1, arg2)
-   return rot:rotate_vector(point)
+   return orientation:rotate_vector(point)
 end
 
---look for where this is used 
--- float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
--- {
---     if (dt <= 0.0f || cutoff_freq <= 0.0f) {
---         return 1.0;
---     }
---     float rc = 1.0f/(M_2PI*cutoff_freq);
---     return constrain_float(dt/(dt+rc), 0.0f, 1.0f);
--- }
-
+--args:
+--  dt: sample time
+--  cutoff_freq: cutoff frequency for low pass filter, in Hz
+--returns: alpha value required to implement LP filter
 function calc_lowpass_alpha_dt(dt, cutoff_freq)
-
    if dt <= 0.0 or cutoff_freq <= 0.0 then
       return 1.0
    end
@@ -486,6 +472,7 @@ function calc_lowpass_alpha_dt(dt, cutoff_freq)
    return drc
 end
 
+--Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
 function makeVector3f(x, y, z)
    local vec = Vector3f()
    vec:x(x)
@@ -494,6 +481,9 @@ function makeVector3f(x, y, z)
    return vec
 end
 
+--Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
+--If vec1 and vec2 are already parallel, returns a zero vector and zero angle
+--Note that the rotation will not be unique.
 function vectors_to_rotation(vector1, vector2)
    axis = vector1:cross(vector2)
    if axis:length() < 0.00001 then
@@ -506,12 +496,15 @@ function vectors_to_rotation(vector1, vector2)
    return axis, angle
 end
 
+--Given vec1, vec2, returns an angular velocity  tuple that rotates vec1 to be parallel to vec2
+--If vec1 and vec2 are already parallel, returns a zero vector and zero angle 
 function vectors_to_angular_rate(vector1, vector2, time_constant)
    axis, angle = vectors_to_rotation(vector1, vector2)
    angular_velocity = angle/time_constant
    return axis:scale(angular_velocity)
 end
 
+--Just used this to test the above function, can probably delete now.
 function test_angular_rate()
    local vector1 = makeVector3f(1.0, 0.0, 0.0)
    local vector2 = makeVector3f(1.0, 1.0, 0.0)
@@ -525,7 +518,6 @@ function path_error_correction(current_pos, target_pos, forward_velocity)
    if forward_velocity <= MIN_SPEED then
       return makeVector3f(0.0, 0.0, 0.0)
    end
-   --assert forward_velocity > 0
    
    --time over which to correct position error
    local time_const_pos_to_vel = 5.0
@@ -547,10 +539,8 @@ test_angular_rate()
 
 local path_var = {}
 path_var.count = 0
-path_var.positionAndRoll = {}
 path_var.positions = {}
 path_var.initial_ori = Quaternion()
-path_var.initial_position = Vector3f()
 
 last_time = 0.0
 
@@ -575,34 +565,11 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
       path_var.last_pos = path(0.0, arg1, arg2) --position at t0
 
       local path_delta = path(target_dt, arg1, arg2) --position at t1
-
-      --rather than account for the initial tangent, just check trajectory, init tangent angle should be 0
-
-      --local init_tangent = path_delta - path_var.last_pos --direction from t0 to 1
-      
-      --TODO: check with tridge what we want to do here. Either enforce trajectories have initial tangent 0, or have an extra reference frame
-      --in the control logic.
-      
-      --path_var.init_yaw = wrap_pi(math.atan(init_tangent:y(), init_tangent:x()))
-      --path_var.init_yaw = -wrap_pi(path_var.init_yaw - math.rad(wp_yaw_deg))
-
-      --TODO: check if we want the wp_yaw or just an initial measured orientation
-      --path_var.init_yaw = math.rad(wp_yaw_deg)
+      --deliberately only want yaw component, because the maneuver should be performed relative to the earth, not relative to the initial orientation
       path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
-
-      --ahrs:get_quat_body_to_ned(path_var.initial_ori)
-
-      gcs:send_text(0, string.format("Initial orientation %.1f %.1f %1.f ", path_var.initial_ori:get_euler_roll(), path_var.initial_ori:get_euler_pitch(), path_var.initial_ori:get_euler_yaw()))
-      gcs:send_text(0, string.format("yaw heading: =%.1f", wp_yaw_deg))
-
       
       local corrected_position_t0 = rotate_path(path, 0, arg1, arg2, path_var.initial_ori)
       local corrected_position_t1 = rotate_path(path, target_dt, arg1, arg2, path_var.initial_ori)
-
-      --path_var.prev_target_pos = corrected_position_t0
-
-      --TODO: construct pose from yaw derived from ground course between waypoints.
-      --TODO: assume level?
 
       path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
       path_var.start_pos = ahrs:get_position()
@@ -613,19 +580,18 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
       speed_PI.set_I(SPEED_I:get())
       speed_PI.reset(math.max(SRV_Channels:get_output_scaled(k_throttle), TRIM_THROTTLE:get()))
 
-      --path_var.positions[-1] = prev_target_pos
+      --path_var.positions[-1] is not used in initial runthrough
       path_var.positions[0] = corrected_position_t0
       path_var.positions[1] = corrected_position_t1
 
-
       path_var.time_correction = 0.0 
 
-      path_var.filtered_target_velocity = Vector3f()
+      path_var.filtered_angular_velocity = Vector3f()
    end
 
+   --TODO: dt taken from actual loop rate or just desired loop rate?
    --local dt = now - path_var.last_time
    local dt = target_dt
-   --actually want ahrs last measured time or ahrs update frequency
 
    --normalise current time to [0, 1]
    local t = (now - path_var.start_time + path_var.time_correction)/path_var.total_time
@@ -638,11 +604,8 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    end
 
    --where we aim to be on the path at this timestamp
-   --TODO: make more clear, yaw and initial translation -> SE3 offset of frame
    --rotate from maneuver frame to 'local' EF
    local next_target_pos = rotate_path(path, t+dt, arg1, arg2, path_var.initial_ori)
-
-   local unrotated_next_target_pos = path(t+dt, arg1, arg2)
 
    path_var.positions[-1] = path_var.positions[0]:copy()
    path_var.positions[0] = path_var.positions[1]:copy()
@@ -659,6 +622,8 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    path_error[0] = (current_measured_pos - path_var.positions[0]):length() 
    path_error[1] = (current_measured_pos - path_var.positions[1]):length()
 
+   -----------------------------------------------------------------------------------------------------------------------------
+   --TODO: Get the "time correction" logic working
    -- local smallest_error_index = -1
    -- for i = 0,1,1
    -- do
@@ -680,6 +645,7 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    -- end
 
    -- path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
+   ------------------------------------------------------------------------------------------------------------------------------
 
    local position_error = path_var.positions[0]- current_measured_pos
    
@@ -690,66 +656,52 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    logger.write("POSM",'x,y,z','fff',current_measured_pos:x(),current_measured_pos:y(),current_measured_pos:z())
    logger.write("PERR",'x,y,z,tc,Lat,Lng,Alt','ffffLLf',position_error:x(),position_error:y(),position_error:z(), path_var.time_correction, path_loc:lat(), path_loc:lng(), path_loc:alt()*0.01)
 
-   --turn into AERO_PATH_TCONST
-   --local correction_time = 0.3
-   --velocity required to correct current position error
-   --local position_error_velocity = (position_error):scale(1.0/correction_time)
    --velocity required to travel along trajectory
    local trajectory_velocity = (path_var.positions[1] - path_var.positions[-1]):scale(0.5/dt) --derivative from -dt to dt for more accuracy
    local tangent1 = (path_var.positions[0] - path_var.positions[-1])
    local tangent2 = (path_var.positions[1] - path_var.positions[0])
    local path_rate_rads = vectors_to_angular_rate(tangent1, tangent2, 2*dt)
-   logger.write("DT",'dt','f',dt)
-
 
    path_var.prev_target_pos = current_target_pos
    path_var.last_measured_pos = current_pos
    path_var.last_time = now
 
    local angular_velocity = path_rate_rads:scale(math.deg(1))
-   logger.write("AV",'x,y,z','fff',angular_velocity:x(),angular_velocity:y(),angular_velocity:z())
+
+   --Smooth the angular velocities
+   local cutoff_hz = 0.2;
+   local alpha = calc_lowpass_alpha_dt(dt, cutoff_hz);
+   local filtered_angular_velocity_x = path_var.filtered_angular_velocity:x()
+   local filtered_angular_velocity_y = path_var.filtered_angular_velocity:y()
+   local filtered_angular_velocity_z = path_var.filtered_angular_velocity:z()
+   filtered_angular_velocity_x = filtered_angular_velocity_x + (angular_velocity:x() - filtered_angular_velocity_x) * alpha
+   filtered_angular_velocity_y = filtered_angular_velocity_y + (angular_velocity:y() - filtered_angular_velocity_y) * alpha
+   filtered_angular_velocity_z = filtered_angular_velocity_z + (angular_velocity:z() - filtered_angular_velocity_z) * alpha
+   path_var.filtered_angular_velocity:x(filtered_angular_velocity_x)
+   path_var.filtered_angular_velocity:y(filtered_angular_velocity_y)
+   path_var.filtered_angular_velocity:z(filtered_angular_velocity_z)
+
+   logger.write("AV",'x,y,z,fx,fy,fz','ffffff',angular_velocity:x(),angular_velocity:y(),angular_velocity:z(), filtered_angular_velocity_x,filtered_angular_velocity_y,filtered_angular_velocity_z)
    
    local vel_length = ahrs:get_velocity_NED():length()
 
    local err_corr_rate = path_error_correction(current_measured_pos, current_target_pos, vel_length)
    local err_corr_rate_deg = err_corr_rate:scale(math.deg(1))
    angular_velocity = angular_velocity + err_corr_rate_deg
+   --angular_velocity = path_var.filtered_angular_velocity + err_corr_rate_deg
 
    logger.write("AVEC",'x,y,z','fff',err_corr_rate_deg:x(),err_corr_rate_deg:y(),err_corr_rate_deg:z())
-
    logger.write("CAV",'x,y,z','fff',angular_velocity:x(),angular_velocity:y(),angular_velocity:z())
 
    local target_speed = TRIM_ARSPD_CM:get()*0.01
    throttle = speed_PI.update(target_speed, vel_length)
    throttle = constrain(throttle, 0, 100.0)
-   --vehicle:set_target_throttle_rate_rpy(throttle, bf_roll_rate, bf_pitch_rate, bf_yaw_rate)
    vehicle:set_target_throttle_rate_rpy(throttle, angular_velocity:x(), angular_velocity:y(), angular_velocity:z())
 
 end
 
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
-   --gcs:send_text(0, string.format("user args arg1=%.1f arg2=%.1f", arg1, arg2))
-
-   local ang = 3.1415/2  + 0.001
-   local vec = makeVector3f(math.cos(ang), math.sin(ang), 0)
-   local quat = Quaternion()
-   --quat:from_euler(0, 90, 0)
-   quat:q1(math.cos(math.pi/4))
-   quat:q2(math.sin(math.pi/4)*vec:x())
-   quat:q3(math.sin(math.pi/4)*vec:y())
-   quat:q4(math.sin(math.pi/4)*vec:z())
-
-   local quat2 = Quaternion()
-   quat2:from_euler(0.5, 0.2, 0)
-
-
-   --gcs:send_text(0, string.format("quat %.1f %.1f %.1f %.1f", quat:q1(), quat:q2(), quat:q3(), quat:q4()))
-   --gcs:send_text(0, string.format("get euler roll2 %.2f", quat:get_euler_roll()))
-   --gcs:send_text(0, string.format("quat2 %.1f %.1f %.1f %.1f", quat2:q1(), quat2:q2(), quat2:q3(), quat2:q4()))
-
-
-
    if id then
       if id ~= last_id then
          -- we've started a new command
