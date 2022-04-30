@@ -152,6 +152,9 @@ protected:
     void load_frame_params(const char *model_json);
 #endif
 
+    // get air density in kg/m^3
+    float get_air_density(float alt_amsl) const;
+
     struct Model model;
 
 private:
@@ -162,9 +165,6 @@ private:
 #if AP_SIM_ENABLED
     Battery *battery;
 #endif
-
-    // get air density in kg/m^3
-    float get_air_density(float alt_amsl) const;
 
     // json parsing helpers
 #if USE_PICOJSON
