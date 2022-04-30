@@ -537,26 +537,6 @@ void Frame::init(const char *frame_str, Battery *_battery)
         model.moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
     }
 
-
-#if 0
-    // useful debug code for thrust curve
-    {
-        motors[0].set_slew_max(0);
-        struct sitl_input input {};
-        for (uint16_t pwm = 1000; pwm < 2000; pwm += 50) {
-            input.servos[0] = pwm;
-
-            Vector3f rot_accel {}, thrust {};
-            Vector3f vel_air_bf {};
-            motors[0].calculate_forces(input, motor_offset, rot_accel, thrust, vel_air_bf,
-                                       ref_air_density, battery->get_voltage());
-            ::printf("pwm[%u] cmd=%.3f thrust=%.3f hovthst=%.3f\n",
-                     pwm, motors[0].pwm_to_command(pwm), -thrust.z*num_motors, hover_thrust);
-        }
-        motors[0].set_slew_max(model.slew_max);
-    }
-#endif
-
     // setup reasonable defaults for battery
     AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
     AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
