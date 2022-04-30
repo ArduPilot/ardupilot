@@ -28,6 +28,7 @@ char keyword_literal[]             = "literal";
 char keyword_reference[]           = "reference";
 char keyword_deprecate[]           = "deprecate";
 char keyword_manual[]              = "manual";
+char keyword_global[]              = "global";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -59,6 +60,7 @@ enum error_codes {
   ERROR_SINGLETON       = 7, // singletons
   ERROR_DEPENDS         = 8, // dependencies
   ERROR_DOCS            = 9, // Documentation
+  ERROR_GLOBALS         = 10,
 };
 
 struct header {
@@ -327,6 +329,7 @@ enum userdata_type {
   UD_USERDATA,
   UD_SINGLETON,
   UD_AP_OBJECT,
+  UD_GLOBAL,
 };
 
 struct argument {
@@ -396,6 +399,7 @@ struct userdata {
 
 static struct userdata *parsed_userdata;
 static struct userdata *parsed_ap_objects;
+static struct userdata *parsed_globals;
 
 void sanitize_character(char **str, char character) {
   char *position = strchr(*str, character);
@@ -1098,6 +1102,31 @@ void handle_ap_object(void) {
   }
 }
 
+void handle_global(void) {
+
+  if (parsed_globals == NULL) {
+    parsed_globals = (struct userdata *)allocate(sizeof(struct userdata));
+    parsed_globals->ud_type = UD_GLOBAL;
+  }
+
+  // read type
+  char *type = next_token();
+  if (type == NULL) {
+    error(ERROR_GLOBALS, "Expected a access type for global");
+  }
+
+  if (strcmp(type, keyword_manual) == 0) {
+    handle_manual(parsed_globals);
+  } else {
+    error(ERROR_GLOBALS, "globals only support manual keyword (got %s)", type);
+  }
+
+  // ensure no more tokens on the line
+  if (next_token()) {
+    error(ERROR_GLOBALS, "global contained an unexpected extra token: %s", state.token);
+  }
+}
+
 void sanity_check_userdata(void) {
   struct userdata * node = parsed_userdata;
   while(node) {
@@ -1726,6 +1755,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "    %s * ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
       break;
     case UD_SINGLETON:
+    case UD_GLOBAL:
       // this was bound early
       break;
     case UD_AP_OBJECT:
@@ -2270,6 +2300,16 @@ void emit_sandbox(void) {
     end_dependency(source, data->dependency);
     data = data->next;
   }
+  if (parsed_globals) {
+    struct method_alias *manual_aliases = parsed_globals->method_aliases;
+    while (manual_aliases) {
+      if (manual_aliases->is_manual == 0) {
+        error(ERROR_GLOBALS, "Globals only support manual methods");
+      }
+      fprintf(source, "    {\"%s\", %s},\n", manual_aliases->alias, manual_aliases->name);
+      manual_aliases = manual_aliases->next;
+    }
+  }
   fprintf(source, "};\n\n");
 
   fprintf(source, "void load_generated_sandbox(lua_State *L) {\n");
@@ -2280,7 +2320,7 @@ void emit_sandbox(void) {
   fprintf(source, "        lua_settable(L, -3);\n");
   fprintf(source, "    }\n");
 
-  // load the userdata allactors
+  // load the userdata allactors and globals
   fprintf(source, "    for (uint32_t i = 0; i < ARRAY_SIZE(new_userdata); i++) {\n");
   fprintf(source, "        lua_pushstring(L, new_userdata[i].name);\n");
   fprintf(source, "        lua_pushcfunction(L, new_userdata[i].fun);\n");
@@ -2617,6 +2657,8 @@ int main(int argc, char **argv) {
         handle_singleton();
       } else if (strcmp (state.token, keyword_ap_object) == 0){
         handle_ap_object();
+      } else if (strcmp (state.token, keyword_global) == 0){
+        handle_global();
       } else {
         error(ERROR_UNKNOWN_KEYWORD, "Expected a keyword, got: %s", state.token);
       }
