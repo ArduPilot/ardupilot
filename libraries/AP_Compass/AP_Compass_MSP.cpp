@@ -27,6 +27,7 @@ AP_Compass_MSP::AP_Compass_MSP(uint8_t _msp_instance)
 
     set_dev_id(instance, devid);
     set_external(instance, true);
+    set_rotation(instance, ROTATION_NONE);
 }
 
 void AP_Compass_MSP::handle_msp(const MSP::msp_compass_data_message_t &pkt)
