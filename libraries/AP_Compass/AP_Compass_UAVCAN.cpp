@@ -101,6 +101,7 @@ bool AP_Compass_UAVCAN::init()
 
     set_dev_id(_instance, _devid);
     set_external(_instance, true);
+    set_rotation(_instance, ROTATION_NONE);
 
     AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG,  "AP_Compass_UAVCAN loaded\n\r");
     return true;
