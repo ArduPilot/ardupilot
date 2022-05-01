@@ -54,5 +54,8 @@
 
     # momentum drag coefficient
     # ratio of momentum drag relative to a ducted rotor of the same effective disc area
-    "mdrag_coef" : 0.10
+    "mdrag_coef" : 0.10,
+
+    # number of motors
+    "num_motors" : 8
 }
