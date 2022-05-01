@@ -411,6 +411,7 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(disc_area),
         FRAME_VAR(mdrag_coef),
         {"moment_inertia", &model.moment_of_inertia, VarType::VECTOR3F},
+        FRAME_VAR(num_motors),
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
@@ -522,6 +523,10 @@ void Frame::init(const char *frame_str, Battery *_battery)
     float power_factor = hover_power / hover_thrust;
 
     battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
+
+    if (uint8_t(model.num_motors) != num_motors) {
+        ::printf("Warning model expected %u motors and got %u\n", uint8_t(model.num_motors), num_motors);
+    }
 
     for (uint8_t i=0; i<num_motors; i++) {
         motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,

@@ -144,6 +144,9 @@ private:
         Vector3f motor_thrust_vec[12];
         float yaw_factor[12] = {0};
 
+        // number of motors
+        float num_motors = 4;
+
     } default_model;
 
 protected:
