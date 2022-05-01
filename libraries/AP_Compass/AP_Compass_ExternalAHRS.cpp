@@ -25,6 +25,7 @@ AP_Compass_ExternalAHRS::AP_Compass_ExternalAHRS(uint8_t port)
 
     set_dev_id(instance, devid);
     set_external(instance, true);
+    set_rotation(instance, ROTATION_NONE);
 }
 
 void AP_Compass_ExternalAHRS::handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt)
