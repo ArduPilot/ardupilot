@@ -44,6 +44,11 @@ sudo -u "$VAGRANT_USER" dbus-launch gsettings set org.gnome.desktop.session idle
 sudo -u "$VAGRANT_USER" mkdir -p /home/"$VAGRANT_USER"/.config
 echo "yes" | sudo -u "$VAGRANT_USER" dd of=/home/"$VAGRANT_USER"/.config/gnome-initial-setup-done
 
+# sssd is missing config:
+if [ ${RELEASE_CODENAME} == 'jammy' ]; then
+    systemctl disable sssd
+fi
+
 # start the graphical environment right now:
 systemctl isolate graphical.target
 
