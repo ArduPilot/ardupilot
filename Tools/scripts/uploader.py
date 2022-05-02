@@ -1012,9 +1012,15 @@ def ports_to_try(args):
 def modemmanager_check():
     if os.path.exists("/usr/sbin/ModemManager"):
         print("""
-==========================================================================================================
-WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)
-==========================================================================================================
+===========================================================================================
+WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device
+===========================================================================================
+""")
+    if os.path.exists("/usr/bin/brltty"):
+        print("""
+=====================================================================================
+WARNING: You should uninstall brltty as it conflicts with any non-modem serial device
+=====================================================================================
 """)
 
 
