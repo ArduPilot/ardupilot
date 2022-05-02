@@ -26,7 +26,7 @@ private:
     bool check_pec_support();
 
     // read_block - returns number of characters read if successful, zero if unsuccessful
-    uint8_t read_block(uint8_t reg, uint8_t* data, bool append_zero) const;
+    uint8_t read_block(uint8_t reg, uint8_t* data) const;
 
     uint8_t _pec_confirmed; // count of the number of times PEC has been confirmed as working
     uint32_t _last_cell_update_us[BATTMONITOR_SMBUS_NUM_CELLS_MAX]; // system time of last successful read of cell voltage
