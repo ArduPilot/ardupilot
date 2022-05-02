@@ -95,15 +95,29 @@ void ModeAuto::run()
         }
     } else {
         // check for mission changes
-        if (mis_change_detector.check_for_mission_change(wp_nav->using_next_waypoint()) != AP_Mission_ChangeDetector_Copter::ChangeResponseType::NONE) {
-            // if mission is running restart the current command if it is a waypoint or spline command
-            if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
+        const AP_Mission_ChangeDetector_Copter::ChangeResponseType mis_chg_resp = mis_change_detector.check_for_mission_change(wp_nav->using_next_waypoint());
+
+        // if mission is running restart the current command if it is a waypoint or spline command
+        if ((mission.state() == AP_Mission::MISSION_RUNNING) && (_mode == SubMode::WP)) {
+            switch (mis_chg_resp) {
+            case AP_Mission_ChangeDetector_Copter::ChangeResponseType::NONE:
+                // no action required
+                break;
+            case AP_Mission_ChangeDetector_Copter::ChangeResponseType::ADD_NEXT_WAYPOINT:
+                if (mission_changed_add_next_wp()) {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "mission changed, added next waypoint");
+                } else {
+                    gcs().send_text(MAV_SEVERITY_CRITICAL, "mission changed, failed to add next waypoint");
+                }
+                break;
+            case AP_Mission_ChangeDetector_Copter::ChangeResponseType::RESET_REQUIRED:
                 if (mission.restart_current_nav_cmd()) {
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed, restarted command");
                 } else {
                     // failed to restart mission for some reason
                     gcs().send_text(MAV_SEVERITY_CRITICAL, "Auto mission changed but failed to restart command");
                 }
+                break;
             }
         }
 
@@ -1391,6 +1405,22 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     default:
         // for unsupported commands it is safer to stop
         break;
+    }
+
+    return true;
+}
+
+// add next waypoint - special case handling of a mission change in which a next waypoint is added
+bool ModeAuto::mission_changed_add_next_wp()
+{
+    const AP_Mission::Mission_Command& curr_cmd = mission.get_current_nav_cmd();
+    const Location dest_loc = loc_from_cmd(curr_cmd, copter.current_loc);
+
+    // set next destination if necessary
+    if (!set_next_wp(curr_cmd, dest_loc)) {
+        // failure to set next destination can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return false;
     }
 
     return true;
