@@ -289,6 +289,23 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
     gpsAccuracyGood = gpsSpdAccPass && ekfInnovationsPass;
 }
 
+// Determine if Mag yaw data is good or not
+void NavEKF3_core::calcCompassGoodForFlight()
+{
+    Vector3F eulerAngles;
+    stateStruct.quat.to_euler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+    const auto &_compass = dal.compass();
+    auto c = _compass.get_field(magSelectIndex);
+    Matrix3F dcm;
+    QuaternionF quat = stateStruct.quat;
+    quat.rotation_matrix(dcm);
+    // building the expected body field from orientation and table earth field
+    Vector3F ebf = dcm.transposed() * table_earth_field_ga;
+    Vector3F Err (c.x-ebf.x*1000,c.y-ebf.y*1000,c.z-ebf.z*1000);
+    // The threshold is set to be 50
+    compassAccuracyGood = (Err.length()<50); 
+}
+
 // Detect if we are in flight or on ground
 void NavEKF3_core::detectFlight()
 {

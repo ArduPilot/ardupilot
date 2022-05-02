@@ -865,6 +865,9 @@ private:
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
 
+    // determines if Compass data is good enough
+    void calcCompassGoodForFlight(void);
+
     // Read the range finder and take new measurements if available
     // Apply a median filter to range finder data
     void readRangeFinder();
@@ -1169,6 +1172,7 @@ private:
     uint32_t lastInnovPassTime_ms;  // last time in msec the GPS innovations passed
     uint32_t lastInnovFailTime_ms;  // last time in msec the GPS innovations failed
     bool gpsAccuracyGood;           // true when the GPS accuracy is considered to be good enough for safe flight.
+    bool compassAccuracyGood;       // true when compass accuracy is good
     Vector3F gpsVelInnov;           // gps velocity innovations
     Vector3F gpsVelVarInnov;        // gps velocity innovation variances
     uint32_t gpsVelInnovTime_ms;    // system time that gps velocity innovations were recorded (to detect timeouts)

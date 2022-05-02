@@ -360,6 +360,8 @@ void NavEKF3_core::readMagData()
 
         // remember time we read compass, to detect compass sensor failure
         lastMagRead_ms = imuSampleTime_ms;
+
+        calcCompassGoodForFlight();
     }
 }
 

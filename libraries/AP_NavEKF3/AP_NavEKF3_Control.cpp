@@ -708,6 +708,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     filterStatus.flags.using_gps = ((imuSampleTime_ms - lastPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
     filterStatus.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
+    filterStatus.flags.compass_glitch = !compassAccuracyGood; // compass glitching affecting navigation accuracy
     filterStatus.flags.gps_quality_good = gpsGoodToAlign;
     // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data
     filterStatus.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&

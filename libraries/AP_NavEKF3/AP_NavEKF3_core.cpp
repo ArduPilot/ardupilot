@@ -296,6 +296,7 @@ void NavEKF3_core::InitialiseVariables()
     lastInnovPassTime_ms = 0;
     lastInnovFailTime_ms = 0;
     gpsAccuracyGood = false;
+    compassAccuracyGood = false;
     gpsloc_prev = {};
     gpsDriftNE = 0.0f;
     gpsVertVelFilt = 0.0f;
