@@ -68,8 +68,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     // camera mount's fast update
     FAST_TASK_CLASS(AP_Mount, &sub.camera_mount, update_fast),
 #endif
-    // log sensor health
-    FAST_TASK(Log_Sensor_Health),
 
     SCHED_TASK(fifty_hz_loop,         50,     75,   3),
     SCHED_TASK_CLASS(AP_GPS, &sub.gps, update, 50, 200,   6),

@@ -168,20 +168,6 @@ void Sub::Log_Write_Data(LogDataID id, float value)
     }
 }
 
-// logs when compass becomes unhealthy
-void Sub::Log_Sensor_Health()
-{
-    if (!should_log(MASK_LOG_ANY)) {
-        return;
-    }
-
-    // check compass
-    if (sensor_health.compass != compass.healthy()) {
-        sensor_health.compass = compass.healthy();
-        AP::logger().Write_Error(LogErrorSubsystem::COMPASS, (sensor_health.compass ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
-    }
-}
-
 struct PACKED log_GuidedTarget {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -320,7 +306,6 @@ void Sub::Log_Write_Data(LogDataID id, uint32_t value) {}
 void Sub::Log_Write_Data(LogDataID id, int16_t value) {}
 void Sub::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Sub::Log_Write_Data(LogDataID id, float value) {}
-void Sub::Log_Sensor_Health() {}
 void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target) {}
 void Sub::Log_Write_Vehicle_Startup_Messages() {}
 
