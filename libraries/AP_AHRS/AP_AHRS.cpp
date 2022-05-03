@@ -587,7 +587,7 @@ void AP_AHRS::update_EKF3(void)
                     _accel_ef_ekf[i] = _dcm_matrix * accel;
                 }
             }
-            _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+            _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF3.getFilterStatus(-1,filt_state);
             update_notify_from_filter_status(filt_state);
