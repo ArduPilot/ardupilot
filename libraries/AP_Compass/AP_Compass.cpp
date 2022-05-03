@@ -1580,6 +1580,10 @@ Compass::read(void)
         return false;
     }
 
+#if HAL_LOGGING_ENABLED
+    const bool old_healthy = healthy();
+#endif
+
 #ifndef HAL_BUILD_AP_PERIPH
     if (!_initial_location_set) {
         try_set_initial_location();
@@ -1620,7 +1624,21 @@ Compass::read(void)
             break;
         }
     }
-    return healthy();
+    const bool new_healthy = healthy();
+
+#if HAL_LOGGING_ENABLED
+
+    #define MASK_LOG_ANY                    0xFFFF
+
+    if (new_healthy != old_healthy) {
+        if (AP::logger().should_log(MASK_LOG_ANY)) {
+            const LogErrorCode code = new_healthy ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY;
+            AP::logger().Write_Error(LogErrorSubsystem::COMPASS, code);
+        }
+    }
+#endif
+
+    return new_healthy;
 }
 
 uint8_t
