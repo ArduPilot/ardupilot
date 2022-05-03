@@ -185,6 +185,7 @@ void AC_AutoTune_Heli::test_init()
                 stop_freq = max_sweep_freq;
             }
         }
+        attitude_control->bf_feedforward(false);
 
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
@@ -1060,19 +1061,19 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
         case ROLL:
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
             command_reading = motors->get_roll();
-            tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
-            gyro_reading = ((float)ahrs_view->roll_sensor) / 5730.0f;
+            tgt_rate_reading = (target_angle_cd) / 5730.0f;
+            gyro_reading = ((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) / 5730.0f;
             break;
         case PITCH:
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
             command_reading = motors->get_pitch();
-            tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
-            gyro_reading = ((float)ahrs_view->pitch_sensor) / 5730.0f;
+            tgt_rate_reading = (target_angle_cd) / 5730.0f;
+            gyro_reading = ((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) / 5730.0f;
             break;
         case YAW:
             command_reading = motors->get_yaw();
-            tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) / 5730.0f;
-            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) / 5730.0f;
+            tgt_rate_reading = (target_angle_cd) / 5730.0f;
+            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading - target_angle_cd)) / 5730.0f;
             attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
             break;
         }
@@ -1206,6 +1207,8 @@ void AC_AutoTune_Heli::updating_rate_ff_up_all(AxisType test_axis)
 // update gains for the angle p up tune type
 void AC_AutoTune_Heli::updating_angle_p_up_all(AxisType test_axis)
 {
+    attitude_control->bf_feedforward(orig_bf_feedforward);
+
     switch (test_axis) {
     case ROLL:
         updating_angle_p_up(tune_roll_sp, test_freq, test_gain, test_phase, freq_cnt);
