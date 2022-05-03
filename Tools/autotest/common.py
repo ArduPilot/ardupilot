@@ -5632,14 +5632,20 @@ class AutoTest(ABC):
         )
 
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
+        self.wait_vfr_hud_speed("groundspeed", speed_min, speed_max, timeout=timeout, **kwargs)
+
+    def wait_airspeed(self, speed_min, speed_max, timeout=30, **kwargs):
+        self.wait_vfr_hud_speed("airspeed", speed_min, speed_max, timeout=timeout, **kwargs)
+
+    def wait_vfr_hud_speed(self, field, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
 
-        def get_groundspeed(timeout2):
+        def get_speed(timeout2):
             msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
             if msg:
-                return msg.groundspeed
-            raise MsgRcvTimeoutException("Failed to get Groundspeed")
+                return getattr(msg, field)
+            raise MsgRcvTimeoutException("Failed to get %s" % field)
 
         def validator(value2, target2=None):
             if speed_min <= value2 <= speed_max:
@@ -5648,9 +5654,9 @@ class AutoTest(ABC):
                 return False
 
         self.wait_and_maintain(
-            value_name="Groundspeed",
+            value_name=field,
             target=(speed_min+speed_max)/2,
-            current_value_getter=lambda: get_groundspeed(timeout),
+            current_value_getter=lambda: get_speed(timeout),
             accuracy=(speed_max - speed_min)/2,
             validator=lambda value2, target2: validator(value2, target2),
             timeout=timeout,
