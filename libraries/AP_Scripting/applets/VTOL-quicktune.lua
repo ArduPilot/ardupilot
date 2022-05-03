@@ -38,8 +38,17 @@ local QUIK_YAW_D_MAX   = bind_add_param('YAW_D_MAX',      7, 0.01)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
+local RCMAP_ROLL       = bind_param("RCMAP_ROLL")
+local RCMAP_PITCH      = bind_param("RCMAP_PITCH")
+local RCMAP_YAW        = bind_param("RCMAP_YAW")
+
+local RCIN_ROLL  = rc:get_channel(RCMAP_ROLL:get())
+local RCIN_PITCH = rc:get_channel(RCMAP_PITCH:get())
+local RCIN_YAW   = rc:get_channel(RCMAP_YAW:get())
+
 local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0
+local PILOT_INPUT_DELAY = 4.0
 
 local YAW_FLTE_MAX = 2.0
 local FLTD_MUL = 0.5
@@ -72,6 +81,7 @@ local stages = { "D", "P" }
 local stage = stages[1]
 local last_stage_change = get_time()
 local last_gain_report = get_time()
+local last_pilot_input = get_time()
 local slew_parm = nil
 local slew_target = 0
 local slew_delta = 0
@@ -155,6 +165,16 @@ function setup_filters()
          end
       end
    end
+end
+
+-- check for pilot input to pause tune
+function have_pilot_input()
+   if (math.abs(RCIN_ROLL:norm_input_dz()) > 0 or
+       math.abs(RCIN_PITCH:norm_input_dz()) > 0 or
+       math.abs(RCIN_YAW:norm_input_dz()) > 0) then
+      return true
+   end
+   return false
 end
 
 reset_axes_done()
@@ -294,6 +314,11 @@ function update()
    if quick_switch == nil or QUIK_ENABLE:get() < 1 then
       return
    end
+
+   if have_pilot_input() then
+      last_pilot_input = get_time()
+   end
+
    local sw_pos = quick_switch:get_aux_switch_pos()
    if sw_pos == 0 or not arming:is_armed() or not vehicle:get_likely_flying() then
       -- abort, revert parameters
@@ -334,6 +359,10 @@ function update()
       get_all_params()
       setup_SMAX()
       setup_filters()
+   end
+
+   if get_time() - last_pilot_input < PILOT_INPUT_DELAY then
+      return
    end
 
    local srate = get_slew_rate(axis)
