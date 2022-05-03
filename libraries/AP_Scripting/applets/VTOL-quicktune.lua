@@ -295,10 +295,7 @@ function gain_limit(pname)
    return 0.0
 end
 
-function reached_limit(pname, gain, srate)
-   if srate > QUIK_OSC_SMAX:get() then
-      return true
-   end
+function reached_limit(pname, gain)
    local limit = gain_limit(pname)
    if limit > 0.0 and gain >= limit then
       return true
@@ -368,8 +365,13 @@ function update()
    local srate = get_slew_rate(axis)
    local pname = get_pname(axis, stage)
    local P = params[pname]
-   if reached_limit(pname, P:get(), srate) then
+   local oscillating = srate > QUIK_OSC_SMAX:get()
+   local limited = reached_limit(pname, P:get())
+   if limited or oscillating then
       local reduction = (100.0-QUIK_GAIN_MARGIN:get())*0.01
+      if not oscillating then
+         reduction = 1.0
+      end
       local new_gain = P:get() * reduction
       local limit = gain_limit(pname)
       if limit > 0.0 and new_gain > limit then
