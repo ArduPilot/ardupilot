@@ -259,6 +259,7 @@ singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'e
 singleton SRV_Channels method set_range void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX
 
 ap_object RC_Channel method norm_input float
+ap_object RC_Channel method norm_input_dz float
 ap_object RC_Channel method get_aux_switch_pos uint8_t
 ap_object RC_Channel method norm_input_ignore_trim float
 ap_object RC_Channel method set_override void uint16_t 0 2200 0'literal
