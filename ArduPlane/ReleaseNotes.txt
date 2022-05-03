@@ -1,3 +1,31 @@
+Release 4.2.0 4th May 2022
+--------------------------
+
+This is the first 4.2 stable release of plane. Since 4.2.0beta6 there
+have only been 3 changes:
+
+ - added VTOL-quicktune lua script
+ - fixed custom compass orientation for DroneCAN compasses
+ - fixed a bug in blended Z accel calculation when not using first IMU
+
+Since the last stable 4.1.7 release there have been over 4k changes,
+so it is not practical to list them all here. Highlights for plane
+users include:
+
+ - smoother quadplane transitions
+ - ship landing support
+ - CAN over mavlink support
+ - major tailsitter improvements
+ - much better error reporting and diagnostics
+ - numerous lua scripting improvements
+ - improved weathervaning support and options
+ - support for fixed wing aerobatics
+ - many new flight controllers added
+ - DroneCAN dual-GPS for yaw support
+
+Happy flying!
+
+
 Release 4.2.0beta6 28th April 2022
 ----------------------------------
 
