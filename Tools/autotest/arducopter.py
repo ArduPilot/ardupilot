@@ -7402,14 +7402,16 @@ class AutoTestCopter(AutoTest):
     def SensorErrorFlags(self):
         self.reboot_sitl()
 
-        for (param_value, expected_ecode, desc) in [
-                (1, 4, 'unhealthy'),
-                (0, 0, 'healthy')
+        for (param_names, param_value, expected_subsys, expected_ecode, desc) in [
+                (['SIM_BARO_DISABLE', 'SIM_BAR2_DISABLE'], 1, 18, 4, 'unhealthy'),
+                (['SIM_BARO_DISABLE', 'SIM_BAR2_DISABLE'], 0, 18, 0, 'healthy'),
+                (['SIM_MAG1_FAIL', 'SIM_MAG2_FAIL', 'SIM_MAG3_FAIL'], 1, 3, 4, 'unhealthy'),
+                (['SIM_MAG1_FAIL', 'SIM_MAG2_FAIL', 'SIM_MAG3_FAIL'], 0, 3, 0, 'healthy'),
         ]:
-            self.set_parameters({
-                "SIM_BARO_DISABLE": param_value,
-                "SIM_BAR2_DISABLE": param_value,
-            })
+            sp = dict()
+            for name in param_names:
+                sp[name] = param_value
+            self.set_parameters(sp)
             self.delay_sim_time(1)
             mlog = self.dfreader_for_current_onboard_log()
             success = False
@@ -7418,7 +7420,7 @@ class AutoTestCopter(AutoTest):
                 print("Got (%s)" % str(m))
                 if m is None:
                     break
-                if m.Subsys == 18 and m.ECode == expected_ecode:  # baro / ecode
+                if m.Subsys == expected_subsys and m.ECode == expected_ecode:  # baro / ecode
                     success = True
                     break
             if not success:
