@@ -397,11 +397,6 @@ private:
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb;
     }
 
-    // sensor health for logging
-    struct {
-        uint8_t compass     : 1;    // true if compass is healthy
-    } sensor_health;
-
     // Motor Output
     MOTOR_CLASS *motors;
     const struct AP_Param::GroupInfo *motors_var_info;
@@ -800,7 +795,6 @@ private:
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
-    void Log_Sensor_Health();
     void Log_Video_Stabilisation();
 #if FRAME_CONFIG == HELI_FRAME
     void Log_Write_Heli(void);

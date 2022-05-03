@@ -138,8 +138,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     // camera mount's fast update
     FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
 #endif
-    // log sensor health
-    FAST_TASK(Log_Sensor_Health),
     FAST_TASK(Log_Video_Stabilisation),
 
     SCHED_TASK(rc_loop,              100,    130,  3),
@@ -743,8 +741,6 @@ Copter::Copter(void)
     param_loader(var_info),
     flightmode(&mode_stabilize)
 {
-    // init sensor error logging flags
-    sensor_health.compass = true;
 }
 
 Copter copter;
