@@ -114,3 +114,5 @@ If you move the switch to the low position at any time in the tune
 then all parameters will be reverted to their original
 values. Parameters will also be reverted if you disarm.
 
+If the pilot gives roll, pitch or yaw input while tuning then the tune
+is paused until 4 seconds after the pilot input stops.
