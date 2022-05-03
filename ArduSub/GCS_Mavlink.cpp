@@ -660,6 +660,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
             break;
         }
 
+        bool z_ignore        = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_Z_IGNORE;
         bool pos_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
         bool vel_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
         bool acc_ignore      = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
@@ -671,7 +672,7 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
          * bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
          */
 
-        if (!pos_ignore && sub.control_mode == ALT_HOLD) { // Control only target depth when in ALT_HOLD
+        if (!z_ignore && sub.control_mode == ALT_HOLD) { // Control only target depth when in ALT_HOLD
             sub.pos_control.set_pos_target_z_cm(packet.alt*100);
             break;
         }
