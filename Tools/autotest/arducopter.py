@@ -8889,6 +8889,10 @@ class AutoTestCopter(AutoTest):
             Test("LogUpload",
                  "Log upload",
                  self.log_upload),
+
+            Test("TestLogDownload2",
+             "Test Onboard Log Download2",
+             self.test_log_download2),
         ])
         return ret
 

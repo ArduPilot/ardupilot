@@ -27,6 +27,8 @@ import random
 import tempfile
 import threading
 import enum
+from pathlib import Path
+from shutil import move
 
 from MAVProxy.modules.lib import mp_util
 
@@ -2896,33 +2898,13 @@ class AutoTest(ABC):
         if ex is not None:
             raise ex
 
-    def test_log_download(self):
-        if self.is_tracker():
-            # tracker starts armed, which is annoying
-            return
-        self.progress("Ensuring we have contents we care about")
-        self.set_parameter("LOG_FILE_DSRMROT", 1)
-        self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
-        original_log_list = self.log_list()
-        for i in range(0, 10):
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.delay_sim_time(1)
-            self.disarm_vehicle()
-        new_log_list = self.log_list()
-        new_log_count = len(new_log_list) - len(original_log_list)
-        if new_log_count != 10:
-            raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
-                                       (new_log_count, original_log_list, new_log_list))
-        self.progress("Directory contents: %s" % str(new_log_list))
-
+    def download_full_log_list(self, print_logs=True):
         tstart = self.get_sim_time()
         self.mav.mav.log_request_list_send(self.sysid_thismav(),
                                            1, # target component
                                            0,
-                                           0xff)
-        logs = []
+                                           0xffff)
+        logs = {}
         last_id = None
         num_logs = None
         while True:
@@ -2932,10 +2914,11 @@ class AutoTest(ABC):
             m = self.mav.recv_match(type='LOG_ENTRY',
                                     blocking=True,
                                     timeout=1)
-            self.progress("Received (%s)" % str(m))
+            if print_logs:
+                self.progress("Received (%s)" % str(m))
             if m is None:
                 continue
-            logs.append(m)
+            logs[m.id] = m
             if last_id is None:
                 if m.num_logs == 0:
                     # caller to guarantee this works:
@@ -2962,7 +2945,107 @@ class AutoTest(ABC):
                                 timeout=2)
         if m is not None:
             raise NotAchievedException("Received extra LOG_ENTRY?!")
+        return logs
 
+    def test_log_download2(self):
+        """Test log wrapping."""
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.progress("Ensuring we have contents we care about")
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        logspath = Path("logs")
+        lastlogfilepath = Path("logs/LASTLOG.TXT")
+        backupdir = Path("logs")
+        if logspath.exists() and any(logspath.iterdir()):
+            for i in range(0, 500):
+                backupdir = Path(logspath.name + str(i))
+                if not backupdir.exists():
+                    move(str(logspath.absolute()), backupdir.absolute())
+                    self.progress(f"Backing up current log directory to {backupdir.name}")
+                    break
+
+        logspath.mkdir()
+        self.progress("Add LASTLOG.TXT file with counter at 500")
+        with open(lastlogfilepath, 'w') as lastlogfile:
+            lastlogfile.write("500\n")
+
+        self.progress("Create fakelogs from 0 to 500 on logs directory")
+        for i in range(1, 501):
+            new_log = logspath / Path(f"{str(i).zfill(8)}.BIN")
+            with open(new_log, 'w+') as logfile:
+                logfile.write(f"I AM LOG {i}\n")
+                for j in range(1, random.randint(0, 5000)):
+                    logfile.write("FAKELOG")
+
+        self.reboot_sitl()
+        self.start_subtest("Checking log list match with filesystem info")
+        logs_dict = self.download_full_log_list(print_logs=False)
+        if len(logs_dict) != 500:
+            raise NotAchievedException(f"Didn't get the full log list, expect 500 got {len(logs_dict)}")
+        log1 = logspath / Path("00000001.BIN")
+        log250 = logspath / Path("00000250.BIN")
+        log500 = logspath / Path("00000500.BIN")
+        if logs_dict[1].size != log1.stat().st_size:
+            raise NotAchievedException("Log1 size mismatch")
+        if logs_dict[250].size != log250.stat().st_size:
+            raise NotAchievedException("Log250 size mismatch")
+        if logs_dict[500].size != log500.stat().st_size:
+            raise NotAchievedException("Log500 size mismatch")
+
+        self.progress("Create new fakelogs from 1 to 11")
+        for i in range(1, 11):
+            new_log = logspath / Path(f"{str(i).zfill(8)}.BIN")
+            with open(new_log, 'w+') as logfile:
+                logfile.write(f"I AM LOG {i}\n")
+                for j in range(1, random.randint(0, 5000)):
+                    logfile.write("FAKELOG")
+
+        self.progress("Add LASTLOG.TXT file with counter at 11")
+        lastlogfilepath.unlink()
+        with open(lastlogfilepath, 'w') as lastlogfile:
+            lastlogfile.write("11\n")
+            lastlogfile.close()
+        self.reboot_sitl()
+        logs_dict = self.download_full_log_list(print_logs=False)
+        if len(logs_dict) != 11:
+            print(logs_dict[2])
+            time.sleep(10000)
+            raise NotAchievedException(f"Didn't get the full log list, expect 11 got {len(logs_dict)}")
+        self.progress("Checking log list match with filesystem info")
+        log2 = logspath / Path("00000002.BIN")
+        log10 = logspath / Path("00000010.BIN")
+        log11 = logspath / Path("00000011.BIN")
+        if logs_dict[2].size != log2.stat().st_size:
+            raise NotAchievedException("Log2 size mismatch")
+        if logs_dict[10].size != log10.stat().st_size:
+            raise NotAchievedException("Log10 size mismatch")
+        if logs_dict[11].size != log11.stat().st_size:
+            raise NotAchievedException("Log11 size mismatch")
+
+    def test_log_download(self):
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.progress("Ensuring we have contents we care about")
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+        original_log_list = self.log_list()
+        for i in range(0, 10):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1)
+            self.disarm_vehicle()
+        new_log_list = self.log_list()
+        new_log_count = len(new_log_list) - len(original_log_list)
+        if new_log_count != 10:
+            raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
+                                       (new_log_count, original_log_list, new_log_list))
+        self.progress("Directory contents: %s" % str(new_log_list))
+
+        self.download_full_log_list()
         log_id = 5
         ofs = 6
         count = 2
