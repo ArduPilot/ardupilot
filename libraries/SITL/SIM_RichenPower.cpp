@@ -198,11 +198,15 @@ void RichenPower::update_send()
     u.packet.runtime_seconds = runtime_seconds_remainder;
 
     const int32_t seconds_until_maintenance = (original_seconds_until_maintenance - _runtime_ms/1000.0f);
+    uint16_t errors = htobe16(u.packet.errors);
     if (seconds_until_maintenance <= 0) {
         u.packet.seconds_until_maintenance = htobe32(0);
+        errors |= (1U<<(uint8_t(Errors::MaintenanceRequired)));
     } else {
         u.packet.seconds_until_maintenance = htobe32(seconds_until_maintenance);
+        errors &= ~(1U<<(uint8_t(Errors::MaintenanceRequired)));
     }
+    u.packet.errors = htobe16(errors);
 
     switch (_state) {
     case State::IDLE:
