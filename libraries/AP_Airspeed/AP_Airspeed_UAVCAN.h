@@ -1,5 +1,13 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_AIRSPEED_UAVCAN_ENABLED
+#define AP_AIRSPEED_UAVCAN_ENABLED HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif
+
+#if AP_AIRSPEED_UAVCAN_ENABLED
+
 #include "AP_Airspeed_Backend.h"
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -44,3 +52,6 @@ private:
     static HAL_Semaphore _sem_registry;
     bool _have_temperature;
 };
+
+
+#endif  // AP_AIRSPEED_UAVCAN_ENABLED
