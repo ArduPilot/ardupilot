@@ -2278,8 +2278,6 @@ void emit_loaders(void) {
   fprintf(source, "    }\n");
 
   fprintf(source, "\n");
-  fprintf(source, "    load_boxed_numerics(L);\n");
-
   fprintf(source, "}\n\n");
 }
 
@@ -2335,9 +2333,6 @@ void emit_sandbox(void) {
   fprintf(source, "    }\n");
 
   fprintf(source, "\n");
-  fprintf(source, "    load_boxed_numerics_sandbox(L);\n");
-
-  // load the userdata complex functions
   fprintf(source, "}\n");
 }
 
