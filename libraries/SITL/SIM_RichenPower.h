@@ -96,6 +96,10 @@ private:
 
     uint32_t last_rpm_update_ms;
 
+    enum class Errors {
+        MaintenanceRequired = 0,
+    };
+
     // packet to send:
     struct PACKED RichenPacket {
         uint8_t magic1;
