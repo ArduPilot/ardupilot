@@ -29,6 +29,7 @@ char keyword_reference[]           = "reference";
 char keyword_deprecate[]           = "deprecate";
 char keyword_manual[]              = "manual";
 char keyword_global[]              = "global";
+char keyword_creation[]            = "creation";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -395,6 +396,7 @@ struct userdata {
   uint32_t operations; // bitset of enum operation_types
   int flags; // flags from the userdata_flags enum
   char *dependency;
+  char *creation; // name of a manual creation function if set, note that this will not be used internally
 };
 
 static struct userdata *parsed_userdata;
@@ -939,6 +941,15 @@ void handle_userdata(void) {
       }
       string_copy(&(node->dependency), depends);
 
+  } else if (strcmp(type, keyword_creation) == 0) {
+      if (node->creation != NULL) {
+        error(ERROR_SINGLETON, "Userdata only support a single creation function");
+      }
+      char *creation = strtok(NULL, "");
+      if (creation == NULL) {
+        error(ERROR_USERDATA, "Expected a creation string for %s",node->name);
+      }
+      string_copy(&(node->creation), creation);
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
@@ -2255,7 +2266,12 @@ void emit_sandbox(void) {
   fprintf(source, "} new_userdata[] = {\n");
   while (data) {
     start_dependency(source, data->dependency);
-    fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+    if (data->creation) {
+      // expose custom creation function to user (not used internally)
+      fprintf(source, "    {\"%s\", %s},\n", data->rename ? data->rename :  data->name, data->creation);
+    } else {
+      fprintf(source, "    {\"%s\", new_%s},\n", data->rename ? data->rename :  data->name, data->sanatized_name);
+    }
     end_dependency(source, data->dependency);
     data = data->next;
   }
