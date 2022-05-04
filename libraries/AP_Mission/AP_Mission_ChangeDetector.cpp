@@ -43,7 +43,7 @@ bool AP_Mission_ChangeDetector::check_for_mission_change(uint8_t& first_changed_
             mis_change_detect.cmd[num_cmds-1] = cmd[num_cmds-1];
             if (!cmds_changed) {
                 cmds_changed = true;
-                first_changed_cmd_idx = cmd_idx;
+                first_changed_cmd_idx = num_cmds-1;
             }
         }
         cmd_idx = cmd[num_cmds-1].index+1;
