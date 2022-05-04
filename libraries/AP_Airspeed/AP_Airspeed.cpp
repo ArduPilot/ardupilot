@@ -45,15 +45,9 @@
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_ASP5033.h"
 #include "AP_Airspeed_Backend.h"
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Airspeed_UAVCAN.h"
-#endif
-#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #include "AP_Airspeed_NMEA.h"
-#endif
-#if HAL_MSP_AIRSPEED_ENABLED
 #include "AP_Airspeed_MSP.h"
-#endif
 extern const AP_HAL::HAL &hal;
 
 #ifdef HAL_AIRSPEED_TYPE_DEFAULT
@@ -394,65 +388,79 @@ void AP_Airspeed::init()
             // nothing to do
             break;
         case TYPE_I2C_MS4525:
+#if AP_AIRSPEED_MS4525_ENABLED
             sensor[i] = new AP_Airspeed_MS4525(*this, i);
+#endif
             break;
         case TYPE_ANALOG:
+#if AP_AIRSPEED_ANALOG_ENABLED
             sensor[i] = new AP_Airspeed_Analog(*this, i);
+#endif
             break;
         case TYPE_I2C_MS5525:
+#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
+#endif
             break;
         case TYPE_I2C_MS5525_ADDRESS_1:
+#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_1);
+#endif
             break;
         case TYPE_I2C_MS5525_ADDRESS_2:
+#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_2);
+#endif
             break;
         case TYPE_I2C_SDP3X:
+#if AP_AIRSPEED_SDP3X_ENABLED
             sensor[i] = new AP_Airspeed_SDP3X(*this, i);
+#endif
             break;
         case TYPE_I2C_DLVR_5IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 5);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_10IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 10);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_20IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 20);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_30IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 30);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_60IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 60);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif  // AP_AIRSPEED_DLVR_ENABLED
             break;
         case TYPE_I2C_ASP5033:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_ASP5033_ENABLED
             sensor[i] = new AP_Airspeed_ASP5033(*this, i);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_AIRSPEED_UAVCAN_ENABLED
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
 #endif
             break;
         case TYPE_NMEA_WATER:
+#if AP_AIRSPEED_NMEA_ENABLED
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
             sensor[i] = new AP_Airspeed_NMEA(*this, i);
 #endif
+#endif
             break;
         case TYPE_MSP:
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
             break;
@@ -657,7 +665,7 @@ void AP_Airspeed::update()
 #endif
 }
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
 /*
   handle MSP airspeed data
  */
@@ -801,7 +809,7 @@ bool AP_Airspeed::healthy(uint8_t i) const { return false; }
 float AP_Airspeed::get_airspeed(uint8_t i) const { return 0.0; }
 float AP_Airspeed::get_differential_pressure(uint8_t i) const { return 0.0; }
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 #endif
 
