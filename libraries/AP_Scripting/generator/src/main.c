@@ -2076,40 +2076,6 @@ void emit_methods(struct userdata *node) {
   }
 }
 
-void emit_userdata_metatables(void) {
-  struct userdata * node = parsed_userdata;
-  while(node) {
-    start_dependency(source, node->dependency);
-    fprintf(source, "const luaL_Reg %s_meta[] = {\n", node->sanatized_name);
-
-    struct userdata_field *field = node->fields;
-    while(field) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", field->rename ? field->rename : field->name, node->sanatized_name, field->name);
-      field = field->next;
-    }
-
-    struct method *method = node->methods;
-    while(method) {
-      fprintf(source, "    {\"%s\", %s_%s},\n", method->rename ? method->rename :  method->name, node->sanatized_name, method->sanatized_name);
-      method = method->next;
-    }
-
-    for (uint32_t i = 1; i < OP_LAST; i = i << 1) {
-      const char * op_name = get_name_for_operation((node->operations) & i);
-      if (op_name == NULL) {
-        continue;
-      }
-      fprintf(source, "    {\"%s\", %s_%s},\n", op_name, node->sanatized_name, op_name);
-    }
-
-    fprintf(source, "    {NULL, NULL}\n");
-    fprintf(source, "};\n");
-    end_dependency(source, node->dependency);
-    fprintf(source, "\n");
-    node = node->next;
-  }
-}
-
 void emit_enum(struct userdata * data) {
     fprintf(source, "struct userdata_enum %s_enums[] = {\n", data->sanatized_name);
     struct userdata_enum *ud_enum = data->enums;
