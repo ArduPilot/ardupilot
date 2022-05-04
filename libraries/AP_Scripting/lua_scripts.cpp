@@ -73,7 +73,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
     va_copy(arg_list_copy, arg_list);
 
     // dry run to work out the required length
-    int len = hal.util->vsnprintf(NULL, 0, fmt, arg_list_copy);
+    int len = hal.util->vsnprintf(nullptr, 0, fmt, arg_list_copy);
 
     // finished with copy
     va_end(arg_list_copy);
