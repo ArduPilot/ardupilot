@@ -3,9 +3,17 @@
  */
 #pragma once
 
-#include "AP_Airspeed_Backend.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_MSP/msp.h>
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#ifndef AP_AIRSPEED_MSP_ENABLED
+#define AP_AIRSPEED_MSP_ENABLED HAL_MSP_SENSORS_ENABLED
+#endif
+
+#if AP_AIRSPEED_MSP_ENABLED
+
+#include "AP_Airspeed_Backend.h"
 
 class AP_Airspeed_MSP : public AP_Airspeed_Backend
 {
@@ -32,4 +40,4 @@ private:
     uint8_t temp_count;
 };
 
-#endif // HAL_MSP_AIRSPEED_ENABLED
+#endif // AP_AIRSPEED_MSP_ENABLED

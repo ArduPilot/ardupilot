@@ -18,6 +18,9 @@
  */
 
 #include "AP_Airspeed_DLVR.h"
+
+#if AP_AIRSPEED_DLVR_ENABLED
+
 #include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
@@ -176,3 +179,5 @@ bool AP_Airspeed_DLVR::get_temperature(float &_temperature)
     _temperature = temperature;
     return true;
 }
+
+#endif

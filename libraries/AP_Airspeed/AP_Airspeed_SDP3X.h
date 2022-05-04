@@ -14,6 +14,14 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_AIRSPEED_SDP3X_ENABLED
+#define AP_AIRSPEED_SDP3X_ENABLED AP_AIRSPEED_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_AIRSPEED_SDP3X_ENABLED
+
 /*
   backend driver for airspeed from I2C
  */
@@ -63,3 +71,6 @@ private:
 
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 };
+
+
+#endif  // AP_AIRSPEED_SDP3X_ENABLED
