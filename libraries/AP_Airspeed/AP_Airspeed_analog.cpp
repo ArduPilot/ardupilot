@@ -16,11 +16,14 @@
  *   analog airspeed driver
  */
 
+#include "AP_Airspeed_analog.h"
+
+#if AP_AIRSPEED_ANALOG_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 
 #include "AP_Airspeed.h"
-#include "AP_Airspeed_analog.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -48,3 +51,5 @@ bool AP_Airspeed_Analog::get_differential_pressure(float &pressure)
     pressure = _source->voltage_average_ratiometric() * VOLTS_TO_PASCAL / get_psi_range();
     return true;
 }
+
+#endif  // AP_AIRSPEED_ANALOG_ENABLED
