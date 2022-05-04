@@ -321,7 +321,9 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_Compass_UAVCAN::subscribe_msgs(this);
     AP_Baro_UAVCAN::subscribe_msgs(this);
     AP_BattMonitor_UAVCAN::subscribe_msgs(this);
+#if AP_AIRSPEED_UAVCAN_ENABLED
     AP_Airspeed_UAVCAN::subscribe_msgs(this);
+#endif
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
