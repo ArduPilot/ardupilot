@@ -524,3 +524,24 @@ singleton i2c manual get_device lua_get_i2c_device
 global manual millis lua_millis
 global manual micros lua_micros
 global manual mission_receive lua_mission_receive
+
+userdata uint32_t creation lua_new_uint32_t
+userdata uint32_t manual_operator __add uint32_t___add
+userdata uint32_t manual_operator __sub uint32_t___sub
+userdata uint32_t manual_operator __mul uint32_t___mul
+userdata uint32_t manual_operator __div uint32_t___div
+userdata uint32_t manual_operator __mod uint32_t___mod
+userdata uint32_t manual_operator __idiv uint32_t___idiv
+userdata uint32_t manual_operator __band uint32_t___band
+userdata uint32_t manual_operator __bor uint32_t___bor
+userdata uint32_t manual_operator __bxor uint32_t___bxor
+userdata uint32_t manual_operator __shl uint32_t___shl
+userdata uint32_t manual_operator __shr uint32_t___shr
+userdata uint32_t manual_operator __eq uint32_t___eq
+userdata uint32_t manual_operator __lt uint32_t___lt
+userdata uint32_t manual_operator __le uint32_t___le
+userdata uint32_t manual_operator __bnot uint32_t___bnot
+userdata uint32_t manual_operator __tostring uint32_t___tostring
+userdata uint32_t manual toint uint32_t_toint
+userdata uint32_t manual tofloat uint32_t_tofloat
+
