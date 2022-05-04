@@ -30,6 +30,7 @@ char keyword_deprecate[]           = "deprecate";
 char keyword_manual[]              = "manual";
 char keyword_global[]              = "global";
 char keyword_creation[]            = "creation";
+char keyword_manual_operator[]     = "manual_operator";
 
 // attributes (should include the leading ' )
 char keyword_attr_enum[]    = "'enum";
@@ -136,6 +137,7 @@ enum operator_type {
   OP_SUB  = (1U << 1),
   OP_MUL  = (1U << 2),
   OP_DIV  = (1U << 3),
+  OP_MANUAL = (1U << 4),
   OP_LAST
 };
 
@@ -352,12 +354,18 @@ struct method {
   uint32_t flags; // filled out with TYPE_FLAGS
 };
 
+enum alias_type {
+  ALIAS_TYPE_NONE,
+  ALIAS_TYPE_MANUAL,
+  ALIAS_TYPE_MANUAL_OPERATOR,
+};
+
 struct method_alias {
   struct method_alias *next;
   char *name;
   char *alias;
   int line;
-  int is_manual;
+  enum alias_type type;
 };
 
 struct userdata_field {
@@ -827,7 +835,7 @@ void handle_method(struct userdata *node) {
   }
 }
 
-void handle_manual(struct userdata *node) {
+void handle_manual(struct userdata *node, enum alias_type type) {
   char *name = next_token();
   if (name == NULL) {
     error(ERROR_SINGLETON, "Expected a lua name for manual %s method",node->name);
@@ -840,7 +848,7 @@ void handle_manual(struct userdata *node) {
   string_copy(&(alias->name), cpp_function_name);
   string_copy(&(alias->alias), name);
   alias->line = state.line_num;
-  alias->is_manual = 1;
+  alias->type = type;
   alias->next = node->method_aliases;
   node->method_aliases = alias;
 }
@@ -941,6 +949,9 @@ void handle_userdata(void) {
       }
       string_copy(&(node->dependency), depends);
 
+  } else if (strcmp(type, keyword_manual) == 0) {
+    handle_manual(node, ALIAS_TYPE_MANUAL);
+
   } else if (strcmp(type, keyword_creation) == 0) {
       if (node->creation != NULL) {
         error(ERROR_SINGLETON, "Userdata only support a single creation function");
@@ -950,6 +961,11 @@ void handle_userdata(void) {
         error(ERROR_USERDATA, "Expected a creation string for %s",node->name);
       }
       string_copy(&(node->creation), creation);
+
+  } else if (strcmp(type, keyword_manual_operator) == 0) {
+    handle_manual(node, ALIAS_TYPE_MANUAL_OPERATOR);
+    node->operations |= OP_MANUAL;
+
   } else {
     error(ERROR_USERDATA, "Unknown or unsupported type for userdata: %s", type);
   }
@@ -1025,7 +1041,7 @@ void handle_singleton(void) {
   } else if (strcmp(type, keyword_reference) == 0) {
     node->flags |= UD_FLAG_REFERENCE;
   } else if (strcmp(type, keyword_manual) == 0) {
-    handle_manual(node);
+    handle_manual(node, ALIAS_TYPE_MANUAL);
   } else {
     error(ERROR_SINGLETON, "Singletons only support renames, methods, semaphore, depends, literal or manual keywords (got %s)", type);
   }
@@ -1127,7 +1143,7 @@ void handle_global(void) {
   }
 
   if (strcmp(type, keyword_manual) == 0) {
-    handle_manual(parsed_globals);
+    handle_manual(parsed_globals, ALIAS_TYPE_MANUAL);
   } else {
     error(ERROR_GLOBALS, "globals only support manual keyword (got %s)", type);
   }
@@ -1141,7 +1157,7 @@ void handle_global(void) {
 void sanity_check_userdata(void) {
   struct userdata * node = parsed_userdata;
   while(node) {
-    if ((node->fields == NULL) && (node->methods == NULL)) {
+    if ((node->fields == NULL) && (node->methods == NULL) && (node->method_aliases == NULL)) {
       error(ERROR_USERDATA, "Userdata %s has no fields or methods", node->name);
     }
     node = node->next;
@@ -2019,6 +2035,7 @@ const char * get_name_for_operation(enum operator_type op) {
     case OP_DIV:
       return "__div";
       break;
+    case OP_MANUAL:
     case OP_LAST:
       return NULL;
   }
@@ -2050,6 +2067,7 @@ void emit_operators(struct userdata *data) {
       case OP_DIV:
         op_sym = '/';
         break;
+      case OP_MANUAL:
       case OP_LAST:
         return;
     }
@@ -2119,9 +2137,9 @@ void emit_index(struct userdata *head) {
 
     struct method_alias *alias = node->method_aliases;
     while(alias) {
-      if (alias->is_manual) {
+      if (alias->type == ALIAS_TYPE_MANUAL) {
         fprintf(source, "    {\"%s\", %s},\n", alias->alias, alias->name);
-      } else {
+      } else if (alias->type == ALIAS_TYPE_NONE) {
         fprintf(source, "    {\"%s\", %s_%s},\n", alias->alias, node->sanatized_name, alias->name);
       }
       alias = alias->next;
@@ -2137,6 +2155,13 @@ void emit_index(struct userdata *head) {
           continue;
         }
         fprintf(source, "    {\"%s\", %s_%s},\n", op_name, node->sanatized_name, op_name);
+      }
+      struct method_alias *alias = node->method_aliases;
+      while(alias) {
+        if (alias->type == ALIAS_TYPE_MANUAL_OPERATOR) {
+          fprintf(source, "    {\"%s\", %s},\n", alias->alias, alias->name);
+        }
+        alias = alias->next;
       }
       fprintf(source, "    {NULL, NULL},\n");
       fprintf(source, "};\n\n");
@@ -2285,7 +2310,7 @@ void emit_sandbox(void) {
   if (parsed_globals) {
     struct method_alias *manual_aliases = parsed_globals->method_aliases;
     while (manual_aliases) {
-      if (manual_aliases->is_manual == 0) {
+      if (manual_aliases->type != ALIAS_TYPE_MANUAL) {
         error(ERROR_GLOBALS, "Globals only support manual methods");
       }
       fprintf(source, "    {\"%s\", %s},\n", manual_aliases->alias, manual_aliases->name);
@@ -2521,7 +2546,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
     struct method_alias *alias = node->method_aliases;
     while(alias) {
       // dont do manual bindings
-      if (alias->is_manual == 0) {
+      if (alias->type == ALIAS_TYPE_NONE) {
         // find the method this is a alias of
         struct method * method = node->methods;
         while (method != NULL && strcmp(method->name, alias->name)) {
