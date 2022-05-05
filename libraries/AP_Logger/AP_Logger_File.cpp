@@ -682,7 +682,6 @@ uint16_t AP_Logger_File::get_num_logs()
     }
     uint16_t high = find_last_log();
     uint16_t ret = high;
-    uint16_t smallest = high;
     uint16_t smallest_above_last = 0;
 
     EXPECT_DELAY_MS(2000);
@@ -693,8 +692,7 @@ uint16_t AP_Logger_File::get_num_logs()
             // not a log filename
             continue;
         }
-        smallest = MIN(smallest, thisnum);
-        if (thisnum > high && (smallest_above_last != 0 || thisnum < smallest_above_last)) {
+        if (thisnum > high && (smallest_above_last == 0 || thisnum < smallest_above_last)) {
             smallest_above_last = thisnum;
         }
     }
