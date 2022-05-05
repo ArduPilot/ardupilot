@@ -52,7 +52,7 @@ void WEAK panic(const char *errormsg, ...)
 }
 
 // partly flogged from: https://github.com/tridge/junkcode/blob/master/segv_handler/segv_handler.c
-void run_command_on_ownpid(const char *commandname)
+static void run_command_on_ownpid(const char *commandname)
 {
     // find dumpstack command:
     const char *command_filepath = commandname; // if we can't find it trust in PATH
