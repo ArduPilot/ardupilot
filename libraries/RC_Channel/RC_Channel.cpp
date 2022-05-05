@@ -586,7 +586,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 /* lookup the announcement for switch change */
 const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const     
 {
-     for (const struct LookupTable entry : lookuptable) {
+     for (const struct LookupTable &entry : lookuptable) {
         if (entry.option == function) {
             return entry.announcement;
         }
