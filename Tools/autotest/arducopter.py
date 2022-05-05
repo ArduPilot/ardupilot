@@ -5290,13 +5290,13 @@ class AutoTestCopter(AutoTest):
 
         return freq
 
-    def fly_gyro_fft_harmonic(self):
+    def test_gyro_fft_harmonic(self, averaging):
         """Use dynamic harmonic notch to control motor noise with harmonic matching of the first harmonic."""
         # basic gyro sample rate test
         self.progress("Flying with gyro FFT harmonic - Gyro sample rate")
         self.context_push()
         ex = None
-        # we are dealing with probabalistic scenarios involving threads, have two bites at the cherry
+        # we are dealing with probabalistic scenarios involving threads
         try:
             self.start_subtest("Hover to calculate approximate hover frequency")
             # magic tridge EKF type that dramatically speeds up the test
@@ -5315,6 +5315,7 @@ class AutoTestCopter(AutoTest):
                 "FFT_THR_REF": self.get_parameter("MOT_THST_HOVER"),
                 "SIM_GYR1_RND": 20,  # enable a noisy gyro
             })
+
             # motor peak enabling FFT will also enable the arming
             # check, self-testing the functionality
             self.set_parameters({
@@ -5323,6 +5324,8 @@ class AutoTestCopter(AutoTest):
                 "FFT_MAXHZ": 450,
                 "FFT_SNR_REF": 10,
             })
+            if averaging:
+                self.set_parameter("FFT_NUM_FRAMES", 8)
 
             # Step 1: inject actual motor noise and use the FFT to track it
             self.set_parameters({
@@ -5436,6 +5439,15 @@ class AutoTestCopter(AutoTest):
 
         if ex is not None:
             raise ex
+
+    def fly_gyro_fft_harmonic(self):
+        """Use dynamic harmonic notch to control motor noise with harmonic matching of the first harmonic."""
+        self.test_gyro_fft_harmonic(False)
+
+    def fly_gyro_fft_continuous_averaging(self):
+        """Use dynamic harmonic notch with FFT averaging to control motor noise
+           with harmonic matching of the first harmonic."""
+        self.test_gyro_fft_harmonic(True)
 
     def fly_gyro_fft(self):
         """Use dynamic harmonic notch to control motor noise."""
@@ -9082,6 +9094,11 @@ class AutoTestCopter(AutoTest):
                  "Fly Gyro FFT Averaging",
                  self.fly_gyro_fft_average,
                  attempts=1),
+
+            Test("GyroFFTContinuousAveraging",
+                 "Fly Gyro FFT Continuous averaging",
+                 self.fly_gyro_fft_continuous_averaging,
+                 attempts=8),
 
             Test("CompassReordering",
                  "Test Compass reordering when priorities are changed",
