@@ -452,7 +452,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         }
     }
 
-    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot) {
+    if (is_critical && have_logged_armed && !_front._params.file_disarm_rot && get_backend_type() != Type::MAVLINK) {
         // if we have previously logged while armed then we log all
         // critical messages from then on. That fixes a problem where
         // logs show the wrong flight mode if you disarm then arm again

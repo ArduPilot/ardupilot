@@ -60,6 +60,7 @@ public:
 
     void remote_log_block_status_msg(const GCS_MAVLINK &link, const mavlink_message_t& msg) override;
     void vehicle_was_disarmed() override {}
+    AP_Logger_Backend::Type get_backend_type() const override { return AP_Logger_Backend::Type::MAVLINK; };
 
 protected:
 

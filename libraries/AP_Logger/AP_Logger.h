@@ -452,13 +452,6 @@ private:
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
     const AP_Int32 &_log_bitmask;
 
-    enum class Backend_Type : uint8_t {
-        NONE       = 0,
-        FILESYSTEM = (1<<0),
-        MAVLINK    = (1<<1),
-        BLOCK      = (1<<2),
-    };
-
     /*
      * support for dynamic Write; user-supplies name, format,
      * labels and values in a single function call.
