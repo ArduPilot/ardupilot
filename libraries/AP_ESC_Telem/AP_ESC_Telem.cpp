@@ -365,7 +365,6 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, c
 #endif
 }
 
-// log ESC telemetry at 10Hz
 void AP_ESC_Telem::update()
 {
     AP_Logger *logger = AP_Logger::get_singleton();
