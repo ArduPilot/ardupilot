@@ -856,11 +856,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         switch ((uint16_t)packet.param1) {
         case PARACHUTE_DISABLE:
             copter.parachute.enabled(false);
-            AP::logger().Write_Event(LogEvent::PARACHUTE_DISABLED);
             return MAV_RESULT_ACCEPTED;
         case PARACHUTE_ENABLE:
             copter.parachute.enabled(true);
-            AP::logger().Write_Event(LogEvent::PARACHUTE_ENABLED);
             return MAV_RESULT_ACCEPTED;
         case PARACHUTE_RELEASE:
             // treat as a manual release which performs some additional check of altitude
