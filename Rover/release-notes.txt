@@ -1,5 +1,11 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.2.0-rc3 07-May-2022
+Changes from 4.2.0-rc2
+1) Bug fixes
+    a) Blended Z axis accel calculation fix when not using first IMU
+    b) Custom compass orientation for DroneCAN compasses
+------------------------------------------------------------------
 Rover 4.2.0-rc2 29-Apr-2022
 Changes from 4.2.0-rc1
 1) Minor Enhancements
