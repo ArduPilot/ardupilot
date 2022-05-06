@@ -33,7 +33,7 @@ at the default of 10 seconds.
 
 This is the percentage gain margin to use. Once the oscillation point
 for a gain is found the gain is reduced by this percentage. The
-default of 70% is good for most users.
+default of 60% is good for most users.
 
 ## QUIK_OSC_SMAX
 
@@ -62,6 +62,29 @@ multirotor style vehicles needs to have a much lower limit on the D
 gain than the oscillation limit to ensure that enough control remains
 for roll, pitch and thrust. A maximum of 0.01 is good for most VTOL
 vehicles.
+
+## QUIK_RP_PI_RATIO
+
+This is the ratio for P to I for roll and pitch axes. This should
+normally be 1, but on some large vehicles a value of up to 3 can be
+used if the I term in the PID is causing too much phase lag.
+
+If QUIK_RP_PI_RATIO is less than 1 then the I value will not be
+changed at all when P is changed.
+
+## QUIK_Y_PI_RATIO
+
+This is the ratio for P to I for the yax axis. This should
+normally be 10, but a different value may be needed on some vehicle
+types.
+
+If QUIK_Y_PI_RATIO is less than 1 then the I value will not be
+changed at all when P is changed.
+
+## QUIK_AUTO_FILTER
+
+This enables automatic setting of the PID filters based on the
+INS_GYRO_FILTER value. Set to zero to disable this feature.
 
 # Operation
 
