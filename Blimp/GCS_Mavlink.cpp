@@ -538,21 +538,6 @@ void GCS_MAVLINK_Blimp::handleMessage(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_TERRAIN_CHECK:
         break;
 
-    case MAVLINK_MSG_ID_SET_HOME_POSITION: {
-        mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(&msg, &packet);
-        if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            IGNORE_RETURN(blimp.set_home_to_current_location(true));
-        } else {
-            Location new_home_loc;
-            new_home_loc.lat = packet.latitude;
-            new_home_loc.lng = packet.longitude;
-            new_home_loc.alt = packet.altitude / 10;
-            IGNORE_RETURN(blimp.set_home(new_home_loc, true));
-        }
-        break;
-    }
-
     default:
         handle_common_message(msg);
         break;
