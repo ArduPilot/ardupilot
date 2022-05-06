@@ -141,7 +141,14 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_RPM/LogStructure.h>
 
 // structure used to define logging format
+// It is packed on ChibiOS to save flash space; however, this causes problems
+// when building the SITL on an Apple M1 CPU (and is also slower) so we do not
+// pack it by default
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 struct PACKED LogStructure {
+#else
+struct LogStructure {
+#endif
     uint8_t msg_type;
     uint8_t msg_len;
     const char *name;
