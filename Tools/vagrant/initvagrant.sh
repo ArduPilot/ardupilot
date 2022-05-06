@@ -61,6 +61,17 @@ echo "source $BASHRC_GIT" |
 # link a half-way decent .mavinit.scr into place:
 sudo --login -u $VAGRANT_USER ln -sf /vagrant/Tools/vagrant/mavinit.scr /home/$VAGRANT_USER/.mavinit.scr
 
+RELEASE_CODENAME=$(lsb_release -c -s)
+
+# no multipath available, stop mutlipathd complaining about lack of data:
+if [ ${RELEASE_CODENAME} == 'jammy' ]; then
+    cat >>/etc/multipath.conf <<EOF
+blacklist { devnode "sda" }
+blacklist { devnode "sdb" }
+EOF
+fi
+
+
 #Plant a marker for sim_vehicle that we're inside a vagrant box
 touch /ardupilot.vagrant
 

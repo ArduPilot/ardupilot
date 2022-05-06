@@ -366,7 +366,7 @@ void Rover::update_logging1(void)
 
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
-        logger.Write_Beacon(g2.beacon);
+        g2.beacon.log();
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -380,7 +380,7 @@ void Rover::update_logging1(void)
 
 #if HAL_PROXIMITY_ENABLED
     if (should_log(MASK_LOG_RANGEFINDER)) {
-        logger.Write_Proximity(g2.proximity);
+        g2.proximity.log();
     }
 #endif
 }

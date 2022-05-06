@@ -253,23 +253,23 @@ void AP_RCTelemetry::check_ekf_status(void)
         uint32_t now = AP_HAL::millis();
         if ((now - check_ekf_status_timer) >= 10000) { // prevent repeating any ekf_status message unless 10 seconds have passed
             // multiple errors can be reported at a time. Same setup as Mission Planner.
-            if (velVar >= 1) {
+            if (velVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error velocity variance");
                 check_ekf_status_timer = now;
             }
-            if (posVar >= 1) {
+            if (posVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error pos horiz variance");
                 check_ekf_status_timer = now;
             }
-            if (hgtVar >= 1) {
+            if (hgtVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error pos vert variance");
                 check_ekf_status_timer = now;
             }
-            if (magVar.length() >= 1) {
+            if (magVar.length() >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error compass variance");
                 check_ekf_status_timer = now;
             }
-            if (tasVar >= 1) {
+            if (tasVar >= 0.8f) {
                 queue_message(MAV_SEVERITY_CRITICAL, "Error terrain alt variance");
                 check_ekf_status_timer = now;
             }

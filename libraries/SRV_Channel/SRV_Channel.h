@@ -52,7 +52,7 @@ public:
     typedef enum
     {
         k_GPIO                  = -1,           ///< used as GPIO pin (input or output)
-        k_none                  = 0,            ///< disabled
+        k_none                  = 0,            ///< general use PWM output used by do-set-servo commands and lua scripts
         k_manual                = 1,            ///< manual, just pass-thru the RC in signal
         k_flap                  = 2,            ///< flap
         k_flap_auto             = 3,            ///< flap automated
@@ -183,7 +183,7 @@ public:
 
     // check if a function is valid for indexing into functions
     static bool valid_function(Aux_servo_function_t fn) {
-        return fn > k_none && fn < k_nr_aux_servo_functions;
+        return fn >= k_none && fn < k_nr_aux_servo_functions;
     }
     bool valid_function(void) const {
         return valid_function(function);
@@ -519,8 +519,9 @@ public:
 
     static void push();
 
-    // disable output to a set of channels given by a mask. This is used by the AP_BLHeli code
+    // disable PWM output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint16_t mask) { disabled_mask = mask; }
+    static uint16_t get_disabled_channel_mask() { return disabled_mask; }
 
     // add to mask of outputs which use digital (non-PWM) output and optionally can reverse thrust, such as DShot
     static void set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask);
@@ -575,19 +576,23 @@ private:
     static SRV_Channel *channels;
     static SRV_Channels *_singleton;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // support for Volz protocol
     AP_Volz_Protocol volz;
     static AP_Volz_Protocol *volz_ptr;
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // support for SBUS protocol
     AP_SBusOut sbus;
     static AP_SBusOut *sbus_ptr;
+#endif // HAL_BUILD_AP_PERIPH
 
+#if AP_ROBOTISSERVO_ENABLED
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
     static AP_RobotisServo *robotis_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
@@ -600,6 +605,7 @@ private:
     static AP_FETtecOneWire *fetteconwire_ptr;
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
 
+    // mask of disabled channels
     static uint16_t disabled_mask;
 
     // mask of outputs which use a digital output protocol, not

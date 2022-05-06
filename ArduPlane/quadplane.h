@@ -18,6 +18,7 @@
 #include <AC_WPNav/AC_Loiter.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <AP_Logger/LogStructure.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "qautotune.h"
 #include "defines.h"
@@ -523,6 +524,7 @@ private:
         OPTION_REPOSITION_LANDING=(1<<17),
         OPTION_ONLY_ARM_IN_QMODE_OR_AUTO=(1<<18),
         OPTION_TRANS_FAIL_TO_FW=(1<<19),
+        OPTION_FS_RTL=(1<<20),
     };
 
     AP_Float takeoff_failure_scalar;

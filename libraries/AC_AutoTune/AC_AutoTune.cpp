@@ -1,6 +1,8 @@
 #include "AC_AutoTune.h"
-#include <GCS_MAVLink/GCS.h>
+
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 #define AUTOTUNE_PILOT_OVERRIDE_TIMEOUT_MS  500     // restart tuning if pilot has left sticks in middle for 2 seconds
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)

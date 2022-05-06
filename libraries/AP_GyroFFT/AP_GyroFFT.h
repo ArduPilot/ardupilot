@@ -61,6 +61,8 @@ public:
     void update_thread();
     // start the update thread
     bool start_update_thread();
+    // is the subsystem enabled
+    bool enabled() const { return _enable; }
 
     // check at startup that standard frequencies can be detected
     bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len);
@@ -72,6 +74,9 @@ public:
     void save_params_on_disarm();
     // dynamically enable or disable the analysis through the aux switch
     void set_analysis_enabled(bool enabled) { _analysis_enabled = enabled; };
+    // notch tuning
+    void start_notch_tune();
+    void stop_notch_tune();
 
     // detected peak frequency filtered at 1/3 the update rate
     const Vector3f& get_noise_center_freq_hz() const { return get_noise_center_freq_hz(FrequencyPeak::CENTER); }
@@ -282,6 +287,8 @@ private:
     uint8_t _health;
     // engine health on roll/pitch/yaw
     Vector3<uint8_t> _rpy_health;
+    // averaged throttle output over averaging period
+    float _avg_throttle_out;
 
     // smoothing filter on the output
     MedianLowPassFilter3dFloat _center_freq_filter[FrequencyPeak::MAX_TRACKED_PEAKS];

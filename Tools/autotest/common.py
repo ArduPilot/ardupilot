@@ -2009,12 +2009,15 @@ class AutoTest(ABC):
                 htree[n] = p
         return htree
 
-    def test_adsb_send_threatening_adsb_message(self, here):
+    def test_adsb_send_threatening_adsb_message(self, here, offset_ne=None):
         self.progress("Sending ABSD_VEHICLE message")
+        new = here
+        if offset_ne is not None:
+            new = self.offset_location_ne(new, offset_ne[0], offset_ne[1])
         self.mav.mav.adsb_vehicle_send(
             37, # ICAO address
-            int(here.lat * 1e7),
-            int(here.lng * 1e7),
+            int(new.lat * 1e7),
+            int(new.lng * 1e7),
             mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
             int(here.alt*1000 + 10000), # 10m up
             0, # heading in cdeg
@@ -4321,14 +4324,17 @@ class AutoTest(ABC):
             0,
             0)
 
-    def set_analog_rangefinder_parameters(self):
-        self.set_parameters({
+    def analog_rangefinder_parameters(self):
+        return {
             "RNGFND1_TYPE": 1,
             "RNGFND1_MIN_CM": 0,
             "RNGFND1_MAX_CM": 4000,
             "RNGFND1_SCALING": 12.12,
             "RNGFND1_PIN": 0,
-        })
+        }
+
+    def set_analog_rangefinder_parameters(self):
+        self.set_parameters(self.analog_rangefinder_parameters())
 
     def send_debug_trap(self, timeout=6000):
         self.progress("Sending trap to autopilot")
@@ -5364,7 +5370,9 @@ class AutoTest(ABC):
             self.wait_heading(heading)
             self.set_rc(4, 1500)
         if self.is_plane():
-            self.progress("NOT IMPLEMENTED")
+            self.set_rc(1, 1800)
+            self.wait_heading(heading)
+            self.set_rc(1, 1500)
         if self.is_rover():
             steering_pwm = 1700
             if not turn_right:
@@ -5624,14 +5632,20 @@ class AutoTest(ABC):
         )
 
     def wait_groundspeed(self, speed_min, speed_max, timeout=30, **kwargs):
+        self.wait_vfr_hud_speed("groundspeed", speed_min, speed_max, timeout=timeout, **kwargs)
+
+    def wait_airspeed(self, speed_min, speed_max, timeout=30, **kwargs):
+        self.wait_vfr_hud_speed("airspeed", speed_min, speed_max, timeout=timeout, **kwargs)
+
+    def wait_vfr_hud_speed(self, field, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given ground speed range."""
         assert speed_min <= speed_max, "Minimum speed should be less than maximum speed."
 
-        def get_groundspeed(timeout2):
+        def get_speed(timeout2):
             msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
             if msg:
-                return msg.groundspeed
-            raise MsgRcvTimeoutException("Failed to get Groundspeed")
+                return getattr(msg, field)
+            raise MsgRcvTimeoutException("Failed to get %s" % field)
 
         def validator(value2, target2=None):
             if speed_min <= value2 <= speed_max:
@@ -5640,9 +5654,9 @@ class AutoTest(ABC):
                 return False
 
         self.wait_and_maintain(
-            value_name="Groundspeed",
+            value_name=field,
             target=(speed_min+speed_max)/2,
-            current_value_getter=lambda: get_groundspeed(timeout),
+            current_value_getter=lambda: get_speed(timeout),
             accuracy=(speed_max - speed_min)/2,
             validator=lambda value2, target2: validator(value2, target2),
             timeout=timeout,
@@ -7215,6 +7229,11 @@ Also, ignores heartbeats not from our target system'''
                 break
         self.progress("Polled home position (%s)" % str(m))
         return m
+
+    def position_target_loc(self):
+        '''returns target location based on POSITION_TARGET_GLOBAL_INT'''
+        m = self.mav.messages.get("POSITION_TARGET_GLOBAL_INT", None)
+        return mavutil.location(m.lat_int*1e-7, m.lon_int*1e-7, m.alt)
 
     def distance_to_nav_target(self, use_cached_nav_controller_output=False):
         '''returns distance to waypoint navigation target in metres'''
@@ -11266,6 +11285,8 @@ switch value'''
                 raise NotAchievedException("Failed to ARM")
             self.set_rc(3, 1050)
             self.wait_rpm1(timeout=10, min_rpm=200)
+
+        self.assert_current_onboard_log_contains_message("RPM")
 
         self.drain_mav_unparsed()
         # anything with a lambda in here needs a proper test written.

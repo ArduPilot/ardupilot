@@ -21,6 +21,7 @@
 #include "AP_Beacon_SITL.h"
 
 #include <AP_Common/Location.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -388,6 +389,32 @@ bool AP_Beacon::device_ready(void) const
     return ((_driver != nullptr) && (_type != AP_BeaconType_None));
 }
 
+// Write beacon sensor (position) data
+void AP_Beacon::log()
+{
+    if (!enabled()) {
+        return;
+    }
+    // position
+    Vector3f pos;
+    float accuracy = 0.0f;
+    get_vehicle_position_ned(pos, accuracy);
+
+    const struct log_Beacon pkt_beacon{
+       LOG_PACKET_HEADER_INIT(LOG_BEACON_MSG),
+       time_us         : AP_HAL::micros64(),
+       health          : (uint8_t)healthy(),
+       count           : (uint8_t)count(),
+       dist0           : beacon_distance(0),
+       dist1           : beacon_distance(1),
+       dist2           : beacon_distance(2),
+       dist3           : beacon_distance(3),
+       posx            : pos.x,
+       posy            : pos.y,
+       posz            : pos.z
+    };
+    AP::logger().WriteBlock(&pkt_beacon, sizeof(pkt_beacon));
+}
 
 // singleton instance
 AP_Beacon *AP_Beacon::_singleton;

@@ -43,11 +43,17 @@ extern const AP_HAL::HAL& hal;
 SRV_Channel *SRV_Channels::channels;
 SRV_Channels *SRV_Channels::_singleton;
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
 AP_Volz_Protocol *SRV_Channels::volz_ptr;
+#endif
+
+#ifndef HAL_BUILD_AP_PERIPH
 AP_SBusOut *SRV_Channels::sbus_ptr;
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
 AP_RobotisServo *SRV_Channels::robotis_ptr;
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED
 AP_FETtecOneWire *SRV_Channels::fetteconwire_ptr;
@@ -184,11 +190,13 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Units: Hz
     AP_GROUPINFO("_RATE",  18, SRV_Channels, default_rate, 50),
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // @Group: _VOLZ_
     // @Path: ../AP_Volz_Protocol/AP_Volz_Protocol.cpp
     AP_SUBGROUPINFO(volz, "_VOLZ_",  19, SRV_Channels, AP_Volz_Protocol),
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // @Group: _SBUS_
     // @Path: ../AP_SBusOut/AP_SBusOut.cpp
     AP_SUBGROUPINFO(sbus, "_SBUS_",  20, SRV_Channels, AP_SBusOut),
@@ -200,18 +208,17 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     AP_SUBGROUPINFO(blheli, "_BLH_",  21, SRV_Channels, AP_BLHeli),
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_ROBOTISSERVO_ENABLED
     // @Group: _ROB_
     // @Path: ../AP_RobotisServo/AP_RobotisServo.cpp
     AP_SUBGROUPINFO(robotis, "_ROB_",  22, SRV_Channels, AP_RobotisServo),
+#endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     // @Group: _FTW_
     // @Path: ../AP_FETtecOneWire/AP_FETtecOneWire.cpp
     AP_SUBGROUPINFO(fetteconwire, "_FTW_",  25, SRV_Channels, AP_FETtecOneWire),
 #endif
-
-#endif // HAL_BUILD_AP_PERIPH
 
     // @Param: _DSHOT_RATE
     // @DisplayName: Servo DShot output rate
@@ -229,7 +236,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
 
     // @Param: _GPIO_MASK
     // @DisplayName: Servo GPIO mask
-    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any auxillary output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
+    // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any auxiliary output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
     // @Bitmask: 0:Servo 1, 1:Servo 2, 2:Servo 3, 3:Servo 4, 4:Servo 5, 5:Servo 6, 6:Servo 7, 7:Servo 8, 8:Servo 9, 9:Servo 10, 10:Servo 11, 11:Servo 12, 12:Servo 13, 13:Servo 14, 14:Servo 15, 15:Servo 16
     // @User: Advanced
     // @RebootRequired: True
@@ -258,11 +265,18 @@ SRV_Channels::SRV_Channels(void)
     fetteconwire_ptr = &fetteconwire;
 #endif
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     volz_ptr = &volz;
+#endif
+
+#ifndef HAL_BUILD_AP_PERIPH
     sbus_ptr = &sbus;
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
     robotis_ptr = &robotis;
-#endif // HAL_BUILD_AP_PERIPH
+#endif // AP_ROBOTISSERVO_ENABLED
+
 #if HAL_SUPPORT_RCOUT_SERIAL
     blheli_ptr = &blheli;
 #endif
@@ -382,17 +396,20 @@ void SRV_Channels::push()
 {
     hal.rcout->push();
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_VOLZ_ENABLED
     // give volz library a chance to update
     volz_ptr->update();
+#endif
 
+#ifndef HAL_BUILD_AP_PERIPH
     // give sbus library a chance to update
     sbus_ptr->update();
+#endif // HAL_BUILD_AP_PERIPH
 
+#if AP_ROBOTISSERVO_ENABLED
     // give robotis library a chance to update
     robotis_ptr->update();
-
-#endif // HAL_BUILD_AP_PERIPH
+#endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // give blheli telemetry a chance to update

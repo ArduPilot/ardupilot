@@ -21,7 +21,8 @@
  *
  */
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 
 #ifndef HAL_NAVEKF2_AVAILABLE
 // only default to EK2 enabled on boards with over 1M flash
@@ -102,10 +103,6 @@ public:
 
     // dead-reckoning support
     bool get_location(struct Location &loc) const;
-    // for scripting until aliases get sorted out:
-    bool get_position(struct Location &loc) const {
-        return get_location(loc);
-    }
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;
@@ -609,8 +606,8 @@ public:
         _vehicle_class = vclass;
     }
 
-    // get the view's rotation, or ROTATION_NONE
-    enum Rotation get_view_rotation(void) const;
+    // get the view
+    AP_AHRS_View *get_view(void) const { return _view; };
 
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;

@@ -63,18 +63,6 @@ static const eventmask_t EVT_PWM_SYNTHETIC_SEND  = EVENT_MASK(13);
 static const eventmask_t EVT_PWM_SEND_NEXT  = EVENT_MASK(14);
 static const eventmask_t EVT_LED_SEND  = EVENT_MASK(15);
 
-static const uint32_t DSHOT_BIT_WIDTH_TICKS = 8;
-static const uint32_t DSHOT_BIT_0_TICKS = 3;
-static const uint32_t DSHOT_BIT_1_TICKS = 6;
-
-// See WS2812B spec for expected pulse widths
-static const uint32_t NEOP_BIT_WIDTH_TICKS = 11;
-static const uint32_t NEOP_BIT_0_TICKS = 4;
-static const uint32_t NEOP_BIT_1_TICKS = 9;
-// neopixel does not use pulse widths at all
-static const uint32_t PROFI_BIT_0_TICKS = 4;
-static const uint32_t PROFI_BIT_1_TICKS = 9;
-
 // #pragma GCC optimize("Og")
 
 /*
@@ -507,6 +495,33 @@ RCOutput::pwm_group *RCOutput::find_chan(uint8_t chan, uint8_t &group_idx)
         }
     }
     return nullptr;
+}
+
+/*
+ * return mask of channels that must be disabled because they share a group with a digital channel
+ */
+uint16_t RCOutput::get_disabled_channels(uint16_t digital_mask)
+{
+    uint16_t dmask = (digital_mask >> chan_offset);
+    uint16_t disabled_chan_mask = 0;
+    for (auto &group : pwm_group_list) {
+        bool digital_group = false;
+        for (uint8_t j = 0; j < 4; j++) {
+            if ((1U << group.chan[j]) & dmask) {
+                digital_group = true;
+            }
+        }
+        if (digital_group) {
+            for (uint8_t j = 0; j < 4; j++) {
+                if (!((1U << group.chan[j]) & dmask)) {
+                    disabled_chan_mask |= (1U << group.chan[j]);
+                }
+            }
+        }
+    }
+
+    disabled_chan_mask <<= chan_offset;
+    return disabled_chan_mask;
 }
 
 uint16_t RCOutput::get_freq(uint8_t chan)

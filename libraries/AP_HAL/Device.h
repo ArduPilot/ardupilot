@@ -347,7 +347,7 @@ public:
 
     /**
      * return a new bus ID for the same bus connection but a new device type.
-     * This is used for auxillary bus connections
+     * This is used for auxiliary bus connections
      */
     static uint32_t change_bus_id(uint32_t old_id, uint8_t devtype) {
         union DeviceId d;

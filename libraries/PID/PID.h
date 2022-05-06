@@ -4,7 +4,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Logger/AP_Logger.h>
+#include <AC_PID/AC_PID.h>  // for AP_PIDInfo
 #include <stdlib.h>
 #include <cmath>
 
@@ -98,7 +98,7 @@ public:
 
     static const struct AP_Param::GroupInfo        var_info[];
 
-    const AP_Logger::PID_Info& get_pid_info(void) const { return _pid_info; }
+    const AP_PIDInfo& get_pid_info(void) const { return _pid_info; }
 
 private:
     AP_Float        _kp;
@@ -113,7 +113,7 @@ private:
 
     float           _get_pid(float error, uint16_t dt, float scaler);
 
-    AP_Logger::PID_Info _pid_info {};
+    AP_PIDInfo _pid_info {};
 
     /// Low pass filter cut frequency for derivative calculation.
     ///

@@ -1,5 +1,38 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.2.0-rc2 29-Apr-2022
+Changes from 4.2.0-rc1
+1) Minor Enhancements
+    a) Button, Relay and RPM GPIO pin conflict pre-arm check improved
+    b) DShot uses narrower bitwidths for more accurate timing (allows BLHeli BlueJay to work)
+    c) INS_NOTCH parameters renamed to INS_HNTC2
+    d) Matek F765-Wing-bdshot firmware added
+    e) Matek H743 supports ICM42688
+    f) QiotekZealot H743 supports ICM4xxxx
+    g) Scripting heap size increased to 100k on F7/H7
+    h) SPRacingH7 improvements including external flash performance improvements
+2) Bug fixes
+    a) BMI088 IMU FIFO overruns fixed
+    b) DO_SET_SERVO with SERVOn_FUNCTION=0 fixed, added pre-arm check of servo functions configured on disabled channels
+    c) Log file descriptor init fixed (issues only seen on Linux autopilots)
+    d) Log list cope with gaps, performance improvement to reduce impact on EKF and some ESCs
+    e) Proximity sensor fix when using MAVLink lidars in non-forward orientations
+    f) RPM sensor fix to avoid "failed to attach pin" spam to GCS
+    g) STM32 DMA fatal exceptions disabled (caused watch dogs reboots with zero information)
+------------------------------------------------------------------
+Rover 4.2.0-rc1 10-Apr-2022
+Changes from 4.2.0-beta3
+1) Minor Enhancements
+    a) Log and monitor threads stack size increased
+    b) SPro H7 Extreme QSPI support improved
+2) Bug fixes
+    a) EKF3 accel bias fixed when an IMU is disabled
+    b) MatekH743 buzzer fixed by reverting to 16 bit timer
+    c) STM32 H7 flash storage bug fixed that caused re-init on overflow
+    d) @SYS file logging fixed
+    e) Timer bug fixed that could cause a watchdog on boards using flash storage
+    f) UART driver incorrect lock class fixed
+------------------------------------------------------------------
 Rover 4.2.0-beta3 30-Mar-2022
 Changes from 4.2.0-beta2
 1) Minor Enhancements

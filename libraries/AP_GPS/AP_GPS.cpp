@@ -554,6 +554,43 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
 }
 
 /*
+  initialise state for sending binary blob initialisation strings.  We
+  may choose different blobs not just based on type but also based on
+  parameters.
+ */
+void AP_GPS::send_blob_start(uint8_t instance)
+{
+    if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
+        static const char blob[] = UBLOX_SET_BINARY_115200;
+        send_blob_start(instance, blob, sizeof(blob));
+        return;
+    }
+
+#if GPS_MOVING_BASELINE
+    if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
+         _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
+        ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
+        // we use 460800 when doing moving baseline as we need
+        // more bandwidth. We don't do this if using UART2, as
+        // in that case the RTCMv3 data doesn't go over the
+        // link to the flight controller
+        static const char blob[] = UBLOX_SET_BINARY_460800;
+        send_blob_start(instance, blob, sizeof(blob));
+        return;
+    }
+#endif
+
+#if AP_GPS_NMEA_ENABLED
+    if (_type[instance] == GPS_TYPE_HEMI) {
+        send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
+        return;
+    }
+#endif // AP_GPS_NMEA_ENABLED
+
+    send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
+}
+
+/*
   send some more initialisation string bytes if there is room in the
   UART transmit buffer
  */
@@ -595,13 +632,11 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
-#ifndef HAL_BUILD_AP_PERIPH
 #if AP_GPS_MAV_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
 #endif //AP_GPS_MAV_ENABLED
-#endif
         break;
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
@@ -639,8 +674,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
 
-    // don't build the less common GPS drivers on F1 AP_Periph
-#if !defined(HAL_BUILD_AP_PERIPH) || !defined(STM32F1)
     switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
@@ -668,7 +701,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     default:
         break;
     }
-#endif // HAL_BUILD_AP_PERIPH
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
@@ -684,25 +716,7 @@ void AP_GPS::detect_instance(uint8_t instance)
         dstate->last_baud_change_ms = now;
 
         if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY && new_gps == nullptr) {
-            if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
-                static const char blob[] = UBLOX_SET_BINARY_115200;
-                send_blob_start(instance, blob, sizeof(blob));
-            } else if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
-                        _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
-                       ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
-                // we use 460800 when doing moving baseline as we need
-                // more bandwidth. We don't do this if using UART2, as
-                // in that case the RTCMv3 data doesn't go over the
-                // link to the flight controller
-                static const char blob[] = UBLOX_SET_BINARY_460800;
-                send_blob_start(instance, blob, sizeof(blob));
-#if AP_GPS_NMEA_ENABLED
-            } else if (_type[instance] == GPS_TYPE_HEMI) {
-                send_blob_start(instance, AP_GPS_NMEA_HEMISPHERE_INIT_STRING, strlen(AP_GPS_NMEA_HEMISPHERE_INIT_STRING));
-#endif // AP_GPS_NMEA_ENABLED        
-            } else {
-                send_blob_start(instance, _initialisation_blob, sizeof(_initialisation_blob));
-            }
+            send_blob_start(instance);
         }
     }
 
@@ -743,7 +757,6 @@ void AP_GPS::detect_instance(uint8_t instance)
             }
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
-#ifndef HAL_BUILD_AP_PERIPH
 #if AP_GPS_SBP2_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
@@ -777,7 +790,6 @@ void AP_GPS::detect_instance(uint8_t instance)
         }
 #endif //AP_GPS_NMEA_ENABLED
 
-#endif // HAL_BUILD_AP_PERIPH
         if (new_gps) {
             goto found_gps;
         }

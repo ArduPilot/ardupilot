@@ -18,10 +18,10 @@
 #include "Sub.h"
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Sub, &sub, func, rate_hz, max_time_micros, priority)
+#define FAST_TASK(func) FAST_TASK_CLASS(Sub, &sub, func)
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here.
+  scheduler table - all tasks should be listed here.
 
   All entries in this table must be ordered by priority.
 
@@ -46,6 +46,31 @@ SCHED_TASK_CLASS arguments:
  */
 
 const AP_Scheduler::Task Sub::scheduler_tasks[] = {
+    // update INS immediately to get current gyro data populated
+    FAST_TASK_CLASS(AP_InertialSensor, &sub.ins, update),
+    // run low level rate controllers that only require IMU data
+    FAST_TASK(run_rate_controller),
+    // send outputs to the motors library immediately
+    FAST_TASK(motors_output),
+     // run EKF state estimator (expensive)
+    FAST_TASK(read_AHRS),
+    // Inertial Nav
+    FAST_TASK(read_inertia),
+    // check if ekf has reset target heading
+    FAST_TASK(check_ekf_yaw_reset),
+    // run the attitude controllers
+    FAST_TASK(update_flight_mode),
+    // update home from EKF if necessary
+    FAST_TASK(update_home_from_EKF),
+    // check if we've reached the surface or bottom
+    FAST_TASK(update_surface_and_bottom_detector),
+#if HAL_MOUNT_ENABLED
+    // camera mount's fast update
+    FAST_TASK_CLASS(AP_Mount, &sub.camera_mount, update_fast),
+#endif
+    // log sensor health
+    FAST_TASK(Log_Sensor_Health),
+
     SCHED_TASK(fifty_hz_loop,         50,     75,   3),
     SCHED_TASK_CLASS(AP_GPS, &sub.gps, update, 50, 200,   6),
 #if AP_OPTICALFLOW_ENABLED
@@ -111,52 +136,13 @@ void Sub::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Sub::_failsafe_priorities[5];
 
-// Main loop - 400hz
-void Sub::fast_loop()
+void Sub::run_rate_controller()
 {
-    // update INS immediately to get current gyro data populated
-    ins.update();
-
     //don't run rate controller in manual or motordetection modes
     if (control_mode != MANUAL && control_mode != MOTOR_DETECT) {
         // run low level rate controllers that only require IMU data
         attitude_control.rate_controller_run();
     }
-
-    // send outputs to the motors library
-    motors_output();
-
-    // run EKF state estimator (expensive)
-    // --------------------
-    read_AHRS();
-
-    // Inertial Nav
-    // --------------------
-    read_inertia();
-
-    // check if ekf has reset target heading
-    check_ekf_yaw_reset();
-
-    // run the attitude controllers
-    update_flight_mode();
-
-    // update home from EKF if necessary
-    update_home_from_EKF();
-
-    // check if we've reached the surface or bottom
-    update_surface_and_bottom_detector();
-
-#if HAL_MOUNT_ENABLED
-    // camera mount's fast update
-    camera_mount.update_fast();
-#endif
-
-    // log sensor health
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Sensor_Health();
-    }
-
-    AP_Vehicle::fast_loop();
 }
 
 // 50 Hz tasks

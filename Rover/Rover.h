@@ -44,6 +44,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
 #include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
+#include <AP_RPM/AP_RPM.h>                          // RPM input library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_Stats/AP_Stats.h>                      // statistics library
 #include <AP_Terrain/AP_Terrain.h>

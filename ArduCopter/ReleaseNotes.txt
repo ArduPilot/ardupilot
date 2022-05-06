@@ -1,5 +1,41 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.0-rc2 29-Apr-2022
+Changes from 4.2.0-rc1
+1) Minor Enhancements
+    a) Button, Relay and RPM GPIO pin conflict pre-arm check improved
+    b) DShot uses narrower bitwidths for more accurate timing (allows BLHeli BlueJay to work)
+    c) iFlight Chimera default parameters file added
+    d) INS_NOTCH parameters renamed to INS_HNTC2
+    e) Matek F765-Wing-bdshot firmware added
+    f) Matek H743 supports ICM42688
+    g) QiotekZealot H743 supports ICM4xxxx
+    h) Scripting heap size increased to 100k on F7/H7
+    i) SPRacingH7 improvements including external flash performance improvements
+2) Bug fixes
+    a) BMI088 IMU FIFO overruns fixed
+    b) DO_SET_SERVO with SERVOn_FUNCTION=0 fixed, added pre-arm check of servo functions configured on disabled channels
+    c) Log file descriptor init fixed (issues only seen on Linux autopilots)
+    d) Log list cope with gaps, performance improvement to reduce impact on EKF and some ESCs
+    e) Proximity sensor fix when using MAVLink lidars in non-forward orientations
+    f) RPM sensor fix to avoid "failed to attach pin" spam to GCS
+    g) STM32 DMA fatal exceptions disabled (caused watch dogs reboots with zero information)
+    h) SysID mode bug fix (was not restoring body-frame feedforward setting upon exit)
+    i) Tradheli autotune fix when max frequency is exceeded
+------------------------------------------------------------------
+Copter 4.2.0-rc1 10-Apr-2022
+Changes from 4.2.0-beta3
+1) Minor Enhancements
+    a) Log and monitor threads stack size increased
+    b) SPro H7 Extreme QSPI support improved
+2) Bug fixes
+    a) EKF3 accel bias fixed when an IMU is disabled
+    b) MatekH743 buzzer fixed by reverting to 16 bit timer
+    c) STM32 H7 flash storage bug fixed that caused re-init on overflow
+    d) @SYS file logging fixed
+    e) Timer bug fixed that could cause a watchdog on boards using flash storage
+    f) UART driver incorrect lock class fixed
+------------------------------------------------------------------
 Copter 4.2.0-beta3 30-Mar-2022
 Changes from 4.2.0-beta2
 1) Minor Enhancements
@@ -309,7 +345,7 @@ Changes from 4.1.0-beta6
     e) Guided mode terrain following init fix (might fly at incorrect alt on second use)
     f) Guided mode yaw rate target timeout fix (vehicle could keep spinning even after targets stopped arriving)
     g) OSD overwrite and nullptr check fix
-    h) Proximity Avoidance auxilary switch also disables avoidance using upward facing lidar
+    h) Proximity Avoidance auxiliary switch also disables avoidance using upward facing lidar
     i) Proximity sensor pre-arm check disabled if avoidance using proximity sensors is disabled 
     j) RCOut banner displayed at very end of startup procedure to avoid invalid output
     k) Tricopter tail servo alway uses regular PWM (fixes use with BLHeli motors)

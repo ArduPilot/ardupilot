@@ -33,8 +33,8 @@
 #endif // !defined(SCRIPTING_STACK_MAX_SIZE)
 
 #if !defined(SCRIPTING_HEAP_SIZE)
-  #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    #define SCRIPTING_HEAP_SIZE (64 * 1024)
+  #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || HAL_MEM_CLASS >= HAL_MEM_CLASS_500
+    #define SCRIPTING_HEAP_SIZE (100 * 1024)
   #else
     #define SCRIPTING_HEAP_SIZE (43 * 1024)
   #endif
@@ -247,7 +247,7 @@ void AP_Scripting::thread(void) {
             }
             // must be enabled to get this far
             if (cleared || _restart) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restated");
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "Scripting restarted");
                 break;
             }
             if ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::NO_SCRIPTS_TO_RUN)) != 0) {

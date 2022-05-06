@@ -54,6 +54,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
@@ -508,7 +509,14 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND
 };
-    
+
+const Location post_origin {
+    518752066,
+    146487830,
+    0,
+    Location::AltFrame::ABSOLUTE
+};
+
 /* report SITL state via MAVLink SIMSTATE*/
 void SIM::simstate_send(mavlink_channel_t chan) const
 {
@@ -649,8 +657,113 @@ float SIM::get_rangefinder(uint8_t instance) {
     return -1;
 };
 
-} // namespace SITL
+float SIM::measure_distance_at_angle_bf(const Location &location, float angle) const
+{
+    // should we populate state.rangefinder_m[...] from this?
+    Vector2f vehicle_pos_cm;
+    if (!location.get_vector_xy_from_origin_NE(vehicle_pos_cm)) {
+        // should probably use SITL variables...
+        return 0.0f;
+    }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static uint64_t count = 0;
+
+    if (count == 0) {
+        unlink("/tmp/rayfile.scr");
+        unlink("/tmp/intersectionsfile.scr");
+    }
+
+    count++;
+
+    // the 1000 here is so the files don't grow unbounded
+    const bool write_debug_files = count < 1000;
+
+    FILE *rayfile = nullptr;
+    if (write_debug_files) {
+        rayfile = fopen("/tmp/rayfile.scr", "a");
+    }
+#endif
+
+    // cast a ray from location out 200m...
+    Location location2 = location;
+    location2.offset_bearing(wrap_180(angle + state.yawDeg), 200);
+    Vector2f ray_endpos_cm;
+    if (!location2.get_vector_xy_from_origin_NE(ray_endpos_cm)) {
+        // should probably use SITL variables...
+        return 0.0f;
+    }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (rayfile != nullptr) {
+        ::fprintf(rayfile, "map icon %f %f barrell\n", location2.lat*1e-7, location2.lng*1e-7);
+        fclose(rayfile);
+    }
+
+    // setup a grid of posts
+    FILE *postfile = nullptr;
+    FILE *intersectionsfile = nullptr;
+    if (write_debug_files) {
+        static bool postfile_written;
+        if (!postfile_written) {
+            ::fprintf(stderr, "Writing /tmp/post-locations.scr\n");
+            postfile_written = true;
+            postfile = fopen("/tmp/post-locations.scr", "w");
+        }
+        intersectionsfile = fopen("/tmp/intersections.scr", "a");
+    }
+#endif
+
+    const float radius_cm = 100.0f;
+    float min_dist_cm = 1000000.0;
+    const uint8_t num_post_offset = 10;
+    for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
+        for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
+            Location post_location = post_origin;
+            post_location.offset(x*10+3, y*10+2);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (postfile != nullptr) {
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
+            }
+#endif
+            Vector2f post_position_cm;
+            if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
+                // should probably use SITL variables...
+                return 0.0f;
+            }
+            Vector2f intersection_point_cm;
+            if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
+                float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                if (intersectionsfile != nullptr) {
+                    Location intersection_point = location;
+                    intersection_point.offset(intersection_point_cm.x/100.0,
+                                              intersection_point_cm.y/100.0);
+                    ::fprintf(intersectionsfile,
+                              "map icon %f %f barrell\n",
+                              intersection_point.lat*1e-7,
+                              intersection_point.lng*1e-7);
+                }
+#endif
+                if (dist_cm < min_dist_cm) {
+                    min_dist_cm = dist_cm;
+                }
+            }
+        }
+    }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (postfile != nullptr) {
+        fclose(postfile);
+    }
+    if (intersectionsfile != nullptr) {
+        fclose(intersectionsfile);
+    }
+#endif
+
+    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
+    return min_dist_cm / 100.0f;
+}
+
+} // namespace SITL
 
 namespace AP {
 

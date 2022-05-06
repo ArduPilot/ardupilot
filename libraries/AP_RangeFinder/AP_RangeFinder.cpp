@@ -187,6 +187,7 @@ void RangeFinder::convert_params(void) {
     };
 
     const struct ConversionTable conversionTable[] = {
+        // PARAMETER_CONVERSION - Added: Feb-2019
             // rangefinder 1
             {0, 0, 0}, //0, TYPE 1
             {1, 1, 0}, //1, PIN 1
@@ -685,11 +686,7 @@ float RangeFinder::distance_orient(enum Rotation orientation) const
 
 uint16_t RangeFinder::distance_cm_orient(enum Rotation orientation) const
 {
-    AP_RangeFinder_Backend *backend = find_instance(orientation);
-    if (backend == nullptr) {
-        return 0;
-    }
-    return backend->distance_cm();
+    return distance_orient(orientation) * 100.0;
 }
 
 int16_t RangeFinder::max_distance_cm_orient(enum Rotation orientation) const

@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  SRV_Channel_aux.cpp - handling of servo auxillary functions
+  SRV_Channel_aux.cpp - handling of servo auxiliary functions
  */
 #include "SRV_Channel.h"
 
@@ -206,7 +206,7 @@ void SRV_Channels::enable_aux_servos()
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // see if it is a valid function
-        if (c.valid_function()) {
+        if (c.valid_function() && !(disabled_mask & (1U<<c.ch_num))) {
             hal.rcout->enable_ch(c.ch_num);
         } else {
             hal.rcout->disable_ch(c.ch_num);
@@ -247,6 +247,27 @@ void SRV_Channels::enable_aux_servos()
 void SRV_Channels::set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask) {
     digital_mask |= dig_mask;
     reversible_mask |= rev_mask;
+
+    // add in NeoPixel and ProfiLED functions to digital array to determine anything else
+    // that should be disabled
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
+        switch (c.function.get()) {
+            case SRV_Channel::k_LED_neopixel1:
+            case SRV_Channel::k_LED_neopixel2:
+            case SRV_Channel::k_LED_neopixel3:
+            case SRV_Channel::k_LED_neopixel4:
+            case SRV_Channel::k_ProfiLED_1:
+            case SRV_Channel::k_ProfiLED_2:
+            case SRV_Channel::k_ProfiLED_3:
+            case SRV_Channel::k_ProfiLED_Clock:
+                dig_mask |= 1U<<c.ch_num;
+                break;
+            default:
+                break;
+        }
+    }
+    disabled_mask = hal.rcout->get_disabled_channels(dig_mask);
 
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
@@ -514,7 +535,7 @@ bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint
 }
 
 /*
-  get a pointer to first auxillary channel for a channel function
+  get a pointer to first auxiliary channel for a channel function
 */
 SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan)
 {
@@ -792,6 +813,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
 */
 void SRV_Channels::upgrade_parameters(void)
 {
+    // PARAMETER_CONVERSION - Added: Jan-2020
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // convert from AP_Int8 to AP_Int16

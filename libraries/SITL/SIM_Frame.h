@@ -21,6 +21,14 @@
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
 
+#ifndef USE_PICOJSON
+#define USE_PICOJSON (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
+#if USE_PICOJSON
+#include "picojson.h"
+#endif
+
 namespace SITL {
 
 /*
@@ -39,7 +47,7 @@ public:
           num_motors(_num_motors),
           motors(_motors) {}
 
-
+#if AP_SIM_ENABLED
     // find a frame by name
     static Frame *find_frame(const char *name);
     
@@ -51,7 +59,8 @@ public:
                           const struct sitl_input &input,
                           Vector3f &rot_accel, Vector3f &body_accel, float* rpm,
                           bool use_drag=true);
-    
+#endif // AP_SIM_ENABLED
+
     float terminal_velocity;
     float terminal_rotation_rate;
     uint8_t motor_offset;
@@ -127,24 +136,43 @@ private:
         // momentum drag coefficient
         float mdrag_coef = 0.2;
 
+        // if zero value will be estimated from mass
+        Vector3f moment_of_inertia;
+
+        // if zero will no be used
+        Vector3f motor_pos[12];
+        Vector3f motor_thrust_vec[12];
+        float yaw_factor[12] = {0};
+
+        // number of motors
+        float num_motors = 4;
+
     } default_model;
 
-    struct Model model;
-
-    // exposed area times coefficient of drag
-    float areaCd;
-    float mass;
-    float velocity_max;
-    float thrust_max;
-    float effective_prop_area;
-    Battery *battery;
-    float last_param_voltage;
+protected:
+#if USE_PICOJSON
+    // load frame parameters from a json model file
+    void load_frame_params(const char *model_json);
+#endif
 
     // get air density in kg/m^3
     float get_air_density(float alt_amsl) const;
 
-    // load frame parameters from a json model file
-    void load_frame_params(const char *model_json);
+    struct Model model;
 
+private:
+    // exposed area times coefficient of drag
+    float areaCd;
+    float mass;
+    float last_param_voltage;
+#if AP_SIM_ENABLED
+    Battery *battery;
+#endif
+
+    // json parsing helpers
+#if USE_PICOJSON
+    void parse_float(picojson::value val, const char* label, float &param);
+    void parse_vector3(picojson::value val, const char* label, Vector3f &param);
+#endif
 };
 }

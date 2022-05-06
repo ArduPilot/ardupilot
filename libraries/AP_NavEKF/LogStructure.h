@@ -6,13 +6,13 @@
 // @Description: EKF Yaw Estimator States
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF core this data is for
-// @Field: YC: GSF yaw estimate (rad)
-// @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (rad)
-// @Field: Y0: Yaw estimate from individual EKF filter 0 (rad)
-// @Field: Y1: Yaw estimate from individual EKF filter 1 (rad)
-// @Field: Y2: Yaw estimate from individual EKF filter 2 (rad)
-// @Field: Y3: Yaw estimate from individual EKF filter 3 (rad)
-// @Field: Y4: Yaw estimate from individual EKF filter 4 (rad)
+// @Field: YC: GSF yaw estimate (deg)
+// @Field: YCS: GSF yaw estimate 1-Sigma uncertainty (deg)
+// @Field: Y0: Yaw estimate from individual EKF filter 0 (deg)
+// @Field: Y1: Yaw estimate from individual EKF filter 1 (deg)
+// @Field: Y2: Yaw estimate from individual EKF filter 2 (deg)
+// @Field: Y3: Yaw estimate from individual EKF filter 3 (deg)
+// @Field: Y4: Yaw estimate from individual EKF filter 4 (deg)
 // @Field: W0: Weighting applied to yaw estimate from individual EKF filter 0
 // @Field: W1: Weighting applied to yaw estimate from individual EKF filter 1
 // @Field: W2: Weighting applied to yaw estimate from individual EKF filter 2
@@ -69,7 +69,7 @@ struct PACKED log_KY1 {
 
 #define KY0_FMT "QBffffffffffff"
 #define KY0_LABELS "TimeUS,C,YC,YCS,Y0,Y1,Y2,Y3,Y4,W0,W1,W2,W3,W4"
-#define KY0_UNITS "s#rrrrrrr-----"
+#define KY0_UNITS "s#hdhhhhh-----"
 #define KY0_MULTS "F-000000000000"
 
 #define KY1_FMT "QBffffffffff"

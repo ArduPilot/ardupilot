@@ -10,6 +10,8 @@
 #include "lua/src/lauxlib.h"
 #include "lua/src/lualib.h"
 
+#include <AP_Logger/LogStructure.h>
+
 #if !defined(LUA_MAXINPUT)
 #define LUA_MAXINPUT    256
 #endif

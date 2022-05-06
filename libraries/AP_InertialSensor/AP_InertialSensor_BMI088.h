@@ -81,6 +81,7 @@ private:
     uint8_t gyro_instance;
     enum Rotation rotation;
     uint8_t temperature_counter;
+    enum DevTypes _accel_devtype;
 
     bool done_accel_config;
     uint32_t accel_config_count;

@@ -52,5 +52,6 @@ private:
     void vector_max_float(const float* vin, uint16_t len, float* maxValue, uint16_t* maxIndex) const override;
     void vector_scale_float(const float* vin, float scale, float* vout, uint16_t len) const override;
     float vector_mean_float(const float* vin, uint16_t len) const override;
+    void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const override;
     void calculate_fft(complexf* f, uint16_t length);
 };

@@ -15,7 +15,6 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -103,6 +102,9 @@ public:
     const Vector2f* get_boundary_points(uint16_t& num_points) const;
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    // a method for vehicles to call to make onboard log messages:
+    void log();
 
 private:
 

@@ -22,6 +22,7 @@
 #include <RC_Channel/RC_Channel.h>
 
 #include "AP_ICEngine.h"
+#include <AP_RPM/AP_RPM.h>
 
 extern const AP_HAL::HAL& hal;
 

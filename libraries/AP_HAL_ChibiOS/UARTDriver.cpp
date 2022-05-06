@@ -634,7 +634,7 @@ void UARTDriver::flush()
         sduSOFHookI((SerialUSBDriver*)sdef.serial);
 #endif
     } else {
-        //TODO: Handle this for other serial ports
+        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
 }
 

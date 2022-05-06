@@ -492,7 +492,7 @@ void AP_AHRS::update_EKF2(void)
         if (active_EKF_type() == EKFType::TWO) {
             Vector3f eulers;
             EKF2.getRotationBodyToNED(_dcm_matrix);
-            EKF2.getEulerAngles(-1,eulers);
+            EKF2.getEulerAngles(eulers);
             roll  = eulers.x;
             pitch = eulers.y;
             yaw   = eulers.z;
@@ -508,7 +508,7 @@ void AP_AHRS::update_EKF2(void)
             // get gyro bias for primary EKF and change sign to give gyro drift
             // Note sign convention used by EKF is bias = measurement - truth
             _gyro_drift.zero();
-            EKF2.getGyroBias(-1,_gyro_drift);
+            EKF2.getGyroBias(_gyro_drift);
             _gyro_drift = -_gyro_drift;
 
             // calculate corrected gyro estimate for get_gyro()
@@ -522,7 +522,7 @@ void AP_AHRS::update_EKF2(void)
 
             // get z accel bias estimate from active EKF (this is usually for the primary IMU)
             float &abias = _accel_bias.z;
-            EKF2.getAccelZBias(-1,abias);
+            EKF2.getAccelZBias(abias);
 
             // This EKF is currently using primary_imu, and abias applies to only that IMU
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
@@ -536,7 +536,7 @@ void AP_AHRS::update_EKF2(void)
             }
             _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
-            EKF2.getFilterStatus(-1,filt_state);
+            EKF2.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
         }
     }
@@ -613,7 +613,7 @@ void AP_AHRS::update_EKF3(void)
                     _accel_ef_ekf[i] = _dcm_matrix * accel;
                 }
             }
-            _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+            _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF3.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
@@ -822,7 +822,7 @@ Vector3f AP_AHRS::wind_estimate(void) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        EKF2.getWind(-1,wind);
+        EKF2.getWind(wind);
         break;
 #endif
 
@@ -987,7 +987,7 @@ bool AP_AHRS::airspeed_vector_true(Vector3f &vec) const
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        return EKF2.getAirSpdVec(-1, vec);
+        return EKF2.getAirSpdVec(vec);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
@@ -1063,7 +1063,7 @@ bool AP_AHRS::get_quaternion(Quaternion &quat) const
         if (!_ekf2_started) {
             return false;
         }
-        EKF2.getQuaternion(-1, quat);
+        EKF2.getQuaternion(quat);
         break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
@@ -1116,7 +1116,7 @@ bool AP_AHRS::get_secondary_attitude(Vector3f &eulers) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // EKF2 is secondary
-        EKF2.getEulerAngles(-1, eulers);
+        EKF2.getEulerAngles(eulers);
         return _ekf2_started;
 #endif
 
@@ -1174,7 +1174,7 @@ bool AP_AHRS::get_secondary_quaternion(Quaternion &quat) const
         if (!_ekf2_started) {
             return false;
         }
-        EKF2.getQuaternion(-1, quat);
+        EKF2.getQuaternion(quat);
         break;
 #endif
 
@@ -1263,7 +1263,7 @@ Vector2f AP_AHRS::groundspeed_vector(void)
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        EKF2.getVelNED(-1,vec);
+        EKF2.getVelNED(vec);
         return Vector2f(vec.x, vec.y);
 #endif
 
@@ -1376,7 +1376,7 @@ bool AP_AHRS::get_velocity_NED(Vector3f &vec) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        EKF2.getVelNED(-1,vec);
+        EKF2.getVelNED(vec);
         return true;
 #endif
 
@@ -1413,7 +1413,7 @@ bool AP_AHRS::get_mag_field_NED(Vector3f &vec) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        EKF2.getMagNED(-1,vec);
+        EKF2.getMagNED(vec);
         return true;
 #endif
 
@@ -1444,7 +1444,7 @@ bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        EKF2.getMagXYZ(-1,vec);
+        EKF2.getMagXYZ(vec);
         return true;
 #endif
 
@@ -1477,7 +1477,7 @@ bool AP_AHRS::get_vert_pos_rate(float &velocity) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        velocity = EKF2.getPosDownDerivative(-1);
+        velocity = EKF2.getPosDownDerivative();
         return true;
 #endif
 
@@ -1555,7 +1555,7 @@ bool AP_AHRS::get_relative_position_NED_origin(Vector3f &vec) const
     case EKFType::TWO: {
         Vector2f posNE;
         float posD;
-        if (EKF2.getPosNE(-1,posNE) && EKF2.getPosD(-1,posD)) {
+        if (EKF2.getPosNE(posNE) && EKF2.getPosD(posD)) {
             // position is valid
             vec.x = posNE.x;
             vec.y = posNE.y;
@@ -1646,7 +1646,7 @@ bool AP_AHRS::get_relative_position_NE_origin(Vector2f &posNE) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
-        bool position_is_valid = EKF2.getPosNE(-1,posNE);
+        bool position_is_valid = EKF2.getPosNE(posNE);
         return position_is_valid;
     }
 #endif
@@ -1716,7 +1716,7 @@ bool AP_AHRS::get_relative_position_D_origin(float &posD) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO: {
-        bool position_is_valid = EKF2.getPosD(-1,posD);
+        bool position_is_valid = EKF2.getPosD(posD);
         return position_is_valid;
     }
 #endif
@@ -1841,7 +1841,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
         }
         if (always_use_EKF()) {
             uint16_t ekf2_faults;
-            EKF2.getFilterFaults(-1,ekf2_faults);
+            EKF2.getFilterFaults(ekf2_faults);
             if (ekf2_faults == 0) {
                 ret = EKFType::TWO;
             }
@@ -1897,7 +1897,7 @@ AP_AHRS::EKFType AP_AHRS::active_EKF_type(void) const
         nav_filter_status filt_state;
 #if HAL_NAVEKF2_AVAILABLE
         if (ret == EKFType::TWO) {
-            EKF2.getFilterStatus(-1,filt_state);
+            EKF2.getFilterStatus(filt_state);
             should_use_gps = EKF2.configuredToUseGPSForPosXY();
         }
 #endif
@@ -2155,7 +2155,7 @@ bool AP_AHRS::get_filter_status(nav_filter_status &status) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        EKF2.getFilterStatus(-1,status);
+        EKF2.getFilterStatus(status);
         return true;
 #endif
 
@@ -2345,7 +2345,7 @@ void AP_AHRS::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         imu_idx = EKF2.getPrimaryCoreIMUIndex();
-        EKF2.getAccelZBias(-1,accel_bias.z);
+        EKF2.getAccelZBias(accel_bias.z);
         break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
@@ -2703,7 +2703,7 @@ bool AP_AHRS::get_origin(Location &ret) const
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        if (!EKF2.getOriginLLH(-1,ret)) {
+        if (!EKF2.getOriginLLH(ret)) {
             return false;
         }
         return true;
@@ -2811,7 +2811,7 @@ bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // use EKF to get innovations
-        return EKF2.getInnovations(-1, velInnov, posInnov, magInnov, tasInnov, yawInnov);
+        return EKF2.getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
@@ -2877,7 +2877,7 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
     case EKFType::TWO: {
         // use EKF to get variance
         Vector2f offset;
-        return EKF2.getVariances(-1, velVar, posVar, hgtVar, magVar, tasVar, offset);
+        return EKF2.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     }
 #endif
 
@@ -3205,14 +3205,6 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.set_baro_alt_noise(noise);
 #endif
-}
-
-/*
-  get the current view's rotation, or ROTATION_NONE
- */
-enum Rotation AP_AHRS::get_view_rotation(void) const
-{
-    return _view?_view->get_rotation():ROTATION_NONE;
 }
 
 // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed

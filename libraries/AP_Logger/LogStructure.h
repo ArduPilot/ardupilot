@@ -120,6 +120,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #define HEAD_BYTE1  0xA3    // Decimal 163
 #define HEAD_BYTE2  0x95    // Decimal 149
 
+#include <AP_Beacon/LogStructure.h>
 #include <AP_DAL/LogStructure.h>
 #include <AP_NavEKF2/LogStructure.h>
 #include <AP_NavEKF3/LogStructure.h>
@@ -132,10 +133,12 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Baro/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
+#include <AP_Proximity/LogStructure.h>
 #include <AC_Avoidance/LogStructure.h>
 #include <AP_ESC_Telem/LogStructure.h>
 #include <AP_AIS/LogStructure.h>
 #include <AP_HAL_ChibiOS/LogStructure.h>
+#include <AP_RPM/LogStructure.h>
 
 // structure used to define logging format
 struct PACKED LogStructure {
@@ -502,13 +505,6 @@ struct PACKED log_MAV_Stats {
     // uint8_t state_retry_max;
 };
 
-struct PACKED log_RPM {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    float rpm1;
-    float rpm2;
-};
-
 struct PACKED log_Rally {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -517,52 +513,6 @@ struct PACKED log_Rally {
     int32_t latitude;
     int32_t longitude;
     int16_t altitude;
-};
-
-struct PACKED log_Beacon {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t health;
-    uint8_t count;
-    float dist0;
-    float dist1;
-    float dist2;
-    float dist3;
-    float posx;
-    float posy;
-    float posz;
-};
-
-// proximity sensor logging
-struct PACKED log_Proximity {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    uint8_t health;
-    float dist0;
-    float dist45;
-    float dist90;
-    float dist135;
-    float dist180;
-    float dist225;
-    float dist270;
-    float dist315;
-    float distup;
-    float closest_angle;
-    float closest_dist;
-};
-struct PACKED log_Proximity_raw {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t instance;
-    float raw_dist0;
-    float raw_dist45;
-    float raw_dist90;
-    float raw_dist135;
-    float raw_dist180;
-    float raw_dist225;
-    float raw_dist270;
-    float raw_dist315;
 };
 
 struct PACKED log_Performance {
@@ -774,19 +724,6 @@ struct PACKED log_VER {
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
 // @Field: Pri: True if sensor is the primary sensor
-
-// @LoggerMessage: BCN
-// @Description: Beacon information
-// @Field: TimeUS: Time since system startup
-// @Field: Health: True if beacon sensor is healthy
-// @Field: Cnt: Number of beacons being used
-// @Field: D0: Distance to first beacon
-// @Field: D1: Distance to second beacon
-// @Field: D2: Distance to third beacon
-// @Field: D3: Distance to fourth beacon
-// @Field: PosX: Calculated beacon position, x-axis
-// @Field: PosY: Calculated beacon position, y-axis
-// @Field: PosZ: Calculated beacon position, z-axis
 
 // @LoggerMessage: CMD
 // @Description: Executed mission command information
@@ -1011,36 +948,6 @@ struct PACKED log_VER {
 // @Field: MVmin: MCU Voltage min
 // @Field: MVmax: MCU Voltage max
 
-// @LoggerMessage: PRX
-// @Description: Proximity Filtered sensor data
-// @Field: TimeUS: Time since system startup
-// @Field: Layer: Pitch(instance) at which the obstacle is at. 0th layer {-75,-45} degrees. 1st layer {-45,-15} degrees. 2nd layer {-15, 15} degrees. 3rd layer {15, 45} degrees. 4th layer {45,75} degrees. Minimum distance in each layer will be logged.
-// @Field: He: True if proximity sensor is healthy
-// @Field: D0: Nearest object in sector surrounding 0-degrees
-// @Field: D45: Nearest object in sector surrounding 45-degrees
-// @Field: D90: Nearest object in sector surrounding 90-degrees
-// @Field: D135: Nearest object in sector surrounding 135-degrees
-// @Field: D180: Nearest object in sector surrounding 180-degrees
-// @Field: D225: Nearest object in sector surrounding 225-degrees
-// @Field: D270: Nearest object in sector surrounding 270-degrees
-// @Field: D315: Nearest object in sector surrounding 315-degrees
-// @Field: DUp: Nearest object in upwards direction
-// @Field: CAn: Angle to closest object
-// @Field: CDis: Distance to closest object
-
-// @LoggerMessage: PRXR
-// @Description: Proximity Raw sensor data
-// @Field: TimeUS: Time since system startup
-// @Field: Layer: Pitch(instance) at which the obstacle is at. 0th layer {-75,-45} degrees. 1st layer {-45,-15} degrees. 2nd layer {-15, 15} degrees. 3rd layer {15, 45} degrees. 4th layer {45,75} degrees. Minimum distance in each layer will be logged.
-// @Field: D0: Nearest object in sector surrounding 0-degrees
-// @Field: D45: Nearest object in sector surrounding 45-degrees
-// @Field: D90: Nearest object in sector surrounding 90-degrees
-// @Field: D135: Nearest object in sector surrounding 135-degrees
-// @Field: D180: Nearest object in sector surrounding 180-degrees
-// @Field: D225: Nearest object in sector surrounding 225-degrees
-// @Field: D270: Nearest object in sector surrounding 270-degrees
-// @Field: D315: Nearest object in sector surrounding 315-degrees
-
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
 // @Field: TimeUS: Time since system startup
@@ -1111,12 +1018,6 @@ struct PACKED log_VER {
 // @Field: Dist: Reported distance from sensor
 // @Field: Stat: Sensor state
 // @Field: Orient: Sensor orientation
-
-// @LoggerMessage: RPM
-// @Description: Data from RPM sensors
-// @Field: TimeUS: Time since system startup
-// @Field: rpm1: First sensor's data
-// @Field: rpm2: Second sensor's data
 
 // @LoggerMessage: RSSI
 // @Description: Received Signal Strength Indicator for RC receiver
@@ -1303,12 +1204,8 @@ LOG_STRUCTURE_FROM_CAMERA \
       "RFND", "QBCBB", "TimeUS,Instance,Dist,Stat,Orient", "s#m--", "F-B--", true }, \
     { LOG_MAV_STATS, sizeof(log_MAV_Stats), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
-    { LOG_BEACON_MSG, sizeof(log_Beacon), \
-      "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--0000000", true }, \
-    { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
-      "PRX", "QBBfffffffffff", "TimeUS,Layer,He,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s#-mmmmmmmmmhm", "F--00000000000", true }, \
-    { LOG_RAW_PROXIMITY_MSG, sizeof(log_Proximity_raw), \
-      "PRXR", "QBffffffff", "TimeUS,Layer,D0,D45,D90,D135,D180,D225,D270,D315", "s#mmmmmmmm", "F-00000000", true }, \
+    LOG_STRUCTURE_FROM_BEACON                                       \
+    LOG_STRUCTURE_FROM_PROXIMITY                                    \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
       "PM",  "QHHIIHHIIIIII", "TimeUS,NLon,NLoop,MaxT,Mem,Load,ErrL,IntE,ErrC,SPIC,I2CC,I2CI,Ex", "s---b%------s", "F---0A------F" }, \
     { LOG_SRTL_MSG, sizeof(log_SRTL), \
@@ -1344,10 +1241,9 @@ LOG_STRUCTURE_FROM_NAVEKF3 \
 LOG_STRUCTURE_FROM_NAVEKF \
 LOG_STRUCTURE_FROM_AHRS \
 LOG_STRUCTURE_FROM_HAL_CHIBIOS \
+LOG_STRUCTURE_FROM_RPM \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
-    { LOG_RPM_MSG, sizeof(log_RPM), \
-      "RPM",  "Qff", "TimeUS,rpm1,rpm2", "sqq", "F00" , true }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
       "RALY", "QBBLLh", "TimeUS,Tot,Seq,Lat,Lng,Alt", "s--DUm", "F--GGB" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
@@ -1424,7 +1320,7 @@ enum LogMessages : uint8_t {
     LOG_DSTL_MSG,
     LOG_MAG_MSG,
     LOG_ARSP_MSG,
-    LOG_RPM_MSG,
+    LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
     LOG_MAV_STATS,
     LOG_FORMAT_UNITS_MSG,
@@ -1442,8 +1338,8 @@ enum LogMessages : uint8_t {
 
     LOG_IDS_FROM_VISUALODOM,
     LOG_IDS_FROM_AVOIDANCE,
-    LOG_BEACON_MSG,
-    LOG_PROXIMITY_MSG,
+    LOG_IDS_FROM_BEACON,
+    LOG_IDS_FROM_PROXIMITY,
     LOG_DF_FILE_STATS,
     LOG_SRTL_MSG,
     LOG_PERFORMANCE_MSG,
@@ -1458,7 +1354,6 @@ enum LogMessages : uint8_t {
     LOG_PSCN_MSG,
     LOG_PSCE_MSG,
     LOG_PSCD_MSG,
-    LOG_RAW_PROXIMITY_MSG,
     LOG_IDS_FROM_PRECLAND,
     LOG_IDS_FROM_AIS,
     LOG_STAK_MSG,

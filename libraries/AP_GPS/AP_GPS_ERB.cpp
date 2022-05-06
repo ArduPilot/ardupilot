@@ -26,6 +26,8 @@
 
 #define STAT_FIX_VALID 0x01
 
+#include <AP_HAL/AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 #if ERB_DEBUGGING

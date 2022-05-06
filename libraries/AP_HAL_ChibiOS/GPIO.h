@@ -82,6 +82,10 @@ public:
     // check if a pin number is valid
     bool valid_pin(uint8_t pin) const override;
 
+    // return servo channel associated with GPIO pin.  Returns true on success and fills in servo_ch argument
+    // servo_ch uses zero-based indexing
+    bool pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const override;
+
     /*
       resolve an ioline to take account of alternative configurations
      */

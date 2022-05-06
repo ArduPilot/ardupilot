@@ -3,6 +3,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 class AP_MotorsUGV {
 public:

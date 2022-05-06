@@ -306,6 +306,7 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
     frame->payload[frame->length - 2] = crc;
 
     uart->write((uint8_t*)frame, frame->length + 2);
+    uart->flush();
 
 #ifdef CRSF_DEBUG
     hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));

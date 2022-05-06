@@ -19,7 +19,8 @@
  */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include "AP_Airspeed.h"
 
 class AP_Airspeed_Backend {

@@ -36,6 +36,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_LandingGear/AP_LandingGear.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Avoidance/AP_Avoidance.h>
@@ -395,7 +396,7 @@ float RC_Channel::stick_mixing(const float servo_in)
 }
 
 //
-// support for auxillary switches:
+// support for auxiliary switches:
 //
 
 void RC_Channel::reset_mode_switch()
@@ -462,7 +463,7 @@ bool RC_Channel::debounce_completed(int8_t position)
 }
 
 //
-// support for auxillary switches:
+// support for auxiliary switches:
 //
 
 // init_aux_switch_function - initialize aux functions
@@ -518,6 +519,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::RUNCAM_OSD_CONTROL:
     case AUX_FUNC::SPRAYER:
     case AUX_FUNC::DISABLE_AIRSPEED_USE:
+    case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT:
 #endif
@@ -578,6 +580,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::EMERGENCY_LANDING_EN, "Emergency Landing"},
     { AUX_FUNC::WEATHER_VANE_ENABLE, "Weathervane"},
     { AUX_FUNC::TURBINE_START, "Turbine Start"},
+    { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
 };
 
 /* lookup the announcement for switch change */
@@ -899,6 +902,26 @@ void RC_Channel::do_aux_function_mission_reset(const AuxSwitchPos ch_flag)
     mission->reset();
 }
 
+void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
+{
+#if HAL_GYROFFT_ENABLED
+    AP_GyroFFT *fft = AP::fft();
+    if (fft == nullptr) {
+        return;
+    }
+
+    switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            fft->start_notch_tune();
+            break;
+        case AuxSwitchPos::MIDDLE:
+        case AuxSwitchPos::LOW:
+            fft->stop_notch_tune();
+            break;
+    }
+#endif
+}
+
 bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
 {
     const bool ret = do_aux_function(ch_option, pos);
@@ -908,7 +931,7 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
     // @Field: TimeUS: Time since system startup
     // @Field: function: ID of triggered function
     // @Field: pos: switch position when function triggered
-    // @Field: source: source of auxillary function invocation
+    // @Field: source: source of auxiliary function invocation
     // @Field: result: true if function was successful
     AP::logger().Write(
         "AUXF",
@@ -985,6 +1008,10 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
     case AUX_FUNC::AVOID_ADSB:
         do_aux_function_avoid_adsb(ch_flag);
+        break;
+
+    case AUX_FUNC::FFT_NOTCH_TUNE:
+        do_aux_function_fft_notch_tune(ch_flag);
         break;
 
 #if HAL_GENERATOR_ENABLED

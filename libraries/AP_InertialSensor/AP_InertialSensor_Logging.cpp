@@ -132,6 +132,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 // @LoggerMessage: FTN
 // @Description: Filter Tuning Messages
 // @Field: TimeUS: microseconds since system startup
+// @Field: I: instance
 // @Field: NDn: number of active dynamic harmonic notches
 // @Field: NF1: dynamic harmonic notch centre frequency for motor 1
 // @Field: NF2: dynamic harmonic notch centre frequency for motor 2
@@ -147,10 +148,19 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 // @Field: NF12: dynamic harmonic notch centre frequency for motor 12
 void AP_InertialSensor::write_notch_log_messages() const
 {
-    const float* notches = get_gyro_dynamic_notch_center_frequencies_hz();
-    AP::logger().WriteStreaming(
-        "FTN", "TimeUS,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s-zzzzzzzzzzzz", "F-------------", "QBffffffffffff", AP_HAL::micros64(), get_num_gyro_dynamic_notch_center_frequencies(),
+    for (auto &notch : harmonic_notches) {
+        const uint8_t i = &notch - &harmonic_notches[0];
+        if (!notch.params.enabled()) {
+            continue;
+        }
+        const float* notches = notch.calculated_notch_freq_hz;
+        AP::logger().WriteStreaming(
+            "FTN", "TimeUS,I,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s#-zzzzzzzzzzzz", "F--------------", "QBBffffffffffff",
+            AP_HAL::micros64(),
+            i,
+            notch.num_calculated_notch_frequencies,
             notches[0], notches[1], notches[2], notches[3],
             notches[4], notches[5], notches[6], notches[7],
             notches[8], notches[9], notches[10], notches[11]);
+    }
 }

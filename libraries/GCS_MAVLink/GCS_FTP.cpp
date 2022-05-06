@@ -567,7 +567,7 @@ void GCS_MAVLINK::ftp_worker(void) {
 
 // calculates how much string length is needed to fit this in a list response
 int GCS_MAVLINK::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry) {
-    const bool is_file = entry->d_type == DT_REG;
+    const bool is_file = entry->d_type == DT_REG || entry->d_type == DT_LNK;
 
     if (space < 3) {
         return -1;

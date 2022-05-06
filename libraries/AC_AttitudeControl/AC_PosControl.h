@@ -12,8 +12,6 @@
 #include <AC_PID/AC_PID_2D.h>       // PID library (2-axis)
 #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library
 #include "AC_AttitudeControl.h"     // Attitude control library
-#include <AP_Motors/AP_Motors.h>    // motors library
-#include <AP_Vehicle/AP_Vehicle.h>  // common vehicle parameters
 
 
 // position controller default definitions
@@ -42,7 +40,7 @@ public:
 
     /// Constructor
     AC_PosControl(AP_AHRS_View& ahrs, const AP_InertialNav& inav,
-                  const AP_Motors& motors, AC_AttitudeControl& attitude_control, float dt);
+                  const class AP_Motors& motors, AC_AttitudeControl& attitude_control, float dt);
 
     /// get_dt - gets time delta in seconds for all position controllers
     float get_dt() const { return _dt; }
@@ -420,7 +418,7 @@ protected:
     // references to inertial nav and ahrs libraries
     AP_AHRS_View&           _ahrs;
     const AP_InertialNav&   _inav;
-    const AP_Motors&        _motors;
+    const class AP_Motors&        _motors;
     AC_AttitudeControl&     _attitude_control;
 
     // parameters

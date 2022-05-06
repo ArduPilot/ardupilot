@@ -31,7 +31,10 @@ class TestBuildOptions(object):
         return mod.BUILD_OPTIONS
 
     def write_defines_to_file(self, defines, filepath):
-        content = "\n".join(["define %s %s" % (a, b) for (a, b) in defines.items()])
+        lines = []
+        lines.extend(["undef %s\n" % (a, ) for (a, b) in defines.items()])
+        lines.extend(["define %s %s\n" % (a, b) for (a, b) in defines.items()])
+        content = "".join(lines)
         with open(filepath, "w") as f:
             f.write(content)
 

@@ -176,7 +176,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _BUS
     // @DisplayName: Airspeed I2C bus
     // @Description: Bus number of the I2C bus where the airspeed sensor is connected
-    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
+    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxiliary)
     // @User: Advanced
     AP_GROUPINFO("_BUS",  9, AP_Airspeed, param[0].bus, HAL_AIRSPEED_BUS_DEFAULT),
 #endif // HAL_BUILD_AP_PERIPH
@@ -282,7 +282,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: 2_BUS
     // @DisplayName: Airspeed I2C bus for 2nd sensor
     // @Description: The bus number of the I2C bus to look for the sensor on
-    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxillary)
+    // @Values: 0:Bus0(internal),1:Bus1(external),2:Bus2(auxiliary)
     // @User: Advanced
     AP_GROUPINFO("2_BUS",  20, AP_Airspeed, param[1].bus, 1),
 
@@ -737,6 +737,58 @@ bool AP_Airspeed::all_healthy(void) const
     return true;
 }
 
+// return true if airspeed is enabled
+bool AP_Airspeed::enabled(uint8_t i) const {
+    if (i < AIRSPEED_MAX_SENSORS) {
+        return param[i].type.get() != TYPE_NONE;
+    }
+    return false;
+}
+
+// return health status of sensor
+bool AP_Airspeed::healthy(uint8_t i) const {
+    bool ok = state[i].healthy && enabled(i) && sensor[i] != nullptr;
+#ifndef HAL_BUILD_AP_PERIPH
+    // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
+    ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
+#endif
+    return ok;
+}
+
+// return the current airspeed in m/s
+float AP_Airspeed::get_airspeed(uint8_t i) const {
+    if (!enabled(i)) {
+        // we can't have negative airspeed so sending an obviously invalid value
+        return -1.0;
+    }
+    return state[i].airspeed;
+}
+
+// return the unfiltered airspeed in m/s
+float AP_Airspeed::get_raw_airspeed(uint8_t i) const {
+    if (!enabled(i)) {
+        // we can't have negative airspeed so sending an obviously invalid value
+        return -1.0;
+    }
+    return state[i].raw_airspeed;
+}
+
+// return the differential pressure in Pascal for the last airspeed reading
+float AP_Airspeed::get_differential_pressure(uint8_t i) const {
+    if (!enabled(i)) {
+        return 0.0;
+    }
+    return state[i].last_pressure;
+}
+
+// return the current corrected pressure
+float AP_Airspeed::get_corrected_pressure(uint8_t i) const {
+    if (!enabled(i)) {
+        return 0.0;
+    }
+    return state[i].corrected_pressure;
+}
+
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
@@ -744,6 +796,10 @@ void AP_Airspeed::update() {};
 bool AP_Airspeed::get_temperature(uint8_t i, float &temperature) { return false; }
 void AP_Airspeed::calibrate(bool in_startup) {}
 bool AP_Airspeed::use(uint8_t i) const { return false; }
+bool AP_Airspeed::enabled(uint8_t i) const { return false; }
+bool AP_Airspeed::healthy(uint8_t i) const { return false; }
+float AP_Airspeed::get_airspeed(uint8_t i) const { return 0.0; }
+float AP_Airspeed::get_differential_pressure(uint8_t i) const { return 0.0; }
 
 #if HAL_MSP_AIRSPEED_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}

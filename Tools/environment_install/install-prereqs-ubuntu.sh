@@ -271,9 +271,12 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
     DO_AP_STM_ENV=1
 fi
 
-heading "Removing modemmanager package that could conflict with firmware uploading"
+heading "Removing modemmanager and brltty package that could conflict with firmware uploading"
 if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
+fi
+if package_is_installed "brltty"; then
+    $APT_GET remove brltty
 fi
 echo "Done!"
 
