@@ -718,28 +718,6 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
 #endif
         break;
 
-    case MAVLINK_MSG_ID_SET_HOME_POSITION: {
-        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
-
-        mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(&msg, &packet);
-        if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            if (!sub.set_home_to_current_location(true)) {
-                // ignore this failure
-            }
-        } else {
-            Location new_home_loc;
-            new_home_loc.lat = packet.latitude;
-            new_home_loc.lng = packet.longitude;
-            new_home_loc.alt = packet.altitude / 10;
-            if (sub.far_from_EKF_origin(new_home_loc)) {
-                break;
-            }
-            IGNORE_RETURN(sub.set_home(new_home_loc, true));
-        }
-        break;
-    }
-
     // This adds support for leak detectors in a separate enclosure
     // connected to a mavlink enabled subsystem
     case MAVLINK_MSG_ID_SYS_STATUS: {
