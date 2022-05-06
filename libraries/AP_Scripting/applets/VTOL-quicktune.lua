@@ -6,6 +6,13 @@
 
 --]]
 
+--[[
+ - TODO:
+ - disable weathervaning while tuning?
+ - possibly lower P XY gains during tuning?
+ - bail out on a large angle error?
+--]]
+
 local PARAM_TABLE_KEY = 8
 local PARAM_TABLE_PREFIX = "QUIK_"
 
@@ -26,15 +33,18 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 7), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 10), 'could not add param table')
 
 local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0)
 local QUIK_AXES        = bind_add_param('AXES',           2, 7)
 local QUIK_DOUBLE_TIME = bind_add_param('DOUBLE_TIME',    3, 10)
-local QUIK_GAIN_MARGIN = bind_add_param('GAIN_MARGIN',    4, 70)
+local QUIK_GAIN_MARGIN = bind_add_param('GAIN_MARGIN',    4, 60)
 local QUIK_OSC_SMAX    = bind_add_param('OSC_SMAX',       5, 5)
 local QUIK_YAW_P_MAX   = bind_add_param('YAW_P_MAX',      6, 0.5)
 local QUIK_YAW_D_MAX   = bind_add_param('YAW_D_MAX',      7, 0.01)
+local QUIK_RP_PI_RATIO = bind_add_param('RP_PI_RATIO',    8, 1.0)
+local QUIK_Y_PI_RATIO  = bind_add_param('Y_PI_RATIO',     9, 10)
+local QUIK_AUTO_FILTER = bind_add_param('AUTO_FILTER',   10, 1)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
@@ -152,16 +162,21 @@ end
 
 -- setup filter frequencies
 function setup_filters()
+   if QUIK_AUTO_FILTER:get() <= 0 then
+      return
+   end
    for i, axis in ipairs(axis_names) do
-      local fltd = axis .. "_FLTD"
-      local fltt = axis .. "_FLTT"
-      local flte = axis .. "_FLTE"
-      adjust_gain(fltt, INS_GYRO_FILTER:get() * FLTT_MUL)
-      adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
-      if axis == "YAW" then
-         local FLTE = params[flte]
-         if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
-            adjust_gain(flte, YAW_FLTE_MAX)
+      if axis_enabled(axis) then
+         local fltd = axis .. "_FLTD"
+         local fltt = axis .. "_FLTT"
+         local flte = axis .. "_FLTE"
+         adjust_gain(fltt, INS_GYRO_FILTER:get() * FLTT_MUL)
+         adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
+         if axis == "YAW" then
+            local FLTE = params[flte]
+            if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
+               adjust_gain(flte, YAW_FLTE_MAX)
+            end
          end
       end
    end
@@ -182,6 +197,18 @@ get_all_params()
 
 -- 3 position switch
 local quick_switch = nil
+
+function axis_enabled(axis)
+   local axes = QUIK_AXES:get()
+   for i = 1, #axis_names do
+      local mask = (1 << (i-1))
+      local axis_name = axis_names[i]
+      if axis == axis_name and (mask & axes) ~= 0 then
+         return true
+      end
+   end
+   return false
+end
 
 -- get the axis name we are working on, or nil for all done
 function get_current_axis()
@@ -226,6 +253,16 @@ function get_pname(axis, stage)
    return axis .. "_" .. stage
 end
 
+-- get axis name from parameter name
+function param_axis(pname)
+   return string.sub(pname, 1, 3)
+end
+
+-- get parameter suffix from parameter name
+function param_suffix(pname)
+   return string.sub(pname, 4)
+end
+
 -- change a gain
 function adjust_gain(pname, value)
    local P = params[pname]
@@ -244,12 +281,14 @@ function adjust_gain(pname, value)
          return
       end
       param_changed[iname] = true
-      if string.sub(pname, 1, 3) == "YAW" then
-         -- for yaw, I is 1/10 of P
-         I:set(value*0.1)
-      else
-         -- otherwise I == P
-         I:set(value)
+
+      -- work out ratio of P to I that we want
+      local PI_ratio = QUIK_RP_PI_RATIO:get()
+      if param_axis(pname) == "YAW" then
+         PI_ratio = QUIK_Y_PI_RATIO:get()
+      end
+      if PI_ratio >= 1 then
+         I:set(value/PI_ratio)
       end
    end
 end
@@ -269,7 +308,7 @@ end
 function update_slew_gain()
    if slew_parm ~= nil then
       local P = params[slew_parm]
-      local axis = string.sub(slew_parm, 1, 3)
+      local axis = param_axis(slew_parm)
       local ax_stage = string.sub(slew_parm, -1)
       adjust_gain(slew_parm, P:get()+slew_delta)
       slew_steps = slew_steps - 1
@@ -283,8 +322,8 @@ end
 
 -- return gain limits on a parameter, or 0 for no limit
 function gain_limit(pname)
-   if string.sub(pname, 1, 3) == "YAW" then
-      local suffix = string.sub(pname, -2)
+   if param_axis(pname) == "YAW" then
+      local suffix = param_suffix(pname)
       if suffix == "_P" then
          return QUIK_YAW_P_MAX:get()
       end
@@ -376,6 +415,19 @@ function update()
       local limit = gain_limit(pname)
       if limit > 0.0 and new_gain > limit then
          new_gain = limit
+      end
+      local old_gain = param_saved[pname]
+      if new_gain < old_gain and string.sub(pname,-2) == '_D' and param_axis(pname) ~= 'YAW' then
+         -- we are lowering a D gain from the original gain. Also lower the P gain by the same amount
+         -- so that we don't trigger P oscillation. We don't drop P by more than a factor of 2
+         local ratio = math.max(new_gain / old_gain, 0.5)
+         local P_name = string.gsub(pname, "_D", "_P")
+         local I_name = string.gsub(pname, "_D", "_I")
+         local old_P = params[P_name]:get()
+         local new_P = old_P * ratio
+         gcs:send_text(0, string.format("adjusting %s %.3f -> %.3f", P_name, old_P, new_P))
+         adjust_gain(P_name, new_P)
+         adjust_gain(I_name, new_P)
       end
       setup_slew_gain(pname, new_gain)
       logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
