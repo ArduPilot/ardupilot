@@ -163,7 +163,8 @@ AP_HW_DEVEBOXH7                      1061
 AP_HW_MatekL431                      1062
 AP_HW_CUBEORANGEPLUS                 1063
 AP_HW_CarbonixF405                   1064
-AP_HW_QioTekAdeptF427                1065
+AP_HW_QioTekAdeptF407                1065
+AP_HW_QioTekAdeptF427                1066
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
