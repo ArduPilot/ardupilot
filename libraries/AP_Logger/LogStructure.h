@@ -136,7 +136,13 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_AIS/LogStructure.h>
 
 // structure used to define logging format
+// It is packed to save flash space; however, this causes problems when building
+// the SITL on an Apple M1 CPU so we do not pack it when compiling SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 struct LogStructure {
+#else
+struct PACKED LogStructure {
+#endif
     uint8_t msg_type;
     uint8_t msg_len;
     const char *name;
