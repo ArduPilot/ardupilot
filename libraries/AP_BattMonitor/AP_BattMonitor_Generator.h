@@ -46,5 +46,9 @@ public:
 
     // This is where we tell the battery monitor 'we have consummed energy' if we want to report a fuel level remaining
     bool has_consumed_energy(void) const override;
+
+    // reset remaining percentage to given value
+    bool reset_remaining(float percentage) override;
+
 };
 #endif

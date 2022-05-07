@@ -46,6 +46,23 @@ bool AP_BattMonitor_Generator_FuelLevel::has_consumed_energy(void) const
     return generator->has_consumed_energy();
 }
 
+bool AP_BattMonitor_Generator_FuelLevel::reset_remaining(float percentage)
+{
+    if (!is_equal(percentage, 100.0f)) {
+        // technically we could probably support half-filling a tank
+        return false;
+    }
+
+    // Get pointer to generator singleton
+    AP_Generator *generator = AP::generator();
+
+    if (generator == nullptr) {
+        return false;
+    }
+
+    return generator->reset_consumed_energy();
+}
+
 void AP_BattMonitor_Generator_FuelLevel::init()
 {
 }
