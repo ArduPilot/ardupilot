@@ -58,6 +58,11 @@ public:
     bool has_fuel_remaining_pct() const { return _has_fuel_remaining_pct; }
     bool has_fuel_remaining_l() const { return _has_fuel_remaining_l; }
 
+    // method to reset the amount of energy remaining in a generator.
+    // This typically means someone has refueled the vehicle without
+    // powering it off, and is indicating that the fuel tank is full.
+    bool reset_consumed_energy();
+
     // healthy() returns true if the generator is not present, or it is
     // present, providing telemetry and not indicating any errors.
     bool healthy(void) const { return _healthy; }

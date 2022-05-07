@@ -39,6 +39,11 @@ public:
         return nullptr;
     }
 
+    // method to reset the amount of energy remaining in a generator.
+    // This typically means someone has refueled the vehicle without
+    // powering it off, and is indicating that the fuel tank is full.
+    virtual bool reset_consumed_energy() { return false; }
+
 protected:
 
     // Update frontend

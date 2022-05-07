@@ -136,6 +136,13 @@ AP_Generator_Loweheiser *AP_Generator::get_loweheiser()
 }
 #endif
 
+bool AP_Generator::reset_consumed_energy() {
+    if (_driver_ptr == nullptr) {
+        return false;
+    }
+    return _driver_ptr->reset_consumed_energy();
+}
+
 // Pass through to backend
 void AP_Generator::send_generator_status(const class GCS_MAVLINK &channel)
 {
