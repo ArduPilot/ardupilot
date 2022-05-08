@@ -54,6 +54,7 @@
 #define AUTOTUNE_SEQ_BITMASK_RATE_D          2
 #define AUTOTUNE_SEQ_BITMASK_ANGLE_P         4
 #define AUTOTUNE_SEQ_BITMASK_MAX_GAIN        8
+#define AUTOTUNE_SEQ_BITMASK_TUNE_CHECK      16
 
 const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
 
@@ -66,8 +67,8 @@ const AP_Param::GroupInfo AC_AutoTune_Heli::var_info[] = {
 
     // @Param: SEQ
     // @DisplayName: AutoTune Sequence Bitmask
-    // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D/Rate P Only(incl max gain),4:Angle P Only,8:Max Gain Only,3:VFF and Rate D/Rate P(incl max gain),5:VFF and Angle P,6:Rate D/Rate P(incl max gain) and angle P
-    // @Bitmask: 0:VFF,1:Rate D/Rate P(incl max gain),2:Angle P,3:Max Gain Only
+    // @Description: 2-byte bitmask to select what tuning should be performed.  Max gain automatically performed if Rate D is selected. Values: 7:All,1:VFF Only,2:Rate D/Rate P Only(incl max gain),4:Angle P Only,8:Max Gain Only,16:Tune Check,3:VFF and Rate D/Rate P(incl max gain),5:VFF and Angle P,6:Rate D/Rate P(incl max gain) and angle P
+    // @Bitmask: 0:VFF,1:Rate D/Rate P(incl max gain),2:Angle P,3:Max Gain Only,4:Tune Check
     // @User: Standard
     AP_GROUPINFO("SEQ", 2, AC_AutoTune_Heli, seq_bitmask,  3),
 
@@ -190,13 +191,28 @@ void AC_AutoTune_Heli::test_init()
         if (!is_equal(start_freq,stop_freq)) {
             // initialize determine gain function
             freqresp.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            dwell_test_init(start_freq, stop_freq, stop_freq, ANGLE);
+            dwell_test_init(start_freq, stop_freq, stop_freq, DRB);
         } else {
             // initialize determine gain function
             freqresp.init(AC_AutoTune_FreqResp::InputType::DWELL, AC_AutoTune_FreqResp::ResponseType::ANGLE);
-            dwell_test_init(start_freq, stop_freq, start_freq, ANGLE);
+            dwell_test_init(start_freq, stop_freq, start_freq, DRB);
         }
 
+        // TODO add time limit for sweep test
+        if (!is_zero(start_freq)) {
+            // 1 seconds is added for a little buffer.  Then the time to conduct the dwells is added to it.
+            step_time_limit_ms = (uint32_t)(2000 + (float)(AUTOTUNE_DWELL_CYCLES + 7) * 1000.0f * M_2PI / start_freq);
+        }
+        break;
+    case TUNE_CHECK:
+        // initialize start frequency
+        if (is_zero(start_freq)) {
+            start_freq = min_sweep_freq;
+            stop_freq = max_sweep_freq;
+        }
+        // initialize determine gain function
+        freqresp.init(AC_AutoTune_FreqResp::InputType::SWEEP, AC_AutoTune_FreqResp::ResponseType::ANGLE);
+        dwell_test_init(start_freq, stop_freq, stop_freq, ANGLE);
         // TODO add time limit for sweep test
         if (!is_zero(start_freq)) {
             // 1 seconds is added for a little buffer.  Then the time to conduct the dwells is added to it.
@@ -256,6 +272,9 @@ void AC_AutoTune_Heli::test_run(AxisType test_axis, const float dir_sign)
         dwell_test_run(0, start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt], RATE);
         break;
     case SP_UP:
+        dwell_test_run(1, start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt], DRB);
+        break;
+    case TUNE_CHECK:
         dwell_test_run(1, start_freq, stop_freq, test_gain[freq_cnt], test_phase[freq_cnt], ANGLE);
         break;
     default:
@@ -279,6 +298,7 @@ void AC_AutoTune_Heli::do_gcs_announcements()
     case RP_UP:
     case MAX_GAINS:
     case SP_UP:
+    case TUNE_CHECK:
         if (is_equal(start_freq,stop_freq)) {
             gcs().send_text(MAV_SEVERITY_INFO, "AutoTune: Dwell");
         } else {
@@ -1061,19 +1081,34 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
         case ROLL:
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_angle_cd + trim_angle_cd.x, trim_angle_cd.y, 0.0f);
             command_reading = motors->get_roll();
-            tgt_rate_reading = (target_angle_cd) / 5730.0f;
-            gyro_reading = ((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) / 5730.0f;
+            if (dwell_type == DRB) {
+                tgt_rate_reading = (target_angle_cd) / 5730.0f;
+                gyro_reading = ((float)ahrs_view->roll_sensor + trim_angle_cd.x - target_angle_cd) / 5730.0f;
+            } else {
+                tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().x) / 5730.0f;
+                gyro_reading = ((float)ahrs_view->roll_sensor) / 5730.0f;
+            }
             break;
         case PITCH:
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(trim_angle_cd.x, target_angle_cd + trim_angle_cd.y, 0.0f);
             command_reading = motors->get_pitch();
-            tgt_rate_reading = (target_angle_cd) / 5730.0f;
-            gyro_reading = ((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) / 5730.0f;
+            if (dwell_type == DRB) {
+                tgt_rate_reading = (target_angle_cd) / 5730.0f;
+                gyro_reading = ((float)ahrs_view->pitch_sensor + trim_angle_cd.y - target_angle_cd) / 5730.0f;
+            } else {
+                tgt_rate_reading = ((float)attitude_control->get_att_target_euler_cd().y) / 5730.0f;
+                gyro_reading = ((float)ahrs_view->pitch_sensor) / 5730.0f;
+            }
             break;
         case YAW:
             command_reading = motors->get_yaw();
-            tgt_rate_reading = (target_angle_cd) / 5730.0f;
-            gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading - target_angle_cd)) / 5730.0f;
+            if (dwell_type == DRB) {
+                tgt_rate_reading = (target_angle_cd) / 5730.0f;
+                gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading - target_angle_cd)) / 5730.0f;
+            } else {
+                tgt_rate_reading = (wrap_180_cd((float)attitude_control->get_att_target_euler_cd().z - trim_yaw_tgt_reading)) / 5730.0f;
+                gyro_reading = (wrap_180_cd((float)ahrs_view->yaw_sensor - trim_yaw_heading_reading)) / 5730.0f;
+            }
             attitude_control->input_euler_angle_roll_pitch_yaw(trim_angle_cd.x, trim_angle_cd.y, wrap_180_cd(trim_yaw_tgt_reading + target_angle_cd), false);
             break;
         }
@@ -1110,7 +1145,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
                 curr_test.freq = freqresp.get_freq();
                 curr_test.gain = freqresp.get_gain();
                 curr_test.phase = freqresp.get_phase();
-                if (dwell_type == ANGLE) {test_accel_max = freqresp.get_accel_max();}
+                if (dwell_type == DRB) {test_accel_max = freqresp.get_accel_max();}
                 // reset cycle_complete to allow indication of next cycle
                 freqresp.reset_cycle_complete();
                 // log sweep data
@@ -1118,7 +1153,7 @@ void AC_AutoTune_Heli::dwell_test_run(uint8_t freq_resp_input, float start_frq, 
             } else {
                 dwell_gain = freqresp.get_gain();
                 dwell_phase = freqresp.get_phase();
-                if (dwell_type == ANGLE) {test_accel_max = freqresp.get_accel_max();}
+                if (dwell_type == DRB) {test_accel_max = freqresp.get_accel_max();}
             }
         }
     }
@@ -1858,6 +1893,10 @@ void AC_AutoTune_Heli::set_tune_sequence()
     }
     if (seq_bitmask & AUTOTUNE_SEQ_BITMASK_MAX_GAIN && !(seq_bitmask & AUTOTUNE_SEQ_BITMASK_RATE_D)) {
         tune_seq[seq_cnt] = MAX_GAINS;
+        seq_cnt++;
+    }
+    if (seq_bitmask & AUTOTUNE_SEQ_BITMASK_TUNE_CHECK) {
+        tune_seq[seq_cnt] = TUNE_CHECK;
         seq_cnt++;
     }
     tune_seq[seq_cnt] = TUNE_COMPLETE;

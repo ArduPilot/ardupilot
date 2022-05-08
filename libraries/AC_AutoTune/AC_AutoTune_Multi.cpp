@@ -726,6 +726,7 @@ void AC_AutoTune_Multi::set_gains_post_tune(AxisType test_axis)
         break;
     case RFF_UP:
     case MAX_GAINS:
+    case TUNE_CHECK:
         // this should never happen
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         break;
@@ -1175,6 +1176,7 @@ void AC_AutoTune_Multi::twitch_test_run(AxisType test_axis, const float dir_sign
         break;
     case RFF_UP:
     case MAX_GAINS:
+    case TUNE_CHECK:
         // this should never happen
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         break;
