@@ -156,7 +156,7 @@ bool AnalogSource::set_pin(uint8_t pin)
         return true;
     }
     bool found_pin = false;
-    if (_pin == ANALOG_SERVO_VRSSI_PIN) {
+    if (pin == ANALOG_SERVO_VRSSI_PIN) {
         found_pin = true;
     } else {
         for (uint8_t i=0; i<ADC_GRP1_NUM_CHANNELS; i++) {
