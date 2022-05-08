@@ -201,7 +201,8 @@ protected:
         SP_UP = 4,                // angle P is being tuned up
         SP_DOWN = 5,              // angle P is being tuned down
         MAX_GAINS = 6,            // max allowable stable gains are determined
-        TUNE_COMPLETE = 7         // Reached end of tuning
+        TUNE_CHECK = 7,           // frequency sweep with tuned gains
+        TUNE_COMPLETE = 8         // Reached end of tuning
     };
     TuneType tune_seq[6];         // holds sequence of tune_types to be performed
     uint8_t tune_seq_curr;        // current tune sequence step
