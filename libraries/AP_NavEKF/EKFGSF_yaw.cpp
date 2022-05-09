@@ -167,7 +167,7 @@ void EKFGSF_yaw::fuseVelData(const Vector2F &vel, const ftype velAcc)
             if (!state_update_failed) {
                 // Calculate weighting for each model assuming a normal error distribution
                 const ftype min_weight = 1e-5f;
-                uint8_t n_clips = 0;
+                n_clips = 0;
                 for (uint8_t mdl_idx = 0; mdl_idx < N_MODELS_EKFGSF; mdl_idx++) {
                     newWeight[mdl_idx] = gaussianDensity(mdl_idx) * GSF.weights[mdl_idx];
                     if (newWeight[mdl_idx] < min_weight) {
@@ -628,6 +628,11 @@ Matrix3F EKFGSF_yaw::updateRotMat(const Matrix3F &R, const Vector3F &g) const
 bool EKFGSF_yaw::getYawData(ftype &yaw, ftype &yawVariance) const
 {
     if (!vel_fuse_running) {
+        return false;
+    }
+    // at least three models must be in good health for a result to be
+    // valid:
+    if (N_MODELS_EKFGSF - n_clips < 3) {
         return false;
     }
     yaw = GSF.yaw;
