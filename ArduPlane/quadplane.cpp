@@ -1870,6 +1870,9 @@ void QuadPlane::update_throttle_hover()
         ahrs.airspeed_estimate(aspeed) && aspeed < plane.aparm.airspeed_min*0.3) {
         // Can we set the time constant automatically
         motors->update_throttle_hover(0.01f);
+#if HAL_GYROFFT_ENABLED
+        plane.gyro_fft.update_freq_hover(0.01f, motors->get_throttle_out());
+#endif
     }
 }
 /*
