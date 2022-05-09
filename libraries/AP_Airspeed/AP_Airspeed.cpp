@@ -606,13 +606,6 @@ void AP_Airspeed::read(uint8_t i)
         state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
         break;
     }
-
-    if (state[i].last_pressure < -32) {
-        // we're reading more than about -8m/s. The user probably has
-        // the ports the wrong way around
-        state[i].healthy = false;
-    }
-
 }
 
 // read all airspeed sensors
