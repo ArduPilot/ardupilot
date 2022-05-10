@@ -1,21 +1,5 @@
 #include "Blimp.h"
 
-
-// performs pre-arm checks. expects to be called at 1hz.
-void AP_Arming_Blimp::update(void)
-{
-    // perform pre-arm checks & display failures every 30 seconds
-    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
-    pre_arm_display_counter++;
-    bool display_fail = false;
-    if (pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
-        display_fail = true;
-        pre_arm_display_counter = 0;
-    }
-
-    pre_arm_checks(display_fail);
-}
-
 bool AP_Arming_Blimp::pre_arm_checks(bool display_failure)
 {
     const bool passed = run_pre_arm_checks(display_failure);
