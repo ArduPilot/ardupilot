@@ -320,6 +320,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_OBLIQUE_SURVEY:
     case MAV_CMD_DO_PARACHUTE:
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
     case MAV_CMD_DO_SPRAYER:
@@ -353,6 +354,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_OBLIQUE_SURVEY:
         return start_command_camera(cmd);
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
@@ -1073,6 +1075,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.cam_trigg_dist.trigger = packet.param3; // when enabled, camera triggers once immediately
         break;
 
+    case MAV_CMD_OBLIQUE_SURVEY:
+        cmd.content.campos_cmd.distance = packet.param1;
+        cmd.content.campos_cmd.interval = packet.param3;
+        cmd.content.campos_cmd.positions = packet.param4;
+        cmd.content.campos_cmd.roll = packet.x;
+        cmd.content.campos_cmd.pitch = packet.y;
+        break;
+
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
         cmd.p1 = packet.param1;                         // action 0=disable, 1=enable
         break;
@@ -1261,6 +1271,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
     switch (packet.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_OBLIQUE_SURVEY:
         mav_cmd.x = packet.x;
         mav_cmd.y = packet.y;
         break;
@@ -1302,6 +1313,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     switch (item_int.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_OBLIQUE_SURVEY:
         item.x = item_int.x;
         item.y = item_int.y;
         break;
@@ -1534,6 +1546,15 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         packet.param1 = cmd.content.cam_trigg_dist.meters;  // distance between camera shots in meters
         packet.param3 = cmd.content.cam_trigg_dist.trigger; // when enabled, camera triggers once immediately
+        break;
+
+    case MAV_CMD_OBLIQUE_SURVEY:
+        packet.param1 = cmd.content.campos_cmd.distance;
+        packet.param3 = cmd.content.campos_cmd.interval;
+        packet.param4 = cmd.content.campos_cmd.positions;
+        packet.x = cmd.content.campos_cmd.roll;
+        packet.y = cmd.content.campos_cmd.pitch;
+        packet.frame = MAV_FRAME_MISSION;               // for compatibility with QGC
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
@@ -2300,6 +2321,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "DigiCamCtrl";
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return "SetCamTrigDst";
+    case MAV_CMD_OBLIQUE_SURVEY:
+        return "ObliqueSurvey";
     case MAV_CMD_DO_SET_ROI:
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:

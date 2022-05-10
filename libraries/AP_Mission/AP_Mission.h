@@ -153,6 +153,15 @@ public:
         uint8_t trigger;        // triggers one image capture immediately
     };
 
+    // Camera Auto Mount Pivoting Oblique Survey (CAMPOS) command
+    struct PACKED CAMPOS_Cmd {
+        float distance;     //distance
+        uint16_t interval;  //minumum camera interval (ms), the mount will move after this time is past
+        uint8_t positions;  //number of positions to take pictures along the [-roll, roll] interval
+        uint8_t roll;         //the roll limits for the camera positions
+        int16_t pitch;        //the fixed pitch angle that the camera will remain
+    };
+
     // gripper command structure
     struct PACKED Gripper_Command {
         uint8_t num;            // gripper number
@@ -269,6 +278,9 @@ public:
 
         // cam trigg distance
         Cam_Trigg_Distance cam_trigg_dist;
+
+        // CAMPOS command
+        CAMPOS_Cmd  campos_cmd;
 
         // do-gripper
         Gripper_Command gripper;

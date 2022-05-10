@@ -125,6 +125,17 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         }
         return true;
 
+    case MAV_CMD_OBLIQUE_SURVEY:
+        if (cmd.content.campos_cmd.positions >= 2) {
+            camera->set_trigger_distance(cmd.content.campos_cmd.distance);
+            camera->set_campos_parameters(
+                cmd.content.campos_cmd.positions, 
+                cmd.content.campos_cmd.roll,
+                cmd.content.campos_cmd.pitch,
+                cmd.content.campos_cmd.interval);
+        }
+        return true;
+
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Unhandled camera case");

@@ -24,6 +24,7 @@ public:
     {
         AP_Param::setup_object_defaults(this, var_info);
         _singleton = this;
+        _campos_positions = 0;
     }
 
     /* Do not allow copies */
@@ -47,10 +48,26 @@ public:
     void            control(float session, float zoom_pos, float zoom_step, float focus_lock, float shooting_cmd, float cmd_id);
 
     // set camera trigger distance in a mission
-    void            set_trigger_distance(uint32_t distance_m)
+    void            set_trigger_distance(float distance_m)
     {
         _trigg_dist.set(distance_m);
     }
+
+    // CAMPOS methods
+    void set_campos_parameters(uint8_t positions, float roll, float pitch, int16_t interval)
+    {
+        _campos_positions = positions;
+        _campos_roll = roll;
+        _campos_pitch = pitch;
+        _campos_angle_interval = _campos_roll * 2 / (_campos_positions - 1);
+        _campos_pose_counter = 0;
+        _campos_updated_roll_angle = false;
+
+        if (interval > 0) {
+            _min_interval.set(interval);
+        }
+    }
+    void update_campos();
 
     // momentary switch to change camera modes
     void cam_mode_toggle();
@@ -110,6 +127,14 @@ private:
     uint32_t        _last_photo_time;   // last time a photo was taken
     struct Location _last_location;
     uint16_t        _image_index;       // number of pictures taken since boot
+
+    //Camera Auto Mount Pivoting Oblique Survey (CAMPOS) command parameters
+    uint8_t         _campos_positions;              //number of positions to take pictures along the [-roll, roll] interval
+    uint8_t         _campos_roll;                   //the roll limits for the camera positions
+    int16_t         _campos_pitch;                  //the fixed pitch angle that the camera will remain
+    float           _campos_angle_interval;         //auxiliary parameter to control the roll positions
+    uint8_t         _campos_pose_counter;           //auxiliary parameter to control the roll positions
+    bool            _campos_updated_roll_angle;     //auxiliary parameter to control the roll positions
 
     // pin number for accurate camera feedback messages
     AP_Int8         _feedback_pin;
