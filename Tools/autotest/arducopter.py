@@ -8628,7 +8628,7 @@ class AutoTestCopter(AutoTest):
         if not lines[0].startswith("TasksV2"):
             raise NotAchievedException("Expected TasksV2 as first line first not (%s)" % lines[0])
         # last line is empty, so -2 here
-        if not lines[-2].startswith("AP_EFI::update"):
+        if not lines[-2].startswith("AP_Vehicle::update_arming"):
             raise NotAchievedException("Expected EFI last not (%s)" % lines[-2])
 
     def tests1a(self):
