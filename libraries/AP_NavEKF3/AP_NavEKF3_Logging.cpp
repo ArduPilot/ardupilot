@@ -146,7 +146,8 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         velTimeout<<1 |
         hgtTimeout<<2 |
         magTimeout<<3 |
-        tasTimeout<<4;
+        tasTimeout<<4 |
+        dragTimeout<<5;
 
     nav_filter_status solutionStatus {};
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
