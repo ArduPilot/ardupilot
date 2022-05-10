@@ -4,22 +4,6 @@
  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #endif
 
-// performs pre-arm checks. expects to be called at 1hz.
-void AP_Arming_Copter::update(void)
-{
-    // perform pre-arm checks & display failures every 30 seconds
-    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
-    pre_arm_display_counter++;
-    bool display_fail = false;
-    if ((_arming_options & uint32_t(AP_Arming::ArmingOptions::DISABLE_PREARM_DISPLAY)) == 0 &&
-        pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
-        display_fail = true;
-        pre_arm_display_counter = 0;
-    }
-
-    pre_arm_checks(display_fail);
-}
-
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
     const bool passed = run_pre_arm_checks(display_failure);
