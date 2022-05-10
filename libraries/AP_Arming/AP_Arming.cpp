@@ -77,6 +77,10 @@
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
 #endif
 
+#ifndef PREARM_DISPLAY_PERIOD
+# define PREARM_DISPLAY_PERIOD 30
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
@@ -153,6 +157,22 @@ AP_Arming::AP_Arming()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// performs pre-arm checks. expects to be called at 1hz.
+void AP_Arming::update(void)
+{
+    // perform pre-arm checks & display failures every 30 seconds
+    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
+    pre_arm_display_counter++;
+    bool display_fail = false;
+    if ((_arming_options & uint32_t(AP_Arming::ArmingOptions::DISABLE_PREARM_DISPLAY)) == 0 &&
+        pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
+        display_fail = true;
+        pre_arm_display_counter = 0;
+    }
+
+    pre_arm_checks(display_fail);
 }
 
 uint16_t AP_Arming::compass_magfield_expected() const
