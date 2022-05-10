@@ -273,7 +273,7 @@ bool Copter::ekf_has_relative_position() const
         return false;
     }
 
-    // return immediately if neither optflow nor visual odometry is enabled
+    // return immediately if neither optflow nor visual odometry nor wind estimatation is enabled
     bool enabled = false;
 #if AP_OPTICALFLOW_ENABLED
     if (optflow.enabled()) {
@@ -285,6 +285,10 @@ bool Copter::ekf_has_relative_position() const
         enabled = true;
     }
 #endif
+    Vector3f airspeed_vec_bf;
+    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+        enabled = true;
+    }
     if (!enabled) {
         return false;
     }
