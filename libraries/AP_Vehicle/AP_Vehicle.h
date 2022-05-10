@@ -393,6 +393,9 @@ protected:
     void accel_cal_update();
 #endif
 
+    // call the arming library's update function
+    void update_arming();
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 #if AP_SIM_ENABLED
