@@ -23,7 +23,7 @@ private:
 
     // check and process replies from sensor
     bool read_sensor_data();
-    void update_sector_data(int16_t angle_deg, uint16_t distance_cm);
+    void update_sector_data(int16_t angle_deg, uint16_t distance_mm);
 
     // reply related variables
     uint8_t buffer[20]; // buffer where to store data from serial
