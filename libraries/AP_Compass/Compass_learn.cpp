@@ -51,8 +51,10 @@ void CompassLearn::update(void)
     AP_Notify::flags.compass_cal_running = true;
 
     ftype yaw_rad, yaw_variance;
-    if (!gsf->getYawData(yaw_rad, yaw_variance) ||
+    uint8_t n_clips;
+    if (!gsf->getYawData(yaw_rad, yaw_variance, &n_clips) ||
         !is_positive(yaw_variance) ||
+        n_clips > 1 ||
         yaw_variance >= sq(radians(YAW_ACCURACY_THRESHOLD_DEG))) {
         // not converged
         return;
