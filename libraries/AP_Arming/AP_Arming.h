@@ -14,6 +14,8 @@ public:
 
     static AP_Arming *get_singleton();
 
+    void update();
+
     enum ArmingChecks {
         ARMING_CHECK_ALL         = (1U << 0),
         ARMING_CHECK_BARO        = (1U << 1),
