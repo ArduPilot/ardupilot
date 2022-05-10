@@ -270,6 +270,7 @@ void NavEKF3_core::SelectBetaDragFusion()
     if (!inhibitWindStates && storedDrag.recall(dragSampleDelayed,imuDataDelayed.time_ms)) {
         FuseDragForces();
     }
+    dragTimeout = (imuSampleTime_ms - lastDragPassTime_ms) > frontend->dragFailTimeLimit_ms;
 #endif
 }
 
@@ -751,6 +752,9 @@ void NavEKF3_core::FuseDragForces()
             }
         }
     }
+
+    // record time of successful fusion
+    lastDragPassTime_ms = imuSampleTime_ms;
 }
 #endif // EK3_FEATURE_DRAG_FUSION
 
