@@ -232,6 +232,20 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
+    // @Param: RP_PD_BOOST
+    // @DisplayName: PD boost
+    // @Description: PD boost
+    // @Range: 1 10
+    // @User: Advanced
+    AP_GROUPINFO("RP_PD_BOOST", 7, AC_AttitudeControl_Multi, _pd_boost, 1.0f),
+
+    // @Param: SLEW_FILT
+    // @DisplayName: slew filter
+    // @Description: slew filter
+    // @Range: 1 50
+    // @User: Advanced
+    AP_GROUPINFO("SLEW_FILT", 8, AC_AttitudeControl_Multi, _slew_filt, 30.0f),
+
     AP_GROUPEND
 };
 
@@ -266,6 +280,7 @@ void AC_AttitudeControl_Multi::set_throttle_out(float throttle_in, bool apply_an
     _throttle_in = throttle_in;
     update_althold_lean_angle_max(throttle_in);
     _motors.set_throttle_filter_cutoff(filter_cutoff);
+    _motors.set_slew_filter_cutoff(_slew_filt);
     if (apply_angle_boost) {
         // Apply angle boost
         throttle_in = get_throttle_boosted(throttle_in);
@@ -349,10 +364,17 @@ void AC_AttitudeControl_Multi::rate_controller_run()
 
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _motors.limit.roll) + _actuator_sysid.x);
+    float pd_boost = 1.0f;
+
+    // Boost PD on very rapid throttle changes
+    if (_motors.get_throttle_slew_rate() > _boost_threshold) {
+        pd_boost = _pd_boost;
+    }
+
+    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _motors.limit.roll, pd_boost) + _actuator_sysid.x);
     _motors.set_roll_ff(get_rate_roll_pid().get_ff());
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _motors.limit.pitch) + _actuator_sysid.y);
+    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _motors.limit.pitch, pd_boost) + _actuator_sysid.y);
     _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
     _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _motors.limit.yaw) + _actuator_sysid.z);

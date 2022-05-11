@@ -425,6 +425,12 @@ protected:
     // rate controller input smoothing time constant
     AP_Float            _input_tc;
 
+    // threshold for angle_p boosting
+    AP_Float            _boost_threshold;
+
+    // angle_p boost multiplier
+    AP_Float            _angle_p_boost;
+
     // Intersampling period in seconds
     float               _dt;
 
