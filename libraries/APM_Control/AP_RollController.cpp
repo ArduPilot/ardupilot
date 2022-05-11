@@ -258,7 +258,7 @@ void AP_RollController::reset_I()
 void AP_RollController::convert_pid()
 {
     AP_Float &ff = rate_pid.ff();
-    if (ff.configured_in_storage()) {
+    if (ff.configured()) {
         return;
     }
     float old_ff=0, old_p=1.0, old_i=0.3, old_d=0.08;
