@@ -582,7 +582,7 @@ void Util::apply_persistent_params(void) const
                             errors++;
                             break;
                         }
-                        if (!ap->configured_in_storage()) {
+                        if (!ap->configured()) {
                             ap->save();
                         }
                     }
