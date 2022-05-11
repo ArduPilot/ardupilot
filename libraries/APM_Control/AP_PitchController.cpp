@@ -356,7 +356,7 @@ void AP_PitchController::reset_I()
 void AP_PitchController::convert_pid()
 {
     AP_Float &ff = rate_pid.ff();
-    if (ff.configured_in_storage()) {
+    if (ff.configured()) {
         return;
     }
 
