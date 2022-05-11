@@ -273,7 +273,7 @@ bool Copter::ekf_has_relative_position() const
         return false;
     }
 
-    // return immediately if neither optflow nor visual odometry nor wind estimatation is enabled
+    // return immediately if neither optflow nor visual odometry is enabled and dead reckoning is inactive
     bool enabled = false;
 #if AP_OPTICALFLOW_ENABLED
     if (optflow.enabled()) {
@@ -285,8 +285,7 @@ bool Copter::ekf_has_relative_position() const
         enabled = true;
     }
 #endif
-    Vector3f airspeed_vec_bf;
-    if (AP::ahrs().airspeed_vector_true(airspeed_vec_bf)) {
+    if (dead_reckoning.active && !dead_reckoning.timeout) {
         enabled = true;
     }
     if (!enabled) {
