@@ -51,7 +51,7 @@ void Copter::init_rc_out()
     motors->set_update_rate(g.rc_speed);
 
 #if FRAME_CONFIG != HELI_FRAME
-    if (channel_throttle->configured_in_storage()) {
+    if (channel_throttle->configured()) {
         // throttle inputs setup, use those to set motor PWM min and max if not already configured
         motors->convert_pwm_min_max_param(channel_throttle->get_radio_min(), channel_throttle->get_radio_max());
     } else {

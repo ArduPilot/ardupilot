@@ -1493,10 +1493,10 @@ void Copter::convert_lgr_parameters(void)
         // this shouldn't happen
         return;
     }
-    if (servo_min->configured_in_storage() ||
-        servo_max->configured_in_storage() ||
-        servo_trim->configured_in_storage() ||
-        servo_reversed->configured_in_storage()) {
+    if (servo_min->configured() ||
+        servo_max->configured() ||
+        servo_trim->configured() ||
+        servo_reversed->configured()) {
         // has been previously saved, don't upgrade
         return;
     }
@@ -1587,7 +1587,7 @@ void Copter::convert_tradheli_parameters(void) const
                 // make sure the pointer is valid
                 if (ap2 != nullptr) {
                     // see if we can load it from EEPROM
-                    if (!ap2->configured_in_storage()) {
+                    if (!ap2->configured()) {
                         // the new parameter is not in storage so set generic swash
                         AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
                     }
@@ -1645,7 +1645,7 @@ void Copter::convert_tradheli_parameters(void) const
             // make sure the pointer is valid
             if (ap2 != nullptr) {
                 // see if we can load it from EEPROM
-                if (!ap2->configured_in_storage()) {
+                if (!ap2->configured()) {
                     // the new parameter is not in storage so set generic swash
                     AP_Param::set_and_save_by_name("H_SW_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
                 }
@@ -1662,7 +1662,7 @@ void Copter::convert_tradheli_parameters(void) const
             // make sure the pointer is valid
             if (ap2 != nullptr) {
                 // see if we can load it from EEPROM
-                if (!ap2->configured_in_storage()) {
+                if (!ap2->configured()) {
                     // the new parameter is not in storage so set generic swash
                     AP_Param::set_and_save_by_name("H_SW2_TYPE", SwashPlateType::SWASHPLATE_TYPE_H3);            
                 }
@@ -1735,7 +1735,7 @@ void Copter::convert_fs_options_params(void) const
     enum ap_var_type ptype;
     AP_Int32 *fs_opt = (AP_Int32 *)AP_Param::find("FS_OPTIONS", &ptype);
 
-    if (fs_opt == nullptr || fs_opt->configured_in_storage() || ptype != AP_PARAM_INT32) {
+    if (fs_opt == nullptr || fs_opt->configured() || ptype != AP_PARAM_INT32) {
         return;
     }
 
