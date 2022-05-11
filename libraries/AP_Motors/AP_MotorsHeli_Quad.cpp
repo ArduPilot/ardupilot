@@ -67,7 +67,7 @@ bool AP_MotorsHeli_Quad::init_outputs()
         _main_rotor.set_ext_gov_arot_bail(0);
     }
 
-    set_initialised_ok(true);
+    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
 
     return true;
 }
