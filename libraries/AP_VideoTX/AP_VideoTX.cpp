@@ -217,7 +217,7 @@ void AP_VideoTX::set_power_level(uint8_t level) {
 // set the current channel
 void AP_VideoTX::set_enabled(bool enabled) {
     _current_enabled = enabled;
-    if (!_enabled.configured_in_storage()) {
+    if (!_enabled.configured()) {
         _enabled.set_and_save(enabled);
     }
 }
