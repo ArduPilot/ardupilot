@@ -215,7 +215,7 @@ bool AP_MotorsHeli_Single::init_outputs()
     // yaw servo is an angle from -4500 to 4500
     SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
 
-    set_initialised_ok(true);
+    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI);
 
     return true;
 }

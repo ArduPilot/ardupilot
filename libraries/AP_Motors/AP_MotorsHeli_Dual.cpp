@@ -267,7 +267,7 @@ bool AP_MotorsHeli_Dual::init_outputs()
         reset_swash_servo(SRV_Channels::get_motor_function(7));
     }
 
-    set_initialised_ok(true);
+    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_DUAL);
 
     return true;
 }
