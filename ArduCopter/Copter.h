@@ -391,11 +391,19 @@ private:
         uint8_t ekf                 : 1; // true if ekf failsafe has occurred
         uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
         uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
+        uint8_t deadreckon          : 1; // true if a dead reckoning failsafe has triggered
     } failsafe;
 
     bool any_failsafe_triggered() const {
-        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb;
+        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.deadreckon;
     }
+
+    // dead reckoning state
+    struct {
+        bool active;        // true if dead reckoning (position estimate using estimated airspeed, no position or velocity source)
+        bool timeout;       // true if dead reckoning has timedout and EKF's position and velocity estimate should no longer be trusted
+        uint32_t start_ms;  // system time that EKF began deadreckoning
+    } dead_reckoning;
 
     // Motor Output
     MOTOR_CLASS *motors;
@@ -734,6 +742,7 @@ private:
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void gpsglitch_check();
+    void failsafe_deadreckon_check();
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
