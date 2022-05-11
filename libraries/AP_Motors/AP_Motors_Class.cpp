@@ -19,6 +19,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Notify/AP_Notify.h>
 
+#define AP_MOTORS_SLEW_FILTER_CUTOFF 50.0f
+
 extern const AP_HAL::HAL& hal;
 
 // singleton instance
@@ -28,6 +30,8 @@ AP_Motors *AP_Motors::_singleton;
 AP_Motors::AP_Motors(uint16_t speed_hz) :
     _speed_hz(speed_hz),
     _throttle_filter(),
+    _throttle_slew(),
+    _throttle_slew_filter(),
     _spool_desired(DesiredSpoolState::SHUT_DOWN),
     _spool_state(SpoolState::SHUT_DOWN),
     _air_density_ratio(1.0f)
@@ -37,6 +41,12 @@ AP_Motors::AP_Motors(uint16_t speed_hz) :
     // setup throttle filtering
     _throttle_filter.set_cutoff_frequency(0.0f);
     _throttle_filter.reset(0.0f);
+
+    _throttle_slew_filter.set_cutoff_frequency(AP_MOTORS_SLEW_FILTER_CUTOFF);
+    _throttle_slew_filter.reset(0.0f);
+
+    // setup throttle slew detector
+    _throttle_slew.reset();
 
     // init limit flags
     limit.roll = true;
