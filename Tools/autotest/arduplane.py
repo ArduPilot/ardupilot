@@ -3598,6 +3598,125 @@ function'''
 
         self.progress("Mission OK")
 
+    def MAV_CMD_NAV_LOITER_TURNS(self, target_system=1, target_component=1):
+        '''test MAV_CMD_NAV_LOITER_TURNS mission item'''
+        alt = 20
+        seq = 0
+        items = []
+        tests = [
+            (self.home_relative_loc_ne(50, -50), 100),
+            (self.home_relative_loc_ne(100, 50), 1005),
+        ]
+        # add a home position:
+        items.append(self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            seq, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION))
+        seq += 1
+
+        # add takeoff
+        items.append(self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            seq, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION))
+        seq += 1
+
+        # add circles
+        for (loc, radius) in tests:
+            items.append(self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                seq, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                0, # current
+                0, # autocontinue
+                3, # p1
+                0, # p2
+                radius, # p3
+                0, # p4
+                int(loc.lat*1e7), # latitude
+                int(loc.lng*1e7), # longitude
+                alt, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION))
+            seq += 1
+
+        # add an RTL
+        items.append(self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            seq, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL,
+            mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            0, # latitude
+            0, # longitude
+            0, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION))
+        seq += 1
+
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, items)
+        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        ofs = 2
+        self.progress("Checking downloaded mission is as expected")
+        for (loc, radius) in tests:
+            downloaded = downloaded_items[ofs]
+            if radius > 255:
+                # ArduPilot only stores % 10
+                radius = radius - radius % 10
+            if downloaded.param3 != radius:
+                raise NotAchievedException(
+                    "Did not get expected radius for item %u; want=%f got=%f" %
+                    (ofs, radius, downloaded.param3))
+            ofs += 1
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.wait_current_waypoint(2)
+
+        for (loc, expected_radius) in tests:
+            REALLY_BAD_FUDGE_FACTOR = 1.12555
+            self.wait_circling_point_with_radius(
+                loc,
+                REALLY_BAD_FUDGE_FACTOR * expected_radius,
+                epsilon=10.0,
+                timeout=240,
+            )
+            self.set_current_waypoint(self.current_waypoint()+1)
+
+        self.fly_home_land_and_disarm(timeout=180)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -3736,6 +3855,10 @@ function'''
             ("LOITER",
              "Test Loiter mode",
              self.LOITER),
+
+            ("MAV_CMD_NAV_LOITER_TURNS",
+             "Test NAV_LOITER_TURNS mission item",
+             self.MAV_CMD_NAV_LOITER_TURNS),
 
             ("DeepStall",
              "Test DeepStall Landing",

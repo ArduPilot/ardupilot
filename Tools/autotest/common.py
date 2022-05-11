@@ -7235,6 +7235,10 @@ Also, ignores heartbeats not from our target system'''
         m = self.mav.messages.get("POSITION_TARGET_GLOBAL_INT", None)
         return mavutil.location(m.lat_int*1e-7, m.lon_int*1e-7, m.alt)
 
+    def current_waypoint(self):
+        m = self.assert_receive_message('MISSION_CURRENT')
+        return m.seq
+
     def distance_to_nav_target(self, use_cached_nav_controller_output=False):
         '''returns distance to waypoint navigation target in metres'''
         m = self.mav.messages.get("NAV_CONTROLLER_OUTPUT", None)
