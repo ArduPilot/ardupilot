@@ -175,8 +175,9 @@ RangeFinder::RangeFinder()
 }
 
 void RangeFinder::convert_params(void) {
-    if (params[0].type.configured_in_storage()) {
-        // _params[0]._type will always be configured in storage after conversion is done the first time
+    if (params[0].type.configured()) {
+        // _params[0]._type will always be configured after conversion is done the first time
+        // or the user has set a type in a defaults.parm file or via apj tool
         return;
     }
 
