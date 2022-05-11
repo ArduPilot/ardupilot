@@ -5301,6 +5301,57 @@ class AutoTestCopter(AutoTest):
             freqs.append(m.PkAvg)
         return numpy.median(numpy.asarray(freqs)), len(freqs)
 
+    def fly_angle_p_boost(self):
+        """Use angle p boost."""
+        # basic gyro sample rate test
+        self.progress("Flying with angle P boost")
+        self.context_push()
+
+        ex = None
+        try:
+            # magic tridge EKF type that dramatically speeds up the test
+            self.set_parameters({
+                "AHRS_EKF_TYPE": 10,
+                "EK2_ENABLE": 0,
+                "EK3_ENABLE": 0,
+                "INS_FAST_SAMPLE": 0,
+                "LOG_BITMASK": 959,
+                "LOG_DISARMED": 0,
+                "ATC_BOOST_THRESH": 1.0,
+                "ATC_ANG_P_BOOST": 5.0,
+                "ATC_RP_PD_BOOST": 5.0,
+            })
+
+            self.reboot_sitl()
+
+            self.takeoff(10, mode="ALT_HOLD")
+            hover_time = 15
+            self.progress("Hovering for %u seconds" % hover_time)
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() < tstart + hover_time:
+                self.mav.recv_match(type='ATTITUDE', blocking=True)
+
+            # fly fast forrest!
+            self.set_rc(3, 1900)
+            self.set_rc(2, 1200)
+            self.wait_groundspeed(5, 1000)
+            self.set_rc(3, 1500)
+            self.set_rc(2, 1500)
+
+            self.do_RTL()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.context_pop()
+
+        # must reboot after we move away from EKF type 10 to EKF2 or EKF3
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def test_gyro_fft_harmonic(self, averaging):
         """Use dynamic harmonic notch to control motor noise with harmonic matching of the first harmonic."""
         # basic gyro sample rate test
@@ -9225,6 +9276,10 @@ class AutoTestCopter(AutoTest):
             Test("DataFlashErase",
                  "Test DataFlash Block backend erase",
                  self.test_dataflash_erase),
+
+            Test("AnglePBoost",
+                 "Test Angle P boost",
+                 self.fly_angle_p_boost),
 
             Test("Callisto",
                  "Test Callisto",
