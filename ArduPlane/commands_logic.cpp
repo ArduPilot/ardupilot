@@ -713,6 +713,10 @@ bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
     uint16_t radius = HIGHBYTE(cmd.p1);
+    if (cmd.type_specific_bits & (1U<<0)) {
+        // special storage handling allows for larger radii
+        radius *= 10;
+    }
     update_loiter(radius);
 
     // LOITER_TURNS makes no sense as VTOL
