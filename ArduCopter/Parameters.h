@@ -667,6 +667,8 @@ public:
     AP_Float                pilot_y_rate;
     AP_Float                pilot_y_expo;
     AP_Int8                 surftrak_mode;
+    AP_Int8                 failsafe_dr_enable;
+    AP_Int16                failsafe_dr_timeout;
 };
 
 extern const AP_Param::Info        var_info[];

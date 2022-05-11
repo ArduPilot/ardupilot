@@ -561,6 +561,9 @@ void Copter::three_hz_loop()
     // check if we've lost terrain data
     failsafe_terrain_check();
 
+    // check for deadreckoning failsafe
+    failsafe_deadreckon_check();
+
 #if AC_FENCE == ENABLED
     // check if we have breached a fence
     fence_check();
