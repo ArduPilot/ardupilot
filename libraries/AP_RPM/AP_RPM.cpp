@@ -104,8 +104,8 @@ PARAMETER_CONVERSION - Added: Aug-2021
 */
 void AP_RPM::convert_params(void)
 {
-    if (_params[0].type.configured_in_storage()) {
-        // _params[0].type will always be configured in storage after conversion is done the first time
+    if (_params[0].type.configured()) {
+        // _params[0].type will always be configured after conversion is done the first time
         return;
     }
 
