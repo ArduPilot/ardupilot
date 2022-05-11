@@ -1604,7 +1604,8 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::GCS_FAILSAFE_SURFACEFAILED:
         case Method::GCS_FAILSAFE_HOLDFAILED:
         case Method::PILOT_INPUT_FAILSAFE:
-            // keep logging for longger if disarmed for a bad reason
+        case Method::DEADRECKON_FAILSAFE:
+            // keep logging for longer if disarmed for a bad reason
             AP::logger().set_long_log_persist(true);
             return;
 
