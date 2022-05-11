@@ -291,6 +291,8 @@ void AP_MotorsMulticopter::output_min()
 // update the throttle input filter
 void AP_MotorsMulticopter::update_throttle_filter()
 {
+    const float last_thr = _throttle_filter.get();
+
     if (armed()) {
         _throttle_filter.apply(_throttle_in, _dt);
         // constrain filtered throttle
@@ -303,6 +305,16 @@ void AP_MotorsMulticopter::update_throttle_filter()
     } else {
         _throttle_filter.reset(0.0f);
     }
+
+    float new_thr = _throttle_filter.get();
+
+    if (!is_equal(last_thr, new_thr)) {
+        _throttle_slew.update(new_thr, AP_HAL::micros());
+    }
+
+    // calculate slope normalized from per-micro
+    const float rate = fabsf(_throttle_slew.slope() * 1e6);
+    _throttle_slew_rate = _throttle_slew_filter.apply(rate, 1.0f / _loop_rate);
 }
 
 // return current_limit as a number from 0 ~ 1 in the range throttle_min to throttle_max
