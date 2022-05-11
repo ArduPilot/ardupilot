@@ -314,6 +314,10 @@ public:
         uint16_t p1;                // general purpose parameter 1
         Content content;
 
+        // for items which store in location, we offer a few more bits
+        // of storage:
+        uint8_t type_specific_bits;  // bitmask of set/unset bits
+
         // return a human-readable interpretation of the ID stored in this command
         const char *type() const;
 
