@@ -718,6 +718,7 @@ void  NavEKF3_core::updateFilterStatus(void)
                                             (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
                                             (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
     filterStatus.flags.initalized = filterStatus.flags.initalized || healthy();
+    filterStatus.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
 }
 
 void NavEKF3_core::runYawEstimatorPrediction()
