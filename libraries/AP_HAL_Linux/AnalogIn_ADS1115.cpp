@@ -17,7 +17,7 @@ bool AnalogSource_ADS1115::set_pin(uint8_t pin)
 
 float AnalogSource_ADS1115::read_average()
 {
-    return read_latest();
+    return voltage_average();
 }
 
 float AnalogSource_ADS1115::read_latest()
@@ -77,7 +77,7 @@ void AnalogIn_ADS1115::_update()
 
     adc_report_s reports[ADS1115_ADC_MAX_CHANNELS];
 
-    size_t rc = _adc->read(reports, 6);
+    size_t rc = _adc->read(reports, ADS1115_ADC_MAX_CHANNELS);
 
     for (size_t i = 0; i < rc; i++) {
         for (uint8_t j=0; j < rc; j++) {
