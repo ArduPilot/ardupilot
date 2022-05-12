@@ -267,7 +267,9 @@ void AP_OSD::init()
         if (!spi_dev) {
             break;
         }
+#if HAL_WITH_OSD_BITMAP
         backend = AP_OSD_MAX7456::probe(*this, std::move(spi_dev));
+#endif
         if (backend == nullptr) {
             break;
         }
