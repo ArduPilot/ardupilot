@@ -292,8 +292,8 @@ void AP_L1_Control::update_waypoint(const struct Location &prev_WP, const struct
         float Nu2 = atan2f(xtrackVel,ltrackVel);
         //Calculate Nu1 angle (Angle to L1 reference point)
         float sine_Nu1 = _crosstrack_error/MAX(_L1_dist, 0.1f);
-        //Limit sine of Nu1 to provide a controlled track capture angle of 45 deg
-        sine_Nu1 = constrain_float(sine_Nu1, -0.7071f, 0.7071f);
+        //Limit output to 90 deg
+        sine_Nu1 = constrain_float(sine_Nu1, -1.0f, 1.0f);
         float Nu1 = asinf(sine_Nu1);
 
         // compute integral error component to converge to a crosstrack of zero when traveling
