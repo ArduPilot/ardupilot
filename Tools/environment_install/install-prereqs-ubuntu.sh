@@ -1,33 +1,50 @@
 #!/bin/bash
-echo "---------- $0 start ----------"
-set -e
-set -x
 
 if [ $EUID == 0 ]; then
     echo "Please do not run this script as root; don't sudo it!"
     exit 1
 fi
 
-OPT="/opt"
-# Ardupilot Tools
-ARDUPILOT_TOOLS="Tools/autotest"
+function show_help {
+    echo "install-prereqs-ubuntu.sh"
+    echo ""
+    echo "Options:"
+    echo "   -h   show this help"
+    echo "   -y   assume \"yes\" as answer to all prompts and run non-interactively"
+    echo "   -q   apt-get no output except for errors"
+    echo "   -3   force use python3"
+}
 
 ASSUME_YES=false
 QUIET=false
-sep="##############################################"
+PYTHON3_FORCE=false
 
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
-while getopts "yq" opt; do
+while getopts "hyq3" opt; do
     case "$opt" in
         \?)
             exit 1
             ;;
+	h)  show_help
+	    exit 0
+	    ;;
         y)  ASSUME_YES=true
             ;;
         q)  QUIET=true
             ;;
+	3)  PYTHON3_DEFAULT=true
+	    ;;
     esac
 done
+
+echo "---------- $0 start ----------"
+set -e
+set -x
+
+sep="##############################################"
+OPT="/opt"
+# Ardupilot Tools
+ARDUPILOT_TOOLS="Tools/autotest"
 
 APT_GET="sudo apt-get"
 if $ASSUME_YES; then
@@ -59,8 +76,14 @@ fi
 
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
-PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
-PIP=pip2
+
+if $PYTHON3_DEFAULT; then
+    PYTHON_V="python3"
+    PIP=pip3
+else
+    PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+    PIP=pip2
+fi
 
 if [ ${RELEASE_CODENAME} == 'xenial' ]; then
     SITLFML_VERSION="2.3v5"
@@ -74,21 +97,27 @@ elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
 elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
+    if ! $PYTHON3_FORCE; then
+	PYTHON_V="python3"
+        PIP=pip3
+    fi
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
+    if ! $PYTHON3_FORCE; then
+        PYTHON_V="python3"
+        PIP=pip3
+    fi
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'hirsute' ] ||
          [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'impish' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
+    if ! $PYTHON3_FORCE; then
+        PYTHON_V="python3"
+        PIP=pip3
+    fi
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
