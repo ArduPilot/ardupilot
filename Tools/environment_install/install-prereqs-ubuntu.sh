@@ -32,7 +32,7 @@ while getopts "hyq3" opt; do
             ;;
         q)  QUIET=true
             ;;
-	3)  PYTHON3_DEFAULT=true
+	3)  PYTHON3_FORCE=true
 	    ;;
     esac
 done
@@ -77,7 +77,7 @@ fi
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
 
-if $PYTHON3_DEFAULT; then
+if $PYTHON3_FORCE; then
     PYTHON_V="python3"
     PIP=pip3
 else
