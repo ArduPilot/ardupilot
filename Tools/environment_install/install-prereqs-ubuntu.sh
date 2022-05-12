@@ -98,7 +98,7 @@ elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; 
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     if ! $PYTHON3_FORCE; then
-	PYTHON_V="python3"
+        PYTHON_V="python3"
         PIP=pip3
     fi
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
