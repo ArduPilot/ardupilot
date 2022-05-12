@@ -97,27 +97,21 @@ elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
 elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    if ! $PYTHON3_FORCE; then
-        PYTHON_V="python3"
-        PIP=pip3
-    fi
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    if ! $PYTHON3_FORCE; then
-        PYTHON_V="python3"
-        PIP=pip3
-    fi
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'hirsute' ] ||
          [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'impish' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    if ! $PYTHON3_FORCE; then
-        PYTHON_V="python3"
-        PIP=pip3
-    fi
+    PYTHON_V="python3"
+    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
