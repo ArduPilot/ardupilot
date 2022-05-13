@@ -10,7 +10,12 @@ void Blimp::default_dead_zones()
     channel_front->set_default_dead_zone(20);
     channel_down->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
-    rc().channel(CH_6)->set_default_dead_zone(0);
+    RC_Channel *rc_knobtune = rc().find_channel_for_option(RC_Channel::AUX_FUNC::KNOB_TUNE);
+    if (rc_knobtune == nullptr) {
+        rc().channel(CH_6)->set_default_dead_zone(0);
+    } else {
+        rc_knobtune->set_default_dead_zone(0);
+    }
 }
 
 void Blimp::init_rc_in()
