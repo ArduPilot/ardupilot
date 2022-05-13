@@ -1,6 +1,6 @@
 [submodule "modules/uavcan"]
 	path = modules/uavcan
-	url = https://github.com/ArduPilot/uavcan.git
+	url = https://github.com/DroneCAN/libuavcan.git
 [submodule "modules/waf"]
 	path = modules/waf
 	url = https://github.com/ArduPilot/waf.git
@@ -19,3 +19,18 @@
 [submodule "modules/libcanard"]
 	path = modules/libcanard
 	url = https://github.com/ArduPilot/libcanard.git
+[submodule "modules/DroneCAN/DSDL"]
+	path = modules/DroneCAN/DSDL
+	url = https://github.com/DroneCAN/DSDL.git
+[submodule "modules/DroneCAN/dronecan_dsdlc"]
+	path = modules/DroneCAN/dronecan_dsdlc
+	url = https://github.com/DroneCAN/dronecan_dsdlc
+[submodule "modules/DroneCAN/libcanard"]
+	path = modules/DroneCAN/libcanard
+	url = https://github.com/DroneCAN/libcanard
+[submodule "modules/DroneCAN/pydronecan"]
+	path = modules/DroneCAN/pydronecan
+	url = https://github.com/DroneCAN/pydronecan
+[submodule "modules/DroneCAN/uavcan"]
+	path = modules/DroneCAN/uavcan
+	url = https://github.com/DroneCAN/libuavcan.git
