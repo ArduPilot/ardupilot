@@ -637,6 +637,10 @@ void AP_Airspeed::update()
     }
 #endif
 
+#if HAL_LOGGING_ENABLED
+    const uint8_t old_primary = primary;
+#endif
+
     // setup primary
     if (healthy(primary_sensor.get())) {
         primary = primary_sensor.get();
@@ -652,6 +656,9 @@ void AP_Airspeed::update()
     check_sensor_failures();
 
 #if HAL_LOGGING_ENABLED
+    if (primary != old_primary) {
+        AP::logger().Write_Event(LogEvent::AIRSPEED_PRIMARY_CHANGED);
+    }
     if (_log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         Log_Airspeed();
     }
