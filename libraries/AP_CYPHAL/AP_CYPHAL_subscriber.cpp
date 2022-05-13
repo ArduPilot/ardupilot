@@ -132,8 +132,8 @@ void UavcanHeartbeatSubscriber::handler(const CanardRxTransfer* transfer)
 UavcanGetInfoRequest::UavcanGetInfoRequest(CanardInstance &ins, CanardTxQueue& tx_queue) :
     UavcanRequestSubscriber(ins, tx_queue, uavcan_node_GetInfo_1_0_FIXED_PORT_ID_)
 {
-    _node_status.protocol_version.major = CANARD_UAVCAN_SPECIFICATION_VERSION_MAJOR;
-    _node_status.protocol_version.minor = CANARD_UAVCAN_SPECIFICATION_VERSION_MINOR;
+    _node_status.protocol_version.major = CANARD_CYPHAL_SPECIFICATION_VERSION_MAJOR;
+    _node_status.protocol_version.minor = CANARD_CYPHAL_SPECIFICATION_VERSION_MINOR;
     _node_status.hardware_version.major = 0;
     _node_status.hardware_version.minor = 1;
     _node_status.software_version.major = 0;
