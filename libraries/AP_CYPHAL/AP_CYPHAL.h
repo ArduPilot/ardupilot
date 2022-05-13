@@ -31,19 +31,16 @@
 #include "canard.h"
 #include "o1heap.h"
 
-#include "uavcan/node/GetInfo_1_0.h"
-
-
-#ifndef UAVCAN_TX_QUEUE_FRAME_SIZE
-#define UAVCAN_TX_QUEUE_FRAME_SIZE      512
+#ifndef CYPHAL_TX_QUEUE_FRAME_SIZE
+#define CYPHAL_TX_QUEUE_FRAME_SIZE      512
 #endif
 
-#ifndef UAVCAN_STACK_SIZE
-#define UAVCAN_STACK_SIZE               768
+#ifndef CYPHAL_STACK_SIZE
+#define CYPHAL_STACK_SIZE               768
 #endif
 
-#ifndef UAVCAN_HEAP_SIZE
-#define UAVCAN_HEAP_SIZE                (1024 * 3)
+#ifndef CYPHAL_HEAP_SIZE
+#define CYPHAL_HEAP_SIZE                (1024 * 3)
 #endif
 
 
@@ -55,8 +52,8 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // Return uavcan from @driver_index or nullptr if it's not ready or doesn't exist
-    static AP_CYPHAL *get_uavcan(uint8_t driver_index);
+    // Return cyphal from @driver_index or nullptr if it's not ready or doesn't exist
+    static AP_CYPHAL *get_cyphal(uint8_t driver_index);
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
@@ -86,13 +83,13 @@ private:
     void processReceivedTransfer(const uint8_t iface_index, const CanardRxTransfer* transfer);
 
     ///< Application layer
-    AP_Int16 _parameters_table[UavcanRegisters::NUMBER_OF_REGISTERS];
+    AP_Int16 _parameters_table[CyphalRegisters::NUMBER_OF_REGISTERS];
 
-    UavcanRegisters _registers;
-    UavcanSubscriberManager subscriber_manager;
-    UavcanPublisherManager publisher_manager;
+    CyphalRegisters _registers;
+    CyphalSubscriberManager subscriber_manager;
+    CyphalPublisherManager publisher_manager;
 
-    UavcanEscController _esc_controller;
+    CyphalEscController _esc_controller;
 };
 
 #endif // HAL_ENABLE_CYPHAL_DRIVERS

@@ -25,22 +25,22 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 
-void UavcanSubscriberManager::init(CanardInstance &ins, CanardTxQueue& tx_queue)
+void CyphalSubscriberManager::init(CanardInstance &ins, CanardTxQueue& tx_queue)
 {
-    UavcanBaseSubscriber *subsriber;
+    CyphalBaseSubscriber *subsriber;
 
     ///< Minimal requrement
-    subsriber = new UavcanHeartbeatSubscriber(ins, tx_queue);
+    subsriber = new CyphalHeartbeatSubscriber(ins, tx_queue);
     add_subscriber(subsriber);
 
-    subsriber = new UavcanGetInfoRequest(ins, tx_queue);
+    subsriber = new CyphalGetInfoRequest(ins, tx_queue);
     add_subscriber(subsriber);
 
-    subsriber = new UavcanNodeExecuteCommandRequest(ins, tx_queue);
+    subsriber = new CyphalNodeExecuteCommandRequest(ins, tx_queue);
     add_subscriber(subsriber);
 }
 
-bool UavcanSubscriberManager::add_subscriber(UavcanBaseSubscriber *subsriber)
+bool CyphalSubscriberManager::add_subscriber(CyphalBaseSubscriber *subsriber)
 {
     if (subsriber == nullptr || number_of_subscribers >= max_number_of_subscribers) {
         return false;
@@ -53,7 +53,7 @@ bool UavcanSubscriberManager::add_subscriber(UavcanBaseSubscriber *subsriber)
 }
 
 
-void UavcanSubscriberManager::process_all(const CanardRxTransfer* transfer)
+void CyphalSubscriberManager::process_all(const CanardRxTransfer* transfer)
 {
     auto port_id = transfer->metadata.port_id;
     for (uint_fast8_t sub_idx = 0; sub_idx < number_of_subscribers; sub_idx++) {
@@ -65,12 +65,12 @@ void UavcanSubscriberManager::process_all(const CanardRxTransfer* transfer)
 }
 
 
-CanardPortID UavcanBaseSubscriber::get_port_id()
+CanardPortID CyphalBaseSubscriber::get_port_id()
 {
     return _port_id;
 }
 
-void UavcanBaseSubscriber::subscribeOnMessage(const size_t extent)
+void CyphalBaseSubscriber::subscribeOnMessage(const size_t extent)
 {
     (void) canardRxSubscribe(&_canard,
                              CanardTransferKindMessage,
@@ -80,7 +80,7 @@ void UavcanBaseSubscriber::subscribeOnMessage(const size_t extent)
                              &_subscription);
 }
 
-void UavcanBaseSubscriber::subscribeOnRequest(const size_t extent)
+void CyphalBaseSubscriber::subscribeOnRequest(const size_t extent)
 {
     (void) canardRxSubscribe(&_canard,
                              CanardTransferKindRequest,
@@ -91,7 +91,7 @@ void UavcanBaseSubscriber::subscribeOnRequest(const size_t extent)
 }
 
 
-void UavcanRequestSubscriber::push_response(size_t buf_size, uint8_t* buf)
+void CyphalRequestSubscriber::push_response(size_t buf_size, uint8_t* buf)
 {
     const CanardMicrosecond tx_deadline_usec = AP_HAL::micros() + 100000;
     auto result = canardTxPush(&_tx_queue, &_canard, tx_deadline_usec, &_transfer_metadata, buf_size, buf);
@@ -111,17 +111,17 @@ void UavcanRequestSubscriber::push_response(size_t buf_size, uint8_t* buf)
 /**
  * @note uavcan.node.Heartbeat.1.0
  */
-UavcanHeartbeatSubscriber::UavcanHeartbeatSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue) :
-    UavcanBaseSubscriber(ins, tx_queue, uavcan_node_Heartbeat_1_0_FIXED_PORT_ID_)
+CyphalHeartbeatSubscriber::CyphalHeartbeatSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue) :
+    CyphalBaseSubscriber(ins, tx_queue, uavcan_node_Heartbeat_1_0_FIXED_PORT_ID_)
 {
 }
 
-void UavcanHeartbeatSubscriber::subscribe()
+void CyphalHeartbeatSubscriber::subscribe()
 {
     subscribeOnMessage(uavcan_node_Heartbeat_1_0_EXTENT_BYTES_);
 }
 
-void UavcanHeartbeatSubscriber::handler(const CanardRxTransfer* transfer)
+void CyphalHeartbeatSubscriber::handler(const CanardRxTransfer* transfer)
 {
 }
 
@@ -129,8 +129,8 @@ void UavcanHeartbeatSubscriber::handler(const CanardRxTransfer* transfer)
 /**
  * @note uavcan.node.GetInfo.1.0
  */
-UavcanGetInfoRequest::UavcanGetInfoRequest(CanardInstance &ins, CanardTxQueue& tx_queue) :
-    UavcanRequestSubscriber(ins, tx_queue, uavcan_node_GetInfo_1_0_FIXED_PORT_ID_)
+CyphalGetInfoRequest::CyphalGetInfoRequest(CanardInstance &ins, CanardTxQueue& tx_queue) :
+    CyphalRequestSubscriber(ins, tx_queue, uavcan_node_GetInfo_1_0_FIXED_PORT_ID_)
 {
     _node_status.protocol_version.major = CANARD_CYPHAL_SPECIFICATION_VERSION_MAJOR;
     _node_status.protocol_version.minor = CANARD_CYPHAL_SPECIFICATION_VERSION_MINOR;
@@ -144,17 +144,17 @@ UavcanGetInfoRequest::UavcanGetInfoRequest(CanardInstance &ins, CanardTxQueue& t
     memcpy(_node_status.name.elements, node_name, _node_status.name.count);
 }
 
-void UavcanGetInfoRequest::subscribe()
+void CyphalGetInfoRequest::subscribe()
 {
     subscribeOnRequest(uavcan_node_GetInfo_Request_1_0_EXTENT_BYTES_);
 }
 
-void UavcanGetInfoRequest::handler(const CanardRxTransfer* transfer)
+void CyphalGetInfoRequest::handler(const CanardRxTransfer* transfer)
 {
     makeResponse(transfer);
 }
 
-void UavcanGetInfoRequest::makeResponse(const CanardRxTransfer* transfer)
+void CyphalGetInfoRequest::makeResponse(const CanardRxTransfer* transfer)
 {
     _transfer_metadata.transfer_id = transfer->metadata.transfer_id;
     _transfer_metadata.remote_node_id = transfer->metadata.remote_node_id;
@@ -171,17 +171,17 @@ void UavcanGetInfoRequest::makeResponse(const CanardRxTransfer* transfer)
 /**
  * @note uavcan.node.ExecuteCommand
  */
-void UavcanNodeExecuteCommandRequest::subscribe()
+void CyphalNodeExecuteCommandRequest::subscribe()
 {
     subscribeOnRequest(uavcan_node_ExecuteCommand_Request_1_0_EXTENT_BYTES_);
 }
 
-void UavcanNodeExecuteCommandRequest::handler(const CanardRxTransfer* transfer)
+void CyphalNodeExecuteCommandRequest::handler(const CanardRxTransfer* transfer)
 {
     makeResponse(transfer);
 }
 
-void UavcanNodeExecuteCommandRequest::makeResponse(const CanardRxTransfer* transfer)
+void CyphalNodeExecuteCommandRequest::makeResponse(const CanardRxTransfer* transfer)
 {
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: ExecuteCommand not implemented yet");
 }

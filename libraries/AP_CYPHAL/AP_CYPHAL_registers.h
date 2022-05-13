@@ -24,7 +24,7 @@
 #include "AP_CYPHAL_subscriber.h"
 
 
-enum UavcanRegister_t {
+enum CyphalRegister_t {
     UAVCAN_PUB_NODE_ID,
 
     UAVCAN_PUB_NOTE_RESPONSE_ID,
@@ -57,14 +57,14 @@ enum UavcanRegister_t {
 };
 
 
-class UavcanRegisters
+class CyphalRegisters
 {
 public:
     static constexpr uint8_t NUMBER_OF_REGISTERS = 24;
-    static constexpr uint16_t UAVCAN_INVALID_REGISTER_VALUE = 65535;
+    static constexpr uint16_t CYPHAL_INVALID_REGISTER_VALUE = 65535;
 
-    UavcanRegisters(AP_Int16 (&parameters_table)[NUMBER_OF_REGISTERS]) : _parameters_table(parameters_table) {}
-    bool init(UavcanSubscriberManager &sub_manager, CanardInstance &ins, CanardTxQueue& tx_queue);
+    CyphalRegisters(AP_Int16 (&parameters_table)[NUMBER_OF_REGISTERS]) : _parameters_table(parameters_table) {}
+    bool init(CyphalSubscriberManager &sub_manager, CanardInstance &ins, CanardTxQueue& tx_queue);
 
     // Return size of register name, otherwise 0
     uint8_t getRegisterNameByIndex(uint8_t register_index, uint8_t register_name[]);
@@ -85,18 +85,18 @@ private:
 /**
  * @note uavcan.register.Access.1.0
  */
-class UavcanRegisterAccessRequest: public UavcanRequestSubscriber
+class CyphalRegisterAccessRequest: public CyphalRequestSubscriber
 {
 public:
-    UavcanRegisterAccessRequest(CanardInstance &ins, CanardTxQueue& tx_queue, UavcanRegisters &uavcan_registers) :
-        UavcanRequestSubscriber(ins, tx_queue, uavcan_register_Access_1_0_FIXED_PORT_ID_),
+    CyphalRegisterAccessRequest(CanardInstance &ins, CanardTxQueue& tx_queue, CyphalRegisters &uavcan_registers) :
+        CyphalRequestSubscriber(ins, tx_queue, uavcan_register_Access_1_0_FIXED_PORT_ID_),
         _registers(uavcan_registers) {};
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 private:
     uavcan_register_Access_Request_1_0 _request_msg;
     uavcan_register_Access_Response_1_0 response_msg;
-    UavcanRegisters &_registers;
+    CyphalRegisters &_registers;
 
     int8_t parseRequest(const CanardRxTransfer* transfer);
     void makeResponse(const CanardRxTransfer* transfer, int8_t reg_index);
@@ -106,17 +106,17 @@ private:
 /**
  * @note uavcan.register.List.1.0
  */
-class UavcanRegisterListRequest: public UavcanRequestSubscriber
+class CyphalRegisterListRequest: public CyphalRequestSubscriber
 {
 public:
-    UavcanRegisterListRequest(CanardInstance &ins, CanardTxQueue& tx_queue, UavcanRegisters &uavcan_registers) :
-        UavcanRequestSubscriber(ins, tx_queue, uavcan_register_List_1_0_FIXED_PORT_ID_),
+    CyphalRegisterListRequest(CanardInstance &ins, CanardTxQueue& tx_queue, CyphalRegisters &uavcan_registers) :
+        CyphalRequestSubscriber(ins, tx_queue, uavcan_register_List_1_0_FIXED_PORT_ID_),
         _registers(uavcan_registers) {};
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 private:
     uavcan_register_List_Response_1_0 _response_msg = {};
-    UavcanRegisters &_registers;
+    CyphalRegisters &_registers;
 
     uint16_t parseRequest(const CanardRxTransfer* transfer);
     void makeResponse(const CanardRxTransfer* transfer, uint16_t index);

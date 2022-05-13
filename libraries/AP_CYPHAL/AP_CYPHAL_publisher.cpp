@@ -22,19 +22,19 @@
 #include <AP_CYPHAL/AP_CYPHAL_registers.h>
 
 
-void UavcanPublisherManager::init(CanardInstance &ins, CanardTxQueue& tx_queue)
+void CyphalPublisherManager::init(CanardInstance &ins, CanardTxQueue& tx_queue)
 {
-    UavcanBasePublisher *publisher;
+    CyphalBasePublisher *publisher;
 
     ///< Minimal requrement
-    publisher = new UavcanHeartbeatPublisher(ins, tx_queue);
+    publisher = new CyphalHeartbeatPublisher(ins, tx_queue);
     add_publisher(publisher);
 
-    publisher = new UavcanPortListPublisher(ins, tx_queue);
+    publisher = new CyphalPortListPublisher(ins, tx_queue);
     add_publisher(publisher);
 }
 
-bool UavcanPublisherManager::add_publisher(UavcanBasePublisher *publisher)
+bool CyphalPublisherManager::add_publisher(CyphalBasePublisher *publisher)
 {
     if (publisher == nullptr || number_of_publishers >= max_number_of_publishers) {
         return false;
@@ -45,7 +45,7 @@ bool UavcanPublisherManager::add_publisher(UavcanBasePublisher *publisher)
     return true;
 }
 
-void UavcanPublisherManager::process_all()
+void CyphalPublisherManager::process_all()
 {
     for (uint_fast8_t pub_idx = 0; pub_idx < number_of_publishers; pub_idx++) {
         if (publishers[pub_idx] != nullptr && publishers[pub_idx]->get_port_id() != 0) {
@@ -55,7 +55,7 @@ void UavcanPublisherManager::process_all()
 }
 
 
-void UavcanBasePublisher::push(size_t buf_size, uint8_t* buf)
+void CyphalBasePublisher::push(size_t buf_size, uint8_t* buf)
 {
     auto result = canardTxPush(&_tx_queue, &_canard, 0, &_transfer_metadata, buf_size, buf);
     if (result < 0) {
@@ -70,8 +70,8 @@ void UavcanBasePublisher::push(size_t buf_size, uint8_t* buf)
 /**
  * @note uavcan.node.Heartbeat_1_0
  */
-UavcanHeartbeatPublisher::UavcanHeartbeatPublisher(CanardInstance &ins, CanardTxQueue& tx_queue) :
-    UavcanBasePublisher(ins, tx_queue, uavcan_node_Heartbeat_1_0_FIXED_PORT_ID_)
+CyphalHeartbeatPublisher::CyphalHeartbeatPublisher(CanardInstance &ins, CanardTxQueue& tx_queue) :
+    CyphalBasePublisher(ins, tx_queue, uavcan_node_Heartbeat_1_0_FIXED_PORT_ID_)
 {
     msg.health.value = uavcan_node_Health_1_0_NOMINAL;
     msg.mode.value = uavcan_node_Mode_1_0_OPERATIONAL;
@@ -84,7 +84,7 @@ UavcanHeartbeatPublisher::UavcanHeartbeatPublisher(CanardInstance &ins, CanardTx
     _transfer_metadata.transfer_id = 0;
 }
 
-void UavcanHeartbeatPublisher::update()
+void CyphalHeartbeatPublisher::update()
 {
     if (AP_HAL::millis() < next_publish_time_ms) {
         return;
@@ -94,7 +94,7 @@ void UavcanHeartbeatPublisher::update()
     publish();
 }
 
-void UavcanHeartbeatPublisher::publish()
+void CyphalHeartbeatPublisher::publish()
 {
     msg.uptime = AP_HAL::millis() / 1000;
 
@@ -112,8 +112,8 @@ void UavcanHeartbeatPublisher::publish()
 /**
  * @note uavcan.node.port.List_0_1
  */
-UavcanPortListPublisher::UavcanPortListPublisher(CanardInstance &ins, CanardTxQueue& tx_queue) :
-    UavcanBasePublisher(ins, tx_queue, uavcan_node_port_List_0_1_FIXED_PORT_ID_)
+CyphalPortListPublisher::CyphalPortListPublisher(CanardInstance &ins, CanardTxQueue& tx_queue) :
+    CyphalBasePublisher(ins, tx_queue, uavcan_node_port_List_0_1_FIXED_PORT_ID_)
 {
     _transfer_metadata.priority = CanardPriorityNominal;
     _transfer_metadata.transfer_kind = CanardTransferKindMessage;
@@ -122,7 +122,7 @@ UavcanPortListPublisher::UavcanPortListPublisher(CanardInstance &ins, CanardTxQu
     _transfer_metadata.transfer_id = 0;
 }
 
-void UavcanPortListPublisher::update()
+void CyphalPortListPublisher::update()
 {
     if (AP_HAL::millis() < next_publish_time_ms) {
         return;
@@ -132,7 +132,7 @@ void UavcanPortListPublisher::update()
     publish();
 }
 
-void UavcanPortListPublisher::publish()
+void CyphalPortListPublisher::publish()
 {
     ///< @todo How much bits does it need? 8466?
     // uint8_t buf[uavcan_node_port_List_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];

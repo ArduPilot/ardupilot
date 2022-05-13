@@ -29,28 +29,28 @@
 #include "uavcan/_register/List_1_0.h"
 
 
-class UavcanBaseSubscriber;
+class CyphalBaseSubscriber;
 
 
-class UavcanSubscriberManager
+class CyphalSubscriberManager
 {
 public:
-    UavcanSubscriberManager() {};
-    UavcanSubscriberManager(const UavcanSubscriberManager&) = delete;
+    CyphalSubscriberManager() {};
+    CyphalSubscriberManager(const CyphalSubscriberManager&) = delete;
     void init(CanardInstance &ins, CanardTxQueue& tx_queue);
     void process_all(const CanardRxTransfer *transfer);
-    bool add_subscriber(UavcanBaseSubscriber *subsriber);
+    bool add_subscriber(CyphalBaseSubscriber *subsriber);
 private:
     static constexpr uint8_t max_number_of_subscribers = 17;    /// default (5) + esc (4*3)
     uint8_t number_of_subscribers = 0;
-    UavcanBaseSubscriber* subscribers[max_number_of_subscribers];
+    CyphalBaseSubscriber* subscribers[max_number_of_subscribers];
 };
 
 
-class UavcanBaseSubscriber
+class CyphalBaseSubscriber
 {
 public:
-    UavcanBaseSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
+    CyphalBaseSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
         _canard(ins), _tx_queue(tx_queue), _port_id(port_id) {};
     CanardPortID get_port_id();
     virtual void subscribe() = 0;
@@ -66,11 +66,11 @@ protected:
 };
 
 
-class UavcanRequestSubscriber: public UavcanBaseSubscriber
+class CyphalRequestSubscriber: public CyphalBaseSubscriber
 {
 public:
-    UavcanRequestSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
-        UavcanBaseSubscriber(ins, tx_queue, port_id)
+    CyphalRequestSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
+        CyphalBaseSubscriber(ins, tx_queue, port_id)
     {
         _transfer_metadata.priority = CanardPriorityNominal;
         _transfer_metadata.transfer_kind = CanardTransferKindResponse;
@@ -85,10 +85,10 @@ protected:
 /**
  * @note uavcan.node.Heartbeat.1.0
  */
-class UavcanHeartbeatSubscriber: public UavcanBaseSubscriber
+class CyphalHeartbeatSubscriber: public CyphalBaseSubscriber
 {
 public:
-    UavcanHeartbeatSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue);
+    CyphalHeartbeatSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue);
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 };
@@ -97,10 +97,10 @@ public:
 /**
  * @note uavcan.node.GetInfo.1.0
  */
-class UavcanGetInfoRequest: public UavcanRequestSubscriber
+class CyphalGetInfoRequest: public CyphalRequestSubscriber
 {
 public:
-    UavcanGetInfoRequest(CanardInstance &ins, CanardTxQueue& tx_queue);
+    CyphalGetInfoRequest(CanardInstance &ins, CanardTxQueue& tx_queue);
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 private:
@@ -112,11 +112,11 @@ private:
 /**
  * @note uavcan.node.ExecuteCommand
  */
-class UavcanNodeExecuteCommandRequest: public UavcanRequestSubscriber
+class CyphalNodeExecuteCommandRequest: public CyphalRequestSubscriber
 {
 public:
-    UavcanNodeExecuteCommandRequest(CanardInstance &ins, CanardTxQueue& tx_queue) :
-        UavcanRequestSubscriber(ins, tx_queue, uavcan_node_ExecuteCommand_1_0_FIXED_PORT_ID_) {};
+    CyphalNodeExecuteCommandRequest(CanardInstance &ins, CanardTxQueue& tx_queue) :
+        CyphalRequestSubscriber(ins, tx_queue, uavcan_node_ExecuteCommand_1_0_FIXED_PORT_ID_) {};
     virtual void subscribe() override;
     virtual void handler(const CanardRxTransfer* transfer) override;
 private:

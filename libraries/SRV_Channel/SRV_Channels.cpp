@@ -571,7 +571,7 @@ void SRV_Channels::push()
 #endif
 #if HAL_ENABLE_CYPHAL_DRIVERS
             case AP_CANManager::Driver_Type_CYPHAL: {
-                AP_CYPHAL *ap_cyphal = AP_CYPHAL::get_uavcan(i);
+                AP_CYPHAL *ap_cyphal = AP_CYPHAL::get_cyphal(i);
                 if (ap_cyphal == nullptr) {
                     continue;
                 }

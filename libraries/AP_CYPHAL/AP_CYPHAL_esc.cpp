@@ -26,17 +26,17 @@
 extern const AP_HAL::HAL& hal;
 
 
-bool UavcanEscController::init(UavcanSubscriberManager &sub_manager,
-                               UavcanPublisherManager &pub_manager,
+bool CyphalEscController::init(CyphalSubscriberManager &sub_manager,
+                               CyphalPublisherManager &pub_manager,
                                CanardInstance &ins,
                                CanardTxQueue& tx_queue)
 {
-    _pub_setpoint = new UavcanSetpointPublisher(ins, tx_queue, _registers.getPortIdByIndex(UAVCAN_PUB_SETPOINT_ID));
+    _pub_setpoint = new CyphalSetpointPublisher(ins, tx_queue, _registers.getPortIdByIndex(UAVCAN_PUB_SETPOINT_ID));
     if (!pub_manager.add_publisher(_pub_setpoint)) {
         return false;
     }
 
-    _pub_readiness = new UavcanReadinessPublisher(ins, tx_queue, _registers.getPortIdByIndex(UAVCAN_PUB_READINESS_ID));
+    _pub_readiness = new CyphalReadinessPublisher(ins, tx_queue, _registers.getPortIdByIndex(UAVCAN_PUB_READINESS_ID));
     if (!pub_manager.add_publisher(_pub_readiness)) {
         return false;
     }
@@ -65,19 +65,19 @@ bool UavcanEscController::init(UavcanSubscriberManager &sub_manager,
     int16_t port_id;
     for (auto esc_idx = 0; esc_idx < 4; esc_idx++) {
         port_id = _registers.getPortIdByIndex(power_register_indexes[esc_idx]);
-        _sub_power[esc_idx] = new UavcanElectricityPowerTsSubscriber(ins, tx_queue, port_id, esc_idx);
+        _sub_power[esc_idx] = new CyphalPowerSubscriber(ins, tx_queue, port_id, esc_idx);
         if (!sub_manager.add_subscriber(_sub_power[esc_idx])) {
             return false;
         }
 
         port_id = _registers.getPortIdByIndex(dynamics_register_indexes[esc_idx]);
-        _sub_dynamics[esc_idx] = new UavcanDynamicsSubscriber(ins, tx_queue, port_id, esc_idx);
+        _sub_dynamics[esc_idx] = new CyphalDynamicsSubscriber(ins, tx_queue, port_id, esc_idx);
         if (!sub_manager.add_subscriber(_sub_dynamics[esc_idx])) {
             return false;
         }
 
         port_id = _registers.getPortIdByIndex(status_register_indexes[esc_idx]);
-        _sub_status[esc_idx] = new UavcanStatusSubscriber(ins, tx_queue, port_id, esc_idx);
+        _sub_status[esc_idx] = new CyphalStatusSubscriber(ins, tx_queue, port_id, esc_idx);
         if (!sub_manager.add_subscriber(_sub_status[esc_idx])) {
             return false;
         }
@@ -88,7 +88,7 @@ bool UavcanEscController::init(UavcanSubscriberManager &sub_manager,
 }
 
 
-void UavcanEscController::SRV_push_servos()
+void CyphalEscController::SRV_push_servos()
 {
     if (!_is_inited) {
         if (AP_HAL::millis() > last_log_ts_ms + 5000) {
@@ -117,12 +117,12 @@ void UavcanEscController::SRV_push_servos()
 /**
  * @note reg.udral.physics.dynamics.rotation.PlanarTs_0_1
  */
-void UavcanDynamicsSubscriber::subscribe()
+void CyphalDynamicsSubscriber::subscribe()
 {
     subscribeOnMessage(reg_udral_physics_dynamics_rotation_PlanarTs_0_1_EXTENT_BYTES_);
 }
 
-void UavcanDynamicsSubscriber::handler(const CanardRxTransfer* transfer)
+void CyphalDynamicsSubscriber::handler(const CanardRxTransfer* transfer)
 {
     const uint8_t* payload = static_cast<const uint8_t*>(transfer->payload);
     size_t payload_len = transfer->payload_size;
@@ -140,12 +140,12 @@ void UavcanDynamicsSubscriber::handler(const CanardRxTransfer* transfer)
 /**
  * @note reg.udral.physics.electricity.PowerTs_0_1
  */
-void UavcanElectricityPowerTsSubscriber::subscribe()
+void CyphalPowerSubscriber::subscribe()
 {
     subscribeOnMessage(reg_udral_physics_electricity_PowerTs_0_1_EXTENT_BYTES_);
 }
 
-void UavcanElectricityPowerTsSubscriber::handler(const CanardRxTransfer* transfer)
+void CyphalPowerSubscriber::handler(const CanardRxTransfer* transfer)
 {
     const uint8_t* payload = static_cast<const uint8_t*>(transfer->payload);
     size_t payload_len = transfer->payload_size;
@@ -165,12 +165,12 @@ void UavcanElectricityPowerTsSubscriber::handler(const CanardRxTransfer* transfe
 /**
  * @note reg.udral.service.actuator.common.Status_0_1
  */
-void UavcanStatusSubscriber::subscribe()
+void CyphalStatusSubscriber::subscribe()
 {
     subscribeOnMessage(reg_udral_service_actuator_common_Status_0_1_EXTENT_BYTES_);
 }
 
-void UavcanStatusSubscriber::handler(const CanardRxTransfer* transfer)
+void CyphalStatusSubscriber::handler(const CanardRxTransfer* transfer)
 {
     const uint8_t* payload = static_cast<const uint8_t*>(transfer->payload);
     size_t payload_len = transfer->payload_size;
@@ -189,22 +189,22 @@ void UavcanStatusSubscriber::handler(const CanardRxTransfer* transfer)
 /**
  * @note reg.udral.service.actuator.common.sp.*
  */
-UavcanSetpointPublisher::UavcanSetpointPublisher(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
-    UavcanBasePublisher(ins, tx_queue, port_id)
+CyphalSetpointPublisher::CyphalSetpointPublisher(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
+    CyphalBasePublisher(ins, tx_queue, port_id)
 {
     _transfer_metadata.priority = CanardPriorityNominal;
     _transfer_metadata.transfer_kind = CanardTransferKindMessage;
     _transfer_metadata.remote_node_id = CANARD_NODE_ID_UNSET;
 }
 
-void UavcanSetpointPublisher::set_setpoint(SrvConfig *srv_config)
+void CyphalSetpointPublisher::set_setpoint(SrvConfig *srv_config)
 {
     for (uint_fast8_t sp_idx = 0; sp_idx < 4; sp_idx++) {
         _vector4_sp.value[sp_idx] = (hal.rcout->scale_esc_to_unity(srv_config[sp_idx].pulse) + 1.0) / 2.0;
     }
 }
 
-void UavcanSetpointPublisher::update()
+void CyphalSetpointPublisher::update()
 {
     if (AP_HAL::millis() < next_publish_time_ms) {
         return;
@@ -214,7 +214,7 @@ void UavcanSetpointPublisher::update()
     publish();
 }
 
-void UavcanSetpointPublisher::publish()
+void CyphalSetpointPublisher::publish()
 {
     uint8_t buf[reg_udral_service_actuator_common_sp_Vector4_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_];
     size_t buf_size = reg_udral_service_actuator_common_sp_Vector4_0_1_SERIALIZATION_BUFFER_SIZE_BYTES_;
@@ -233,8 +233,8 @@ void UavcanSetpointPublisher::publish()
 /**
  * @note reg.udral.service.common_Readiness_0_1
  */
-UavcanReadinessPublisher::UavcanReadinessPublisher(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
-    UavcanBasePublisher(ins, tx_queue, port_id)
+CyphalReadinessPublisher::CyphalReadinessPublisher(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
+    CyphalBasePublisher(ins, tx_queue, port_id)
 {
     _transfer_metadata.priority = CanardPriorityNominal;
     _transfer_metadata.transfer_kind = CanardTransferKindMessage;
@@ -243,7 +243,7 @@ UavcanReadinessPublisher::UavcanReadinessPublisher(CanardInstance &ins, CanardTx
     _readiness.value = reg_udral_service_common_Readiness_0_1_SLEEP;
 }
 
-void UavcanReadinessPublisher::update_readiness()
+void CyphalReadinessPublisher::update_readiness()
 {
     if (hal.util->safety_switch_state() == AP_HAL::Util::safety_state::SAFETY_NONE) {
         _readiness.value = reg_udral_service_common_Readiness_0_1_SLEEP;
@@ -254,7 +254,7 @@ void UavcanReadinessPublisher::update_readiness()
     }
 }
 
-void UavcanReadinessPublisher::update()
+void CyphalReadinessPublisher::update()
 {
     if (AP_HAL::millis() < next_publish_time_ms) {
         return;
@@ -264,7 +264,7 @@ void UavcanReadinessPublisher::update()
     publish();
 }
 
-void UavcanReadinessPublisher::publish()
+void CyphalReadinessPublisher::publish()
 {
     _transfer_metadata.port_id = _port_id;
 

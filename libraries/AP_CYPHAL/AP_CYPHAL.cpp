@@ -32,8 +32,8 @@ extern const AP_HAL::HAL& hal;
 // table of user settable CAN bus parameters
 const AP_Param::GroupInfo AP_CYPHAL::var_info[] = {
     // @Param: NODE
-    // @DisplayName: UAVCAN node that is used for this network
-    // @Description: UAVCAN node should be set implicitly
+    // @DisplayName: Cyphal node that is used for this network
+    // @Description: Cyphal node should be set implicitly
     // @Range: 1 250
     // @User: Advanced
     AP_GROUPINFO("NODE",    1, AP_CYPHAL, _parameters_table[0], 10),
@@ -208,7 +208,7 @@ const AP_Param::GroupInfo AP_CYPHAL::var_info[] = {
 
 
 ///< Base must be aligned for O1HEAP_ALIGNMENT byes. Otherwise o1heapInit may fail!
-uint8_t base[UAVCAN_HEAP_SIZE] __attribute__ ((aligned (O1HEAP_ALIGNMENT)));
+uint8_t base[CYPHAL_HEAP_SIZE] __attribute__ ((aligned (O1HEAP_ALIGNMENT)));
 
 static O1HeapInstance* my_allocator;
 
@@ -230,7 +230,7 @@ void memFree(CanardInstance* const canard_, void* const pointer)
 
 
 
-AP_CYPHAL *AP_CYPHAL::get_uavcan(uint8_t driver_index)
+AP_CYPHAL *AP_CYPHAL::get_cyphal(uint8_t driver_index)
 {
     if (driver_index >= AP::can().get_num_drivers() ||
         AP::can().get_driver_type(driver_index) != AP_CANManager::Driver_Type_CYPHAL) {
@@ -245,7 +245,7 @@ void AP_CYPHAL::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    my_allocator = o1heapInit(base, UAVCAN_HEAP_SIZE);
+    my_allocator = o1heapInit(base, CYPHAL_HEAP_SIZE);
     if (NULL == my_allocator) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: o1heapInit() failed");
         return;
@@ -253,7 +253,7 @@ void AP_CYPHAL::init(uint8_t driver_index, bool enable_filters)
 
     _canard = canardInit(&memAllocate, &memFree);
     _canard.node_id = 42;
-    _tx_queue = canardTxInit(UAVCAN_TX_QUEUE_FRAME_SIZE, CANARD_MTU_CAN_CLASSIC);
+    _tx_queue = canardTxInit(CYPHAL_TX_QUEUE_FRAME_SIZE, CANARD_MTU_CAN_CLASSIC);
 
     publisher_manager.init(_canard, _tx_queue);
     subscriber_manager.init(_canard, _tx_queue);
@@ -263,7 +263,7 @@ void AP_CYPHAL::init(uint8_t driver_index, bool enable_filters)
 
     bool is_thread_created = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CYPHAL::loop, void),
                              _thread_name,
-                             UAVCAN_STACK_SIZE,
+                             CYPHAL_STACK_SIZE,
                              AP_HAL::Scheduler::PRIORITY_CAN,
                              0);
     if (!is_thread_created) {

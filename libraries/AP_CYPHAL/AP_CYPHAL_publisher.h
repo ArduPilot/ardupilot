@@ -27,30 +27,30 @@
 #include "uavcan/node/GetInfo_1_0.h"
 
 
-class UavcanBasePublisher;
+class CyphalBasePublisher;
 
 
-class UavcanPublisherManager
+class CyphalPublisherManager
 {
 public:
-    UavcanPublisherManager() {};
+    CyphalPublisherManager() {};
     void init(CanardInstance &ins, CanardTxQueue& tx_queue);
 
     // return true in sucess, otherwise false
-    bool add_publisher(UavcanBasePublisher *publisher);
+    bool add_publisher(CyphalBasePublisher *publisher);
 
     void process_all();
 private:
     static constexpr uint8_t max_number_of_publishers = 4;
     uint8_t number_of_publishers = 0;
-    UavcanBasePublisher *publishers[max_number_of_publishers];
+    CyphalBasePublisher *publishers[max_number_of_publishers];
 };
 
 
-class UavcanBasePublisher
+class CyphalBasePublisher
 {
 public:
-    UavcanBasePublisher(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
+    CyphalBasePublisher(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
         _canard(ins), _tx_queue(tx_queue), _port_id(port_id) {};
     uint16_t get_port_id()
     {
@@ -71,10 +71,10 @@ protected:
 /**
  * @note uavcan.node.Heartbeat_1_0
  */
-class UavcanHeartbeatPublisher : public UavcanBasePublisher
+class CyphalHeartbeatPublisher : public CyphalBasePublisher
 {
 public:
-    UavcanHeartbeatPublisher(CanardInstance &ins, CanardTxQueue& tx_queue);
+    CyphalHeartbeatPublisher(CanardInstance &ins, CanardTxQueue& tx_queue);
     virtual void update() override;
 
 private:
@@ -89,10 +89,10 @@ private:
 /**
  * @note uavcan.node.port.List_0_1
  */
-class UavcanPortListPublisher : public UavcanBasePublisher
+class CyphalPortListPublisher : public CyphalBasePublisher
 {
 public:
-    UavcanPortListPublisher(CanardInstance &ins, CanardTxQueue& tx_queue);
+    CyphalPortListPublisher(CanardInstance &ins, CanardTxQueue& tx_queue);
     virtual void update() override;
 
 private:
