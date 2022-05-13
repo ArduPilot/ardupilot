@@ -158,27 +158,50 @@ fi
 
 # ArduPilot official Toolchain for STM32 boards
 function install_arm_none_eabi_toolchain() {
-  # GNU Tools for ARM Embedded Processors
-  # (see https://launchpad.net/gcc-arm-embedded/)
-  ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
-  ARM_TARBALL="$ARM_ROOT-x86_64-linux.tar.bz2"
-  ARM_TARBALL_URL="https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
-  if [ ! -d $OPT/$ARM_ROOT ]; then
-    (
-        cd $OPT;
-        heading "Installing toolchain for STM32 Boards"
-        echo "Downloading from ArduPilot server"
-        sudo wget $ARM_TARBALL_URL
-        echo "Installing..."
-        sudo tar xjf ${ARM_TARBALL}
-        echo "... Cleaning"
-        sudo rm ${ARM_TARBALL};
-    )
-  fi
-  echo "Registering STM32 Toolchain for ccache"
-  sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-  sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-  echo "Done!"
+    # GNU Tools for ARM Embedded Processors
+    # (see https://launchpad.net/gcc-arm-embedded/)
+    ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
+    case $(uname -m) in
+        x86_64)
+            if [ ! -d $OPT/$ARM_ROOT ]; then
+                (
+                    cd $OPT
+                    heading "Installing toolchain for STM32 Boards"
+                    echo "Installing toolchain for STM32 Boards"
+                    echo "Downloading from ArduPilot server"
+                    sudo wget https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    echo "Installing..."
+                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    echo "... Cleaning"
+                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                )
+            fi
+            echo "Registering STM32 Toolchain for ccache"
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            echo "Done!";;
+
+        aarch64)
+            if [ ! -d $OPT/$ARM_ROOT ]; then
+                (
+                    cd $OPT
+                    heading "Installing toolchain for STM32 Boards"
+                    echo "Installing toolchain for STM32 Boards"
+                    echo "Downloading from ArduPilot server"
+                    sudo wget https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    echo "Installing..."
+                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    echo "... Cleaning"
+                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                )
+            fi
+            echo "Registering STM32 Toolchain for ccache"
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            echo "Done!";;
+    esac
 }
 
 function maybe_prompt_user() {
