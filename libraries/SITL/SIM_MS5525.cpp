@@ -73,5 +73,6 @@ void MS5525::get_pressure_temperature_readings(float &P_Pa, float &Temp_C)
 
     // To Do: Add a sensor board temperature offset parameter
     Temp_C = (KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta)) + 25.0;
-    P_Pa = AP::sitl()->state.airspeed_raw_pressure[0];
+    const uint8_t sensor_ofs = 0;  // TODO: work out which SITL parameter to use
+    P_Pa = AP::sitl()->state.airspeed_raw_pressure[sensor_ofs] + AP::sitl()->arspd_offset[sensor_ofs];
 }
