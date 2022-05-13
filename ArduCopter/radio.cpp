@@ -15,7 +15,12 @@ void Copter::default_dead_zones()
     channel_throttle->set_default_dead_zone(30);
     channel_yaw->set_default_dead_zone(20);
 #endif
-    rc().channel(CH_6)->set_default_dead_zone(0);
+    RC_Channel *rc_knobtune = rc().find_channel_for_option(RC_Channel::AUX_FUNC::KNOB_TUNE);
+    if (rc_knobtune == nullptr) {
+        rc().channel(CH_6)->set_default_dead_zone(0);
+    } else {
+        rc_knobtune->set_default_dead_zone(0);
+    }
 }
 
 void Copter::init_rc_in()
