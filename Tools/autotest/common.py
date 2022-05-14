@@ -6790,6 +6790,7 @@ Also, ignores heartbeats not from our target system'''
         try:
             self.check_rc_defaults()
             self.change_mode(self.default_mode())
+            self.set_current_waypoint(0, check_afterwards=False)
             self.drain_mav()
             self.drain_all_pexpects()
 
