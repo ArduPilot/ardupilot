@@ -471,6 +471,7 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("AUTO")
         self.set_current_waypoint(7)
         self.wait_disarmed(timeout=timeout)
+        self.set_current_waypoint(0, check_afterwards=False)
 
     def wait_level_flight(self, accuracy=5, timeout=30):
         """Wait for level flight."""
