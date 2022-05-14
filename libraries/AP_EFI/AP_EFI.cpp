@@ -40,14 +40,14 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
 
     // @Param: _COEF1
     // @DisplayName: EFI Calibration Coefficient 1
-    // @Description: Used to calibrate fuel flow for MS protocol (Slope)
+    // @Description: Used to calibrate fuel flow for MS protocol (Slope). This should be calculated from a log at constant fuel usage rate. Plot (ECYL[0].InjT*EFI.Rpm)/600.0 to get the duty_cycle. Measure actual fuel usage in cm^3/min, and set EFI_COEF1 = fuel_usage_cm3permin / duty_cycle
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("_COEF1", 2, AP_EFI, coef1, 0),
 
     // @Param: _COEF2
     // @DisplayName: EFI Calibration Coefficient 2
-    // @Description: Used to calibrate fuel flow for MS protocol (Offset)
+    // @Description: Used to calibrate fuel flow for MS protocol (Offset). This can be used to correct for a non-zero offset in the fuel consumption calculation of EFI_COEF1
     // @Range: 0 10
     // @User: Advanced
     AP_GROUPINFO("_COEF2", 3, AP_EFI, coef2, 0),

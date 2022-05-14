@@ -24,6 +24,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+// RPM Threshold for fuel consumption estimator
+#define RPM_THRESHOLD                100
+
 extern const AP_HAL::HAL &hal;
 
 AP_EFI_Serial_Lutan::AP_EFI_Serial_Lutan(AP_EFI &_frontend):
@@ -63,7 +66,6 @@ void AP_EFI_Serial_Lutan::update()
             const uint32_t crc2 = ~crc_crc32(~0U, &pkt[2], length);
             if (crc == crc2) {
                 // valid data
-                internal_state.last_updated_ms = now;
                 internal_state.spark_dwell_time_ms = int16_t(be16toh(data.dwell))*0.1;
                 internal_state.cylinder_status[0].injection_time_ms = be16toh(data.pulseWidth1)*0.00666;
                 internal_state.engine_speed_rpm = be16toh(data.rpm);
@@ -74,6 +76,16 @@ void AP_EFI_Serial_Lutan::update()
                 // CHT is in coolant field
                 internal_state.cylinder_status[0].cylinder_head_temperature = internal_state.coolant_temperature;
                 internal_state.throttle_position_percent = int16_t(be16toh(data.tps))*0.1;
+
+                // integrate fuel consumption
+                if (internal_state.engine_speed_rpm > RPM_THRESHOLD) {
+                    const float duty_cycle = (internal_state.cylinder_status[0].injection_time_ms * internal_state.engine_speed_rpm)/600.0f;
+                    internal_state.fuel_consumption_rate_cm3pm = duty_cycle*get_coef1() - get_coef2();
+                    internal_state.estimated_consumed_fuel_volume_cm3 += internal_state.fuel_consumption_rate_cm3pm * (now - internal_state.last_updated_ms)/60000.0f;
+                } else {
+                    internal_state.fuel_consumption_rate_cm3pm = 0;
+                }
+                internal_state.last_updated_ms = now;
                 copy_to_frontend();
             }
             pkt_nbytes = 0;
