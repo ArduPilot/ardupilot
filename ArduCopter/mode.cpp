@@ -541,6 +541,8 @@ void Mode::make_safe_ground_handling(bool force_throttle_unlimited)
         break;
     }
 
+    pos_control->relax_velocity_controller_xy();
+    pos_control->update_xy_controller();
     pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
     pos_control->update_z_controller();
     // we may need to move this out
