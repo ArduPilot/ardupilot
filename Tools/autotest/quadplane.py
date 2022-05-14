@@ -446,6 +446,7 @@ class AutoTestQuadPlane(AutoTest):
 
     def takeoff(self, height, mode):
         """climb to specified height and set throttle to 1500"""
+        self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
