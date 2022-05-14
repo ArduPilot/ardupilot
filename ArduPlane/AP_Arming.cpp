@@ -102,6 +102,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
        }
     }
 
+    if (plane.mission.get_in_landing_sequence_flag()) {
+        check_failed(display_failure,"In landing sequence");
+        ret = false;
+    }
+    
     return ret;
 }
 
