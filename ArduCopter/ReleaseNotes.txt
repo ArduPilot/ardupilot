@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.0-rc4 14-May-2022
+Changes from 4.2.0-rc3
+1) FlyingMoon F407 and F427 autopilots supported
+2) Vibration failsafe disabled in manual modes
+3) Bug fixes
+    a) Log file list with over 500 logs fixed
+    b) Loiter mode ignores ATC_SLEW_YAW parameter
+    c) RSSI when using IOMCU pin 103 fixed
+    d) TradHeli internal error during takeoff fixed
+------------------------------------------------------------------
 Copter 4.2.0-rc3 07-May-2022
 Changes from 4.2.0-rc2
 1) Bug fixes
