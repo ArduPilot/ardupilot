@@ -49,7 +49,7 @@ void AC_AttitudeControl_Multi_6DoF::input_euler_angle_roll_pitch_yaw(float euler
 }
 
 // Command a thrust vector and heading rate
-void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds)
+void AC_AttitudeControl_Multi_6DoF::input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw)
 {
     // convert thrust vector to a roll and pitch angles
     // this negates the advantage of using thrust vector control, but works just fine
