@@ -1,5 +1,12 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.2.0-rc4 14-May-2022
+Changes from 4.2.0-rc3
+1) FlyingMoon F407 and F427 autopilots supported
+2) Bug fixes
+    a) Log file list with over 500 logs fixed
+    b) RSSI when using IOMCU pin 103 fixed
+------------------------------------------------------------------
 Rover 4.2.0-rc3 07-May-2022
 Changes from 4.2.0-rc2
 1) Bug fixes
