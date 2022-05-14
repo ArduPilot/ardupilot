@@ -892,7 +892,6 @@ void ModeAuto::wp_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        wp_nav->wp_and_spline_init();
         return;
     }
 
@@ -989,7 +988,6 @@ void ModeAuto::loiter_run()
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        wp_nav->wp_and_spline_init();
         return;
     }
 
@@ -1015,7 +1013,7 @@ void ModeAuto::loiter_to_alt_run()
 {
     // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
     if (is_disarmed_or_landed() || !motors->get_interlock()) {
-        zero_throttle_and_relax_ac();
+        make_safe_ground_handling();
         return;
     }
 
