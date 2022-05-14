@@ -614,6 +614,7 @@ class AutoTestPlane(AutoTest):
         self.wait_servo_channel_value(2, deepstall_elevator_pwm)
 
         self.disarm_wait(timeout=120)
+        self.set_current_waypoint(0, check_afterwards=False)
 
         self.progress("Flying home")
         self.takeoff(100)
@@ -749,6 +750,7 @@ class AutoTestPlane(AutoTest):
         #        tend to miss the final waypoint by a fair bit, and
         #        this is probably too noisy anyway?
         self.wait_disarmed(timeout=timeout)
+        self.set_current_waypoint(0, check_afterwards=False)
 
     def fly_flaps(self):
         """Test flaps functionality."""
