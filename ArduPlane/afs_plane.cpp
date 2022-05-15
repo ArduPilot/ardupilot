@@ -84,7 +84,7 @@ void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available()) {
         // setup AP_Motors outputs for failsafe
-        uint16_t mask = plane.quadplane.motors->get_motor_mask();
+        uint32_t mask = plane.quadplane.motors->get_motor_mask();
         hal.rcout->set_failsafe_pwm(mask, plane.quadplane.motors->get_pwm_output_min());
     }
 #endif

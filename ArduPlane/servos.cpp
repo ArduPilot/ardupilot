@@ -984,7 +984,7 @@ void Plane::servos_output(void)
 
     // support MANUAL_RCMASK
     if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
-        SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
+        SRV_Channels::copy_radio_in_out_mask(uint32_t(g2.manual_rc_mask.get()));
     }
 
     SRV_Channels::calc_pwm();
