@@ -25,7 +25,82 @@ extern const AP_HAL::HAL& hal;
 void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
     AP_MotorsMatrix::init(frame_class, frame_type);
+    if (!initialised_ok()) {
+        // underlying class must init correctly
+        return;
+    }
     set_initialised_ok(false);
+
+    // conversion factors so the new mix comes out close to the old
+    // should reduce the need to re-tune, I have not calculated them all yet...
+    // there may be some way to derive from the motor matrix, but I can't work it out
+    // these are still not a perfect conversion, I'm not sure why....
+    // may also need a yaw conversion for the A V and tail frames... but there quads so this mixer won't help much in anycase
+    float roll_conversion; 
+    float pitch_conversion;
+    switch (frame_class) {
+        case MOTOR_FRAME_QUAD: {
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    roll_conversion = 0.5;
+                    pitch_conversion = 0.5;
+                    break;
+                case MOTOR_FRAME_TYPE_X:
+                    roll_conversion = 1.0;
+                    pitch_conversion = 1.0;
+                    break;
+                default:
+                    return;
+            }
+            break;
+        }
+        case MOTOR_FRAME_HEXA: {
+            switch (frame_type) {
+                 case MOTOR_FRAME_TYPE_X:
+                    roll_conversion = 0.75;
+                    pitch_conversion = 1.0;
+                    break;
+                default:
+                    return;
+            }
+            break;
+        }
+        case MOTOR_FRAME_OCTA: {
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_X:
+                    roll_conversion = 1.1715728;
+                    pitch_conversion = 1.1715728;
+                    break;
+                default:
+                    return;
+            }
+            break;
+        }
+        case MOTOR_FRAME_OCTAQUAD: {
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_X:
+                    roll_conversion = 2.0;
+                    pitch_conversion = 2.0;
+                    break;
+                default:
+                    return;
+            }
+        }
+        case MOTOR_FRAME_DODECAHEXA: {
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_X:
+                    roll_conversion = 1.5;
+                    pitch_conversion = 2.0;
+                    break;
+                default:
+                    return;
+            }
+            break;
+        }
+        default:
+            return;
+    }
+
 
     if (frame_class == MOTOR_FRAME_SCRIPTING_MATRIX) {
         // Scripting frame class not supported
@@ -60,8 +135,8 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     // convert motor factors to matrix format
     motor_factors.init(num_motors,4);
     for (uint8_t i = 0; i < num_motors; i++) {
-        motor_factors(i, 0, _roll_factor[i]);
-        motor_factors(i, 1, _pitch_factor[i]);
+        motor_factors(i, 0, _roll_factor[i]/roll_conversion);
+        motor_factors(i, 1, _pitch_factor[i]/pitch_conversion);
         motor_factors(i, 2, _yaw_factor[i]);
         motor_factors(i, 3, _throttle_factor[i]);
     }
