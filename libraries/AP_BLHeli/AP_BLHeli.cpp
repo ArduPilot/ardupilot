@@ -1377,7 +1377,7 @@ void AP_BLHeli::init(void)
     AP_Motors *motors = AP::motors();
 #endif
     if (motors) {
-        uint16_t motormask = motors->get_motor_mask();
+        uint32_t motormask = motors->get_motor_mask();
         // set the rest of the digital channels
         if (motors->is_digital_pwm_type()) {
             digital_mask |= motormask;
@@ -1581,7 +1581,7 @@ void AP_BLHeli::update_telemetry(void)
                 break;
             }
         }
-        uint16_t mask = 1U << motor_map[idx];
+        uint32_t mask = 1U << motor_map[idx];
         if (SRV_Channels::have_digital_outputs(mask)) {
             hal.rcout->set_telem_request_mask(mask);
             last_telem_esc = idx;
