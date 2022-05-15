@@ -555,9 +555,9 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
 {
     // Convert from centidegrees on public interface to radians
     float heading_rate = radians(heading_rate_cds * 0.01f);
-    // a zero _angle_vel_yaw_max means that setting is disabled
-    const float slew_yaw_max_rads = get_slew_yaw_max_rads();
     if (slew_yaw) {
+        // a zero _angle_vel_yaw_max means that setting is disabled
+        const float slew_yaw_max_rads = get_slew_yaw_max_rads();
         heading_rate = constrain_float(heading_rate, -slew_yaw_max_rads, slew_yaw_max_rads);
     }
 
