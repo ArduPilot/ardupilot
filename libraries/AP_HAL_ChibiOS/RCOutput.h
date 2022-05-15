@@ -74,7 +74,7 @@ public:
     /*
      * return mask of channels that must be disabled because they share a group with a digital channel
      */
-    uint16_t get_disabled_channels(uint16_t digital_mask) override;
+    uint32_t get_disabled_channels(uint32_t digital_mask) override;
 
     float scale_esc_to_unity(uint16_t pwm) override {
         return 2.0 * ((float) pwm - _esc_pwm_min) / (_esc_pwm_max - _esc_pwm_min) - 1.0;
