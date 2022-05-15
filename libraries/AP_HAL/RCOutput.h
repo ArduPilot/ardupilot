@@ -269,7 +269,7 @@ public:
     /*
      * return mask of channels that must be disabled because they share a group with a digital channel
      */
-    virtual uint16_t get_disabled_channels(uint16_t digital_mask) { return 0; }
+    virtual uint32_t get_disabled_channels(uint32_t digital_mask) { return 0; }
 
     /*
       set default update rate
