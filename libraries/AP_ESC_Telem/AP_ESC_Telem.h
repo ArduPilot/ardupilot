@@ -68,7 +68,7 @@ public:
 
     // get mask of ESCs that sent valid telemetry data in the last
     // ESC_TELEM_DATA_TIMEOUT_MS
-    uint16_t get_active_esc_mask() const;
+    uint32_t get_active_esc_mask() const;
 
     // return the last time telemetry data was received in ms for the given ESC or 0 if never
     uint32_t get_last_telem_data_ms(uint8_t esc_index) const {
