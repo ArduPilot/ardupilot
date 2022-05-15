@@ -44,7 +44,7 @@ public:
     void update();
 
     // return a bitmask of escs that are "present" which means they are responding to requests.  Bitmask matches RC outputs
-    uint16_t get_present_mask() const { return _esc_present_bitmask; }
+    uint32_t get_present_mask() const { return _esc_present_bitmask; }
 
 private:
 
@@ -106,8 +106,8 @@ private:
     const float amp_ms_to_mah = 1.0f / 3600.0f;  // for converting amp milliseconds to mAh
 
     // variables for updating bitmask of responsive escs
-    uint16_t _esc_present_bitmask;      // bitmask of which escs seem to be present
-    uint16_t _esc_present_bitmask_recent;   // bitmask of escs that have responded in the last second
+    uint32_t _esc_present_bitmask;      // bitmask of which escs seem to be present
+    uint32_t _esc_present_bitmask_recent;   // bitmask of escs that have responded in the last second
     uint32_t _esc_present_update_ms;    // system time _esc_present_bitmask was last updated
 
     // structure for sending motor lock command to ESC
