@@ -606,7 +606,7 @@ bool AP_KDECAN::pre_arm_check(char* reason, uint8_t reason_len)
 
     _enum_sem.give();
 
-    uint16_t motors_mask = 0;
+    uint32_t motors_mask = 0;
     AP_Motors *motors = AP_Motors::get_singleton();
 
     if (motors) {
