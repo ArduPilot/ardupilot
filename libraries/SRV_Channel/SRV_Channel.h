@@ -637,6 +637,9 @@ private:
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
     AP_Int32 gpio_mask;
+#if NUM_SERVO_CHANNELS >= 17
+    AP_Int8 enable_32_channels;
+#endif
 
     // return true if passthrough is disabled
     static bool passthrough_disabled(void) {
