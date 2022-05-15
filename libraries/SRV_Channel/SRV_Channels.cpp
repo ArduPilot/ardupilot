@@ -235,7 +235,16 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),
-    
+
+#if (NUM_SERVO_CHANNELS >= 17)
+    // @Param: _32_ENABLE
+    // @DisplayName: Enable outputs 17 to 31
+    // @Description: This allows for up to 32 outputs, enabling parameters for outputs above 16
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO_FLAGS("_32_ENABLE", 43, SRV_Channels, enable_32_channels, 0, AP_PARAM_FLAG_ENABLE),
+#endif
+
 #if (NUM_SERVO_CHANNELS >= 17)
     // @Group: 17_
     // @Path: SRV_Channel.cpp

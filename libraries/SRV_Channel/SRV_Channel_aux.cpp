@@ -76,7 +76,13 @@ void SRV_Channel::output_ch(void)
  */
 void SRV_Channels::output_ch_all(void)
 {
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+    uint8_t max_chan = NUM_SERVO_CHANNELS;
+#if NUM_SERVO_CHANNELS >= 17
+    if (_singleton != nullptr && _singleton->enable_32_channels.get() <= 0) {
+        max_chan = 16;
+    }
+#endif
+    for (uint8_t i = 0; i < max_chan; i++) {
         channels[i].output_ch();
     }
 }
