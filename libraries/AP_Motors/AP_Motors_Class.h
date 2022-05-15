@@ -310,10 +310,10 @@ protected:
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
     // mask of what channels need fast output
-    uint16_t            _motor_fast_mask;
+    uint32_t            _motor_fast_mask;
 
     // mask of what channels need to use SERVOn_MIN/MAX for output mapping
-    uint16_t            _motor_pwm_range_mask;
+    uint32_t            _motor_pwm_range_mask;
     
     // pass through variables
     float _roll_radio_passthrough;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed
