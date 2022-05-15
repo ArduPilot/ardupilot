@@ -102,7 +102,7 @@ public:
     };
 
     // set default value for BRD_SAFETY_MASK
-    void set_default_safety_ignore_mask(uint16_t mask);
+    void set_default_safety_ignore_mask(uint32_t mask);
 
     static enum px4_board_type get_board_type(void) {
 #if AP_FEATURE_BOARD_DETECT
@@ -143,7 +143,7 @@ public:
     // return the value of BRD_SAFETY_MASK
     uint16_t get_safety_mask(void) const {
 #if AP_FEATURE_BOARD_DETECT || defined(AP_FEATURE_BRD_PWM_COUNT_PARAM)
-        return uint16_t(state.ignore_safety_channels.get());
+        return uint32_t(state.ignore_safety_channels.get());
 #else
         return 0;
 #endif
