@@ -48,7 +48,7 @@ private:
     bool _corking = false;
     uint8_t _channel_offset;
     int16_t _oe_pin_number;
-    uint16_t _pending_write_mask;
+    uint32_t _pending_write_mask;
 };
 
 }
