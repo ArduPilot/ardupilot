@@ -49,7 +49,7 @@ void AP_Periph_FW::rcout_init()
         SRV_Channels::set_angle(SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i), 1000);
     }
 
-    uint16_t esc_mask = 0;
+    uint32_t esc_mask = 0;
     for (uint8_t i=0; i<SERVO_OUT_MOTOR_MAX; i++) {
         SRV_Channels::set_range(SRV_Channels::get_motor_function(i), UAVCAN_ESC_MAX_VALUE);
         uint8_t chan;
