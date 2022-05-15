@@ -41,7 +41,7 @@ extern const AP_HAL::HAL& hal;
  * enable bi-directional telemetry request for a mask of channels. This is used
  * with DShot to get telemetry feedback
  */
-void RCOutput::set_bidir_dshot_mask(uint16_t mask)
+void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
     _bdshot.mask = (mask >> chan_offset);
     // we now need to reconfigure the DMA channels since they are affected by the value of the mask
