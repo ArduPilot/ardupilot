@@ -373,7 +373,7 @@ void AP_BoardConfig::init()
 }
 
 // set default value for BRD_SAFETY_MASK
-void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
+void AP_BoardConfig::set_default_safety_ignore_mask(uint32_t mask)
 {
 #if HAL_HAVE_SAFETY_SWITCH
     state.ignore_safety_channels.set_default(mask);
