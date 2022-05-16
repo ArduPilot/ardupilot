@@ -710,17 +710,17 @@ class AutoTestPlane(AutoTest):
         )
         self.delay_sim_time(10)
         self.progress("Ensuring initial speed is known and relatively constant")
-        initial_speed = 21.5
+        initial_speed = 22.0
         timeout = 10
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 break
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("GroundSpeed: %f want=%f" %
-                          (m.groundspeed, initial_speed))
-            if abs(initial_speed - m.groundspeed) > 1:
-                raise NotAchievedException("Initial speed not as expected (want=%f got=%f" % (initial_speed, m.groundspeed))
+            self.progress("AirSpeed: %f want=%f" %
+                          (m.airspeed, initial_speed))
+            if abs(initial_speed - m.airspeed) > 1:
+                raise NotAchievedException("Initial speed not as expected (want=%f got=%f" % (initial_speed, m.airspeed))
 
         self.progress("Setting groundspeed")
         new_target_groundspeed = initial_speed + 5
@@ -740,6 +740,17 @@ class AutoTestPlane(AutoTest):
         self.wait_groundspeed(new_target_groundspeed-0.5, new_target_groundspeed+0.5, timeout=40)
         self.set_parameter("SIM_WIND_SPD", 0)
 
+        # clear target groundspeed
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            1, # groundspeed
+            0,
+            -1, # throttle / no change
+            0, # absolute values
+            0,
+            0,
+            0)
+
         self.progress("Setting airspeed")
         new_target_airspeed = initial_speed + 5
         self.run_cmd(
@@ -751,10 +762,10 @@ class AutoTestPlane(AutoTest):
             0,
             0,
             0)
-        self.wait_groundspeed(new_target_airspeed-0.5, new_target_airspeed+0.5)
+        self.wait_airspeed(new_target_airspeed-0.5, new_target_airspeed+0.5)
         self.progress("Adding some wind, hoping groundspeed increases/decreases")
         self.set_parameters({
-            "SIM_WIND_SPD": 5,
+            "SIM_WIND_SPD": 7,
             "SIM_WIND_DIR": 270,
         })
         self.delay_sim_time(5)
@@ -765,7 +776,7 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Did not achieve groundspeed delta")
             m = self.mav.recv_match(type='VFR_HUD', blocking=True)
             delta = abs(m.airspeed - m.groundspeed)
-            want_delta = 4
+            want_delta = 5
             self.progress("groundspeed and airspeed should be different (have=%f want=%f)" % (delta, want_delta))
             if delta > want_delta:
                 break
@@ -3720,15 +3731,15 @@ function'''
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        self.set_parameter("NAVL1_LIM_BANK", 50)
 
         self.wait_current_waypoint(2)
 
         for (loc, expected_radius) in tests:
-            REALLY_BAD_FUDGE_FACTOR = 1.12555
             self.wait_circling_point_with_radius(
                 loc,
-                REALLY_BAD_FUDGE_FACTOR * expected_radius,
-                epsilon=10.0,
+                expected_radius,
+                epsilon=20.0,
                 timeout=240,
             )
             self.set_current_waypoint(self.current_waypoint()+1)
