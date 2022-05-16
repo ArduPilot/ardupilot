@@ -2014,3 +2014,17 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
     }
     return nullptr;
 }
+
+void NavEKF3::disable_bias_learning()
+{
+    if (core) {
+        core[primary].disable_bias_learning();
+    }
+}
+
+void NavEKF3::enable_bias_learning()
+{
+    if (core) {
+        core[primary].enable_bias_learning();
+    }
+}

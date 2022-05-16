@@ -427,6 +427,9 @@ public:
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const { return yawEstimator; }
 
+    void disable_bias_learning();
+    void enable_bias_learning();
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -975,6 +978,11 @@ private:
 
     bool getGPSLLH(struct Location &loc) const;
 
+    void enableDelVelBiasLearning();
+    void disableDelVelBiasLearning();
+    void enableDelAngleBiasLearning();
+    void disableDelAngleBiasLearning();
+
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
@@ -1145,6 +1153,7 @@ private:
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
     ftype tiltErrorVariance;        // variance of the angular uncertainty measured perpendicular to the vertical (rad^2)
+    bool inhibitBiasStates;         // user control over bias state learning;
 
     // variables used to calculate a vertical velocity that is kinematically consistent with the vertical position
     struct {

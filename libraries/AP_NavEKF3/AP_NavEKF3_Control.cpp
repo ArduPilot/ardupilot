@@ -153,26 +153,12 @@ void NavEKF3_core::setWindMagStateLearningMode()
     }
 
     // inhibit delta velocity bias learning if we have not yet aligned the tilt
-    if (tiltAlignComplete && inhibitDelVelBiasStates) {
-        // activate the states
-        inhibitDelVelBiasStates = false;
-        updateStateIndexLim();
-
-        // set the initial covariance values
-        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-        P[14][14] = P[13][13];
-        P[15][15] = P[13][13];
+    if (tiltAlignComplete && inhibitDelVelBiasStates && !inhibitBiasStates) {
+        enableDelVelBiasLearning();
     }
 
-    if (tiltAlignComplete && inhibitDelAngBiasStates) {
-        // activate the states
-        inhibitDelAngBiasStates = false;
-        updateStateIndexLim();
-
-        // set the initial covariance values
-        P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
-        P[11][11] = P[10][10];
-        P[12][12] = P[10][10];
+    if (tiltAlignComplete && inhibitDelAngBiasStates && !inhibitBiasStates) {
+        enableDelAngleBiasLearning();
     }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
@@ -185,6 +171,59 @@ void NavEKF3_core::setWindMagStateLearningMode()
 
     updateStateIndexLim();
 }
+
+void NavEKF3_core::enableDelVelBiasLearning()
+{
+    // activate the states
+    inhibitDelVelBiasStates = false;
+    updateStateIndexLim();
+
+    // set the initial covariance values
+    P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+    P[14][14] = P[13][13];
+    P[15][15] = P[13][13];
+}
+
+void NavEKF3_core::disableDelVelBiasLearning()
+{
+    // activate the states
+    inhibitDelVelBiasStates = true;
+    updateStateIndexLim();
+}
+
+void NavEKF3_core::enableDelAngleBiasLearning()
+{
+    // activate the states
+    inhibitDelAngBiasStates = false;
+    updateStateIndexLim();
+
+    // set the initial covariance values
+    P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+    P[11][11] = P[10][10];
+    P[12][12] = P[10][10];
+}
+
+void NavEKF3_core::disableDelAngleBiasLearning()
+{
+    // activate the states
+    inhibitDelAngBiasStates = false;
+    updateStateIndexLim();
+}
+
+void NavEKF3_core::disable_bias_learning()
+{
+    inhibitBiasStates = true;
+    disableDelAngleBiasLearning();
+    disableDelVelBiasLearning();
+}
+
+void NavEKF3_core::enable_bias_learning()
+{
+    inhibitBiasStates = false;
+    enableDelAngleBiasLearning();
+    enableDelVelBiasLearning();
+}
+
 
 // Adjust the indexing limits used to address the covariance, states and other EKF arrays to avoid unnecessary operations
 // if we are not using those states
