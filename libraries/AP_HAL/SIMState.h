@@ -109,22 +109,6 @@ private:
     
     const char *_fg_address;
 
-    // delay buffer variables
-    static const uint8_t wind_buffer_length = 50;
-
-    // airspeed sensor delay buffer variables
-    struct readings_wind {
-        uint32_t time;
-        float data;
-    };
-    uint8_t store_index_wind;
-    uint32_t last_store_time_wind;
-    VectorN<readings_wind,wind_buffer_length> buffer_wind;
-    VectorN<readings_wind,wind_buffer_length> buffer_wind_2;
-    uint32_t time_delta_wind;
-    uint32_t delayed_time_wind;
-    uint32_t wind_start_delay_micros;
-
     // internal SITL model
     SITL::Aircraft *sitl_model;
 
