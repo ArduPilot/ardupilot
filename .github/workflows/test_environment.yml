@@ -1,8 +1,8 @@
 name: test environment setup
 on:
-  workflow_dispatch:
   schedule:
     - cron: '0 0 * * 6'  # every saturday at midnight
+  workflow_dispatch:
 
 
 concurrency:
@@ -104,6 +104,7 @@ jobs:
         shell: 'script -q -e -c "bash {0}"'
         run: |
           source ~/.bashrc
+          git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure
           ./waf rover
 
@@ -115,5 +116,6 @@ jobs:
         shell: 'script -q -e -c "bash {0}"'
         run: |
           source ~/.bashrc
+          git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure --board CubeOrange
           ./waf plane
