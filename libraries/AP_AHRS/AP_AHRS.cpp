@@ -3232,6 +3232,32 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
     return nullptr;
 }
 
+void AP_AHRS::disable_bias_learning()
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF3_AVAILABLE
+        case EKFType::THREE:
+            EKF3.disable_bias_learning();
+            break;
+#endif
+        default:
+            break;
+    }
+}
+
+void AP_AHRS::enable_bias_learning()
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF3_AVAILABLE
+        case EKFType::THREE:
+            EKF3.enable_bias_learning();
+            break;
+#endif
+        default:
+            break;
+    }
+}
+
 // singleton instance
 AP_AHRS *AP_AHRS::_singleton;
 

@@ -612,6 +612,9 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    void disable_bias_learning();
+    void enable_bias_learning();
+
 private:
 
     // optional view class
