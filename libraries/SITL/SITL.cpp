@@ -66,7 +66,6 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SIM,  flow_rate, 10),
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
-    AP_GROUPINFO("WIND_DELAY",    40, SIM,  wind_delay, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
     AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
@@ -282,22 +281,11 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
-    // user settable parameters for the 1st airspeed sensor
-    AP_GROUPINFO("ARSPD_RND",     50, SIM,  arspd_noise[0], 2.0),
-    AP_GROUPINFO("ARSPD_OFS",     51, SIM,  arspd_offset[0], 2013),
-    AP_GROUPINFO("ARSPD_FAIL",    52, SIM,  arspd_fail[0], 0),
-    AP_GROUPINFO("ARSPD_FAILP",   53, SIM,  arspd_fail_pressure[0], 0),
-    AP_GROUPINFO("ARSPD_PITOT",   54, SIM,  arspd_fail_pitot_pressure[0], 0),
+    AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, SIM::AirspeedParm),
+#if AIRSPEED_MAX_SENSORS > 1
+    AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, SIM::AirspeedParm),
+#endif
 
-    // user settable parameters for the 2nd airspeed sensor
-    AP_GROUPINFO("ARSPD2_RND",    56, SIM,  arspd_noise[1], 2.0),
-    AP_GROUPINFO("ARSPD2_OFS",    57, SIM,  arspd_offset[1], 2013),
-    AP_GROUPINFO("ARSPD2_FAIL",   58, SIM,  arspd_fail[1], 0),
-    AP_GROUPINFO("ARSPD2_FAILP",  59, SIM,  arspd_fail_pressure[1], 0),
-    AP_GROUPINFO("ARSPD2_PITOT",  60, SIM,  arspd_fail_pitot_pressure[1], 0),
-
-    // user settable common airspeed parameters
-    AP_GROUPINFO("ARSPD_SIGN",    62, SIM,  arspd_signflip, 0),
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
@@ -320,6 +308,19 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
     AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
+    AP_GROUPEND
+};
+
+// user settable parameters for airspeed sensors
+const AP_Param::GroupInfo SIM::AirspeedParm::var_info[] = {
+        // user settable parameters for the 1st airspeed sensor
+    AP_GROUPINFO("RND",     1, SIM::AirspeedParm,  noise, 2.0),
+    AP_GROUPINFO("OFS",     2, SIM::AirspeedParm,  offset, 2013),
+    AP_GROUPINFO("FAIL",    3, SIM::AirspeedParm,  fail, 0),
+    AP_GROUPINFO("FAILP",   4, SIM::AirspeedParm,  fail_pressure, 0),
+    AP_GROUPINFO("PITOT",   5, SIM::AirspeedParm,  fail_pitot_pressure, 0),
+    AP_GROUPINFO("SIGN",    6, SIM::AirspeedParm,  signflip, 0),
+    AP_GROUPINFO("RATIO",   7, SIM::AirspeedParm,  ratio, 1.99),
     AP_GROUPEND
 };
 
