@@ -212,6 +212,10 @@ void NavEKF3_core::disableDelAngleBiasLearning()
 
 void NavEKF3_core::disable_bias_learning()
 {
+    if (inhibitBiasStates) {
+        return;
+    }
+
     inhibitBiasStates = true;
     disableDelAngleBiasLearning();
     disableDelVelBiasLearning();
@@ -219,6 +223,10 @@ void NavEKF3_core::disable_bias_learning()
 
 void NavEKF3_core::enable_bias_learning()
 {
+    if (!inhibitBiasStates) {
+        return;
+    }
+
     inhibitBiasStates = false;
     enableDelAngleBiasLearning();
     enableDelVelBiasLearning();

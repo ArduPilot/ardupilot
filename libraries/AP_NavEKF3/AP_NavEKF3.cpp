@@ -2017,6 +2017,7 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
 
 void NavEKF3::disable_bias_learning()
 {
+    AP::dal().log_event3(AP_DAL::Event::disableBiasLearning);
     if (core) {
         core[primary].disable_bias_learning();
     }
@@ -2024,6 +2025,7 @@ void NavEKF3::disable_bias_learning()
 
 void NavEKF3::enable_bias_learning()
 {
+    AP::dal().log_event3(AP_DAL::Event::enableBiasLearning);
     if (core) {
         core[primary].enable_bias_learning();
     }
