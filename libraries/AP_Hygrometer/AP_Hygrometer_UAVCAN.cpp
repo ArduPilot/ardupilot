@@ -25,7 +25,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define LOG_TAG "Hygrometer"
-#define C_TO_KELVIN 273.15f
 
 UC_REGISTRY_BINDER(HygrometerCb, dronecan::sensors::hygrometer::Hygrometer);
 
@@ -131,7 +130,7 @@ void AP_Hygrometer_UAVCAN::handle_hygrometer(AP_UAVCAN* ap_uavcan, uint8_t node_
     WITH_SEMAPHORE(driver->_sem_hygrometer);
     driver->_humidity = cb.msg->humidity;
     if (!isnan(cb.msg->temperature))  {
-        driver->_temperature = cb.msg->temperature - C_TO_KELVIN;
+        driver->_temperature = KELVIN_TO_C(cb.msg->temperature);
     }
     driver->_last_sample_time_ms = AP_HAL::millis();
 }
