@@ -71,6 +71,9 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
     case AP_DAL::Event::checkLaneSwitch:
         ekf2.checkLaneSwitch();
         break;
+    case AP_DAL::Event::enableBiasLearning:
+    case AP_DAL::Event::disableBiasLearning:
+        break;
     }
     if (replay_force_ekf3) {
         LR_MsgHandler_REV3 h{f, ekf2, ekf3};
@@ -127,6 +130,12 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         break;
     case AP_DAL::Event::checkLaneSwitch:
         ekf3.checkLaneSwitch();
+        break;
+    case AP_DAL::Event::enableBiasLearning:
+        ekf3.enable_bias_learning();
+        break;
+    case AP_DAL::Event::disableBiasLearning:
+        ekf3.disable_bias_learning();
         break;
     }
 
