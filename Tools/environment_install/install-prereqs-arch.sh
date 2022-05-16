@@ -23,7 +23,7 @@ while getopts "yq" opt; do
 done
 
 BASE_PKGS="base-devel ccache git gsfonts tk wget gcc"
-SITL_PKGS="python-pip python-setuptools python-wheel wxpython opencv python-numpy python-scipy"
+SITL_PKGS="python-pip python-setuptools python-wheel python-wxpython opencv python-numpy python-scipy"
 PX4_PKGS="lib32-glibc zip zlib ncurses"
 
 PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect argparse matplotlib pyparsing geocoder pyserial empy"
