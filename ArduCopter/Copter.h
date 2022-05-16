@@ -316,6 +316,7 @@ private:
     // vibration check
     struct {
         bool high_vibes;    // true while high vibration are detected
+        bool inhibit_bias_learning;
         uint32_t start_ms;  // system time high vibration were last detected
         uint32_t clear_ms;  // system time high vibrations stopped
     } vibration_check;

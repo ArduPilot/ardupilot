@@ -70,8 +70,6 @@ bool ModeAcro::init(bool ignore_checks)
         copter.air_mode = AirMode::AIRMODE_ENABLED;
     }
 
-    ahrs.disable_bias_learning();
-
     return true;
 }
 
@@ -81,7 +79,6 @@ void ModeAcro::exit()
         copter.air_mode = AirMode::AIRMODE_DISABLED;
     }
     disable_air_mode_reset = false;
-    ahrs.enable_bias_learning();
 }
 
 void ModeAcro::air_mode_aux_changed()

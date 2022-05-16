@@ -242,6 +242,15 @@ void Copter::check_vibration()
     // assume checks will succeed
     bool innovation_checks_valid = true;
 
+    // fiddle with bias learning
+    if (motors->armed() && flightmode->has_manual_throttle() && !vibration_check.inhibit_bias_learning) {
+        ahrs.disable_bias_learning();
+        vibration_check.inhibit_bias_learning = true;
+    } else if ((!flightmode->has_manual_throttle() || !motors->armed()) && vibration_check.inhibit_bias_learning) {
+        ahrs.enable_bias_learning();
+        vibration_check.inhibit_bias_learning = false;
+    }
+
     // check if vertical velocity and position innovations are positive (NKF3.IVD & NKF3.IPD are both positive)
     Vector3f vel_innovation;
     Vector3f pos_innovation;
