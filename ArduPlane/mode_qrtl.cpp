@@ -5,6 +5,13 @@
 
 bool ModeQRTL::_enter()
 {
+    // treat QRTL as QLAND if we are in guided wait takeoff state, to cope
+    // with failsafes during GUIDED->AUTO takeoff sequence
+    if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
+       plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
+       return true;
+    }
+
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(plane.home.alt + quadplane.qrtl_alt*100UL);
     plane.prev_WP_loc = plane.current_loc;

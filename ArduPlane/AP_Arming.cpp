@@ -179,6 +179,16 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         }
     }
 
+    if ((plane.control_mode == &plane.mode_auto) && !plane.mission.starts_with_takeoff_cmd()) {
+        check_failed(display_failure,"missing takeoff waypoint");
+        ret = false;
+    }
+
+    if (plane.control_mode == &plane.mode_rtl) {
+        check_failed(display_failure,"in RTL mode");
+        ret = false;
+    }
+    
     /*
       Q_ASSIST_SPEED really should be enabled for all quadplanes except tailsitters
      */
