@@ -328,3 +328,45 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
     float value = require_field_float(msg, "Value");
     set_parameter(parameter_name, value);
 }
+
+bool in_acro = false;
+bool armed = false;
+bool disable_bias_learning = false;
+
+// Fake out DAL messages for testing bias changes
+void LR_MsgHandler_MODE::process_message(uint8_t *msg)
+{
+    float value = require_field_float(msg, "ModeNum");
+    if (is_equal(value, 1.0f)) {
+        in_acro = true;
+    } else {
+        in_acro = false;
+    }
+
+    if (in_acro && armed && !disable_bias_learning) {
+        ekf3.disable_bias_learning();
+        disable_bias_learning = true;
+    } else if ((!in_acro || !armed) && disable_bias_learning) {
+        ekf3.enable_bias_learning();
+        disable_bias_learning = false;
+    }
+}
+
+// Fake out DAL messages for testing bias changes
+void LR_MsgHandler_EV::process_message(uint8_t *msg)
+{
+    float value = require_field_float(msg, "Id");
+    if (is_equal(value, float(LogEvent::ARMED))) {
+        armed = true;
+    } else if (is_equal(value, float(LogEvent::DISARMED))) {
+        armed = false;
+    }
+
+    if (in_acro && armed && !disable_bias_learning) {
+        ekf3.disable_bias_learning();
+        disable_bias_learning = true;
+    } else if ((!in_acro || !armed) && disable_bias_learning) {
+        ekf3.enable_bias_learning();
+        disable_bias_learning = false;
+    }
+}

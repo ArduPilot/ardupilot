@@ -246,3 +246,17 @@ public:
 private:
     bool set_parameter(const char *name, const float value);
 };
+
+class LR_MsgHandler_MODE : public LR_MsgHandler_EKF
+{
+public:
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
+    void process_message(uint8_t *msg) override;
+};
+
+class LR_MsgHandler_EV : public LR_MsgHandler_EKF
+{
+public:
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
+    void process_message(uint8_t *msg) override;
+};
