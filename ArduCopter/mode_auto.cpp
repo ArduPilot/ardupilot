@@ -536,6 +536,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
     ///
     /// navigation commands
     ///
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:                   // 22
         do_takeoff(cmd);
         break;
@@ -544,6 +545,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_wp(cmd);
         break;
 
+    case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:              // 21 LAND to Waypoint
         do_land(cmd);
         break;
@@ -772,6 +774,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     //
     // navigation commands
     //
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
         cmd_complete = verify_takeoff();
         break;
@@ -780,6 +783,7 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_nav_wp(cmd);
         break;
 
+    case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
         cmd_complete = verify_land();
         break;
@@ -1292,10 +1296,12 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
         get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
         return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
     }
+    case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
         // stop because we may change between rel,abs and terrain alt types
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
     case MAV_CMD_NAV_TAKEOFF:
         // always stop for RTL and takeoff commands
     default:
