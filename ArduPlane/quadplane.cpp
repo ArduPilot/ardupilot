@@ -1266,6 +1266,10 @@ void QuadPlane::set_armed(bool armed)
         return;
     }
     motors->armed(armed);
+
+    if (plane.control_mode == &plane.mode_guided) {
+        guided_wait_takeoff = armed;
+    }
 }
 
 
@@ -1793,6 +1797,10 @@ void QuadPlane::update_throttle_suppression(void)
         return;
     }
 
+    if (guided_wait_takeoff) {
+        goto idle_state;
+    }
+
     /* if the users throttle is above zero then allow motors to run
 
        if the user has unset the "check throttle zero when arming"
@@ -1832,7 +1840,8 @@ void QuadPlane::update_throttle_suppression(void)
     if (plane.control_mode == &plane.mode_auto && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
         return;
     }
-    
+
+idle_state:
     // motors should be in the spin when armed state to warn user they could become active
     set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     motors->set_throttle(0);
@@ -3504,6 +3513,7 @@ bool QuadPlane::do_user_takeoff(float takeoff_altitude)
     set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     guided_start();
     guided_takeoff = true;
+    guided_wait_takeoff = false;
     if ((options & OPTION_DISABLE_GROUND_EFFECT_COMP) == 0) {
         ahrs.set_takeoff_expected(true);
     }
@@ -4080,6 +4090,11 @@ void QuadPlane::mode_enter(void)
     poscontrol.xy_correction.zero();
     poscontrol.velocity_match.zero();
     poscontrol.last_velocity_match_ms = 0;
+
+    // clear guided takeoff wait on any mode change, but remember the
+    // state for special behaviour
+    guided_wait_takeoff_on_mode_enter = guided_wait_takeoff;
+    guided_wait_takeoff = false;
 }
 
 #endif  // HAL_QUADPLANE_ENABLED
