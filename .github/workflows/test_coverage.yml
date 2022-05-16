@@ -60,6 +60,7 @@ jobs:
       - name: test ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
+          TERM: xterm
         shell: 'script -q -e -c "bash {0}"'
         run: |
           PATH="/github/home/.local/bin:$PATH"
