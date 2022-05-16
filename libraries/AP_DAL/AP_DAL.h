@@ -47,6 +47,8 @@ public:
         unsetTerrainHgtStable     = 10,
         requestYawReset           = 11,
         checkLaneSwitch           = 12,
+        disableBiasLearning       = 13,
+        enableBiasLearning        = 14,
     };
 
     // must remain the same as AP_AHRS_VehicleClass numbers-wise
