@@ -612,7 +612,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 
             // calculate innovation for Y observation
             flowInnov[1] = losPred[1] - ofDataDelayed.flowRadXYcomp.y;
-            flowInnovTime_ms = AP_HAL::millis();
+            flowInnovTime_ms = dal.millis();
 
             // calculate Kalman gains for the Y-axis observation
             Kfusion[0] = -t78*(t12+P[0][5]*t2*t8-P[0][6]*t2*t10+P[0][1]*t2*t16-P[0][2]*t2*t19+P[0][3]*t2*t22+P[0][4]*t2*t27);
