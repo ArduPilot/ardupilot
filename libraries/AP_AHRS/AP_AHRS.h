@@ -644,6 +644,7 @@ private:
     AP_Float gps_gain;
 
     AP_Float beta;
+    AP_Int16 _options;
 
     AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
@@ -664,6 +665,19 @@ private:
 #endif
     };
     EKFType active_EKF_type(void) const;
+
+
+    /*
+      AHRS_OPTIONS bits
+     */
+    enum class AHRS_Option {
+        DISABLE_ACCEL_BIAS = (1U<<0),
+    };
+
+    bool option_set(AHRS_Option option) const {
+        return (_options.get() & uint16_t(option)) != 0;
+    }
+
 
     // if successful returns true and sets secondary_ekf_type to None (for DCM), EKF3 or EKF3
     // returns false if no secondary (i.e. only using DCM)

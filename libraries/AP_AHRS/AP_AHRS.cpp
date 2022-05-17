@@ -178,6 +178,13 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // index 17
 
+    // @Param: OPTIONS
+    // @DisplayName: AHRS options
+    // @Description: Options to change the behaviour of the AHRS backends
+    // @Bitmask: 0:Disable use of learned EKF accel biases
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, 0),
+    
     AP_GROUPEND
 };
 
@@ -522,7 +529,9 @@ void AP_AHRS::update_EKF2(void)
 
             // get z accel bias estimate from active EKF (this is usually for the primary IMU)
             float &abias = _accel_bias.z;
-            EKF2.getAccelZBias(abias);
+            if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+                EKF2.getAccelZBias(abias);
+            }
 
             // This EKF is currently using primary_imu, and abias applies to only that IMU
             for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
@@ -599,7 +608,9 @@ void AP_AHRS::update_EKF3(void)
 
             // get 3-axis accel bias festimates for active EKF (this is usually for the primary IMU)
             Vector3f &abias = _accel_bias;
-            EKF3.getAccelBias(-1,abias);
+            if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+                EKF3.getAccelBias(-1,abias);
+            }
 
             // This EKF uses the primary IMU
             // Eventually we will run a separate instance of the EKF for each IMU and do the selection and blending of EKF outputs upstream
@@ -2345,13 +2356,17 @@ void AP_AHRS::getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         imu_idx = EKF2.getPrimaryCoreIMUIndex();
-        EKF2.getAccelZBias(accel_bias.z);
+        if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+            EKF2.getAccelZBias(accel_bias.z);
+        }
         break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         imu_idx = EKF3.getPrimaryCoreIMUIndex();
-        EKF3.getAccelBias(-1,accel_bias);
+        if (!option_set(AHRS_Option::DISABLE_ACCEL_BIAS)) {
+            EKF3.getAccelBias(-1,accel_bias);
+        }
         break;
 #endif
 #if AP_AHRS_SIM_ENABLED
