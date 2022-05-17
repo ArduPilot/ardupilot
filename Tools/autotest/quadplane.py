@@ -187,7 +187,6 @@ class AutoTestQuadPlane(AutoTest):
                 'LOITER',
                 'QHOVER',
                 'QLOITER',
-                'RTL',
                 'STABILIZE',
                 'TRAINING',
         ):
