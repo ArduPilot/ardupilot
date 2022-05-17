@@ -459,7 +459,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
     switch (source) {
     case AP_NavEKF_Source::SourceXY::GPS:
         // check for timeouts
-        if (AP_HAL::millis() - gpsVelInnovTime_ms > 500) {
+        if (dal.millis() - gpsVelInnovTime_ms > 500) {
             return false;
         }
         innovations = gpsVelInnov.tofloat();
@@ -468,7 +468,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
 #if EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::EXTNAV:
         // check for timeouts
-        if (AP_HAL::millis() - extNavVelInnovTime_ms > 500) {
+        if (dal.millis() - extNavVelInnovTime_ms > 500) {
             return false;
         }
         innovations = extNavVelInnov.tofloat();
@@ -477,7 +477,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
 #endif // EK3_FEATURE_EXTERNAL_NAV
     case AP_NavEKF_Source::SourceXY::OPTFLOW:
         // check for timeouts
-        if (AP_HAL::millis() - flowInnovTime_ms > 500) {
+        if (dal.millis() - flowInnovTime_ms > 500) {
             return false;
         }
         innovations.x = flowInnov[0];
