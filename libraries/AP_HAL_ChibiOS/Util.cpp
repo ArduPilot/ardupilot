@@ -86,16 +86,11 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 void *Util::allocate_heap_memory(size_t size)
 {
-    void *buf = malloc(size);
-    if (buf == nullptr) {
+    memory_heap_t *heap = (memory_heap_t *)malloc(size + sizeof(memory_heap_t));
+    if (heap == nullptr) {
         return nullptr;
     }
-
-    memory_heap_t *heap = (memory_heap_t *)malloc(sizeof(memory_heap_t));
-    if (heap != nullptr) {
-        chHeapObjectInit(heap, buf, size);
-    }
-
+    chHeapObjectInit(heap, heap + 1U, size);
     return heap;
 }
 
