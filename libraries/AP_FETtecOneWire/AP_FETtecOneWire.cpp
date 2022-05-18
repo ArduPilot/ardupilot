@@ -53,6 +53,13 @@ const AP_Param::GroupInfo AP_FETtecOneWire::var_info[] {
     // @User: Standard
     AP_GROUPINFO("RVMASK",  2, AP_FETtecOneWire, _reverse_mask_parameter, 0),
 
+    // @Param: 3DMASK
+    // @DisplayName: Bitmask of 3D channels
+    // @Description: Servo channel mask of reversible FETtec ESC outputs.
+    // @Bitmask: 0:SERVO1,1:SERVO2,2:SERVO3,3:SERVO4,4:SERVO5,5:SERVO6,6:SERVO7,7:SERVO8,8:SERVO9,9:SERVO10,10:SERVO11,11:SERVO12
+    // @User: Standard
+    AP_GROUPINFO("3DMASK",  4, AP_FETtecOneWire, _reversible_mask_parameter, 0),
+
 #if HAL_WITH_ESC_TELEM
     // @Param: POLES
     // @DisplayName: Nr. electrical poles
@@ -120,6 +127,7 @@ void AP_FETtecOneWire::init()
     }
 
     _motor_mask = _motor_mask_parameter; // take a copy that will not change after we leave this function
+    _reversible_mask = _reversible_mask_parameter; // take a copy that will not change after we leave this function
     _esc_count = __builtin_popcount(_motor_mask);
 #if HAL_WITH_ESC_TELEM
     // OneWire supports at most 15 ESCs, because of the 4 bit limitation
@@ -181,7 +189,7 @@ void AP_FETtecOneWire::init()
     // tell SRV_Channels about ESC capabilities
     // this is a bit soonish because we have not seen the ESCs on the bus yet,
     // but saves us having to use a state variable to ensure doing this latter just once
-    SRV_Channels::set_digital_outputs(_motor_mask, 0);
+    SRV_Channels::set_digital_outputs(_motor_mask, _reversible_mask);
 
     _init_done = true;
 }
@@ -788,6 +796,15 @@ void AP_FETtecOneWire::update()
             esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
             esc.telem_requested = false;
         }
+    } else {
+        for (uint8_t i=0; i<_esc_count; i++) {
+            auto &esc = _escs[i];
+            if (!esc.telem_requested || now - esc.last_telem_us < 1000000U ) {
+                // telem OK
+                continue;
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc id=%u. Not Resetting it.", esc.id);
+        }
     }
 #endif  // HAL_WITH_ESC_TELEM
 
@@ -827,10 +844,19 @@ void AP_FETtecOneWire::update()
             continue;
         }
         motor_pwm[i] = constrain_int16(c->get_output_pwm(), 1000, 2000);
-        fet_debug("esc=%u in: %u", esc.id, motor_pwm[i]);
-        if (_reverse_mask & (1U << i)) {
-            motor_pwm[i] = 2000-motor_pwm[i];
+
+        if (_reversible_mask & (1U << i)) {
+            if (_reverse_mask & (1U << i)) {
+                motor_pwm[i] = -(motor_pwm[i] - 1500) * 2 + 1000;
+            } else {
+                motor_pwm[i] = (motor_pwm[i] - 1500) * 2 + 1000;
+            }
+        } else {
+            if (_reverse_mask & (1U << i)) {
+                motor_pwm[i] = 2000 - motor_pwm[i];
+            }
         }
+        fet_debug("esc=%u in: %u", esc.id, motor_pwm[i]);
     }
 
     // send motor setpoints to ESCs, and request for telemetry data
