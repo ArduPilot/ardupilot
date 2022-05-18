@@ -796,15 +796,6 @@ void AP_FETtecOneWire::update()
             esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
             esc.telem_requested = false;
         }
-    } else {
-        for (uint8_t i=0; i<_esc_count; i++) {
-            auto &esc = _escs[i];
-            if (!esc.telem_requested || now - esc.last_telem_us < 1000000U ) {
-                // telem OK
-                continue;
-            }
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc id=%u. Not Resetting it.", esc.id);
-        }
     }
 #endif  // HAL_WITH_ESC_TELEM
 
