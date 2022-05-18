@@ -1727,8 +1727,6 @@ class AutoTestPlane(AutoTest):
         self.progress("Ensure AIRSPEED_AUTOCAL in air")
         self.assert_receive_message('AIRSPEED_AUTOCAL')
         self.wait_statustext("Airspeed 0 ratio reset", check_context=True, timeout=70)
-        # we only autocal the primary sensor?!
-        self.set_parameter('ARSPD_PRIMARY', 1)
         self.wait_statustext("Airspeed 1 ratio reset", check_context=True, timeout=70)
         self.fly_home_land_and_disarm()
 
