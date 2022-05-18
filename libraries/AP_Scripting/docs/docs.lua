@@ -1116,10 +1116,12 @@ function baro:get_pressure() end
 ---@class serial
 serial = {}
 
--- desc
----@param protocol integer
----@return AP_HAL__UARTDriver_ud
-function serial:find_serial(protocol) end
+-- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28`).
+-- For instance = 0, returns first such UART, second for instance = 1, and so on.
+-- If such an instance is not found, returns nil.
+---@param instance integer -- the 0-based index of the UART instance to return.
+---@return AP_HAL__UARTDriver_ud -- the requested UART instance available for scripting, or nil if none.
+function serial:find_serial(instance) end
 
 
 -- desc
