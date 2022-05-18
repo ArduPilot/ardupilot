@@ -10,6 +10,7 @@ bool ModeAuto::_enter()
         quadplane.guided_wait_takeoff_on_mode_enter) {
         if (!plane.mission.starts_with_takeoff_cmd()) {
             gcs().send_text(MAV_SEVERITY_ERROR,"Takeoff waypoint required");
+            quadplane.guided_wait_takeoff = true;
             return false;
         }
     }
