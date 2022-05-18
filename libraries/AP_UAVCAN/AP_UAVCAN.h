@@ -268,6 +268,7 @@ private:
     AP_Int8 _uavcan_node;
     AP_Int32 _servo_bm;
     AP_Int32 _esc_bm;
+    AP_Int8 _esc_offset;
     AP_Int16 _servo_rate_hz;
     AP_Int16 _options;
     AP_Int16 _notify_state_hz;
