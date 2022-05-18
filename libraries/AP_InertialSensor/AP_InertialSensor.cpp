@@ -543,7 +543,7 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
     // @DisplayName: IMU enable mask
     // @Description: Bitmask of IMUs to enable. It can be used to prevent startup of specific detected IMUs
     // @User: Advanced
-    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
+    // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU,6:SeventhIMU
     AP_GROUPINFO("ENABLE_MASK",  40, AP_InertialSensor, _enable_mask, 0x7F),
 
     // @Group: HNTCH_
