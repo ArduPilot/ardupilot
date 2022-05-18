@@ -79,14 +79,14 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     AP_GROUPINFO("NODE", 1, AP_UAVCAN, _uavcan_node, 10),
 
     // @Param: SRV_BM
-    // @DisplayName: RC Out channels to be transmitted as servo over UAVCAN
+    // @DisplayName: Output channels to be transmitted as servo over UAVCAN
     // @Description: Bitmask with one set for channel to be transmitted as a servo command over UAVCAN
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
     // @User: Advanced
     AP_GROUPINFO("SRV_BM", 2, AP_UAVCAN, _servo_bm, 0),
 
     // @Param: ESC_BM
-    // @DisplayName: RC Out channels to be transmitted as ESC over UAVCAN
+    // @DisplayName: Output channels to be transmitted as ESC over UAVCAN
     // @Description: Bitmask with one set for channel to be transmitted as a ESC command over UAVCAN
     // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
     // @User: Advanced
@@ -115,6 +115,13 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("NTF_RT", 6, AP_UAVCAN, _notify_state_hz, 20),
 
+    // @Param: ESC_OF
+    // @DisplayName: ESC Output channels offset
+    // @Description: Offset for ESC numbering in DroneCAN ESC RawCommand messages. This allows for more efficient packing of ESC command messages. If your ESCs are on servo functions 5 to 8 and you set this parameter to 4 then the ESC RawCommand will be sent with the first 4 slots filled. This can be used for more efficint usage of CAN bandwidth
+    // @Range: 0 18
+    // @User: Advanced
+    AP_GROUPINFO("ESC_OF", 7, AP_UAVCAN, _esc_offset, 0),
+    
     AP_GROUPEND
 };
 
@@ -496,8 +503,11 @@ void AP_UAVCAN::SRV_send_esc(void)
 
     WITH_SEMAPHORE(SRV_sem);
 
+    // esc offset allows for efficient packing of higher ESC numbers in RawCommand
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+
     // find out how many esc we have enabled and if they are active at all
-    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+    for (uint8_t i = esc_offset; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
@@ -510,7 +520,7 @@ void AP_UAVCAN::SRV_send_esc(void)
     if (active_esc_num > 0) {
         k = 0;
 
-        for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
+        for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
@@ -915,7 +925,8 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
 void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
 {
 #if HAL_WITH_ESC_TELEM
-    const uint8_t esc_index = cb.msg->esc_index;
+    const uint8_t esc_offset = constrain_int16(ap_uavcan->_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+    const uint8_t esc_index = cb.msg->esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
         return;
