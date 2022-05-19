@@ -223,7 +223,8 @@ public:
     static bool is_dshot_protocol(const enum output_mode mode);
 
 
-    // https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20Firmware%20specs/Digital_Cmd_Spec.txt
+    // BLHeli32: https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20Firmware%20specs/Digital_Cmd_Spec.txt
+    // BLHeli_S: https://github.com/bitdump/BLHeli/blob/master/BLHeli_S%20SiLabs/Dshotprog%20spec%20BLHeli_S.txt
     enum BLHeliDshotCommand : uint8_t {
       DSHOT_RESET = 0,
       DSHOT_BEEP1 = 1,
@@ -239,6 +240,7 @@ public:
       DSHOT_SAVE = 12,
       DSHOT_NORMAL = 20,
       DSHOT_REVERSE = 21,
+      // The following options are only available on BLHeli32
       DSHOT_LED0_ON = 22,
       DSHOT_LED1_ON = 23,
       DSHOT_LED2_ON = 24,
@@ -253,7 +255,8 @@ public:
 
     enum DshotEscType {
       DSHOT_ESC_NONE = 0,
-      DSHOT_ESC_BLHELI = 1
+      DSHOT_ESC_BLHELI = 1,
+      DSHOT_ESC_BLHELI_S = 2
     };
 
     virtual void    set_output_mode(uint32_t mask, enum output_mode mode) {}
@@ -341,9 +344,25 @@ public:
     /*
      * bit width values for different protocols
      */
-    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS = 8;
-    static constexpr uint32_t DSHOT_BIT_0_TICKS = 3;
-    static constexpr uint32_t DSHOT_BIT_1_TICKS = 6;
+    /*
+     * It seems ESCs are quite sensitive to the DSHOT duty cycle.
+     * Options are (ticks, percentage):
+     * 20/7/14, 35/70
+     * 11/4/8, 36/72
+     * 8/3/6, 37/75
+     */
+    // bitwidths: 8/3/6 == 37%/75%
+    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_DEFAULT = 8;
+    static constexpr uint32_t DSHOT_BIT_0_TICKS_DEFAULT = 3;
+    static constexpr uint32_t DSHOT_BIT_1_TICKS_DEFAULT = 6;
+    // bitwidths: 11/4/8 == 36%/72%
+    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_S = 11;
+    static constexpr uint32_t DSHOT_BIT_0_TICKS_S = 4;
+    static constexpr uint32_t DSHOT_BIT_1_TICKS_S = 8;
+
+    static uint32_t DSHOT_BIT_WIDTH_TICKS;
+    static uint32_t DSHOT_BIT_0_TICKS;
+    static uint32_t DSHOT_BIT_1_TICKS;
 
     // See WS2812B spec for expected pulse widths
     static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 20;
