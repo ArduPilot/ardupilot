@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Provide structured data understood by the CustomBuild server app.py
 
