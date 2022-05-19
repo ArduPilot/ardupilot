@@ -6,7 +6,7 @@
   This protocol only allows for one ESC per UART RX line, so using a
   CAN node per ESC works well.
  */
-#include "hwing_esc.h"
+#include "AP_ESC/AP_ESC_hwing_esc.h"
 #include <AP_HAL/utility/sparse-endian.h>
 
 #ifdef HAL_PERIPH_ENABLE_HWESC
