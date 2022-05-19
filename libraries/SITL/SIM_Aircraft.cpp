@@ -122,7 +122,6 @@ float Aircraft::ground_height_difference() const
 
 void Aircraft::set_precland(SIM_Precland *_precland) {
     precland = _precland;
-    precland->set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
 }
 
 /*
@@ -980,7 +979,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (precland && precland->is_enabled()) {
         precland->update(get_location(), get_position_relhome());
         if (precland->_over_precland_base) {
-            local_ground_level += precland->_origin_height;
+            local_ground_level += precland->_precland_height;
         }
     }
 
