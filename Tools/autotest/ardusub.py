@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Dive ArduSub in SITL
 

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Fly ArduPlane in SITL
 
