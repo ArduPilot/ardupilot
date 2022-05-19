@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Drive a Sailboat in SITL
 
