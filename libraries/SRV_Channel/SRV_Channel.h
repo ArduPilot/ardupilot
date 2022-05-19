@@ -29,7 +29,7 @@
 #elif defined(HAL_BUILD_AP_PERIPH)
     #define NUM_SERVO_CHANNELS 0
 #else
-    #if !HAL_MINIMIZE_FEATURES
+    #if !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
         #define NUM_SERVO_CHANNELS 32
     #else
         #define NUM_SERVO_CHANNELS 16
