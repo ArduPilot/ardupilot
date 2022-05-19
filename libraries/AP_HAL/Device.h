@@ -55,6 +55,11 @@ public:
     FUNCTOR_TYPEDEF(PeriodicCb, void);
     typedef void* PeriodicHandle;
 
+    // Register Read Write Callback
+    // returns: void parameters: register address, register data, register datasize, direction R:false, W:true
+    FUNCTOR_TYPEDEF(RegisterRWCb, void, uint8_t, uint8_t*, uint32_t, bool);
+    typedef void* RegisterRWHandle;
+
     FUNCTOR_TYPEDEF(BankSelectCb, bool, uint8_t);
 
     Device(enum BusType type)
@@ -141,8 +146,13 @@ public:
      */
     bool read_registers(uint8_t first_reg, uint8_t *recv, uint32_t recv_len)
     {
+        uint8_t read_reg = first_reg;
         first_reg |= _read_flag;
-        return transfer(&first_reg, 1, recv, recv_len);
+        bool result = transfer(&first_reg, 1, recv, recv_len);
+        if (_register_rw_callback != nullptr && result) {
+            _register_rw_callback(read_reg, recv, recv_len, false);
+        }
+        return result;
     }
 
     /**
@@ -157,7 +167,19 @@ public:
         if (checked) {
             set_checked_register(reg, val);
         }
-        return transfer(buf, sizeof(buf), nullptr, 0);
+        bool result = transfer(buf, sizeof(buf), nullptr, 0);
+        if (_register_rw_callback && result) {
+            _register_rw_callback(reg, &val, 1, true);
+        }
+        return result;
+    }
+
+    
+    /*
+     * Sets a callback to be called when a register is read or written.
+     */
+    virtual void set_register_rw_callback(RegisterRWCb register_rw_callback) {
+        _register_rw_callback = register_rw_callback;
     }
 
     /**
@@ -429,7 +451,7 @@ protected:
 
 private:
     BankSelectCb _bank_select;
-
+    RegisterRWCb _register_rw_callback;
     struct {
         uint8_t n_allocated;
         uint8_t n_set;
