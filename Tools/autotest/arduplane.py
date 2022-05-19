@@ -685,7 +685,7 @@ class AutoTestPlane(AutoTest):
         ]
 
         for (current_waypoint, want_airspeed) in checks:
-            self.wait_current_waypoint(current_waypoint)
+            self.wait_current_waypoint(current_waypoint, timeout=120)
             self.wait_airspeed(want_airspeed-1, want_airspeed+1, minimum_duration=5, timeout=120)
 
         self.fly_home_land_and_disarm()
@@ -711,16 +711,8 @@ class AutoTestPlane(AutoTest):
         self.delay_sim_time(10)
         self.progress("Ensuring initial speed is known and relatively constant")
         initial_speed = 22.0
-        timeout = 10
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                break
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            self.progress("AirSpeed: %f want=%f" %
-                          (m.airspeed, initial_speed))
-            if abs(initial_speed - m.airspeed) > 1:
-                raise NotAchievedException("Initial speed not as expected (want=%f got=%f" % (initial_speed, m.airspeed))
+        timeout = 15
+        self.wait_airspeed(initial_speed-1, initial_speed+1, minimum_duration=5, timeout=timeout)
 
         self.progress("Setting groundspeed")
         new_target_groundspeed = initial_speed + 5
