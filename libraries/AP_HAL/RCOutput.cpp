@@ -2,6 +2,10 @@
 
 extern const AP_HAL::HAL &hal;
 
+uint32_t AP_HAL::RCOutput::DSHOT_BIT_WIDTH_TICKS = DSHOT_BIT_WIDTH_TICKS_DEFAULT;
+uint32_t AP_HAL::RCOutput::DSHOT_BIT_0_TICKS = DSHOT_BIT_0_TICKS_DEFAULT;
+uint32_t AP_HAL::RCOutput::DSHOT_BIT_1_TICKS = DSHOT_BIT_1_TICKS_DEFAULT;
+
 // helper function for implementation of get_output_mode_banner
 const char* AP_HAL::RCOutput::get_output_mode_string(enum output_mode out_mode) const
 {
