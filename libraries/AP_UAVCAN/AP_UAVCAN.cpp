@@ -569,7 +569,7 @@ void AP_UAVCAN::SRV_push_servos()
 
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         // Check if this channels has any function assigned
-        if (SRV_Channels::channel_function(i)) {
+        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_none) {
             _SRV_conf[i].pulse = SRV_Channels::srv_channel(i)->get_output_pwm();
             _SRV_conf[i].esc_pending = true;
             _SRV_conf[i].servo_pending = true;
