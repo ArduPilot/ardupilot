@@ -127,7 +127,7 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Param: OPTION
     // @DisplayName: UAVCAN options
     // @Description: Option flags
-    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd
+    // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:ESC Index matches Motor name instead of Servo Index (ESC 3 is Motor3 regardless of what servo it's on)
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_UAVCAN, _options, 0),
     
@@ -203,8 +203,8 @@ AP_UAVCAN::AP_UAVCAN()
     AP_Param::setup_object_defaults(this, var_info);
 
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-        _SRV_conf[i].esc_pending = false;
-        _SRV_conf[i].servo_pending = false;
+        _ESC_conf[i].pending = false;
+        _SRV_conf[i].pending = false;
     }
 
     debug_uavcan(AP_CANManager::LOG_INFO, "AP_UAVCAN constructed\n\r");
@@ -448,7 +448,7 @@ void AP_UAVCAN::loop(void)
                     SRV_send_actuator();
                     sent_servos = true;
                     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                        _SRV_conf[i].servo_pending = false;
+                        _SRV_conf[i].pending = false;
                     }
                 }
             }
@@ -459,7 +459,7 @@ void AP_UAVCAN::loop(void)
             }
 
             for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
-                _SRV_conf[i].esc_pending = false;
+                _ESC_conf[i].pending = false;
             }
         }
 
@@ -502,7 +502,7 @@ void AP_UAVCAN::SRV_send_actuator(void)
              * physically possible throws at [-1:1] limits.
              */
 
-            if (_SRV_conf[starting_servo].servo_pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
+            if (_SRV_conf[starting_servo].pending && ((((uint32_t) 1) << starting_servo) & _servo_bm)) {
                 cmd.actuator_id = starting_servo + 1;
 
                 // TODO: other types
@@ -544,7 +544,7 @@ void AP_UAVCAN::SRV_send_esc(void)
     for (uint8_t i = esc_offset; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
-            if (_SRV_conf[i].esc_pending) {
+            if (_ESC_conf[i].pending) {
                 active_esc_num++;
             }
         }
@@ -557,7 +557,7 @@ void AP_UAVCAN::SRV_send_esc(void)
         for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
-                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
+                float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_ESC_conf[i].pulse) + 1.0) / 2.0;
 
                 scaled = constrain_float(scaled, 0, cmd_max);
 
@@ -581,9 +581,25 @@ void AP_UAVCAN::SRV_push_servos()
         // Check if this channels has any function assigned
         if (SRV_Channels::channel_function(i) > SRV_Channel::k_none) {
             _SRV_conf[i].pulse = SRV_Channels::srv_channel(i)->get_output_pwm();
-            _SRV_conf[i].esc_pending = true;
-            _SRV_conf[i].servo_pending = true;
+            _SRV_conf[i].pending = true;
         }
+    }
+
+    if (option_is_set(AP_UAVCAN::Options::ESC_IDX_MATCHES_MOTOR_NAME)) {
+        for (uint8_t motor = 0; motor < 12; motor++) {
+            // search all SRV channels for a motor_X
+            for (uint8_t srv = 0; srv < NUM_SERVO_CHANNELS; srv++) {
+                if (SRV_Channels::channel_function(srv) != SRV_Channels::get_motor_function(motor)) {
+                    continue;
+                }
+                _ESC_conf[motor].pulse = SRV_Channels::srv_channel(srv)->get_output_pwm();
+                _ESC_conf[motor].pending = true;
+                break;
+            }
+        }
+    } else {
+        // ESC index matches SRV index
+        memcpy(_ESC_conf, _SRV_conf, sizeof(_ESC_conf));
     }
 
     _SRV_armed = hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED;
