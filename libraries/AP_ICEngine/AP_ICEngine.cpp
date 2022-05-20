@@ -357,7 +357,7 @@ void AP_ICEngine::update(void)
   check for throttle override. This allows the ICE controller to force
   the correct starting throttle when starting the engine and maintain idle when disarmed
  */
-bool AP_ICEngine::throttle_override(uint8_t &percentage)
+bool AP_ICEngine::throttle_override(float &percentage)
 {
     if (!enable) {
         return false;
@@ -366,33 +366,32 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
     if (state == ICE_RUNNING &&
         idle_percent > 0 &&
         idle_percent < 100 &&
-        (int16_t)idle_percent > SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))
+        idle_percent > percentage)
     {
-        percentage = (uint8_t)idle_percent;
+        percentage = idle_percent;
         return true;
     }
 
     if (state == ICE_STARTING || state == ICE_START_DELAY) {
-        percentage = (uint8_t)start_percent.get();
+        percentage = start_percent.get();
         return true;
     }
 
     if (redline.flag && !(options & uint16_t(Options::DISABLE_REDLINE_GOVERNOR))) {
         // limit the throttle from increasing above what the current output is
-        const float incoming_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
         if (redline.throttle_percentage < 1.0f) {
-            redline.throttle_percentage = incoming_throttle;
+            redline.throttle_percentage = percentage;
         }
-        if (incoming_throttle < redline.throttle_percentage - redline.governor_integrator) {
+        if (percentage < redline.throttle_percentage - redline.governor_integrator) {
             // the throttle before the override is much lower than what the integrator is at
             // reset the integrator
             redline.governor_integrator = 0;
-            redline.throttle_percentage = incoming_throttle;
-        } else if (incoming_throttle < redline.throttle_percentage) {
+            redline.throttle_percentage = percentage;
+        } else if (percentage < redline.throttle_percentage) {
             // the throttle is below the integrator set point
             // remove the difference from the integrator
-            redline.governor_integrator -= redline.throttle_percentage - incoming_throttle;
-            redline.throttle_percentage = incoming_throttle;
+            redline.governor_integrator -= redline.throttle_percentage - percentage;
+            redline.throttle_percentage = percentage;
         } else if (filtered_rpm_value > redline_rpm) {
             // reduce the throttle if still over the redline RPM
             const float redline_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
