@@ -140,9 +140,7 @@ void RCOutput::init()
     // setup default output rate of 50Hz
     set_freq(0xFFFF ^ ((1U<<chan_offset)-1), 50);
 
-#ifdef HAL_GPIO_PIN_SAFETY_IN
     safety_state = AP_HAL::Util::SAFETY_DISARMED;
-#endif
 
 #if RCOU_DSHOT_TIMING_DEBUG
     hal.gpio->pinMode(54, 1);
