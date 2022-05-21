@@ -502,8 +502,8 @@ void AC_AutoTune_Heli::load_test_gains()
     float rate_p, rate_i, rate_d;
     switch (axis) {
     case ROLL:
-        if (tune_type == SP_UP) {
-            rate_i = orig_roll_ri;
+        if (tune_type == SP_UP || tune_type == TUNE_CHECK) {
+            rate_i = tune_roll_rff*AUTOTUNE_FFI_RATIO_FINAL;
         } else {
             // freeze integrator to hold trim by making i term small during rate controller tuning
             rate_i = 0.01f * orig_roll_ri;
@@ -518,8 +518,8 @@ void AC_AutoTune_Heli::load_test_gains()
         load_gain_set(ROLL, rate_p, rate_i, rate_d, tune_roll_rff, tune_roll_sp, tune_roll_accel, orig_roll_fltt, 0.0f, 0.0f);
         break;
     case PITCH:
-        if (tune_type == SP_UP) {
-            rate_i = orig_pitch_ri;
+        if (tune_type == SP_UP || tune_type == TUNE_CHECK) {
+            rate_i = tune_pitch_rff*AUTOTUNE_FFI_RATIO_FINAL;
         } else {
             // freeze integrator to hold trim by making i term small during rate controller tuning
             rate_i = 0.01f * orig_pitch_ri;
@@ -534,8 +534,13 @@ void AC_AutoTune_Heli::load_test_gains()
         load_gain_set(PITCH, rate_p, rate_i, rate_d, tune_pitch_rff, tune_pitch_sp, tune_pitch_accel, orig_pitch_fltt, 0.0f, 0.0f);
         break;
     case YAW:
-        // freeze integrator to hold trim by making i term small during rate controller tuning
-        load_gain_set(YAW, tune_yaw_rp, tune_yaw_rp*0.01f, tune_yaw_rd, tune_yaw_rff, tune_yaw_sp, tune_yaw_accel, orig_yaw_fltt, tune_yaw_rLPF, 0.0f);
+        if (tune_type == SP_UP || tune_type == TUNE_CHECK) {
+            rate_i = tune_yaw_rp*AUTOTUNE_YAW_PI_RATIO_FINAL;
+        } else {
+            // freeze integrator to hold trim by making i term small during rate controller tuning
+            rate_i = 0.01f * orig_yaw_ri;
+        }
+        load_gain_set(YAW, tune_yaw_rp, rate_i, tune_yaw_rd, tune_yaw_rff, tune_yaw_sp, tune_yaw_accel, orig_yaw_fltt, tune_yaw_rLPF, 0.0f);
         break;
     }
 }
