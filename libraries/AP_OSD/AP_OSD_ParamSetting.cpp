@@ -156,7 +156,7 @@ static const char* AUX_OPTIONS[] = {
 static const char* FLTMODES[] = {
     "MAN", "CIRC", "STAB", "TRAIN", "ACRO", "FBWA", "FBWB", "CRUISE", "ATUNE", "", "AUTO",
     "RTL", "LOIT", "TKOF", "ADSB", "GUID", "", "QSTAB", "QHOV", "QLOIT", "QLAND",
-    "QRTL", "QTUNE", "QACRO"
+    "QRTL", "QTUNE", "QACRO", "THRML", "L2QLND"
 };
 
 static const char* FS_ACT[] = {
@@ -176,7 +176,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
     { -1, AP_SerialManager::SerialProtocol_NumProtocols - 1,    1, ARRAY_SIZE(SERIAL_PROTOCOL_VALUES), SERIAL_PROTOCOL_VALUES },  // OSD_PARAM_SERIAL_PROTOCOL
     { 0, SRV_Channel::k_nr_aux_servo_functions - 1,             1, ARRAY_SIZE(SERVO_FUNCTIONS), SERVO_FUNCTIONS },                // OSD_PARAM_SERVO_FUNCTION
     { 0, 105, 1, ARRAY_SIZE(AUX_OPTIONS), AUX_OPTIONS },                        // OSD_PARAM_AUX_FUNCTION
-    { 0, 23, 1,  ARRAY_SIZE(FLTMODES), FLTMODES },                              // OSD_PARAM_FLIGHT_MODE
+    { 0, 25, 1,  ARRAY_SIZE(FLTMODES), FLTMODES },                              // OSD_PARAM_FLIGHT_MODE
     { 0, 5, 1,   ARRAY_SIZE(FS_ACT), FS_ACT },                                  // OSD_PARAM_FAILSAFE_ACTION
     { 0, 3, 1,   ARRAY_SIZE(FS_SHRT_ACTNS), FS_SHRT_ACTNS },                    // OSD_PARAM_FAILSAFE_ACTION_1
     { 0, 3, 1,   ARRAY_SIZE(FS_LNG_ACTNS), FS_LNG_ACTNS },                      // OSD_PARAM_FAILSAFE_ACTION_2
@@ -201,7 +201,8 @@ static const char* AUX_OPTIONS[] = {
 static const char* FLTMODES[] = {
     "STAB", "ACRO", "ALTHOLD", "AUTO", "GUIDED", "LOIT", "RTL", "CIRC", "", "LAND",
     "", "DRFT", "", "SPORT", "FLIP", "ATUN", "POSHLD", "BRAKE", "THROW", "AVD_ADSB",
-    "GUID_NOGPS", "SMRTRTL", "FLOHOLD", "FOLLOW", "ZIGZAG", "SYSID", "HELI_ARO"
+    "GUID_NOGPS", "SMRTRTL", "FLOHOLD", "FOLLOW", "ZIGZAG", "SYSID", "HELI_ARO", "AUTORTL",
+    "TRTLE"
 };
 
 static const char* FS_OPTIONS[] = {
@@ -222,7 +223,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[OS
     { -1, AP_SerialManager::SerialProtocol_NumProtocols - 1,    1, ARRAY_SIZE(SERIAL_PROTOCOL_VALUES), SERIAL_PROTOCOL_VALUES },  // OSD_PARAM_SERIAL_PROTOCOL
     { 0, SRV_Channel::k_nr_aux_servo_functions - 1,             1, ARRAY_SIZE(SERVO_FUNCTIONS), SERVO_FUNCTIONS },                // OSD_PARAM_SERVO_FUNCTION
     { 0, 105, 1, ARRAY_SIZE(AUX_OPTIONS), AUX_OPTIONS },                        // OSD_PARAM_AUX_FUNCTION
-    { 0, 23, 1,  ARRAY_SIZE(FLTMODES), FLTMODES },                              // OSD_PARAM_FLIGHT_MODE
+    { 0, 28, 1,  ARRAY_SIZE(FLTMODES), FLTMODES },                              // OSD_PARAM_FLIGHT_MODE
     { 0, 3, 1,   ARRAY_SIZE(FS_OPTIONS), FS_OPTIONS },                          // OSD_PARAM_FAILSAFE_ACTION
     { 0, 5, 1,   ARRAY_SIZE(FS_ACT), FS_ACT },                                  // OSD_PARAM_FAILSAFE_ACTION_1
     { 0, 5, 1,   ARRAY_SIZE(THR_FS_ACT), THR_FS_ACT },                          // OSD_PARAM_FAILSAFE_ACTION_2
