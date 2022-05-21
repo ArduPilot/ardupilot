@@ -95,11 +95,17 @@ void AP_Parachute::enabled(bool on_off)
     AP::logger().Write_Event(_enabled ? LogEvent::PARACHUTE_ENABLED : LogEvent::PARACHUTE_DISABLED);
 }
 
+/// enabled_by_aux - enable or disable parachute release using aux switch
+void AP_Parachute::enabled_by_aux(bool on_off)
+{
+    _enabled_by_aux = on_off;
+}
+
 /// release - release parachute
 void AP_Parachute::release()
 {
     // exit immediately if not enabled
-    if (_enabled <= 0) {
+    if (_enabled <= 0 || !_enabled_by_aux) {
         return;
     }
 
@@ -121,7 +127,7 @@ void AP_Parachute::release()
 void AP_Parachute::update()
 {
     // exit immediately if not enabled or parachute not to be released
-    if (_enabled <= 0) {
+    if (_enabled <= 0 || !_enabled_by_aux) {
         return;
     }
 
@@ -205,7 +211,7 @@ void AP_Parachute::check_sink_rate()
 // check settings are valid
 bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
 {
-    if (_enabled > 0) {
+    if (_enabled > 0 && _enabled_by_aux) {
         if (_release_type == AP_PARACHUTE_TRIGGER_TYPE_SERVO) {
             if (!SRV_Channels::function_assigned(SRV_Channel::k_parachute_release)) {
                 hal.util->snprintf(buffer, buflen, "Chute has no channel");
