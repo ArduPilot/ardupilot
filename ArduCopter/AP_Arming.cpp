@@ -322,7 +322,7 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         const uint32_t esc_mask = tcan->get_present_mask();
         uint8_t escs_missing = 0;
         uint8_t first_missing = 0;
-        for (uint8_t i = 0; i < 16; i++) {
+        for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
             uint32_t bit = 1UL << i;
             if (((motors_mask & bit) > 0) && ((esc_mask & bit) == 0)) {
                 escs_missing++;
