@@ -2210,6 +2210,8 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             // remember last pos reset to handle GPS glitch in LAND_FINAL
             Vector2f rpos;
             last_pos_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
+            qp.landing_detect.land_start_ms = 0;
+            qp.landing_detect.lower_limit_start_ms = 0;
         }
         // double log to capture the state change
         qp.log_QPOS();
@@ -3074,13 +3076,12 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
  */
 bool QuadPlane::land_detector(uint32_t timeout_ms)
 {
-    const uint32_t now = AP_HAL::millis();
-    bool might_be_landed =  (landing_detect.lower_limit_start_ms != 0 &&
-                             now - landing_detect.lower_limit_start_ms > 1000);
+    bool might_be_landed = should_relax() && !poscontrol.pilot_correction_active;
     if (!might_be_landed) {
         landing_detect.land_start_ms = 0;
         return false;
     }
+    const uint32_t now = AP_HAL::millis();
     float height = inertial_nav.get_position_z_up_cm() * 0.01;
     if (landing_detect.land_start_ms == 0) {
         landing_detect.land_start_ms = now;
