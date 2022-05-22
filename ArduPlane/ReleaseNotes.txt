@@ -1,3 +1,39 @@
+Release 4.2.1 23rd May 2022
+---------------------------
+
+This is a minor release on top of the 4.2 firmware. It has a number of
+bug fixes and safety improvements. The changes are:
+
+- fixed a bug in handling wrap in log download when 500 logs are on the microSD card
+- added FlyingMoonF407 and FlyingMoonF427 support
+- fixed RSSI input on the RCIN pin on CubeBlack and CubeOrange
+- fixed update of gyro FFT throttle tracking
+- removed unhealthy reporting on airspeed sensors with negative pressure as this commonly happens on VTOL takeoff
+- improved handling of large LOITER_TURNS mission items, expanding maximum to 2.5km
+- added fuel usage integration on Lutan EFI
+- refuse arming in AUTO when in a landing sequence due to a failsafe
+- account for sprung throttle (from RC_OPTIONS) in throttle suppression code
+- improved safety of in-flight compass learning
+- fixed automatic airspeed ratio calibration for 2nd airspeed sensor
+- increase safety of GUIDED -> AUTO takeoff sequence used by QGC
+- added CAN_Dx_UC_ESC_OF parameter for ESC offset for bandwidth efficiency
+- fixed handling of safety state on boards with no safety switch
+- fixed bug where a false positive could trigger landing disarm while land repositioning is active
+
+The most important fixes are related to how QGC (which is often used
+on modern GCS style transmitters) does automatic takeoff with the
+"swipe right for takeoff" system. QGC does a sequence of a change to
+GUIDED mode, then arming, then change to AUTO mode. That sequence is
+dangerous if the current waypoint is not properly reset to a VTOL
+takeoff. To fix this a number of changes were made to ensure that
+takeoff is done with a valid VTOL takeoff. The changes include
+handling of failsafe events (such as GCS or RC failsafe) part way
+through this takeoff sequence. If QRTL or RTL is engaged during this
+sequence then the vehicle will switch to QLAND.
+
+Happy flying!
+
+
 Release 4.2.1beta1 19th May 2022
 --------------------------------
 
