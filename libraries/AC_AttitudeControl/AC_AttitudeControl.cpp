@@ -878,11 +878,13 @@ float AC_AttitudeControl::input_shaping_ang_vel(float target_ang_vel, float desi
     }
 }
 
-// calculates the accleration correction from an rate error. The angular acceleration is limited.
+// calculates the accleration correction from an rate error. The angular acceleration and deceleration is limited.
 float AC_AttitudeControl::input_shaping_rate(float error_rate, float input_tc, float accel_max, float target_ang_vel, float dt)
 {
+    // Calculate the acceleration to smoothly achieve rate. Jerk is not limited.
     float desired_ang_accel = sqrt_controller(error_rate, 1.0f / MAX(input_tc, 0.01f), 0.0f, dt);
 
+    // limit acceleration or deceleration
     if (is_positive(accel_max)) {
         desired_ang_accel = constrain_float(desired_ang_accel, -accel_max, accel_max);
     }
