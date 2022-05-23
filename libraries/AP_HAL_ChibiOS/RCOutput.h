@@ -172,7 +172,7 @@ public:
     /*
       Set/get the dshot esc_type
      */
-    void set_dshot_esc_type(DshotEscType dshot_esc_type) override { _dshot_esc_type = dshot_esc_type; }
+    void set_dshot_esc_type(DshotEscType dshot_esc_type) override;
 
     DshotEscType get_dshot_esc_type() const override { return _dshot_esc_type; }
 #endif
