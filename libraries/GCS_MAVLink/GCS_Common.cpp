@@ -811,7 +811,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
             // add home alt if needed
             handle_change_alt_request(cmd);
 
-            // verify we recevied the command
+            // verify we received the command
             result = MAV_MISSION_ACCEPTED;
         }
         send_mission_ack(msg, MAV_MISSION_TYPE_MISSION, result);
