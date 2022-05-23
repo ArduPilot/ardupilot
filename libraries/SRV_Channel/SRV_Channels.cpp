@@ -231,7 +231,7 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: _DSHOT_ESC
     // @DisplayName: Servo DShot ESC type
     // @Description: This sets the DShot ESC type for all outputs. The ESC type affects the range of DShot commands available. None means that no dshot commands will be executed.
-    // @Values: 0:None,1:BLHeli32/BLHeli_S/Kiss
+    // @Values: 0:None,1:BLHeli32/Kiss,2:BLHeli_S
     // @User: Advanced
     AP_GROUPINFO("_DSHOT_ESC",  24, SRV_Channels, dshot_esc_type, 0),
 
