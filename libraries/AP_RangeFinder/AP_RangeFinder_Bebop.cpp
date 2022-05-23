@@ -331,7 +331,7 @@ void AP_RangeFinder_Bebop::_reconfigure_wave()
 }
 
 /*
- * First configuration of the the pulse that will be send over spi
+ * First configuration of the pulse that will be send over spi
  */
 int AP_RangeFinder_Bebop::_configure_wave()
 {
