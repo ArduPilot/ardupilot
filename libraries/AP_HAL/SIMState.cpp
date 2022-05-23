@@ -9,6 +9,9 @@
  */
 
 #include <SITL/SIM_Multicopter.h>
+#include <SITL/SIM_Plane.h>
+
+#include <AP_Baro/AP_Baro.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -21,7 +24,11 @@ void SIMState::update()
     static bool init_done;
     if (!init_done) {
         init_done = true;
+#if APM_BUILD_TYPE(APM_BUILD_ArduCopter)
         sitl_model = SITL::MultiCopter::create("+");
+#elif APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        sitl_model = SITL::Plane::create("plane");
+#endif
     }
 
     _fdm_input_step();
