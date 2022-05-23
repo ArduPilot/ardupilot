@@ -125,7 +125,7 @@ private:
     void handle_adsb_in_msg(const Packet_XP &msg);
     void handle_ack(const Packet_XP &msg);
 
-    // send messages to to transceiver
+    // send messages to transceiver
     void send_msg_Installation();
     void send_msg_PreFlight();
     void send_msg_Operating();
