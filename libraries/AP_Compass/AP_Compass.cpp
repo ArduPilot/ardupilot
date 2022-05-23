@@ -719,7 +719,7 @@ void Compass::init()
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
-    // if so and the the primary compass is not set in current setup
+    // if so and the primary compass is not set in current setup
     // make the devid as primary.
     if (_priority_did_stored_list[Priority(0)] == 0) {
         uint16_t k_param_compass;
