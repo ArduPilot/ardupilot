@@ -200,7 +200,7 @@ void SRV_Channels::update_aux_servo_function(void)
     initialised = true;
 }
 
-/// Should be called after the the servo functions have been initialized
+/// Should be called after the servo functions have been initialized
 /// called at 1Hz
 void SRV_Channels::enable_aux_servos()
 {
