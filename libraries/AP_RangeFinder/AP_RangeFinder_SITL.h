@@ -14,9 +14,15 @@
  */
 #pragma once
 
-#include "AP_RangeFinder_Backend.h"
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#ifndef AP_SIM_RANGEFINDER_ENABLED
+#define AP_SIM_RANGEFINDER_ENABLED (AP_SIM_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+#endif
+
+#if AP_SIM_RANGEFINDER_ENABLED
+
+#include "AP_RangeFinder_Backend.h"
 
 #include <SITL/SITL.h>
 
@@ -41,4 +47,4 @@ private:
 
 };
 
-#endif
+#endif  // AP_SIM_RANGEFINDER_ENABLED

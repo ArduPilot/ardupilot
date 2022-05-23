@@ -12,11 +12,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include "AP_RangeFinder_SITL.h"
+
+#if AP_SIM_RANGEFINDER_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,4 +50,5 @@ void AP_RangeFinder_SITL::update(void)
     update_status();
 }
 
-#endif
+#endif  // AP_SIM_RANGEFINDER_ENABLED
+
