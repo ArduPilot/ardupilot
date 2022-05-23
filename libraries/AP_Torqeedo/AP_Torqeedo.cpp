@@ -283,7 +283,7 @@ bool AP_Torqeedo::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
-// returns a human-readable string corresponding the the passed-in
+// returns a human-readable string corresponding the passed-in
 // master error code (see page 93 of https://media.torqeedo.com/downloads/manuals/torqeedo-Travel-manual-DE-EN.pdf)
 // If no conversion is available then nullptr is returned
 const char * AP_Torqeedo::map_master_error_code_to_string(uint8_t code) const
