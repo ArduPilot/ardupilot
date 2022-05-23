@@ -9,6 +9,13 @@ Run the sitl-on-hw.sh script to compile and flash for MatekH743.  Adjust for you
 	cd $HOME/ardupilot
 	./libraries/SITL/examples/on-hardware/sitl-on-hw.sh
 
+Plane can also be simulated:
+
+::
+
+	cd $HOME/ardupilot
+	./libraries/SITL/examples/on-hardware/sitl-on-hw.sh -v plane
+
 ## Configuring
 
 Wipe the parameters on the board; this can be done with a mavlink command, or by setting the FORMAT_VERSION parameter to 0.
