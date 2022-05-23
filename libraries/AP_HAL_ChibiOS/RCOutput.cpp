@@ -569,7 +569,9 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
 
 #if AP_SIM_ENABLED
     hal.simstate->pwm_output[chan] = period_us;
-    return;
+    if (!(AP::sitl()->on_hardware_output_enable_mask & (1U<<chan))) {
+        return;
+    }
 #endif
 
 #if HAL_WITH_IO_MCU
