@@ -950,6 +950,13 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         external_payload_mass += sprayer->payload_mass();
     }
 
+    {
+        const float range = rangefinder_range();
+        for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
+            rangefinder_m[i] = range;
+        }
+    }
+
     // update i2c
     if (i2c) {
         i2c->update(*this);
