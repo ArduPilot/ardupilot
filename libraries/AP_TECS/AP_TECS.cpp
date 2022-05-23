@@ -813,7 +813,7 @@ void AP_TECS::_update_throttle_without_airspeed(int16_t throttle_nudge)
 void AP_TECS::_detect_bad_descent(void)
 {
     // Detect a demanded airspeed too high for the aircraft to achieve. This will be
-    // evident by the the following conditions:
+    // evident by the following conditions:
     // 1) Underspeed protection not active
     // 2) Specific total energy error > 200 (greater than ~20m height error)
     // 3) Specific total energy reducing
