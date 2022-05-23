@@ -504,6 +504,8 @@ void AP_MotorsUGV::setup_pwm_type()
 {
     _motor_mask = 0;
 
+    hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
+
     // work out mask of channels assigned to motors
     _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttle);
     _motor_mask |= SRV_Channels::get_output_channel_mask(SRV_Channel::k_throttleLeft);
