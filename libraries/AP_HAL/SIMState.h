@@ -63,7 +63,7 @@ public:
     void set_gps0(SITL::GPS *_gps) { gps[0] = _gps; }
 #endif
 
-    uint16_t pwm_output[16];  // was SITL_NUM_CHANNELS
+    uint16_t pwm_output[32];  // was SITL_NUM_CHANNELS
 
 private:
     void _set_param_default(const char *parm);
@@ -211,6 +211,8 @@ private:
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;
 
     const char *_home_str;
+
+    uint32_t wind_start_delay_micros;
 
 #if HAL_SIM_GPS_ENABLED
     // simulated GPS devices
