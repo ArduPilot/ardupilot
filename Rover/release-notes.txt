@@ -1,6 +1,6 @@
 Rover Release Notes:
 ------------------------------------------------------------------
-Rover 4.2.0-rc4 14-May-2022
+Rover 4.2.0 23-May-2022 / 4.2.0-rc4 14-May-2022
 Changes from 4.2.0-rc3
 1) FlyingMoon F407 and F427 autopilots supported
 2) Bug fixes
