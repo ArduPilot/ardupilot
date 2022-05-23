@@ -1076,6 +1076,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_USD1:
                 case AP_CANManager::Driver_Type_None:
                 case AP_CANManager::Driver_Type_Scripting:
+                case AP_CANManager::Driver_Type_Tattu:
                 case AP_CANManager::Driver_Type_Benewake:
                     break;
             }
