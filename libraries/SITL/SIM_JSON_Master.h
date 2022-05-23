@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  Send and receve JSON backend data to alow a second AP instance to ride along
+  Send and receive JSON backend data to alow a second AP instance to ride along
 */
 
 #pragma once
