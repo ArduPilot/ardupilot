@@ -445,12 +445,12 @@ protected:
     // velocity controller.
     Vector3f            _ang_vel_body;
 
-    // This is the the angular velocity in radians per second in the body frame, added to the output angular
+    // This is the angular velocity in radians per second in the body frame, added to the output angular
     // attitude controller by the System Identification Mode.
     // It is reset to zero immediately after it is used.
     Vector3f            _sysid_ang_vel_body;
 
-    // This is the the unitless value added to the output of the PID by the System Identification Mode.
+    // This is the unitless value added to the output of the PID by the System Identification Mode.
     // It is reset to zero immediately after it is used.
     Vector3f            _actuator_sysid;
 
