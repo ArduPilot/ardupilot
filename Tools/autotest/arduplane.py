@@ -2498,6 +2498,7 @@ function'''
         airspeed_sensors = [
             ("MS5525", 3, 1),
             ("DLVR", 7, 2),
+            ("SITL", 100, 0),
         ]
         for (name, t, bus) in airspeed_sensors:
             self.context_push()
