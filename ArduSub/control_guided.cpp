@@ -315,10 +315,10 @@ void Sub::guided_pos_control_run()
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
+        // roll & pitch & yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        // roll, pitch from pilot, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true);
     }
 }
@@ -371,10 +371,10 @@ void Sub::guided_vel_control_run()
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
+        // roll & pitch & yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        // roll, pitch from pilot, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true);
     }
 }
@@ -437,10 +437,10 @@ void Sub::guided_posvel_control_run()
 
     // call attitude controller
     if (auto_yaw_mode == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
+        // roll & pitch & yaw rate from pilot
         attitude_control.input_euler_angle_roll_pitch_euler_rate_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
     } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
+        // roll, pitch from pilot, yaw heading from auto_heading()
         attitude_control.input_euler_angle_roll_pitch_yaw(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true);
     }
 }
