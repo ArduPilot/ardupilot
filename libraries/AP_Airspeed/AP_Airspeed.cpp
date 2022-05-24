@@ -48,6 +48,7 @@
 #include "AP_Airspeed_UAVCAN.h"
 #include "AP_Airspeed_NMEA.h"
 #include "AP_Airspeed_MSP.h"
+#include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
 #ifdef HAL_AIRSPEED_TYPE_DEFAULT
@@ -94,7 +95,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),     // NOTE: Index 0 is actually used as index 63 here
 
@@ -390,6 +391,11 @@ void AP_Airspeed::init()
         case TYPE_I2C_MS4525:
 #if AP_AIRSPEED_MS4525_ENABLED
             sensor[i] = new AP_Airspeed_MS4525(*this, i);
+#endif
+            break;
+        case TYPE_SITL:
+#if AP_AIRSPEED_SITL_ENABLED
+            sensor[i] = new AP_Airspeed_SITL(*this, i);
 #endif
             break;
         case TYPE_ANALOG:
