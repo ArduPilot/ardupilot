@@ -16,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -1289,6 +1290,29 @@ void AP_MotorsMatrix::disable_yaw_torque(void)
         _yaw_factor[i] = 0;
     }
 }
+
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+// examples can pull values direct
+float AP_MotorsMatrix::get_thrust_rpyt_out(uint8_t i)
+{
+    if (i < AP_MOTORS_MAX_NUM_MOTORS) {
+        return _thrust_rpyt_out[i];
+    }
+    return 0.0;
+}
+
+bool AP_MotorsMatrix::get_factors(uint8_t i, float &roll, float &pitch, float &yaw, float &throttle)
+{
+    if ((i < AP_MOTORS_MAX_NUM_MOTORS) && motor_enabled[i]) {
+        roll = _roll_factor[i];
+        pitch = _pitch_factor[i];
+        yaw = _yaw_factor[i];
+        throttle = _throttle_factor[i];
+        return true;
+    }
+    return false;
+}
+#endif
 
 // singleton instance
 AP_MotorsMatrix *AP_MotorsMatrix::_singleton;
