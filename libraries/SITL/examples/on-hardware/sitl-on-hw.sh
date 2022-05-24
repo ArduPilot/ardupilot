@@ -7,7 +7,8 @@ BOARD=NucleoH743
 BOARD=MatekH743
 #BOARD=F35Lightning
 
-THISDIR=$(dirname $0)
+THISDIR=$(realpath $(dirname $0))
+ROOTDIR=$(realpath "$THISDIR/../../../..")
 
 VEHICLE="copter"
 DEFAULTS_PATH=""
@@ -46,6 +47,8 @@ if [ -z "${DEFAULTS_PATH}" ]; then
         EXTRA_HWDEF="$THISDIR/extra-hwdef-sitl-on-hw.dat"
     fi
 fi
+
+pushd $ROOTDIR
 
 ./waf configure \
       --board=$BOARD \
