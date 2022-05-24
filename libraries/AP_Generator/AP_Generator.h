@@ -66,6 +66,15 @@ public:
     // Parameter block
     static const struct AP_Param::GroupInfo var_info[];
 
+    // bits which can be set in _options to modify generator behaviour:
+    enum class Option {
+        INHIBIT_MAINTENANCE_WARNINGS = 0,
+    };
+
+    bool option_set(Option opt) const {
+        return (_options & 1U<<uint32_t(opt)) != 0;
+    }
+
 private:
 
     // Pointer to chosen driver
@@ -73,6 +82,7 @@ private:
 
     // Parameters
     AP_Int8 _type; // Select which generator to use
+    AP_Int32 _options; // Select which generator to use
 
     enum class Type {
         GEN_DISABLED = 0,

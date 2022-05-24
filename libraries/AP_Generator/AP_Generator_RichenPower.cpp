@@ -201,12 +201,14 @@ void AP_Generator_RichenPower::check_maintenance_required()
         return;
     }
 
-    const uint32_t now = AP_HAL::millis();
+    if (!AP::generator()->option_set(AP_Generator::Option::INHIBIT_MAINTENANCE_WARNINGS)) {
+        const uint32_t now = AP_HAL::millis();
 
-    if (last_reading.errors & (1U<<uint16_t(Errors::MaintenanceRequired))) {
-        if (now - last_maintenance_warning_ms > 60000) {
-            gcs().send_text(MAV_SEVERITY_NOTICE, "Generator: requires maintenance");
-            last_maintenance_warning_ms = now;
+        if (last_reading.errors & (1U<<uint16_t(Errors::MaintenanceRequired))) {
+            if (now - last_maintenance_warning_ms > 60000) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "Generator: requires maintenance");
+                last_maintenance_warning_ms = now;
+            }
         }
     }
 }
