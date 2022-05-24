@@ -43,7 +43,7 @@ public:
     static void register_client(AP_AccelCal_Client* client);
 
 #if HAL_GCS_ENABLED
-    void handleMessage(const mavlink_message_t &msg);
+    void handle_command_ack(const mavlink_command_ack_t &packet);
 #endif
 
     // true if we are in a calibration process
