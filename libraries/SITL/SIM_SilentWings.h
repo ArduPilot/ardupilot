@@ -52,7 +52,7 @@ private:
            double position_latitude;        // Degrees   Position latitude,
            double position_longitude;       // Degrees            longitude,
            float  altitude_msl;             // m         Altitude w.r.t. the sea level
-           float  altitude_ground;          // m         Altitude w.r.t. the ground level 
+           float  altitude_ground;          // m         Altitude w.r.t. the ground level
            float  altitude_ground_45;       // m         Ground 45 degrees ahead (NOT IMPLEMENTED YET)
            float  altitude_ground_forward;  // m         Ground straight ahead (NOT IMPLEMENTED YET)
            float  roll;                     // Degrees
@@ -62,11 +62,11 @@ private:
            float  d_pitch;                  // Deg/sec   Pitch speed
            float  d_yaw;                    // Deg/sec   Yaw speed
            float  vx;                       // m/s       Velocity vector in body-axis
-           float  vy; 
-           float  vz;                
+           float  vy;
+           float  vz;
            float  vx_wind;                  // m/s       Velocity vector in body-axis, relative to the wind
            float  vy_wind;
-           float  vz_wind; 
+           float  vz_wind;
            float  v_eas;                    // m/s       Equivalent (indicated) air speed.
            float  ax;                       // m/s^2     Acceleration vector in body axis
            float  ay;
@@ -80,7 +80,7 @@ private:
            float  density;                  // Air density at aircraft altitude
            float  temperature;              // Degrees Celcius   Air temperature at aircraft altitude
     } pkt;
-    
+
     struct {
         uint32_t last_report_ms;
         uint32_t data_count;
@@ -90,25 +90,25 @@ private:
     bool recv_fdm(void);
     void process_packet();
     bool interim_update();
-	
+
     /*  Create and set in/out socket for Silent Wings simulator */
     void set_interface_ports(const char* address, const int port_in, const int port_out) override;
-    
+
     /* Sends control inputs to the Silent Wings. */
     void send_servos(const struct sitl_input &input);
 
     /* Timestamp of the latest data packet received from Silent Wings. */
     uint32_t last_data_time_ms;
-    
+
     /* Timestamp of the first data packet received from Silent Wings. */
     uint32_t first_pkt_timestamp_ms;
-    
-    /* Indicates whether first_pkt_timestamp_ms has been initialized (i.e., any packets have been received from Silent Wings. */ 
+
+    /* Indicates whether first_pkt_timestamp_ms has been initialized (i.e., any packets have been received from Silent Wings. */
     bool inited_first_pkt_timestamp;
-    
+
     /* ArduPlane's internal time when the first packet from Silent Wings is received. */
     uint64_t time_base_us;
-    
+
     SocketAPM sock;
     const char *_sw_address = "127.0.0.1";
     int _port_in = 6060;
