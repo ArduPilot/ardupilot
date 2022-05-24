@@ -3,6 +3,10 @@
 SITL::SIM_BattMonitor_SMBus_Generic::SIM_BattMonitor_SMBus_Generic() :
     SIM_BattMonitor_SMBus()
 {
+
+    const char *manufacturer_name = "sitl_smbus_generic";
+    set_block(SMBusBattDevReg::MANUFACTURE_NAME, manufacturer_name);
+
 }
 
 void SITL::SIM_BattMonitor_SMBus_Generic::init()

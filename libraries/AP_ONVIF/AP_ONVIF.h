@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if ENABLE_ONVIF
 #pragma GCC diagnostic push

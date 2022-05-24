@@ -28,7 +28,7 @@ const AP_Param::GroupInfo AP_CustomRotations::var_info[] = {
     AP_GROUPEND
 };
 
-AP_CustomRotation::AP_CustomRotation(AP_CustomRotation_params _params):
+AP_CustomRotation::AP_CustomRotation(AP_CustomRotation_params &_params):
     params(_params)
 {
     init();

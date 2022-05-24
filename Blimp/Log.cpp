@@ -232,14 +232,11 @@ tuning_max     : tune_max
     logger.WriteBlock(&pkt_tune, sizeof(pkt_tune));
 }
 
-// logs when baro or compass becomes unhealthy
+// logs when compass becomes unhealthy
 void Blimp::Log_Sensor_Health()
 {
-    // check baro
-    if (sensor_health.baro != barometer.healthy()) {
-        sensor_health.baro = barometer.healthy();
-        AP::logger().Write_Error(LogErrorSubsystem::BARO,
-                                 (sensor_health.baro ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY));
+    if (!should_log(MASK_LOG_ANY)) {
+        return;
     }
 
     // check compass

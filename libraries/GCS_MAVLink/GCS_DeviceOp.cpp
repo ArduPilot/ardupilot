@@ -48,6 +48,10 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
         retcode = 2;
         goto fail;
     }
+    if (packet.count > sizeof(data)) {
+        retcode = 5;
+        goto fail;
+    }
     if (!dev->get_semaphore()->take(10)) {
         retcode = 3;
         goto fail;        

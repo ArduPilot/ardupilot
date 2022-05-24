@@ -131,3 +131,6 @@ define HAL_SPRAYER_ENABLED 0
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+
+# minimal GPS drivers to reduce flash usage
+include ../include/minimal_GPS.inc

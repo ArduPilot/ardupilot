@@ -28,6 +28,7 @@
 #include <GCS_MAVLink/GCS.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Math/AP_Math.h>
 
 using namespace ChibiOS;
 
@@ -89,7 +90,7 @@ void GPIO::init()
         chan_offset = 8;
     }
 #endif
-    // auto-disable pins being used for PWM output based on BRD_PWM_COUNT parameter
+    // auto-disable pins being used for PWM output
     for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
         struct gpio_entry *g = &_gpio_tab[i];
         if (g->pwm_num != 0) {
@@ -462,8 +463,7 @@ static void pal_interrupt_wait(void *arg)
 }
 
 /*
-  block waiting for a pin to change. A timeout of 0 means wait
-  forever. Return true on pin change, false on timeout
+  block waiting for a pin to change. Return true on pin change, false on timeout
 */
 bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_us)
 {
@@ -486,8 +486,11 @@ bool GPIO::wait_pin(uint8_t pin, INTERRUPT_TRIGGER_TYPE mode, uint32_t timeout_u
         osalSysUnlock();
         return false;
     }
-        
-    msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, TIME_US2I(timeout_us));
+
+    // don't allow for very long timeouts, or below the delta
+    timeout_us = constrain_uint32(TIME_US2I(timeout_us), CH_CFG_ST_TIMEDELTA, TIME_US2I(30000U));
+
+    msg_t msg = osalThreadSuspendTimeoutS(&g->thd_wait, timeout_us);
     _attach_interruptI(g->pal_line,
                        palcallback_t(nullptr),
                        nullptr,
@@ -506,6 +509,37 @@ bool GPIO::valid_pin(uint8_t pin) const
     }
 #endif
     return gpio_by_pin_num(pin) != nullptr;
+}
+
+// return servo channel associated with GPIO pin.  Returns true on success and fills in servo_ch argument
+// servo_ch uses zero-based indexing
+bool GPIO::pin_to_servo_channel(uint8_t pin, uint8_t& servo_ch) const
+{
+    uint8_t fmu_chan_offset = 0;
+#if HAL_WITH_IO_MCU
+    if (AP_BoardConfig::io_enabled()) {
+        // check if this is one of the main pins
+        uint8_t main_servo_ch = pin;
+        if (iomcu.convert_pin_number(main_servo_ch)) {
+            servo_ch = main_servo_ch;
+            return true;
+        }
+        // with IOMCU the local (FMU) channels start at 8
+        fmu_chan_offset = 8;
+    }
+#endif
+
+    // search _gpio_tab for matching pin
+    for (uint8_t i=0; i<ARRAY_SIZE(_gpio_tab); i++) {
+        if (_gpio_tab[i].pin_num == pin) {
+            if (_gpio_tab[i].pwm_num == 0) {
+                return false;
+            }
+            servo_ch = _gpio_tab[i].pwm_num-1+fmu_chan_offset;
+            return true;
+        }
+    }
+    return false;
 }
 
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4)

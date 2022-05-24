@@ -7,6 +7,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Relay.h"
+#include <AP_Logger/AP_Logger.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
   #define RELAY1_PIN_DEFAULT 13
@@ -55,28 +56,28 @@
 const AP_Param::GroupInfo AP_Relay::var_info[] = {
     // @Param: PIN
     // @DisplayName: First Relay Pin
-    // @Description: Digital pin number for first relay control. This is the pin used for camera control.
+    // @Description: Digital pin number for first relay control. This is the pin used for camera shutter control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Standard
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,27:BBBMini Pin P8.17,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
     AP_GROUPINFO("PIN",  0, AP_Relay, _pin[0], RELAY1_PIN_DEFAULT),
 
     // @Param: PIN2
     // @DisplayName: Second Relay Pin
-    // @Description: Digital pin number for 2nd relay control.
+    // @Description: Digital pin number for 2nd relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Standard
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,65:BBBMini Pin P8.18,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
     AP_GROUPINFO("PIN2",  1, AP_Relay, _pin[1], RELAY2_PIN_DEFAULT),
 
     // @Param: PIN3
     // @DisplayName: Third Relay Pin
-    // @Description: Digital pin number for 3rd relay control.
+    // @Description: Digital pin number for 3rd relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Standard
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,22:BBBMini Pin P8.19,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
     AP_GROUPINFO("PIN3",  2, AP_Relay, _pin[2], RELAY3_PIN_DEFAULT),
 
     // @Param: PIN4
     // @DisplayName: Fourth Relay Pin
-    // @Description: Digital pin number for 4th relay control.
+    // @Description: Digital pin number for 4th relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Standard
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,63:BBBMini Pin P8.34,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
     AP_GROUPINFO("PIN4",  3, AP_Relay, _pin[3], RELAY4_PIN_DEFAULT),
@@ -90,14 +91,14 @@ const AP_Param::GroupInfo AP_Relay::var_info[] = {
 
     // @Param: PIN5
     // @DisplayName: Fifth Relay Pin
-    // @Description: Digital pin number for 5th relay control.
+    // @Description: Digital pin number for 5th relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Standard
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,62:BBBMini Pin P8.13,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
     AP_GROUPINFO("PIN5",  5, AP_Relay, _pin[4], RELAY5_PIN_DEFAULT),
 
     // @Param: PIN6
     // @DisplayName: Sixth Relay Pin
-    // @Description: Digital pin number for 6th relay control.
+    // @Description: Digital pin number for 6th relay control. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @User: Standard
     // @Values: -1:Disabled,49:BB Blue GP0 pin 4,50:AUXOUT1,51:AUXOUT2,52:AUXOUT3,53:AUXOUT4,54:AUXOUT5,55:AUXOUT6,57:BB Blue GP0 pin 3,113:BB Blue GP0 pin 6,116:BB Blue GP0 pin 5,37:BBBMini Pin P8.14,101:MainOut1,102:MainOut2,103:MainOut3,104:MainOut4,105:MainOut5,106:MainOut6,107:MainOut7,108:MainOut8
     AP_GROUPINFO("PIN6",  6, AP_Relay, _pin[5], RELAY6_PIN_DEFAULT),
@@ -140,6 +141,18 @@ void AP_Relay::set(const uint8_t instance, const bool value)
     if (_pin[instance] == -1) {
         return;
     }
+    const uint32_t now = AP_HAL::millis();
+    _pin_states = value ? _pin_states | (1U<<instance) : _pin_states & ~(1U<<instance);
+    if ((_pin_states != _last_logged_pin_states) && (now - _last_log_ms > 10)) {
+       AP::logger().Write("RELY", "TimeUS,State", "s-", "F-", "QB",
+                                        AP_HAL::micros64(),
+                                        _pin_states);
+       _last_log_ms = now;
+       _last_logged_pin_states = _pin_states;
+    }
+#if AP_SIM_ENABLED && (CONFIG_HAL_BOARD != HAL_BOARD_SITL)
+    return;
+#endif
     hal.gpio->pinMode(_pin[instance], HAL_GPIO_OUTPUT);
     hal.gpio->write(_pin[instance], value);
 }
@@ -156,8 +169,18 @@ void AP_Relay::toggle(uint8_t instance)
 bool AP_Relay::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<AP_RELAY_NUM_RELAYS; i++) {
-        if (_pin[i] != -1 && !hal.gpio->valid_pin(_pin[i])) {
-            hal.util->snprintf(buffer, buflen, "Relay[%u] pin %d invalid", i + 1, int(_pin[i].get()));
+        int8_t pin = _pin[i].get();
+        if (pin != -1 && !hal.gpio->valid_pin(pin)) {
+            char param_name_buf[11] = "RELAY_PIN";
+            if (i > 0) {
+                hal.util->snprintf(param_name_buf, ARRAY_SIZE(param_name_buf), "RELAY_PIN%u", unsigned(i+1));
+            }
+            uint8_t servo_ch;
+            if (hal.gpio->pin_to_servo_channel(pin, servo_ch)) {
+                hal.util->snprintf(buffer, buflen, "%s=%d, set SERVO%u_FUNCTION=-1", param_name_buf, int(pin), unsigned(servo_ch+1));
+            } else {
+                hal.util->snprintf(buffer, buflen, "%s=%d invalid", param_name_buf, int(pin));
+            }
             return false;
         }
     }

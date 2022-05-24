@@ -189,7 +189,6 @@ private:
 
     // sensor health for logging
     struct {
-        uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
     } sensor_health;
 
@@ -209,7 +208,6 @@ private:
 
     // Altitude
     int32_t baro_alt;            // barometer altitude in cm above home
-    LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // filtered pilot's throttle input used to cancel landing if throttle held high
     LowPassFilterFloat rc_throttle_control_in_filter;
@@ -298,7 +296,6 @@ private:
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
-    void fast_loop() override;
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);

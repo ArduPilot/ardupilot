@@ -73,6 +73,7 @@ enum class HarmonicNotchDynamicMode {
     UpdateRPM       = 2,
     UpdateBLHeli    = 3,
     UpdateGyroFFT   = 4,
+    UpdateRPM2      = 5,
 };
 
 /*
@@ -89,17 +90,23 @@ public:
     HarmonicNotchFilterParams(void);
     // set the fundamental center frequency of the harmonic notch
     void set_center_freq_hz(float center_freq) { _center_freq_hz.set(center_freq); }
+    // set the bandwidth of the harmonic notch
+    void set_bandwidth_hz(float bandwidth_hz) { _bandwidth_hz.set(bandwidth_hz); }
     // harmonics enabled on the harmonic notch
     uint8_t harmonics(void) const { return _harmonics; }
     // has the user set the harmonics value
     void set_default_harmonics(uint8_t hmncs) { _harmonics.set_default(hmncs); }
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
+    void set_reference(float ref) { _reference = ref; }
     // notch options
     bool hasOption(Options option) const { return _options & uint16_t(option); }
     // notch dynamic tracking mode
     HarmonicNotchDynamicMode tracking_mode(void) const { return HarmonicNotchDynamicMode(_tracking_mode.get()); }
     static const struct AP_Param::GroupInfo var_info[];
+
+    // save parameters
+    void save_params();
 
 private:
     // configured notch harmonics

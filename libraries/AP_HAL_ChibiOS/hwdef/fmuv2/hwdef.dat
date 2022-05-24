@@ -13,3 +13,6 @@ define HAL_MINIMIZE_FEATURES 1
 
 # we don't have a flash page spare to write parameters to:
 undef STORAGE_FLASH_PAGE
+
+# minimal GPS drivers to reduce flash usage
+include ../include/minimal_GPS.inc

@@ -664,7 +664,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_BCOEF_X
     // @DisplayName: Ballistic coefficient for X axis drag
-    // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
+    // @Description: Ratio of mass to drag coefficient measured along the X body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the frontal area. The predicted drag from the rotors is specified separately by the EK3_DRAG_MCOEF parameter.
     // @Range: 0.0 1000.0
     // @Units: kg/m/m
     // @User: Advanced
@@ -672,7 +672,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_BCOEF_Y
     // @DisplayName: Ballistic coefficient for Y axis drag
-    // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_MCOEF parameter.
+    // @Description: Ratio of mass to drag coefficient measured along the Y body axis. This parameter enables estimation of wind drift for vehicles with bluff bodies and without propulsion forces in the X and Y direction (eg multicopters). The drag produced by this effect scales with speed squared.  Set to a postive value > 1.0 to enable. A starting value is the mass in Kg divided by the side area. The predicted drag from the rotors is specified separately by the EK3_DRAG_MCOEF parameter.
     // @Range: 50.0 1000.0
     // @Units: kg/m/m
     // @User: Advanced
@@ -680,7 +680,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_M_NSE
     // @DisplayName: Observation noise for drag acceleration
-    // @Description: This sets the amount of noise used when fusing X and Y acceleration as an observation that enables esitmation of wind velocity for multi-rotor vehicles. This feature is enabled by the EK3_BCOEF_X and EK3_BCOEF_Y parameters
+    // @Description: This sets the amount of noise used when fusing X and Y acceleration as an observation that enables esitmation of wind velocity for multi-rotor vehicles. This feature is enabled by the EK3_DRAG_BCOEF_X and EK3_DRAG_BCOEF_Y parameters
     // @Range: 0.1 2.0
     // @Increment: 0.1
     // @User: Advanced
@@ -689,7 +689,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: DRAG_MCOEF
     // @DisplayName: Momentum coefficient for propeller drag
-    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_BCOEF_X and EK3_BCOEF_Y parameters.
+    // @Description: This parameter is used to predict the drag produced by the rotors when flying a multi-copter, enabling estimation of wind drift. The drag produced by this effect scales with speed not speed squared and is produced because some of the air velocity normal to the rotors axis of rotation is lost when passing through the rotor disc which changes the momentum of the airflow causing drag. For unducted rotors the effect is roughly proportional to the area of the propeller blades when viewed side on and changes with different propellers. It is higher for ducted rotors. For example if flying at 15 m/s at sea level conditions produces a rotor induced drag acceleration of 1.5 m/s/s, then EK3_DRAG_MCOEF would be set to 0.1 = (1.5/15.0). Set EK3_MCOEF to a postive value to enable wind estimation using this drag effect. To account for the drag produced by the body which scales with speed squared, see documentation for the EK3_DRAG_BCOEF_X and EK3_DRAG_BCOEF_Y parameters.
     // @Range: 0.0 1.0
     // @Increment: 0.01
     // @Units: 1/s
@@ -1154,55 +1154,49 @@ int8_t NavEKF3::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosNE(int8_t instance, Vector2f &posNE) const
+bool NavEKF3::getPosNE(Vector2f &posNE) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosNE(posNE);
+    return core[primary].getPosNE(posNE);
 }
 
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF3::getPosD(int8_t instance, float &posD) const
+bool NavEKF3::getPosD(float &posD) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getPosD(posD);
+    return core[primary].getPosD(posD);
 }
 
 // return NED velocity in m/s
-void NavEKF3::getVelNED(int8_t instance, Vector3f &vel) const
+void NavEKF3::getVelNED(Vector3f &vel) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getVelNED(vel);
+        core[primary].getVelNED(vel);
     }
 }
 
-// return estimate of true airspeed vector in body frame in m/s for the specified instance
-// An out of range instance (eg -1) returns data for the primary instance
+// return estimate of true airspeed vector in body frame in m/s
 // returns false if estimate is unavailable
-bool NavEKF3::getAirSpdVec(int8_t instance, Vector3f &vel) const
+bool NavEKF3::getAirSpdVec(Vector3f &vel) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        return core[instance].getAirSpdVec(vel);
+        return core[primary].getAirSpdVec(vel);
     }
     return false;
 }
 
 // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
-float NavEKF3::getPosDownDerivative(int8_t instance) const
+float NavEKF3::getPosDownDerivative() const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     // return the value calculated from a complementary filter applied to the EKF height and vertical acceleration
     if (core) {
-        return core[instance].getPosDownDerivative();
+        return core[primary].getPosDownDerivative();
     }
     return 0.0f;
 }
@@ -1273,40 +1267,35 @@ void NavEKF3::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGainSca
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 // returns true if wind state estimation is active
-bool NavEKF3::getWind(int8_t instance, Vector3f &wind) const
+bool NavEKF3::getWind(Vector3f &wind) const
 {
-    bool ret = false;
-    if (instance < 0 || instance >= num_cores) instance = primary;
-    if (core) {
-        ret = core[instance].getWind(wind);
+    if (core == nullptr) {
+        return false;
     }
-    return ret;
+    return core[primary].getWind(wind);
 }
 
 // return earth magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagNED(int8_t instance, Vector3f &magNED) const
+void NavEKF3::getMagNED(Vector3f &magNED) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getMagNED(magNED);
+        core[primary].getMagNED(magNED);
     }
 }
 
 // return body magnetic field estimates in measurement units / 1000
-void NavEKF3::getMagXYZ(int8_t instance, Vector3f &magXYZ) const
+void NavEKF3::getMagXYZ(Vector3f &magXYZ) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getMagXYZ(magXYZ);
+        core[primary].getMagXYZ(magXYZ);
     }
 }
 
-// return the airspeed sensor in use for the specified instance
-uint8_t NavEKF3::getActiveAirspeed(int8_t instance) const
+// return the airspeed sensor in use
+uint8_t NavEKF3::getActiveAirspeed() const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        return core[instance].getActiveAirspeed();
+        return core[primary].getActiveAirspeed();
     } else {
         return 255;
     }
@@ -1343,17 +1332,15 @@ bool NavEKF3::getLLH(struct Location &loc) const
     return core[primary].getLLH(loc);
 }
 
-// Return the latitude and longitude and height used to set the NED origin for the specified instance
-// An out of range instance (eg -1) returns data for the primary instance
+// Return the latitude and longitude and height used to set the NED origin
 // All NED positions calculated by the filter are relative to this location
 // Returns false if the origin has not been set
-bool NavEKF3::getOriginLLH(int8_t instance, struct Location &loc) const
+bool NavEKF3::getOriginLLH(struct Location &loc) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (!core) {
         return false;
     }
-    return core[instance].getOriginLLH(loc);
+    return core[primary].getOriginLLH(loc);
 }
 
 // set the latitude and longitude and height used to set the NED origin
@@ -1393,12 +1380,11 @@ bool NavEKF3::getHAGL(float &HAGL) const
     return core[primary].getHAGL(HAGL);
 }
 
-// return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF3::getEulerAngles(int8_t instance, Vector3f &eulers) const
+// return the Euler roll, pitch and yaw angle in radians
+void NavEKF3::getEulerAngles(Vector3f &eulers) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getEulerAngles(eulers);
+        core[primary].getEulerAngles(eulers);
     }
 }
 
@@ -1422,45 +1408,39 @@ void NavEKF3::getQuaternionBodyToNED(int8_t instance, Quaternion &quat) const
 }
 
 // return the quaternions defining the rotation from NED to XYZ (autopilot) axes
-void NavEKF3::getQuaternion(int8_t instance, Quaternion &quat) const
+void NavEKF3::getQuaternion(Quaternion &quat) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getQuaternion(quat);
+        core[primary].getQuaternion(quat);
     }
 }
 
-// return the innovations for the specified instance
-bool NavEKF3::getInnovations(int8_t instance, Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
+// return the innovations
+bool NavEKF3::getInnovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
 {
     if (core == nullptr) {
         return false;
     }
-    if (instance < 0 || instance >= num_cores) instance = primary;
 
-    return core[instance].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    return core[primary].getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
 }
 
 // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
-bool NavEKF3::getVariances(int8_t instance, float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
+bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const
 {
     if (core == nullptr) {
         return false;
     }
-    if (instance < 0 || instance >= num_cores) instance = primary;
 
-    return core[instance].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    return core[primary].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
-// get a source's velocity innovations for the specified instance.  Set instance to -1 for the primary instance
+// get a source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
-bool NavEKF3::getVelInnovationsAndVariancesForSource(int8_t instance, AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
+bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
 {
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
     if (core) {
-        return core[instance].getVelInnovationsAndVariancesForSource(source, innovations, variances);
+        return core[primary].getVelInnovationsAndVariancesForSource(source, innovations, variances);
     }
     return false;
 }
@@ -1754,11 +1734,10 @@ void NavEKF3::setTerrainHgtStable(bool val)
   6 = badly conditioned synthetic sideslip fusion
   7 = filter is not initialised
 */
-void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
+void NavEKF3::getFilterFaults(uint16_t &faults) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterFaults(faults);
+        core[primary].getFilterFaults(faults);
     } else {
         faults = 0;
     }
@@ -1767,11 +1746,10 @@ void NavEKF3::getFilterFaults(int8_t instance, uint16_t &faults) const
 /*
   return filter status flags
 */
-void NavEKF3::getFilterStatus(int8_t instance, nav_filter_status &status) const
+void NavEKF3::getFilterStatus(nav_filter_status &status) const
 {
-    if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
-        core[instance].getFilterStatus(status);
+        core[primary].getFilterStatus(status);
     } else {
         memset(&status, 0, sizeof(status));
     }
@@ -2019,14 +1997,11 @@ bool NavEKF3::yawAlignmentComplete(void) const
     return core[primary].have_aligned_yaw();
 }
 
-// returns true when the state estimates for the selected core are significantly degraded by vibration
-bool NavEKF3::isVibrationAffected(int8_t instance) const
+// returns true when the state estimates are significantly degraded by vibration
+bool NavEKF3::isVibrationAffected() const
 {
-    if (instance < 0 || instance >= num_cores) {
-        instance = primary;
-    }
     if (core) {
-        return core[instance].isVibrationAffected();
+        return core[primary].isVibrationAffected();
     }
     return false;
 }

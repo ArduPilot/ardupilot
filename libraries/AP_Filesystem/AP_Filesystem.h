@@ -34,6 +34,7 @@
 #endif
 #define DT_REG 0
 #define DT_DIR 1
+#define DT_LNK 10
 
 struct dirent {
    char    d_name[MAX_NAME_LEN]; /* filename */

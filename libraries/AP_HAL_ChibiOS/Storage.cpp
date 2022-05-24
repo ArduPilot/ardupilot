@@ -346,6 +346,7 @@ void Storage::_flash_load(void)
 bool Storage::_flash_write(uint16_t line)
 {
 #ifdef STORAGE_FLASH_PAGE
+    EXPECT_DELAY_MS(1);
     return _flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE);
 #else
     return false;
@@ -360,6 +361,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 #ifdef STORAGE_FLASH_PAGE
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
+        EXPECT_DELAY_MS(1);
         if (hal.flash->write(base_address+offset, data, length)) {
             return true;
         }
@@ -412,13 +414,10 @@ bool Storage::_flash_erase_sector(uint8_t sector)
           thread.  We can't use EXPECT_DELAY_MS() as it checks we are
           in the main thread
          */
-        ChibiOS::Scheduler *sched = (ChibiOS::Scheduler *)hal.scheduler;
-        sched->_expect_delay_ms(1000);
+        EXPECT_DELAY_MS(1000);
         if (hal.flash->erasepage(_flash_page+sector)) {
-            sched->_expect_delay_ms(0);
             return true;
         }
-        sched->_expect_delay_ms(0);
         hal.scheduler->delay(1);
     }
     return false;

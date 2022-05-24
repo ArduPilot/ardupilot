@@ -22,10 +22,10 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Blimp, &blimp, func, rate_hz, max_time_micros, priority)
+#define FAST_TASK(func) FAST_TASK_CLASS(Blimp, &blimp, func)
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here.
+  scheduler table - all tasks should be listed here.
 
   All entries in this table must be ordered by priority.
 
@@ -49,6 +49,23 @@ SCHED_TASK_CLASS arguments:
 
  */
 const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
+    // update INS immediately to get current gyro data populated
+    FAST_TASK_CLASS(AP_InertialSensor, &blimp.ins, update),
+    // send outputs to the motors library immediately
+    FAST_TASK(motors_output),
+     // run EKF state estimator (expensive)
+    FAST_TASK(read_AHRS),
+    // Inertial Nav
+    FAST_TASK(read_inertia),
+    // check if ekf has reset target heading or position
+    FAST_TASK(check_ekf_reset),
+    // run the attitude controllers
+    FAST_TASK(update_flight_mode),
+    // update home from EKF if necessary
+    FAST_TASK(update_home_from_EKF),
+    // log sensor health
+    FAST_TASK(Log_Sensor_Health),
+
     SCHED_TASK(rc_loop,              100,    130,   3),
     SCHED_TASK(throttle_loop,         50,     75,   6),
     SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
@@ -92,40 +109,6 @@ void Blimp::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 }
 
 constexpr int8_t Blimp::_failsafe_priorities[4];
-
-// Main loop
-void Blimp::fast_loop()
-{
-    // update INS immediately to get current gyro data populated
-    ins.update();
-
-    // send outputs to the motors library immediately
-    motors_output();
-
-    // run EKF state estimator (expensive)
-    // --------------------
-    read_AHRS();
-
-    // Inertial Nav
-    // --------------------
-    read_inertia();
-
-    // check if ekf has reset target heading or position
-    check_ekf_reset();
-
-    // run the attitude controllers
-    update_flight_mode();
-
-    // update home from EKF if necessary
-    update_home_from_EKF();
-
-    // log sensor health
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Sensor_Health();
-    }
-
-    AP_Vehicle::fast_loop(); //just does gyro fft
-}
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz
@@ -289,14 +272,12 @@ Blimp::Blimp(void)
     : logger(g.log_bitmask),
       flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
-      land_accel_ef_filter(LAND_DETECTOR_ACCEL_LPF_CUTOFF),
       rc_throttle_control_in_filter(1.0f),
       inertial_nav(ahrs),
       param_loader(var_info),
       flightmode(&mode_manual)
 {
     // init sensor error logging flags
-    sensor_health.baro = true;
     sensor_health.compass = true;
 }
 

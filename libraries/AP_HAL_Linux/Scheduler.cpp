@@ -325,7 +325,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
     exit(1);
 }
 
-#if APM_BUILD_TYPE(APM_BUILD_Replay)
+#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     if (time_usec < _stopped_clock_usec) {

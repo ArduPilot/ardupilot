@@ -1,5 +1,7 @@
 #include <AP_Winch/AP_Winch_Backend.h>
+
 #include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 // setup rc input and output
 void AP_Winch_Backend::init()

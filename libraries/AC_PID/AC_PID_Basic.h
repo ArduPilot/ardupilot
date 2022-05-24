@@ -5,7 +5,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Logger/AP_Logger.h>
+#include "AP_PIDInfo.h"
 
 /// @class	AC_PID_Basic
 /// @brief	Copter PID control class
@@ -70,7 +70,7 @@ public:
     void set_integrator(float error, float i);
     void set_integrator(float i);
 
-    const AP_Logger::PID_Info& get_pid_info(void) const WARN_IF_UNUSED { return _pid_info; }
+    const AP_PIDInfo& get_pid_info(void) const WARN_IF_UNUSED { return _pid_info; }
 
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
@@ -94,5 +94,5 @@ protected:
     float _integrator;  // integrator value
     bool _reset_filter; // true when input filter should be reset during next call to set_input
 
-    AP_Logger::PID_Info _pid_info;
+    AP_PIDInfo _pid_info;
 };

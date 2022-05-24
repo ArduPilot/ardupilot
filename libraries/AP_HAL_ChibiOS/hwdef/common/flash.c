@@ -75,7 +75,7 @@
 
 // optionally disable interrupts during flash writes
 #ifndef STM32_FLASH_DISABLE_ISR
-#define STM32_FLASH_DISABLE_ISR 0
+#define STM32_FLASH_DISABLE_ISR 1
 #endif
 
 // the 2nd bank of flash needs to be handled differently
@@ -546,28 +546,37 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
         return false;
     }
 
-    // check for erasure
-    if (!stm32h7_check_all_ones(addr, count >> 2)) {
-        return false;
-    }
-
-#if STM32_FLASH_DISABLE_ISR
-    syssts_t sts = chSysGetStatusAndLockX();
-#endif
-
     stm32_flash_unlock();
     bool success = true;
 
     while (count >= 32) {
-        if (!stm32h7_flash_write32(addr, b)) {
-            success = false;
-            goto failed;
-        }
+        const uint8_t *b2 = (const uint8_t *)addr;
+        // if the bytes already match then skip this chunk
+        if (memcmp(b, b2, 32) != 0) {
+            // check for erasure
+            if (!stm32h7_check_all_ones(addr, 8)) {
+                return false;
+            }
 
-        // check contents
-        if (memcmp((void*)addr, b, 32) != 0) {
-            success = false;
-            goto failed;
+#if STM32_FLASH_DISABLE_ISR
+            syssts_t sts = chSysGetStatusAndLockX();
+#endif
+
+            bool ok = stm32h7_flash_write32(addr, b);
+
+#if STM32_FLASH_DISABLE_ISR
+            chSysRestoreStatusX(sts);
+#endif
+
+            if (!ok) {
+                success = false;
+                goto failed;
+            }
+            // check contents
+            if (memcmp((void*)addr, b, 32) != 0) {
+                success = false;
+                goto failed;
+            }
         }
 
         addr += 32;
@@ -577,9 +586,6 @@ static bool stm32_flash_write_h7(uint32_t addr, const void *buf, uint32_t count)
 
 failed:
     stm32_flash_lock();
-#if STM32_FLASH_DISABLE_ISR
-    chSysRestoreStatusX(sts);
-#endif
     return success;
 }
 

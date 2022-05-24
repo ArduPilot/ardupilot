@@ -1,3 +1,75 @@
+Release 4.2.0 4th May 2022
+--------------------------
+
+This is the first 4.2 stable release of plane. Since 4.2.0beta6 there
+have only been 3 changes:
+
+ - added VTOL-quicktune lua script
+ - fixed custom compass orientation for DroneCAN compasses
+ - fixed a bug in blended Z accel calculation when not using first IMU
+
+Since the last stable 4.1.7 release there have been over 4k changes,
+so it is not practical to list them all here. Highlights for plane
+users include:
+
+ - smoother quadplane transitions
+ - ship landing support
+ - CAN over mavlink support
+ - major tailsitter improvements
+ - much better error reporting and diagnostics
+ - numerous lua scripting improvements
+ - improved weathervaning support and options
+ - support for fixed wing aerobatics
+ - many new flight controllers added
+ - DroneCAN dual-GPS for yaw support
+
+Happy flying!
+
+
+Release 4.2.0beta6 28th April 2022
+----------------------------------
+
+This is the 6th beta of the 4.2.0 major release
+
+ - fix FIFO overruns on the BMI088 IMU
+ - fix plane avoidance behaviour when in AvoidADSB mode
+ - disable fatal exceptions on DMA errors on STM32
+ - changed quadplane weathervaning to make pitch input optional for nose-in and tail-in
+ - increased default scripting heap size on F7/H7 to 100k
+ - added ICM42688 option on MatekH743
+ - added ICM4xxxx option on QiotekZealotH743
+ - rename INS_NOTCH parameters to INS_HNTC2
+ - added Q_OPTION for RTL on failsafe in Q modes, for ship operation
+ - disabled setting of highest airspeed when disarmed
+ - fixed init of file descriptor in logging
+ - cope with gaps in log listing, and reduce impact of log listing on EKF and ESCs
+ - avoided repeated message on "failed to detach from pin" for RPM
+ - improved error messages on GPIO pin configuration conflict
+ - use narrower bitwidths for dshot, giving more accurate timing
+ - added MatekF765-Wing-bdshot target
+ - fixed use of DO_SET_SERVO with SERVOn_FUNCTION=0
+ - several improvements to SPRacingH7 support
+
+Happy flying!
+
+Release 4.2.0beta5 5th April 2022
+---------------------------------
+
+This is the 5th beta of the 4.2.0 major release
+
+ - fixed a timer bug that could cause boards using flash storage to watchdog
+ - added OTG2 USB on QioTekZealotH743
+ - increased stack size on log and monitor threads
+ - fixed rudder control when ARMING_RUDDER != 2 on quadplanes
+ - fixed accel bias when an IMU is disabled in EKF3
+ - improved QSPI support for SPro H7 Extreme
+ - fixed @SYS file logging
+ - fixed buzzer on MatekH743, going back to 16 bit timer
+ - fixed H7 flash storage bug that caused re-init on overflow
+ - fixed incorrect lock class in UART driver
+
+Happy flying!
+
 Release 4.2.0beta4 28th March 2022
 ----------------------------------
 

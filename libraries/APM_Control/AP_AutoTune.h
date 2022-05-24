@@ -1,10 +1,10 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/LogStructure.h>
-#include <AP_Param/AP_Param.h>
+
+#include <Filter/SlewLimiter.h>
 #include <AP_Vehicle/AP_Vehicle.h>
-#include <AC_PID/AC_PID.h>
+#include <Filter/ModeFilter.h>
 
 class AP_AutoTune
 {
@@ -43,7 +43,7 @@ public:
 
 
     // constructor
-    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, AC_PID &rpid);
+    AP_AutoTune(ATGains &_gains, ATType type, const AP_Vehicle::FixedWing &parms, class AC_PID &rpid);
 
     // called when autotune mode is entered
     void start(void);
@@ -54,7 +54,7 @@ public:
 
     // update called whenever autotune mode is active. This is
     // called at the main loop rate
-    void update(AP_Logger::PID_Info &pid_info, float scaler, float angle_err_deg);
+    void update(struct AP_PIDInfo &pid_info, float scaler, float angle_err_deg);
 
     // are we running?
     bool running;
@@ -62,7 +62,7 @@ public:
 private:
     // the current gains
     ATGains &current;
-    AC_PID &rpid;
+    class AC_PID &rpid;
 
     // what type of autotune is this
     ATType type;

@@ -123,7 +123,7 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         if (!HAVE_PAYLOAD_SPACE(chan, PID_TUNING)) {
             return;
         }
-        const AP_Logger::PID_Info *pid_info = nullptr;
+        const AP_PIDInfo *pid_info = nullptr;
         switch (axes[i]) {
         case PID_SEND::VELX:
             pid_info = &blimp.pid_vel_xy.get_pid_info_x();

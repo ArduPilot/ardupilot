@@ -89,9 +89,13 @@ class BoardList(object):
                 # a hwdef can specify which vehicles this target is valid for:
                 match = re.match(r"AUTOBUILD_TARGETS\s*(.*)", line)
                 if match is not None:
-                    board.autobuild_targets = [
-                        x.rstrip().lstrip().lower() for x in match.group(1).split(",")
-                    ]
+                    mname = match.group(1)
+                    if mname.lower() == 'none':
+                        board.autobuild_targets = []
+                    else:
+                        board.autobuild_targets = [
+                            x.rstrip().lstrip().lower() for x in mname.split(",")
+                        ]
 
     def read_hwdef(self, filepath):
         fh = open(filepath)
@@ -120,12 +124,6 @@ class BoardList(object):
             # IOMCU:
             "iomcu",
             'iomcu_f103_8MHz',
-
-            # evaluation boards
-            'H757I_EVAL',
-            'H757I_EVAL_intf',
-            "Nucleo-G491",
-            "NucleoH743",
 
             # bdshot
             "CubeYellow-bdshot",
@@ -168,11 +166,6 @@ class BoardList(object):
             "G4-ESC",
             "HereID",
             "HerePro",
-
-            # evaluation boards
-            "H757I_EVAL",
-            "Nucleo-L476",
-            "Nucleo-L496",
         ]
         ret = []
         for x in self.boards:
@@ -186,3 +179,23 @@ class BoardList(object):
 
 AUTOBUILD_BOARDS = BoardList().find_autobuild_boards()
 AP_PERIPH_BOARDS = BoardList().find_ap_periph_boards()
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='list boards to build')
+
+    parser.add_argument('target')
+    parser.add_argument('--per-line', action='store_true', default=False, help='list one per line for use with xargs')
+    args = parser.parse_args()
+    board_list = BoardList()
+    target = args.target
+    if target == "AP_Periph":
+        blist = board_list.find_ap_periph_boards()
+    else:
+        blist = board_list.find_autobuild_boards(target)
+    blist = sorted(blist)
+    if args.per_line:
+        for b in blist:
+            print(b)
+    else:
+        print(blist)

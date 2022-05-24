@@ -231,6 +231,8 @@ private:
 
     // have we disabled motor outputs?
     bool motors_disabled;
+    // mask of channels that should normally be disabled
+    uint16_t motors_disabled_mask;
 
     // have we locked the UART?
     bool uart_locked;

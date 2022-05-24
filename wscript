@@ -683,7 +683,6 @@ def _build_recursion(bld):
     common_dirs_excl = [
         'modules',
         'libraries/AP_HAL_*',
-        'libraries/SITL',
     ]
 
     hal_dirs_patterns = [

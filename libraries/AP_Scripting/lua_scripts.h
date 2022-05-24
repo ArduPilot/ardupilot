@@ -19,9 +19,10 @@
 #include <setjmp.h>
 
 #include <AP_Filesystem/posix_compat.h>
-#include "lua_bindings.h"
 #include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS.h>
+
+#include "lua/src/lua.hpp"
 
 #ifndef REPL_DIRECTORY
   #if HAL_OS_FATFS_IO
@@ -132,8 +133,12 @@ private:
 
     // must be static for use in atpanic
     static void print_error(MAV_SEVERITY severity);
-    static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
     static char *error_msg_buf;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
+
+public:
+    // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
+    static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
+
 };

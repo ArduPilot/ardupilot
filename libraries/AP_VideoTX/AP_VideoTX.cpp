@@ -17,6 +17,8 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <GCS_MAVLink/GCS.h>
 
+#include <AP_HAL/AP_HAL.h>
+
 extern const AP_HAL::HAL& hal;
 
 AP_VideoTX *AP_VideoTX::singleton;

@@ -20,20 +20,24 @@
  */
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
 #ifndef HAL_SCHEDULER_ENABLED
 #define HAL_SCHEDULER_ENABLED 1
 #endif
 
 #include <AP_Param/AP_Param.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Util.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include "PerfInfo.h"       // loop perf monitoring
 
 #if HAL_MINIMIZE_FEATURES
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_name,
+#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_name "*",
 #else
 #define AP_SCHEDULER_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name,
+#define AP_FAST_NAME_INITIALIZER(_clazz,_name) .name = #_clazz "::" #_name "*",
 #endif
 #define LOOP_RATE 0
 
@@ -49,6 +53,17 @@
 }
 
 /*
+  useful macro for creating the fastloop task table
+ */
+#define FAST_TASK_CLASS(classname, classptr, func) { \
+    .function = FUNCTOR_BIND(classptr, &classname::func, void),\
+    AP_FAST_NAME_INITIALIZER(classname, func)\
+    .rate_hz = 0,\
+    .max_time_micros = 0,\
+    .priority = AP_Scheduler::FAST_TASK_PRI0 \
+}
+
+/*
   A task scheduler for APM main loops
 
   Sketches should call scheduler.init() on startup, then call
@@ -61,10 +76,7 @@
 class AP_Scheduler
 {
 public:
-
-    FUNCTOR_TYPEDEF(scheduler_fastloop_fn_t, void);
-
-    AP_Scheduler(scheduler_fastloop_fn_t fastloop_fn = nullptr);
+    AP_Scheduler();
 
     /* Do not allow copies */
     AP_Scheduler(const AP_Scheduler &other) = delete;
@@ -85,6 +97,13 @@ public:
 
     enum class Options : uint8_t {
         RECORD_TASK_INFO = 1 << 0
+    };
+
+    enum FastTaskPriorities {
+        FAST_TASK_PRI0 = 0,
+        FAST_TASK_PRI1 = 1,
+        FAST_TASK_PRI2 = 2,
+        MAX_FAST_TASK_PRIORITIES = 3
     };
 
     // initialise scheduler
@@ -168,9 +187,6 @@ public:
     AP::PerfInfo perf_info;
 
 private:
-    // function that is called before anything in the scheduler table:
-    scheduler_fastloop_fn_t _fastloop_fn;
-
     // used to enable scheduler debugging
     AP_Int8 _debug;
 

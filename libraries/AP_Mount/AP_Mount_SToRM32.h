@@ -3,14 +3,14 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include "AP_Mount_Backend.h"
+
+#if HAL_MOUNT_ENABLED
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <RC_Channel/RC_Channel.h>
-#include "AP_Mount_Backend.h"
-#if HAL_MOUNT_ENABLED
+#include <AP_AHRS/AP_AHRS.h>
 
 #define AP_MOUNT_STORM32_RESEND_MS  1000    // resend angle targets to gimbal once per second
 #define AP_MOUNT_STORM32_SEARCH_MS  60000   // search for gimbal for 1 minute after startup

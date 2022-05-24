@@ -16,6 +16,7 @@
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Scripting.h"
+#include <AP_Logger/AP_Logger.h>
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
@@ -162,7 +163,6 @@ void lua_scripts::create_sandbox(lua_State *L) {
     lua_pushstring(L, "utf8");
     luaopen_utf8(L);
     lua_settable(L, -3);
-    load_lua_bindings(L);
     load_generated_sandbox(L);
 
 }

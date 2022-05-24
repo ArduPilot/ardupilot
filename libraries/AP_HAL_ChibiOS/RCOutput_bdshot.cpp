@@ -477,7 +477,7 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     }
 
     // check nothing bad happened
-    if ((flags & STM32_DMA_ISR_TEIF) != 0) {
+    if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
         INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
     }
     dmaStreamDisable(group->dma);
@@ -510,7 +510,7 @@ __RAMFUNC__ void RCOutput::bdshot_dma_ic_irq_callback(void *p, uint32_t flags)
     chSysLockFromISR();
 
     // check nothing bad happened
-    if ((flags & STM32_DMA_ISR_TEIF) != 0) {
+    if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
         INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
     }
 
