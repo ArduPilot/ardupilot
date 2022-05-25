@@ -42,6 +42,9 @@ public:
     // return the average motor RPM
     float get_average_motor_rpm() const { return get_average_motor_rpm(0xFFFFFFFF); }
 
+    // determine whether all the motors in servo_channel_mask are running
+    bool are_motors_running(uint32_t servo_channel_mask, float min_rpm) const;
+
     // get an individual ESC's temperature in centi-degrees if available, returns true on success
     bool get_temperature(uint8_t esc_index, int16_t& temp) const;
 
@@ -91,9 +94,15 @@ public:
     // udpate at 10Hz to log telemetry
     void update();
 
+    // is ESC telemetry working
+    bool is_active() const { return _have_data; }
+
+    // is rpm telemetry configured for the provided channel mask
+    bool is_telemetry_active(uint32_t servo_channel_mask) const;
+
 private:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
-    void update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate);
+    void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate);
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
 
