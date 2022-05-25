@@ -24,6 +24,8 @@
 
 //#define ESC_TELEM_DEBUG
 
+#define ESC_RPM_CHECK_TIMEOUT_US 100000UL   // timeout for motor running validity
+
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -115,6 +117,40 @@ uint32_t AP_ESC_Telem::get_active_esc_mask() const {
 uint8_t AP_ESC_Telem::get_num_active_escs() const {
     uint32_t active = get_active_esc_mask();
     return __builtin_popcount(active);
+}
+
+// return the whether all the motors in servo_channel_mask are running
+bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm) const
+{
+    const uint32_t now = AP_HAL::micros();
+
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        if (BIT_IS_SET(servo_channel_mask, i)) {
+            const volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[i];
+            // we choose a relatively strict measure of health so that failsafe actions can rely on the results
+            if (now < rpmdata.last_update_us || now - rpmdata.last_update_us > ESC_RPM_CHECK_TIMEOUT_US) {
+                return false;
+            }
+            if (rpmdata.rpm < min_rpm) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// is telemetry active for the provided channel mask
+bool AP_ESC_Telem::is_telemetry_active(uint32_t servo_channel_mask) const
+{
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
+        if (BIT_IS_SET(servo_channel_mask, i)) {
+            // no data received
+            if (get_last_telem_data_ms(i) == 0 && _rpm_data[i].last_update_us == 0) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 // get an individual ESC's slewed rpm if available, returns true on success
