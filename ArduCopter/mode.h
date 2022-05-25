@@ -400,7 +400,7 @@ public:
     void exit() override;
     void run() override;
 
-    bool requires_GPS() const override { return true; }
+    bool requires_GPS() const override;
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
@@ -422,6 +422,8 @@ public:
         NAV_ATTITUDE_TIME,
     };
 
+    // set submode.  returns true on success, false on failure
+    void set_submode(SubMode new_submode);
 
     // pause continue in auto mode
     bool pause() override;
