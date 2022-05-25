@@ -3442,8 +3442,8 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
     if (weathervane->get_yaw_out(wv_output,
                                      plane.channel_rudder->get_control_in(),
                                      plane.relative_ground_altitude(plane.g.rangefinder_landing),
-                                     wp_nav->get_roll(),
-                                     wp_nav->get_pitch(),
+                                     pos_control->get_roll_cd(),
+                                     pos_control->get_pitch_cd(),
                                      is_takeoff,
                                      in_vtol_land_sequence())) {
         return constrain_float(wv_output * (1/45.0), -100.0, 100.0) * yaw_rate_max * 0.5;
