@@ -229,7 +229,16 @@ public:
         float arg1;
         float arg2;
     };
-    
+
+    // Scripting NAV command (with verify)
+    struct PACKED nav_attitude_time_Command {
+        uint16_t time_sec;
+        int16_t roll_deg;
+        int8_t pitch_deg;
+        int16_t yaw_deg;
+        float climb_rate;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -302,7 +311,10 @@ public:
 
         // nav scripting
         nav_script_time_Command nav_script_time;
-        
+
+        // nav attitude time
+        nav_attitude_time_Command nav_attitude_time;
+
         // location
         Location location{};      // Waypoint location
     };
