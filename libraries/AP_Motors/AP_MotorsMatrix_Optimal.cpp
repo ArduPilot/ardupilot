@@ -20,6 +20,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InternalError/AP_InternalError.h>
 
+#pragma GCC diagnostic error "-Wframe-larger-than=4500"
+
 extern const AP_HAL::HAL& hal;
 
 void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_type frame_type)
