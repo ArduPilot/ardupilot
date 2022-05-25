@@ -152,11 +152,6 @@ bool Copter::ekf_over_threshold()
 // failsafe_ekf_event - perform ekf failsafe
 void Copter::failsafe_ekf_event()
 {
-    // return immediately if ekf failsafe already triggered
-    if (failsafe.ekf) {
-        return;
-    }
-
     // EKF failsafe event has occurred
     failsafe.ekf = true;
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_OCCURRED);
@@ -211,6 +206,19 @@ void Copter::failsafe_ekf_off_event(void)
         gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe Cleared");
     }
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
+}
+
+// re-check if the flight mode requires GPS but EKF failsafe is active
+// this should be called by flight modes that are changing their submode from one that does NOT require a position estimate to one that does
+void Copter::failsafe_ekf_recheck()
+{
+    // return immediately if not in ekf failsafe
+    if (!failsafe.ekf) {
+        return;
+    }
+
+    // trigger EKF failsafe action
+    failsafe_ekf_event();
 }
 
 // check for ekf yaw reset and adjust target heading, also log position reset
