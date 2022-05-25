@@ -419,6 +419,7 @@ public:
         LOITER_TO_ALT,
         NAV_PAYLOAD_PLACE,
         NAV_SCRIPT_TIME,
+        NAV_ATTITUDE_TIME,
     };
 
     // Auto
@@ -500,6 +501,7 @@ private:
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
+    void nav_attitude_time_run();
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
@@ -546,6 +548,7 @@ private:
 #if AP_SCRIPTING_ENABLED
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
 #endif
+    void do_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
     bool verify_takeoff();
     bool verify_land();
@@ -567,6 +570,7 @@ private:
 #if AP_SCRIPTING_ENABLED
     bool verify_nav_script_time();
 #endif
+    bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
@@ -622,6 +626,15 @@ private:
         float arg2;         // 2nd argument provided by mission command
     } nav_scripting;
 #endif
+
+    // nav attitude time command variables
+    struct {
+        int16_t roll_deg;   // target roll angle in degrees.  provided by mission command
+        int8_t pitch_deg;   // target pitch angle in degrees.  provided by mission command
+        int16_t yaw_deg;    // target yaw angle in degrees.  provided by mission command
+        float climb_rate;   // climb rate in m/s. provided by mission command
+        uint32_t start_ms;  // system time that nav attitude time command was recieved (used for timeout)
+    } nav_attitude_time;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
