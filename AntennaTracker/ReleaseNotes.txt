@@ -1,5 +1,18 @@
 Antenna Tracker Release Notes:
 ------------------------------------------------------------------
+AntennaTracker 4.2.0 beta1 25-May-2022
+Changes from 1.1.0
+1) Many new supported boards
+2) New sensor support
+3) PID improvements
+4) Filtering improvements
+5) Integrate AP_Stats library
+6) Scripting support
+7) Logging improvements
+8) Improvements to GCS communications
+9) Option to scan before vehicle found
+10) Innumerable system-level improvements; see Copter and Plane 4.2 release notes
+------------------------------------------------------------------
 AntennaTracker 1.1.0 3-Aug-2019
 Changes from 1.1.0-rc1
 1) Instantiate battery monitor instance
