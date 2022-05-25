@@ -72,8 +72,6 @@ void Sub::poshold_run()
     } else {
         pos_control.init_xy_controller_stopping_point();
     }
-    motors.set_forward(forward_out + pilot_forward);
-    motors.set_lateral(lateral_out + pilot_lateral);
     /////////////////////
     // Update attitude //
 
@@ -109,5 +107,8 @@ void Sub::poshold_run()
 
     // Update z axis //
     control_depth();
+
+    motors.set_forward(motors.get_forward() + forward_out + pilot_forward);
+    motors.set_lateral(motors.get_lateral() + lateral_out + pilot_lateral);
 }
 #endif  // POSHOLD_ENABLED == ENABLED
