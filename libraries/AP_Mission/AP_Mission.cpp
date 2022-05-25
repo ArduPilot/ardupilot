@@ -410,7 +410,8 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
     // NAV commands all have ids below MAV_CMD_NAV_LAST, plus some exceptions
     return (cmd.id <= MAV_CMD_NAV_LAST ||
             cmd.id == MAV_CMD_NAV_SET_YAW_SPEED ||
-            cmd.id == MAV_CMD_NAV_SCRIPT_TIME);
+            cmd.id == MAV_CMD_NAV_SCRIPT_TIME ||
+            cmd.id == MAV_CMD_NAV_ATTITUDE_TIME);
 }
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
@@ -1189,6 +1190,14 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.nav_script_time.arg2 = packet.param4;
         break;
 
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        cmd.content.nav_attitude_time.time_sec = constrain_float(packet.param1, 0, UINT16_MAX);
+        cmd.content.nav_attitude_time.roll_deg = (fabsf(packet.param2) <= 180) ? packet.param2 : 0;
+        cmd.content.nav_attitude_time.pitch_deg = (fabsf(packet.param3) <= 90) ? packet.param3 : 0;
+        cmd.content.nav_attitude_time.yaw_deg = ((packet.param4 >= -180) && (packet.param4 <= 360)) ? packet.param4 : 0;
+        cmd.content.nav_attitude_time.climb_rate = packet.x;
+        break;
+
     case MAV_CMD_DO_PAUSE_CONTINUE:
         cmd.p1 = packet.param1;
         break;
@@ -1279,6 +1288,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const ma
     switch (packet.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_NAV_ATTITUDE_TIME:
         mav_cmd.x = packet.x;
         mav_cmd.y = packet.y;
         break;
@@ -1320,6 +1330,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
     switch (item_int.command) {
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
+    case MAV_CMD_NAV_ATTITUDE_TIME:
         item.x = item_int.x;
         item.y = item_int.y;
         break;
@@ -1653,6 +1664,14 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.nav_script_time.timeout_s;
         packet.param3 = cmd.content.nav_script_time.arg1;
         packet.param4 = cmd.content.nav_script_time.arg2;
+        break;
+
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        packet.param1 = cmd.content.nav_attitude_time.time_sec;
+        packet.param2 = cmd.content.nav_attitude_time.roll_deg;
+        packet.param3 = cmd.content.nav_attitude_time.pitch_deg;
+        packet.param4 = cmd.content.nav_attitude_time.yaw_deg;
+        packet.x = cmd.content.nav_attitude_time.climb_rate;
         break;
 
     case MAV_CMD_DO_PAUSE_CONTINUE:
@@ -2379,6 +2398,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "Go Around";
     case MAV_CMD_NAV_SCRIPT_TIME:
         return "NavScriptTime";
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        return "NavAttitudeTime";
     case MAV_CMD_DO_PAUSE_CONTINUE:
         return "PauseContinue";
 
