@@ -102,6 +102,12 @@ public:
     // 10hz logging of voltage scaling and max trust
     void                Log_Write() override;
 
+    // 10Hz check whether motors are running after arming
+    bool                check_failsafe() override;
+
+    // pre-arm motor failsafe check
+    bool                pre_arm_check() override;
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
@@ -186,6 +192,9 @@ protected:
 
     // scaling for booster motor throttle
     AP_Float            _boost_scale;
+
+    // RPM below which motors will disarm when not flying
+    AP_Float            _fs_rpm;
 
     // motor output variables
     bool                motor_enabled[AP_MOTORS_MAX_NUM_MOTORS];    // true if motor is enabled

@@ -16,6 +16,7 @@
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
@@ -207,6 +208,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SAFE_TIME", 42, AP_MotorsMulticopter, _safe_time, AP_MOTORS_SAFE_TIME_DEFAULT),
 
+#if HAL_WITH_ESC_TELEM
+    // @Param: FS_RPM_MIN
+    // @DisplayName: Motor failsafe RPM
+    // @Description: RPM below which the motors will be disarmed if the vehicle is not flying. A value of 0 disables this failsafe check.
+    // @Range: 0 5000
+    // @Units: RPM
+    // @User: Advanced
+    AP_GROUPINFO("FS_RPM_MIN", 43, AP_MotorsMulticopter, _fs_rpm, 0),
+#endif
     AP_GROUPEND
 };
 
@@ -621,6 +631,12 @@ void AP_MotorsMulticopter::output_logic()
                 spin_up_armed_ratio = _spin_arm / _spin_min;
             }
             _spin_up_ratio += constrain_float(spin_up_armed_ratio - _spin_up_ratio, -spool_step, spool_step);
+
+            // check whether we successfully got to ground idle
+            if (!check_failsafe()) {
+                AP::logger().Write_Error(LogErrorSubsystem::MOTORS, LogErrorCode::FAILSAFE_OCCURRED);
+                set_failsafe(FailsafeState::FAILED_TO_IDLE);
+            }
             break;
         }
         _throttle_thrust_max = 0.0f;
@@ -645,6 +661,12 @@ void AP_MotorsMulticopter::output_logic()
         if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
             _spool_state = SpoolState::SPOOLING_DOWN;
             break;
+        }
+
+        // check whether we successfully got to spoolup
+        if (!check_failsafe()) {
+            AP::logger().Write_Error(LogErrorSubsystem::MOTORS, LogErrorCode::FAILSAFE_OCCURRED);
+            set_failsafe(FailsafeState::FAILED_TO_SPOOLUP);
         }
 
         // set and increment ramp variables
@@ -679,6 +701,12 @@ void AP_MotorsMulticopter::output_logic()
         if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
             _spool_state = SpoolState::SPOOLING_DOWN;
             break;
+        }
+
+        // check whether we successfully got to throttle unlimited
+        if (!check_failsafe()) {
+            AP::logger().Write_Error(LogErrorSubsystem::MOTORS, LogErrorCode::FAILSAFE_OCCURRED);
+            set_failsafe(FailsafeState::FAILED_TO_UNLIMITED);
         }
 
         // set and increment ramp variables
@@ -798,3 +826,36 @@ void AP_MotorsMulticopter::convert_pwm_min_max_param(int16_t radio_min, int16_t 
     _pwm_min.set_and_save(radio_min);
     _pwm_max.set_and_save(radio_max);
 }
+
+bool AP_MotorsMulticopter::pre_arm_check()
+{
+#if HAL_WITH_ESC_TELEM
+    if (is_zero(_fs_rpm)) {
+        return true;
+    }
+
+    if (!AP::esc_telem().is_telemetry_active(get_motor_mask())) {
+        return false;
+    }
+#endif
+    return true;
+}
+
+// check whether motors are running after arming
+bool AP_MotorsMulticopter::check_failsafe()
+{
+#if HAL_WITH_ESC_TELEM
+    if (!AP::esc_telem().is_active()) {
+        return true;
+    }
+
+    if (is_zero(_fs_rpm)) {
+        return true;
+    }
+
+    return AP_Motors::check_failsafe(_fs_rpm.get());
+#else
+    return true;
+#endif
+}
+

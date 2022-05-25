@@ -18,6 +18,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Logger/AP_Logger.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -266,6 +268,30 @@ void AP_Motors::output_test_seq(uint8_t motor_seq, int16_t pwm)
     if (armed() && _interlock) {
         _output_test_seq(motor_seq, pwm);
     }
+}
+
+bool AP_Motors::running(float min_rpm)
+{
+#if HAL_WITH_ESC_TELEM
+    AP_ESC_Telem& esc = AP::esc_telem();
+
+    return esc.are_motors_running(get_motor_mask(), min_rpm);
+#else
+    return armed() && _interlock;
+#endif
+}
+
+bool AP_Motors::check_failsafe(float min_rpm)
+{
+    if (!armed()) {
+        return true;
+    }
+
+    if (running(min_rpm)) {
+        return true;
+    }
+
+    return false;
 }
 
 namespace AP {

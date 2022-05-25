@@ -157,6 +157,17 @@ public:
     bool                get_thrust_boost() const { return _thrust_boost; }
     virtual uint8_t     get_lost_motor() const { return 0; }
 
+    // spool failsafe states
+    enum class FailsafeState : uint8_t {
+        NORMAL = 0,                   // all motors behaving as expected
+        FAILED_TO_IDLE = 1,           // one or more motors failed to get to ground idle
+        FAILED_TO_SPOOLUP = 2,        // one or more motors failed to get to spooling up
+        FAILED_TO_UNLIMITED = 3,      // one or more motors failed to get to throttle unlimited
+    };
+
+    void                set_failsafe(enum FailsafeState state) { _failsafe_state = state; }
+    FailsafeState       get_failsafe() const { return _failsafe_state; }
+
     // desired spool states
     enum class DesiredSpoolState : uint8_t {
         SHUT_DOWN = 0,              // all motors should move to stop
@@ -257,6 +268,15 @@ public:
     // direct motor write
     virtual void        rc_write(uint8_t chan, uint16_t pwm);
 
+    // are the motors running (requires telemetry)
+    bool running(float min_rpm);
+    // check whether motors are running after arming
+    bool check_failsafe(float min_rpm);
+    virtual bool check_failsafe() { return true; }
+
+    // pre-arm motor failsafe check
+    virtual bool pre_arm_check() { return true; }
+
 #if AP_SCRIPTING_ENABLED
     void set_frame_string(const char * str);
 #endif
@@ -326,6 +346,7 @@ protected:
     bool                _thrust_boost;          // true if thrust boost is enabled to handle motor failure
     bool                _thrust_balanced;       // true when output thrust is well balanced
     float               _thrust_boost_ratio;    // choice between highest and second highest motor output for output mixing (0 ~ 1). Zero is normal operation
+    FailsafeState       _failsafe_state;        // motors failed to spin up
 
     MAV_TYPE _mav_type; // MAV_TYPE_GENERIC = 0;
 
