@@ -61,7 +61,7 @@ void Copter::ekf_check()
 
     // increment or decrement counters and take action
     if (!checks_passed) {
-        // if compass is not yet flagged as bad
+        // if variances are not yet flagged as bad
         if (!ekf_check_state.bad_variance) {
             // increase counter
             ekf_check_state.fail_count++;
@@ -94,7 +94,7 @@ void Copter::ekf_check()
         if (ekf_check_state.fail_count > 0) {
             ekf_check_state.fail_count--;
 
-            // if compass is flagged as bad and the counter reaches zero then clear flag
+            // if variances are flagged as bad and the counter reaches zero then clear flag
             if (ekf_check_state.bad_variance && ekf_check_state.fail_count == 0) {
                 ekf_check_state.bad_variance = false;
                 AP::logger().Write_Error(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_VARIANCE_CLEARED);
