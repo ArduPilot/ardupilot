@@ -204,12 +204,12 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     }
 
     // the clever bit
-    MatrixRC<double,max_num_motors,1> out = interior_point_solve(f, b);
+    interior_point_solve(f, b);
 
     // copy to motor outputs
     for (uint8_t i = 0; i < max_num_motors; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = out(i,0);
+            _thrust_rpyt_out[i] = x(i,0);
         }
     }
 
@@ -221,64 +221,49 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
 // x = A * B
 MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optimal::A_mult(const MatrixRC<double,num_constraints,1>& B) const
 {
-    MatrixRC<double,max_num_motors,1> x;
+    MatrixRC<double,max_num_motors,1> X;
     for (uint8_t i = 0; i < max_num_motors; i++) {
-        x(i,0) = A.average_throttle(i,0)*B(0,0) + A.max_throttle(i,0)*B(1+i,0) + A.min_throttle(i,0)*B(1+max_num_motors+i,0);
+        X(i,0) = A.average_throttle(i,0)*B(0,0) + A.max_throttle(i,0)*B(1+i,0) + A.min_throttle(i,0)*B(1+max_num_motors+i,0);
     }
-    return x;
+    return X;
 }
 
 // x = A' * B
 MatrixRC<double,AP_MotorsMatrix_Optimal::num_constraints,1> AP_MotorsMatrix_Optimal::At_mult(const MatrixRC<double,max_num_motors,1>& B) const
 {
-    MatrixRC<double,num_constraints,1> x;
-    x(0,0) = A.average_throttle.dot(B);
+    MatrixRC<double,num_constraints,1> X;
+    X(0,0) = A.average_throttle.dot(B);
     for (uint8_t i = 0; i < max_num_motors; i++) {
-        x(1+i,0) = A.max_throttle(i,0)*B(i,0);
-        x(1+max_num_motors+i,0) = A.min_throttle(i,0)*B(i,0);
+        X(1+i,0) = A.max_throttle(i,0)*B(i,0);
+        X(1+max_num_motors+i,0) = A.min_throttle(i,0)*B(i,0);
     }
-    return x;
+    return X;
 }
 
 // x = A*diag(B)*A'
 MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,AP_MotorsMatrix_Optimal::max_num_motors> AP_MotorsMatrix_Optimal::A_mult_b_mult_At(const MatrixRC<double,num_constraints,1>& B) const
 {
-    MatrixRC<double,max_num_motors,max_num_motors> x;
+    MatrixRC<double,max_num_motors,max_num_motors> X;
     for (uint8_t i = 0; i < max_num_motors; i++) {
         for (uint8_t j = 0; j < max_num_motors; j++) {
-            x(i,j) = A.average_throttle(i,0) * A.average_throttle(j,0) * B(0,0);
+            X(i,j) = A.average_throttle(i,0) * A.average_throttle(j,0) * B(0,0);
             if (i == j) {
-                x(i,j) += A.max_throttle(i,0)*A.max_throttle(j,0)*B(j+1,0) + A.min_throttle(i,0)*A.min_throttle(j,0)*B(j+max_num_motors+1,0);
+                X(i,j) += A.max_throttle(i,0)*A.max_throttle(j,0)*B(j+1,0) + A.min_throttle(i,0)*A.min_throttle(j,0)*B(j+max_num_motors+1,0);
             }
         }
     }
-    return x;
+    return X;
 }
 
 // interior point method quadratic programming solver
 // Inspired by: https://github.com/jarredbarber/eigen-QP
 // solves min( 0.5*x'Hx + f'x )
 // with constraints A'x >= b
-MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num_motors,1> &f, const MatrixRC<double,num_constraints,1> &b) const
+void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num_motors,1> &f, const MatrixRC<double,num_constraints,1> &b)
 {
-    const double eta = 0.95;
-
-    // init matrix size
-    MatrixRC<double,max_num_motors,1> x;
-    MatrixRC<double,num_constraints,1> z;
-    MatrixRC<double,num_constraints,1> s;
-    MatrixRC<double,num_constraints,1> z_rs;
-    MatrixRC<double,max_num_motors,1> rL;
-    MatrixRC<double,num_constraints,1> rs;
-    MatrixRC<double,num_constraints,1> rsz;
-    MatrixRC<double,max_num_motors,max_num_motors> H_bar;
-    MatrixRC<double,max_num_motors,1> f_bar;
-    MatrixRC<double,max_num_motors,1> dx;
-    MatrixRC<double,num_constraints,1> dz;
-    MatrixRC<double,num_constraints,1> ds;
 
     // setup starting points
-    // x is init to 0
+    x = 0.0;
     z = 1.0;
     s = 1.0;
 
@@ -288,6 +273,7 @@ MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optim
     rsz = 1.0;
     double mu = num_constraints;
 
+    constexpr double eta = 0.95;
     constexpr double tol = 1e-6;
     constexpr double tol_sq = tol * tol;
     constexpr double tol_nA = tol * num_constraints;
@@ -345,7 +331,6 @@ MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optim
             break;
         }
     }
-    return x;
 }
 
 #endif // HAL_HAVE_HARDWARE_DOUBLE

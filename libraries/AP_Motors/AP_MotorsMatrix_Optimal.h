@@ -46,7 +46,21 @@ private:
     MatrixRC<double,max_num_motors,max_num_motors> A_mult_b_mult_At(const MatrixRC<double,num_constraints,1>& B) const;
 
     // solver
-    MatrixRC<double,max_num_motors,1> interior_point_solve(const MatrixRC<double,max_num_motors,1> &f, const MatrixRC<double,num_constraints,1> &b) const;
+    void interior_point_solve(const MatrixRC<double,max_num_motors,1> &f, const MatrixRC<double,num_constraints,1> &b);
+
+    // interior_point_solve function local variables, global to avoid frame size error
+    MatrixRC<double,max_num_motors,1> x;
+    MatrixRC<double,num_constraints,1> z;
+    MatrixRC<double,num_constraints,1> s;
+    MatrixRC<double,num_constraints,1> z_rs;
+    MatrixRC<double,max_num_motors,1> rL;
+    MatrixRC<double,num_constraints,1> rs;
+    MatrixRC<double,num_constraints,1> rsz;
+    MatrixRC<double,max_num_motors,max_num_motors> H_bar;
+    MatrixRC<double,max_num_motors,1> f_bar;
+    MatrixRC<double,max_num_motors,1> dx;
+    MatrixRC<double,num_constraints,1> dz;
+    MatrixRC<double,num_constraints,1> ds;
 
 };
 
