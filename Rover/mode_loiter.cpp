@@ -23,7 +23,7 @@ void ModeLoiter::update()
 {
     // boat loiter downstream , use a oppsite direction of known water flow
     if (g2.loit_type == 1 && !isnan(_loiter_yaw_cd) && 
-        fabs(wrap_180_cd(_loiter_yaw_cd - ahrs.yaw_sensor)) > 9000.0f) {
+        fabsf(wrap_180_cd(_loiter_yaw_cd - ahrs.yaw_sensor)) > 9000.0f) {
         // run steering and throttle controllers
         calc_steering_to_heading(_loiter_yaw_cd, 0.0f);
         calc_throttle(0.0f, true);
@@ -83,8 +83,8 @@ void ModeLoiter::update()
     // update loiter heading
     float speed;
     if (g2.loit_type == 1 && attitude_control.get_forward_speed(speed)) {
-        const bool loiter_success = fabs(speed) < 0.25f && 
-                                    fabs(wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor)) < 1000.0f && 
+        const bool loiter_success = fabsf(speed) < 0.25f && 
+                                    fabsf(wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor)) < 1000.0f && 
                                     _distance_to_destination < 1.25f * loiter_radius;
         if (loiter_success) {
             _loiter_yaw_cd = ahrs.yaw_sensor;
