@@ -8,6 +8,7 @@ line-length = 120
 [tool.mypy]
 ignore_missing_imports = true
 exclude = [
+    'libraries/',
     'modules/',
     'build/',
     'cmake-build-debug/',
