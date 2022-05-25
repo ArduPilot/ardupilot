@@ -436,7 +436,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
 // this should be called by backends when new telemetry values are available
-void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate)
+void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate)
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return;
