@@ -49,6 +49,9 @@ void ModeStabilize::run()
         break;
 
     case AP_Motors::SpoolState::SPOOLING_UP:
+        check_takeoff_failsafe_actions();
+        break;
+
     case AP_Motors::SpoolState::SPOOLING_DOWN:
         // do nothing
         break;

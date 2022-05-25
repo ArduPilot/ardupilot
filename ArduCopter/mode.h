@@ -289,6 +289,8 @@ public:
     void set_land_complete(bool b);
     GCS_Copter &gcs();
     void set_throttle_takeoff(void);
+    // check takeoff failsafe and abort takeoff if prevented
+    bool check_takeoff_failsafe_actions();
     uint16_t get_pilot_speed_dn(void);
     // end pass-through functions
 };

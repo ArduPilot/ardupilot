@@ -1005,6 +1005,22 @@ void Mode::set_throttle_takeoff()
     pos_control->init_z_controller();
 }
 
+// check takeoff failsafe and abort takeoff if prevented
+bool Mode::check_takeoff_failsafe_actions()
+{
+    // motors failed to spoolup, prevent takeoff
+    if (motors->get_failsafe() == AP_Motors::FailsafeState::FAILED_TO_SPOOLUP
+        || motors->get_failsafe() == AP_Motors::FailsafeState::FAILED_TO_UNLIMITED) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Motors are not running - disarming");
+        copter.arming.disarm(AP_Arming::Method::MOTOR_FAILSAFE);
+        motors->set_failsafe(AP_Motors::FailsafeState::NORMAL);  // allow re-arming
+        return false;
+    }
+
+    return true;
+}
+
+
 uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();

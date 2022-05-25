@@ -270,6 +270,11 @@ void ModeFlowHold::run()
         break;
 
     case AltHold_Takeoff:
+        // check that it is actually safe to take-off
+        if (!check_takeoff_failsafe_actions()) {
+            break;
+        }
+
         // set motors to full range
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 

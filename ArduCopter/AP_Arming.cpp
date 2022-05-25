@@ -289,6 +289,10 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return true;
     }
 
+    if (!copter.motors->pre_arm_check()) {
+        check_failed(display_failure, "ESC Telemetry not running for failsafe");
+        return false;
+    }
     return true;
 }
 

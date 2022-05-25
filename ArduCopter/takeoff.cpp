@@ -129,6 +129,11 @@ void Mode::auto_takeoff_run()
         }
     }
 
+    // check that it is actually safe to take-off
+    if (!check_takeoff_failsafe_actions()) {
+        return;
+    }
+
     // aircraft stays in landed state until rotor speed run up has finished
     if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         set_land_complete(false);

@@ -132,6 +132,11 @@ void ModeLoiter::run()
         break;
 
     case AltHold_Takeoff:
+        // check that it is actually safe to take-off
+        if (!check_takeoff_failsafe_actions()) {
+            break;
+        }
+
         // initiate take-off
         if (!takeoff.running()) {
             takeoff.start(constrain_float(g.pilot_takeoff_alt,0.0f,1000.0f));
