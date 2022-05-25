@@ -404,7 +404,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == SubMode::NAVGUIDED || mode() == SubMode::NAV_SCRIPT_TIME; }
+    bool in_guided_mode() const override { return _mode == SubMode::NAVGUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
 
     // Auto modes
     enum class SubMode : uint8_t {
@@ -422,8 +422,6 @@ public:
         NAV_ATTITUDE_TIME,
     };
 
-    // Auto
-    SubMode mode() const { return _mode; }
 
     // pause continue in auto mode
     bool pause() override;
