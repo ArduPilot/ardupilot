@@ -26,7 +26,7 @@ RADIUS_OF_EARTH = 6378100.0  # in meters
 
 
 # List of open terminal windows for macosx
-windowID = []
+windowID = []  # type: list
 
 def m2ft(x):
     """Meters to feet."""

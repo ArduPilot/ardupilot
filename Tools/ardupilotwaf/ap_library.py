@@ -36,7 +36,7 @@ from waflib.Tools import c_preproc
 
 import ardupilotwaf as ap
 
-UTILITY_SOURCE_EXTS = ['utility/' + glob for glob in ap.SOURCE_EXTS]
+UTILITY_SOURCE_EXTS = ['utility/' + glob for glob in ap.SOURCE_EXTS]  # type: ignore
 
 def _common_tgen_name(library):
     return 'objs/%s' % library
@@ -44,7 +44,7 @@ def _common_tgen_name(library):
 def _vehicle_tgen_name(library, vehicle):
     return 'objs/%s/%s' % (library, vehicle)
 
-_vehicle_indexes = {}
+_vehicle_indexes = {}  # type: dict
 def _vehicle_index(vehicle):
     """ Used for the objects taskgens idx parameter """
     if vehicle not in _vehicle_indexes:
@@ -159,15 +159,15 @@ def process_ap_libraries(self):
 class ap_library_check_headers(Task.Task):
     color = 'PINK'
     before  = 'cxx c'
-    dispatched_headers = set()
-    whitelist = (
+    dispatched_headers = set()  # type: set
+    whitelist_base = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
         'libraries/AP_Camera/AP_RunCam.h',
         'libraries/AP_Common/AP_FWVersionDefine.h',
         'libraries/AP_Scripting/lua_generated_bindings.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
     )
-    whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
+    whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist_base)
 
     def run(self):
         for n in self.headers:

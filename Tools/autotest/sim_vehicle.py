@@ -31,9 +31,12 @@ import math
 from pysim import util
 from pysim import vehicleinfo
 
+if sys.version_info.major >= 3:
+    from typing import Optional, List
+
 
 # List of open terminal windows for macosx
-windowID = []
+windowID = []  # type: List
 
 autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
@@ -1337,16 +1340,16 @@ if not os.path.exists(vehicle_dir):
     sys.exit(1)
 
 if cmd_opts.instances is not None:
-    instances = set()
+    instances_set = set()
     for i in cmd_opts.instances.split(' '):
         i = (int)(i)
         if i < 0:
             print("May not specify a negative instance ID")
             sys.exit(1)
-        instances.add(i)
-    instances = sorted(instances) # to list
+        instances_set.add(i)
+    instances = sorted(instances_set)  # to list
 else:
-    instances = range(cmd_opts.instance, cmd_opts.instance + cmd_opts.count)
+    instances = list(range(cmd_opts.instance, cmd_opts.instance + cmd_opts.count))
 
 if cmd_opts.instance == 0:
     kill_tasks()
@@ -1354,8 +1357,9 @@ if cmd_opts.instance == 0:
 if cmd_opts.tracker:
     start_antenna_tracker(cmd_opts)
 
+
 if cmd_opts.custom_location:
-    location = [(float)(x) for x in cmd_opts.custom_location.split(",")]
+    location = [(float)(x) for x in cmd_opts.custom_location.split(",")]    # type: Optional[List[float]]
     progress("Starting up at %s" % (location,))
 elif cmd_opts.location is not None:
     location = find_location_by_name(cmd_opts.location)
@@ -1363,6 +1367,7 @@ elif cmd_opts.location is not None:
 else:
     progress("Starting up at SITL location")
     location = None
+
 if cmd_opts.swarm is not None:
     offsets = find_offsets(instances, cmd_opts.swarm)
 elif cmd_opts.auto_offset_line is not None:
@@ -1443,7 +1448,6 @@ if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
     # import only here so as to avoid jinja dependency in whole script
     from jinja2 import Environment, FileSystemLoader
     from tempfile import mkstemp
-    entities = []
     config = {}
     config['plane'] = cmd_opts.vehicle == 'ArduPlane'
     if location is not None:

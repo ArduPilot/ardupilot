@@ -81,7 +81,7 @@ def _clang_cross_support(cfg):
         '-B' + os.path.join(toolchain_path, 'bin')
     ]
 
-_clang_cross_support.called = False
+_clang_cross_support.called = False  # type: ignore[attr-defined]
 
 def _set_clang_crosscompilation_wrapper(tool_module):
     original_configure = tool_module.configure

@@ -12,7 +12,7 @@ wind = util.Wind('7,90,0.1')
 t0 = time.time()
 velocity = Vector3(0, 0, 0)
 
-t = 0
+t = 0.0
 deltat = 0.01
 
 while t < 60:

@@ -244,7 +244,7 @@ def ap_common_vehicle_libraries(bld):
 
     return libraries
 
-_grouped_programs = {}
+_grouped_programs = {}  # type: dict
 
 @conf
 def ap_program(bld,
@@ -371,7 +371,7 @@ def ap_find_tests(bld, use=[]):
             cxxflags=['-Wno-undef'],
         )
 
-_versions = []
+_versions = []  # type: list
 
 @conf
 def ap_version_append_str(ctx, k, v):
@@ -468,7 +468,7 @@ def test_summary(bld):
 
     bld.fatal('check: some tests failed')
 
-_build_commands = {}
+_build_commands = {}  # type: dict
 
 def _process_build_command(bld):
     if bld.cmd not in _build_commands:

@@ -21,8 +21,8 @@ try: # Python 3.x
     from tkinter import Tk
     from tkinter.filedialog import askopenfilename
 except ImportError: # Python 2.x
-    from Tkinter import Tk
-    from tkFileDialog import askopenfilename
+    from Tkinter import Tk  # type: ignore
+    from tkFileDialog import askopenfilename  # type: ignore
 
 import argparse
 import ntpath

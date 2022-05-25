@@ -47,9 +47,9 @@ def _midpoint_projection(a, b):
 radius = math.sqrt(1 + g**2)
 
 # radius / (length of two vertices of an icosahedron triangle)
-_midpoint_projection.scale = radius / (2 * g)
+_midpoint_projection.scale = radius / (2 * g)  # type: ignore[attr-defined]
 
-sections_triangles = ()
+sections_triangles = tuple()  # type: tuple
 
 for a, b, c in triangles:
     ma = _midpoint_projection(a, b)

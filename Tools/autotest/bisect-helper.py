@@ -60,7 +60,8 @@ import shlex
 import sys
 import time
 import traceback
-
+if sys.version_info.major >= 3:
+    from typing import Union
 
 def get_exception_stacktrace(e):
     if sys.version_info[0] >= 3:
@@ -356,7 +357,7 @@ if __name__ == '__main__':
     (opts, args) = parser.parse_args()
 
     if opts.build:
-        bisecter = BisectBuild(opts)
+        bisecter = BisectBuild(opts)  # type: Union[BisectCITest, BisectBuild]
     elif opts.autotest:
         bisecter = BisectCITest(opts)
     else:

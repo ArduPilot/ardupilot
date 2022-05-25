@@ -201,11 +201,9 @@ process_vehicle(vehicle)
 debug("Found %u documented libraries" % len(libraries))
 
 if args.emit_sitl:
-    libraries = filter(lambda x : x.name == 'SIM_', libraries)
+    libraries = list(filter(lambda x : x.name == 'SIM_', libraries))
 else:
-    libraries = filter(lambda x : x.name != 'SIM_', libraries)
-
-libraries = list(libraries)
+    libraries = list(filter(lambda x : x.name != 'SIM_', libraries))
 
 alllibs = libraries[:]
 

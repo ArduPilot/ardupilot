@@ -34,7 +34,7 @@ class FilterTest:
 
     FFT_N = 512
 
-    filters = {}
+    filters = {}  # type: dict
 
     def __init__(self, acc_t, acc_x, acc_y, acc_z, gyr_t, gyr_x, gyr_y, gyr_z, acc_freq, gyr_freq,
                  acc_lpf_cutoff, gyr_lpf_cutoff,

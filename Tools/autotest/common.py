@@ -41,7 +41,7 @@ from pysim import util, vehicleinfo
 try:
     import queue as Queue
 except ImportError:
-    import Queue
+    import Queue  # type: ignore
 
 
 # Enumeration convenience class for mavlink POSITION_TARGET_TYPEMASK
@@ -84,12 +84,7 @@ if sys.version_info[0] >= 3:
     import io as StringIO  # srsly, we just did that.
 else:
     import StringIO
-
-try:
     from itertools import izip as zip
-except ImportError:
-    # probably python2
-    pass
 
 
 class ErrorException(Exception):

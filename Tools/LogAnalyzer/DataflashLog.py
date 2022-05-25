@@ -297,7 +297,7 @@ class LogIterator:
             index = self.iterators[self.lineLabel][0]
             return self.logdata.channels[self.lineLabel][dataLabel].listData[index][1]
 
-    iterators   = {}      # lineLabel -> (listIndex,lineNumber)
+    iterators   = {}      # type: dict #lineLabel -> (listIndex,lineNumber)
     logdata     = None
     currentLine = None
 

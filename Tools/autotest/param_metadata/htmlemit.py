@@ -5,7 +5,7 @@ Emit docs in a form acceptable to the old Ardupilot wordpress docs site
 from param import known_param_fields, known_units
 from emit import Emit
 try:
-    from cgi import escape as cescape
+    from cgi import escape as cescape  # type: ignore
 except Exception:
     from html import escape as cescape
 

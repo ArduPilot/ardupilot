@@ -17,7 +17,7 @@ class udp_out(object):
             sys.exit(1)
         self.port = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.destination_addr = (a[0], int(a[1]))
-        self.port.setblocking(0)
+        self.port.setblocking(False)
         self.last_address = None
 
     def recv(self, n=None):
@@ -67,8 +67,8 @@ airspeed = 0
 magic = 0x4c56414f
 
 deltaT = 0.005
-rollDeg = 45
-pitchDeg = 0
+rollDeg = 45.0
+pitchDeg = 0.0
 
 pitchMax = None
 rollMax = None

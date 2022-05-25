@@ -243,7 +243,7 @@ jsb_console.delaybeforesend = 0
 print("JSBSim FG FDM input on %s" % str(jsb_in_address))
 jsb_in = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 jsb_in.bind(jsb_in_address)
-jsb_in.setblocking(0)
+jsb_in.setblocking(False)
 
 # socket addresses
 sim_out_address = interpret_address(opts.simout)
@@ -252,12 +252,12 @@ sim_in_address = interpret_address(opts.simin)
 # setup input from SITL sim
 sim_in = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sim_in.bind(sim_in_address)
-sim_in.setblocking(0)
+sim_in.setblocking(False)
 
 # setup output to SITL sim
 sim_out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sim_out.connect(interpret_address(opts.simout))
-sim_out.setblocking(0)
+sim_out.setblocking(False)
 
 # setup possible output to FlightGear for display
 fg_out = None
@@ -361,7 +361,7 @@ def main_loop():
             last_wall_time = now
 
 
-def exit_handler():
+def exit_handler(signum, frame):
     """Exit the sim."""
     print("running exit handler")
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -381,5 +381,5 @@ try:
     main_loop()
 except Exception as ex:
     print(ex)
-    exit_handler()
+    exit_handler(1, None)
     raise

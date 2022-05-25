@@ -430,7 +430,7 @@ class Board:
         if not embed.create_embedded_h(header, ctx.env.ROMFS_FILES, ctx.env.ROMFS_UNCOMPRESSED):
             ctx.fatal("Failed to created ap_romfs_embedded.h")
 
-Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))
+Board = BoardMeta('Board', Board.__bases__, dict(Board.__dict__))  # type: ignore
 
 def add_dynamic_boards_chibios():
     '''add boards based on existance of hwdef.dat in subdirectories for ChibiOS'''

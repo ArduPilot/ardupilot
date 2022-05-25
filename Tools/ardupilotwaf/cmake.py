@@ -278,7 +278,7 @@ class CMakeConfig(object):
     def build(self, cmake_target, **kw):
         return self.bld.cmake_build(self.name, cmake_target, **kw)
 
-_cmake_instances = {}
+_cmake_instances = {}  # type: dict
 def get_cmake(name):
     if name not in _cmake_instances:
         raise Exception('cmake: configuration named "%s" not found' % name)
