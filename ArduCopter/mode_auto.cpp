@@ -152,6 +152,10 @@ void ModeAuto::run()
     case SubMode::NAV_PAYLOAD_PLACE:
         payload_place_run();
         break;
+
+    case SubMode::NAV_ATTITUDE_TIME:
+        nav_attitude_time_run();
+        break;
     }
 
     // only pretend to be in auto RTL so long as mission still thinks its in a landing sequence or the mission has completed
@@ -594,6 +598,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 #endif
 
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        do_nav_attitude_time(cmd);
+        break;
+
     //
     // conditional commands
     //
@@ -830,6 +838,10 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
         cmd_complete = verify_nav_script_time();
         break;
 #endif
+
+    case MAV_CMD_NAV_ATTITUDE_TIME:
+        cmd_complete = verify_nav_attitude_time(cmd);
+        break;
 
     ///
     /// conditional commands
@@ -1080,6 +1092,35 @@ void ModeAuto::loiter_to_alt_run()
 
     // Send the commanded climb rate to the position controller
     pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate);
+
+    pos_control->update_z_controller();
+}
+
+// maintain an attitude for a specified time
+void ModeAuto::nav_attitude_time_run()
+{
+    // if not auto armed or motor interlock not enabled set throttle to zero and exit immediately
+    if (is_disarmed_or_landed() || !motors->get_interlock()) {
+        make_safe_ground_handling();
+        return;
+    }
+
+    // constrain climb rate
+    float target_climb_rate_cms = constrain_float(nav_attitude_time.climb_rate * 100.0, pos_control->get_max_speed_down_cms(), pos_control->get_max_speed_up_cms());
+
+    // get avoidance adjusted climb rate
+    target_climb_rate_cms = get_avoidance_adjusted_climbrate(target_climb_rate_cms);
+
+    // limit and scale lean angles
+    const float angle_limit_cd = MAX(1000.0f, MIN(copter.aparm.angle_max, attitude_control->get_althold_lean_angle_max_cd()));
+    Vector2f target_rp_cd(nav_attitude_time.roll_deg * 100, nav_attitude_time.pitch_deg * 100);
+    target_rp_cd.limit_length(angle_limit_cd);
+
+    // send targets to attitude controller
+    attitude_control->input_euler_angle_roll_pitch_yaw(target_rp_cd.x, target_rp_cd.y, nav_attitude_time.yaw_deg * 100, true);
+
+    // Send the commanded climb rate to the position controller
+    pos_control->set_pos_target_z_from_climb_rate_cm(target_climb_rate_cms);
 
     pos_control->update_z_controller();
 }
@@ -1548,6 +1589,18 @@ void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
 }
 #endif
 
+// start maintaining an attitude for a specified time
+void ModeAuto::do_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
+{
+    _mode = SubMode::NAV_ATTITUDE_TIME;
+
+    // copy command arguments into local structure
+    nav_attitude_time.roll_deg = cmd.content.nav_attitude_time.roll_deg;
+    nav_attitude_time.pitch_deg = cmd.content.nav_attitude_time.pitch_deg;
+    nav_attitude_time.yaw_deg = cmd.content.nav_attitude_time.yaw_deg;
+    nav_attitude_time.climb_rate = cmd.content.nav_attitude_time.climb_rate;
+    nav_attitude_time.start_ms = AP_HAL::millis();
+}
 
 /********************************************************************************/
 // Condition (May) commands
@@ -2082,6 +2135,12 @@ bool ModeAuto::verify_nav_script_time()
     return false;
 }
 #endif
+
+// check if nav_attitude_time command has completed
+bool ModeAuto::verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
+{
+    return ((AP_HAL::millis() - nav_attitude_time.start_ms) > (cmd.content.nav_attitude_time.time_sec * 1000));
+}
 
 // pause - Prevent aircraft from progressing along the track
 bool ModeAuto::pause()
