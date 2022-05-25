@@ -111,14 +111,15 @@ class AutoTestSub(AutoTest):
         """
         angles in eulers
         """
-        msg = self.mav.mav.set_attitude_target_send(
-        0,
-        0, 0,
-        1<<6, #
-        mavextra.euler_to_quat([math.radians(roll), math.radians(pitch), math.radians(yaw)]),
-        0, #roll rate
-        0, #pitch rate
-        0, 0) # yaw rate, thrust
+        self.mav.mav.set_attitude_target_send(
+            0,
+            0, 0,
+            1 << 6,
+            mavextra.euler_to_quat([math.radians(roll), math.radians(pitch), math.radians(yaw)]),
+            0, # roll rate
+            0, # pitch rate
+            0, 0 # yaw rate, thrust
+        )
 
     def test_alt_hold(self):
         """Test ALT_HOLD mode
