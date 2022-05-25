@@ -720,6 +720,7 @@ private:
     bool ekf_over_threshold();
     void failsafe_ekf_event();
     void failsafe_ekf_off_event(void);
+    void failsafe_ekf_recheck();
     void check_ekf_reset();
     void check_vibration();
 
