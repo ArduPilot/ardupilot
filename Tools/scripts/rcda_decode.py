@@ -6,20 +6,20 @@ captures RC input bytes when RC_OPTIONS=16 is set
 '''
 
 import struct
-
+import time
+import serial
+from pymavlink import mavutil
 from argparse import ArgumentParser
+from sys import version_info
+
 parser = ArgumentParser(description=__doc__)
 parser.add_argument("--condition", default=None, help="select packets by condition")
 parser.add_argument("--baudrate", type=int, default=115200, help="baudrate")
 parser.add_argument("--port", type=str, default=None, help="port")
 parser.add_argument("--delay-mul", type=float, default=1.0, help="delay multiplier")
 parser.add_argument("log", metavar="LOG")
-import time
-import serial
 
 args = parser.parse_args()
-
-from pymavlink import mavutil
 
 print("Processing log %s" % args.log)
 mlog = mavutil.mavlink_connection(args.log)
@@ -42,7 +42,7 @@ while True:
     buf = struct.pack("<IIIIIIIIII",
                       msg.U0, msg.U1, msg.U2, msg.U3, msg.U4,
                         msg.U5, msg.U6, msg.U7, msg.U8, msg.U9)[0:msg.Len]
-    ibuf = [ ord(b) for b in buf ]
+    ibuf = [ord(b) if version_info.major < 3 else b for b in buf]  # type: ignore
     dt = tnow - tlast
     tlast = tnow
     print(len(ibuf), ibuf, dt)

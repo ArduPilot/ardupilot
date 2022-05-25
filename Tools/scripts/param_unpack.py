@@ -38,7 +38,7 @@ data_types = {
 # cross a block boundary
 pad_byte = 0
 if sys.version_info.major < 3:
-    pad_byte = chr(0)
+    pad_byte = chr(0)  # type: ignore
 
 count = 0
 
@@ -51,7 +51,7 @@ while True:
         break
 
     ptype, plen = struct.unpack("<BB", data[0:2])
-    flags = (ptype>>4) & 0x0F
+    flags = (ptype >> 4) & 0x0F
     ptype &= 0x0F
 
     if not ptype in data_types:
@@ -59,7 +59,7 @@ while True:
 
     (type_len, type_format) = data_types[ptype]
 
-    name_len = ((plen>>4) & 0x0F) + 1
+    name_len = ((plen >> 4) & 0x0F) + 1
     common_len = (plen & 0x0F)
     name = last_name[0:common_len] + data[2:2+name_len].decode('utf-8')
     vdata = data[2+name_len:2+name_len+type_len]

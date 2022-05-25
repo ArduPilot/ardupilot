@@ -7,7 +7,7 @@ import struct
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from elftools.elf.elffile import ELFFile
-from typing import Any
+from typing import Any, Optional, Union
 
 
 class FirmwareVersionType(enum.Enum):
@@ -82,7 +82,7 @@ class BoardSubType(enum.Enum):
 @dataclass
 class FWVersion:
     header: int = 0x61706677766572FB
-    header_version: bytes = bytes([0, 0])
+    header_version: int = 0
     pointer_size: int = 0
     vehicle_type: int = 0
     board_type: int = 0
@@ -102,7 +102,7 @@ class FWVersion:
 
     def __str__(self):
         header = self.header.to_bytes(8, byteorder="big")
-        header_version = self.header_version.to_bytes(2, byteorder="big")
+        header_version: bytes = self.header_version.to_bytes(2, byteorder="big")
         firmware_day = self.os_software_version % 100
         firmware_month = self.os_software_version % 10000 - firmware_day
         firmware_year = self.os_software_version - firmware_month - firmware_day
@@ -140,7 +140,7 @@ class Decoder:
         self.fwversion = FWVersion()
         self.byteorder = ""
         self.pointer_size = 0
-        self.elffile = None
+        self.elffile: Optional[ELFFile] = None
 
     def unpack(self, struct_format: str) -> Any:
         struct_format = f"{self.byteorder}{struct_format}"
@@ -156,15 +156,16 @@ class Decoder:
             return ""
 
         # Calculate address offset for PIE (Position Independent Executables) binaries
-        address = next(self.elffile.address_offsets(address))
+        if self.elffile is not None:
+            address = next(self.elffile.address_offsets(address))
 
         current_address = self.bytesio.seek(0, io.SEEK_CUR)
         self.bytesio.seek(address)
-        string = []
+        string: list = []
         while True:
             string += self.bytesio.read(1)
             if string[-1] == 0:
-                string = string[0 : len(string) - 1]
+                string = string[0: len(string) - 1]
                 break
         self.bytesio.seek(current_address)
         return bytes(string).decode("UTF-8")

@@ -105,10 +105,10 @@ Options:
                     import msvcrt
                     msvcrt.setmode(fileno, os.O_BINARY)
 
-    fin = args[0]
+    fin = args[0]  # type: ignore
     if fin == '-':
         # read from stdin
-        fin = sys.stdin
+        fin = sys.stdin  # type: ignore
         force_stream_binary(fin)
     elif not os.path.isfile(fin):
         txt = "ERROR: File not found: %s" % fin   # that's required to get not-so-dumb result from 2to3 tool
@@ -116,10 +116,10 @@ Options:
         sys.exit(1)
 
     if len(args) == 2:
-        fout = args[1]
+        fout = args[1]  # type: ignore
     else:
         # write to stdout
-        fout = sys.stdout
+        fout = sys.stdout  # type: ignore
         force_stream_binary(fout)
 
     sys.exit(bin2hex(fin, fout, offset))

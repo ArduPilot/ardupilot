@@ -38,7 +38,7 @@ sorted_frames =  sorted(frames,
                         reverse=True)
 
 print("FrameSize   Code")
-for frame in sorted_frames:
-    if frame.frame_size > 0:
-        print("%9u   %s" % (frame.frame_size, frame.code))
+for sframe in sorted_frames:
+    if sframe.frame_size > 0:
+        print("%9u   %s" % (sframe.frame_size, sframe.code))
     

@@ -8,12 +8,12 @@ import csv, sys
 
 filename = sys.argv[1]
 
-c = open(filename, 'r')
-data = csv.reader(c)
+cfile = open(filename, 'r')
+data = csv.reader(cfile)
 
 pulse_start = []
 prev_values = []
-pwm = []
+pwm = []  # type: list
 nchannels = 0
 
 for row in data:

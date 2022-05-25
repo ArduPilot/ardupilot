@@ -151,7 +151,7 @@ def crc32(bytes, state=0):
 class firmware(object):
     '''Loads a firmware file'''
 
-    desc = {}
+    desc = {}  # type: dict
     image = bytes()
     crcpad = bytearray(b'\xff\xff\xff\xff')
 
