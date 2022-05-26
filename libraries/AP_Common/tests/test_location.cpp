@@ -83,6 +83,21 @@ TEST(Location, LatLngWrapping)
             EXPECT_EQ(rev.lng, test.start_lng);
             EXPECT_EQ(0, rev.alt);
         }
+        {
+            Location loc{test.start_lat, test.start_lng, 0, Location::AltFrame::ABOVE_HOME};
+            loc.offset(test.delta_metres_ne);
+            EXPECT_EQ(test.expected_lat, loc.lat);
+            EXPECT_EQ(test.expected_lng, loc.lng);
+            EXPECT_EQ(0, loc.alt);
+        }
+        // and now reverse
+        {
+            Location rev{test.expected_lat, test.expected_lng, 0, Location::AltFrame::ABOVE_HOME};
+            rev.offset(-test.delta_metres_ne);
+            EXPECT_EQ(rev.lat, test.start_lat);
+            EXPECT_EQ(rev.lng, test.start_lng);
+            EXPECT_EQ(0, rev.alt);
+        }
     }
 }
 
@@ -102,14 +117,26 @@ TEST(Location, LocOffsetDouble)
     };
 
     for (auto &test : tests) {
-        Location home{test.home_lat, test.home_lng, 0, Location::AltFrame::ABOVE_HOME};
-        Location loc1 = home;
-        Location loc2 = home;
-        loc1.offset(test.delta_metres_ne1.x, test.delta_metres_ne1.y);
-        loc2.offset(test.delta_metres_ne2.x, test.delta_metres_ne2.y);
-        Vector2d diff = loc1.get_distance_NE_double(loc2);
-        EXPECT_FLOAT_EQ(diff.x, test.expected_pos_change.x);
-        EXPECT_FLOAT_EQ(diff.y, test.expected_pos_change.y);
+        {
+            Location home{test.home_lat, test.home_lng, 0, Location::AltFrame::ABOVE_HOME};
+            Location loc1 = home;
+            Location loc2 = home;
+            loc1.offset(test.delta_metres_ne1.x, test.delta_metres_ne1.y);
+            loc2.offset(test.delta_metres_ne2.x, test.delta_metres_ne2.y);
+            Vector2d diff = loc1.get_distance_NE_double(loc2);
+            EXPECT_FLOAT_EQ(diff.x, test.expected_pos_change.x);
+            EXPECT_FLOAT_EQ(diff.y, test.expected_pos_change.y);
+        }
+        {
+            Location home{test.home_lat, test.home_lng, 0, Location::AltFrame::ABOVE_HOME};
+            Location loc1 = home;
+            Location loc2 = home;
+            loc1.offset(test.delta_metres_ne1);
+            loc2.offset(test.delta_metres_ne2);
+            Vector2d diff = loc1.get_distance_NE_double(loc2);
+            EXPECT_FLOAT_EQ(diff.x, test.expected_pos_change.x);
+            EXPECT_FLOAT_EQ(diff.y, test.expected_pos_change.y);
+        }
     }
 }
 
