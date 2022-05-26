@@ -1125,6 +1125,43 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
+    def test_takeoff_check_mode(self, mode, user_takeoff=False):
+        # stabilize check
+        self.progress("Motor takeoff check in %s" % mode)
+        self.change_mode(mode)
+        self.zero_throttle()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.send_mavlink_arm_command()
+        self.mav.recv_match(blocking=True, timeout=1)
+        if user_takeoff:
+            self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 10)
+        else:
+            self.set_rc(3, 1700)
+        # we may never see ourselves as armed is a heartbeat
+        self.wait_statustext("Takeoff blocked: ESC RPM too low")
+        self.zero_throttle()
+        self.disarm_vehicle()
+        self.wait_disarmed()
+
+    # Tests the motor failsafe
+    def test_takeoff_check(self):
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            'SIM_ESC_TELEM': 1,
+            'SIM_ESC_ARM_RPM': 500,
+            'TKOFF_RPM_MIN': 1000,
+        })
+
+        self.test_takeoff_check_mode("STABILIZE")
+        self.test_takeoff_check_mode("ACRO")
+        self.test_takeoff_check_mode("LOITER")
+        self.test_takeoff_check_mode("ALT_HOLD")
+        # self.test_takeoff_check_mode("FLOWHOLD")
+        self.test_takeoff_check_mode("GUIDED", True)
+        self.test_takeoff_check_mode("POSHOLD")
+        # self.test_takeoff_check_mode("SPORT")
+
     def assert_dataflash_message_field_level_at(self,
                                                 mtype,
                                                 field,
@@ -5194,7 +5231,7 @@ class AutoTestCopter(AutoTest):
             "LOG_DISARMED": 0,
             "SIM_VIB_MOT_MAX": 350,
             "SIM_GYR1_RND": 20,
-            "SIM_ESC_TELEM": 1,
+            "SIM_ESC_TELEM": 1
         })
         self.reboot_sitl()
 
@@ -8895,6 +8932,9 @@ class AutoTestCopter(AutoTest):
              "Test Splines and Terrain",
              self.test_terrain_spline_mission),
 
+            ("TakeoffCheck",
+             "Test takeoff check",
+             self.test_takeoff_check),
         ])
         return ret
 
