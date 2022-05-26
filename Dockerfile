@@ -1,9 +1,14 @@
 FROM ubuntu:20.04
 WORKDIR /ardupilot
 
+ARG UID=1000
+ARG GID=1000
+# Create non root user
+ENV USER=ardupilot
+
 ARG DEBIAN_FRONTEND=noninteractive
-RUN useradd -U -m ardupilot && \
-    usermod -G users ardupilot
+RUN groupadd -g $GID -o $USER && \
+    useradd -m -u $UID -g $GID -o -s /bin/bash $USER
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
     lsb-release \
@@ -13,9 +18,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 COPY Tools/environment_install/install-prereqs-ubuntu.sh /ardupilot/Tools/environment_install/
 COPY Tools/completion /ardupilot/Tools/completion/
-
-# Create non root user for pip
-ENV USER=ardupilot
 
 RUN echo "ardupilot ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ardupilot
 RUN chmod 0440 /etc/sudoers.d/ardupilot
