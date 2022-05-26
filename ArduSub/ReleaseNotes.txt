@@ -1,6 +1,15 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0-beta8 26-May-2022
+
+ - Fix issue with poshold introduced in beta7 (no lateral control)
+ - Fix i2c buses masks for Navigator
+ - Do not use RC3_MIN/MAX instead of MOT_PWM_MIN/MAX
+ - Update submodules for easier builds
+ - Fix cygwin build
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.0-beta7 29-Apr-2022
 
  - Tweak depth hold at arbitrary attitudes
