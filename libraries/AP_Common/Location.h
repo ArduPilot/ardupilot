@@ -80,6 +80,9 @@ public:
     void offset(const Vector2f &ofs_ne) {
         offset_latlng(lat, lng, ofs_ne.x, ofs_ne.y);
     }
+    void offset(const Vector2d &ofs_ne) {
+        offset_latlng(lat, lng, ofs_ne.x, ofs_ne.y);
+    }
 
     // extrapolate latitude/longitude given bearing and distance
     void offset_bearing(ftype bearing_deg, ftype distance);
