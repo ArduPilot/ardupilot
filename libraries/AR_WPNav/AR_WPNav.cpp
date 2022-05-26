@@ -387,7 +387,7 @@ bool AR_WPNav::get_stopping_location(Location& stopping_loc)
     // calculate stopping position from current location in meters
     const Vector2f stopping_offset = velocity.normalized() * stopping_dist;
     stopping_loc = current_loc;
-    stopping_loc.offset(stopping_offset.x, stopping_offset.y);
+    stopping_loc.offset(stopping_offset);
 
     return true;
 }
