@@ -159,7 +159,7 @@ void JSON_Master::receive(struct sitl_input &input)
 
         if (list->instance == master_instance) {
             // Use the servo outs from this instance
-            memcpy(input.servos,buffer.pwm,sizeof(input.servos));
+            memcpy(input.servos,buffer.pwm,sizeof(buffer.pwm));
         }
     }
 }

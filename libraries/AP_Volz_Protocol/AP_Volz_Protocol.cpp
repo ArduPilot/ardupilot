@@ -15,7 +15,7 @@ const AP_Param::GroupInfo AP_Volz_Protocol::var_info[] = {
     // @Param: MASK
     // @DisplayName: Channel Bitmask
     // @Description: Enable of volz servo protocol to specific channels
-    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16
+    // @Bitmask: 0:Channel1,1:Channel2,2:Channel3,3:Channel4,4:Channel5,5:Channel6,6:Channel7,7:Channel8,8:Channel9,9:Channel10,10:Channel11,11:Channel12,12:Channel13,13:Channel14,14:Channel15,15:Channel16,16:Channel17,17:Channel18,18:Channel19,19:Channel20,20:Channel21,21:Channel22,22:Channel23,23:Channel24,24:Channel25,25:Channel26,26:Channel27,28:Channel29,29:Channel30,30:Channel31,31:Channel32
     // @User: Standard
     AP_GROUPINFO("MASK",  1, AP_Volz_Protocol, bitmask, 0),
 
@@ -62,7 +62,7 @@ void AP_Volz_Protocol::update()
     uint8_t i;
     uint16_t value;
 
-    // loop for all 16 channels
+    // loop for all channels
     for (i=0; i<NUM_SERVO_CHANNELS; i++) {
         // check if current channel is needed for Volz protocol
         if (last_used_bitmask & (1U<<i)) {
