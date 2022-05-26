@@ -292,7 +292,7 @@ void ModeAuto::rtl_start()
     }
 }
 
-// auto_takeoff_start - initialises waypoint controller to implement take-off
+// initialise waypoint controller to implement take-off
 void ModeAuto::takeoff_start(const Location& dest_loc)
 {
     if (!copter.current_loc.initialised()) {
