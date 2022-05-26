@@ -303,12 +303,6 @@ void Location::offset_latlng(int32_t &lat, int32_t &lng, ftype ofs_north, ftype 
     lng = wrap_longitude(dlng+lng);
 }
 
-// extrapolate latitude/longitude given distances (in meters) north and east
-void Location::offset(ftype ofs_north, ftype ofs_east)
-{
-    offset_latlng(lat, lng, ofs_north, ofs_east);
-}
-
 /*
  *  extrapolate latitude/longitude given bearing and distance
  * Note that this function is accurate to about 1mm at a distance of
