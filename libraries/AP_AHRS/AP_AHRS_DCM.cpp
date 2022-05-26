@@ -1069,8 +1069,8 @@ bool AP_AHRS_DCM::get_location(struct Location &loc) const
         float dt = 0;
         gps.get_lag(dt);
         dt += constrain_float((now - _last_pos_ms) * 0.001, 0, 0.5);
-        Vector2f dpos = _last_velocity.xy() * dt;
-        loc.offset(dpos.x, dpos.y);
+        const Vector2f dpos = _last_velocity.xy() * dt;
+        loc.offset(dpos);
     }
     return _have_position;
 }
