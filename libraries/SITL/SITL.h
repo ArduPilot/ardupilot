@@ -441,6 +441,8 @@ public:
 
     // ESC telemetry
     AP_Int8 esc_telem;
+    // RPM when motors are armed
+    AP_Float esc_rpm_armed;
 
     struct {
         // LED state, for serial LED emulation
