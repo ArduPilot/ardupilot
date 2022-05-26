@@ -53,7 +53,7 @@ int16_t AP_DAL_RangeFinder::max_distance_cm_orient(enum Rotation orientation) co
         const auto *rangefinder = AP::rangefinder();
         // the EKF only asks for this from a specific orientation.  Thankfully.
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-        return rangefinder->ground_clearance_cm_orient(orientation);
+        return rangefinder->max_distance_cm_orient(orientation);
     }
 #endif
 
