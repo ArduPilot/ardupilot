@@ -300,6 +300,16 @@ public:
      */
     virtual void serial_led_send(const uint16_t chan) {}
 
+    /*
+      Can this driver handle gpio as well as RC
+    */
+    virtual bool supports_gpio() { return false; };
+
+    /*
+      Writes gpio state to a channel
+    */
+    virtual void write_gpio(uint8_t chan, bool active) {};
+
 protected:
 
     // helper functions for implementation of get_output_mode_banner
