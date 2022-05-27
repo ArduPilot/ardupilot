@@ -276,6 +276,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @RebootRequired: True
     GSCALAR(rangefinder_port, "RNGFND_PORT", AP_PERIPH_RANGEFINDER_PORT_DEFAULT),
 
+    // @Param: RNGFND_MAX_RATE
+    // @DisplayName: Rangefinder max rate
+    // @Description: This is the maximum rate we send rangefinder data in Hz. Zero means no limit
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(rangefinder_max_rate, "RNGFND_MAX_RATE", 50),
+    
     // Rangefinder driver
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp

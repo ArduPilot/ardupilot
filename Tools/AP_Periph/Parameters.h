@@ -55,6 +55,7 @@ public:
         k_param_can_fdbaudrate0,
         k_param_can_fdbaudrate1,
         k_param_node_stats,
+        k_param_rangefinder_max_rate,
     };
 
     AP_Int16 format_version;
@@ -81,6 +82,7 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     AP_Int32 rangefinder_baud;
     AP_Int8 rangefinder_port;
+    AP_Int16 rangefinder_max_rate;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_ADSB

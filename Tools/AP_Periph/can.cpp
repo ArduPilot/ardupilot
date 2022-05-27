@@ -2239,8 +2239,9 @@ void AP_Periph_FW::can_rangefinder_update(void)
 #endif
     uint32_t now = AP_HAL::native_millis();
     static uint32_t last_update_ms;
-    if (now - last_update_ms < 20) {
-        // max 50Hz data
+    if (g.rangefinder_max_rate > 0 &&
+        now - last_update_ms < 1000/g.rangefinder_max_rate) {
+        // limit to max rate
         return;
     }
     last_update_ms = now;
@@ -2250,6 +2251,12 @@ void AP_Periph_FW::can_rangefinder_update(void)
         // don't send any data
         return;
     }
+    const uint32_t sample_ms = rangefinder.last_reading_ms(ROTATION_NONE);
+    if (last_sample_ms == sample_ms) {
+        return;
+    }
+    last_sample_ms = sample_ms;
+
     uint16_t dist_cm = rangefinder.distance_cm_orient(ROTATION_NONE);
     uavcan_equipment_range_sensor_Measurement pkt {};
     pkt.sensor_id = rangefinder.get_address(0);
