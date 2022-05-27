@@ -174,6 +174,7 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
+    uint32_t last_sample_ms;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
