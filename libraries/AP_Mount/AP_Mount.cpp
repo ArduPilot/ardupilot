@@ -10,6 +10,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Gremsy.h"
 #include <AP_Math/location.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
@@ -17,7 +18,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 19, AP_Mount, state[0]._type, 0, AP_PARAM_FLAG_ENABLE),
@@ -392,7 +393,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -465,6 +466,11 @@ void AP_Mount::init()
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
+            _num_instances++;
+
+        // check for Gremsy mounts
+        } else if (mount_type == Mount_Type_Gremsy) {
+            _backends[instance] = new AP_Mount_Gremsy(*this, state[instance], instance);
             _num_instances++;
         }
 
@@ -766,6 +772,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
         break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
+        handle_gimbal_device_information(msg);
+        break;
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
         handle_gimbal_device_attitude_status(msg);
         break;
@@ -787,6 +796,16 @@ void AP_Mount::handle_param_value(const mavlink_message_t &msg)
     }
 }
 
+
+// handle GIMBAL_DEVICE_INFORMATION message
+void AP_Mount::handle_gimbal_device_information(const mavlink_message_t &msg)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->handle_gimbal_device_information(msg);
+        }
+    }
+}
 
 // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
 void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
