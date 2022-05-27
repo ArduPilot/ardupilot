@@ -16,6 +16,7 @@
 #include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
+#include "AP_BattMonitor_AD7091R5.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -296,6 +297,11 @@ AP_BattMonitor::init()
 #if HAL_TORQEEDO_ENABLED
             case Type::Torqeedo:
                 drivers[instance] = new AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
+                break;
+#endif
+#if AP_BATTMON_AD7091R5_ENABLED
+            case Type::AD7091R5:
+                drivers[instance] = new AP_BattMonitor_AD7091R5(*this, state[instance], _params[instance]);
                 break;
 #endif
             case Type::NONE:
