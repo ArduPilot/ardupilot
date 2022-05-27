@@ -1083,6 +1083,9 @@ void NavEKF3::resetCoreErrors(void)
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
 void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
+    if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
+        AP::dal().log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
+    }
     sources.setPosVelYawSourceSet(source_set_idx);
 }
 
