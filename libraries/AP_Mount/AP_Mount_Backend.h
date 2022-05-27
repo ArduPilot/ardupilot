@@ -79,6 +79,9 @@ public:
     // handle a GLOBAL_POSITION_INT message
     bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
 
+    // handle GIMBAL_DEVICE_INFORMATION message
+    virtual void handle_gimbal_device_information(const mavlink_message_t &msg) {}
+
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
 
