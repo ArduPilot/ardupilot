@@ -1,5 +1,18 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.1-rc1 28-May-2022
+Changes from 4.2.0
+1) CAN ESCs bus bandwidth efficiency improvements (see CAN_Dx_UC_ESC_OF parameter)
+2) DShot timing improvements to support for ESC variants
+3) LOITER_TURNS command radius max increased from 255m to 2550m (but only 10m accuracy when over 255)
+4) Luftan EFI measures fuel consumption (see EFI_COEF1, EFI_COEF2)
+5) Bug fixes
+    a) CAN ESCs work on boards with no safety switch (e.g. MatekH743)
+    b) Inflight Compass calibration checks GSF yaw estimate is good
+    c) LOITER_TURNS command's Turns field limited to 255 (previously would wrap to lower number)
+    d) NeoPixel colour fix
+    e) Precision Landing maintains yaw during retries
+------------------------------------------------------------------
 Copter 4.2.0 23-May-2022 / 4.2.0-rc4 14-May-2022
 Changes from 4.2.0-rc3
 1) FlyingMoon F407 and F427 autopilots supported
