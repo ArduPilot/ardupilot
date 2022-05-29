@@ -324,7 +324,8 @@ private:
     // Logging function
     void Write_Baro(void);
     void Write_Baro_instance(uint64_t time_us, uint8_t baro_instance);
-    
+
+    void update_field_elevation();
 };
 
 namespace AP {
