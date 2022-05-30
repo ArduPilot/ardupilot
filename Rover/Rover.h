@@ -61,6 +61,9 @@
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #include "RC_Channel.h"                  // RC Channel Library
+#if PRECISION_LANDING == ENABLED
+#include <AC_PrecLand/AC_PrecLand.h>
+#endif
 
 #include "mode.h"
 
@@ -136,7 +139,9 @@ private:
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
 #endif
-
+#if PRECISION_LANDING == ENABLED
+    AC_PrecLand precland;
+#endif
     // GCS handling
     GCS_Rover _gcs;  // avoid using this; use gcs()
     GCS_Rover &gcs() { return _gcs; }
@@ -314,6 +319,10 @@ private:
 
     // Parameters.cpp
     void load_parameters(void) override;
+
+    // precision_landing.cpp
+    void init_precland();
+    void update_precland();
 
     // radio.cpp
     void set_control_channels(void) override;
