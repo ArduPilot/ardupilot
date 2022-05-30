@@ -21,17 +21,21 @@ AP_Logger_Block::AP_Logger_Block(AP_Logger &front, LoggerMessageWriter_DFLogStar
     AP_Logger_Backend(front, writer),
     writebuf(0)
 {
-    // buffer is used for both reads and writes so access must always be within the semaphore
-    buffer = (uint8_t *)hal.util->malloc_type(page_size_max, AP_HAL::Util::MEM_DMA_SAFE);
-    if (buffer == nullptr) {
-        AP_HAL::panic("Out of DMA memory for logging");
-    }
     df_stats_clear();
 }
 
-// init is called after backend init
+// Init() is called after driver Init(), it is the responsibility of the driver to make sure the 
+// device is ready to accept commands before Init() is called
 void AP_Logger_Block::Init(void)
 {
+    // buffer is used for both reads and writes so access must always be within the semaphore
+    buffer = (uint8_t *)hal.util->malloc_type(df_PageSize, AP_HAL::Util::MEM_DMA_SAFE);
+    if (buffer == nullptr) {
+        AP_HAL::panic("Out of DMA memory for logging");
+    }
+
+    //flash_test();
+
     if (CardInserted()) {
         // reserve space for version in last sector
         df_NumPages -= df_PagePerBlock;
@@ -105,7 +109,7 @@ void AP_Logger_Block::FinishWrite(void)
             chip_full = true;
             return;
         }
-        SectorErase(df_PageAdr / df_PagePerBlock);
+        SectorErase(get_block(df_PageAdr));
     }
 }
 
@@ -864,9 +868,10 @@ void AP_Logger_Block::io_timer(void)
         WITH_SEMAPHORE(sem);
 
         const uint32_t sectors = df_NumPages / df_PagePerSector;
-        const uint32_t sectors_in_64k = 0x10000 / (df_PagePerSector * df_PageSize);
+        const uint32_t block_size = df_PagePerBlock * df_PageSize;
+        const uint32_t sectors_in_block = block_size / (df_PagePerSector * df_PageSize);
         uint32_t next_sector = get_sector(df_EraseFrom);
-        const uint32_t aligned_sector = sectors - (((df_NumPages - df_EraseFrom + 1) / df_PagePerSector) / sectors_in_64k) * sectors_in_64k;
+        const uint32_t aligned_sector = sectors - (((df_NumPages - df_EraseFrom + 1) / df_PagePerSector) / sectors_in_block) * sectors_in_block;
         while (next_sector < aligned_sector) {
             Sector4kErase(next_sector);
             io_timer_heartbeat = AP_HAL::millis();
@@ -875,9 +880,9 @@ void AP_Logger_Block::io_timer(void)
         uint16_t blocks_erased = 0;
         while (next_sector < sectors) {
             blocks_erased++;
-            SectorErase(next_sector / sectors_in_64k);
+            SectorErase(next_sector / sectors_in_block);
             io_timer_heartbeat = AP_HAL::millis();
-            next_sector += sectors_in_64k;
+            next_sector += sectors_in_block;
         }
         status_msg = StatusMessage::RECOVERY_COMPLETE;
         df_EraseFrom = 0;
@@ -926,6 +931,46 @@ void AP_Logger_Block::write_log_page()
     }
     FinishWrite();
     df_Write_FilePage++;
+}
+
+void AP_Logger_Block::flash_test()
+{
+    const uint32_t pages_to_check = 128;
+    for (uint32_t i=1; i<=pages_to_check; i++) {
+        if ((i-1) % df_PagePerBlock == 0) {
+            printf("Block erase %u\n", get_block(i));
+            SectorErase(get_block(i));
+        }
+        memset(buffer, uint8_t(i), df_PageSize);
+        if (i<5) {
+            printf("Flash fill 0x%x\n", uint8_t(i));
+        } else if (i==5) {
+            printf("Flash fill pages 5-%u\n", pages_to_check);
+        }
+        BufferToPage(i);
+    }
+    for (uint32_t i=1; i<=pages_to_check; i++) {
+        if (i<5) {
+            printf("Flash check 0x%x\n", uint8_t(i));
+        } else if (i==5) {
+            printf("Flash check pages 5-%u\n", pages_to_check);
+        }
+        PageToBuffer(i);
+        uint32_t bad_bytes = 0;
+        uint32_t first_bad_byte = 0;
+        for (uint32_t j=0; j<df_PageSize; j++) {
+            if (buffer[j] != uint8_t(i)) {
+                bad_bytes++;
+                if (bad_bytes == 1) {
+                    first_bad_byte = j;
+                }
+            }
+        }
+        if (bad_bytes > 0) {
+            printf("Test failed: page %u, %u of %u bad bytes, first=0x%x\n",
+                i, bad_bytes, df_PageSize, buffer[first_bad_byte]);
+        }
+    }
 }
 
 #endif // HAL_LOGGING_BLOCK_ENABLED
