@@ -6,6 +6,7 @@
 
 #include "AP_Logger_File.h"
 #include "AP_Logger_DataFlash.h"
+#include "AP_Logger_W25N01GV.h"
 #include "AP_Logger_MAVLink.h"
 
 #include <AP_InternalError/AP_InternalError.h>
@@ -26,6 +27,10 @@ extern const AP_HAL::HAL& hal;
 #else
 #define HAL_LOGGING_FILE_BUFSIZE  16
 #endif
+#endif
+
+#ifndef HAL_LOGGING_DATAFLASH_DRIVER
+#define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_DataFlash
 #endif
 
 #ifndef HAL_LOGGING_STACK_SIZE
@@ -188,7 +193,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         { Backend_Type::FILESYSTEM, AP_Logger_File::probe },
 #endif
 #if HAL_LOGGING_DATAFLASH_ENABLED
-        { Backend_Type::BLOCK, AP_Logger_DataFlash::probe },
+        { Backend_Type::BLOCK, HAL_LOGGING_DATAFLASH_DRIVER::probe },
 #endif
 #if HAL_LOGGING_MAVLINK_ENABLED
         { Backend_Type::MAVLINK, AP_Logger_MAVLink::probe },
@@ -206,7 +211,7 @@ void AP_Logger::Init(const struct LogStructure *structures, uint8_t num_types)
         LoggerMessageWriter_DFLogStart *message_writer =
             new LoggerMessageWriter_DFLogStart();
         if (message_writer == nullptr)  {
-            AP_BoardConfig::allocation_error("mesage writer");
+            AP_BoardConfig::allocation_error("message writer");
         }
         backends[_next_backend] = backend_config.probe_fn(*this, message_writer);
         if (backends[_next_backend] == nullptr) {
