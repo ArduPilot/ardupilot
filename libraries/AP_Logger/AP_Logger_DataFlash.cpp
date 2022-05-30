@@ -109,9 +109,10 @@ bool AP_Logger_DataFlash::getSectorCount(void)
 
     // Read manufacturer ID
     uint8_t cmd = JEDEC_DEVICE_ID;
-    dev->transfer(&cmd, 1, buffer, 4);
+    uint8_t buf[4]; // buffer not yet allocated
+    dev->transfer(&cmd, 1, buf, 4);
 
-    uint32_t id = buffer[0] << 16 | buffer[1] << 8 | buffer[2];
+    uint32_t id = buf[0] << 16 | buf[1] << 8 | buf[2];
 
     uint32_t blocks = 0;
 
@@ -300,31 +301,6 @@ void AP_Logger_DataFlash::WriteEnable(void)
     WITH_SEMAPHORE(dev_sem);
     uint8_t b = JEDEC_WRITE_ENABLE;
     dev->transfer(&b, 1, nullptr, 0);
-}
-
-void AP_Logger_DataFlash::flash_test()
-{
-    // wait for the chip to be ready, this has been moved from Init()
-    hal.scheduler->delay(2000);
-
-    for (uint8_t i=1; i<=20; i++) {
-        printf("Flash fill %u\n", i);
-        if (i % df_PagePerBlock == 0) {
-            SectorErase(i / df_PagePerBlock);
-        }
-        memset(buffer, i, df_PageSize);
-        BufferToPage(i);
-    }
-    for (uint8_t i=1; i<=20; i++) {
-        printf("Flash check %u\n", i);
-        PageToBuffer(i);
-        for (uint32_t j=0; j<df_PageSize; j++) {
-            if (buffer[j] != i) {
-                printf("Test error: page %u j=%u v=%u\n", i, j, buffer[j]);
-                break;
-            }
-        }
-    }
 }
 
 #endif // HAL_LOGGING_DATAFLASH_ENABLED
