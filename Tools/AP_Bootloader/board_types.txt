@@ -171,6 +171,7 @@ AP_HW_CUBERED                        1069
 AP_HW_CUBERED_IO                     1070
 AP_HW_GreenSight_UltraBlue           1071
 AP_HW_GreenSight_microBlue           1072
+AP_HW_MAMBAH743_V4                   1073
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
