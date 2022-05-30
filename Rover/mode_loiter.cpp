@@ -52,9 +52,16 @@ void ModeLoiter::update()
         _desired_yaw_cd = rover.current_loc.get_bearing_to(_destination);
         float yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
         // if destination is behind vehicle, reverse towards it
-        if ((fabsf(yaw_error_cd) > 9000 && g2.loit_type == 0) || g2.loit_type == 2 || (fabsf(yaw_error_cd) > 9000 && g2.loit_type == 1)) {
+        if ((fabsf(yaw_error_cd) > 9000 && g2.loit_type == 0) || g2.loit_type == 2) {
             _desired_yaw_cd = wrap_180_cd(_desired_yaw_cd + 18000);
             yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
+            _desired_speed = -_desired_speed;
+        }
+
+        // consdier g2.loit_type = 1, ensure that the bow of the boat is facing the direction of water flow when boat fall back
+        if (fabsf(yaw_error_cd) > 9000 && g2.loit_type == 0 && !isnan(_loiter_yaw_cd)) {
+            _desired_yaw_cd = _loiter_yaw_cd;
+             yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
             _desired_speed = -_desired_speed;
         }
         
