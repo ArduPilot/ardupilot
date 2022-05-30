@@ -306,6 +306,12 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(camera,                  "CAM_", AP_Camera),
 #endif
 
+#if PRECISION_LANDING == ENABLED
+    // @Group: PLND_
+    // @Path: ../libraries/AC_PrecLand/AC_PrecLand.cpp
+    GOBJECT(precland,                "PLND_", AC_PrecLand),
+#endif
+
 #if HAL_MOUNT_ENABLED
     // @Group: MNT
     // @Path: ../libraries/AP_Mount/AP_Mount.cpp
