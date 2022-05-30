@@ -159,6 +159,18 @@ AP_HW_KakuteH7Mini                   1058
 AP_HW_JHEMCUGSF405A                  1059
 AP_HW_SPRACINGH7                     1060
 AP_HW_DEVEBOXH7                      1061
+AP_HW_MatekL431                      1062
+AP_HW_CUBEORANGEPLUS                 1063
+AP_HW_CarbonixF405                   1064
+AP_HW_QioTekAdeptF407                1065
+AP_HW_QioTekAdeptF427                1066
+AP_HW_FlyingMoonF407                 1067
+AP_HW_FlyingMoonF427                 1068
+AP_HW_CUBERED                        1069
+AP_HW_CUBERED_IO                     1070
+AP_HW_GreenSight_UltraBlue           1071
+AP_HW_GreenSight_microBlue           1072
+AP_HW_MAMBAH743_V4                   1073
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
