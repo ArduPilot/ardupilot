@@ -91,16 +91,12 @@ bool CyphalEscController::init(CyphalSubscriberManager &sub_manager,
 void CyphalEscController::SRV_push_servos()
 {
     if (!_is_inited) {
-        if (AP_HAL::millis() > last_log_ts_ms + 5000) {
-            last_log_ts_ms = AP_HAL::millis();
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: esc is not inited.");
-        }
         return;
     }
 
     WITH_SEMAPHORE(SRV_sem);
 
-    for (uint8_t src_idx = 0; src_idx < NUM_SERVO_CHANNELS; src_idx++) {
+    for (uint8_t src_idx = 0; src_idx < CYPHAL_SRV_NUMBER; src_idx++) {
         // Check if this channels has any function assigned
         if (SRV_Channels::channel_function(src_idx)) {
             _SRV_conf[src_idx].pulse = SRV_Channels::srv_channel(src_idx)->get_output_pwm();

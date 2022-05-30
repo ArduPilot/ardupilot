@@ -239,6 +239,40 @@ AP_CYPHAL *AP_CYPHAL::get_cyphal(uint8_t driver_index)
     return static_cast<AP_CYPHAL*>(AP::can().get_driver(driver_index));
 }
 
+CyphalRegisters &AP_CYPHAL::get_registers()
+{
+    return _registers;
+}
+
+CanardInstance &AP_CYPHAL::get_canard_instance()
+{
+    return _canard;
+}
+
+CanardTxQueue &AP_CYPHAL::get_tx_queue()
+{
+    return _tx_queue;
+}
+
+bool AP_CYPHAL::add_subscriber(uint8_t driver_index, CyphalBaseSubscriber *subsriber)
+{
+    if (subsriber == nullptr) {
+        return false;
+    }
+
+    AP_CYPHAL* cyphal = AP_CYPHAL::get_cyphal(driver_index);
+    if (cyphal == nullptr) {
+        return false;
+    }
+
+    if (!cyphal->subscriber_manager.add_subscriber(subsriber)) {
+        return false;
+    }
+
+    return true;
+}
+
+
 void AP_CYPHAL::init(uint8_t driver_index, bool enable_filters)
 {
     if (_initialized) {
@@ -247,7 +281,7 @@ void AP_CYPHAL::init(uint8_t driver_index, bool enable_filters)
 
     my_allocator = o1heapInit(base, CYPHAL_HEAP_SIZE);
     if (NULL == my_allocator) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: o1heapInit() failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AP_CYPHAL: o1heapInit() failed");
         return;
     }
 
@@ -298,12 +332,12 @@ bool AP_CYPHAL::add_interface(AP_HAL::CANIface* new_can_iface)
     _can_iface = new_can_iface;
 
     if (_can_iface == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: CAN driver not found");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AP_CYPHAL: CAN driver not found");
         return false;
     }
 
     if (!_can_iface->is_initialized()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: Driver not initialized");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AP_CYPHAL: Driver not initialized");
         return false;
     }
 
@@ -326,7 +360,7 @@ int8_t AP_CYPHAL::spinReceive(uint16_t duration_us)
         CanardRxTransfer transfer;
         int8_t result = canardRxAccept(&_canard, AP_HAL::micros64(), &canard_frame, 0, &transfer, NULL);
         if (result < 0) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: recv err: %d", result);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AP_CYPHAL: recv err: %d", result);
             // An error has occurred: either an argument is invalid or we've ran out of memory.
             // It is possible to statically prove that an out-of-memory will never occur for a given
             // application if the heap is sized correctly; for background, refer to the Robson's Proof

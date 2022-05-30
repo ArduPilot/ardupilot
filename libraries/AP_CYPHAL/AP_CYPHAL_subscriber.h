@@ -50,8 +50,10 @@ private:
 class CyphalBaseSubscriber
 {
 public:
+    CyphalBaseSubscriber(uint8_t register_idx);
     CyphalBaseSubscriber(CanardInstance &ins, CanardTxQueue& tx_queue, CanardPortID port_id) :
-        _canard(ins), _tx_queue(tx_queue), _port_id(port_id) {};
+        _canard(&ins), _tx_queue(&tx_queue), _port_id(port_id) {};
+
     CanardPortID get_port_id();
     virtual void subscribe() = 0;
     virtual void handler(const CanardRxTransfer* transfer) = 0;
@@ -60,9 +62,11 @@ protected:
     void subscribeOnRequest(const size_t extent);
 
     CanardRxSubscription _subscription;
-    CanardInstance &_canard;
-    CanardTxQueue &_tx_queue;
     CanardPortID _port_id;
+    CanardInstance *_canard;
+    CanardTxQueue *_tx_queue;
+private:
+    bool init(uint8_t register_idx);
 };
 
 

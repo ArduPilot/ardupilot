@@ -36,7 +36,7 @@
 
 
 #ifndef CYPHAL_SRV_NUMBER
-#define CYPHAL_SRV_NUMBER            18
+#define CYPHAL_SRV_NUMBER            4
 #endif
 
 
@@ -90,8 +90,6 @@ private:
     CyphalReadinessPublisher *_pub_readiness;
 
     bool _is_inited{false};
-
-    uint32_t last_log_ts_ms = {5000};
 
     CyphalRegisters& _registers;
 };

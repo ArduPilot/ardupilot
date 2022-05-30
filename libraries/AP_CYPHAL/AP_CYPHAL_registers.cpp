@@ -22,6 +22,7 @@
 #include "AP_CYPHAL.h"
 #include <AP_Param/AP_Param.h>
 
+CyphalRegisters* CyphalRegisters::instance;
 
 struct RegisterCell {
     uint8_t register_name[30];     // 30 should be enough, but this value might be increased

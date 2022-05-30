@@ -19,6 +19,7 @@
 
 #if HAL_ENABLE_CYPHAL_DRIVERS
 
+#include <AP_CYPHAL/AP_CYPHAL.h>
 #include <AP_CYPHAL/AP_CYPHAL_registers.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
@@ -43,6 +44,11 @@ void CyphalSubscriberManager::init(CanardInstance &ins, CanardTxQueue& tx_queue)
 bool CyphalSubscriberManager::add_subscriber(CyphalBaseSubscriber *subsriber)
 {
     if (subsriber == nullptr || number_of_subscribers >= max_number_of_subscribers) {
+        return false;
+    }
+
+    auto port_id = subsriber->get_port_id();
+    if (port_id == 0 || port_id == CyphalRegisters::CYPHAL_INVALID_REGISTER_VALUE) {
         return false;
     }
 
@@ -72,7 +78,7 @@ CanardPortID CyphalBaseSubscriber::get_port_id()
 
 void CyphalBaseSubscriber::subscribeOnMessage(const size_t extent)
 {
-    (void) canardRxSubscribe(&_canard,
+    (void) canardRxSubscribe(_canard,
                              CanardTransferKindMessage,
                              _port_id,
                              extent,
@@ -82,7 +88,7 @@ void CyphalBaseSubscriber::subscribeOnMessage(const size_t extent)
 
 void CyphalBaseSubscriber::subscribeOnRequest(const size_t extent)
 {
-    (void) canardRxSubscribe(&_canard,
+    (void) canardRxSubscribe(_canard,
                              CanardTransferKindRequest,
                              _port_id,
                              extent,
@@ -90,11 +96,27 @@ void CyphalBaseSubscriber::subscribeOnRequest(const size_t extent)
                              &_subscription);
 }
 
+CyphalBaseSubscriber::CyphalBaseSubscriber(uint8_t register_idx) {
+    init(register_idx);
+}
+
+bool CyphalBaseSubscriber::init(uint8_t register_idx) {
+    AP_CYPHAL* cyphal = AP_CYPHAL::get_cyphal(0);
+    if (cyphal == nullptr) {
+        return false;
+    }
+
+    auto registers = cyphal->get_registers();
+    _canard = &cyphal->get_canard_instance();
+    _tx_queue = &cyphal->get_tx_queue();
+    _port_id = registers.getPortIdByIndex(register_idx);
+    return true;
+}
 
 void CyphalRequestSubscriber::push_response(size_t buf_size, uint8_t* buf)
 {
     const CanardMicrosecond tx_deadline_usec = AP_HAL::micros() + 100000;
-    auto result = canardTxPush(&_tx_queue, &_canard, tx_deadline_usec, &_transfer_metadata, buf_size, buf);
+    auto result = canardTxPush(_tx_queue, _canard, tx_deadline_usec, &_transfer_metadata, buf_size, buf);
 
     // An error has occurred: either an argument is invalid, the TX queue is full, or we've
     // run out of memory. It is possible to statically prove that an out-of-memory will
@@ -183,7 +205,7 @@ void CyphalNodeExecuteCommandRequest::handler(const CanardRxTransfer* transfer)
 
 void CyphalNodeExecuteCommandRequest::makeResponse(const CanardRxTransfer* transfer)
 {
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "v1: ExecuteCommand not implemented yet");
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AP_CYPHAL: ExecuteCommand not implemented yet");
 }
 
 #endif // HAL_ENABLE_CYPHAL_DRIVERS

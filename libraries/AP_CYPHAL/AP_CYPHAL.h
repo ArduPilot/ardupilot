@@ -55,12 +55,20 @@ public:
     // Return cyphal from @driver_index or nullptr if it's not ready or doesn't exist
     static AP_CYPHAL *get_cyphal(uint8_t driver_index);
 
+    CyphalRegisters &get_registers();
+    CanardInstance &get_canard_instance();
+    CanardTxQueue &get_tx_queue();
+
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
 
     void loop(void);
 
     void SRV_push_servos(void);
+
+    uint8_t get_driver_index() {return 0;}
+
+    static bool add_subscriber(uint8_t driver_index, CyphalBaseSubscriber *subsriber);
 
 private:
     char _thread_name[10] = "cyphal";

@@ -63,7 +63,12 @@ public:
     static constexpr uint8_t NUMBER_OF_REGISTERS = 24;
     static constexpr uint16_t CYPHAL_INVALID_REGISTER_VALUE = 65535;
 
-    CyphalRegisters(AP_Int16 (&parameters_table)[NUMBER_OF_REGISTERS]) : _parameters_table(parameters_table) {}
+    CyphalRegisters(AP_Int16 (&parameters_table)[NUMBER_OF_REGISTERS]) : _parameters_table(parameters_table) {
+        if (!instance) {
+            instance = this;
+        }
+    }
+
     bool init(CyphalSubscriberManager &sub_manager, CanardInstance &ins, CanardTxQueue& tx_queue);
 
     // Return size of register name, otherwise 0
@@ -79,6 +84,7 @@ public:
 
 private:
     AP_Int16 (&_parameters_table)[NUMBER_OF_REGISTERS];
+    static CyphalRegisters* instance;
 };
 
 
