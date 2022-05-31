@@ -34,9 +34,6 @@ public:
         _instance(instance)
     {}
 
-    // Virtual destructor
-    virtual ~AP_Mount_Backend(void) {}
-
     // init - performs any required initialisation for this instance
     virtual void init() = 0;
 
