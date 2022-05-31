@@ -597,6 +597,13 @@ public:
 protected:
 
     bool _enter() override;
+
+private:
+
+    enum class SubMode {
+        climb,
+        RTL,
+    } submode;
 };
 
 class ModeQAcro : public Mode
