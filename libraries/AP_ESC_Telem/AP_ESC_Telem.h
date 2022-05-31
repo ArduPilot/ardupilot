@@ -84,7 +84,7 @@ public:
 
 private:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
-    void update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate);
+    void update_rpm(const uint8_t esc_index, const int32_t new_rpm, const float error_rate);
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const AP_ESC_Telem_Backend::TelemetryData& new_data, const uint16_t data_mask);
 
