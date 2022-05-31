@@ -403,6 +403,10 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(scripting, "SCR_", AP_Scripting),
 #endif
 
+#if HAL_PERIPH_ARM_MONITORING_ENABLE
+    GSCALAR(disarm_delay, "DISARM_DELAY", 1000),
+#endif
+
     AP_VAREND
 };
 

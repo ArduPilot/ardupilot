@@ -239,6 +239,9 @@ public:
 #if HAL_GCS_ENABLED
     GCS_Periph _gcs;
 #endif
+#if HAL_PERIPH_ARM_MONITORING_ENABLE
+    bool arm_update_status;
+#endif
     // setup the var_info table
     AP_Param param_loader{var_info};
 

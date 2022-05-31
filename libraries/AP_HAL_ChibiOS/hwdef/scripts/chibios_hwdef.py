@@ -2828,6 +2828,10 @@ def add_apperiph_defaults(f):
 #define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
 #endif
 
+#ifndef HAL_PERIPH_ARM_MONITORING_ENABLE
+#define HAL_PERIPH_ARM_MONITORING_ENABLE 0
+#endif
+
 /*
  * Airspeed Backends - we selectively turn backends *off*
  */
