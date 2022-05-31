@@ -341,7 +341,7 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 
 // record an update to the RPM together with timestamp, this allows the notch values to be slewed
 // this should be called by backends when new telemetry values are available
-void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, const float error_rate)
+void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const int32_t new_rpm, const float error_rate)
 {
     if (esc_index >= ESC_TELEM_MAX_ESCS) {
         return;
@@ -353,7 +353,9 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, c
     volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
 
     rpmdata.prev_rpm = rpmdata.rpm;
-    rpmdata.rpm = new_rpm;
+    // RPM is passed in as an int, but stored as a float. Likely this means consumers (e.g. mavlink and logs)
+    // think they are getting precision when they are not.
+    rpmdata.rpm = (float)new_rpm;
     if (now > rpmdata.last_update_us) { // cope with wrapping
         rpmdata.update_rate_hz = 1.0e6f / (now - rpmdata.last_update_us);
     }
