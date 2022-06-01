@@ -26,6 +26,7 @@
 #include "AP_ADSB_uAvionix_MAVLink.h"
 #include "AP_ADSB_uAvionix_UCP.h"
 #include "AP_ADSB_Sagetech.h"
+#include "AP_ADSB_Sagetech_MXS.h"
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -55,7 +56,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
     // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP
+    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    0, AP_PARAM_FLAG_ENABLE),
@@ -159,7 +160,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: ADS-B Options
-    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe
+    // @Bitmask: 0:Ping200X Send GPS,1:Squawk 7400 on RC failsafe,2:Squawk 7400 on GCS failsafe,3:Sagetech MXS use External Config
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  15, AP_ADSB, _options, 0),
 
@@ -276,7 +277,14 @@ void AP_ADSB::detect_instance(uint8_t instance)
 #if HAL_ADSB_SAGETECH_ENABLED
         if (AP_ADSB_Sagetech::detect()) {
             _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
-            return;
+        }
+#endif
+        break;
+
+    case Type::Sagetech_MXS:
+#if HAL_ADSB_SAGETECH_MXS_ENABLED
+        if (AP_ADSB_Sagetech_MXS::detect()) {
+            _backend[instance] = new AP_ADSB_Sagetech_MXS(*this, instance);
         }
 #endif
         break;
@@ -671,7 +679,7 @@ void AP_ADSB::handle_transceiver_report(const mavlink_channel_t chan, const mavl
 void AP_ADSB::send_adsb_out_status(const mavlink_channel_t chan) const
 {
     for (uint8_t i=0; i < ADSB_MAX_INSTANCES; i++) {
-        if (_type[i] == (int8_t)(AP_ADSB::Type::uAvionix_UCP)) {
+        if (_type[i] == (int8_t)(AP_ADSB::Type::uAvionix_UCP) || (int8_t)(AP_ADSB::Type::Sagetech_MXS)) {
             mavlink_msg_uavionix_adsb_out_status_send_struct(chan, &out_state.tx_status);
             return;
         }
