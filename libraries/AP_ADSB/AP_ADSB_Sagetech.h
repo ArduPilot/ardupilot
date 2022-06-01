@@ -137,11 +137,6 @@ private:
     // send msg to request a packet by type
     void request_packet(const MsgType_XP type);
 
-    // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
-    // stored on a GCS as a string field in different format, but then transmitted
-    // over mavlink as a float which is always a decimal.
-    uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
-
     // timers for each out-bound packet
     uint32_t        last_packet_initialize_ms;
     uint32_t        last_packet_PreFlight_ms;

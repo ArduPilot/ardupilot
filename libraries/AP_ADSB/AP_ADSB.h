@@ -151,6 +151,11 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
+    // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
+    // stored on a GCS as a string field in different format, but then transmitted
+    // over mavlink as a float which is always a decimal.
+    static uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
+
     // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
     // See wikipedia for IDENT explaination https://en.wikipedia.org/wiki/Transponder_(aeronautics)
     bool ident_start() {
