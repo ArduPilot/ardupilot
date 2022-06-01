@@ -269,6 +269,9 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
     z = 1.0;
     s = 1.0;
 
+    // 1/1 = 1
+    s_inv = 1.0;
+
     // compute residuals
     rL = f - A_mult(z);
     rs = s + b;
@@ -283,7 +286,7 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
     for (uint8_t k = 0; k < 15; k++) {
 
         // Pre-decompose to speed up solve
-        H_bar = cholesky(H + A_mult_b_mult_At(z.per_element_div(s)));
+        H_bar = cholesky(H + A_mult_b_mult_At(z.per_element_mult(s_inv)));
         z_rs = z.per_element_mult(rs);
 
         double alpha;
@@ -291,10 +294,10 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
             // centring on fist iteration, correction on second
 
             // Solve system
-            f_bar = rL + A_mult((rsz - z_rs).per_element_div(s));
+            f_bar = rL + A_mult((rsz - z_rs).per_element_mult(s_inv));
             dx = backward_sub_t(H_bar, forward_sub(H_bar,f_bar));
             ds = At_mult(dx) + rs;
-            dz = (rsz - z.per_element_mult(ds)).per_element_div(s);
+            dz = (rsz - z.per_element_mult(ds)).per_element_mult(s_inv);
 
             // Compute alpha
             alpha = 1.0;
@@ -326,12 +329,16 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
         // Update rhs and mu
         rL = matrix_multiply(H,x) + f - A_mult(z);
         rs = s - At_mult(x) + b;
-        rsz = s.per_element_mult(z);
         mu = z.dot(s);
 
         if ((mu < tol_nA) || (rL.dot(rL) < tol_sq) || (rs.dot(rs) < tol_sq)) {
             break;
         }
+
+        // update values for next iteration
+        rsz = s.per_element_mult(z);
+        s_inv = s.per_element_inv();
+
     }
 }
 

@@ -52,6 +52,7 @@ private:
     MatrixRC<double,max_num_motors,1> x;
     MatrixRC<double,num_constraints,1> z;
     MatrixRC<double,num_constraints,1> s;
+    MatrixRC<double,num_constraints,1> s_inv;
     MatrixRC<double,num_constraints,1> z_rs;
     MatrixRC<double,max_num_motors,1> rL;
     MatrixRC<double,num_constraints,1> rs;
