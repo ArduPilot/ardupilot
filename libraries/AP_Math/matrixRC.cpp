@@ -172,7 +172,7 @@ MatrixRC<T,R,C> MatrixRC<T,R,C>::per_element_mult_vector_columns(const MatrixRC<
     }
     return r;
 }
-template MatrixRC<double,4,12> MatrixRC<double,4,12>::per_element_mult_vector_columns(const MatrixRC<double,1,12>& b) const;
+template MatrixRC<float,4,12> MatrixRC<float,4,12>::per_element_mult_vector_columns(const MatrixRC<float,1,12>& b) const;
 
 // elementwise division, matrix by vector
 template <typename T, uint8_t R, uint8_t C>
@@ -185,7 +185,7 @@ MatrixRC<T,R,C> MatrixRC<T,R,C>::per_element_mult_vector_rows(const MatrixRC<T,R
     }
     return r;
 }
-template MatrixRC<double,25,12> MatrixRC<double,25,12>::per_element_mult_vector_rows(const MatrixRC<double,25,1>& b) const;
+template MatrixRC<float,25,12> MatrixRC<float,25,12>::per_element_mult_vector_rows(const MatrixRC<float,25,1>& b) const;
 
 // dot product
 template <typename T, uint8_t R, uint8_t C>
@@ -229,12 +229,12 @@ void MatrixRC<T,R,C>::print(const char* name) const {
 }
 #endif
 
-template class MatrixRC<double, 1, 4>;
-template class MatrixRC<double, 4, 1>;
-template class MatrixRC<double, 12, 1>;
-template class MatrixRC<double, 12, 4>;
-template class MatrixRC<double, 12, 12>;
-template class MatrixRC<double, 25, 1>;
+template class MatrixRC<float, 1, 4>;
+template class MatrixRC<float, 4, 1>;
+template class MatrixRC<float, 12, 1>;
+template class MatrixRC<float, 12, 4>;
+template class MatrixRC<float, 12, 12>;
+template class MatrixRC<float, 25, 1>;
 
 // perform Cholesky decomposition in place
 // Note that this method does not zero the upper triangle
@@ -256,7 +256,7 @@ MatrixRC<T,R,R> cholesky(const MatrixRC<T,R,R>& b) {
     }
     return x;
 }
-template MatrixRC<double,12,12> cholesky<double,12>(const MatrixRC<double,12,12>& b);
+template MatrixRC<float,12,12> cholesky<float,12>(const MatrixRC<float,12,12>& b);
 
 // forward substitution
 // equivelent to: x = a \ b if a is lower triangular
@@ -272,7 +272,7 @@ MatrixRC<T,R,1> forward_sub(const MatrixRC<T,R,R>& a, const MatrixRC<T,R,1>& b) 
     }
     return x;
 }
-template MatrixRC<double,12,1> forward_sub<double,12>(const MatrixRC<double,12,12>& a, const MatrixRC<double,12,1>& b);
+template MatrixRC<float,12,1> forward_sub<float,12>(const MatrixRC<float,12,12>& a, const MatrixRC<float,12,1>& b);
 
 // backwards substitution, transposing a
 // equivelent to: x = a' \ b if a is lower triangular
@@ -288,7 +288,7 @@ MatrixRC<T,R,1> backward_sub_t(const MatrixRC<T,R,R>& a, const MatrixRC<T,R,1>& 
     }
     return x;
 }
-template MatrixRC<double,12,1> backward_sub_t<double,12>(const MatrixRC<double,12,12>& a, const MatrixRC<double,12,1>& b);
+template MatrixRC<float,12,1> backward_sub_t<float,12>(const MatrixRC<float,12,12>& a, const MatrixRC<float,12,1>& b);
 
 // matrix multiplication
 template <typename T, uint8_t R, uint8_t C, uint8_t J>
@@ -303,6 +303,6 @@ MatrixRC<T,R,J> matrix_multiply(const MatrixRC<T,R,C>&a, const MatrixRC<T,C,J>& 
     }
     return r;
 }
-template MatrixRC<double,12,12> matrix_multiply<double,12,4,12>(const MatrixRC<double,12,4>&a, const MatrixRC<double,4,12>& b);
-template MatrixRC<double,12,1> matrix_multiply<double,12,4,1>(const MatrixRC<double,12,4>&a, const MatrixRC<double,4,1>& b);
-template MatrixRC<double,12,1> matrix_multiply<double,12,12,1>(const MatrixRC<double,12,12>&a, const MatrixRC<double,12,1>& b);
+template MatrixRC<float,12,12> matrix_multiply<float,12,4,12>(const MatrixRC<float,12,4>&a, const MatrixRC<float,4,12>& b);
+template MatrixRC<float,12,1> matrix_multiply<float,12,4,1>(const MatrixRC<float,12,4>&a, const MatrixRC<float,4,1>& b);
+template MatrixRC<float,12,1> matrix_multiply<float,12,12,1>(const MatrixRC<float,12,12>&a, const MatrixRC<float,12,1>& b);
