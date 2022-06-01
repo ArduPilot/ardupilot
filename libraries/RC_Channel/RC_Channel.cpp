@@ -522,6 +522,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::FFT_NOTCH_TUNE:
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::RETRACT_MOUNT:
+    case AUX_FUNC::MOUNT_LOCK:
 #endif
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
@@ -582,6 +583,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::WEATHER_VANE_ENABLE, "Weathervane"},
     { AUX_FUNC::TURBINE_START, "Turbine Start"},
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
+    { AUX_FUNC::MOUNT_LOCK, "MountLock"},
 };
 
 /* lookup the announcement for switch change */
@@ -1212,6 +1214,17 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
                 mount->set_mode_to_default();
                 break;
         }
+#endif
+        break;
+    }
+
+    case AUX_FUNC::MOUNT_LOCK: {
+#if HAL_MOUNT_ENABLED
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            break;
+        }
+        mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
 #endif
         break;
     }
