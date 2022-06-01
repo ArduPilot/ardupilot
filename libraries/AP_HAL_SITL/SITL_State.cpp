@@ -385,6 +385,9 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
     } else if (streq(name, "richenpower")) {
         sitl_model->set_richenpower(&_sitl->richenpower_sim);
         return &_sitl->richenpower_sim;
+    } else if (streq(name, "loweheiser")) {
+        sitl_model->set_loweheiser(&_sitl->loweheiser_sim);
+        return &_sitl->loweheiser_sim;
     } else if (streq(name, "fetteconewireesc")) {
         sitl_model->set_fetteconewireesc(&_sitl->fetteconewireesc_sim);
         return &_sitl->fetteconewireesc_sim;
