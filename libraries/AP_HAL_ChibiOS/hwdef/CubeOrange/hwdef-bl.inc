@@ -56,5 +56,4 @@ PE4 MPU_EXT_CS CS
 PD10 FRAM_CS CS SPEED_VERYLOW
 
 # disable peripheral and sensor power in the bootloader
-PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
 PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
