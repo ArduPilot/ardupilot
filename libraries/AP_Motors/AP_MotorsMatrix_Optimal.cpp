@@ -326,12 +326,17 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
         z -= dz*alpha*eta;
         s -= ds*alpha*eta;
 
-        // Update rhs and mu
-        rL = matrix_multiply(H,x) + f - A_mult(z);
-        rs = s - At_mult(x) + b;
+        // Update rhs and mu, checking for convergence
         mu = z.dot(s);
-
-        if ((mu < tol_nA) || (rL.dot(rL) < tol_sq) || (rs.dot(rs) < tol_sq)) {
+        if (mu < tol_nA) {
+            break;
+        }
+        rs = s - At_mult(x) + b;
+        if (rs.dot(rs) < tol_sq) {
+            break;
+        }
+        rL = matrix_multiply(H,x) + f - A_mult(z);
+        if (rL.dot(rL) < tol_sq) {
             break;
         }
 
