@@ -558,6 +558,19 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     _backends[instance]->set_mode(mode);
 }
 
+// set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+// If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
+{
+    // sanity check instance
+    if (!check_instance(instance)) {
+        return;
+    }
+
+    // return immediately if no change
+    state[instance]._yaw_lock = yaw_lock;
+}
+
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
 {
