@@ -15,14 +15,7 @@
 
 #include "AP_MotorsMatrix_Optimal.h"
 
-#if HAL_HAVE_HARDWARE_DOUBLE
-
-#include <AP_HAL/AP_HAL.h>
-#include <AP_InternalError/AP_InternalError.h>
-
-#pragma GCC diagnostic error "-Wframe-larger-than=4500"
-
-extern const AP_HAL::HAL& hal;
+#pragma GCC diagnostic error "-Wframe-larger-than=2500"
 
 void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
@@ -125,7 +118,7 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
 
     // Weighting vector defines the relative weighting of roll, pitch, yaw and throttle
     // may want to change this on the fly in the future, but in that case we can no longer pre-compute the hessian
-    MatrixRC<double,1,4> w;
+    MatrixRC<float,1,4> w;
     w(0, 0) = 15.0; // roll
     w(0, 1) = 15.0; // pitch
     w(0, 2) = 15.0; // yaw
@@ -187,17 +180,17 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     throttle_avg_max = constrain_float(throttle_avg_max, throttle_thrust, throttle_thrust_max);
 
     // set roll, pitch, yaw and throttle input value
-    MatrixRC<double,4,1> input;
+    MatrixRC<float,4,1> input;
     input(0, 0) = roll_thrust;
     input(1, 0) = pitch_thrust;
     input(2, 0) = yaw_thrust;
     input(3, 0) = throttle_thrust;
 
     // input matrix
-    MatrixRC<double,max_num_motors,1> f = matrix_multiply(motor_factors, input);
+    MatrixRC<float,max_num_motors,1> f = matrix_multiply(motor_factors, input);
 
     // constraints, average throttle, 1 and 0
-    MatrixRC<double,num_constraints,1> b;
+    MatrixRC<float,num_constraints,1> b;
     b(0, 0) = -throttle_avg_max;
     for (uint8_t i = 0; i < max_num_motors; i++) {
         if (motor_enabled[i]) {
@@ -221,9 +214,9 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
 
 // sparse A matrix handling
 // x = A * B
-MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optimal::A_mult(const MatrixRC<double,num_constraints,1>& B) const
+MatrixRC<float,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optimal::A_mult(const MatrixRC<float,num_constraints,1>& B) const
 {
-    MatrixRC<double,max_num_motors,1> X;
+    MatrixRC<float,max_num_motors,1> X;
     for (uint8_t i = 0; i < max_num_motors; i++) {
         X(i,0) = A.average_throttle(i,0)*B(0,0) + A.max_throttle(i,0)*B(1+i,0) + A.min_throttle(i,0)*B(1+max_num_motors+i,0);
     }
@@ -231,9 +224,9 @@ MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optim
 }
 
 // x = A' * B
-MatrixRC<double,AP_MotorsMatrix_Optimal::num_constraints,1> AP_MotorsMatrix_Optimal::At_mult(const MatrixRC<double,max_num_motors,1>& B) const
+MatrixRC<float,AP_MotorsMatrix_Optimal::num_constraints,1> AP_MotorsMatrix_Optimal::At_mult(const MatrixRC<float,max_num_motors,1>& B) const
 {
-    MatrixRC<double,num_constraints,1> X;
+    MatrixRC<float,num_constraints,1> X;
     X(0,0) = A.average_throttle.dot(B);
     for (uint8_t i = 0; i < max_num_motors; i++) {
         X(1+i,0) = A.max_throttle(i,0)*B(i,0);
@@ -243,9 +236,9 @@ MatrixRC<double,AP_MotorsMatrix_Optimal::num_constraints,1> AP_MotorsMatrix_Opti
 }
 
 // x = A*diag(B)*A'
-MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,AP_MotorsMatrix_Optimal::max_num_motors> AP_MotorsMatrix_Optimal::A_mult_b_mult_At(const MatrixRC<double,num_constraints,1>& B) const
+MatrixRC<float,AP_MotorsMatrix_Optimal::max_num_motors,AP_MotorsMatrix_Optimal::max_num_motors> AP_MotorsMatrix_Optimal::A_mult_b_mult_At(const MatrixRC<float,num_constraints,1>& B) const
 {
-    MatrixRC<double,max_num_motors,max_num_motors> X;
+    MatrixRC<float,max_num_motors,max_num_motors> X;
     for (uint8_t i = 0; i < max_num_motors; i++) {
         for (uint8_t j = 0; j < max_num_motors; j++) {
             X(i,j) = A.average_throttle(i,0) * A.average_throttle(j,0) * B(0,0);
@@ -261,7 +254,7 @@ MatrixRC<double,AP_MotorsMatrix_Optimal::max_num_motors,AP_MotorsMatrix_Optimal:
 // Inspired by: https://github.com/jarredbarber/eigen-QP
 // solves min( 0.5*x'Hx + f'x )
 // with constraints A'x >= b
-void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num_motors,1> &f, const MatrixRC<double,num_constraints,1> &b)
+void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<float,max_num_motors,1> &f, const MatrixRC<float,num_constraints,1> &b)
 {
 
     // setup starting points
@@ -276,12 +269,12 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
     rL = f - A_mult(z);
     rs = s + b;
     rsz = 1.0;
-    double mu = num_constraints;
+    float mu = num_constraints;
 
-    constexpr double eta = 0.95;
-    constexpr double tol = 1e-6;
-    constexpr double tol_sq = tol * tol;
-    constexpr double tol_nA = tol * num_constraints;
+    constexpr float eta = 0.95;
+    constexpr float tol = 1e-5;
+    constexpr float tol_sq = tol * tol;
+    constexpr float tol_nA = tol * num_constraints;
     // limit to 15 iterations
     for (uint8_t k = 0; k < 15; k++) {
 
@@ -289,7 +282,7 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
         H_bar = cholesky(H + A_mult_b_mult_At(z.per_element_mult(s_inv)));
         z_rs = z.per_element_mult(rs);
 
-        double alpha;
+        float alpha;
         for (uint8_t i = 0; i < 2; i++) {
             // centring on fist iteration, correction on second
 
@@ -315,16 +308,16 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
             }
 
             // affine duality gap
-            double mu_a = (z-dz*alpha).dot(s-(ds*alpha));
+            float mu_a = (z-dz*alpha).dot(s-(ds*alpha));
 
             // apply centring parameter
             rsz += ds.per_element_mult(dz) - ((mu_a*mu_a*mu_a)/(mu*mu*num_constraints));
 
         }
         // Update x, z, s
-        x -= dx*alpha*eta;
-        z -= dz*alpha*eta;
-        s -= ds*alpha*eta;
+        x -= dx*(alpha*eta);
+        z -= dz*(alpha*eta);
+        s -= ds*(alpha*eta);
 
         // Update rhs and mu, checking for convergence
         mu = z.dot(s);
@@ -346,5 +339,3 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<double,max_num
 
     }
 }
-
-#endif // HAL_HAVE_HARDWARE_DOUBLE
