@@ -132,9 +132,6 @@ public:
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // send a GIMBAL_REPORT message to GCS
-    void send_gimbal_report(mavlink_channel_t chan);
-
     // send a MOUNT_STATUS message to GCS:
     void send_mount_status(mavlink_channel_t chan);
 

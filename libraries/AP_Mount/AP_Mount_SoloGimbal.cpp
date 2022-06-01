@@ -159,11 +159,4 @@ void AP_Mount_SoloGimbal::handle_gimbal_torque_report(mavlink_channel_t chan, co
     _gimbal.disable_torque_report();
 }
 
-/*
-  send a GIMBAL_REPORT message to the GCS
- */
-void AP_Mount_SoloGimbal::send_gimbal_report(mavlink_channel_t chan)
-{
-}
-
 #endif // HAL_SOLO_GIMBAL_ENABLED

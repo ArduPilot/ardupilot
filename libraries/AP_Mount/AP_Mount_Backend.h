@@ -79,9 +79,6 @@ public:
     // handle a PARAM_VALUE message
     virtual void handle_param_value(const mavlink_message_t &msg) {}
 
-    // send a GIMBAL_REPORT message to the GCS
-    virtual void send_gimbal_report(const mavlink_channel_t chan) {}
-
     // handle a GLOBAL_POSITION_INT message
     bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
 
