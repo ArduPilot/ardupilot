@@ -332,3 +332,6 @@ DMA_NOSHARE SPI1* SPI4* USART6*
 # for users who have replaced their CubeSolo with a CubeOrange:
 define HAL_OREO_LED_ENABLED 1
 define HAL_SOLO_GIMBAL_ENABLED HAL_MOUNT_ENABLED
+
+# Enable Sagetech MXS ADSB transponder
+define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED

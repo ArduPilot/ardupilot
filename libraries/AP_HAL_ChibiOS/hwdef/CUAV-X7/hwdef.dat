@@ -315,3 +315,7 @@ DMA_NOSHARE  SPI1* TIM*UP*
 
 # default to 45C target temp
 define HAL_IMU_TEMP_DEFAULT 45
+
+# Enable Sagetech MXS ADSB transponder
+define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
+
