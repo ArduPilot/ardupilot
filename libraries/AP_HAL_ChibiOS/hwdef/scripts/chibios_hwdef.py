@@ -2782,6 +2782,10 @@ def add_apperiph_defaults(f):
 #define AP_ROBOTISSERVO_ENABLED 0
 #endif
 
+#ifndef AP_STATS_ENABLED
+#define AP_STATS_ENABLED 0
+#endif
+
 /*
  * GPS Backends - we selectively turn backends on.
  *   Note also that f103-GPS explicitly disables some of these backends.
