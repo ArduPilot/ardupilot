@@ -17,7 +17,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/Location.h>
 
 class AP_Beacon_Backend;
@@ -31,7 +30,7 @@ class AP_Beacon
 public:
     friend class AP_Beacon_Backend;
 
-    AP_Beacon(AP_SerialManager &_serial_manager);
+    AP_Beacon();
 
     // get singleton instance
     static AP_Beacon *get_singleton() { return _singleton; }
@@ -130,7 +129,6 @@ private:
 
     // external references
     AP_Beacon_Backend *_driver;
-    AP_SerialManager &serial_manager;
 
     // last known position
     Vector3f veh_pos_ned;
