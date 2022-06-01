@@ -37,6 +37,8 @@
 
 #define ADSB_BITBASK_RF_CAPABILITIES_UAT_IN         (1 << 0)
 #define ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN      (1 << 1)
+#define ADSB_BITBASK_RF_CAPABILITIES_UAT_OUT        (1 << 2)
+#define ADSB_BITBASK_RF_CAPABILITIES_1090ES_OUT     (1 << 3)
 
 class AP_ADSB_Backend;
 
@@ -46,6 +48,7 @@ public:
     friend class AP_ADSB_uAvionix_MAVLink;
     friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
+    friend class AP_ADSB_Sagetech_MXS;
 
     // constructor
     AP_ADSB();
@@ -65,6 +68,7 @@ public:
         uAvionix_MAVLink    = 1,
         Sagetech            = 2,
         uAvionix_UCP        = 3,
+        Sagetech_MXS        = 4,
     };
 
     struct adsb_vehicle_t {
@@ -77,6 +81,7 @@ public:
         Ping200X_Send_GPS               = (1<<0),
         Squawk_7400_FS_RC               = (1<<1),
         Squawk_7400_FS_GCS              = (1<<2),
+        SagteTech_MXS_External_Config   = (1<<3),
     };
 
     // for holding parameters
