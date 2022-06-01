@@ -115,6 +115,11 @@ public:
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
+    // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+    // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+    void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
+    void set_yaw_lock(uint8_t instance, bool yaw_lock);
+
     // set_angle_targets - sets angle targets in degrees
     void set_angle_targets(float roll, float tilt, float pan) { set_angle_targets(_primary, roll, tilt, pan); }
     void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
@@ -179,6 +184,7 @@ protected:
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
 
         MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
+        bool            _yaw_lock;          // If true the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
         struct Location _roi_target;        // roi target location
         bool _roi_target_set;
 
