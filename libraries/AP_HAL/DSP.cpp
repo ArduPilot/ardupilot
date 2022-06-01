@@ -190,7 +190,7 @@ uint16_t DSP::step_calc_frequencies(FFTWindowState* fft, uint16_t start_bin, uin
 void DSP::update_average_from_sliding_window(FFTWindowState* fft)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define ASSERT_MAX(v) assert((v)<(sizeof(float) * fft->_num_stored_freqs * fft->_sliding_window_size))
+#define ASSERT_MAX(v) assert((v)<(fft->_num_stored_freqs * fft->_sliding_window_size))
 #else
 #define ASSERT_MAX(v)
 #endif
