@@ -49,6 +49,7 @@
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
 #include <SITL/SIM_RichenPower.h>
+#include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
 
 #include "AP_HAL_SITL.h"
