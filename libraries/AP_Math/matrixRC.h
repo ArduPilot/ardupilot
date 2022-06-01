@@ -34,6 +34,7 @@ public:
 
     MatrixRC<T,R,C> per_element_mult(const MatrixRC<T,R,C>& b) const;
     MatrixRC<T,R,C> per_element_div(const MatrixRC<T,R,C>& b) const;
+    MatrixRC<T,R,C> per_element_inv() const;
 
     MatrixRC<T,R,C> per_element_mult_vector_columns(const MatrixRC<T,1,C>& b) const;
     MatrixRC<T,R,C> per_element_mult_vector_rows(const MatrixRC<T,R,1>& b) const;

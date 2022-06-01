@@ -149,6 +149,18 @@ MatrixRC<T,R,C> MatrixRC<T,R,C>::per_element_div(const MatrixRC<T,R,C>& b) const
     return r;
 }
 
+// elementwise inversion, to faster to inverse and multiply than several per_element_div calls
+template <typename T, uint8_t R, uint8_t C>
+MatrixRC<T,R,C> MatrixRC<T,R,C>::per_element_inv() const {
+    MatrixRC<T,R,C> r;
+    for (uint8_t i = 0; i < R; i++) {
+        for (uint8_t j = 0; j < C; j++) {
+            r.v[i][j] = 1.0 / v[i][j];
+        }
+    }
+    return r;
+}
+
 // elementwise multiplication, matrix by vector
 template <typename T, uint8_t R, uint8_t C>
 MatrixRC<T,R,C> MatrixRC<T,R,C>::per_element_mult_vector_columns(const MatrixRC<T,1,C>& b) const {
@@ -232,8 +244,9 @@ MatrixRC<T,R,R> cholesky(const MatrixRC<T,R,R>& b) {
     MatrixRC<T,R,R> x = b;
     for (uint8_t i = 0; i < R; i++) {
         x.v[i][i] = sqrt(x.v[i][i]);
+        T ii_inv = 1.0 / x.v[i][i];
         for (uint8_t j = i+1; j < R; j++) {
-            x.v[j][i] /= x.v[i][i];
+            x.v[j][i] *= ii_inv;
         }
         for (uint8_t k = i+1; k < R; k++) {
             for (uint8_t j = k; j < R; j++) {
