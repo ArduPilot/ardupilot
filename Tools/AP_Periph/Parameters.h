@@ -54,6 +54,7 @@ public:
         k_param_can_fdmode,
         k_param_can_fdbaudrate0,
         k_param_can_fdbaudrate1,
+        k_param_node_stats,
     };
 
     AP_Int16 format_version;

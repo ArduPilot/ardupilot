@@ -18,6 +18,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
+#include <AP_Stats/AP_Stats.h>
 
 #if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
@@ -102,6 +103,10 @@ public:
 #endif
 
     AP_SerialManager serial_manager;
+
+#if AP_STATS_ENABLED
+    AP_Stats node_stats;
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
