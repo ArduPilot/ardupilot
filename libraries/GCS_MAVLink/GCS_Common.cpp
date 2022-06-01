@@ -916,6 +916,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_HIGH_LATENCY2,         MSG_HIGH_LATENCY2},
         { MAVLINK_MSG_ID_AIS_VESSEL,            MSG_AIS_VESSEL},
         { MAVLINK_MSG_ID_UAVIONIX_ADSB_OUT_STATUS, MSG_UAVIONIX_ADSB_OUT_STATUS},
+        { MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE},
             };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -5151,6 +5152,52 @@ void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 #endif
 }
 
+void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
+{
+    // get attitude
+    const AP_AHRS &ahrs = AP::ahrs();
+    Quaternion quat;
+    if (!ahrs.get_quaternion(quat)) {
+        return;
+    }
+    const float repr_offseq_q[] = {quat.q1, quat.q2, quat.q3, quat.q4};
+
+    // get velocity
+    Vector3f vel;
+    if (!ahrs.get_velocity_NED(vel)) {
+        vel.zero();
+    }
+
+    // get vehicle body-frame rotation rate targets
+    Vector3f rate_bf_targets;
+    const AP_Vehicle *vehicle = AP::vehicle();
+    if (vehicle != nullptr) {
+        vehicle->get_rate_bf_targets(rate_bf_targets);
+    }
+
+    // get estimator flags
+    uint16_t est_status_flags = 0;
+    nav_filter_status nav_filt_status;
+    if (ahrs.get_filter_status(nav_filt_status)) {
+        est_status_flags = (uint16_t)(nav_filt_status.value & 0xFFFF);
+    }
+
+    mavlink_msg_autopilot_state_for_gimbal_device_send(
+        chan,
+        mavlink_system.sysid,   // target system (this autopilot's gimbal)
+        0,                  // target component (anything)
+        AP_HAL::micros(),   // time boot us
+        repr_offseq_q,  // attitude as quaternion
+        0,      // attitude estimated delay in micros
+        vel.x,  // x speed in NED (m/s)
+        vel.y,  // y speed in NED (m/s)
+        vel.z,  // z speed in NED (m/s)
+        0,      // velocity estimated delay in micros
+        rate_bf_targets.z,// feed forward angular velocity z
+        est_status_flags,   // estimator status
+        0);     // landed_state (see MAV_LANDED_STATE)
+}
+
 void GCS_MAVLINK::send_received_message_deprecation_warning(const char * message)
 {
     // we're not expecting very many of these ever, so a tiny bit of
@@ -5496,6 +5543,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
         CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
         send_uavionix_adsb_out_status();
+        break;
+
+    case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
+        CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
+        send_autopilot_state_for_gimbal_device();
         break;
 
     default:
