@@ -16,6 +16,7 @@
 #include "AP_Beacon_Backend.h"
 // debug
 #include <stdio.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 
 /*
   base class constructor. 
