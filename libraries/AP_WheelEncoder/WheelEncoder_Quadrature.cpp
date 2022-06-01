@@ -138,5 +138,5 @@ void AP_WheelEncoder_Quadrature::irq_handler(uint8_t pin,
     update_phase_and_error_count();
 
     // record update time
-    irq_state.last_reading_ms = timestamp;
+    irq_state.last_reading_ms = timestamp * 1e-3f;
 }
