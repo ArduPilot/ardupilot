@@ -734,16 +734,6 @@ void AP_Mount::handle_param_value(const mavlink_message_t &msg)
     }
 }
 
-// send a GIMBAL_REPORT message to the GCS
-void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
-{
-    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_gimbal_report(chan);
-        }
-    }    
-}
-
 
 // singleton instance
 AP_Mount *AP_Mount::_singleton;
