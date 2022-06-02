@@ -52,6 +52,7 @@ public:
         DEVTYPE_BARO_SPL06    = 0x0C,
         DEVTYPE_BARO_UAVCAN   = 0x0D,
         DEVTYPE_BARO_MSP      = 0x0E,
+        DEVTYPE_BARO_ICP101XX = 0x0F,
     };
     
 protected:
