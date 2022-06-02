@@ -78,7 +78,7 @@ bool Sub::set_mode(control_mode_t mode, ModeReason reason)
         // update notify object
         notify_flight_mode(control_mode);
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
         camera.set_is_auto_mode(control_mode == AUTO);
 #endif
 
