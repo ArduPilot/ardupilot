@@ -239,6 +239,16 @@ public:
         float climb_rate;
     };
 
+    // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW support
+    struct PACKED gimbal_manager_pitchyaw_Command {
+        int8_t pitch_angle_deg;
+        int16_t yaw_angle_deg;
+        int8_t pitch_rate_degs;
+        int8_t yaw_rate_degs;
+        uint8_t flags;
+        uint8_t gimbal_id;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -314,6 +324,9 @@ public:
 
         // nav attitude time
         nav_attitude_time_Command nav_attitude_time;
+
+        // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
+        gimbal_manager_pitchyaw_Command gimbal_manager_pitchyaw;
 
         // location
         Location location{};      // Waypoint location
@@ -760,7 +773,7 @@ private:
 
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
-
+    bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
 };
 
 namespace AP
