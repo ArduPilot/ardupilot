@@ -168,6 +168,7 @@ BUILD_OPTIONS = [
     Feature('Sensors', 'MSP', 'AP_BARO_MSP_ENABLED', 'Enable MSP Barometric Sensor', 0, None),
     Feature('Sensors', 'SPL06', 'AP_BARO_SPL06_ENABLED', 'Enable SPL06 Barometric Sensor', 1, None),
     Feature('Sensors', 'UAVCAN', 'AP_BARO_UAVCAN_ENABLED', 'Enable UAVCAN Barometric Sensor', 0, None),
+    Feature('Sensors', 'ICP101XX', 'AP_BARO_ICP101XX_ENABLED', 'Enable ICP101XX Barometric Sensor', 0, None),
 
     Feature('Sensors', 'RPM', 'RPM_ENABLED', 'Enable RPM sensors', 0, None),
 
