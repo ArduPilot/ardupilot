@@ -99,9 +99,7 @@
 #include <AP_Rally/AP_Rally.h>           // Rally point library
 #endif
 
-#if CAMERA == ENABLED
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
-#endif
 
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
@@ -336,7 +334,7 @@ private:
     AC_Circle circle_nav;
 
     // Camera
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
