@@ -731,6 +731,7 @@ void RC_Channel::do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag)
 #endif // !APM_BUILD_ArduPlane
 }
 
+#if AP_CAMERA_ENABLED
 void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
 {
     AP_Camera *camera = AP::camera();
@@ -741,6 +742,7 @@ void RC_Channel::do_aux_function_camera_trigger(const AuxSwitchPos ch_flag)
         camera->take_picture();
     }
 }
+#endif
 
 void RC_Channel::do_aux_function_runcam_control(const AuxSwitchPos ch_flag)
 {
@@ -966,9 +968,11 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
 bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
+#if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_TRIGGER:
         do_aux_function_camera_trigger(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::FENCE:
         do_aux_function_fence(ch_flag);
@@ -1178,6 +1182,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 #endif // HAL_MINIMIZE_FEATURES
 
     case AUX_FUNC::CAM_MODE_TOGGLE: {
+#if AP_CAMERA_ENABLED
         // Momentary switch to for cycling camera modes
         AP_Camera *camera = AP_Camera::get_singleton();
         if (camera == nullptr) {
@@ -1194,6 +1199,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             camera->cam_mode_toggle();
             break;
         }
+#endif
         break;
     }
 
