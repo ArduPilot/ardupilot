@@ -120,7 +120,7 @@ void Sub::control_depth() {
     // Read the output of the z controller and rotate it so it always points up
     Vector3f throttle_vehicle_frame = ahrs.get_rotation_body_to_ned().transposed() * Vector3f(0, 0, motors.get_throttle_in_bidirectional());
     //TODO: scale throttle with the ammount of thrusters in the given direction
-    attitude_control.set_throttle_out(throttle_vehicle_frame.z + channel_throttle->norm_input(), false, g.throttle_filt);
+    motors.set_throttle(throttle_vehicle_frame.z + channel_throttle->norm_input());
     motors.set_forward(-throttle_vehicle_frame.x + channel_forward->norm_input());
     motors.set_lateral(-throttle_vehicle_frame.y + channel_lateral->norm_input());
 }
