@@ -53,7 +53,7 @@ bool Mode::enter()
     plane.guided_state.last_target_alt = 0;
 #endif
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     plane.camera.set_is_auto_mode(this == &plane.mode_auto);
 #endif
 
