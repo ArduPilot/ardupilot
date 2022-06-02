@@ -220,6 +220,8 @@ BUILD_OPTIONS = [
     Feature('Actuators', 'Volz', 'AP_VOLZ_ENABLED', 'Enable Volz Protocol', 0, None),
     Feature('Actuators', 'RobotisServo', 'AP_ROBOTISSERVO_ENABLED', 'Enable RobotisServo Protocol', 0, None),
     Feature('Actuators', 'FETTecOneWire', 'AP_FETTEC_ONEWIRE_ENABLED', 'Enable FETTec OneWire ESCs', 0, None),
+
+    Feature('Payload', 'Camera', 'AP_CAMERA_ENABLED', 'Enable Camera Trigger support', 0, None),
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: x.category)
