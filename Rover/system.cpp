@@ -234,7 +234,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
     fence.manual_recovery_start();
 #endif
 
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     camera.set_is_auto_mode(control_mode->mode_number() == Mode::Number::AUTO);
 #endif
 
