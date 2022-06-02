@@ -118,10 +118,15 @@ protected:
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
+    Vector3f    _rate_target_rads;      // desired roll, pitch, yaw rate in radians/sec
+    bool        _rate_target_rads_valid;// true if _rate_target_rads should can be used (e.g. RC input is using rate control)
 
 private:
 
-    void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;
+    // update rate and angle targets from RC input
+    // current angle target (in radians) should be provided in angle_rad target
+    // rate and angle targets are returned in rate_rads and angle_rad arguments
+    void update_rate_and_angle_from_rc(const RC_Channel *chan, float &rate_rads, float &angle_rad, float angle_min_rad, float angle_max_rad) const;
 };
 
 #endif // HAL_MOUNT_ENABLED
