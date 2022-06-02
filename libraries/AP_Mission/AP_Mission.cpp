@@ -5,6 +5,7 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Camera/AP_Camera.h>
 
 const AP_Param::GroupInfo AP_Mission::var_info[] = {
 
@@ -358,8 +359,10 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_CONTROL_VIDEO:
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return start_command_camera(cmd);
+#endif
     case MAV_CMD_DO_PARACHUTE:
         return start_command_parachute(cmd);
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
