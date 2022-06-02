@@ -87,7 +87,7 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,            &sub.camera_mount, update,              50,  75,  45),
 #endif
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera,           &sub.camera,       update,              50,  75,  48),
 #endif
     SCHED_TASK(ten_hz_logging_loop,   10,    350,  51),
