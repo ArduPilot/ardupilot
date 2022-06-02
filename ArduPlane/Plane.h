@@ -236,7 +236,7 @@ private:
     AP_Navigation *nav_controller = &L1_controller;
 
     // Camera
-#if CAMERA == ENABLED
+#if AP_CAMERA_ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
