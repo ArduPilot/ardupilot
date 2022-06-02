@@ -3198,6 +3198,7 @@ void GCS_MAVLINK::handle_system_time_message(const mavlink_message_t &msg)
     AP::rtc().set_utc_usec(packet.time_unix_usec, AP_RTC::SOURCE_MAVLINK_SYSTEM_TIME);
 }
 
+#if AP_CAMERA_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &packet)
 {
     AP_Camera *camera = AP::camera();
@@ -3239,6 +3240,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_camera(const mavlink_command_long_t &pack
     }
     return result;
 }
+#endif
 
 
 // sets ekf_origin if it has not been set.
@@ -3690,6 +3692,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_file_transfer_protocol(msg);
         break;
 
+#if AP_CAMERA_ENABLED
     case MAVLINK_MSG_ID_DIGICAM_CONTROL:
     case MAVLINK_MSG_ID_GOPRO_HEARTBEAT: // heartbeat from a GoPro in Solo gimbal
         {
@@ -3700,6 +3703,7 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
             camera->handle_message(chan, msg);
         }
         break;
+#endif
 
     case MAVLINK_MSG_ID_SET_MODE:
         handle_set_mode(msg);
@@ -4554,12 +4558,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_long_packet(const mavlink_command_long_t 
         result = handle_rc_bind(packet);
         break;
 
+#if AP_CAMERA_ENABLED
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
     case MAV_CMD_DO_DIGICAM_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         result = handle_command_camera(packet);
         break;
-
+#endif
     case MAV_CMD_DO_GRIPPER:
         result = handle_command_do_gripper(packet);
         break;
@@ -5469,6 +5474,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_distance_sensor();
         break;
 
+#if AP_CAMERA_ENABLED
     case MSG_CAMERA_FEEDBACK:
         {
             AP_Camera *camera = AP::camera();
@@ -5479,6 +5485,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
             camera->send_feedback(chan);
         }
         break;
+#endif
 
     case MSG_SYSTEM_TIME:
         CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
