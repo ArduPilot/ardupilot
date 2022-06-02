@@ -2,6 +2,10 @@
 /// @brief	Photo or video camera manager, with EEPROM-backed storage of constants.
 #pragma once
 
+#include "AP_Camera_config.h"
+
+#if AP_CAMERA_ENABLED
+
 #include <AP_Common/Location.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Param/AP_Param.h>
@@ -162,3 +166,5 @@ private:
 namespace AP {
 AP_Camera *camera();
 };
+
+#endif

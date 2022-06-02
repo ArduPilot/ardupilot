@@ -1,4 +1,7 @@
 #include "AP_Camera.h"
+
+#if AP_CAMERA_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 
 // Write a Camera packet
@@ -54,3 +57,5 @@ void AP_Camera::Write_Trigger(void)
 {
     Write_CameraInfo(LOG_TRIGGER_MSG, 0);
 }
+
+#endif

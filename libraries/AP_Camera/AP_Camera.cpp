@@ -1,5 +1,7 @@
 #include "AP_Camera.h"
 
+#if AP_CAMERA_ENABLED
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
@@ -564,3 +566,5 @@ AP_Camera *camera()
 }
 
 }
+
+#endif
