@@ -243,7 +243,7 @@ template <typename T, uint8_t R>
 MatrixRC<T,R,R> cholesky(const MatrixRC<T,R,R>& b) {
     MatrixRC<T,R,R> x = b;
     for (uint8_t i = 0; i < R; i++) {
-        x.v[i][i] = sqrt(x.v[i][i]);
+        x.v[i][i] = sqrtf(x.v[i][i]);
         T ii_inv = 1.0 / x.v[i][i];
         for (uint8_t j = i+1; j < R; j++) {
             x.v[j][i] *= ii_inv;
