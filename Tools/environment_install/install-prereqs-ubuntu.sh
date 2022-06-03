@@ -242,6 +242,10 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'impish' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
+    if [ ${RELEASE_CODENAME} == 'jammy' ]; then
+        # for build.SITLPeriphGPS:
+        SITL_PKGS+=" g++-multilib"
+    fi
 else
   SITL_PKGS+=" python-argparse"
 fi
