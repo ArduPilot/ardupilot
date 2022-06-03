@@ -265,6 +265,10 @@
 #define HAL_INS_ENABLED (!defined(HAL_BUILD_AP_PERIPH))
 #endif
 
+#ifndef AP_STATS_ENABLED
+#define AP_STATS_ENABLED (!defined(HAL_BUILD_AP_PERIPH))
+#endif
+
 #ifndef HAL_WITH_MCU_MONITORING
 #define HAL_WITH_MCU_MONITORING 0
 #endif
