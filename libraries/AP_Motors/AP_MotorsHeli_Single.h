@@ -79,7 +79,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    uint16_t get_motor_mask() override;
+    uint32_t get_motor_mask() override;
 
     // ext_gyro_gain - set external gyro gain in range 0 ~ 1000
     void ext_gyro_gain(float gain)  override { if (gain >= 0 && gain <= 1000) { _ext_gyro_gain_std = gain; }}

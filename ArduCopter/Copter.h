@@ -879,7 +879,6 @@ private:
     // system.cpp
     void init_ardupilot() override;
     void startup_INS_ground();
-    void update_dynamic_notch() override;
     bool position_ok() const;
     bool ekf_has_absolute_position() const;
     bool ekf_has_relative_position() const;

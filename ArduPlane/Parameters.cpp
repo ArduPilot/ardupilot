@@ -1500,7 +1500,8 @@ void Plane::load_parameters(void)
         AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, old_top_element, true);
     }
 
-    if (!ins.gyro_notch_enabled()) {
+#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
+    if (!ins.harmonic_notches[1].params.enabled()) {
         // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
         const AP_Param::ConversionInfo notchfilt_conversion_info[] {
             { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
@@ -1512,11 +1513,10 @@ void Plane::load_parameters(void)
         for (uint8_t i=0; i<notchfilt_table_size; i++) {
             AP_Param::convert_old_parameters(&notchfilt_conversion_info[i], 1.0f);
         }
-        if (ins.gyro_notch_enabled()) {
-            AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-            AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-        }
+        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
+        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
     }
-
+#endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
+    
     hal.console->printf("load_all took %uus\n", (unsigned)(micros() - before));
 }

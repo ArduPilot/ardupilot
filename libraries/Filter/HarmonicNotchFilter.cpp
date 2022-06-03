@@ -60,7 +60,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: HMNCS
     // @DisplayName: Harmonic Notch Filter harmonics
-    // @Description: Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A maximum of 3 harmonics can be used at any one time.
+    // @Description: Bitmask of harmonic frequencies to apply Harmonic Notch Filter to. This option takes effect on the next reboot. A value of 0 disables this filter. The first harmonic refers to the base frequency.
     // @Bitmask: 0:1st harmonic,1:2nd harmonic,2:3rd harmonic,3:4th hamronic,4:5th harmonic,5:6th harmonic,6:7th harmonic,7:8th harmonic
     // @User: Advanced
     // @RebootRequired: True
@@ -78,7 +78,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode
     // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based updates should only be used with multicopters.
     // @Range: 0 4
-    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT
+    // @Values: 0:Disabled,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor
     // @User: Advanced
     AP_GROUPINFO("MODE", 7, HarmonicNotchFilterParams, _tracking_mode, 1),
 

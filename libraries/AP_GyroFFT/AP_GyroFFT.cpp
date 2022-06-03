@@ -248,10 +248,25 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
         return;
     }
 
-    const uint8_t harmonics = _ins->get_gyro_harmonic_notch_harmonics();
+    // check for harmonics across all harmonic notch filters
+    // note that we only allow one harmonic notch filter linked to the FFT code
+    uint8_t harmonics = 0;
+    uint8_t num_notches = 0;
+    for (auto &notch : _ins->harmonic_notches) {
+        if (notch.params.enabled()) {
+            harmonics |= notch.params.harmonics();
+            num_notches = MAX(num_notches, notch.num_dynamic_notches);
+        }
+    }
+
+    if (harmonics == 0) {
+        // this allows use of FFT to find peaks with all notch filters disabled
+        harmonics = 3;
+    }
+
     // count the number of active harmonics or dynamic notchs
     _tracked_peaks = constrain_int16(MAX(__builtin_popcount(harmonics),
-        _ins->get_num_gyro_dynamic_notches()), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
+                                         num_notches), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
 
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
@@ -374,7 +389,13 @@ void AP_GyroFFT::update()
     if (!_rpy_health.x && !_rpy_health.y) {
         _health = 0;
     } else {
-        _health = MIN(_global_state._health, _ins->get_num_gyro_dynamic_notches());
+        uint8_t num_notches = 1;
+        for (auto &notch : _ins->harmonic_notches) {
+            if (notch.params.enabled()) {
+                num_notches = MAX(num_notches, notch.num_dynamic_notches);
+            }
+        }
+        _health = MIN(_global_state._health, num_notches);
     }
 }
 

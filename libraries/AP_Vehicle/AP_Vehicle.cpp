@@ -6,6 +6,8 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_RPM/AP_RPM.h>
+#include <SRV_Channel/SRV_Channel.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/sdcard.h>
 #endif
@@ -385,20 +387,100 @@ bool AP_Vehicle::is_crashed() const
     return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
 }
 
-// run notch update at either loop rate or 200Hz
-void AP_Vehicle::update_dynamic_notch_at_specified_rate()
+// update the harmonic notch filter center frequency dynamically
+void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 {
-    if (ins.has_harmonic_option(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
-        update_dynamic_notch();
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+    if (!notch.params.enabled()) {
+        return;
+    }
+    const float ref_freq = notch.params.center_freq_hz();
+    const float ref = notch.params.reference();
+    if (is_zero(ref)) {
+        notch.update_freq_hz(ref_freq);
         return;
     }
 
-    // decimated update at 200Hz
-    const uint32_t now = AP_HAL::millis();
+    const AP_Motors* motors = AP::motors();
+    const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
+    const float throttle_freq = ref_freq * MAX(1.0f, sqrtf(motors_throttle / ref));
 
-    if (now - _last_notch_update_ms > 5) {
-        _last_notch_update_ms = now;
-        update_dynamic_notch();
+    switch (notch.params.tracking_mode()) {
+        case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
+            // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
+            notch.update_freq_hz(throttle_freq);
+            break;
+
+        case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
+        case HarmonicNotchDynamicMode::UpdateRPM2: {
+            const auto *rpm_sensor = AP::rpm();
+            uint8_t sensor = (notch.params.tracking_mode()==HarmonicNotchDynamicMode::UpdateRPM?0:1);
+            float rpm;
+            if (rpm_sensor != nullptr && rpm_sensor->get_rpm(sensor, rpm)) {
+                // set the harmonic notch filter frequency from the main rotor rpm
+                notch.update_freq_hz(MAX(ref_freq, rpm * ref * (1.0/60)));
+            } else {
+                notch.update_freq_hz(ref_freq);
+            }
+            break;
+        }
+#if HAL_WITH_ESC_TELEM
+        case HarmonicNotchDynamicMode::UpdateBLHeli: // BLHeli based tracking
+            // set the harmonic notch filter frequency scaled on measured frequency
+            if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+                float notches[INS_MAX_NOTCHES];
+                const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(notch.num_dynamic_notches, notches);
+
+                for (uint8_t i = 0; i < num_notches; i++) {
+                    notches[i] =  MAX(ref_freq, notches[i]);
+                }
+                if (num_notches > 0) {
+                    notch.update_frequencies_hz(num_notches, notches);
+                } else {    // throttle fallback
+                    notch.update_freq_hz(throttle_freq);
+                }
+            } else {
+                notch.update_freq_hz(MAX(ref_freq, AP::esc_telem().get_average_motor_frequency_hz() * ref));
+            }
+            break;
+#endif
+#if HAL_GYROFFT_ENABLED
+        case HarmonicNotchDynamicMode::UpdateGyroFFT: // FFT based tracking
+            // set the harmonic notch filter frequency scaled on measured frequency
+            if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
+                float notches[INS_MAX_NOTCHES];
+                const uint8_t peaks = gyro_fft.get_weighted_noise_center_frequencies_hz(notch.num_dynamic_notches, notches);
+
+                notch.update_frequencies_hz(peaks, notches);
+            } else {
+                notch.update_freq_hz(gyro_fft.get_weighted_noise_center_freq_hz());
+            }
+            break;
+#endif
+        case HarmonicNotchDynamicMode::Fixed: // static
+        default:
+            notch.update_freq_hz(ref_freq);
+            break;
+    }
+#endif // APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+}
+
+
+// run notch update at either loop rate or 200Hz
+void AP_Vehicle::update_dynamic_notch_at_specified_rate()
+{
+    for (auto &notch : ins.harmonic_notches) {
+        if (notch.params.hasOption(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
+            update_dynamic_notch(notch);
+        } else {
+            // decimated update at 200Hz
+            const uint32_t now = AP_HAL::millis();
+            const uint8_t i = &notch - &ins.harmonic_notches[0];
+            if (now - _last_notch_update_ms[i] > 5) {
+                _last_notch_update_ms[i] = now;
+                update_dynamic_notch(notch);
+            }
+        }
     }
 }
 
@@ -522,3 +604,4 @@ AP_Vehicle *vehicle()
 }
 
 };
+
