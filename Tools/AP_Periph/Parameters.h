@@ -56,6 +56,9 @@ public:
         k_param_can_fdbaudrate1,
         k_param_node_stats,
         k_param_rangefinder_max_rate,
+        k_param_efi,
+        k_param_efi_port,
+        k_param_efi_baudrate,
     };
 
     AP_Int16 format_version;
@@ -129,6 +132,11 @@ public:
     AP_Int16 sysid_this_mav;
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    AP_Int32 efi_baudrate;
+    AP_Int8 efi_port;
+#endif
+    
 #if HAL_CANFD_SUPPORTED
     AP_Int8 can_fdmode;
     AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
