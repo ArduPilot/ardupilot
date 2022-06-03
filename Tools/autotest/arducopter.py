@@ -7398,7 +7398,7 @@ class AutoTestCopter(AutoTest):
             "exhaust_gas_temperature": float("nan"),
             "throttle_out": 0.0,
             "pt_compensation": 0.0,
-            "ignition_voltage": float("nan"),
+            "ignition_voltage": 0.0,
         }, epsilon=1.0)
         self.assert_received_message_field_values('GENERATOR_STATUS', {
             "status": 1,
@@ -7415,6 +7415,9 @@ class AutoTestCopter(AutoTest):
         })
 
         self.context_collect('STATUSTEXT')
+
+        # check prearms - should bounce due to generator not in correct state
+        self.try_arm(result=False, expect_msg="requested state is not RUN")
 
         self.start_subtest("Generator to idle")
         self.set_rc(gen_ctrl_ch, 1500) # remember this is a switch position - idle
@@ -7450,6 +7453,9 @@ class AutoTestCopter(AutoTest):
         self.set_rc(gen_ctrl_ch, 2000) # remember this is a switch position - run
         self.wait_statustext("Generator HIGH", check_context=True)
 
+        # check prearms - should bounce due to generator too cold
+        self.try_arm(result=False, expect_msg="Generator warming up")
+
         self.set_rc(gen_ctrl_ch, 1000) # remember this is a switch position - stop
         self.wait_statustext("requested state is not RUN", timeout=200)
 
@@ -7473,7 +7479,7 @@ class AutoTestCopter(AutoTest):
         if bs.voltages[0] != want_bs_volt:
             raise NotAchievedException("Battery voltage not as expected (want=%f) got=(%f)" % (want_bs_volt, bs.voltages[0],))
 
-        self.progress("Cheking battery remaining")
+        self.progress("Checking battery remaining")
         bs = self.assert_receive_message(
             "BATTERY_STATUS",
             condition="BATTERY_STATUS.id==2",  # id is zero-indexed
