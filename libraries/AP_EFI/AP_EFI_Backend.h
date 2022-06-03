@@ -35,9 +35,6 @@ protected:
     // Copies internal state to the frontend state
     void copy_to_frontend();
 
-    // Semaphore for access to shared frontend data
-    HAL_Semaphore sem;
-
     // Internal state for this driver (before copying to frontend)
     EFI_State internal_state;
 
