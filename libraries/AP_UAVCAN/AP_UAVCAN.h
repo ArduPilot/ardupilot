@@ -30,7 +30,6 @@
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <uavcan/protocol/param/GetSet.hpp>
 #include <uavcan/protocol/param/ExecuteOpcode.hpp>
-#include <uavcan/helpers/heap_based_pool_allocator.hpp>
 #include <SRV_Channel/SRV_Channel.h>
 
 
@@ -54,6 +53,7 @@ class ESCStatusCb;
 class DebugCb;
 class ParamGetSetCb;
 class ParamExecuteOpcodeCb;
+class AP_PoolAllocator;
 
 #if defined(__GNUC__) && (__GNUC__ > 8)
 #define DISABLE_W_CAST_FUNCTION_TYPE_PUSH \
@@ -264,7 +264,9 @@ private:
     AP_Int16 _servo_rate_hz;
     AP_Int16 _options;
     AP_Int16 _notify_state_hz;
+    AP_Int16 _pool_size;
 
+    AP_PoolAllocator *_allocator;
     uavcan::Node<0> *_node;
 
     uint8_t _driver_index;
