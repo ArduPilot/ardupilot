@@ -48,6 +48,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
+#include <AP_EFI/AP_EFI_DroneCAN.h>
 #include <AP_GPS/AP_GPS_UAVCAN.h>
 #include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
 #include <AP_Compass/AP_Compass_UAVCAN.h>
@@ -323,6 +324,9 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
+#if HAL_EFI_ENABLED
+    AP_EFI_DroneCAN::subscribe_msgs(this);
+#endif
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
