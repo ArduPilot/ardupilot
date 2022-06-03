@@ -268,6 +268,7 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 constexpr int8_t Copter::_failsafe_priorities[7];
 
 #if AP_SCRIPTING_ENABLED
+#if MODE_GUIDED_ENABLED == ENABLED
 // start takeoff to given altitude (for use by scripting)
 bool Copter::start_takeoff(float alt)
 {
@@ -378,7 +379,9 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     mode_guided.set_angle(q, Vector3f{}, climb_rate_ms*100, false);
     return true;
 }
+#endif
 
+#if MODE_CIRCLE_ENABLED == ENABLED
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
@@ -391,6 +394,7 @@ bool Copter::set_circle_rate(float rate_dps)
     circle_nav->set_rate(rate_dps);
     return true;
 }
+#endif
 
 // set desired speed (m/s). Used for scripting.
 bool Copter::set_desired_speed(float speed)
@@ -404,6 +408,7 @@ bool Copter::set_desired_speed(float speed)
     return true;
 }
 
+#if MODE_AUTO_ENABLED == ENABLED
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Copter::nav_scripting_enable(uint8_t mode)
 {
@@ -429,6 +434,7 @@ void Copter::nav_script_time_done(uint16_t id)
 
     return mode_auto.nav_script_time_done(id);
 }
+#endif
 
 // returns true if the EKF failsafe has triggered.  Only used by Lua scripts
 bool Copter::has_ekf_failsafed() const
