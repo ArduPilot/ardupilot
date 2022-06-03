@@ -185,6 +185,17 @@ void AP_Periph_FW::init()
     adsb_init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    if (efi.enabled() && g.efi_port >= 0) {
+        auto *uart = hal.serial(g.efi_port);
+        if (uart != nullptr) {
+            uart->begin(g.efi_baudrate);
+            serial_manager.set_protocol_and_baud(g.efi_port, AP_SerialManager::SerialProtocol_EFI, g.efi_baudrate);
+            efi.init();
+        }
+    }
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     if (airspeed.enabled()){
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
