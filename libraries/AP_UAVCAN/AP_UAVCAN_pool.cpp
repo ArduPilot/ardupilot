@@ -51,6 +51,11 @@ void* AP_PoolAllocator::allocate(std::size_t size)
         return nullptr;
     }
     Node *ret = free_list;
+    const uint32_t blk = ret - pool_nodes;
+    if (blk >= num_blocks) {
+        INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
+        return nullptr;
+    }
     free_list = free_list->next;
 
     used++;
@@ -69,6 +74,11 @@ void AP_PoolAllocator::deallocate(const void* ptr)
     WITH_SEMAPHORE(sem);
 
     Node *p = reinterpret_cast<Node*>(const_cast<void*>(ptr));
+    const uint32_t blk = p - pool_nodes;
+    if (blk >= num_blocks) {
+        INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
+        return;
+    }
     p->next = free_list;
     free_list = p;
 
