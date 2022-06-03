@@ -20,6 +20,7 @@
 #include "AP_EFI_Serial_MS.h"
 #include "AP_EFI_Serial_Lutan.h"
 #include "AP_EFI_NWPMU.h"
+#include "AP_EFI_DroneCAN.h"
 #include <AP_Logger/AP_Logger.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -33,7 +34,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -83,6 +84,11 @@ void AP_EFI::init(void)
     case Type::NWPMU:
 #if HAL_EFI_NWPWU_ENABLED
         backend = new AP_EFI_NWPMU(*this);
+#endif
+        break;
+    case Type::DroneCAN:
+#if HAL_EFI_DRONECAN_ENABLED
+        backend = new AP_EFI_DroneCAN(*this);
 #endif
         break;
     default:
