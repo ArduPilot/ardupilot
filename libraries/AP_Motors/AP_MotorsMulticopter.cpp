@@ -501,12 +501,10 @@ float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
 // parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
 bool AP_MotorsMulticopter::check_mot_pwm_params() const
 {
-    // sanity says that minimum should be less than maximum:
-    if (_pwm_min >= _pwm_max) {
-        return false;
-    }
-    // negative values are out-of-range:
-    if (_pwm_max <= 0) {
+    // _pwm_min is a value greater than or equal to 1.
+    // _pwm_max is greater than _pwm_min.
+    // The values of _pwm_min and _pwm_max are positive values.
+    if (_pwm_min < 1 || _pwm_min >= _pwm_max) {
         return false;
     }
     return true;
