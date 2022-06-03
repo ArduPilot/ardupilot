@@ -79,6 +79,9 @@ public:
     // handle a GLOBAL_POSITION_INT message
     bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
 
+    // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
+    virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
+
 protected:
 
     // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
