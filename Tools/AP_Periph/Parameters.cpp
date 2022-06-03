@@ -39,6 +39,14 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_BARO_ENABLE_DEFAULT 1
 #endif
 
+#ifndef AP_PERIPH_EFI_PORT_DEFAULT
+#define AP_PERIPH_EFI_PORT_DEFAULT 3
+#endif
+
+#ifndef HAL_PERIPH_EFI_BAUDRATE_DEFAULT
+#define HAL_PERIPH_EFI_BAUDRATE_DEFAULT 115200
+#endif
+
 #ifndef HAL_DEFAULT_MAV_SYSTEM_ID
 #define MAV_SYSTEM_ID 3
 #else
@@ -416,6 +424,31 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Group: Node
     // @Path: ../libraries/AP_Stats/AP_Stats.cpp
     GOBJECT(node_stats, "STAT", AP_Stats),
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_EFI
+    // @Param: EFI_BAUDRATE
+    // @DisplayName: EFI serial baudrate
+    // @Description: EFI  serial baudrate.
+    // @Values: 1:1200,2:2400,4:4800,9:9600,19:19200,38:38400,57:57600,111:111100,115:115200,230:230400,256:256000,460:460800,500:500000,921:921600,1500:1500000
+    // @Increment: 1
+    // @User: Standard
+    // @RebootRequired: True
+    GSCALAR(efi_baudrate, "EFI_BAUDRATE", HAL_PERIPH_EFI_BAUDRATE_DEFAULT),
+
+    // @Param: EFI_PORT
+    // @DisplayName: EFI Serial Port
+    // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to EFI.
+    // @Range: 0 10
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(efi_port, "EFI_PORT", AP_PERIPH_EFI_PORT_DEFAULT),
+
+    // EFI driver
+    // @Group: EFI
+    // @Path: ../libraries/AP_EFI/AP_EFI.cpp
+    GOBJECT(efi, "EFI", AP_EFI),
 #endif
 
     AP_VAREND
