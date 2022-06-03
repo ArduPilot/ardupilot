@@ -82,6 +82,7 @@ public:
         NWPMU     = 2,
         Lutan     = 3,
         // LOWEHEISER = 4,
+        DroneCAN = 5,
     };
 
     static AP_EFI *get_singleton(void) {

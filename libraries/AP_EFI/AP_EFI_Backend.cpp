@@ -41,4 +41,10 @@ float AP_EFI_Backend::get_coef2(void) const
 {
     return frontend.coef2;
 }
+
+HAL_Semaphore &AP_EFI_Backend::get_sem(void)
+{
+    return frontend.sem;
+}
+
 #endif // HAL_EFI_ENABLED

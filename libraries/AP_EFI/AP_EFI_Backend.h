@@ -42,6 +42,8 @@ protected:
     float get_coef1(void) const;
     float get_coef2(void) const;
 
+    HAL_Semaphore &get_sem(void);
+
 private:
     AP_EFI &frontend;
 };
