@@ -608,6 +608,41 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet)
+{
+    if (!check_primary()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // check flags for change to RETRACT
+    uint8_t flags = (uint8_t)packet.param5;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        _backends[_primary]->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return MAV_RESULT_ACCEPTED;
+    }
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        _backends[_primary]->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // To-Do: handle earth-frame vs body-frame angles
+    // To-Do: handle pitch and yaw rates
+    // To-Do: handle gimbal device id
+
+    // param1 : pitch_angle (in degrees)
+    // param2 : yaw angle (in degrees)
+    const float pitch_angle_deg = packet.param1;
+    const float yaw_angle_deg = packet.param2;
+    if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
+        set_angle_targets(0, pitch_angle_deg, yaw_angle_deg);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    return MAV_RESULT_FAILED;
+}
+
+
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {
@@ -615,6 +650,8 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
         return handle_command_do_mount_configure(packet);
     case MAV_CMD_DO_MOUNT_CONTROL:
         return handle_command_do_mount_control(packet);
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+        return handle_command_do_gimbal_manager_pitchyaw(packet);
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
