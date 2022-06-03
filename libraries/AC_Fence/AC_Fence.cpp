@@ -223,9 +223,12 @@ bool AC_Fence::present() const
         enabled_fences & AC_FENCE_TYPE_ALT_MIN ||
         enabled_fences & AC_FENCE_TYPE_ALT_MAX ||
         ((enabled_fences & AC_FENCE_TYPE_POLYGON) && _poly_loader.total_fence_count() > 0)) {
-        return true;
+            fprintf(stderr, "Fence PRESENT %d\n",_poly_loader.total_fence_count() );
+        return false;
+//        return true;
     }
 
+    fprintf(stderr, "Fence NOT present\n");
     return false;
 }
 
@@ -296,11 +299,12 @@ bool AC_Fence::pre_arm_check(const char* &fail_msg) const
     fail_msg = nullptr;
 
     // if fences are enabled but none selected fail pre-arm check
+    /* FENCE PREARM
     if ((enabled() || _auto_enabled) && !present()) {
         fail_msg = "Fence enabled, but no fence found";
         return false;
     }
-
+    */
     // if not enabled or not fence set-up always return true
     if ((!_enabled && !_auto_enabled) || !_enabled_fences) {
         return true;
