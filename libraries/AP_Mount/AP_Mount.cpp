@@ -766,6 +766,9 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
         break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
+        handle_gimbal_device_attitude_status(msg);
+        break;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Unhandled mount case");
@@ -784,6 +787,16 @@ void AP_Mount::handle_param_value(const mavlink_message_t &msg)
     }
 }
 
+
+// handle GIMBAL_DEVICE_ATTITUDE_STATUS message
+void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->handle_gimbal_device_attitude_status(msg);
+        }
+    }
+}
 
 // singleton instance
 AP_Mount *AP_Mount::_singleton;
