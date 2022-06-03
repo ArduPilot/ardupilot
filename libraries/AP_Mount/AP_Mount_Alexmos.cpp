@@ -145,7 +145,7 @@ void AP_Mount_Alexmos::get_boardinfo()
 }
 
 /*
-  control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s2
+  control_axis : send new angles to the gimbal at a fixed speed of 30 deg/s
 */
 void AP_Mount_Alexmos::control_axis(const Vector3f& angle, bool target_in_degrees)
 {
