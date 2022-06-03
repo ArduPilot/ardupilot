@@ -194,7 +194,7 @@ bool AP_Mount_Backend::calc_angle_to_sysid_target(Vector3f& angles_to_target_rad
                                   relative_pan);
 }
 
-// calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
+// calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (in radians) to point at the given target
 bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const
 {
     Location current_loc;
