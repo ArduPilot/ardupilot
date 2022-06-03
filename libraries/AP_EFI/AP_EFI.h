@@ -66,6 +66,14 @@ public:
 
     bool is_healthy() const;
 
+    // return timestamp of last update
+    uint32_t get_last_update_ms(void) const {
+        return state.last_updated_ms;
+    }
+
+    // get a copy of state structure
+    void get_state(EFI_State &state);
+
     // Parameter info
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -100,6 +108,9 @@ private:
     // Tracking backends
     AP_EFI_Backend *backend;
     static AP_EFI *singleton;
+
+    // Semaphore for access to shared frontend data
+    HAL_Semaphore sem;
 
     // write to log
     void log_status();

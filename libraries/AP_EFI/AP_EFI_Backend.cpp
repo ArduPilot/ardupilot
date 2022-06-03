@@ -28,7 +28,7 @@ AP_EFI_Backend::AP_EFI_Backend(AP_EFI &_frontend) :
 
 void AP_EFI_Backend::copy_to_frontend() 
 {
-    WITH_SEMAPHORE(sem);
+    WITH_SEMAPHORE(frontend.sem);
     frontend.state = internal_state;
 }
 
