@@ -482,11 +482,12 @@ void AP_InertialSensor_BMI270::poll_data()
 
 bool AP_InertialSensor_BMI270::hardware_init()
 {
-    bool ret = false;
+    bool init = false;
+    bool read_chip_id = false;
 
     hal.scheduler->delay(BMI270_POWERUP_DELAY_MSEC);
 
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
@@ -512,6 +513,9 @@ bool AP_InertialSensor_BMI270::hardware_init()
             continue;
         }
 
+        // successfully identified the chip, proceed with initialisation
+        read_chip_id = true;
+
         // disable power save
         write_register(BMI270_REG_PWR_CONF, 0x00);
         hal.scheduler->delay(1); // needs to be at least 450us
@@ -532,7 +536,7 @@ bool AP_InertialSensor_BMI270::hardware_init()
         read_registers(BMI270_REG_INTERNAL_STATUS, &status, 1);
 
         if ((status & 1) == 1) {
-            ret = true;
+            init = true;
             hal.console->printf("BMI270 initialized after %d retries\n", i+1);
             break;
         }
@@ -540,19 +544,16 @@ bool AP_InertialSensor_BMI270::hardware_init()
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
-    _dev->get_semaphore()->give();
-    return ret;
+    if (read_chip_id && !init) {
+        hal.console->printf("BMI270: failed to init\n");
+    }
+
+    return init;
 }
 
 bool AP_InertialSensor_BMI270::init()
 {
-    bool ret = false;
     _dev->set_read_flag(0x80);
 
-    ret = hardware_init();
-    if (!ret) {
-        hal.console->printf("BMI270: failed to init\n");
-    }
-
-    return ret;
+    return hardware_init();
 }
