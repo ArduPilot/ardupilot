@@ -13,6 +13,10 @@
  - bail out on a large angle error?
 --]]
 
+local MAV_SEVERITY_INFO = 6
+local MAV_SEVERITY_NOTICE = 5
+local MAV_SEVERITY_EMERGENCY = 0
+
 local PARAM_TABLE_KEY = 8
 local PARAM_TABLE_PREFIX = "QUIK_"
 
@@ -35,7 +39,7 @@ end
 -- setup quicktune specific parameters
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 10), 'could not add param table')
 
-local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0)
+local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0) 
 local QUIK_AXES        = bind_add_param('AXES',           2, 7)
 local QUIK_DOUBLE_TIME = bind_add_param('DOUBLE_TIME',    3, 10)
 local QUIK_GAIN_MARGIN = bind_add_param('GAIN_MARGIN',    4, 60)
@@ -71,16 +75,16 @@ local DEFAULT_SMAX = 50.0
 if param:get("Q_A_RAT_RLL_SMAX") then
    is_quadplane = true
    atc_prefix = "Q_A"
-   gcs:send_text(0, "Quicktune for quadplane loaded")
+   gcs:send_text(MAV_SEVERITY_EMERGENCY, "Quicktune for quadplane loaded")
 elseif param:get("ATC_RAT_RLL_SMAX") then
    is_quadplane = false
-   gcs:send_text(0, "Quicktune for multicopter loaded")
+   gcs:send_text(MAV_SEVERITY_EMERGENCY, "Quicktune for multicopter loaded")
 else
-   gcs:send_text(0, "Quicktune unknown vehicle")
+   gcs:send_text(MAV_SEVERITY_EMERGENCY, "Quicktune unknown vehicle")
    return
 end
 
--- get time in sections since boot
+-- get time in seconds since boot
 function get_time()
    return millis():tofloat() * 0.001
 end
@@ -92,6 +96,7 @@ local stage = stages[1]
 local last_stage_change = get_time()
 local last_gain_report = get_time()
 local last_pilot_input = get_time()
+local last_notice = get_time()
 local slew_parm = nil
 local slew_target = 0
 local slew_delta = 0
@@ -244,6 +249,7 @@ function advance_stage(axis)
       stage = "P"
    else
       axes_done[axis] = true
+      gcs:send_text(5, string.format("Tuning: %s done", axis))
       stage = "D"
    end
 end
@@ -314,8 +320,11 @@ function update_slew_gain()
       slew_steps = slew_steps - 1
       logger.write('QUIK','SRate,Gain,Param', 'ffn', get_slew_rate(axis), P:get(), axis .. ax_stage)
       if slew_steps == 0 then
-         gcs:send_text(0, string.format("%s %.4f", slew_parm, P:get()))
+         gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f", slew_parm, P:get()))
          slew_parm = nil
+         if get_current_axis() == nil then
+             gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: DONE"))
+         end
       end
    end
 end
@@ -343,6 +352,7 @@ function reached_limit(pname, gain)
 end
 
 -- main update function
+local last_warning = get_time()
 function update()
    if quick_switch == nil then
       quick_switch = rc:find_channel_for_option(300)
@@ -356,12 +366,17 @@ function update()
    end
 
    local sw_pos = quick_switch:get_aux_switch_pos()
+   if sw_pos == 1 and (not arming:is_armed() or not vehicle:get_likely_flying()) and get_time() > last_warning + 5 then
+      gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: Must be flying to tune"))
+      last_warning = get_time()
+      return
+   end
    if sw_pos == 0 or not arming:is_armed() or not vehicle:get_likely_flying() then
       -- abort, revert parameters
       if need_restore then
          need_restore = false
          restore_all_params()
-         gcs:send_text(0, string.format("Tuning: reverted"))
+         gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: reverted"))
       end
       reset_axes_done()
       return
@@ -371,7 +386,7 @@ function update()
       if need_restore then
          need_restore = false
          save_all_params()
-         gcs:send_text(0, string.format("Tuning: saved"))
+         gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: saved"))
       end
    end
    if sw_pos ~= 1 then
@@ -391,7 +406,7 @@ function update()
 
    if not need_restore then
       -- we are just starting tuning, get current values
-      gcs:send_text(0, string.format("Tuning: starting tune"))
+      gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: starting tune"))
       get_all_params()
       setup_SMAX()
       setup_filters()
@@ -422,21 +437,16 @@ function update()
          -- so that we don't trigger P oscillation. We don't drop P by more than a factor of 2
          local ratio = math.max(new_gain / old_gain, 0.5)
          local P_name = string.gsub(pname, "_D", "_P")
-         local I_name = string.gsub(pname, "_D", "_I")
          local old_P = params[P_name]:get()
          local new_P = old_P * ratio
-         gcs:send_text(0, string.format("adjusting %s %.3f -> %.3f", P_name, old_P, new_P))
+         gcs:send_text(MAV_SEVERITY_INFO, string.format("adjusting %s %.3f -> %.3f", P_name, old_P, new_P))
          adjust_gain(P_name, new_P)
-         adjust_gain(I_name, new_P)
       end
       setup_slew_gain(pname, new_gain)
       logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
-      gcs:send_text(0, string.format("Tuning: %s done", pname))
+      gcs:send_text(6, string.format("Tuning: %s done", pname))
       advance_stage(axis)
       last_stage_change = get_time()
-      if get_current_axis() == nil then
-         gcs:send_text(0, string.format("Tuning: DONE"))
-      end
    else
       local new_gain = P:get()*get_gain_mul()
       if new_gain <= 0.0001 then
@@ -446,7 +456,7 @@ function update()
       logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
       if get_time() - last_gain_report > 3 then
          last_gain_report = get_time()
-         gcs:send_text(0, string.format("%s %.4f sr:%.2f", pname, new_gain, srate))
+         gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f sr:%.2f", pname, new_gain, srate))
       end
    end
 end
@@ -457,7 +467,7 @@ end
 function protected_wrapper()
   local success, err = pcall(update)
   if not success then
-     gcs:send_text(0, "Internal Error: " .. err)
+     gcs:send_text(MAV_SEVERITY_EMERGENCY, "Internal Error: " .. err)
      -- when we fault we run the update function again after 1s, slowing it
      -- down a bit so we don't flood the console with errors
      --return protected_wrapper, 1000
