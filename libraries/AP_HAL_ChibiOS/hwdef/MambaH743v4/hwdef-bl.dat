@@ -1,0 +1,45 @@
+# hw definition file for processing by chibios_pins.py
+# for Diatone MambaH743 mk4 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load
+APJ_BOARD_ID 1073
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 384
+
+STORAGE_FLASH_PAGE 1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PE3 BUZZER OUTPUT LOW PULLDOWN
+
+PE5 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# Add CS pins to ensure they are high in bootloader
+PA15 FLASH_CS CS
+PB12 MAX7456_CS CS
+PA4  MPU6000_CS CS
+PE11 MPU6000_2_CS CS
