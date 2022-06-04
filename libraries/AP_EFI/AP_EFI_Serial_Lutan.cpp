@@ -53,9 +53,9 @@ void AP_EFI_Serial_Lutan::update()
     if (n + pkt_nbytes > sizeof(pkt)) {
         pkt_nbytes = 0;
     }
-    const ssize_t nread = port->read(&pkt[pkt_nbytes], n);
-    if (nread <= 0) {
-        return;
+    ssize_t nread = port->read(&pkt[pkt_nbytes], n);
+    if (nread < 0) {
+        nread = 0;
     }
     pkt_nbytes += nread;
     if (pkt_nbytes > 2) {
