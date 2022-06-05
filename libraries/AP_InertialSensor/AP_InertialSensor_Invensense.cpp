@@ -759,7 +759,9 @@ check_registers:
               events to help with log analysis, but don't shout at the
               GCS to prevent possible flood
             */
+#if HAL_LOGGING_ENABLED
             AP::logger().Write_MessageF("ICM20602 yofs fix: %x %x", y_ofs, _saved_y_ofs_high);
+#endif
             _register_write(MPUREG_ACC_OFF_Y_H, _saved_y_ofs_high);
         }
     }
