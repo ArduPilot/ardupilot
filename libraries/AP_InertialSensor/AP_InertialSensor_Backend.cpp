@@ -418,6 +418,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         // should not have been called
@@ -430,6 +431,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
         }
     }
+#endif
 }
 
 /*
@@ -631,6 +633,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t inst
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         // should not have been called
@@ -643,6 +646,7 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
         }
     }
+#endif
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
@@ -771,10 +775,12 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
 // log an unexpected change in a register for an IMU
 void AP_InertialSensor_Backend::log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg)
 {
+#if HAL_LOGGING_ENABLED
     AP::logger().Write("IREG", "TimeUS,DevID,Bank,Reg,Val", "QIBBB",
                        AP_HAL::micros64(),
                        bus_id,
                        reg.bank,
                        reg.regnum,
                        reg.value);
+#endif
 }
