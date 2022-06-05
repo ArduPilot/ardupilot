@@ -265,6 +265,7 @@ bool AP_InertialSensor::BatchSampler::should_log(uint8_t _instance, IMU_SENSOR_T
 
 void AP_InertialSensor::BatchSampler::sample(uint8_t _instance, AP_InertialSensor::IMU_SENSOR_TYPE _type, uint64_t sample_us, const Vector3f &_sample)
 {
+#if HAL_LOGGING_ENABLED
     if (!should_log(_instance, _type)) {
         return;
     }
@@ -277,5 +278,6 @@ void AP_InertialSensor::BatchSampler::sample(uint8_t _instance, AP_InertialSenso
     data_z[data_write_offset] = multiplier*_sample.z;
 
     data_write_offset++; // may unblock the reading process
+#endif
 }
 #endif //#if HAL_INS_ENABLED
