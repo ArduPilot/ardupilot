@@ -537,6 +537,7 @@ private:
 
     void start_io_thread(void);
     void io_thread();
+    bool check_crash_dump_save(void);
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
     // support for logging file content
