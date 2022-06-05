@@ -320,7 +320,7 @@ void Plane::airbrake_update(void)
     float throttle_min = aparm.throttle_min.get();
     float airbrake_pc = 0;
 
-    float throttle_pc = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    float throttle_pc = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle);
 
     if (throttle_min < 0) {
         if (landing.is_flaring()) {
