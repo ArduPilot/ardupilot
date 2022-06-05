@@ -404,7 +404,7 @@ float calc_lowpass_alpha_dt(float dt, float cutoff_freq)
         return 1.0;
     }
     float rc = 1.0f/(M_2PI*cutoff_freq);
-    return constrain_float(dt/(dt+rc), 0.0f, 1.0f);
+    return dt/(dt+rc);
 }
 
 #ifndef AP_MATH_FILL_NANF_USE_MEMCPY
