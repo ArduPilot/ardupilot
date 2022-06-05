@@ -535,7 +535,7 @@ uint8_t AC_Fence::check()
     }
 
     // minimum altitude fence check
-    if (_floor_enabled && check_fence_alt_min()) {
+    if (check_fence_alt_min()) {
         ret |= AC_FENCE_TYPE_ALT_MIN;
     }
 
