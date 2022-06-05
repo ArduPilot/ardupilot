@@ -1,5 +1,7 @@
 #include "AP_Logger.h"
 
+#if HAL_LOGGING_ENABLED
+
 #include "AP_Logger_Backend.h"
 
 #include "AP_Logger_File.h"
@@ -1631,3 +1633,5 @@ AP_Logger &logger()
 }
 
 };
+
+#endif // HAL_LOGGING_ENABLED
