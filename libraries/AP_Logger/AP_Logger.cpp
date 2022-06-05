@@ -1293,6 +1293,36 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
     return len;
 }
 
+/*
+  see if we need to save a crash dump. Returns true if either no crash
+  dump available or we have saved it to sdcard. This is called
+  continuously until success to account for late mount of the microSD
+ */
+bool AP_Logger::check_crash_dump_save(void)
+{
+    int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
+    if (fd == -1) {
+        // we don't have a crash dump file. The @SYS filesystem
+        // returns -1 for open on empty files
+        return true;
+    }
+    int fd2 = AP::FS().open("APM/crash_dump.bin", O_WRONLY|O_CREAT|O_TRUNC);
+    if (fd2 == -1) {
+        // sdcard not available yet, try again later
+        AP::FS().close(fd);
+        return false;
+    }
+    uint8_t buf[128];
+    int32_t n;
+    while ((n = AP::FS().read(fd, buf, sizeof(buf))) > 0) {
+        AP::FS().write(fd2, buf, n);
+    }
+    AP::FS().close(fd2);
+    AP::FS().close(fd);
+    GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Saved crash_dump.bin");
+    return true;
+}
+
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
 // and the thread will sleep while this completes preventing other tasks from running, it therefore
 // is necessary to run the IO in it's own thread
@@ -1300,6 +1330,8 @@ void AP_Logger::io_thread(void)
 {
     uint32_t last_run_us = AP_HAL::micros();
     uint32_t last_stack_us = last_run_us;
+    uint32_t last_crash_check_us = last_run_us;
+    bool done_crash_dump_save = false;
 
     while (true) {
         uint32_t now = AP_HAL::micros();
@@ -1317,6 +1349,13 @@ void AP_Logger::io_thread(void)
         if (now - last_stack_us > 100000U) {
             last_stack_us = now;
             hal.util->log_stack_info();
+        }
+
+        // check for saving a crash dump file every 5s
+        if (!done_crash_dump_save &&
+            now - last_crash_check_us > 5000000U) {
+            last_crash_check_us = now;
+            done_crash_dump_save = check_crash_dump_save();
         }
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
         file_content_update();
