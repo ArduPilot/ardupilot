@@ -208,17 +208,21 @@ AP_GPS_SBP2::_sbp_process_message() {
         case SBP_EXT_EVENT_MSGTYPE:
             memcpy(&last_event, parser_state.msg_buff, sizeof(struct sbp_ext_event_t));
             check_new_itow(last_event.tow, parser_state.msg_len);
+#if HAL_LOGGING_ENABLED
             logging_ext_event();
+#endif
             break;
 
         default:
             break;
     }
 
+#if HAL_LOGGING_ENABLED
     // send all messages we receive to log, even if it's an unsupported message,
     // so we can do additional post-processing from logs.
     // The log mask will be used to adjust or suppress logging
     logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
+#endif
 }
 
 int32_t 
@@ -440,6 +444,7 @@ AP_GPS_SBP2::_detect(struct SBP2_detect_state &state, uint8_t data)
     return false;
 }
 
+#if HAL_LOGGING_ENABLED
 void
 AP_GPS_SBP2::logging_log_full_update()
 {
@@ -525,4 +530,5 @@ AP_GPS_SBP2::logging_ext_event() {
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
+#endif // HAL_LOGGING_ENABLED
 #endif //AP_GPS_SBP2_ENABLED
