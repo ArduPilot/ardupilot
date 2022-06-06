@@ -204,11 +204,6 @@ void Blimp::one_hz_loop()
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
-    if (!motors->armed()) {
-        // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.update_orientation();
-    }
-
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
