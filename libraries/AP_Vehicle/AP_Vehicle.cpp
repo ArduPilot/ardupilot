@@ -80,6 +80,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
     AP_SUBGROUPINFO(custom_rotations, "CUST_ROT", 11, AP_Vehicle, AP_CustomRotations),
 
+#if HAL_WITH_ESC_TELEM
+    // @Group: ESC_TLM
+    // @Path: ../AP_ESC_Telem/AP_ESC_Telem.cpp
+    AP_SUBGROUPINFO(esc_telem, "ESC_TLM", 12, AP_Vehicle, AP_ESC_Telem),
+#endif
+
     AP_GROUPEND
 };
 
