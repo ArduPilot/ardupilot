@@ -130,12 +130,11 @@ The script will also adjust filter settings using the following rules:
  - if no SMAX is set for a rate controller than the SMAX will be set to 50Hz
 
 Once the tuning is finished you will see a "Tuning: done" message. You
-can save the tune by moving the switch to the high position. You
-should do this to save before you land and disarm.
+can save the tune by moving the switch to the high position (Tune Save). You
+should do this to save before you land and disarm. If you save before the tune is completed the tune will pause, and any parameters completed will be saved and the current value of the one being actively tuned will remain active. You can resume tuning by returning the switch again to the middle position, or if moved to the low position, the parameter currently being tuned will be reverted but any previously saved parameters will remain.
 
-If you move the switch to the low position at any time in the tune
-then all parameters will be reverted to their original
-values. Parameters will also be reverted if you disarm.
+If you move the switch to the low position at any time in the tune before using the Tune Save switch position, then all parameters will be reverted to their original
+values. Parameters will also be reverted if you disarm before saving.
 
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
