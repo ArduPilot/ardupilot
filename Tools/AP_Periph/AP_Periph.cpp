@@ -24,6 +24,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include "AP_Periph.h"
 #include <stdio.h>
+#include <dronecan_msgs.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -381,7 +382,18 @@ void AP_Periph_FW::update()
         last_error_ms = now;
         can_printf("IERR 0x%x %u", unsigned(ierr.errors()), unsigned(ierr.last_error_line()));
     }
-
+#if HAL_PERIPH_ARM_MONITORING_ENABLE
+    static uint32_t last_arm_check_ms;
+    if (now - last_arm_check_ms > g.disarm_delay){
+        last_arm_check_ms = now;
+        if(periph.arm_update_status){    
+            periph.arm_update_status = false;
+        }
+        else{
+            hal.util->set_soft_armed(UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_STATUS_DISARMED);
+        }
+    }
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && CH_DBG_ENABLE_STACK_CHECK == TRUE
     static uint32_t last_debug_ms;
     if ((g.debug&(1<<DEBUG_SHOW_STACK)) && now - last_debug_ms > 5000) {

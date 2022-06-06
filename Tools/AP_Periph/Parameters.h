@@ -54,6 +54,7 @@ public:
         k_param_can_fdmode,
         k_param_can_fdbaudrate0,
         k_param_can_fdbaudrate1,
+        k_param_disarm_delay,
     };
 
     AP_Int16 format_version;
@@ -131,6 +132,10 @@ public:
     AP_Int8 can_fdbaudrate[HAL_NUM_CAN_IFACES];
 #else
     static constexpr uint8_t can_fdmode = 0;
+#endif
+
+#if HAL_PERIPH_ARM_MONITORING_ENABLE
+    AP_Int32 disarm_delay;
 #endif
     Parameters() {}
 };
