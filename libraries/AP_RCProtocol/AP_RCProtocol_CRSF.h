@@ -24,6 +24,8 @@
 
 #define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
+#define CSRF_HEADER_LEN     2U       // header length
+#define CRSF_FRAME_PAYLOAD_MAX (CRSF_FRAMELEN_MAX - CSRF_HEADER_LEN)     // maximum size of the frame length field in a packet
 #define CRSF_BAUDRATE       416666
 
 class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend {
@@ -169,7 +171,7 @@ public:
         uint8_t device_address;
         uint8_t length;
         uint8_t type;
-        uint8_t payload[CRSF_FRAMELEN_MAX - 3]; // +1 for crc
+        uint8_t payload[CRSF_FRAME_PAYLOAD_MAX - 1]; // type is already accounted for
     } PACKED;
 
     struct LinkStatisticsFrame {
@@ -209,7 +211,7 @@ public:
         uint8_t starting_channel:5;     // which channel number is the first one in the frame
         uint8_t res_configuration:2;    // configuration for the RC data resolution (10 - 13 bits)
         uint8_t digital_switch_flag:1;  // configuration bit for digital channel
-        uint8_t channels[CRSF_FRAMELEN_MAX - 4]; // +1 for crc
+        uint8_t channels[CRSF_FRAME_PAYLOAD_MAX - 2]; // payload less byte above
         // uint16_t channel[]:res;      // variable amount of channels (with variable resolution based
                                         // on the res_configuration) based on the frame size
         // uint16_t digital_switch_channel[]:10; // digital switch channel
