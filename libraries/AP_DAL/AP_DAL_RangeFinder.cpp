@@ -115,15 +115,11 @@ bool AP_DAL_RangeFinder::has_orientation(enum Rotation orientation) const
 
 AP_DAL_RangeFinder_Backend *AP_DAL_RangeFinder::get_backend(uint8_t id) const
 {
-   if (id >= RANGEFINDER_MAX_INSTANCES) {
-       INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-       return nullptr;
-   }
-   if (id >= _RRNH.num_sensors) {
+    if (id >= _RRNH.num_sensors) {
         return nullptr;
     }
 
-   return _backend[id];
+    return _backend[id];
 }
 
 void AP_DAL_RangeFinder::handle_message(const log_RRNH &msg)
