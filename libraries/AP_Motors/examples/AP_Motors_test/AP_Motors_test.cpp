@@ -76,7 +76,9 @@ void setup()
         if (strcmp(argv[1],"t") == 0) {
             motor_order_test();
         } else if (strcmp(argv[1],"s") == 0) {
+            uint32_t start = AP_HAL::millis();
             stability_test();
+            hal.console->printf("Took %i ms\n",AP_HAL::millis() - start);
         } else {
             ::printf("Expected single argument, 't' or 's'\n");
         }
