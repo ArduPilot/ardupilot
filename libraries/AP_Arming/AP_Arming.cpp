@@ -1315,13 +1315,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 
-#if HAL_GYROFFT_ENABLED
-    // make sure the FFT subsystem is enabled if arming checks have been disabled
-    AP_GyroFFT *fft = AP::fft();
-    if (fft != nullptr) {
-        fft->prepare_for_arming();
-    }
-#endif
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
@@ -1384,6 +1377,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if (armed && do_arming_checks && checks_to_perform == 0) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
+    
+#if HAL_GYROFFT_ENABLED
+    // make sure the FFT subsystem is enabled if arming checks have been disabled
+    AP_GyroFFT *fft = AP::fft();
+    if (fft != nullptr) {
+        fft->prepare_for_arming();
+    }
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     if (armed) {
