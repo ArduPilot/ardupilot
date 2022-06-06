@@ -40,7 +40,7 @@ private:
     // sparse constraints matrix handling
     MatrixRC<float,max_num_motors,1> A_mult(const MatrixRC<float,num_constraints,1>& B) const;
     MatrixRC<float,num_constraints,1> At_mult(const MatrixRC<float,max_num_motors,1>& B) const;
-    MatrixRC<float,max_num_motors,max_num_motors> A_mult_b_mult_At(const MatrixRC<float,num_constraints,1>& B) const;
+    MatrixRC<float,max_num_motors,max_num_motors> H_plus_A_mult_b_mult_At(const MatrixRC<float,num_constraints,1>& B) const;
 
     // solver
     void interior_point_solve(const MatrixRC<float,max_num_motors,1> &f, const MatrixRC<float,num_constraints,1> &b);

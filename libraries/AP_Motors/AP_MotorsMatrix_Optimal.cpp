@@ -108,10 +108,10 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     uint8_t num_motors = 0;
     for (uint8_t i = 0; i < max_num_motors; i++) {
         if (motor_enabled[i]) {
-            motor_factors(i, 0) = _roll_factor[i] / roll_conversion;
-            motor_factors(i, 1) = _pitch_factor[i] / pitch_conversion;
-            motor_factors(i, 2) = _yaw_factor[i];
-            motor_factors(i, 3) = _throttle_factor[i];
+            motor_factors.v[i][0] = _roll_factor[i] / roll_conversion;
+            motor_factors.v[i][1] = _pitch_factor[i] / pitch_conversion;
+            motor_factors.v[i][2] = _yaw_factor[i];
+            motor_factors.v[i][3] = _throttle_factor[i];
             num_motors++;
         }
     }
@@ -119,28 +119,28 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     // Weighting vector defines the relative weighting of roll, pitch, yaw and throttle
     // may want to change this on the fly in the future, but in that case we can no longer pre-compute the hessian
     MatrixRC<float,1,4> w;
-    w(0, 0) = 15.0; // roll
-    w(0, 1) = 15.0; // pitch
-    w(0, 2) = 15.0; // yaw
-    w(0, 3) = 1.0;  // throttle
+    w.v[0][0] = 15.0; // roll
+    w.v[0][1] = 15.0; // pitch
+    w.v[0][2] = 15.0; // yaw
+    w.v[0][3] = 1.0;  // throttle
 
     // setup hessian matrix
     H = matrix_multiply(motor_factors.per_element_mult_vector_columns(w), motor_factors.transposed());
     for (uint8_t i = num_motors; i < max_num_motors; i++) {
-        H(i,i) = 1.0; // populate remaining diagonals to ensure positive definite matrix
+        H.v[i][i] = 1.0; // populate remaining diagonals to ensure positive definite matrix
     }
 
     // setup constraints
     for (uint8_t i = 0; i < max_num_motors; i++) {
-        A.average_throttle(i, 0) = -motor_factors(i, 3) / num_motors;
+        A.average_throttle.v[i][0] = -motor_factors.v[i][3] / num_motors;
         if (motor_enabled[i]) {
-            A.max_throttle(i, 0) = -1.0;
-            A.min_throttle(i, 0) =  1.0;
+            A.max_throttle.v[i][0] = -1.0;
+            A.min_throttle.v[i][0] =  1.0;
         }
     }
 
     // re-scale by weights to save runtime calculation
-    w(0, 3) *= num_motors;
+    w.v[0][3] *= num_motors;
     w *= -1;
     motor_factors = motor_factors.per_element_mult_vector_columns(w);
 
@@ -181,20 +181,20 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
 
     // set roll, pitch, yaw and throttle input value
     MatrixRC<float,4,1> input;
-    input(0, 0) = roll_thrust;
-    input(1, 0) = pitch_thrust;
-    input(2, 0) = yaw_thrust;
-    input(3, 0) = throttle_thrust;
+    input.v[0][0] = roll_thrust;
+    input.v[1][0] = pitch_thrust;
+    input.v[2][0] = yaw_thrust;
+    input.v[3][0] = throttle_thrust;
 
     // input matrix
     MatrixRC<float,max_num_motors,1> f = matrix_multiply(motor_factors, input);
 
     // constraints, average throttle, 1 and 0
     MatrixRC<float,num_constraints,1> b;
-    b(0, 0) = -throttle_avg_max;
+    b.v[0][0] = -throttle_avg_max;
     for (uint8_t i = 0; i < max_num_motors; i++) {
         if (motor_enabled[i]) {
-            b(1+i, 0) = -1.0; // could set this to 0 if a failed motor is detected
+            b.v[1+i][0] = -1.0; // could set this to 0 if a failed motor is detected
         }
     }
 
@@ -204,7 +204,7 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     // copy to motor outputs
     for (uint8_t i = 0; i < max_num_motors; i++) {
         if (motor_enabled[i]) {
-            _thrust_rpyt_out[i] = x(i,0);
+            _thrust_rpyt_out[i] = x.v[i][0];
         }
     }
 
@@ -218,7 +218,7 @@ MatrixRC<float,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optima
 {
     MatrixRC<float,max_num_motors,1> X;
     for (uint8_t i = 0; i < max_num_motors; i++) {
-        X(i,0) = A.average_throttle(i,0)*B(0,0) + A.max_throttle(i,0)*B(1+i,0) + A.min_throttle(i,0)*B(1+max_num_motors+i,0);
+        X.v[i][0] = A.average_throttle.v[i][0]*B.v[0][0] + A.max_throttle.v[i][0]*B.v[1+i][0] + A.min_throttle.v[i][0]*B.v[1+max_num_motors+i][0];
     }
     return X;
 }
@@ -227,24 +227,27 @@ MatrixRC<float,AP_MotorsMatrix_Optimal::max_num_motors,1> AP_MotorsMatrix_Optima
 MatrixRC<float,AP_MotorsMatrix_Optimal::num_constraints,1> AP_MotorsMatrix_Optimal::At_mult(const MatrixRC<float,max_num_motors,1>& B) const
 {
     MatrixRC<float,num_constraints,1> X;
-    X(0,0) = A.average_throttle.dot(B);
+    X.v[0][0] = A.average_throttle.dot(B);
     for (uint8_t i = 0; i < max_num_motors; i++) {
-        X(1+i,0) = A.max_throttle(i,0)*B(i,0);
-        X(1+max_num_motors+i,0) = A.min_throttle(i,0)*B(i,0);
+        X.v[1+i][0] = A.max_throttle.v[i][0]*B.v[i][0];
+        X.v[1+max_num_motors+i][0] = A.min_throttle.v[i][0]*B.v[i][0];
     }
     return X;
 }
 
-// x = A*diag(B)*A'
-MatrixRC<float,AP_MotorsMatrix_Optimal::max_num_motors,AP_MotorsMatrix_Optimal::max_num_motors> AP_MotorsMatrix_Optimal::A_mult_b_mult_At(const MatrixRC<float,num_constraints,1>& B) const
+// x = H + A*diag(B)*A'
+// Note that we only calculate the lower triangle, matrix is expected to be symmetric
+MatrixRC<float,AP_MotorsMatrix_Optimal::max_num_motors,AP_MotorsMatrix_Optimal::max_num_motors> AP_MotorsMatrix_Optimal::H_plus_A_mult_b_mult_At(const MatrixRC<float,num_constraints,1>& B) const
 {
     MatrixRC<float,max_num_motors,max_num_motors> X;
     for (uint8_t i = 0; i < max_num_motors; i++) {
-        for (uint8_t j = 0; j < max_num_motors; j++) {
-            X(i,j) = A.average_throttle(i,0) * A.average_throttle(j,0) * B(0,0);
-            if (i == j) {
-                X(i,j) += A.max_throttle(i,0)*A.max_throttle(j,0)*B(j+1,0) + A.min_throttle(i,0)*A.min_throttle(j,0)*B(j+max_num_motors+1,0);
-            }
+        for (uint8_t j = 0; j <= i; j++) {
+            X.v[i][j] = A.average_throttle.v[i][0] * A.average_throttle.v[j][0] * B.v[0][0];
+        }
+        X.v[i][i] += A.max_throttle.v[i][0]*A.max_throttle.v[i][0]*B.v[i+1][0] + A.min_throttle.v[i][0]*A.min_throttle.v[i][0]*B.v[i+max_num_motors+1][0];
+        for (uint8_t j = 0; j <= i; j++) {
+            // MATLAB thinks this is better than adding first, floating point stuff I guess
+            X.v[i][j] += H.v[i][j];
         }
     }
     return X;
@@ -279,7 +282,7 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<float,max_num_
     for (uint8_t k = 0; k < 15; k++) {
 
         // Pre-decompose to speed up solve
-        H_bar = cholesky(H + A_mult_b_mult_At(z.per_element_mult(s_inv)));
+        H_bar = cholesky(H_plus_A_mult_b_mult_At(z.per_element_mult(s_inv)));
         z_rs = z.per_element_mult(rs);
 
         float alpha;
@@ -295,11 +298,11 @@ void AP_MotorsMatrix_Optimal::interior_point_solve(const MatrixRC<float,max_num_
             // Compute alpha
             alpha = 1.0;
             for (uint8_t j = 0; j < num_constraints; j++) {
-                if (dz(j,0) > 0) {
-                    alpha = MIN(alpha, z(j,0)/dz(j,0));
+                if (dz.v[j][0] > 0) {
+                    alpha = MIN(alpha, z.v[j][0]/dz.v[j][0]);
                 }
-                if (ds(j,0) > 0) {
-                    alpha = MIN(alpha, s(j,0)/ds(j,0));
+                if (ds.v[j][0] > 0) {
+                    alpha = MIN(alpha, s.v[j][0]/ds.v[j][0]);
                 }
             }
 
