@@ -26,12 +26,27 @@
 
 extern const AP_HAL::HAL& hal;
 
+// table of user settable parameters
+const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
+
+    // @Param: _MAV_OFS
+    // @DisplayName: ESC Telemetry mavlink offset
+    // @Description: Offset to apply to ESC numbers when reporting as ESC_TELEMETRY packets over MAVLink. This allows high numbered motors to be displayed as low numbered ESCs for convenience on GCS displays. A value of 4 would send ESC on output 5 as ESC number 1 in ESC_TELEMETRY packets
+    // @Increment: 1
+    // @Range: 0 31
+    // @User: Standard
+    AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
+    
+    AP_GROUPEND
+};
+
 AP_ESC_Telem::AP_ESC_Telem()
 {
     if (_singleton) {
         AP_HAL::panic("Too many AP_ESC_Telem instances");
     }
     _singleton = this;
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // return the average motor RPM
@@ -241,6 +256,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
     uint32_t now_us = AP_HAL::micros();
 
     // loop through groups of 4 ESCs
+    const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
     const uint8_t num_idx = ESC_TELEM_MAX_ESCS/4;
     for (uint8_t idx = 0; idx < num_idx; idx++) {
         const uint8_t i = (next_idx + idx) % num_idx;
@@ -251,12 +267,19 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
             next_idx = i;
             return;
         }
-#define ESC_DATA_STALE(idx) \
-        (now - _telem_data[idx].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS \
-            && now_us - _rpm_data[idx].last_update_us > ESC_RPM_DATA_TIMEOUT_US)
 
-        // skip this group of ESCs if no data to send
-        if (ESC_DATA_STALE(i * 4) && ESC_DATA_STALE(i * 4 + 1) && ESC_DATA_STALE(i * 4 + 2) && ESC_DATA_STALE(i * 4 + 3)) {
+        bool all_stale = true;
+        for (uint8_t j=0; j<4; j++) {
+            const uint8_t esc_id = (i * 4 + j) + esc_offset;
+            if (esc_id < ESC_TELEM_MAX_ESCS &&
+                (now - _telem_data[esc_id].last_update_ms <= ESC_TELEM_DATA_TIMEOUT_MS ||
+                 now_us - _rpm_data[esc_id].last_update_us <= ESC_RPM_DATA_TIMEOUT_US)) {
+                all_stale = false;
+                break;
+            }
+        }
+        if (all_stale) {
+            // skip this group of ESCs if no data to send
             continue;
         }
 
@@ -271,7 +294,11 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
         // fill in output arrays
         for (uint8_t j = 0; j < 4; j++) {
-            const uint8_t esc_id = i * 4 + j;
+            const uint8_t esc_id = (i * 4 + j) + esc_offset;
+            if (esc_id >= ESC_TELEM_MAX_ESCS) {
+                continue;
+            }
+
             temperature[j] = _telem_data[esc_id].temperature_cdeg / 100;
             voltage[j] = constrain_float(_telem_data[esc_id].voltage * 100.0f, 0, UINT16_MAX);
             current[j] = constrain_float(_telem_data[esc_id].current * 100.0f, 0, UINT16_MAX);
