@@ -16,9 +16,6 @@ public:
         memset(v, 0, sizeof(v));
     }
 
-    T& operator () (uint8_t i, uint8_t j);
-    const T&operator() (uint8_t i, uint8_t j) const;
-
     MatrixRC<T,R,C> &operator =(const T num);
     MatrixRC<T,R,C> &operator *=(const T num);
 

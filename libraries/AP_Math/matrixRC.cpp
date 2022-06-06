@@ -9,18 +9,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-// get and set with ()
-template <typename T, uint8_t R, uint8_t C>
-T& MatrixRC<T,R,C>::operator () (uint8_t i, uint8_t j) {
-    return v[i][j];
-}
-
-// const getter
-template <typename T, uint8_t R, uint8_t C>
-const T& MatrixRC<T,R,C>::operator () (uint8_t i, uint8_t j) const {
-    return v[i][j];
-}
-
 // set all values
 template <typename T, uint8_t R, uint8_t C>
 MatrixRC<T,R,C> &MatrixRC<T,R,C>::operator =(const T num) {
