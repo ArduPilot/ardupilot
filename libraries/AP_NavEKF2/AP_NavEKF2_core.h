@@ -68,6 +68,13 @@
 #else
 #define EK2_POSXY_STATE_LIMIT 1.0e6
 #endif
+
+// maximum number of downward facing rangefinder instances available
+#if RANGEFINDER_MAX_INSTANCES > 1
+#define DOWNWARD_RANGEFINDER_MAX_INSTANCES 2
+#else
+#define DOWNWARD_RANGEFINDER_MAX_INSTANCES 1
+#endif
     
 class AP_AHRS;
 
@@ -1004,11 +1011,11 @@ private:
     // Range finder
     ftype baroHgtOffset;                    // offset applied when when switching to use of Baro height
     ftype rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
-    ftype storedRngMeas[2][3];              // Ringbuffer of stored range measurements for dual range sensors
-    uint32_t storedRngMeasTime_ms[2][3];    // Ringbuffers of stored range measurement times for dual range sensors
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
-    uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+    ftype storedRngMeas[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];              // Ringbuffer of stored range measurements for dual range sensors
+    uint32_t storedRngMeasTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3];    // Ringbuffers of stored range measurement times for dual range sensors
+    uint8_t rngMeasIndex[DOWNWARD_RANGEFINDER_MAX_INSTANCES];                // Current range measurement ringbuffer index for dual range sensors
 
     // Range Beacon Sensor Fusion
     EKF_obs_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
