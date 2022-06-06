@@ -1,6 +1,6 @@
 Rover Release Notes:
 ------------------------------------------------------------------
-Rover 4.2.1-rc1 28-May-2022
+Rover 4.2.1 07-Jun-2022 / 4.2.1-rc1 28-May-2022
 Changes from 4.2.0
 1) CAN ESCs bus bandwidth efficiency improvements (see CAN_Dx_UC_ESC_OF parameter)
 2) DShot timing improvements to support for ESC variants
