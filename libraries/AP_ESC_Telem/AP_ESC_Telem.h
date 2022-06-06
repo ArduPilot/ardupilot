@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_ESC_Telem_Backend.h"
 
 #if HAL_WITH_ESC_TELEM
@@ -23,8 +24,9 @@ public:
     AP_ESC_Telem();
 
     /* Do not allow copies */
-    AP_ESC_Telem(const AP_ESC_Telem &other) = delete;
-    AP_ESC_Telem &operator=(const AP_ESC_Telem&) = delete;
+    CLASS_NO_COPY(AP_ESC_Telem);
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     static AP_ESC_Telem *get_singleton();
 
@@ -105,6 +107,8 @@ private:
     uint8_t next_idx;
 
     bool _have_data;
+
+    AP_Int8 mavlink_offset;
 
     static AP_ESC_Telem *_singleton;
 };
