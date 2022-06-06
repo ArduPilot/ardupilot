@@ -5,7 +5,14 @@
 
 #if HAL_WITH_ESC_TELEM
 
-#define ESC_TELEM_MAX_ESCS   12
+#ifdef NUM_SERVO_CHANNELS
+ #define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+#elif !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+ #define ESC_TELEM_MAX_ESCS 32
+#else
+ #define ESC_TELEM_MAX_ESCS 16
+#endif
+
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
 #define ESC_RPM_DATA_TIMEOUT_US 1000000UL
 
@@ -95,6 +102,7 @@ private:
 
     uint32_t _last_telem_log_ms[ESC_TELEM_MAX_ESCS];
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
+    uint8_t next_idx;
 
     bool _have_data;
 
@@ -105,4 +113,5 @@ namespace AP {
     AP_ESC_Telem &esc_telem();
 };
 
-#endif
+#endif // HAL_WITH_ESC_TELEM
+
