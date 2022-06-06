@@ -147,7 +147,6 @@ static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
 #define CRSF_INTER_FRAME_TIME_US_250HZ    4000U // At fastest, frames are sent by the transmitter every 4 ms, 250 Hz
 #define CRSF_INTER_FRAME_TIME_US_150HZ    6667U // At medium, frames are sent by the transmitter every 6.667 ms, 150 Hz
 #define CRSF_INTER_FRAME_TIME_US_50HZ    20000U // At slowest, frames are sent by the transmitter every 20ms, 50 Hz
-#define CSRF_HEADER_LEN     2                   // header length
 #define CSRF_HEADER_TYPE_LEN     (CSRF_HEADER_LEN + 1)           // header length including type
 
 #define CRSF_DIGITAL_CHANNEL_MIN 172
@@ -222,7 +221,7 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
     if (_frame_ofs == CSRF_HEADER_TYPE_LEN) {
         _frame_crc = crc8_dvb_s2(0, _frame.type);
         // check for garbage frame
-        if (_frame.length > CRSF_FRAMELEN_MAX) {
+        if (_frame.length > CRSF_FRAME_PAYLOAD_MAX) {
             _frame_ofs = 0;
         }
         return;
@@ -246,8 +245,8 @@ void AP_RCProtocol_CRSF::_process_byte(uint32_t timestamp_us, uint8_t byte)
         // we consumed the partial frame, reset
         _frame_ofs = 0;
 
-        // bad CRC
-        if (_frame_crc != _frame.payload[_frame.length - CSRF_HEADER_LEN]) {
+        // bad CRC (payload start is +1 from frame start, so need to subtract that from frame length to get index)
+        if (_frame_crc != _frame.payload[_frame.length - 2]) {
             return;
         }
 
@@ -434,7 +433,7 @@ void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, ui
     }
 
     // calculate the number of channels packed
-    uint8_t numOfChannels = ((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits;
+    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), CRSF_MAX_CHANNELS);
 
     // unpack the channel data
     uint8_t bitsMerged = 0;
@@ -443,9 +442,17 @@ void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, ui
 
     for (uint8_t n = 0; n < numOfChannels; n++) {
         while (bitsMerged < channelBits) {
+            // check for corrupt frame
+            if (readByteIndex >= CRSF_FRAME_PAYLOAD_MAX) {
+                return;
+            }
             uint8_t readByte = payload[readByteIndex++];
             readValue |= ((uint32_t) readByte) << bitsMerged;
             bitsMerged += 8;
+        }
+        // check for corrupt frame
+        if (uint8_t(channel_data->starting_channel + n) >= CRSF_MAX_CHANNELS) {
+            return;
         }
         _channels[channel_data->starting_channel + n] =
             uint16_t(channelScale * float(uint16_t(readValue & channelMask)) + 988);
