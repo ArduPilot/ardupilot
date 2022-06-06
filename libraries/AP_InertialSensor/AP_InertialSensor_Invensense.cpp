@@ -973,6 +973,13 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
 
         /* bus-dependent initialization */
         if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+            /* reset signal path as recommended in the datasheet */
+            if (_mpu_type == Invensense_MPU6000 || _mpu_type == Invensense_MPU6500) {
+                _register_write(MPUREG_SIGNAL_PATH_RESET,
+                    BIT_SIGNAL_PATH_RESET_TEMP_RESET|BIT_SIGNAL_PATH_RESET_ACCEL_RESET|BIT_SIGNAL_PATH_RESET_GYRO_RESET);
+                hal.scheduler->delay(100);
+            }
+
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _last_stat_user_ctrl |= BIT_USER_CTRL_I2C_IF_DIS;
