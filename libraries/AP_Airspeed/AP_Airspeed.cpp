@@ -138,8 +138,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     // @Param: _AUTOCAL
-    // @DisplayName{Plane}: Automatic airspeed ratio calibration
-    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
+    // @DisplayName: Automatic airspeed ratio calibration
+    // @DisplayName{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Description: Enables automatic adjustment of ARSPD_RATIO during a calibration flight based on estimation of ground speed and true airspeed. New ratio saved every 2 minutes if change is > 5%. Should not be left enabled.
     // @User: Advanced
     AP_GROUPINFO("_AUTOCAL",  5, AP_Airspeed, param[0].autocal, 0),
