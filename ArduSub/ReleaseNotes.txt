@@ -1,6 +1,11 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.0 6-June-2022
+
+ - Fix agressive depth hold twitching introduced in beta7
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.0-beta8 26-May-2022
 
  - Fix issue with poshold introduced in beta7 (no lateral control)
