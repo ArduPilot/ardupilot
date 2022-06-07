@@ -912,9 +912,10 @@ AP_InertialSensor::init(uint16_t loop_rate)
         // calculate number of notches we might want to use for harmonic notch
         if (notch.params.enabled()) {
             const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+            const bool all_sensors = notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs);
             num_filters += __builtin_popcount(notch.params.harmonics())
                 * notch.num_dynamic_notches * (double_notch ? 2 : 1)
-                * sensors_used;
+                * (all_sensors?sensors_used:1);
         }
     }
 
