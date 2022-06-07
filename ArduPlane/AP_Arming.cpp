@@ -368,9 +368,11 @@ bool AP_Arming_Plane::mission_checks(bool report)
 {
     // base checks
     bool ret = AP_Arming::mission_checks(report);
+    /* Moved to SCRIPTING
     if (plane.mission.get_landing_sequence_start() > 0 && plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
         ret = false;
         check_failed(ARMING_CHECK_MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
     }
+    */
     return ret;
 }

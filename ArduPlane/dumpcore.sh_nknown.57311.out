@@ -1,0 +1,3 @@
+Unable to set exception ports, task_set_exception_portsreturned: 4
+/tmp/gdb.57326:2: Error in sourced command file:
+You can't do that without a process to debug.
