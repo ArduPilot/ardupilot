@@ -258,7 +258,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         // ensure controllers are OK with us arming:
-        char failure_msg[50];
+        char failure_msg[50] = {};
         if (!copter.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
             return false;
@@ -344,7 +344,7 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
 bool AP_Arming_Copter::oa_checks(bool display_failure)
 {
 #if AC_OAPATHPLANNER_ENABLED == ENABLED
-    char failure_msg[50];
+    char failure_msg[50] = {};
     if (copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
         return true;
     }
