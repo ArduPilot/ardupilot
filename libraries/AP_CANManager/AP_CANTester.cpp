@@ -29,7 +29,6 @@
 #include <uavcan/protocol/dynamic_node_id_client.hpp>
 #include <uavcan/equipment/esc/Status.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
-#include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include "AP_CANTester_KDECAN.h"
 extern const AP_HAL::HAL& hal;
@@ -39,7 +38,7 @@ const AP_Param::GroupInfo CANTester::var_info[] = {
     // @DisplayName: CAN Test Index
     // @Description: Selects the Index of Test that needs to be run recursively, this value gets reset to 0 at boot.
     // @Range: 0 4
-    // @Values: 0:TEST_NONE, 1:TEST_LOOPBACK,2:TEST_BUSOFF_RECOVERY,3:TEST_UAVCAN_DNA,4:TEST_TOSHIBA_CAN, 5:TEST_KDE_CAN, 6:TEST_UAVCAN_ESC,  7:TEST_UAVCAN_FD_ESC
+    // @Values: 0:TEST_NONE, 1:TEST_LOOPBACK,2:TEST_BUSOFF_RECOVERY,3:TEST_UAVCAN_DNA,5:TEST_KDE_CAN, 6:TEST_UAVCAN_ESC,  7:TEST_UAVCAN_FD_ESC
     // @User: Advanced
     AP_GROUPINFO("ID", 1, CANTester, _test_id, 0),
 
@@ -191,18 +190,6 @@ void CANTester::main_thread()
                 }
             } else {
                 gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for UAVCAN_DNA_TEST");
-            }
-            break;
-        case CANTester::TEST_TOSHIBA_CAN:
-            if (_can_ifaces[1] == nullptr) {
-                gcs().send_text(MAV_SEVERITY_ALERT, "********Running Toshiba CAN Test********");
-                if (test_toshiba_can()) {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********Toshiba CAN Test Pass********");
-                } else {
-                    gcs().send_text(MAV_SEVERITY_ALERT, "********Toshiba CAN Test Fail********");
-                }
-            } else {
-                gcs().send_text(MAV_SEVERITY_ALERT, "Only one iface needs to be set for TEST_TOSHIBA_CAN");
             }
             break;
         case CANTester::TEST_KDE_CAN:
@@ -512,192 +499,6 @@ bool CANTester::test_uavcan_dna()
     delete node;
     return true;
 }
-
-/*****************************************
- *            TOSHIBA CAN Test           *
- *****************************************/
-#define NUM_TOSHIBA_TEST_RUN 1000
-bool CANTester::test_toshiba_can()
-{
-    AP_HAL::CANFrame frame;
-    uint16_t num_runs = NUM_TOSHIBA_TEST_RUN;
-    uint32_t num_errors = 0;
-    uint32_t num_lock_cmds = 0;
-    uint32_t num_request_data_cmds = 0;
-    uint32_t num_motor_cmds = 0;
-    uint32_t start_time = AP_HAL::native_millis();
-    AP_HAL::CANIface::CanIOFlags flags;
-
-    while (num_runs--) {
-        if (!read_frame(0, frame, _loop_rate, flags)) {
-            continue;
-        }
-        if (flags & AP_HAL::CANIface::Loopback) {
-            continue;
-        }
-        switch (frame.id) {
-        case AP_ToshibaCAN::COMMAND_LOCK: {
-            AP_ToshibaCAN::motor_lock_cmd_t lock_frame;
-            if (sizeof(lock_frame) != frame.dlc) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad lock command length");
-                num_errors++;
-            }
-            memcpy(&lock_frame, frame.data, sizeof(lock_frame));
-            if (lock_frame.motor1 != 1 && lock_frame.motor1 != 2 &&
-                lock_frame.motor2 != 1 && lock_frame.motor2 != 2 &&
-                lock_frame.motor3 != 1 && lock_frame.motor3 != 2 &&
-                lock_frame.motor4 != 1 && lock_frame.motor4 != 2 &&
-                lock_frame.motor5 != 1 && lock_frame.motor5 != 2 &&
-                lock_frame.motor6 != 1 && lock_frame.motor6 != 2 &&
-                lock_frame.motor7 != 1 && lock_frame.motor7 != 2 &&
-                lock_frame.motor8 != 1 && lock_frame.motor8 != 2 &&
-                lock_frame.motor9 != 1 && lock_frame.motor9 != 2 &&
-                lock_frame.motor10 != 1 && lock_frame.motor10 != 2 &&
-                lock_frame.motor11 != 1 && lock_frame.motor11 != 2 &&
-                lock_frame.motor12 != 1 && lock_frame.motor12 != 2) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad lock frame received!");
-                num_errors++;
-            }
-            num_lock_cmds++;
-            break;
-        }
-        case AP_ToshibaCAN::COMMAND_REQUEST_DATA: {
-            AP_ToshibaCAN::motor_request_data_cmd_t request_data_cmd;
-            if (sizeof(request_data_cmd) != frame.dlc) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad request data command length");
-                num_errors++;
-            }
-            memcpy(&request_data_cmd, frame.data, sizeof(request_data_cmd));
-            if (!((request_data_cmd.motor1  == request_data_cmd.motor2 &&
-                   request_data_cmd.motor2  == request_data_cmd.motor3 &&
-                   request_data_cmd.motor3  == request_data_cmd.motor4 &&
-                   request_data_cmd.motor4  == request_data_cmd.motor5 &&
-                   request_data_cmd.motor5  == request_data_cmd.motor6 &&
-                   request_data_cmd.motor6  == request_data_cmd.motor7 &&
-                   request_data_cmd.motor7  == request_data_cmd.motor8 &&
-                   request_data_cmd.motor8  == request_data_cmd.motor9 &&
-                   request_data_cmd.motor9  == request_data_cmd.motor10 &&
-                   request_data_cmd.motor10 == request_data_cmd.motor11 &&
-                   request_data_cmd.motor11 == request_data_cmd.motor12) &&
-                  (request_data_cmd.motor1 == 0 ||
-                   request_data_cmd.motor1 == 1 ||
-                   request_data_cmd.motor1 == 2 ||
-                   request_data_cmd.motor1 == 3 ||
-                   request_data_cmd.motor1 == 4 ||
-                   request_data_cmd.motor1 == 5))) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad request frame received!");
-                num_errors++;
-            }
-            num_request_data_cmds++;
-            send_toshiba_can_reply(request_data_cmd.motor1);
-            break;
-        }
-        case AP_ToshibaCAN::COMMAND_MOTOR1:
-        case AP_ToshibaCAN::COMMAND_MOTOR2:
-        case AP_ToshibaCAN::COMMAND_MOTOR3: {
-            AP_ToshibaCAN::motor_rotation_cmd_t rotation_cmd;
-            if (frame.dlc != sizeof(rotation_cmd)) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad motor command length");
-                num_errors++;
-            }
-            memcpy(&rotation_cmd, frame.data, sizeof(rotation_cmd));
-            if ((rotation_cmd.motor1 > AP_ToshibaCAN::TOSHIBACAN_OUTPUT_MAX) ||
-                (rotation_cmd.motor2 > AP_ToshibaCAN::TOSHIBACAN_OUTPUT_MAX) ||
-                (rotation_cmd.motor3 > AP_ToshibaCAN::TOSHIBACAN_OUTPUT_MAX) ||
-                (rotation_cmd.motor4 > AP_ToshibaCAN::TOSHIBACAN_OUTPUT_MAX)) {
-                gcs().send_text(MAV_SEVERITY_CRITICAL, "Bad motor command data");
-                num_errors++;
-            }
-            num_motor_cmds++;
-            break;
-        }
-        default: {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Unsupported Command");
-            num_errors++;
-            break;
-        }
-        }
-    }
-    uint32_t num_secs = (AP_HAL::native_millis() - start_time)/1000;
-    gcs().send_text(MAV_SEVERITY_ALERT, "Num Errors: %lu Cmds Lock: %lu Request: %lu Motor: %lu",
-                    (long unsigned int)num_errors,
-                    (long unsigned int)num_lock_cmds,
-                    (long unsigned int)num_request_data_cmds,
-                    (long unsigned int)num_motor_cmds);
-
-    gcs().send_text(MAV_SEVERITY_ALERT, "Rates Lock: %lu Request: %lu Motor: %lu",
-                    (long unsigned int)num_lock_cmds/num_secs,
-                    (long unsigned int)num_request_data_cmds/num_secs,
-                    (long unsigned int)num_motor_cmds/num_secs);
-    if (num_errors) {
-        return false;
-    } else {
-        return true;
-    }
-}
-
-bool CANTester::send_toshiba_can_reply(uint32_t cmd)
-{
-    AP_HAL::CANFrame send_frame;
-    for (uint8_t sub_id = 0; sub_id < TOSHIBACAN_MAX_NUM_ESCS; sub_id++) {
-        // decode rpm and voltage data
-        switch (cmd) {
-        case 1: {
-            // copy contents to our structure
-            AP_ToshibaCAN::motor_reply_data1_t reply_data;
-            reply_data.rpm = htobe16(100);
-            reply_data.current_ma = htobe16(1000);
-            reply_data.voltage_mv = htobe16(12000);
-            memcpy(send_frame.data, &reply_data, sizeof(reply_data.data));
-            send_frame.id = AP_ToshibaCAN::MOTOR_DATA1 + sub_id;
-            memcpy(send_frame.data, &reply_data, sizeof(reply_data));
-            send_frame.dlc = 8;
-            write_frame(0, send_frame, 1000);
-            continue;
-        }
-
-        // decode temperature data
-        case 2: {
-            // motor data2 data format is 8 bytes (64 bits)
-            //    10 bits: U temperature
-            //    10 bits: V temperature
-            //    10 bits: W temperature
-            //    10 bits: motor temperature
-            //    remaining 24 bits: reserved
-            const uint16_t temp = (300 * 5) + 20;
-            send_frame.data[0] = (temp >> 2) & 0xFF;
-            send_frame.data[1] = ((temp << 6) | ((temp >> 4) & 0x3F)) & 0xFF;
-            send_frame.data[2] = (((temp << 4) & 0xF0) | ((temp >> 6) & 0x0F)) & 0xFF;
-            send_frame.data[3] = (((temp << 2) & 0xFC) | ((temp >> 8) & 0x03)) & 0xFF;
-            send_frame.data[4] = temp & 0xFF;
-            send_frame.id = AP_ToshibaCAN::MOTOR_DATA2 + sub_id;
-            send_frame.dlc = 8;
-            write_frame(0, send_frame, 1000);
-            continue;
-        }
-
-        // encode cumulative usage data
-        case 3: {
-            // motor data3 data format is 8 bytes (64 bits)
-            //    3 bytes: usage in seconds
-            //    2 bytes: number of times rotors started and stopped
-            //    3 bytes: reserved
-            uint32_t secs = AP_HAL::native_millis()/1000;
-            send_frame.data[0] = (secs >> 16) & 0xFF;
-            send_frame.data[0] = (secs >> 8) & 0xFF;
-            send_frame.data[0] = (secs & 0xFF);
-            send_frame.id = AP_ToshibaCAN::MOTOR_DATA3 + sub_id;
-            send_frame.dlc = 8;
-            write_frame(0, send_frame, 1000);
-            continue;
-        }
-        default:
-            return false;
-        }
-    }
-    return true;
-}
-
 
 /*****************************************
  *              KDE CAN Test             *

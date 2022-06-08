@@ -20,7 +20,6 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
-#include <AP_ToshibaCAN/AP_ToshibaCAN.h>
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include "AP_CANTester.h"
 #include <AP_KDECAN/AP_KDECAN.h>
@@ -32,7 +31,7 @@ const AP_Param::GroupInfo AP_CANManager::CANDriver_Params::var_info[] = {
     // @Param: PROTOCOL
     // @DisplayName: Enable use of specific protocol over virtual driver
     // @Description: Enabling this option starts selected protocol that will use this virtual driver
-    // @Values: 0:Disabled,1:DroneCAN,3:ToshibaCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake
+    // @Values: 0:Disabled,1:DroneCAN,4:PiccoloCAN,5:CANTester,6:EFI_NWPMU,7:USD1,8:KDECAN,10:Scripting,11:Benewake
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("PROTOCOL", 1, AP_CANManager::CANDriver_Params, _driver_type, AP_CANManager::Driver_Type_UAVCAN),
