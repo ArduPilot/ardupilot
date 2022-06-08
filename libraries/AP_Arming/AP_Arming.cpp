@@ -1060,13 +1060,6 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CANManager::Driver_Type_ToshibaCAN:
-                {
-                    // toshibacan doesn't currently have any prearm
-                    // checks.  Theres scope for adding a "not
-                    // initialised" prearm check.
-                    break;
-                }
                 case AP_CANManager::Driver_Type_CANTester:
                 {
                     check_failed(ARMING_CHECK_SYSTEM, report, "TestCAN: No Arming with TestCAN enabled");
