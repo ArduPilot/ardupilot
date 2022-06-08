@@ -104,6 +104,7 @@ local slew_target = 0
 local slew_delta = 0
 
 local axes_done = {}
+local filters_done = {}
 
 
 -- create params dictionary indexed by name, such as "RLL_P"
@@ -124,6 +125,7 @@ end
 function reset_axes_done()
    for i, axis in ipairs(axis_names) do
       axes_done[axis] = false
+      filters_done[axis] = false
    end
    stage = stages[1]
 end
@@ -168,25 +170,19 @@ function setup_SMAX()
 end
 
 -- setup filter frequencies
-function setup_filters()
-   if QUIK_AUTO_FILTER:get() <= 0 then
-      return
-   end
-   for i, axis in ipairs(axis_names) do
-      if axis_enabled(axis) then
-         local fltd = axis .. "_FLTD"
-         local fltt = axis .. "_FLTT"
-         local flte = axis .. "_FLTE"
-         adjust_gain(fltt, INS_GYRO_FILTER:get() * FLTT_MUL)
-         adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
-         if axis == "YAW" then
-            local FLTE = params[flte]
-            if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
-               adjust_gain(flte, YAW_FLTE_MAX)
-            end
-         end
+function setup_filters(axis)
+   local fltd = axis .. "_FLTD"
+   local fltt = axis .. "_FLTT"
+   local flte = axis .. "_FLTE"
+   adjust_gain(fltt, INS_GYRO_FILTER:get() * FLTT_MUL)
+   adjust_gain(fltd, INS_GYRO_FILTER:get() * FLTD_MUL)
+   if axis == "YAW" then
+      local FLTE = params[flte]
+      if FLTE:get() <= 0.0 or FLTE:get() > YAW_FLTE_MAX then
+         adjust_gain(flte, YAW_FLTE_MAX)
       end
    end
+   filters_done[axis] = true
 end
 
 -- check for pilot input to pause tune
@@ -421,11 +417,15 @@ function update()
       gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: starting tune"))
       get_all_params()
       setup_SMAX()
-      setup_filters()
    end
 
    if get_time() - last_pilot_input < PILOT_INPUT_DELAY then
       return
+   end
+
+   if not filters_done[axis] then
+      gcs:send_text(MAV_SEVERITY_INFO, string.format("Starting %s tune", axis))
+      setup_filters(axis)
    end
 
    local srate = get_slew_rate(axis)
