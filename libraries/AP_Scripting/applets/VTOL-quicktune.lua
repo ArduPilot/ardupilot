@@ -37,7 +37,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 10), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 11), 'could not add param table')
 
 local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0) 
 local QUIK_AXES        = bind_add_param('AXES',           2, 7)
@@ -49,6 +49,7 @@ local QUIK_YAW_D_MAX   = bind_add_param('YAW_D_MAX',      7, 0.01)
 local QUIK_RP_PI_RATIO = bind_add_param('RP_PI_RATIO',    8, 1.0)
 local QUIK_Y_PI_RATIO  = bind_add_param('Y_PI_RATIO',     9, 10)
 local QUIK_AUTO_FILTER = bind_add_param('AUTO_FILTER',   10, 1)
+local QUIK_AUTO_SAVE   = bind_add_param('AUTO_SAVE',     11, 0)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
@@ -97,6 +98,7 @@ local last_stage_change = get_time()
 local last_gain_report = get_time()
 local last_pilot_input = get_time()
 local last_notice = get_time()
+local tune_done_time = nil
 local slew_parm = nil
 local slew_target = 0
 local slew_delta = 0
@@ -323,7 +325,8 @@ function update_slew_gain()
          gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f", slew_parm, P:get()))
          slew_parm = nil
          if get_current_axis() == nil then
-             gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: DONE"))
+            gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: DONE"))
+            tune_done_time = get_time()
          end
       end
    end
@@ -377,6 +380,7 @@ function update()
          need_restore = false
          restore_all_params()
          gcs:send_text(MAV_SEVERITY_EMERGENCY, string.format("Tuning: reverted"))
+         tune_done_time = nil
       end
       reset_axes_done()
       return
@@ -400,7 +404,15 @@ function update()
 
    axis = get_current_axis()
    if axis == nil then
-      -- nothing left to do
+      -- nothing left to do, check autosave time
+      if tune_done_time ~= nil and QUIK_AUTO_SAVE:get() > 0 then
+         if get_time() - tune_done_time > QUIK_AUTO_SAVE:get() then
+            need_restore = false
+            save_all_params()
+            gcs:send_text(MAV_SEVERITY_NOTICE, string.format("Tuning: saved"))
+            tune_done_time = nil
+         end
+      end
       return
    end
 
