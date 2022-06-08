@@ -52,7 +52,6 @@ private:
         TEST_LOOPBACK,
         TEST_BUSOFF_RECOVERY,
         TEST_UAVCAN_DNA,
-        TEST_TOSHIBA_CAN,
         TEST_KDE_CAN,
         TEST_UAVCAN_ESC,
         TEST_UAVCAN_FD_ESC,
@@ -79,8 +78,6 @@ private:
     bool test_busoff_recovery();
 
     bool test_uavcan_dna();
-    bool test_toshiba_can();
-    bool send_toshiba_can_reply(uint32_t cmd);
 
     bool test_kdecan();
 
