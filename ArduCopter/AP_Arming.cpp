@@ -1,9 +1,5 @@
 #include "Copter.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
- #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
-#endif
-
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
     const bool passed = run_pre_arm_checks(display_failure);
@@ -292,51 +288,6 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
     if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
         return true;
     }
-
-    // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS && (FRAME_CONFIG != HELI_FRAME)
-    bool tcan_active = false;
-    uint8_t tcan_index = 0;
-    const uint8_t num_drivers = AP::can().get_num_drivers();
-    for (uint8_t i = 0; i < num_drivers; i++) {
-        if (AP::can().get_driver_type(i) == AP_CANManager::Driver_Type_ToshibaCAN) {
-            tcan_active = true;
-            tcan_index = i;
-        }
-    }
-    if (tcan_active) {
-        // check motor range parameters
-        if (copter.motors->get_pwm_output_min() != 1000) {
-            check_failed(display_failure, "TCAN ESCs require MOT_PWM_MIN=1000");
-            return false;
-        }
-        if (copter.motors->get_pwm_output_max() != 2000) {
-            check_failed(display_failure, "TCAN ESCs require MOT_PWM_MAX=2000");
-            return false;
-        }
-
-        // check we have an ESC present for every SERVOx_FUNCTION = motorx
-        // find and report first missing ESC, extra ESCs are OK
-        AP_ToshibaCAN *tcan = AP_ToshibaCAN::get_tcan(tcan_index);
-        const uint32_t motors_mask = copter.motors->get_motor_mask();
-        const uint32_t esc_mask = tcan->get_present_mask();
-        uint8_t escs_missing = 0;
-        uint8_t first_missing = 0;
-        for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
-            uint32_t bit = 1UL << i;
-            if (((motors_mask & bit) > 0) && ((esc_mask & bit) == 0)) {
-                escs_missing++;
-                if (first_missing == 0) {
-                    first_missing = i+1;
-                }
-            }
-        }
-        if (escs_missing > 0) {
-            check_failed(display_failure, "TCAN missing %d escs, check #%d", (int)escs_missing, (int)first_missing);
-            return false;
-        }
-    }
-#endif
 
     return true;
 }
