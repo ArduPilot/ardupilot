@@ -30,7 +30,6 @@
   #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     #include <AP_KDECAN/AP_KDECAN.h>
   #endif
-  #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
   #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #endif
 
@@ -554,14 +553,6 @@ void SRV_Channels::push()
                 }
                 ap_kdecan->update();
 #endif
-                break;
-            }
-            case AP_CANManager::Driver_Type_ToshibaCAN: {
-                AP_ToshibaCAN *ap_tcan = AP_ToshibaCAN::get_tcan(i);
-                if (ap_tcan == nullptr) {
-                    continue;
-                }
-                ap_tcan->update();
                 break;
             }
 #if HAL_PICCOLO_CAN_ENABLE
