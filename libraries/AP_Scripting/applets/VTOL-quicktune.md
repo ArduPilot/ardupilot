@@ -86,6 +86,14 @@ changed at all when P is changed.
 This enables automatic setting of the PID filters based on the
 INS_GYRO_FILTER value. Set to zero to disable this feature.
 
+## QUIK_AUTO_SAVE
+
+This enables automatic saving of the tune if this number of seconds
+pass after the end of the tune without reverting the tune. Setting
+this to a non-zero value allows you to use quicktune with a 2-position
+switch, with the switch settings as low and mid positions. A zero
+value disables auto-save and you need to have a 3 position switch.
+
 # Operation
 
 First you should setup harmonic notch filtering using the guide in the
@@ -98,9 +106,10 @@ controllers microSD card, then set SCR_ENABLE to 1. Reboot, and
 refresh parameters. Then set QUIK_ENABLE to 1.
 
 You will then need to setup a 3 position switch on an available RC
-input channel for controlling the tune. If for example channel 6 is
-available with a 3 position switch then you should set RC6_OPTION=300
-to association the tuning control with that switch.
+input channel for controlling the tune (or 2 position if you set
+QUIK_AUTO_SAVE). If for example channel 6 is available with a 3
+position switch then you should set RC6_OPTION=300 to association the
+tuning control with that switch.
 
 You should then takeoff and put the vehicle into QLOITER mode (for
 quadplanes) or LOITER mode (for multicopters) and have it in a steady
