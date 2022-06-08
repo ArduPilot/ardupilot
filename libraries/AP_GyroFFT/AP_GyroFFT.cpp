@@ -327,7 +327,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
 
     // finally we are done
     _initialized = true;
-    update_parameters();
+    update_parameters(true);
     // start running FFTs
     if (start_update_thread()) {
         set_analysis_enabled(true);
@@ -477,10 +477,10 @@ bool AP_GyroFFT::start_analysis() {
 }
 
 // update calculated values of dynamic parameters - runs at 1Hz
-void AP_GyroFFT::update_parameters()
+void AP_GyroFFT::update_parameters(bool force)
 {
     // lock contention is very costly, so don't allow configuration updates while flying
-    if (!_initialized || AP::arming().is_armed()) {
+    if ((!_initialized || AP::arming().is_armed()) && !force) {
         return;
     }
 
