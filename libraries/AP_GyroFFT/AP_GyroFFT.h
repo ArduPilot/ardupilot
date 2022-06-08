@@ -56,7 +56,7 @@ public:
     // update the engine state - runs at 400Hz
     void update();
     // update calculated values of dynamic parameters - runs at 1Hz
-    void update_parameters();
+    void update_parameters() { update_parameters(false); }
     // thread for processing gyro data via FFT
     void update_thread();
     // start the update thread
@@ -211,6 +211,7 @@ private:
     uint16_t get_available_samples(uint8_t axis) {
         return _sample_mode == 0 ?_ins->get_raw_gyro_window(axis).available() : _downsampled_gyro_data[axis].available();
     }
+    void update_parameters(bool force);
     // semaphore for access to shared FFT data
     HAL_Semaphore _sem;
 
