@@ -88,7 +88,6 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AC_Avoidance',
     'AP_LandingGear',
     'AP_RobotisServo',
-    'AP_ToshibaCAN',
     'AP_NMEA_Output',
     'AP_Filesystem',
     'AP_ADSB',
