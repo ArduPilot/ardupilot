@@ -153,6 +153,7 @@ class generate_apj(Task.Task):
             signature = signer.sign(digest)
             img += len(signature).to_bytes(76 - len(signature), 'big')
             img += signature
+            img += b'\x46\x49\x58\x53' # magic
             # print(len(signature), len(len(signature).to_bytes(76 - len(signature), 'big')), '...............................')
             import binascii
 

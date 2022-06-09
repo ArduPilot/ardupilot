@@ -112,10 +112,10 @@ def options(opt):
         default=False,
         help='Configure for building a bootloader.')
 
-    g.add_option('--secure-key',
-        action='store',
-        default=None,
-        help='Configure for building a secure bootloader, needs public certificate to be included.')
+    # g.add_option('--secure-key',
+    #     action='store',
+    #     default=None,
+    #     help='Configure for building a secure bootloader, needs public certificate to be included.')
 
     g.add_option('--ds-publickey',
         action='store',
@@ -317,12 +317,7 @@ def configure(cfg):
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
-    cfg.env.SECURE_KEY = cfg.options.secure_key
-    if cfg.options.secure_key is not None:
-        cfg.env.SECURE = True
-    else:
-        cfg.env.SECURE = False        
-
+    cfg.env.SECURE = True
     cfg.env.OPTIONS = cfg.options.__dict__
 
     # Allow to differentiate our build from the make build

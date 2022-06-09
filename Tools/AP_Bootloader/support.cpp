@@ -112,6 +112,14 @@ uint32_t flash_func_read_word(uint32_t offset)
     return *(const uint32_t *)(flash_base + offset);
 }
 
+/*
+  read byte at offset relative to flash base
+ */
+void flash_func_read_bytes(uint32_t offset, uint8_t *data, uint32_t len)
+{
+    memcpy(data, (uint8_t*)flash_base + offset, len);
+}
+
 bool flash_func_write_word(uint32_t offset, uint32_t v)
 {
     return stm32_flash_write(uint32_t(flash_base+offset), &v, sizeof(v));

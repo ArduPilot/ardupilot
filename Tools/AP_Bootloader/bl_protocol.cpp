@@ -60,12 +60,18 @@
 #include <wolfssl/wolfcrypt/ecc.h>
 #include <wolfssl/wolfcrypt/asn_public.h>
 
+const uint8_t signature_magic[] = {0x46, 0x49, 0x58, 0x53};
+
 wc_Sha256 sha;
 uint8_t firstPage[128];
-uint8_t hash[32];
-uint32_t signature[19];
-const char* ecc_qx = ECC_QX;
-const char* ecc_qy = ECC_QX;
+
+struct ecc_raw {
+    uint8_t sig[8] = {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29};
+    char QX[65] = {};
+    char QY[65] = {};
+};
+const struct ecc_raw public_key __attribute__((section(".ecc_raw")));
+
 ecc_key publicKey;
 #endif
 
@@ -242,6 +248,11 @@ jump_to_app()
         if (app_base[i] == 0xffffffff) {
             return;
         }
+    }
+
+    // verify that the app is valid
+    if (!verify_image()) {
+        return;
     }
 
     /*
@@ -847,9 +858,11 @@ bootloader(unsigned timeout)
             // program the deferred first word
             if (first_words[0] != 0xffffffff) {
 #if defined(SECURE) && SECURE==1
+                uint8_t hash[32];
+                uint32_t signature[19];
                 //verify signature
                 wc_InitSha256(&sha);
-                for (unsigned p = 0; p < address - 76; p += 4) {
+                for (unsigned p = 0; p < address - 80; p += 4) {
                     uint32_t bytes;
 
                     if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
@@ -859,8 +872,13 @@ bootloader(unsigned timeout)
                     }
                     wc_Sha256Update(&sha, (uint8_t *)&bytes, sizeof(bytes));
                 }
+                uint8_t magic[4];
+                flash_func_read_bytes(address - 4, magic, sizeof(magic));
+                if (memcmp(magic, signature_magic, sizeof(magic)) != 0) {
+                    goto cmd_bad;
+                }
                 for (unsigned p = 0; p < 76; p += 4) {
-                    signature[p/4] = flash_func_read_word(p + address - 76);
+                    signature[p/4] = flash_func_read_word(p + address - 80);
                 }
                 uint8_t* sigbytes = (uint8_t*)signature;
                 uint8_t siglength = 0;
@@ -877,15 +895,18 @@ bootloader(unsigned timeout)
                 wc_Sha256Final(&sha, hash);
                 int err = wc_ecc_init(&publicKey);
                 if (err != MP_OKAY) {
+                    wc_ecc_free(&publicKey);
                     goto cmd_fail;
-                } 
-                err = wc_ecc_import_raw(&publicKey, ECC_QX, ECC_QY, NULL, "SECP256R1");
+                }
+                err = wc_ecc_import_raw(&publicKey, public_key.QX, public_key.QY, NULL, "SECP256R1");
                 if (err != MP_OKAY) {
+                    wc_ecc_free(&publicKey);
                     goto cmd_fail;
                 }
                 int ret, verified = 0;
                 ret = wc_ecc_verify_hash(sigbytes, siglength, hash, sizeof(hash), &verified, &publicKey);
                 if (verified == 0 || ret != 0) {
+                    wc_ecc_free(&publicKey);
                     goto cmd_fail;
                 }
 #endif
@@ -973,4 +994,67 @@ cmd_fail:
         failure_response();
         continue;
     }
+}
+
+
+bool verify_image() {
+    uint8_t magic[4];
+    uint32_t magic_offset = 0;
+    uint8_t hash[32];
+    uint32_t signature[19];
+
+    // find magic
+    for (uint32_t i = board_info.fw_size-4; i > 0; i --) {
+        flash_func_read_bytes(i, magic, 4);
+        if (memcmp(magic, signature_magic, 4) == 0) {
+            magic_offset = i;
+            break;
+        }
+    }
+    if (magic_offset == 0) {
+        return false;
+    }
+    // verify signature
+    wc_InitSha256(&sha);
+    for (unsigned p = 0; p < magic_offset - 76; p += 4) {
+        uint32_t bytes;
+        bytes = flash_func_read_word(p);
+        wc_Sha256Update(&sha, (uint8_t *)&bytes, sizeof(bytes));
+    }
+
+    for (unsigned p = 0; p < 76; p += 4) {
+        signature[p/4] = flash_func_read_word(p + magic_offset - 76);
+    }
+
+    uint8_t* sigbytes = (uint8_t*)signature;
+    uint8_t siglength = 0;
+    for (uint8_t i = 0; i < 6; i++) {
+        if(sigbytes[i] != 0) {
+            siglength = sigbytes[i];
+            sigbytes = &sigbytes[i+1];
+            break;
+        }
+    }
+    if ((siglength > 72) || (siglength == 0)) {
+        return false;
+    }
+    wc_Sha256Final(&sha, hash);
+
+    int err = wc_ecc_init(&publicKey);
+    if (err != MP_OKAY) {
+        wc_ecc_free(&publicKey);
+        return false;
+    }
+    err = wc_ecc_import_raw(&publicKey, public_key.QX, public_key.QY, NULL, "SECP256R1");
+    if (err != MP_OKAY) {
+        wc_ecc_free(&publicKey);
+        return false;
+    }
+    int ret, verified = 0;
+    ret = wc_ecc_verify_hash(sigbytes, siglength, hash, sizeof(hash), &verified, &publicKey);
+    if (verified == 0 || ret != 0) {
+        wc_ecc_free(&publicKey);
+        return false;
+    }
+    return true;
 }

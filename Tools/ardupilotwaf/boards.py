@@ -169,10 +169,10 @@ class Board:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
         
-        if not cfg.options.bootloader or cfg.options.secure_key is not None:
-            env.DEFINES.update(
-                ENABLE_HEAP = 1,
-            )
+        # if not cfg.options.bootloader or cfg.options.secure_key is not None:
+        env.DEFINES.update(
+            ENABLE_HEAP = 1,
+        )
 
         if cfg.options.enable_math_check_indexes:
             env.CXXFLAGS += ['-DMATH_CHECK_INDEXES']
@@ -740,23 +740,23 @@ class chibios(Board):
             env.ROMFS_FILES += [ ('server_pubkey.der', cfg.options.ds_publickey) ]
             env.CXXFLAGS += ['-DHAL_DIGITAL_SKY_RFM']
 
-        if cfg.options.secure_key is not None:
-            from Crypto.PublicKey import ECC
-            cfg.define('WOLFSSL_USER_SETTINGS', 1)
-            cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
-            cfg.define('SECURE', 1)
-            env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
-            env.GIT_SUBMODULES += ['wolfssl']
-            env.BUILD_WOLFSSL = True
-            cfg.load('wolfssl')
-            pubkey = ECC.import_key(open(cfg.options.secure_key, 'rb').read())
-            X = hex(pubkey._point.x).upper()
-            Y = hex(pubkey._point.y).upper()
-            env.DEFINES.update(ECC_QX='"'+X[2:]+'"')
-            env.DEFINES.update(ECC_QY='"'+Y[2:]+'"')
-            env.CFLAGS += [
-                '-DSECURE=1',
-            ]
+        # if cfg.options.secure_key is not None:
+        from Crypto.PublicKey import ECC
+        cfg.define('WOLFSSL_USER_SETTINGS', 1)
+        cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
+        cfg.define('SECURE', 1)
+        env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
+        env.GIT_SUBMODULES += ['wolfssl']
+        env.BUILD_WOLFSSL = True
+        cfg.load('wolfssl')
+        # pubkey = ECC.import_key(open(cfg.options.secure_key, 'rb').read())
+        # X = hex(pubkey._point.x).upper()
+        # Y = hex(pubkey._point.y).upper()
+        # env.DEFINES.update(ECC_QX='"'+X[2:]+'"')
+        # env.DEFINES.update(ECC_QY='"'+Y[2:]+'"')
+        env.CFLAGS += [
+            '-DSECURE=1',
+        ]
                
 
     def build(self, bld):

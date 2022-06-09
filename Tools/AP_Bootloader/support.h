@@ -22,6 +22,7 @@ void flash_init();
 
 void flash_program_option_bytes(uint32_t data);
 uint32_t flash_func_read_word(uint32_t offset);
+void flash_func_read_bytes(uint32_t offset, uint8_t *data, uint32_t len);
 bool flash_func_write_word(uint32_t offset, uint32_t v);
 bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n);
 uint32_t flash_func_sector_size(uint32_t sector);

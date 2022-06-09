@@ -1,6 +1,6 @@
 void jump_to_app(void);
 void bootloader(unsigned timeout);
-
+bool verify_image();
 /*****************************************************************************
  * Chip/board functions.
  */
