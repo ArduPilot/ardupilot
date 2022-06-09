@@ -103,7 +103,7 @@ float SlewLimiter::modifier(float sample, float dt)
 
     const float raw_slew_rate = 0.5f*(_max_pos_slew_rate + _max_neg_slew_rate);
 
-    // Apply a further reduction when the oldest exceedance event falls outside the window rewuired for the
+    // Apply a further reduction when the oldest exceedance event falls outside the window required for the
     // specified number of exceedance events. This prevents spikes due to control mode changed, etc causing
     // unwanted gain reduction and is only applied to the slew rate used for gain reduction
     float modifier_input = raw_slew_rate;
@@ -113,7 +113,7 @@ float SlewLimiter::modifier(float sample, float dt)
     }
 
     // Apply a filter to increases in slew rate only to reduce the effect of gusts and large controller
-    // setpoint changeschanges
+    // setpoint changes
     const float attack_alpha = fminf(2.0f * decay_alpha, 1.0f);
 
     _modifier_slew_rate = (1.0f - attack_alpha) * _modifier_slew_rate + attack_alpha * modifier_input;
