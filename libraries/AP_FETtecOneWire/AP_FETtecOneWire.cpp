@@ -119,15 +119,15 @@ void AP_FETtecOneWire::init()
         return; // no serial port available, so nothing to do here
     }
 
-    _motor_mask = _motor_mask_parameter; // take a copy that will not change after we leave this function
+    _motor_mask = uint32_t(_motor_mask_parameter); // take a copy that will not change after we leave this function
     _esc_count = __builtin_popcount(_motor_mask);
 #if HAL_WITH_ESC_TELEM
     // OneWire supports at most 15 ESCs, because of the 4 bit limitation
     // on the fast-throttle command.  But we are still limited to the
     // number of ESCs the telem library will collect data for.
-    if (_esc_count == 0 || _motor_mask >= (1 << MIN(15, ESC_TELEM_MAX_ESCS))) {
+    if (_esc_count == 0 || _motor_mask >= (1U << MIN(15,ESC_TELEM_MAX_ESCS))) {
 #else
-    if (_esc_count == 0 || _motor_mask >= (1 << NUM_SERVO_CHANNELS)) {
+    if (_esc_count == 0 || _motor_mask >= (1U << MIN(15,NUM_SERVO_CHANNELS))) {
 #endif
         _invalid_mask = true;
         return;
@@ -750,7 +750,7 @@ void AP_FETtecOneWire::configure_escs()
         case ESCState::WAITING_SET_FAST_COM_LENGTH_OK:
             return;
         case ESCState::RUNNING:
-            _running_mask |= (1 << esc.servo_ofs);
+            _running_mask |= (1U << esc.servo_ofs);
             break;
         }
     }
@@ -782,7 +782,7 @@ void AP_FETtecOneWire::update()
                 // telem OK
                 continue;
             }
-            _running_mask &= ~(1 << esc.servo_ofs);
+            _running_mask &= ~(1U << esc.servo_ofs);
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No telem from esc id=%u. Resetting it.", esc.id);
             //GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "unknown %u, invalid %u, too short %u, unexpected: %u, crc_err %u", _unknown_esc_message, _message_invalid_in_state_count, _period_too_short, esc.unexpected_telem, crc_rec_err_cnt);
             esc.set_state(ESCState::WANT_SEND_OK_TO_GET_RUNNING_SW_TYPE);
