@@ -155,11 +155,48 @@ float AP_RSSI::read_receiver_rssi()
 }
 
 // Only valid for RECEIVER type RSSI selections. Returns -1 if protocol does not provide link quality report.
-float AP_RSSI::read_receiver_link_quality()
+int16_t AP_RSSI::read_receiver_link_quality()
 {
     if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
         return RC_Channels::get_receiver_link_quality();
     }
+    // should never get to here
+    return -1;
+}
+
+int8_t AP_RSSI::read_receiver_rfmode()
+{
+    if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
+        return RC_Channels::get_receiver_rfmode();
+    }
+    // should never get to here
+    return -1;
+}
+
+int16_t AP_RSSI::read_receiver_tx_power()
+{
+    if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
+        return RC_Channels::get_receiver_tx_power();
+    }
+    // should never get to here
+    return -1;
+}
+
+int8_t AP_RSSI::read_receiver_snr()
+{
+    if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
+        return RC_Channels::get_receiver_snr();
+    }
+    // should never get to here
+    return -1;
+}
+
+int8_t AP_RSSI::read_receiver_active_antenna()
+{
+    if (RssiType(rssi_type.get()) == RssiType::RECEIVER) {
+        return RC_Channels::get_receiver_active_antenna();
+    }
+    // should never get to here
     return -1;
 }
 

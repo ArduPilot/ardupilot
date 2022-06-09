@@ -99,6 +99,25 @@ int16_t RC_Channels::get_receiver_link_quality(void)
 {
     return hal.rcin->get_rx_link_quality();
 }
+int8_t RC_Channels::get_receiver_rfmode(void)
+{
+    return hal.rcin->get_rfmode();
+}
+
+int16_t RC_Channels::get_receiver_tx_power(void)
+{
+    return hal.rcin->get_tx_power();
+}
+
+int8_t RC_Channels::get_receiver_snr(void)
+{
+    return hal.rcin->get_snr();
+}
+
+int8_t RC_Channels::get_receiver_active_antenna(void)
+{
+    return hal.rcin->get_active_antenna();
+}
 void RC_Channels::clear_overrides(void)
 {
     RC_Channels &_rc = rc();

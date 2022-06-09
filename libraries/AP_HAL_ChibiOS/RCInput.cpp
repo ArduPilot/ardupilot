@@ -190,6 +190,10 @@ void RCInput::_timer_tick(void)
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
         _rx_link_quality = rcprot.get_rx_link_quality();
+        _rfmode = rcprot.get_rfmode();
+        _tx_power = rcprot.get_tx_power();
+        _snr = rcprot.get_snr();
+        _active_antenna = rcprot.get_active_antenna();
 #ifndef HAL_NO_UARTDRIVER
         rc_protocol = rcprot.protocol_name();
         source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;

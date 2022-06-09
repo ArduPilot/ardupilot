@@ -73,6 +73,10 @@ public:
         uint8_t remaining; // ( percent )
     };
 
+    struct PACKED VarioSensorFrame {
+        int16_t vario_speed; // ( m/s * 100 )
+    };
+
     struct PACKED VTXFrame {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
@@ -211,6 +215,7 @@ public:
         GPSFrame gps;
         HeartbeatFrame heartbeat;
         BatteryFrame battery;
+        VarioSensorFrame vario;
         VTXFrame vtx;
         AttitudeFrame attitude;
         FlightModeFrame flightmode;
@@ -258,6 +263,7 @@ private:
         ATTITUDE,
         VTX_PARAMETERS,
         BATTERY,
+        VARIO,
         GPS,
         FLIGHT_MODE,
         PASSTHROUGH,
@@ -273,9 +279,12 @@ private:
     void setup_custom_telemetry();
     void update_custom_telemetry_rates(const AP_RCProtocol_CRSF::RFMode rf_mode);
 
+    float get_vspeed_ms(void);
+
     void calc_parameter_ping();
     void calc_heartbeat();
     void calc_battery();
+    void calc_vario();
     void calc_gps();
     void calc_attitude();
     void calc_flight_mode();

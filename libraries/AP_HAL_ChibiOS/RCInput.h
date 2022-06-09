@@ -55,6 +55,18 @@ public:
     int16_t get_rx_link_quality(void) override {
         return _rx_link_quality;
     }
+    int8_t get_rfmode(void) override {
+        return _rfmode;
+    }
+    int16_t get_tx_power(void) override {
+        return _tx_power;
+    }
+    int8_t get_snr(void) override {
+        return _snr;
+    }
+    int8_t get_active_antenna(void) override {
+        return _active_antenna;
+    }
     const char *protocol() const override { return last_protocol; }
 
     void _timer_tick(void);
@@ -68,6 +80,10 @@ private:
     Semaphore rcin_mutex;
     int16_t _rssi = -1;
     int16_t _rx_link_quality = -1;
+    int8_t _rfmode = -1; // RF_MODE_UNKNOWN from AP_RCProtocol_CRSF::RFMode
+    int16_t _tx_power = -1;
+    int8_t _snr = INT8_MIN;
+    int8_t _active_antenna = -1;
     uint32_t _rcin_timestamp_last_signal;
     uint32_t _rcin_last_iomcu_ms;
     bool _init;

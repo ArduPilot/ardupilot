@@ -35,6 +35,10 @@ public:
     /* get receiver based RSSI if available. -1 for unknown, 0 for no link, 255 for maximum link */
     virtual int16_t get_rssi(void) { return -1; }
     virtual int16_t get_rx_link_quality(void) { return -1; }
+    virtual int8_t get_rfmode(void) { return -1; } // RF_MODE_UNKNOWN from AP_RCProtocol_CRSF::RFMode
+    virtual int16_t get_tx_power(void) { return -1; } // 
+    virtual int8_t get_snr(void) { return INT8_MIN; } // 
+    virtual int8_t get_active_antenna(void) { return -1; } // 
     /* Return string describing method RC input protocol */
     virtual const char *protocol() const = 0;
 

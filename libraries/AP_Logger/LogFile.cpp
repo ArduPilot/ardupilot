@@ -254,7 +254,11 @@ void AP_Logger::Write_RSSI()
         LOG_PACKET_HEADER_INIT(LOG_RSSI_MSG),
         time_us       : AP_HAL::micros64(),
         RXRSSI        : rssi->read_receiver_rssi(),
-        RXLQ          : rssi->read_receiver_link_quality()
+        RXLQ          : rssi->read_receiver_link_quality(),
+        RFMODE        : rssi->read_receiver_rfmode(),
+        TXPOWER       : rssi->read_receiver_tx_power(),
+        SNR           : rssi->read_receiver_snr(),
+        ANTENNA       : rssi->read_receiver_active_antenna()
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

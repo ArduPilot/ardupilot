@@ -1021,7 +1021,71 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Description: Vertical position on screen
     // @Range: 0 15
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
+#ifdef RSSI_EXTENSIONS_ENABLED
+    // @Param: TX_PWR_EN
+    // @DisplayName: CRSFPWR_EN
+    // @Description: Displays the TX power when using the CRSF RC protocol
+    // @Values: 0:Disabled,1:Enabled
 
+    // @Param: TX_PWR_X
+    // @DisplayName: CRSFPWR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: TX_PWR_Y
+    // @DisplayName: CRSFPWR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(tx_power, "TX_PWR", 3, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RX_SNR_EN
+    // @DisplayName: CRSFSNR_EN
+    // @Description: Displays RC signal to noise ratio in dB for CRSF
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RX_SNR_X
+    // @DisplayName: CRSFSNR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RX_SNR_Y
+    // @DisplayName: CRSFSNR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(rx_snr, "RX_SNR", 4, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RX_ANT_EN
+    // @DisplayName: CRSFANT_EN
+    // @Description: Displays the current active antenna for CRSF
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RX_ANT_X
+    // @DisplayName: CRSFANT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RX_ANT_Y
+    // @DisplayName: CRSFANT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(rx_antenna, "RX_ANT", 5, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: RFMODE_EN
+    // @DisplayName: CRSFANT_EN
+    // @Description: Displays the current RF mode/packet rate
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RFMODE_X
+    // @DisplayName: CRSFANT_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RFMODE_Y
+    // @DisplayName: CRSFANT_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(rf_mode, "RFMODE", 6, AP_OSD_Screen, AP_OSD_Setting),
+#endif
     AP_GROUPEND
 };
 
@@ -1335,6 +1399,50 @@ void AP_OSD_Screen::draw_link_quality(uint8_t x, uint8_t y)
         }
     }
 }
+
+#ifdef RSSI_EXTENSIONS_ENABLED
+void AP_OSD_Screen::draw_rf_mode(uint8_t x, uint8_t y)
+{
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    if (ap_rssi) {
+        const int8_t rfmodev = ap_rssi->read_receiver_rfmode();
+        backend->write(x, y, false, "%d", rfmodev);        
+    }
+}
+
+void AP_OSD_Screen::draw_tx_power(uint8_t x, uint8_t y)
+{
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    const int16_t tx_powerv = ap_rssi->read_receiver_tx_power();
+    if (tx_powerv > 0) {
+        backend->write(x, y, false, "%4d", tx_powerv);
+    } else {
+        backend->write(x, y, false, "----");
+    }
+}
+
+void AP_OSD_Screen::draw_rx_snr(uint8_t x, uint8_t y)
+{
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    const int8_t snrv = ap_rssi->read_receiver_snr();
+    if (snrv == INT8_MIN) {
+        backend->write(x, y, false, "---");
+    } else {
+        backend->write(x, y, false, "%3d",snrv);
+    }
+}
+
+void AP_OSD_Screen::draw_rx_antenna(uint8_t x, uint8_t y)
+{
+    AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
+    const int8_t active_antennav = ap_rssi->read_receiver_active_antenna();
+    if (active_antennav < 0) {
+        backend->write(x, y, false, "-");
+    } else {
+        backend->write(x, y, false, "%d", active_antennav);
+    }
+}
+#endif
 
 void AP_OSD_Screen::draw_current(uint8_t instance, uint8_t x, uint8_t y)
 {
@@ -2186,6 +2294,12 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(restvolt);
     DRAW_SETTING(rssi);
     DRAW_SETTING(link_quality);
+#ifdef RSSI_EXTENSIONS_ENABLED
+    DRAW_SETTING(rf_mode);
+    DRAW_SETTING(tx_power);
+    DRAW_SETTING(rx_snr);
+    DRAW_SETTING(rx_antenna);
+#endif
     DRAW_SETTING(current);
     DRAW_SETTING(batused);
     DRAW_SETTING(bat2used);

@@ -39,6 +39,10 @@
 #define OSD_PARAM_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
+#ifndef RSSI_EXTENSIONS_ENABLED
+#define RSSI_EXTENSIONS_ENABLED (BOARD_FLASH_SIZE>1024)
+#endif
+
 #ifndef HAL_OSD_SIDEBAR_ENABLE
 #define HAL_OSD_SIDEBAR_ENABLE !HAL_MINIMIZE_FEATURES
 #endif
@@ -149,6 +153,12 @@ private:
     AP_OSD_Setting bat_volt{true, 24, 1};
     AP_OSD_Setting rssi{true, 1, 1};
     AP_OSD_Setting link_quality{false,1,1};
+#ifdef RSSI_EXTENSIONS_ENABLED
+    AP_OSD_Setting rf_mode{false, 1, 1};
+    AP_OSD_Setting tx_power{false, 1, 1};
+    AP_OSD_Setting rx_snr{false, 1, 1};
+    AP_OSD_Setting rx_antenna{false, 1, 1};
+#endif
     AP_OSD_Setting restvolt{false, 24, 2};
     AP_OSD_Setting avgcellvolt{false, 24, 3};
     AP_OSD_Setting current{true, 25, 2};
@@ -218,6 +228,12 @@ private:
     void draw_restvolt(uint8_t x, uint8_t y);
     void draw_rssi(uint8_t x, uint8_t y);
     void draw_link_quality(uint8_t x, uint8_t y);
+#ifdef RSSI_EXTENSIONS_ENABLED
+    void draw_rf_mode(uint8_t x, uint8_t y);
+    void draw_tx_power(uint8_t x, uint8_t y);
+    void draw_rx_snr(uint8_t x, uint8_t y);
+    void draw_rx_antenna(uint8_t x, uint8_t y);
+#endif
     void draw_current(uint8_t x, uint8_t y);
     void draw_current(uint8_t instance, uint8_t x, uint8_t y);
     void draw_batused(uint8_t x, uint8_t y);
