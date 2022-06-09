@@ -134,11 +134,6 @@ private:
     // prepare and send commands to generator:
     void command_generator();
 
-    // threshold temperature (degC) for when the mavlink
-    // overtemperature bit should be set.  Might want a parameter for
-    // this:
-    static constexpr float temp_for_overtemp_warning = 190;
-
     // log data to onboard storage:
     void Log_Write();
     uint32_t last_logged_reading_ms;
@@ -156,6 +151,7 @@ private:
     AP_Float idle_throttle;
     AP_Float temp_required_for_run;
     AP_Float temp_required_for_idle;
+    AP_Float temp_for_overtemp_warning;
 
     // update runtime and maintenance-required time
     void update_stats();

@@ -49,6 +49,13 @@ const AP_Param::GroupInfo AP_Generator_Loweheiser::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("IDLE_TEMP", 15, AP_Generator_Loweheiser, temp_required_for_idle, 110),
 
+    // @Param: OVER_TEMP
+    // @DisplayName: Cylinder Head Over Temperature Warning Level
+    // @Description: threshold temperature for the cylinder head above which the mavlink over temperature message gets sent
+    // @Units: degC
+    // @User: Advanced
+    AP_GROUPINFO("OVER_TEMP", 16, AP_Generator_Loweheiser, temp_for_overtemp_warning, 205),
+
     // Param indexes must be between 10 and 19 to avoid conflict with other generator param tables loaded by pointer
 
     AP_GROUPEND
