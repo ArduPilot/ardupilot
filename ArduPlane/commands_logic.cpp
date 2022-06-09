@@ -201,6 +201,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         do_nav_script_time(cmd);
         break;
 #endif
+
+    case MAV_CMD_NAV_DELAY:
+        do_nav_delay(cmd);
+        break;
         
     default:
         // unable to use the command, allow the vehicle to try the next command
@@ -301,7 +305,10 @@ bool Plane::verify_command(const AP_Mission::Mission_Command& cmd)        // Ret
     case MAV_CMD_NAV_SCRIPT_TIME:
         return verify_nav_script_time(cmd);
 #endif
-        
+
+     case MAV_CMD_NAV_DELAY:
+         return verify_nav_delay(cmd);
+
     // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
@@ -518,6 +525,21 @@ void Plane::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 
     // init to 0, set to 1 when altitude is reached
     condition_value = 0;
+}
+
+// do_nav_delay - Delay the next navigation command
+void Plane::do_nav_delay(const AP_Mission::Mission_Command& cmd)
+{
+    nav_delay.time_start_ms = millis();
+
+    if (cmd.content.nav_delay.seconds > 0) {
+        // relative delay
+        nav_delay.time_max_ms = cmd.content.nav_delay.seconds * 1000; // convert seconds to milliseconds
+    } else {
+        // absolute delay to utc time
+        nav_delay.time_max_ms = AP::rtc().get_time_utc(cmd.content.nav_delay.hour_utc, cmd.content.nav_delay.min_utc, cmd.content.nav_delay.sec_utc, 0);
+    }
+    gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay.time_max_ms/1000));
 }
 
 /********************************************************************************/
@@ -849,6 +871,20 @@ bool Plane::verify_altitude_wait(const AP_Mission::Mission_Command &cmd)
         // idle_wiggle_stage is updated in set_servos_idle()
     }
 
+    return false;
+}
+
+// verify_nav_delay - check if we have waited long enough
+bool Plane::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
+{
+    if (hal.util->get_soft_armed()) {
+        // don't delay while armed, we need a nav controller running
+        return true;
+    }
+    if (millis() - nav_delay.time_start_ms > nav_delay.time_max_ms) {
+        nav_delay.time_max_ms = 0;
+        return true;
+    }
     return false;
 }
 
