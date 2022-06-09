@@ -65,12 +65,14 @@ const uint8_t signature_magic[] = {0x46, 0x49, 0x58, 0x53};
 wc_Sha256 sha;
 uint8_t firstPage[128];
 
-struct ecc_raw {
+struct __attribute__((__packed__)) secure_data {
     uint8_t sig[8] = {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29};
     char QX[65] = {};
     char QY[65] = {};
+    char sysid[12] = {};
 };
-const struct ecc_raw public_key __attribute__((section(".ecc_raw")));
+
+const struct secure_data public_key __attribute__((section(".ecc_raw")));
 
 ecc_key publicKey;
 #endif
@@ -872,6 +874,9 @@ bootloader(unsigned timeout)
                     }
                     wc_Sha256Update(&sha, (uint8_t *)&bytes, sizeof(bytes));
                 }
+                if (memcmp((uint8_t *)UDID_START, public_key.sysid, sizeof(public_key.sysid)) != 0) {
+                    goto cmd_bad;
+                }
                 uint8_t magic[4];
                 flash_func_read_bytes(address - 4, magic, sizeof(magic));
                 if (memcmp(magic, signature_magic, sizeof(magic)) != 0) {
@@ -995,7 +1000,6 @@ cmd_fail:
         continue;
     }
 }
-
 
 bool verify_image() {
     uint8_t magic[4];
