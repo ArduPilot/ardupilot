@@ -167,6 +167,7 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
             return true;
         // any of these are considered "skippable" when determining if
         // we "start with a takeoff command"
+        case MAV_CMD_DO_AUX_FUNCTION:
         case MAV_CMD_NAV_DELAY:
             continue;
         default:
@@ -338,6 +339,8 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     // check for landing related commands and set in_landing_sequence flag
     if (is_landing_type_cmd(cmd.id) || cmd.id == MAV_CMD_DO_LAND_START) {
         set_in_landing_sequence_flag(true);
+    } else if (is_takeoff_type_cmd(cmd.id)) {
+        set_in_landing_sequence_flag(false);
     }
 
     gcs().send_text(MAV_SEVERITY_INFO, "Mission: %u %s", cmd.index, cmd.type());
@@ -2312,6 +2315,18 @@ bool AP_Mission::is_landing_type_cmd(uint16_t id) const
     case MAV_CMD_NAV_LAND:
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_DO_PARACHUTE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// check if command is a takeoff type command.
+bool AP_Mission::is_takeoff_type_cmd(uint16_t id) const
+{
+    switch (id) {
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
         return true;
     default:
         return false;
