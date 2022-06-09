@@ -3524,6 +3524,9 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 
 void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg) const
 {
+    if (msg.compid == MAV_COMP_ID_GIMBAL) {
+        return; // Ignore heartbeats from the MAVLink gimbal
+    }
     // if the heartbeat is from our GCS then we don't failsafe for
     // now...
     if (msg.sysid == sysid_my_gcs()) {
