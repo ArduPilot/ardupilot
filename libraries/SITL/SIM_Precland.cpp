@@ -98,6 +98,13 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DIST_LMT", 8, SIM_Precland, _dist_limit, 10),
 
+    // @Param: ORIENT
+    // @DisplayName: Precland device orientation
+    // @Description: Precland device orientation vector
+    // @Values: 0:Front, 4:Back, 24:Up
+    // @User: Advanced
+    AP_GROUPINFO("ORIENT", 9, SIM_Precland, _orient, ROTATION_PITCH_90),
+
     AP_GROUPEND
 };
 
@@ -112,24 +119,39 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
         return;
     }
 
-    const float distance_z = -position.z;
-    const float origin_height_m = _origin_height * 0.01f;
-    if (distance_z > _alt_limit + origin_height_m) {
-        _healthy = false;
-        return;
-    }
-
     const Location origin_center(static_cast<int32_t>(_origin_lat * 1.0e7f),
             static_cast<int32_t>(_origin_lon * 1.0e7f),
             static_cast<int32_t>(_origin_height),
             Location::AltFrame::ABOVE_HOME);
-    Vector2f center;
-    if (!origin_center.get_vector_xy_from_origin_NE(center)) {
+    Vector3f centerf;
+    if (!origin_center.get_vector_from_origin_NEU(centerf)) {
         _healthy = false;
         return;
     }
-    center = center * 0.01f;  // cm to m
-    _over_precland_base = origin_center.get_distance(loc) <= 2.0f;
+    centerf = centerf * 0.01f;        // cm to m
+    centerf.z = -centerf.z;           // neu to ned
+    Vector3d center(centerf.x, centerf.y, centerf.z);   // convert to make the further vector operations easy
+
+    // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
+    Vector3d axis{1, 0, 0};
+    axis.rotate((Rotation)_orient.get());   // unit vector in direction of axis of cone or cylinder
+    Vector3d position_wrt_origin = position - center;  // position of vehicle with respect to preland device origin
+    
+    // longitudinal distance of vehicle from the precland device
+    // this is the distance of vehicle from the plane which is passing through precland device origin and perpendicular to axis of cone/cylinder
+    // this plane is the ground plane when the axis has PITCH_90 rotation
+    const float longitudinal_dist = position_wrt_origin.projected(axis).length();
+
+    // lateral distance of vehicle from the precland device
+    // this is the perpendicular distance of vehicle from the axis of cone/cylinder
+    const float lateral_distance = safe_sqrt(MAX(0, position_wrt_origin.length_squared() - longitudinal_dist*longitudinal_dist));
+
+    // return false if vehicle if vehicle is  longitudinally too far away from precland device
+    // for PITCH_90 orientation, longitudinal distance = alt of vehicle - origin_height (in m)
+    if (longitudinal_dist > _alt_limit) {
+        _healthy = false;
+        return;
+    }
 
     const uint32_t now = AP_HAL::millis();
     if (now - _last_update_ms < 1000.0f * (1.0f / _rate)) {
@@ -139,15 +161,17 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
 
     switch (_type) {
         case PRECLAND_TYPE_CONE: {
-            const float in_radius = distance_z * _dist_limit / (_alt_limit + origin_height_m);
-            if (norm(position.x - center.x, position.y - center.y) > in_radius) {
+            // lateral_limit is the limit of how far the vehicle can laterally be from precland_device
+            // in case of cone, this limit increases gradually as the vehicle moves longitudinally far away from precland device
+            const float lateral_limit = longitudinal_dist * _dist_limit / _alt_limit;
+            if (lateral_distance > lateral_limit) {
                 _healthy = false;
                 return;
             }
             break;
         }
         case PRECLAND_TYPE_SPHERE: {
-            if (norm(position.x - center.x, position.y - center.y, distance_z - _origin_height) > (_alt_limit + origin_height_m)) {
+            if (position_wrt_origin.length() > _dist_limit) {
                 _healthy = false;
                 return;
             }
@@ -155,14 +179,14 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
         }
         default:
         case PRECLAND_TYPE_CYLINDER: {
-            if (norm(position.x - center.x, position.y - center.y) > _dist_limit) {
+            if (lateral_distance > _dist_limit) {
                 _healthy = false;
                 return;
             }
             break;
         }
     }
-    _target_pos = position - Vector3d(center.x, center.y, origin_height_m);
+    _target_pos = position_wrt_origin;
     _healthy = true;
 }
 
