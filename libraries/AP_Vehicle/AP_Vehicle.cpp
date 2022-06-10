@@ -396,6 +396,27 @@ bool AP_Vehicle::is_crashed() const
     return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
 }
 
+// update the harmonic notch filter for throttle based notch
+void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+    const float ref_freq = notch.params.center_freq_hz();
+    const float ref = notch.params.reference();
+    const float min_ratio = notch.params.freq_min_ratio();
+
+    const AP_Motors* motors = AP::motors();
+    if (motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
+        notch.set_inactive(true);
+    } else {
+        notch.set_inactive(false);
+    }
+    const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
+    float throttle_freq = ref_freq * MAX(min_ratio, sqrtf(motors_throttle / ref));
+
+    notch.update_freq_hz(throttle_freq);
+#endif
+}
+
 // update the harmonic notch filter center frequency dynamically
 void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 {
@@ -410,14 +431,10 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
         return;
     }
 
-    const AP_Motors* motors = AP::motors();
-    const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
-    const float throttle_freq = ref_freq * MAX(1.0f, sqrtf(motors_throttle / ref));
-
     switch (notch.params.tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
-            notch.update_freq_hz(throttle_freq);
+            update_throttle_notch(notch);
             break;
 
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
@@ -446,7 +463,7 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
                 if (num_notches > 0) {
                     notch.update_frequencies_hz(num_notches, notches);
                 } else {    // throttle fallback
-                    notch.update_freq_hz(throttle_freq);
+                    update_throttle_notch(notch);
                 }
             } else {
                 notch.update_freq_hz(MAX(ref_freq, AP::esc_telem().get_average_motor_frequency_hz() * ref));

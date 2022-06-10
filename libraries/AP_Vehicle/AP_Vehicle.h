@@ -250,9 +250,6 @@ public:
 
 #endif // AP_SCRIPTING_ENABLED
 
-    // update the harmonic notch
-    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
-
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
 
@@ -415,6 +412,12 @@ private:
     // if there's been a watchdog reset, notify the world via a
     // statustext:
     void send_watchdog_reset_statustext();
+
+    // update the harmonic notch for throttle based notch
+    void update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch);
+
+    // update the harmonic notch
+    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
 
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
