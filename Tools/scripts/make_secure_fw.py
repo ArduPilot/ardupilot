@@ -32,3 +32,6 @@ if len(sys.argv) == 3:
     f = open(apj_file, "w")
     f.write(json.dumps(d, indent=4))
     f.close()
+else:
+    print("Usage: make_secure_fw.py <apj_file> <key_file>")
+    sys.exit(1)

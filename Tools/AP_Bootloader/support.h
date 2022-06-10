@@ -30,6 +30,7 @@ bool flash_func_erase_sector(uint32_t sector);
 uint32_t flash_func_read_otp(uint32_t idx);
 uint32_t flash_func_read_sn(uint32_t idx);
 void flash_set_keep_unlocked(bool);
+void stop_dfu_boot(void);
 void lock_bl_port(void);
 
 bool flash_write_flush(void);

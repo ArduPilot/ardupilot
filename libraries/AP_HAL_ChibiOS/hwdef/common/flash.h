@@ -31,6 +31,8 @@ void stm32_flash_enable_rdp(void);
 void stm32_flash_disable_rdp(void);
 bool stm32_flash_is_rdp_enabled(void);
 void stm32_flash_opt_confirm(void);
+void stm32_flash_stop_dfu_boot(void);
+void stm32_flash_start_dfu_boot(void);
 #ifndef HAL_BOOTLOADER_BUILD
 bool stm32_flash_recent_erase(void);
 #endif

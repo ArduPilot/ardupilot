@@ -226,6 +226,12 @@ bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords)
     return true;
 }
 
+
+void stop_dfu_boot(void)
+{
+    return stm32_flash_stop_dfu_boot();
+}
+
 uint32_t get_mcu_id(void)
 {
     return *(uint32_t *)DBGMCU_BASE;

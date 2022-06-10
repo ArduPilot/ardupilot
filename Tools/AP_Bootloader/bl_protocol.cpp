@@ -1048,6 +1048,9 @@ bool verify_image() {
         return false;
     }
 
+    // self verification passed, we can disable dfu now
+    stop_dfu_boot();
+
     // Do firmware verification
     // find magic
     for (uint32_t i = board_info.fw_size-4; i > 0; i --) {

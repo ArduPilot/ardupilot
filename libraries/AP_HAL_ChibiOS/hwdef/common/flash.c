@@ -795,6 +795,28 @@ void stm32_flash_disable_rdp()
 #endif
 }
 
+void stm32_flash_stop_dfu_boot()
+{
+    if ((FLASH->BOOT_CUR & FLASH_BOOT_ADD0) == 0x0800) {
+        return;
+    }
+    // set BOOTADDR0 to 0x08000000
+    stm32_flash_opt_unlock();
+    FLASH->BOOT_PRG = (FLASH->BOOT_CUR & ~FLASH_BOOT_ADD0) | 0x0800;
+    stm32_flash_opt_confirm();
+}
+
+void stm32_flash_start_dfu_boot()
+{
+    if ((FLASH->BOOT_CUR & FLASH_BOOT_ADD0) == 0x1FF0) {
+        return;
+    }
+    // set BOOTADDR0 to 0x1FF00000
+    stm32_flash_opt_unlock();
+    FLASH->BOOT_PRG = (FLASH->BOOT_CUR & ~FLASH_BOOT_ADD0) | 0x1FF0;
+    stm32_flash_opt_confirm();
+}
+
 #ifndef HAL_BOOTLOADER_BUILD
 /*
   return true if we had a recent erase
