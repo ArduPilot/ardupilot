@@ -23,7 +23,7 @@ if len(sys.argv) == 3:
     img += len(signature).to_bytes(76 - len(signature), 'big')
     img += signature
     img += b'\x46\x49\x58\x53' # magic
-    print(len(signature), len(len(signature).to_bytes(76 - len(signature), 'big')), '...............................')
+    print(len(signature), len(len(signature).to_bytes(76 - len(signature), 'big')))
 
     d["image"] = base64.b64encode(zlib.compress(img,9)).decode('utf-8')
     d["image_size"] = len(img)

@@ -1001,12 +1001,54 @@ cmd_fail:
     }
 }
 
+extern uint32_t __signature_base__, __signature_end__;
+
 bool verify_image() {
     uint8_t magic[4];
     uint32_t magic_offset = 0;
     uint8_t hash[32];
     uint32_t signature[19];
 
+    // do self verification
+    // do sha hash
+    wc_InitSha256(&sha);
+    for (uint8_t *p = (uint8_t*)0x8000000ULL; p < (uint8_t*)&__signature_base__; p += 4) {
+        wc_Sha256Update(&sha, (uint8_t *)p, sizeof(uint32_t));
+    }
+
+    uint8_t* sigbytes = (uint8_t*)&__signature_base__;
+    uint8_t siglength = 0;
+    for (uint8_t i = 0; i < 6; i++) {
+        if(sigbytes[i] != 0) {
+            siglength = sigbytes[i];
+            sigbytes = &sigbytes[i+1];
+            break;
+        }
+    }
+    if ((siglength > 72) || (siglength == 0)) {
+        return false;
+    }
+    wc_Sha256Final(&sha, hash);
+
+    // do ecc verify
+    int err = wc_ecc_init(&publicKey);
+    if (err != MP_OKAY) {
+        wc_ecc_free(&publicKey);
+        return false;
+    }
+    err = wc_ecc_import_raw(&publicKey, public_key.QX, public_key.QY, NULL, "SECP256R1");
+    if (err != MP_OKAY) {
+        wc_ecc_free(&publicKey);
+        return false;
+    }
+    int ret, verified = 0;
+    ret = wc_ecc_verify_hash(sigbytes, siglength, hash, sizeof(hash), &verified, &publicKey);
+    if (verified == 0 || ret != 0) {
+        wc_ecc_free(&publicKey);
+        return false;
+    }
+
+    // Do firmware verification
     // find magic
     for (uint32_t i = board_info.fw_size-4; i > 0; i --) {
         flash_func_read_bytes(i, magic, 4);
@@ -1030,8 +1072,8 @@ bool verify_image() {
         signature[p/4] = flash_func_read_word(p + magic_offset - 76);
     }
 
-    uint8_t* sigbytes = (uint8_t*)signature;
-    uint8_t siglength = 0;
+    sigbytes = (uint8_t*)signature;
+    siglength = 0;
     for (uint8_t i = 0; i < 6; i++) {
         if(sigbytes[i] != 0) {
             siglength = sigbytes[i];
@@ -1044,7 +1086,7 @@ bool verify_image() {
     }
     wc_Sha256Final(&sha, hash);
 
-    int err = wc_ecc_init(&publicKey);
+    err = wc_ecc_init(&publicKey);
     if (err != MP_OKAY) {
         wc_ecc_free(&publicKey);
         return false;
@@ -1054,7 +1096,7 @@ bool verify_image() {
         wc_ecc_free(&publicKey);
         return false;
     }
-    int ret, verified = 0;
+    verified = 0;
     ret = wc_ecc_verify_hash(sigbytes, siglength, hash, sizeof(hash), &verified, &publicKey);
     if (verified == 0 || ret != 0) {
         wc_ecc_free(&publicKey);

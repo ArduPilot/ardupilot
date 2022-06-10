@@ -193,4 +193,11 @@ SECTIONS
         . = ORIGIN(HEAP_RAM) + LENGTH(HEAP_RAM);
         __heap_end__ = .;
     } > HEAP_RAM
+
+    .signature (NOLOAD) :
+    {
+        __signature_base__ = .;
+        . = ORIGIN(flash) + LENGTH(flash);
+        __signature_end__ = .;
+    } > flash
 }
