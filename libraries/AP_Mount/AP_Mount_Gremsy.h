@@ -54,6 +54,9 @@ private:
     // returns true on success, false on failure to start sending
     bool start_sending_attitude_to_gimbal();
 
+    // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
+    void send_gimbal_device_retract() const;
+
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
     // earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
     void send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const;
@@ -61,9 +64,6 @@ private:
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
     // earth_frame should be true if yaw_rad target is an earth frame angle, false if body_frame
     void send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const;
-
-    // turn motors on/off
-    void enable_motors(bool on) const;
 
     // internal variables
     bool _found_gimbal;             // true once a MAVLink enabled gimbal has been found

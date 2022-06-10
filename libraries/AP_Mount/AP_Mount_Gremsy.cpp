@@ -28,7 +28,7 @@ void AP_Mount_Gremsy::update()
         // move mount to a "retracted" position.  We disable motors
         case MAV_MOUNT_MODE_RETRACT:
             // handled below
-            enable_motors(false);
+            send_gimbal_device_retract();
             break;
 
         // move mount to a neutral position, typically pointing forward
@@ -237,6 +237,24 @@ bool AP_Mount_Gremsy::start_sending_attitude_to_gimbal()
     return (res == MAV_RESULT_ACCEPTED);
 }
 
+// send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
+void AP_Mount_Gremsy::send_gimbal_device_retract() const
+{
+    // check we have space for the message
+    if (!HAVE_PAYLOAD_SPACE(_chan, GIMBAL_DEVICE_SET_ATTITUDE)) {
+        return;
+    }
+
+    // send command_long command containing a do_mount_control command
+    const float quat_array[4] = {NAN, NAN, NAN, NAN};
+    mavlink_msg_gimbal_device_set_attitude_send(_chan,
+                                                _sysid,     // target system
+                                                _compid,    // target component
+                                                GIMBAL_DEVICE_FLAGS_RETRACT,    // gimbal device flags
+                                                quat_array, // attitude as a quaternion
+                                                0, 0, 0);   // angular velocities
+}
+
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
 // earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
 void AP_Mount_Gremsy::send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const
@@ -288,24 +306,6 @@ void AP_Mount_Gremsy::send_gimbal_device_set_attitude(float roll_rad, float pitc
                                                 flags,      // gimbal device flags
                                                 quat_array, // attitude as a quaternion
                                                 NAN, NAN, NAN);   // angular velocities
-}
-
-// turn motors on/off
-void AP_Mount_Gremsy::enable_motors(bool on) const
-{
-    // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(_chan, COMMAND_LONG)) {
-        return;
-    }
-
-    // send COMPMAND_LONG with MAV_CMD_USER_1 command with Param7 populated to turn on/off motor
-    mavlink_msg_command_long_send(_chan,
-                                  _sysid,
-                                  _compid,
-                                  MAV_CMD_USER_1,
-                                  0,                // confirmation of zero means this is the first time this message has been sent
-                                  0, 0, 0, 0, 0, 0, // param1 to param6 unused
-                                  on ? 0x01 : 0x00);// 0=OFF, 1=ON
 }
 
 #endif // HAL_MOUNT_ENABLED
