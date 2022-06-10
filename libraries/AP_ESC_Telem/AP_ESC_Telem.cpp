@@ -285,12 +285,7 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
 
         // arrays to hold output
-        uint8_t temperature[4] {};
-        uint16_t voltage[4] {};
-        uint16_t current[4] {};
-        uint16_t current_tot[4] {};
-        uint16_t rpm[4] {};
-        uint16_t count[4] {};
+        mavlink_esc_telemetry_1_to_4_t s {};
 
         // fill in output arrays
         for (uint8_t j = 0; j < 4; j++) {
@@ -299,54 +294,57 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
                 continue;
             }
 
-            temperature[j] = _telem_data[esc_id].temperature_cdeg / 100;
-            voltage[j] = constrain_float(_telem_data[esc_id].voltage * 100.0f, 0, UINT16_MAX);
-            current[j] = constrain_float(_telem_data[esc_id].current * 100.0f, 0, UINT16_MAX);
-            current_tot[j] = constrain_float(_telem_data[esc_id].consumption_mah, 0, UINT16_MAX);
+            s.temperature[j] = _telem_data[esc_id].temperature_cdeg / 100;
+            s.voltage[j] = constrain_float(_telem_data[esc_id].voltage * 100.0f, 0, UINT16_MAX);
+            s.current[j] = constrain_float(_telem_data[esc_id].current * 100.0f, 0, UINT16_MAX);
+            s.totalcurrent[j] = constrain_float(_telem_data[esc_id].consumption_mah, 0, UINT16_MAX);
             float rpmf = 0.0f;
             if (get_rpm(esc_id, rpmf)) {
-                rpm[j] = constrain_float(rpmf, 0, UINT16_MAX);
-            } else {
-                rpm[j] = 0;
+                s.rpm[j] = constrain_float(rpmf, 0, UINT16_MAX);
             }
-            count[j] = _telem_data[esc_id].count;
+            s.count[j] = _telem_data[esc_id].count;
         }
 
-        // use a function pointer to reduce flash space
-        typedef void (*esc_telem_send_fn_t)(mavlink_channel_t, const uint8_t *, const uint16_t *, const uint16_t *, const uint16_t *, const uint16_t *, const uint16_t *);
-        esc_telem_send_fn_t fn = nullptr;
+        // make sure a msg hasn't been extended
+        static_assert(MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_5_TO_8_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_9_TO_12_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_13_TO_16_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_17_TO_20_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_21_TO_24_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_21_TO_24_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_25_TO_28_LEN &&
+                      MAVLINK_MSG_ID_ESC_TELEMETRY_1_TO_4_LEN == MAVLINK_MSG_ID_ESC_TELEMETRY_29_TO_32_LEN,
+                      "telem messages not compatible");
 
+        const mavlink_channel_t chan = (mavlink_channel_t)mav_chan;
         // send messages
         switch (i) {
             case 0:
-                fn = mavlink_msg_esc_telemetry_1_to_4_send;
+                mavlink_msg_esc_telemetry_1_to_4_send_struct(chan, &s);
                 break;
             case 1:
-                fn = mavlink_msg_esc_telemetry_5_to_8_send;
+                mavlink_msg_esc_telemetry_5_to_8_send_struct(chan, (const mavlink_esc_telemetry_5_to_8_t *)&s);
                 break;
             case 2:
-                fn = mavlink_msg_esc_telemetry_9_to_12_send;
+                mavlink_msg_esc_telemetry_9_to_12_send_struct(chan, (const mavlink_esc_telemetry_9_to_12_t *)&s);
                 break;
             case 3:
-                fn = mavlink_msg_esc_telemetry_13_to_16_send;
+                mavlink_msg_esc_telemetry_13_to_16_send_struct(chan, (const mavlink_esc_telemetry_13_to_16_t *)&s);
                 break;
 #if ESC_TELEM_MAX_ESCS > 16
             case 4:
-                fn = mavlink_msg_esc_telemetry_17_to_20_send;
+                mavlink_msg_esc_telemetry_17_to_20_send_struct(chan, (const mavlink_esc_telemetry_17_to_20_t *)&s);
                 break;
             case 5:
-                fn = mavlink_msg_esc_telemetry_21_to_24_send;
+                mavlink_msg_esc_telemetry_21_to_24_send_struct(chan, (const mavlink_esc_telemetry_21_to_24_t *)&s);
                 break;
             case 6:
-                fn = mavlink_msg_esc_telemetry_25_to_28_send;
+                mavlink_msg_esc_telemetry_25_to_28_send_struct(chan, (const mavlink_esc_telemetry_25_to_28_t *)&s);
                 break;
             case 7:
-                fn = mavlink_msg_esc_telemetry_29_to_32_send;
+                mavlink_msg_esc_telemetry_29_to_32_send_struct(chan, (const mavlink_esc_telemetry_29_to_32_t *)&s);
                 break;
 #endif
-        }
-        if (fn != nullptr) {
-            fn((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
         }
     }
     // we checked for all sends without running out of buffer space,
