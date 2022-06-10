@@ -292,6 +292,11 @@ public:
     virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
 #endif
 
+    /*
+     get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+     */
+    virtual bool get_rate_bf_targets(Vector3f& rate_bf_targets) const { return false; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
