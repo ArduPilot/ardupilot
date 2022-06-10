@@ -1573,12 +1573,10 @@ void AP_Periph_FW::hwesc_telem_update()
  */
 void AP_Periph_FW::esc_telem_update()
 {
-    const uint8_t mask = esc_telem.get_active_esc_mask();
-    const uint8_t num_escs = esc_telem.get_num_active_escs();
-    for (uint8_t i=0; i<num_escs; i++) {
-        if (((1U<<i) & mask) == 0) {
-            continue;
-        }
+    uint32_t mask = esc_telem.get_active_esc_mask();
+    while (mask != 0) {
+        int8_t i = __builtin_ffs(mask) - 1;
+        mask &= ~(1U<<i);
         const float nan = nanf("");
         uavcan_equipment_esc_Status pkt {};
         const auto *channel = SRV_Channels::srv_channel(i);
