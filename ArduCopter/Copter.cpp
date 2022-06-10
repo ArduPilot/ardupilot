@@ -725,6 +725,13 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
+// get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+bool Copter::get_rate_bf_targets(Vector3f& rate_bf_targets) const
+{
+    rate_bf_targets = attitude_control->rate_bf_targets();
+    return true;
+}
+
 /*
   constructor for main Copter class
  */
