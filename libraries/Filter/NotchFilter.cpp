@@ -77,11 +77,11 @@ T NotchFilter<T>::apply(const T &sample)
     if (!initialised || need_reset) {
         // if we have not been initialised when return the input
         // sample as output and update delayed samples
-        ntchsig2 = ntchsig1;
-        ntchsig1 = ntchsig;
-        ntchsig = sample;
-        signal2 = signal1;
         signal1 = sample;
+        signal2 = sample;
+        ntchsig = sample;
+        ntchsig1 = sample;
+        ntchsig2 = sample;
         need_reset = false;
         return sample;
     }
