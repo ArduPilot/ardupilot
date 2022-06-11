@@ -2509,8 +2509,13 @@ function'''
 
             # insert listener to compare airspeeds:
             airspeed = [None, None]
+            # don't start testing until we've seen real speed from
+            # both sensors.  This gets us out of the noise area.
+            global initial_airspeed_threshold_reached
+            initial_airspeed_threshold_reached = False
 
             def check_airspeeds(mav, m):
+                global initial_airspeed_threshold_reached
                 m_type = m.get_type()
                 if (m_type == 'NAMED_VALUE_FLOAT' and
                         m.name == 'AS2'):
@@ -2521,6 +2526,11 @@ function'''
                     return
                 if airspeed[0] is None or airspeed[1] is None:
                     return
+                if not initial_airspeed_threshold_reached:
+                    if (airspeed[0] < 2 or airspeed[1] < 2 and
+                            not (airspeed[0] > 10 or airspeed[1] > 10)):
+                        return
+                    initial_airspeed_threshold_reached = True
                 delta = abs(airspeed[0] - airspeed[1])
                 if delta > 2:
                     raise NotAchievedException("Airspeed mismatch (as1=%f as2=%f)" % (airspeed[0], airspeed[1]))
