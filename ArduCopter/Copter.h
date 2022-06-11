@@ -611,6 +611,7 @@ private:
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
+        USE_OPTIMAL_MIXER              = (1<<3),  // 8
     };
 
     static constexpr int8_t _failsafe_priorities[] = {
