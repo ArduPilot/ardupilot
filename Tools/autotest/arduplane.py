@@ -2565,8 +2565,10 @@ function'''
         # FIXME: once we have a pre-populated terrain cache this
         # should require an instantly correct report to pass
         tstart = self.get_sim_time_cached()
+        last_terrain_report_pending = -1
         while True:
-            if self.get_sim_time_cached() - tstart > 60:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60:
                 raise NotAchievedException("Did not get correct terrain report")
 
             self.mav.mav.terrain_check_send(lat_int, lng_int)
@@ -2575,6 +2577,14 @@ function'''
             self.progress(self.dump_message_verbose(report))
             if report.spacing != 0:
                 break
+
+            # we will keep trying to long as the number of pending
+            # tiles is dropping:
+            if last_terrain_report_pending == -1:
+                last_terrain_report_pending = report.pending
+            elif report.pending < last_terrain_report_pending:
+                last_terrain_report_pending = report.pending
+                tstart = now
 
             self.delay_sim_time(1)
 
