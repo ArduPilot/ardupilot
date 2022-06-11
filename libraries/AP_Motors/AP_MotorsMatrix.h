@@ -101,6 +101,10 @@ public:
     };
     void add_motors_raw(const struct MotorDefRaw *motors, uint8_t num_motors);
 
+    // pull values direct, (examples only)
+    float get_thrust_rpyt_out(uint8_t i);
+    bool get_factors(uint8_t i, float &roll, float &pitch, float &yaw, float &throttle);
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
