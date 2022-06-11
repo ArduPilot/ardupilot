@@ -7183,7 +7183,9 @@ Also, ignores heartbeats not from our target system'''
         tstart = self.get_sim_time_cached()
         remaining_to_receive = set(range(0, m.count))
         next_to_request = 0
-        timeout = (10 + m.count/10)
+        timeout = m.count / 10
+        timeout *= self.speedup / 10.0
+        timeout += 10
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("timeout downloading type=%s" %
