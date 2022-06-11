@@ -3584,13 +3584,11 @@ class AutoTest(ABC):
         self.context_get().message_hooks.append(hook)
 
     def remove_message_hook(self, hook):
+        '''remove hook from list of message hooks.  Assumes it exists exactly
+        once'''
         if self.mav is None:
             return
-        oldlen = len(self.mav.message_hooks)
-        self.mav.message_hooks = list(filter(lambda x: x != hook,
-                                             self.mav.message_hooks))
-        if len(self.mav.message_hooks) == oldlen:
-            raise NotAchievedException("Failed to remove hook")
+        self.mav.message_hooks.remove(hook)
 
     def rootdir(self):
         this_dir = os.path.dirname(__file__)
@@ -4940,6 +4938,10 @@ class AutoTest(ABC):
     def context_pop(self):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
+        # remove hooks first; these hooks can raise exceptions which
+        # we really don't want...
+        for hook in dead.message_hooks:
+            self.remove_message_hook(hook)
         if dead.sitl_commandline_customised and len(self.contexts):
             self.contexts[-1].sitl_commandline_customised = True
 
@@ -4947,8 +4949,6 @@ class AutoTest(ABC):
         for p in dead.parameters:
             dead_parameters_dict[p[0]] = p[1]
         self.set_parameters(dead_parameters_dict, add_to_context=False)
-        for hook in dead.message_hooks:
-            self.remove_message_hook(hook)
 
     class Context(object):
         def __init__(self, testsuite):
@@ -6787,7 +6787,7 @@ Also, ignores heartbeats not from our target system'''
 
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile)
 
-        start_num_message_hooks = len(self.mav.message_hooks)
+        start_message_hooks = self.mav.message_hooks
 
         prettyname = "%s (%s)" % (name, desc)
         self.start_test(prettyname)
@@ -6811,6 +6811,11 @@ Also, ignores heartbeats not from our target system'''
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
+            # reset the message hooks; we've failed-via-exception and
+            # can't expect the hooks to have been cleaned up
+            for h in self.mav.message_hooks:
+                if h not in start_message_hooks:
+                    self.mav.message_hooks.remove(h)
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
 
@@ -6889,9 +6894,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
 
         # make sure we don't leave around stray listeners:
-        if len(self.mav.message_hooks) != start_num_message_hooks:
-            self.progress("Stray message listeners: %s" %
-                          str(self.mav.message_hooks))
+        if len(self.mav.message_hooks) != len(start_message_hooks):
+            self.progress("Stray message listeners: %s vs start %s" %
+                          (str(self.mav.message_hooks), str(start_message_hooks)))
             passed = False
 
         if passed:
