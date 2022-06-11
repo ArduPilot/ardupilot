@@ -1450,6 +1450,7 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         return;
     }
     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
+        // allow mounts to see the location of other vehicles
         handle_mount_message(msg);
     }
     if (!accept_packet(status, msg)) {
