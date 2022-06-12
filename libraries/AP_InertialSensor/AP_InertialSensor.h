@@ -446,12 +446,22 @@ public:
         // Update the harmonic notch frequencies
         void update_freq_hz(float scaled_freq);
         void update_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
-        
+
+        // enable/disable the notch
+        void set_inactive(bool _inactive) {
+            inactive = _inactive;
+        }
+
+        bool is_inactive(void) const {
+            return inactive;
+        }
+
     private:
         // support for updating harmonic filter at runtime
         float last_center_freq_hz[INS_MAX_INSTANCES];
         float last_bandwidth_hz[INS_MAX_INSTANCES];
         float last_attenuation_dB[INS_MAX_INSTANCES];
+        bool inactive;
     } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
 
 private:
