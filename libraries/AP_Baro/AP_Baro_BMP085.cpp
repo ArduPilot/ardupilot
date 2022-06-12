@@ -59,6 +59,9 @@ AP_Baro_Backend * AP_Baro_BMP085::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::De
 
 bool AP_Baro_BMP085::_init()
 {
+    if (!_dev) {
+        return false;
+    }
     union {
         uint8_t buff[22];
         uint16_t wb[11];

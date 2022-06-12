@@ -533,6 +533,21 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
 }
 
 /*
+  wrapper around hal.i2c_mgr->get_device() that prevents duplicate devices being opened
+ */
+bool AP_Baro::_have_i2c_driver(uint8_t bus, uint8_t address) const
+{
+    for (int i=0; i<_num_drivers; ++i) {
+        if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
+            AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
+            // device already has been defined.
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
   macro to add a backend with check for too many sensors
  We don't try to start more than the maximum allowed
  */
@@ -589,7 +604,7 @@ void AP_Baro::init(void)
 #endif
 
 // macro for use by HAL_INS_PROBE_LIST
-#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
+#define GET_I2C_DEVICE(bus, address) _have_i2c_driver(bus, address)?nullptr:hal.i2c_mgr->get_device(bus, address)
 
 #if AP_SIM_BARO_ENABLED
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_BARO_MS56XX_ENABLED
