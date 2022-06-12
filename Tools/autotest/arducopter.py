@@ -2627,6 +2627,16 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
+    def hover_for_interval(self, hover_time):
+        '''hovers for an interval of hover_time seconds.  Returns the bookend
+        times for that interval
+        '''
+        self.progress("Hovering for %u seconds" % hover_time)
+        tstart = self.get_sim_time()
+        self.delay_sim_time(hover_time)
+        tend = self.get_sim_time()
+        return tstart, tend
+
     def fly_motor_vibration(self):
         """Test flight with motor vibration"""
         self.context_push()
@@ -2653,11 +2663,7 @@ class AutoTestCopter(AutoTest):
             self.takeoff(15, mode="ALT_HOLD")
 
             hover_time = 15
-            tstart = self.get_sim_time()
-            self.progress("Hovering for %u seconds" % hover_time)
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
-            tend = self.get_sim_time()
+            tstart, tend = self.hover_for_interval(hover_time)
 
             # if we don't reduce vibes here then the landing detector
             # may not trigger
@@ -2688,11 +2694,8 @@ class AutoTestCopter(AutoTest):
 
             self.takeoff(15, mode="ALT_HOLD")
 
-            tstart = self.get_sim_time()
-            self.progress("Hovering for %u seconds" % hover_time)
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
-            tend = self.get_sim_time()
+            tstart, tend = self.hover_for_interval(hover_time)
+
             self.set_parameter("SIM_VIB_MOT_MAX", 0)
             self.do_RTL()
             psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
@@ -5057,12 +5060,8 @@ class AutoTestCopter(AutoTest):
             self.takeoff(10, mode="ALT_HOLD")
 
         hover_time = 15
-        tstart = self.get_sim_time()
-        self.progress("Hovering for %u seconds" % hover_time)
-        while self.get_sim_time_cached() < tstart + hover_time:
-            self.mav.recv_match(type='ATTITUDE', blocking=True)
+        tstart, tend = self.hover_for_interval(hover_time)
         vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
-        tend = self.get_sim_time()
 
         self.do_RTL()
         psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
@@ -5232,12 +5231,9 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10, mode="ALT_HOLD")
 
         hover_time = 15
-        tstart = self.get_sim_time()
-        self.progress("Hovering for %u seconds" % hover_time)
-        while self.get_sim_time_cached() < tstart + hover_time:
-            self.mav.recv_match(type='ATTITUDE', blocking=True)
+        tstart, tend = self.hover_for_interval(hover_time)
+
         vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
-        tend = self.get_sim_time()
 
         self.do_RTL()
         psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
@@ -5356,19 +5352,12 @@ class AutoTestCopter(AutoTest):
             self.takeoff(10, mode="ALT_HOLD")
 
             hover_time = 10
-            tstart = self.get_sim_time()
-            self.progress("Hovering for %u seconds" % hover_time)
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
-            vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            tstart, tend_unused = self.hover_for_interval(hover_time)
 
+            self.progress("Switching motor vibration multiplier")
             self.set_parameter("SIM_VIB_MOT_MULT", 5.0)
 
-            self.progress("Hovering for %u seconds" % hover_time)
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
-            vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            tend = self.get_sim_time()
+            tstart_unused, tend = self.hover_for_interval(hover_time)
 
             self.do_RTL()
 
@@ -5539,11 +5528,7 @@ class AutoTestCopter(AutoTest):
 
             self.takeoff(10, mode="ALT_HOLD")
             hover_time = 15
-            self.progress("Hovering for %u seconds" % hover_time)
-            tstart = self.get_sim_time()
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
-            tend = self.get_sim_time()
+            tstart, tend = self.hover_for_interval(hover_time)
 
             # fly fast forrest!
             self.set_rc(3, 1900)
@@ -5581,11 +5566,7 @@ class AutoTestCopter(AutoTest):
 
             self.takeoff(10, mode="ALT_HOLD")
 
-            self.progress("Hovering for %u seconds" % hover_time)
-            tstart = self.get_sim_time()
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
-            tend = self.get_sim_time()
+            tstart, tend = self.hover_for_interval(hover_time)
 
             self.do_RTL()
             # prevent update parameters from messing with the settings when we pop the context
@@ -5649,16 +5630,13 @@ class AutoTestCopter(AutoTest):
             self.takeoff(10, mode="ALT_HOLD")
 
             hover_time = 60
-            tstart = self.get_sim_time()
-            self.progress("Hovering for %u seconds" % hover_time)
 
             # start the tune
             self.set_rc(7, 2000)
 
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
+            tstart, tend = self.hover_for_interval(hover_time)
+
             vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            tend = self.get_sim_time()
 
             # finish the tune
             self.set_rc(7, 1000)
@@ -5702,16 +5680,13 @@ class AutoTestCopter(AutoTest):
             self.takeoff(10, mode="ALT_HOLD")
 
             hover_time = 60
-            tstart = self.get_sim_time()
-            self.progress("Hovering for %u seconds" % hover_time)
 
             # start the tune
             self.set_rc(7, 2000)
 
-            while self.get_sim_time_cached() < tstart + hover_time:
-                self.mav.recv_match(type='ATTITUDE', blocking=True)
+            self.hover_for_interval(hover_time)
+
             vfr_hud = self.mav.recv_match(type='VFR_HUD', blocking=True)
-            tend = self.get_sim_time()
 
             # finish the tune
             self.set_rc(7, 1000)
