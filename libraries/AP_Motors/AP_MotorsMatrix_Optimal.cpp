@@ -45,11 +45,26 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
         case MOTOR_FRAME_QUAD: {
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
+                case MOTOR_FRAME_TYPE_NYT_PLUS:
+                case MOTOR_FRAME_TYPE_PLUSREV:
                     roll_conversion = 0.5;
                     pitch_conversion = 0.5;
                     break;
                 case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_NYT_X:
+                case MOTOR_FRAME_TYPE_BF_X:
+                case MOTOR_FRAME_TYPE_BF_X_REV:
+                case MOTOR_FRAME_TYPE_DJI_X:
+                case MOTOR_FRAME_TYPE_CW_X:
+                case MOTOR_FRAME_TYPE_V:
+                case MOTOR_FRAME_TYPE_H:
+                case MOTOR_FRAME_TYPE_VTAIL: // Not calculated, assume 1
+                case MOTOR_FRAME_TYPE_ATAIL: // Not calculated, assume 1
                     roll_conversion = 1.0;
+                    pitch_conversion = 1.0;
+                    break;
+                case MOTOR_FRAME_TYPE_Y4:
+                    roll_conversion = 0.5;
                     pitch_conversion = 1.0;
                     break;
                 default:
@@ -59,8 +74,18 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
         }
         case MOTOR_FRAME_HEXA: {
             switch (frame_type) {
-                 case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_PLUS:
+                    roll_conversion = 1.0;
+                    pitch_conversion = 0.75;
+                    break;
+                case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_DJI_X:
+                case MOTOR_FRAME_TYPE_CW_X:
                     roll_conversion = 0.75;
+                    pitch_conversion = 1.0;
+                    break;
+                case MOTOR_FRAME_TYPE_H:
+                    roll_conversion = 1.5;
                     pitch_conversion = 1.0;
                     break;
                 default:
@@ -70,9 +95,27 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
         }
         case MOTOR_FRAME_OCTA: {
             switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    roll_conversion = 1.0;
+                    pitch_conversion = 1.0;
+                    break;
                 case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_DJI_X:
+                case MOTOR_FRAME_TYPE_CW_X:
                     roll_conversion = 1.1715728;
                     pitch_conversion = 1.1715728;
+                    break;
+                case MOTOR_FRAME_TYPE_V:
+                    roll_conversion = 1.1939;
+                    pitch_conversion = 1.109;
+                    break;
+                case MOTOR_FRAME_TYPE_H:
+                    roll_conversion = 2.0;
+                    pitch_conversion = 1.11;
+                    break;
+                case MOTOR_FRAME_TYPE_I:
+                    roll_conversion = 1.11;
+                    pitch_conversion = 2.0;
                     break;
                 default:
                     return;
@@ -81,7 +124,14 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
         }
         case MOTOR_FRAME_OCTAQUAD: {
             switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    roll_conversion = 1.0;
+                    pitch_conversion = 1.0;
+                    break;
                 case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_V:
+                case MOTOR_FRAME_TYPE_H:
+                case MOTOR_FRAME_TYPE_CW_X:
                     roll_conversion = 2.0;
                     pitch_conversion = 2.0;
                     break;
@@ -92,9 +142,40 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
         }
         case MOTOR_FRAME_DODECAHEXA: {
             switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    roll_conversion = 2.0;
+                    pitch_conversion = 1.5;
+                    break;
                 case MOTOR_FRAME_TYPE_X:
                     roll_conversion = 1.5;
                     pitch_conversion = 2.0;
+                    break;
+                default:
+                    return;
+            }
+            break;
+        }
+        case MOTOR_FRAME_Y6: {
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_Y6B:
+                case MOTOR_FRAME_TYPE_Y6F:
+                default:
+                    roll_conversion = 1.0;
+                    pitch_conversion = 0.75;
+                    break;
+            }
+            break;
+        }
+        case MOTOR_FRAME_DECA: {
+            switch (frame_type) {
+                case MOTOR_FRAME_TYPE_PLUS:
+                    roll_conversion = 1.38;
+                    pitch_conversion = 1.25;
+                    break;
+                case MOTOR_FRAME_TYPE_X:
+                case MOTOR_FRAME_TYPE_CW_X:
+                    roll_conversion = 1.25;
+                    pitch_conversion = 1.38;
                     break;
                 default:
                     return;
