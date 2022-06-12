@@ -45,7 +45,7 @@ bool AP_OSD_MSP_DisplayPort::init(void)
         gcs().send_text(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
         return false;
     }
-	_bInitedUart=false;
+	  _bInitedUart=false;
     return true;
 }
 
