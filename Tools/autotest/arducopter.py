@@ -6140,10 +6140,11 @@ class AutoTestCopter(AutoTest):
 
         tstart = self.get_sim_time()
         last_send = 0
+        m = None
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > 100:
-                raise NotAchievedException("Did not get correct angle back")
+                raise NotAchievedException("Did not get correct angle back (last-message=%s)" % str(m))
 
             if now - last_send > 0.1:
                 self.progress("ang=%f sending front=%f right=%f" %
@@ -6179,25 +6180,20 @@ class AutoTestCopter(AutoTest):
 
     def OBSTACLE_DISTANCE_3D(self):
         self.context_push()
-        ex = None
-        try:
-            self.set_parameters({
-                "SERIAL5_PROTOCOL": 1,
-                "PRX_TYPE": 2,
-            })
-            self.reboot_sitl()
-
-            for angle in range(0, 360):
-                self.OBSTACLE_DISTANCE_3D_test_angle(angle)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-        self.context_pop()
-        self.disarm_vehicle(force=True)
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 1,
+            "PRX_TYPE": 2,
+            "SIM_SPEEDUP": 8,  # much GCS interaction
+        })
         self.reboot_sitl()
-        if ex is not None:
-            raise ex
+        # need yaw estimate to stabilise:
+        self.wait_ekf_happy(require_absolute=True)
+
+        for angle in range(0, 360):
+            self.OBSTACLE_DISTANCE_3D_test_angle(angle)
+
+        self.context_pop()
+        self.reboot_sitl()
 
     def fly_proximity_avoidance_test_corners(self):
         self.start_subtest("Corners")
@@ -8866,7 +8862,7 @@ class AutoTestCopter(AutoTest):
              lambda: self.fly_stability_patch(30)),  # 17s
 
             ("OBSTACLE_DISTANCE_3D",
-             "Test proximity avoidance slide behaviour in 3D",
+             "Check round-trip behaviour of distance sensors",
              self.OBSTACLE_DISTANCE_3D),  # ??s
 
             ("AC_Avoidance_Proximity",
