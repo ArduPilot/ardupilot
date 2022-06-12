@@ -176,7 +176,7 @@ bool MSP::msp_parse_received_data(msp_port_t *msp, uint8_t c)
         }
         break;
 
-    case MSP_HEADER_M:      // Waiting for '<'
+    case MSP_HEADER_M:      // Waiting for '<' or '>'
         if ((c == '<')|| (c=='>')) {
             msp->offset = 0;
             msp->checksum1 = 0;
