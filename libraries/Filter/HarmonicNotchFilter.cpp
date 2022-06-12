@@ -90,6 +90,13 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("OPTS", 8, HarmonicNotchFilterParams, _options, 0),
 
+    // @Param: FM_RAT
+    // @DisplayName: Throttle notch min freqency ratio
+    // @Description: The minimum ratio below the configured frequency to take throttle based notch filters when flying at a throttle level below the reference throttle. Note that lower frequency notch filters will have more phase lag. If you want throttle based notch filtering to be effective at a throttle up to 30% below the configured notch frequency then set this parameter to 0.7. The default of 1.0 means the notch will not go below the frequency in the FREQ parameter.
+    // @Range: 0.1 1.0
+    // @User: Advanced
+    AP_GROUPINFO("FM_RAT", 9, HarmonicNotchFilterParams, _freq_min_ratio, 1.0),
+    
     AP_GROUPEND
 };
 
