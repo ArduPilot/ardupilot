@@ -350,7 +350,9 @@ void AP_MSP_Telem_Backend::process_incoming_data()
         while (numc-- > 0) {
 			//Read result is signed need to check
             const int16_t c = _msp_port.uart->read(); 
-			if(c>=0){
+			if (c < 0) {
+			    break;
+			}
 					msp_parse_received_data(&_msp_port,(uint8_t)c);
 
              if (_msp_port.c_state == MSP_COMMAND_RECEIVED) {
