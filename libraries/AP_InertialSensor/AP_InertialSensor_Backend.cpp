@@ -186,17 +186,23 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
         if (!notch.params.enabled()) {
             continue;
         }
+        bool inactive = notch.is_inactive();
 #ifndef HAL_BUILD_AP_PERIPH
         // by default we only run the expensive notch filters on the
         // currently active IMU we reset the inactive notch filters so
         // that if we switch IMUs we're not left with old data
         if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
             instance != AP::ahrs().get_primary_gyro_index()) {
-            notch.filter[instance].reset();
-            continue;
+            inactive = true;
         }
 #endif
-        gyro_filtered = notch.filter[instance].apply(gyro_filtered);
+        if (inactive) {
+            // while inactive we reset the filter so when it activates the first output
+            // will be the first input sample
+            notch.filter[instance].reset();
+        } else {
+            gyro_filtered = notch.filter[instance].apply(gyro_filtered);
+        }
     }
 
     // apply the low pass filter last to attentuate any notch induced noise
