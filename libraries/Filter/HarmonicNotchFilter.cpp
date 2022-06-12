@@ -311,3 +311,5 @@ void HarmonicNotchFilterParams::save_params()
   instantiate template classes
  */
 template class HarmonicNotchFilter<Vector3f>;
+template class HarmonicNotchFilter<float>;
+
