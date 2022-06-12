@@ -17,6 +17,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+extern const AP_HAL::HAL& hal;
 
 void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_type frame_type)
 {
@@ -184,6 +185,16 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
         }
         default:
             return;
+    }
+
+    // update frame name
+    if (frame_string != nullptr) {
+        free(frame_string);
+    }
+    const size_t len = strlen(string_prefix)+strlen(AP_MotorsMatrix::_get_frame_string())+1;
+    frame_string = new char[len];
+    if (frame_string != nullptr) {
+        hal.util->snprintf(frame_string, len, "%s%s", string_prefix, AP_MotorsMatrix::_get_frame_string());
     }
 
     // convert motor factors to matrix format
@@ -498,4 +509,12 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
 
     }
     return k;
+}
+
+const char* AP_MotorsMatrix_Optimal::_get_frame_string() const
+{
+    if (frame_string != nullptr) {
+        return frame_string;
+    }
+    return AP_MotorsMatrix::_get_frame_string();
 }

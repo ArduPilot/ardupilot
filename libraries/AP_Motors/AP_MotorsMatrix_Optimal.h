@@ -12,6 +12,10 @@ public:
 
     void output_armed_stabilizing() override;
 
+protected:
+
+    const char* _get_frame_string() const override;
+
 private:
 
     static constexpr uint8_t max_num_motors = AP_MOTORS_MAX_NUM_MOTORS;
@@ -79,6 +83,10 @@ private:
     // set points and constraints
     float f[max_num_motors];
     float b[max_num_constraints];
+
+    // frame string with optimal prepended
+    const char *string_prefix = "Optimal ";
+    char *frame_string;
 
 };
 
