@@ -76,8 +76,7 @@ uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, 
 
 void AP_OSD_MSP_DisplayPort::flush(void)
 {
-    if(!_bInitedUart)
-	{
+    if (!_bInitedUart) {
 		_bInitedUart=true;
 		_displayport->init_uart();
 	}
