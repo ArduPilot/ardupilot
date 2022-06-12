@@ -204,7 +204,7 @@ private:
         SYM_RNGFD,
         SYM_LQ,
     };
-
+	bool _bInitedUart;
     bool _blink_on;
 };
 #endif
