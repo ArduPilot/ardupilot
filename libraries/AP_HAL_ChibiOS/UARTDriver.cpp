@@ -665,20 +665,12 @@ uint32_t UARTDriver::get_usb_baud() const
     return 0;
 }
 
-/* Empty implementations of Stream virtual methods */
 uint32_t UARTDriver::available() {
-    if (!_rx_initialised || lock_read_key) {
+    if (!_rx_initialised || _uart_owner_thd != chThdGetSelfX()) {
         return 0;
     }
-    if (sdef.is_usb) {
-#ifdef HAVE_USB_SERIAL
 
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
-            return 0;
-        }
-#endif
-    }
-    return _readbuf.available();
+    return UARTDriver::available_locked(0);
 }
 
 uint32_t UARTDriver::available_locked(uint32_t key)
@@ -746,22 +738,11 @@ ssize_t UARTDriver::read(uint8_t *buffer, uint16_t count)
 
 int16_t UARTDriver::read()
 {
-    if (lock_read_key != 0 || _uart_owner_thd != chThdGetSelfX()){
-        return -1;
-    }
-    if (!_rx_initialised) {
+    if (_uart_owner_thd != chThdGetSelfX()) {
         return -1;
     }
 
-    uint8_t byte;
-    if (!_readbuf.read_byte(&byte)) {
-        return -1;
-    }
-    if (!_rts_is_active) {
-        update_rts_line();
-    }
-
-    return byte;
+    return UARTDriver::read_locked(0);
 }
 
 int16_t UARTDriver::read_locked(uint32_t key)
