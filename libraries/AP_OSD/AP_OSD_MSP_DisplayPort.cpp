@@ -45,7 +45,7 @@ bool AP_OSD_MSP_DisplayPort::init(void)
         gcs().send_text(MAV_SEVERITY_WARNING,"MSP DisplayPort uart not available");
         return false;
     }
-	  _bInitedUart=false;
+    _bInitedUart=false;
     return true;
 }
 
@@ -77,9 +77,9 @@ uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, 
 void AP_OSD_MSP_DisplayPort::flush(void)
 {
     if (!_bInitedUart) {
-		_bInitedUart=true;
-		_displayport->init_uart();
-	}
+        _bInitedUart=true;
+        _displayport->init_uart();
+    }
 
 
     // grab the screen and force a redraw
