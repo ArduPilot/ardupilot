@@ -355,7 +355,7 @@ void AP_MSP_Telem_Backend::process_incoming_data()
 			}
 					msp_parse_received_data(&_msp_port,(uint8_t)c);
 
-             if (_msp_port.c_state == MSP_COMMAND_RECEIVED) {
+            if (_msp_port.c_state == MSP_COMMAND_RECEIVED) {
                 msp_process_received_command();
 			 }
             }
