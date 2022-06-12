@@ -106,6 +106,11 @@ public:
     HarmonicNotchDynamicMode tracking_mode(void) const { return HarmonicNotchDynamicMode(_tracking_mode.get()); }
     static const struct AP_Param::GroupInfo var_info[];
 
+    // return minimum frequency ratio for throttle notch
+    float freq_min_ratio(void) const {
+        return _freq_min_ratio;
+    }
+
     // save parameters
     void save_params();
 
@@ -118,6 +123,9 @@ private:
     AP_Int8 _tracking_mode;
     // notch options
     AP_Int16 _options;
+
+    // minimum frequency ratio for throttle based notches
+    AP_Float _freq_min_ratio;
 };
 
 typedef HarmonicNotchFilter<Vector3f> HarmonicNotchFilterVector3f;
