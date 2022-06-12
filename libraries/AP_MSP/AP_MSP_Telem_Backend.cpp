@@ -349,17 +349,19 @@ void AP_MSP_Telem_Backend::process_incoming_data()
         // Process incoming bytes
         while (numc-- > 0) {
 			//Read result is signed need to check
+			//This read can fail if uart registered thread 
+			//Is wrong even if availible shows it has data
             const int16_t c = _msp_port.uart->read(); 
 			if (c < 0) {
 			    break;
 			}
-					msp_parse_received_data(&_msp_port,(uint8_t)c);
+
+			msp_parse_received_data(&_msp_port,(uint8_t)c);
 
             if (_msp_port.c_state == MSP_COMMAND_RECEIVED) {
                 msp_process_received_command();
 			 }
-            }
-        }
+         }
     }
 }
 
