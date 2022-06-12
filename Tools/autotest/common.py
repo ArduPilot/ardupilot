@@ -8032,6 +8032,10 @@ Also, ignores heartbeats not from our target system'''
     # this autotest appears to interfere with FixedYawCalibration, no idea why.
     def SITLCompassCalibration(self, compass_count=3, timeout=1000):
         '''Test Fixed Yaw Calibration"'''
+
+        timeout /= 8
+        timeout *= self.speedup
+
         def reset_pos_and_start_magcal(mavproxy, tmask):
             mavproxy.send("sitl_stop\n")
             mavproxy.send("sitl_attitude 0 0 0\n")
