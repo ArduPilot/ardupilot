@@ -205,6 +205,7 @@ struct PACKED log_Parameter {
     uint64_t time_us;
     char name[16];
     float value;
+    float default_value;
 };
 
 struct PACKED log_DSF {
@@ -920,6 +921,7 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: Name: parameter name
 // @Field: Value: parameter value
+// @Field: Default: default parameter value for this board and config
 
 // @LoggerMessage: PIDR,PIDP,PIDY,PIDA,PIDS,PIDN,PIDE
 // @Description: Proportional/Integral/Derivative gain values for Roll/Pitch/Yaw/Altitude/Steering
@@ -1213,7 +1215,7 @@ struct PACKED log_VER {
     { LOG_MULT_MSG, sizeof(log_Format_Multiplier), \
       "MULT", "Qbd",      "TimeUS,Id,Mult", "s--","F--" },   \
     { LOG_PARAMETER_MSG, sizeof(log_Parameter), \
-     "PARM", "QNf",        "TimeUS,Name,Value", "s--", "F--"  },       \
+     "PARM", "QNff",        "TimeUS,Name,Value,Default", "s---", "F---"  },       \
 LOG_STRUCTURE_FROM_GPS \
     { LOG_MESSAGE_MSG, sizeof(log_Message), \
       "MSG",  "QZ",     "TimeUS,Message", "s-", "F-"}, \

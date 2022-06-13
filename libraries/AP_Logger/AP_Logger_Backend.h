@@ -126,10 +126,11 @@ public:
     bool Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
     bool Write_Mode(uint8_t mode, const ModeReason reason);
-    bool Write_Parameter(const char *name, float value);
+    bool Write_Parameter(const char *name, float value, float default_val);
     bool Write_Parameter(const AP_Param *ap,
                              const AP_Param::ParamToken &token,
-                             enum ap_var_type type);
+                             enum ap_var_type type,
+                             float default_val);
     bool Write_VER();
 
     uint32_t num_dropped(void) const {
