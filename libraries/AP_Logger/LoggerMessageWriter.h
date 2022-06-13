@@ -140,6 +140,7 @@ private:
 
     AP_Param::ParamToken token;
     AP_Param *ap;
+    float param_default;
     enum ap_var_type type;
 
 

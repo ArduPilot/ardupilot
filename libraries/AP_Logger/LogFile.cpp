@@ -103,13 +103,14 @@ bool AP_Logger_Backend::Write_Format_Units(const struct LogStructure *s)
 /*
   write a parameter to the log
  */
-bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
+bool AP_Logger_Backend::Write_Parameter(const char *name, float value, float default_val)
 {
     struct log_Parameter pkt{
         LOG_PACKET_HEADER_INIT(LOG_PARAMETER_MSG),
         time_us : AP_HAL::micros64(),
         name  : {},
-        value : value
+        value : value,
+        default_value : default_val
     };
     strncpy_noterm(pkt.name, name, sizeof(pkt.name));
     return WriteCriticalBlock(&pkt, sizeof(pkt));
@@ -120,11 +121,12 @@ bool AP_Logger_Backend::Write_Parameter(const char *name, float value)
  */
 bool AP_Logger_Backend::Write_Parameter(const AP_Param *ap,
                                             const AP_Param::ParamToken &token,
-                                            enum ap_var_type type)
+                                            enum ap_var_type type,
+                                            float default_val)
 {
     char name[16];
     ap->copy_name_token(token, &name[0], sizeof(name), true);
-    return Write_Parameter(name, ap->cast_to_float(type));
+    return Write_Parameter(name, ap->cast_to_float(type), default_val);
 }
 
 // Write an RCIN packet
