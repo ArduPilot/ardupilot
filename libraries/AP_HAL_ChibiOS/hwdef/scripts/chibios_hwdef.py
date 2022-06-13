@@ -709,6 +709,9 @@ def get_ram_map():
         ram_map = get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
         if ram_map is not None:
             return ram_map
+    elif int(env_vars.get('USE_ALT_RAM_MAP',0)) == '1':
+        print("Using ALT_RAM_MAP")
+        return get_mcu_config('ALT_RAM_MAP', True)
     return get_mcu_config('RAM_MAP', True)
 
 def get_flash_pages_sizes():
