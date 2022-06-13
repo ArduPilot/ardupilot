@@ -2634,7 +2634,7 @@ class AutoTestCopter(AutoTest):
         '''
         self.progress("Hovering for %u seconds" % hover_time)
         tstart = self.get_sim_time()
-        self.delay_sim_time(hover_time)
+        self.delay_sim_time(hover_time, reason='data collection')
         vfr_hud = self.poll_message('VFR_HUD')
         tend = self.get_sim_time()
         return tstart, tend, vfr_hud.throttle
@@ -5227,7 +5227,9 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
-        # find a motor peak
+        '''do a simple up-and-down test flight with current vehicle state.
+        Check that the onboard filter comes up with the same peak-frequency that
+        post-processing does.'''
         self.takeoff(10, mode="ALT_HOLD")
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.do_RTL()
@@ -5240,26 +5242,36 @@ class AutoTestCopter(AutoTest):
         smaxhz = int(maxhz * scale)
         freq = psd["F"][numpy.argmax(psd["X"][sminhz:smaxhz]) + sminhz]
         peakdb = numpy.amax(psd["X"][sminhz:smaxhz])
-        if peakdb < dblevel:
-            raise NotAchievedException("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
-        elif peakhz is not None and abs(freq - peakhz) / peakhz > 0.05:
-            raise NotAchievedException("Did not detect a motor peak at %fHz, found %fHz at %fdB" % (peakhz, freq, peakdb))
-        else:
-            self.progress("Detected motor peak at %fHz, throttle %f%%, %fdB" % (freq, hover_throttle, peakdb))
 
-        # we have a peak make sure that the FFT detected something close
-        # logging is at 10Hz
-        # accuracy is determined by sample rate and fft length, given our use of quinn we could probably use half of this
-        freqDelta = 1000. / fftLength
+        self.progress("Post-processing FFT detected motor peak at %fHz/%fdB, throttle %f%%" %
+                      (freq, peakdb, hover_throttle))
+
+        if peakdb < dblevel:
+            raise NotAchievedException(
+                "Detected motor peak not strong enough; want=%fdB got=%fdB" %
+                (peakdb, dblevel))
+
+        # caller can supply an expected frequency:
+        if peakhz is not None and abs(freq - peakhz) / peakhz > 0.05:
+            raise NotAchievedException(
+                "Post-processing detected motor peak at wrong frequency; want=%fHz got=%fHz" %
+                (peakhz, freq))
+
+        # we have a peak make sure that the onboard filter detected
+        # something close logging is at 10Hz
 
         # peak within resolution of FFT length
         pkAvg, nmessages = self.extract_median_FTN1_PkAvg_from_current_onboard_log(tstart, tend)
         self.progress("Onboard-FFT detected motor peak at %fHz (processed %d FTN1 messages)" % (pkAvg, nmessages))
 
-        # peak within 5%
+        # accuracy is determined by sample rate and fft length, given
+        # our use of quinn we could probably use half of this
+        freqDelta = 1000. / fftLength
         if abs(pkAvg - freq) > freqDelta:
-            raise NotAchievedException("FFT did not detect a motor peak at %f, found %f, wanted %f" % (dblevel, pkAvg, freq))
-
+            raise NotAchievedException(
+                "post-processed FFT does not  agree with onboard filter on peak frequency; onboard=%fHz post-processed=%fHz/%fdB" %  # noqa
+                (pkAvg, freq, dblevel)
+            )
         return freq
 
     def extract_median_FTN1_PkAvg_from_current_onboard_log(self, tstart, tend):
