@@ -5252,23 +5252,16 @@ class AutoTestCopter(AutoTest):
         mlog = self.dfreader_for_current_onboard_log()
         # accuracy is determined by sample rate and fft length, given our use of quinn we could probably use half of this
         freqDelta = 1000. / fftLength
-        pkAvg = freq
-        nmessages = 1
-
-        m = mlog.recv_match(
-            type='FTN1',
-            blocking=False,
-            condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6)
-        )
         freqs = []
-        while m is not None:
-            nmessages = nmessages + 1
-            freqs.append(m.PkAvg)
+        while True:
             m = mlog.recv_match(
                 type='FTN1',
                 blocking=False,
                 condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6)
             )
+            if m is None:
+                break
+            freqs.append(m.PkAvg)
 
         # peak within resolution of FFT length
         pkAvg = numpy.median(numpy.asarray(freqs))
@@ -5358,17 +5351,15 @@ class AutoTestCopter(AutoTest):
             self.do_RTL()
 
             mlog = self.dfreader_for_current_onboard_log()
-            m = mlog.recv_match(
-                type='FTN1',
-                blocking=False,
-                condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
             freqs = []
-            while m is not None:
-                freqs.append(m.PkAvg)
+            while True:
                 m = mlog.recv_match(
                     type='FTN1',
                     blocking=False,
                     condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
+                if m is None:
+                    break
+                freqs.append(m.PkAvg)
 
             # peak within resolution of FFT length, the highest energy peak switched but our detection should not
             pkAvg = numpy.median(numpy.asarray(freqs))
