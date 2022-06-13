@@ -865,7 +865,7 @@ void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason)
 
 void AP_Logger::Write_Parameter(const char *name, float value)
 {
-    FOR_EACH_BACKEND(Write_Parameter(name, value));
+    FOR_EACH_BACKEND(Write_Parameter(name, value, quiet_nanf()));
 }
 
 void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
