@@ -41,7 +41,7 @@ For purchase, connection and configuration information please see the [ArduPilot
 
 ## ArduPilot to ESC protocol
 
-The FETtec OneWire protocol supports up to 24 ESCs. As most copters only use at most 12 motors, ArduPilot's implementation supports only 12 (`ESC_TELEM_MAX_ESCS`)to save memory.
+The FETtec OneWire protocol supports up to 24 ESCs without telemetry and up to 15 ESCs with telemetry.
 
 There are two types of messages sent to the ESCs configuration and fast-throttle messages:
 
@@ -165,7 +165,7 @@ pre_arm_check()
 
 The `SERVO_FTW_MASK` parameter selects which servo outputs, if any, will be routed to FETtec ESCs.
 You need to reboot after changing this parameter.
-When `HAL_WITH_ESC_TELEM` is active (default) only the first 12 (`ESC_TELEM_MAX_ESCS`) can be used.
+When `HAL_WITH_ESC_TELEM` is active (default) only the first 15 (`ESC_TELEM_MAX_ESCS`) can be used.
 The FETtec ESC IDs set inside the FETtec firmware by the FETtec configuration tool are one-indexed.
 These IDs must start at ID 1 and be in a single contiguous block.
 You do not need to change these FETtec IDs if you change the servo output assignments inside ArduPilot the using the `SERVO_FTW_MASK` parameter.
