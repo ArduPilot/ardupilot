@@ -531,13 +531,16 @@ class AutoTestPlane(AutoTest):
         self.progress("Flying mission %s" % filename)
         num_wp = self.load_mission(filename, strict=strict)-1
         self.set_current_waypoint(0, check_afterwards=False)
+        self.context_push()
+        self.context_collect('STATUSTEXT')
         self.change_mode('AUTO')
         self.wait_waypoint(1, num_wp, max_dist=60, timeout=mission_timeout)
         self.wait_groundspeed(0, 0.5, timeout=mission_timeout)
         if quadplane:
-            self.wait_statustext("Throttle disarmed", timeout=200)
+            self.wait_statustext("Throttle disarmed", timeout=200, check_context=True)
         else:
-            self.wait_statustext("Auto disarmed", timeout=60)
+            self.wait_statustext("Auto disarmed", timeout=60, check_context=True)
+        self.context_pop()
         self.progress("Mission OK")
 
     def fly_do_reposition(self):
