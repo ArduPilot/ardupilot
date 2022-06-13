@@ -583,10 +583,17 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
         self.progress("Waiting for deepstall messages")
 
-        self.wait_text("Deepstall: Entry: ", timeout=240)
+        # note that the following two don't necessarily happen in this
+        # order, but at very high speedups we may miss the elevator
+        # PWM if we first look for the text (due to the get_sim_time()
+        # in wait_servo_channel_value)
+
+        self.context_collect('STATUSTEXT')
 
         # assume elevator is on channel 2:
-        self.wait_servo_channel_value(2, deepstall_elevator_pwm)
+        self.wait_servo_channel_value(2, deepstall_elevator_pwm, timeout=240)
+
+        self.wait_text("Deepstall: Entry: ", check_context=True)
 
         self.disarm_wait(timeout=120)
 
@@ -610,10 +617,16 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
         self.progress("Waiting for deepstall messages")
 
-        self.wait_text("Deepstall: Entry: ", timeout=240)
+        # note that the following two don't necessarily happen in this
+        # order, but at very high speedups we may miss the elevator
+        # PWM if we first look for the text (due to the get_sim_time()
+        # in wait_servo_channel_value)
+        self.context_collect('STATUSTEXT')
 
         # assume elevator is on channel 2:
-        self.wait_servo_channel_value(2, deepstall_elevator_pwm)
+        self.wait_servo_channel_value(2, deepstall_elevator_pwm, timeout=240)
+
+        self.wait_text("Deepstall: Entry: ", check_context=True)
 
         self.disarm_wait(timeout=120)
         self.set_current_waypoint(0, check_afterwards=False)
