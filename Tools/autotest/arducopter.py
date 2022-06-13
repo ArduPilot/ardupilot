@@ -5249,29 +5249,33 @@ class AutoTestCopter(AutoTest):
 
         # we have a peak make sure that the FFT detected something close
         # logging is at 10Hz
-        mlog = self.dfreader_for_current_onboard_log()
         # accuracy is determined by sample rate and fft length, given our use of quinn we could probably use half of this
         freqDelta = 1000. / fftLength
-        freqs = []
-        while True:
-            m = mlog.recv_match(
-                type='FTN1',
-                blocking=False,
-                condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6)
-            )
-            if m is None:
-                break
-            freqs.append(m.PkAvg)
 
         # peak within resolution of FFT length
-        pkAvg = numpy.median(numpy.asarray(freqs))
-        self.progress("Detected motor peak at %fHz processing %d messages" % (pkAvg, nmessages))
+        pkAvg, nmessages = self.extract_median_FTN1_PkAvg_from_current_onboard_log(tstart, tend)
+        self.progress("Onboard-FFT detected motor peak at %fHz (processed %d FTN1 messages)" % (pkAvg, nmessages))
 
         # peak within 5%
         if abs(pkAvg - freq) > freqDelta:
             raise NotAchievedException("FFT did not detect a motor peak at %f, found %f, wanted %f" % (dblevel, pkAvg, freq))
 
         return freq
+
+    def extract_median_FTN1_PkAvg_from_current_onboard_log(self, tstart, tend):
+        '''extracts FTN1 messages from log, returns median of pkAvg values and
+        the number of samples'''
+        mlog = self.dfreader_for_current_onboard_log()
+        freqs = []
+        while True:
+            m = mlog.recv_match(
+                type='FTN1',
+                blocking=False,
+                condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
+            if m is None:
+                break
+            freqs.append(m.PkAvg)
+        return numpy.median(numpy.asarray(freqs)), len(freqs)
 
     def test_gyro_fft_harmonic(self, averaging):
         """Use dynamic harmonic notch to control motor noise with harmonic matching of the first harmonic."""
@@ -5350,19 +5354,9 @@ class AutoTestCopter(AutoTest):
 
             self.do_RTL()
 
-            mlog = self.dfreader_for_current_onboard_log()
-            freqs = []
-            while True:
-                m = mlog.recv_match(
-                    type='FTN1',
-                    blocking=False,
-                    condition="FTN1.TimeUS>%u and FTN1.TimeUS<%u" % (tstart * 1.0e6, tend * 1.0e6))
-                if m is None:
-                    break
-                freqs.append(m.PkAvg)
-
             # peak within resolution of FFT length, the highest energy peak switched but our detection should not
-            pkAvg = numpy.median(numpy.asarray(freqs))
+            pkAvg, nmessages = self.extract_median_FTN1_PkAvg_from_current_onboard_log(tstart, tend)
+
             freqDelta = 1000. / self.get_parameter("FFT_WINDOW_SIZE")
 
             if abs(pkAvg - freq) > freqDelta:
