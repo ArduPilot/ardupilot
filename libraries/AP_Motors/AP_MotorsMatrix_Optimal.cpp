@@ -303,6 +303,10 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
         _thrust_rpyt_out[i] = x[i];
     }
 
+    // determine throttle thrust for harmonic notch
+    // compensation_gain can never be zero
+    _throttle_out = outputs[3] / compensation_gain;
+
     // @LoggerMessage: MMIX
     // @Description: Motor mixer data
     // @Field: TimeUS: Time since system startup
