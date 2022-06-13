@@ -35,6 +35,12 @@
 // optionally enable debug code for dumping keys
 #define AP_PARAM_KEY_DUMP 0
 
+#if defined(HAL_GCS_ENABLED)
+    #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED
+#else
+    #define AP_PARAM_DEFAULTS_ENABLED 1
+#endif
+
 /*
   maximum size of embedded parameter file
  */
@@ -469,15 +475,16 @@ public:
     /// @return             The first variable in _var_info, or nullptr if
     ///                     there are none.
     ///
-    static AP_Param *      first(ParamToken *token, enum ap_var_type *ptype);
+    static AP_Param *      first(ParamToken *token, enum ap_var_type *ptype, float *default_val = nullptr);
 
     /// Returns the next variable in _var_info, recursing into groups
     /// as needed
-    static AP_Param *      next(ParamToken *token, enum ap_var_type *ptype, bool skip_disabled=false);
+    static AP_Param *      next(ParamToken *token, enum ap_var_type *ptype) { return  next(token, ptype, false); }
+    static AP_Param *      next(ParamToken *token, enum ap_var_type *ptype, bool skip_disabled, float *default_val = nullptr);
 
     /// Returns the next scalar variable in _var_info, recursing into groups
     /// as needed
-    static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype);
+    static AP_Param *       next_scalar(ParamToken *token, enum ap_var_type *ptype, float *default_val = nullptr);
 
     /// get the size of a type in bytes
     static uint8_t				type_size(enum ap_var_type type);
@@ -539,7 +546,12 @@ public:
     static bool add_param(uint8_t key, uint8_t param_num, const char *pname, float default_value);
     static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
 #endif
-    
+
+protected:
+
+    // store default value in linked list
+    static void add_default(AP_Param *ap, float v) { add_default(ap, v, default_list); }
+
 private:
     static AP_Param *_singleton;
 
@@ -676,7 +688,8 @@ private:
                                     const ptrdiff_t group_offset,
                                     ParamToken *token,
                                     enum ap_var_type *ptype,
-                                    bool skip_disabled);
+                                    bool skip_disabled,
+                                    float *default_val);
 
     // find a default value given a pointer to a default value in flash
     static float get_default_value(const AP_Param *object_ptr, const float *def_value_ptr);
@@ -761,6 +774,19 @@ private:
 
     // background function for saving parameters
     void save_io_handler(void);
+
+    // Store default values from add_default() calls in linked list
+    struct defaults_list {
+        AP_Param *ap;
+        float val;
+        defaults_list *next;
+    };
+#if AP_PARAM_MAX_EMBEDDED_PARAM > 0
+    static defaults_list *embedded_default_list;
+#endif
+    static defaults_list *default_list;
+    static void add_default(AP_Param *ap, float v, defaults_list *&list);
+    static void check_default(AP_Param *ap, float *default_value);
 };
 
 namespace AP {
@@ -804,9 +830,21 @@ public:
     /// Sets if the parameter is unconfigured
     ///
     void set_default(const T &v) {
+#if AP_PARAM_DEFAULTS_ENABLED
+        add_default(this, (float)v);
+#endif
         if (!configured()) {
             set(v);
         }
+    }
+
+    /// Sets parameter and default
+    ///
+    void set_and_default(const T &v) {
+#if AP_PARAM_DEFAULTS_ENABLED
+        add_default(this, (float)v);
+#endif
+        set(v);
     }
 
     /// Value setter - set value, tell GCS
