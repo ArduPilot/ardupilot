@@ -593,6 +593,7 @@ protected:
         SBF_UseBaseForYaw = (1U << 1U),
         UBX_Use115200     = (1U << 2U),
         UAVCAN_MBUseDedicatedBus  = (1 << 3U),
+        HeightEllipsoid   = (1U << 4),
     };
 
     // check if an option is set
