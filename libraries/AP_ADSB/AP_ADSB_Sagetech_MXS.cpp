@@ -1,21 +1,23 @@
 /*
-    Copyright 2022 Sagetech Avionics Inc. All rights reserved.
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
-    https://github.com/Sagetech-Avionics/sagetech-mxs-sdk/blob/main/doc/pdf/ICD02373_MXS_Host_ICD.pdf
-
-    Author: Chuck Faber, Tom Pittenger
+ * Copyright (C)  2022 Sagetech Avionics Inc. All rights reserved.
+ *
+ * This file is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This file is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * SDK specification
+ * https://github.com/Sagetech-Avionics/sagetech-mxs-sdk/blob/main/doc/pdf/ICD02373_MXS_Host_ICD.pdf
+ * 
+ * Authors: Chuck Faber, Tom Pittenger
 */
 
 
@@ -27,6 +29,9 @@
 #include <AP_RTC/AP_RTC.h>
 #include <stdio.h>
 #include <time.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#define SAGETECH_USE_MXS_SDK        !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 
 #define MXS_INIT_TIMEOUT                            20000
 
@@ -164,6 +169,7 @@ void AP_ADSB_Sagetech_MXS::update()
 
 void AP_ADSB_Sagetech_MXS::handle_packet(const Packet &msg) 
 {
+#if SAGETECH_USE_MXS_SDK
     switch (msg.type) {
         case MsgType::ACK:
             if(sgDecodeAck((uint8_t*) &msg, &mxs_state.ack)) {
@@ -248,6 +254,7 @@ void AP_ADSB_Sagetech_MXS::handle_packet(const Packet &msg)
             // unhandled or intended for out-bound only
             break;
     }
+#endif // SAGETECH_USE_MXS_SDK
 }
 
 bool AP_ADSB_Sagetech_MXS::parse_byte(const uint8_t data) 
@@ -351,9 +358,11 @@ void AP_ADSB_Sagetech_MXS::auto_config_operating()
 
     last.msg.type = SG_MSG_TYPE_HOST_OPMSG;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_OPMSG] {};
     sgEncodeOperating(txComBuffer, &mxs_state.op, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_OPMSG);
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::auto_config_installation()
@@ -385,9 +394,11 @@ void AP_ADSB_Sagetech_MXS::auto_config_installation()
 
     last.msg.type = SG_MSG_TYPE_HOST_INSTALL;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_INSTALL] {};
     sgEncodeInstall(txComBuffer, &mxs_state.inst, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_INSTALL);
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::auto_config_flightid()
@@ -399,9 +410,11 @@ void AP_ADSB_Sagetech_MXS::auto_config_flightid()
     }
     last.msg.type = SG_MSG_TYPE_HOST_FLIGHT;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_FLIGHT] {};
     sgEncodeFlightId(txComBuffer, &mxs_state.fid, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_FLIGHT);
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::handle_ack(const sg_ack_t ack)
@@ -502,9 +515,13 @@ void AP_ADSB_Sagetech_MXS::send_data_req(const sg_datatype_t dataReqType)
     dataReq.reqType = dataReqType;
     last.msg.type = SG_MSG_TYPE_HOST_DATAREQ;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_DATAREQ] {};
     sgEncodeDataReq(txComBuffer, &dataReq, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_DATAREQ);
+#else
+    (void)dataReq;
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::send_install_msg()
@@ -523,9 +540,11 @@ void AP_ADSB_Sagetech_MXS::send_install_msg()
 
     last.msg.type = SG_MSG_TYPE_HOST_INSTALL;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_INSTALL] {};
     sgEncodeInstall(txComBuffer, &mxs_state.inst, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_INSTALL);
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::send_flight_id_msg()
@@ -537,9 +556,11 @@ void AP_ADSB_Sagetech_MXS::send_flight_id_msg()
 
     last.msg.type = SG_MSG_TYPE_HOST_FLIGHT;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_FLIGHT] {};
     sgEncodeFlightId(txComBuffer, &mxs_state.fid, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_FLIGHT);
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::send_operating_msg()
@@ -598,9 +619,11 @@ void AP_ADSB_Sagetech_MXS::send_operating_msg()
 
     last.msg.type = SG_MSG_TYPE_HOST_OPMSG;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_OPMSG] {};
     sgEncodeOperating(txComBuffer, &mxs_state.op, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_OPMSG);
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::send_gps_msg()
@@ -674,9 +697,13 @@ void AP_ADSB_Sagetech_MXS::send_gps_msg()
 
     last.msg.type = SG_MSG_TYPE_HOST_GPS;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_GPS] {};
     sgEncodeGPS(txComBuffer, &gps, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_GPS);
+#else
+    (void)gps;
+#endif
 }
 
 void AP_ADSB_Sagetech_MXS::send_targetreq_msg() 
@@ -696,9 +723,11 @@ void AP_ADSB_Sagetech_MXS::send_targetreq_msg()
 
     last.msg.type = SG_MSG_TYPE_HOST_TARGETREQ;
 
+#if SAGETECH_USE_MXS_SDK
     uint8_t txComBuffer[SG_MSG_LEN_TARGETREQ] {};
     sgEncodeTargetReq(txComBuffer, &mxs_state.treq, ++last.msg.id);
     msg_write(txComBuffer, SG_MSG_LEN_TARGETREQ);
+#endif
 }
 
 sg_emitter_t AP_ADSB_Sagetech_MXS::convert_emitter_type_to_sg(const uint8_t emitterType) const
