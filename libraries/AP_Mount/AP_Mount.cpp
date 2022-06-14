@@ -469,10 +469,12 @@ void AP_Mount::init()
             _num_instances++;
 #endif
 
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
+#endif
 
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
