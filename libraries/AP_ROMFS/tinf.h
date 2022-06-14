@@ -8,8 +8,7 @@
  * Copyright (c) 2014-2016 by Paul Sokolovsky
  */
 
-#ifndef TINF_H_INCLUDED
-#define TINF_H_INCLUDED
+#pragma once
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -126,5 +125,3 @@ uint32_t TINFCC uzlib_crc32(const void *data, unsigned int length, uint32_t crc)
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* TINF_H_INCLUDED */
