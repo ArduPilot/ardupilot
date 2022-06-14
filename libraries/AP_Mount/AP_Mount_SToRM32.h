@@ -5,7 +5,11 @@
 
 #include "AP_Mount_Backend.h"
 
-#if HAL_MOUNT_ENABLED
+#ifndef HAL_MOUNT_STORM32MAVLINK_ENABLED
+#define HAL_MOUNT_STORM32MAVLINK_ENABLED HAL_MOUNT_ENABLED
+#endif
+
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -49,4 +53,4 @@ private:
     mavlink_channel_t _chan;        // mavlink channel used to communicate with gimbal
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
 };
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_STORM32MAVLINK_ENABLED
