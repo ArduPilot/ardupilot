@@ -17,8 +17,7 @@
 //				having "id" to "identifier."  Also redefined "spare" in Rx MAH
 //				to provide more bits for "chargeUsed" fields.
 //
-#ifndef TELEMETRY_H
-#define	TELEMETRY_H
+#pragma once
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -1350,5 +1349,3 @@ typedef union
 //
 //		if .sID == 0x00 then .identifier = device type (TELE_DEVICE_xxx) and address I2C bus
 //		if .sID != 0x00 then .sID = device type and .identifer = address on I2C bus
-
-#endif
