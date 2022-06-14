@@ -33,3 +33,5 @@ IMU Invensensev2 SPI:icm20948 ROTATION_YAW_270
 CHECK_ICM42688_EXT      spi_check_register("icm42688_ext", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688)
 
 CHECK_IMU0_PRESENT   $CHECK_ICM42688_EXT
+
+env DEFAULT_PARAMETERS 'libraries/AP_HAL_ChibiOS/hwdef/CubeOrange/defaults.parm'
