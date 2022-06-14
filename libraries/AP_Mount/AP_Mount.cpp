@@ -453,10 +453,12 @@ void AP_Mount::init()
             _num_instances++;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
+#if HAL_MOUNT_ALEXMOS_ENABLED
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
             _backends[instance] = new AP_Mount_Alexmos(*this, state[instance], instance);
             _num_instances++;
+#endif
 
         // check for SToRM32 mounts using MAVLink protocol
         } else if (mount_type == Mount_Type_SToRM32) {
