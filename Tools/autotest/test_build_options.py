@@ -20,11 +20,15 @@ class TestBuildOptions(object):
                  match_glob=None,
                  do_step_disable_all=True,
                  do_step_disable_none=False,
+                 do_step_disable_defaults=True,
+                 do_step_disable_in_turn=True,
                  build_targets=None):
         self.sizes_nothing_disabled = None
         self.match_glob = match_glob
         self.do_step_disable_all = do_step_disable_all
         self.do_step_disable_none = do_step_disable_none
+        self.do_step_run_with_defaults = do_step_disable_defaults
+        self.do_step_disable_in_turn = do_step_disable_in_turn
         self.build_targets = build_targets
         if self.build_targets is None:
             self.build_targets = self.all_targets()
@@ -152,14 +156,26 @@ class TestBuildOptions(object):
         self.test_compile_with_defines({})
         self.sizes_nothing_disabled = self.find_build_sizes()
 
+    def run_with_defaults(self):
+        options = self.get_build_options_from_ardupilot_tree()
+        defines = {}
+        for feature in options:
+            defines[feature.define] = feature.default
+        self.test_compile_with_defines(defines)
+
     def run(self):
+        if self.do_step_run_with_defaults:
+            self.progress("Running run-with-defaults step")
+            self.run_with_defaults()
         if self.do_step_disable_all:
             self.progress("Running disable-all step")
             self.run_disable_all()
         if self.do_step_disable_none:
             self.progress("Running disable-none step")
             self.run_disable_none()
-        self.run_disable_in_turn()
+        if self.do_step_disable_in_turn:
+            self.progress("Running disable-in-turn step")
+            self.run_disable_in_turn()
 
 
 if __name__ == '__main__':
@@ -169,12 +185,18 @@ if __name__ == '__main__':
                       type='string',
                       default=None,
                       help='feature define must match this glob to be tested')
+    parser.add_option("--no-run-with-defaults",
+                      action='store_true',
+                      help='Do not run the run-with-defaults step')
     parser.add_option("--no-disable-all",
                       action='store_true',
                       help='Do not run the disable-all step')
     parser.add_option("--no-disable-none",
                       action='store_true',
                       help='Do not run the disable-none step')
+    parser.add_option("--no-disable-in-turn",
+                      action='store_true',
+                      help='Do not run the disable-in-turn step')
     parser.add_option("--build-targets",
                       type='choice',
                       choices=TestBuildOptions.all_targets(),
@@ -187,6 +209,8 @@ if __name__ == '__main__':
         match_glob=opts.define_match_glob,
         do_step_disable_all=not opts.no_disable_all,
         do_step_disable_none=not opts.no_disable_none,
+        do_step_disable_defaults=not opts.no_run_with_defaults,
+        do_step_disable_in_turn=not opts.no_disable_in_turn,
         build_targets=opts.build_targets,
     )
     tbo.run()
