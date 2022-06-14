@@ -443,8 +443,10 @@ void AP_Mount::init()
 
         // check for servo mounts
         if (mount_type == Mount_Type_Servo) {
+#if HAL_MOUNT_SERVO_ENABLED
             _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
             _num_instances++;
+#endif
 
 #if HAL_SOLO_GIMBAL_ENABLED
         // check for MAVLink mounts
