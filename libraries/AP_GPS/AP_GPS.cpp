@@ -560,7 +560,7 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
  */
 void AP_GPS::send_blob_start(uint8_t instance)
 {
-    if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
+    if (_type[instance] == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -569,7 +569,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if GPS_MOVING_BASELINE
     if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
          _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
-        ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
+        !option_set(DriverOptions::UBX_MBUseUart2)) {
         // we use 460800 when doing moving baseline as we need
         // more bandwidth. We don't do this if using UART2, as
         // in that case the RTCMv3 data doesn't go over the
@@ -738,13 +738,13 @@ void AP_GPS::detect_instance(uint8_t instance)
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
-             (_baudrates[dstate->current_baud] >= 115200 && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) ||
+             (_baudrates[dstate->current_baud] >= 115200 && option_set(DriverOptions::UBX_Use115200)) ||
              _baudrates[dstate->current_baud] == 230400) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
 
-        const uint32_t ublox_mb_required_baud = (_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2)?230400:460800;
+        const uint32_t ublox_mb_required_baud = option_set(DriverOptions::UBX_MBUseUart2)?230400:460800;
         if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
              _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
             _baudrates[dstate->current_baud] == ublox_mb_required_baud &&
