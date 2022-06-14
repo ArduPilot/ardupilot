@@ -19,9 +19,9 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
 #if HAL_MOUNT_ENABLED
+#include <AP_Common/AP_Common.h>
 #include <RC_Channel/RC_Channel.h>
 
 class AP_Mount_Backend
