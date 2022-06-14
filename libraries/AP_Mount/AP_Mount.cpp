@@ -468,10 +468,12 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
 
+#if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
         } else if (mount_type == Mount_Type_Gremsy) {
             _backends[instance] = new AP_Mount_Gremsy(*this, state[instance], instance);
             _num_instances++;
+#endif // HAL_MOUNT_GREMSY_ENABLED
         }
 
         // init new instance

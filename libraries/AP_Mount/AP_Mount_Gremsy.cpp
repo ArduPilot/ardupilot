@@ -1,7 +1,6 @@
 #include "AP_Mount_Gremsy.h"
-#if HAL_MOUNT_ENABLED
-#include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS.h>
+
+#if HAL_MOUNT_GREMSY_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -308,4 +307,4 @@ void AP_Mount_Gremsy::send_gimbal_device_set_attitude(float roll_rad, float pitc
                                                 NAN, NAN, NAN);   // angular velocities
 }
 
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_GREMSY_ENABLED
