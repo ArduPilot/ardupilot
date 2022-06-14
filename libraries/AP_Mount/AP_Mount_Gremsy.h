@@ -1,18 +1,21 @@
 /*
-  SToRM32 mount using serial protocol backend class
+  Gremsy mount backend class
  */
 #pragma once
 
+#include "AP_Mount_Backend.h"
+
+#ifndef HAL_MOUNT_GREMSY_ENABLED
+#define HAL_MOUNT_GREMSY_ENABLED (HAL_MOUNT_ENABLED && !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if HAL_MOUNT_GREMSY_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include "AP_Mount_Backend.h"
-
-#if HAL_MOUNT_ENABLED
-
 
 class AP_Mount_Gremsy : public AP_Mount_Backend
 {
@@ -76,4 +79,4 @@ private:
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _sent_gimbal_device_attitude_status_ms;    // time_boot_ms field of gimbal_device_status message last forwarded to the GCS (used to prevent sending duplicates)
 };
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_GREMSY_ENABLED
