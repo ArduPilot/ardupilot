@@ -1,5 +1,6 @@
 #include "AP_Mount_SToRM32_serial.h"
-#if HAL_MOUNT_ENABLED
+
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
@@ -296,4 +297,4 @@ void AP_Mount_SToRM32_serial::parse_reply() {
             break;
     }
 }
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_STORM32SERIAL_ENABLED
