@@ -12,6 +12,7 @@
 #include "AP_Mount_SToRM32_serial.h"
 #include "AP_Mount_Gremsy.h"
 #include <AP_Math/location.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
@@ -449,7 +450,7 @@ void AP_Mount::init()
 #endif
 
 #if HAL_SOLO_GIMBAL_ENABLED
-        // check for MAVLink mounts
+        // check for Solo mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
