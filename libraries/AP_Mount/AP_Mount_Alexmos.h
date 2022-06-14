@@ -3,13 +3,16 @@
 */
 #pragma once
 
-#include "AP_Mount.h"
-#if HAL_MOUNT_ENABLED
+#include "AP_Mount_Backend.h"
+
+#ifndef HAL_MOUNT_ALEXMOS_ENABLED
+#define HAL_MOUNT_ALEXMOS_ENABLED HAL_MOUNT_ENABLED
+#endif
+
+#if HAL_MOUNT_ALEXMOS_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_Mount_Backend.h"
-
 
 //definition of the commands id for the Alexmos Serial Protocol
 #define CMD_READ_PARAMS 'R'
@@ -299,4 +302,4 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_ALEXMOS_ENABLED
