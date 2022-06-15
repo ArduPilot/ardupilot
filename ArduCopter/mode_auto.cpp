@@ -1145,25 +1145,33 @@ void ModeAuto::payload_place_run_descend()
     land_run_vertical_control();
 }
 
-// terrain_adjusted_location: returns a Location with lat/lon from cmd
-// and altitude from our current altitude adjusted for location
-Location ModeAuto::terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const
+// sets the target_loc's alt to the vehicle's current alt but does not change target_loc's frame
+// in the case of terrain altitudes either the terrain database or the rangefinder may be used
+// returns true on success, false on failure
+bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
 {
-    // convert to location class
-    Location target_loc(cmd.content.location);
-
-    // decide if we will use terrain following
-    int32_t curr_terr_alt_cm, target_terr_alt_cm;
-    if (copter.current_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, curr_terr_alt_cm) &&
-        target_loc.get_alt_cm(Location::AltFrame::ABOVE_TERRAIN, target_terr_alt_cm)) {
-        curr_terr_alt_cm = MAX(curr_terr_alt_cm,200);
-        // if using terrain, set target altitude to current altitude above terrain
-        target_loc.set_alt_cm(curr_terr_alt_cm, Location::AltFrame::ABOVE_TERRAIN);
-    } else {
-        // set target altitude to current altitude above home
-        target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+    // if terrain alt using rangefinder is being used then set alt to current rangefinder altitude
+    if ((target_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) &&
+        (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER)) {
+        int32_t curr_rngfnd_alt_cm;
+        if (copter.get_rangefinder_height_interpolated_cm(curr_rngfnd_alt_cm)) {
+            // wp_nav is using rangefinder so use current rangefinder alt
+            target_loc.set_alt_cm(MAX(curr_rngfnd_alt_cm, 200), Location::AltFrame::ABOVE_TERRAIN);
+            return true;
+        }
+        return false;
     }
-    return target_loc;
+
+    // take copy of current location and change frame to match target
+    Location currloc = copter.current_loc;
+    if (!currloc.change_alt_frame(target_loc.get_alt_frame())) {
+        // this could fail due missing terrain database alt
+        return false;
+    }
+
+    // set target_loc's alt
+    target_loc.set_alt_cm(currloc.alt, currloc.get_alt_frame());
+    return true;
 }
 
 /********************************************************************************/
@@ -1314,7 +1322,15 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         state = State::FlyToLocation;
 
-        const Location target_loc = terrain_adjusted_location(cmd);
+        // convert cmd to location class
+        Location target_loc(cmd.content.location);
+        if (!shift_alt_to_current_alt(target_loc)) {
+            // this can only fail due to missing terrain database alt or rangefinder alt
+            // use current alt-above-home and report error
+            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
+        }
 
         wp_start(target_loc);
     } else {
@@ -1650,7 +1666,15 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         nav_payload_place.state = PayloadPlaceStateType_FlyToLocation;
 
-        const Location target_loc = terrain_adjusted_location(cmd);
+        // convert cmd to location class
+        Location target_loc(cmd.content.location);
+        if (!shift_alt_to_current_alt(target_loc)) {
+            // this can only fail due to missing terrain database alt or rangefinder alt
+            // use current alt-above-home and report error
+            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
+            AP::logger().Write_Error(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
+        }
 
         wp_start(target_loc);
     } else {
