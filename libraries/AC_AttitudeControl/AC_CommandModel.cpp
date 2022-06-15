@@ -38,3 +38,12 @@ const AP_Param::GroupInfo AC_CommandModel::var_info[] = {
     AP_GROUPEND
 };
 
+// Constructor
+AC_CommandModel::AC_CommandModel(float initial_rate, float initial_expo, float initial_tc)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    rate = initial_rate;
+    expo = initial_expo;
+    rate_tc = initial_tc;
+}
+
