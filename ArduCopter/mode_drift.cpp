@@ -54,7 +54,7 @@ void ModeDrift::run()
 
     // gain scheduling for yaw
     float pitch_vel2 = MIN(fabsf(pitch_vel), 2000);
-    float target_yaw_rate = target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.acro_y_rate / 45.0;
+    float target_yaw_rate = target_roll * (1.0f - (pitch_vel2 / 5000.0f)) * g2.command_model_acro_y.get_rate() / 45.0;
 
     roll_vel = constrain_float(roll_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
     pitch_vel = constrain_float(pitch_vel, -DRIFT_SPEEDLIMIT, DRIFT_SPEEDLIMIT);
