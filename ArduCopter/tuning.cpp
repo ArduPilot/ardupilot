@@ -107,14 +107,14 @@ void Copter::tuning()
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // Acro roll pitch rates
     case TUNING_ACRO_RP_RATE:
-        g2.acro_rp_rate = tuning_value;
+        g2.command_model_acro_rp.set_rate(tuning_value);
         break;
 #endif
 
 #if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
     // Acro yaw rate
     case TUNING_ACRO_YAW_RATE:
-        g2.acro_y_rate = tuning_value;
+        g2.command_model_acro_y.set_rate(tuning_value);
         break;
 #endif
 

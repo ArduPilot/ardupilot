@@ -34,8 +34,8 @@ void ModeSport::run()
     // get pilot's desired roll and pitch rates
 
     // calculate rate requests
-    float target_roll_rate = channel_roll->get_control_in() * g2.acro_rp_rate * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
-    float target_pitch_rate = channel_pitch->get_control_in() * g2.acro_rp_rate * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
+    float target_roll_rate = channel_roll->get_control_in() * g2.command_model_acro_rp.get_rate() * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
+    float target_pitch_rate = channel_pitch->get_control_in() * g2.command_model_acro_rp.get_rate() * 100.0 / ROLL_PITCH_YAW_INPUT_MAX;
 
     // get attitude targets
     const Vector3f att_target = attitude_control->get_att_target_euler_cd();
@@ -50,15 +50,15 @@ void ModeSport::run()
 
     const float angle_max = copter.aparm.angle_max;
     if (roll_angle > angle_max){
-        target_roll_rate +=  sqrt_controller(angle_max - roll_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
+        target_roll_rate +=  sqrt_controller(angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
     }else if (roll_angle < -angle_max) {
-        target_roll_rate +=  sqrt_controller(-angle_max - roll_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
+        target_roll_rate +=  sqrt_controller(-angle_max - roll_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_roll_max_cdss(), G_Dt);
     }
 
     if (pitch_angle > angle_max){
-        target_pitch_rate +=  sqrt_controller(angle_max - pitch_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
+        target_pitch_rate +=  sqrt_controller(angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
     }else if (pitch_angle < -angle_max) {
-        target_pitch_rate +=  sqrt_controller(-angle_max - pitch_angle, g2.acro_rp_rate * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
+        target_pitch_rate +=  sqrt_controller(-angle_max - pitch_angle, g2.command_model_acro_rp.get_rate() * 100.0 / ACRO_LEVEL_MAX_OVERSHOOT, attitude_control->get_accel_pitch_max_cdss(), G_Dt);
     }
 
     // get pilot's desired yaw rate
