@@ -163,8 +163,9 @@ class AutoTestPlane(AutoTest):
     def test_need_ekf_to_arm(self):
         """Loiter where we are."""
         self.progress("Ensuring we need EKF to be healthy to arm")
-        self.reboot_sitl()
+        self.wait_ready_to_arm()
         self.context_collect("STATUSTEXT")
+        self.reboot_sitl()
         tstart = self.get_sim_time()
         success = False
         while not success:
