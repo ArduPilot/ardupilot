@@ -425,18 +425,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(rc_speed, "RC_SPEED",              RC_FAST_SPEED),
 
-    // @Param: ACRO_RP_P
-    // @DisplayName: Acro Roll and Pitch P gain
-    // @Description: Converts pilot roll and pitch into a desired rate of rotation in ACRO and SPORT mode.  Higher values mean faster rate of rotation.
-    // @Range: 1 10
-    // @User: Standard
-
-    // @Param: ACRO_YAW_P
-    // @DisplayName: Acro Yaw P gain
-    // @Description: Converts pilot yaw input into a desired rate of rotation.  Higher values mean faster rate of rotation.
-    // @Range: 1 10
-    // @User: Standard
-
 #if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
     // @Param: ACRO_BAL_ROLL
     // @DisplayName: Acro Balance Roll
