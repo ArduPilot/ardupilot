@@ -8708,9 +8708,12 @@ Also, ignores heartbeats not from our target system'''
             (round(new_measured_rate, ndigits=ndigits),
              round(expected_rate, ndigits=ndigits))
         )
+        notachieved_ex = None
         if round(new_measured_rate, ndigits=ndigits) != round(expected_rate, ndigits=ndigits):
-            raise NotAchievedException("Rate not achieved (got %f want %f)" %
-                                       (round(new_measured_rate, ndigits), round(expected_rate, ndigits)))
+            notachieved_ex = NotAchievedException(
+                "Rate not achieved (got %f want %f)" %
+                (round(new_measured_rate, ndigits),
+                 round(expected_rate, ndigits)))
 
         # make sure get_message_interval works:
         self.send_get_message_interval(victim_message, mav=mav)
@@ -8730,6 +8733,9 @@ Also, ignores heartbeats not from our target system'''
         m = mav.recv_match(type='COMMAND_ACK', blocking=True)
         if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
             raise NotAchievedException("Expected ACCEPTED for reading message interval")
+
+        if notachieved_ex is not None:
+            raise notachieved_ex
 
     def test_set_message_interval(self):
         self.start_subtest('Basic tests')
