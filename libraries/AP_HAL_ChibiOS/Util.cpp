@@ -725,7 +725,7 @@ void Util::log_stack_info(void)
 #if !defined(HAL_BOOTLOADER_BUILD)
 size_t Util::last_crash_dump_size() const
 {
-#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
+#if HAL_CRASHDUMP_ENABLE
     // get dump size
     uint32_t size = stm32_crash_dump_size();
     char* dump_start = (char*)stm32_crash_dump_addr();
@@ -744,7 +744,7 @@ size_t Util::last_crash_dump_size() const
 
 void* Util::last_crash_dump_ptr() const
 {
-#if HAL_GCS_ENABLED && HAL_CRASHDUMP_ENABLE
+#if HAL_CRASHDUMP_ENABLE
     if (last_crash_dump_size() == 0) {
         return nullptr;
     }
