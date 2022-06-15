@@ -11,10 +11,7 @@
 
 class AC_CommandModel {
 public:
-    AC_CommandModel(void)
-        {
-            AP_Param::setup_object_defaults(this, var_info);
-        }
+    AC_CommandModel(float initial_rate, float initial_expo, float initial_tc);
 
     // Accessors for parameters
     float get_rate_tc() { return rate_tc; }
