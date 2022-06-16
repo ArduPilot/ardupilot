@@ -1,3 +1,32 @@
+Release 4.2.2beta1 16th June 2022
+---------------------------------
+
+This is a minor stable release with a few new features and bug
+fixes. The changes are:
+
+ - support two full harmonic notches using the INS_HNTC2_ parameters
+ - adjust neopixel bitwidths for better reliability
+ - fixed EKF3 replay bugs that caused poor replay fidelity
+ - added BLHeli_S ESC type in SERVO_DSHOT_ESC
+ - reduced min lean angle for alt-hold in quadplanes to 5 degrees
+ - fixed param ftp run length encoding bug
+ - reduced default quadplane rate accelerations and XY position gains
+ - improved parameter checks of Q_M_PWM parameters for bad conversions
+ - added Q_NAVALT_MIN parameter for min alt to start attitude control in takeoff
+ - added CAN_Dn_UC_POOL parameter to control DroneCAN pool size, to allow memory saving on F4 boards
+ - saved hardfault crash dumps to microSD if detected
+ - fixed PWM rangefinder bug and support SCALING parameter
+ - updated OSD flight modes menu for newer modes
+ - preserve new rangefinder addresses on VL53L1X
+ - protect against hardfault on bad CRSF frames
+ - handle reset of CRSF receiver in flight
+ - added MambaH743v4 and MambaF405 MK4
+ - fixed fault on FFT init with ARMING_REQUIRE=0
+ - synced quicktune lua script with latest version
+ - learn MAVLink routes on private channels
+
+Happy flying!
+
 Release 4.2.1 23rd May 2022
 ---------------------------
 
