@@ -147,12 +147,13 @@ void AP_Mount_Gremsy::send_mount_status(mavlink_channel_t chan)
 void AP_Mount_Gremsy::find_gimbal()
 {
     // do not look for gimbal for first 10 seconds so user may see banner
-    if (AP_HAL::millis() < 10000) {
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms < 10000) {
         return;
     }
 
-    // return if search time has has passed
-    if (AP_HAL::millis() > AP_MOUNT_GREMSY_SEARCH_MS) {
+    // search for gimbal for 60 seconds or until armed
+    if ((now_ms > AP_MOUNT_GREMSY_SEARCH_MS) && hal.util->get_soft_armed()) {
         return;
     }
 
@@ -176,7 +177,6 @@ void AP_Mount_Gremsy::find_gimbal()
 
     // request GIMBAL_DEVICE_INFORMATION
     if (!_got_device_info) {
-        uint32_t now_ms = AP_HAL::millis();
         if (now_ms - _last_devinfo_req_ms > 1000) {
             _last_devinfo_req_ms = now_ms;
             request_gimbal_device_information();
