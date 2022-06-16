@@ -57,10 +57,18 @@
 #include <AP_ADSB/AP_ADSB.h>
 #include "AP_UAVCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
+#include "AP_UAVCAN_pool.h"
 
 #define LED_DELAY_US 50000
 
 extern const AP_HAL::HAL& hal;
+
+// setup default pool size
+#ifndef UAVCAN_NODE_POOL_SIZE
+#define UAVCAN_NODE_POOL_SIZE 8192
+#endif
+
+#define UAVCAN_STACK_SIZE     4096
 
 #define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
 
@@ -121,6 +129,13 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @Range: 0 18
     // @User: Advanced
     AP_GROUPINFO("ESC_OF", 7, AP_UAVCAN, _esc_offset, 0),
+
+    // @Param: POOL
+    // @DisplayName: CAN pool size
+    // @Description: Amount of memory in bytes to allocate for the DroneCAN memory pool. More memory is needed for higher CAN bus loads
+    // @Range: 1024 16384
+    // @User: Advanced
+    AP_GROUPINFO("POOL", 8, AP_UAVCAN, _pool_size, UAVCAN_NODE_POOL_SIZE),
     
     AP_GROUPEND
 };
@@ -171,9 +186,7 @@ static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_stat
 UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
 static uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb> *debug_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 
-
-AP_UAVCAN::AP_UAVCAN() :
-    _node_allocator()
+AP_UAVCAN::AP_UAVCAN()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -232,7 +245,14 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator);
+    _allocator = new AP_PoolAllocator(_pool_size);
+
+    if (_allocator == nullptr || !_allocator->init()) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node pool\n");
+        return;
+    }
+
+    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), *_allocator);
 
     if (_node == nullptr) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node\n\r");
