@@ -43,6 +43,9 @@ public:
     // used for gimbals that need to read INS data at full rate
     virtual void update_fast() {}
 
+    // return true if healthy
+    virtual bool healthy() const { return true; }
+
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
