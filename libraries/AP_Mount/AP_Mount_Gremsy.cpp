@@ -88,6 +88,34 @@ void AP_Mount_Gremsy::update()
     }
 }
 
+// return true if healthy
+bool AP_Mount_Gremsy::healthy() const
+{
+    // unhealthy until gimbal has been found and replied with device info
+    if (!_found_gimbal || !_got_device_info) {
+        return false;
+    }
+
+    // unhealthy if attitude information NOT received within the last second
+    if (AP_HAL::millis() - _last_attitude_status_ms > 1000) {
+        return false;
+    }
+
+    // check failure flags
+    uint32_t critical_failure_flags = GIMBAL_DEVICE_ERROR_FLAGS_ENCODER_ERROR |
+                                      GIMBAL_DEVICE_ERROR_FLAGS_POWER_ERROR |
+                                      GIMBAL_DEVICE_ERROR_FLAGS_MOTOR_ERROR |
+                                      GIMBAL_DEVICE_ERROR_FLAGS_SOFTWARE_ERROR |
+                                      GIMBAL_DEVICE_ERROR_FLAGS_COMMS_ERROR;
+
+    if ((_gimbal_device_attitude_status.failure_flags & critical_failure_flags) > 0) {
+        return false;
+    }
+
+    // if we get this far return mount is healthy
+    return true;
+}
+
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Gremsy::send_mount_status(mavlink_channel_t chan)
 {
@@ -208,6 +236,7 @@ void AP_Mount_Gremsy::handle_gimbal_device_attitude_status(const mavlink_message
 
     // take copy of message so it can be forwarded onto GCS later
     mavlink_msg_gimbal_device_attitude_status_decode(&msg, &_gimbal_device_attitude_status);
+    _last_attitude_status_ms = AP_HAL::millis();
 }
 
 // request GIMBAL_DEVICE_INFORMATION message
