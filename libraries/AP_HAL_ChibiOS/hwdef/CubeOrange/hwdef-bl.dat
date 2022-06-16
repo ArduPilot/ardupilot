@@ -69,3 +69,5 @@ PROCESS_STACK 0x4000
 
 # Hold Flash at the end for keystore
 FLASH_RESERVE_END_KB 128
+
+env OPTIMIZE -O0
