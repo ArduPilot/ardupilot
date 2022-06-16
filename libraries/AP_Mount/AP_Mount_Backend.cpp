@@ -125,7 +125,7 @@ void AP_Mount_Backend::update_rate_and_angle_from_rc(const RC_Channel *chan, flo
         rate_rads = 0;
         return;
     }
-    rate_rads = chan->norm_input_dz() * 0.005f * _frontend._joystick_speed;
+    rate_rads = chan->norm_input_dz() * radians(_frontend._rc_rate_max);
     angle_rad = constrain_float(angle_rad + (rate_rads * AP_MOUNT_UPDATE_DT), radians(angle_min_rad*0.01f), radians(angle_max_rad*0.01f));
 }
 
@@ -137,7 +137,7 @@ void AP_Mount_Backend::update_targets_from_rc()
     const RC_Channel *pan_ch = rc().channel(_state._pan_rc_in - 1);
 
     // if joystick_speed is defined then pilot input defines a rate of change of the angle
-    if (_frontend._joystick_speed > 0) {
+    if (_frontend._rc_rate_max > 0) {
         // allow pilot position input to come directly from an RC_Channel
         update_rate_and_angle_from_rc(roll_ch, _rate_target_rads.x, _angle_ef_target_rad.x, _state._roll_angle_min, _state._roll_angle_max);
         update_rate_and_angle_from_rc(tilt_ch, _rate_target_rads.y, _angle_ef_target_rad.y, _state._tilt_angle_min, _state._tilt_angle_max);
