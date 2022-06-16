@@ -33,7 +33,7 @@ at the default of 10 seconds.
 
 This is the percentage gain margin to use. Once the oscillation point
 for a gain is found the gain is reduced by this percentage. The
-default of 70% is good for most users.
+default of 60% is good for most users.
 
 ## QUIK_OSC_SMAX
 
@@ -63,6 +63,37 @@ gain than the oscillation limit to ensure that enough control remains
 for roll, pitch and thrust. A maximum of 0.01 is good for most VTOL
 vehicles.
 
+## QUIK_RP_PI_RATIO
+
+This is the ratio for P to I for roll and pitch axes. This should
+normally be 1, but on some large vehicles a value of up to 3 can be
+used if the I term in the PID is causing too much phase lag.
+
+If QUIK_RP_PI_RATIO is less than 1 then the I value will not be
+changed at all when P is changed.
+
+## QUIK_Y_PI_RATIO
+
+This is the ratio for P to I for the yax axis. This should
+normally be 10, but a different value may be needed on some vehicle
+types.
+
+If QUIK_Y_PI_RATIO is less than 1 then the I value will not be
+changed at all when P is changed.
+
+## QUIK_AUTO_FILTER
+
+This enables automatic setting of the PID filters based on the
+INS_GYRO_FILTER value. Set to zero to disable this feature.
+
+## QUIK_AUTO_SAVE
+
+This enables automatic saving of the tune if this number of seconds
+pass after the end of the tune without reverting the tune. Setting
+this to a non-zero value allows you to use quicktune with a 2-position
+switch, with the switch settings as low and mid positions. A zero
+value disables auto-save and you need to have a 3 position switch.
+
 # Operation
 
 First you should setup harmonic notch filtering using the guide in the
@@ -75,9 +106,10 @@ controllers microSD card, then set SCR_ENABLE to 1. Reboot, and
 refresh parameters. Then set QUIK_ENABLE to 1.
 
 You will then need to setup a 3 position switch on an available RC
-input channel for controlling the tune. If for example channel 6 is
-available with a 3 position switch then you should set RC6_OPTION=300
-to association the tuning control with that switch.
+input channel for controlling the tune (or 2 position if you set
+QUIK_AUTO_SAVE). If for example channel 6 is available with a 3
+position switch then you should set RC6_OPTION=300 to association the
+tuning control with that switch.
 
 You should then takeoff and put the vehicle into QLOITER mode (for
 quadplanes) or LOITER mode (for multicopters) and have it in a steady
@@ -107,12 +139,11 @@ The script will also adjust filter settings using the following rules:
  - if no SMAX is set for a rate controller than the SMAX will be set to 50Hz
 
 Once the tuning is finished you will see a "Tuning: done" message. You
-can save the tune by moving the switch to the high position. You
-should do this to save before you land and disarm.
+can save the tune by moving the switch to the high position (Tune Save). You
+should do this to save before you land and disarm. If you save before the tune is completed the tune will pause, and any parameters completed will be saved and the current value of the one being actively tuned will remain active. You can resume tuning by returning the switch again to the middle position, or if moved to the low position, the parameter currently being tuned will be reverted but any previously saved parameters will remain.
 
-If you move the switch to the low position at any time in the tune
-then all parameters will be reverted to their original
-values. Parameters will also be reverted if you disarm.
+If you move the switch to the low position at any time in the tune before using the Tune Save switch position, then all parameters will be reverted to their original
+values. Parameters will also be reverted if you disarm before saving.
 
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
