@@ -179,13 +179,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_PAN",  15, AP_Mount, state[0]._pan_angle_max,  4500),
 
-    // @Param: _JSTICK_SPD
-    // @DisplayName: mount joystick speed
-    // @Description: 0 for position control, small for low speeds, 100 for max speed. A good general value is 10 which gives a movement speed of 3 degrees per second.
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("_JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
+    // 16 was _JSTICK_SPD
 
     // @Param: _LEAD_RLL
     // @DisplayName: Roll stabilization lead time
@@ -215,7 +209,14 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // 24 is AVAILABLE
+    // @Param: _RC_RATE
+    // @DisplayName: Mount RC Rate
+    // @Description: Pilot rate control's maximum rate.  Set to zero to use angle control
+    // @Units: deg/s
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RC_RATE",  24, AP_Mount, _rc_rate_max, 0),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
@@ -431,6 +432,9 @@ void AP_Mount::init()
                 state[0]._type.set_and_save(Mount_Type_Servo);
         }
     }
+
+    // perform any required parameter conversion
+    convert_params();
 
     // primary is reset to the first instantiated mount
     bool primary_set = false;
@@ -824,6 +828,18 @@ void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->handle_gimbal_device_attitude_status(msg);
+        }
+    }
+}
+
+// perform any required parameter conversion
+void AP_Mount::convert_params()
+{
+    // convert JSTICK_SPD to RC_RATE
+    if (!_rc_rate_max.configured()) {
+        int8_t jstick_spd = 0;
+        if (AP_Param::get_param_by_index(this, 16, AP_PARAM_INT8, &jstick_spd) && (jstick_spd > 0)) {
+            _rc_rate_max.set_and_save(jstick_spd * 0.3);
         }
     }
 }
