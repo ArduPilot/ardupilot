@@ -29,6 +29,8 @@ AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
     AP_RangeFinder_Backend(_state, _params),
     estimated_terrain_height(_estimated_terrain_height)
 {
+    // this gives one mm per us
+    params.scaling.set_default(1.0);
 }
 
 /*
@@ -47,7 +49,8 @@ bool AP_RangeFinder_PWM::get_reading(float &reading_m)
         return false;
     }
 
-    reading_m = value_us * 10.0f; // correct for LidarLite.  Parameter needed?  Converts from decimetres -> m here
+    // LidarLite uses one mm per us
+    reading_m = value_us * 0.001 * params.scaling;
     return true;
 }
 
