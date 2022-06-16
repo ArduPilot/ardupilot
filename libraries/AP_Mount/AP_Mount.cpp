@@ -734,6 +734,34 @@ void AP_Mount::send_mount_status(mavlink_channel_t chan)
     }
 }
 
+// run pre-arm check.  returns false on failure and fills in failure_msg
+// any failure_msg returned will not include a prefix
+bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
+{
+    // check type parameters
+    for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
+        if ((state[i]._type != Mount_Type_None) && (_backends[i] == nullptr)) {
+            strncpy(failure_msg, "check TYPE", failure_msg_len);
+            return false;
+        }
+    }
+
+    // return true if no mount configured
+    if (_num_instances == 0) {
+        return true;
+    }
+
+    // check healthy
+    for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
+        if ((_backends[i] != nullptr) && !_backends[i]->healthy()) {
+            strncpy(failure_msg, "not healthy", failure_msg_len);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {
