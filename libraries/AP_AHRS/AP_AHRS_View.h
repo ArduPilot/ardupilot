@@ -195,6 +195,9 @@ public:
     // get pitch trim (deg)
     float get_pitch_trim() const { return _pitch_trim_deg; }
 
+    // Rotate vector from AHRS reference frame to AHRS view refences frame
+    void rotate(Vector3f &vec) const;
+
 private:
     const enum Rotation rotation;
     AP_AHRS &ahrs;
