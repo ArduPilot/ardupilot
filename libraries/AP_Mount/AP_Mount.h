@@ -151,7 +151,7 @@ protected:
     static AP_Mount *_singleton;
 
     // frontend parameters
-    AP_Int8             _joystick_speed;    // joystick gain
+    AP_Int16            _rc_rate_max;       // Pilot rate control's maximum rate.  Set to zero to use angle control
 
     // front end members
     uint8_t             _num_instances;     // number of mounts instantiated
@@ -212,6 +212,9 @@ private:
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);
+
+    // perform any required parameter conversion
+    void convert_params();
 };
 
 namespace AP {
