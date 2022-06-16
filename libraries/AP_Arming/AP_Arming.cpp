@@ -47,6 +47,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Mount/AP_Mount.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -1141,6 +1142,24 @@ bool AP_Arming::osd_checks(bool display_failure) const
     return true;
 }
 
+bool AP_Arming::mount_checks(bool display_failure) const
+{
+#if HAL_MOUNT_ENABLED
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_CAMERA)) {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            return true;
+        }
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] = {};
+        if (!mount->pre_arm_checks(fail_msg, sizeof(fail_msg))) {
+            check_failed(ARMING_CHECK_CAMERA, display_failure, "Mount: %s", fail_msg);
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
 bool AP_Arming::fettec_checks(bool display_failure) const
 {
 #if AP_FETTEC_ONEWIRE_ENABLED
@@ -1323,6 +1342,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  proximity_checks(report)
         &  camera_checks(report)
         &  osd_checks(report)
+        &  mount_checks(report)
         &  fettec_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
