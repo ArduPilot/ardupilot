@@ -4751,7 +4751,7 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(12, 1500)
 
                 self.progress("Testing RC rate control")
-                self.set_parameter('MNT_JSTICK_SPD', 10)
+                self.set_parameter('MNT_RC_RATE', 10)
                 self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
                 self.set_rc(12, 1300)
                 self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
@@ -4766,7 +4766,7 @@ class AutoTestCopter(AutoTest):
                 self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
                 self.progress("Reverting to angle mode")
-                self.set_parameter('MNT_JSTICK_SPD', 0)
+                self.set_parameter('MNT_RC_RATE', 0)
                 self.set_rc(12, 1500)
                 self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
