@@ -73,17 +73,18 @@ void AP_Mount_SoloGimbal::update()
             break;
 
         case MAV_MOUNT_MODE_HOME_LOCATION:
+            _gimbal.set_lockedToBody(false);
             // constantly update the home location:
             if (!AP::ahrs().home_is_set()) {
                 break;
             }
             _state._roi_target = AP::ahrs().get_home();
             _state._roi_target_set = true;
-            _gimbal.set_lockedToBody(false);
             UNUSED_RESULT(calc_angle_to_roi_target(_angle_ef_target_rad, true, true, true));
             break;
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
+            _gimbal.set_lockedToBody(false);
             UNUSED_RESULT(calc_angle_to_sysid_target(_angle_ef_target_rad, true, true, true));
             break;
 
