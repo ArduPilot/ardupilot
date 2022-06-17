@@ -135,7 +135,8 @@ private:
     // update rate and angle targets from RC input
     // current angle target (in radians) should be provided in angle_rad target
     // rate and angle targets are returned in rate_rads and angle_rad arguments
-    void update_rate_and_angle_from_rc(const RC_Channel *chan, float &rate_rads, float &angle_rad, float angle_min_rad, float angle_max_rad) const;
+    // angle min and max are in centi-degrees
+    void update_rate_and_angle_from_rc(const RC_Channel *chan, float &rate_rads, float &angle_rad, float angle_min_cd, float angle_max_cd) const;
 };
 
 #endif // HAL_MOUNT_ENABLED
