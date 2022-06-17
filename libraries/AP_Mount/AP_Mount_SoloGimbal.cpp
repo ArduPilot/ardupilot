@@ -69,7 +69,7 @@ void AP_Mount_SoloGimbal::update()
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             _gimbal.set_lockedToBody(false);
-            UNUSED_RESULT(calc_angle_to_roi_target(_angle_ef_target_rad, true, true));
+            UNUSED_RESULT(calc_angle_to_roi_target(_angle_ef_target_rad, true, true, true));
             break;
 
         case MAV_MOUNT_MODE_HOME_LOCATION:
@@ -80,11 +80,11 @@ void AP_Mount_SoloGimbal::update()
             _state._roi_target = AP::ahrs().get_home();
             _state._roi_target_set = true;
             _gimbal.set_lockedToBody(false);
-            UNUSED_RESULT(calc_angle_to_roi_target(_angle_ef_target_rad, true, true));
+            UNUSED_RESULT(calc_angle_to_roi_target(_angle_ef_target_rad, true, true, true));
             break;
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            UNUSED_RESULT(calc_angle_to_sysid_target(_angle_ef_target_rad, true, true));
+            UNUSED_RESULT(calc_angle_to_sysid_target(_angle_ef_target_rad, true, true, true));
             break;
 
         default:
