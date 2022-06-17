@@ -119,14 +119,15 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
 // update rate and angle targets from RC input
 // current angle target (in radians) should be provided in angle_rad target
 // rate and angle targets are returned in rate_rads and angle_rad arguments
-void AP_Mount_Backend::update_rate_and_angle_from_rc(const RC_Channel *chan, float &rate_rads, float &angle_rad, float angle_min_rad, float angle_max_rad) const
+// angle min and max are in centi-degrees
+void AP_Mount_Backend::update_rate_and_angle_from_rc(const RC_Channel *chan, float &rate_rads, float &angle_rad, float angle_min_cd, float angle_max_cd) const
 {
     if ((chan == nullptr) || (chan->get_radio_in() == 0)) {
         rate_rads = 0;
         return;
     }
     rate_rads = chan->norm_input_dz() * radians(_frontend._rc_rate_max);
-    angle_rad = constrain_float(angle_rad + (rate_rads * AP_MOUNT_UPDATE_DT), radians(angle_min_rad*0.01f), radians(angle_max_rad*0.01f));
+    angle_rad = constrain_float(angle_rad + (rate_rads * AP_MOUNT_UPDATE_DT), radians(angle_min_cd*0.01f), radians(angle_max_cd*0.01f));
 }
 
 // update_targets_from_rc - updates angle targets using input from receiver
