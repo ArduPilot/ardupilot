@@ -22,7 +22,7 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
 
     // @Param: THROTTLE
     // @DisplayName: Throttle channel
-    // @Description: Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter. Warning APM 2.X: Changing the throttle channel could produce unexpected fail-safe results if connection between receiver and on-board PPM Encoder is lost. Disabling on-board PPM Encoder is recommended.  Reboot is required for changes to take effect.
+    // @Description: Throttle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Throttle is normally on channel 3, but you can move it to any channel with this parameter. Reboot is required for changes to take effect.
     // @Range: 1 8
     // @Increment: 1
     // @User: Advanced
