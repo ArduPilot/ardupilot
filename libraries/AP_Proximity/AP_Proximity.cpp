@@ -29,6 +29,7 @@
 #include "AP_Proximity_Cygbot_D1.h"
 #include "AP_Proximity_DroneCAN.h"
 #include "AP_Proximity_Scripting.h"
+#include "AP_Proximity_LD06.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -215,6 +216,15 @@ void AP_Proximity::init()
         case Type::AirSimSITL:
             state[instance].instance = instance;
             drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
+            break;
+#endif
+#if AP_PROXIMITY_LD06_ENABLED
+        case Type::LD06:
+            if (AP_Proximity_LD06::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
             break;
 #endif
         }
