@@ -66,7 +66,7 @@ public:
 
 protected:
     // axis that can be tuned
-    enum AxisType {
+    enum class AxisType {
         ROLL = 0,                 // roll axis is being tuned (either angle or rate)
         PITCH = 1,                // pitch axis is being tuned (either angle or rate)
         YAW = 2,                  // pitch axis is being tuned (either angle or rate)

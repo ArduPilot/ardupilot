@@ -163,11 +163,11 @@ const char *AC_AutoTune::type_string() const
 const char *AC_AutoTune::axis_string() const
 {
     switch (axis) {
-    case ROLL:
+    case AxisType::ROLL:
         return "Roll";
-    case PITCH:
+    case AxisType::PITCH:
         return "Pitch";
-    case YAW:
+    case AxisType::YAW:
         return "Yaw";
     }
     return "";
@@ -345,17 +345,17 @@ void AC_AutoTune::control_attitude()
 
         // Initialize test-specific variables
         switch (axis) {
-        case ROLL:
+        case AxisType::ROLL:
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().x) * 100.0f;
             start_angle = ahrs_view->roll_sensor;
             break;
-        case PITCH:
+        case AxisType::PITCH:
             abort_angle = AUTOTUNE_TARGET_ANGLE_RLLPIT_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().y) * 100.0f;
             start_angle = ahrs_view->pitch_sensor;
             break;
-        case YAW:
+        case AxisType::YAW:
             abort_angle = AUTOTUNE_TARGET_ANGLE_YAW_CD;
             start_rate = ToDeg(ahrs_view->get_gyro().z) * 100.0f;
             start_angle = ahrs_view->yaw_sensor;
@@ -461,25 +461,25 @@ void AC_AutoTune::control_attitude()
                 // advance to the next axis
                 bool complete = false;
                 switch (axis) {
-                case ROLL:
+                case AxisType::ROLL:
                     axes_completed |= AUTOTUNE_AXIS_BITMASK_ROLL;
                     if (pitch_enabled()) {
-                        axis = PITCH;
+                        axis = AxisType::PITCH;
                     } else if (yaw_enabled()) {
-                        axis = YAW;
+                        axis = AxisType::YAW;
                     } else {
                         complete = true;
                     }
                     break;
-                case PITCH:
+                case AxisType::PITCH:
                     axes_completed |= AUTOTUNE_AXIS_BITMASK_PITCH;
                     if (yaw_enabled()) {
-                        axis = YAW;
+                        axis = AxisType::YAW;
                     } else {
                         complete = true;
                     }
                     break;
-                case YAW:
+                case AxisType::YAW:
                     axes_completed |= AUTOTUNE_AXIS_BITMASK_YAW;
                     complete = true;
                     break;
@@ -502,7 +502,7 @@ void AC_AutoTune::control_attitude()
         // reverse direction for multicopter twitch test
         positive_direction = twitch_reverse_direction();
 
-        if (axis == YAW) {
+        if (axis == AxisType::YAW) {
             attitude_control->input_euler_angle_roll_pitch_yaw(0.0f, 0.0f, ahrs_view->yaw_sensor, false);
         }
 
@@ -524,11 +524,11 @@ void AC_AutoTune::backup_gains_and_initialise()
 {
     // initialise state because this is our first time
     if (roll_enabled()) {
-        axis = ROLL;
+        axis = AxisType::ROLL;
     } else if (pitch_enabled()) {
-        axis = PITCH;
+        axis = AxisType::PITCH;
     } else if (yaw_enabled()) {
-        axis = YAW;
+        axis = AxisType::YAW;
     }
     // no axes are complete
     axes_completed = 0;
@@ -691,7 +691,7 @@ void AC_AutoTune::get_poshold_attitude(float &roll_cd_out, float &pitch_cd_out, 
       more than 2.5 degrees of attitude on the axis it is tuning
      */
     float target_yaw_cd = degrees(atan2f(pdiff.y, pdiff.x)) * 100;
-    if (axis == PITCH) {
+    if (axis == AxisType::PITCH) {
         // for roll and yaw tuning we point along the wind, for pitch
         // we point across the wind
         target_yaw_cd += 9000;
