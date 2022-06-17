@@ -76,7 +76,7 @@ void AP_Mount_SToRM32_serial::update()
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true, true)) {
                 resend_now = true;
             }
             break;
@@ -88,15 +88,13 @@ void AP_Mount_SToRM32_serial::update()
             }
             _state._roi_target = AP::ahrs().get_home();
             _state._roi_target_set = true;
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true, true)) {
                 resend_now = true;
             }
             break;
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
-                                           true,
-                                           true)) {
+            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true, true)) {
                 resend_now = true;
             }
             break;
