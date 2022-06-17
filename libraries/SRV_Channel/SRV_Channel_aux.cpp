@@ -751,6 +751,10 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Aux_servo_function_t function, flo
     for (slew_list *slew = _slew; slew; slew = slew->next) {
         if (slew->func == function) {
             // found existing item, update max change
+            if (!is_positive(slew->max_change)) {
+                // prevent a step when enabling/disabling
+                slew->last_scaled_output = functions[function].output_scaled;
+            }
             slew->max_change = max_change;
             return;
         }
