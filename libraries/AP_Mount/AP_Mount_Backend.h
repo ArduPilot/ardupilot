@@ -98,27 +98,17 @@ protected:
 
     // calc_angle_to_location - calculates the earth-frame roll, tilt
     // and pan angles (in radians) to point at the given target
-    bool calc_angle_to_location(const struct Location &target,
-                                Vector3f& angles_to_target_rad,
-                                bool calc_tilt,
-                                bool calc_pan,
-                                bool relative_pan = true) const WARN_IF_UNUSED;
+    bool calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const WARN_IF_UNUSED;
 
     // calc_angle_to_roi_target - calculates the earth-frame roll, tilt
     // and pan angles (in radians) to point at the ROI-target (as set
     // by various mavlink messages)
-    bool calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
-                                  bool calc_tilt,
-                                  bool calc_pan,
-                                  bool relative_pan = true) const WARN_IF_UNUSED;
+    bool calc_angle_to_roi_target(Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const WARN_IF_UNUSED;
 
     // calc_angle_to_sysid_target - calculates the earth-frame roll, tilt
     // and pan angles (in radians) to point at the sysid-target (as set
     // by various mavlink messages)
-    bool calc_angle_to_sysid_target(Vector3f& angles_to_target_rad,
-                                    bool calc_tilt,
-                                    bool calc_pan,
-                                    bool relative_pan = true) const WARN_IF_UNUSED;
+    bool calc_angle_to_sysid_target(Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const WARN_IF_UNUSED;
 
     // get the mount mode from frontend
     MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
