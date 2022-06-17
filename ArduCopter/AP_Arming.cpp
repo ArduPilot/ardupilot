@@ -643,6 +643,9 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     // superclass method should always be the last thing called; it
     // has side-effects which would need to be cleaned up if one of
     // our arm checks failed
+    if (copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS) {
+        return AP_Arming::arm_checks(AP_Arming::Method::GUIDED);
+    }
     return AP_Arming::arm_checks(method);
 }
 
