@@ -75,6 +75,14 @@ public:
         USE_MOTOR_ALWAYS = 2
     };
 
+    // states of SAIL_CONTROL_TYPE parameter and sail_control_type variable
+    enum SailControlType: uint8_t {
+        LINEAR  = 0,
+        FIXED = 1,
+        EXTREMUM_SEEKING = 2,
+        SMOOTH_EXTREMUM_SEEKING = 3,
+    };
+
     // set state of motor
     // if report_failure is true a message will be sent to all GCSs
     void set_motor_state(UseMotor state, bool report_failure = true);
