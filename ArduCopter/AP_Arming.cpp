@@ -572,7 +572,11 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method)) {
-        check_failed(true, "Mode not armable");
+        if (!(copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS)) {
+            check_failed(true, "Mode not armable");
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mode not armable");
+        }
         return false;
     }
 
@@ -684,7 +688,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     }
 
     if (!AP_Arming::arm(method, do_arming_checks)) {
-        AP_Notify::events.arming_failed = true;
+        if (!(copter.flightmode->mode_number() == Mode::Number::GUIDED || copter.flightmode->mode_number() == Mode::Number::GUIDED_NOGPS)) {
+            AP_Notify::events.arming_failed = true;
+        }
         in_arm_motors = false;
         return false;
     }
