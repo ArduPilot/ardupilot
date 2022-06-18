@@ -382,7 +382,11 @@ void Copter::allocate_motors(void)
         default:
 #if AP_MOTOR_FRAME_OPTIMAL_ENABLED
             if ((copter.g2.frame_options & uint32_t(FrameOptions::USE_OPTIMAL_MIXER)) != 0) {
-                motors = new AP_MotorsMatrix_Optimal(copter.scheduler.get_loop_rate_hz());
+                // Allocate fast memory, gives very small speed boost, 1.5% - 2%
+                motors = (AP_MotorsMatrix*) hal.util->malloc_type(sizeof(AP_MotorsMatrix_Optimal), AP_HAL::Util::MEM_FAST);
+                if (motors != nullptr) {
+                    new (motors) AP_MotorsMatrix_Optimal(copter.scheduler.get_loop_rate_hz());
+                }
                 motors_var_info = AP_MotorsMatrix_Optimal::var_info;
             } else
 #endif
