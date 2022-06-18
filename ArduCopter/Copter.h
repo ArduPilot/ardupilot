@@ -613,10 +613,6 @@ private:
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
     };
 
-    enum class FrameOptions {
-        USE_OPTIMAL_MIXER              = (1<<0),  // 1
-    };
-
     static constexpr int8_t _failsafe_priorities[] = {
                                                       (int8_t)FailsafeAction::TERMINATE,
                                                       (int8_t)FailsafeAction::LAND,

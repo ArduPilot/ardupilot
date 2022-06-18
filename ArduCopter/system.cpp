@@ -380,7 +380,7 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_DECA:
 #if AP_MOTOR_FRAME_OPTIMAL_ENABLED
         {
-            if ((copter.g2.frame_options & uint32_t(FrameOptions::USE_OPTIMAL_MIXER)) != 0) {
+            if ((copter.g2.frame_options & uint32_t(AP_Motors::FrameOptions::USE_OPTIMAL_MIXER)) != 0) {
                 // Allocate fast memory, gives very small speed boost, 1.5% - 2%
                 motors = (AP_MotorsMatrix*) hal.util->malloc_type(sizeof(AP_MotorsMatrix_Optimal), AP_HAL::Util::MEM_FAST);
                 if (motors != nullptr) {
