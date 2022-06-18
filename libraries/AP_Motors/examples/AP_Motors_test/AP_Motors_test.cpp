@@ -36,11 +36,11 @@ SRV_Channels srvs;
 // uncomment the row below depending upon what frame you are using
 // setting very slow loop rate removes the need to wait for filters, see update_motors()
 //AP_MotorsTri  motors(400);
-//AP_MotorsMatrix   motors(1);
+AP_MotorsMatrix   motors(1);
 //AP_MotorsHeli_Single motors(rc7, rsc, h1, h2, h3, h4, 400);
 //AP_MotorsSingle motors(400);
 //AP_MotorsCoax motors(400);
-AP_MotorsMatrix_Optimal motors(1);
+//AP_MotorsMatrix_Optimal motors(1);
 
 AP_BattMonitor _battmonitor{0, nullptr, nullptr};
 
