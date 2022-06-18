@@ -1030,7 +1030,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FLIGHT_OPTIONS
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
-    // @Bitmask: 0:Disable thrust loss check, 1:Disable yaw imbalance warning, 2:Release gripper on thrust loss, 3: use optimal mixer H7 only
+    // @Bitmask: 0:Disable thrust loss check, 1:Disable yaw imbalance warning, 2:Release gripper on thrust loss
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 44, ParametersG2, flight_options, 0),
 
@@ -1112,6 +1112,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Range: 0 120
     // @User: Standard
     AP_GROUPINFO("FS_DR_TIMEOUT", 53, ParametersG2, failsafe_dr_timeout, 30),
+
+    // @Param: FRAME_OPTIONS
+    // @DisplayName: Frame options
+    // @Description: Options related to vehicle frame type and class
+    // @Bitmask: 0:Optimal mixer H7 only
+    // @User: Standard
+    AP_GROUPINFO("FRAME_OPTIONS", 54, ParametersG2, frame_options, 0),
 
     AP_GROUPEND
 };

@@ -380,8 +380,8 @@ void Copter::allocate_motors(void)
         case AP_Motors::MOTOR_FRAME_DECA:
         case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
         default:
-#if defined(STM32H7) || CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
-            if ((copter.g2.flight_options & uint32_t(FlightOptions::USE_OPTIMAL_MIXER)) != 0) {
+#if AP_MOTOR_FRAME_OPTIMAL_ENABLED
+            if ((copter.g2.frame_options & uint32_t(FrameOptions::USE_OPTIMAL_MIXER)) != 0) {
                 motors = new AP_MotorsMatrix_Optimal(copter.scheduler.get_loop_rate_hz());
                 motors_var_info = AP_MotorsMatrix_Optimal::var_info;
             } else
