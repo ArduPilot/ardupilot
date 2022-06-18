@@ -24,7 +24,10 @@ public:
     Sailboat();
 
     // enabled
-    bool sail_enabled() const { return enable > 0;}
+    bool sail_enabled() const
+    {
+        return enable > 0;
+    }
 
     // true if sailboat navigation (aka tacking) is enabled
     bool tack_enabled() const;
@@ -76,11 +79,9 @@ public:
     };
 
     // states of SAIL_CONTROL_TYPE parameter and sail_control_type variable
-    enum SailControlType: uint8_t {
-        LINEAR  = 0,
-        FIXED = 1,
-        EXTREMUM_SEEKING = 2,
-        SMOOTH_EXTREMUM_SEEKING = 3
+    enum class SailControlType {
+        DEFAULT  = 0,
+        FIXED = 1
     };
 
     // set state of motor
@@ -91,7 +92,10 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     // return sailboat loiter radius
-    float get_loiter_radius() const {return loit_radius;}
+    float get_loiter_radius() const
+    {
+        return loit_radius;
+    }
 
 private:
 

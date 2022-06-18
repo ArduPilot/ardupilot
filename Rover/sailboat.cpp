@@ -105,7 +105,7 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @Param: CTRL_TYPE
     // @DisplayName: Sail control type
     // @Description: Select the strategy of sail control for the sailboat
-    // @Values: 0:Standard,1:Fixed Angle
+    // @Values: 0:Default SAIL_ANGLE_IDEAL from apparent wind,1:Fixed to SAIL_ANGLE_MIN
     // @User: Standard
     AP_GROUPINFO("CTRL_TYPE", 10, Sailboat, sail_control_type, 0),
 
@@ -209,15 +209,15 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
 
     // run speed controller if motor is forced on or motor assistance is required for low speeds or tacking
     if ((motor_state == UseMotor::USE_MOTOR_ALWAYS) ||
-         motor_assist_tack() ||
-         motor_assist_low_wind()) {
+        motor_assist_tack() ||
+        motor_assist_low_wind()) {
         // run speed controller - duplicate of calls found in mode::calc_throttle();
         throttle_out = 100.0f * rover.g2.attitude_control.get_throttle_out_speed(desired_speed,
-                                                                        rover.g2.motors.limit.throttle_lower,
-                                                                        rover.g2.motors.limit.throttle_upper,
-                                                                        rover.g.speed_cruise,
-                                                                        rover.g.throttle_cruise * 0.01f,
-                                                                        rover.G_Dt);
+                       rover.g2.motors.limit.throttle_lower,
+                       rover.g2.motors.limit.throttle_upper,
+                       rover.g.speed_cruise,
+                       rover.g.throttle_cruise * 0.01f,
+                       rover.G_Dt);
     } else {
         throttle_out = 0.0f;
     }
@@ -246,18 +246,37 @@ void Sailboat::get_throttle_and_mainsail_out(float desired_speed, float &throttl
     if (!is_positive(desired_speed)) {
         mainsail_out = 100.0f;
     } else {
-        // Sails are sheeted the same on each side use abs wind direction
 
-        // set the main sail to the ideal angle to the wind
-        float mainsail_angle = wind_dir_apparent_abs - sail_angle_ideal;
+        float mainsail_base = 0.0f;
 
-        // make sure between allowable range
-        mainsail_angle = constrain_float(mainsail_angle,sail_angle_min, sail_angle_max);
+        switch (SailControlType((int)sail_control_type)) {
 
-        // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
-        float mainsail_base = linear_interpolate(0.0f, 100.0f, mainsail_angle,sail_angle_min,sail_angle_max);
+        // standard linear interpolation control
+        case (SailControlType::DEFAULT):
+        default: {
 
-        mainsail_out = constrain_float((mainsail_base + pid_offset), 0.0f ,100.0f);
+            // Sails are sheeted the same on each side use abs wind direction
+
+            // set the main sail to the ideal angle to the wind
+            float mainsail_angle = wind_dir_apparent_abs - sail_angle_ideal;
+
+            // make sure between allowable range
+            mainsail_angle = constrain_float(mainsail_angle, sail_angle_min, sail_angle_max);
+
+            // linear interpolate mainsail value (0 to 100) from wind angle mainsail_angle
+            mainsail_base = linear_interpolate(0.0f, 100.0f, mainsail_angle, sail_angle_min, sail_angle_max);
+            break;
+        }
+
+        // fixed angle strategy
+        case (SailControlType::FIXED): {
+
+            // linear interpolate mainsail value (0 to 100) from sail_angle_min
+            mainsail_base = linear_interpolate(0.0f, 100.0f, sail_angle_min, 0.0f, 90.0f);
+            break;
+        }
+        }
+        mainsail_out = constrain_float((mainsail_base + pid_offset), 0.0f,100.0f);
     }
 
     //
@@ -356,7 +375,7 @@ void Sailboat::handle_tack_request_acro()
 float Sailboat::get_tack_heading_rad()
 {
     if (fabsf(wrap_PI(tack_heading_rad - rover.ahrs.yaw)) < radians(SAILBOAT_TACKING_ACCURACY_DEG) ||
-       ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
+        ((AP_HAL::millis() - tack_request_ms) > SAILBOAT_AUTO_TACKING_TIMEOUT_MS)) {
         clear_tack();
     }
 
@@ -487,12 +506,12 @@ float Sailboat::calc_heading(float desired_heading_cd)
         gcs().send_text(MAV_SEVERITY_INFO, "Sailboat: Tacking");
         // calculate target heading for the new tack
         switch (current_tack) {
-            case AP_WindVane::Sailboat_Tack::TACK_PORT:
-                tack_heading_rad = right_no_go_heading_rad;
-                break;
-            case AP_WindVane::Sailboat_Tack::TACK_STARBOARD:
-                tack_heading_rad = left_no_go_heading_rad;
-                break;
+        case AP_WindVane::Sailboat_Tack::TACK_PORT:
+            tack_heading_rad = right_no_go_heading_rad;
+            break;
+        case AP_WindVane::Sailboat_Tack::TACK_STARBOARD:
+            tack_heading_rad = left_no_go_heading_rad;
+            break;
         }
         currently_tacking = true;
         auto_tack_start_ms = now;
