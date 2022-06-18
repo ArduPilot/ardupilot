@@ -111,8 +111,7 @@
  * @author      Thomas Eichinger <thomas.eichinger@fu-berlin.de>
  */
 
-#ifndef PERIPH_I2C_H
-#define PERIPH_I2C_H
+#pragma once
 
 #include <stdint.h>
 #include <stddef.h>
@@ -426,5 +425,4 @@ int i2c_write_regs(_i2c_bus_t* bus, uint16_t addr, uint16_t reg,
 }
 #endif
 
-#endif /* PERIPH_I2C_H */
 /** @} */
