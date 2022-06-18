@@ -17,8 +17,7 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#ifndef _SERVOCOMMANDS_H
-#define _SERVOCOMMANDS_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -191,4 +190,3 @@ int decodeServo_EnterBootloaderPacket(const void* pkt);
 #ifdef __cplusplus
 }
 #endif
-#endif // _SERVOCOMMANDS_H

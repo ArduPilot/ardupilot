@@ -16,9 +16,7 @@
  *
  * Author: Oliver Walters
  */
-
-#ifndef _ESCCOMMANDS_H
-#define _ESCCOMMANDS_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -179,4 +177,3 @@ int decodeESC_ResetESCPacket(const void* pkt);
 #ifdef __cplusplus
 }
 #endif
-#endif // _ESCCOMMANDS_H

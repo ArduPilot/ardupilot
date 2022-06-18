@@ -17,8 +17,7 @@
  * Author: Oliver Walters
  */
 
-#ifndef _ESCVELOCITYPROTOCOL_H
-#define _ESCVELOCITYPROTOCOL_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -449,4 +448,3 @@ uint32_t getESCVelocityPacketID(const void* pkt);
 #ifdef __cplusplus
 }
 #endif
-#endif // _ESCVELOCITYPROTOCOL_H

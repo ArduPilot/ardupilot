@@ -17,8 +17,7 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#ifndef _SCALEDDECODE_H
-#define _SCALEDDECODE_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -243,4 +242,3 @@ int8_t int8ScaledFrom1SignedBytes(const uint8_t* bytes, int* index, uint8_t divi
 #ifdef __cplusplus
 }
 #endif
-#endif // _SCALEDDECODE_H

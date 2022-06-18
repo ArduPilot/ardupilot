@@ -17,8 +17,7 @@
  * Author: Oliver Walters
  */
 
-#ifndef _LEGACYESCDEFINES_H
-#define _LEGACYESCDEFINES_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -116,4 +115,3 @@ int decodeESC_LegacyErrorBits_t(const uint8_t* data, int* bytecount, ESC_LegacyE
 #ifdef __cplusplus
 }
 #endif
-#endif // _LEGACYESCDEFINES_H

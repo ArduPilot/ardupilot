@@ -17,8 +17,7 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-#ifndef _FIELDDECODE_H
-#define _FIELDDECODE_H
+#pragma once
 
 // Language target is C, C++ compilers: don't mangle us
 #ifdef __cplusplus
@@ -126,4 +125,3 @@ int16_t int16FromLeBytes(const uint8_t* bytes, int* index);
 #ifdef __cplusplus
 }
 #endif
-#endif // _FIELDDECODE_H
