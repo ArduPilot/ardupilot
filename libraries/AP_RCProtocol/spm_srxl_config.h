@@ -24,8 +24,7 @@ SOFTWARE.
 
 // This file is automatically included within spm_srxl.h -- do not include elsewhere!
 
-#ifndef _SRXL_CONFIG_H_
-#define _SRXL_CONFIG_H_
+#pragma once
 
 //### USER PROVIDED HEADER FUNCTIONS AND FORWARD DECLARATIONS ###
 
@@ -142,5 +141,3 @@ static inline void srxlEnterCriticalSection(void)
 static inline void srxlExitCriticalSection(void)
 {
 }
-
-#endif // _SRXL_CONFIG_H_
