@@ -49,6 +49,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
+#include <AP_VideoTX/AP_Tramp.h>
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
 #include <AP_AIS/AP_AIS.h>
@@ -376,6 +377,10 @@ protected:
     
 #if HAL_SMARTAUDIO_ENABLED
     AP_SmartAudio smartaudio;
+#endif
+
+#if AP_TRAMP_ENABLED
+    AP_Tramp tramp;
 #endif
 
 #if HAL_EFI_ENABLED

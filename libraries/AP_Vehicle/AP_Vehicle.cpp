@@ -208,6 +208,10 @@ void AP_Vehicle::setup()
     smartaudio.init();
 #endif
 
+#if AP_TRAMP_ENABLED
+    tramp.init();
+#endif
+
 #if AP_PARAM_KEY_DUMP
     AP_Param::show_all(hal.console, true);
 #endif
@@ -304,6 +308,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
     SCHED_TASK(update_dynamic_notch_at_specified_rate,      LOOP_RATE,                    200, 215),
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
+#if AP_TRAMP_ENABLED
+    SCHED_TASK_CLASS(AP_Tramp,     &vehicle.tramp,          update,                   50,  50, 225),
+#endif
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
