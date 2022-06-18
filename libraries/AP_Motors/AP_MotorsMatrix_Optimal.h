@@ -66,7 +66,7 @@ private:
     void H_plus_A_mult_b_mult_At();
 
     // solver
-    uint8_t interior_point_solve();
+    void interior_point_solve();
 
     // interior_point_solve function local variables
     float x[max_num_motors];
@@ -92,6 +92,10 @@ private:
     // set points and constraints
     float f[max_num_motors];
     float b[max_num_constraints];
+
+    // number of iterations and convergence flag
+    uint8_t iter;
+    bool converged;
 
     // frame string with optimal prepended
     const char *string_prefix = "Optimal ";

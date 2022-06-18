@@ -262,10 +262,12 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     if (!initialised_ok()) {
         return;
     }
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #if DISABLE_INTERRUPTS_FOR_TIMMING
     void *istate = hal.scheduler->disable_interrupts_save();
 #endif
     const uint32_t start_us = AP_HAL::micros();
+#endif
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -295,19 +297,19 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     }
 
     // the clever bit
-    uint8_t itter = interior_point_solve();
+    interior_point_solve();
 
     // workout what output was achieved
     mat_vec_mult(motor_factors_trans, x, outputs);
     outputs[3] /= num_motors;
 
-    // set limit flags, threshold of 5%
-    const float threshold = 0.05;
-    limit.roll = fabsf(inputs[0] - outputs[0]) > threshold;
-    limit.pitch = fabsf(inputs[1] - outputs[1]) > threshold;
-    limit.yaw = fabsf(inputs[2] - outputs[2]) > threshold;
-    limit.throttle_lower = (outputs[3] - inputs[3]) > threshold;
-    limit.throttle_upper = (inputs[3] - outputs[3]) > threshold;
+    // set limit flags, threshold of 1%
+    const float threshold = 0.01;
+    limit.roll = fabsf(inputs[0] - outputs[0]) > threshold ? 1 : 0;
+    limit.pitch = fabsf(inputs[1] - outputs[1]) > threshold ? 1 : 0;
+    limit.yaw = fabsf(inputs[2] - outputs[2]) > threshold ? 1 : 0;
+    limit.throttle_lower = (outputs[3] - inputs[3]) > threshold ? 1 : 0;
+    limit.throttle_upper = (inputs[3] - outputs[3]) > threshold ? 1 : 0;
 
     // copy to motor outputs
     for (uint8_t i = 0; i < num_motors; i++) {
@@ -318,6 +320,7 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     // compensation_gain can never be zero
     _throttle_out = outputs[3] / compensation_gain;
 
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     const uint32_t end_us = AP_HAL::micros();
 
 #if DISABLE_INTERRUPTS_FOR_TIMMING
@@ -328,7 +331,8 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     // @Description: Motor mixer data
     // @Field: TimeUS: Time since system startup
     // @Field: Run: Runtime
-    // @Field: itter: number of iterations
+    // @Field: iter: number of iterations
+    // @Field: Conv: Converged to a solution
     // @Field: dR: desired roll
     // @Field: dP: desired pitch
     // @Field: dY: desired yaw
@@ -337,17 +341,13 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     // @Field: aP: achieved pitch
     // @Field: aY: achieved yaw
     // @Field: aT: achieved throttle
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    AP::logger().Write("MMIX", "TimeUS,Run,itter,dR,dP,dY,dT,aR,aP,aY,aT", "QIBffffffff",
+    AP::logger().Write("MMIX", "TimeUS,Run,iter,Conv,dR,dP,dY,dT,aR,aP,aY,aT", "QIBBffffffff",
                                            AP_HAL::micros64(),
                                            end_us - start_us,
-                                           itter,
+                                           iter,
+                                           converged ? 1 : 0,
                                            inputs[0],inputs[1],inputs[2],inputs[3],
                                            outputs[0],outputs[1],outputs[2],outputs[3]);
-#else
-    // stop varable unused warnings in examples
-    itter = end_us - start_us;
-    itter++;
 #endif
 }
 
@@ -391,7 +391,7 @@ void AP_MotorsMatrix_Optimal::H_plus_A_mult_b_mult_At()
 // Inspired by: https://github.com/jarredbarber/eigen-QP
 // solves min( 0.5*x'Hx + f'x )
 // with constraints A'x >= b
-uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
+void AP_MotorsMatrix_Optimal::interior_point_solve()
 {
     // setup starting points
     for (uint8_t i = 0; i < num_motors; i++) {
@@ -418,15 +418,20 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
     float mu = num_constraints;
 
     // limit to 10 iterations
-    uint8_t k;
-    for (k = 0; k < 10; k++) {
+    converged = false;
+    for (iter = 0; iter < 10; iter++) {
 
         // Pre-decompose to speed up solve
         // H_bar = H + A*diag(z .* s_inv)*A'
         H_plus_A_mult_b_mult_At();
 
         // H_bar = chol(H_temp)
-        cholesky(H_bar);
+        if (!cholesky(H_bar)) {
+            // Stop propogating numberical issues
+            // could raise an internal error
+            // moving to double would fix
+            return;
+        }
 
         float alpha;
         for (uint8_t i = 0; i < 2; i++) {
@@ -506,7 +511,8 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
             dot += rs[j]*rs[j];
         }
         if ((dot < tol_sq) || (mu < tol_nA)) {
-            break;
+            converged = true;
+            return;
         }
         // rL = H*x + f - A*z
         mat_vec_mult(H, x, rL);
@@ -517,7 +523,8 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
             dot += rL[j]*rL[j];
         }
         if (dot < tol_sq) {
-            break;
+            converged = true;
+            return;
         }
 
         // update values for next iteration
@@ -529,7 +536,6 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
         }
 
     }
-    return k;
 }
 
 const char* AP_MotorsMatrix_Optimal::_get_frame_string() const
