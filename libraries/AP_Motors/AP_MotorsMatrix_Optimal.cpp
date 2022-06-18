@@ -23,6 +23,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#pragma GCC optimize("O3")
+
 extern const AP_HAL::HAL& hal;
 
 void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_type frame_type)
