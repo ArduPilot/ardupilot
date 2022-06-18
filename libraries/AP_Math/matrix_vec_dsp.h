@@ -2,6 +2,8 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+// Do not use DSP, it is much faster in some cases, but upto 2x slower in others
+// Not using it gives more consitant run-times
 #define use_DSP HAL_WITH_DSP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && 0
 
 #if use_DSP
@@ -16,16 +18,16 @@ struct Matrix {
 #endif
 
 // setup matrix struct
-void init_mat(Matrix *S, uint16_t numRows, uint16_t numCols, float *pData);
+void init_mat(Matrix &S, uint16_t numRows, uint16_t numCols, float *pData);
 
 // element wise matrix vector multiplication
-void per_element_mult_mv(const Matrix *A, float *B, Matrix *dest);
+void per_element_mult_mv(const Matrix &A, float *B, Matrix &dest);
 
 // transpose
-void mat_trans(const Matrix *A, Matrix *dest);
+void mat_trans(const Matrix &A, Matrix &dest);
 
-// multiply two matrixes
-void mat_mult(const Matrix *A, const Matrix *B, Matrix *dest);
+// multiply two matrices
+void mat_mult(const Matrix &A, const Matrix &B, Matrix &dest);
 
 // scale by constant
 void vec_scale(const float *A, const float scale, float *dest, uint8_t size);
@@ -52,16 +54,16 @@ void vec_offset(const float *A, const float offset, float *dest, uint8_t size);
 void vec_inv(const float *A, float *dest, uint8_t size);
 
 // matrix multiplied by vector
-void mat_vec_mult(const Matrix *A, const float *B, float *dest);
+void mat_vec_mult(const Matrix &A, const float *B, float *dest);
 
 // in place Cholesky factorisation
-void cholesky(Matrix *A);
+void cholesky(Matrix &A);
 
 // forward substitution
-void forward_sub(const Matrix *A, const float *B, float *dest);
+void forward_sub(const Matrix &A, const float *B, float *dest);
 
 // backwards substitution, transposing a
-void backward_sub_t(const Matrix *A, const float *B, float *dest);
+void backward_sub_t(const Matrix &A, const float *B, float *dest);
 
 // print matrix to console, for debugging (SITL only)
-void print_mat(const char* name, const Matrix *A);
+void print_mat(const char* name, const Matrix &A);
