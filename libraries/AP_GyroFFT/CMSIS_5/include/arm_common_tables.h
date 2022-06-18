@@ -26,8 +26,7 @@
  * limitations under the License.
  */
 
-#ifndef _ARM_COMMON_TABLES_H
-#define _ARM_COMMON_TABLES_H
+#pragma once
 
 #include "arm_math.h"
 
@@ -375,4 +374,3 @@
 
 #endif /* if !defined(ARM_DSP_CONFIG_TABLES) || defined(ARM_FAST_TABLES) */
 
-#endif /*  ARM_COMMON_TABLES_H */
