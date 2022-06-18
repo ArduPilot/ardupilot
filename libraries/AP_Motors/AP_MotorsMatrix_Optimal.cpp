@@ -17,6 +17,9 @@
 
 #if AP_MOTOR_FRAME_OPTIMAL_ENABLED
 
+// allows more accurate timeing, do not fly!
+#define DISABLE_INTERRUPTS_FOR_TIMMING 0
+
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -257,7 +260,10 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     if (!initialised_ok()) {
         return;
     }
-    const uint32_t start = AP_HAL::micros();
+#if DISABLE_INTERRUPTS_FOR_TIMMING
+    void *istate = hal.scheduler->disable_interrupts_save();
+#endif
+    const uint32_t start_us = AP_HAL::micros();
 
     // apply voltage and air pressure compensation
     const float compensation_gain = get_compensation_gain(); // compensation for battery voltage and altitude
@@ -310,6 +316,12 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     // compensation_gain can never be zero
     _throttle_out = outputs[3] / compensation_gain;
 
+    const uint32_t end_us = AP_HAL::micros();
+
+#if DISABLE_INTERRUPTS_FOR_TIMMING
+    hal.scheduler->restore_interrupts(istate);
+#endif
+
     // @LoggerMessage: MMIX
     // @Description: Motor mixer data
     // @Field: TimeUS: Time since system startup
@@ -326,13 +338,13 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     AP::logger().Write("MMIX", "TimeUS,Run,itter,dR,dP,dY,dT,aR,aP,aY,aT", "QIBffffffff",
                                            AP_HAL::micros64(),
-                                           AP_HAL::micros() - start,
+                                           end_us - start_us,
                                            itter,
                                            inputs[0],inputs[1],inputs[2],inputs[3],
                                            outputs[0],outputs[1],outputs[2],outputs[3]);
 #else
     // stop varable unused warnings in examples
-    itter = start;
+    itter = end_us - start_us;
     itter++;
 #endif
 }
