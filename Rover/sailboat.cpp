@@ -102,6 +102,13 @@ const AP_Param::GroupInfo Sailboat::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LOIT_RADIUS", 9, Sailboat, loit_radius, 5),
 
+    // @Param: CTRL_TYPE
+    // @DisplayName: Sail control type
+    // @Description: Select the strategy of sail control for the sailboat
+    // @Values: 0:Standard,1:Fixed Angle
+    // @User: Standard
+    AP_GROUPINFO("CTRL_TYPE", 10, Sailboat, sail_control_type, 0),
+
     AP_GROUPEND
 };
 

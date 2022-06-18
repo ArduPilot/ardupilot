@@ -80,7 +80,7 @@ public:
         LINEAR  = 0,
         FIXED = 1,
         EXTREMUM_SEEKING = 2,
-        SMOOTH_EXTREMUM_SEEKING = 3,
+        SMOOTH_EXTREMUM_SEEKING = 3
     };
 
     // set state of motor
@@ -111,6 +111,7 @@ private:
     AP_Float sail_windspeed_min;
     AP_Float xtrack_max;
     AP_Float loit_radius;
+    AP_Int8 sail_control_type;
 
     RC_Channel *channel_mainsail;   // rc input channel for controlling mainsail
     bool currently_tacking;         // true when sailboat is in the process of tacking to a new heading
