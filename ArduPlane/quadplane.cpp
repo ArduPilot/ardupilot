@@ -449,7 +449,14 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 5
     // @User: Advanced
     AP_GROUPINFO("NAVALT_MIN", 32, QuadPlane, takeoff_navalt_min, 0),
-    
+
+    // @Param: FRAME_OPTIONS
+    // @DisplayName: Frame options
+    // @Description: Options related to vehicle frame type and class
+    // @Bitmask: 0:Optimal mixer H7 only
+    // @User: Standard
+    AP_GROUPINFO("FRAME_OPTIONS", 33, QuadPlane, frame_options, 0),
+
     AP_GROUPEND
 };
 
@@ -670,6 +677,28 @@ bool QuadPlane::setup(void)
             motors_var_info = AP_MotorsMatrix_Scripting_Dynamic::var_info;
 #endif // AP_SCRIPTING_ENABLED
             break;
+    case AP_Motors::MOTOR_FRAME_QUAD:
+    case AP_Motors::MOTOR_FRAME_HEXA:
+    case AP_Motors::MOTOR_FRAME_Y6:
+    case AP_Motors::MOTOR_FRAME_OCTA:
+    case AP_Motors::MOTOR_FRAME_OCTAQUAD:
+    case AP_Motors::MOTOR_FRAME_DODECAHEXA:
+    case AP_Motors::MOTOR_FRAME_DECA:
+#if AP_MOTOR_FRAME_OPTIMAL_ENABLED
+        {
+            if ((frame_options & uint32_t(AP_Motors::FrameOptions::USE_OPTIMAL_MIXER)) != 0) {
+                // Allocate fast memory, gives very small speed boost, 1.5% - 2%
+                motors = (AP_MotorsMatrix*) hal.util->malloc_type(sizeof(AP_MotorsMatrix_Optimal), AP_HAL::Util::MEM_FAST);
+                if (motors != nullptr) {
+                    new (motors) AP_MotorsMatrix_Optimal(plane.scheduler.get_loop_rate_hz());
+                }
+                motors_var_info = AP_MotorsMatrix_Optimal::var_info;
+                break;
+            }
+            FALLTHROUGH;
+        }
+#endif
+    case AP_Motors::MOTOR_FRAME_SCRIPTING_MATRIX:
     default:
         motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz(), rc_speed);
         motors_var_info = AP_MotorsMatrix::var_info;
