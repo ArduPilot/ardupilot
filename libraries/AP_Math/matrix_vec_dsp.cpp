@@ -7,6 +7,8 @@
 // faster for some problems. Never seems to be more than 2x slower. Probably need more testing....
 // not all functions have a CMSIS equivelent, some such as "cholesky" would it we were to update.
 
+#pragma GCC optimize("O3")
+
 // setup matrix struct
 void init_mat(Matrix &S, uint16_t numRows, uint16_t numCols, float *pData)
 {
