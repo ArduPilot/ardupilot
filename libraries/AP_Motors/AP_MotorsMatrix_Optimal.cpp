@@ -14,6 +14,9 @@
  */
 
 #include "AP_MotorsMatrix_Optimal.h"
+
+#if AP_MOTOR_FRAME_OPTIMAL_ENABLED
+
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -189,7 +192,7 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
 
     // update frame name
     if (frame_string != nullptr) {
-        free(frame_string);
+        delete [] frame_string;
     }
     const size_t len = strlen(string_prefix)+strlen(AP_MotorsMatrix::_get_frame_string())+1;
     frame_string = new char[len];
@@ -206,15 +209,15 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     }
     num_constraints = (num_motors*2) + 1;
 
-    init_mat(&motor_factors, num_motors, 4, motor_factors_data);
-    init_mat(&motor_factors_trans, 4, num_motors, motor_factors_trans_data);
+    init_mat(motor_factors, num_motors, 4, motor_factors_data);
+    init_mat(motor_factors_trans, 4, num_motors, motor_factors_trans_data);
     for (uint8_t i = 0; i < num_motors; i++) {
         motor_factors_data[i*4 + 0] = _roll_factor[i] / roll_conversion;
         motor_factors_data[i*4 + 1] = _pitch_factor[i] / pitch_conversion;
         motor_factors_data[i*4 + 2] = _yaw_factor[i];
         motor_factors_data[i*4 + 3] = _throttle_factor[i];
     }
-    mat_trans(&motor_factors, &motor_factors_trans);
+    mat_trans(motor_factors, motor_factors_trans);
 
     // Weighting vector defines the relative weighting of roll, pitch, yaw and throttle
     // may want to change this on the fly in the future, but in that case we can no longer pre-compute the hessian
@@ -223,15 +226,15 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
 
     // setup hessian matrix
     // H = motor_factors * diag(w) * motor_factors'
-    init_mat(&H, num_motors, num_motors, H_data);
-    init_mat(&H_bar, num_motors, num_motors, H_bar_data);
+    init_mat(H, num_motors, num_motors, H_data);
+    init_mat(H_bar, num_motors, num_motors, H_bar_data);
 
     Matrix motor_factors_tmp;
     float tmp_A[12*4];
-    init_mat(&motor_factors_tmp, num_motors, 4, tmp_A);
-    per_element_mult_mv(&motor_factors, w, &motor_factors_tmp);
+    init_mat(motor_factors_tmp, num_motors, 4, tmp_A);
+    per_element_mult_mv(motor_factors, w, motor_factors_tmp);
 
-    mat_mult(&motor_factors_tmp, &motor_factors_trans, &H);
+    mat_mult(motor_factors_tmp, motor_factors_trans, H);
 
     // setup constraints
     for (uint8_t i = 0; i < num_motors; i++) {
@@ -243,7 +246,7 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     // re-scale by weights to save runtime calculation
     w[3] *= num_motors;
     vec_scale(w, -1.0, w, 4);
-    per_element_mult_mv(&motor_factors, w, &motor_factors);
+    per_element_mult_mv(motor_factors, w, motor_factors);
 
 }
 
@@ -274,7 +277,7 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     throttle_avg_max = constrain_float(throttle_avg_max, inputs[3], throttle_thrust_max);
 
     // calculate input vector
-    mat_vec_mult(&motor_factors, inputs, f);
+    mat_vec_mult(motor_factors, inputs, f);
 
     // constraints, average throttle, 1 and 0
     b[0] = -throttle_avg_max;
@@ -287,7 +290,7 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
     uint8_t itter = interior_point_solve();
 
     // workout what output was achieved
-    mat_vec_mult(&motor_factors_trans, x, outputs);
+    mat_vec_mult(motor_factors_trans, x, outputs);
     outputs[3] /= num_motors;
 
     // set limit flags, threshold of 5%
@@ -409,7 +412,7 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
         H_plus_A_mult_b_mult_At();
 
         // H_bar = chol(H_temp)
-        cholesky(&H_bar);
+        cholesky(H_bar);
 
         float alpha;
         for (uint8_t i = 0; i < 2; i++) {
@@ -424,8 +427,8 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
             A_mult(temp_con, f_bar);
             vec_add(f_bar, rL, f_bar, num_motors);
 
-            forward_sub(&H_bar, f_bar, dx);
-            backward_sub_t(&H_bar, dx, dx);
+            forward_sub(H_bar, f_bar, dx);
+            backward_sub_t(H_bar, dx, dx);
 
             // ds = A'dx + rs
             At_mult(dx, ds);
@@ -492,7 +495,7 @@ uint8_t AP_MotorsMatrix_Optimal::interior_point_solve()
             break;
         }
         // rL = H*x + f - A*z
-        mat_vec_mult(&H, x, rL);
+        mat_vec_mult(H, x, rL);
         A_mult(z, temp_mot);
         dot = 0.0;
         for (uint8_t j = 0; j < num_motors; j++) {
@@ -522,3 +525,5 @@ const char* AP_MotorsMatrix_Optimal::_get_frame_string() const
     }
     return AP_MotorsMatrix::_get_frame_string();
 }
+
+#endif // AP_MOTOR_FRAME_OPTIMAL_ENABLED

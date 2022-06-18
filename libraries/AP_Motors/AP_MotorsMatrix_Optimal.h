@@ -1,5 +1,14 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL.h>
+
+// Only enable on H7 boards for ChibiOS, enable on everything else
+#ifndef AP_MOTOR_FRAME_OPTIMAL_ENABLED
+    #define AP_MOTOR_FRAME_OPTIMAL_ENABLED defined(STM32H7) || CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#endif
+
+#if AP_MOTOR_FRAME_OPTIMAL_ENABLED
+
 #include "AP_MotorsMatrix.h"
 #include <AP_Math/matrix_vec_dsp.h>
 
@@ -90,3 +99,4 @@ private:
 
 };
 
+#endif // AP_MOTOR_FRAME_OPTIMAL_ENABLED
