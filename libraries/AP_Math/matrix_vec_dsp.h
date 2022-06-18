@@ -57,7 +57,7 @@ void vec_inv(const float *A, float *dest, uint8_t size);
 void mat_vec_mult(const Matrix &A, const float *B, float *dest);
 
 // in place Cholesky factorisation
-void cholesky(Matrix &A);
+bool cholesky(Matrix &A);
 
 // forward substitution
 void forward_sub(const Matrix &A, const float *B, float *dest);

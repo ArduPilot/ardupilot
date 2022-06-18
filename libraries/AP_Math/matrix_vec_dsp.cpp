@@ -185,10 +185,13 @@ void mat_vec_mult(const Matrix &A, const float *B, float *dest)
 // in place Cholesky factorisation
 // Note that this method does not zero the upper triangle
 // No need with forward_sub and backward_sub implementation
-void cholesky(Matrix &A)
+bool cholesky(Matrix &A)
 {
     for (uint8_t i = 0; i < A.numRows; i++) {
-        A.pData[i*A.numRows + i] = safe_sqrt(A.pData[i*A.numRows + i]);
+        if (!is_positive(A.pData[i*A.numRows + i])) {
+            return false;
+        }
+        A.pData[i*A.numRows + i] = sqrtf(A.pData[i*A.numRows + i]);
         float ii_inv = 1.0 / A.pData[i*A.numCols + i];
         for (uint8_t j = i+1; j < A.numRows; j++) {
             A.pData[j*A.numRows + i] *= ii_inv;
@@ -199,6 +202,7 @@ void cholesky(Matrix &A)
             }
         }
     }
+    return true;
 }
 
 // forward substitution
