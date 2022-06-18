@@ -19,8 +19,7 @@
   Implemented by: Tom Pittenger
  */
 
-#ifndef _GDL90_H_
-#define _GDL90_H_
+#pragma once
 
 #include <stdint.h>
 
@@ -80,4 +79,3 @@ typedef struct
   uint8_t       prev_data;
 } GDL90_RX_STATUS;
 
-#endif
