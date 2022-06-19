@@ -7633,9 +7633,9 @@ class AutoTestCopter(AutoTest):
         self.do_RTL()
 
     def fly_each_frame_optimal(self):
-        self.fly_each_frame(test_optimal_mix = True)
+        self.fly_each_frame(test_optimal_mix=True)
 
-    def fly_each_frame(self, test_optimal_mix = False):
+    def fly_each_frame(self, test_optimal_mix=False):
         vinfo = vehicleinfo.VehicleInfo()
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
