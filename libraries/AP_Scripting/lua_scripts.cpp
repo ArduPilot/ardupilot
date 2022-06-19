@@ -16,6 +16,7 @@
 #include "lua_scripts.h"
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Scripting.h"
+#include <AP_Logger/AP_Logger.h>
 
 #include <AP_Scripting/lua_generated_bindings.h>
 
@@ -34,6 +35,10 @@ lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, co
       _debug_options(debug_options),
      terminal(_terminal) {
     _heap = hal.util->allocate_heap_memory(heap_size);
+}
+
+lua_scripts::~lua_scripts() {
+    free(_heap);
 }
 
 void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
@@ -68,7 +73,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
     va_copy(arg_list_copy, arg_list);
 
     // dry run to work out the required length
-    int len = hal.util->vsnprintf(NULL, 0, fmt, arg_list_copy);
+    int len = hal.util->vsnprintf(nullptr, 0, fmt, arg_list_copy);
 
     // finished with copy
     va_end(arg_list_copy);
@@ -92,7 +97,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
     va_end(arg_list);
 
     // print to cosole and GCS
-    hal.console->printf("Lua: %s\n", error_msg_buf);
+    DEV_PRINTF("Lua: %s\n", error_msg_buf);
     print_error(severity);
 }
 
@@ -162,7 +167,6 @@ void lua_scripts::create_sandbox(lua_State *L) {
     lua_pushstring(L, "utf8");
     luaopen_utf8(L);
     lua_settable(L, -3);
-    load_lua_bindings(L);
     load_generated_sandbox(L);
 
 }
@@ -534,5 +538,20 @@ void lua_scripts::run(void) {
                 error_msg_buf = nullptr;
             }
         }
+    }
+
+    // make sure all scripts have been removed
+    while (scripts != nullptr) {
+        remove_script(lua_state, scripts);
+    }
+
+    if (lua_state != nullptr) {
+        lua_close(lua_state); // shutdown the old state
+        lua_state = nullptr;
+    }
+
+    if (error_msg_buf != nullptr) {
+        hal.util->heap_realloc(_heap, error_msg_buf, 0);
+        error_msg_buf = nullptr;
     }
 }

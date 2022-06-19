@@ -1,9 +1,13 @@
 #include "AP_Mount_SToRM32.h"
-#if HAL_MOUNT_ENABLED
+
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
+
+#define AP_MOUNT_STORM32_RESEND_MS  1000    // resend angle targets to gimbal once per second
+#define AP_MOUNT_STORM32_SEARCH_MS  60000   // search for gimbal for 1 minute after startup
 
 AP_Mount_SToRM32::AP_Mount_SToRM32(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
     AP_Mount_Backend(frontend, state, instance),
@@ -169,4 +173,4 @@ void AP_Mount_SToRM32::send_do_mount_control(float pitch_deg, float roll_deg, fl
     // store time of send
     _last_send = AP_HAL::millis();
 }
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_STORM32MAVLINK_ENABLED

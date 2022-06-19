@@ -10,14 +10,16 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Gremsy.h"
 #include <AP_Math/location.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 19, AP_Mount, state[0]._type, 0, AP_PARAM_FLAG_ENABLE),
@@ -392,7 +394,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -442,30 +444,45 @@ void AP_Mount::init()
 
         // check for servo mounts
         if (mount_type == Mount_Type_Servo) {
+#if HAL_MOUNT_SERVO_ENABLED
             _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
             _num_instances++;
+#endif
 
 #if HAL_SOLO_GIMBAL_ENABLED
-        // check for MAVLink mounts
+        // check for Solo mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
+#if HAL_MOUNT_ALEXMOS_ENABLED
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
             _backends[instance] = new AP_Mount_Alexmos(*this, state[instance], instance);
             _num_instances++;
+#endif
 
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
         } else if (mount_type == Mount_Type_SToRM32) {
             _backends[instance] = new AP_Mount_SToRM32(*this, state[instance], instance);
             _num_instances++;
+#endif
 
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
+#endif
+
+#if HAL_MOUNT_GREMSY_ENABLED
+        // check for Gremsy mounts
+        } else if (mount_type == Mount_Type_Gremsy) {
+            _backends[instance] = new AP_Mount_Gremsy(*this, state[instance], instance);
+            _num_instances++;
+#endif // HAL_MOUNT_GREMSY_ENABLED
         }
 
         // init new instance
@@ -558,6 +575,19 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     _backends[instance]->set_mode(mode);
 }
 
+// set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+// If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
+{
+    // sanity check instance
+    if (!check_instance(instance)) {
+        return;
+    }
+
+    // return immediately if no change
+    state[instance]._yaw_lock = yaw_lock;
+}
+
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
 {
@@ -595,6 +625,41 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet)
+{
+    if (!check_primary()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // check flags for change to RETRACT
+    uint8_t flags = (uint8_t)packet.param5;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        _backends[_primary]->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return MAV_RESULT_ACCEPTED;
+    }
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        _backends[_primary]->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // To-Do: handle earth-frame vs body-frame angles
+    // To-Do: handle pitch and yaw rates
+    // To-Do: handle gimbal device id
+
+    // param1 : pitch_angle (in degrees)
+    // param2 : yaw angle (in degrees)
+    const float pitch_angle_deg = packet.param1;
+    const float yaw_angle_deg = packet.param2;
+    if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
+        set_angle_targets(0, pitch_angle_deg, yaw_angle_deg);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    return MAV_RESULT_FAILED;
+}
+
+
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {
@@ -602,6 +667,8 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
         return handle_command_do_mount_configure(packet);
     case MAV_CMD_DO_MOUNT_CONTROL:
         return handle_command_do_mount_control(packet);
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+        return handle_command_do_gimbal_manager_pitchyaw(packet);
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
@@ -716,6 +783,12 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
         break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
+        handle_gimbal_device_information(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
+        handle_gimbal_device_attitude_status(msg);
+        break;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Unhandled mount case");
@@ -734,16 +807,26 @@ void AP_Mount::handle_param_value(const mavlink_message_t &msg)
     }
 }
 
-// send a GIMBAL_REPORT message to the GCS
-void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
+
+// handle GIMBAL_DEVICE_INFORMATION message
+void AP_Mount::handle_gimbal_device_information(const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
-            _backends[instance]->send_gimbal_report(chan);
+            _backends[instance]->handle_gimbal_device_information(msg);
         }
-    }    
+    }
 }
 
+// handle GIMBAL_DEVICE_ATTITUDE_STATUS message
+void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->handle_gimbal_device_attitude_status(msg);
+        }
+    }
+}
 
 // singleton instance
 AP_Mount *AP_Mount::_singleton;

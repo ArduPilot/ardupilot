@@ -3,14 +3,16 @@
 */
 #pragma once
 
-#include "AP_Mount.h"
-#if HAL_MOUNT_ENABLED
+#include "AP_Mount_Backend.h"
+
+#ifndef HAL_MOUNT_ALEXMOS_ENABLED
+#define HAL_MOUNT_ALEXMOS_ENABLED HAL_MOUNT_ENABLED
+#endif
+
+#if HAL_MOUNT_ALEXMOS_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include "AP_Mount_Backend.h"
-
 
 //definition of the commands id for the Alexmos Serial Protocol
 #define CMD_READ_PARAMS 'R'
@@ -56,7 +58,7 @@
 #define AP_MOUNT_ALEXMOS_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_ALEXMOS_MODE_RC 4
 
-#define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
+#define AP_MOUNT_ALEXMOS_SPEED 30 // deg/s
 
 #define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
@@ -300,4 +302,4 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_ALEXMOS_ENABLED

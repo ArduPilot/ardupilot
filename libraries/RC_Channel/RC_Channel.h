@@ -88,8 +88,8 @@ public:
     // set and save trim if changed
     void       set_and_save_radio_trim(int16_t val) { radio_trim.set_and_save_ifchanged(val);}
 
-    // check if any of the trim/min/max param are configured in storage, this would indicate that the user has done a calibration at somepoint
-    bool       configured_in_storage() { return radio_min.configured_in_storage() || radio_max.configured_in_storage() || radio_trim.configured_in_storage(); }
+    // check if any of the trim/min/max param are configured, this would indicate that the user has done a calibration at somepoint
+    bool       configured() { return radio_min.configured() || radio_max.configured() || radio_trim.configured(); }
 
     ControlType get_type(void) const { return type_in; }
 
@@ -215,7 +215,7 @@ public:
         // options 150-199 continue user rc switch options
         CRUISE =             150,  // CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
-        SIMPLE_HEADING_RESET = 152, // reset simple mode refernce heading to current
+        SIMPLE_HEADING_RESET = 152, // reset simple mode reference heading to current
         ARMDISARM =          153, // arm or disarm vehicle
         ARMDISARM_AIRMODE =  154, // arm or disarm vehicle enabling airmode
         TRIM_TO_CURRENT_SERVO_RC = 155, // trim to current servo and RC
@@ -224,7 +224,9 @@ public:
         OPTFLOW_CAL =        158, // optical flow calibration
         FORCEFLYING =        159, // enable or disable land detection for GPS based manual modes preventing land detection and maintainting set_throttle_mix_max
         WEATHER_VANE_ENABLE = 160, // enable/disable weathervaning
-        TURBINE_START =       161, // initialize turbine start sequence
+        TURBINE_START =      161, // initialize turbine start sequence
+        FFT_NOTCH_TUNE =     162, // FFT notch tuning function
+        MOUNT_LOCK =         163, // Mount yaw lock vs follow
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -249,7 +251,7 @@ public:
     };
     typedef enum AUX_FUNC aux_func_t;
 
-    // auxillary switch handling (n.b.: we store this as 2-bits!):
+    // auxiliary switch handling (n.b.: we store this as 2-bits!):
     enum class AuxSwitchPos : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
         MIDDLE,    // indicates auxiliary switch is in the middle position (pwm >1200, <1800)
@@ -315,6 +317,7 @@ protected:
     void do_aux_function_relay(uint8_t relay, bool val);
     void do_aux_function_sprayer(const AuxSwitchPos ch_flag);
     void do_aux_function_generator(const AuxSwitchPos ch_flag);
+    void do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag);
 
     typedef int8_t modeswitch_pos_t;
     virtual void mode_switch_changed(modeswitch_pos_t new_pos) {
@@ -546,7 +549,7 @@ public:
     uint32_t last_input_ms() const { return last_update_ms; };
 
     // method for other parts of the system (e.g. Button and mavlink)
-    // to trigger auxillary functions
+    // to trigger auxiliary functions
     bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTriggerSource source) {
         return rc_channel(0)->run_aux_function(ch_option, pos, source);
     }

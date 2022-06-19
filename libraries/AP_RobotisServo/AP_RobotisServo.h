@@ -18,6 +18,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_ROBOTISSERVO_ENABLED
+#define AP_ROBOTISSERVO_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if AP_ROBOTISSERVO_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -50,7 +58,7 @@ private:
     void configure_servos(void);
 
     // auto-detected mask of available servos, from a broadcast ping
-    uint16_t servo_mask;
+    uint32_t servo_mask;
     uint8_t detection_count;
     uint8_t configured_servos;
     bool initialised;
@@ -65,3 +73,5 @@ private:
     uint32_t last_send_us;
     uint32_t delay_time_us;
 };
+
+#endif  // AP_ROBOTISSERVO_ENABLED

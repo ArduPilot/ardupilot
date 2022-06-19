@@ -3,6 +3,7 @@
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Logger/AP_Logger.h>
 #include "GyroFrame.h"
 
 #if HAL_WITH_DSP
@@ -39,13 +40,14 @@ public:
 
 class DSPTest : public AP_HAL::DSP {
 public:
-    virtual FFTWindowState* fft_init(uint16_t w, uint16_t sample_rate) override { return nullptr; }
+    virtual FFTWindowState* fft_init(uint16_t w, uint16_t sample_rate, uint8_t sliding_window_size) override { return nullptr; }
     virtual void fft_start(FFTWindowState* state, FloatBuffer& samples, uint16_t advance) override {}
     virtual uint16_t fft_analyse(FFTWindowState* state, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff) override { return 0; }
 protected:
     virtual void vector_max_float(const float* vin, uint16_t len, float* maxValue, uint16_t* maxIndex) const override {}
     virtual void vector_scale_float(const float* vin, float scale, float* vout, uint16_t len) const override {}
     virtual float vector_mean_float(const float* vin, uint16_t len) const override { return 0.0f; };
+    virtual void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const override {}
 public:
     void run_tests();
 } dsptest;

@@ -185,7 +185,7 @@ struct PACKED log_XKF3 {
 // @Field: OFN: Most recent position reset (North component)
 // @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
-// @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
+// @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
 // @Field: SS: Filter solution status
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index

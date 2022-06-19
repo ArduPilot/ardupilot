@@ -181,7 +181,12 @@ uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c,
         pname++;
         last_name++;
     }
-    const uint8_t name_len = strlen(pname);
+    uint8_t name_len = strlen(pname);
+    if (name_len == 0) {
+        name_len = 1;
+        common_len--;
+        pname--;
+    }
     const uint8_t type_len = AP_Param::type_size(ptype);
     uint8_t packed_len = type_len + name_len + 2;
     const uint8_t flags = 0;

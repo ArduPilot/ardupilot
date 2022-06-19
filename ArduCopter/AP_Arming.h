@@ -19,8 +19,6 @@ public:
     AP_Arming_Copter(const AP_Arming_Copter &other) = delete;
     AP_Arming_Copter &operator=(const AP_Arming_Copter&) = delete;
 
-    void update(void);
-
     bool rc_calibration_checks(bool display_failure) override;
 
     bool disarm(AP_Arming::Method method, bool do_disarm_checks=true) override;

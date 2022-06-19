@@ -598,7 +598,7 @@ void NavEKF2_core::UpdateFilter(bool predict)
     static uint32_t timing_counter;
     total_us += dal.micros() - timing_start_us;
     if (timing_counter++ == 4000) {
-        hal.console->printf("ekf2 avg %.2f us\n", total_us / float(timing_counter));
+        DEV_PRINTF("ekf2 avg %.2f us\n", total_us / float(timing_counter));
         total_us = 0;
         timing_counter = 0;
     }

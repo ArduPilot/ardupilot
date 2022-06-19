@@ -155,6 +155,14 @@ const AP_Param::GroupInfo AP_GyroFFT::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("HMNC_PEAK", 13, AP_GyroFFT, _harmonic_peak, 0),
 
+    // @Param: NUM_FRAMES
+    // @DisplayName: FFT output frames to retain and average
+    // @Description: Number of output frequency frames to retain and average in order to calculate final frequencies. Averaging output frames can drastically reduce noise and jitter at the cost of latency as long as the input is stable. The default is to perform no averaging. For rapidly changing frequencies (e.g. smaller aircraft) fewer frames should be averaged.
+    // @Range: 0 8
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("NUM_FRAMES", 14, AP_GyroFFT, _num_frames, 0),
+
     AP_GROUPEND
 };
 
@@ -208,10 +216,13 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     // this is particularly a problem on IMUs with higher sample rates (e.g. BMI088)
     // 16 gives a maximum output rate of 2Khz / 16 = 125Hz per axis or 375Hz in aggregate
     _samples_per_frame = MAX(FFT_MIN_SAMPLES_PER_FRAME, 1 << lrintf(log2f(_samples_per_frame)));
+    if (_num_frames > 0) {
+        _num_frames = constrain_int16(_num_frames, 2, AP_HAL::DSP::MAX_SLIDING_WINDOW_SIZE);
+    }
 
     // check that we have enough memory for the window size requested
     // INS: XYZ_AXIS_COUNT * INS_MAX_INSTANCES * _window_size, DSP: 3 * _window_size, FFT: XYZ_AXIS_COUNT + 3 * _window_size
-    const uint32_t allocation_count = (XYZ_AXIS_COUNT * INS_MAX_INSTANCES + 3 + XYZ_AXIS_COUNT + 3) * sizeof(float);
+    const uint32_t allocation_count = (XYZ_AXIS_COUNT * INS_MAX_INSTANCES + 3 + XYZ_AXIS_COUNT + 3 + _num_frames) * sizeof(float);
     if (allocation_count * FFT_DEFAULT_WINDOW_SIZE > hal.util->available_memory() / 2) {
         gcs().send_text(MAV_SEVERITY_WARNING, "AP_GyroFFT: disabled, required %u bytes", (unsigned int)allocation_count * FFT_DEFAULT_WINDOW_SIZE);
         return;
@@ -248,10 +259,23 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
         return;
     }
 
-    const uint8_t harmonics = _ins->get_gyro_harmonic_notch_harmonics();
+    // check for harmonics across all harmonic notch filters
+    // note that we only allow one harmonic notch filter linked to the FFT code
+    uint8_t harmonics = 0;
+    uint8_t num_notches = 0;
+    for (auto &notch : _ins->harmonic_notches) {
+        if (notch.params.enabled()) {
+            harmonics |= notch.params.harmonics();
+            num_notches = MAX(num_notches, notch.num_dynamic_notches);
+        }
+    }
+    if (harmonics == 0) {
+        // this allows use of FFT to find peaks with all notch filters disabled
+        harmonics = 3;
+    }
     // count the number of active harmonics or dynamic notchs
     _tracked_peaks = constrain_int16(MAX(__builtin_popcount(harmonics),
-        _ins->get_num_gyro_dynamic_notches()), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
+                                         num_notches), 1, FrequencyPeak::MAX_TRACKED_PEAKS);
 
     // calculate harmonic multiplier. this assumes the harmonics configured on the 
     // harmonic notch reflect the multiples of the fundamental harmonic that should be tracked
@@ -274,7 +298,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     }
 
     // initialise the HAL DSP subsystem
-    _state = hal.dsp->fft_init(_window_size, _fft_sampling_rate_hz);
+    _state = hal.dsp->fft_init(_window_size, _fft_sampling_rate_hz, _num_frames);
     if (_state == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Failed to initialize DSP engine");
         return;
@@ -312,7 +336,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
 
     // finally we are done
     _initialized = true;
-    update_parameters();
+    update_parameters(true);
     // start running FFTs
     if (start_update_thread()) {
         set_analysis_enabled(true);
@@ -374,7 +398,13 @@ void AP_GyroFFT::update()
     if (!_rpy_health.x && !_rpy_health.y) {
         _health = 0;
     } else {
-        _health = MIN(_global_state._health, _ins->get_num_gyro_dynamic_notches());
+        uint8_t num_notches = 1;
+        for (auto &notch : _ins->harmonic_notches) {
+            if (notch.params.enabled()) {
+                num_notches = MAX(num_notches, notch.num_dynamic_notches);
+            }
+        }
+        _health = MIN(_global_state._health, num_notches);
     }
 }
 
@@ -456,10 +486,10 @@ bool AP_GyroFFT::start_analysis() {
 }
 
 // update calculated values of dynamic parameters - runs at 1Hz
-void AP_GyroFFT::update_parameters()
+void AP_GyroFFT::update_parameters(bool force)
 {
     // lock contention is very costly, so don't allow configuration updates while flying
-    if (!_initialized || AP::arming().is_armed()) {
+    if ((!_initialized || AP::arming().is_armed()) && !force) {
         return;
     }
 
@@ -595,6 +625,14 @@ void AP_GyroFFT::update_freq_hover(float dt, float throttle_out)
     if (!analysis_enabled()) {
         return;
     }
+
+    // throttle averaging for average fft calculation
+    if (is_zero(_avg_throttle_out)) {
+        _avg_throttle_out = throttle_out;
+    } else {
+        _avg_throttle_out = constrain_float(_avg_throttle_out + (dt / (10.0f + dt)) * (throttle_out - _avg_throttle_out), 0.01f, 0.9f);
+    }
+
     // we have chosen to constrain the hover frequency to be within the range reachable by the third order expo polynomial.
     _freq_hover_hz = constrain_float(_freq_hover_hz + (dt / (10.0f + dt)) * (get_weighted_noise_center_freq_hz() - _freq_hover_hz), _fft_min_hz, _fft_max_hz);
     _bandwidth_hover_hz = constrain_float(_bandwidth_hover_hz + (dt / (10.0f + dt)) * (get_weighted_noise_center_bandwidth_hz() - _bandwidth_hover_hz), 0, _fft_max_hz * 0.5f);
@@ -612,6 +650,69 @@ void AP_GyroFFT::save_params_on_disarm()
     _freq_hover_hz.save();
     _bandwidth_hover_hz.save();
     _throttle_ref.save();
+}
+
+    // notch tuning
+void AP_GyroFFT::start_notch_tune()
+{
+    if (!analysis_enabled()) {
+        return;
+    }
+
+    if (!hal.dsp->fft_start_average(_state)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to start FFT averaging");
+    }
+    _avg_throttle_out = 0.0f;
+}
+
+void AP_GyroFFT::stop_notch_tune()
+{
+    if (!analysis_enabled()) {
+        return;
+    }
+
+    float freqs[FrequencyPeak::MAX_TRACKED_PEAKS] {};
+
+    uint16_t numpeaks = hal.dsp->fft_stop_average(_state, _config._fft_start_bin, _config._fft_end_bin, freqs);
+
+    if (numpeaks == 0) {
+        return;
+    }
+
+    float harmonic = freqs[0];
+    float harmonic_fit = 100.0f;
+
+    for (uint8_t i = 1; i < numpeaks; i++) {
+        if (freqs[i] < harmonic) {
+            const float fit = 100.0f * fabsf(harmonic - freqs[i] * _harmonic_multiplier) / harmonic;
+            if (isfinite(fit) && fit < _harmonic_fit && fit < harmonic_fit) {
+                harmonic = freqs[i];
+                harmonic_fit = fit;
+            }
+        }
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "FFT: Found peaks at %.1f/%.1f/%.1fHz", freqs[0], freqs[1], freqs[2]);
+    gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Selected %.1fHz with fit %.1f%%\n", harmonic, is_equal(harmonic_fit, 100.0f) ? 100.0f : 100.0f - harmonic_fit);
+
+    // if we don't have a throttle value then all bets are off
+    if (is_zero(_avg_throttle_out) || is_zero(harmonic)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to calculate notch: need stable hover");
+        return;
+    }
+
+    // pick a ref which means the notch covers all the way down to FFT_MINHZ
+    const float thr_ref = _avg_throttle_out * sq((float)_fft_min_hz.get() / harmonic);
+
+    if (!_ins->setup_throttle_gyro_harmonic_notch((float)_fft_min_hz.get(), thr_ref)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to set throttle notch with %.1fHz/%.2f",
+            (float)_fft_min_hz.get(), thr_ref);
+        // save results to FFT slots
+        _throttle_ref = thr_ref;
+        _freq_hover_hz = harmonic;
+    } else {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", (float)_fft_min_hz.get(), thr_ref);
+    }
 }
 
 // return the noise peak that is being tracked
@@ -685,7 +786,7 @@ float AP_GyroFFT::get_weighted_noise_center_freq_hz() const
     if (!_health) {
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
         AP_Motors* motors = AP::motors();
-        if (motors != nullptr) {
+        if (motors != nullptr && !is_zero(_throttle_ref)) {
             // FFT is not healthy, fallback to throttle-based estimate
             return constrain_float(_fft_min_hz * MAX(1.0f, sqrtf(motors->get_throttle_out() / _throttle_ref)), _fft_min_hz, _fft_max_hz);
         }
@@ -919,7 +1020,7 @@ void AP_GyroFFT::calculate_noise(bool calibrating, const EngineConfig& config)
 #if DEBUG_FFT
     WITH_SEMAPHORE(_sem);
     _debug_state = _thread_state;
-    _debug_max_freq_bin = _state->_freq_bins[_state->_peak_data[FrequencyPeak::CENTER]._bin];
+    _debug_max_freq_bin = _state->get_freq_bin(_state->_peak_data[FrequencyPeak::CENTER]._bin);
     _debug_max_bin_freq = _state->_peak_data[FrequencyPeak::CENTER]._freq_hz;
     _debug_snr = snr;
     _debug_max_bin = _state->_peak_data[FrequencyPeak::CENTER]._bin;
@@ -1012,7 +1113,7 @@ bool AP_GyroFFT::calculate_filtered_noise(FrequencyPeak target_peak, FrequencyPe
 
     if (freqs.is_valid(FrequencyPeak(source_peak))) {
         // total peak energy requires an integration, as an approximation use amplitude * noise width * 5/6
-        update_tl_center_freq_energy(target_peak, _update_axis, _state->_freq_bins[nb] * peak_data->_noise_width_hz * 0.8333f);
+        update_tl_center_freq_energy(target_peak, _update_axis, _state->get_freq_bin(nb) * peak_data->_noise_width_hz * 0.8333f);
         update_tl_noise_center_bandwidth_hz(target_peak, _update_axis, peak_data->_noise_width_hz);
         update_tl_noise_center_freq_hz(target_peak, _update_axis, freqs.get_weighted_frequency(FrequencyPeak(source_peak)));
         _missed_cycles[_update_axis][target_peak] = 0;
@@ -1025,7 +1126,7 @@ bool AP_GyroFFT::calculate_filtered_noise(FrequencyPeak target_peak, FrequencyPe
     }
 
     // we failed to find a signal for more than FFT_MAX_MISSED_UPDATES cycles
-    update_tl_center_freq_energy(target_peak, _update_axis, _state->_freq_bins[nb] * peak_data->_noise_width_hz * 0.8333f);     // use the actual energy detected rather than 0
+    update_tl_center_freq_energy(target_peak, _update_axis, _state->get_freq_bin(nb) * peak_data->_noise_width_hz * 0.8333f);     // use the actual energy detected rather than 0
     update_tl_noise_center_bandwidth_hz(target_peak, _update_axis, _bandwidth_hover_hz);
     update_tl_noise_center_freq_hz(target_peak, _update_axis, config._fft_min_hz);
 
@@ -1061,12 +1162,12 @@ bool AP_GyroFFT::get_weighted_frequency(FrequencyPeak peak, float& weighted_peak
     const uint16_t bin = peak_data->_bin;
 
     // calculate the SNR and center frequency energy
-    const float max_energy = MAX(1.0f, _state->_freq_bins[bin]);
+    const float max_energy = MAX(1.0f, _state->get_freq_bin(bin));
     const float ref_energy = MAX(1.0f, _ref_energy[_update_axis][bin]);
     snr = 10.f * (log10f(max_energy) - log10f(ref_energy));
 
     // if the bin energy is above the noise threshold then we have a signal
-    if (!_thread_state._noise_needs_calibration && isfinite(_state->_freq_bins[bin]) && snr > config._snr_threshold_db) {
+    if (!_thread_state._noise_needs_calibration && isfinite(_state->get_freq_bin(bin)) && snr > config._snr_threshold_db) {
         weighted_peak_freq_hz = constrain_float(peak_data->_freq_hz, (float)config._fft_min_hz, (float)config._fft_max_hz);
         return true;
     }
@@ -1122,7 +1223,7 @@ void AP_GyroFFT::update_ref_energy(uint16_t max_bin)
     // determine a PS noise reference at each of the possible center frequencies
     if (_noise_cycles == 0 && _noise_calibration_cycles[_update_axis] > 0) {
         for (uint16_t i = 1; i < _state->_bin_count; i++) {
-            _ref_energy[_update_axis][i] += _state->_freq_bins[i];
+            _ref_energy[_update_axis][i] += _state->get_freq_bin(i);
         }
         if (--_noise_calibration_cycles[_update_axis] == 0) {
             for (uint16_t i = 1; i < _state->_bin_count; i++) {
@@ -1181,6 +1282,12 @@ float AP_GyroFFT::self_test(float frequency, FloatBuffer& test_window)
 
     _update_axis = 0;
 
+    // if using averaging we need to process _num_frames in order to not bias the result
+    for (uint8_t i = 1; i < _num_frames; i++) {
+        hal.dsp->fft_start(_state, test_window, 0);
+        hal.dsp->fft_analyse(_state, _config._fft_start_bin, _config._fft_end_bin, _config._attenuation_cutoff);
+    }
+    // final cycle is the one we want
     hal.dsp->fft_start(_state, test_window, 0);
     uint16_t max_bin = hal.dsp->fft_analyse(_state, _config._fft_start_bin, _config._fft_end_bin, _config._attenuation_cutoff);
 

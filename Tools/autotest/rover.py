@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Drive Rover in SITL
 
@@ -71,6 +69,9 @@ class AutoTestRover(AutoTest):
 
     def default_frame(self):
         return "rover"
+
+    def default_speedup(self):
+        return 100
 
     def is_rover(self):
         return True
@@ -5642,16 +5643,23 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     if self.get_sim_time_cached() - tstart > 15:
                         self.progress("Got POSITION_TARGET_GLOBAL_INT, all good !")
                         break
-            self.change_mode("GUIDED")
 
             self.start_subtest("Test End Mission Behavior ACRO")
             self.set_parameter("MIS_DONE_BEHAVE", 2)
-            self.change_mode("AUTO")
+            # race conditions here to do with get_sim_time()
+            # swallowing heartbeats means we have to be a little
+            # circuitous when testing here:
+            self.change_mode("GUIDED")
+            self.send_cmd_do_set_mode('AUTO')
             self.wait_mode("ACRO")
 
             self.start_subtest("Test End Mission Behavior MANUAL")
             self.set_parameter("MIS_DONE_BEHAVE", 3)
-            self.change_mode("AUTO")
+            # race conditions here to do with get_sim_time()
+            # swallowing heartbeats means we have to be a little
+            # circuitous when testing here:
+            self.change_mode("GUIDED")
+            self.send_cmd_do_set_mode("AUTO")
             self.wait_mode("MANUAL")
             self.disarm_vehicle()
         except Exception as e:
@@ -5784,6 +5792,29 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.customise_SITL_commandline([])
         # make sure we're back at our original value:
         self.assert_parameter_value("LOG_BITMASK", 1)
+
+    def RangeFinder(self):
+        # the following magic numbers correspond to the post locations in SITL
+        home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 315)
+
+        rangefinder_params = {
+            "SIM_SONAR_ROT": 6,
+        }
+        rangefinder_params.update(self.analog_rangefinder_parameters())
+
+        self.set_parameters(rangefinder_params)
+        self.customise_SITL_commandline([
+            "--home", home_string,
+        ])
+        self.wait_ready_to_arm()
+        if self.mavproxy is not None:
+            self.mavproxy.send('script /tmp/post-locations.scr\n')
+        m = self.assert_receive_message('RANGEFINDER', very_verbose=True)
+        if m.voltage == 0:
+            raise NotAchievedException("Did not get non-zero voltage")
+        want_range = 10
+        if abs(m.distance - want_range) > 0.1:
+            raise NotAchievedException("Expected %fm got %fm" % (want_range, m.distance))
 
     def test_depthfinder(self):
         # Setup rangefinders
@@ -6082,6 +6113,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("AccelCal",
              "Accelerometer Calibration testing",
              self.accelcal),
+
+            ("RangeFinder",
+             "Test RangeFinder",
+             self.RangeFinder),
 
             ("AP_Proximity_MAV",
              "Test MAV proximity backend",

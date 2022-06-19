@@ -3,6 +3,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
 #include <AP_WheelEncoder/AP_WheelRateControl.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 class AP_MotorsUGV {
 public:
@@ -106,7 +107,7 @@ public:
     bool pre_arm_check(bool report) const;
 
     // return the motor mask
-    uint16_t get_motor_mask() const { return _motor_mask; }
+    uint32_t get_motor_mask() const { return _motor_mask; }
 
     // returns true if the configured PWM type is digital and should have fixed endpoints
     bool is_digital_pwm_type() const;
@@ -215,7 +216,7 @@ private:
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
-    uint16_t _motor_mask;   // mask of motors configured with pwm_type
+    uint32_t _motor_mask;   // mask of motors configured with pwm_type
     frame_type _frame_type; // frame type requested at initialisation
 
     // omni variables

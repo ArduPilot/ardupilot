@@ -100,7 +100,7 @@ private:
 
     bool send_deepstall_message(mavlink_channel_t chan) const;
 
-    const AP_Logger::PID_Info& get_pid_info(void) const;
+    const AP_PIDInfo& get_pid_info(void) const;
 
     //private helpers
     void build_approach_path(bool use_current_heading);

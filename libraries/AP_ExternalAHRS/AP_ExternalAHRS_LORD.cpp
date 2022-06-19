@@ -269,6 +269,7 @@ void AP_ExternalAHRS_LORD::post_imu() const
         AP::compass().handle_external(mag);
     }
 
+#if AP_BARO_EXTERNALAHRS_ENABLED
     {
         const AP_ExternalAHRS::baro_data_message_t baro {
             instance: 0,
@@ -278,6 +279,7 @@ void AP_ExternalAHRS_LORD::post_imu() const
         };        
         AP::baro().handle_external(baro);
     }
+#endif
 }
 
 // Collects data from a gnss packet into `gnss_data`

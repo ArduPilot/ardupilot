@@ -14,7 +14,7 @@
 */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_SPEKTRUM_TELEM_ENABLED
 #define HAL_SPEKTRUM_TELEM_ENABLED !HAL_MINIMIZE_FEATURES
@@ -22,7 +22,6 @@
 
 #if HAL_SPEKTRUM_TELEM_ENABLED
 
-#include <AP_Notify/AP_Notify.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_RCTelemetry.h"

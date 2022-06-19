@@ -28,6 +28,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_SPort_Passthrough.h>
 #include <math.h>
 #include <stdio.h>
+#include <AP_HAL/AP_HAL.h>
 
 #if HAL_CRSF_TELEM_ENABLED
 
@@ -62,6 +63,7 @@ bool AP_CRSF_Telem::init(void)
         && !AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         return false;
     }
+
     return AP_RCTelemetry::init();
 }
 
@@ -85,6 +87,9 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(5000, 100); // passthrough       max 10Hz
     add_scheduler_entry(5000, 500); // status text       max 2Hz
     add_scheduler_entry(5, 20);     // command          50Hz (generally not active unless requested by the TX)
+    add_scheduler_entry(5, 500);    // version ping      2Hz (only active at startup)
+    add_scheduler_entry(5, 100);    // device ping      10Hz (only active during TX loss, also see CRSF_RX_TIMEOUT)
+    disable_scheduler_entry(DEVICE_PING);
 }
 
 void AP_CRSF_Telem::setup_custom_telemetry()
@@ -167,7 +172,7 @@ void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_
     }
 }
 
-void AP_CRSF_Telem::process_rf_mode_changes()
+bool AP_CRSF_Telem::process_rf_mode_changes()
 {
     const AP_RCProtocol_CRSF::RFMode current_rf_mode = get_rf_mode();
     uint32_t now = AP_HAL::millis();
@@ -179,18 +184,25 @@ void AP_CRSF_Telem::process_rf_mode_changes()
         uart = crsf->get_UART();
     }
     if (uart == nullptr) {
-        return;
+        return true;
     }
+    // not ready yet
+    if (!uart->is_initialized()) {
+        return false;
+    }
+
     // warn the user if their setup is sub-optimal
-    if (_telem_last_report_ms == 0 && !uart->is_dma_enabled()) {
+    if (_telem_bootstrap_msg_pending && !uart->is_dma_enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "%s: running on non-DMA serial port", get_protocol_string());
     }
     // note if option was set to show LQ in place of RSSI
     bool current_lq_as_rssi_active = bool(rc().use_crsf_lq_as_rssi());
-    if(_telem_last_report_ms == 0 || _noted_lq_as_rssi_active != current_lq_as_rssi_active){
+    if(_telem_bootstrap_msg_pending || _noted_lq_as_rssi_active != current_lq_as_rssi_active){
         _noted_lq_as_rssi_active = current_lq_as_rssi_active;
         gcs().send_text(MAV_SEVERITY_INFO, "%s: RSSI now displays %s", get_protocol_string(), current_lq_as_rssi_active ? " as LQ" : "normally");
     }
+    _telem_bootstrap_msg_pending = false;
+
     const bool is_high_speed = is_high_speed_telemetry(current_rf_mode);
     if ((now - _telem_last_report_ms > 5000)) {
         // report an RF mode change or a change in telemetry rate if we haven't done so in the last 5s
@@ -204,8 +216,12 @@ void AP_CRSF_Telem::process_rf_mode_changes()
         _telem_is_high_speed = is_high_speed;
         _telem_rf_mode = current_rf_mode;
         _telem_last_avg_rate = _scheduler.avg_packet_rate;
+        if (_telem_last_report_ms == 0) {   // only want to show bootstrap messages once
+            _telem_bootstrap_msg_pending = true;
+        }
         _telem_last_report_ms = now;
     }
+    return true;
 }
 
 // return custom frame id based on fw version
@@ -288,25 +304,25 @@ void AP_CRSF_Telem::queue_message(MAV_SEVERITY severity, const char *text)
     AP_RCTelemetry::queue_message(severity, text);
 }
 
-void AP_CRSF_Telem::enter_scheduler_params_mode()
+/*
+  disable telemetry entries that require a transmitter to be present
+ */
+void AP_CRSF_Telem::disable_tx_entries()
 {
-    debug("parameter passthrough enabled");
-    set_scheduler_entry(HEARTBEAT, 50, 200);            // heartbeat        5Hz
-
     disable_scheduler_entry(ATTITUDE);
     disable_scheduler_entry(BATTERY);
     disable_scheduler_entry(GPS);
     disable_scheduler_entry(FLIGHT_MODE);
     disable_scheduler_entry(PASSTHROUGH);
     disable_scheduler_entry(STATUS_TEXT);
+    // GENERAL_COMMAND and PARAMETERS will only be sent under very specific circumstances
 }
 
-void AP_CRSF_Telem::exit_scheduler_params_mode()
+/*
+  enable telemetry entries that require a transmitter to be present
+ */
+void AP_CRSF_Telem::enable_tx_entries()
 {
-    debug("parameter passthrough disabled");
-    // setup the crossfire scheduler for custom telemetry
-    set_scheduler_entry(HEARTBEAT, 2000, 5000);     // 0.2Hz
-
     enable_scheduler_entry(ATTITUDE);
     enable_scheduler_entry(BATTERY);
     enable_scheduler_entry(GPS);
@@ -315,6 +331,21 @@ void AP_CRSF_Telem::exit_scheduler_params_mode()
     enable_scheduler_entry(STATUS_TEXT);
 
     update_custom_telemetry_rates(_telem_rf_mode);
+}
+
+void AP_CRSF_Telem::enter_scheduler_params_mode()
+{
+    debug("parameter passthrough enabled");
+    set_scheduler_entry(HEARTBEAT, 50, 200);            // heartbeat        5Hz
+    disable_tx_entries();
+}
+
+void AP_CRSF_Telem::exit_scheduler_params_mode()
+{
+    debug("parameter passthrough disabled");
+    // setup the crossfire scheduler for custom telemetry
+    set_scheduler_entry(HEARTBEAT, 2000, 5000);     // 0.2Hz
+    enable_tx_entries();
 }
 
 void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
@@ -346,24 +377,12 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
 // WFQ scheduler
 bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
 {
-    process_rf_mode_changes();
+    if (!process_rf_mode_changes()) {
+        return false;
+    }
 
     switch (idx) {
     case PARAMETERS:
-        // to get crossfire firmware version we send an RX device ping until we get a response
-        // but only if there are no other requests pending
-        if (_crsf_version.pending && _pending_request.frame_type == 0) {
-            if (_crsf_version.retry_count++ > CRSF_RX_DEVICE_PING_MAX_RETRY) {
-                _crsf_version.pending = false;
-                _crsf_version.minor = 0;
-                _crsf_version.major = 0;
-                gcs().send_text(MAV_SEVERITY_DEBUG,"%s: RX device ping failed", get_protocol_string());
-            } else {
-                _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
-                _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
-                gcs().send_text(MAV_SEVERITY_DEBUG,"%s: requesting RX device info", get_protocol_string());
-            }
-        }
         return _pending_request.frame_type > 0;
     case VTX_PARAMETERS:
         return AP::vtx().have_params_changed() ||_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
@@ -373,6 +392,12 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
         return rc().crsf_custom_telemetry() && !queue_empty;
     case GENERAL_COMMAND:
         return _baud_rate_request.pending;
+    case VERSION_PING:
+        return _crsf_version.pending;
+    case HEARTBEAT:
+        return true; // always send heartbeat if enabled
+    case DEVICE_PING:
+        return !_crsf_version.pending; // only send pings if version has been negotiated
     default:
         return _enable_telemetry;
     }
@@ -387,7 +412,7 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             calc_heartbeat();
             break;
         case PARAMETERS: // update parameter settings
-            update_params();
+            process_pending_requests();
             break;
         case ATTITUDE:
             calc_attitude();
@@ -421,6 +446,22 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             break;
         case GENERAL_COMMAND:
             calc_command_response();
+            break;
+        case VERSION_PING:
+            // to get crossfire firmware version we send an RX device ping
+            if (_crsf_version.retry_count++ > CRSF_RX_DEVICE_PING_MAX_RETRY) {
+                _crsf_version.pending = false;
+                _crsf_version.minor = 0;
+                _crsf_version.major = 0;
+                disable_scheduler_entry(VERSION_PING);
+                gcs().send_text(MAV_SEVERITY_DEBUG,"%s: RX device ping failed", get_protocol_string());
+            } else {
+                calc_device_ping(AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER);
+                gcs().send_text(MAV_SEVERITY_DEBUG,"%s: requesting RX device info", get_protocol_string());
+            }
+            break;
+        case DEVICE_PING:
+            calc_device_ping(AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER);
             break;
         default:
             break;
@@ -566,6 +607,7 @@ void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
 
     _param_request.origin = ping->origin;
     _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
+    _pending_request.destination = ping->origin;
 }
 
 // request for device info
@@ -611,6 +653,7 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     }
 
     _crsf_version.pending = false;
+    disable_scheduler_entry(VERSION_PING);
 }
 
 // request for a general command
@@ -658,7 +701,7 @@ void AP_CRSF_Telem::update()
 {
 }
 
-void AP_CRSF_Telem::update_params()
+void AP_CRSF_Telem::process_pending_requests()
 {
     // handle general parameter requests
     switch (_pending_request.frame_type) {
@@ -669,7 +712,7 @@ void AP_CRSF_Telem::update_params()
         break;
     // construct a ping frame originating here
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
-        calc_device_ping();
+        calc_device_ping(_pending_request.destination);
         break;
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
         // reset parameter passthrough timeout
@@ -679,6 +722,8 @@ void AP_CRSF_Telem::update_params()
     default:
         break;
     }
+
+    _pending_request.frame_type = 0;
 }
 
 void AP_CRSF_Telem::update_vtx_params()
@@ -913,13 +958,11 @@ void AP_CRSF_Telem::calc_device_info() {
 }
 
 // send a device ping
-void AP_CRSF_Telem::calc_device_ping() {
-    _telem.ext.ping.destination = _pending_request.destination;
+void AP_CRSF_Telem::calc_device_ping(uint8_t destination) {
+    _telem.ext.ping.destination = destination;
     _telem.ext.ping.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
     _telem_size = 2;
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
-
-    _pending_request.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_BROADCAST;
     _pending_request.frame_type = 0;
 
     _telem_pending = true;
@@ -1387,10 +1430,23 @@ void AP_CRSF_Telem::get_multi_packet_passthrough_telem_data(uint8_t size)
 
 /*
   fetch CRSF frame data
+  if is_tx_active is true then this will be a request for telemetry after receiving an RC frame
  */
-bool AP_CRSF_Telem::_get_telem_data(AP_RCProtocol_CRSF::Frame* data)
+bool AP_CRSF_Telem::_get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active)
 {
     memset(&_telem, 0, sizeof(TelemetryPayload));
+    // update telemetry tasks if we either lost or regained the transmitter
+    if (_is_tx_active != is_tx_active) {
+        if (is_tx_active) {
+            disable_scheduler_entry(DEVICE_PING);
+            enable_tx_entries();
+        } else {
+            disable_tx_entries();
+            enable_scheduler_entry(DEVICE_PING);
+        }
+        _is_tx_active = is_tx_active;
+    }
+
     run_wfq_scheduler();
     if (!_telem_pending) {
         return false;
@@ -1418,12 +1474,12 @@ bool AP_CRSF_Telem::process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void
 /*
   fetch data for an external transport, such as CRSF
  */
-bool AP_CRSF_Telem::get_telem_data(AP_RCProtocol_CRSF::Frame* data)
+bool AP_CRSF_Telem::get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_active)
 {
     if (!get_singleton()) {
         return false;
     }
-    return singleton->_get_telem_data(data);
+    return singleton->_get_telem_data(data, is_tx_active);
 }
 
 AP_CRSF_Telem *AP_CRSF_Telem::get_singleton(void) {

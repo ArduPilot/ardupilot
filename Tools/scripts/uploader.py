@@ -1012,9 +1012,15 @@ def ports_to_try(args):
 def modemmanager_check():
     if os.path.exists("/usr/sbin/ModemManager"):
         print("""
-==========================================================================================================
-WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device (like Pixhawk)
-==========================================================================================================
+===========================================================================================
+WARNING: You should uninstall ModemManager as it conflicts with any non-modem serial device
+===========================================================================================
+""")
+    if os.path.exists("/usr/bin/brltty"):
+        print("""
+=====================================================================================
+WARNING: You should uninstall brltty as it conflicts with any non-modem serial device
+=====================================================================================
 """)
 
 
@@ -1165,8 +1171,8 @@ def main():
                         up.upload(fw, force=args.force, boot_delay=args.boot_delay)
 
                 except RuntimeError as ex:
-                    # print the error
-                    print("\nERROR: %s" % ex.args)
+                    # print the error and exit as a failure
+                    sys.exit("\nERROR: %s" % ex.args)
 
                 except IOError:
                     up.close()

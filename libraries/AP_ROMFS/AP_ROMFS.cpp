@@ -20,6 +20,11 @@
 #include "tinf.h"
 #include <AP_Math/crc.h>
 
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#include <string.h>
+
 #ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
 #include <ap_romfs_embedded.h>
 #else

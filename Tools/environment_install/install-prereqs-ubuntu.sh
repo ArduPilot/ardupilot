@@ -59,18 +59,24 @@ fi
 
 # Checking Ubuntu release to adapt software version to install
 RELEASE_CODENAME=$(lsb_release -c -s)
-PYTHON_V="python"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
-PIP=pip2
+PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+PIP=pip3
 
 if [ ${RELEASE_CODENAME} == 'xenial' ]; then
     SITLFML_VERSION="2.3v5"
     SITLCFML_VERSION="2.3"
+    PYTHON_V="python2"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'disco' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+    PYTHON_V="python2"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
+    PYTHON_V="python2"
+    PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
@@ -92,6 +98,8 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
+    PYTHON_V="python2"
+    PIP=pip2
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
@@ -158,27 +166,50 @@ fi
 
 # ArduPilot official Toolchain for STM32 boards
 function install_arm_none_eabi_toolchain() {
-  # GNU Tools for ARM Embedded Processors
-  # (see https://launchpad.net/gcc-arm-embedded/)
-  ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
-  ARM_TARBALL="$ARM_ROOT-x86_64-linux.tar.bz2"
-  ARM_TARBALL_URL="https://firmware.ardupilot.org/Tools/STM32-tools/$ARM_TARBALL"
-  if [ ! -d $OPT/$ARM_ROOT ]; then
-    (
-        cd $OPT;
-        heading "Installing toolchain for STM32 Boards"
-        echo "Downloading from ArduPilot server"
-        sudo wget $ARM_TARBALL_URL
-        echo "Installing..."
-        sudo tar xjf ${ARM_TARBALL}
-        echo "... Cleaning"
-        sudo rm ${ARM_TARBALL};
-    )
-  fi
-  echo "Registering STM32 Toolchain for ccache"
-  sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-  sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
-  echo "Done!"
+    # GNU Tools for ARM Embedded Processors
+    # (see https://launchpad.net/gcc-arm-embedded/)
+    ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"
+    case $(uname -m) in
+        x86_64)
+            if [ ! -d $OPT/$ARM_ROOT ]; then
+                (
+                    cd $OPT
+                    heading "Installing toolchain for STM32 Boards"
+                    echo "Installing toolchain for STM32 Boards"
+                    echo "Downloading from ArduPilot server"
+                    sudo wget https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    echo "Installing..."
+                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    echo "... Cleaning"
+                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                )
+            fi
+            echo "Registering STM32 Toolchain for ccache"
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            echo "Done!";;
+
+        aarch64)
+            if [ ! -d $OPT/$ARM_ROOT ]; then
+                (
+                    cd $OPT
+                    heading "Installing toolchain for STM32 Boards"
+                    echo "Installing toolchain for STM32 Boards"
+                    echo "Downloading from ArduPilot server"
+                    sudo wget https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    echo "Installing..."
+                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    echo "... Cleaning"
+                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                )
+            fi
+            echo "Registering STM32 Toolchain for ccache"
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            echo "Done!";;
+    esac
 }
 
 function maybe_prompt_user() {
@@ -271,9 +302,12 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
     DO_AP_STM_ENV=1
 fi
 
-heading "Removing modemmanager package that could conflict with firmware uploading"
+heading "Removing modemmanager and brltty package that could conflict with firmware uploading"
 if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
+fi
+if package_is_installed "brltty"; then
+    $APT_GET remove brltty
 fi
 echo "Done!"
 

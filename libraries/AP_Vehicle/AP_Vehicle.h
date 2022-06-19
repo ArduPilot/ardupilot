@@ -21,6 +21,8 @@
 
 #include "ModeReason.h" // reasons can't be defined in this header due to circular loops
 
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
@@ -29,7 +31,6 @@
 #include <AP_EFI/AP_EFI.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
-#include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>                    // Notify library
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
@@ -227,6 +228,8 @@ public:
     // allow for VTOL velocity matching of a target
     virtual bool set_velocity_match(const Vector2f &velocity) { return false; }
 
+    // returns true if the EKF failsafe has triggered
+    virtual bool has_ekf_failsafed() const { return false; }
 
     // control outputs enumeration
     enum class ControlOutput {
@@ -248,7 +251,7 @@ public:
 #endif // AP_SCRIPTING_ENABLED
 
     // update the harmonic notch
-    virtual void update_dynamic_notch() {};
+    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
@@ -289,6 +292,11 @@ public:
     virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
 #endif
 
+    /*
+     get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+     */
+    virtual bool get_rate_bf_targets(Vector3f& rate_bf_targets) const { return false; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -304,8 +312,7 @@ protected:
 #endif
 
     // main loop scheduler
-    AP_Scheduler scheduler{FUNCTOR_BIND_MEMBER(&AP_Vehicle::fast_loop, void)};
-    virtual void fast_loop();
+    AP_Scheduler scheduler;
 
     // IMU variables
     // Integration time; time last loop took to run
@@ -391,6 +398,9 @@ protected:
     void accel_cal_update();
 #endif
 
+    // call the arming library's update function
+    void update_arming();
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 #if AP_SIM_ENABLED
@@ -411,7 +421,7 @@ private:
 
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
-    uint32_t _last_notch_update_ms; // last time update_dynamic_notch() was run
+    uint32_t _last_notch_update_ms[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS]; // last time update_dynamic_notch() was run
 
     static AP_Vehicle *_singleton;
 

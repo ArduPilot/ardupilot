@@ -2,6 +2,12 @@
 
 #include "AP_Baro_Backend.h"
 
+#ifndef AP_BARO_MS56XX_ENABLED
+#define AP_BARO_MS56XX_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_BARO_MS56XX_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Device.h>
@@ -90,3 +96,5 @@ private:
 
     enum MS56XX_TYPE _ms56xx_type;
 };
+
+#endif  // AP_BARO_MS56XX_ENABLED

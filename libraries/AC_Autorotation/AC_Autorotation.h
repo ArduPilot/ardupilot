@@ -8,9 +8,6 @@
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter.h>
 #include <AC_PID/AC_P.h>
-#include <AP_InertialNav/AP_InertialNav.h>
-#include <AP_AHRS/AP_AHRS.h>
-#include <AP_HAL/AP_HAL.h>
 
 
 class AC_Autorotation

@@ -2,7 +2,6 @@
 /// @brief	handle routing of MAVLink packets by ID
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 

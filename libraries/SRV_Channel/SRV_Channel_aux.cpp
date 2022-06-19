@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  SRV_Channel_aux.cpp - handling of servo auxillary functions
+  SRV_Channel_aux.cpp - handling of servo auxiliary functions
  */
 #include "SRV_Channel.h"
 
@@ -76,7 +76,13 @@ void SRV_Channel::output_ch(void)
  */
 void SRV_Channels::output_ch_all(void)
 {
-    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+    uint8_t max_chan = NUM_SERVO_CHANNELS;
+#if NUM_SERVO_CHANNELS >= 17
+    if (_singleton != nullptr && _singleton->enable_32_channels.get() <= 0) {
+        max_chan = 16;
+    }
+#endif
+    for (uint8_t i = 0; i < max_chan; i++) {
         channels[i].output_ch();
     }
 }
@@ -178,10 +184,12 @@ void SRV_Channels::update_aux_servo_function(void)
     for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
         functions[i].channel_mask = 0;
     }
+    invalid_mask = 0;
 
     // set auxiliary ranges
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (!channels[i].valid_function()) {
+            invalid_mask |= 1U<<i;
             continue;
         }
         const uint16_t function = channels[i].function.get();
@@ -192,7 +200,7 @@ void SRV_Channels::update_aux_servo_function(void)
     initialised = true;
 }
 
-/// Should be called after the the servo functions have been initialized
+/// Should be called after the servo functions have been initialized
 /// called at 1Hz
 void SRV_Channels::enable_aux_servos()
 {
@@ -206,7 +214,7 @@ void SRV_Channels::enable_aux_servos()
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // see if it is a valid function
-        if (c.valid_function()) {
+        if (c.valid_function() && !(disabled_mask & (1U<<c.ch_num))) {
             hal.rcout->enable_ch(c.ch_num);
         } else {
             hal.rcout->disable_ch(c.ch_num);
@@ -244,9 +252,30 @@ void SRV_Channels::enable_aux_servos()
     set TRIM to either 1000 or 1500 depending on whether the channel
     is reversible
 */
-void SRV_Channels::set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask) {
+void SRV_Channels::set_digital_outputs(uint32_t dig_mask, uint32_t rev_mask) {
     digital_mask |= dig_mask;
     reversible_mask |= rev_mask;
+
+    // add in NeoPixel and ProfiLED functions to digital array to determine anything else
+    // that should be disabled
+    for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
+        SRV_Channel &c = channels[i];
+        switch (c.function.get()) {
+            case SRV_Channel::k_LED_neopixel1:
+            case SRV_Channel::k_LED_neopixel2:
+            case SRV_Channel::k_LED_neopixel3:
+            case SRV_Channel::k_LED_neopixel4:
+            case SRV_Channel::k_ProfiLED_1:
+            case SRV_Channel::k_ProfiLED_2:
+            case SRV_Channel::k_ProfiLED_3:
+            case SRV_Channel::k_ProfiLED_Clock:
+                dig_mask |= 1U<<c.ch_num;
+                break;
+            default:
+                break;
+        }
+    }
+    disabled_mask = hal.rcout->get_disabled_channels(dig_mask);
 
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
@@ -263,7 +292,7 @@ void SRV_Channels::set_digital_outputs(uint16_t dig_mask, uint16_t rev_mask) {
 }
 
 /// enable output channels using a channel mask
-void SRV_Channels::enable_by_mask(uint16_t mask)
+void SRV_Channels::enable_by_mask(uint32_t mask)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if (mask & (1U<<i)) {
@@ -357,7 +386,7 @@ SRV_Channels::copy_radio_in_out(SRV_Channel::Aux_servo_function_t function, bool
   copy radio_in to radio_out for a channel mask
  */
 void
-SRV_Channels::copy_radio_in_out_mask(uint16_t mask)
+SRV_Channels::copy_radio_in_out_mask(uint32_t mask)
 {
     for (uint8_t i = 0; i < NUM_SERVO_CHANNELS; i++) {
         if ((1U<<i) & mask) {
@@ -514,7 +543,7 @@ bool SRV_Channels::find_channel(SRV_Channel::Aux_servo_function_t function, uint
 }
 
 /*
-  get a pointer to first auxillary channel for a channel function
+  get a pointer to first auxiliary channel for a channel function
 */
 SRV_Channel *SRV_Channels::get_channel_for(SRV_Channel::Aux_servo_function_t function, int8_t default_chan)
 {
@@ -566,7 +595,7 @@ float SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::Aux_servo_functi
 /*
   get mask of output channels for a function
  */
-uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
+uint32_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t function)
 {
     if (!initialised) {
         update_aux_servo_function();
@@ -574,7 +603,7 @@ uint16_t SRV_Channels::get_output_channel_mask(SRV_Channel::Aux_servo_function_t
     if (SRV_Channel::valid_function(function)) {
         return functions[function].channel_mask;
     }
-    return 0;
+    return invalid_mask;
 }
 
 
@@ -792,6 +821,7 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Aux_servo_function_t function)
 */
 void SRV_Channels::upgrade_parameters(void)
 {
+    // PARAMETER_CONVERSION - Added: Jan-2020
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         // convert from AP_Int8 to AP_Int16
@@ -802,7 +832,7 @@ void SRV_Channels::upgrade_parameters(void)
 // set RC output frequency on a function output
 void SRV_Channels::set_rc_frequency(SRV_Channel::Aux_servo_function_t function, uint16_t frequency_hz)
 {
-    uint16_t mask = 0;
+    uint32_t mask = 0;
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         SRV_Channel &c = channels[i];
         if (c.function == function) {

@@ -3,7 +3,6 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_AutoTune.h"
-#include <AP_Logger/AP_Logger.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
 
@@ -34,7 +33,7 @@ public:
     void autotune_start(void);
     void autotune_restore(void);
 
-    const AP_Logger::PID_Info& get_pid_info(void) const
+    const AP_PIDInfo& get_pid_info(void) const
     {
         return _pid_info;
     }
@@ -64,7 +63,7 @@ private:
     AC_PID rate_pid{0.08, 0.15, 0, 0.345, 0.666, 3, 0, 12, 0.02, 150, 1};
     float angle_err_deg;
 
-    AP_Logger::PID_Info _pid_info;
+    AP_PIDInfo _pid_info;
 
     float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
 };

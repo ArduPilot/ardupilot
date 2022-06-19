@@ -326,11 +326,9 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             switch (ch_flag) {
                 case AuxSwitchPos::LOW:
                     copter.parachute.enabled(false);
-                    AP::logger().Write_Event(LogEvent::PARACHUTE_DISABLED);
                     break;
                 case AuxSwitchPos::MIDDLE:
                     copter.parachute.enabled(true);
-                    AP::logger().Write_Event(LogEvent::PARACHUTE_ENABLED);
                     break;
                 case AuxSwitchPos::HIGH:
                     copter.parachute.enabled(true);

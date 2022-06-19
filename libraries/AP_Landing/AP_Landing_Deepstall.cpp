@@ -26,6 +26,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Logger/AP_Logger.h>
 
 // table of user settable parameters for deepstall
 const AP_Param::GroupInfo AP_Landing_Deepstall::var_info[] = {
@@ -448,13 +449,13 @@ bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
     return true;
 }
 
-const AP_Logger::PID_Info& AP_Landing_Deepstall::get_pid_info(void) const
+const AP_PIDInfo& AP_Landing_Deepstall::get_pid_info(void) const
 {
     return ds_PID.get_pid_info();
 }
 
 void AP_Landing_Deepstall::Log(void) const {
-    const AP_Logger::PID_Info& pid_info = ds_PID.get_pid_info();
+    const AP_PIDInfo& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),
         time_us          : AP_HAL::micros64(),
@@ -600,7 +601,7 @@ bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Lo
     const Vector2f location_delta = current_loc.get_distance_NE(target_loc);
     const float heading_error = degrees(landing.ahrs.groundspeed_vector().angle(location_delta));
 
-    // Check to see if the the plane is heading toward the land waypoint. We use 20 degrees (+/-10 deg)
+    // Check to see if the plane is heading toward the land waypoint. We use 20 degrees (+/-10 deg)
     // of margin so that the altitude to be within 5 meters of desired
 
     if (heading_error <= 10.0  && fabsf(height_error) < DEEPSTALL_LOITER_ALT_TOLERANCE) {

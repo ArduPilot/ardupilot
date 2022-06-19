@@ -27,6 +27,12 @@
 
 #include "AP_Baro_Backend.h"
 
+#ifndef AP_BARO_KELLERLD_ENABLED
+#define AP_BARO_KELLERLD_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_BARO_KELLERLD_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Device.h>
@@ -87,3 +93,6 @@ private:
     bool read_cal();
     bool read_mode_type();
 };
+
+
+#endif  // AP_BARO_KELLERLD_ENABLED

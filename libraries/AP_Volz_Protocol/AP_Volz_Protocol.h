@@ -33,6 +33,14 @@
 
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef AP_VOLZ_ENABLED
+#define AP_VOLZ_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
+#endif
+
+#if AP_VOLZ_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 
@@ -73,3 +81,5 @@ private:
     AP_Int32 bitmask;
     bool initialised;
 };
+
+#endif  // AP_VOLZ_PROTOCOL

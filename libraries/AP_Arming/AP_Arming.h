@@ -1,20 +1,20 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
-#include <RC_Channel/RC_Channel.h>
 
 class AP_Arming {
 public:
 
     AP_Arming();
 
-    /* Do not allow copies */
-    AP_Arming(const AP_Arming &other) = delete;
-    AP_Arming &operator=(const AP_Arming&) = delete;
+    CLASS_NO_COPY(AP_Arming);  /* Do not allow copies */
 
     static AP_Arming *get_singleton();
+
+    void update();
 
     enum ArmingChecks {
         ARMING_CHECK_ALL         = (1U << 0),
@@ -73,6 +73,7 @@ public:
         TOYMODELANDTHROTTLE = 30, // only disarm uses this...
         TOYMODELANDFORCE = 31, // only disarm uses this...
         LANDING = 32, // only disarm uses this...
+        DEADRECKON_FAILSAFE = 33, // only disarm uses this...
         UNKNOWN = 100,
     };
 
@@ -122,7 +123,12 @@ public:
 
     // method that was last used for disarm; invalid unless the
     // vehicle has been disarmed at least once.
-    Method last_disarm_method() const { return _last_disarm_method; } 
+    Method last_disarm_method() const { return _last_disarm_method; }
+
+    // enum for ARMING_OPTIONS parameter
+    enum class ArmingOptions : int32_t {
+        DISABLE_PREARM_DISPLAY   = (1U << 0),
+    };
 
 protected:
 
@@ -131,7 +137,8 @@ protected:
     AP_Int32                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
-    AP_Int32                 _required_mission_items;
+    AP_Int32                _required_mission_items;
+    AP_Int32                _arming_options;
 
     // internal members
     bool                    armed;
@@ -191,7 +198,7 @@ protected:
     virtual bool proximity_checks(bool report) const;
 
     bool servo_checks(bool report) const;
-    bool rc_checks_copter_sub(bool display_failure, const RC_Channel *channels[4]) const;
+    bool rc_checks_copter_sub(bool display_failure, const class RC_Channel *channels[4]) const;
 
     bool visodom_checks(bool report) const;
     bool disarm_switch_checks(bool report) const;
@@ -214,8 +221,8 @@ private:
 
     static AP_Arming *_singleton;
 
-    bool ins_accels_consistent(const AP_InertialSensor &ins);
-    bool ins_gyros_consistent(const AP_InertialSensor &ins);
+    bool ins_accels_consistent(const class AP_InertialSensor &ins);
+    bool ins_gyros_consistent(const class AP_InertialSensor &ins);
 
     // check if we should keep logging after disarming
     void check_forced_logging(const AP_Arming::Method method);

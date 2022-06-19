@@ -35,7 +35,6 @@
 
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_TC_DEFAULT      1.0f    // Time constant used to limit lean angle so that vehicle does not lose altitude
 #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_THROTTLE_MAX    0.8f    // Max throttle used to limit lean angle so that vehicle does not lose altitude
-#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN             10.0f   // Min lean angle so that vehicle can maintain limited control
 
 #define AC_ATTITUDE_CONTROL_MIN_DEFAULT                 0.1f    // minimum throttle mix default
 #define AC_ATTITUDE_CONTROL_MAN_DEFAULT                 0.1f    // manual throttle mix default
@@ -64,8 +63,13 @@ public:
         _aparm(aparm),
         _motors(motors)
         {
+            _singleton = this;
             AP_Param::setup_object_defaults(this, var_info);
         }
+
+    static AC_AttitudeControl *get_singleton(void) {
+        return _singleton;
+    }
 
     // Empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl() {}
@@ -179,7 +183,7 @@ public:
     virtual void input_angle_step_bf_roll_pitch_yaw(float roll_angle_step_bf_cd, float pitch_angle_step_bf_cd, float yaw_angle_step_bf_cd);
 
     // Command a thrust vector in the earth frame and a heading angle and/or rate
-    virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds);
+    virtual void input_thrust_vector_rate_heading(const Vector3f& thrust_vector, float heading_rate_cds, bool slew_yaw = true);
     virtual void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_angle_cd, float heading_rate_cds);
     void input_thrust_vector_heading(const Vector3f& thrust_vector, float heading_cd) {input_thrust_vector_heading(thrust_vector, heading_cd, 0.0f);}
 
@@ -362,6 +366,9 @@ public:
 
     // enable inverted flight on backends that support it
     virtual void set_inverted_flight(bool inverted) {}
+
+    // get the slew rate value for roll, pitch and yaw, for oscillation detection in lua scripts
+    void get_rpy_srate(float &roll_srate, float &pitch_srate, float &yaw_srate);
     
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -437,12 +444,12 @@ protected:
     // velocity controller.
     Vector3f            _ang_vel_body;
 
-    // This is the the angular velocity in radians per second in the body frame, added to the output angular
+    // This is the angular velocity in radians per second in the body frame, added to the output angular
     // attitude controller by the System Identification Mode.
     // It is reset to zero immediately after it is used.
     Vector3f            _sysid_ang_vel_body;
 
-    // This is the the unitless value added to the output of the PID by the System Identification Mode.
+    // This is the unitless value added to the output of the PID by the System Identification Mode.
     // It is reset to zero immediately after it is used.
     Vector3f            _actuator_sysid;
 
@@ -482,6 +489,8 @@ protected:
     const AP_AHRS_View&  _ahrs;
     const AP_Vehicle::MultiCopter &_aparm;
     AP_Motors&          _motors;
+
+    static AC_AttitudeControl *_singleton;
 
 protected:
     /*

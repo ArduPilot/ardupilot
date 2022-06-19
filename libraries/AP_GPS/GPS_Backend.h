@@ -98,12 +98,10 @@ public:
         return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
     }
 
-    enum DriverOptions : int16_t {
-        UBX_MBUseUart2    = (1U << 0U),
-        SBF_UseBaseForYaw = (1U << 1U),
-        UBX_Use115200     = (1U << 2U),
-        UAVCAN_MBUseDedicatedBus  = (1 << 3U),
-    };
+    // check if an option is set
+    bool option_set(const AP_GPS::DriverOptions option) const {
+        return gps.option_set(option);
+    }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
@@ -140,13 +138,6 @@ protected:
     void set_uart_timestamp(uint16_t nbytes);
 
     void check_new_itow(uint32_t itow, uint32_t msg_length);
-
-    /*
-      access to driver option bits
-     */
-    DriverOptions driver_options(void) const {
-        return DriverOptions(gps._driver_options.get());
-    }
 
 #if GPS_MOVING_BASELINE
     bool calculate_moving_base_yaw(const float reported_heading_deg, const float reported_distance, const float reported_D);

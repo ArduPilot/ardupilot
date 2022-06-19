@@ -39,6 +39,7 @@ union nav_filter_status {
         bool gps_quality_good   : 1; // 15 - true if we can use GPS for navigation
         bool initalized         : 1; // 16 - true if the EKF has ever been healthy
         bool rejecting_airspeed : 1; // 17 - true if we are rejecting airspeed data
+        bool dead_reckoning     : 1; // 18 - true if we are dead reckoning (e.g. no position or velocity source)
     } flags;
     uint32_t value;
 };

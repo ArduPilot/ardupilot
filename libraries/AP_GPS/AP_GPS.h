@@ -473,6 +473,7 @@ public:
     bool blend_health_check() const;
 
     // handle sending of initialisation strings to the GPS - only used by backends
+    void send_blob_start(uint8_t instance);
     void send_blob_start(uint8_t instance, const char *_blob, uint16_t size);
     void send_blob_update(uint8_t instance);
 
@@ -586,6 +587,19 @@ protected:
 #endif // GPS_MOVING_BASELINE
 
     uint32_t _log_gps_bit = -1;
+
+    enum DriverOptions : int16_t {
+        UBX_MBUseUart2    = (1U << 0U),
+        SBF_UseBaseForYaw = (1U << 1U),
+        UBX_Use115200     = (1U << 2U),
+        UAVCAN_MBUseDedicatedBus  = (1 << 3U),
+        HeightEllipsoid   = (1U << 4),
+    };
+
+    // check if an option is set
+    bool option_set(const DriverOptions option) const {
+        return (uint8_t(_driver_options.get()) & uint8_t(option)) != 0;
+    }
 
 private:
     static AP_GPS *_singleton;

@@ -156,7 +156,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
         if (now - _last_re_init_ms > 5000) {
             _last_re_init_ms = now;
             bool ok = _flash.re_initialise();
-            hal.console->printf("Storage: failed at %u:%u for %u - re-init %u\n",
+            DEV_PRINTF("Storage: failed at %u:%u for %u - re-init %u\n",
                                 (unsigned)sector, (unsigned)offset, (unsigned)length, (unsigned)ok);
 #ifdef STORAGEDEBUG
             printf("Storage: failed at %u:%u for %u - re-init %u\n",

@@ -215,7 +215,7 @@ bool AP_MotorsHeli_Single::init_outputs()
     // yaw servo is an angle from -4500 to 4500
     SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
 
-    set_initialised_ok(true);
+    set_initialised_ok(_frame_class == MOTOR_FRAME_HELI);
 
     return true;
 }
@@ -355,7 +355,7 @@ void AP_MotorsHeli_Single::calculate_scalars()
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsHeli_Single::get_motor_mask()
+uint32_t AP_MotorsHeli_Single::get_motor_mask()
 {
     // heli uses channels 1,2,3,4 and 8
     // setup fast channels

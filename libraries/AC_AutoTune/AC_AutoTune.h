@@ -18,7 +18,6 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AP_Math/AP_Math.h>
@@ -231,6 +230,15 @@ protected:
     };
     void load_gains(enum GainType gain_type);
 
+    // autotune modes (high level states)
+    enum TuneMode {
+        UNINITIALISED = 0,        // autotune has never been run
+        TUNING = 1,               // autotune is testing gains
+        SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
+        FAILED = 3,               // tuning has failed, user is flying on original gains
+    };
+    TuneMode mode;                       // see TuneMode for what modes are allowed
+
     // copies of object pointers to make code a bit clearer
     AC_AttitudeControl *attitude_control;
     AC_PosControl *pos_control;
@@ -301,15 +309,6 @@ private:
     // returns true if vehicle is close to level
     bool currently_level();
 
-    // autotune modes (high level states)
-    enum TuneMode {
-        UNINITIALISED = 0,        // autotune has never been run
-        TUNING = 1,               // autotune is testing gains
-        SUCCESS = 2,              // tuning has completed, user is flight testing the new gains
-        FAILED = 3,               // tuning has failed, user is flying on original gains
-    };
-
-    TuneMode mode;                       // see TuneMode for what modes are allowed
     bool     pilot_override;             // true = pilot is overriding controls so we suspend tuning temporarily
     bool     use_poshold;                // true = enable position hold
     bool     have_position;              // true = start_position is value

@@ -4,6 +4,8 @@
 
 extern const AP_HAL::HAL& hal;
 
+#define AP_MOUNT_UPDATE_DT 0.02     // update rate in seconds.  update() should be called at this rate
+
 // set_angle_targets - sets angle targets in degrees
 void AP_Mount_Backend::set_angle_targets(float roll, float tilt, float pan)
 {
@@ -114,13 +116,17 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     return true;
 }
 
-void AP_Mount_Backend::rate_input_rad(float &out, const RC_Channel *chan, float min, float max) const
+// update rate and angle targets from RC input
+// current angle target (in radians) should be provided in angle_rad target
+// rate and angle targets are returned in rate_rads and angle_rad arguments
+void AP_Mount_Backend::update_rate_and_angle_from_rc(const RC_Channel *chan, float &rate_rads, float &angle_rad, float angle_min_rad, float angle_max_rad) const
 {
     if ((chan == nullptr) || (chan->get_radio_in() == 0)) {
+        rate_rads = 0;
         return;
     }
-    out += chan->norm_input_dz() * 0.0001f * _frontend._joystick_speed;
-    out = constrain_float(out, radians(min*0.01f), radians(max*0.01f));
+    rate_rads = chan->norm_input_dz() * 0.005f * _frontend._joystick_speed;
+    angle_rad = constrain_float(angle_rad + (rate_rads * AP_MOUNT_UPDATE_DT), radians(angle_min_rad*0.01f), radians(angle_max_rad*0.01f));
 }
 
 // update_targets_from_rc - updates angle targets using input from receiver
@@ -131,20 +137,12 @@ void AP_Mount_Backend::update_targets_from_rc()
     const RC_Channel *pan_ch = rc().channel(_state._pan_rc_in - 1);
 
     // if joystick_speed is defined then pilot input defines a rate of change of the angle
-    if (_frontend._joystick_speed) {
+    if (_frontend._joystick_speed > 0) {
         // allow pilot position input to come directly from an RC_Channel
-        rate_input_rad(_angle_ef_target_rad.x,
-                       roll_ch,
-                       _state._roll_angle_min,
-                       _state._roll_angle_max);
-        rate_input_rad(_angle_ef_target_rad.y,
-                       tilt_ch,
-                       _state._tilt_angle_min,
-                       _state._tilt_angle_max);
-        rate_input_rad(_angle_ef_target_rad.z,
-                       pan_ch,
-                       _state._pan_angle_min,
-                       _state._pan_angle_max);
+        update_rate_and_angle_from_rc(roll_ch, _rate_target_rads.x, _angle_ef_target_rad.x, _state._roll_angle_min, _state._roll_angle_max);
+        update_rate_and_angle_from_rc(tilt_ch, _rate_target_rads.y, _angle_ef_target_rad.y, _state._tilt_angle_min, _state._tilt_angle_max);
+        update_rate_and_angle_from_rc(pan_ch, _rate_target_rads.z, _angle_ef_target_rad.z, _state._pan_angle_min, _state._pan_angle_max);
+        _rate_target_rads_valid = true;
     } else {
         // allow pilot rate input to come directly from an RC_Channel
         if ((roll_ch != nullptr) && (roll_ch->get_radio_in() != 0)) {
@@ -156,6 +154,8 @@ void AP_Mount_Backend::update_targets_from_rc()
         if ((pan_ch != nullptr) && (pan_ch->get_radio_in() != 0)) {
             _angle_ef_target_rad.z = angle_input_rad(pan_ch, _state._pan_angle_min, _state._pan_angle_max);
         }
+        // not using rate input
+        _rate_target_rads_valid = false;
     }
 }
 
@@ -194,7 +194,7 @@ bool AP_Mount_Backend::calc_angle_to_sysid_target(Vector3f& angles_to_target_rad
                                   relative_pan);
 }
 
-// calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (and radians) to point at the given target
+// calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (in radians) to point at the given target
 bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const
 {
     Location current_loc;
@@ -224,7 +224,7 @@ bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vec
 
     // pan calcs
     if (calc_pan) {
-        // calc absolute heading and then onvert to vehicle relative yaw
+        // calc absolute heading and then convert to vehicle relative yaw
         angles_to_target_rad.z = atan2f(GPS_vector_x, GPS_vector_y);
         if (relative_pan) {
             angles_to_target_rad.z = wrap_PI(angles_to_target_rad.z - AP::ahrs().yaw);

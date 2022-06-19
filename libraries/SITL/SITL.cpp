@@ -54,6 +54,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("WIND_DIR",      10, SIM,  wind_direction,  180),
     AP_GROUPINFO("WIND_TURB",     11, SIM,  wind_turbulance,  0),
     AP_GROUPINFO("SERVO_SPEED",   16, SIM,  servo_speed,  0.14),
+    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
     AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
@@ -65,7 +66,6 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("TERRAIN",       34, SIM,  terrain_enable, 1),
     AP_GROUPINFO("FLOW_RATE",     35, SIM,  flow_rate, 10),
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
-    AP_GROUPINFO("WIND_DELAY",    40, SIM,  wind_delay, 0),
     AP_GROUPINFO("ADSB_COUNT",    45, SIM,  adsb_plane_count, -1),
     AP_GROUPINFO("ADSB_RADIUS",   46, SIM,  adsb_radius_m, 10000),
     AP_GROUPINFO("ADSB_ALT",      47, SIM,  adsb_altitude_m, 1000),
@@ -281,22 +281,11 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     AP_GROUPINFO("ESC_TELEM", 40, SIM, esc_telem, 1),
 
-    // user settable parameters for the 1st airspeed sensor
-    AP_GROUPINFO("ARSPD_RND",     50, SIM,  arspd_noise[0], 2.0),
-    AP_GROUPINFO("ARSPD_OFS",     51, SIM,  arspd_offset[0], 2013),
-    AP_GROUPINFO("ARSPD_FAIL",    52, SIM,  arspd_fail[0], 0),
-    AP_GROUPINFO("ARSPD_FAILP",   53, SIM,  arspd_fail_pressure[0], 0),
-    AP_GROUPINFO("ARSPD_PITOT",   54, SIM,  arspd_fail_pitot_pressure[0], 0),
+    AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, SIM::AirspeedParm),
+#if AIRSPEED_MAX_SENSORS > 1
+    AP_SUBGROUPINFO(airspeed[1], "ARSPD2_", 51, SIM, SIM::AirspeedParm),
+#endif
 
-    // user settable parameters for the 2nd airspeed sensor
-    AP_GROUPINFO("ARSPD2_RND",    56, SIM,  arspd_noise[1], 2.0),
-    AP_GROUPINFO("ARSPD2_OFS",    57, SIM,  arspd_offset[1], 2013),
-    AP_GROUPINFO("ARSPD2_FAIL",   58, SIM,  arspd_fail[1], 0),
-    AP_GROUPINFO("ARSPD2_FAILP",  59, SIM,  arspd_fail_pressure[1], 0),
-    AP_GROUPINFO("ARSPD2_PITOT",  60, SIM,  arspd_fail_pitot_pressure[1], 0),
-
-    // user settable common airspeed parameters
-    AP_GROUPINFO("ARSPD_SIGN",    62, SIM,  arspd_signflip, 0),
 
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
@@ -319,6 +308,19 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_BAK", 8,  SIM::BaroParm, wcof_xn, 0.0),
     AP_GROUPINFO("WCF_RGT", 9,  SIM::BaroParm, wcof_yp, 0.0),
     AP_GROUPINFO("WCF_LFT", 10, SIM::BaroParm, wcof_yn, 0.0),
+    AP_GROUPEND
+};
+
+// user settable parameters for airspeed sensors
+const AP_Param::GroupInfo SIM::AirspeedParm::var_info[] = {
+        // user settable parameters for the 1st airspeed sensor
+    AP_GROUPINFO("RND",     1, SIM::AirspeedParm,  noise, 2.0),
+    AP_GROUPINFO("OFS",     2, SIM::AirspeedParm,  offset, 2013),
+    AP_GROUPINFO("FAIL",    3, SIM::AirspeedParm,  fail, 0),
+    AP_GROUPINFO("FAILP",   4, SIM::AirspeedParm,  fail_pressure, 0),
+    AP_GROUPINFO("PITOT",   5, SIM::AirspeedParm,  fail_pitot_pressure, 0),
+    AP_GROUPINFO("SIGN",    6, SIM::AirspeedParm,  signflip, 0),
+    AP_GROUPINFO("RATIO",   7, SIM::AirspeedParm,  ratio, 1.99),
     AP_GROUPEND
 };
 
@@ -496,6 +498,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: the instance number to  take servos from
     AP_GROUPINFO("JSON_MASTER",     27, SIM, ride_along_master, 0),
 
+    // @Param: OH_MASK
+    // @DisplayName: SIM-on_hardware Output Enable Mask
+    // @Description: channels which are passed through to actual hardware when running on actual hardware
+    AP_GROUPINFO("OH_MASK",     28, SIM, on_hardware_output_enable_mask, 0),
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
@@ -508,7 +515,14 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_GROUPEND
 };
-    
+
+const Location post_origin {
+    518752066,
+    146487830,
+    0,
+    Location::AltFrame::ABSOLUTE
+};
+
 /* report SITL state via MAVLink SIMSTATE*/
 void SIM::simstate_send(mavlink_channel_t chan) const
 {
@@ -649,8 +663,113 @@ float SIM::get_rangefinder(uint8_t instance) {
     return -1;
 };
 
-} // namespace SITL
+float SIM::measure_distance_at_angle_bf(const Location &location, float angle) const
+{
+    // should we populate state.rangefinder_m[...] from this?
+    Vector2f vehicle_pos_cm;
+    if (!location.get_vector_xy_from_origin_NE(vehicle_pos_cm)) {
+        // should probably use SITL variables...
+        return 0.0f;
+    }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static uint64_t count = 0;
+
+    if (count == 0) {
+        unlink("/tmp/rayfile.scr");
+        unlink("/tmp/intersectionsfile.scr");
+    }
+
+    count++;
+
+    // the 1000 here is so the files don't grow unbounded
+    const bool write_debug_files = count < 1000;
+
+    FILE *rayfile = nullptr;
+    if (write_debug_files) {
+        rayfile = fopen("/tmp/rayfile.scr", "a");
+    }
+#endif
+
+    // cast a ray from location out 200m...
+    Location location2 = location;
+    location2.offset_bearing(wrap_180(angle + state.yawDeg), 200);
+    Vector2f ray_endpos_cm;
+    if (!location2.get_vector_xy_from_origin_NE(ray_endpos_cm)) {
+        // should probably use SITL variables...
+        return 0.0f;
+    }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (rayfile != nullptr) {
+        ::fprintf(rayfile, "map icon %f %f barrell\n", location2.lat*1e-7, location2.lng*1e-7);
+        fclose(rayfile);
+    }
+
+    // setup a grid of posts
+    FILE *postfile = nullptr;
+    FILE *intersectionsfile = nullptr;
+    if (write_debug_files) {
+        static bool postfile_written;
+        if (!postfile_written) {
+            ::fprintf(stderr, "Writing /tmp/post-locations.scr\n");
+            postfile_written = true;
+            postfile = fopen("/tmp/post-locations.scr", "w");
+        }
+        intersectionsfile = fopen("/tmp/intersections.scr", "a");
+    }
+#endif
+
+    const float radius_cm = 100.0f;
+    float min_dist_cm = 1000000.0;
+    const uint8_t num_post_offset = 10;
+    for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
+        for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
+            Location post_location = post_origin;
+            post_location.offset(x*10+3, y*10+2);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            if (postfile != nullptr) {
+                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm/100.0);
+            }
+#endif
+            Vector2f post_position_cm;
+            if (!post_location.get_vector_xy_from_origin_NE(post_position_cm)) {
+                // should probably use SITL variables...
+                return 0.0f;
+            }
+            Vector2f intersection_point_cm;
+            if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
+                float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                if (intersectionsfile != nullptr) {
+                    Location intersection_point = location;
+                    intersection_point.offset(intersection_point_cm.x/100.0,
+                                              intersection_point_cm.y/100.0);
+                    ::fprintf(intersectionsfile,
+                              "map icon %f %f barrell\n",
+                              intersection_point.lat*1e-7,
+                              intersection_point.lng*1e-7);
+                }
+#endif
+                if (dist_cm < min_dist_cm) {
+                    min_dist_cm = dist_cm;
+                }
+            }
+        }
+    }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (postfile != nullptr) {
+        fclose(postfile);
+    }
+    if (intersectionsfile != nullptr) {
+        fclose(intersectionsfile);
+    }
+#endif
+
+    // ::fprintf(stderr, "Distance @%f = %fm\n", angle, min_dist_cm/100.0f);
+    return min_dist_cm / 100.0f;
+}
+
+} // namespace SITL
 
 namespace AP {
 

@@ -265,7 +265,10 @@ AP_AHRS_DCM::check_matrix(void)
         normalize();
 
         if (_dcm_matrix.is_nan() ||
-                fabsf(_dcm_matrix.c.x) > 10) {
+                fabsf(_dcm_matrix.c.x) > 10.0) {
+            // See Issue #20284: regarding the selection of 10.0 for DCM reset
+            // This won't be lowered without evidence of an issue or mathematical proof & testing of a lower bound
+
             // normalisation didn't fix the problem! We're
             // in real trouble. All we can do is reset
             //Serial.printf("ERROR: DCM matrix error. _dcm_matrix.c.x=%f\n",

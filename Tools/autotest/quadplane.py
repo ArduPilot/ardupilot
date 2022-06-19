@@ -187,7 +187,6 @@ class AutoTestQuadPlane(AutoTest):
                 'LOITER',
                 'QHOVER',
                 'QLOITER',
-                'RTL',
                 'STABILIZE',
                 'TRAINING',
         ):
@@ -446,6 +445,7 @@ class AutoTestQuadPlane(AutoTest):
 
     def takeoff(self, height, mode):
         """climb to specified height and set throttle to 1500"""
+        self.set_current_waypoint(0, check_afterwards=False)
         self.change_mode(mode)
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -470,6 +470,7 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode("AUTO")
         self.set_current_waypoint(7)
         self.wait_disarmed(timeout=timeout)
+        self.set_current_waypoint(0, check_afterwards=False)
 
     def wait_level_flight(self, accuracy=5, timeout=30):
         """Wait for level flight."""

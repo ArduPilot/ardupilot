@@ -15,7 +15,6 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include "AP_BattMonitor.h"
 
 class AP_BattMonitor_Backend

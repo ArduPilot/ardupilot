@@ -48,18 +48,22 @@
 #define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED
 #endif
 
+// range of IDs to allow for new messages during replay. It is very
+// useful to be able to add new messages during a replay, but we need
+// to avoid colliding with existing messages
+#define REPLAY_LOG_NEW_MSG_MAX 230
+#define REPLAY_LOG_NEW_MSG_MIN 220
+
+#include <AC_PID/AC_PID.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_AHRS/AP_AHRS_DCM.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
-#include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Rally/AP_Rally.h>
-#include <AP_Beacon/AP_Beacon.h>
-#include <AP_Proximity/AP_Proximity.h>
 #include <AP_Vehicle/ModeReason.h>
 
 #include <stdint.h>
@@ -138,6 +142,8 @@ enum class LogEvent : uint8_t {
     EK3_SOURCES_SET_TO_SECONDARY = 86,
     EK3_SOURCES_SET_TO_TERTIARY = 87,
 
+    AIRSPEED_PRIMARY_CHANGED = 90,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
@@ -181,6 +187,7 @@ enum class LogErrorSubsystem : uint8_t {
     PILOT_INPUT = 28,
     FAILSAFE_VIBE = 29,
     INTERNAL_ERROR = 30,
+    FAILSAFE_DEADRECKON = 31
 };
 
 // bizarrely this enumeration has lots of duplicate values, offering
@@ -304,14 +311,9 @@ public:
                        bool was_command_long=false);
     void Write_Mission_Cmd(const AP_Mission &mission,
                                const AP_Mission::Mission_Command &cmd);
-    void Write_RPM(const AP_RPM &rpm_sensor);
     void Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
                           const RallyLocation &rally_point);
-    void Write_Beacon(AP_Beacon &beacon);
-#if HAL_PROXIMITY_ENABLED
-    void Write_Proximity(AP_Proximity &proximity);
-#endif
     void Write_SRTL(bool active, uint16_t num_points, uint16_t max_points, uint8_t action, const Vector3f& point);
     void Write_Winch(bool healthy, bool thread_end, bool moving, bool clutch, uint8_t mode, float desired_length, float length, float desired_rate, uint16_t tension, float voltage, int8_t temp);
     void Write_PSCN(float pos_target, float pos, float vel_desired, float vel_target, float vel, float accel_desired, float accel_target, float accel);
@@ -326,21 +328,7 @@ public:
     void WriteCritical(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, ...);
     void WriteV(const char *name, const char *labels, const char *units, const char *mults, const char *fmt, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    // This structure provides information on the internal member data of a PID for logging purposes
-    struct PID_Info {
-        float target;
-        float actual;
-        float error;
-        float P;
-        float I;
-        float D;
-        float FF;
-        float Dmod;
-        float slew_rate;
-        bool  limit;
-    };
-
-    void Write_PID(uint8_t msg_type, const PID_Info &info);
+    void Write_PID(uint8_t msg_type, const AP_PIDInfo &info);
 
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
@@ -537,6 +525,7 @@ private:
 
     void start_io_thread(void);
     void io_thread();
+    bool check_crash_dump_save(void);
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
     // support for logging file content
@@ -549,7 +538,7 @@ private:
         void reset();
         void remove_and_free(file_list *victim);
         struct file_list *head, *tail;
-        int fd;
+        int fd{-1};
         uint32_t offset;
         bool fast;
         uint8_t counter;

@@ -431,7 +431,7 @@
 #define STM32_I2C_I2C2_DMA_PRIORITY         3
 #define STM32_I2C_I2C3_DMA_PRIORITY         3
 #define STM32_I2C_I2C4_DMA_PRIORITY         3
-#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      osalSysHalt("DMA failure")
+#define STM32_I2C_DMA_ERROR_HOOK(i2cp)      STM32_DMA_ERROR_HOOK(i2cp)
 
 /*
  * ICU driver system settings.
@@ -538,7 +538,7 @@
 #define STM32_SPI_SPI4_IRQ_PRIORITY         10
 #define STM32_SPI_SPI5_IRQ_PRIORITY         10
 #define STM32_SPI_SPI6_IRQ_PRIORITY         10
-#define STM32_SPI_DMA_ERROR_HOOK(spip)      osalSysHalt("DMA failure")
+#define STM32_SPI_DMA_ERROR_HOOK(spip)      STM32_DMA_ERROR_HOOK(spip)
 
 /*
  * ST driver system settings.
@@ -565,7 +565,7 @@
 #define STM32_UART_USART6_DMA_PRIORITY      0
 #define STM32_UART_UART7_DMA_PRIORITY       0
 #define STM32_UART_UART8_DMA_PRIORITY       0
-#define STM32_UART_DMA_ERROR_HOOK(uartp)    osalSysHalt("DMA failure")
+#define STM32_UART_DMA_ERROR_HOOK(uartp)    STM32_DMA_ERROR_HOOK(uartp)
 
 #define STM32_IRQ_LPUART1_PRIORITY          12
 

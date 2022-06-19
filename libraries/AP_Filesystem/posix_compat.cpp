@@ -146,15 +146,14 @@ int apfs_fputs(const char *s, APFS_FILE *stream)
     return ret;
 }
 
+#undef fgets
 char *apfs_fgets(char *s, int size, APFS_FILE *stream)
 {
     CHECK_STREAM(stream, NULL);
-    ssize_t ret = AP::FS().read(stream->fd, s, size-1);
-    if (ret < 0) {
-        stream->error = true;
+    auto &fs = AP::FS();
+    if (!fs.fgets(s, size, stream->fd)) {
         return NULL;
     }
-    s[ret] = 0;
     return s;
 }
 
