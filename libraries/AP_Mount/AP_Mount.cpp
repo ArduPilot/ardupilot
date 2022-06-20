@@ -772,7 +772,7 @@ void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_loc)
+void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
 {
     // call instance's set_roi_cmd
     if (check_instance(instance)) {
