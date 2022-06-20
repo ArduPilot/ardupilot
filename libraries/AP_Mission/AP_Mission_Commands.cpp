@@ -224,15 +224,19 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
         return true;
     }
 
-    // To-Do: handle earth-frame vs body-frame angles
-    //bool earth_frame = cmd.content.gimbal_manager_pitchyaw.flags.GIMBAL_MANAGER_FLAGS_ROLL_LOCK |
-    //                   cmd.content.gimbal_manager_pitchyaw.flags.GIMBAL_MANAGER_FLAGS_PITCH_LOCK |
-    //                   cmd.content.gimbal_manager_pitchyaw.flags.GIMBAL_MANAGER_FLAGS_YAW_LOCK;
-    // To-Do: handle pitch and yaw rates
     // To-Do: handle gimbal device id
 
-    if (!isnan(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) && !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg)) {
-        mount->set_angle_targets(0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg);
+    // handle angle target
+    const bool pitch_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) && (fabsf(cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg) <= 90);
+    const bool yaw_angle_valid = !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) && (fabsf(cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg) <= 360);
+    if (pitch_angle_valid && yaw_angle_valid) {
+        mount->set_angle_target(0, cmd.content.gimbal_manager_pitchyaw.pitch_angle_deg, cmd.content.gimbal_manager_pitchyaw.yaw_angle_deg, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return true;
+    }
+
+    // handle rate target
+    if (!isnan(cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs) && !isnan(cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs)) {
+        mount->set_rate_target(0, cmd.content.gimbal_manager_pitchyaw.pitch_rate_degs, cmd.content.gimbal_manager_pitchyaw.yaw_rate_degs, cmd.content.gimbal_manager_pitchyaw.flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return true;
     }
 
