@@ -4137,6 +4137,7 @@ void QuadPlane::mode_enter(void)
     poscontrol.xy_correction.zero();
     poscontrol.velocity_match.zero();
     poscontrol.last_velocity_match_ms = 0;
+    poscontrol.set_state(QuadPlane::QPOS_NONE);
 
     // clear guided takeoff wait on any mode change, but remember the
     // state for special behaviour
