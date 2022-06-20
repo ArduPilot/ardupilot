@@ -49,8 +49,15 @@ public:
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
-    // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) = 0;
+    // get mount's mode
+    enum MAV_MOUNT_MODE get_mode() const { return _mode; }
+
+    // set mount's mode
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
+
+    // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+    // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+    void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
 
     // set_angle_targets - sets angle targets in degrees
     void set_angle_targets(float roll, float tilt, float pan);
@@ -110,15 +117,23 @@ protected:
     // by various mavlink messages)
     bool calc_angle_to_sysid_target(Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const WARN_IF_UNUSED;
 
-    // get the mount mode from frontend
-    MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
+
+    MAV_MOUNT_MODE  _mode;          // current mode (see MAV_MOUNT_MODE enum)
+    bool _yaw_lock;                 // True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
+
     Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
     Vector3f    _rate_target_rads;      // desired roll, pitch, yaw rate in radians/sec
     bool        _rate_target_rads_valid;// true if _rate_target_rads should can be used (e.g. RC input is using rate control)
+    Location _roi_target;           // roi target location
+    bool _roi_target_set;           // true if the roi target has been set
+
+    uint8_t _target_sysid;          // sysid to track
+    Location _target_sysid_location;// sysid target location
+    bool _target_sysid_location_set;// true if _target_sysid has been set
 
 private:
 

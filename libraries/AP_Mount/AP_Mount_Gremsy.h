@@ -36,9 +36,6 @@ public:
     // has_pan_control
     bool has_pan_control() const override { return true; }
 
-    // set_mode
-    void set_mode(enum MAV_MOUNT_MODE mode) override { _state._mode = mode; }
-
     // send_mount_status
     void send_mount_status(mavlink_channel_t chan) override;
 

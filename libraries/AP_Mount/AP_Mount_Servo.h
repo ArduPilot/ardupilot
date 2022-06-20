@@ -39,9 +39,6 @@ public:
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     bool has_pan_control() const override { return _flags.pan_control; }
 
-    // set_mode - sets mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) override;
-
     // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
     void send_mount_status(mavlink_channel_t chan) override;
 
