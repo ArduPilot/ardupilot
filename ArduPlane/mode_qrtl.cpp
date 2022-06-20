@@ -14,9 +14,6 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     plane.prev_WP_loc = plane.current_loc;
 
-    // clear QPOS state
-    quadplane.poscontrol.set_state(QuadPlane::QPOS_NONE);
-
     const int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt*100UL;
     if (quadplane.motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
         // VTOL motors are active, either in VTOL flight or assisted flight
