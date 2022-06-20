@@ -51,7 +51,9 @@ void setup()
 
     // motor initialisation
     motors.set_update_rate(490);
-#if NUM_OUTPUTS == 8
+#if NUM_OUTPUTS == 12
+    motors.init(AP_Motors::MOTOR_FRAME_DODECAHEXA, AP_Motors::MOTOR_FRAME_TYPE_X);
+#elif NUM_OUTPUTS == 8
     motors.init(AP_Motors::MOTOR_FRAME_OCTA, AP_Motors::MOTOR_FRAME_TYPE_X);
 #elif NUM_OUTPUTS == 6
     motors.init(AP_Motors::MOTOR_FRAME_HEXA, AP_Motors::MOTOR_FRAME_TYPE_X);
@@ -167,8 +169,10 @@ void stability_test()
     hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot1_norm,Mot2_norm,Mot3_norm,Mot4_norm,LimR,LimP,LimY,LimThD,LimThU\n");                       // quad
 #elif NUM_OUTPUTS <= 6
     hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,Mot1_norm,Mot2_norm,Mot3_norm,Mot4_norm,Mot5_norm,Mot6_norm,LimR,LimP,LimY,LimThD,LimThU\n");             // hexa
-#else
+#elif NUM_OUTPUTS <= 8
     hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,Mot7,Mot8,Mot1_norm,Mot2_norm,Mot3_norm,Mot4_norm,Mot5_norm,Mot6_norm,Mot7_norm,Mot8_norm,LimR,LimP,LimY,LimThD,LimThU\n");   // octa
+#else
+    hal.console->printf("Roll,Pitch,Yaw,Thr,Mot1,Mot2,Mot3,Mot4,Mot5,Mot6,Mot7,Mot8,Mot9,Mot10,Mot11,Mot12,Mot1_norm,Mot2_norm,Mot3_norm,Mot4_norm,Mot5_norm,Mot6_norm,Mot7_norm,Mot8_norm,Mot9_norm,Mot10_norm,Mot11_norm,Mot12_norm,LimR,LimP,LimY,LimThD,LimThU\n");   // octa
 #endif
 
     // run stability test
@@ -181,8 +185,11 @@ void stability_test()
                     yaw_in = rpy_tests[y];
                     throttle_in = throttle_tests[t];
                     motors.set_roll(roll_in);
+                    motors.set_roll_ff(0.0);
                     motors.set_pitch(pitch_in);
+                    motors.set_pitch_ff(0.0);
                     motors.set_yaw(yaw_in);
+                    motors.set_yaw_ff(0.0);
                     motors.set_throttle(throttle_in);
                     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
                     update_motors();
@@ -192,8 +199,10 @@ void stability_test()
                     hal.console->printf("%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d\n",                // quad
 #elif NUM_OUTPUTS <= 6
                     hal.console->printf("%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d\n",          // hexa
-#else
+#elif NUM_OUTPUTS <= 8
                     hal.console->printf("%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d\n",    // octa
+#else
+                    hal.console->printf("%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%0.4f,%d,%d,%d,%d,%d\n",    // dodeca
 #endif
                             roll_in,
                             pitch_in,
@@ -211,6 +220,12 @@ void stability_test()
                             (int)hal.rcout->read(6),
                             (int)hal.rcout->read(7),
 #endif
+#if NUM_OUTPUTS >= 12
+                            (int)hal.rcout->read(8),
+                            (int)hal.rcout->read(9),
+                            (int)hal.rcout->read(10),
+                            (int)hal.rcout->read(11),
+#endif
                             motors.get_thrust_rpyt_out(0),
                             motors.get_thrust_rpyt_out(1),
                             motors.get_thrust_rpyt_out(2),
@@ -222,6 +237,12 @@ void stability_test()
 #if NUM_OUTPUTS >= 8
                             motors.get_thrust_rpyt_out(6),
                             motors.get_thrust_rpyt_out(7),
+#endif
+#if NUM_OUTPUTS >= 12
+                            motors.get_thrust_rpyt_out(8),
+                            motors.get_thrust_rpyt_out(9),
+                            motors.get_thrust_rpyt_out(10),
+                            motors.get_thrust_rpyt_out(11),
 #endif
                             (int)motors.limit.roll,
                             (int)motors.limit.pitch,

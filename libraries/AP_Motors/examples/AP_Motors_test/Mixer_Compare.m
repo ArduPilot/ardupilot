@@ -55,7 +55,7 @@ frame_definition = [ % octo quad x
    -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6];
 %}
 %{
-frame_definition = [ % octo quad x
+frame_definition = [ % DoecaHeaxa x
      30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1;
      30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2;
      90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    3;
@@ -76,11 +76,17 @@ num_motors = size(frame_definition,1);
 motor_factors = [cosd(frame_definition(:,1) + 90), cosd(frame_definition(:,1)), frame_definition(:,2), ones(num_motors,1)];
 motor_factors = (motor_factors ./ max(abs(motor_factors))) .* [0.5, 0.5, 0.5, 1];
 
+test = rand(1,num_motors);
+roll_pitch_scale = (test*motor_factors(:,[1,2]))./mrdivide(test,motor_factors(:,[1,2])');
+yaw_scale = num_motors / 4;
+
 files = dir('*.csv');
 if isempty(files)
     error('no .csv files found')
 end
 
+zlims_min = zeros(4,1);
+zlims_max = zeros(4,1);
 for i = numel(files):-1:1
     results(i).raw = readmatrix(files(i).name);
     if size(results(i).raw,2) ~= (num_motors*2) + 9
@@ -108,9 +114,12 @@ for i = numel(files):-1:1
         
         results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:) = squeeze(results(i).norm_out(roll_index,pitch_index,yaw_index,throttle_index,:))'*motor_factors;
         results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,4) = results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,4) / num_motors;
-     
-        %results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:) = squeeze(results(i).norm_out(roll_index,pitch_index,yaw_index,throttle_index,:))' / motor_factors';
+        results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,3) = results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,3) / yaw_scale;
+
         results(i).error(roll_index,pitch_index,yaw_index,throttle_index,:) = abs(squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)) - results(i).raw(j,1:4)');
+
+        zlims_min = min(zlims_min,squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)));
+        zlims_max = max(zlims_max,squeeze(results(i).achieved_output(roll_index,pitch_index,yaw_index,throttle_index,:)));
     end
 end
 
@@ -158,9 +167,9 @@ for i = 4:-1:1
     hold all
 
     if i == 1
-        surf(axis2(i),roll_in,pitch_in,roll_in,'EdgeColor','none','FaceColor','k','FaceAlpha',0.25);
+        surf(axis2(i),roll_in,pitch_in,roll_in*roll_pitch_scale(1),'EdgeColor','none','FaceColor','k','FaceAlpha',0.25);
     elseif i == 2
-        surf(axis2(i),roll_in,pitch_in,pitch_in,'EdgeColor','none','FaceColor','k','FaceAlpha',0.25);
+        surf(axis2(i),roll_in,pitch_in,pitch_in*roll_pitch_scale(2),'EdgeColor','none','FaceColor','k','FaceAlpha',0.25);
     elseif i == 3
         yaw_ideal = surf(axis2(i),roll_in,pitch_in,yaw_in(yaw_index)*ones(size(roll_in)),'EdgeColor','none','FaceColor','k','FaceAlpha',0.25);
     elseif i ==4
@@ -176,11 +185,7 @@ for i = 4:-1:1
     xlabel('roll in')
     ylabel('pitch in')
 
-    if i < 4
-        zlim([-1.01,1.01])
-    else
-        zlim([-0.01,1.01])
-    end
+    zlim([zlims_min(i)-0.1,zlims_max(i)+0.1]) 
 
     view(3);
 end
