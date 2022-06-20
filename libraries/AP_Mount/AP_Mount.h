@@ -128,12 +128,12 @@ public:
     void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
-    void set_roi_target(uint8_t instance, const struct Location &target_loc);
+    void set_roi_target(const Location &target_loc) { set_roi_target(_primary,target_loc); }
+    void set_roi_target(uint8_t instance, const Location &target_loc);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t instance, const uint8_t sysid);
-    void set_target_sysid(const uint8_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t instance, uint8_t sysid);
 
     // mavlink message handling:
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
