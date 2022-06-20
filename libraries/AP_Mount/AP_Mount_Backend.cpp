@@ -19,7 +19,7 @@ void AP_Mount_Backend::set_angle_targets(float roll, float tilt, float pan)
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount_Backend::set_roi_target(const struct Location &target_loc)
+void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 {
     // set the target gps location
     _state._roi_target = target_loc;
@@ -186,7 +186,7 @@ bool AP_Mount_Backend::calc_angle_to_sysid_target(Vector3f& angles_to_target_rad
 }
 
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (in radians) to point at the given target
-bool AP_Mount_Backend::calc_angle_to_location(const struct Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const
+bool AP_Mount_Backend::calc_angle_to_location(const Location &target, Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const
 {
     Location current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
