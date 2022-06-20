@@ -591,15 +591,28 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
     _backends[instance]->set_yaw_lock(yaw_lock);
 }
 
-// set_angle_targets - sets angle targets in degrees
-void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
+// set angle target in degrees
+// yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
+void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
     if (!check_instance(instance)) {
         return;
     }
 
     // send command to backend
-    _backends[instance]->set_angle_targets(roll, tilt, pan);
+    _backends[instance]->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
+}
+
+// sets rate target in deg/s
+// yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
+void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock)
+{
+    if (!check_instance(instance)) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->set_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_lock);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
@@ -646,8 +659,6 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
         return MAV_RESULT_ACCEPTED;
     }
 
-    // To-Do: handle earth-frame vs body-frame angles
-    // To-Do: handle pitch and yaw rates
     // To-Do: handle gimbal device id
 
     // param1 : pitch_angle (in degrees)
@@ -655,7 +666,16 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_angle_deg = packet.param1;
     const float yaw_angle_deg = packet.param2;
     if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
-        set_angle_targets(0, pitch_angle_deg, yaw_angle_deg);
+        set_angle_target(0, pitch_angle_deg, yaw_angle_deg, (uint32_t)packet.param5 & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // param3 : pitch_rate (in deg/s)
+    // param4 : yaw rate (in deg/s)
+    const float pitch_rate_degs = packet.param3;
+    const float yaw_rate_degs = packet.param4;
+    if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
+        set_rate_target(0, pitch_rate_degs, yaw_rate_degs, (uint32_t)packet.param5 & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
