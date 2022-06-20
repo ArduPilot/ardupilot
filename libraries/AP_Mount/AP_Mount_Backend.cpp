@@ -15,27 +15,27 @@ void AP_Mount_Backend::set_angle_targets(float roll, float tilt, float pan)
     _angle_ef_target_rad.z = radians(pan);
 
     // set the mode to mavlink targeting
-    _frontend.set_mode(_instance, MAV_MOUNT_MODE_MAVLINK_TARGETING);
+    set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
 void AP_Mount_Backend::set_roi_target(const Location &target_loc)
 {
     // set the target gps location
-    _state._roi_target = target_loc;
-    _state._roi_target_set = true;
+    _roi_target = target_loc;
+    _roi_target_set = true;
 
     // set the mode to GPS tracking mode
-    _frontend.set_mode(_instance, MAV_MOUNT_MODE_GPS_POINT);
+    set_mode(MAV_MOUNT_MODE_GPS_POINT);
 }
 
 // set_sys_target - sets system that mount should attempt to point towards
 void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 {
-    _state._target_sysid = sysid;
+    _target_sysid = sysid;
 
     // set the mode to sysid tracking mode
-    _frontend.set_mode(_instance, MAV_MOUNT_MODE_SYSID_TARGET);
+    set_mode(MAV_MOUNT_MODE_SYSID_TARGET);
 }
 
 // process MOUNT_CONFIGURE messages received from GCS. deprecated.
@@ -50,15 +50,15 @@ void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &p
 // process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {
-    control((int32_t)packet.input_a, (int32_t)packet.input_b, (int32_t)packet.input_c, _state._mode);
+    control((int32_t)packet.input_a, (int32_t)packet.input_b, (int32_t)packet.input_c, _mode);
 }
 
 void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode)
 {
-    _frontend.set_mode(_instance, mount_mode);
+    set_mode(mount_mode);
 
     // interpret message fields based on mode
-    switch (_frontend.get_mode(_instance)) {
+    switch (get_mode()) {
         case MAV_MOUNT_MODE_RETRACT:
         case MAV_MOUNT_MODE_NEUTRAL:
             // do nothing with request if mount is retracted or in neutral position
@@ -89,8 +89,8 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
 
         case MAV_MOUNT_MODE_HOME_LOCATION: {
             // set the target gps location
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
+            _roi_target = AP::ahrs().get_home();
+            _roi_target_set = true;
             break;
         }
 
@@ -103,15 +103,15 @@ void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_
 // handle a GLOBAL_POSITION_INT message
 bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet)
 {
-    if (_state._target_sysid != msg_sysid) {
+    if (_target_sysid != msg_sysid) {
         return false;
     }
 
-    _state._target_sysid_location.lat = packet.lat;
-    _state._target_sysid_location.lng = packet.lon;
+    _target_sysid_location.lat = packet.lat;
+    _target_sysid_location.lng = packet.lon;
     // global_position_int.alt is *UP*, so is location.
-    _state._target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
-    _state._target_sysid_location_set = true;
+    _target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
+    _target_sysid_location_set = true;
 
     return true;
 }
@@ -168,21 +168,21 @@ float AP_Mount_Backend::angle_input_rad(const RC_Channel* rc, int16_t angle_min,
 
 bool AP_Mount_Backend::calc_angle_to_roi_target(Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const
 {
-    if (!_state._roi_target_set) {
+    if (!_roi_target_set) {
         return false;
     }
-    return calc_angle_to_location(_state._roi_target, angles_to_target_rad, calc_tilt, calc_pan, relative_pan);
+    return calc_angle_to_location(_roi_target, angles_to_target_rad, calc_tilt, calc_pan, relative_pan);
 }
 
 bool AP_Mount_Backend::calc_angle_to_sysid_target(Vector3f& angles_to_target_rad, bool calc_tilt, bool calc_pan, bool relative_pan) const
 {
-    if (!_state._target_sysid_location_set) {
+    if (!_target_sysid_location_set) {
         return false;
     }
-    if (!_state._target_sysid) {
+    if (!_target_sysid) {
         return false;
     }
-    return calc_angle_to_location(_state._target_sysid_location, angles_to_target_rad, calc_tilt, calc_pan, relative_pan);
+    return calc_angle_to_location(_target_sysid_location, angles_to_target_rad, calc_tilt, calc_pan, relative_pan);
 }
 
 // calc_angle_to_location - calculates the earth-frame roll, tilt and pan angles (in radians) to point at the given target

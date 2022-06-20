@@ -190,15 +190,6 @@ protected:
         AP_Float        _roll_stb_lead;     // roll lead control gain
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
 
-        MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
-        bool            _yaw_lock;          // If true the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
-        struct Location _roi_target;        // roi target location
-        bool _roi_target_set;
-
-        uint8_t _target_sysid;           // sysid to track
-        Location _target_sysid_location; // sysid target location
-        bool _target_sysid_location_set;
-
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:

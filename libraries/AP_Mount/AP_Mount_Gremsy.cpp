@@ -66,8 +66,8 @@ void AP_Mount_Gremsy::update()
             if (!AP::ahrs().home_is_set()) {
                 break;
             }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
+            _roi_target = AP::ahrs().get_home();
+            _roi_target_set = true;
             if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true, false)) {
                 send_gimbal_device_set_attitude(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z, true);
             }
