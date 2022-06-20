@@ -326,6 +326,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SPRAYER:
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return true;
     default:
         return _cmd_verify_fn(cmd);
