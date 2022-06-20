@@ -227,7 +227,7 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     // Weighting vector defines the relative weighting of roll, pitch, yaw and throttle
     // may want to change this on the fly in the future, but in that case we can no longer pre-compute the hessian
     // roll, pitch, yaw, throttle
-    float w[4] = {50.0, 50.0, 25.0, 1};
+    float w[4] = {50.0, 50.0, 1.0, 0.1};
 
     // setup hessian matrix
     // H = motor_factors * diag(w) * motor_factors'
@@ -249,6 +249,7 @@ void AP_MotorsMatrix_Optimal::init(motor_frame_class frame_class, motor_frame_ty
     }
 
     // re-scale by weights to save runtime calculation
+    w[2] *= num_motors*0.25;
     w[3] *= num_motors;
     vec_scale(w, -1.0, w, 4);
     per_element_mult_mv(motor_factors, w, motor_factors);
@@ -301,6 +302,7 @@ void AP_MotorsMatrix_Optimal::output_armed_stabilizing()
 
     // workout what output was achieved
     mat_vec_mult(motor_factors_trans, x, outputs);
+    outputs[2] /= num_motors*0.25;
     outputs[3] /= num_motors;
 
     // set limit flags, threshold of 1%
