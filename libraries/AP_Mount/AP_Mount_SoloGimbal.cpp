@@ -78,8 +78,8 @@ void AP_Mount_SoloGimbal::update()
             if (!AP::ahrs().home_is_set()) {
                 break;
             }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
+            _roi_target = AP::ahrs().get_home();
+            _roi_target_set = true;
             UNUSED_RESULT(calc_angle_to_roi_target(_angle_ef_target_rad, true, true, true));
             break;
 
@@ -110,14 +110,14 @@ void AP_Mount_SoloGimbal::set_mode(enum MAV_MOUNT_MODE mode)
     }
 
     // record the mode change
-    _state._mode = mode;
+    _mode = mode;
 }
 
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_SoloGimbal::send_mount_status(mavlink_channel_t chan)
 {
     if (_gimbal.aligned()) {
-        mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100, _state._mode);
+        mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_ef_target_rad.y)*100, degrees(_angle_ef_target_rad.x)*100, degrees(_angle_ef_target_rad.z)*100, _mode);
     }
     
     // block heartbeat from transmitting to the GCS

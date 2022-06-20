@@ -81,8 +81,8 @@ void AP_Mount_Servo::update()
             if (!AP::ahrs().home_is_set()) {
                 break;
             }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
+            _roi_target = AP::ahrs().get_home();
+            _roi_target_set = true;
             if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, true)) {
                 stabilize();
             }
@@ -115,13 +115,6 @@ void AP_Mount_Servo::update()
     move_servo(_pan_idx,  _angle_bf_output_deg.z*10, _state._pan_angle_min*0.1f, _state._pan_angle_max*0.1f);
 }
 
-// set_mode - sets mount's mode
-void AP_Mount_Servo::set_mode(enum MAV_MOUNT_MODE mode)
-{
-    // record the mode change and return success
-    _state._mode = mode;
-}
-
 // private methods
 
 // check_servo_map - detects which axis we control using the functions assigned to the servos in the RC_Channel_aux
@@ -136,7 +129,7 @@ void AP_Mount_Servo::check_servo_map()
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Servo::send_mount_status(mavlink_channel_t chan)
 {
-    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100, _state._mode);
+    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100, _mode);
 }
 
 // stabilize - stabilizes the mount relative to the Earth's frame

@@ -15,6 +15,7 @@ void AP_Mount_Alexmos::init()
         _initialised = true;
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
+        set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
     }
 }
 
@@ -64,8 +65,8 @@ void AP_Mount_Alexmos::update()
             if (!AP::ahrs().home_is_set()) {
                 break;
             }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
+            _roi_target = AP::ahrs().get_home();
+            _roi_target_set = true;
             if (calc_angle_to_roi_target(_angle_ef_target_rad, true, false, true)) {
                 control_axis(_angle_ef_target_rad, false);
             }
@@ -89,13 +90,6 @@ bool AP_Mount_Alexmos::has_pan_control() const
     return _gimbal_3axis;
 }
 
-// set_mode - sets mount's mode
-void AP_Mount_Alexmos::set_mode(enum MAV_MOUNT_MODE mode)
-{
-    // record the mode change and return success
-    _state._mode = mode;
-}
-
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
 {
@@ -104,7 +98,7 @@ void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
     }
 
     get_angles();
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100, _state._mode);
+    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100, _mode);
 }
 
 /*

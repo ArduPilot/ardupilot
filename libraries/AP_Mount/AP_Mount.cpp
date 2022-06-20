@@ -441,9 +441,6 @@ void AP_Mount::init()
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        // default instance's state
-        state[instance]._mode = (enum MAV_MOUNT_MODE)state[instance]._default_mode.get();
-
         MountType mount_type = get_mount_type(instance);
 
         // check for servo mounts
@@ -502,6 +499,7 @@ void AP_Mount::init()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->init();
+            set_mode_to_default(instance);
         }
     }
 }
@@ -553,11 +551,12 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 {
     // sanity check instance
-    if (instance >= AP_MOUNT_MAX_INSTANCES) {
-        return  MAV_MOUNT_MODE_RETRACT;
+    if (!check_instance(instance)) {
+        return MAV_MOUNT_MODE_RETRACT;
     }
 
-    return state[instance]._mode;
+    // ask backend its mode
+    return _backends[instance]->get_mode();
 }
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
@@ -588,8 +587,8 @@ void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
         return;
     }
 
-    // return immediately if no change
-    state[instance]._yaw_lock = yaw_lock;
+    // call backend's set_yaw_lock
+    _backends[instance]->set_yaw_lock(yaw_lock);
 }
 
 // set_angle_targets - sets angle targets in degrees
