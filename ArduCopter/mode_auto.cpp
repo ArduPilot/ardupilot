@@ -1730,7 +1730,7 @@ void ModeAuto::do_mount_control(const AP_Mission::Mission_Command& cmd)
         auto_yaw.set_yaw_angle_rate(cmd.content.mount_control.yaw,0.0f);
     }
     // pass the target angles to the camera mount
-    copter.camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
+    copter.camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
 }
 
