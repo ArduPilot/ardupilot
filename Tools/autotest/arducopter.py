@@ -7371,6 +7371,10 @@ class AutoTestCopter(AutoTest):
             "GEN_IDLE_TEMP": 80,
         })
 
+        self.reboot_sitl()
+
+        self.assert_parameter_value("GEN_IDLE_TH", 25)
+
         self.delay_sim_time(10)  # so we can actually receive messages...
 
         self.start_subtest("Checking GENERATOR_STATUS")
