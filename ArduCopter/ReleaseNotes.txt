@@ -1,5 +1,25 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.2-rc1 21-Jun-2022
+Changes from 4.2.1
+1) MambaH743v4 and MambaF405 MK4 autopilot support
+2) Second full harmonic notches available (see INS_HNTC2_ parameters)
+3) UAVCAN memory usage reduced (see CAN_Dn_UC_POOL parameter to control DroneCAN pool size)
+4) VTOL QuikTune lua script added
+5) Watchdog (caused by hardfault) saves crash dump logs to SD card
+6) Bug fixes
+    a) Circle mode stops below altitude fence
+    b) CRSF protection against watchdog on bad frames
+    c) CRSF reset in flight handled
+    d) FFT init watchdog fix when ARMING_REQUIRE=0 (not actually possible on Copter)
+    e) OSD flight modes menu includes newer flight modes
+    f) Param download (via MAVFTP) fixed for params with overlapping names
+    g) PWM rangefinder bug fix and added SCALING parameter support
+    h) Replay bug fix when EK3_SRCs changed
+    i) SERIALx_OPTION fix when "Don't forward mavlink to/from" selected (resolves MAVLink gimbal detection)
+    j) TradHeli Autotune fix which could cause incorrect gains to be loaded
+    k) VL53L1X rangefinder preserves addresses
+------------------------------------------------------------------
 Copter 4.2.1 07-Jun-2022 / 4.2.1-rc1 28-May-2022
 Changes from 4.2.0
 1) CAN ESCs bus bandwidth efficiency improvements (see CAN_Dx_UC_ESC_OF parameter)
