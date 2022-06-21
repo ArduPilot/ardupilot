@@ -90,6 +90,7 @@ BUILD_OPTIONS = [
     Feature('ICE', 'EFI_DRONECAN', 'HAL_EFI_DRONECAN_ENABLED', 'Enable EFI DroneCAN', 0, 'EFI'),
     Feature('ICE', 'GENERATOR', 'HAL_GENERATOR_ENABLED', 'Enable Generator', 0, None),
     Feature('ICE', 'GENERATOR_RICHENPOWER', 'AP_GENERATOR_RICHENPOWER_ENABLED', 'Enable Richenpower Generator', 0, "GENERATOR"),  # noqa
+    Feature('Generator', 'LOWEHEISER', 'AP_GENERATOR_LOWEHEISER_ENABLED', 'Enable Loweheiser Generator', 0, 'GENERATOR'),
 
     Feature('OSD', 'OSD', 'OSD_ENABLED', 'Enable OSD', 0, None),
     Feature('OSD', 'PLUSCODE', 'HAL_PLUSCODE_ENABLE', 'Enable PlusCode', 0, 'OSD'),
