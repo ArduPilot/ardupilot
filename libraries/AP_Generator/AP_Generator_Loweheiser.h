@@ -73,6 +73,11 @@ public:
 
 private:
 
+    // second init is called after parameters are loaded from eeprom;
+    // init() before.
+    bool second_init_done;
+    void check_second_init();
+
     // we store the entirety of the most recent packet for the time being:
     mavlink_loweheiser_gov_efi_t packet;
     uint32_t last_packet_received_ms;

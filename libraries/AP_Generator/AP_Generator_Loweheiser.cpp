@@ -67,13 +67,8 @@ void AP_Generator_Loweheiser::init()
 
     _frontend._has_consumed_energy = true;
 
-    if (time_until_maintenance == 0) {
-        // manufacturer-recommended maintenance interval, 300 hours.
-        // On the off-chance that the user manages to switch the
-        // vehicle off at exactly 0 seconds remaining this *will*
-        // reset.
-        time_until_maintenance.set_and_save(300 * 60 * 60);
-    }
+    // nothing in this method may use parameters as AP_Generator loads
+    // values from eeprom!
 }
 
 // healthy returns true if the generator is not present, or it is
@@ -290,8 +285,25 @@ void AP_Generator_Loweheiser::update_common_backend_variables()
     }
 }
 
+void AP_Generator_Loweheiser::check_second_init()
+{
+    if (second_init_done) {
+        return;
+    }
+    second_init_done = true;
+    if (time_until_maintenance == 0) {
+        // manufacturer-recommended maintenance interval, 300 hours.
+        // On the off-chance that the user manages to switch the
+        // vehicle off at exactly 0 seconds remaining this *will*
+        // reset.
+        time_until_maintenance.set_and_save(300 * 60 * 60);
+    }
+}
+
 void AP_Generator_Loweheiser::update()
 {
+    check_second_init();
+
     // periodically check the user's configuration of RC input channels:
     check_rc_input_channels();
 

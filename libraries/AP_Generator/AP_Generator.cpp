@@ -91,6 +91,11 @@ void AP_Generator::init()
 #endif
     }
 
+    if (_driver_ptr != nullptr) {
+        _driver_ptr->init();
+        _driver_type = type();
+    }
+
     // if the backend has some local parameters then make those
     // available in the tree
     if (_driver_ptr) {
@@ -101,11 +106,6 @@ void AP_Generator::init()
             // param count could have changed
             AP_Param::invalidate_count();
         }
-    }
-
-    if (_driver_ptr != nullptr) {
-        _driver_ptr->init();
-        _driver_type = type();
     }
 }
 
