@@ -184,6 +184,7 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
     result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
     result = result && update_check(buflen, buffer, fs_capacity_inversion, "capacity failsafe critical > low");
     result = result && update_check(buflen, buffer, fs_voltage_inversion, "voltage failsafe critical > low");
+    result = result && update_check(buflen, buffer, !_state.healthy, "unhealthy");
 
     return result;
 }
