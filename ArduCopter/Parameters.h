@@ -469,7 +469,6 @@ public:
 #if MODE_ACRO_ENABLED == ENABLED
     // Acro parameters
     AP_Int8                 acro_trainer;
-    AP_Float                acro_rp_expo;
 #endif
 
     // Note: keep initializers here in the same order as they are declared
@@ -539,8 +538,6 @@ public:
     // developer options
     AP_Int32 dev_options;
 
-    // acro exponent parameters
-    AP_Float acro_y_expo;          // remove
 #if MODE_ACRO_ENABLED == ENABLED
     AP_Float acro_thr_mid;
 #endif
@@ -666,17 +663,6 @@ public:
     AP_Float guided_timeout;
 #endif
 
-#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
-    // Acro parameters
-    AP_Float                acro_rp_rate;    // remove
-#endif
-
-#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
-    AP_Float                acro_y_rate;     // remove
-#endif
-
-    AP_Float                pilot_y_rate;    // remove
-    AP_Float                pilot_y_expo;    // remove
     AP_Int8                 surftrak_mode;
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
