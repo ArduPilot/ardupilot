@@ -424,8 +424,8 @@ void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) co
     const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
 
     // Scale the throttle limits to prevent subsequent clipping
-    min_throttle = MAX((int8_t)(ratio * (float)min_throttle), -100);
-    max_throttle = MIN((int8_t)(ratio * (float)max_throttle),  100);
+    min_throttle = int8_t(MAX((ratio * (float)min_throttle), -100));
+    max_throttle = int8_t(MIN((ratio * (float)max_throttle),  100));
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                         constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
