@@ -75,7 +75,7 @@ UC_REGISTRY_BINDER(RelPosHeadingCb, ardupilot::gnss::RelPosHeading);
 #else
 #define NATIVE_TIME_OFFSET 0
 #endif
-AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
+AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 
 // Member Methods
