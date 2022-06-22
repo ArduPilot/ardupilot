@@ -31,6 +31,8 @@ namespace SITL {
 class RF_TeraRanger_Serial : public SerialRangeFinder {
 public:
 
+    static SerialRangeFinder *create() { return NEW_NOTHROW RF_TeraRanger_Serial(); }
+
     uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
 
 
