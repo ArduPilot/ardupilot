@@ -74,7 +74,9 @@ void AP_Generator::init()
             break;
 
         case Type::RICHENPOWER:
+#if AP_GENERATOR_RICHENPOWER_ENABLED
             _driver_ptr = new AP_Generator_RichenPower(*this);
+#endif
             break;
     }
 
