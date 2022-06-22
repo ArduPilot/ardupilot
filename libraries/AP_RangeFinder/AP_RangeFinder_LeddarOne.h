@@ -69,7 +69,7 @@ private:
     uint32_t last_sending_request_ms;
     uint32_t last_available_ms;
 
-    uint32_t sum_distance;
+    uint32_t sum_distance_mm;
 
     LeddarOne_ModbusStatus modbus_status = LEDDARONE_MODBUS_STATE_INIT;
     uint8_t read_buffer[LEDDARONE_READ_BUFFER_SIZE];
