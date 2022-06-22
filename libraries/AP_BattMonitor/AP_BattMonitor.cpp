@@ -739,6 +739,19 @@ uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
     return drivers[instance]->get_mavlink_fault_bitmask();
 }
 
+/*
+  check that all configured battery monitors are healthy
+ */
+bool AP_BattMonitor::healthy() const
+{
+    for (uint8_t i=0; i< _num_instances; i++) {
+        if (get_type(i) != Type::NONE && !healthy(i)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 namespace AP {
 
 AP_BattMonitor &battery()
