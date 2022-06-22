@@ -48,16 +48,6 @@ uint32_t AP_RangeFinder_Backend_Serial::initial_baudrate(const uint8_t serial_in
 }
 
 /*
-   detect if a Serial rangefinder is connected. We'll detect by simply
-   checking for SerialManager configuration
-*/
-bool AP_RangeFinder_Backend_Serial::detect(uint8_t serial_instance)
-{
-    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance);
-}
-
-
-/*
    update the state of the sensor
 */
 void AP_RangeFinder_Backend_Serial::update(void)

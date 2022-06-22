@@ -29,7 +29,11 @@ class AP_RangeFinder_NMEA : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_NMEA(_state, _params);
+    }
 
 protected:
 
@@ -38,6 +42,8 @@ protected:
     }
 
 private:
+
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     /// enum for handled messages
     enum sentence_types : uint8_t {

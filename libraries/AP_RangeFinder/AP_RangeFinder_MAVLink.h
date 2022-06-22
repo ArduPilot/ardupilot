@@ -16,6 +16,7 @@ class AP_RangeFinder_MAVLink : public AP_RangeFinder_Backend
 {
 
 public:
+
     // constructor
     using AP_RangeFinder_Backend::AP_RangeFinder_Backend;
 
