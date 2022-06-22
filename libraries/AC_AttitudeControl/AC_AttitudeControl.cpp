@@ -287,7 +287,7 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw(float euler
 
         // When yaw acceleration limiting is enabled, the yaw input shaper constrains angular acceleration about the yaw axis, slewing
         // the output rate towards the input rate.
-        if (is_zero(_rate_y_tc)) {
+        if (!is_positive(_rate_y_tc)) {
             _euler_rate_target.z = input_shaping_ang_vel(_euler_rate_target.z, euler_yaw_rate, euler_accel.z, _dt);
         } else {
             _euler_rate_target.z = input_shaping_rate((euler_yaw_rate - _euler_rate_target.z), _rate_y_tc, euler_accel.z, _euler_rate_target.z, _dt);
@@ -392,14 +392,14 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw(float euler_roll_rate_c
 
         // When acceleration limiting is enabled, the input shaper constrains angular acceleration, slewing
         // the output rate towards the input rate.
-        if (is_zero(_rate_rp_tc)) {
+        if (!is_positive(_rate_rp_tc)) {
             _euler_rate_target.x = input_shaping_ang_vel(_euler_rate_target.x, euler_roll_rate, euler_accel.x, _dt);
             _euler_rate_target.y = input_shaping_ang_vel(_euler_rate_target.y, euler_pitch_rate, euler_accel.y, _dt);
         } else {
             _euler_rate_target.x = input_shaping_rate((euler_roll_rate - _euler_rate_target.x), _rate_rp_tc, euler_accel.x, _euler_rate_target.x, _dt);
             _euler_rate_target.y = input_shaping_rate((euler_pitch_rate - _euler_rate_target.y), _rate_rp_tc, euler_accel.y, _euler_rate_target.y, _dt);
         }
-        if (is_zero(_rate_y_tc)) {
+        if (!is_positive(_rate_y_tc)) {
             _euler_rate_target.z = input_shaping_ang_vel(_euler_rate_target.z, euler_yaw_rate, euler_accel.z, _dt);
         } else {
             _euler_rate_target.z = input_shaping_rate((euler_yaw_rate - _euler_rate_target.z), _rate_y_tc, euler_accel.z, _euler_rate_target.z, _dt);
@@ -441,14 +441,14 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw(float roll_rate_bf_cds, fl
         // Compute acceleration-limited body frame rates
         // When acceleration limiting is enabled, the input shaper constrains angular acceleration about the axis, slewing
         // the output rate towards the input rate.
-        if (is_zero(_rate_rp_tc)) {
+        if (!is_positive(_rate_rp_tc)) {
             _ang_vel_target.x = input_shaping_ang_vel(_ang_vel_target.x, roll_rate_rads, get_accel_roll_max_radss(), _dt);
             _ang_vel_target.y = input_shaping_ang_vel(_ang_vel_target.y, pitch_rate_rads, get_accel_pitch_max_radss(), _dt);
         } else {
             _ang_vel_target.x = input_shaping_rate((roll_rate_rads - _ang_vel_target.x), _rate_rp_tc, get_accel_roll_max_radss(), _ang_vel_target.x, _dt);
             _ang_vel_target.y = input_shaping_rate((pitch_rate_rads - _ang_vel_target.y), _rate_rp_tc, get_accel_pitch_max_radss(), _ang_vel_target.y, _dt);
         }
-        if (is_zero(_rate_y_tc)) {
+        if (!is_positive(_rate_y_tc)) {
             _ang_vel_target.z = input_shaping_ang_vel(_ang_vel_target.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
         } else {
             _ang_vel_target.z = input_shaping_rate((yaw_rate_rads - _ang_vel_target.z), _rate_y_tc, get_accel_yaw_max_radss(), _ang_vel_target.z, _dt);
@@ -483,14 +483,14 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2(float roll_rate_bf_cds, 
     // Compute acceleration-limited body frame rates
     // When acceleration limiting is enabled, the input shaper constrains angular acceleration about the axis, slewing
     // the output rate towards the input rate.
-    if (is_zero(_rate_rp_tc)) {
+    if (!is_positive(_rate_rp_tc)) {
         _ang_vel_target.x = input_shaping_ang_vel(_ang_vel_target.x, roll_rate_rads, get_accel_roll_max_radss(), _dt);
         _ang_vel_target.y = input_shaping_ang_vel(_ang_vel_target.y, pitch_rate_rads, get_accel_pitch_max_radss(), _dt);
     } else {
         _ang_vel_target.x = input_shaping_rate((roll_rate_rads - _ang_vel_target.x), _rate_rp_tc, get_accel_roll_max_radss(), _ang_vel_target.x, _dt);
         _ang_vel_target.y = input_shaping_rate((pitch_rate_rads - _ang_vel_target.y), _rate_rp_tc, get_accel_pitch_max_radss(), _ang_vel_target.y, _dt);
     }
-    if (is_zero(_rate_y_tc)) {
+    if (!is_positive(_rate_y_tc)) {
         _ang_vel_target.z = input_shaping_ang_vel(_ang_vel_target.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
     } else {
         _ang_vel_target.z = input_shaping_rate((yaw_rate_rads - _ang_vel_target.z), _rate_y_tc, get_accel_yaw_max_radss(), _ang_vel_target.z, _dt);
@@ -531,14 +531,14 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3(float roll_rate_bf_cds, 
     // Compute acceleration-limited body frame rates
     // When acceleration limiting is enabled, the input shaper constrains angular acceleration about the axis, slewing
     // the output rate towards the input rate.
-    if (is_zero(_rate_rp_tc)) {
+    if (!is_positive(_rate_rp_tc)) {
         _ang_vel_target.x = input_shaping_ang_vel(_ang_vel_target.x, roll_rate_rads, get_accel_roll_max_radss(), _dt);
         _ang_vel_target.y = input_shaping_ang_vel(_ang_vel_target.y, pitch_rate_rads, get_accel_pitch_max_radss(), _dt);
     } else {
         _ang_vel_target.x = input_shaping_rate((roll_rate_rads - _ang_vel_target.x), _rate_rp_tc, get_accel_roll_max_radss(), _ang_vel_target.x, _dt);
         _ang_vel_target.y = input_shaping_rate((pitch_rate_rads - _ang_vel_target.y), _rate_rp_tc, get_accel_pitch_max_radss(), _ang_vel_target.y, _dt);
     }
-    if (is_zero(_rate_y_tc)) {
+    if (!is_positive(_rate_y_tc)) {
         _ang_vel_target.z = input_shaping_ang_vel(_ang_vel_target.z, yaw_rate_rads, get_accel_yaw_max_radss(), _dt);
     } else {
         _ang_vel_target.z = input_shaping_rate((yaw_rate_rads - _ang_vel_target.z), _rate_y_tc, get_accel_yaw_max_radss(), _ang_vel_target.z, _dt);
@@ -624,7 +624,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading(const Vector3f& thrust
 
         // When yaw acceleration limiting is enabled, the yaw input shaper constrains angular acceleration about the yaw axis, slewing
         // the output rate towards the input rate.
-        if (is_zero(_rate_y_tc)) {
+        if (!is_positive(_rate_y_tc)) {
             _ang_vel_target.z = input_shaping_ang_vel(_ang_vel_target.z, heading_rate, get_accel_yaw_max_radss(), _dt);
         } else {
             _ang_vel_target.z = input_shaping_rate((heading_rate - _ang_vel_target.z), _rate_y_tc, get_accel_yaw_max_radss(), _ang_vel_target.z, _dt);
