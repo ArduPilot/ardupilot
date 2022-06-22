@@ -69,7 +69,6 @@ private:
     uint32_t last_sending_request_ms;
     uint32_t last_available_ms;
 
-    uint16_t detections[LEDDARONE_DETECTIONS_MAX];
     uint32_t sum_distance;
 
     LeddarOne_ModbusStatus modbus_status = LEDDARONE_MODBUS_STATE_INIT;
