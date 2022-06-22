@@ -14,9 +14,9 @@ public:
     AC_CommandModel(float initial_rate, float initial_expo, float initial_tc);
 
     // Accessors for parameters
-    float get_rate_tc() { return rate_tc; }
-    float get_rate() { return rate; }
-    float get_expo() { return expo; }
+    float get_rate_tc() const { return rate_tc; }
+    float get_rate() const { return rate; }
+    float get_expo() const { return expo; }
 
     // Set the max rate
     void set_rate(float input) { rate = input; }
