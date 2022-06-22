@@ -10,8 +10,6 @@ public:
                                   AP_RangeFinder_Params &_params);
 
     void init_serial(uint8_t serial_instance) override;
-    // static detection function
-    static bool detect(uint8_t serial_instance);
 
 protected:
 

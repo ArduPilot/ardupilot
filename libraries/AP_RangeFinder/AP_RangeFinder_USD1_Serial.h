@@ -14,7 +14,11 @@ class AP_RangeFinder_USD1_Serial : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_USD1_Serial(_state, _params);
+    }
 
 protected:
 
@@ -31,6 +35,9 @@ protected:
     uint16_t tx_bufsize() const override { return 128; }
 
 private:
+
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     // detect USD1_Serial Firmware Version
     bool detect_version(void);
 

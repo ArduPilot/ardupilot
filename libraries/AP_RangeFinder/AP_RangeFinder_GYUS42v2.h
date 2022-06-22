@@ -15,7 +15,11 @@ class AP_RangeFinder_GYUS42v2 : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_GYUS42v2(_state, _params);
+    }
 
 protected:
 
@@ -28,6 +32,8 @@ protected:
     }
 
 private:
+
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     // get a reading
     bool get_reading(float &reading_m) override;
