@@ -172,12 +172,10 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
         return LEDDARONE_STATE_ERR_NUMBER_DETECTIONS;
     }
 
-    memset(detections, 0, sizeof(detections));
     sum_distance = 0;
     for (index=0; index<number_detections; index++) {
         // construct data word from two bytes and convert mm to cm
-        detections[index] =  (static_cast<uint16_t>(read_buffer[index_offset])*256 + read_buffer[index_offset+1]) / 10;
-        sum_distance += detections[index];
+        sum_distance += (static_cast<uint16_t>(read_buffer[index_offset])*256 + read_buffer[index_offset+1]) / 10;
 
         // add index offset (4) to read next detection data
         index_offset += LEDDARONE_DETECTION_DATA_OFFSET;
