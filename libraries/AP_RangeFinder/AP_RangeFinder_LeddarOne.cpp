@@ -133,14 +133,13 @@ bool AP_RangeFinder_LeddarOne::CRC16(uint8_t *aBuffer, uint8_t aLength, bool aCh
   */
 LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detections)
 {
-    uint8_t index;
     uint8_t index_offset = LEDDARONE_DETECTION_DATA_INDEX_OFFSET;
 
     // read serial
     uint32_t nbytes = uart->available();
 
     if (nbytes != 0)  {
-        for (index=read_len; index<nbytes+read_len; index++) {
+        for (uint8_t index=read_len; index<nbytes+read_len; index++) {
             if (index >= LEDDARONE_READ_BUFFER_SIZE) {
                 return LEDDARONE_STATE_ERR_BAD_RESPONSE;
             }
@@ -173,7 +172,7 @@ LeddarOne_Status AP_RangeFinder_LeddarOne::parse_response(uint8_t &number_detect
     }
 
     sum_distance = 0;
-    for (index=0; index<number_detections; index++) {
+    for (uint8_t index=0; index<number_detections; index++) {
         // construct data word from two bytes and convert mm to cm
         sum_distance += (static_cast<uint16_t>(read_buffer[index_offset])*256 + read_buffer[index_offset+1]) / 10;
 
