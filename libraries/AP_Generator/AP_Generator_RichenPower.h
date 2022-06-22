@@ -3,7 +3,11 @@
 
 #include "AP_Generator_Backend.h"
 
-#if HAL_GENERATOR_ENABLED
+#ifndef AP_GENERATOR_RICHENPOWER_ENABLED
+#define AP_GENERATOR_RICHENPOWER_ENABLED 0
+#endif
+
+#if AP_GENERATOR_RICHENPOWER_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <SRV_Channel/SRV_Channel.h>
