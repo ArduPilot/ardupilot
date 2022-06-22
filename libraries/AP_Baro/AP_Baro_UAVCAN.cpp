@@ -16,7 +16,7 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(PressureCb, uavcan::equipment::air_data::StaticPressure);
 UC_REGISTRY_BINDER(TemperatureCb, uavcan::equipment::air_data::StaticTemperature);
 
-AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[] = {0};
+AP_Baro_UAVCAN::DetectedModules AP_Baro_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Baro_UAVCAN::_sem_registry;
 
 /*
