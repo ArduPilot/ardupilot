@@ -343,6 +343,8 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance
 void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
 #if AP_RANGEFINDER_ENABLED
+    AP_RangeFinder_Backend_Serial *(*serial_create_fn)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&) = nullptr;
+
     const Type _type = (Type)params[instance].type.get();
     switch (_type) {
     case Type::PLI2C:
@@ -464,23 +466,17 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::LWSER:
 #if AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED
-        if (AP_RangeFinder_LightWareSerial::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_LightWareSerial(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_LightWareSerial::create;
 #endif
         break;
     case Type::LEDDARONE:
 #if AP_RANGEFINDER_LEDDARONE_ENABLED
-        if (AP_RangeFinder_LeddarOne::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_LeddarOne(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_LeddarOne::create;
 #endif
         break;
     case Type::USD1_Serial:
 #if AP_RANGEFINDER_USD1_SERIAL_ENABLED
-        if (AP_RangeFinder_USD1_Serial::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_USD1_Serial(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_USD1_Serial::create;
 #endif
         break;
     case Type::BEBOP:
@@ -499,9 +495,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::MBSER:
 #if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
-        if (AP_RangeFinder_MaxsonarSerialLV::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_MaxsonarSerialLV(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_MaxsonarSerialLV::create;
 #endif
         break;
     case Type::ANALOG:
@@ -522,37 +516,27 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::NMEA:
 #if AP_RANGEFINDER_NMEA_ENABLED
-        if (AP_RangeFinder_NMEA::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_NMEA(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_NMEA::create;
 #endif
         break;
     case Type::WASP:
 #if AP_RANGEFINDER_WASP_ENABLED
-        if (AP_RangeFinder_Wasp::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Wasp(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_Wasp::create;
 #endif
         break;
     case Type::BenewakeTF02:
 #if AP_RANGEFINDER_BENEWAKE_TF02_ENABLED
-        if (AP_RangeFinder_Benewake_TF02::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Benewake_TF02(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_Benewake_TF02::create;
 #endif
         break;
     case Type::BenewakeTFmini:
 #if AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED
-        if (AP_RangeFinder_Benewake_TFMini::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Benewake_TFMini(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_Benewake_TFMini::create;
 #endif
         break;
     case Type::BenewakeTF03:
 #if AP_RANGEFINDER_BENEWAKE_TF03_ENABLED
-        if (AP_RangeFinder_Benewake_TF03::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Benewake_TF03(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_Benewake_TF03::create;
 #endif
         break;
     case Type::PWM:
@@ -564,23 +548,17 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         break;
     case Type::BLPing:
 #if AP_RANGEFINDER_BLPING_ENABLED
-        if (AP_RangeFinder_BLPing::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_BLPing(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_BLPing::create;
 #endif
         break;
     case Type::Lanbao:
 #if AP_RANGEFINDER_LANBAO_ENABLED
-        if (AP_RangeFinder_Lanbao::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_Lanbao(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_Lanbao::create;
 #endif
         break;
     case Type::LeddarVu8_Serial:
 #if AP_RANGEFINDER_LEDDARVU8_ENABLED
-        if (AP_RangeFinder_LeddarVu8::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_LeddarVu8(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_LeddarVu8::create;
 #endif
         break;
 
@@ -597,9 +575,7 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 
     case Type::GYUS42v2:
 #if AP_RANGEFINDER_GYUS42V2_ENABLED
-        if (AP_RangeFinder_GYUS42v2::detect(serial_instance)) {
-            _add_backend(new AP_RangeFinder_GYUS42v2(state[instance], params[instance]), instance, serial_instance++);
-        }
+        serial_create_fn = AP_RangeFinder_GYUS42v2::create;
 #endif
         break;
 
@@ -629,6 +605,15 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 #endif
     case Type::NONE:
         break;
+    }
+
+    if (serial_create_fn != nullptr) {
+        if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Rangefinder, serial_instance)) {
+            auto *b = serial_create_fn(state[instance], params[instance]);
+            if (b != nullptr) {
+                _add_backend(b, instance, serial_instance++);
+            }
+        }
     }
 
     // if the backend has some local parameters then make those available in the tree

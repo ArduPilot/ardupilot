@@ -14,7 +14,11 @@ class AP_RangeFinder_Lanbao : public AP_RangeFinder_Backend_Serial
 
 public:
 
-    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+    static AP_RangeFinder_Backend_Serial *create(
+        RangeFinder::RangeFinder_State &_state,
+        AP_RangeFinder_Params &_params) {
+        return new AP_RangeFinder_Lanbao(_state, _params);
+    }
 
     // Lanbao is always 115200:
     uint32_t initial_baudrate(uint8_t serial_instance) const override {
@@ -28,6 +32,9 @@ protected:
     }
 
 private:
+
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
+
     // get a reading
     bool get_reading(float &reading_m) override;
 
