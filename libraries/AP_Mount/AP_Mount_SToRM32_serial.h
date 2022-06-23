@@ -44,7 +44,7 @@ public:
 private:
 
     // send_target_angles
-    void send_target_angles(float pitch_deg, float roll_deg, float yaw_deg);
+    void send_target_angles(const MountTarget& angle_target_rad);
 
     // send read data request
     void get_angles();
@@ -137,6 +137,7 @@ private:
     AP_HAL::UARTDriver *_port;
 
     bool _initialised;              // true once the driver has been initialised
+    MountTarget _angle_rad;         // latest angle target
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
 
     uint8_t _reply_length;
