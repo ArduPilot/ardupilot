@@ -13,7 +13,7 @@ USB_PRODUCT 0x0053
 USB_STRING_MANUFACTURER "Holybro"
 
 # board ID for firmware load
-APJ_BOARD_ID 53
+APJ_BOARD_ID 56
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
