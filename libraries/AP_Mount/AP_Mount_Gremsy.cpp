@@ -37,47 +37,55 @@ void AP_Mount_Gremsy::update()
             }
             break;
 
-        // point to the angles given by a mavlink message
+        // use angle or rate targets provided by a mavlink message or mission command
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // angle targets should have been set by a MOUNT_CONTROL message from GCS
-            send_gimbal_device_set_attitude(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z, true);
+            switch (mavt_target.target_type) {
+            case MountTargetType::ANGLE:
+                send_gimbal_device_set_attitude(mavt_target.angle_rad.roll, mavt_target.angle_rad.pitch, mavt_target.angle_rad.yaw, mavt_target.angle_rad.yaw_is_ef);
+                break;
+            case MountTargetType::RATE:
+                send_gimbal_device_set_rate(mavt_target.rate_rads.roll, mavt_target.rate_rads.pitch, mavt_target.rate_rads.yaw, mavt_target.rate_rads.yaw_is_ef);
+                break;
+            }
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
+        case MAV_MOUNT_MODE_RC_TARGETING: {
             // update targets using pilot's rc inputs
-            update_targets_from_rc();
-            if (_rate_target_rads_valid) {
-                send_gimbal_device_set_rate(_rate_target_rads.x, _rate_target_rads.y, _rate_target_rads.z, _state._yaw_lock);
-            } else {
-                send_gimbal_device_set_attitude(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z, _state._yaw_lock);
+            MountTarget rc_target {};
+            if (get_rc_rate_target(rc_target)) {
+                send_gimbal_device_set_rate(rc_target.roll, rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
+            } else if (get_rc_angle_target(rc_target)) {
+                send_gimbal_device_set_attitude(rc_target.roll, rc_target.pitch, rc_target.yaw, rc_target.yaw_is_ef);
             }
             break;
+        }
 
         // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true, false)) {
-                send_gimbal_device_set_attitude(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z, true);
+        case MAV_MOUNT_MODE_GPS_POINT: {
+            MountTarget angle_target_rad {};
+            if (get_angle_target_to_roi(angle_target_rad)) {
+                send_gimbal_device_set_attitude(angle_target_rad.roll, angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
             }
             break;
+        }
 
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            // constantly update the home location:
-            if (!AP::ahrs().home_is_set()) {
-                break;
-            }
-            _roi_target = AP::ahrs().get_home();
-            _roi_target_set = true;
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true, false)) {
-                send_gimbal_device_set_attitude(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z, true);
+        // point mount to home
+        case MAV_MOUNT_MODE_HOME_LOCATION: {
+            MountTarget angle_target_rad {};
+            if (get_angle_target_to_home(angle_target_rad)) {
+                send_gimbal_device_set_attitude(angle_target_rad.roll, angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
             }
             break;
+        }
 
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad, true, true, false)) {
-                send_gimbal_device_set_attitude(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z, true);
+        case MAV_MOUNT_MODE_SYSID_TARGET: {
+            MountTarget angle_target_rad {};
+            if (get_angle_target_to_sysid(angle_target_rad)) {
+                send_gimbal_device_set_attitude(angle_target_rad.roll, angle_target_rad.pitch, angle_target_rad.yaw, angle_target_rad.yaw_is_ef);
             }
             break;
+        }
 
         default:
             // unknown mode so do nothing
