@@ -415,7 +415,11 @@ void AP_AutoTune::update(AP_PIDInfo &pinfo, float scaler, float angle_err_deg)
     rpid.ff().set(FF);
     rpid.kP().set(P);
     rpid.kD().set(D);
-    rpid.kI().set(MAX(P*AUTOTUNE_I_RATIO, (FF / TRIM_TCONST)));
+    if (type == AUTOTUNE_ROLL) {  // for roll set I = smaller of FF or P
+        rpid.kI().set(MIN(P, (FF / TRIM_TCONST)));
+    } else {                      // for pitch/yaw naturally damped axes) set I usually = FF to get 1 sec I closure
+        rpid.kI().set(MAX(P*AUTOTUNE_I_RATIO, (FF / TRIM_TCONST)));
+    }
 
     // setup filters to be suitable for time constant and gyro filter
     rpid.filt_T_hz().set(10.0/(current.tau * 2 * M_PI));
