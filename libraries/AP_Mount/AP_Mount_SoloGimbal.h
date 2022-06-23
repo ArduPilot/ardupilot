@@ -30,7 +30,7 @@ public:
     void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    bool has_pan_control() const override;
+    bool has_pan_control() const override { return false; }
 
     // set_mode - sets mount's mode
     void set_mode(enum MAV_MOUNT_MODE mode) override;
@@ -53,7 +53,7 @@ private:
     void Log_Write_Gimbal(SoloGimbal &gimbal);
 
     bool _params_saved;
-
+    MountTarget _angle_rad;         // angle target
     SoloGimbal _gimbal;
 };
 
