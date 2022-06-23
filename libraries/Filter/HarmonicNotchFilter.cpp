@@ -84,8 +84,8 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: OPTS
     // @DisplayName: Harmonic Notch Filter options
-    // @Description: Harmonic Notch Filter options. Double-notches can provide deeper attenuation across a wider bandwidth than single notches and are suitable for larger aircraft. Dynamic harmonics attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz.
-    // @Bitmask: 0:Double notch,1:Dynamic harmonic,2:Update at loop rate,3:EnableOnAllIMUs
+    // @Description: Harmonic Notch Filter options. Triple and double-notches can provide deeper attenuation across a wider bandwidth with reduced latency than single notches and are suitable for larger aircraft. Dynamic harmonics attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz. If both double and triple notches are specified only double notches will take effect.
+    // @Bitmask: 0:Double notch,1:Dynamic harmonic,2:Update at loop rate,3:EnableOnAllIMUs,4:Triple notch
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OPTS", 8, HarmonicNotchFilterParams, _options, 0),
@@ -124,14 +124,9 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, fl
     // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
     _notch_spread = bandwidth_hz / (32 * center_freq_hz);
 
-    if (_double_notch) {
-        // position the individual notches so that the attenuation is no worse than a single notch
-        // calculate attenuation and quality from the shaping constraints
-        NotchFilter<T>::calculate_A_and_Q(center_freq_hz, bandwidth_hz * 0.5, attenuation_dB, _A, _Q);
-    } else {
-        // calculate attenuation and quality from the shaping constraints
-        NotchFilter<T>::calculate_A_and_Q(center_freq_hz, bandwidth_hz, attenuation_dB, _A, _Q);
-    }
+    // position the individual notches so that the attenuation is no worse than a single notch
+    // calculate attenuation and quality from the shaping constraints
+    NotchFilter<T>::calculate_A_and_Q(center_freq_hz, bandwidth_hz / _composite_notches, attenuation_dB, _A, _Q);
 
     _initialised = true;
     update(center_freq_hz);
@@ -141,11 +136,11 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, float center_freq_hz, fl
   allocate a collection of, at most HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
  */
 template <class T>
-void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint8_t harmonics, bool double_notch)
+void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint8_t harmonics, uint8_t composite_notches)
 {
-    _double_notch = double_notch;
+    _composite_notches = MIN(composite_notches, 3);
     _num_harmonics = __builtin_popcount(harmonics);
-    _num_filters = _num_harmonics * num_notches * (double_notch ? 2 : 1);
+    _num_filters = _num_harmonics * num_notches * _composite_notches;
     _harmonics = harmonics;
 
     if (_num_filters > 0) {
@@ -177,12 +172,13 @@ void HarmonicNotchFilter<T>::update(float center_freq_hz)
     for (uint8_t i = 0; i < HNF_MAX_HARMONICS && _num_enabled_filters < _num_filters; i++) {
         if ((1U<<i) & _harmonics) {
             const float notch_center = center_freq_hz * (i+1);
-            if (!_double_notch) {
+            if (_composite_notches != 2) {
                 // only enable the filter if its center frequency is below the nyquist frequency
                 if (notch_center < nyquist_limit) {
                     _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center, _A, _Q);
                 }
-            } else {
+            }
+            if (_composite_notches > 1) {
                 float notch_center_double;
                 // only enable the filter if its center frequency is below the nyquist frequency
                 notch_center_double = notch_center * (1.0 - _notch_spread);
@@ -226,12 +222,13 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
         }
 
         const float notch_center = constrain_float(center_freq_hz[center_n] * (harmonic_n+1), 1.0f, nyquist_limit);
-        if (!_double_notch) {
+        if (_composite_notches != 2) {
             // only enable the filter if its center frequency is below the nyquist frequency
             if (notch_center < nyquist_limit) {
                 _filters[_num_enabled_filters++].init_with_A_and_Q(_sample_freq_hz, notch_center, _A, _Q);
             }
-        } else {
+        }
+        if (_composite_notches > 1) {
             float notch_center_double;
             // only enable the filter if its center frequency is below the nyquist frequency
             notch_center_double = notch_center * (1.0 - _notch_spread);
