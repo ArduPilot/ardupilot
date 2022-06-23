@@ -5134,6 +5134,18 @@ class AutoTestCopter(AutoTest):
                     "Double-notch peak was higher than single-notch peak %fdB > %fdB" %
                     (peakdb2, peakdb1))
 
+            # now add triple dynamic notches and check that the peak is squashed
+            self.set_parameter("INS_HNTCH_OPTS", 16)
+            self.reboot_sitl()
+
+            freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+            # triple-notch should do better, but check for within 5%
+            if peakdb2 * 1.05 > peakdb1:
+                raise NotAchievedException(
+                    "Triple-notch peak was higher than single-notch peak %fdB > %fdB" %
+                    (peakdb2, peakdb1))
+
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
