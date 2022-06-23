@@ -43,8 +43,8 @@ private:
     // search for gimbal in GCS_MAVLink routing table
     void find_gimbal();
 
-    // send_do_mount_control - send a COMMAND_LONG containing a do_mount_control message
-    void send_do_mount_control(float pitch_deg, float roll_deg, float yaw_deg, enum MAV_MOUNT_MODE mount_mode);
+    // send_do_mount_control with latest angle targets
+    void send_do_mount_control(const MountTarget& angle_target_rad);
 
     // internal variables
     bool _initialised;              // true once the driver has been initialised
@@ -52,5 +52,6 @@ private:
     uint8_t _compid;                // component id of gimbal
     mavlink_channel_t _chan;        // mavlink channel used to communicate with gimbal
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
+    MountTarget _angle_rad;         // latest angle target
 };
 #endif // HAL_MOUNT_STORM32MAVLINK_ENABLED
