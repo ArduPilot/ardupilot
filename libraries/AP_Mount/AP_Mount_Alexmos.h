@@ -95,8 +95,8 @@ private:
     // get_boardinfo - get board version and firmware version
     void get_boardinfo();
 
-    // control_axis - send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const Vector3f& angle , bool targets_in_degrees);
+    // send new angles to the gimbal at a fixed speed of 30 deg/s
+    void control_axis(const MountTarget& angle_target_rad);
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
@@ -104,7 +104,7 @@ private:
     // write_params - write new parameters to the gimbal settings
     void write_params();
 
-    bool get_realtimedata( Vector3f& angle);
+    bool get_realtimedata(Vector3f& angle);
 
     // Alexmos Serial Protocol reading part implementation
     // send_command - send a command to the Alemox Serial API
@@ -115,6 +115,8 @@ private:
 
     // read_incoming - detect and read the header of the incoming message from the gimbal
     void read_incoming();
+
+    MountTarget _angle_rad;         // latest angle target
 
     // structure for the Serial Protocol
 
