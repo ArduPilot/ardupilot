@@ -48,6 +48,7 @@ TARGET_HW_ATL_MANTIS_EDU               97
 Reserved  PX4 [BL] FMU v5X.x           51
 Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
+Reserved "PX4 [BL] FMU v6C.x"          56
  
 Reserved "GUMSTIX [BL] FMU v6"         54
 Reserved "ARK CAN FLOW"                80
