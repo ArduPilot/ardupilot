@@ -5153,6 +5153,108 @@ void GCS_MAVLINK::send_uavionix_adsb_out_status() const
 #endif
 }
 
+// OpenDroneID Send Messages
+#if AP_OPENDRONEID_ENABLED
+void GCS_MAVLINK::send_open_drone_id_basic_id()
+{
+    // const AP_OpenDroneID &opendrone_id = AP::opendroneid();
+
+    const uint8_t id_or_mac[20] {};
+
+    MAV_ODID_ID_TYPE id_type = MAV_ODID_ID_TYPE_NONE;
+    // MAV_ODID_ID_TYPE id_type = opendrone_id.get_id_type();
+    
+    MAV_ODID_UA_TYPE ua_type = MAV_ODID_UA_TYPE_NONE;
+    // MAV_ODID_UA_TYPE ua_type = opendrone_id.get_ua_type();
+
+
+    const uint8_t uas_id[20] {};
+    // opendrone_id.get_uas_id(uas_id);
+    // const AP_AHRS &ahrs = AP::ahrs();
+    mavlink_msg_open_drone_id_basic_id_send(
+        chan,
+        0,                  // System ID (0 for broadcast)
+        0,                  // Component ID (0 for broadcast)
+        id_or_mac,                  // id_or_mac: Only used for drone ID data received from other UAs
+        id_type,
+        ua_type,
+        uas_id
+    );
+}
+
+
+void GCS_MAVLINK::send_open_drone_id_location()
+{
+    // MAV_ODID_OPERATOR_LOCATION_TYPE
+    
+    
+    // const AP_AHRS &ahrs = AP::ahrs();
+    
+    // mavlink_msg_open_drone_id_location_send(
+    //     chan,
+    //     0,                  // System ID (0 for broadcast)
+    //     0,                  // Component ID (0 for broadcast)
+    //     0,                  // id_or_mac: Only used for drone ID data received from other UAs
+    // )
+}
+
+void GCS_MAVLINK::send_open_drone_id_system()
+{
+    // MAV_ODID_OPERATOR_LOCATION_TYPE
+    
+    
+    // const AP_AHRS &ahrs = AP::ahrs();
+    
+    // mavlink_msg_open_drone_id_system_send(
+    //     chan,
+    //     0,                  // System ID (0 for broadcast)
+    //     0,                  // Component ID (0 for broadcast)
+    //     0,                  // id_or_mac: Only used for drone ID data received from other UAs
+        
+        
+        
+    // )
+    
+    // location
+    // ahrs.get_location()
+    
+    // mavlink_msg_open_drone_id_system( )
+
+    // const AP_AHRS &ahrs = AP::ahrs();
+    // const Vector3f &omega_I = ahrs.get_gyro_drift();
+    // mavlink_msg_ahrs_send(
+    //     chan,
+    //     omega_I.x,
+    //     omega_I.y,
+    //     omega_I.z,
+    //     0,
+    //     0,
+    //     ahrs.get_error_rp(),
+    //     ahrs.get_error_yaw());
+        
+        
+}
+
+void GCS_MAVLINK::send_open_drone_id_operator_id()
+{
+    // MAV_ODID_OPERATOR_LOCATION_TYPE
+    
+    
+    // const AP_AHRS &ahrs = AP::ahrs();
+    
+    // mavlink_msg_open_drone_id_operator_id_send(
+    //     chan,
+    //     0,                  // System ID (0 for broadcast)
+    //     0,                  // Component ID (0 for broadcast)
+    //     0,                  // id_or_mac: Only used for drone ID data received from other UAs
+    // )
+}
+
+
+#endif // AP_OPENDRONEID_ENABLED
+
+
+
 void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
 {
     // get attitude
@@ -5294,6 +5396,25 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(BATTERY2);
         send_battery2();
         break;
+
+// OpenDroneID Send Messages
+#if AP_OPENDRONEID_ENABLED
+    case MSG_OPEN_DRONE_ID_BASIC_ID:
+        send_open_drone_id_basic_id();
+        break;
+
+    case MSG_OPEN_DRONE_ID_LOCATION:
+        send_open_drone_id_location();
+        break;
+
+    case MSG_OPEN_DRONE_ID_SYSTEM:
+        send_open_drone_id_system();
+        break;
+
+    case MSG_OPEN_DRONE_ID_OPERATOR_ID:
+        send_open_drone_id_operator_id();
+        break;
+#endif
 
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
