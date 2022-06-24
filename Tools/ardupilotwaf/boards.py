@@ -563,6 +563,10 @@ class sitl(Board):
                 '-O3',
             ]
 
+        if cfg.env.OPTIONS['minimize']:
+            cfg.define('HAL_MINIMIZE_FEATURES', 1)
+            cfg.env.DISABLE_SCRIPTING = 1
+
         if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
             env.CXXFLAGS += [
                 '-fsanitize=address',
