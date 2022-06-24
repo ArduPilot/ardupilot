@@ -19,6 +19,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_SITL.h"
 
+#if HAL_WITH_DSP
+
 #include <complex>
 
 typedef std::complex<float> complexf;
@@ -55,3 +57,5 @@ private:
     void vector_add_float(const float* vin1, const float* vin2, float* vout, uint16_t len) const override;
     void calculate_fft(complexf* f, uint16_t length);
 };
+
+#endif
