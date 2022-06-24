@@ -125,6 +125,11 @@ def options(opt):
         default=False,
         help='Configure as debug variant.')
 
+    g.add_option('--minimize',
+        action='store_true',
+        default=False,
+        help='Build SITL with HAL_MINIMIZE_FEATURES')
+
     g.add_option('--disable-watchdog',
         action='store_true',
         default=False,
