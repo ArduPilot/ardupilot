@@ -514,7 +514,13 @@ include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
 
-
+include AP_Mount/AP_Mount.h
+singleton AP_Mount rename mount
+singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t 0 UINT8_MAX
+singleton AP_Mount method set_mode void uint8_t 0 UINT8_MAX MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
+singleton AP_Mount method set_angle_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
+singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
+singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
 
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write
