@@ -21,6 +21,15 @@ void AC_PrecLand_SITL::update()
         _los_meas_body =  body_to_ned.mul_transpose(-position).tofloat();
         _distance_to_target = _sitl->precland_sim.option_enabled(SITL::SIM_Precland::Option::ENABLE_TARGET_DISTANCE) ? _los_meas_body.length() : 0.0f;
         _los_meas_body /= _los_meas_body.length();
+
+        if (_frontend._orient != Rotation::ROTATION_PITCH_270) {
+            // rotate body frame vector based on orientation
+            // this is done to have homogeneity among backends
+            // frontend rotates it back to get correct body frame vector
+            _los_meas_body.rotate_inverse(_frontend._orient);
+            _los_meas_body.rotate_inverse(ROTATION_PITCH_90);
+        }
+
         _have_los_meas = true;
         _los_meas_time_ms = _sitl->precland_sim.last_update_ms();
     } else {
