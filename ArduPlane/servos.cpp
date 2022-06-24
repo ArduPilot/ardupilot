@@ -886,6 +886,8 @@ void Plane::set_servos(void)
     // slew rate limit throttle
     throttle_slew_limit(SRV_Channel::k_throttle);
 
+    const float base_throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+
     if (!arming.is_armed()) {
         //Some ESCs get noisy (beep error msgs) if PWM == 0.
         //This little segment aims to avoid this.
@@ -912,7 +914,7 @@ void Plane::set_servos(void)
     }
 
     float override_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
-    if (g2.ice_control.throttle_override(override_pct)) {
+    if (g2.ice_control.throttle_override(override_pct, base_throttle)) {
         // the ICE controller wants to override the throttle for starting, idle, or redline
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
 #if HAL_QUADPLANE_ENABLED
