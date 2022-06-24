@@ -306,11 +306,8 @@ public:
     static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt);
     static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float dt){ return input_shaping_angle(error_angle,  input_tc,  accel_max,  target_ang_vel,  0.0f,  0.0f,  dt); }
 
-    // limits the acceleration and deceleration of a velocity request
-    static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt);
-
-    // calculates the accleration correction from an rate error. The angular acceleration and deceleration is limited.
-    static float input_shaping_rate(float error_rate, float input_tc, float accel_max, float target_ang_vel, float dt);
+    // Shapes the velocity request based on a rate time constant. The angular acceleration and deceleration is limited.
+    static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt, float input_tc);
 
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
