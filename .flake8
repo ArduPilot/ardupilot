@@ -1,5 +1,5 @@
 [flake8]
-ignore =
+extend-ignore =
     # H301: one import per line
     H301,
     # H306: imports not in alphabetical order (time, os)
@@ -14,5 +14,10 @@ ignore =
     E203,
     # E221 multiple spaces before operator
     E221
+
+extend-exclude =
+    build,
+    modules,
+    .git
 
 max-line-length = 127
