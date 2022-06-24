@@ -497,6 +497,7 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_NAV_CONTROLLER_OUTPUT,
     MSG_FENCE_STATUS,
     MSG_POSITION_TARGET_GLOBAL_INT,
+    MSG_POSITION_TARGET_LOCAL_NED,
 };
 static const ap_message STREAM_POSITION_msgs[] = {
     MSG_LOCATION,
