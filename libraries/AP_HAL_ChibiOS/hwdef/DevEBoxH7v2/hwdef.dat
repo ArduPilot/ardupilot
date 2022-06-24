@@ -16,8 +16,6 @@ STM32_ST_USE_TIMER 2
 # reserve 256 bytes for comms between app and bootloader
 RAM_RESERVE_START 256
 
-define NO_DATAFLASH TRUE
-
 FLASH_SIZE_KB 128
 FLASH_RESERVE_START_KB 0
 
