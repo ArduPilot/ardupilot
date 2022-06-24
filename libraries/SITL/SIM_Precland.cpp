@@ -123,14 +123,13 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
             static_cast<int32_t>(_origin_lon * 1.0e7f),
             static_cast<int32_t>(_origin_height),
             Location::AltFrame::ABOVE_HOME);
-    Vector3f centerf;
-    if (!origin_center.get_vector_from_origin_NEU(centerf)) {
+    Vector2f centerf;
+    if (!origin_center.get_vector_xy_from_origin_NE(centerf)) {
         _healthy = false;
         return;
     }
     centerf = centerf * 0.01f;        // cm to m
-    centerf.z = -centerf.z;           // neu to ned
-    Vector3d center(centerf.x, centerf.y, centerf.z);   // convert to make the further vector operations easy
+    Vector3d center(centerf.x, centerf.y, -_origin_height);   // convert to make the further vector operations easy
 
     // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
     Vector3d axis{1, 0, 0};
