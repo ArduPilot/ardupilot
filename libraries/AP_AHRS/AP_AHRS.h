@@ -155,6 +155,10 @@ public:
     // returns false if estimate is unavailable
     bool airspeed_vector_true(Vector3f &vec) const;
 
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+    // returns false if the data is unavailable
+    bool airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+
     // return true if airspeed comes from an airspeed sensor, as
     // opposed to an IMU estimate
     bool airspeed_sensor_enabled(void) const;
