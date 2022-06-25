@@ -87,7 +87,7 @@ extern const AP_HAL::HAL &hal;
 #define PSI_RANGE_DEFAULT 1.0f
 #endif
 
-#define OPTIONS_DEFAULT AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE | AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE
+#define OPTIONS_DEFAULT AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE | AP_Airspeed::OptionsMask::ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE | AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
@@ -188,9 +188,9 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 #ifndef HAL_BUILD_AP_PERIPH
     // @Param: _OPTIONS
     // @DisplayName: Airspeed options bitmask
-    // @Description: Bitmask of options to use with airspeed. 0:Disable use based on airspeed/groundspeed mismatch (see ARSPD_WIND_MAX), 1:Automatically reenable use based on airspeed/groundspeed mismatch recovery (see ARSPD_WIND_MAX) 2:Disable voltage correction
+    // @Description: Bitmask of options to use with airspeed. 0:Disable use based on airspeed/groundspeed mismatch (see ARSPD_WIND_MAX), 1:Automatically reenable use based on airspeed/groundspeed mismatch recovery (see ARSPD_WIND_MAX) 2:Disable voltage correction, 3:Check that the airspeed is statistically consistent with the navigation EKF vehicle and wind velocity estimates using EKF3 (requires AHRS_EKF_TYPE = 3)
     // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
-    // @Bitmask: 0:SpeedMismatchDisable, 1:AllowSpeedMismatchRecovery, 2:DisableVoltageCorrection
+    // @Bitmask: 0:SpeedMismatchDisable, 1:AllowSpeedMismatchRecovery, 2:DisableVoltageCorrection, 3:UseEkf3Consistency
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 21, AP_Airspeed, _options, OPTIONS_DEFAULT),
 
@@ -209,6 +209,16 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Units: m/s
     // @User: Advanced
     AP_GROUPINFO("_WIND_WARN", 23, AP_Airspeed, _wind_warn, 0),
+
+    // @Param: _WIND_GATE
+    // @DisplayName: Re-enable Consistency Check Gate Size
+    // @Description: Number of standard deviations applied to the re-enable EKF consistency check that is used when ARSPD_OPTIONS bit position 3 is set. Larger values will make the re-enabling of the airspeed sensor faster, but increase the likelihood of re-enabling a degraded sensor.
+    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle.
+    // @Units: StdDev
+    // @Range: 0.0 10.0
+    // @User: Advanced
+    AP_GROUPINFO("_WIND_GATE", 26, AP_Airspeed, _wind_gate, 5.0f),
+
 #endif
 
 #if AIRSPEED_MAX_SENSORS > 1
@@ -292,7 +302,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     
 #endif // AIRSPEED_MAX_SENSORS
 
-    // Note that 21, 22 and 23 are used above by the _OPTIONS, _WIND_MAX and _WIND_WARN parameters.  Do not use them!!
+    // Note that 21, 22, 23 and 26 are used above by the _OPTIONS, _WIND_MAX, _WIND_WARN and _WIND_GATE parameters.  Do not use them!!
 
     // NOTE: Index 63 is used by AIRSPEED_TYPE, Do not use it!: AP_Param converts an index of 0 to 63 so that the index may be bit shifted
     AP_GROUPEND
@@ -713,6 +723,7 @@ void AP_Airspeed::Log_Airspeed()
             use           : use(i),
             healthy       : healthy(i),
             health_prob   : get_health_probability(i),
+            test_ratio    : get_test_ratio(i),
             primary       : get_primary()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
