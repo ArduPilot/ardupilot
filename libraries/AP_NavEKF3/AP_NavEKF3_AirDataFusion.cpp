@@ -68,7 +68,7 @@ void NavEKF3_core::FuseAirspeed()
         }
         SK_TAS[1] = SH_TAS[1];
 
-        if (!airDataFusionWindOnly) {
+        if (tasDataDelayed.healthy && !airDataFusionWindOnly) {
             Kfusion[0] = SK_TAS[0]*(P[0][4]*SH_TAS[2] - P[0][22]*SH_TAS[2] + P[0][5]*SK_TAS[1] - P[0][23]*SK_TAS[1] + P[0][6]*vd*SH_TAS[0]);
             Kfusion[1] = SK_TAS[0]*(P[1][4]*SH_TAS[2] - P[1][22]*SH_TAS[2] + P[1][5]*SK_TAS[1] - P[1][23]*SK_TAS[1] + P[1][6]*vd*SH_TAS[0]);
             Kfusion[2] = SK_TAS[0]*(P[2][4]*SH_TAS[2] - P[2][22]*SH_TAS[2] + P[2][5]*SK_TAS[1] - P[2][23]*SK_TAS[1] + P[2][6]*vd*SH_TAS[0]);
@@ -84,7 +84,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 0, 9);
         }
 
-        if (!inhibitDelAngBiasStates && !airDataFusionWindOnly) {
+        if (tasDataDelayed.healthy && !inhibitDelAngBiasStates && !airDataFusionWindOnly) {
             Kfusion[10] = SK_TAS[0]*(P[10][4]*SH_TAS[2] - P[10][22]*SH_TAS[2] + P[10][5]*SK_TAS[1] - P[10][23]*SK_TAS[1] + P[10][6]*vd*SH_TAS[0]);
             Kfusion[11] = SK_TAS[0]*(P[11][4]*SH_TAS[2] - P[11][22]*SH_TAS[2] + P[11][5]*SK_TAS[1] - P[11][23]*SK_TAS[1] + P[11][6]*vd*SH_TAS[0]);
             Kfusion[12] = SK_TAS[0]*(P[12][4]*SH_TAS[2] - P[12][22]*SH_TAS[2] + P[12][5]*SK_TAS[1] - P[12][23]*SK_TAS[1] + P[12][6]*vd*SH_TAS[0]);
@@ -93,7 +93,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 10, 12);
         }
 
-        if (!inhibitDelVelBiasStates && !airDataFusionWindOnly) {
+        if (tasDataDelayed.healthy && !inhibitDelVelBiasStates && !airDataFusionWindOnly) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
@@ -108,7 +108,7 @@ void NavEKF3_core::FuseAirspeed()
         }
 
         // zero Kalman gains to inhibit magnetic field state estimation
-        if (!inhibitMagStates && !airDataFusionWindOnly) {
+        if (tasDataDelayed.healthy && !inhibitMagStates && !airDataFusionWindOnly) {
             Kfusion[16] = SK_TAS[0]*(P[16][4]*SH_TAS[2] - P[16][22]*SH_TAS[2] + P[16][5]*SK_TAS[1] - P[16][23]*SK_TAS[1] + P[16][6]*vd*SH_TAS[0]);
             Kfusion[17] = SK_TAS[0]*(P[17][4]*SH_TAS[2] - P[17][22]*SH_TAS[2] + P[17][5]*SK_TAS[1] - P[17][23]*SK_TAS[1] + P[17][6]*vd*SH_TAS[0]);
             Kfusion[18] = SK_TAS[0]*(P[18][4]*SH_TAS[2] - P[18][22]*SH_TAS[2] + P[18][5]*SK_TAS[1] - P[18][23]*SK_TAS[1] + P[18][6]*vd*SH_TAS[0]);
@@ -120,7 +120,7 @@ void NavEKF3_core::FuseAirspeed()
             zero_range(&Kfusion[0], 16, 21);
         }
 
-        if (!inhibitWindStates) {
+        if (tasDataDelayed.healthy && !inhibitWindStates) {
             Kfusion[22] = SK_TAS[0]*(P[22][4]*SH_TAS[2] - P[22][22]*SH_TAS[2] + P[22][5]*SK_TAS[1] - P[22][23]*SK_TAS[1] + P[22][6]*vd*SH_TAS[0]);
             Kfusion[23] = SK_TAS[0]*(P[23][4]*SH_TAS[2] - P[23][22]*SH_TAS[2] + P[23][5]*SK_TAS[1] - P[23][23]*SK_TAS[1] + P[23][6]*vd*SH_TAS[0]);
         } else {
@@ -135,7 +135,7 @@ void NavEKF3_core::FuseAirspeed()
         tasTestRatio = sq(innovVtas) / (sq(MAX(0.01f * (ftype)frontend->_tasInnovGate, 1.0f)) * varInnovVtas);
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
-        bool tasHealth = ((tasTestRatio < 1.0f) || badIMUdata);
+        const bool tasHealth = tasDataDelayed.healthy && ((tasTestRatio < 1.0f) || badIMUdata);
         tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
         if (!tasHealth) {
             lastTasFailTime_ms = imuSampleTime_ms;
@@ -189,11 +189,10 @@ void NavEKF3_core::FuseAirspeed()
                 }
             }
         }
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
     }
-
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-    ForceSymmetry();
-    ConstrainVariances();
 }
 
 // select fusion of true airspeed measurements
