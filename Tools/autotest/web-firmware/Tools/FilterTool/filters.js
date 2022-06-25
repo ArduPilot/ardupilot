@@ -478,6 +478,19 @@ async function load_parameters(file) {
                 }
             }
         }
+        if (line.startsWith("ATC_RAT_RLL_FLTD") ||
+           line.startsWith("Q_A_RAT_RLL_FLTD")) {
+            var fvar = document.getElementById("FLTD");
+            if (fvar) {
+                v = line.split(/[\s,=\t]+/);
+                if (v.length >= 2) {
+                    var vname = v[0];
+                    var value = v[1];
+                    fvar.value = value;
+                    console.log("set FLTD=" + value);
+                }
+            }
+        }
     }
     fill_docs();
     calculate_filter();
