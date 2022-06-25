@@ -136,6 +136,7 @@ public:
         ON_FAILURE_AHRS_WIND_MAX_DO_DISABLE                   = (1<<0),   // If set then use airspeed failure check
         ON_FAILURE_AHRS_WIND_MAX_RECOVERY_DO_REENABLE         = (1<<1),   // If set then automatically enable the airspeed sensor use when healthy again.
         DISABLE_VOLTAGE_CORRECTION                            = (1<<2),
+        USE_EKF_CONSISTENCY                                   = (1<<3),
     };
 
     enum airspeed_type {
@@ -183,6 +184,7 @@ private:
     AP_Int32 _options;    // bitmask options for airspeed
     AP_Float _wind_max;
     AP_Float _wind_warn;
+    AP_Float _wind_gate;
 
     struct {
         AP_Float offset;
@@ -225,6 +227,7 @@ private:
         struct {
             uint32_t last_check_ms;
             float health_probability;
+            float test_ratio;
             int8_t param_use_backup;
             uint32_t last_warn_ms;
         } failures;
@@ -252,6 +255,14 @@ private:
     }
     float get_health_probability(void) const {
         return get_health_probability(primary);
+    }
+
+    // get the consistency test ratio
+    float get_test_ratio(uint8_t i) const {
+        return state[i].failures.test_ratio;
+    }
+    float get_test_ratio(void) const {
+        return get_test_ratio(primary);
     }
 
     void update_calibration(uint8_t i, float raw_pressure);
