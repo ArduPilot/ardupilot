@@ -10,6 +10,8 @@ APJ_BOARD_ID 1013
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
+MCU_CLOCKRATE_MHZ 480
+
 FLASH_SIZE_KB 2048
 env OPTIMIZE -Os
 
