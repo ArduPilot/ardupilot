@@ -22,11 +22,13 @@ ArduPilot 4.2 filter setup.
 
   <form id="params" action="">
 <fieldset>
-  <legend>INS Settings</legend>
+  <legend>Graph Settings</legend>
         <p>
-                <label for="GyroSampleRate">Gyro Sample Rate</label>
-                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000"/>
-	</p>
+                <input type="radio" id="ScaleLog" name="Scale" value="Log">
+                <label for="LogScale">Log Scale</label><br>
+                <input type="radio" id="ScaleLinear" name="Scale" value="Linear" checked>
+                <label for="LinearScale">Linear Scale</label><br>
+        </p>
         <p>
                 <label for="MaxFreq">Maximum Displayed Frequency</label>
                 <input id="MaxFreq" name="MaxFreq" type="number" step="1" value="150"/>
@@ -34,6 +36,13 @@ ArduPilot 4.2 filter setup.
         <p>
                 <label for="MaxPhaseLag">Maximum Displayed Phase Lag</label>
                 <input id="MaxPhaseLag" name="MaxPhaseLag" type="number" step="1" value="360"/>
+	</p>
+</fieldset>
+<fieldset>
+  <legend>INS Settings</legend>
+        <p>
+                <label for="GyroSampleRate">Gyro Sample Rate</label>
+                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000"/>
 	</p>
         <p>
                 <label for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>

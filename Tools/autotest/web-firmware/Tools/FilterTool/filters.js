@@ -320,13 +320,30 @@ function calculate_filter() {
     samples /= Math.max(1, freq_max/150.0);
     // console.log("samples: " + samples)
 
+    var scale = document.getElementById("ScaleLog");
+    var use_dB = scale.checked;
     var attenuation = []
     var phase_lag = []
     var max_phase_lag = 0.0;
     var phase_wrap = 0.0;
+    var min_atten = 0.0;
+    var max_atten = 1.0;
+    var atten_string = "Attenuation";
+    if (use_dB) {
+        max_atten = 0;
+        min_atten = -10;
+        atten_string = "Attenuation (dB)";
+    }
     for (freq=1; freq<=freq_max; freq++) {
         var v = run_filters(filters, freq, sample_rate, samples);
-        attenuation.push({x:freq, y:v[0]});
+        var aten = v[0];
+        if (use_dB) {
+            // show power in decibels
+            aten = 20 * Math.log10(aten);
+        }
+        min_atten = Math.min(min_atten, aten);
+        max_atten = Math.max(max_atten, aten);
+        attenuation.push({x:freq, y:aten});
         var phase = v[1] + phase_wrap;
         if (phase < max_phase_lag-100) {
             // we have wrapped
@@ -344,6 +361,9 @@ function calculate_filter() {
         chart.data.datasets[0].data = attenuation;
         chart.data.datasets[1].data = phase_lag;
         chart.options.scales.xAxes[0].ticks.max = freq_max;
+        chart.options.scales.yAxes[0].ticks.min = min_atten
+        chart.options.scales.yAxes[0].ticks.max = max_atten;
+        chart.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
         chart.options.scales.yAxes[1].ticks.min = -max_phase_lag;
         chart.options.scales.yAxes[1].ticks.max = 0;
         chart.update();
@@ -379,10 +399,10 @@ function calculate_filter() {
                 scales: {
                     yAxes: [
                         {
-                            scaleLabel: { display: true, labelString: "Attenuation" },
+                            scaleLabel: { display: true, labelString: atten_string },
                             id: 'Attenuation',
                             position: 'left',
-                            ticks: {min:0, max:1.0, stepSize:0.1}
+                            ticks: {min:min_atten, max:max_atten, stepSize:0.1}
                         },
                         {
                             scaleLabel: { display: true, labelString: "Phase Lag(deg)" },
@@ -479,7 +499,7 @@ async function load_parameters(file) {
             }
         }
         if (line.startsWith("ATC_RAT_RLL_FLTD") ||
-           line.startsWith("Q_A_RAT_RLL_FLTD")) {
+            line.startsWith("Q_A_RAT_RLL_FLTD")) {
             var fvar = document.getElementById("FLTD");
             if (fvar) {
                 v = line.split(/[\s,=\t]+/);
