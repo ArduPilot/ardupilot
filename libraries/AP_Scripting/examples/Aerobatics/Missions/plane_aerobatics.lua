@@ -1,7 +1,7 @@
 --[[ perform simple aerobatic manoeuvres in AUTO mode
 cmd = 1: axial rolls, arg1 = roll rate dps, arg2 = number of rolls
 cmd = 2: loops or 180deg return, arg1 = pitch rate dps, arg2 = number of loops, if zero do a 1/2 cuban8-like return
-cmd = 3: rolling circle, arg1 = radius, arg2 = number of rolls
+cmd = 3: rolling circle, arg1 = earth frame yaw rate, dps, arg2 = roll rate, dps
 cmd = 4: knife edge at any angle, arg1 = roll angle to hold, arg2 = duration
 cmd = 5: pause, holding heading and alt to allow stabilization after a move, arg1 = duration in seconds
 ]]--
@@ -342,7 +342,7 @@ local rolling_circle_yaw = 0
 local rolling_circle_last_ms = 0
 
 function do_rolling_circle(arg1, arg2)
-   -- constant roll rate circle roll, arg1 radius of circle, positive to right, neg to left, arg2 is number of rolls to do
+   -- constant roll rate circle roll, arg1 = earth frame yaw rate, dps, positive to right, neg to left, arg2 = roll rate, dps
    if not running then
       running = true
       rolling_circle_stage = 0
