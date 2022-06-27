@@ -154,7 +154,7 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 define STM32_PWM_USE_ADVANCED TRUE
 
 # FFT option (disabled by default)
-# define HAL_WITH_DSP 1
+# define HAL_GYROFFT_ENABLED 1
 # define AC_OAPATHPLANNER_ENABLED 0
 
 # EK2 options (disabled by default)
