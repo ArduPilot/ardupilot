@@ -1467,7 +1467,8 @@ class AutoTest(ABC):
                  reset_after_every_test=False,
                  sitl_32bit=False,
                  ubsan=False,
-                 ubsan_abort=False):
+                 ubsan_abort=False,
+                 build_opts={}):
 
         self.start_time = time.time()
         global __autotest__ # FIXME; make progress a non-staticmethod
@@ -1495,6 +1496,7 @@ class AutoTest(ABC):
         self.sitl_32bit = sitl_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
+        self.build_opts = build_opts
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
@@ -4991,6 +4993,32 @@ class AutoTest(ABC):
         for p in dead.parameters:
             dead_parameters_dict[p[0]] = p[1]
         self.set_parameters(dead_parameters_dict, add_to_context=False)
+
+        if getattr(self, "old_binary", None) is not None:
+            self.stop_SITL()
+            with open(self.binary, "wb") as f:
+                f.write(self.old_binary)
+                f.close()
+            self.start_SITL(wipe=False)
+            self.set_streamrate(self.sitl_streamrate())
+
+    def context_start_custom_binary(self, extra_defines={}):
+        # grab copy of current binary:
+        context = self.context_get()
+        if getattr(context, "old_binary", None) is not None:
+            raise ValueError("Not nestable at the moment")
+        with open(self.binary, "rb") as f:
+            self.old_binary = f.read()
+            f.close()
+        build_opts = copy.copy(self.build_opts)
+        build_opts["extra_defines"] = extra_defines
+        util.build_SITL(
+            'bin/arducopter', # FIXME!
+            **build_opts,
+        )
+        self.stop_SITL()
+        self.start_SITL(wipe=False)
+        self.set_streamrate(self.sitl_streamrate())
 
     class Context(object):
         def __init__(self, testsuite):
