@@ -1,0 +1,1 @@
+define HAL_MINIMIZE_FEATURES 1

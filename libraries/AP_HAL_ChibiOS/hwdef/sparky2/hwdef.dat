@@ -137,4 +137,4 @@ define HAL_LOGGING_DATAFLASH_ENABLED 1
 define STM32_PWM_USE_ADVANCED TRUE
 
 # we are low on flash on this board
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc
