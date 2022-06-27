@@ -20,3 +20,6 @@ define HAL_SPRAYER_ENABLED 0
 
 # RunCam control isn't available on smaller boards
 define HAL_RUNCAM_ENABLED 0
+
+# disable use of onboard FFT library:
+define HAL_GYROFFT_ENABLED 0
