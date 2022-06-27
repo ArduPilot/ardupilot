@@ -1,6 +1,6 @@
 Rover Release Notes:
 ------------------------------------------------------------------
-Rover 4.2.2-rc1 21-Jun-2022
+Rover 4.2.2 28-Jun-2022 / 4.2.2-rc1 21-Jun-2022
 Changes from 4.2.1
 1) MambaH743v4 and MambaF405 MK4 autopilot support
 2) Second full harmonic notches available (see INS_HNTC2_ parameters)
