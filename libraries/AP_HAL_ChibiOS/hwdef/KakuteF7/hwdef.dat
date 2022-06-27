@@ -158,7 +158,7 @@ define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
-define HAL_MINIMIZE_FEATURES 1
+include ../include/minimize_features.inc
 
 
 # reduce max size of embedded params for apj_tool.py
