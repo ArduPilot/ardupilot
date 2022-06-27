@@ -2243,7 +2243,7 @@ void GCS::setup_uarts()
             frsky = nullptr;
         }
     }
-#if !HAL_MINIMIZE_FEATURES
+#if AP_LTM_TELEM_ENABLED
     ltm_telemetry.init();
 #endif
 
