@@ -563,6 +563,10 @@ arducopter and upload it to my board".
         action='store_true',
         help='Output all test programs.')
 
+    g.add_option('--define',
+        action='append',
+        help='Add C++ define to build.')
+
     g = opt.ap_groups['clean']
 
     g.add_option('--clean-all-sigs',
