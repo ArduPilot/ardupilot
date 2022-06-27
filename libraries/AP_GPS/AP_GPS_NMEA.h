@@ -80,6 +80,7 @@ private:
         _GPS_SENTENCE_PHD = 138, // extension for AllyStar GPS modules
         _GPS_SENTENCE_THS = 160, // True heading with quality indicator, available on Trimble MB-Two
         _GPS_SENTENCE_KSXT = 170, // extension for Unicore, 21 fields
+        _GPS_SENTENCE_HPR = 200, // extension for hemisphere GPS modules
         _GPS_SENTENCE_OTHER = 0
     };
 
@@ -147,6 +148,9 @@ private:
     uint8_t _new_satellite_count;                       ///< satellite count parsed from a term
     uint8_t _new_quality_indicator;                                     ///< GPS quality indicator parsed from a term
 
+    //add HPR terms 
+    int32_t _new_yaw;
+
     uint32_t _last_RMC_ms;
     uint32_t _last_GGA_ms;
     uint32_t _last_VTG_ms;
@@ -199,9 +203,12 @@ private:
 
 #define AP_GPS_NMEA_HEMISPHERE_INIT_STRING \
         "$JATT,NMEAHE,0\r\n" /* Prefix of GP on the HDT message */      \
+        "$JATT,GYROAID,YES\r\n" /* Enable GYRO */                       \
+        "$JATT,TILTAID,YES\r\n" /* Enable TILT */                       \
         "$JASC,GPGGA,5\r\n" /* GGA at 5Hz */                            \
         "$JASC,GPRMC,5\r\n" /* RMC at 5Hz */                            \
         "$JASC,GPVTG,5\r\n" /* VTG at 5Hz */                            \
         "$JASC,GPHDT,5\r\n" /* HDT at 5Hz */                            \
+        "$JASC,GPHPR,5\r\n" /* HPR at 5Hz */                            \
         "$JMODE,SBASR,YES\r\n" /* Enable SBAS */
 #endif

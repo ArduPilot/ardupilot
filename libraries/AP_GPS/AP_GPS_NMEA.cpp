@@ -398,6 +398,13 @@ bool AP_GPS_NMEA::_term_complete()
                         state.gps_yaw_configured = true;
                     }
                     break;
+                case _GPS_SENTENCE_HPR:
+                    _last_yaw_ms = now;
+                    state.gps_yaw = wrap_360(_new_yaw * 0.01f);
+                    state.have_gps_yaw = true;
+                    state.gps_yaw_time_ms = AP_HAL::millis();
+                    state.gps_yaw_configured = true;
+                    break;
                 }
             } else {
                 switch (_sentence_type) {
@@ -417,6 +424,15 @@ bool AP_GPS_NMEA::_term_complete()
         }
         // we got a bad message, ignore it
         return false;
+    }
+
+    if(_term_number == 1){
+        /* special case for $HPR*/
+        if(strcmp(_term,"HPR") == 0){
+            _sentence_type = _GPS_SENTENCE_HPR;
+            _gps_data_good = true;
+            return false;
+        }
     }
 
     // the first term determines the sentence type
@@ -499,6 +515,9 @@ bool AP_GPS_NMEA::_term_complete()
         case _GPS_SENTENCE_RMC + 9: // Date (GPRMC)
             _new_date = atol(_term);
             break;
+        case _GPS_SENTENCE_HPR + 2: //Time (HPR)
+            _new_time = _parse_decimal_100(_term);
+            break;
 
         // location
         //
@@ -559,6 +578,9 @@ bool AP_GPS_NMEA::_term_complete()
             break;
         case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 22: // PHD message, fields
             _ksxt.fields[_term_number-1] = atof(_term);
+            break;
+        case _GPS_SENTENCE_HPR + 3: // GPHPR   
+            _new_yaw = _parse_decimal_100(_term);
             break;
         }
     }
