@@ -342,7 +342,7 @@ local rolling_circle_yaw = 0
 local rolling_circle_last_ms = 0
 
 function do_rolling_circle(arg1, arg2)
-   -- constant roll rate circle roll, arg1 = angular rate circle dps, positive to right, neg to left, arg2 = roll rate dps
+   -- constant roll rate circle roll, arg1 = earth frame yaw rate, dps, positive to right, neg to left, arg2 = roll rate, dps
    if not running then
       running = true
       rolling_circle_stage = 0
