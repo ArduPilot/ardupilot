@@ -32,20 +32,20 @@ public:
 
     // constructor creates a quaternion equivalent
     // to roll=0, pitch=0, yaw=0
-    QuaternionT<T>()
+    QuaternionT()
     {
         q1 = 1;
         q2 = q3 = q4 = 0;
     }
 
     // setting constructor
-    QuaternionT<T>(const T _q1, const T _q2, const T _q3, const T _q4) :
+    QuaternionT(const T _q1, const T _q2, const T _q3, const T _q4) :
         q1(_q1), q2(_q2), q3(_q3), q4(_q4)
     {
     }
 
     // setting constructor
-    QuaternionT<T>(const T _q[4]) :
+    QuaternionT(const T _q[4]) :
         q1(_q[0]), q2(_q[1]), q3(_q[2]), q4(_q[3])
     {
     }
