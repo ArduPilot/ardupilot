@@ -53,6 +53,7 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
     }
     r.file_ofs = 0;
     r.open = true;
+    r.with_defaults = false;
     r.start = 0;
     r.count = 0;
     r.read_size = 0;
@@ -94,6 +95,18 @@ int AP_Filesystem_Param::open(const char *fname, int flags, bool allow_absolute_
             c = strchr(c, '&');
             continue;
         }
+#if AP_PARAM_DEFAULTS_ENABLED
+        if (strncmp(c, "withdefaults=", 13) == 0) {
+            uint32_t v = strtoul(c+13, nullptr, 10);
+            if (v > 1) {
+                goto failed;
+            }
+            r.with_defaults = v == 1;
+            c += 13;
+            c = strchr(c, '&');
+            continue;
+        }
+#endif
     }
 
     return idx;
@@ -128,18 +141,18 @@ int AP_Filesystem_Param::close(int fd)
 /*
   packed format:
     file header:
-      uint16_t magic = 0x671b
+      uint16_t magic = 0x671b or  0x671c for included default values
       uint16_t num_params
       uint16_t total_params
 
     per-parameter:
 
     uint8_t type:4;         // AP_Param type NONE=0, INT8=1, INT16=2, INT32=3, FLOAT=4
-    uint8_t flags:4;        // for future use
+    uint8_t flags:4;        // bit 0: includes default value for this param
     uint8_t common_len:4;   // number of name bytes in common with previous entry, 0..15
     uint8_t name_len:4;     // non-common length of param name -1 (0..15)
     uint8_t name[name_len]; // name
-    uint8_t data[];         // value, length given by variable type
+    uint8_t data[];         // value, length given by variable type, data length doubled if default is included
 
     Any leading zero bytes after the header should be discarded as pad
     bytes. Pad bytes are used to ensure that a parameter data[] field
@@ -155,18 +168,19 @@ uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c,
     name[AP_MAX_NAME_SIZE] = 0;
     enum ap_var_type ptype;
     AP_Param *ap;
+    float default_val;
 
     if (c.token_ofs == 0) {
         c.idx = 0;
-        ap = AP_Param::first(&c.token, &ptype);
+        ap = AP_Param::first(&c.token, &ptype, &default_val);
         uint16_t idx = 0;
         while (idx < r.start && ap) {
-            ap = AP_Param::next_scalar(&c.token, &ptype);
+            ap = AP_Param::next_scalar(&c.token, &ptype, &default_val);
             idx++;
         }
     } else {
         c.idx++;
-        ap = AP_Param::next_scalar(&c.token, &ptype);
+        ap = AP_Param::next_scalar(&c.token, &ptype, &default_val);
     }
     if (ap == nullptr || (r.count && c.idx >= r.count)) {
         return 0;
@@ -187,9 +201,14 @@ uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c,
         common_len--;
         pname--;
     }
+#if AP_PARAM_DEFAULTS_ENABLED
+    const bool add_default = r.with_defaults && !is_equal(ap->cast_to_float(ptype), default_val);
+#else
+    const bool add_default = false;
+#endif
     const uint8_t type_len = AP_Param::type_size(ptype);
-    uint8_t packed_len = type_len + name_len + 2;
-    const uint8_t flags = 0;
+    uint8_t packed_len = type_len + name_len + 2 + (add_default ? type_len : 0);
+    const uint8_t flags = add_default;
 
     /*
       see if we need to add padding to ensure that a data field never
@@ -211,6 +230,36 @@ uint8_t AP_Filesystem_Param::pack_param(const struct rfile &r, struct cursor &c,
     buf[1] = common_len | ((name_len-1)<<4);
     memcpy(&buf[2], pname, name_len);
     memcpy(&buf[2+name_len], ap, type_len);
+#if AP_PARAM_DEFAULTS_ENABLED
+    if (add_default) {
+        switch (ptype) {
+            case AP_PARAM_NONE:
+            case AP_PARAM_GROUP:
+                // should never happen...
+                break;
+            case AP_PARAM_INT8: {
+                const int32_t int8_default = default_val;
+                memcpy(&buf[2+name_len+type_len], &int8_default, type_len);
+                break;
+            }
+            case AP_PARAM_INT16: {
+                const int16_t int16_default = default_val;
+                memcpy(&buf[2+name_len+type_len], &int16_default, type_len);
+                break;
+            }
+            case AP_PARAM_INT32: {
+                const int32_t int32_default = default_val;
+                memcpy(&buf[2+name_len+type_len], &int32_default, type_len);
+                break;
+            }
+            case AP_PARAM_FLOAT:
+            case AP_PARAM_VECTOR3F: {
+                memcpy(&buf[2+name_len+type_len], &default_val, type_len);
+                break;
+            }
+        }
+    }
+#endif
 
     strcpy(c.last_name, name);
 
@@ -306,6 +355,9 @@ int32_t AP_Filesystem_Param::read(int fd, void *buf, uint32_t count)
             hdr.num_params = r.count;
         }
         uint8_t n = MIN(sizeof(hdr) - r.file_ofs, count);
+        if (r.with_defaults) {
+            hdr.magic = pmagic_with_default;
+        }
         const uint8_t *b = (const uint8_t *)&hdr;
         memcpy(buf, &b[r.file_ofs], n);
         count -= n;
