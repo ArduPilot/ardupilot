@@ -111,8 +111,10 @@ bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reaso
 // dummy method to avoid linking AP_Avoidance
 // AP_Avoidance *AP::ap_avoidance() { return nullptr; }
 
+#if AP_LTM_TELEM_ENABLED
 // avoid building/linking LTM:
 void AP_LTM_Telem::init() {};
+#endif
 #if AP_DEVO_TELEM_ENABLED
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
