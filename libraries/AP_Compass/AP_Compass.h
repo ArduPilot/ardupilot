@@ -601,6 +601,18 @@ private:
     bool init_done;
 
     uint8_t _first_usable; // first compass usable based on COMPASSx_USE param
+
+    struct I2CCompassProbeSpec {
+        Compass::DriverType driver_type;
+        AP_Compass_Backend* (*probefn)(AP_HAL::OwnPtr<AP_HAL::I2CDevice>, bool external, Rotation rot);
+        uint32_t bus_mask;
+        uint8_t addr;
+        bool is_external;
+        Rotation rotation;
+    };
+
+    void probe_specs(const I2CCompassProbeSpec *specs, uint8_t nspec, bool all_external);
+
 };
 
 namespace AP {
