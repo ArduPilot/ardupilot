@@ -175,7 +175,7 @@ define HAL_DEFAULT_AIRSPEED_PIN 10
 
 # -------reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
-define HAL_WITH_DSP FALSE
+define HAL_GYROFFT_ENABLED 0
 
 # --------------------- save flash ----------------------
 # save some flash
