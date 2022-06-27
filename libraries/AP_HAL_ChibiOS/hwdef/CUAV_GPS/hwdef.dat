@@ -130,8 +130,6 @@ define CAN_APP_NODE_NAME "org.ardupilot.cuav_gps"
 
 define HAL_NO_MONITOR_THREAD
 
-define HAL_MINIMIZE_FEATURES 0
-
 
 define HAL_DEVICE_THREAD_STACK 768
 

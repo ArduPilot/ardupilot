@@ -103,8 +103,6 @@ define IO_THD_WA_SIZE      300
 
 define HAL_NO_MONITOR_THREAD
 
-define HAL_MINIMIZE_FEATURES 0
-
 
 # only one I2C bus
 I2C_ORDER I2C1
