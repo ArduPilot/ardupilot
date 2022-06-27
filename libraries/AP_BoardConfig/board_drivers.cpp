@@ -71,25 +71,8 @@ void AP_BoardConfig::board_init_debug()
 
 AP_BoardConfig::px4_board_type AP_BoardConfig::px4_configured_board;
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-extern "C" {
-    int fmu_main(int, char **);
-};
-#endif
-
 void AP_BoardConfig::board_setup_drivers(void)
 {
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
-    /*
-      this works around an issue with some FMUv4 hardware (eg. copies
-      of the Pixracer) which have incorrect components leading to
-      sensor brownout on boot
-     */
-    if (px4_start_driver(fmu_main, "fmu", "sensor_reset 20")) {
-        printf("FMUv4 sensor reset complete\n");
-    }
-#endif
-
     if (state.board_type == PX4_BOARD_OLDDRIVERS) {
         printf("Old drivers no longer supported\n");
         state.board_type = PX4_BOARD_AUTO;
@@ -297,7 +280,7 @@ void AP_BoardConfig::validate_board_type(void)
        cook the IMUs if the user uses an old paramater file. We
        override the board type for that specific case
      */
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(HAL_CHIBIOS_ARCH_FMUV3)
+#if defined(HAL_CHIBIOS_ARCH_FMUV3)
     if (state.board_type == PX4_BOARD_PIXHAWK &&
         (spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250) ||
@@ -309,17 +292,13 @@ void AP_BoardConfig::validate_board_type(void)
         // Pixhawk2 has LSM303D and MPUxxxx on external bus. If we
         // detect those, then force PIXHAWK2, even if the user has
         // configured for PIXHAWK1
-#if !defined(CONFIG_ARCH_BOARD_PX4FMU_V3) && !defined(HAL_CHIBIOS_ARCH_FMUV3)
+#if !defined(HAL_CHIBIOS_ARCH_FMUV3)
         // force user to load the right firmware
         config_error("Pixhawk2 requires FMUv3 firmware");        
 #endif
         state.board_type.set(PX4_BOARD_PIXHAWK2);
         DEV_PRINTF("Forced PIXHAWK2\n");
     }
-#endif
-
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO)
-	// Nothing to do for the moment
 #endif
 }
 
@@ -344,12 +323,7 @@ void AP_BoardConfig::board_autodetect(void)
         return;
     }
 
-#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-    // only one choice
-    state.board_type.set(PX4_BOARD_PX4V1);
-    DEV_PRINTF("Detected PX4v1\n");
-
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2) || defined(HAL_CHIBIOS_ARCH_FMUV3)
+#if defined(HAL_CHIBIOS_ARCH_FMUV3)
     if ((spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu6000_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
          spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU60X0) ||
@@ -380,7 +354,7 @@ void AP_BoardConfig::board_autodetect(void)
     } else {
         config_error("Unable to detect board type");
     }
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4) || defined(HAL_CHIBIOS_ARCH_FMUV4)
+#elif defined(HAL_CHIBIOS_ARCH_FMUV4)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     DEV_PRINTF("Detected Pixracer\n");
@@ -388,38 +362,29 @@ void AP_BoardConfig::board_autodetect(void)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
     DEV_PRINTF("Detected MindPX-V2\n");
-#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4PRO) || defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
+#elif defined(HAL_CHIBIOS_ARCH_FMUV4PRO)
     // only one choice
     state.board_type.set_and_notify(PX4_BOARD_PIXHAWK_PRO);
     DEV_PRINTF("Detected Pixhawk Pro\n");	
-#elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
-    state.board_type.set_and_notify(PX4_BOARD_AEROFC);
-    DEV_PRINTF("Detected Aero FC\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV5)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     DEV_PRINTF("Detected FMUv5\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV6)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     DEV_PRINTF("Detected FMUv6\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V51) || defined(HAL_CHIBIOS_ARCH_BRAINV51)
+#elif defined(HAL_CHIBIOS_ARCH_BRAINV51)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN51);
     DEV_PRINTF("Detected VR Brain 5.1\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52) || defined(HAL_CHIBIOS_ARCH_BRAINV52)
+#elif defined(HAL_CHIBIOS_ARCH_BRAINV52)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN52);
     DEV_PRINTF("Detected VR Brain 5.2\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V52E)
-    state.board_type.set_and_notify(VRX_BOARD_BRAIN52E);
-    DEV_PRINTF("Detected VR Brain 5.2E\n");
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V51) || defined(HAL_CHIBIOS_ARCH_UBRAINV51)
+#elif defined(HAL_CHIBIOS_ARCH_UBRAINV51)
     state.board_type.set_and_notify(VRX_BOARD_UBRAIN51);
     DEV_PRINTF("Detected VR Micro Brain 5.1\n");
-#elif defined(CONFIG_ARCH_BOARD_VRUBRAIN_V52)
-    state.board_type.set_and_notify(VRX_BOARD_UBRAIN52);
-    DEV_PRINTF("Detected VR Micro Brain 5.2\n");
-#elif defined(CONFIG_ARCH_BOARD_VRCORE_V10) || defined(HAL_CHIBIOS_ARCH_COREV10)
+#elif defined(HAL_CHIBIOS_ARCH_COREV10)
     state.board_type.set_and_notify(VRX_BOARD_CORE10);
     DEV_PRINTF("Detected VR Core 1.0\n");
-#elif defined(CONFIG_ARCH_BOARD_VRBRAIN_V54) || defined(HAL_CHIBIOS_ARCH_BRAINV54)
+#elif defined(HAL_CHIBIOS_ARCH_BRAINV54)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN54);
     DEV_PRINTF("Detected VR Brain 5.4\n");
 #endif
