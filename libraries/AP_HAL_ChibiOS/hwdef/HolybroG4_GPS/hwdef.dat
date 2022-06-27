@@ -131,8 +131,6 @@ define CAN_APP_NODE_NAME "org.ardupilot.HolybroG4_GPS"
 define HAL_NO_LOGGING
 define HAL_NO_MONITOR_THREAD
 
-define HAL_MINIMIZE_FEATURES 0
-
 define HAL_DEVICE_THREAD_STACK 768
 
 # we setup a small defaults.parm
