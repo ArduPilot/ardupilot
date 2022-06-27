@@ -58,8 +58,10 @@ void GCS_Tracker::update_vehicle_sensor_status_flags()
         MAV_SYS_STATUS_SENSOR_YAW_POSITION;
 }
 
+#if AP_LTM_TELEM_ENABLED
 // avoid building/linking LTM:
 void AP_LTM_Telem::init() {};
+#endif
 #if AP_DEVO_TELEM_ENABLED
 // avoid building/linking Devo:
 void AP_DEVO_Telem::init() {};
