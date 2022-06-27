@@ -370,6 +370,9 @@ def do_build(opts, frame_options):
     if opts.ubsan_abort:
         cmd_configure.append("--ubsan-abort")
 
+    for nv in opts.define:
+        cmd_configure.append("--define=%s" % nv)
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -967,6 +970,11 @@ group_build.add_option("", "--sitl-32bit",
                        action='store_true',
                        dest="sitl_32bit",
                        help="compile sitl using 32-bit")
+group_build.add_option("", "--configure-define",
+                       default=[],
+                       action='append',
+                       dest="define",
+                       help="create a preprocessor define")
 group_build.add_option("", "--rebuild-on-failure",
                        dest="rebuild_on_failure",
                        action='store_true',

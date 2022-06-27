@@ -9,6 +9,7 @@ Andrew Tridgell, October 2011
 from __future__ import print_function
 import atexit
 import fnmatch
+import copy
 import glob
 import optparse
 import os
@@ -39,6 +40,8 @@ from pymavlink.generator import mavtemplate
 from common import Test
 
 tester = None
+
+build_opts = None
 
 
 def buildlogs_dirpath():
@@ -454,6 +457,8 @@ def run_step(step):
     if opts.Werror:
         build_opts['extra_configure_args'].append("--Werror")
 
+    build_opts = build_opts
+
     vehicle_binary = None
     if step == 'build.Plane':
         vehicle_binary = 'bin/arduplane'
@@ -533,6 +538,7 @@ def run_step(step):
         "logs_dir": buildlogs_dirpath(),
         "sup_binaries": supplementary_binaries,
         "reset_after_every_test": opts.reset_after_every_test,
+        "build_opts": copy.copy(build_opts),
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
