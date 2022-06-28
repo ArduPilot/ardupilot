@@ -666,6 +666,7 @@ public:
     AP_Int8                 surftrak_mode;
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
+    AP_Int16                takeoff_rpm_min;
 };
 
 extern const AP_Param::Info        var_info[];

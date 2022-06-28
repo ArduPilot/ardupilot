@@ -192,6 +192,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(ekf_check,             10,     75,  84),
     SCHED_TASK(check_vibration,       10,     50,  87),
     SCHED_TASK(gpsglitch_check,       10,     50,  90),
+    SCHED_TASK(takeoff_check,         50,     50,  91),
 #if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landinggear_update,    10,     75,  93),
 #endif

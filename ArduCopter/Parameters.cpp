@@ -1143,6 +1143,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(command_model_pilot, "PILOT_Y_", 56, ParametersG2, AC_CommandModel),
 
+    // @Param: TKOFF_RPM_MIN
+    // @DisplayName: Takeoff Check RPM minimum
+    // @Description: Takeoff is not permitted until motors report at least this RPM.  Set to zero to disable check
+    // @Range: 0 10000
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_RPM_MIN", 57, ParametersG2, takeoff_rpm_min, 0),
+
     AP_GROUPEND
 };
 
