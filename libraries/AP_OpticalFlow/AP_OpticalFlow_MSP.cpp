@@ -74,7 +74,7 @@ void AP_OpticalFlow_MSP::update(void)
         state.flowRate *= -1;
 
         // we only apply yaw to flowRate as body rate comes from AHRS
-        _applyYaw(state.flowRate);
+        apply_orientation(state.flowRate);
     } else {
         // first frame received in some time so cannot calculate flow values
         state.flowRate.zero();

@@ -98,6 +98,12 @@ public:
     // last_update() - returns system time of last sensor update
     uint32_t last_update() const { return _last_update_ms; }
 
+    // get user defined sensor orientation
+    enum Rotation get_orientation() const { return (enum Rotation)_orientation.get(); }
+
+    // returns true if sensor is orientated to face upwards
+    bool upwards_orientation() const;
+
     struct OpticalFlow_state {
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
         Vector2f flowRate;          // optical flow angular rate in rad/sec measured about the X and Y body axis. A RH rotation about a sensor axis produces a positive rate.
@@ -130,9 +136,9 @@ private:
     AP_Int8  _type;                 // user configurable sensor type
     AP_Int16 _flowScalerX;          // X axis flow scale factor correction - parts per thousand
     AP_Int16 _flowScalerY;          // Y axis flow scale factor correction - parts per thousand
-    AP_Int16 _yawAngle_cd;          // yaw angle of sensor X axis with respect to vehicle X axis - centi degrees
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
     AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
+    AP_Int8 _orientation;           // sensor orientation
 
     // method called by backend to update frontend state:
     void update_state(const OpticalFlow_state &state);

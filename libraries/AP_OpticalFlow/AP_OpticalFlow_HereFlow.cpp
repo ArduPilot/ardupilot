@@ -94,8 +94,8 @@ void AP_OpticalFlow_HereFlow::_push_state(void)
                                 flowRate.y * flowScaleFactorY) * integralToRate;
     state.bodyRate = bodyRate * integralToRate;
     state.surface_quality = surface_quality;
-    _applyYaw(state.flowRate);
-    _applyYaw(state.bodyRate);
+    apply_orientation(state.flowRate);
+    apply_orientation(state.bodyRate);
     // hal.console->printf("DRV: %u %f %f\n", state.surface_quality, flowRate.length(), bodyRate.length());
     _update_frontend(state);
     new_data = false;

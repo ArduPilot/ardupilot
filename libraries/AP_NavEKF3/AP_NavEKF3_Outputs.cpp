@@ -264,7 +264,7 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 {
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
-    return !hgtTimeout && gndOffsetValid && healthy();
+    return !hgtTimeout && terrainStateValid && healthy();
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
@@ -578,7 +578,7 @@ void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
     // range finder is fitted for other applications
     float temp;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
-        temp = sqrtF(auxRngTestRatio);
+        temp = sqrtF(terrainRngTestRatio);
     } else {
         temp = 0.0f;
     }

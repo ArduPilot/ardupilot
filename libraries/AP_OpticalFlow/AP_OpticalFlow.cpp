@@ -52,15 +52,6 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_FYSCALER", 2,  OpticalFlow,    _flowScalerY,   0),
 
-    // @Param: _ORIENT_YAW
-    // @DisplayName: Flow sensor yaw alignment
-    // @Description: Specifies the number of centi-degrees that the flow sensor is yawed relative to the vehicle. A sensor with its X-axis pointing to the right of the vehicle X axis has a positive yaw angle.
-    // @Units: cdeg
-    // @Range: -17999 +18000
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ORIENT_YAW", 3,  OpticalFlow,    _yawAngle_cd,   0),
-
     // @Param: _POS_X
     // @DisplayName:  X position offset
     // @Description: X position of the optical flow sensor focal point in body frame. Positive X is forward of the origin.
@@ -92,6 +83,13 @@ const AP_Param::GroupInfo OpticalFlow::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("_ADDR", 5,  OpticalFlow, _address,   0),
+
+    // @Param: _ORIENT
+    // @DisplayName: Flow sensor orientation
+    // @Description: Flow sensor orientation
+    // @Values: 0:Downwards, 1:Downwards Yaw45, 2:Downwards Yaw90, 3:Downwards Yaw135, 4:Downwards Yaw180, 5:Downwards Yaw225, 6:Downwards Yaw270, 7:Downwards Yaw315, 8:Upwards, 9:Upwards Yaw45, 10:Upwards Yaw90, 11:Upwards Yaw135, 12:Upwards Yaw180, 13:Upwards Yaw225, 14:Upwards Yaw270, 15:Upwards Yaw315
+    // @User: Standard
+    AP_GROUPINFO("_ORIENT", 6, OpticalFlow, _orientation, 0),
 
     AP_GROUPEND
 };
@@ -226,6 +224,13 @@ void OpticalFlow::handle_msp(const MSP::msp_opflow_data_message_t &pkt)
 }
 #endif //HAL_MSP_OPTICALFLOW_ENABLED
 
+// returns true if sensor is orientated to face upwards
+bool OpticalFlow::upwards_orientation() const
+{
+    const enum Rotation orient = get_orientation();
+    return (orient >= Rotation::ROTATION_ROLL_180 && orient <= ROTATION_ROLL_180_YAW_315);
+}
+
 // start calibration
 void OpticalFlow::start_calibration()
 {
@@ -259,7 +264,8 @@ void OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _state.flowRate,
                                 _state.bodyRate,
                                 _last_update_ms,
-                                get_pos_offset());
+                                get_pos_offset(),
+                                upwards_orientation());
     Log_Write_Optflow();
 }
 

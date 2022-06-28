@@ -106,6 +106,53 @@ void NavEKF3_core::readRangeFinder(void)
     }
 }
 
+// Read upward facing range finder
+void NavEKF3_core::readRangeFinderUp()
+{
+    // return immediately if no rangefinder object
+    const auto *_rng = dal.rangefinder();
+    if (_rng == nullptr) {
+        return;
+    }
+
+    // search for upward facing rangefinder with good data
+    AP_DAL_RangeFinder_Backend* sensor = nullptr;
+    uint8_t sensorIndex;
+    bool sensorFound = false;
+    for (sensorIndex = 0; sensorIndex < RANGEFINDER_MAX_INSTANCES; sensorIndex++) {
+        sensor = _rng->get_backend(sensorIndex);
+        if ((sensor != nullptr) && (sensor->orientation() == ROTATION_PITCH_90) && (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
+            // found sensor, stop looking
+            sensorFound = true;
+            break;
+        }
+    }
+    if (!sensorFound || (sensor == nullptr)) {
+        return;
+    }
+
+    // return immediately if there has been no new sensor data
+    const uint32_t last_reading_ms = sensor->last_reading_ms();
+    if (lastRngUpMeasTime_ms == last_reading_ms) {
+        return;
+    }
+
+    // limit update rate to maximum allowed by data buffers
+    if ((last_reading_ms - lastRngUpMeasTime_ms) < frontend->sensorIntervalMin_ms) {
+        return;
+    }
+    lastRngUpMeasTime_ms = last_reading_ms;
+
+    // store reading to buffer
+    range_elements rngUpDataNew = {};
+    rngUpDataNew.rng = sensor->distance_cm() * 0.01;
+    rngUpDataNew.time_ms = last_reading_ms;
+    rngUpDataNew.sensor_idx = sensorIndex;
+
+    // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
+    storedRangeUp.push(rngUpDataNew);
+}
+
 void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vector3f &delAng, float delTime, uint32_t timeStamp_ms, uint16_t delay_ms, const Vector3f &posOffset)
 {
 #if EK3_FEATURE_BODY_ODOM
@@ -167,7 +214,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
 
 // write the raw optical flow measurements
 // this needs to be called externally.
-void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void NavEKF3_core::writeOptFlowMeas(uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, uint32_t msecFlowMeas, const Vector3f &posOffset, bool upwardsOrientation)
 {
     // limit update rate to maximum allowed by sensor buffers
     if ((imuSampleTime_ms - flowMeaTime_ms) < frontend->sensorIntervalMin_ms) {
@@ -198,6 +245,7 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor body rates for bias and write
         of_elements ofDataNew {};
+        ofDataNew.upwardsOrientation = upwardsOrientation;
         ofDataNew.bodyRadXYZ.x = rawGyroRates.x - flowGyroBias.x;
         ofDataNew.bodyRadXYZ.y = rawGyroRates.y - flowGyroBias.y;
         // the sensor interface doesn't provide a z axis rate so use the rate from the nav sensor instead

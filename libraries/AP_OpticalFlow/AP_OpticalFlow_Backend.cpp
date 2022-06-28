@@ -34,19 +34,21 @@ void OpticalFlow_backend::_update_frontend(const struct OpticalFlow::OpticalFlow
     frontend.update_state(state);
 }
 
-// apply yaw angle to a vector
-void OpticalFlow_backend::_applyYaw(Vector2f &v)
+// rotate vector based on user supplied sensor orientation
+// resulting vector will be as if sensor was pointing dowards in default orientation
+void OpticalFlow_backend::apply_orientation(Vector2f &v) const
 {
-    float yawAngleRad = _yawAngleRad();
-    if (is_zero(yawAngleRad)) {
+    // skip rotation in the most common case
+    const enum Rotation orient = frontend.get_orientation();
+    if (orient == ROTATION_NONE) {
         return;
     }
-    float cosYaw = cosf(yawAngleRad);
-    float sinYaw = sinf(yawAngleRad);
-    float x = v.x;
-    float y = v.y;
-    v.x = cosYaw * x - sinYaw * y;
-    v.y = sinYaw * x + cosYaw * y;
+
+    // create a 3D vector, rotate and then copy only the xy portions
+    Vector3f v3d{v.x, v.y, 0};
+    v3d.rotate(orient);
+    v.x = v3d.x;
+    v.y = v3d.y;
 }
 
 #endif

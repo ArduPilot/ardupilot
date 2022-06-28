@@ -317,7 +317,7 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 }
 
 // log optical flow data
-void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
+void AP_DAL::writeOptFlowMeas(uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, uint32_t msecFlowMeas, const Vector3f &posOffset, bool upwardsOrientation)
 {
     end_frame();
 
@@ -327,6 +327,7 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     _ROFH.rawGyroRates = rawGyroRates;
     _ROFH.msecFlowMeas = msecFlowMeas;
     _ROFH.posOffset = posOffset;
+    _ROFH.upwardsOrientation = upwardsOrientation;
     WRITE_REPLAY_BLOCK_IFCHANGED(ROFH, _ROFH, old);
 }
 
@@ -436,8 +437,10 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
-    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
-    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
+    if (!msg.upwardsOrientation) {
+        ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset);
+    }
+    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.upwardsOrientation);
 }
 
 /*

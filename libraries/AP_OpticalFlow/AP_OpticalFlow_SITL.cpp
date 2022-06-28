@@ -122,7 +122,7 @@ void AP_OpticalFlow_SITL::update(void)
         }
     }
 
-    _applyYaw(state.flowRate);
+    apply_orientation(state.flowRate);
     
     // copy results to front end
     _update_frontend(state);

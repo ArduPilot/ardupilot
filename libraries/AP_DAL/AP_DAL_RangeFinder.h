@@ -63,6 +63,9 @@ public:
 
     const Vector3f &get_pos_offset() const { return _RRNI.pos_offset; }
 
+    // return system time of last successful read from the sensor
+    uint32_t last_reading_ms() const { return _RRNI.last_reading_ms; }
+
     // DAL methods:
     void start_frame(AP_RangeFinder_Backend *backend);
 

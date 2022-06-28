@@ -98,6 +98,7 @@ void AP_DAL_RangeFinder_Backend::start_frame(AP_RangeFinder_Backend *backend) {
     _RRNI.status = (uint8_t)backend->status();
     _RRNI.pos_offset = backend->get_pos_offset();
     _RRNI.distance_cm = backend->distance_cm();
+    _RRNI.last_reading_ms = backend->last_reading_ms();
     WRITE_REPLAY_BLOCK_IFCHANGED(RRNI, _RRNI, old);
 }
 

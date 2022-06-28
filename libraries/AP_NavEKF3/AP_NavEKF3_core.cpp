@@ -135,6 +135,10 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     if(dal.rangefinder() && !storedRange.init(MIN(2*obs_buffer_length , imu_buffer_length))) {
         return false;
     }
+    // upward facing rangefinder
+    if(dal.rangefinder() && !storedRangeUp.init(MIN(obs_buffer_length , imu_buffer_length))) {
+        return false;
+    }
     // Note: range beacon data is read one beacon at a time and can arrive at a high rate
     if(dal.beacon() && !storedRangeBeacon.init(imu_buffer_length+1)) {
         return false;
@@ -209,7 +213,7 @@ void NavEKF3_core::InitialiseVariables()
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
-    gndHgtValidTime_ms = 0;
+    terrainValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
     lastGpsAidBadTime_ms = 0;
@@ -244,11 +248,11 @@ void NavEKF3_core::InitialiseVariables()
     memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
-    Popt = 0.0f;
+    terrainPopt = 0.0f;
     terrainState = 0.0f;
-    prevPosN = stateStruct.position.x;
-    prevPosE = stateStruct.position.y;
-    inhibitGndState = false;
+    terrainPrevPosNE.x = stateStruct.position.x;
+    terrainPrevPosNE.y = stateStruct.position.y;
+    inhibitTerrainState = false;
     flowGyroBias.x = 0;
     flowGyroBias.y = 0;
     PV_AidingMode = AID_NONE;
@@ -266,7 +270,7 @@ void NavEKF3_core::InitialiseVariables()
     windStatesAligned = false;
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
-    gndOffsetValid =  false;
+    terrainStateValid =  false;
     validOrigin = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
@@ -414,6 +418,7 @@ void NavEKF3_core::InitialiseVariables()
     storedBaro.reset();
     storedTAS.reset();
     storedRange.reset();
+    storedRangeUp.reset();
     storedOutput.reset();
     storedRangeBeacon.reset();
 #if EK3_FEATURE_BODY_ODOM
@@ -627,7 +632,7 @@ void NavEKF3_core::CovarianceInit()
 
 
     // optical flow ground height covariance
-    Popt = 0.25f;
+    terrainPopt = 0.25f;
 
 }
 
@@ -2011,9 +2016,11 @@ void NavEKF3_core::ConstrainStates()
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
     for (uint8_t i=22; i<=23; i++) statesArray[i] = constrain_ftype(statesArray[i],-100.0f,100.0f);
     // constrain the terrain state to be below the vehicle height unless we are using terrain as the height datum
-    if (!inhibitGndState) {
+    if (!inhibitTerrainState) {
         terrainState = MAX(terrainState, stateStruct.position.z + rngOnGnd);
     }
+    // constrain ceiling state to be above the vehicle
+    ceilingState = MAX(ceilingState, ceilingDistMin - stateStruct.position.z);
 }
 
 // calculate the NED earth spin vector in rad/sec

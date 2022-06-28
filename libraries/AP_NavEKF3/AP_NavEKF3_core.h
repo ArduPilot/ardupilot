@@ -246,7 +246,8 @@ public:
     // The sign convention is that a RH physical rotation of the sensor about an axis produces both a positive flow and gyro rate
     // msecFlowMeas is the scheduler time in msec when the optical flow data was received from the sensor.
     // posOffset is the XYZ flow sensor position in the body frame in m
-    void writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset);
+    // upwardsOrientation should be true if the sensor is pointing upwards
+    void writeOptFlowMeas(uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, uint32_t msecFlowMeas, const Vector3f &posOffset, bool upwardsOrientation);
 
     // retrieve latest corrected optical flow samples (used for calibration)
     bool getOptFlowSample(uint32_t& timeStamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const;
@@ -563,6 +564,7 @@ private:
         Vector2F    flowRadXYcomp;  // motion compensated XY optical flow angular rates about the XY body axes (rad/sec)
         Vector3F    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
         Vector3F    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
+        bool        upwardsOrientation; // true if optical flow sensor is facing upwards
     };
 
     struct vel_odm_elements : EKF_obs_element_t {
@@ -827,9 +829,13 @@ private:
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
+    // Estimate ceiling offset (i.e. ceiling's height above EKF origin) using an upward facing rangefinder
+    void EstimateCeilingOffset();
+
     // fuse optical flow measurements into the main filter
+    // flowNoise is the variance of of optical flow rate measurements in (rad/sec)^2
     // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
-    void FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse);
+    void FuseOptFlow(const of_elements &ofDataDelayed, ftype flowNoise, bool really_fuse);
 
     // Control filter mode changes
     void controlFilterModes();
@@ -868,6 +874,9 @@ private:
     // Read the range finder and take new measurements if available
     // Apply a median filter to range finder data
     void readRangeFinder();
+
+    // Read upward facing range finder
+    void readRangeFinderUp();
 
     // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
     void detectOptFlowTakeoff(void);
@@ -1174,23 +1183,26 @@ private:
     Vector3F gpsVelVarInnov;        // gps velocity innovation variances
     uint32_t gpsVelInnovTime_ms;    // system time that gps velocity innovations were recorded (to detect timeouts)
 
-    // variables added for optical flow fusion
+    // variables added for optical flow fusion and terrain estimation
     EKF_obs_buffer_t<of_elements> storedOF;    // OF data buffer
     bool flowDataValid;             // true while optical flow data is still fresh
-    Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
-    uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
-    uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
+    uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
     Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
-    ftype Popt;                     // Optical flow terrain height state covariance (m^2)
-    ftype terrainState;             // terrain position state (m)
-    ftype prevPosN;                 // north position at last measurement
-    ftype prevPosE;                 // east position at last measurement
-    ftype varInnovRng;              // range finder observation innovation variance (m^2)
-    ftype innovRng;                 // range finder observation innovation (m)
+    Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
+    Vector2F flowGyroBias;          // bias error of optical flow sensor gyro output
+    uint32_t terrainValidTime_ms;   // time stamp from last terrain offset state update (msec)
+    ftype terrainState;             // terrain height above EKF origin (m)
+    ftype terrainPopt;              // Optical flow terrain height state covariance (m^2)
+    Vector2F terrainPrevPosNE;      // position at last measurement in NE frame
+    Vector2F terrainFlowInnov;      // optical flow rate innovation from 1-state terrain offset estimator
+    ftype terrainRngInnov;          // range finder observation innovation (m)
+    ftype terrainRngTestRatio;      // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
+    bool inhibitTerrainState;       // true when the terrain position state is to remain constant
+    bool terrainStateValid;         // true when the ground offset state can still be considered valid
     struct {
         uint32_t timestamp_ms;      // system timestamp of last correct optical flow sample (used for calibration)
         Vector2f flowRate;          // latest corrected optical flow flow rate (used for calibration)
@@ -1198,14 +1210,20 @@ private:
         Vector2f losPred;           // EKF estimated component of flowRate that comes from vehicle movement (not rotation)
     } flowCalSample;
 
+    // variables for upward facing optical flow and ceiling state estimation
+    EKF_obs_buffer_t<range_elements> storedRangeUp; // upward range finder data buffer
+    uint32_t lastRngUpMeasTime_ms;  // system time of last upward rangefinder measurement (time from sensor)
+    uint32_t ceilingValidTime_ms;   // system time from last ceiling offset state update
+    uint32_t ceilingResetTime_ms;   // system time of last ceiling state reset
+    Vector2F ceilingPrevPosNE;      // position (in NE frame) when ceiling state was last estimated
+    uint32_t ceilingPrevPosNETime_ms;   // system time that ceilingPrevPosNE was recorded
+    ftype ceilingState;             // ceiling height above EKF origin (m)
+    ftype ceilingPopt;              // ceiling height state covariance (m^2)
+    ftype ceilingRngInnov;          // range finder observation innovation (m) calculated during ceiling state estimation
+    ftype ceilingRngTestRatio;      // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
+    const float ceilingDistMin = 0.05;  // ceiling estimate's minimum height above vehicle
+
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
-    bool inhibitGndState;           // true when the terrain position state is to remain constant
-    uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
-    Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
-    Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
-    ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
-    ftype auxRngTestRatio;          // square of range finder innovations divided by fail threshold used by main filter where >1.0 is a fail
-    Vector2F flowGyroBias;          // bias error of optical flow sensor gyro output
     bool rangeDataToFuse;           // true when valid range finder height data has arrived at the fusion time horizon.
     bool baroDataToFuse;            // true when valid baro height finder data has arrived at the fusion time horizon.
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
@@ -1216,7 +1234,6 @@ private:
                     };
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
-    bool gndOffsetValid;            // true when the ground offset state can still be considered valid
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
@@ -1229,8 +1246,9 @@ private:
     ftype storedRngMeas[2][3];              // Ringbuffer of stored range measurements for dual range sensors
     uint32_t storedRngMeasTime_ms[2][3];    // Ringbuffers of stored range measurement times for dual range sensors
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
+    uint32_t rngValidMeaTime_ms;            // time stamp from latest valid range measurement (msec)
     uint8_t rngMeasIndex[2];                // Current range measurement ringbuffer index for dual range sensors
-    bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
+    bool terrainHgtStable;                  // flag set by external caller to true when the terrain height is stable enough to be used as a height reference
 
     // body frame odometry fusion
 #if EK3_FEATURE_BODY_ODOM

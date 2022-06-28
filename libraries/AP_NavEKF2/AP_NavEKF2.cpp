@@ -1201,7 +1201,7 @@ bool NavEKF2::use_compass(void) const
 // posOffset is the XYZ flow sensor position in the body frame in m
 void NavEKF2::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset)
 {
-    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset);
+    AP::dal().writeOptFlowMeas(rawFlowQuality, rawFlowRates, rawGyroRates, msecFlowMeas, posOffset, false);
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
