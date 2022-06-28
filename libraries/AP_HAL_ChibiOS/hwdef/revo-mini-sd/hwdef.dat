@@ -19,9 +19,8 @@ define HAL_OS_FATFS_IO 1
 define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
-# disable SMBUS and fuel battery monitors to save flash
+# disable SMBUS monitors to save flash
 define AP_BATTMON_SMBUS_ENABLE 0
-define AP_BATTMON_FUEL_ENABLE 0
 
 # disable parachute and sprayer to save flash
 define HAL_PARACHUTE_ENABLED 0

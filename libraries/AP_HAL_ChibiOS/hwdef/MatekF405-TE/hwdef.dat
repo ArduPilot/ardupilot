@@ -177,7 +177,6 @@ define HAL_WITH_DSP FALSE
 
 # --------------------- save flash ----------------------
 define AP_BATTMON_SMBUS_ENABLE 0
-define AP_BATTMON_FUEL_ENABLE 0
 define HAL_PARACHUTE_ENABLED 0
 define HAL_SPRAYER_ENABLED 0
 define HAL_GENERATOR_ENABLED 0
