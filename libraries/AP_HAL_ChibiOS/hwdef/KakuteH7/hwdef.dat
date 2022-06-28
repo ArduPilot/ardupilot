@@ -132,6 +132,10 @@ SPIDEV icm20689 SPI4 DEVID1 ICM20689_CS MODE3  1*MHZ  4*MHZ
 SPIDEV sdcard   SPI1 DEVID1 SDCARD_CS   MODE0 400*KHZ 25*MHZ
 SPIDEV osd      SPI2 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
 
+# bluetooth power switch, turn it off to prevent rf interference
+PE13 EVENT_OUT OUTPUT LOW PUSHPULL GPIO(82)
+define RELAY3_PIN_DEFAULT 82
+
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
