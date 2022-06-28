@@ -286,17 +286,21 @@ AP_BattMonitor::init()
             case Type::Sum:
                 drivers[instance] = new AP_BattMonitor_Sum(*this, state[instance], _params[instance], instance);
                 break;
-#if AP_BATTMON_FUEL_ENABLE
+#if AP_BATTMON_FUELFLOW_ENABLE
             case Type::FuelFlow:
                 drivers[instance] = new AP_BattMonitor_FuelFlow(*this, state[instance], _params[instance]);
                 break;
+#endif // AP_BATTMON_FUELFLOW_ENABLE
+#if AP_BATTMON_FUELLEVEL_PWM_ENABLE
             case Type::FuelLevel_PWM:
                 drivers[instance] = new AP_BattMonitor_FuelLevel_PWM(*this, state[instance], _params[instance]);
                 break;
+#endif // AP_BATTMON_FUELLEVEL_PWM_ENABLE
+#if AP_BATTMON_FUELLEVEL_ANALOG_ENABLE
             case Type::FuelLevel_Analog:
                 drivers[instance] = new AP_BattMonitor_FuelLevel_Analog(*this, state[instance], _params[instance]);
                 break;
-#endif // AP_BATTMON_FUEL_ENABLE
+#endif // AP_BATTMON_FUELLEVEL_ANALOG_ENABLE
 #if HAL_GENERATOR_ENABLED
             case Type::GENERATOR_ELEC:
                 drivers[instance] = new AP_BattMonitor_Generator_Elec(*this, state[instance], _params[instance]);
