@@ -670,6 +670,7 @@ public:
 
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;
+    AP_Int16                takeoff_rpm_min;
 };
 
 extern const AP_Param::Info        var_info[];
