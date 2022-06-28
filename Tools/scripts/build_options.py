@@ -40,7 +40,9 @@ BUILD_OPTIONS = [
     Feature('Safety', 'AC_AVOID', 'AC_AVOID_ENABLED', 'Enable Avoidance', 0, 'FENCE'),
     Feature('Safety', 'AC_OAPATHPLANNER', 'AC_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
 
-    Feature('Battery', 'BATTMON_FUEL', 'AP_BATTMON_FUEL_ENABLE', 'Enable Fuel BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTMON_FUELFLOW', 'AP_BATTMON_FUELFLOW_ENABLE', 'Enable Fuel Flow BatteryMonitor', 0, None),
+    Feature('Battery', 'BATTMON_FUELLEVEL_PWM', 'AP_BATTMON_FUELLEVEL_PWM_ENABLE', 'Enable Flow Level PWM BattryMonitor', 0, None),  # noqa: E501
+    Feature('Battery', 'BATTMON_FUELLEVEL_ANALOG', 'AP_BATTMON_FUELLEVEL_ANALOG_ENABLE', 'Enable Flow Level Analog BattryMonitor', 0, None),  # noqa: E501
     Feature('Battery', 'BATTMON_SMBUS', 'AP_BATTMON_SMBUS_ENABLE', 'Enable SMBUS BatteryMonitor', 0, None),
     Feature('Battery', 'BATTMON_INA2XX', 'HAL_BATTMON_INA2XX_ENABLED', 'Enable INA2XX BatteryMonitor', 0, None),
 
