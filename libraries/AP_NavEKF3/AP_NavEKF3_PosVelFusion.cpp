@@ -1134,7 +1134,7 @@ void NavEKF3_core::selectHeightForFusion()
     }
 
     // Use Baro alt as a fallback if we lose range finder, GPS, external nav or Beacon
-    bool lostRngHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && !rangeFinderDataIsFresh);
+    bool lostRngHgt = _rng && ((activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) && (!rangeFinderDataIsFresh ||  ((terrainState - stateStruct.position.z)> 1e-2 * (ftype)_rng->max_distance_cm_orient(ROTATION_PITCH_270))));
     bool lostGpsHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::GPS) && ((imuSampleTime_ms - lastTimeGpsReceived_ms) > 2000));
     bool lostRngBcnHgt = ((activeHgtSource == AP_NavEKF_Source::SourceZ::BEACON) && ((imuSampleTime_ms - rngBcnDataDelayed.time_ms) > 2000));
     bool fallback_to_baro = lostRngHgt || lostGpsHgt || lostRngBcnHgt;
