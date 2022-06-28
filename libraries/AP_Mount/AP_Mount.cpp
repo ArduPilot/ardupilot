@@ -648,7 +648,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     }
 
     // check flags for change to RETRACT
-    uint8_t flags = (uint8_t)packet.param5;
+    uint32_t flags = (uint32_t)packet.param5;
     if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
         _backends[_primary]->set_mode(MAV_MOUNT_MODE_RETRACT);
         return MAV_RESULT_ACCEPTED;
@@ -666,7 +666,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_angle_deg = packet.param1;
     const float yaw_angle_deg = packet.param2;
     if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
-        set_angle_target(0, pitch_angle_deg, yaw_angle_deg, (uint32_t)packet.param5 & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -675,7 +675,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_rate_degs = packet.param3;
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
-        set_rate_target(0, pitch_rate_degs, yaw_rate_degs, (uint32_t)packet.param5 & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
