@@ -54,7 +54,7 @@ public:
     // check if we have completed transition to vtol
     bool transition_vtol_complete(void) const;
 
-    // return true if transistion to VTOL flight
+    // return true if transition to VTOL flight
     bool in_vtol_transition(uint32_t now = 0) const;
 
     // account for control surface speed scaling in VTOL modes
@@ -144,14 +144,14 @@ public:
 
     void VTOL_update() override;
 
-    void force_transistion_complete() override;
+    void force_transition_complete() override;
 
     bool complete() const override { return transition_state == TRANSITION_DONE; }
 
     // setup for the transition back to fixed wing
     void restart() override;
 
-    uint8_t get_log_transision_state() const override { return static_cast<uint8_t>(transition_state); }
+    uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
     bool active() const override { return transition_state != TRANSITION_DONE; }
 

@@ -832,7 +832,7 @@ void Tailsitter_Transition::VTOL_update()
     if (transition_state == TRANSITION_ANGLE_WAIT_VTOL) {
         float aspeed;
         bool have_airspeed = quadplane.ahrs.airspeed_estimate(aspeed);
-        // provide assistance in forward flight portion of tailsitter transistion
+        // provide assistance in forward flight portion of tailsitter transition
         quadplane.assisted_flight = quadplane.should_assist(aspeed, have_airspeed);
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
@@ -937,7 +937,7 @@ void Tailsitter_Transition::restart()
 }
 
 // force state to FW and setup for the transition back to VTOL
-void Tailsitter_Transition::force_transistion_complete()
+void Tailsitter_Transition::force_transition_complete()
 {
     transition_state = TRANSITION_DONE;
     vtol_transition_start_ms = AP_HAL::millis();
