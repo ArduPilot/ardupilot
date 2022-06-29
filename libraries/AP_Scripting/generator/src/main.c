@@ -2552,13 +2552,11 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
         }
 
         emit_docs_method(name, alias->alias, method);
-
-        alias = alias->next;
       }
-
-      fprintf(docs, "\n");
-      free(name);
+      alias = alias->next;
     }
+    fprintf(docs, "\n");
+    free(name);
     node = node->next;
   }
 }
