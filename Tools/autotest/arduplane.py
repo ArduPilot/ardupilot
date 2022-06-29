@@ -1861,7 +1861,7 @@ class AutoTestPlane(AutoTest):
         home = self.home_position_as_mav_location()
         distance = self.get_distance(home, self.mav.location())
 
-        self.wait_altitude(expected_alt - 10, expected_alt + 10, relative=True)
+        self.wait_altitude(expected_alt - 10, expected_alt + 10, relative=True, timeout=80)
 
         new_distance = self.get_distance(home, self.mav.location())
         # We should be farther from to home.
