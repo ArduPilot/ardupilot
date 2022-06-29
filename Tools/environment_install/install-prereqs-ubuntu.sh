@@ -62,20 +62,15 @@ RELEASE_CODENAME=$(lsb_release -c -s)
 PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
 PIP=pip3
 
-if [ ${RELEASE_CODENAME} == 'xenial' ]; then
+if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'bionic' ]; then
     SITLFML_VERSION="2.3v5"
     SITLCFML_VERSION="2.3"
-    PYTHON_V="python2"
+    PYTHON_V="python"
     PIP=pip2
-elif [ ${RELEASE_CODENAME} == 'disco' ]; then
+elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
-    PYTHON_V="python2"
-    PIP=pip2
-elif [ ${RELEASE_CODENAME} == 'eoan' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python2"
+    PYTHON_V="python"
     PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'focal' ] || [ ${RELEASE_CODENAME} == 'ulyssa' ]; then
     SITLFML_VERSION="2.5"
@@ -98,7 +93,7 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
 elif [ ${RELEASE_CODENAME} == 'trusty' ]; then
     SITLFML_VERSION="2"
     SITLCFML_VERSION="2"
-    PYTHON_V="python2"
+    PYTHON_V="python"
     PIP=pip2
 else
     # We assume APT based system, so let's try with apt-cache first.
@@ -137,7 +132,7 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget"
-if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
+if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
     PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect flake8==3.7.9 geocoder empy configparser==5.0.0 click==7.1.2 decorator==4.4.2"
 else
@@ -146,7 +141,7 @@ fi
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
+    if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'bionic' ]; then
         PYTHON_PKGS="$PYTHON_PKGS pygame==2.0.3 intelhex"
     else
         PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
@@ -292,7 +287,7 @@ fi
 # Install all packages
 $APT_GET install $BASE_PKGS $SITL_PKGS $PX4_PKGS $ARM_LINUX_PKGS $COVERAGE_PKGS
 # Update Pip and Setuptools on old distro
-if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'disco' ] || [ ${RELEASE_CODENAME} == 'eoan' ]; then
+if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'bionic' ]; then
     # use fixed version for package that drop python2 support
     $PIP install --user -U pip==20.3 setuptools==44.0.0
 fi
