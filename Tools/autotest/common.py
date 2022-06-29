@@ -2731,7 +2731,7 @@ class AutoTest(ABC):
         tstart = time.time()
         timeout = 120
         failed_to_drain = False
-        while mav.recv_match(blocking=False) is not None:
+        while mav.recv_msg() is not None:
             count += 1
             if time.time() - tstart > timeout:
                 # ArduPilot can produce messages faster than we can
