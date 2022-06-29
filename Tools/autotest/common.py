@@ -2729,8 +2729,16 @@ class AutoTest(ABC):
         self.in_drain_mav = True
         count = 0
         tstart = time.time()
+        timeout = 120
+        failed_to_drain = False
         while mav.recv_match(blocking=False) is not None:
             count += 1
+            if time.time() - tstart > timeout:
+                # ArduPilot can produce messages faster than we can
+                # consume them.  Until a better solution is found,
+                # just die if that seems to be the case:
+                failed_to_drain = True
+                quiet = False
         if quiet:
             self.in_drain_mav = False
             return
@@ -2742,6 +2750,10 @@ class AutoTest(ABC):
 
         if not quiet:
             self.progress("Drained %u messages from mav (%s)" % (count, rate), send_statustext=False)
+
+        if failed_to_drain:
+            raise NotAchievedException("Did not fully drain MAV within %ss" % timeout)
+
         self.in_drain_mav = False
 
     def do_timesync_roundtrip(self, quiet=False, timeout_in_wallclock=False):
