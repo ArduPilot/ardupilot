@@ -2405,7 +2405,7 @@ function'''
         self.set_rc(rc_chan, 1500)
 
         # Make sure this causes throttle down.
-        self.wait_servo_channel_value(3, 1200, timeout=2, comparator=operator.lt)
+        self.wait_servo_channel_value(3, 1200, timeout=3, comparator=operator.lt)
 
         self.progress("Waiting for next WP with no thermalling")
         self.wait_waypoint(4, 4, timeout=1200, max_dist=120)
