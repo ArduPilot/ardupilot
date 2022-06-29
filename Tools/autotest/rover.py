@@ -71,7 +71,7 @@ class AutoTestRover(AutoTest):
         return "rover"
 
     def default_speedup(self):
-        return 100
+        return 30
 
     def is_rover(self):
         return True
