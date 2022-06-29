@@ -1891,7 +1891,7 @@ class AutoTestPlane(AutoTest):
         self.wait_distance_to_nav_target(
             0,
             500,
-            timeout=120,
+            timeout=240,
         )
         alt = self.get_altitude(relative=True)
         expected_halfway_alt = expected_alt + (post_cruise_alt + rtl_climb_min - expected_alt)/2.0
