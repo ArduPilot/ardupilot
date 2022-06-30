@@ -177,7 +177,7 @@ function install_arm_none_eabi_toolchain() {
                     heading "Installing toolchain for STM32 Boards"
                     echo "Installing toolchain for STM32 Boards"
                     echo "Downloading from ArduPilot server"
-                    sudo wget https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
                     echo "Installing..."
                     sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
                     sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
@@ -197,7 +197,7 @@ function install_arm_none_eabi_toolchain() {
                     heading "Installing toolchain for STM32 Boards"
                     echo "Installing toolchain for STM32 Boards"
                     echo "Downloading from ArduPilot server"
-                    sudo wget https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
                     echo "Installing..."
                     sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
                     sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
