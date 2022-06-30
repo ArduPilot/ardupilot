@@ -62,9 +62,14 @@ RELEASE_CODENAME=$(lsb_release -c -s)
 PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
 PIP=pip3
 
-if [ ${RELEASE_CODENAME} == 'xenial' ] || [ ${RELEASE_CODENAME} == 'bionic' ]; then
+if [ ${RELEASE_CODENAME} == 'xenial' ] ; then
     SITLFML_VERSION="2.3v5"
     SITLCFML_VERSION="2.3"
+    PYTHON_V="python"
+    PIP=pip2
+elif [ ${RELEASE_CODENAME} == 'bionic' ] ; then
+    SITLFML_VERSION="2.4"
+    SITLCFML_VERSION="2.4"
     PYTHON_V="python"
     PIP=pip2
 elif [ ${RELEASE_CODENAME} == 'buster' ]; then
