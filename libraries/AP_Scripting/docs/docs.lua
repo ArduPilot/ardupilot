@@ -697,6 +697,42 @@ function RC_Channel_ud:norm_input_dz() end
 
 
 -- desc
+---@class mount
+mount = {}
+
+-- desc
+---@param instance integer
+---@param target_loc Location_ud
+function mount:set_roi_target(instance, target_loc) end
+
+-- desc
+---@param instance integer
+---@param roll_degs number
+---@param pitch_degs number
+---@param yaw_degs number
+---@param yaw_is_earth_frame boolean
+function mount:set_rate_target(instance, roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame) end
+
+-- desc
+---@param instance integer
+---@param roll_deg number
+---@param pitch_deg number
+---@param yaw_deg number
+---@param yaw_is_earth_frame boolean
+function mount:set_angle_target(instance, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame) end
+
+-- desc
+---@param instance integer
+---@param mode integer
+function mount:set_mode(instance, mode) end
+
+-- desc
+---@param instance integer
+---@return integer
+function mount:get_mode(instance) end
+
+
+-- desc
 ---@class motors
 motors = {}
 
