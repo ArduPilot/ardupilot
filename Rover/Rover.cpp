@@ -214,6 +214,12 @@ bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
     return true;
 }
 
+// set desired nav speed (m/s). Used for scripting.
+bool Rover::set_desired_speed(float speed)
+{
+    return control_mode->set_desired_speed(speed);
+}
+
 // get control output (for use in scripting)
 // returns true on success and control_value is set to a value in the range -1 to +1
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
