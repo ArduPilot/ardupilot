@@ -229,9 +229,9 @@ void RCInput::_timer_tick(void)
             iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
             _rcin_timestamp_last_signal = last_iomcu_us;
             _rcin_last_iomcu_ms = now;
+            _rssi = iomcu.get_RSSI();
 #ifndef HAL_NO_UARTDRIVER
             rc_protocol = iomcu.get_rc_protocol();
-            _rssi = iomcu.get_RSSI();
             source = RCSource::IOMCU;
 #endif
         }
