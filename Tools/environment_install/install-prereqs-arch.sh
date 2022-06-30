@@ -68,7 +68,7 @@ pip3 -q install --user -U $PYTHON_PKGS
 if [ ! -d $OPT/$ARM_ROOT ]; then
     (
         cd $OPT;
-        sudo wget $ARM_TARBALL_URL;
+        sudo wget --progress=dot:giga $ARM_TARBALL_URL;
         sudo tar xjf ${ARM_TARBALL};
         sudo rm ${ARM_TARBALL};
     )
