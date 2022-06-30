@@ -92,6 +92,7 @@ jobs:
             *"archlinux"*)
             cp /etc/skel/.bashrc /root
             cp /etc/skel/.bashrc /github/home
+            git config --global --add safe.directory /__w/ardupilot/ardupilot
             Tools/environment_install/install-prereqs-arch.sh -qy
             ;;
           esac
@@ -116,6 +117,12 @@ jobs:
         shell: 'script -q -e -c "bash {0}"'
         run: |
           source ~/.bashrc
+          case ${{matrix.os}} in
+            *"archlinux"*)
+              export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
+              export PATH=/__w/ardupilot/ardupilot/ardupilot/Tools/autotest:$PATH
+              ;;
+          esac
           git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure --board CubeOrange
           ./waf plane
