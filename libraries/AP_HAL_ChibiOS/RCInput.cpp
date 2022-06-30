@@ -21,7 +21,7 @@
 #include "hwdef/common/ppm.h"
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
-#include <AP_RCProtocol/AP_RCProtocol_config.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -31,9 +31,7 @@ extern AP_IOMCU iomcu;
 
 #include <AP_Math/AP_Math.h>
 
-#ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
-#endif
 
 #define SIG_DETECT_TIMEOUT_US 500000
 using namespace ChibiOS;
@@ -150,7 +148,7 @@ void RCInput::_timer_tick(void)
     if (!_init) {
         return;
     }
-#ifndef HAL_NO_UARTDRIVER
+#if HAL_GCS_ENABLED
     const char *rc_protocol = nullptr;
     RCSource source = last_source;
 #endif
@@ -199,7 +197,7 @@ void RCInput::_timer_tick(void)
         rcprot.read(_rc_values, _num_channels);
         _rssi = rcprot.get_RSSI();
         _rx_link_quality = rcprot.get_rx_link_quality();
-#ifndef HAL_NO_UARTDRIVER
+#if HAL_GCS_ENABLED
         rc_protocol = rcprot.protocol_name();
         source = rcprot.using_uart() ? RCSource::RCPROT_BYTES : RCSource::RCPROT_PULSES;
 #endif
@@ -230,7 +228,7 @@ void RCInput::_timer_tick(void)
             _rcin_timestamp_last_signal = last_iomcu_us;
             _rcin_last_iomcu_ms = now;
             _rssi = iomcu.get_RSSI();
-#ifndef HAL_NO_UARTDRIVER
+#if HAL_GCS_ENABLED
             rc_protocol = iomcu.get_rc_protocol();
             source = RCSource::IOMCU;
 #endif
@@ -238,7 +236,7 @@ void RCInput::_timer_tick(void)
     }
 #endif
 
-#ifndef HAL_NO_UARTDRIVER
+#if HAL_GCS_ENABLED
     if (rc_protocol && (rc_protocol != last_protocol || source != last_source)) {
         last_protocol = rc_protocol;
         last_source = source;

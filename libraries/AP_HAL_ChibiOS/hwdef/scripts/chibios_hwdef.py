@@ -1218,6 +1218,10 @@ class ChibiOSHWDef(object):
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
 #endif
+
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
 ''')
             else:
                 f.write('''
@@ -1267,6 +1271,10 @@ class ChibiOSHWDef(object):
 #define CH_CFG_USE_DYNAMIC FALSE
 #endif
 #define STM32_FLASH_DISABLE_ISR 0
+
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
 ''')
             if not self.env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
                 f.write('''

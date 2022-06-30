@@ -23,7 +23,7 @@
 #include <AP_Radio/AP_Radio.h>
 #endif
 
-#include <AP_RCProtocol/AP_RCProtocol.h>
+#include <GCS_MAVLink/GCS_config.h>
 
 #if HAL_USE_ICU == TRUE
 #include "SoftSigReader.h"
@@ -55,7 +55,11 @@ public:
     int16_t get_rx_link_quality(void) override {
         return _rx_link_quality;
     }
+#if HAL_GCS_ENABLED
     const char *protocol() const override { return last_protocol; }
+#else
+    const char *protocol() const override { return "?"; }
+#endif
 
     void _timer_tick(void);
     bool rc_bind(int dsmMode) override;
@@ -73,6 +77,7 @@ private:
     uint32_t _rcin_last_iomcu_ms;
 #endif
     bool _init;
+#if HAL_GCS_ENABLED
     const char *last_protocol;
 
     enum class RCSource {
@@ -82,6 +87,7 @@ private:
         RCPROT_BYTES = 3,
         APRADIO = 4,
     } last_source;
+#endif
 
     bool pulse_input_enabled;
 
