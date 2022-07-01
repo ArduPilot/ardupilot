@@ -685,19 +685,23 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
         return MAV_RESULT_DENIED; // failed as the location is not valid
     }
 
+#if MODE_GUIDED_ENABLED == ENABLED
     // we need to do this first, as we don't want to change the flight mode unless we can also set the target
     if (!copter.mode_guided.set_destination(request_location, false, 0, false, 0)) {
         return MAV_RESULT_FAILED;
     }
+#endif
 
     if (!copter.flightmode->in_guided_mode()) {
         if (!copter.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_FAILED;
         }
+#if MODE_GUIDED_ENABLED == ENABLED
         // the position won't have been loaded if we had to change the flight mode, so load it again
         if (!copter.mode_guided.set_destination(request_location, false, 0, false, 0)) {
             return MAV_RESULT_FAILED;
         }
+#endif
     }
 
     return MAV_RESULT_ACCEPTED;
@@ -1045,6 +1049,7 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 {
+#if MODE_GUIDED_ENABLED == ENABLED
     // for mavlink SET_POSITION_TARGET messages
     constexpr uint32_t MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE =
         POSITION_TARGET_TYPEMASK_X_IGNORE |
@@ -1067,6 +1072,7 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
     constexpr uint32_t MAVLINK_SET_POS_TYPE_MASK_FORCE_SET =
         POSITION_TARGET_TYPEMASK_FORCE_SET;
+#endif
 
     switch (msg.msgid) {
 
