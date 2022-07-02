@@ -75,16 +75,16 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
 
-    _kp = initial_p;
-    _ki = initial_i;
-    _kd = initial_d;
-    _kff = initial_ff;
-    _kimax = fabsf(initial_imax);
-    filt_T_hz(initial_filt_T_hz);
-    filt_E_hz(initial_filt_E_hz);
-    filt_D_hz(initial_filt_D_hz);
-    _slew_rate_max.set(initial_srmax);
-    _slew_rate_tau.set(initial_srtau);
+    _kp.set_and_default(initial_p);
+    _ki.set_and_default(initial_i);
+    _kd.set_and_default(initial_d);
+    _kff.set_and_default(initial_ff);
+    _kimax.set_and_default(initial_imax);
+    _filt_T_hz.set_and_default(initial_filt_T_hz);
+    _filt_E_hz.set_and_default(initial_filt_E_hz);
+    _filt_D_hz.set_and_default(initial_filt_D_hz);
+    _slew_rate_max.set_and_default(initial_srmax);
+    _slew_rate_tau.set_and_default(initial_srtau);
 
     // reset input filter to first value received
     _flags._reset_filter = true;

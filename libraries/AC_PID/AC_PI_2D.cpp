@@ -36,9 +36,10 @@ AC_PI_2D::AC_PI_2D(float initial_p, float initial_i, float initial_imax, float i
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
 
-    _kp = initial_p;
-    _ki = initial_i;
-    _imax = fabsf(initial_imax);
+    _kp.set_and_default(initial_p);
+    _ki.set_and_default(initial_i);
+    _imax.set_and_default(initial_imax);
+    _filt_hz.set_and_default(initial_filt_hz);
     filt_hz(initial_filt_hz);
 
     // reset input filter to first value received

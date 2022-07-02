@@ -19,7 +19,7 @@ AC_P_2D::AC_P_2D(float initial_p, float dt) :
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
 
-    _kp = initial_p;
+    _kp.set_and_default(initial_p);
 }
 
 // update_all - set target and measured inputs to P controller and calculate outputs
