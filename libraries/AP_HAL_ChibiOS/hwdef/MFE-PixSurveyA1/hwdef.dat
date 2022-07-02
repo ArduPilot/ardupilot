@@ -2,7 +2,7 @@
 # for MFE-V3, based on fmuv3
 include ../fmuv3/hwdef.dat
 
-APJ_BOARD_ID 148
+APJ_BOARD_ID 1076
 
 #Use MPU9250 or ICM20948 on the new hardware
 COMPASS AK8963:probe_mpu9250 0 ROTATION_PITCH_180
