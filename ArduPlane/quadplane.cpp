@@ -2459,6 +2459,7 @@ void QuadPlane::vtol_position_controller(void)
         const float distance = diff_wp.length();
         const Vector2f rel_groundspeed_vector = landing_closing_velocity();
         const float rel_groundspeed_sq = rel_groundspeed_vector.length_squared();
+        const float closing_groundspeed = rel_groundspeed_vector * diff_wp.normalized();
 
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
@@ -2494,11 +2495,11 @@ void QuadPlane::vtol_position_controller(void)
 
         Vector2f target_speed_xy_cms;
         Vector2f target_accel_cms;
-        const float target_accel = accel_needed(distance, rel_groundspeed_sq);
+        const float target_accel = accel_needed(distance, closing_groundspeed*closing_groundspeed);
         if (distance > 0.1) {
             Vector2f diff_wp_norm = diff_wp.normalized();
             target_speed_xy_cms = diff_wp_norm * target_speed * 100;
-            target_accel_cms = diff_wp_norm * (-target_accel*100);
+            target_accel_cms = diff_wp_norm * (target_accel*100) * (is_positive(closing_groundspeed) ? -1.0 : 1.0);
         }
         const float target_speed_ms = target_speed_xy_cms.length() * 0.01;
 
