@@ -56,13 +56,13 @@ AC_PID_2D::AC_PID_2D(float initial_kP, float initial_kI, float initial_kD, float
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
 
-    _kp = initial_kP;
-    _ki = initial_kI;
-    _kd = initial_kD;
-    _kff = initial_kFF;
-    _kimax = fabsf(initial_imax);
-    filt_E_hz(initial_filt_E_hz);
-    filt_D_hz(initial_filt_D_hz);
+    _kp.set_and_default(initial_kP);
+    _ki.set_and_default(initial_kI);
+    _kd.set_and_default(initial_kD);
+    _kff.set_and_default(initial_kFF);
+    _kimax.set_and_default(initial_imax);
+    _filt_E_hz.set_and_default(initial_filt_E_hz);
+    _filt_D_hz.set_and_default(initial_filt_D_hz);
 
     // reset input filter to first value received
     _reset_filter = true;

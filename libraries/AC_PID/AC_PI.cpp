@@ -30,9 +30,9 @@ AC_PI::AC_PI(float initial_p, float initial_i, float initial_imax)
     // load parameter values from eeprom
     AP_Param::setup_object_defaults(this, var_info);
 
-    kP.set(initial_p);
-    kI.set(initial_i);
-    imax.set(initial_imax);
+    kP.set_and_default(initial_p);
+    kI.set_and_default(initial_i);
+    imax.set_and_default(initial_imax);
 }
 
 float AC_PI::update(float measurement, float target, float dt)
