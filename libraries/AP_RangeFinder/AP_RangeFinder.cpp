@@ -664,12 +664,18 @@ RangeFinder::Status RangeFinder::status_orient(enum Rotation orientation) const
     return backend->status();
 }
 
-void RangeFinder::handle_msg(const mavlink_message_t &msg)
+void RangeFinder::handle_distance_sensor_msg(const mavlink_message_t &msg)
 {
+    mavlink_distance_sensor_t packet;
+    mavlink_msg_distance_sensor_decode(&msg, &packet);
+
     uint8_t i;
     for (i=0; i<num_instances; i++) {
-        if ((drivers[i] != nullptr) && ((Type)params[i].type.get() != Type::NONE)) {
-          drivers[i]->handle_msg(msg);
+        if ((drivers[i] != nullptr) && ((Type)params[i].type.get() == Type::MAVLink)) {
+          if (drivers[i]->handle_distance_sensor_msg(packet)==true) {
+            // message accepted and processed by a sensor.
+            return ;
+          }
         }
     }
 }

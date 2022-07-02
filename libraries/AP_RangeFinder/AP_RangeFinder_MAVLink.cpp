@@ -22,19 +22,19 @@
 /*
    Set the distance based on a MAVLINK message
 */
-void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
+bool AP_RangeFinder_MAVLink::handle_distance_sensor_msg(const mavlink_distance_sensor_t &packet)
 {
-    mavlink_distance_sensor_t packet;
-    mavlink_msg_distance_sensor_decode(&msg, &packet);
-
-    // only accept distances for the configured orentation
+    // only accept distances for the configured orientation
     if (packet.orientation == orientation()) {
         state.last_reading_ms = AP_HAL::millis();
         distance_cm = packet.current_distance;
         _max_distance_cm = packet.max_distance;
         _min_distance_cm = packet.min_distance;
         sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
+        // message has been accepted by this sensor.
+        return true;
     }
+    return false;
 }
 
 int16_t AP_RangeFinder_MAVLink::max_distance_cm() const

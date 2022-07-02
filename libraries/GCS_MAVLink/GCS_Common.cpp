@@ -3473,7 +3473,7 @@ void GCS_MAVLINK::handle_distance_sensor(const mavlink_message_t &msg)
 {
     RangeFinder *rangefinder = AP::rangefinder();
     if (rangefinder != nullptr) {
-        rangefinder->handle_msg(msg);
+        rangefinder->handle_distance_sensor_msg(msg);
     }
 
 #if HAL_PROXIMITY_ENABLED

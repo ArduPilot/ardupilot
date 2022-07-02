@@ -158,7 +158,7 @@ public:
     void update(void);
 
     // Handle an incoming DISTANCE_SENSOR message (from a MAVLink enabled range finder)
-    void handle_msg(const mavlink_message_t &msg);
+    void handle_distance_sensor_msg(const mavlink_message_t &msg);
 
 #if HAL_MSP_RANGEFINDER_ENABLED
     // Handle an incoming DISTANCE_SENSOR message (from a MSP enabled range finder)
