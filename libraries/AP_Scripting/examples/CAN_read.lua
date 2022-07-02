@@ -1,19 +1,36 @@
 -- This script is an example of reading from the CAN bus
 
--- Load CAN driver, using the scripting protocol and with a buffer size of 5
-local driver = CAN.get_device(5)
+-- Load CAN driver1. The first will attach to a protocol of 10, the 2nd to a protocol of 12
+-- this allows the script to distinguish packets on two CAN interfaces
+local driver1 = CAN.get_device(5)
+local driver2 = CAN.get_device2(5)
+
+if not driver1 and not driver2 then
+   gcs:send_text(0,"No scripting CAN interfaces found")
+   return
+end
+
+function show_frame(dnum, frame)
+    gcs:send_text(0,string.format("CAN[%u] msg from " .. tostring(frame:id()) .. ": %i, %i, %i, %i, %i, %i, %i, %i", dnum, frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
+end
 
 function update()
 
-  -- Read a message from the buffer
-  frame = driver:read_frame()
+   -- see if we got any frames
+   if driver1 then
+      frame = driver1:read_frame()
+      if frame then
+         show_frame(1, frame)
+      end
+   end
+   if driver2 then
+      frame = driver2:read_frame()
+      if frame then
+         show_frame(2, frame)
+      end
+   end
 
-  if frame then
-    -- note that we have to be careful to keep the ID as a uint32_t userdata to retain precision
-    gcs:send_text(0,string.format("CAN msg from " .. tostring(frame:id()) .. ": %i, %i, %i, %i, %i, %i, %i, %i", frame:data(0), frame:data(1), frame:data(2), frame:data(3), frame:data(4), frame:data(5), frame:data(6), frame:data(7)))
-  end
-
-  return update, 100
+  return update, 10
 
 end
 

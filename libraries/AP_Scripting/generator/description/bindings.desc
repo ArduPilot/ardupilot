@@ -455,6 +455,7 @@ singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
 
 singleton CAN manual get_device lua_get_CAN_device
+singleton CAN manual get_device2 lua_get_CAN_device2
 singleton CAN depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 include AP_Scripting/AP_Scripting_CANSensor.h depends HAL_MAX_CAN_PROTOCOL_DRIVERS
