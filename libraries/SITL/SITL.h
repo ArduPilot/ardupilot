@@ -330,6 +330,10 @@ public:
     AP_Float vibe_motor;
     // amplitude scaling of motor noise relative to gyro/accel noise
     AP_Float vibe_motor_scale;
+
+    // what harmonics to generate
+    AP_Int16 vibe_motor_harmonics;
+
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
 
