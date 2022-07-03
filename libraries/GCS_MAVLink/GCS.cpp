@@ -16,6 +16,7 @@
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
+#include "MissionItemProtocol_PathPlanning.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,6 +40,7 @@ void GCS::get_sensor_status_flags(uint32_t &present,
 MissionItemProtocol_Waypoints *GCS::_missionitemprotocol_waypoints;
 MissionItemProtocol_Rally *GCS::_missionitemprotocol_rally;
 MissionItemProtocol_Fence *GCS::_missionitemprotocol_fence;
+MissionItemProtocol_PathPlanning *GCS::_missionitemprotocol_path_planning;
 
 const MAV_MISSION_TYPE GCS_MAVLINK::supported_mission_types[] = {
     MAV_MISSION_TYPE_MISSION,

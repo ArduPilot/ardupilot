@@ -58,6 +58,7 @@
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
 #include "MissionItemProtocol_Fence.h"
+#include "MissionItemProtocol_PathPlanning.h"
 
 #include <stdio.h>
 
@@ -518,6 +519,10 @@ MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE missi
         return _missionitemprotocol_rally;
     case MAV_MISSION_TYPE_FENCE:
         return _missionitemprotocol_fence;
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    case MAV_MISSION_TYPE_PATH_PLANNING:
+        return _missionitemprotocol_path_planning;
+#endif
     default:
         return nullptr;
     }
@@ -2137,6 +2142,9 @@ void GCS::update_send()
         if (fence != nullptr) {
             _missionitemprotocol_fence = new MissionItemProtocol_Fence(*fence);
         }
+#if APM_BUILD_TYPE(APM_BUILD_Rover) // we may also have this on copter, but we cant tell at compile time (from here)
+        _missionitemprotocol_path_planning = new MissionItemProtocol_PathPlanning();
+#endif
     }
     if (_missionitemprotocol_waypoints != nullptr) {
         _missionitemprotocol_waypoints->update();
@@ -2147,6 +2155,11 @@ void GCS::update_send()
     if (_missionitemprotocol_fence != nullptr) {
         _missionitemprotocol_fence->update();
     }
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    if (_missionitemprotocol_path_planning != nullptr) {
+        _missionitemprotocol_path_planning->update();
+    }
+#endif // APM_BUILD_TYPE(APM_BUILD_Rover)
 #endif // HAL_BUILD_AP_PERIPH
     // round-robin the GCS_MAVLINK backend that gets to go first so
     // one backend doesn't monopolise all of the time allowed for sending

@@ -75,6 +75,8 @@ protected:
 
 private:
 
+    virtual bool read_only() const { return false; }
+
     virtual void truncate(const mavlink_mission_count_t &packet) = 0;
 
     uint16_t        request_i; // request index
