@@ -559,7 +559,7 @@ private:
     struct tas_elements : EKF_obs_element_t {
         ftype       tas;            // true airspeed measurement (m/sec)
         ftype       tasVariance;    // variance of true airspeed measurement (m/sec)^2
-        bool        healthy;        // true if measurement can be allowed to modify EKF states.
+        bool        allowFusion;    // true if measurement can be allowed to modify EKF states.
     };
 
     struct of_elements : EKF_obs_element_t {
