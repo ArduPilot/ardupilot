@@ -137,19 +137,18 @@ void AP_InertialSensor_SITL::generate_accel()
         // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
         if (!is_zero(sitl->vibe_motor) && motors_on) {
             for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
-                float &phase = accel_motor_phase[i];
-                float motor_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
-                float phase_incr = motor_freq * 2 * M_PI / (accel_sample_hz * nsamples);
-                phase += phase_incr;
-                if (phase_incr > M_PI) {
-                    phase -= 2 * M_PI;
+                uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics);
+                const float base_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
+                while (harmonics != 0) {
+                    const uint8_t bit = __builtin_ffs(harmonics);
+                    harmonics &= ~(1U<<(bit-1U));
+                    const float phase = accel_motor_phase[i] * float(bit);
+                    accel.x += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                    accel.y += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                    accel.z += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
                 }
-                else if (phase_incr < -M_PI) {
-                    phase += 2 * M_PI;
-                }
-                accel.x += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
-                accel.y += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
-                accel.z += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
+                const float phase_incr = base_freq * 2 * M_PI / (accel_sample_hz * nsamples);
+                accel_motor_phase[i] = wrap_PI(accel_motor_phase[i] + phase_incr);
             }
         }
 
@@ -243,19 +242,18 @@ void AP_InertialSensor_SITL::generate_gyro()
         // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
         if (!is_zero(sitl->vibe_motor) && motors_on) {
             for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
-                float motor_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
-                float phase_incr = motor_freq * 2 * M_PI / (gyro_sample_hz * nsamples);
-                float &phase = gyro_motor_phase[i];
-                phase += phase_incr;
-                if (phase_incr > M_PI) {
-                    phase -= 2 * M_PI;
+                uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics);
+                const float base_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
+                while (harmonics != 0) {
+                    const uint8_t bit = __builtin_ffs(harmonics);
+                    harmonics &= ~(1U<<(bit-1U));
+                    const float phase = gyro_motor_phase[i] * float(bit);
+                    p += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
+                    q += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
+                    r += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
                 }
-                else if (phase_incr < -M_PI) {
-                    phase += 2 * M_PI;
-                }
-                p += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
-                q += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
-                r += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
+                const float phase_incr = base_freq * 2 * M_PI / (gyro_sample_hz * nsamples);
+                gyro_motor_phase[i] = wrap_PI(gyro_motor_phase[i] + phase_incr);
             }
         }
 
