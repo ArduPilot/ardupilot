@@ -11,6 +11,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
+#include <AC_AttitudeControl/AC_CommandModel.h>
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_AttitudeControl/AC_WeatherVane.h>
@@ -196,6 +197,13 @@ private:
     // air mode state: OFF, ON, ASSISTED_FLIGHT_ONLY
     AirMode air_mode;
 
+    // Command model parameter class
+    // Default max rate, default expo, default time constant
+    AC_CommandModel command_model_pilot{100.0, 0.25, 0.25};
+    // helper functions to set and disable time constant from command model
+    void set_pilot_yaw_rate_time_constant();
+    void disable_yaw_rate_time_constant();
+
     // return true if airmode should be active
     bool air_mode_active() const;
 
@@ -318,9 +326,6 @@ private:
     AP_Int16 assist_alt;
     uint32_t alt_error_start_ms;
     bool in_alt_assist;
-
-    // maximum yaw rate in degrees/second
-    AP_Float yaw_rate_max;
 
     // landing speed in cm/s
     AP_Int16 land_speed_cms;

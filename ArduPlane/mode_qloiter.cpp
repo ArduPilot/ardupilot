@@ -77,6 +77,9 @@ void ModeQLoiter::run()
         pos_control->set_externally_limited_xy();
     }
 
+    // Pilot input, use yaw rate time constant
+    quadplane.set_pilot_yaw_rate_time_constant();
+
     // call attitude controller with conservative smoothing gain of 4.0f
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                   plane.nav_pitch_cd,
