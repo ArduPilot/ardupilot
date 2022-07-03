@@ -275,9 +275,6 @@ void Sub::one_hz_loop()
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
-    // update position controller alt limits
-    update_poscon_alt_max();
-
     // log terrain data
     terrain_logging();
 
