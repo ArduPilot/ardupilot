@@ -2572,6 +2572,18 @@ function'''
         '''test AP_Terrain'''
         self.reboot_sitl()  # we know the terrain height at CMAC
 
+        # install a message hook to show ArduPilot's terrain requests
+        # as they flow through.  MAVProxy should answer these with
+        # TERRAIN_DATA responses
+        def mh(mav, m):
+            t = m.get_type()
+            want_t = frozenset(['TERRAIN_REQUEST', 'TERRAIN_DATA'])
+            if t not in want_t:
+                return
+            self.progress("%s seen:" % t)
+            self.progress(self.dump_message_verbose(m))
+        self.install_message_hook_context(mh)
+
         mavproxy = self.start_mavproxy()
 
         self.wait_ready_to_arm()
