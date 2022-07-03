@@ -42,8 +42,8 @@ const AP_Param::GroupInfo AC_CommandModel::var_info[] = {
 AC_CommandModel::AC_CommandModel(float initial_rate, float initial_expo, float initial_tc)
 {
     AP_Param::setup_object_defaults(this, var_info);
-    rate = initial_rate;
-    expo = initial_expo;
-    rate_tc = initial_tc;
+    rate.set_and_default(initial_rate);
+    expo.set_and_default(initial_expo);
+    rate_tc.set_and_default(initial_tc);
 }
 
