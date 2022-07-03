@@ -161,8 +161,14 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     this.notches = []
     var chained = 1;
     var dbl = false;
+    var triple = false;
+    var composite_notches = 1;
     if (opts & 1) {
         dbl = true;
+        composite_notches = 2;
+    } else if (opts & 16) {
+        triple = true;
+        composite_notches = 3;
     }
 
     this.reset = function(sample) {
@@ -204,22 +210,36 @@ function HarmonicNotchFilter(sample_freq,enable,mode,freq,bw,att,ref,fm_rat,hmnc
     for (var n=0;n<8;n++) {
         var fmul = n+1;
         if (hmncs & (1<<n)) {
-            var center_freq_hz = freq * fmul;
+            var notch_center = freq * fmul;
             var bandwidth_hz = bw * fmul;
             for (var c=0; c<chained; c++) {
                 var nyquist_limit = sample_freq * 0.48;
                 var bandwidth_limit = bandwidth_hz * 0.52;
-                // adjust the fundamental center frequency to be in the allowable range
-                center_freq_hz = constrain_float(center_freq_hz, bandwidth_limit, nyquist_limit);
+
                 // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
-                if (dbl) {
-                    var notch_spread = bandwidth_hz / (32.0 * center_freq_hz);
-                    var notch_center1 = center_freq_hz * (1.0 - notch_spread);
-                    var notch_center2 = center_freq_hz * (1.0 + notch_spread);
-                    this.notches.push(new NotchFilter(sample_freq,notch_center1,bandwidth_hz*0.5,att));
-                    this.notches.push(new NotchFilter(sample_freq,notch_center2,bandwidth_hz*0.5,att));
-                } else {
-                    this.notches.push(new NotchFilter(sample_freq,center_freq_hz,bandwidth_hz,att));
+                var notch_spread = bandwidth_hz / (32.0 * notch_center);
+
+                // adjust the fundamental center frequency to be in the allowable range
+                notch_center = constrain_float(notch_center, bandwidth_limit, nyquist_limit);
+
+                if (composite_notches != 2) {
+                    // only enable the filter if its center frequency is below the nyquist frequency
+                    if (notch_center < nyquist_limit) {
+                        this.notches.push(new NotchFilter(sample_freq,notch_center,bandwidth_hz/composite_notches,att));
+                    }
+                }
+                if (composite_notches > 1) {
+                    var notch_center_double;
+                    // only enable the filter if its center frequency is below the nyquist frequency
+                    notch_center_double = notch_center * (1.0 - notch_spread);
+                    if (notch_center_double < nyquist_limit) {
+                        this.notches.push(new NotchFilter(sample_freq,notch_center_double,bandwidth_hz/composite_notches,att));
+                    }
+                    // only enable the filter if its center frequency is below the nyquist frequency
+                    notch_center_double = notch_center * (1.0 + notch_spread);
+                    if (notch_center_double < nyquist_limit) {
+                        this.notches.push(new NotchFilter(sample_freq,notch_center_double,bandwidth_hz/composite_notches,att));
+                    }
                 }
             }
         }
@@ -571,6 +591,9 @@ function fill_docs()
             }
             if (ival & 8) {
                 bits.push("All IMUs Rate");
+            }
+            if ((ival & 16) && (ival & 1) == 0) {
+                bits.push("Triple Notch");
             }
             doc.innerHTML = bits.join(", ");
         } else if (name.endsWith("_HMNCS")) {
