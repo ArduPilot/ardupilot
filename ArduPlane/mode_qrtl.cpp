@@ -82,6 +82,7 @@ void ModeQRTL::run()
                 pos_control->set_externally_limited_xy();
             }
             // weathervane with no pilot input
+            quadplane.disable_yaw_rate_time_constant();
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
                                                                           plane.nav_pitch_cd,
                                                                           quadplane.get_weathervane_yaw_rate_cds());
