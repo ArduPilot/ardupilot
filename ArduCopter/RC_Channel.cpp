@@ -120,6 +120,7 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::WINCH_ENABLE:
     case AUX_FUNC::AIRMODE:
     case AUX_FUNC::FORCEFLYING:
+    case AUX_FUNC::CUSTOM_CONTROLLER:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
@@ -611,6 +612,11 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             }
             break;
 
+        case AUX_FUNC::CUSTOM_CONTROLLER:
+#if CUSTOMCONTROL_ENABLED == ENABLED && FRAME_CONFIG != HELI_FRAME
+            copter.attitude_control->set_custom_controller(ch_flag == AuxSwitchPos::HIGH);
+            break;
+#endif
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }

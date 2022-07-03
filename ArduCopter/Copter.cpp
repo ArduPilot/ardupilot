@@ -481,6 +481,9 @@ void Copter::fourhundred_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
+#if CUSTOMCONTROL_ENABLED == ENABLED        
+        attitude_control->log_write();
+#endif
     }
 }
 

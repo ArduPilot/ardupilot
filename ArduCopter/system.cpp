@@ -452,13 +452,19 @@ void Copter::allocate_motors(void)
         ac_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
 #endif // AP_SCRIPTING_ENABLED
     } else {
-        attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
+        #if CUSTOMCONTROL_ENABLED == ENABLED
+            attitude_control = new AC_CustomControl(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
+        #else
+            attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
+        #endif
+        // Use original AC_AttitudeControl_Multi param table, add AC_CustomControl's param table as an extension
         ac_var_info = AC_AttitudeControl_Multi::var_info;
     }
 #else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
     ac_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
+
     if (attitude_control == nullptr) {
         AP_BoardConfig::allocation_error("AttitudeControl");
     }
