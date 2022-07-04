@@ -756,7 +756,7 @@ bool QuadPlane::setup(void)
     // init wp_nav variables after detaults are setup
     wp_nav->wp_and_spline_init();
 
-    transition->force_transistion_complete();
+    transition->force_transition_complete();
 
     // param count will have changed
     AP_Param::invalidate_count();
@@ -1747,7 +1747,7 @@ void QuadPlane::update(void)
                 set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
                 motors->output();
             }
-            transition->force_transistion_complete();
+            transition->force_transition_complete();
             assisted_flight = false;
         } else {
             transition->update();
@@ -3292,7 +3292,7 @@ void QuadPlane::Log_Write_QControl_Tuning()
         climb_rate          : int16_t(inertial_nav.get_velocity_z_up_cms()),
         throttle_mix        : attitude_control->get_throttle_mix(),
         speed_scaler        : tailsitter.log_spd_scaler,
-        transition_state    : transition->get_log_transision_state(),
+        transition_state    : transition->get_log_transition_state(),
         assist              : assisted_flight,
     };
     plane.logger.WriteBlock(&pkt, sizeof(pkt));
@@ -4085,7 +4085,7 @@ void SLT_Transition::set_last_fw_pitch()
     last_fw_nav_pitch_cd = plane.nav_pitch_cd;
 }
 
-void SLT_Transition::force_transistion_complete() {
+void SLT_Transition::force_transition_complete() {
     transition_state = TRANSITION_DONE; 
     in_forced_transition = false;
     transition_start_ms = 0;

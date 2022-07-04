@@ -74,7 +74,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
 
     // @Param: WING_FLAP
     // @DisplayName: Tiltrotor tilt angle that will be used as flap
-    // @Description: For use on tilt wings, the wing will tilt up to this angle for flap, transistion will be complete when the wing reaches this angle from the forward fight position, 0 disables
+    // @Description: For use on tilt wings, the wing will tilt up to this angle for flap, transition will be complete when the wing reaches this angle from the forward fight position, 0 disables
     // @Units: deg
     // @Increment: 1
     // @Range: 0 15

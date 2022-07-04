@@ -5134,6 +5134,18 @@ class AutoTestCopter(AutoTest):
                     "Double-notch peak was higher than single-notch peak %fdB > %fdB" %
                     (peakdb2, peakdb1))
 
+            # now add triple dynamic notches and check that the peak is squashed
+            self.set_parameter("INS_HNTCH_OPTS", 16)
+            self.reboot_sitl()
+
+            freq, hover_throttle, peakdb2 = self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+            # triple-notch should do better, but check for within 5%
+            if peakdb2 * 1.05 > peakdb1:
+                raise NotAchievedException(
+                    "Triple-notch peak was higher than single-notch peak %fdB > %fdB" %
+                    (peakdb2, peakdb1))
+
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
@@ -5443,7 +5455,7 @@ class AutoTestCopter(AutoTest):
                 "EK2_ENABLE": 0,
                 "EK3_ENABLE": 0,
                 "INS_LOG_BAT_MASK": 3,
-                "INS_LOG_BAT_OPT": 0,
+                "INS_LOG_BAT_OPT": 4,
                 "INS_GYRO_FILTER": 100,
                 "INS_FAST_SAMPLE": 0,
                 "LOG_BITMASK": 958,
@@ -5548,7 +5560,7 @@ class AutoTestCopter(AutoTest):
             # we are limited to half the loop rate for frequency detection
             self.set_parameters({
                 "FFT_MAXHZ": 185,
-                "INS_LOG_BAT_OPT": 0,
+                "INS_LOG_BAT_OPT": 4,
                 "SIM_VIB_MOT_MAX": 220,
                 "FFT_WINDOW_SIZE": 64,
                 "FFT_WINDOW_OLAP": 0.75,
