@@ -239,7 +239,6 @@ bool AP_Compass_AK09916::init()
     }
 
     if (!_check_id()) {
-        hal.console->printf("AK09916: Wrong id\n");
         goto fail;
     }
 
