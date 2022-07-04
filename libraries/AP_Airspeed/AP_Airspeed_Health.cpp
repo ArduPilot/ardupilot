@@ -56,7 +56,12 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     }
     bool data_is_inconsistent;
     if ((AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY & _options) != 0) {
-            data_is_inconsistent = state[i].failures.test_ratio > MAX(_wind_gate, 0.0f);
+        float gate_size = MAX(_wind_gate, 0.0f);
+        if (param[i].use == 0) {
+            // require a smaller inconsistency for a disabled sensor to be declared consistent
+            gate_size *= 0.7f;
+        }
+        data_is_inconsistent = state[i].failures.test_ratio > gate_size;
     } else {
         data_is_inconsistent = false;
     }
