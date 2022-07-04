@@ -1,0 +1,13 @@
+# turn on DroneCAN power monitor
+CAN_P1_DRIVER 1
+CAN_P2_DRIVER 1
+BATT_MONITOR 8
+
+# setup SERIAL5 for TELEM3
+SERIAL5_PROTOCOL 2
+
+# turn on DroneCAN RGB LED
+NTF_LED_TYPES 231
+
+# MPPT Powered on when armed
+BATT_OPTIONS 8
