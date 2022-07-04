@@ -1094,7 +1094,8 @@ if __name__ == "__main__":
         'build.SITLPeriphGPS',
         'test.CAN',
 
-        'convertgpx',
+        # convertgps disabled as it takes 5 hours
+        # 'convertgpx',
     ]
 
     moresteps = [
