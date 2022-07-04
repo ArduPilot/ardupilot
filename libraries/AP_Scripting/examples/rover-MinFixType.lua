@@ -49,6 +49,15 @@ local FIX_TYPES = {
 
 local MODE_THRESHOLDS = {1231, 1361, 1491, 1621, 1750, 2050}
 
+local USER_MODES = {
+    param:get('MODE1'),
+    param:get('MODE2'),
+    param:get('MODE3'),
+    param:get('MODE4'),
+    param:get('MODE5'),
+    param:get('MODE6')
+}
+
 local MODE_CH  = param:get('MODE_CH')
 local THR_CH   = param:get('RCMAP_THROTTLE')
 local THR_TRIM = param:get(string.format('RC%d_TRIM', THR_CH))
@@ -77,7 +86,7 @@ local function get_user_mode()
             break
         end
     end
-    return tonumber(param:get('MODE' .. mode_num))
+    return USER_MODES[mode_num]
 end
 
 local function get_pause_mode()
