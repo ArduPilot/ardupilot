@@ -1,3 +1,27 @@
+Release 4.2.3beta1 2nd August 2022
+----------------------------------
+
+This is a minor stable release with a few new features and bug
+fixes. The changes are:
+
+- allow INA2xx battery to init after startup
+- fixed healthy check on battery monitors to check all enabled monitors
+- added Pixhawk6C and Pixhawk6X support
+- fixed alighment of QRTL start in fixed wing circle landing approach
+- added Foxeer Reaper F745 support
+- added MFE PixSurveyA1 support
+- fixed combination of waypoint passby with acceptance distance
+- cut throttle on ICE stop when armed
+- added ICE option for starting when disarmed
+- zero VFWD integrator on ICE override in quadplanes
+- don't failsafe when in fixed wing landing sequence with RTL_AUTOLAND
+- improved handling of overshoot in VTOL landing
+- improved choice of target airspeed in VTOL landing approach
+- improved ICM42xxx filter settings
+- allow for faster sample rates on ICM42xxx
+
+
+
 Release 4.2.2 24th June 2022
 ----------------------------
 
