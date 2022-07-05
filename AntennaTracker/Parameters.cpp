@@ -549,6 +549,7 @@ void Tracker::load_parameters(void)
         g.format_version.set_and_save(Parameters::k_format_version);
         hal.console->printf("done.\n");
     }
+    g.format_version.set_default(Parameters::k_format_version);
 
     uint32_t before = AP_HAL::micros();
     // Load all auto-loaded EEPROM variables
