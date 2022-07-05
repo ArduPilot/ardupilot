@@ -42,7 +42,7 @@ public:
     void                output_min() override;
 
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
-    void                set_yaw_headroom(int16_t pwm) { _yaw_headroom = pwm; }
+    void                set_yaw_headroom(int16_t pwm) { _yaw_headroom.set(pwm); }
 
     // update_throttle_range - update throttle endpoints
     void                update_throttle_range();

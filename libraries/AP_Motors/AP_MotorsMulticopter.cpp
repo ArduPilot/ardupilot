@@ -383,7 +383,7 @@ void AP_MotorsMulticopter::update_lift_max_from_batt_voltage()
         return;
     }
 
-    _batt_voltage_min = MAX(_batt_voltage_min, _batt_voltage_max * 0.6f);
+    _batt_voltage_min.set(MAX(_batt_voltage_min, _batt_voltage_max * 0.6f));
 
     // contrain resting voltage estimate (resting voltage is actual voltage with sag removed based on current draw and resistance)
     _batt_voltage_resting_estimate = constrain_float(_batt_voltage_resting_estimate, _batt_voltage_min, _batt_voltage_max);
@@ -529,7 +529,7 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
 {
     if (_throttle_hover_learn != HOVER_LEARN_DISABLED) {
         // we have chosen to constrain the hover throttle to be within the range reachable by the third order expo polynomial.
-        _throttle_hover = constrain_float(_throttle_hover + (dt / (dt + AP_MOTORS_THST_HOVER_TC)) * (get_throttle() - _throttle_hover), AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX);
+        _throttle_hover.set(constrain_float(_throttle_hover + (dt / (dt + AP_MOTORS_THST_HOVER_TC)) * (get_throttle() - _throttle_hover), AP_MOTORS_THST_HOVER_MIN, AP_MOTORS_THST_HOVER_MAX));
     }
 }
 

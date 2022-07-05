@@ -72,7 +72,7 @@ public:
     uint8_t     get_control_mode() const { return _control_mode; }
 
     // set_critical_speed
-    void        set_critical_speed(float critical_speed) { _critical_speed = critical_speed; }
+    void        set_critical_speed(float critical_speed) { _critical_speed.set(critical_speed); }
 
     // get_desired_speed
     float       get_desired_speed() const { return _desired_speed; }
@@ -88,13 +88,13 @@ public:
     float       get_governor_output() const { return _governor_output; }
     void        governor_reset();
     float       get_control_output() const { return _control_output; }
-    void        set_idle_output(float idle_output) { _idle_output = idle_output; }
+    void        set_idle_output(float idle_output) { _idle_output.set(idle_output); }
     void        autothrottle_run();
     void        set_throttle_curve();
 
     // functions for ramp and runup timers, runup_complete flag
-    void        set_ramp_time(int8_t ramp_time) { _ramp_time = ramp_time; }
-    void        set_runup_time(int8_t runup_time) { _runup_time = runup_time; }
+    void        set_ramp_time(int8_t ramp_time) { _ramp_time.set(ramp_time); }
+    void        set_runup_time(int8_t runup_time) { _runup_time.set(runup_time); }
     bool        is_runup_complete() const { return _runup_complete; }
 
     // is_spooldown_complete
