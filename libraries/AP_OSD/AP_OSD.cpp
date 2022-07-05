@@ -240,7 +240,7 @@ AP_OSD::AP_OSD()
     AP_Param::setup_object_defaults(this, var_info);
 #if OSD_ENABLED
     // default first screen enabled
-    screen[0].enabled = 1;
+    screen[0].enabled.set(1);
     previous_pwm_screen = -1;
 #endif
 #ifdef WITH_SITL_OSD
