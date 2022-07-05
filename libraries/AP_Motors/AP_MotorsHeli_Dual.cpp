@@ -353,20 +353,20 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 {
     // range check collective min, max and mid
     if( _collective_min >= _collective_max ) {
-        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
-        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
+        _collective_min.set(AP_MOTORS_HELI_COLLECTIVE_MIN);
+        _collective_max.set(AP_MOTORS_HELI_COLLECTIVE_MAX);
     }
 
 
     // range check collective min, max and mid for rear swashplate
     if( _collective2_min >= _collective2_max ) {
-        _collective2_min = AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN;
-        _collective2_max = AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX;
+        _collective2_min.set(AP_MOTORS_HELI_DUAL_COLLECTIVE2_MIN);
+        _collective2_max.set(AP_MOTORS_HELI_DUAL_COLLECTIVE2_MAX);
     }
 
-    _collective_zero_thrust_deg = constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg);
+    _collective_zero_thrust_deg.set(constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg));
 
-    _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
+    _collective_land_min_deg.set(constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg));
 
     if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
         // calculate collective zero thrust point as a number from 0 to 1
