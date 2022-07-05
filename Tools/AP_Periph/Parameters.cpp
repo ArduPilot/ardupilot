@@ -472,6 +472,7 @@ void AP_Periph_FW::load_parameters(void)
         // save the current format version
         g.format_version.set_and_save(Parameters::k_format_version);
     }
+    g.format_version.set_default(Parameters::k_format_version);
 
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
