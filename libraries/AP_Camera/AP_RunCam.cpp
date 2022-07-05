@@ -123,7 +123,7 @@ AP_RunCam::AP_RunCam()
         AP_HAL::panic("AP_RunCam must be singleton");
     }
     _singleton = this;
-    _cam_type = constrain_int16(_cam_type, 0, RUNCAM_MAX_DEVICE_TYPES);
+    _cam_type.set(constrain_int16(_cam_type, 0, RUNCAM_MAX_DEVICE_TYPES));
     _video_recording = VideoOption(_cam_control_option & uint8_t(ControlOption::VIDEO_RECORDING_AT_BOOT));
 }
 
@@ -950,7 +950,7 @@ void AP_RunCam::parse_device_info(const Request& request)
     uint8_t featureLowBits = request._recv_buf[2];
     uint8_t featureHighBits = request._recv_buf[3];
     if (!has_feature(Feature::FEATURES_OVERRIDE)) {
-        _features = (featureHighBits << 8) | featureLowBits;
+        _features.set((featureHighBits << 8) | featureLowBits);
     }
     if (_features > 0) {
         _state = State::INITIALIZED;
