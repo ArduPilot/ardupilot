@@ -134,8 +134,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: ICE options
-    // @Description: Options for ICE control
-    // @Bitmask: 0:DisableIgnitionRCFailsafe,1:DisableRedlineRPMGovernor
+    // @Description: Options for ICE control. The DisableIgnitionRCFailsafe option will cause the ignition to be set off on any R/C failsafe.
+    // @Bitmask: 0:DisableIgnitionRCFailsafe,1:DisableRedineGovernor
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
 
     // @Param: STARTCHN_MIN
@@ -224,7 +224,7 @@ void AP_ICEngine::update(void)
         should_run = true;
     }
 
-    if ((options & uint16_t(Options::DISABLE_IGNITION_RC_FAILSAFE)) && AP_Notify::flags.failsafe_radio) {
+    if (option_set(Options::DISABLE_IGNITION_RC_FAILSAFE) && AP_Notify::flags.failsafe_radio) {
         // user has requested ignition kill on RC failsafe
         should_run = false;
     }
@@ -376,9 +376,12 @@ bool AP_ICEngine::throttle_override(float &percentage)
     if (state == ICE_STARTING || state == ICE_START_DELAY) {
         percentage = start_percent.get();
         return true;
+    } else if (state != ICE_RUNNING && hal.util->get_soft_armed()) {
+        percentage = 0;
+        return true;
     }
-
-    if (redline.flag && !(options & uint16_t(Options::DISABLE_REDLINE_GOVERNOR))) {
+    
+    if (redline.flag && !option_set(Options::DISABLE_REDLINE_GOVERNOR)) {
         // limit the throttle from increasing above what the current output is
         if (redline.throttle_percentage < 1.0f) {
             redline.throttle_percentage = percentage;
@@ -401,6 +404,7 @@ bool AP_ICEngine::throttle_override(float &percentage)
         percentage = redline.throttle_percentage - redline.governor_integrator;
         return true;
     }
+
     return false;
 }
 
