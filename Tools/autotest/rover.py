@@ -571,7 +571,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.load_fence("rover-fence-ac-avoid.txt")
             self.set_parameters({
                 "FENCE_ENABLE": 0,
-                "PRX_TYPE": 10,
+                "PRX1_TYPE": 10,
                 "RC10_OPTION": 40, # proximity-enable
             })
             self.reboot_sitl()
@@ -5335,7 +5335,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ex = None
         try:
             self.set_parameters({
-                "PRX_TYPE": 2,  # AP_Proximity_MAV
+                "PRX1_TYPE": 2,  # AP_Proximity_MAV
                 "OA_TYPE": 2,  # dijkstra
                 "OA_DB_OUTPUT": 3,  # send all items
             })

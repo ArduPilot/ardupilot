@@ -6125,7 +6125,7 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         self.set_parameters({
             "SERIAL5_PROTOCOL": 1,
-            "PRX_TYPE": 2,
+            "PRX1_TYPE": 2,
             "SIM_SPEEDUP": 8,  # much GCS interaction
         })
         self.reboot_sitl()
@@ -6146,7 +6146,7 @@ class AutoTestCopter(AutoTest):
             self.load_fence("copter-avoidance-fence.txt")
             self.set_parameters({
                 "FENCE_ENABLE": 1,
-                "PRX_TYPE": 10,
+                "PRX1_TYPE": 10,
                 "PRX_LOG_RAW": 1,
                 "RC10_OPTION": 40, # proximity-enable
             })
@@ -6214,7 +6214,7 @@ class AutoTestCopter(AutoTest):
         home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 0)
         for (name, prx_type, expected_distances) in sensors:
             self.start_subtest("Testing %s" % name)
-            self.set_parameter("PRX_TYPE", prx_type)
+            self.set_parameter("PRX1_TYPE", prx_type)
             self.customise_SITL_commandline([
                 "--uartF=sim:%s:" % name,
                 "--home", home_string,
@@ -6251,7 +6251,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameters({
-                "PRX_TYPE": 2,
+                "PRX1_TYPE": 2,
                 "AVOID_ALT_MIN": 10,
             })
             self.set_analog_rangefinder_parameters()
@@ -6834,7 +6834,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         try:
             self.set_parameter("SERIAL5_PROTOCOL", 1)
-            self.set_parameter("PRX_TYPE", 2)  # mavlink
+            self.set_parameter("PRX1_TYPE", 2)  # mavlink
             self.reboot_sitl()
 
             self.progress("Should be unhealthy while we don't send messages")
