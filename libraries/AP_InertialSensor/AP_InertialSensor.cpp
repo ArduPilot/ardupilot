@@ -1573,7 +1573,7 @@ AP_InertialSensor::_init_gyro()
             _gyro_cal_ok[k] = true;
             _gyro_offset[k] = new_gyro_offset[k];
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_gyro[k] = 0.5 * (get_temperature(k) + start_temperature[k]);
+            caltemp_gyro[k].set(0.5 * (get_temperature(k) + start_temperature[k]));
 #endif
         }
     }
