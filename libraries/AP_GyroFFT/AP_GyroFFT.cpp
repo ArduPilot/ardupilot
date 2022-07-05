@@ -206,21 +206,21 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     }
 
     // check that we support the window size requested and it is a power of 2
-    _window_size = 1 << lrintf(log2f(_window_size.get()));
+    _window_size.set(1 << lrintf(log2f(_window_size.get())));
 #if defined(STM32H7) || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    _window_size = constrain_int16(_window_size, 32, 512);
+    _window_size.set(constrain_int16(_window_size, 32, 512));
 #else
-    _window_size = constrain_int16(_window_size, 32, 256);
+    _window_size.set(constrain_int16(_window_size, 32, 256));
 #endif
     // number of samples needed before a new frame can be processed
-    _window_overlap = constrain_float(_window_overlap, 0.0f, 0.9f);
+    _window_overlap.set(constrain_float(_window_overlap, 0.0f, 0.9f));
     _samples_per_frame = (1.0f - _window_overlap) * _window_size;
     // if we allow too small a number of samples per frame the output rate gets very high
     // this is particularly a problem on IMUs with higher sample rates (e.g. BMI088)
     // 16 gives a maximum output rate of 2Khz / 16 = 125Hz per axis or 375Hz in aggregate
     _samples_per_frame = MAX(FFT_MIN_SAMPLES_PER_FRAME, 1 << lrintf(log2f(_samples_per_frame)));
     if (_num_frames > 0) {
-        _num_frames = constrain_int16(_num_frames, 2, AP_HAL::DSP::MAX_SLIDING_WINDOW_SIZE);
+        _num_frames.set(constrain_int16(_num_frames, 2, AP_HAL::DSP::MAX_SLIDING_WINDOW_SIZE));
     }
 
     // check that we have enough memory for the window size requested
@@ -231,7 +231,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
         return;
     } else if (allocation_count * _window_size > hal.util->available_memory() / 2) {
         gcs().send_text(MAV_SEVERITY_WARNING, "AP_GyroFFT: req alloc %u bytes (free=%u)", (unsigned int)allocation_count * _window_size, (unsigned int)hal.util->available_memory());
-        _window_size = FFT_DEFAULT_WINDOW_SIZE;
+        _window_size.set(FFT_DEFAULT_WINDOW_SIZE);
     }
     // save any changes that were made
     _window_size.save();
@@ -499,7 +499,7 @@ void AP_GyroFFT::update_parameters(bool force)
     WITH_SEMAPHORE(_sem);
 
     // don't allow MAXHZ to go to Nyquist
-    _fft_max_hz = MIN(_fft_max_hz, _fft_sampling_rate_hz * 0.48);
+    _fft_max_hz.set(MIN(_fft_max_hz, _fft_sampling_rate_hz * 0.48));
     _config._snr_threshold_db = _snr_threshold_db;
     _config._fft_min_hz = _fft_min_hz;
     _config._fft_max_hz = _fft_max_hz;
@@ -637,9 +637,9 @@ void AP_GyroFFT::update_freq_hover(float dt, float throttle_out)
     }
 
     // we have chosen to constrain the hover frequency to be within the range reachable by the third order expo polynomial.
-    _freq_hover_hz = constrain_float(_freq_hover_hz + (dt / (10.0f + dt)) * (get_weighted_noise_center_freq_hz() - _freq_hover_hz), _fft_min_hz, _fft_max_hz);
-    _bandwidth_hover_hz = constrain_float(_bandwidth_hover_hz + (dt / (10.0f + dt)) * (get_weighted_noise_center_bandwidth_hz() - _bandwidth_hover_hz), 0, _fft_max_hz * 0.5f);
-    _throttle_ref = constrain_float(_throttle_ref + (dt / (10.0f + dt)) * (throttle_out * sq((float)_fft_min_hz.get() / _freq_hover_hz.get()) - _throttle_ref), 0.01f, 0.9f);
+    _freq_hover_hz.set(constrain_float(_freq_hover_hz + (dt / (10.0f + dt)) * (get_weighted_noise_center_freq_hz() - _freq_hover_hz), _fft_min_hz, _fft_max_hz));
+    _bandwidth_hover_hz.set(constrain_float(_bandwidth_hover_hz + (dt / (10.0f + dt)) * (get_weighted_noise_center_bandwidth_hz() - _bandwidth_hover_hz), 0, _fft_max_hz * 0.5f));
+    _throttle_ref.set(constrain_float(_throttle_ref + (dt / (10.0f + dt)) * (throttle_out * sq((float)_fft_min_hz.get() / _freq_hover_hz.get()) - _throttle_ref), 0.01f, 0.9f));
 }
 
 // save parameters as part of disarming
@@ -711,8 +711,8 @@ void AP_GyroFFT::stop_notch_tune()
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: Unable to set throttle notch with %.1fHz/%.2f",
             (float)_fft_min_hz.get(), thr_ref);
         // save results to FFT slots
-        _throttle_ref = thr_ref;
-        _freq_hover_hz = harmonic;
+        _throttle_ref.set(thr_ref);
+        _freq_hover_hz.set(harmonic);
     } else {
         gcs().send_text(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", (float)_fft_min_hz.get(), thr_ref);
     }
