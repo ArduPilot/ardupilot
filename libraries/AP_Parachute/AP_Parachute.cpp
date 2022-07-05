@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_Parachute::var_info[] = {
 /// enabled - enable or disable parachute release
 void AP_Parachute::enabled(bool on_off)
 {
-    _enabled = on_off;
+    _enabled.set(on_off);
 
     // clear release_time
     _release_time = 0;
