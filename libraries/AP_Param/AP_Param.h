@@ -893,35 +893,6 @@ public:
         return _value;
     }
 
-    /// Copy assignment from T is equivalent to ::set.
-    ///
-    AP_ParamT<T,PT>& operator= (const T &v) {
-        _value = v;
-        return *this;
-    }
-
-    /// bit ops on parameters
-    ///
-    AP_ParamT<T,PT>& operator |=(const T &v) {
-        _value |= v;
-        return *this;
-    }
-
-    AP_ParamT<T,PT>& operator &=(const T &v) {
-        _value &= v;
-        return *this;
-    }
-
-    AP_ParamT<T,PT>& operator +=(const T &v) {
-        _value += v;
-        return *this;
-    }
-
-    AP_ParamT<T,PT>& operator -=(const T &v) {
-        _value -= v;
-        return *this;
-    }
-
     /// AP_ParamT types can implement AP_Param::cast_to_float
     ///
     float cast_to_float(void) const {
