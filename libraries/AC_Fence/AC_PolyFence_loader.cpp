@@ -296,7 +296,7 @@ bool AC_PolyFence_loader::format()
 bool AC_PolyFence_loader::convert_to_new_storage()
 {
     // sanity check total
-    _total = constrain_int16(_total, 0, max_items());
+    _total.set(constrain_int16(_total, 0, max_items()));
     // FIXME: ensure the fence was closed and don't load it if it was not
     if (_total < 5) {
         // fence was invalid.  Just format it and move on
