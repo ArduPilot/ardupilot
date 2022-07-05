@@ -102,7 +102,7 @@ public:
     void update(void);
 
     bool enabled() const { return enable; }
-    void set_enabled(bool _enable) { enable = _enable; }
+    void set_enabled(bool _enable) { enable.set(_enable); }
 
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }
