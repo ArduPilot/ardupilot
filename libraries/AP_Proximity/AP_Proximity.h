@@ -104,10 +104,10 @@ public:
 
     // get total number of obstacles, used in GPS based Simple Avoidance
     uint8_t get_obstacle_count() const;
-    
+
     // get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
     bool get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const;
-    
+
     // returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
     // returns FLT_MAX if it's an invalid instance.
     bool closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const;
