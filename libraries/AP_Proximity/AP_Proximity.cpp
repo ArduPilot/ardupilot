@@ -91,7 +91,7 @@ AP_Proximity::AP_Proximity()
 
 // initialise the Proximity class. We do detection of attached sensors here
 // we don't allow for hot-plugging of sensors (i.e. reboot required)
-void AP_Proximity::init(void)
+void AP_Proximity::init()
 {
     if (num_instances != 0) {
         // init called a 2nd time?
@@ -111,7 +111,7 @@ void AP_Proximity::init(void)
 }
 
 // update Proximity state for all instances. This should be called at a high rate by the main loop
-void AP_Proximity::update(void)
+void AP_Proximity::update()
 {
     for (uint8_t i=0; i<num_instances; i++) {
         if (!valid_instance(i)) {
@@ -127,6 +127,14 @@ void AP_Proximity::update(void)
             primary_instance = i;
         }
     }
+}
+
+AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
+{
+    if (instance < PROXIMITY_MAX_INSTANCES) {
+        return (Type)((uint8_t)params[instance].type);
+    }
+    return Type::None;
 }
 
 // return sensor orientation
@@ -165,6 +173,114 @@ AP_Proximity::Status AP_Proximity::get_status() const
     return get_status(primary_instance);
 }
 
+// get maximum and minimum distances (in meters) of primary sensor
+float AP_Proximity::distance_max() const
+{
+    if (!valid_instance(primary_instance)) {
+        return 0.0f;
+    }
+    // get maximum distance from backend
+    return drivers[primary_instance]->distance_max();
+}
+float AP_Proximity::distance_min() const
+{
+    if (!valid_instance(primary_instance)) {
+        return 0.0f;
+    }
+    // get minimum distance from backend
+    return drivers[primary_instance]->distance_min();
+}
+
+
+// get distances in 8 directions. used for sending distances to ground station
+bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const
+{
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    // get distances from backend
+    return drivers[primary_instance]->get_horizontal_distances(prx_dist_array);
+}
+
+// get number of layers.
+uint8_t AP_Proximity::get_num_layers() const
+{
+    if (!valid_instance(primary_instance)) {
+        return 0;
+    }
+    return drivers[primary_instance]->get_num_layers();
+}
+
+// get raw and filtered distances in 8 directions per layer. used for logging
+bool AP_Proximity::get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const
+{
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    // get distances from backend
+    return drivers[primary_instance]->get_active_layer_distances(layer, prx_dist_array, prx_filt_dist_array);
+}
+
+// get total number of obstacles, used in GPS based Simple Avoidance
+uint8_t AP_Proximity::get_obstacle_count() const
+{   
+    if (!valid_instance(primary_instance)) {
+        return 0;
+    }
+    return drivers[primary_instance]->get_obstacle_count();
+}
+
+// get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
+bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
+{
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    return drivers[primary_instance]->get_obstacle(obstacle_num, vec_to_obstacle);
+}
+
+// returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
+// used in GPS based Simple Avoidance
+bool AP_Proximity::closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
+{
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    return drivers[primary_instance]->closest_point_from_segment_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
+}
+
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
+{
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    // get closest object from backend
+    return drivers[primary_instance]->get_closest_object(angle_deg, distance);
+}
+
+// get number of objects, used for non-GPS avoidance
+uint8_t AP_Proximity::get_object_count() const
+{
+    if (!valid_instance(primary_instance)) {
+        return 0;
+    }
+    // get count from backend
+    return drivers[primary_instance]->get_horizontal_object_count();
+}
+
+// get an object's angle and distance, used for non-GPS avoidance
+// returns false if no angle or distance could be returned for some reason
+bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const
+{
+    if (!valid_instance(primary_instance)) {
+        return false;
+    }
+    // get angle and distance from backend
+    return drivers[primary_instance]->get_horizontal_object_angle_and_distance(object_number, angle_deg, distance);
+}
+
 // handle mavlink DISTANCE_SENSOR messages
 void AP_Proximity::handle_msg(const mavlink_message_t &msg)
 {
@@ -174,6 +290,112 @@ void AP_Proximity::handle_msg(const mavlink_message_t &msg)
         }
     }
 }
+
+// methods for mavlink SYS_STATUS message (send_sys_status)
+// these methods cover only the primary instance
+bool AP_Proximity::sensor_present() const
+{
+    return get_status() != Status::NotConnected;
+}
+bool AP_Proximity::sensor_enabled() const
+{
+    return get_type(primary_instance) != Type::None;
+}
+bool AP_Proximity::sensor_failed() const
+{
+    return get_status() != Status::Good;
+}
+
+// get distance in meters upwards, returns true on success
+bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
+{
+    if (!valid_instance(instance)) {
+        return false;
+    }
+    // get upward distance from backend
+    return drivers[instance]->get_upward_distance(distance);
+}
+
+bool AP_Proximity::get_upward_distance(float &distance) const
+{
+    return get_upward_distance(primary_instance, distance);
+}
+
+// set alt as read from dowward facing rangefinder. Tilt is already adjusted for.
+void AP_Proximity::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
+{
+    if (!valid_instance(primary_instance)) {
+        return;
+    }
+    // store alt at the backend
+    drivers[primary_instance]->set_rangefinder_alt(use, healthy, alt_cm);
+}
+
+#if HAL_LOGGING_ENABLED
+// Write proximity sensor distances
+void AP_Proximity::log()
+{
+    // exit immediately if not enabled
+    if (get_status() == AP_Proximity::Status::NotConnected) {
+        return;
+    }
+
+    Proximity_Distance_Array dist_array{}; // raw distances stored here
+    Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
+    auto &logger { AP::logger() };
+    for (uint8_t i = 0; i < get_num_layers(); i++) {
+        const bool active = get_active_layer_distances(i, dist_array, filt_dist_array);
+        if (!active) {
+            // nothing on this layer
+            continue;
+        }
+        float dist_up;
+        if (!get_upward_distance(dist_up)) {
+            dist_up = 0.0f;
+        }
+
+        float closest_ang = 0.0f;
+        float closest_dist = 0.0f;
+        get_closest_object(closest_ang, closest_dist);
+
+        const struct log_Proximity pkt_proximity{
+                LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
+                time_us         : AP_HAL::micros64(),
+                instance        : i,
+                health          : (uint8_t)get_status(),
+                dist0           : filt_dist_array.distance[0],
+                dist45          : filt_dist_array.distance[1],
+                dist90          : filt_dist_array.distance[2],
+                dist135         : filt_dist_array.distance[3],
+                dist180         : filt_dist_array.distance[4],
+                dist225         : filt_dist_array.distance[5],
+                dist270         : filt_dist_array.distance[6],
+                dist315         : filt_dist_array.distance[7],
+                distup          : dist_up,
+                closest_angle   : closest_ang,
+                closest_dist    : closest_dist
+        };
+        logger.WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
+
+        if (_raw_log_enable) {
+            const struct log_Proximity_raw pkt_proximity_raw{
+                LOG_PACKET_HEADER_INIT(LOG_RAW_PROXIMITY_MSG),
+                time_us         : AP_HAL::micros64(),
+                instance        : i,
+                raw_dist0       : dist_array.distance[0],
+                raw_dist45      : dist_array.distance[1],
+                raw_dist90      : dist_array.distance[2],
+                raw_dist135     : dist_array.distance[3],
+                raw_dist180     : dist_array.distance[4],
+                raw_dist225     : dist_array.distance[5],
+                raw_dist270     : dist_array.distance[6],
+                raw_dist315     : dist_array.distance[7],
+            };
+            logger.WriteBlock(&pkt_proximity_raw, sizeof(pkt_proximity_raw));
+        }
+    }
+}
+#endif
 
 // return true if the given instance exists
 bool AP_Proximity::valid_instance(uint8_t i) const
@@ -267,224 +489,7 @@ void AP_Proximity::detect_instance(uint8_t instance)
     }
 }
 
-// get distances in 8 directions. used for sending distances to ground station
-bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const
-{
-    if (!valid_instance(primary_instance)) {
-        return false;
-    }
-    // get distances from backend
-    return drivers[primary_instance]->get_horizontal_distances(prx_dist_array);
-}
 
-// get raw and filtered distances in 8 directions per layer. used for logging
-bool AP_Proximity::get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const
-{
-    if (!valid_instance(primary_instance)) {
-        return false;
-    }
-    // get distances from backend
-    return drivers[primary_instance]->get_active_layer_distances(layer, prx_dist_array, prx_filt_dist_array);
-}
-
-// get total number of obstacles, used in GPS based Simple Avoidance
-uint8_t AP_Proximity::get_obstacle_count() const
-{   
-    if (!valid_instance(primary_instance)) {
-        return 0;
-    }
-    return drivers[primary_instance]->get_obstacle_count();
-}
-
-// get number of layers.
-uint8_t AP_Proximity::get_num_layers() const
-{
-    if (!valid_instance(primary_instance)) {
-        return 0;
-    }
-    return drivers[primary_instance]->get_num_layers();
-}
-
-// get vector to obstacle based on obstacle_num passed, used in GPS based Simple Avoidance
-bool AP_Proximity::get_obstacle(uint8_t obstacle_num, Vector3f& vec_to_obstacle) const
-{
-    if (!valid_instance(primary_instance)) {
-        return false;
-    }
-    return drivers[primary_instance]->get_obstacle(obstacle_num, vec_to_obstacle);
-}
-
-// returns shortest distance to "obstacle_num" obstacle, from a line segment formed between "seg_start" and "seg_end"
-// used in GPS based Simple Avoidance
-bool AP_Proximity::closest_point_from_segment_to_obstacle(uint8_t obstacle_num, const Vector3f& seg_start, const Vector3f& seg_end, Vector3f& closest_point) const
-{
-    if (!valid_instance(primary_instance)) {
-        return false;
-    }
-    return drivers[primary_instance]->closest_point_from_segment_to_obstacle(obstacle_num, seg_start, seg_end, closest_point);
-}
-
-// get distance and angle to closest object (used for pre-arm check)
-//   returns true on success, false if no valid readings
-bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
-{
-    if (!valid_instance(primary_instance)) {
-        return false;
-    }
-    // get closest object from backend
-    return drivers[primary_instance]->get_closest_object(angle_deg, distance);
-}
-
-// get number of objects, used for non-GPS avoidance
-uint8_t AP_Proximity::get_object_count() const
-{
-    if (!valid_instance(primary_instance)) {
-        return 0;
-    }
-    // get count from backend
-    return drivers[primary_instance]->get_horizontal_object_count();
-}
-
-// get an object's angle and distance, used for non-GPS avoidance
-// returns false if no angle or distance could be returned for some reason
-bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const
-{
-    if (!valid_instance(primary_instance)) {
-        return false;
-    }
-    // get angle and distance from backend
-    return drivers[primary_instance]->get_horizontal_object_angle_and_distance(object_number, angle_deg, distance);
-}
-
-// get maximum and minimum distances (in meters) of primary sensor
-float AP_Proximity::distance_max() const
-{
-    if (!valid_instance(primary_instance)) {
-        return 0.0f;
-    }
-    // get maximum distance from backend
-    return drivers[primary_instance]->distance_max();
-}
-float AP_Proximity::distance_min() const
-{
-    if (!valid_instance(primary_instance)) {
-        return 0.0f;
-    }
-    // get minimum distance from backend
-    return drivers[primary_instance]->distance_min();
-}
-
-// get distance in meters upwards, returns true on success
-bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
-{
-    if (!valid_instance(instance)) {
-        return false;
-    }
-    // get upward distance from backend
-    return drivers[instance]->get_upward_distance(distance);
-}
-
-bool AP_Proximity::get_upward_distance(float &distance) const
-{
-    return get_upward_distance(primary_instance, distance);
-}
-
-AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
-{
-    if (instance < PROXIMITY_MAX_INSTANCES) {
-        return (Type)((uint8_t)params[instance].type);
-    }
-    return Type::None;
-}
-
-bool AP_Proximity::sensor_present() const
-{
-    return get_status() != Status::NotConnected;
-}
-bool AP_Proximity::sensor_enabled() const
-{
-    return get_type(primary_instance) != Type::None;
-}
-bool AP_Proximity::sensor_failed() const
-{
-    return get_status() != Status::Good;
-}
-
-// set alt as read from dowward facing rangefinder. Tilt is already adjusted for.
-void AP_Proximity::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
-{
-    if (!valid_instance(primary_instance)) {
-        return;
-    }
-    // store alt at the backend
-    drivers[primary_instance]->set_rangefinder_alt(use, healthy, alt_cm);
-}
-
-#if HAL_LOGGING_ENABLED
-// Write proximity sensor distances
-void AP_Proximity::log()
-{
-    // exit immediately if not enabled
-    if (get_status() == AP_Proximity::Status::NotConnected) {
-        return;
-    }
-
-    Proximity_Distance_Array dist_array{}; // raw distances stored here
-    Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
-    auto &logger { AP::logger() };
-    for (uint8_t i = 0; i < get_num_layers(); i++) {
-        const bool active = get_active_layer_distances(i, dist_array, filt_dist_array);
-        if (!active) {
-            // nothing on this layer
-            continue;
-        }
-        float dist_up;
-        if (!get_upward_distance(dist_up)) {
-            dist_up = 0.0f;
-        }
-
-        float closest_ang = 0.0f;
-        float closest_dist = 0.0f;
-        get_closest_object(closest_ang, closest_dist);
-
-        const struct log_Proximity pkt_proximity{
-                LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
-                time_us         : AP_HAL::micros64(),
-                instance        : i,
-                health          : (uint8_t)get_status(),
-                dist0           : filt_dist_array.distance[0],
-                dist45          : filt_dist_array.distance[1],
-                dist90          : filt_dist_array.distance[2],
-                dist135         : filt_dist_array.distance[3],
-                dist180         : filt_dist_array.distance[4],
-                dist225         : filt_dist_array.distance[5],
-                dist270         : filt_dist_array.distance[6],
-                dist315         : filt_dist_array.distance[7],
-                distup          : dist_up,
-                closest_angle   : closest_ang,
-                closest_dist    : closest_dist
-        };
-        logger.WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
-
-        if (_raw_log_enable) {
-            const struct log_Proximity_raw pkt_proximity_raw{
-                LOG_PACKET_HEADER_INIT(LOG_RAW_PROXIMITY_MSG),
-                time_us         : AP_HAL::micros64(),
-                instance        : i,
-                raw_dist0       : dist_array.distance[0],
-                raw_dist45      : dist_array.distance[1],
-                raw_dist90      : dist_array.distance[2],
-                raw_dist135     : dist_array.distance[3],
-                raw_dist180     : dist_array.distance[4],
-                raw_dist225     : dist_array.distance[5],
-                raw_dist270     : dist_array.distance[6],
-                raw_dist315     : dist_array.distance[7],
-            };
-            logger.WriteBlock(&pkt_proximity_raw, sizeof(pkt_proximity_raw));
-        }
-    }
-}
-#endif
 
 AP_Proximity *AP_Proximity::_singleton;
 
