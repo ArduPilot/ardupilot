@@ -310,13 +310,13 @@ void AP_MotorsHeli_Single::calculate_scalars()
 {
     // range check collective min, max and zero
     if( _collective_min >= _collective_max ) {
-        _collective_min = AP_MOTORS_HELI_COLLECTIVE_MIN;
-        _collective_max = AP_MOTORS_HELI_COLLECTIVE_MAX;
+        _collective_min.set(AP_MOTORS_HELI_COLLECTIVE_MIN);
+        _collective_max.set(AP_MOTORS_HELI_COLLECTIVE_MAX);
     }
 
-    _collective_zero_thrust_deg = constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg);
+    _collective_zero_thrust_deg.set(constrain_float(_collective_zero_thrust_deg, _collective_min_deg, _collective_max_deg));
 
-    _collective_land_min_deg = constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg);
+    _collective_land_min_deg.set(constrain_float(_collective_land_min_deg, _collective_min_deg, _collective_max_deg));
 
     if (!is_equal((float)_collective_max_deg, (float)_collective_min_deg)) {
         // calculate collective zero thrust point as a number from 0 to 1
@@ -467,7 +467,7 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
         // also not required if we are using external gyro
         if ((_main_rotor.get_control_output() > _main_rotor.get_idle_output()) && _tail_type != AP_MOTORS_HELI_SINGLE_TAILTYPE_SERVO_EXTGYRO) {
             // sanity check collective_yaw_effect
-            _collective_yaw_effect = constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE);
+            _collective_yaw_effect.set(constrain_float(_collective_yaw_effect, -AP_MOTORS_HELI_SINGLE_COLYAW_RANGE, AP_MOTORS_HELI_SINGLE_COLYAW_RANGE));
             // the 4.5 scaling factor is to bring the values in line with previous releases
             yaw_offset = _collective_yaw_effect * fabsf(collective_out - _collective_zero_thrust_pct) / 4.5f;
         }
