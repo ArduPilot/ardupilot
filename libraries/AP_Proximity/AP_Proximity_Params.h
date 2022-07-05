@@ -3,7 +3,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
-#define PROXIMITY_MAX_IGNORE                6   // up to six areas can be ignored
+#define PROXIMITY_MAX_IGNORE                4   // up to six areas can be ignored
 
 class AP_Proximity_Params {
 
