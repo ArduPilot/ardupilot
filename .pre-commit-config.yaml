@@ -52,4 +52,8 @@ repos:
       hooks:
         - id: mypy
           args: [--no-strict-optional, --ignore-missing-imports]
+          exclude: |
+            (?x)(
+              libraries/
+            )
           additional_dependencies: [types-PyYAML, types-requests, types-pytz, types-tabulate]
