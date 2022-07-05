@@ -484,6 +484,11 @@ void AP_UAVCAN_DNA_Server::handleNodeStatus(uint8_t node_id, const NodeStatusCb 
         return;
     }
     WITH_SEMAPHORE(sem);
+
+    if (_ap_uavcan->option_is_set(AP_UAVCAN::Options::LOG_NODE_STATUS)) {
+        log_NodeStatus(node_id, cb.msg->uptime_sec, cb.msg->health, cb.msg->mode);
+    }
+
     if (!isNodeIDVerified(node_id)) {
         //immediately begin verification of the node_id
         for (uint8_t i = 0; i < HAL_MAX_CAN_PROTOCOL_DRIVERS; i++) {
@@ -578,6 +583,29 @@ void AP_UAVCAN_DNA_Server::handleNodeInfo(uint8_t node_id, uint8_t unique_id[], 
             nodeInfo_resp_rcvd = true;
         }
     }
+}
+
+/*
+  optionally log NodeStatus packets
+ */
+void AP_UAVCAN_DNA_Server::log_NodeStatus(uint8_t node_id, uint32_t uptime_sec, uint8_t healthy, uint8_t mode)
+{
+    if (node_id > MAX_NODE_ID) {
+        return;
+    }
+
+    // @LoggerMessage: CANH
+    // @Description: CAN Health Status
+    // @Field: TimeUS: Time since system startup
+    // @Field: NodeID: Node ID
+    // @Field: Healthy: zero when node healthy
+    // @Field: UpTime: time since boot in seconds
+    AP::logger().WriteStreaming("CANH",
+                                "TimeUS," "NodeID," "Healthy," "UpTime", // labels
+                                "s"            "#"        "-"       "-", // units
+                                "F"            "-"        "-"       "-", // multipliers
+                                "Q"            "B"        "B"       "I", // types
+                                AP_HAL::micros64(), node_id, healthy, uptime_sec);
 }
 
 //Trampoline call for handleNodeInfo member call
