@@ -446,7 +446,7 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
         // initialise offset in NED frame
         _offset = -dist_vec_ned;
         // ensure offset_type used matches frame of offsets saved
-        _offset_type = AP_FOLLOW_OFFSET_TYPE_NED;
+        _offset_type.set(AP_FOLLOW_OFFSET_TYPE_NED);
         gcs().send_text(MAV_SEVERITY_INFO, "N-E-D follow offset loaded");
     }
 }
