@@ -885,7 +885,7 @@ void AP_Baro::update(void)
             // update altitude calculation
             float ground_pressure = sensors[i].ground_pressure;
             if (!is_positive(ground_pressure) || isnan(ground_pressure) || isinf(ground_pressure)) {
-                sensors[i].ground_pressure = sensors[i].pressure;
+                sensors[i].ground_pressure.set(sensors[i].pressure);
             }
             float altitude = sensors[i].altitude;
             float corrected_pressure = sensors[i].pressure + sensors[i].p_correction;

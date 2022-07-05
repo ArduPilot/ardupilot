@@ -173,7 +173,7 @@ public:
     uint8_t num_instances(void) const { return _num_sensors; }
 
     // set baro drift amount
-    void set_baro_drift_altitude(float alt) { _alt_offset = alt; }
+    void set_baro_drift_altitude(float alt) { _alt_offset.set(alt); }
 
     // get baro drift amount
     float get_baro_drift_offset(void) const { return _alt_offset_active; }
