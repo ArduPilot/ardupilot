@@ -39,8 +39,8 @@ AP_BattMonitor_SMBus::AP_BattMonitor_SMBus(AP_BattMonitor &mon,
     _state.var_info = var_info;
 
     _bus.set_default(i2c_bus);
-    _params._serial_number = AP_BATT_SERIAL_NUMBER_DEFAULT;
-    _params._pack_capacity = 0;
+    _params._serial_number.set(AP_BATT_SERIAL_NUMBER_DEFAULT);
+    _params._pack_capacity.set(0);
 }
 
 void AP_BattMonitor_SMBus::init(void)
