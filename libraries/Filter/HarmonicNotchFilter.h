@@ -100,7 +100,7 @@ public:
     void set_default_harmonics(uint8_t hmncs) { _harmonics.set_default(hmncs); }
     // reference value of the harmonic notch
     float reference(void) const { return _reference; }
-    void set_reference(float ref) { _reference = ref; }
+    void set_reference(float ref) { _reference.set(ref); }
     // notch options
     bool hasOption(Options option) const { return _options & uint16_t(option); }
     // notch dynamic tracking mode
