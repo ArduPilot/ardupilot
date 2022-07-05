@@ -2458,59 +2458,57 @@ function'''
         # Enable soaring (no automatic thermalling)
         self.set_rc(rc_chan, 1500)
 
-        # Enable speed to fly.
-        self.set_parameter("SOAR_CRSE_ARSPD", -1)
+        self.set_parameters({
+            "SOAR_CRSE_ARSPD": -1,  # Enable speed to fly.
+            "SOAR_VSPEED": 1,  # Set appropriate McCready.
+            "SIM_WIND_SPD": 0,
+        })
 
-        # Set appropriate McCready.
-        self.set_parameter("SOAR_VSPEED", 1)
-        self.set_parameter("SIM_WIND_SPD", 0)
-
-        # Wait a few seconds before determining the "trim" airspeed.
+        self.progress('Waiting a few seconds before determining the "trim" airspeed.')
         self.delay_sim_time(20)
         m = self.mav.recv_match(type='VFR_HUD', blocking=True)
         trim_airspeed = m.airspeed
+        self.progress("Using trim_airspeed=%f" % (trim_airspeed,))
 
         min_airspeed = self.get_parameter("ARSPD_FBW_MIN")
         max_airspeed = self.get_parameter("ARSPD_FBW_MAX")
 
-        # Add updraft
-        self.set_parameter("SIM_WIND_SPD", 1)
-        self.set_parameter('SIM_WIND_DIR_Z', 90)
-        self.delay_sim_time(20)
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        if trim_airspeed > max_airspeed:
+            raise NotAchievedException("trim airspeed > max_airspeed (%f>%f)" %
+                                       (trim_airspeed, max_airspeed))
+        if trim_airspeed < min_airspeed:
+            raise NotAchievedException("trim airspeed < min_airspeed (%f<%f)" %
+                                       (trim_airspeed, min_airspeed))
 
-        if not m.airspeed < trim_airspeed and trim_airspeed > min_airspeed:
-            raise NotAchievedException("Airspeed did not reduce in updraft")
+        self.progress("Adding updraft")
+        self.set_parameters({
+            "SIM_WIND_SPD": 1,
+            'SIM_WIND_DIR_Z': 90,
+        })
+        self.progress("Waiting for vehicle to move slower in updraft")
+        self.wait_airspeed(0, trim_airspeed-0.5, minimum_duration=10, timeout=120)
 
-        # Add downdraft
+        self.progress("Adding downdraft")
         self.set_parameter('SIM_WIND_DIR_Z', -90)
-        self.delay_sim_time(20)
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        self.progress("Waiting for vehicle to move faster in downdraft")
+        self.wait_airspeed(trim_airspeed+0.5, trim_airspeed+100, minimum_duration=10, timeout=120)
 
-        if not m.airspeed > trim_airspeed and trim_airspeed < max_airspeed:
-            raise NotAchievedException("Airspeed did not increase in downdraft")
+        self.progress("Zeroing wind and increasing McCready")
+        self.set_parameters({
+            "SIM_WIND_SPD": 0,
+            "SOAR_VSPEED": 2,
+        })
+        self.progress("Waiting for airspeed to increase with higher VSPEED")
+        self.wait_airspeed(trim_airspeed+0.5, trim_airspeed+100, minimum_duration=10, timeout=120)
 
-        # Zero the wind and increase McCready.
-        self.set_parameter("SIM_WIND_SPD", 0)
-        self.set_parameter("SOAR_VSPEED", 2)
-        self.delay_sim_time(20)
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
-
-        if not m.airspeed > trim_airspeed and trim_airspeed < max_airspeed:
-            raise NotAchievedException("Airspeed did not increase with higher SOAR_VSPEED")
-
-        # Reduce McCready.
+        self.progress("Reducing McCready")
         self.set_parameter("SOAR_VSPEED", 0)
-        self.delay_sim_time(20)
-        m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+        self.progress("Waiting for airspeed to decrease with lower VSPEED")
+        self.wait_airspeed(0, trim_airspeed-0.5, minimum_duration=10, timeout=120)
 
-        if not m.airspeed < trim_airspeed and trim_airspeed > min_airspeed:
-            raise NotAchievedException("Airspeed did not reduce with lower SOAR_VSPEED")
-
-        # Disarm
-        self.disarm_vehicle_expect_fail()
-
-        self.progress("Mission OK")
+        # takes too long to land, so just make it all go away:
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
 
     def test_airspeed_drivers(self):
         airspeed_sensors = [
