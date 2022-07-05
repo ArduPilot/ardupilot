@@ -11,7 +11,9 @@ exclude: |
   ^build/ |
   ^cmake-build-debug/ |
   \.m |
-  ^libraries/AP_HAL_ChibiOS/hwdef/scripts/
+  ^libraries/AP_HAL_ChibiOS/hwdef/scripts/ |
+  .*\/wscript |
+  wscript
   )
 
 repos:
@@ -50,4 +52,4 @@ repos:
       hooks:
         - id: mypy
           args: [--no-strict-optional, --ignore-missing-imports]
-          additional_dependencies: [types-PyYAML, types-requests]
+          additional_dependencies: [types-PyYAML, types-requests, types-pytz, types-tabulate]
