@@ -1488,8 +1488,8 @@ if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
                     entities[i][k] = v
     config['entities'] = list(entities.values())
     env = Environment(loader=FileSystemLoader(os.path.join(autotest_dir, 'template')))
-    mission = env.get_template('scrimmage.xml').render(**config)
-    tmp = mkstemp()
+    mission = env.get_template('scrimmage.template').render(**config)
+    tmp = mkstemp(suffix=".xml")
     atexit.register(os.remove, tmp[1])
 
     with os.fdopen(tmp[0], 'w') as fd:
