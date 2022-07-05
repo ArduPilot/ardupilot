@@ -517,8 +517,8 @@ void AP_MotorsMulticopter::update_throttle_range()
     // if all outputs are digital adjust the range. We also do this for type PWM_RANGE, as those use the
     // scaled output, which is then mapped to PWM via the SRV_Channel library
     if (SRV_Channels::have_digital_outputs(get_motor_mask()) || (_pwm_type == PWM_TYPE_PWM_RANGE)) {
-        _pwm_min = 1000;
-        _pwm_max = 2000;
+        _pwm_min.set_and_default(1000);
+        _pwm_max.set_and_default(2000);
     }
 
     hal.rcout->set_esc_scaling(get_pwm_output_min(), get_pwm_output_max());
