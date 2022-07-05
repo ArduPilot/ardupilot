@@ -164,7 +164,7 @@ private:
 };
 
 // This class gives an easy way of making a temporary boundary, used for "sorting" distances.
-// When unkown number of distances at various orientations are sent we store the least distance in the temporary boundary.
+// When unknown number of distances at various orientations are sent we store the least distance in the temporary boundary.
 // After all the messages are received, we copy the contents of the temporary boundary and put it in the main 3-D boundary.
 class AP_Proximity_Temp_Boundary
 {

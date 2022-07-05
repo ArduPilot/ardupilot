@@ -28,7 +28,7 @@ class AP_Proximity_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state);
+	AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state, AP_Proximity_Params &_params);
 
     // we declare a virtual destructor so that Proximity drivers can
     // override with a custom destructor if need be
@@ -121,6 +121,7 @@ protected:
 
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
+    AP_Proximity_Params &params;            // parameters for this backend
 
     // Methods to manipulate 3D boundary in this class
     AP_Proximity_Boundary_3D boundary;
