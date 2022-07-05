@@ -190,7 +190,7 @@ void AP_ADSB::init(void)
 {
     if (in_state.vehicle_list == nullptr) {
         // sanity check param
-        in_state.list_size_param = constrain_int16(in_state.list_size_param, 1, INT16_MAX);
+        in_state.list_size_param.set(constrain_int16(in_state.list_size_param, 1, INT16_MAX));
 
         in_state.vehicle_list = new adsb_vehicle_t[in_state.list_size_param];
 
@@ -350,7 +350,7 @@ void AP_ADSB::update(void)
         // param changed, check that it's a valid octal
         if (!is_valid_callsign(out_state.cfg.squawk_octal_param)) {
             // invalid, reset it to default
-            out_state.cfg.squawk_octal_param = ADSB_SQUAWK_OCTAL_DEFAULT;
+            out_state.cfg.squawk_octal_param.set(ADSB_SQUAWK_OCTAL_DEFAULT);
         }
         out_state.cfg.squawk_octal = (uint16_t)out_state.cfg.squawk_octal_param;
     }
@@ -616,16 +616,16 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
     out_state.cfg.was_set_externally = true;
 
     out_state.cfg.ICAO_id = packet.ICAO;
-    out_state.cfg.ICAO_id_param = out_state.cfg.ICAO_id_param_prev = packet.ICAO & 0x00FFFFFFFF;
+    out_state.cfg.ICAO_id_param.set(out_state.cfg.ICAO_id_param_prev = packet.ICAO & 0x00FFFFFFFF);
 
     // May contain a non-null value at the end so accept it as-is with memcpy instead of strcpy
     memcpy(out_state.cfg.callsign, packet.callsign, sizeof(out_state.cfg.callsign));
 
-    out_state.cfg.emitterType = packet.emitterType;
-    out_state.cfg.lengthWidth = packet.aircraftSize;
-    out_state.cfg.gpsOffsetLat = packet.gpsOffsetLat;
-    out_state.cfg.gpsOffsetLon = packet.gpsOffsetLon;
-    out_state.cfg.rfSelect = packet.rfSelect;
+    out_state.cfg.emitterType.set(packet.emitterType);
+    out_state.cfg.lengthWidth.set(packet.aircraftSize);
+    out_state.cfg.gpsOffsetLat.set(packet.gpsOffsetLat);
+    out_state.cfg.gpsOffsetLon.set(packet.gpsOffsetLon);
+    out_state.cfg.rfSelect.set(packet.rfSelect);
     out_state.cfg.stall_speed_cm = packet.stallSpeed;
 
     // guard against string with non-null end char
