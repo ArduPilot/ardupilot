@@ -5,7 +5,7 @@
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    aparm.angle_max = constrain_int16(aparm.angle_max,1000,8000);
+    aparm.angle_max.set(constrain_int16(aparm.angle_max,1000,8000));
 
     // limit max lean angle
     angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
@@ -103,7 +103,7 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
-    g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
+    g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
 
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
