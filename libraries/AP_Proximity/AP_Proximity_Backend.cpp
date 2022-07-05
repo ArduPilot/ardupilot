@@ -28,9 +28,10 @@ extern const AP_HAL::HAL& hal;
   base class constructor. 
   This incorporates initialisation as well.
 */
-AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity &_frontend, AP_Proximity::Proximity_State &_state) :
+AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity& _frontend, AP_Proximity::Proximity_State& _state, AP_Proximity_Params& _params) :
         frontend(_frontend),
-        state(_state)
+        state(_state),
+        params(_params)
 {
 }
 
@@ -85,15 +86,15 @@ float AP_Proximity_Backend::correct_angle_for_orientation(float angle_degrees) c
 bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance_m, bool check_for_ign_area) const
 {
     // check if distances are supposed to be in a particular range
-    if (!is_zero(frontend._max_m)) {
-        if (distance_m > frontend._max_m) {
+    if (!is_zero(params.max_m)) {
+        if (distance_m > params.max_m) {
             // too far away
             return true;
         }
     }
 
-    if (!is_zero(frontend._min_m)) {
-        if (distance_m < frontend._min_m) {
+    if (!is_zero(params.min_m)) {
+        if (distance_m < params.min_m) {
             // too close
             return true;
         }
@@ -102,8 +103,8 @@ bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance
     if (check_for_ign_area) {
         // check angle vs each ignore area
         for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
-            if (frontend._ignore_width_deg[i] != 0) {
-                if (abs(yaw - frontend._ignore_angle_deg[i]) <= (frontend._ignore_width_deg[i]/2)) {
+            if (params.ignore_width_deg[i] != 0) {
+                if (abs(yaw - params.ignore_angle_deg[i]) <= (params.ignore_width_deg[i]/2)) {
                     return true;
                 }
             }

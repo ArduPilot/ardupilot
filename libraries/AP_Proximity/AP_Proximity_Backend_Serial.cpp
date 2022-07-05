@@ -24,8 +24,9 @@
    already know that we should setup the proximity sensor
 */
 AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial(AP_Proximity &_frontend,
-                                                         AP_Proximity::Proximity_State &_state) :
-    AP_Proximity_Backend(_frontend, _state)
+                                                         AP_Proximity::Proximity_State &_state,
+                                                         AP_Proximity_Params &_params) :
+    AP_Proximity_Backend(_frontend, _state, _params)
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
     _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
@@ -37,9 +38,9 @@ AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial(AP_Proximity &_frontend
 
 // detect if a proximity sensor is connected by looking for a
 // configured serial port
-bool AP_Proximity_Backend_Serial::detect()
+bool AP_Proximity_Backend_Serial::detect(uint8_t instance)
 {
-    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
+    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Lidar360, instance);
 }
 
 #endif // HAL_PROXIMITY_ENABLED
