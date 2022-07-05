@@ -912,9 +912,10 @@ AP_InertialSensor::init(uint16_t loop_rate)
         // calculate number of notches we might want to use for harmonic notch
         if (notch.params.enabled()) {
             const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+            const bool triple_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::TripleNotch);
             const bool all_sensors = notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs);
             num_filters += __builtin_popcount(notch.params.harmonics())
-                * notch.num_dynamic_notches * (double_notch ? 2 : 1)
+                * notch.num_dynamic_notches * (double_notch ? 2 : triple_notch ? 3 : 1)
                 * (all_sensors?sensors_used:1);
         }
     }
@@ -930,8 +931,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
             for (auto &notch : harmonic_notches) {
                 if (notch.params.enabled()) {
                     const bool double_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::DoubleNotch);
+                    const bool triple_notch = notch.params.hasOption(HarmonicNotchFilterParams::Options::TripleNotch);
                     notch.filter[i].allocate_filters(notch.num_dynamic_notches,
-                                                     notch.params.harmonics(), double_notch);
+                                                     notch.params.harmonics(), double_notch ? 2 : triple_notch ? 3 : 1);
                     // initialise default settings, these will be subsequently changed in AP_InertialSensor_Backend::update_gyro()
                     notch.filter[i].init(_gyro_raw_sample_rates[i], notch.calculated_notch_freq_hz[0],
                                          notch.params.bandwidth_hz(), notch.params.attenuation_dB());
