@@ -63,7 +63,7 @@ public:
                              const float    i,
                              const float    d,
                              const int16_t  imaxval) {
-        _kp = p; _ki = i; _kd = d; _imax = imaxval;
+        _kp.set(p); _ki.set(i); _kd.set(d); _imax.set(imaxval);
     }
 
     float        kP() const {
