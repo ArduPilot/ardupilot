@@ -494,9 +494,9 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
 // sanity check parameters
 void AP_MotorsUGV::sanity_check_parameters()
 {
-    _throttle_min = constrain_int16(_throttle_min, 0, 20);
-    _throttle_max = constrain_int16(_throttle_max, 30, 100);
-    _vector_angle_max = constrain_float(_vector_angle_max, 0.0f, 90.0f);
+    _throttle_min.set(constrain_int16(_throttle_min, 0, 20));
+    _throttle_max.set(constrain_int16(_throttle_max, 30, 100));
+    _vector_angle_max.set(constrain_float(_vector_angle_max, 0.0f, 90.0f));
 }
 
 // setup pwm output type
