@@ -909,6 +909,9 @@ void Plane::set_servos(void)
     if (g2.ice_control.throttle_override(override_pct)) {
         // the ICE controller wants to override the throttle for starting
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
+#if HAL_QUADPLANE_ENABLED
+        quadplane.vel_forward.integrator = 0;
+#endif
     }
 
     // run output mixer and send values to the hal for output
