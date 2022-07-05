@@ -1025,9 +1025,9 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
             _accel_yaw_max.load();
         }
     } else {
-        _accel_roll_max = 0.0f;
-        _accel_pitch_max = 0.0f;
-        _accel_yaw_max = 0.0f;
+        _accel_roll_max.set(0.0f);
+        _accel_pitch_max.set(0.0f);
+        _accel_yaw_max.set(0.0f);
     }
 }
 
