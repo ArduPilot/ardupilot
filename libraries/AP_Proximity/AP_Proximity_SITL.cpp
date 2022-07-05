@@ -33,8 +33,9 @@ extern const AP_HAL::HAL& hal;
    The constructor also initialises the proximity sensor. 
 */
 AP_Proximity_SITL::AP_Proximity_SITL(AP_Proximity &_frontend,
-                                     AP_Proximity::Proximity_State &_state):
-    AP_Proximity_Backend(_frontend, _state),
+                                     AP_Proximity::Proximity_State &_state,
+                                     AP_Proximity_Params& _params):
+    AP_Proximity_Backend(_frontend, _state, _params),
     sitl(AP::sitl())
 {
     ap_var_type ptype;
