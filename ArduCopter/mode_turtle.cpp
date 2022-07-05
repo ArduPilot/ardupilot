@@ -29,9 +29,9 @@ bool ModeTurtle::init(bool ignore_checks)
     change_motor_direction(true);
 
     // disable throttle and gps failsafe
-    g.failsafe_throttle = FS_THR_DISABLED;
-    g.failsafe_gcs = FS_GCS_DISABLED;
-    g.fs_ekf_action = 0;
+    g.failsafe_throttle.set(FS_THR_DISABLED);
+    g.failsafe_gcs.set(FS_GCS_DISABLED);
+    g.fs_ekf_action.set(0);
 
     // arm
     motors->armed(true);

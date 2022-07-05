@@ -1505,7 +1505,7 @@ public:
     bool is_autopilot() const override { return false; }
     bool logs_attitude() const override { return true; }
 
-    void set_magnitude(float input) { waveform_magnitude = input; }
+    void set_magnitude(float input) { waveform_magnitude.set(input); }
 
     static const struct AP_Param::GroupInfo var_info[];
 
