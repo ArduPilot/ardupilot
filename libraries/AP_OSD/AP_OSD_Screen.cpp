@@ -1290,7 +1290,7 @@ void AP_OSD_Screen::draw_avgcellvolt(uint8_t x, uint8_t y)
     uint8_t p = (100 - pct) / 16.6;
     float v = battery.voltage();
     // calculate cell count - WARNING this can be inaccurate if the LIPO/LIION  battery is far from fully charged when attached and is used in this panel
-    osd->max_battery_voltage = MAX(osd->max_battery_voltage,v);
+    osd->max_battery_voltage.set(MAX(osd->max_battery_voltage,v));
     if (osd->cell_count > 0) {
         v = v / osd->cell_count;
         backend->write(x,y, v < osd->warn_avgcellvolt, "%c%1.2f%c", SYMBOL(SYM_BATT_FULL) + p, v, SYMBOL(SYM_VOLT));

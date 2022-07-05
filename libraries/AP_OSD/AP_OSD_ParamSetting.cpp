@@ -239,34 +239,34 @@ extern const AP_HAL::HAL& hal;
 AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number, bool _enabled, uint8_t x, uint8_t y,  int16_t key, int8_t idx, int32_t group, int8_t type, float min, float max, float incr)
     : AP_OSD_Setting(_enabled, x, y), _param_number(param_number)
 {
-    _param_group = group;
-    _param_idx = idx;
-    _param_key = key;
-    _param_min = min;
-    _param_max = max;
-    _param_incr = incr;
-    _type = type;
+    _param_group.set(group);
+    _param_idx.set(idx);
+    _param_key.set(key);
+    _param_min.set(min);
+    _param_max.set(max);
+    _param_incr.set(incr);
+    _type.set(type);
 }
 
 // default constructor that just sets some sensible defaults that exist on all platforms
 AP_OSD_ParamSetting::AP_OSD_ParamSetting(uint8_t param_number)
     : AP_OSD_Setting(false, 2, param_number + 1), _param_number(param_number)
 {
-    _param_min = 0.0f;
-    _param_max = 1.0f;
-    _param_incr = 0.001f;
-    _type = OSD_PARAM_NONE;
+    _param_min.set(0.0f);
+    _param_max.set(1.0f);
+    _param_incr.set(0.001f);
+    _type.set(OSD_PARAM_NONE);
 }
 
 // construct a setting from a compact static initializer structure
 AP_OSD_ParamSetting::AP_OSD_ParamSetting(const Initializer& initializer)
     : AP_OSD_ParamSetting(initializer.index)
 {
-    _param_group = initializer.token.group_element;
-    _param_idx = initializer.token.idx;
-    _param_key = initializer.token.key;
-    _type = initializer.type;
-    enabled = true;
+    _param_group.set(initializer.token.group_element);
+    _param_idx.set(initializer.token.idx);
+    _param_key.set(initializer.token.key);
+    _type.set(initializer.type);
+    enabled.set(true);
 }
 
 // update the contained parameter
@@ -287,7 +287,7 @@ void AP_OSD_ParamSetting::update()
     }
 
     if (_param == nullptr) {
-        enabled = false;
+        enabled.set(false);
     } else {
         guess_ranges();
     }
@@ -406,13 +406,13 @@ void AP_OSD_ParamSetting::guess_ranges(bool force)
         }
 
         if (force || !_param_min.configured()) {
-            _param_min = min;
+            _param_min.set(min);
         }
         if (force || !_param_max.configured()) {
-            _param_max = max;
+            _param_max.set(max);
         }
         if (force || !_param_incr.configured()) {
-            _param_incr = incr;
+            _param_incr.set(incr);
         }
     }
 }
@@ -438,9 +438,9 @@ bool AP_OSD_ParamSetting::set_from_metadata()
 {
     // check for statically configured setting metadata
     if (_type > 0 && _type < OSD_PARAM_NUM_TYPES && _param_metadata[_type - 1].values_max > 0) {
-        _param_incr = _param_metadata[_type - 1].increment;
-        _param_min = _param_metadata[_type - 1].min_value;
-        _param_max = _param_metadata[_type - 1].max_value;
+        _param_incr.set(_param_metadata[_type - 1].increment);
+        _param_min.set(_param_metadata[_type - 1].min_value);
+        _param_max.set(_param_metadata[_type - 1].max_value);
         return true;
     }
     return false;
