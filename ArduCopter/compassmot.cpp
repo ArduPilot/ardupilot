@@ -102,7 +102,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
     }
 
     // disable throttle failsafe
-    g.failsafe_throttle = FS_THR_DISABLED;
+    g.failsafe_throttle.set(FS_THR_DISABLED);
 
     // disable motor compensation
     compass.motor_compensation_type(AP_COMPASS_MOT_COMP_DISABLED);
