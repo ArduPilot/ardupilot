@@ -18,7 +18,7 @@
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --uartF=sim:sf45b --speedup=1 -l 51.8752066,14.6487840,54.15,0
 
 param set SERIAL5_PROTOCOL 11  # proximity
-param set PRX_TYPE 8  # s45b
+param set PRX1_TYPE 8  # s45b
 reboot
 
 arm throttle
