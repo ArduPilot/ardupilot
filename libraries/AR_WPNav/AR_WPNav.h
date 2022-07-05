@@ -91,6 +91,8 @@ public:
 
     // accessors for parameter values
     float get_default_speed() const { return _speed_max; }
+    float get_default_accel() const { return _accel_max; }
+    float get_default_jerk() const { return _jerk_max; }
     float get_radius() const { return _radius; }
     float get_pivot_rate() const { return _pivot.get_rate_max(); }
 
