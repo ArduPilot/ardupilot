@@ -95,8 +95,8 @@ public:
     void update();
 
     // enable or disable avoidance
-    void enable() { _enabled = true; };
-    void disable() { _enabled = false; };
+    void enable() { _enabled.set(true); };
+    void disable() { _enabled.set(false); };
 
     // current overall threat level
     MAV_COLLISION_THREAT_LEVEL current_threat_level() const;
