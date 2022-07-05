@@ -93,7 +93,7 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
     const float distance_to_dest = current_loc.get_distance(destination);
 
     // make sure user has set a meaningful value for _lookahead
-    _lookahead = MAX(_lookahead,1.0f);
+    _lookahead.set(MAX(_lookahead,1.0f));
 
     // lookahead distance is adjusted dynamically based on avoidance results
     _current_lookahead = constrain_float(_current_lookahead, _lookahead * 0.5f, _lookahead);
