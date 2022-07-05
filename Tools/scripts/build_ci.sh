@@ -328,6 +328,12 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "pre-commit" ]; then
+        echo "Checking codebase with pre-commit"
+        ./Tools/scripts/run_precommit.sh
+        continue
+    fi
+
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
