@@ -50,6 +50,7 @@ void AP_BattMonitor_Generator_FuelLevel::init()
 {
     // Set params for users:
     // Fuel level reporting can be percentage or bar.g - this is user configurable by setting BATTX_CAPACITY to either 100 (percentage readout) or 300/350 (bar.g readout)
+    _params._pack_capacity.set_default(100);
     // Fuel only reports a fixed 1v, don't want batt monitor failsafes on this instance
     _params._low_voltage.set(0);
     _params._critical_voltage.set(0);
