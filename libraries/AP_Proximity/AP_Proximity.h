@@ -64,6 +64,35 @@ public:
         Good
     };
 
+    // detect and initialise any available proximity sensors
+    void init();
+
+    // update state of all proximity sensors. Should be called at high rate from main loop
+    void update();
+
+    // return the number of proximity sensor backends
+    uint8_t num_sensors() const { return num_instances; }
+
+    // return sensor type of a given instance
+    Type get_type(uint8_t instance) const;
+
+    // return sensor orientation and yaw correction
+    uint8_t get_orientation(uint8_t instance) const;
+    int16_t get_yaw_correction(uint8_t instance) const;
+    float get_filter_freq() const { return _filt_freq; }
+
+    // return sensor health
+    Status get_status(uint8_t instance) const;
+    Status get_status() const;
+
+    // get maximum and minimum distances (in meters) of primary sensor
+    float distance_max() const;
+    float distance_min() const;
+
+    //
+    // 3D boundary related methods
+    //
+
     // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     struct Proximity_Distance_Array {
         uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
@@ -76,28 +105,11 @@ public:
         uint8_t offset_valid; // bitmask
     };
 
-    // detect and initialise any available proximity sensors
-    void init(void);
-
-    // update state of all proximity sensors. Should be called at high rate from main loop
-    void update(void);
-
-    // return sensor orientation and yaw correction
-    uint8_t get_orientation(uint8_t instance) const;
-    int16_t get_yaw_correction(uint8_t instance) const;
-    float get_filter_freq() const { return _filt_freq; }
-
-    // return sensor health
-    Status get_status(uint8_t instance) const;
-    Status get_status() const;
-
-    // Return the number of proximity sensors
-    uint8_t num_sensors(void) const {
-        return num_instances;
-    }
-
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
+
+    // get number of layers in the 3D boundary
+    uint8_t get_num_layers() const;
 
     // get raw and filtered distances in 8 directions per layer. used for logging
     bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
@@ -120,36 +132,12 @@ public:
     uint8_t get_object_count() const;
     bool get_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
-    // get number of layers
-    uint8_t get_num_layers() const;
-
-    // get maximum and minimum distances (in meters) of primary sensor
-    float distance_max() const;
-    float distance_min() const;
+    //
+    // mavlink related methods
+    //
 
     // handle mavlink DISTANCE_SENSOR messages
     void handle_msg(const mavlink_message_t &msg);
-
-    // The Proximity_State structure is filled in by the backend driver
-    struct Proximity_State {
-        uint8_t                 instance;   // the instance number of this proximity sensor
-        Status   status;     // sensor status
-    };
-
-    //
-    // support for upward facing sensors
-    //
-
-    // get distance upwards in meters. returns true on success
-    bool get_upward_distance(uint8_t instance, float &distance) const;
-    bool get_upward_distance(float &distance) const;
-
-    Type get_type(uint8_t instance) const;
-
-    // parameter list
-    static const struct AP_Param::GroupInfo var_info[];
-
-    static AP_Proximity *get_singleton(void) { return _singleton; };
 
     // methods for mavlink SYS_STATUS message (send_sys_status)
     // these methods cover only the primary instance
@@ -157,12 +145,30 @@ public:
     bool sensor_enabled() const;
     bool sensor_failed() const;
 
+    //
+    // support for upwards and downwards facing sensors
+    //
+
+    // get distance upwards in meters. returns true on success
+    bool get_upward_distance(uint8_t instance, float &distance) const;
+    bool get_upward_distance(float &distance) const;
+
     // set alt as read from downward facing rangefinder. Tilt is already adjusted for
     void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
 
-    // method called by vehicle to have AP_Proximity write onboard log
-    // messages:
+    // method called by vehicle to have AP_Proximity write onboard log messages
     void log();
+
+    // The Proximity_State structure is filled in by the backend driver
+    struct Proximity_State {
+        uint8_t instance;   // the instance number of this proximity sensor
+        Status status;      // sensor status
+    };
+
+    // parameter list
+    static const struct AP_Param::GroupInfo var_info[];
+
+    static AP_Proximity *get_singleton(void) { return _singleton; };
 
 protected:
 
