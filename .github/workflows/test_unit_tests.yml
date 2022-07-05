@@ -24,7 +24,8 @@ jobs:
         config: [
             unit-tests,
             python-cleanliness,
-            sitl
+            sitl,
+            pre-commit,
             # examples,
         ]
     steps:
@@ -55,6 +56,9 @@ jobs:
           if [[ ${{ matrix.toolchain }} == "clang" ]]; then
             export CC=clang
             export CXX=clang++
+          fi
+          if [[ ${{ matrix.config }} == "pre-commit" ]]; then
+            python3 -m pip install pre-commit
           fi
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh
