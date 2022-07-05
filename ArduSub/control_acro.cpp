@@ -76,7 +76,7 @@ void Sub::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int16
 
         // range check expo
         if (g.acro_expo > 1.0f) {
-            g.acro_expo = 1.0f;
+            g.acro_expo.set(1.0f);
         }
 
         // roll expo
