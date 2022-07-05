@@ -425,6 +425,9 @@ public:
 
     // guided options bitmask
     AP_Int32 guided_options;
+
+    // Rover options
+    AP_Int32 manual_options;
 };
 
 extern const AP_Param::Info var_info[];
