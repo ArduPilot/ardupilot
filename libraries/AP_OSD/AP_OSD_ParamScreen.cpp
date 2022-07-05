@@ -375,11 +375,11 @@ void AP_OSD_ParamScreen::modify_configured_parameter(uint8_t number, Event ev)
 
     if (param != nullptr) {
         // update the stored index
-        setting._param_group = setting._current_token.group_element;
-        setting._param_key = AP_Param::get_persistent_key(setting._current_token.key);
-        setting._param_idx = setting._current_token.idx;
+        setting._param_group.set(setting._current_token.group_element);
+        setting._param_key.set(AP_Param::get_persistent_key(setting._current_token.key));
+        setting._param_idx.set(setting._current_token.idx);
         setting._param = param;
-        setting._type = OSD_PARAM_NONE;
+        setting._type.set(OSD_PARAM_NONE);
         // force update() to refresh the token
         setting._current_token.key = 0;
         setting._current_token.idx = 0;
