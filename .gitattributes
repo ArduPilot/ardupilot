@@ -1,7 +1,10 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+text eol=lf
 
 # bash gets confused if you pass in .sh files from windows
 # This breaks Vagrant for some users.
 *.sh text eol=lf
+*.py text eol=lf
 
 *.bin -diff
 *.elf -diff
