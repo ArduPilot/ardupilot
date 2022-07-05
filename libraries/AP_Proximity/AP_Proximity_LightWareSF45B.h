@@ -11,8 +11,9 @@ class AP_Proximity_LightWareSF45B : public AP_Proximity_LightWareSerial
 public:
     // constructor
     AP_Proximity_LightWareSF45B(AP_Proximity &_frontend,
-                                AP_Proximity::Proximity_State &_state) :
-            AP_Proximity_LightWareSerial(_frontend, _state) {}
+                                AP_Proximity::Proximity_State &_state,
+                                AP_Proximity_Params& _params) :
+            AP_Proximity_LightWareSerial(_frontend, _state, _params) {}
 
     uint16_t rxspace() const override {
         return 1280;
