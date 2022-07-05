@@ -75,7 +75,7 @@ void AP_BoardConfig::board_setup_drivers(void)
 {
     if (state.board_type == PX4_BOARD_OLDDRIVERS) {
         printf("Old drivers no longer supported\n");
-        state.board_type = PX4_BOARD_AUTO;
+        state.board_type.set(PX4_BOARD_AUTO);
     }
 
     // run board auto-detection
