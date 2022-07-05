@@ -39,12 +39,16 @@ repos:
         -   id: check-yaml
 
 # Use to sort python imports by name and put system import first.
-  -   repo: https://github.com/pycqa/isort
-      rev: 5.10.1
-      hooks:
-        - id: isort
-          args: [--check-only]
-          name: isort (python)
+#  -   repo: https://github.com/pycqa/isort
+#      rev: 5.10.1
+#      hooks:
+#        - id: isort
+#          args: [--check-only]
+#          exclude: |
+#            (?x)(
+#              libraries/
+#            )
+#          name: isort (python)
 
 # Use to check python typing to show errors.
   -   repo: https://github.com/pre-commit/mirrors-mypy
