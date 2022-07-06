@@ -25,10 +25,6 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#ifndef AP_GPS_SIRF_ENABLED
-  #define AP_GPS_SIRF_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
-#endif
-
 #if AP_GPS_SIRF_ENABLED
 
 #define SIRF_SET_BINARY "$PSRF100,0,38400,8,1,0*3C\r\n"
