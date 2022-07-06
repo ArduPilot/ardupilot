@@ -12,6 +12,9 @@ bool Plane::failsafe_in_landing_sequence() const
         return true;
     }
 #endif
+    if (mission.get_in_landing_sequence_flag()) {
+        return true;
+    }
     return false;
 }
 
