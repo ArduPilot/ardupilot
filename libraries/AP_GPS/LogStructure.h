@@ -211,4 +211,4 @@ struct PACKED log_GPS_RAWS {
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true }, \
-    LOG_STRUCTURE_FROM_GPS_SBP,
+    LOG_STRUCTURE_FROM_GPS_SBP

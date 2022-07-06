@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AP_GPS_config.h"
 
 #define LOG_IDS_FROM_GPS_SBP                    \
     LOG_MSG_SBPHEALTH,                          \
@@ -68,6 +69,7 @@ struct PACKED log_SbpEvent {
     uint8_t quality;
 };
 
+#if AP_GPS_SBP_ENABLED
 #define LOG_STRUCTURE_FROM_GPS_SBP \
     { LOG_MSG_SBPHEALTH, sizeof(log_SbpHealth), \
       "SBPH", "QIII", "TimeUS,CrcError,LastInject,IARhyp", "s---", "F---" , true }, \
@@ -76,4 +78,7 @@ struct PACKED log_SbpEvent {
     { LOG_MSG_SBPRAWM, sizeof(log_SbpRAWM), \
       "SBRM", "QQQQQQQQQQQQQQQ", "TimeUS,msg_flag,1,2,3,4,5,6,7,8,9,10,11,12,13", "s??????????????", "F??????????????" , true }, \
     { LOG_MSG_SBPEVENT, sizeof(log_SbpEvent), \
-      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" }
+      "SBRE", "QHIiBB", "TimeUS,GWk,GMS,ns_residual,level,quality", "s?????", "F?????" },
+#else
+#define LOG_STRUCTURE_FROM_GPS_SBP
+#endif
