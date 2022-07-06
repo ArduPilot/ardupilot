@@ -46,10 +46,6 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#ifndef AP_GPS_NMEA_ENABLED
-  #define AP_GPS_NMEA_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
-#endif
-
 #if AP_GPS_NMEA_ENABLED
 /// NMEA parser
 ///

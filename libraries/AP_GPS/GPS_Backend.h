@@ -21,10 +21,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_RTC/JitterCorrection.h>
 #include "AP_GPS.h"
-
-#ifndef AP_GPS_BACKEND_DEFAULT_ENABLED
-#define AP_GPS_BACKEND_DEFAULT_ENABLED 1
-#endif
+#include "AP_GPS_config.h"
 
 #ifndef AP_GPS_DEBUG_LOGGING_ENABLED
 // enable this to log all bytes from the GPS. Also needs a call to
