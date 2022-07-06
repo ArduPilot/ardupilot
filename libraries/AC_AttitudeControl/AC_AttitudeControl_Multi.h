@@ -78,6 +78,10 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    // custom controller functions
+    virtual void set_custom_controller(bool enabled) {};
+    virtual void log_write(void) {};
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
