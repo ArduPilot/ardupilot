@@ -516,6 +516,7 @@ singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BU
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
 
 include AP_Mount/AP_Mount.h
+singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
 singleton AP_Mount rename mount
 singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t 0 UINT8_MAX
 singleton AP_Mount method set_mode void uint8_t 0 UINT8_MAX MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
