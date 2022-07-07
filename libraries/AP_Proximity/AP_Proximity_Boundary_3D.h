@@ -79,8 +79,9 @@ public:
     // This method will also mark the sector and layer to be "valid",
     // This distance can then be used for Obstacle Avoidance
     // Assume detected obstacle is horizontal (zero pitch), if no pitch is passed
-    void set_face_attributes(const Face &face, float pitch, float yaw, float distance);
-    void set_face_attributes(const Face &face, float yaw, float distance) { set_face_attributes(face, 0, yaw, distance); }
+    // prx_instance should be set to the proximity sensor backend instance number
+    void set_face_attributes(const Face &face, float pitch, float yaw, float distance, uint8_t prx_instance);
+    void set_face_attributes(const Face &face, float yaw, float distance, uint8_t prx_instance) { set_face_attributes(face, 0, yaw, distance, prx_instance); }
 
     // update boundary points used for simple avoidance based on a single sector and pitch distance changing
     //   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
@@ -92,7 +93,8 @@ public:
 
     // Reset this location, specified by Face object, back to default
     // i.e Distance is marked as not-valid
-    void reset_face(const Face &face);
+    // prx_instance should be set to the proximity sensor's backend instance number
+    void reset_face(const Face &face, uint8_t prx_instance);
 
     // check if a face has valid distance even if it was updated a long time back
     void check_face_timeout();
@@ -170,6 +172,7 @@ private:
     float _distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];       // distance to closest object within each sector and layer
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
     uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
+    uint8_t _prx_instance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // proximity sensor backend instance that provided the distance
     LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
     float _filter_freq;                                                 // cutoff freq of low pass filter
     uint32_t _last_check_face_timeout_ms;                               // system time to throttle check_face_timeout method
@@ -193,7 +196,8 @@ public:
     void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, yaw, distance); }
 
     // fill the original 3D boundary with the contents of this temporary boundary
-    void update_3D_boundary(AP_Proximity_Boundary_3D &boundary);
+    // prx_instance should be set to the proximity sensor's backend instance number
+    void update_3D_boundary(uint8_t prx_instance, AP_Proximity_Boundary_3D &boundary);
 
 private:
 
