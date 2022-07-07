@@ -46,7 +46,7 @@ void AP_Proximity_Boundary_3D::init()
 // pitch is the vertical body-frame angle (in degrees) to the obstacle (0=directly ahead, 90 is above the vehicle)
 // yaw is the horizontal body-frame angle (in degrees) to the obstacle (0=directly ahead of the vehicle, 90 is to the right of the vehicle)
 AP_Proximity_Boundary_3D::Face AP_Proximity_Boundary_3D::get_face(float pitch, float yaw) const
-{   
+{
     const uint8_t sector = wrap_360(yaw + (PROXIMITY_SECTOR_WIDTH_DEG * 0.5f)) / 45.0f;
     const float pitch_limited = constrain_float(pitch, -75.0f, 74.9f);
     const uint8_t layer = (pitch_limited + 75.0f)/PROXIMITY_PITCH_WIDTH_DEG;
