@@ -308,8 +308,8 @@ void AP_Proximity::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
 // Write proximity sensor distances
 void AP_Proximity::log()
 {
-    // exit immediately if not enabled
-    if (get_status() == AP_Proximity::Status::NotConnected) {
+    // exit immediately if no sensors
+    if (num_sensors() == 0) {
         return;
     }
 
