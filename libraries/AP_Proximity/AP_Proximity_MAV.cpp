@@ -86,7 +86,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         // provided we got the new obstacle in less than PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS
         if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
             // push data from temp boundary to the main 3-D proximity boundary
-            temp_boundary.update_3D_boundary(frontend.boundary);
+            temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
             // clear temp boundary for new data
             temp_boundary.reset();
         }
@@ -178,9 +178,9 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
         if (latest_face != face) {
             // store previous face
             if (face_distance_valid) {
-                frontend.boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+                frontend.boundary.set_face_attributes(face, face_yaw_deg, face_distance, state.instance);
             } else {
-                frontend.boundary.reset_face(face);
+                frontend.boundary.reset_face(face, state.instance);
             }
             // init for latest face
             face = latest_face;
@@ -202,9 +202,9 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
 
     // process the last face
     if (face_distance_valid) {
-        frontend.boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+        frontend.boundary.set_face_attributes(face, face_yaw_deg, face_distance, state.instance);
     } else {
-        frontend.boundary.reset_face(face);
+        frontend.boundary.reset_face(face, state.instance);
     }
     return;
 }
@@ -231,7 +231,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
         // push data from temp boundary to the main 3-D proximity boundary because a new timestamp has arrived
-        temp_boundary.update_3D_boundary(frontend.boundary);
+        temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
         // clear temp boundary for new data
         temp_boundary.reset();
     }
