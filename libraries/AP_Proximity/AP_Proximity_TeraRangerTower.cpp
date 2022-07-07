@@ -95,13 +95,13 @@ bool AP_Proximity_TeraRangerTower::read_sensor_data()
 void AP_Proximity_TeraRangerTower::update_sector_data(int16_t angle_deg, uint16_t distance_mm)
 {
     // Get location on 3-D boundary based on angle to the object
-    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
     if ((distance_mm != 0xffff) && !ignore_reading(angle_deg, distance_mm * 0.001f, false)) {
-        boundary.set_face_attributes(face, angle_deg, ((float) distance_mm) / 1000);
+        frontend.boundary.set_face_attributes(face, angle_deg, ((float) distance_mm) / 1000);
         // update OA database
         database_push(angle_deg, ((float) distance_mm) / 1000);
     } else {
-        boundary.reset_face(face);
+        frontend.boundary.reset_face(face);
     }
     _last_distance_received_ms = AP_HAL::millis();
 }

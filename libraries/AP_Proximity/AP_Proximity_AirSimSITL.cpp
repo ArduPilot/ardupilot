@@ -37,7 +37,7 @@ void AP_Proximity_AirSimSITL::update(void)
     set_status(AP_Proximity::Status::Good);
 
     // reset all faces to default so that it can be filled with the fresh lidar data
-    boundary.reset();
+    frontend.boundary.reset();
 
     // precalculate sq of min distance
     const float distance_min_sq = sq(distance_min());
@@ -62,7 +62,7 @@ void AP_Proximity_AirSimSITL::update(void)
 
             // add distance to the 3D boundary
             const float yaw_angle_deg = wrap_360(degrees(atan2f(point.y, point.x)));
-            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+            const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw_angle_deg);
             // store the min distance in each face in a temp boundary
             temp_boundary.add_distance(face, yaw_angle_deg, safe_sqrt(distance_sq));
 
@@ -77,7 +77,7 @@ void AP_Proximity_AirSimSITL::update(void)
         }
     }
     // copy temp boundary to real boundary
-    temp_boundary.update_3D_boundary(boundary);
+    temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
 }
 
 // get maximum and minimum distances (in meters) of primary sensor
