@@ -15,8 +15,7 @@
 
 #include "AP_Proximity_Boundary_3D.h"
 
-#if HAL_PROXIMITY_ENABLED
-#include "AP_Proximity_Backend.h"
+#define PROXIMITY_BOUNDARY_3D_TIMEOUT_MS 750 // we should check the 3D boundary faces after this many ms
 
 /*
   Constructor. 
@@ -185,6 +184,13 @@ void AP_Proximity_Boundary_3D::reset_face(const Face &face)
 // check if a face has valid distance even if it was updated a long time back
 void AP_Proximity_Boundary_3D::check_face_timeout()
 {
+    // exit immediately if already checked recently
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - _last_check_face_timeout_ms) < PROXIMITY_BOUNDARY_3D_TIMEOUT_MS) {
+        return;
+    }
+    _last_check_face_timeout_ms = now_ms;
+
     for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             if (_distance_valid[layer][sector]) {
@@ -363,7 +369,7 @@ bool AP_Proximity_Boundary_3D::get_filtered_distance(const Face &face, float &di
 }
 
 // Get raw and filtered distances in 8 directions per layer
-bool AP_Proximity_Boundary_3D::get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const
+bool AP_Proximity_Boundary_3D::get_layer_distances(uint8_t layer_number, float dist_max, Proximity_Distance_Array &prx_dist_array, Proximity_Distance_Array &prx_filt_dist_array) const
 {
     // cycle through all sectors filling in distances and orientations
     // see MAV_SENSOR_ORIENTATION for orientations (0 = forward, 1 = 45 degree clockwise from north, etc)
@@ -423,4 +429,3 @@ void AP_Proximity_Temp_Boundary::update_3D_boundary(AP_Proximity_Boundary_3D &bo
     }
 }
 
-#endif // HAL_PROXIMITY_ENABLED

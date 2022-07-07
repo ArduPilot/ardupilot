@@ -23,9 +23,9 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_Proximity_Params.h"
+#include "AP_Proximity_Boundary_3D.h"
 
 #define PROXIMITY_MAX_INSTANCES             2   // Maximum number of proximity sensor instances available on this platform
-#define PROXIMITY_MAX_DIRECTION 8
 #define PROXIMITY_SENSOR_ID_START 10
 
 class AP_Proximity_Backend;
@@ -93,26 +93,8 @@ public:
     // 3D boundary related methods
     //
 
-    // structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
-    struct Proximity_Distance_Array {
-        uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
-        float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
-        bool valid(uint8_t offset) const {
-            // returns true if the distance stored at offset is valid
-            return (offset < 8 && (offset_valid & (1U<<offset)));
-        };
-
-        uint8_t offset_valid; // bitmask
-    };
-
     // get distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
     bool get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const;
-
-    // get number of layers in the 3D boundary
-    uint8_t get_num_layers() const;
-
-    // get raw and filtered distances in 8 directions per layer. used for logging
-    bool get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
 
     // get total number of obstacles, used in GPS based Simple Avoidance
     uint8_t get_obstacle_count() const;
@@ -169,6 +151,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     static AP_Proximity *get_singleton(void) { return _singleton; };
+
+    // 3D boundary
+    AP_Proximity_Boundary_3D boundary;
 
 protected:
 
