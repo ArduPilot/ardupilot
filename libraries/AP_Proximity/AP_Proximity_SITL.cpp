@@ -61,14 +61,14 @@ void AP_Proximity_SITL::update(void)
         // update distance in each sector
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             const float yaw_angle_deg = sector * 45.0f;
-            AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+            AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw_angle_deg);
             float fence_distance;
             if (get_distance_to_fence(yaw_angle_deg, fence_distance)) {
-                boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
+                frontend.boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
                 // update OA database
                 database_push(yaw_angle_deg, fence_distance);
             } else {
-                boundary.reset_face(face);
+                frontend.boundary.reset_face(face);
             }
         }
     } else {

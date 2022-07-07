@@ -86,7 +86,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         // provided we got the new obstacle in less than PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS
         if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
             // push data from temp boundary to the main 3-D proximity boundary
-            temp_boundary.update_3D_boundary(boundary);
+            temp_boundary.update_3D_boundary(frontend.boundary);
             // clear temp boundary for new data
             temp_boundary.reset();
         }
@@ -95,7 +95,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
         const uint8_t sector = packet.orientation;
         // get the face for this sector
         const float yaw_angle_deg = sector * 45;
-        const AP_Proximity_Boundary_3D::Face face = boundary.get_face(yaw_angle_deg);
+        const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw_angle_deg);
         _distance_min = packet.min_distance * 0.01f;
         _distance_max = packet.max_distance * 0.01f;
         const bool in_range = distance <= _distance_max && distance >= _distance_min;
@@ -158,7 +158,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
     bool face_distance_valid = false;
 
     // reset this  boundary to fill with new data
-    boundary.reset();
+    frontend.boundary.reset();
 
     // iterate over message's sectors
     for (uint8_t j = 0; j < total_distances; j++) {
@@ -174,13 +174,13 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
         }
 
         // get face for this latest reading
-        AP_Proximity_Boundary_3D::Face latest_face = boundary.get_face(mid_angle);
+        AP_Proximity_Boundary_3D::Face latest_face = frontend.boundary.get_face(mid_angle);
         if (latest_face != face) {
             // store previous face
             if (face_distance_valid) {
-                boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+                frontend.boundary.set_face_attributes(face, face_yaw_deg, face_distance);
             } else {
-                boundary.reset_face(face);
+                frontend.boundary.reset_face(face);
             }
             // init for latest face
             face = latest_face;
@@ -202,9 +202,9 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
 
     // process the last face
     if (face_distance_valid) {
-        boundary.set_face_attributes(face, face_yaw_deg, face_distance);
+        frontend.boundary.set_face_attributes(face, face_yaw_deg, face_distance);
     } else {
-        boundary.reset_face(face);
+        frontend.boundary.reset_face(face);
     }
     return;
 }
@@ -231,7 +231,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
 
     if ((previous_msg_timestamp != _last_msg_update_timestamp_ms) || (time_diff > PROXIMITY_TIMESTAMP_MSG_TIMEOUT_MS)) {
         // push data from temp boundary to the main 3-D proximity boundary because a new timestamp has arrived
-        temp_boundary.update_3D_boundary(boundary);
+        temp_boundary.update_3D_boundary(frontend.boundary);
         // clear temp boundary for new data
         temp_boundary.reset();
     }
@@ -263,7 +263,7 @@ void AP_Proximity_MAV::handle_obstacle_distance_3d_msg(const mavlink_message_t &
     }
 
     // allot to correct layer and sector based on calculated pitch and yaw
-    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(pitch, yaw);
+    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(pitch, yaw);
     temp_boundary.add_distance(face, pitch, yaw, obstacle.length());
 
     if (database_ready) {

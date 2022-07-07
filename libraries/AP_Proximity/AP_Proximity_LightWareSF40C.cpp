@@ -320,16 +320,16 @@ void AP_Proximity_LightWareSF40C::process_message()
             const uint16_t idx = 14 + (i * 2);
             const int16_t dist_cm = (int16_t)buff_to_uint16(_msg.payload[idx], _msg.payload[idx+1]);
             const float angle_deg = wrap_360((point_start_index + i) * angle_inc_deg * angle_sign + angle_correction);
-            const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+            const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
 
             // if point is on a new face then finish off previous face
             if (face != _face) {
                 // update boundary used for avoidance
                 if (_face_distance_valid) {
-                    boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                    frontend.boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
                 } else {
                     // mark previous face invalid
-                    boundary.reset_face(_face);
+                    frontend.boundary.reset_face(_face);
                 }
                 // init for new face
                 _face = face;

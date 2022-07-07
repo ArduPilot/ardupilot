@@ -15,10 +15,8 @@
 
 #pragma once
 
-#include "AP_Proximity.h"
-
-#if HAL_PROXIMITY_ENABLED
-
+#include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 #include <Filter/LowPassFilter.h>
 
 #define PROXIMITY_NUM_SECTORS         8       // number of sectors
@@ -30,6 +28,19 @@
 #define PROXIMITY_BOUNDARY_DIST_DEFAULT 100   // if we have no data for a sector, boundary is placed 100m out
 #define PROXIMITY_FILT_RESET_TIME     1000    // reset filter if last distance was pushed more than this many ms away
 #define PROXIMITY_FACE_RESET_MS       1000    // face will be reset if not updated within this many ms
+
+// structure holding distances in PROXIMITY_MAX_DIRECTION directions. used for sending distances to ground station
+#define PROXIMITY_MAX_DIRECTION 8
+struct Proximity_Distance_Array {
+    uint8_t orientation[PROXIMITY_MAX_DIRECTION]; // orientation (i.e. rough direction) of the distance (see MAV_SENSOR_ORIENTATION)
+    float distance[PROXIMITY_MAX_DIRECTION];      // distance in meters
+    bool valid(uint8_t offset) const {
+        // returns true if the distance stored at offset is valid
+        return (offset < 8 && (offset_valid & (1U<<offset)));
+    };
+
+    uint8_t offset_valid; // bitmask
+};
 
 class AP_Proximity_Boundary_3D
 {
@@ -112,7 +123,7 @@ public:
     uint8_t get_num_layers() const { return PROXIMITY_NUM_LAYERS; }
 
     // get raw and filtered distances in 8 directions per layer.
-    bool get_layer_distances(uint8_t layer_number, float dist_max, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const;
+    bool get_layer_distances(uint8_t layer_number, float dist_max, Proximity_Distance_Array &prx_dist_array, Proximity_Distance_Array &prx_filt_dist_array) const;
 
     // pass down filter cut-off freq from params
     void set_filter_freq(float filt_freq) { _filter_freq = filt_freq; }
@@ -161,6 +172,7 @@ private:
     uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
     LowPassFilterFloat _filtered_distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // low pass filter
     float _filter_freq;                                                 // cutoff freq of low pass filter
+    uint32_t _last_check_face_timeout_ms;                               // system time to throttle check_face_timeout method
 };
 
 // This class gives an easy way of making a temporary boundary, used for "sorting" distances.
@@ -189,5 +201,3 @@ private:
     float _angle[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // yaw angle in degrees to closest object within each sector and layer
     float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
 };
-
-#endif // HAL_PROXIMITY_ENABLED

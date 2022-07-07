@@ -314,15 +314,15 @@ void AP_Proximity_RPLidarA2::parse_response_data()
 #endif
                 _last_distance_received_ms = AP_HAL::millis();
                 if (!ignore_reading(angle_deg, distance_m)) {
-                    const AP_Proximity_Boundary_3D::Face face = boundary.get_face(angle_deg);
+                    const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle_deg);
 
                     if (face != _last_face) {
                         // distance is for a new face, the previous one can be updated now
                         if (_last_distance_valid) {
-                            boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m);
+                            frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m);
                         } else {
                             // reset distance from last face
-                            boundary.reset_face(face);
+                            frontend.boundary.reset_face(face);
                         }
 
                         // initialize the new face

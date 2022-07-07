@@ -38,37 +38,10 @@ AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity& _frontend, AP_Proximity
 static_assert(PROXIMITY_MAX_DIRECTION <= 8,
               "get_horizontal_distances assumes 8-bits is enough for validity bitmask");
 
-// get distances in PROXIMITY_MAX_DIRECTION directions horizontally. used for sending distances to ground station
-bool AP_Proximity_Backend::get_horizontal_distances(AP_Proximity::Proximity_Distance_Array &prx_dist_array) const
-{
-    AP_Proximity::Proximity_Distance_Array prx_filt_dist_array; // unused
-    return boundary.get_layer_distances(PROXIMITY_MIDDLE_LAYER, distance_max(), prx_dist_array, prx_filt_dist_array);
-}
-// get distances in PROXIMITY_MAX_DIRECTION directions at a layer. used for logging
-bool AP_Proximity_Backend::get_active_layer_distances(uint8_t layer, AP_Proximity::Proximity_Distance_Array &prx_dist_array, AP_Proximity::Proximity_Distance_Array &prx_filt_dist_array) const
-{
-    return boundary.get_layer_distances(layer, distance_max(), prx_dist_array, prx_filt_dist_array);
-}
-
 // set status and update valid count
 void AP_Proximity_Backend::set_status(AP_Proximity::Status status)
 {
     state.status = status;
-}
-
-// timeout faces that have not received data recently and update filter frequencies
-void AP_Proximity_Backend::boundary_3D_checks()
-{
-    // set the cutoff freq for low pass filter
-    boundary.set_filter_freq(frontend.get_filter_freq());
-
-    // check if any face has valid distance when it should not
-    const uint32_t now_ms = AP_HAL::millis();
-    // run this check every PROXIMITY_BOUNDARY_3D_TIMEOUT_MS
-    if ((now_ms - _last_timeout_check_ms) > PROXIMITY_BOUNDARY_3D_TIMEOUT_MS) {
-        _last_timeout_check_ms = now_ms;
-        boundary.check_face_timeout();
-    }
 }
 
 // correct an angle (in degrees) based on the orientation and yaw correction parameters
