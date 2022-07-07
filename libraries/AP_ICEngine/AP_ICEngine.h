@@ -31,7 +31,7 @@ public:
     void update(void);
 
     // check for throttle override
-    bool throttle_override(float &percent);
+    bool throttle_override(float &percent, const float base_throttle);
 
     enum ICE_State {
         ICE_OFF=0,
@@ -126,6 +126,7 @@ private:
     enum class Options : uint16_t {
         DISABLE_IGNITION_RC_FAILSAFE=(1U<<0),
         DISABLE_REDLINE_GOVERNOR = (1U << 1),
+        THROTTLE_WHILE_DISARMED = (1U << 2),
     };
     AP_Int16 options;
 
