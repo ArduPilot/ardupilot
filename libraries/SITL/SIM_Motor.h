@@ -136,6 +136,7 @@ private:
     float max_outflow_velocity;
     float true_prop_area;
     float momentum_drag_coefficient;
+    float diagonal_size;
 
     float last_command;
     uint64_t last_calc_us;
