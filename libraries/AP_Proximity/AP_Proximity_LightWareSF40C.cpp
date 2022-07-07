@@ -326,10 +326,10 @@ void AP_Proximity_LightWareSF40C::process_message()
             if (face != _face) {
                 // update boundary used for avoidance
                 if (_face_distance_valid) {
-                    frontend.boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance);
+                    frontend.boundary.set_face_attributes(_face, _face_yaw_deg, _face_distance, state.instance);
                 } else {
                     // mark previous face invalid
-                    frontend.boundary.reset_face(_face);
+                    frontend.boundary.reset_face(_face, state.instance);
                 }
                 // init for new face
                 _face = face;

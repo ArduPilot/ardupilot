@@ -319,10 +319,10 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                     if (face != _last_face) {
                         // distance is for a new face, the previous one can be updated now
                         if (_last_distance_valid) {
-                            frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m);
+                            frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
                         } else {
                             // reset distance from last face
-                            frontend.boundary.reset_face(face);
+                            frontend.boundary.reset_face(face, state.instance);
                         }
 
                         // initialize the new face

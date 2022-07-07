@@ -152,11 +152,11 @@ void AP_Proximity_TeraRangerTowerEvo::update_sector_data(int16_t angle_deg, uint
     //check for target too far, target too close and sensor not connected
     const bool valid = (distance_mm != 0xffff) && (distance_mm > 0x0001);
     if (valid && !ignore_reading(angle_deg, distance_mm * 0.001f, false)) {
-        frontend.boundary.set_face_attributes(face, angle_deg, ((float) distance_mm) / 1000);
+        frontend.boundary.set_face_attributes(face, angle_deg, ((float) distance_mm) / 1000, state.instance);
         // update OA database
         database_push(angle_deg, ((float) distance_mm) / 1000);
     } else {
-        frontend.boundary.reset_face(face);
+        frontend.boundary.reset_face(face, state.instance);
     }
     _last_distance_received_ms = AP_HAL::millis();
 }

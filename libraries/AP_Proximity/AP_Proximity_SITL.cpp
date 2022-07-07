@@ -64,11 +64,11 @@ void AP_Proximity_SITL::update(void)
             AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(yaw_angle_deg);
             float fence_distance;
             if (get_distance_to_fence(yaw_angle_deg, fence_distance)) {
-                frontend.boundary.set_face_attributes(face, yaw_angle_deg, fence_distance);
+                frontend.boundary.set_face_attributes(face, yaw_angle_deg, fence_distance, state.instance);
                 // update OA database
                 database_push(yaw_angle_deg, fence_distance);
             } else {
-                frontend.boundary.reset_face(face);
+                frontend.boundary.reset_face(face, state.instance);
             }
         }
     } else {

@@ -118,7 +118,7 @@ bool AP_Proximity_Cygbot_D1::parse_byte(uint8_t data)
         // checksum is valid, parse payload
         _last_distance_received_ms = AP_HAL::millis();
         parse_payload();
-        _temp_boundary.update_3D_boundary(frontend.boundary);
+        _temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
         reset();
         return true;
     }
