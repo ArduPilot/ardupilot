@@ -3860,6 +3860,16 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP::can().handle_can_filter_modify(msg);
 #endif
         break;
+
+#if AP_OPENDRONEID_ENABLED
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_ARM_STATUS:
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_OPERATOR_ID:
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID:
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID:
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM:
+        AP::opendroneid().handle_msg(chan, msg);
+        break;
+#endif
     }
 
 }
