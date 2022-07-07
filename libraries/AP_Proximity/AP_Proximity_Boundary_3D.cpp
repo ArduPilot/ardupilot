@@ -53,17 +53,30 @@ AP_Proximity_Boundary_3D::Face AP_Proximity_Boundary_3D::get_face(float pitch, f
 }
 
 // Set the actual body-frame angle(yaw), pitch, and distance of the detected object.
-// This method will also mark the sector and layer to be "valid", so this distance can be used for Obstacle Avoidance
-void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch, float angle, float distance)
+// This method will also mark the sector and layer to be "valid",
+// This distance can then be used for Obstacle Avoidance
+// Assume detected obstacle is horizontal (zero pitch), if no pitch is passed
+// prx_instance should be set to the proximity sensor backend instance number
+void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch, float angle, float distance, uint8_t prx_instance)
 {
     if (!face.valid()) {
         return;
+    }
+
+    // ignore update if another instance has provided a shorter distance within the last 0.2 seconds
+    if ((prx_instance != _prx_instance[face.layer][face.sector]) && _distance_valid[face.layer][face.sector] && (_filtered_distance[face.layer][face.sector].get() < distance)) {
+        // check if recent
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _last_update_ms[face.layer][face.sector] < 200) {
+            return;
+        }
     }
 
     _angle[face.layer][face.sector] = angle;
     _pitch[face.layer][face.sector] = pitch;
     _distance[face.layer][face.sector] = distance;
     _distance_valid[face.layer][face.sector] = true;
+    _prx_instance[face.layer][face.sector] = prx_instance;
 
     // apply filter
     set_filtered_distance(face, distance);
@@ -170,11 +183,26 @@ void AP_Proximity_Boundary_3D::reset()
 
 // Reset this location, specified by Face object, back to default
 // i.e Distance is marked as not-valid, and set to a large number.
-void AP_Proximity_Boundary_3D::reset_face(const Face &face)
+// prx_instance should be set to the proximity sensor's backend instance number
+void AP_Proximity_Boundary_3D::reset_face(const Face &face, uint8_t prx_instance)
 {
     if (!face.valid()) {
         return;
     }
+
+    // return immediately if face already has no valid distance
+    if (!_distance_valid[face.layer][face.sector]) {
+        return;
+    }
+
+    // ignore reset if another instance provided this face's distance within the last 0.2 seconds
+    if (prx_instance != _prx_instance[face.layer][face.sector]) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _last_update_ms[face.layer][face.sector] < 200) {
+            return;
+        }
+    }
+
     _distance_valid[face.layer][face.sector] = false;
 
     // update simple avoidance boundary
@@ -194,10 +222,10 @@ void AP_Proximity_Boundary_3D::check_face_timeout()
     for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             if (_distance_valid[layer][sector]) {
-                if ((AP_HAL::millis() - _last_update_ms[layer][sector]) > PROXIMITY_FACE_RESET_MS) {
+                if ((now_ms - _last_update_ms[layer][sector]) > PROXIMITY_FACE_RESET_MS) {
                     // this face has a valid distance but wasn't updated for a long time, reset it
-                    AP_Proximity_Boundary_3D::Face face{layer, sector};
-                    reset_face(face);
+                    _distance_valid[layer][sector] = false;
+                    update_boundary(AP_Proximity_Boundary_3D::Face{layer, sector});
                 }
             }
         }
@@ -417,13 +445,14 @@ void AP_Proximity_Temp_Boundary::add_distance(const AP_Proximity_Boundary_3D::Fa
 }
 
 // fill the original 3D boundary with the contents of this temporary boundary
-void AP_Proximity_Temp_Boundary::update_3D_boundary(AP_Proximity_Boundary_3D &boundary)
+// prx_instance should be set to the proximity sensor's backend instance number
+void AP_Proximity_Temp_Boundary::update_3D_boundary(uint8_t prx_instance, AP_Proximity_Boundary_3D &boundary)
 {
     for (uint8_t layer=0; layer < PROXIMITY_NUM_LAYERS; layer++) {
         for (uint8_t sector=0; sector < PROXIMITY_NUM_SECTORS; sector++) {
             if (_distances[layer][sector] < FLT_MAX) {
                 AP_Proximity_Boundary_3D::Face face{layer, sector};
-                boundary.set_face_attributes(face, _pitch[layer][sector], _angle[layer][sector], _distances[layer][sector]);
+                boundary.set_face_attributes(face, _pitch[layer][sector], _angle[layer][sector], _distances[layer][sector], prx_instance);
             }
         }
     }

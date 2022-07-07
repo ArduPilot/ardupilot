@@ -51,11 +51,11 @@ void AP_Proximity_RangeFinder::update(void)
                 _distance_min = sensor->min_distance_cm() * 0.01f;
                 _distance_max = sensor->max_distance_cm() * 0.01f;
                 if ((distance <= _distance_max) && (distance >= _distance_min) && !ignore_reading(angle, distance, false)) {
-                    frontend.boundary.set_face_attributes(face, angle, distance);
+                    frontend.boundary.set_face_attributes(face, angle, distance, state.instance);
                     // update OA database
                     database_push(angle, distance);
                 } else {
-                    frontend.boundary.reset_face(face);
+                    frontend.boundary.reset_face(face, state.instance);
                 }
                 _last_update_ms = now;
             }
