@@ -1,7 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/AP_Common.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 class PACKED AP_FWVersion {
 
