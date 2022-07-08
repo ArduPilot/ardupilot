@@ -15,7 +15,7 @@ import argparse
 parser = argparse.ArgumentParser(description='configure all ChibiOS boards')
 parser.add_argument('--build', action='store_true', default=False, help='build as well as configure')
 parser.add_argument('--build-target', default='copter', help='build target')
-parser.add_argument('--stop', action='store_true', default=False, help='stop on build fail')
+parser.add_argument('--stop', action='store_true', default=False, help='stop on configure or build failure')
 parser.add_argument('--no-bl', action='store_true', default=False, help="don't check bootloader builds")
 parser.add_argument('--Werror', action='store_true', default=False, help="build with -Werror")
 parser.add_argument('--pattern', default='*')

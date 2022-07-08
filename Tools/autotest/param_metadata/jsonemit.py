@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import json
 import copy
 from emit import Emit

@@ -3,14 +3,19 @@
  */
 #pragma once
 
+#include "AP_Mount_Backend.h"
+
+#ifndef HAL_MOUNT_STORM32SERIAL_ENABLED
+#define HAL_MOUNT_STORM32SERIAL_ENABLED HAL_MOUNT_ENABLED
+#endif
+
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
-
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include "AP_Mount_Backend.h"
-#if HAL_MOUNT_ENABLED
 
 #define AP_MOUNT_STORM32_SERIAL_RESEND_MS   1000    // resend angle targets to gimbal once per second
 
@@ -39,7 +44,7 @@ public:
 private:
 
     // send_target_angles
-    void send_target_angles(float pitch_deg, float roll_deg, float yaw_deg);
+    void send_target_angles(const MountTarget& angle_target_rad);
 
     // send read data request
     void get_angles();
@@ -132,6 +137,7 @@ private:
     AP_HAL::UARTDriver *_port;
 
     bool _initialised;              // true once the driver has been initialised
+    MountTarget _angle_rad;         // latest angle target
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
 
     uint8_t _reply_length;
@@ -148,4 +154,4 @@ private:
     // keep the last _current_angle values
     Vector3l _current_angle;
 };
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_STORM32SERIAL_ENABLED

@@ -573,6 +573,7 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
           we have data to copy out
          */
         uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
+        uart_drv->_rx_stats_bytes += len;
         uart_drv->receive_timestamp_update();
     }
 
@@ -1156,7 +1157,7 @@ void UARTDriver::write_pending_bytes(void)
         }
         if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
-            hal.console->printf("disabling flow control on serial %u\n", sdef.get_index());
+            DEV_PRINTF("disabling flow control on serial %u\n", sdef.get_index());
             set_flow_control(FLOW_CONTROL_DISABLE);
         }
     }

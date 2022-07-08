@@ -3,6 +3,12 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+#ifndef AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
+#define AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
+
 class AP_RangeFinder_MaxsonarSerialLV : public AP_RangeFinder_Backend_Serial
 {
 
@@ -25,3 +31,5 @@ private:
     char linebuf[10];
     uint8_t linebuf_len = 0;
 };
+
+#endif  // AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED

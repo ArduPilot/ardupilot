@@ -10,14 +10,16 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Gremsy.h"
 #include <AP_Math/location.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 19, AP_Mount, state[0]._type, 0, AP_PARAM_FLAG_ENABLE),
@@ -25,7 +27,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,6:Home Location
     // @User: Standard
     AP_GROUPINFO("_DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -177,13 +179,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_PAN",  15, AP_Mount, state[0]._pan_angle_max,  4500),
 
-    // @Param: _JSTICK_SPD
-    // @DisplayName: mount joystick speed
-    // @Description: 0 for position control, small for low speeds, 100 for max speed. A good general value is 10 which gives a movement speed of 3 degrees per second.
-    // @Range: 0 100
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("_JSTICK_SPD",  16, AP_Mount, _joystick_speed, 0),
+    // 16 was _JSTICK_SPD
 
     // @Param: _LEAD_RLL
     // @DisplayName: Roll stabilization lead time
@@ -213,13 +209,20 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 23 formerly _K_RATE
 
-    // 24 is AVAILABLE
+    // @Param: _RC_RATE
+    // @DisplayName: Mount RC Rate
+    // @Description: Pilot rate control's maximum rate.  Set to zero to use angle control
+    // @Units: deg/s
+    // @Range: 0 90
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_RC_RATE",  24, AP_Mount, _rc_rate_max, 0),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Param: 2_DEFLT_MODE
     // @DisplayName: Mount default operating mode
     // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point
+    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,6:Home Location
     // @User: Standard
     AP_GROUPINFO("2_DEFLT_MODE",    25, AP_Mount, state[1]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
 
@@ -392,7 +395,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -430,42 +433,57 @@ void AP_Mount::init()
         }
     }
 
+    // perform any required parameter conversion
+    convert_params();
+
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
     // create each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
-        // default instance's state
-        state[instance]._mode = (enum MAV_MOUNT_MODE)state[instance]._default_mode.get();
-
         MountType mount_type = get_mount_type(instance);
 
         // check for servo mounts
         if (mount_type == Mount_Type_Servo) {
+#if HAL_MOUNT_SERVO_ENABLED
             _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
             _num_instances++;
+#endif
 
 #if HAL_SOLO_GIMBAL_ENABLED
-        // check for MAVLink mounts
+        // check for Solo mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
             _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
             _num_instances++;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
+#if HAL_MOUNT_ALEXMOS_ENABLED
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
             _backends[instance] = new AP_Mount_Alexmos(*this, state[instance], instance);
             _num_instances++;
+#endif
 
+#if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
         } else if (mount_type == Mount_Type_SToRM32) {
             _backends[instance] = new AP_Mount_SToRM32(*this, state[instance], instance);
             _num_instances++;
+#endif
 
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
+#endif
+
+#if HAL_MOUNT_GREMSY_ENABLED
+        // check for Gremsy mounts
+        } else if (mount_type == Mount_Type_Gremsy) {
+            _backends[instance] = new AP_Mount_Gremsy(*this, state[instance], instance);
+            _num_instances++;
+#endif // HAL_MOUNT_GREMSY_ENABLED
         }
 
         // init new instance
@@ -481,6 +499,7 @@ void AP_Mount::init()
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->init();
+            set_mode_to_default(instance);
         }
     }
 }
@@ -532,11 +551,12 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 {
     // sanity check instance
-    if (instance >= AP_MOUNT_MAX_INSTANCES) {
-        return  MAV_MOUNT_MODE_RETRACT;
+    if (!check_instance(instance)) {
+        return MAV_MOUNT_MODE_RETRACT;
     }
 
-    return state[instance]._mode;
+    // ask backend its mode
+    return _backends[instance]->get_mode();
 }
 
 // set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
@@ -558,15 +578,41 @@ void AP_Mount::set_mode(uint8_t instance, enum MAV_MOUNT_MODE mode)
     _backends[instance]->set_mode(mode);
 }
 
-// set_angle_targets - sets angle targets in degrees
-void AP_Mount::set_angle_targets(uint8_t instance, float roll, float tilt, float pan)
+// set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+// If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+void AP_Mount::set_yaw_lock(uint8_t instance, bool yaw_lock)
+{
+    // sanity check instance
+    if (!check_instance(instance)) {
+        return;
+    }
+
+    // call backend's set_yaw_lock
+    _backends[instance]->set_yaw_lock(yaw_lock);
+}
+
+// set angle target in degrees
+// yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
+void AP_Mount::set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
 {
     if (!check_instance(instance)) {
         return;
     }
 
     // send command to backend
-    _backends[instance]->set_angle_targets(roll, tilt, pan);
+    _backends[instance]->set_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
+}
+
+// sets rate target in deg/s
+// yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
+void AP_Mount::set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock)
+{
+    if (!check_instance(instance)) {
+        return;
+    }
+
+    // send command to backend
+    _backends[instance]->set_rate_target(roll_degs, pitch_degs, yaw_degs, yaw_lock);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_long_t &packet)
@@ -575,9 +621,9 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_lon
         return MAV_RESULT_FAILED;
     }
     _backends[_primary]->set_mode((MAV_MOUNT_MODE)packet.param1);
-    state[0]._stab_roll = packet.param2;
-    state[0]._stab_tilt = packet.param3;
-    state[0]._stab_pan = packet.param4;
+    state[_primary]._stab_roll = packet.param2;
+    state[_primary]._stab_tilt = packet.param3;
+    state[_primary]._stab_pan = packet.param4;
 
     return MAV_RESULT_ACCEPTED;
 }
@@ -595,6 +641,48 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
     return MAV_RESULT_ACCEPTED;
 }
 
+MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet)
+{
+    if (!check_primary()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // check flags for change to RETRACT
+    uint32_t flags = (uint32_t)packet.param5;
+    if ((flags & GIMBAL_MANAGER_FLAGS_RETRACT) > 0) {
+        _backends[_primary]->set_mode(MAV_MOUNT_MODE_RETRACT);
+        return MAV_RESULT_ACCEPTED;
+    }
+    // check flags for change to NEUTRAL
+    if ((flags & GIMBAL_MANAGER_FLAGS_NEUTRAL) > 0) {
+        _backends[_primary]->set_mode(MAV_MOUNT_MODE_NEUTRAL);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // To-Do: handle gimbal device id
+
+    // param1 : pitch_angle (in degrees)
+    // param2 : yaw angle (in degrees)
+    const float pitch_angle_deg = packet.param1;
+    const float yaw_angle_deg = packet.param2;
+    if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
+        set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // param3 : pitch_rate (in deg/s)
+    // param4 : yaw rate (in deg/s)
+    const float pitch_rate_degs = packet.param3;
+    const float yaw_rate_degs = packet.param4;
+    if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
+        set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    return MAV_RESULT_FAILED;
+}
+
+
 MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {
@@ -602,6 +690,8 @@ MAV_RESULT AP_Mount::handle_command_long(const mavlink_command_long_t &packet)
         return handle_command_do_mount_configure(packet);
     case MAV_CMD_DO_MOUNT_CONTROL:
         return handle_command_do_mount_control(packet);
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+        return handle_command_do_gimbal_manager_pitchyaw(packet);
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
@@ -663,6 +753,34 @@ void AP_Mount::send_mount_status(mavlink_channel_t chan)
     }
 }
 
+// run pre-arm check.  returns false on failure and fills in failure_msg
+// any failure_msg returned will not include a prefix
+bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
+{
+    // check type parameters
+    for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
+        if ((state[i]._type != Mount_Type_None) && (_backends[i] == nullptr)) {
+            strncpy(failure_msg, "check TYPE", failure_msg_len);
+            return false;
+        }
+    }
+
+    // return true if no mount configured
+    if (_num_instances == 0) {
+        return true;
+    }
+
+    // check healthy
+    for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
+        if ((_backends[i] != nullptr) && !_backends[i]->healthy()) {
+            strncpy(failure_msg, "not healthy", failure_msg_len);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // point at system ID sysid
 void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 {
@@ -673,7 +791,7 @@ void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
 }
 
 // set_roi_target - sets target location that mount should attempt to point towards
-void AP_Mount::set_roi_target(uint8_t instance, const struct Location &target_loc)
+void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
 {
     // call instance's set_roi_cmd
     if (check_instance(instance)) {
@@ -716,6 +834,12 @@ void AP_Mount::handle_message(mavlink_channel_t chan, const mavlink_message_t &m
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         handle_global_position_int(msg);
         break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_INFORMATION:
+        handle_gimbal_device_information(msg);
+        break;
+    case MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS:
+        handle_gimbal_device_attitude_status(msg);
+        break;
     default:
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         AP_HAL::panic("Unhandled mount case");
@@ -734,16 +858,38 @@ void AP_Mount::handle_param_value(const mavlink_message_t &msg)
     }
 }
 
-// send a GIMBAL_REPORT message to the GCS
-void AP_Mount::send_gimbal_report(mavlink_channel_t chan)
+
+// handle GIMBAL_DEVICE_INFORMATION message
+void AP_Mount::handle_gimbal_device_information(const mavlink_message_t &msg)
 {
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
-            _backends[instance]->send_gimbal_report(chan);
+            _backends[instance]->handle_gimbal_device_information(msg);
         }
-    }    
+    }
 }
 
+// handle GIMBAL_DEVICE_ATTITUDE_STATUS message
+void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg)
+{
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        if (_backends[instance] != nullptr) {
+            _backends[instance]->handle_gimbal_device_attitude_status(msg);
+        }
+    }
+}
+
+// perform any required parameter conversion
+void AP_Mount::convert_params()
+{
+    // convert JSTICK_SPD to RC_RATE
+    if (!_rc_rate_max.configured()) {
+        int8_t jstick_spd = 0;
+        if (AP_Param::get_param_by_index(this, 16, AP_PARAM_INT8, &jstick_spd) && (jstick_spd > 0)) {
+            _rc_rate_max.set_and_save(jstick_spd * 0.3);
+        }
+    }
+}
 
 // singleton instance
 AP_Mount *AP_Mount::_singleton;

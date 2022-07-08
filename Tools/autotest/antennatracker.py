@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 '''
 Test AntennaTracker vehicle in SITL
 

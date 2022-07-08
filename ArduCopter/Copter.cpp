@@ -138,8 +138,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     // camera mount's fast update
     FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
 #endif
-    // log sensor health
-    FAST_TASK(Log_Sensor_Health),
     FAST_TASK(Log_Video_Stabilisation),
 
     SCHED_TASK(rc_loop,              100,    130,  3),
@@ -394,6 +392,18 @@ bool Copter::set_circle_rate(float rate_dps)
     return true;
 }
 
+// set desired speed (m/s). Used for scripting.
+bool Copter::set_desired_speed(float speed)
+{
+    // exit if vehicle is not in auto mode
+    if (!flightmode->is_autopilot()) {
+        return false;
+    }
+
+    wp_nav->set_speed_xy(speed * 100.0f);
+    return true;
+}
+
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Copter::nav_scripting_enable(uint8_t mode)
 {
@@ -563,6 +573,9 @@ void Copter::three_hz_loop()
     // check if we've lost terrain data
     failsafe_terrain_check();
 
+    // check for deadreckoning failsafe
+    failsafe_deadreckon_check();
+
 #if AC_FENCE == ENABLED
     // check if we have breached a fence
     fence_check();
@@ -583,12 +596,7 @@ void Copter::one_hz_loop()
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
-    arming.update();
-
     if (!motors->armed()) {
-        // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.update_orientation();
-
         update_using_interlock();
 
         // check the user hasn't updated the frame class or type
@@ -729,6 +737,13 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
+// get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+bool Copter::get_rate_bf_targets(Vector3f& rate_bf_targets) const
+{
+    rate_bf_targets = attitude_control->rate_bf_targets();
+    return true;
+}
+
 /*
   constructor for main Copter class
  */
@@ -743,8 +758,6 @@ Copter::Copter(void)
     param_loader(var_info),
     flightmode(&mode_stabilize)
 {
-    // init sensor error logging flags
-    sensor_health.compass = true;
 }
 
 Copter copter;

@@ -588,6 +588,19 @@ protected:
 
     uint32_t _log_gps_bit = -1;
 
+    enum DriverOptions : int16_t {
+        UBX_MBUseUart2    = (1U << 0U),
+        SBF_UseBaseForYaw = (1U << 1U),
+        UBX_Use115200     = (1U << 2U),
+        UAVCAN_MBUseDedicatedBus  = (1 << 3U),
+        HeightEllipsoid   = (1U << 4),
+    };
+
+    // check if an option is set
+    bool option_set(const DriverOptions option) const {
+        return (uint8_t(_driver_options.get()) & uint8_t(option)) != 0;
+    }
+
 private:
     static AP_GPS *_singleton;
     HAL_Semaphore rsem;

@@ -72,7 +72,7 @@ private:
     AP_Int8 _num_poles;
 
     // ESC detected information
-    uint16_t _esc_present_bitmask;
+    uint32_t _esc_present_bitmask;
     uint8_t _esc_max_node_id;
 
     // enumeration

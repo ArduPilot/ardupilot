@@ -340,11 +340,11 @@ void AP_RobotisServo::process_packet(const uint8_t *pkt, uint8_t length)
         // easier
         return;
     }
-    uint16_t id_mask = (1U<<(id-1));
+    uint32_t id_mask = (1U<<(id-1));
     if (!(id_mask & servo_mask)) {
         // mark the servo as present
         servo_mask |= id_mask;
-        hal.console->printf("Robotis: new servo %u\n", id);
+        DEV_PRINTF("Robotis: new servo %u\n", id);
     }
 }
 

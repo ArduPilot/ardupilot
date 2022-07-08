@@ -48,6 +48,7 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Baro/AP_Baro_UAVCAN.h>
 #include <AP_RangeFinder/AP_RangeFinder_UAVCAN.h>
+#include <AP_EFI/AP_EFI_DroneCAN.h>
 #include <AP_GPS/AP_GPS_UAVCAN.h>
 #include <AP_BattMonitor/AP_BattMonitor_UAVCAN.h>
 #include <AP_Compass/AP_Compass_UAVCAN.h>
@@ -58,11 +59,13 @@
 #include "AP_UAVCAN_DNA_Server.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
+#include "AP_UAVCAN_pool.h"
 
 #define LED_DELAY_US 50000
 
 extern const AP_HAL::HAL& hal;
 
+// setup default pool size
 #ifndef UAVCAN_NODE_POOL_SIZE
 #if HAL_CANFD_SUPPORTED
 #define UAVCAN_NODE_POOL_SIZE 16384
@@ -75,15 +78,6 @@ extern const AP_HAL::HAL& hal;
 #define UAVCAN_STACK_SIZE     8192
 #else
 #define UAVCAN_STACK_SIZE     4096
-#endif
-
-
-#ifndef UAVCAN_NODE_POOL_BLOCK_SIZE
-#if HAL_CANFD_SUPPORTED
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 128
-#else
-#define UAVCAN_NODE_POOL_BLOCK_SIZE 64
-#endif
 #endif
 
 #define debug_uavcan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "UAVCAN", fmt, ##args); } while (0)
@@ -103,16 +97,17 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     AP_GROUPINFO("NODE", 1, AP_UAVCAN, _uavcan_node, 10),
 
     // @Param: SRV_BM
-    // @DisplayName: RC Out channels to be transmitted as servo over UAVCAN
+    // @DisplayName: Output channels to be transmitted as servo over UAVCAN
     // @Description: Bitmask with one set for channel to be transmitted as a servo command over UAVCAN
-    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
+
     // @User: Advanced
     AP_GROUPINFO("SRV_BM", 2, AP_UAVCAN, _servo_bm, 0),
 
     // @Param: ESC_BM
-    // @DisplayName: RC Out channels to be transmitted as ESC over UAVCAN
+    // @DisplayName: Output channels to be transmitted as ESC over UAVCAN
     // @Description: Bitmask with one set for channel to be transmitted as a ESC command over UAVCAN
-    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16
+    // @Bitmask: 0: ESC 1, 1: ESC 2, 2: ESC 3, 3: ESC 4, 4: ESC 5, 5: ESC 6, 6: ESC 7, 7: ESC 8, 8: ESC 9, 9: ESC 10, 10: ESC 11, 11: ESC 12, 12: ESC 13, 13: ESC 14, 14: ESC 15, 15: ESC 16, 16: ESC 17, 17: ESC 18, 18: ESC 19, 19: ESC 20, 20: ESC 21, 21: ESC 22, 22: ESC 23, 23: ESC 24, 24: ESC 25, 25: ESC 26, 26: ESC 27, 27: ESC 28, 28: ESC 29, 29: ESC 30, 30: ESC 31, 31: ESC 32
     // @User: Advanced
     AP_GROUPINFO("ESC_BM", 3, AP_UAVCAN, _esc_bm, 0),
 
@@ -139,6 +134,20 @@ const AP_Param::GroupInfo AP_UAVCAN::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("NTF_RT", 6, AP_UAVCAN, _notify_state_hz, 20),
 
+    // @Param: ESC_OF
+    // @DisplayName: ESC Output channels offset
+    // @Description: Offset for ESC numbering in DroneCAN ESC RawCommand messages. This allows for more efficient packing of ESC command messages. If your ESCs are on servo functions 5 to 8 and you set this parameter to 4 then the ESC RawCommand will be sent with the first 4 slots filled. This can be used for more efficint usage of CAN bandwidth
+    // @Range: 0 18
+    // @User: Advanced
+    AP_GROUPINFO("ESC_OF", 7, AP_UAVCAN, _esc_offset, 0),
+
+    // @Param: POOL
+    // @DisplayName: CAN pool size
+    // @Description: Amount of memory in bytes to allocate for the DroneCAN memory pool. More memory is needed for higher CAN bus loads
+    // @Range: 1024 16384
+    // @User: Advanced
+    AP_GROUPINFO("POOL", 8, AP_UAVCAN, _pool_size, UAVCAN_NODE_POOL_SIZE),
+    
     AP_GROUPEND
 };
 
@@ -187,9 +196,6 @@ static uavcan::Subscriber<uavcan::equipment::esc::Status, ESCStatusCb> *esc_stat
 // handler DEBUG
 UC_REGISTRY_BINDER(DebugCb, uavcan::protocol::debug::LogMessage);
 static uavcan::Subscriber<uavcan::protocol::debug::LogMessage, DebugCb> *debug_listener[HAL_MAX_CAN_PROTOCOL_DRIVERS];
-
-static uavcan::PoolAllocator<UAVCAN_NODE_POOL_SIZE, UAVCAN_NODE_POOL_BLOCK_SIZE, AP_UAVCAN::RaiiSynchronizer> _node_allocator[HAL_MAX_CAN_PROTOCOL_DRIVERS];
-
 
 AP_UAVCAN::AP_UAVCAN()
 {
@@ -250,7 +256,14 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
         return;
     }
 
-    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), _node_allocator[driver_index]);
+    _allocator = new AP_PoolAllocator(_pool_size);
+
+    if (_allocator == nullptr || !_allocator->init()) {
+        debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node pool\n");
+        return;
+    }
+
+    _node = new uavcan::Node<0>(*_iface_mgr, uavcan::SystemClock::instance(), *_allocator);
 
     if (_node == nullptr) {
         debug_uavcan(AP_CANManager::LOG_ERROR, "UAVCAN: couldn't allocate node\n\r");
@@ -319,13 +332,22 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
     AP_UAVCAN_DNA_Server::subscribe_msgs(this);
     AP_GPS_UAVCAN::subscribe_msgs(this);
     AP_Compass_UAVCAN::subscribe_msgs(this);
+#if AP_BARO_UAVCAN_ENABLED
     AP_Baro_UAVCAN::subscribe_msgs(this);
+#endif
     AP_BattMonitor_UAVCAN::subscribe_msgs(this);
+#if AP_AIRSPEED_UAVCAN_ENABLED
     AP_Airspeed_UAVCAN::subscribe_msgs(this);
+#endif
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
     AP_OpticalFlow_HereFlow::subscribe_msgs(this);
 #endif
+#if AP_RANGEFINDER_UAVCAN_ENABLED
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
+#endif
+#if HAL_EFI_ENABLED
+    AP_EFI_DroneCAN::subscribe_msgs(this);
+#endif
 
     act_out_array[driver_index] = new uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand>(*_node);
     act_out_array[driver_index]->setTxTimeout(uavcan::MonotonicDuration::fromMSec(2));
@@ -528,8 +550,11 @@ void AP_UAVCAN::SRV_send_esc(void)
 
     WITH_SEMAPHORE(SRV_sem);
 
+    // esc offset allows for efficient packing of higher ESC numbers in RawCommand
+    const uint8_t esc_offset = constrain_int16(_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+
     // find out how many esc we have enabled and if they are active at all
-    for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
+    for (uint8_t i = esc_offset; i < UAVCAN_SRV_NUMBER; i++) {
         if ((((uint32_t) 1) << i) & _esc_bm) {
             max_esc_num = i + 1;
             if (_SRV_conf[i].esc_pending) {
@@ -542,7 +567,7 @@ void AP_UAVCAN::SRV_send_esc(void)
     if (active_esc_num > 0) {
         k = 0;
 
-        for (uint8_t i = 0; i < max_esc_num && k < 20; i++) {
+        for (uint8_t i = esc_offset; i < max_esc_num && k < 20; i++) {
             if ((((uint32_t) 1) << i) & _esc_bm) {
                 // TODO: ESC negative scaling for reverse thrust and reverse rotation
                 float scaled = cmd_max * (hal.rcout->scale_esc_to_unity(_SRV_conf[i].pulse) + 1.0) / 2.0;
@@ -567,7 +592,7 @@ void AP_UAVCAN::SRV_push_servos()
 
     for (uint8_t i = 0; i < UAVCAN_SRV_NUMBER; i++) {
         // Check if this channels has any function assigned
-        if (SRV_Channels::channel_function(i) > SRV_Channel::k_none) {
+        if (SRV_Channels::channel_function(i) >= SRV_Channel::k_none) {
             _SRV_conf[i].pulse = SRV_Channels::srv_channel(i)->get_output_pwm();
             _SRV_conf[i].esc_pending = true;
             _SRV_conf[i].servo_pending = true;
@@ -947,7 +972,8 @@ void AP_UAVCAN::handle_actuator_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, co
 void AP_UAVCAN::handle_ESC_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ESCStatusCb &cb)
 {
 #if HAL_WITH_ESC_TELEM
-    const uint8_t esc_index = cb.msg->esc_index;
+    const uint8_t esc_offset = constrain_int16(ap_uavcan->_esc_offset.get(), 0, UAVCAN_SRV_NUMBER);
+    const uint8_t esc_index = cb.msg->esc_index + esc_offset;
 
     if (!is_esc_data_index_valid(esc_index)) {
         return;

@@ -1208,7 +1208,7 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
 
     if (ofs+type_size((enum ap_var_type)phdr.type)+2*sizeof(phdr) >= _storage.size()) {
         // we are out of room for saving variables
-        hal.console->printf("EEPROM full\n");
+        DEV_PRINTF("EEPROM full\n");
         return;
     }
 
@@ -1584,7 +1584,7 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
     uint16_t key;
 
     if (!find_key_by_pointer(object_pointer, key)) {
-        hal.console->printf("ERROR: Unable to find param pointer\n");
+        DEV_PRINTF("ERROR: Unable to find param pointer\n");
         return;
     }
     
@@ -1869,7 +1869,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
     AP_Param *ap2;
     ap2 = find(&info->new_name[0], &ptype);
     if (ap2 == nullptr) {
-        hal.console->printf("Unknown conversion '%s'\n", info->new_name);
+        DEV_PRINTF("Unknown conversion '%s'\n", info->new_name);
         return;
     }
 
@@ -1903,7 +1903,7 @@ void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float sc
         }
     } else {
         // can't do vector<->scalar conversion, or different vector types
-        hal.console->printf("Bad conversion type '%s'\n", info->new_name);
+        DEV_PRINTF("Bad conversion type '%s'\n", info->new_name);
     }
 }
 #pragma GCC diagnostic pop

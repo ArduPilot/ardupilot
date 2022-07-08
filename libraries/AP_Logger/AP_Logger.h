@@ -48,6 +48,12 @@
 #define HAL_LOGGER_FILE_CONTENTS_ENABLED HAL_LOGGING_FILESYSTEM_ENABLED
 #endif
 
+// range of IDs to allow for new messages during replay. It is very
+// useful to be able to add new messages during a replay, but we need
+// to avoid colliding with existing messages
+#define REPLAY_LOG_NEW_MSG_MAX 230
+#define REPLAY_LOG_NEW_MSG_MIN 220
+
 #include <AC_PID/AC_PID.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -136,6 +142,8 @@ enum class LogEvent : uint8_t {
     EK3_SOURCES_SET_TO_SECONDARY = 86,
     EK3_SOURCES_SET_TO_TERTIARY = 87,
 
+    AIRSPEED_PRIMARY_CHANGED = 90,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
@@ -179,6 +187,7 @@ enum class LogErrorSubsystem : uint8_t {
     PILOT_INPUT = 28,
     FAILSAFE_VIBE = 29,
     INTERNAL_ERROR = 30,
+    FAILSAFE_DEADRECKON = 31
 };
 
 // bizarrely this enumeration has lots of duplicate values, offering
@@ -516,6 +525,7 @@ private:
 
     void start_io_thread(void);
     void io_thread();
+    bool check_crash_dump_save(void);
 
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
     // support for logging file content

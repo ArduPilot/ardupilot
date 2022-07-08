@@ -32,14 +32,23 @@
 #endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#ifndef BOARD_SAFETY_ENABLE_DEFAULT
-# define BOARD_SAFETY_ENABLE_DEFAULT 1
-#endif
 #ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
 #endif
 #ifndef BOARD_TYPE_DEFAULT
 # define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
+#endif
+#endif
+
+#ifndef BOARD_SAFETY_ENABLE_DEFAULT
+#if defined(HAL_GPIO_PIN_SAFETY_IN)
+  // have safety startup enabled if we have a safety pin
+  # define BOARD_SAFETY_ENABLE_DEFAULT 1
+#elif defined(HAL_WITH_IO_MCU)
+  // if we have an IOMCU then enable by default
+  # define BOARD_SAFETY_ENABLE_DEFAULT HAL_WITH_IO_MCU
+#else
+  # define BOARD_SAFETY_ENABLE_DEFAULT 0
 #endif
 #endif
 
@@ -146,7 +155,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #endif
 #endif
 
-#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETYENABLE
     // @DisplayName: Enable use of safety arming switch
     // @Description: This controls the default state of the safety switch at startup. When set to 1 the safety switch will start in the safe state (flashing) at boot. When set to zero the safety switch will start in the unsafe state (solid) at startup. Note that if a safety switch is fitted the user can still control the safety state after startup using the switch. The safety state can also be controlled in software using a MAVLink message.
@@ -154,7 +162,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("SAFETYENABLE",   3, AP_BoardConfig, state.safety_enable, BOARD_SAFETY_ENABLE_DEFAULT),
-#endif
 
 #if AP_FEATURE_SBUS_OUT
     // @Param: SBUS_OUT
@@ -169,11 +176,10 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @Param: SERIAL_NUM
     // @DisplayName: User-defined serial number
     // @Description: User-defined serial number of this vehicle, it can be any arbitrary number you want and has no effect on the autopilot
-    // @Range: -32768 32767
+    // @Range: -8388608 8388607
     // @User: Standard
     AP_GROUPINFO("SERIAL_NUM", 5, AP_BoardConfig, vehicleSerialNumber, 0),
 
-#if HAL_HAVE_SAFETY_SWITCH
     // @Param: SAFETY_MASK
     // @DisplayName: Outputs which ignore the safety switch state
     // @Description: A bitmask which controls what outputs can move while the safety switch has not been pressed
@@ -181,7 +187,6 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("SAFETY_MASK", 7, AP_BoardConfig, state.ignore_safety_channels, 0),
-#endif
 
 #if HAL_HAVE_IMU_HEATER
     // @Param: HEAT_TARG
@@ -337,6 +342,9 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 void AP_BoardConfig::init()
 {
+    // PARAMETER_CONVERSION - Added: APR-2022
+    vehicleSerialNumber.convert_parameter_width(AP_PARAM_INT16);
+
     board_setup();
 
     AP::rtc().set_utc_usec(hal.util->get_hw_rtc(), AP_RTC::SOURCE_HW);
@@ -370,11 +378,9 @@ void AP_BoardConfig::init()
 }
 
 // set default value for BRD_SAFETY_MASK
-void AP_BoardConfig::set_default_safety_ignore_mask(uint16_t mask)
+void AP_BoardConfig::set_default_safety_ignore_mask(uint32_t mask)
 {
-#if HAL_HAVE_SAFETY_SWITCH
     state.ignore_safety_channels.set_default(mask);
-#endif
 }
 
 void AP_BoardConfig::init_safety()

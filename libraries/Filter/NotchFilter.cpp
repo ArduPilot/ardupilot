@@ -74,14 +74,15 @@ void NotchFilter<T>::init_with_A_and_Q(float sample_freq_hz, float center_freq_h
 template <class T>
 T NotchFilter<T>::apply(const T &sample)
 {
-    if (!initialised) {
+    if (!initialised || need_reset) {
         // if we have not been initialised when return the input
         // sample as output and update delayed samples
-        ntchsig2 = ntchsig1;
-        ntchsig1 = ntchsig;
-        ntchsig = sample;
-        signal2 = signal1;
         signal1 = sample;
+        signal2 = sample;
+        ntchsig = sample;
+        ntchsig1 = sample;
+        ntchsig2 = sample;
+        need_reset = false;
         return sample;
     }
     ntchsig2 = ntchsig1;
@@ -96,8 +97,7 @@ T NotchFilter<T>::apply(const T &sample)
 template <class T>
 void NotchFilter<T>::reset()
 {
-    ntchsig2 = ntchsig1 = T();
-    signal2 = signal1 = T();
+    need_reset = true;
 }
 
 /*

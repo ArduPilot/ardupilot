@@ -14,6 +14,8 @@ public:
 
     static AP_Arming *get_singleton();
 
+    void update();
+
     enum ArmingChecks {
         ARMING_CHECK_ALL         = (1U << 0),
         ARMING_CHECK_BARO        = (1U << 1),
@@ -71,6 +73,7 @@ public:
         TOYMODELANDTHROTTLE = 30, // only disarm uses this...
         TOYMODELANDFORCE = 31, // only disarm uses this...
         LANDING = 32, // only disarm uses this...
+        DEADRECKON_FAILSAFE = 33, // only disarm uses this...
         UNKNOWN = 100,
     };
 
@@ -181,6 +184,8 @@ protected:
     bool camera_checks(bool display_failure);
 
     bool osd_checks(bool display_failure) const;
+
+    bool mount_checks(bool display_failure) const;
 
     bool aux_auth_checks(bool display_failure);
 

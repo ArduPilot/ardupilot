@@ -47,6 +47,7 @@
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 #include <AP_RPM/AP_RPM.h>
+#include <AP_Mount/AP_Mount.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -75,6 +76,10 @@
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
 #else
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMDISARM
+#endif
+
+#ifndef PREARM_DISPLAY_PERIOD
+# define PREARM_DISPLAY_PERIOD 30
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -130,7 +135,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       ARMING_CHECK_ALL),
 
-    // @Param: OPTIONS
+    // @Param{Copter}: OPTIONS
     // @DisplayName: Arming options
     // @Description: Options that can be applied to change arming behaviour
     // @Values: 0:None,1:Disable prearm display
@@ -153,6 +158,22 @@ AP_Arming::AP_Arming()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// performs pre-arm checks. expects to be called at 1hz.
+void AP_Arming::update(void)
+{
+    // perform pre-arm checks & display failures every 30 seconds
+    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
+    pre_arm_display_counter++;
+    bool display_fail = false;
+    if ((_arming_options & uint32_t(AP_Arming::ArmingOptions::DISABLE_PREARM_DISPLAY)) == 0 &&
+        pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
+        display_fail = true;
+        pre_arm_display_counter = 0;
+    }
+
+    pre_arm_checks(display_fail);
 }
 
 uint16_t AP_Arming::compass_magfield_expected() const
@@ -1040,13 +1061,6 @@ bool AP_Arming::can_checks(bool report)
 #endif
                     break;
                 }
-                case AP_CANManager::Driver_Type_ToshibaCAN:
-                {
-                    // toshibacan doesn't currently have any prearm
-                    // checks.  Theres scope for adding a "not
-                    // initialised" prearm check.
-                    break;
-                }
                 case AP_CANManager::Driver_Type_CANTester:
                 {
                     check_failed(ARMING_CHECK_SYSTEM, report, "TestCAN: No Arming with TestCAN enabled");
@@ -1056,6 +1070,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_USD1:
                 case AP_CANManager::Driver_Type_None:
                 case AP_CANManager::Driver_Type_Scripting:
+                case AP_CANManager::Driver_Type_Scripting2:
                 case AP_CANManager::Driver_Type_Benewake:
                     break;
             }
@@ -1121,6 +1136,24 @@ bool AP_Arming::osd_checks(bool display_failure) const
         char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
         if (!osd->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
             check_failed(ARMING_CHECK_CAMERA, display_failure, "%s", fail_msg);
+            return false;
+        }
+    }
+#endif
+    return true;
+}
+
+bool AP_Arming::mount_checks(bool display_failure) const
+{
+#if HAL_MOUNT_ENABLED
+    if ((checks_to_perform & ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_CAMERA)) {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            return true;
+        }
+        char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] = {};
+        if (!mount->pre_arm_checks(fail_msg, sizeof(fail_msg))) {
+            check_failed(ARMING_CHECK_CAMERA, display_failure, "Mount: %s", fail_msg);
             return false;
         }
     }
@@ -1310,6 +1343,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  proximity_checks(report)
         &  camera_checks(report)
         &  osd_checks(report)
+        &  mount_checks(report)
         &  fettec_checks(report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
@@ -1326,13 +1360,6 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 
-#if HAL_GYROFFT_ENABLED
-    // make sure the FFT subsystem is enabled if arming checks have been disabled
-    AP_GyroFFT *fft = AP::fft();
-    if (fft != nullptr) {
-        fft->prepare_for_arming();
-    }
-#endif
     // ensure the GPS drivers are ready on any final changes
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_GPS_CONFIG)) {
@@ -1395,6 +1422,14 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
     if (armed && do_arming_checks && checks_to_perform == 0) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
+    
+#if HAL_GYROFFT_ENABLED
+    // make sure the FFT subsystem is enabled if arming checks have been disabled
+    AP_GyroFFT *fft = AP::fft();
+    if (fft != nullptr) {
+        fft->prepare_for_arming();
+    }
+#endif
 
 #if AP_TERRAIN_AVAILABLE
     if (armed) {
@@ -1584,7 +1619,8 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
         case Method::GCS_FAILSAFE_SURFACEFAILED:
         case Method::GCS_FAILSAFE_HOLDFAILED:
         case Method::PILOT_INPUT_FAILSAFE:
-            // keep logging for longger if disarmed for a bad reason
+        case Method::DEADRECKON_FAILSAFE:
+            // keep logging for longer if disarmed for a bad reason
             AP::logger().set_long_log_persist(true);
             return;
 

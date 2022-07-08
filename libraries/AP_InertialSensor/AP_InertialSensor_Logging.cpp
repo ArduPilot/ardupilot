@@ -98,12 +98,17 @@ void AP_InertialSensor::Write_Vibration() const
 // Write information about a series of IMU readings to log:
 bool AP_InertialSensor::BatchSampler::Write_ISBH(const float sample_rate_hz) const
 {
+    uint8_t instance_to_write = instance;
+    if (post_filter && (_doing_pre_post_filter_logging
+            || (_doing_post_filter_logging && _doing_sensor_rate_logging))) {
+        instance_to_write += (type == IMU_SENSOR_TYPE_ACCEL ? _imu._accel_count : _imu._gyro_count);
+    }
     const struct log_ISBH pkt{
         LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
         time_us        : AP_HAL::micros64(),
         seqno          : isb_seqnum,
         sensor_type    : (uint8_t)type,
-        instance       : instance,
+        instance       : instance_to_write,
         multiplier     : multiplier,
         sample_count   : (uint16_t)_required_count,
         sample_us      : measurement_started_us,

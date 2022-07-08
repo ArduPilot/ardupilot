@@ -3,13 +3,16 @@
 */
 #pragma once
 
-#include "AP_Mount.h"
-#if HAL_MOUNT_ENABLED
+#include "AP_Mount_Backend.h"
+
+#ifndef HAL_MOUNT_ALEXMOS_ENABLED
+#define HAL_MOUNT_ALEXMOS_ENABLED HAL_MOUNT_ENABLED
+#endif
+
+#if HAL_MOUNT_ALEXMOS_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include "AP_Mount_Backend.h"
-
 
 //definition of the commands id for the Alexmos Serial Protocol
 #define CMD_READ_PARAMS 'R'
@@ -55,7 +58,7 @@
 #define AP_MOUNT_ALEXMOS_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_ALEXMOS_MODE_RC 4
 
-#define AP_MOUNT_ALEXMOS_SPEED 30 // degree/s2
+#define AP_MOUNT_ALEXMOS_SPEED 30 // deg/s
 
 #define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
@@ -75,11 +78,8 @@ public:
     // update mount position - should be called periodically
     void update() override;
 
-    // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
+    // has_pan_control - returns true if this mount can control its pan (required for multicopters)
     bool has_pan_control() const override;
-
-    // set_mode - sets mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) override;
 
     // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
     void send_mount_status(mavlink_channel_t chan) override;
@@ -95,8 +95,8 @@ private:
     // get_boardinfo - get board version and firmware version
     void get_boardinfo();
 
-    // control_axis - send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const Vector3f& angle , bool targets_in_degrees);
+    // send new angles to the gimbal at a fixed speed of 30 deg/s
+    void control_axis(const MountTarget& angle_target_rad);
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);
@@ -104,7 +104,7 @@ private:
     // write_params - write new parameters to the gimbal settings
     void write_params();
 
-    bool get_realtimedata( Vector3f& angle);
+    bool get_realtimedata(Vector3f& angle);
 
     // Alexmos Serial Protocol reading part implementation
     // send_command - send a command to the Alemox Serial API
@@ -115,6 +115,8 @@ private:
 
     // read_incoming - detect and read the header of the incoming message from the gimbal
     void read_incoming();
+
+    MountTarget _angle_rad;         // latest angle target
 
     // structure for the Serial Protocol
 
@@ -299,4 +301,4 @@ private:
     // confirmed that last command was ok
     bool _last_command_confirmed : 1;
 };
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_ALEXMOS_ENABLED

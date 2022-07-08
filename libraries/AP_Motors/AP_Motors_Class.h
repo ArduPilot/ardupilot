@@ -221,7 +221,7 @@ public:
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-    virtual uint16_t    get_motor_mask() = 0;
+    virtual uint32_t    get_motor_mask() = 0;
 
     // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
     void                set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input);
@@ -309,10 +309,10 @@ protected:
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
 
     // mask of what channels need fast output
-    uint16_t            _motor_fast_mask;
+    uint32_t            _motor_fast_mask;
 
     // mask of what channels need to use SERVOn_MIN/MAX for output mapping
-    uint16_t            _motor_pwm_range_mask;
+    uint32_t            _motor_pwm_range_mask;
     
     // pass through variables
     float _roll_radio_passthrough;     // roll input from pilot in -1 ~ +1 range.  used for setup and providing servo feedback while landed

@@ -697,6 +697,42 @@ function RC_Channel_ud:norm_input_dz() end
 
 
 -- desc
+---@class mount
+mount = {}
+
+-- desc
+---@param instance integer
+---@param target_loc Location_ud
+function mount:set_roi_target(instance, target_loc) end
+
+-- desc
+---@param instance integer
+---@param roll_degs number
+---@param pitch_degs number
+---@param yaw_degs number
+---@param yaw_is_earth_frame boolean
+function mount:set_rate_target(instance, roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame) end
+
+-- desc
+---@param instance integer
+---@param roll_deg number
+---@param pitch_deg number
+---@param yaw_deg number
+---@param yaw_is_earth_frame boolean
+function mount:set_angle_target(instance, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame) end
+
+-- desc
+---@param instance integer
+---@param mode integer
+function mount:set_mode(instance, mode) end
+
+-- desc
+---@param instance integer
+---@return integer
+function mount:get_mode(instance) end
+
+
+-- desc
 ---@class motors
 motors = {}
 
@@ -1116,10 +1152,12 @@ function baro:get_pressure() end
 ---@class serial
 serial = {}
 
--- desc
----@param protocol integer
----@return AP_HAL__UARTDriver_ud
-function serial:find_serial(protocol) end
+-- Returns the UART instance that allows connections from scripts (those with SERIALx_PROTOCOL = 28`).
+-- For instance = 0, returns first such UART, second for instance = 1, and so on.
+-- If such an instance is not found, returns nil.
+---@param instance integer -- the 0-based index of the UART instance to return.
+---@return AP_HAL__UARTDriver_ud -- the requested UART instance available for scripting, or nil if none.
+function serial:find_serial(instance) end
 
 
 -- desc
@@ -1394,6 +1432,11 @@ function vehicle:set_velocity_match(param1) end
 ---@param param1 integer
 ---@return boolean
 function vehicle:nav_scripting_enable(param1) end
+
+-- desc sets autopilot nav speed (Copter and Rover)
+---@param param1 number
+---@return boolean
+function vehicle:set_desired_speed(param1) end
 
 -- desc
 ---@param param1 number

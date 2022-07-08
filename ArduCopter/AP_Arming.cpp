@@ -1,25 +1,5 @@
 #include "Copter.h"
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
- #include <AP_ToshibaCAN/AP_ToshibaCAN.h>
-#endif
-
-// performs pre-arm checks. expects to be called at 1hz.
-void AP_Arming_Copter::update(void)
-{
-    // perform pre-arm checks & display failures every 30 seconds
-    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
-    pre_arm_display_counter++;
-    bool display_fail = false;
-    if ((_arming_options & uint32_t(AP_Arming::ArmingOptions::DISABLE_PREARM_DISPLAY)) == 0 &&
-        pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
-        display_fail = true;
-        pre_arm_display_counter = 0;
-    }
-
-    pre_arm_checks(display_fail);
-}
-
 bool AP_Arming_Copter::pre_arm_checks(bool display_failure)
 {
     const bool passed = run_pre_arm_checks(display_failure);
@@ -274,7 +254,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         // ensure controllers are OK with us arming:
-        char failure_msg[50];
+        char failure_msg[50] = {};
         if (!copter.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
             return false;
@@ -309,58 +289,13 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return true;
     }
 
-    // if this is a multicopter using ToshibaCAN ESCs ensure MOT_PMW_MIN = 1000, MOT_PWM_MAX = 2000
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS && (FRAME_CONFIG != HELI_FRAME)
-    bool tcan_active = false;
-    uint8_t tcan_index = 0;
-    const uint8_t num_drivers = AP::can().get_num_drivers();
-    for (uint8_t i = 0; i < num_drivers; i++) {
-        if (AP::can().get_driver_type(i) == AP_CANManager::Driver_Type_ToshibaCAN) {
-            tcan_active = true;
-            tcan_index = i;
-        }
-    }
-    if (tcan_active) {
-        // check motor range parameters
-        if (copter.motors->get_pwm_output_min() != 1000) {
-            check_failed(display_failure, "TCAN ESCs require MOT_PWM_MIN=1000");
-            return false;
-        }
-        if (copter.motors->get_pwm_output_max() != 2000) {
-            check_failed(display_failure, "TCAN ESCs require MOT_PWM_MAX=2000");
-            return false;
-        }
-
-        // check we have an ESC present for every SERVOx_FUNCTION = motorx
-        // find and report first missing ESC, extra ESCs are OK
-        AP_ToshibaCAN *tcan = AP_ToshibaCAN::get_tcan(tcan_index);
-        const uint16_t motors_mask = copter.motors->get_motor_mask();
-        const uint16_t esc_mask = tcan->get_present_mask();
-        uint8_t escs_missing = 0;
-        uint8_t first_missing = 0;
-        for (uint8_t i = 0; i < 16; i++) {
-            uint32_t bit = 1UL << i;
-            if (((motors_mask & bit) > 0) && ((esc_mask & bit) == 0)) {
-                escs_missing++;
-                if (first_missing == 0) {
-                    first_missing = i+1;
-                }
-            }
-        }
-        if (escs_missing > 0) {
-            check_failed(display_failure, "TCAN missing %d escs, check #%d", (int)escs_missing, (int)first_missing);
-            return false;
-        }
-    }
-#endif
-
     return true;
 }
 
 bool AP_Arming_Copter::oa_checks(bool display_failure)
 {
 #if AC_OAPATHPLANNER_ENABLED == ENABLED
-    char failure_msg[50];
+    char failure_msg[50] = {};
     if (copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
         return true;
     }

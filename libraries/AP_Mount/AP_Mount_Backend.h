@@ -19,9 +19,9 @@
  */
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include "AP_Mount.h"
 #if HAL_MOUNT_ENABLED
+#include <AP_Common/AP_Common.h>
 #include <RC_Channel/RC_Channel.h>
 
 class AP_Mount_Backend
@@ -34,9 +34,6 @@ public:
         _instance(instance)
     {}
 
-    // Virtual destructor
-    virtual ~AP_Mount_Backend(void) {}
-
     // init - performs any required initialisation for this instance
     virtual void init() = 0;
 
@@ -46,17 +43,32 @@ public:
     // used for gimbals that need to read INS data at full rate
     virtual void update_fast() {}
 
+    // return true if healthy
+    virtual bool healthy() const { return true; }
+
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
-    // set_mode - sets mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) = 0;
+    // get mount's mode
+    enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
-    // set_angle_targets - sets angle targets in degrees
-    void set_angle_targets(float roll, float tilt, float pan);
+    // set mount's mode
+    virtual void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
+
+    // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+    // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+    void set_yaw_lock(bool yaw_lock) { _yaw_lock = yaw_lock; }
+
+    // set angle target in degrees
+    // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
+    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
+
+    // sets rate target in deg/s
+    // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
+    void set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_is_earth_frame);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const struct Location &target_loc);
+    void set_roi_target(const Location &target_loc);
 
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
@@ -79,55 +91,88 @@ public:
     // handle a PARAM_VALUE message
     virtual void handle_param_value(const mavlink_message_t &msg) {}
 
-    // send a GIMBAL_REPORT message to the GCS
-    virtual void send_gimbal_report(const mavlink_channel_t chan) {}
-
     // handle a GLOBAL_POSITION_INT message
     bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
 
+    // handle GIMBAL_DEVICE_INFORMATION message
+    virtual void handle_gimbal_device_information(const mavlink_message_t &msg) {}
+
+    // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
+    virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
+
 protected:
 
-    // update_targets_from_rc - updates angle targets (i.e. _angle_ef_target_rad) using input from receiver
-    void update_targets_from_rc();
+    enum class MountTargetType {
+        ANGLE,
+        RATE,
+    };
 
-    // angle_input_rad - convert RC input into an earth-frame target angle
-    float angle_input_rad(const RC_Channel* rc, int16_t angle_min, int16_t angle_max);
+    // structure for a single angle or rate target
+    struct MountTarget {
+        float roll;
+        float pitch;
+        float yaw;
+        bool yaw_is_ef;
+    };
 
-    // calc_angle_to_location - calculates the earth-frame roll, tilt
-    // and pan angles (and radians) to point at the given target
-    bool calc_angle_to_location(const struct Location &target,
-                                Vector3f& angles_to_target_rad,
-                                bool calc_tilt,
-                                bool calc_pan,
-                                bool relative_pan = true) const WARN_IF_UNUSED;
+    // get pilot input (in the range -1 to +1) received through RC
+    void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
 
-    // calc_angle_to_roi_target - calculates the earth-frame roll, tilt
-    // and pan angles (and radians) to point at the ROI-target (as set
-    // by various mavlink messages)
-    bool calc_angle_to_roi_target(Vector3f& angles_to_target_rad,
-                                  bool calc_tilt,
-                                  bool calc_pan,
-                                  bool relative_pan = true) const WARN_IF_UNUSED;
+    // get rate targets (in rad/s) from pilot RC
+    // returns true on success (RC is providing rate targets), false on failure (RC is providing angle targets)
+    bool get_rc_rate_target(MountTarget& rate_rads) const WARN_IF_UNUSED;
 
-    // calc_angle_to_sysid_target - calculates the earth-frame roll, tilt
-    // and pan angles (and radians) to point at the sysid-target (as set
-    // by various mavlink messages)
-    bool calc_angle_to_sysid_target(Vector3f& angles_to_target_rad,
-                                    bool calc_tilt,
-                                    bool calc_pan,
-                                    bool relative_pan = true) const WARN_IF_UNUSED;
+    // get angle targets (in radians) from pilot RC
+    // returns true on success (RC is providing angle targets), false on failure (RC is providing rate targets)
+    bool get_rc_angle_target(MountTarget& angle_rad) const WARN_IF_UNUSED;
 
-    // get the mount mode from frontend
-    MAV_MOUNT_MODE get_mode(void) const { return _frontend.get_mode(_instance); }
+    // get angle targets (in radians) to a Location
+    // returns true on success, false on failure
+    bool get_angle_target_to_location(const Location &loc, MountTarget& angle_rad) const WARN_IF_UNUSED;
+
+    // get angle targets (in radians) to ROI location
+    // returns true on success, false on failure
+    bool get_angle_target_to_roi(MountTarget& angle_rad) const WARN_IF_UNUSED;
+
+    // get angle targets (in radians) to home location
+    // returns true on success, false on failure
+    bool get_angle_target_to_home(MountTarget& angle_rad) const WARN_IF_UNUSED;
+
+    // get angle targets (in radians) to a vehicle with sysid of _target_sysid
+    // returns true on success, false on failure
+    bool get_angle_target_to_sysid(MountTarget& angle_rad) const WARN_IF_UNUSED;
+
+    // return body-frame yaw angle from a mount target
+    float get_bf_yaw_angle(const MountTarget& angle_rad) const;
+
+    // return earth-frame yaw angle from a mount target
+    float get_ef_yaw_angle(const MountTarget& angle_rad) const;
+
+    // update angle targets using a given rate target
+    // the resulting angle_rad yaw frame will match the rate_rad yaw frame
+    // assumes a 50hz update rate
+    void update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const;
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
-    Vector3f    _angle_ef_target_rad;   // desired earth-frame roll, tilt and vehicle-relative pan angles in radians
 
-private:
+    MAV_MOUNT_MODE  _mode;          // current mode (see MAV_MOUNT_MODE enum)
+    bool _yaw_lock;                 // True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
 
-    void rate_input_rad(float &out, const RC_Channel *ch, float min, float max) const;
+    // structure for MAVLink Targeting angle and rate targets
+    struct {
+        MountTargetType target_type;// MAVLink targeting mode's current target type (e.g. angle or rate)
+        MountTarget angle_rad;      // angle target in radians
+        MountTarget rate_rads;      // rate target in rad/s
+    } mavt_target;
+
+    Location _roi_target;           // roi target location
+    bool _roi_target_set;           // true if the roi target has been set
+
+    uint8_t _target_sysid;          // sysid to track
+    Location _target_sysid_location;// sysid target location
+    bool _target_sysid_location_set;// true if _target_sysid has been set
 };
 
 #endif // HAL_MOUNT_ENABLED

@@ -1,8 +1,6 @@
-#include <AP_HAL/AP_HAL.h>
-
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
-
 #include "AP_Airspeed_UAVCAN.h"
+
+#if AP_AIRSPEED_UAVCAN_ENABLED
 
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_UAVCAN/AP_UAVCAN.h>
@@ -16,7 +14,7 @@ extern const AP_HAL::HAL& hal;
 // UAVCAN Frontend Registry Binder
 UC_REGISTRY_BINDER(AirspeedCb, uavcan::equipment::air_data::RawAirData);
 
-AP_Airspeed_UAVCAN::DetectedModules AP_Airspeed_UAVCAN::_detected_modules[] = {0};
+AP_Airspeed_UAVCAN::DetectedModules AP_Airspeed_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Airspeed_UAVCAN::_sem_registry;
 
 // constructor
@@ -163,4 +161,4 @@ bool AP_Airspeed_UAVCAN::get_temperature(float &temperature)
     return true;
 }
 
-#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
+#endif // AP_AIRSPEED_UAVCAN_ENABLED

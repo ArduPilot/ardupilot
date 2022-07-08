@@ -147,7 +147,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
 
     // @Param: YAW_SV_ANGLE
     // @DisplayName: Yaw Servo Max Lean Angle
-    // @Description: Yaw servo's maximum lean angle
+    // @Description: Yaw servo's maximum lean angle (Tricopter only)
     // @Range: 5 80
     // @Units: deg
     // @Increment: 1
@@ -501,12 +501,10 @@ float AP_MotorsMulticopter::actuator_spin_up_to_ground_idle() const
 // parameter checks for MOT_PWM_MIN/MAX, returns true if parameters are valid
 bool AP_MotorsMulticopter::check_mot_pwm_params() const
 {
-    // sanity says that minimum should be less than maximum:
-    if (_pwm_min >= _pwm_max) {
-        return false;
-    }
-    // negative values are out-of-range:
-    if (_pwm_max <= 0) {
+    // _pwm_min is a value greater than or equal to 1.
+    // _pwm_max is greater than _pwm_min.
+    // The values of _pwm_min and _pwm_max are positive values.
+    if (_pwm_min < 1 || _pwm_min >= _pwm_max) {
         return false;
     }
     return true;
@@ -777,7 +775,7 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint8_t mask, float r
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
 //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
-uint16_t AP_MotorsMulticopter::get_motor_mask()
+uint32_t AP_MotorsMulticopter::get_motor_mask()
 {
     return SRV_Channels::get_output_channel_mask(SRV_Channel::k_boost_throttle);
 }
@@ -794,7 +792,7 @@ void AP_MotorsMulticopter::save_params_on_disarm()
 // convert to PWM min and max in the motor lib
 void AP_MotorsMulticopter::convert_pwm_min_max_param(int16_t radio_min, int16_t radio_max)
 {
-    if (_pwm_min.configured_in_storage() || _pwm_max.configured_in_storage()) {
+    if (_pwm_min.configured() || _pwm_max.configured()) {
         return;
     }
     _pwm_min.set_and_save(radio_min);

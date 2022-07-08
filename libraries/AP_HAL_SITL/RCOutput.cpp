@@ -106,7 +106,7 @@ void RCOutput::push(void)
 /*
   Serial LED emulation
 */
-bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint16_t clock_mask)
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint32_t clock_mask)
 {
     if (chan > 15 || num_leds > 64) {
         return false;

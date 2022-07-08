@@ -35,15 +35,14 @@ protected:
     // Copies internal state to the frontend state
     void copy_to_frontend();
 
-    // Semaphore for access to shared frontend data
-    HAL_Semaphore sem;
-
     // Internal state for this driver (before copying to frontend)
     EFI_State internal_state;
 
     int8_t get_uavcan_node_id(void) const;
     float get_coef1(void) const;
     float get_coef2(void) const;
+
+    HAL_Semaphore &get_sem(void);
 
 private:
     AP_EFI &frontend;

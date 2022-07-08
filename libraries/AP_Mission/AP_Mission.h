@@ -229,7 +229,26 @@ public:
         float arg1;
         float arg2;
     };
-    
+
+    // Scripting NAV command (with verify)
+    struct PACKED nav_attitude_time_Command {
+        uint16_t time_sec;
+        int16_t roll_deg;
+        int8_t pitch_deg;
+        int16_t yaw_deg;
+        float climb_rate;
+    };
+
+    // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW support
+    struct PACKED gimbal_manager_pitchyaw_Command {
+        int8_t pitch_angle_deg;
+        int16_t yaw_angle_deg;
+        int8_t pitch_rate_degs;
+        int8_t yaw_rate_degs;
+        uint8_t flags;
+        uint8_t gimbal_id;
+    };
+
     union Content {
         // jump structure
         Jump_Command jump;
@@ -302,7 +321,13 @@ public:
 
         // nav scripting
         nav_script_time_Command nav_script_time;
-        
+
+        // nav attitude time
+        nav_attitude_time_Command nav_attitude_time;
+
+        // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
+        gimbal_manager_pitchyaw_Command gimbal_manager_pitchyaw;
+
         // location
         Location location{};      // Waypoint location
     };
@@ -313,6 +338,10 @@ public:
         uint16_t id;                // mavlink command id
         uint16_t p1;                // general purpose parameter 1
         Content content;
+
+        // for items which store in location, we offer a few more bits
+        // of storage:
+        uint8_t type_specific_bits;  // bitmask of set/unset bits
 
         // return a human-readable interpretation of the ID stored in this command
         const char *type() const;
@@ -744,7 +773,7 @@ private:
 
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
-
+    bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
 };
 
 namespace AP

@@ -488,12 +488,6 @@ public:
     // check var table for consistency
     static bool             check_var_info(void);
 
-    // return true if the parameter is configured in the defaults file
-    bool configured_in_defaults_file(bool &read_only) const;
-
-    // return true if the parameter is configured in EEPROM/FRAM
-    bool configured_in_storage(void) const;
-
     // return true if the parameter is configured
     bool configured(void) const;
 
@@ -703,6 +697,12 @@ private:
      */
     static bool count_embedded_param_defaults(uint16_t &count);
     static void load_embedded_param_defaults(bool last_pass);
+
+    // return true if the parameter is configured in the defaults file
+    bool configured_in_defaults_file(bool &read_only) const;
+
+    // return true if the parameter is configured in EEPROM/FRAM
+    bool configured_in_storage(void) const;
 
     // send a parameter to all GCS instances
     void send_parameter(const char *name, enum ap_var_type param_header_type, uint8_t idx) const;

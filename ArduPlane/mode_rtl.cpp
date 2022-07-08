@@ -8,10 +8,15 @@ bool ModeRTL::_enter()
     plane.rtl.done_climb = false;
 #if HAL_QUADPLANE_ENABLED
     plane.vtol_approach_s.approach_stage = Plane::Landing_ApproachStage::RTL;
-#endif
+
+    // treat RTL as QLAND if we are in guided wait takeoff state, to cope
+    // with failsafes during GUIDED->AUTO takeoff sequence
+    if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
+       plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
+       return true;
+    }
 
     // do not check if we have reached the loiter target if switching from loiter this will trigger as the nav controller has not yet proceeded the new destination
-#if HAL_QUADPLANE_ENABLED
     switch_QRTL(false);
 #endif
 

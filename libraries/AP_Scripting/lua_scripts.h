@@ -53,9 +53,9 @@ class lua_scripts
 public:
     lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options, struct AP_Scripting::terminal_s &_terminal);
 
-    /* Do not allow copies */
-    lua_scripts(const lua_scripts &other) = delete;
-    lua_scripts &operator=(const lua_scripts&) = delete;
+    ~lua_scripts();
+
+    CLASS_NO_COPY(lua_scripts);
 
     // return true if initialisation failed
     bool heap_allocated() const { return _heap != nullptr; }

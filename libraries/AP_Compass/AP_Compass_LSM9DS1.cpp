@@ -84,23 +84,23 @@ bool AP_Compass_LSM9DS1::init()
     AP_HAL::Semaphore *bus_sem = _dev->get_semaphore();
 
     if (!bus_sem) {
-        hal.console->printf("LSM9DS1: Unable to get bus semaphore\n");
+        DEV_PRINTF("LSM9DS1: Unable to get bus semaphore\n");
         return false;
     }
     bus_sem->take_blocking();
 
     if (!_check_id()) {
-        hal.console->printf("LSM9DS1: Could not check id\n");
+        DEV_PRINTF("LSM9DS1: Could not check id\n");
         goto errout;
     }
 
     if (!_configure()) {
-        hal.console->printf("LSM9DS1: Could not check id\n");
+        DEV_PRINTF("LSM9DS1: Could not check id\n");
         goto errout;
     }
 
     if (!_set_scale()) {
-        hal.console->printf("LSM9DS1: Could not set scale\n");
+        DEV_PRINTF("LSM9DS1: Could not set scale\n");
         goto errout;
     }
 
@@ -127,15 +127,14 @@ errout:
 
 void AP_Compass_LSM9DS1::_dump_registers()
 {
-    hal.console->printf("LSMDS1 registers\n");
+    DEV_PRINTF("LSMDS1 registers\n");
     for (uint8_t reg = LSM9DS1M_OFFSET_X_REG_L_M; reg <= LSM9DS1M_INT_THS_H_M; reg++) {
-        uint8_t v = _register_read(reg);
-        hal.console->printf("%02x:%02x ", (unsigned)reg, (unsigned)v);
+        DEV_PRINTF("%02x:%02x ", (unsigned)reg, (unsigned)_register_read(reg));
         if ((reg - (LSM9DS1M_OFFSET_X_REG_L_M-1)) % 16 == 0) {
-            hal.console->printf("\n");
+            DEV_PRINTF("\n");
         }
     }
-    hal.console->printf("\n");
+    DEV_PRINTF("\n");
 }
 
 void AP_Compass_LSM9DS1::_update(void)
@@ -174,7 +173,7 @@ bool AP_Compass_LSM9DS1::_check_id(void)
 
     uint8_t value = _register_read(LSM9DS1M_WHO_AM_I);
     if (value != WHO_AM_I_MAG) {
-        hal.console->printf("LSM9DS1: unexpected WHOAMI 0x%x\n", (unsigned)value);
+        DEV_PRINTF("LSM9DS1: unexpected WHOAMI 0x%x\n", (unsigned)value);
         return false;
     }
 

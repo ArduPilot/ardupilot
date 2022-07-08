@@ -38,7 +38,7 @@ void AP::PerfInfo::allocate_task_info(uint8_t num_tasks)
 {
     _task_info = new TaskInfo[num_tasks];
     if (_task_info == nullptr) {
-        hal.console->printf("Unable to allocate scheduler TaskInfo\n");
+        DEV_PRINTF("Unable to allocate scheduler TaskInfo\n");
         _num_tasks = 0;
         return;
     }

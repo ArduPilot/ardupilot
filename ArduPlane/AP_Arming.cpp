@@ -102,6 +102,11 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
        }
     }
 
+    if (plane.mission.get_in_landing_sequence_flag()) {
+        check_failed(display_failure,"In landing sequence");
+        ret = false;
+    }
+    
     return ret;
 }
 
@@ -153,13 +158,17 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
     }
 
     // ensure controllers are OK with us arming:
-    char failure_msg[50];
+    char failure_msg[50] = {};
     if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
         check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
         ret = false;
     }
     if (!plane.quadplane.attitude_control->pre_arm_checks("ATC", failure_msg, ARRAY_SIZE(failure_msg))) {
         check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
+        ret = false;
+    }
+    if (!plane.quadplane.motors->check_mot_pwm_params()) {
+        check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check Q_M_PWM_MIN/MAX");
         ret = false;
     }
 
@@ -174,6 +183,16 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         }
     }
 
+    if ((plane.control_mode == &plane.mode_auto) && !plane.mission.starts_with_takeoff_cmd()) {
+        check_failed(display_failure,"missing takeoff waypoint");
+        ret = false;
+    }
+
+    if (plane.control_mode == &plane.mode_rtl) {
+        check_failed(display_failure,"in RTL mode");
+        ret = false;
+    }
+    
     /*
       Q_ASSIST_SPEED really should be enabled for all quadplanes except tailsitters
      */

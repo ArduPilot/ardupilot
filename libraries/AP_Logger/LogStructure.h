@@ -141,7 +141,14 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_RPM/LogStructure.h>
 
 // structure used to define logging format
+// It is packed on ChibiOS to save flash space; however, this causes problems
+// when building the SITL on an Apple M1 CPU (and is also slower) so we do not
+// pack it by default
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 struct PACKED LogStructure {
+#else
+struct LogStructure {
+#endif
     uint8_t msg_type;
     uint8_t msg_len;
     const char *name;
@@ -275,6 +282,15 @@ struct PACKED log_RCOUT {
     uint16_t chan12;
     uint16_t chan13;
     uint16_t chan14;
+};
+
+struct PACKED log_RCOUT2 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t chan15;
+    uint16_t chan16;
+    uint16_t chan17;
+    uint16_t chan18;
 };
 
 struct PACKED log_MAV {
@@ -994,7 +1010,7 @@ struct PACKED log_VER {
 // @Field: C14: channel 14 input
 
 // @LoggerMessage: RCOU
-// @Description: Servo channel output values
+// @Description: Servo channel output values 1 to 14
 // @Field: TimeUS: Time since system startup
 // @Field: C1: channel 1 output
 // @Field: C2: channel 2 output
@@ -1010,6 +1026,32 @@ struct PACKED log_VER {
 // @Field: C12: channel 12 output
 // @Field: C13: channel 13 output
 // @Field: C14: channel 14 output
+
+// @LoggerMessage: RCO2
+// @Description: Servo channel output values 15 to 18
+// @Field: TimeUS: Time since system startup
+// @Field: C15: channel 15 output
+// @Field: C16: channel 16 output
+// @Field: C17: channel 17 output
+// @Field: C18: channel 18 output
+
+// @LoggerMessage: RCO3
+// @Description: Servo channel output values 19 to 32
+// @Field: TimeUS: Time since system startup
+// @Field: C19: channel 19 output
+// @Field: C20: channel 20 output
+// @Field: C21: channel 21 output
+// @Field: C22: channel 22 output
+// @Field: C23: channel 23 output
+// @Field: C24: channel 24 output
+// @Field: C25: channel 25 output
+// @Field: C26: channel 26 output
+// @Field: C27: channel 27 output
+// @Field: C28: channel 28 output
+// @Field: C29: channel 29 output
+// @Field: C30: channel 30 output
+// @Field: C31: channel 31 output
+// @Field: C32: channel 32 output
 
 // @LoggerMessage: RFND
 // @Description: Rangefinder sensor information
@@ -1181,6 +1223,10 @@ LOG_STRUCTURE_FROM_GPS \
       "RCI2",  "QHHH",     "TimeUS,C15,C16,OMask", "sYY-", "F---", true }, \
     { LOG_RCOUT_MSG, sizeof(log_RCOUT), \
       "RCOU",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true  }, \
+    { LOG_RCOUT2_MSG, sizeof(log_RCOUT2), \
+      "RCO2",  "QHHHH",     "TimeUS,C15,C16,C17,C18", "sYYYY", "F----", true  }, \
+    { LOG_RCOUT3_MSG, sizeof(log_RCOUT), \
+      "RCO3",  "QHHHHHHHHHHHHHH",     "TimeUS,C19,C20,C21,C22,C23,C24,C25,C26,C27,C28,C29,C30,C31,C32", "sYYYYYYYYYYYYYY", "F--------------", true  }, \
     { LOG_RSSI_MSG, sizeof(log_RSSI), \
       "RSSI",  "Qff",     "TimeUS,RXRSSI,RXLQ", "s--", "F--", true  }, \
 LOG_STRUCTURE_FROM_BARO \
@@ -1362,6 +1408,8 @@ enum LogMessages : uint8_t {
     LOG_VIDEO_STABILISATION_MSG,
     LOG_MOTBATT_MSG,
     LOG_VER_MSG,
+    LOG_RCOUT2_MSG,
+    LOG_RCOUT3_MSG,
 
     _LOG_LAST_MSG_
 };

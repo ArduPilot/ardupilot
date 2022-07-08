@@ -342,7 +342,10 @@ public:
         void periodic();
 
         bool doing_sensor_rate_logging() const { return _doing_sensor_rate_logging; }
-        bool doing_post_filter_logging() const { return _doing_post_filter_logging; }
+        bool doing_post_filter_logging() const {
+            return (_doing_post_filter_logging && (post_filter || !_doing_sensor_rate_logging))
+                || (_doing_pre_post_filter_logging && post_filter);
+        }
 
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
@@ -370,6 +373,7 @@ public:
         enum batch_opt_t {
             BATCH_OPT_SENSOR_RATE = (1<<0),
             BATCH_OPT_POST_FILTER = (1<<1),
+            BATCH_OPT_PRE_POST_FILTER = (1<<2),
         };
 
         void rotate_to_next_sensor();
@@ -382,14 +386,18 @@ public:
         bool Write_ISBH(const float sample_rate_hz) const;
         bool Write_ISBD() const;
 
+        bool has_option(batch_opt_t option) const { return _batch_options_mask & uint16_t(option); }
+
         uint64_t measurement_started_us;
 
-        bool initialised : 1;
-        bool isbh_sent : 1;
-        bool _doing_sensor_rate_logging : 1;
-        bool _doing_post_filter_logging : 1;
-        uint8_t instance : 3; // instance we are sending data for
-        AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
+        bool initialised;
+        bool isbh_sent;
+        bool _doing_sensor_rate_logging;
+        bool _doing_post_filter_logging;
+        bool _doing_pre_post_filter_logging;
+        uint8_t instance; // instance we are sending data for
+        bool post_filter; // whether we are sending post-filter data
+        AP_InertialSensor::IMU_SENSOR_TYPE type;
         uint16_t isb_seqnum;
         int16_t *data_x;
         int16_t *data_y;
@@ -446,12 +454,22 @@ public:
         // Update the harmonic notch frequencies
         void update_freq_hz(float scaled_freq);
         void update_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
-        
+
+        // enable/disable the notch
+        void set_inactive(bool _inactive) {
+            inactive = _inactive;
+        }
+
+        bool is_inactive(void) const {
+            return inactive;
+        }
+
     private:
         // support for updating harmonic filter at runtime
         float last_center_freq_hz[INS_MAX_INSTANCES];
         float last_bandwidth_hz[INS_MAX_INSTANCES];
         float last_attenuation_dB[INS_MAX_INSTANCES];
+        bool inactive;
     } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
 
 private:

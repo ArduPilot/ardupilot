@@ -97,13 +97,14 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
         return true;
     }
 
+    // learn new routes including private channels
+    // so that find_mav_type works for all channels
+    learn_route(in_channel, msg);
+
     // don't ever forward data from a private channel
     if ((GCS_MAVLINK::is_private(in_channel))) {
         return true;
     }
-
-    // learn new routes
-    learn_route(in_channel, msg);
 
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
         msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {

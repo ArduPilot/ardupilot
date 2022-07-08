@@ -234,6 +234,7 @@ singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null f
 singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
+singleton AP_Vehicle method set_desired_speed boolean float'skip_check
 singleton AP_Vehicle method nav_scripting_enable boolean uint8_t 0 UINT8_MAX
 singleton AP_Vehicle method set_velocity_match boolean Vector2f
 singleton AP_Vehicle method has_ekf_failsafed boolean
@@ -456,6 +457,7 @@ singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
 
 singleton CAN manual get_device lua_get_CAN_device
+singleton CAN manual get_device2 lua_get_CAN_device2
 singleton CAN depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 include AP_Scripting/AP_Scripting_CANSensor.h depends HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -518,6 +520,15 @@ singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float
 include AC_Fence/AC_Fence.h  depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_Fence method present boolean
 
+include AP_Mount/AP_Mount.h
+singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
+singleton AP_Mount rename mount
+singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t 0 UINT8_MAX
+singleton AP_Mount method set_mode void uint8_t 0 UINT8_MAX MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
+singleton AP_Mount method set_angle_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
+singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
+singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
+
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write
 
@@ -526,3 +537,24 @@ singleton i2c manual get_device lua_get_i2c_device
 global manual millis lua_millis
 global manual micros lua_micros
 global manual mission_receive lua_mission_receive
+
+userdata uint32_t creation lua_new_uint32_t
+userdata uint32_t manual_operator __add uint32_t___add
+userdata uint32_t manual_operator __sub uint32_t___sub
+userdata uint32_t manual_operator __mul uint32_t___mul
+userdata uint32_t manual_operator __div uint32_t___div
+userdata uint32_t manual_operator __mod uint32_t___mod
+userdata uint32_t manual_operator __idiv uint32_t___idiv
+userdata uint32_t manual_operator __band uint32_t___band
+userdata uint32_t manual_operator __bor uint32_t___bor
+userdata uint32_t manual_operator __bxor uint32_t___bxor
+userdata uint32_t manual_operator __shl uint32_t___shl
+userdata uint32_t manual_operator __shr uint32_t___shr
+userdata uint32_t manual_operator __eq uint32_t___eq
+userdata uint32_t manual_operator __lt uint32_t___lt
+userdata uint32_t manual_operator __le uint32_t___le
+userdata uint32_t manual_operator __bnot uint32_t___bnot
+userdata uint32_t manual_operator __tostring uint32_t___tostring
+userdata uint32_t manual toint uint32_t_toint
+userdata uint32_t manual tofloat uint32_t_tofloat
+

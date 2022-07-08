@@ -221,6 +221,9 @@ public:
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
     virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
 
+   // set auto mode speed in meters/sec (for use by scripting with Copter/Rover)
+    virtual bool set_desired_speed(float speed) { return false; }
+
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
@@ -249,9 +252,6 @@ public:
     virtual bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) { return false; }
 
 #endif // AP_SCRIPTING_ENABLED
-
-    // update the harmonic notch
-    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
 
     // zeroing the RC outputs can prevent unwanted motor movement:
     virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
@@ -291,6 +291,11 @@ public:
    // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing TRIM_PITCH_CD
     virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
 #endif
+
+    /*
+     get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+     */
+    virtual bool get_rate_bf_targets(Vector3f& rate_bf_targets) const { return false; }
 
 protected:
 
@@ -393,6 +398,9 @@ protected:
     void accel_cal_update();
 #endif
 
+    // call the arming library's update function
+    void update_arming();
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 #if AP_SIM_ENABLED
@@ -407,6 +415,12 @@ private:
     // if there's been a watchdog reset, notify the world via a
     // statustext:
     void send_watchdog_reset_statustext();
+
+    // update the harmonic notch for throttle based notch
+    void update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch);
+
+    // update the harmonic notch
+    void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
 
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();

@@ -100,3 +100,9 @@ Vector2f AP_AHRS_View::body_to_earth2D(const Vector2f &bf) const
     return Vector2f(bf.x * trig.cos_yaw - bf.y * trig.sin_yaw,
                     bf.x * trig.sin_yaw + bf.y * trig.cos_yaw);
 }
+
+// Rotate vector from AHRS reference frame to AHRS view reference frame
+void AP_AHRS_View::rotate(Vector3f &vec) const
+{
+    vec = rot_view * vec;
+}

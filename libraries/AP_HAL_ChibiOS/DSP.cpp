@@ -50,9 +50,9 @@ extern const AP_HAL::HAL& hal;
 // important as frequency resolution. Referred to as [Heinz] throughout the code.
 
 // initialize the FFT state machine
-AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate)
+AP_HAL::DSP::FFTWindowState* DSP::fft_init(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
 {
-    DSP::FFTWindowStateARM* fft = new DSP::FFTWindowStateARM(window_size, sample_rate);
+    DSP::FFTWindowStateARM* fft = new DSP::FFTWindowStateARM(window_size, sample_rate, sliding_window_size);
     if (fft == nullptr || fft->_hanning_window == nullptr || fft->_rfft_data == nullptr || fft->_freq_bins == nullptr || fft->_derivative_freq_bins == nullptr) {
         delete fft;
         return nullptr;
@@ -78,8 +78,8 @@ uint16_t DSP::fft_analyse(AP_HAL::DSP::FFTWindowState* state, uint16_t start_bin
 }
 
 // create an instance of the FFT state machine
-DSP::FFTWindowStateARM::FFTWindowStateARM(uint16_t window_size, uint16_t sample_rate)
-    : AP_HAL::DSP::FFTWindowState::FFTWindowState(window_size, sample_rate)
+DSP::FFTWindowStateARM::FFTWindowStateARM(uint16_t window_size, uint16_t sample_rate, uint8_t sliding_window_size)
+    : AP_HAL::DSP::FFTWindowState::FFTWindowState(window_size, sample_rate, sliding_window_size)
 {
     if (_freq_bins == nullptr || _hanning_window == nullptr || _rfft_data == nullptr || _derivative_freq_bins == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate %u bytes for window %u for DSP",
@@ -130,6 +130,7 @@ extern "C" {
 void DSP::step_hanning(FFTWindowStateARM* fft, FloatBuffer& samples, uint16_t advance)
 {
     TIMER_START(_hanning_timer);
+
     // 5us
     // apply hanning window to gyro samples and store result in _freq_bins
     // hanning starts and ends with 0, could be skipped for minor speed improvement
@@ -212,6 +213,7 @@ void DSP::step_stage_rfft_f32(FFTWindowStateARM* fft)
 void DSP::step_arm_cmplx_mag_f32(FFTWindowStateARM* fft, uint16_t start_bin, uint16_t end_bin, float noise_att_cutoff)
 {
     TIMER_START(_arm_cmplx_mag_f32_timer);
+
     // 8us (BF)
     // 32   -   4us F7,  5us F4,  5us H7
     // 64   -   7us F7, 13us F4

@@ -174,6 +174,51 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle_acc_dt[instance] = 0;
 }
 
+/*
+  apply harmonic notch and low pass gyro filters
+ */
+void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const Vector3f &gyro)
+{
+    Vector3f gyro_filtered = gyro;
+
+    // apply the harmonic notch filters
+    for (auto &notch : _imu.harmonic_notches) {
+        if (!notch.params.enabled()) {
+            continue;
+        }
+        bool inactive = notch.is_inactive();
+#ifndef HAL_BUILD_AP_PERIPH
+        // by default we only run the expensive notch filters on the
+        // currently active IMU we reset the inactive notch filters so
+        // that if we switch IMUs we're not left with old data
+        if (!notch.params.hasOption(HarmonicNotchFilterParams::Options::EnableOnAllIMUs) &&
+            instance != AP::ahrs().get_primary_gyro_index()) {
+            inactive = true;
+        }
+#endif
+        if (inactive) {
+            // while inactive we reset the filter so when it activates the first output
+            // will be the first input sample
+            notch.filter[instance].reset();
+        } else {
+            gyro_filtered = notch.filter[instance].apply(gyro_filtered);
+        }
+    }
+
+    // apply the low pass filter last to attentuate any notch induced noise
+    gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
+
+    // if the filtering failed in any way then reset the filters and keep the old value
+    if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
+        _imu._gyro_filter[instance].reset();
+        for (auto &notch : _imu.harmonic_notches) {
+            notch.filter[instance].reset();
+        }
+    } else {
+        _imu._gyro_filtered[instance] = gyro_filtered;
+    }
+}
+
 void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
                                                             const Vector3f &gyro,
                                                             uint64_t sample_us)
@@ -264,27 +309,9 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
             _imu._gyro_window[instance][2].push(scaled_gyro.z);
         }
 #endif
-        Vector3f gyro_filtered = gyro;
 
-        // apply the harmonic notch filter
-        for (auto &notch : _imu.harmonic_notches) {
-            if (notch.params.enabled()) {
-                gyro_filtered = notch.filter[instance].apply(gyro_filtered);
-            }
-        }
-
-        // apply the low pass filter last to attentuate any notch induced noise
-        gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
-
-        // if the filtering failed in any way then reset the filters and keep the old value
-        if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
-            _imu._gyro_filter[instance].reset();
-            for (auto &notch : _imu.harmonic_notches) {
-                notch.filter[instance].reset();
-            }
-        } else {
-            _imu._gyro_filtered[instance] = gyro_filtered;
-        }
+        // apply gyro filters
+        apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
@@ -383,27 +410,9 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
             _imu._gyro_window[instance][2].push(scaled_gyro.z);
         }
 #endif
-        Vector3f gyro_filtered = gyro;
 
-        // apply the harmonic notch filters
-        for (auto &notch : _imu.harmonic_notches) {
-            if (notch.params.enabled()) {
-                gyro_filtered = notch.filter[instance].apply(gyro_filtered);
-            }
-        }
-
-        // apply the low pass filter last to attentuate any notch induced noise
-        gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
-
-        // if the filtering failed in any way then reset the filters and keep the old value
-        if (gyro_filtered.is_nan() || gyro_filtered.is_inf()) {
-            _imu._gyro_filter[instance].reset();
-            for (auto &notch : _imu.harmonic_notches) {
-                notch.filter[instance].reset();
-            }
-        } else {
-            _imu._gyro_filtered[instance] = gyro_filtered;
-        }
+        // apply gyro filters
+        apply_gyro_filters(instance, gyro);
 
         _imu._new_gyro_data[instance] = true;
     }
@@ -418,6 +427,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
 
 void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &gyro)
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         // should not have been called
@@ -430,6 +440,7 @@ void AP_InertialSensor_Backend::log_gyro_raw(uint8_t instance, const uint64_t sa
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_GYRO, sample_us, gyro);
         }
     }
+#endif
 }
 
 /*
@@ -631,6 +642,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_sensor_rate_sample(uint8_t inst
 
 void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t sample_us, const Vector3f &accel)
 {
+#if HAL_LOGGING_ENABLED
     AP_Logger *logger = AP_Logger::get_singleton();
     if (logger == nullptr) {
         // should not have been called
@@ -643,6 +655,7 @@ void AP_InertialSensor_Backend::log_accel_raw(uint8_t instance, const uint64_t s
             _imu.batchsampler.sample(instance, AP_InertialSensor::IMU_SENSOR_TYPE_ACCEL, sample_us, accel);
         }
     }
+#endif
 }
 
 void AP_InertialSensor_Backend::_set_accel_max_abs_offset(uint8_t instance,
@@ -771,10 +784,12 @@ bool AP_InertialSensor_Backend::should_log_imu_raw() const
 // log an unexpected change in a register for an IMU
 void AP_InertialSensor_Backend::log_register_change(uint32_t bus_id, const AP_HAL::Device::checkreg &reg)
 {
+#if HAL_LOGGING_ENABLED
     AP::logger().Write("IREG", "TimeUS,DevID,Bank,Reg,Val", "QIBBB",
                        AP_HAL::micros64(),
                        bus_id,
                        reg.bank,
                        reg.regnum,
                        reg.value);
+#endif
 }

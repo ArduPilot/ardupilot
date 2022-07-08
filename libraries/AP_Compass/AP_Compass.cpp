@@ -719,7 +719,7 @@ void Compass::init()
 
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
-    // if so and the the primary compass is not set in current setup
+    // if so and the primary compass is not set in current setup
     // make the devid as primary.
     if (_priority_did_stored_list[Priority(0)] == 0) {
         uint16_t k_param_compass;
@@ -1172,10 +1172,12 @@ void Compass::_probe_external_i2c_compasses(void)
                 ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, ist8310_addr[a]),
                             true, default_rotation));
             }
+#ifndef HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE
             FOREACH_I2C_INTERNAL(i) {
                 ADD_BACKEND(DRIVER_IST8310, AP_Compass_IST8310::probe(GET_I2C_DEVICE(i, ist8310_addr[a]),
                             all_external, default_rotation));
             }
+#endif
         }
     }
 #endif
@@ -1461,7 +1463,7 @@ void Compass::_detect_backends(void)
 
     if (_backend_count == 0 ||
         _compass_count == 0) {
-        hal.console->printf("No Compass backends available\n");
+        DEV_PRINTF("No Compass backends available\n");
     }
 }
 
@@ -1580,6 +1582,10 @@ Compass::read(void)
         return false;
     }
 
+#if HAL_LOGGING_ENABLED
+    const bool old_healthy = healthy();
+#endif
+
 #ifndef HAL_BUILD_AP_PERIPH
     if (!_initial_location_set) {
         try_set_initial_location();
@@ -1620,7 +1626,21 @@ Compass::read(void)
             break;
         }
     }
-    return healthy();
+    const bool new_healthy = healthy();
+
+#if HAL_LOGGING_ENABLED
+
+    #define MASK_LOG_ANY                    0xFFFF
+
+    if (new_healthy != old_healthy) {
+        if (AP::logger().should_log(MASK_LOG_ANY)) {
+            const LogErrorCode code = new_healthy ? LogErrorCode::ERROR_RESOLVED : LogErrorCode::UNHEALTHY;
+            AP::logger().Write_Error(LogErrorSubsystem::COMPASS, code);
+        }
+    }
+#endif
+
+    return new_healthy;
 }
 
 uint8_t

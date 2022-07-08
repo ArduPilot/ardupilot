@@ -353,7 +353,10 @@ void Sub::do_circle(const AP_Mission::Mission_Command& cmd)
     }
 
     // calculate radius
-    uint8_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
+    uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
+    if (cmd.type_specific_bits & (1U << 0)) {
+        circle_radius_m *= 10;
+    }
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     auto_circle_movetoedge_start(circle_center, circle_radius_m);
@@ -682,6 +685,6 @@ void Sub::do_roi(const AP_Mission::Mission_Command& cmd)
 void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 {
 #if HAL_MOUNT_ENABLED
-    camera_mount.set_angle_targets(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw);
+    camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
 }

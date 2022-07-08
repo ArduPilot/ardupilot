@@ -384,7 +384,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_BATTERY_STATUS,
     MSG_MOUNT_STATUS,
     MSG_OPTICAL_FLOW,
-    MSG_GIMBAL_REPORT,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
@@ -717,28 +716,6 @@ void GCS_MAVLINK_Sub::handleMessage(const mavlink_message_t &msg)
         sub.terrain.handle_data(chan, msg);
 #endif
         break;
-
-    case MAVLINK_MSG_ID_SET_HOME_POSITION: {
-        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
-
-        mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(&msg, &packet);
-        if ((packet.latitude == 0) && (packet.longitude == 0) && (packet.altitude == 0)) {
-            if (!sub.set_home_to_current_location(true)) {
-                // ignore this failure
-            }
-        } else {
-            Location new_home_loc;
-            new_home_loc.lat = packet.latitude;
-            new_home_loc.lng = packet.longitude;
-            new_home_loc.alt = packet.altitude / 10;
-            if (sub.far_from_EKF_origin(new_home_loc)) {
-                break;
-            }
-            IGNORE_RETURN(sub.set_home(new_home_loc, true));
-        }
-        break;
-    }
 
     // This adds support for leak detectors in a separate enclosure
     // connected to a mavlink enabled subsystem

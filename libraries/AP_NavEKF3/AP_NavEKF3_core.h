@@ -303,7 +303,7 @@ public:
     * Write position and quaternion data from an external navigation system
     *
     * pos        : position in the RH navigation frame. Frame is assumed to be NED if frameIsNED is true. (m)
-    * quat       : quaternion desribing the the rotation from navigation frame to body frame
+    * quat       : quaternion desribing the rotation from navigation frame to body frame
     * posErr     : 1-sigma spherical position error (m)
     * angErr     : 1-sigma spherical angle error (rad)
     * timeStamp_ms : system time the measurement was taken, not the time it was received (mSec)
@@ -983,6 +983,7 @@ private:
     bool hgtTimeout;                // boolean true if height measurements have failed innovation consistency check and timed out
     bool magTimeout;                // boolean true if magnetometer measurements have failed for too long and have timed out
     bool tasTimeout;                // boolean true if true airspeed measurements have failed for too long and have timed out
+    bool dragTimeout;               // boolean true if drag measurements have failed for too long and have timed out
     bool badIMUdata;                // boolean true if the bad IMU data is detected
     uint32_t badIMUdata_ms;         // time stamp bad IMU data was last detected
     uint32_t goodIMUdata_ms;        // time stamp good IMU data was last detected
@@ -1319,6 +1320,7 @@ private:
 	Vector2F innovDragVar;	            // multirotor drag measurement innovation variance ((m/sec**2)**2)
 	Vector2F dragTestRatio;		        // drag innovation consistency check ratio
 #endif
+	uint32_t lastDragPassTime_ms;       // system time that drag samples were last successfully fused
     bool dragFusionEnabled;
 
     // height source selection logic

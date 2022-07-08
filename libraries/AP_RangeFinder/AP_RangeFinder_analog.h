@@ -4,6 +4,12 @@
 #include "AP_RangeFinder_Backend.h"
 #include "AP_RangeFinder_Params.h"
 
+#ifndef AP_RANGEFINDER_ANALOG_ENABLED
+#define AP_RANGEFINDER_ANALOG_ENABLED AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_RANGEFINDER_ANALOG_ENABLED
+
 class AP_RangeFinder_analog : public AP_RangeFinder_Backend
 {
 public:
@@ -28,3 +34,5 @@ private:
 
     AP_HAL::AnalogSource *source;
 };
+
+#endif

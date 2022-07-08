@@ -73,6 +73,7 @@ public:
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
     // Scripting CAN sensor
     ScriptingCANSensor *_CAN_dev;
+    ScriptingCANSensor *_CAN_dev2;
 #endif
 
     // mission item buffer

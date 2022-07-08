@@ -103,6 +103,10 @@ define AP_VOLZ_ENABLED 0
 define HAL_SUPPORT_RCOUT_SERIAL 0
 define HAL_TORQEEDO_ENABLED 0
 
+# the SkyViper only has a single Baro:
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_ICM20789_ENABLED 1
+
 # SkyViper has only one physical GPS but can also take from mavlink:
 define AP_GPS_BACKEND_DEFAULT_ENABLED 0
 define AP_GPS_UBLOX_ENABLED 1
@@ -116,5 +120,9 @@ define AP_MOTORS_FRAME_QUAD_ENABLED 1
 define COMPASS_MAX_SENSORS 1
 define BARO_MAX_INSTANCES 1
 define INS_MAX_INSTANCES 1
+
+# SkyViper doesn't have any rangefinder, but might get mavlink?
+define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED 0
+define AP_RANGEFINDER_MAVLINK_ENABLED 1
 
 AUTOBUILD_TARGETS Copter

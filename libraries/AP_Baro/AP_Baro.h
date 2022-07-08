@@ -10,8 +10,12 @@
 #define AP_SIM_BARO_ENABLED AP_SIM_ENABLED
 #endif
 
-#ifndef HAL_MSP_BARO_ENABLED
-#define HAL_MSP_BARO_ENABLED HAL_MSP_SENSORS_ENABLED
+#ifndef AP_BARO_EXTERNALAHRS_ENABLED
+#define AP_BARO_EXTERNALAHRS_ENABLED HAL_EXTERNAL_AHRS_ENABLED
+#endif
+
+#ifndef AP_BARO_MSP_ENABLED
+#define AP_BARO_MSP_ENABLED HAL_MSP_SENSORS_ENABLED
 #endif
 
 // maximum number of sensor instances
@@ -114,6 +118,10 @@ public:
     // pressure in Pascal
     float get_altitude_difference(float base_pressure, float pressure) const;
 
+    // get sea level pressure relative to 1976 standard atmosphere model
+    // pressure in Pascal
+    float get_sealevel_pressure(float pressure) const;
+
     // get scale factor required to convert equivalent to true airspeed
     float get_EAS2TAS(void);
 
@@ -190,14 +198,13 @@ public:
         return _rsem;
     }
 
-#if HAL_MSP_BARO_ENABLED
+#if AP_BARO_MSP_ENABLED
     void handle_msp(const MSP::msp_baro_data_message_t &pkt);
 #endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_BARO_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
-    
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -216,9 +223,7 @@ private:
 
     bool init_done;
 
-#if HAL_MSP_BARO_ENABLED
     uint8_t msp_instance_mask;
-#endif
 
     // bitmask values for GND_PROBE_EXT
     enum {
@@ -270,6 +275,9 @@ private:
 
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
+    AP_Float                            _field_elevation;       // field elevation in meters
+    float                               _field_elevation_active;
+    uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
     AP_Int8                             _ext_bus; // bus number for external barometer
     float                               _last_altitude_EAS2TAS;

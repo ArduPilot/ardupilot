@@ -163,29 +163,6 @@ float Sub::get_surface_tracking_climb_rate(int16_t target_rate, float current_al
 #endif
 }
 
-// updates position controller's maximum altitude using fence and EKF limits
-void Sub::update_poscon_alt_max()
-{
-    // minimum altitude, ie. maximum depth
-    // interpreted as no limit if left as zero
-    float min_alt_cm = 0.0;
-
-    // no limit if greater than 100, a limit is necessary,
-    // or the vehicle will try to fly out of the water
-    float max_alt_cm = g.surface_depth; // minimum depth
-
-#if AC_FENCE == ENABLED
-    // set fence altitude limit in position controller
-    if ((fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        min_alt_cm = fence.get_safe_alt_min()*100.0f;
-        max_alt_cm = fence.get_safe_alt_max()*100.0f;
-    }
-#endif
-    // pass limit to pos controller
-    pos_control.set_alt_min(min_alt_cm);
-    pos_control.set_alt_max(max_alt_cm);
-}
-
 // rotate vector from vehicle's perspective to North-East frame
 void Sub::rotate_body_frame_to_NE(float &x, float &y)
 {

@@ -45,15 +45,10 @@
 #include "AP_Airspeed_analog.h"
 #include "AP_Airspeed_ASP5033.h"
 #include "AP_Airspeed_Backend.h"
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include "AP_Airspeed_UAVCAN.h"
-#endif
-#if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #include "AP_Airspeed_NMEA.h"
-#endif
-#if HAL_MSP_AIRSPEED_ENABLED
 #include "AP_Airspeed_MSP.h"
-#endif
+#include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
 #ifdef HAL_AIRSPEED_TYPE_DEFAULT
@@ -100,7 +95,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Airspeed type
     // @Description: Type of airspeed sensor
-    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033
+    // @Values: 0:None,1:I2C-MS4525D0,2:Analog,3:I2C-MS5525,4:I2C-MS5525 (0x76),5:I2C-MS5525 (0x77),6:I2C-SDP3X,7:I2C-DLVR-5in,8:DroneCAN,9:I2C-DLVR-10in,10:I2C-DLVR-20in,11:I2C-DLVR-30in,12:I2C-DLVR-60in,13:NMEA water speed,14:MSP,15:ASP5033,100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 0, AP_Airspeed, param[0].type, ARSPD_DEFAULT_TYPE, AP_PARAM_FLAG_ENABLE),     // NOTE: Index 0 is actually used as index 63 here
 
@@ -143,8 +138,8 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
 #if AP_AIRSPEED_AUTOCAL_ENABLE
     // @Param: _AUTOCAL
-    // @DisplayName{Plane}: Automatic airspeed ratio calibration
-    // @Description{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
+    // @DisplayName: Automatic airspeed ratio calibration
+    // @DisplayName{Copter, Blimp, Rover, Sub}: This parameter and function is not used by this vehicle. Always set to 0.
     // @Description: Enables automatic adjustment of ARSPD_RATIO during a calibration flight based on estimation of ground speed and true airspeed. New ratio saved every 2 minutes if change is > 5%. Should not be left enabled.
     // @User: Advanced
     AP_GROUPINFO("_AUTOCAL",  5, AP_Airspeed, param[0].autocal, 0),
@@ -168,7 +163,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: _PSI_RANGE
     // @DisplayName: The PSI range of the device
-    // @Description: This parameter allows you to to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
+    // @Description: This parameter allows you to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
     // @User: Advanced
     AP_GROUPINFO("_PSI_RANGE",  8, AP_Airspeed, param[0].psi_range, PSI_RANGE_DEFAULT),
 
@@ -275,7 +270,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
 
     // @Param: 2_PSI_RANGE
     // @DisplayName: The PSI range of the device for 2nd sensor
-    // @Description: This parameter allows you to to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
+    // @Description: This parameter allows you to set the PSI (pounds per square inch) range for your sensor. You should not change this unless you examine the datasheet for your device
     // @User: Advanced
     AP_GROUPINFO("2_PSI_RANGE",  19, AP_Airspeed, param[1].psi_range, PSI_RANGE_DEFAULT),
 
@@ -394,65 +389,84 @@ void AP_Airspeed::init()
             // nothing to do
             break;
         case TYPE_I2C_MS4525:
+#if AP_AIRSPEED_MS4525_ENABLED
             sensor[i] = new AP_Airspeed_MS4525(*this, i);
+#endif
+            break;
+        case TYPE_SITL:
+#if AP_AIRSPEED_SITL_ENABLED
+            sensor[i] = new AP_Airspeed_SITL(*this, i);
+#endif
             break;
         case TYPE_ANALOG:
+#if AP_AIRSPEED_ANALOG_ENABLED
             sensor[i] = new AP_Airspeed_Analog(*this, i);
+#endif
             break;
         case TYPE_I2C_MS5525:
+#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_AUTO);
+#endif
             break;
         case TYPE_I2C_MS5525_ADDRESS_1:
+#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_1);
+#endif
             break;
         case TYPE_I2C_MS5525_ADDRESS_2:
+#if AP_AIRSPEED_MS5525_ENABLED
             sensor[i] = new AP_Airspeed_MS5525(*this, i, AP_Airspeed_MS5525::MS5525_ADDR_2);
+#endif
             break;
         case TYPE_I2C_SDP3X:
+#if AP_AIRSPEED_SDP3X_ENABLED
             sensor[i] = new AP_Airspeed_SDP3X(*this, i);
+#endif
             break;
         case TYPE_I2C_DLVR_5IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 5);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_10IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 10);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_20IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 20);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_30IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 30);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_I2C_DLVR_60IN:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_DLVR_ENABLED
             sensor[i] = new AP_Airspeed_DLVR(*this, i, 60);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif  // AP_AIRSPEED_DLVR_ENABLED
             break;
         case TYPE_I2C_ASP5033:
-#if !HAL_MINIMIZE_FEATURES
+#if AP_AIRSPEED_ASP5033_ENABLED
             sensor[i] = new AP_Airspeed_ASP5033(*this, i);
-#endif // !HAL_MINIMIZE_FEATURES
+#endif
             break;
         case TYPE_UAVCAN:
-#if HAL_ENABLE_LIBUAVCAN_DRIVERS
+#if AP_AIRSPEED_UAVCAN_ENABLED
             sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
 #endif
             break;
         case TYPE_NMEA_WATER:
+#if AP_AIRSPEED_NMEA_ENABLED
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
             sensor[i] = new AP_Airspeed_NMEA(*this, i);
 #endif
+#endif
             break;
         case TYPE_MSP:
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
             sensor[i] = new AP_Airspeed_MSP(*this, i, 0);
 #endif
             break;
@@ -613,13 +627,6 @@ void AP_Airspeed::read(uint8_t i)
         state[i].airspeed       = sqrtf(fabsf(state[i].filtered_pressure) * param[i].ratio);
         break;
     }
-
-    if (state[i].last_pressure < -32) {
-        // we're reading more than about -8m/s. The user probably has
-        // the ports the wrong way around
-        state[i].healthy = false;
-    }
-
 }
 
 // read all airspeed sensors
@@ -634,6 +641,10 @@ void AP_Airspeed::update()
     if (enabled(1)) {
         gcs().send_named_float("AS2", get_airspeed(1));
     }
+#endif
+
+#if HAL_LOGGING_ENABLED
+    const uint8_t old_primary = primary;
 #endif
 
     // setup primary
@@ -651,13 +662,16 @@ void AP_Airspeed::update()
     check_sensor_failures();
 
 #if HAL_LOGGING_ENABLED
+    if (primary != old_primary) {
+        AP::logger().Write_Event(LogEvent::AIRSPEED_PRIMARY_CHANGED);
+    }
     if (_log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
         Log_Airspeed();
     }
 #endif
 }
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
 /*
   handle MSP airspeed data
  */
@@ -801,7 +815,7 @@ bool AP_Airspeed::healthy(uint8_t i) const { return false; }
 float AP_Airspeed::get_airspeed(uint8_t i) const { return 0.0; }
 float AP_Airspeed::get_differential_pressure(uint8_t i) const { return 0.0; }
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
 void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 #endif
 

@@ -76,15 +76,15 @@ void AP_Logger_File::Init()
         bufsize *= 0.9;
     }
     if (bufsize >= _writebuf_chunk && bufsize != desired_bufsize) {
-        hal.console->printf("AP_Logger: reduced buffer %u/%u\n", (unsigned)bufsize, (unsigned)desired_bufsize);
+        DEV_PRINTF("AP_Logger: reduced buffer %u/%u\n", (unsigned)bufsize, (unsigned)desired_bufsize);
     }
 
     if (!_writebuf.get_size()) {
-        hal.console->printf("Out of memory for logging\n");
+        DEV_PRINTF("Out of memory for logging\n");
         return;
     }
 
-    hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
+    DEV_PRINTF("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
 
@@ -323,12 +323,12 @@ void AP_Logger_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
+            DEV_PRINTF("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
                 _cached_oldest_log = 0;
-                hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+                DEV_PRINTF("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -627,7 +627,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
-            hal.console->printf("Log read open fail for %s - %s\n",
+            DEV_PRINTF("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -790,7 +790,7 @@ void AP_Logger_File::start_new_log(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-        hal.console->printf("Out of space for logging\n");
+        DEV_PRINTF("Out of space for logging\n");
         return;
     }
 
@@ -834,7 +834,7 @@ void AP_Logger_File::start_new_log(void)
         if (open_error_ms_was_zero) {
             ::printf("Log open fail for %s - %s\n",
                      _write_filename, strerror(saved_errno));
-            hal.console->printf("Log open fail for %s - %s\n",
+            DEV_PRINTF("Log open fail for %s - %s\n",
                                 _write_filename, strerror(saved_errno));
         }
         return;
@@ -934,7 +934,7 @@ void AP_Logger_File::io_timer(void)
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-            hal.console->printf("Out of space for logging\n");
+            DEV_PRINTF("Out of space for logging\n");
             stop_logging();
             _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
             last_io_operation = "";

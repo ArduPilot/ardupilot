@@ -11,6 +11,9 @@
 #define AP_AIRSPEED_ENABLED 1
 #endif
 
+#ifndef AP_AIRSPEED_MSP_ENABLED
+#define AP_AIRSPEED_MSP_ENABLED (AP_AIRSPEED_ENABLED && HAL_MSP_SENSORS_ENABLED)
+#endif
 
 class AP_Airspeed_Backend;
 
@@ -22,9 +25,6 @@ class AP_Airspeed_Backend;
 #define AP_AIRSPEED_AUTOCAL_ENABLE AP_AIRSPEED_ENABLED
 #endif
 
-#ifndef HAL_MSP_AIRSPEED_ENABLED
-#define HAL_MSP_AIRSPEED_ENABLED HAL_MSP_SENSORS_ENABLED
-#endif
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
@@ -156,6 +156,7 @@ public:
         TYPE_NMEA_WATER=13,
         TYPE_MSP=14,
         TYPE_I2C_ASP5033=15,
+        TYPE_SITL=100,
     };
 
     // get current primary sensor
@@ -172,7 +173,7 @@ public:
         return get_corrected_pressure(primary);
     }
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
     void handle_msp(const MSP::msp_airspeed_data_message_t &pkt);
 #endif
     

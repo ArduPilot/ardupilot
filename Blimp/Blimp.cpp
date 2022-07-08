@@ -63,8 +63,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     FAST_TASK(update_flight_mode),
     // update home from EKF if necessary
     FAST_TASK(update_home_from_EKF),
-    // log sensor health
-    FAST_TASK(Log_Sensor_Health),
 
     SCHED_TASK(rc_loop,              100,    130,   3),
     SCHED_TASK(throttle_loop,         50,     75,   6),
@@ -206,13 +204,6 @@ void Blimp::one_hz_loop()
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
-    arming.update();
-
-    if (!motors->armed()) {
-        // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.update_orientation();
-    }
-
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
 
@@ -277,8 +268,6 @@ Blimp::Blimp(void)
       param_loader(var_info),
       flightmode(&mode_manual)
 {
-    // init sensor error logging flags
-    sensor_health.compass = true;
 }
 
 Blimp blimp;

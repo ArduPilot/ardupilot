@@ -346,3 +346,5 @@ define HAL_BATT_CURR_SCALE 36.364
 # before we enable it
 #define HAL_SPI_USE_POLLED
 
+# Enable Sagetech MXS ADSB transponder
+define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED

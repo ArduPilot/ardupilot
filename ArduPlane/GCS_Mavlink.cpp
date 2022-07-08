@@ -601,7 +601,6 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_BATTERY_STATUS,
     MSG_MOUNT_STATUS,
     MSG_OPTICAL_FLOW,
-    MSG_GIMBAL_REPORT,
     MSG_MAG_CAL_REPORT,
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
@@ -1239,23 +1238,6 @@ void GCS_MAVLINK_Plane::handleMessage(const mavlink_message_t &msg)
             plane.guided_state.last_forced_throttle_ms = now;
         }
 
-        break;
-    }
-
-    case MAVLINK_MSG_ID_SET_HOME_POSITION:
-    {
-        send_received_message_deprecation_warning(STR_VALUE(MAVLINK_MSG_ID_SET_HOME_POSITION));
-
-        mavlink_set_home_position_t packet;
-        mavlink_msg_set_home_position_decode(&msg, &packet);
-        Location new_home_loc {};
-        new_home_loc.lat = packet.latitude;
-        new_home_loc.lng = packet.longitude;
-        new_home_loc.alt = packet.altitude / 10;
-        if (!set_home(new_home_loc, false)) {
-            // silently fails...
-            break;
-        }
         break;
     }
 

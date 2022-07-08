@@ -146,5 +146,5 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-# minimal GPS drivers to reduce flash usage
-include ../include/minimal_GPS.inc
+# minimal drivers to reduce flash usage
+include ../include/minimal.inc

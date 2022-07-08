@@ -80,6 +80,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_CustomRotations/AP_CustomRotations.cpp
     AP_SUBGROUPINFO(custom_rotations, "CUST_ROT", 11, AP_Vehicle, AP_CustomRotations),
 
+#if HAL_WITH_ESC_TELEM
+    // @Group: ESC_TLM
+    // @Path: ../AP_ESC_Telem/AP_ESC_Telem.cpp
+    AP_SUBGROUPINFO(esc_telem, "ESC_TLM", 12, AP_Vehicle, AP_ESC_Telem),
+#endif
+
     AP_GROUPEND
 };
 
@@ -101,7 +107,7 @@ void AP_Vehicle::setup()
     // initialise serial port
     serial_manager.init_console();
 
-    hal.console->printf("\n\nInit %s"
+    DEV_PRINTF("\n\nInit %s"
                         "\n\nFree RAM: %u\n",
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
@@ -290,7 +296,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_VideoTX,   &vehicle.vtx,            update,                    2, 100, 220),
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
-    SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                   10,  50, 230),
+    SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
 #endif
 #if HAL_GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),
@@ -304,6 +310,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_EFI_ENABLED
     SCHED_TASK_CLASS(AP_EFI,       &vehicle.efi,            update,                   10, 200, 250),
 #endif
+    SCHED_TASK(update_arming,          1,     50, 253),
 };
 
 void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks)
@@ -389,6 +396,27 @@ bool AP_Vehicle::is_crashed() const
     return AP::arming().last_disarm_method() == AP_Arming::Method::CRASH;
 }
 
+// update the harmonic notch filter for throttle based notch
+void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+    const float ref_freq = notch.params.center_freq_hz();
+    const float ref = notch.params.reference();
+    const float min_ratio = notch.params.freq_min_ratio();
+
+    const AP_Motors* motors = AP::motors();
+    if (motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
+        notch.set_inactive(true);
+    } else {
+        notch.set_inactive(false);
+    }
+    const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
+    float throttle_freq = ref_freq * MAX(min_ratio, sqrtf(motors_throttle / ref));
+
+    notch.update_freq_hz(throttle_freq);
+#endif
+}
+
 // update the harmonic notch filter center frequency dynamically
 void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 {
@@ -403,14 +431,10 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
         return;
     }
 
-    const AP_Motors* motors = AP::motors();
-    const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
-    const float throttle_freq = ref_freq * MAX(1.0f, sqrtf(motors_throttle / ref));
-
     switch (notch.params.tracking_mode()) {
         case HarmonicNotchDynamicMode::UpdateThrottle: // throttle based tracking
             // set the harmonic notch filter frequency approximately scaled on motor rpm implied by throttle
-            notch.update_freq_hz(throttle_freq);
+            update_throttle_notch(notch);
             break;
 
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
@@ -439,7 +463,7 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
                 if (num_notches > 0) {
                     notch.update_frequencies_hz(num_notches, notches);
                 } else {    // throttle fallback
-                    notch.update_freq_hz(throttle_freq);
+                    update_throttle_notch(notch);
                 }
             } else {
                 notch.update_freq_hz(MAX(ref_freq, AP::esc_telem().get_average_motor_frequency_hz() * ref));
@@ -591,6 +615,12 @@ void AP_Vehicle::accel_cal_update()
 #endif
 }
 #endif // HAL_INS_ACCELCAL_ENABLED
+
+// call the arming library's update function
+void AP_Vehicle::update_arming()
+{
+    AP::arming().update();
+}
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

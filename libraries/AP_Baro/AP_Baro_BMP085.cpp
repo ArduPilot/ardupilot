@@ -14,6 +14,8 @@
  */
 #include "AP_Baro_BMP085.h"
 
+#if AP_BARO_BMP085_ENABLED
+
 #include <utility>
 #include <stdio.h>
 
@@ -345,3 +347,5 @@ bool AP_Baro_BMP085::_data_ready()
 
     return AP_HAL::millis() - _last_press_read_command_time > conversion_time_msec;
 }
+
+#endif // AP_BARO_BMP085_ENABLED

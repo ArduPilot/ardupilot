@@ -68,8 +68,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
     // camera mount's fast update
     FAST_TASK_CLASS(AP_Mount, &sub.camera_mount, update_fast),
 #endif
-    // log sensor health
-    FAST_TASK(Log_Sensor_Health),
 
     SCHED_TASK(fifty_hz_loop,         50,     75,   3),
     SCHED_TASK_CLASS(AP_GPS, &sub.gps, update, 50, 200,   6),
@@ -271,17 +269,11 @@ void Sub::one_hz_loop()
     }
 
     if (!motors.armed()) {
-        // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.update_orientation();
-
         motors.update_throttle_range();
     }
 
     // update assigned functions and enable auxiliary servos
     SRV_Channels::enable_aux_servos();
-
-    // update position controller alt limits
-    update_poscon_alt_max();
 
     // log terrain data
     terrain_logging();

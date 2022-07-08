@@ -2,6 +2,12 @@
 
 #include "AP_Baro_Backend.h"
 
+#ifndef AP_BARO_ICM20789_ENABLED
+#define AP_BARO_ICM20789_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_BARO_ICM20789_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Device.h>
@@ -64,3 +70,5 @@ private:
     const float quadr_factor = 1 / 16777216.0;
     const float offst_factor = 2048.0;
 };
+
+#endif  // AP_BARO_ICM20789_ENABLED

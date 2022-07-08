@@ -125,7 +125,7 @@ private:
     void handle_adsb_in_msg(const Packet_XP &msg);
     void handle_ack(const Packet_XP &msg);
 
-    // send messages to to transceiver
+    // send messages to transceiver
     void send_msg_Installation();
     void send_msg_PreFlight();
     void send_msg_Operating();
@@ -136,11 +136,6 @@ private:
 
     // send msg to request a packet by type
     void request_packet(const MsgType_XP type);
-
-    // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
-    // stored on a GCS as a string field in different format, but then transmitted
-    // over mavlink as a float which is always a decimal.
-    uint32_t convert_base_to_decimal(const uint8_t baseIn, uint32_t inputNumber);
 
     // timers for each out-bound packet
     uint32_t        last_packet_initialize_ms;

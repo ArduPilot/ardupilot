@@ -362,15 +362,33 @@ bool AP_AccelCal::client_active(uint8_t client_num)
 }
 
 #if HAL_GCS_ENABLED
-void AP_AccelCal::handleMessage(const mavlink_message_t &msg)
+void AP_AccelCal::handle_command_ack(const mavlink_command_ack_t &packet)
 {
     if (!_waiting_for_mavlink_ack) {
         return;
     }
-    _waiting_for_mavlink_ack = false;
-    if (msg.msgid == MAVLINK_MSG_ID_COMMAND_ACK) {
-        _start_collect_sample = true;
+    // this is support for the old, non-accelcal-specific calibration.
+    // The GCS is expected to send back a COMMAND_ACK when the vehicle
+    // is posed, but we placed no constraints on the result code or
+    // the command field in the ack packet.  That meant that any ACK
+    // would move the cal process forward - and since we don't even
+    // check the source system/component here the process could easily
+    // fail due to other ACKs floating around the mavlink network.
+    // GCSs should be moved to using the non-gcs-snoop method.  As a
+    // round-up:
+    // MAVProxy: command=1-6 depending on pose, result=1
+    // QGC: command=0, result=1
+    // MissionPlanner: uses new ACCELCAL_VEHICLE_POS
+    if (packet.command > 6) {
+        // not an acknowledgement for a vehicle position
+        return;
     }
+    if (packet.result != MAV_RESULT_TEMPORARILY_REJECTED) {
+        // not an acknowledgement for a vehicle position
+        return;
+    }
+    _waiting_for_mavlink_ack = false;
+    _start_collect_sample = true;
 }
 
 bool AP_AccelCal::gcs_vehicle_position(float position)

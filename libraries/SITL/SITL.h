@@ -7,6 +7,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
@@ -78,7 +79,7 @@ struct sitl_fdm {
     } scanner;
 
     float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
-    float airspeed_raw_pressure[2];
+    float airspeed_raw_pressure[AIRSPEED_MAX_SENSORS];
 
     struct {
         float speed;
@@ -89,7 +90,7 @@ struct sitl_fdm {
 };
 
 // number of rc output channels
-#define SITL_NUM_CHANNELS 16
+#define SITL_NUM_CHANNELS 32
 
 class SIM {
 public:
@@ -112,6 +113,9 @@ public:
 #endif // SFML_JOYSTICK
         for (uint8_t i=0; i<BARO_MAX_INSTANCES; i++) {
             AP_Param::setup_object_defaults(&baro[i], baro[i].var_info);
+        }
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            AP_Param::setup_object_defaults(&airspeed[i], airspeed[i].var_info);
         }
         if (_singleton != nullptr) {
             AP_HAL::panic("Too many SITL instances");
@@ -162,12 +166,6 @@ public:
     // Board Orientation (and inverse)
     Matrix3f ahrs_rotation;
     Matrix3f ahrs_rotation_inv;
-
-    AP_Float arspd_noise[2];  // pressure noise
-    AP_Float arspd_fail[2];   // airspeed value in m/s to fail to
-    AP_Float arspd_fail_pressure[2]; // pitot tube failure pressure in Pa
-    AP_Float arspd_fail_pitot_pressure[2]; // pitot tube failure pressure in Pa
-    AP_Float arspd_offset[2]; // airspeed sensor offset in m/s
 
     AP_Float mag_noise;   // in mag units (earth field is 818)
     AP_Vector3f mag_mot;  // in mag units per amp
@@ -230,6 +228,7 @@ public:
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
     AP_Int16 loop_rate_hz;
+    AP_Int32 on_hardware_output_enable_mask;  // mask of output channels passed through to actual hardware
 
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
@@ -255,6 +254,20 @@ public:
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
+    // airspeed parameters
+    class AirspeedParm {
+    public:
+        static const struct AP_Param::GroupInfo var_info[];
+        AP_Float noise;  // pressure noise
+        AP_Float fail;   // airspeed value in m/s to fail to
+        AP_Float fail_pressure; // pitot tube failure pressure in Pa
+        AP_Float fail_pitot_pressure; // pitot tube failure pressure in Pa
+        AP_Float offset; // airspeed sensor offset in m/s
+        AP_Float ratio; // airspeed ratios
+        AP_Int8  signflip;
+    };
+    AirspeedParm airspeed[AIRSPEED_MAX_SENSORS];
+    
     // EFI type
     enum EFIType {
         EFI_TYPE_NONE = 0,
@@ -282,7 +295,6 @@ public:
     AP_Float wind_type_coef;
 
     AP_Int16  mag_delay; // magnetometer data delay in ms
-    AP_Int16  wind_delay; // windspeed data delay in ms
 
     // ADSB related run-time options
     AP_Int16 adsb_plane_count;
@@ -308,9 +320,6 @@ public:
     
     AP_Int8 thermal_scenario;
 
-    // differential pressure sensor tube order
-    AP_Int8 arspd_signflip;
-
     // weight on wheels pin
     AP_Int8 wow_pin;
 
@@ -321,6 +330,10 @@ public:
     AP_Float vibe_motor;
     // amplitude scaling of motor noise relative to gyro/accel noise
     AP_Float vibe_motor_scale;
+
+    // what harmonics to generate
+    AP_Int16 vibe_motor_harmonics;
+
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
 

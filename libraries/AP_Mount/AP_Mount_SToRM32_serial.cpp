@@ -1,5 +1,6 @@
 #include "AP_Mount_SToRM32_serial.h"
-#if HAL_MOUNT_ENABLED
+
+#if HAL_MOUNT_STORM32SERIAL_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/include/mavlink/v2.0/checksum.h>
@@ -41,61 +42,66 @@ void AP_Mount_SToRM32_serial::update()
     // update based on mount mode
     switch(get_mode()) {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT:
-            {
+        case MAV_MOUNT_MODE_RETRACT: {
             const Vector3f &target = _state._retract_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
-            }
+            _angle_rad.roll = ToRad(target.x);
+            _angle_rad.pitch = ToRad(target.y);
+            _angle_rad.yaw = ToRad(target.z);
+            _angle_rad.yaw_is_ef = false;
             break;
+        }
 
         // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL:
-            {
+        case MAV_MOUNT_MODE_NEUTRAL: {
             const Vector3f &target = _state._neutral_angles.get();
-            _angle_ef_target_rad.x = ToRad(target.x);
-            _angle_ef_target_rad.y = ToRad(target.y);
-            _angle_ef_target_rad.z = ToRad(target.z);
-            }
+            _angle_rad.roll = ToRad(target.x);
+            _angle_rad.pitch = ToRad(target.y);
+            _angle_rad.yaw = ToRad(target.z);
+            _angle_rad.yaw_is_ef = false;
             break;
+        }
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
+            switch (mavt_target.target_type) {
+            case MountTargetType::ANGLE:
+                _angle_rad = mavt_target.angle_rad;
+                break;
+            case MountTargetType::RATE:
+                update_angle_target_from_rate(mavt_target.rate_rads, _angle_rad);
+                break;
+            }
             resend_now = true;
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            // update targets using pilot's rc inputs
-            update_targets_from_rc();
+        case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's RC inputs
+            MountTarget rc_target {};
+            if (get_rc_rate_target(rc_target)) {
+                update_angle_target_from_rate(rc_target, _angle_rad);
+            } else if (get_rc_angle_target(rc_target)) {
+                _angle_rad = rc_target;
+            }
             resend_now = true;
             break;
+        }
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+            if (get_angle_target_to_roi(_angle_rad)) {
                 resend_now = true;
             }
             break;
 
         case MAV_MOUNT_MODE_HOME_LOCATION:
-            // constantly update the home location:
-            if (!AP::ahrs().home_is_set()) {
-                break;
-            }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, true, true)) {
+            if (get_angle_target_to_home(_angle_rad)) {
                 resend_now = true;
             }
             break;
 
         case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
-                                           true,
-                                           true)) {
+            if (get_angle_target_to_sysid(_angle_rad)) {
                 resend_now = true;
             }
             break;
@@ -113,7 +119,7 @@ void AP_Mount_SToRM32_serial::update()
     }
     if (can_send(resend_now)) {
         if (resend_now) {
-            send_target_angles(ToDeg(_angle_ef_target_rad.y), ToDeg(_angle_ef_target_rad.x), ToDeg(_angle_ef_target_rad.z));
+            send_target_angles(_angle_rad);
             get_angles();
             _reply_type = ReplyType_ACK;
             _reply_counter = 0;
@@ -143,14 +149,14 @@ void AP_Mount_SToRM32_serial::set_mode(enum MAV_MOUNT_MODE mode)
     }
 
     // record the mode change
-    _state._mode = mode;
+    _mode = mode;
 }
 
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_SToRM32_serial::send_mount_status(mavlink_channel_t chan)
 {
     // return target angles as gimbal's actual attitude.
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y, _current_angle.x, _current_angle.z, _state._mode);
+    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y, _current_angle.x, _current_angle.z, _mode);
 }
 
 bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
@@ -163,7 +169,7 @@ bool AP_Mount_SToRM32_serial::can_send(bool with_control) {
 
 
 // send_target_angles
-void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg, float yaw_deg)
+void AP_Mount_SToRM32_serial::send_target_angles(const MountTarget& angle_target_rad)
 {
 
     static cmd_set_angles_struct cmd_set_angles_data = {
@@ -187,14 +193,10 @@ void AP_Mount_SToRM32_serial::send_target_angles(float pitch_deg, float roll_deg
         return;
     }
 
-    // reverse pitch and yaw control
-    pitch_deg = -pitch_deg;
-    yaw_deg = -yaw_deg;
-
-    // send CMD_SETANGLE
-    cmd_set_angles_data.pitch = pitch_deg;
-    cmd_set_angles_data.roll = roll_deg;
-    cmd_set_angles_data.yaw = yaw_deg;
+    // send CMD_SETANGLE (Note: reversed pitch and yaw)
+    cmd_set_angles_data.pitch = -degrees(angle_target_rad.pitch);
+    cmd_set_angles_data.roll = degrees(angle_target_rad.roll);
+    cmd_set_angles_data.yaw = -degrees(get_bf_yaw_angle(angle_target_rad));
 
     uint8_t* buf = (uint8_t*)&cmd_set_angles_data;
 
@@ -296,4 +298,4 @@ void AP_Mount_SToRM32_serial::parse_reply() {
             break;
     }
 }
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_STORM32SERIAL_ENABLED

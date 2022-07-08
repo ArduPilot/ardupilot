@@ -17,6 +17,8 @@
 
 #include "AP_RangeFinder_MaxsonarSerialLV.h"
 
+#if AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
@@ -68,3 +70,5 @@ bool AP_RangeFinder_MaxsonarSerialLV::get_reading(float &reading_m)
 
     return true;
 }
+
+#endif  // AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED
