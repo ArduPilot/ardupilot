@@ -202,14 +202,6 @@ bool AP_Arming::check_enabled(const enum AP_Arming::ArmingChecks check) const
     return (checks_to_perform & check);
 }
 
-MAV_SEVERITY AP_Arming::check_severity(const enum AP_Arming::ArmingChecks check) const
-{
-    if (check_enabled(check)) {
-        return MAV_SEVERITY_CRITICAL;
-    }
-    return MAV_SEVERITY_DEBUG; // technically should be NOTICE, but will annoy users at that level
-}
-
 void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool report, const char *fmt, ...) const
 {
     if (!report) {
@@ -226,7 +218,11 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     }
     hal.util->snprintf(taggedfmt, sizeof(taggedfmt), metafmt, fmt);
 
-    MAV_SEVERITY severity = check_severity(check);
+    MAV_SEVERITY severity = MAV_SEVERITY_CRITICAL;
+    if (!check_enabled(check)) {
+        // technically should be NOTICE, but will annoy users at that level:
+        severity = MAV_SEVERITY_DEBUG;
+    }
     va_list arg_list;
     va_start(arg_list, fmt);
     gcs().send_textv(severity, taggedfmt, arg_list);
