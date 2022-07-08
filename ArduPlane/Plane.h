@@ -1201,6 +1201,9 @@ private:
     float pitch_in_expo(bool use_dz) const;
     float rudder_in_expo(bool use_dz) const;
 
+    // mode reason for entering previous mode
+    ModeReason previous_mode_reason = ModeReason::UNKNOWN;
+
 public:
     void failsafe_check(void);
 #if AP_SCRIPTING_ENABLED
