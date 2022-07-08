@@ -86,7 +86,7 @@ TEST(NotchFilterTest, HarmonicNotchTest)
     const float test_amplitude = 0.7;
     const double dt = 1.0 / rate_hz;
 
-    bool double_notch = false;
+    bool double_notch = true;
     HarmonicNotchFilter<float> filters[num_test_freq][chained_filters] {};
     struct {
         double in;
@@ -105,7 +105,7 @@ TEST(NotchFilterTest, HarmonicNotchTest)
     for (uint8_t i=0; i<num_test_freq; i++) {
         for (uint8_t c=0; c<chained_filters; c++) {
             auto &f = filters[i][c];
-            f.allocate_filters(num_harmonics, harmonics, double_notch);
+            f.allocate_filters(num_harmonics, harmonics, double_notch?2:1);
             f.init(rate_hz, base_freq, bandwidth, attenuation_dB);
         }
     }
@@ -150,6 +150,10 @@ TEST(NotchFilterTest, HarmonicNotchTest)
     ::printf("Lag at 2Hz %.2f degrees\n", integrals[1].get_lag_degrees(2));
     ::printf("Lag at 5Hz %.2f degrees\n", integrals[4].get_lag_degrees(5));
     ::printf("Lag at 10Hz %.2f degrees\n", integrals[9].get_lag_degrees(10));
+    EXPECT_NEAR(integrals[0].get_lag_degrees(1), 11.0, 0.5);
+    EXPECT_NEAR(integrals[1].get_lag_degrees(2), 22.03, 0.5);
+    EXPECT_NEAR(integrals[4].get_lag_degrees(5), 55.23, 0.5);
+    EXPECT_NEAR(integrals[9].get_lag_degrees(10), 112.23, 0.5);
 }
 
 AP_GTEST_MAIN()
