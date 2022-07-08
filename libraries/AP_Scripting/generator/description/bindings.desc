@@ -549,6 +549,12 @@ singleton AP::motors() rename motors
 singleton AP::motors() method set_frame_string void string
 singleton AP::motors() method get_interlock boolean
 singleton AP::motors() method get_desired_spool_state uint8_t
+singleton AP::motors() method get_roll float
+singleton AP::motors() method get_roll_ff float
+singleton AP::motors() method get_pitch float
+singleton AP::motors() method get_pitch_ff float
+singleton AP::motors() method get_yaw float
+singleton AP::motors() method get_yaw_ff float
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal

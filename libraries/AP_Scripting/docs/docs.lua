@@ -1064,6 +1064,30 @@ function motors:set_frame_string(param1) end
 ---@return integer
 function motors:get_desired_spool_state() end
 
+-- get yaw FF output
+---@return number
+function motors:get_yaw_ff() end
+
+-- get yaw P+I+D
+---@return number
+function motors:get_yaw() end
+
+-- get pitch FF out
+---@return number
+function motors:get_pitch_ff() end
+
+-- get pitch P+I+D out
+---@return number
+function motors:get_pitch() end
+
+-- get roll FF out
+---@return number
+function motors:get_roll_ff() end
+
+-- get roll P+I+D
+---@return number
+function motors:get_roll() end
+
 -- desc
 ---@class FWVersion
 FWVersion = {}
