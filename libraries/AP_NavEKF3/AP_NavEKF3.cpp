@@ -1776,10 +1776,10 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(mavlink_channel_t chan) const
+void NavEKF3::send_status_report(GCS_MAVLINK &link) const
 {
     if (core) {
-        core[primary].send_status_report(chan);
+        core[primary].send_status_report(link);
     }
 }
 

@@ -3,6 +3,7 @@
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 #include <AP_DAL/AP_DAL.h>
+#include <GCS_MAVLink/GCS.h>
 
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF3_core::healthy(void) const
@@ -525,8 +526,9 @@ void  NavEKF3_core::getFilterStatus(nav_filter_status &status) const
     status = filterStatus;
 }
 
+#if HAL_GCS_ENABLED
 // send an EKF_STATUS message to GCS
-void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
+void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
 {
     // prepare flags
     uint16_t flags = 0;
@@ -585,8 +587,9 @@ void NavEKF3_core::send_status_report(mavlink_channel_t chan) const
     const float mag_max = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
 
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
 }
+#endif  // HAL_GCS_ENABLED
 
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF3_core::prearm_failure_reason(void) const
