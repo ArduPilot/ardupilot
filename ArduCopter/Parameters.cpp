@@ -1143,6 +1143,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(command_model_pilot, "PILOT_Y_", 56, ParametersG2, AC_CommandModel),
 
+    // @Param: FRAME_OPTIONS
+    // @DisplayName: Frame options
+    // @Description: Options related to vehicle frame type and class
+    // @Bitmask: 0:Optimal mixer H7 only
+    // @User: Standard
+    AP_GROUPINFO("FRAME_OPTIONS", 54, ParametersG2, frame_options, 0),
+
     AP_GROUPEND
 };
 

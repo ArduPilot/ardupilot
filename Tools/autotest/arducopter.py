@@ -7644,7 +7644,10 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
         self.do_RTL()
 
-    def fly_each_frame(self):
+    def fly_each_frame_optimal(self):
+        self.fly_each_frame(test_optimal_mix=True)
+
+    def fly_each_frame(self, test_optimal_mix=False):
         vinfo = vehicleinfo.VehicleInfo()
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
@@ -7664,6 +7667,13 @@ class AutoTestCopter(AutoTest):
             if frame_bits.get("external", False):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
+
+            # optimal mixer only works with matrix frame types
+            invalid_frames = {'tri', 'singlecopter', 'coaxcopter'}
+            if test_optimal_mix and (('heil' in frame) or (frame in invalid_frames)):
+                self.progress("Optimal mixer does not work with %s" % (frame))
+                continue
+
             model = frame_bits.get("model", frame)
             # the model string for Callisto has crap in it.... we
             # should really have another entry in the vehicleinfo data
@@ -7677,6 +7687,10 @@ class AutoTestCopter(AutoTest):
                 model=model,
                 wipe=True,
             )
+
+            if test_optimal_mix:
+                self.set_parameter("FRAME_OPTIONS", 1)
+                self.reboot_sitl()
 
             # add a listener that verifies yaw looks good:
             def verify_yaw(mav, m):
@@ -9111,6 +9125,10 @@ class AutoTestCopter(AutoTest):
             Test("FlyEachFrame",
                  "Fly each supported internal frame",
                  self.fly_each_frame),
+
+            Test("FlyEachFrameOptimal",
+                 "Fly each supported internal frame using optimal mixer",
+                 self.fly_each_frame_optimal),
 
             Test("GPSBlending",
                  "Test GPS Blending",

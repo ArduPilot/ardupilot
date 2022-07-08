@@ -544,6 +544,7 @@ public:
 
     // frame class
     AP_Int8 frame_class;
+    AP_Int16 frame_options;
 
     // RC input channels
     RC_Channels_Copter rc_channels;
