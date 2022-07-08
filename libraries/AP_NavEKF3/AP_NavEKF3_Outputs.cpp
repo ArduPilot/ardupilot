@@ -575,19 +575,27 @@ void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
     Vector2f offset;
     getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 
+
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
-    float temp;
+    float temp = 0;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
-    } else {
-        temp = 0.0f;
     }
-    const float mag_max = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
+
+    const mavlink_ekf_status_report_t packet{
+        velVar,
+        posVar,
+        hgtVar,
+        fmaxF(fmaxF(magVar.x,magVar.y),magVar.z),
+        temp,
+        flags,
+        tasVar
+    };
 
     // send message
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
+    mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
 }
 #endif  // HAL_GCS_ENABLED
 
