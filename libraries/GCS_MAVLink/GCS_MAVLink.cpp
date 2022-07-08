@@ -127,7 +127,7 @@ void comm_send_lock(mavlink_channel_t chan_m, uint16_t size)
     chan_locks[chan].take_blocking();
     if (mavlink_comm_port[chan]->txspace() < size) {
         chan_discard[chan] = true;
-        gcs_out_of_space_to_send_count(chan_m);
+        gcs_out_of_space_to_send(chan_m);
     }
 }
 

@@ -348,7 +348,7 @@ bool GCS::out_of_time() const
     return true;
 }
 
-void gcs_out_of_space_to_send_count(mavlink_channel_t chan)
+void gcs_out_of_space_to_send(mavlink_channel_t chan)
 {
     gcs().chan(chan)->out_of_space_to_send();
 }
