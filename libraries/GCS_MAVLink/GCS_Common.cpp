@@ -5392,7 +5392,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
     case MSG_EKF_STATUS_REPORT:
         CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
-        AP::ahrs().send_ekf_status_report(chan);
+        AP::ahrs().send_ekf_status_report(*this);
         break;
 
     case MSG_MEMINFO:
