@@ -194,10 +194,10 @@ Vector3f AP_ExternalAHRS::get_accel(void)
 }
 
 // send an EKF_STATUS message to GCS
-void AP_ExternalAHRS::send_status_report(mavlink_channel_t chan) const
+void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
 {
     if (backend) {
-        backend->send_status_report(chan);
+        backend->send_status_report(link);
     }
 }
 

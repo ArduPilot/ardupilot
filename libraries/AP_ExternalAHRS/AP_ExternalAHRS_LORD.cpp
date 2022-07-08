@@ -491,7 +491,7 @@ void AP_ExternalAHRS_LORD::get_filter_status(nav_filter_status &status) const
     }
 }
 
-void AP_ExternalAHRS_LORD::send_status_report(mavlink_channel_t chan) const
+void AP_ExternalAHRS_LORD::send_status_report(GCS_MAVLINK &link) const
 {
     // prepare flags
     uint16_t flags = 0;
@@ -536,7 +536,7 @@ void AP_ExternalAHRS_LORD::send_status_report(mavlink_channel_t chan) const
     const float pos_gate = 4; // represents hz value data is posted at
     const float hgt_gate = 4; // represents hz value data is posted at
     const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
-    mavlink_msg_ekf_status_report_send(chan, flags,
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
                                        gnss_data.speed_accuracy/vel_gate, gnss_data.horizontal_position_accuracy/pos_gate, gnss_data.vertical_position_accuracy/hgt_gate,
                                        mag_var, 0, 0);
 

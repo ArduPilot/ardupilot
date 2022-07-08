@@ -417,7 +417,7 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
 }
 
 // send an EKF_STATUS message to GCS
-void AP_ExternalAHRS_VectorNav::send_status_report(mavlink_channel_t chan) const
+void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
 {
     if (!last_pkt1) {
         return;
@@ -466,7 +466,7 @@ void AP_ExternalAHRS_VectorNav::send_status_report(mavlink_channel_t chan) const
     const float pos_gate = 5;
     const float hgt_gate = 5;
     const float mag_var = 0;
-    mavlink_msg_ekf_status_report_send(chan, flags,
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
                                        pkt1.velU/vel_gate, pkt1.posU/pos_gate, pkt1.posU/hgt_gate,
                                        mag_var, 0, 0);
 }
