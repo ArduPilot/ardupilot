@@ -1113,6 +1113,12 @@ function esc_telem:get_temperature(instance) end
 ---@return number|nil
 function esc_telem:get_rpm(instance) end
 
+-- update RPM for an ESC
+---@param param1 integer -- ESC number
+---@param param2 integer -- RPM
+---@param param3 number -- error rate
+function esc_telem:update_rpm(esc_index, rpm, error_rate) end
+
 
 -- desc
 ---@class optical_flow
