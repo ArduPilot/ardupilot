@@ -29,8 +29,6 @@
 
 #if HAL_EXTERNAL_AHRS_ENABLED
 
-#include <GCS_MAVLink/GCS_MAVLink.h>
-
 class AP_ExternalAHRS_backend;
 
 class AP_ExternalAHRS {
@@ -91,7 +89,7 @@ public:
     void get_filter_status(nav_filter_status &status) const;
     Vector3f get_gyro(void);
     Vector3f get_accel(void);
-    void send_status_report(mavlink_channel_t chan) const;
+    void send_status_report(class GCS_MAVLINK &link) const;
 
     // update backend
     void update();
