@@ -301,7 +301,7 @@ public:
     bool resetHeightDatum();
 
     // send a EKF_STATUS_REPORT for current EKF
-    void send_ekf_status_report(mavlink_channel_t chan) const;
+    void send_ekf_status_report(class GCS_MAVLINK &link) const;
 
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation

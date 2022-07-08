@@ -1278,6 +1278,6 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(float &posD) const
     return true;
 }
 
-void AP_AHRS_DCM::send_ekf_status_report(mavlink_channel_t chan) const
+void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
 {
 }
