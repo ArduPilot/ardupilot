@@ -123,7 +123,7 @@ public:
     bool get_relative_position_NE_origin(Vector2f &posNE) const override;
     bool get_relative_position_D_origin(float &posD) const override;
 
-    void send_ekf_status_report(mavlink_channel_t chan) const override;
+    void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
 private:
 

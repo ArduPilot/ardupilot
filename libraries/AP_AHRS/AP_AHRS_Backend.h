@@ -310,7 +310,7 @@ public:
         return false;
     }
 
-    virtual void send_ekf_status_report(mavlink_channel_t chan) const = 0;
+    virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     virtual void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {

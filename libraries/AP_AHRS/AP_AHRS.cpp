@@ -2663,12 +2663,12 @@ bool AP_AHRS::resetHeightDatum(void)
 }
 
 // send a EKF_STATUS_REPORT for current EKF
-void AP_AHRS::send_ekf_status_report(mavlink_channel_t chan) const
+void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     switch (ekf_type()) {
     case EKFType::NONE:
         // send zero status report
-        dcm.send_ekf_status_report(chan);
+        dcm.send_ekf_status_report(link);
         break;
 
 #if AP_AHRS_SIM_ENABLED
@@ -2686,26 +2686,26 @@ void AP_AHRS::send_ekf_status_report(mavlink_channel_t chan) const
         //EKF_CONST_POS_MODE | /* EKF is in constant position mode and does not know it's absolute or relative position. | */
         EKF_PRED_POS_HORIZ_REL | /* Set if EKF's predicted horizontal position (relative) estimate is good. | */
         EKF_PRED_POS_HORIZ_ABS; /* Set if EKF's predicted horizontal position (absolute) estimate is good. | */
-        mavlink_msg_ekf_status_report_send(chan, flags, 0, 0, 0, 0, 0, 0);
+        mavlink_msg_ekf_status_report_send(link.get_chan(), flags, 0, 0, 0, 0, 0, 0);
         }
         break;
 #endif
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL: {
-        AP::externalAHRS().send_status_report(chan);
+        AP::externalAHRS().send_status_report(link);
         break;
     }
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        return EKF2.send_status_report(chan);
+        return EKF2.send_status_report(link);
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.send_status_report(chan);
+        return EKF3.send_status_report(link);
 #endif
 
     }
