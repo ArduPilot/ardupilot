@@ -263,7 +263,7 @@ This list is automatically generated from the latest ardupilot source code, and 
                         ret += self.render_table_headings(ret, row, headings, field_table_info, field, param)
                     elif field == "Range":
                         (param_min, param_max) = (param.__dict__[field]).split(' ')
-                        row.append("%s - %s" % (param_min, param_max,))
+                        row.append("%s to %s" % (param_min, param_max,))
                     elif field == 'Units':
                         abbreviated_units = param.__dict__[field]
                         if abbreviated_units != '':
