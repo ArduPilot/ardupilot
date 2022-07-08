@@ -3,6 +3,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_DAL/AP_DAL.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -492,8 +493,9 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
 }
 
+#if HAL_GCS_ENABLED
 // send an EKF_STATUS message to GCS
-void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
+void NavEKF2_core::send_status_report(GCS_MAVLINK &link) const
 {
     // prepare flags
     uint16_t flags = 0;
@@ -550,8 +552,9 @@ void NavEKF2_core::send_status_report(mavlink_channel_t chan) const
     }
 
     // send message
-    mavlink_msg_ekf_status_report_send(chan, flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
 }
+#endif  // HAL_GCS_ENABLED
 
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF2_core::prearm_failure_reason(void) const

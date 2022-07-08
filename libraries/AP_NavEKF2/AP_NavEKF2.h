@@ -25,7 +25,6 @@
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 
 class NavEKF2_core;
@@ -216,7 +215,7 @@ public:
     void  getFilterStatus(nav_filter_status &status) const;
 
     // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(mavlink_channel_t chan) const;
+    void send_status_report(class GCS_MAVLINK &link) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
