@@ -406,11 +406,12 @@ void AP_ESC_Telem::update_rpm(const uint8_t esc_index, const uint16_t new_rpm, c
 
     const uint32_t now = AP_HAL::micros();
     volatile AP_ESC_Telem_Backend::RpmData& rpmdata = _rpm_data[esc_index];
+    const auto last_update_us = rpmdata.last_update_us;
 
     rpmdata.prev_rpm = rpmdata.rpm;
     rpmdata.rpm = new_rpm;
-    if (now > rpmdata.last_update_us) { // cope with wrapping
-        rpmdata.update_rate_hz = 1.0e6f / (now - rpmdata.last_update_us);
+    if (now > last_update_us) { // cope with wrapping
+        rpmdata.update_rate_hz = 1.0e6f / (now - last_update_us);
     }
     rpmdata.last_update_us = now;
     rpmdata.error_rate = error_rate;
