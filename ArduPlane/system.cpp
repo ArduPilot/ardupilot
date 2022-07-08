@@ -204,14 +204,11 @@ void Plane::startup_ground(void)
 
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
-    // update last reason
-    const ModeReason last_reason = _last_reason;
-    _last_reason = reason;
 
     if (control_mode == &new_mode) {
         // don't switch modes if we are already in the correct mode.
         // only make happy noise if using a difent method to switch, this stops beeping for repeated change mode requests from GCS
-        if ((reason != last_reason) && (reason != ModeReason::INITIALISED)) {
+        if ((reason != control_mode_reason) && (reason != ModeReason::INITIALISED)) {
             AP_Notify::events.user_mode_change = 1;
         }
         return true;
