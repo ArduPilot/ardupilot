@@ -43,9 +43,13 @@ void Plane::fence_check()
         return;
     }
 
-    if (orig_breaches &&
-        (control_mode->is_guided_mode()
-        || control_mode == &mode_rtl || fence.get_action() == AC_FENCE_ACTION_REPORT_ONLY)) {
+    const bool current_mode_breach = plane.control_mode_reason == ModeReason::FENCE_BREACHED;
+    const bool previous_mode_breach = plane.previous_mode_reason ==  ModeReason::FENCE_BREACHED;
+    const bool previous_mode_complete = (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL) ||
+                                        (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) ||
+                                        (plane.control_mode_reason == ModeReason::QRTL_INSTEAD_OF_RTL) ||
+                                        (plane.control_mode_reason == ModeReason::QLAND_INSTEAD_OF_RTL);
+    if (orig_breaches && (current_mode_breach || (previous_mode_breach && previous_mode_complete))) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
