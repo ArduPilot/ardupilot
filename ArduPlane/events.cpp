@@ -200,11 +200,11 @@ void Plane::failsafe_short_off_event(ModeReason reason)
     // We're back in radio contact
     gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
     failsafe.state = FAILSAFE_NONE;
-    //restore entry mode if desired but check that our current mode is still due to failsafe
-    if ( _last_reason == ModeReason::RADIO_FAILSAFE) { 
+    // restore entry mode if desired but check that our current mode is still due to failsafe
+    if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
        set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
        gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
-     }
+    }
 }
 
 void Plane::failsafe_long_off_event(ModeReason reason)
