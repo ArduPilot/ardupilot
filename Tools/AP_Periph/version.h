@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
 #define THISFIRMWARE "AP_Periph V1.4dev"
 
 // the following line is parsed by the autotest scripts
