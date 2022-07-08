@@ -27,6 +27,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
