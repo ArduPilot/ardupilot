@@ -22,7 +22,7 @@
 #define UAVCAN_ESC_MAX_VALUE    8191
 
 #define SERVO_OUT_RCIN_MAX      32  // note that we allow for more than is in the enum
-#define SERVO_OUT_MOTOR_MAX     12  // SRV_Channel::k_motor1 ... SRV_Channel::k_motor8, SRV_Channel::k_motor9 ... SRV_Channel::k_motor12
+#define SERVO_OUT_MOTOR_MAX     16  // SRV_Channel::k_motor1 ... SRV_Channel::k_motor8, SRV_Channel::k_motor9 ... SRV_Channel::k_motor12, SRV_Channel::k_motor13 ... SRV_Channel::k_motor16
 
 extern const AP_HAL::HAL &hal;
 
