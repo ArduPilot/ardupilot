@@ -106,6 +106,9 @@ bool AP_MotorsMatrix_Scripting_Dynamic::init(uint8_t expected_num_motors)
         case 12:
             _mav_type = MAV_TYPE_DODECAROTOR;
             break;
+        case 16:
+            _mav_type = MAV_TYPE_HEXADECAROTOR;
+            break;
         default:
             _mav_type = MAV_TYPE_GENERIC;
     }
