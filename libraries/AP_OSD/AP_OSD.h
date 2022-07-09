@@ -449,6 +449,9 @@ public:
     // init - perform required initialisation
     void init();
 
+    // update - allow updates that must occur on the main loop
+    void update();
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 

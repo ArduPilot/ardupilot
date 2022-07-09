@@ -40,6 +40,9 @@ public:
     //initilize framebuffer and underlying hardware
     virtual bool init() = 0;
 
+    // updates for display and events that must be called from main loop
+    virtual void update() {}
+
     //update screen
     virtual void flush() = 0;
 

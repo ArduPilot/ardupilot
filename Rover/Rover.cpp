@@ -130,6 +130,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if ADVANCED_FAILSAFE == ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
+#ifdef WITH_SITL_OSD
+    SCHED_TASK_CLASS(AP_OSD,              &rover.osd,              update,         50,  300,  180),
+#endif
 };
 
 

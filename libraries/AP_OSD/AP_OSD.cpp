@@ -317,6 +317,24 @@ void AP_OSD::init()
 #endif
 }
 
+void AP_OSD::update()
+{
+#if OSD_ENABLED
+    if (backend != nullptr) {
+        switch (osd_types(osd_type.get())) {
+        default:
+            break;
+#ifdef WITH_SITL_OSD
+        case OSD_SITL: {
+            backend->update();
+            break;
+        }
+#endif
+        }
+    }
+#endif
+}
+
 #if OSD_ENABLED
 void AP_OSD::osd_thread()
 {

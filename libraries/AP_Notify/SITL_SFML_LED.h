@@ -34,16 +34,25 @@ class SITL_SFML_LED: public RGBLed
 public:
     SITL_SFML_LED();
     bool init(void) override;
+    void update() override;
 
 protected:
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
 
+    sf::RenderWindow *w_rgb {nullptr};
+    bool rgb_is_closing {false};
+
+    sf::RenderWindow *w_serial {nullptr};
+    bool serial_is_closing {false};
+
     pthread_t thread;
     void update_thread(void);
     void update_serial_LEDs(void);
     static void *update_thread_start(void *obj);
+
+    void poll_events(sf::RenderWindow *w, bool &is_closing);
 
     static constexpr uint8_t height = 50;
     static constexpr uint8_t width = height;

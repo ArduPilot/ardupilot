@@ -21,9 +21,10 @@
 #include <unistd.h>
 
 #ifdef WITH_SITL_RGBLED
-#include <SITL/SITL.h>
-
 #include "SITL_SFML_LED.h"
+#include <SITL/SITL.h>
+#include <AP_Common/AP_FEHideExcept.h>
+
 
 SITL_SFML_LED::SITL_SFML_LED():
     RGBLed((uint8_t)brightness::LED_OFF,
@@ -116,31 +117,19 @@ bool SITL_SFML_LED::layout_pos(SITL::LedLayout layout, uint8_t chan, uint8_t led
  */
 void SITL_SFML_LED::update_serial_LEDs()
 {
-    static sf::RenderWindow *w;
     static sf::RectangleShape *leds[16][MAX_LEDS];
 
     SITL::SIM *sitl = AP::sitl();
-    if (sitl == nullptr || sitl->led.send_counter == 0) {
+    if (sitl == nullptr ||
+        sitl->led.send_counter == 0 ||
+        !w_serial) {
         // no SerialLEDs set
         return;
     }
     SITL::LedLayout layout = SITL::LedLayout(sitl->led_layout.get());
-    if (w == nullptr) {
-        uint8_t max_leds = 0;
-        for (uint8_t i=0; i<16; i++) {
-            max_leds = MAX(max_leds, sitl->led.num_leds[i]);
-        }
-        uint16_t xsize=0, ysize=0;
-        if (!layout_size(layout, xsize, ysize)) {
-            return;
-        }
-        w = new sf::RenderWindow(sf::VideoMode(xsize*(serialLED_size+1), ysize*(serialLED_size+1)), "SerialLED");
-        if (!w) {
-            return;
-        }
-        w->clear(sf::Color(0, 0, 0, 255));
-    }
+    WITH_SEMAPHORE(AP::notify().sf_window_mutex);
 
+    w_serial->clear(sf::Color(255, 255, 255, 255));
     for (uint8_t chan=0; chan<16; chan++) {
         for (uint8_t led=0; led<sitl->led.num_leds[chan]; led++) {
             uint8_t *rgb = &sitl->led.rgb[chan][led].rgb[0];
@@ -156,43 +145,25 @@ void SITL_SFML_LED::update_serial_LEDs()
                 }
             }
             leds[chan][led]->setFillColor(sf::Color(rgb[0], rgb[1], rgb[2], 255));
-            w->draw(*leds[chan][led]);
+            w_serial->draw(*leds[chan][led]);
         }
     }
-    w->display();
+    w_serial->display();
 }
 
 void SITL_SFML_LED::update_thread(void)
 {
-    sf::RenderWindow *w = nullptr;
-    {
-        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(width, height), "LED");
-    }
-
-    if (!w) {
-        AP_HAL::panic("Unable to create RGBLed window");
-    }
-
     while (true) {
         {
-            WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-            sf::Event event;
-            while (w->pollEvent(event)) {
-                if (event.type == sf::Event::Closed) {
-                    w->close();
-                    break;
-                }
-            }
-            if (!w->isOpen()) {
+            if (!w_rgb->isOpen()) {
                 break;
             }
             const uint32_t colour = red<<16 | green<<8 | blue;
             if (colour != last_colour) {
                 last_colour = colour;
 
-                w->clear(sf::Color(red, green, blue, 255));
-                w->display();
+                w_rgb->clear(sf::Color(red, green, blue, 255));
+                w_rgb->display();
             }
 
             update_serial_LEDs();
@@ -210,9 +181,79 @@ void *SITL_SFML_LED::update_thread_start(void *obj)
 
 bool SITL_SFML_LED::init()
 {
-    pthread_create(&thread, NULL, update_thread_start, this);
+    {
+        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+        rgb_is_closing = false;
 
+        FEHideExcept hide_except;
+        w_rgb = new sf::RenderWindow(sf::VideoMode(width, height), "LED");
+    }
+
+    if (!w_rgb) {
+        AP_HAL::panic("Unable to create RGBLed window");
+    }
+
+    poll_events(w_rgb, rgb_is_closing);
+
+    pthread_create(&thread, NULL, update_thread_start, this);
     return true;
+}
+
+void SITL_SFML_LED::update()
+{
+    RGBLed::update();
+
+    // check if we need to create serial LED window
+    SITL::SIM *sitl = AP::sitl();
+    if (sitl != nullptr &&
+        sitl->led.send_counter != 0 &&
+        w_serial == nullptr) {
+
+        SITL::LedLayout layout = SITL::LedLayout(sitl->led_layout.get());
+        uint8_t max_leds = 0;
+        for (uint8_t i=0; i<16; i++) {
+            max_leds = MAX(max_leds, sitl->led.num_leds[i]);
+        }
+        uint16_t xsize=0, ysize=0;
+        if (layout_size(layout, xsize, ysize)) {
+            WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+            serial_is_closing = false;
+
+            FEHideExcept hide_except;
+            w_serial = new sf::RenderWindow(sf::VideoMode(
+                  xsize*(serialLED_size+1),
+                  ysize*(serialLED_size+1)),
+                  "SerialLED");
+          if (w_serial) {
+              w_serial->clear(sf::Color(0, 0, 0, 255));
+          }
+        }
+    }
+
+    // update event loop
+    poll_events(w_rgb, rgb_is_closing);
+    poll_events(w_serial, serial_is_closing);
+}
+
+void SITL_SFML_LED::poll_events(sf::RenderWindow *w, bool &is_closing)
+{
+    if (!w) {
+        return;
+    }
+
+    WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+    if (is_closing) {
+        w->close();
+    }
+
+    FEHideExcept hide_except;
+    sf::Event event;
+    while (w->pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            w->setVisible(false);
+            is_closing = true;
+        }
+    }
 }
 
 bool SITL_SFML_LED::hw_set_rgb(uint8_t _red, uint8_t _green, uint8_t _blue)

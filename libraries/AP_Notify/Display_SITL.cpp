@@ -18,6 +18,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Common/AP_FEHideExcept.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -44,14 +45,6 @@ Display_SITL *Display_SITL::probe()
 // main loop of graphics thread
 void Display_SITL::update_thread(void)
 {
-    {
-        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-        w = new sf::RenderWindow(sf::VideoMode(COLUMNS*SCALE, ROWS*SCALE), "Display");
-    }
-    if (!w) {
-        AP_HAL::panic("Unable to create Display_SITL window");
-    }
-
     const sf::Color color_black = sf::Color(0,0,0);
     const sf::Color color_white = sf::Color(255,255,255);
 
@@ -62,12 +55,6 @@ void Display_SITL::update_thread(void)
     while (true) {
         {
             WITH_SEMAPHORE(AP::notify().sf_window_mutex);
-            sf::Event event;
-            while (w->pollEvent(event)) {
-                if (event.type == sf::Event::Closed) {
-                    w->close();
-                }
-            }
             if (!w->isOpen()) {
                 break;
             }
@@ -114,8 +101,22 @@ void *Display_SITL::update_thread_start(void *obj)
 
 bool Display_SITL::hw_init()
 {
+    // create the window on the main thread (macOS compatibility)
+    {
+        WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+
+        FEHideExcept hide_except;
+        w = new sf::RenderWindow(sf::VideoMode(COLUMNS*SCALE, ROWS*SCALE), "Display");
+    }
+    if (!w) {
+        AP_HAL::panic("Unable to create Display_SITL window");
+    }
+
+    poll_events();
+
     pthread_create(&thread, NULL, update_thread_start, this);
     _need_hw_update = true;
+    _is_closing = false;
 
     return true;
 }
@@ -123,6 +124,29 @@ bool Display_SITL::hw_init()
 void Display_SITL::hw_update()
 {
     _need_hw_update = true;
+
+    poll_events();
+}
+
+void Display_SITL::poll_events()
+{
+    if (!w) {
+        return;
+    }
+
+    WITH_SEMAPHORE(AP::notify().sf_window_mutex);
+    if (_is_closing) {
+        w->close();
+    }
+
+    FEHideExcept hide_except;
+    sf::Event event;
+    while (w->pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            w->setVisible(false);
+            _is_closing = true;
+        }
+    }
 }
 
 void Display_SITL::set_pixel(uint16_t x, uint16_t y)
