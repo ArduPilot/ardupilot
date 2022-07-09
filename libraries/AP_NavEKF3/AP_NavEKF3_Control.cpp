@@ -700,10 +700,10 @@ void  NavEKF3_core::updateFilterStatus(void)
     filterStatus.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
     filterStatus.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     filterStatus.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    filterStatus.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
+    filterStatus.flags.horiz_pos_rel = ((doingFlowNav && terrainStateValid) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
     filterStatus.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
     filterStatus.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
-    filterStatus.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
+    filterStatus.flags.terrain_alt = terrainStateValid && filterHealthy;     // terrain height estimate valid
     filterStatus.flags.const_pos_mode = (PV_AidingMode == AID_NONE) && filterHealthy;     // constant position mode
     filterStatus.flags.pred_horiz_pos_rel = filterStatus.flags.horiz_pos_rel; // EKF3 enters the required mode before flight
     filterStatus.flags.pred_horiz_pos_abs = filterStatus.flags.horiz_pos_abs; // EKF3 enters the required mode before flight
