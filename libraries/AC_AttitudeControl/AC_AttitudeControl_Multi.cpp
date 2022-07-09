@@ -1,6 +1,7 @@
 #include "AC_AttitudeControl_Multi.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+#include "AC_CustomControl.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
@@ -231,6 +232,10 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Range: 0.1 0.9
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
+
+#if CUSTOMCONTROL_ENABLED
+    AP_SUBGROUPEXTENSION("", 7, AC_CustomControl, var_info),
+#endif
 
     AP_GROUPEND
 };
