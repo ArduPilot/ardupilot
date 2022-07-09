@@ -534,7 +534,8 @@ bool Plane::verify_takeoff()
             auto_state.takeoff_speed_time_ms = millis();
         }
         if (auto_state.takeoff_speed_time_ms != 0 &&
-            millis() - auto_state.takeoff_speed_time_ms >= 2000) {
+            millis() - auto_state.takeoff_speed_time_ms >= 2000
+            && g.level_roll_limit != 0) {
             // once we reach sufficient speed for good GPS course
             // estimation we save our current GPS ground course
             // corrected for summed yaw to set the take off
