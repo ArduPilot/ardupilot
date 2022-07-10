@@ -5931,6 +5931,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.assert_prearm_failure("Motors Emergency Stopped")
         self.context_pop()
 
+    def assert_mode(self, mode):
+        if not self.mode_is(mode):
+            raise NotAchievedException("Mode is not %s" % str(mode))
+
+    def ChangeModeByNumber(self):
+        '''ensure we can set a mode by number, handy when we don't have a
+        pymavlink number for it yet'''
+        for (x, want) in (0, 'MANUAL'), (1, 'ACRO'), (3, 3):
+            self.change_mode(x)
+            self.assert_mode(want)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6172,6 +6183,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("DepthFinder",
              "Test mulitple depthfinders for boats",
              self.test_depthfinder),
+
+            ("ChangeModeByNumber",
+             "Test changing mode by number",
+             self.ChangeModeByNumber),
 
             ("EStopAtBoot",
              "Ensure EStop prevents arming when asserted at boot time",
