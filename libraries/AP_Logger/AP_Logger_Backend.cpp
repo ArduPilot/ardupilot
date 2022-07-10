@@ -446,7 +446,7 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         _front._last_mavlink_log_transfer_message_handled_ms != 0) {
         if (AP_HAL::millis() - _front._last_mavlink_log_transfer_message_handled_ms < 10000) {
             if (!_front.vehicle_is_armed()) {
-                // user is transfering files via mavlink
+                // user is transferring files via mavlink
                 return false;
             }
         } else {

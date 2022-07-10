@@ -67,7 +67,7 @@ void AP_LoggerTest::setup(void)
     // Test
     hal.scheduler->delay(20);
 
-    // We start to write some info (sequentialy) starting from page 1
+    // We start to write some info (sequentially) starting from page 1
     // This is similar to what we will do...
     log_num = logger.find_last_log();
     hal.console->printf("Using log number %u\n", log_num);
