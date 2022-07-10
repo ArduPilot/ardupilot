@@ -351,7 +351,7 @@ public:
     // number of blocks that have been dropped
     uint32_t num_dropped(void) const;
 
-    // accesss to public parameters
+    // access to public parameters
     void set_force_log_disarmed(bool force_logging) { _force_log_disarmed = force_logging; }
     void set_long_log_persist(bool b) { _force_long_log_persist = b; }
     bool log_while_disarmed(void) const;
@@ -487,7 +487,7 @@ private:
 
     bool _armed;
 
-    // state to help us not log unneccesary RCIN values:
+    // state to help us not log unnecessary RCIN values:
     bool should_log_rcin2;
 
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
