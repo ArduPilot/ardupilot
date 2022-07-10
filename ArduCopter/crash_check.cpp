@@ -191,7 +191,7 @@ void Copter::yaw_imbalance_check()
         return;
     }
 
-    // thrust loss is trigerred, yaw issues are expected
+    // thrust loss is triggered, yaw issues are expected
     if (motors->get_thrust_boost()) {
         yaw_I_filt.reset(0.0f);
         return;
@@ -219,8 +219,8 @@ void Copter::yaw_imbalance_check()
 
     const float I_max = attitude_control->get_rate_yaw_pid().imax();
     if ((is_positive(I_max) && ((I > YAW_IMBALANCE_IMAX_THRESHOLD * I_max) || (is_equal(I_term,I_max))))) {
-        // filtered using over precentage of I max or unfiltered = I max
-        // I makes up more than precentage of total available control power
+        // filtered using over percentage of I max or unfiltered = I max
+        // I makes up more than percentage of total available control power
         const uint32_t now = millis();
         if (now - last_yaw_warn_ms > YAW_IMBALANCE_WARN_MS) {
             last_yaw_warn_ms = now;
