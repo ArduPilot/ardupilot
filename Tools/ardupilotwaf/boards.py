@@ -557,6 +557,21 @@ class sitl(Board):
             '-Werror=float-equal'
         ]
 
+        if cfg.options.ubsan or cfg.options.ubsan_abort:
+            env.CXXFLAGS += [
+                "-fsanitize=undefined",
+                "-fsanitize=float-cast-overflow",
+            ]
+            env.LINKFLAGS += [
+                "-fsanitize=undefined",
+                "-lubsan",
+            ]
+
+        if cfg.options.ubsan_abort:
+            env.CXXFLAGS += [
+                "-fno-sanitize-recover"
+            ]
+
         if not cfg.env.DEBUG:
             env.CXXFLAGS += [
                 '-O3',
