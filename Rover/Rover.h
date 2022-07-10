@@ -90,6 +90,9 @@ public:
     friend class ModeSmartRTL;
     friend class ModeFollow;
     friend class ModeSimple;
+#if MODE_DOCK_ENABLED == ENABLED
+    friend class ModeDock;
+#endif
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -230,6 +233,9 @@ private:
     ModeSmartRTL mode_smartrtl;
     ModeFollow mode_follow;
     ModeSimple mode_simple;
+#if MODE_DOCK_ENABLED == ENABLED
+    ModeDock mode_dock;
+#endif
 
     // cruise throttle and speed learning
     typedef struct {

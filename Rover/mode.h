@@ -19,11 +19,14 @@ public:
         LOITER       = 5,
         FOLLOW       = 6,
         SIMPLE       = 7,
+#if MODE_DOCK_ENABLED == ENABLED
+        DOCK         = 8,
+#endif
         AUTO         = 10,
         RTL          = 11,
         SMART_RTL    = 12,
         GUIDED       = 15,
-        INITIALISING = 16
+        INITIALISING = 16,
     };
 
     // Constructor
@@ -744,3 +747,54 @@ private:
     float _desired_heading_cd;  // latest desired heading (in centi-degrees) from pilot
 };
 
+#if MODE_DOCK_ENABLED == ENABLED
+class ModeDock : public Mode
+{
+public:
+
+    // need a constructor for parameters
+    ModeDock(void);
+
+    // Does not allow copies
+    CLASS_NO_COPY(ModeDock);
+
+    uint32_t mode_number() const override { return DOCK; }
+    const char *name4() const override { return "DOCK"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    bool is_autopilot_mode() const override { return true; }
+
+    // return distance (in meters) to destination
+    float get_distance_to_destination() const override { return _distance_to_destination; }
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+
+    AP_Float speed; // dock mode speed
+    AP_Float desired_dir; // desired direction of approach
+    AP_Int8 hdg_corr_enable; // enable heading correction
+    AP_Float hdg_corr_weight; // heading correction weight
+    AP_Float stopping_dist; // how far away from the docking target should we start stopping
+
+    bool _enter() override;
+
+    // return reduced speed of vehicle based on error in position and current distance from the dock
+    float apply_slowdown(float desired_speed);
+
+    // calculate position of dock relative to the vehicle
+    bool calc_dock_pos_rel_vehicle_NE(Vector2f &dock_pos_rel_vehicle) const;
+
+    // we force the vehicle to use real dock target vector when this much close to the docking station
+    const float _force_real_target_limit_cm = 300.0f;
+    // acceptable lateral error in vehicle's position with respect to dock. This is used while slowing down the vehicle
+    const float _acceptable_pos_error_cm = 20.0f;
+
+    Vector2f _dock_pos_rel_origin_cm;   // position vector towards docking target relative to ekf origin
+    Vector2f _desired_heading_NE;       // unit vector in desired direction of docking
+    bool _docking_complete = false;     // flag to mark docking complete when we are close enough to the dock
+    bool _loitering = false; // true if we are loitering after mission completion
+};
+#endif
