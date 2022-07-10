@@ -487,3 +487,26 @@ float degF_to_Kelvin(float temp_f)
 {
     return (temp_f + 459.67) * 0.55556;
 }
+
+/*
+  conversion functions to prevent undefined behaviour
+ */
+int16_t float_to_int16(const float v)
+{
+    return int16_t(constrain_float(v, INT16_MIN, INT16_MAX));
+}
+
+int32_t float_to_int32(const float v)
+{
+    return int32_t(constrain_float(v, INT32_MIN, INT32_MAX));
+}
+
+uint16_t float_to_uint16(const float v)
+{
+    return uint16_t(constrain_float(v, 0, UINT16_MAX));
+}
+
+uint32_t float_to_uint32(const float v)
+{
+    return uint32_t(constrain_float(v, 0, UINT32_MAX));
+}
