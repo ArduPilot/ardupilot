@@ -140,15 +140,17 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
     // longitudinal distance of vehicle from the precland device
     // this is the distance of vehicle from the plane which is passing through precland device origin and perpendicular to axis of cone/cylinder
     // this plane is the ground plane when the axis has PITCH_90 rotation
-    const float longitudinal_dist = position_wrt_origin.projected(axis).length();
+    Vector3d projection_on_axis = position_wrt_origin.projected(axis);
+    const float longitudinal_dist = projection_on_axis.length();
 
     // lateral distance of vehicle from the precland device
     // this is the perpendicular distance of vehicle from the axis of cone/cylinder
     const float lateral_distance = safe_sqrt(MAX(0, position_wrt_origin.length_squared() - longitudinal_dist*longitudinal_dist));
 
+    // sign of projection's dot product with axis tells if vehicle is in front of beacon
     // return false if vehicle if vehicle is  longitudinally too far away from precland device
     // for PITCH_90 orientation, longitudinal distance = alt of vehicle - origin_height (in m)
-    if (longitudinal_dist > _alt_limit) {
+    if (projection_on_axis.dot(axis) <= 0 || longitudinal_dist > _alt_limit) {
         _healthy = false;
         return;
     }
