@@ -129,6 +129,18 @@ class VehicleInfo(object):
                 "default_params_filename": ["default_params/copter.parm",
                                             "default_params/copter-dodecahexa.parm" ],
             },
+            "hexadeca-octa": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm",
+                                            "default_params/copter-hexadecaocta.parm" ],
+            },
+            "hexadeca-octa-cwx": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-hexadecaocta.parm",
+                    "default_params/copter-hexadecaocta-cwx.parm" ],
+            },
             # SIM
             "IrisRos": {
                 "waf_target": "bin/arducopter",
