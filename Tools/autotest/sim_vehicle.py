@@ -364,6 +364,12 @@ def do_build(opts, frame_options):
     if opts.sitl_32bit:
         cmd_configure.append("--sitl-32bit")
 
+    if opts.ubsan:
+        cmd_configure.append("--ubsan")
+
+    if opts.ubsan_abort:
+        cmd_configure.append("--ubsan-abort")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -982,6 +988,16 @@ group_build.add_option("", "--coverage",
                        action='store_true',
                        default=False,
                        help="use coverage build")
+group_build.add_option("", "--ubsan",
+                       default=False,
+                       action='store_true',
+                       dest="ubsan",
+                       help="compile sitl with undefined behaviour sanitiser")
+group_build.add_option("", "--ubsan-abort",
+                       default=False,
+                       action='store_true',
+                       dest="ubsan_abort",
+                       help="compile sitl with undefined behaviour sanitiser and abort on error")
 parser.add_option_group(group_build)
 
 group_sim = optparse.OptionGroup(parser, "Simulation options")
