@@ -5952,6 +5952,68 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_heading(90)
         self.disarm_vehicle()
 
+    def AutoDock(self):
+        self.context_push()
+
+        self.set_parameters({
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 4,
+            "PLND_ORIENT": 0,
+        })
+
+        start = self.mav.location()
+        target = start
+        (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
+        self.progress("Setting target to %f %f" % (start.lat, start.lng))
+
+        self.set_parameters({
+            "SIM_PLD_ENABLE": 1,
+            "SIM_PLD_LAT": target.lat,
+            "SIM_PLD_LON": target.lng,
+            "SIM_PLD_HEIGHT": 0,
+            "SIM_PLD_ALT_LMT": 30,
+            "SIM_PLD_DIST_LMT": 30,
+            "SIM_PLD_ORIENT": 4,    # emit beams towards south, vehicle's heading must be north to see it
+            "SIM_PLD_OPTIONS": 1,
+            "DOCK_SPEED": 2,
+        })
+
+        for type in range(0, 3):  # CYLINDRICAL FOV, CONICAL FOV, SPHERICAL FOV
+            ex = None
+            try:
+                self.set_parameter("SIM_PLD_TYPE", type)
+                self.reboot_sitl()
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                self.reach_heading_manual(0)
+                self.set_rc(3, 1400)
+                self.wait_distance(25)
+                self.set_rc_default()
+                self.change_mode(8) # DOCK mode
+                self.wait_groundspeed(0, 0.03, timeout=120)
+                self.disarm_vehicle()
+                self.assert_receive_message('GLOBAL_POSITION_INT')
+                new_pos = self.mav.location()
+                delta = self.get_distance(target, new_pos)
+                self.progress("Docked %f metres from target position" % delta)
+                max_delta = 0.5
+                if delta > max_delta:
+                    raise NotAchievedException("Did not dock close enough to target position (%fm > %fm" % (delta, max_delta))
+
+                if not self.current_onboard_log_contains_message("PL"):
+                    raise NotAchievedException("Did not see expected PL message")
+
+            except Exception as e:
+                self.print_exception_caught(e)
+                ex = e
+                break
+        self.context_pop()
+        self.reboot_sitl()
+        self.progress("All done")
+
+        if ex is not None:
+            raise ex
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6205,6 +6267,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("StickMixingAuto",
              "Ensure Stick Mixing works in auto",
              self.StickMixingAuto),
+
+            ("AutoDock",
+             "Test automatic docking of rover for multiple FOVs of simulated beacon",
+             self.AutoDock),
 
         ])
         return ret
