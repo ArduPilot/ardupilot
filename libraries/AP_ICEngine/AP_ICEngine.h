@@ -125,6 +125,10 @@ private:
     };
     AP_Int16 options;
 
+    bool option_set(Options option) const {
+        return (options & uint16_t(option)) != 0;
+    }
+
     // start_chan debounce
     uint16_t start_chan_last_value = 1500;
     uint32_t start_chan_last_ms;
