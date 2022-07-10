@@ -132,7 +132,7 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: ICE options
     // @Description: Options for ICE control
-    // @Bitmask: 0:DisableIgnitionRCFailsafe
+    // @Bitmask: 0:DisableIgnitionRCFailsafe,2:ThrottleWhileDisarmed
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
 
     // @Param: STARTCHN_MIN
@@ -282,7 +282,7 @@ void AP_ICEngine::update(void)
                 // reset initial height while disarmed
                 initial_height = -pos.z;
             }
-        } else if (idle_percent <= 0) { // check if we should idle
+        } else if (idle_percent <= 0 && !option_set(Options::THROTTLE_WHILE_DISARMED)) {
             // force ignition off when disarmed
             state = ICE_OFF;
         }
@@ -323,8 +323,11 @@ void AP_ICEngine::update(void)
 /*
   check for throttle override. This allows the ICE controller to force
   the correct starting throttle when starting the engine and maintain idle when disarmed
+
+  base_throttle is the throttle before the disarmed override
+  check. This allows for throttle control while disarmed
  */
-bool AP_ICEngine::throttle_override(uint8_t &percentage)
+bool AP_ICEngine::throttle_override(float &percentage, const float base_throttle)
 {
     if (!enable) {
         return false;
@@ -335,7 +338,10 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
         idle_percent < 100 &&
         (int16_t)idle_percent > SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))
     {
-        percentage = (uint8_t)idle_percent;
+        percentage = idle_percent;
+        if (option_set(Options::THROTTLE_WHILE_DISARMED)) {
+            percentage = MAX(percentage, base_throttle);
+        }
         return true;
     }
 
@@ -347,6 +353,12 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
         return true;
     }
     
+    // if THROTTLE_WHILE_DISARMED is set then we use the base_throttle, allowing the pilot to control throttle while disarmed
+    if (option_set(Options::THROTTLE_WHILE_DISARMED) && base_throttle > percentage) {
+        percentage = base_throttle;
+        return true;
+    }
+
     return false;
 }
 
