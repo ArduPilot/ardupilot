@@ -772,7 +772,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
         }
 
         // allow user to take control during repositioning. Note: copied from land_run_horizontal_control()
-        // To-Do: this code exists at several different places in slightly diffrent forms and that should be fixed
+        // To-Do: this code exists at several different places in slightly different forms and that should be fixed
         if (g.land_repositioning) {
             float target_roll = 0.0f;
             float target_pitch = 0.0f;
@@ -796,7 +796,7 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
     }
 
     Vector3p retry_pos_NEU{retry_pos.x, retry_pos.y, retry_pos.z * -1.0f};
-    //pos contoller expects input in NEU cm's
+    // pos controller expects input in NEU cm's
     retry_pos_NEU = retry_pos_NEU * 100.0f;
     pos_control->input_pos_xyz(retry_pos_NEU, 0.0f, 1000.0f);
 
