@@ -360,3 +360,11 @@ float fixedwing_turn_rate(float bank_angle_deg, float airspeed);
 // convert degrees farenheight to Kelvin
 float degF_to_Kelvin(float temp_f);
 
+/*
+  conversion functions to prevent undefined behaviour
+ */
+int16_t float_to_int16(const float v);
+uint16_t float_to_uint16(const float v);
+int32_t float_to_int32(const float v);
+uint32_t float_to_uint32(const float v);
+
