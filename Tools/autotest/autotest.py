@@ -447,6 +447,8 @@ def run_step(step):
         "extra_configure_args": opts.waf_configure_args,
         "coverage": opts.coverage,
         "sitl_32bit" : opts.sitl_32bit,
+        "ubsan" : opts.ubsan,
+        "ubsan_abort" : opts.ubsan_abort,
     }
 
     if opts.Werror:
@@ -959,6 +961,16 @@ if __name__ == "__main__":
                            action='store_true',
                            dest="sitl_32bit",
                            help="compile sitl using 32-bit")
+    group_build.add_option("", "--ubsan",
+                           default=False,
+                           action='store_true',
+                           dest="ubsan",
+                           help="compile sitl with undefined behaviour sanitiser")
+    group_build.add_option("", "--ubsan-abort",
+                           default=False,
+                           action='store_true',
+                           dest="ubsan_abort",
+                           help="compile sitl with undefined behaviour sanitiser and abort on error")
     parser.add_option_group(group_build)
 
     group_sim = optparse.OptionGroup(parser, "Simulation options")
