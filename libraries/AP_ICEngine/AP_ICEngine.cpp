@@ -211,7 +211,7 @@ void AP_ICEngine::update(void)
         should_run = true;
     }
 
-    if ((options & uint16_t(Options::DISABLE_IGNITION_RC_FAILSAFE)) && AP_Notify::flags.failsafe_radio) {
+    if (option_set(Options::DISABLE_IGNITION_RC_FAILSAFE) && AP_Notify::flags.failsafe_radio) {
         // user has requested ignition kill on RC failsafe
         should_run = false;
     }
@@ -340,9 +340,13 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
     }
 
     if (state == ICE_STARTING || state == ICE_START_DELAY) {
-        percentage = (uint8_t)start_percent.get();
+        percentage = start_percent.get();
+        return true;
+    } else if (state != ICE_RUNNING && hal.util->get_soft_armed()) {
+        percentage = 0;
         return true;
     }
+    
     return false;
 }
 
