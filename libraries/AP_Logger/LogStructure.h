@@ -708,7 +708,7 @@ struct PACKED log_VER {
 #define PID_MULTS  "F----------"
 
 // @LoggerMessage: ADSB
-// @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information
+// @Description: Automatic Dependent Serveillance - Broadcast detected vehicle information
 // @Field: TimeUS: Time since system startup
 // @Field: ICAO_address: Transponder address
 // @Field: Lat: Vehicle latitude
@@ -1190,16 +1190,16 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: Name: script name
 // @Field: Runtime: run time
-// @Field: Total_mem: total memory useage
+// @Field: Total_mem: total memory usage
 // @Field: Run_mem: run memory usage
 
 // @LoggerMessage: MOTB
 // @Description: Motor mixer information
 // @Field: TimeUS: Time since system startup
 // @Field: LiftMax: Maximum motor compensation gain
-// @Field: BatVolt: Ratio betwen detected battery voltage and maximum battery voltage
+// @Field: BatVolt: Ratio between detected battery voltage and maximum battery voltage
 // @Field: ThLimit: Throttle limit set due to battery current limitations
-// @Field: ThrAvMx: Maximum average throttle that can be used to maintain attitude controll, derived from throttle mix params
+// @Field: ThrAvMx: Maximum average throttle that can be used to maintain attitude control, derived from throttle mix params
 // @Field: FailFlags: bit 0 motor failed, bit 1 motors balanced, should be 2 in normal flight
 
 // messages for all boards
