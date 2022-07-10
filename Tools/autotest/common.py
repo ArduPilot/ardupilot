@@ -5351,6 +5351,8 @@ class AutoTest(ABC):
 
     def get_mode_from_mode_mapping(self, mode):
         """Validate and return the mode number from a string or int."""
+        if isinstance(mode, int):
+            return mode
         mode_map = self.mav.mode_mapping()
         if mode_map is None:
             mav_type = self.mav.messages['HEARTBEAT'].type
