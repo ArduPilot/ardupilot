@@ -633,7 +633,7 @@ private:
         int8_t pitch_deg;   // target pitch angle in degrees.  provided by mission command
         int16_t yaw_deg;    // target yaw angle in degrees.  provided by mission command
         float climb_rate;   // climb rate in m/s. provided by mission command
-        uint32_t start_ms;  // system time that nav attitude time command was recieved (used for timeout)
+        uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
     } nav_attitude_time;
 };
 

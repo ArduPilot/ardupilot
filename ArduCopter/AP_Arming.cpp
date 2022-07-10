@@ -169,7 +169,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         }
 
         char fail_msg[50];
-        // check input mangager parameters
+        // check input manager parameters
         if (!copter.input_manager.parameter_check(fail_msg, ARRAY_SIZE(fail_msg))) {
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "%s", fail_msg);
             return false;
