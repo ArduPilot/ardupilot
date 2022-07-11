@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_Common/AP_ExpandingArray.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 #define AIVDM_BUFFER_SIZE 10
 #define AIVDM_PAYLOAD_SIZE 65
