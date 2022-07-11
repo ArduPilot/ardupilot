@@ -13,6 +13,9 @@
 #include <malloc.h>
 #endif
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#ifdef UBSAN_ENABLED
+#include <sanitizer/asan_interface.h>
+#endif
 
 using namespace HALSITL;
 
@@ -48,6 +51,45 @@ Scheduler::Scheduler(SITL_State *sitlState) :
     _stopped_clock_usec(0)
 {
 }
+
+#ifdef UBSAN_ENABLED
+/*
+  catch ubsan errors and append to a log file
+ */
+extern "C" {
+void __ubsan_get_current_report_data(const char **OutIssueKind,
+                                     const char **OutMessage,
+                                     const char **OutFilename, unsigned *OutLine,
+                                     unsigned *OutCol, char **OutMemoryAddr);
+
+void __ubsan_on_report()
+{
+    static int fd = -1;
+    if (fd == -1) {
+        const char *ubsan_log_path = getenv("UBSAN_LOG_PATH");
+        if (ubsan_log_path == nullptr) {
+            ubsan_log_path = "ubsan.log";
+        }
+        if (ubsan_log_path != nullptr) {
+            fd = open(ubsan_log_path, O_APPEND|O_CREAT|O_WRONLY, 0644);
+        }
+    }
+    if (fd != -1) {
+        const char *OutIssueKind = nullptr;
+        const char *OutMessage = nullptr;
+        const char *OutFilename = nullptr;
+        unsigned OutLine=0;
+        unsigned OutCol=0;
+        char *OutMemoryAddr=nullptr;
+        __ubsan_get_current_report_data(&OutIssueKind, &OutMessage, &OutFilename,
+                                        &OutLine, &OutCol, &OutMemoryAddr);
+        dprintf(fd, "ubsan error: %s:%u:%u %s:%s\n",
+                OutFilename, OutLine, OutCol,
+                OutIssueKind, OutMessage);
+    }
+}
+}
+#endif
 
 void Scheduler::init()
 {
