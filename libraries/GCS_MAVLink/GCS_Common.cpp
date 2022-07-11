@@ -113,20 +113,25 @@ GCS_MAVLINK::GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters,
 
 bool GCS_MAVLINK::init(uint8_t instance)
 {
-    // search for serial port
-    const AP_SerialManager& serial_manager = AP::serialmanager();
-
-    const AP_SerialManager::SerialProtocol protocol = AP_SerialManager::SerialProtocol_MAVLink;
-
     // get associated mavlink channel
     chan = (mavlink_channel_t)(MAVLINK_COMM_0 + instance);
     if (!valid_channel(chan)) {
         return false;
     }
 
+    // find instance of MAVLink protocol; the protocol_match method in
+    // AP_SerialManager means this will match MAVLink2 and MAVLinkHL,
+    // too:
+    uartstate = AP::serialmanager().find_protocol_instance(AP_SerialManager::SerialProtocol_MAVLink, instance);
+    if (uartstate == nullptr) {
+        return false;
+    }
+
     // and init the gcs instance
 
-    if (!serial_manager.should_forward_mavlink_telemetry(protocol, instance)) {
+    // whether this port is considered "private" is stored on the uart
+    // rather than in our own parameters:
+    if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD)) {
         set_channel_private(chan);
     }
 
@@ -152,11 +157,11 @@ bool GCS_MAVLINK::init(uint8_t instance)
     _port->set_flow_control(old_flow_control);
 
     // now change back to desired baudrate
-    _port->begin(serial_manager.find_baudrate(protocol, instance));
+    _port->begin(uartstate->baudrate());
 
     mavlink_comm_port[chan] = _port;
 
-    AP_SerialManager::SerialProtocol mavlink_protocol = serial_manager.get_mavlink_protocol(chan);
+    const auto mavlink_protocol = uartstate->get_protocol();
     mavlink_status_t *status = mavlink_get_channel_status(chan);
     if (status == nullptr) {
         return false;
@@ -166,7 +171,7 @@ bool GCS_MAVLINK::init(uint8_t instance)
         mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         // load signing key
         load_signing_key();
-    } else if (status) {
+    } else {
         // user has asked to only send MAVLink1
         status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     }
@@ -1470,10 +1475,11 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
         mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
     }
+    const auto mavlink_protocol = uartstate->get_protocol();
     if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
         (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-        (AP::serialmanager().get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLink2 ||
-         AP::serialmanager().get_mavlink_protocol(chan) == AP_SerialManager::SerialProtocol_MAVLinkHL)) {
+        (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
+         mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL)) {
         // if we receive any MAVLink2 packets on a connection
         // currently sending MAVLink1 then switch to sending
         // MAVLink2
@@ -6084,7 +6090,7 @@ uint64_t GCS_MAVLINK::capabilities() const
     uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
-    AP_SerialManager::SerialProtocol mavlink_protocol = AP::serialmanager().get_mavlink_protocol(chan);
+    const auto mavlink_protocol = uartstate->get_protocol();
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
     }
