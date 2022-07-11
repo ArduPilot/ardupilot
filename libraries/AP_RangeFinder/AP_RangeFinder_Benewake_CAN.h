@@ -22,6 +22,7 @@ public:
 
     // handler for incoming frames. Return true if consumed
     bool handle_frame(AP_HAL::CANFrame &frame);
+    bool handle_frame_H30(AP_HAL::CANFrame &frame);
 
     static const struct AP_Param::GroupInfo var_info[];
 
