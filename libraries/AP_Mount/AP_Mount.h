@@ -146,8 +146,8 @@ public:
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // send a MOUNT_STATUS message to GCS:
-    void send_mount_status(mavlink_channel_t chan);
+    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
+    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
     // run pre-arm check.  returns false on failure and fills in failure_msg
     // any failure_msg returned will not include a prefix
