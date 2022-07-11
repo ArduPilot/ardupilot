@@ -119,14 +119,12 @@ bool GCS_MAVLINK::init(uint8_t instance)
     const AP_SerialManager::SerialProtocol protocol = AP_SerialManager::SerialProtocol_MAVLink;
 
     // get associated mavlink channel
-    if (!serial_manager.get_mavlink_channel(protocol, instance, chan)) {
-        // return immediately in unlikely case mavlink channel cannot be found
-        return false;
-    }
-    // and init the gcs instance
+    chan = (mavlink_channel_t)(MAVLINK_COMM_0 + instance);
     if (!valid_channel(chan)) {
         return false;
     }
+
+    // and init the gcs instance
 
     if (!serial_manager.should_forward_mavlink_telemetry(protocol, instance)) {
         set_channel_private(chan);
