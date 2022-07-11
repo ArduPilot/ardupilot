@@ -74,7 +74,7 @@ void AP_Proximity_LeddarVu8::read_sensor_data()
     // read any available characters from the lidar
   const uint16_t nbytes = _uart->available();
     while (nbytes-- > 0) {
-        int16_t r = _uart->read();
+        const uint8_t byte = _uart->read();
         if (r < 0) {
             continue;
         }
