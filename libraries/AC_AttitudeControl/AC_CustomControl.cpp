@@ -78,7 +78,7 @@ void AC_CustomControl::rate_controller_run()
         ////////// end
 
         // reset main controller incase we switch out of custom one
-        AC_AttitudeControl::relax_attitude_controllers();
+        reset_main_controller();
     } else {
         // custom controller not enabled and switched on, run primary controller
         AC_AttitudeControl_Multi::rate_controller_run();
@@ -130,6 +130,25 @@ void AC_CustomControl::reset_custom_controller(void) {
     _pid_atti_rate_pitch.reset_filter();
     _pid_atti_rate_yaw.reset_filter();
 }
+
+// reset unused main controller axis
+void AC_CustomControl::reset_main_controller(void) 
+{
+    if (_custom_controller_mask & (uint8_t)CustomControllerOption::ROLL) {
+        get_rate_roll_pid().reset_filter();
+        get_rate_roll_pid().reset_I();
+    }
+    if (_custom_controller_mask & (uint8_t)CustomControllerOption::PITCH) {
+        get_rate_pitch_pid().reset_filter();
+        get_rate_pitch_pid().reset_I();
+    }
+    if (_custom_controller_mask & (uint8_t)CustomControllerOption::YAW) {
+        get_rate_yaw_pid().reset_filter();
+        get_rate_yaw_pid().reset_I();
+    }
+}
+
+
 
 void AC_CustomControl::set_custom_controller(bool enabled)
 {

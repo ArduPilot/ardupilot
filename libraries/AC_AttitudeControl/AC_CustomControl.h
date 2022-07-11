@@ -22,6 +22,7 @@ public:
     void rate_controller_run(void) override;
 	
     void reset_custom_controller(void);
+    void reset_main_controller(void);
     Vector3f run_custom_controller(void);
     void motor_set(Vector3f rpy);
 
