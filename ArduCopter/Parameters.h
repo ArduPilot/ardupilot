@@ -128,7 +128,7 @@ public:
         k_param_rangefinder, // rangefinder object
         k_param_fs_ekf_thresh,
         k_param_terrain,
-        k_param_acro_rp_expo,
+        k_param_acro_rp_expo,           // deprecated - remove
         k_param_throttle_deadzone,
         k_param_optflow,
         k_param_dcmcheck_thresh,        // deprecated - remove
@@ -362,7 +362,7 @@ public:
         k_param_pid_accel_z,            // remove
         k_param_acro_balance_roll,
         k_param_acro_balance_pitch,
-        k_param_acro_yaw_p,
+        k_param_acro_yaw_p,             // remove
         k_param_autotune_axis_bitmask, // remove
         k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
@@ -469,7 +469,6 @@ public:
 #if MODE_ACRO_ENABLED == ENABLED
     // Acro parameters
     AP_Int8                 acro_trainer;
-    AP_Float                acro_rp_expo;
 #endif
 
     // Note: keep initializers here in the same order as they are declared
@@ -539,8 +538,6 @@ public:
     // developer options
     AP_Int32 dev_options;
 
-    // acro exponent parameters
-    AP_Float acro_y_expo;
 #if MODE_ACRO_ENABLED == ENABLED
     AP_Float acro_thr_mid;
 #endif
@@ -627,6 +624,17 @@ public:
     void *mode_zigzag_ptr;
 #endif
 
+    // command model parameters
+#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
+    AC_CommandModel command_model_acro_rp;
+#endif
+
+#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
+    AC_CommandModel command_model_acro_y;
+#endif
+
+    AC_CommandModel command_model_pilot;
+
 #if MODE_ACRO_ENABLED == ENABLED
     AP_Int8 acro_options;
 #endif
@@ -655,18 +663,9 @@ public:
     AP_Float guided_timeout;
 #endif
 
-#if MODE_ACRO_ENABLED == ENABLED || MODE_SPORT_ENABLED == ENABLED
-    // Acro parameters
-    AP_Float                acro_rp_rate;
-#endif
-
-#if MODE_ACRO_ENABLED == ENABLED || MODE_DRIFT_ENABLED == ENABLED
-    AP_Float                acro_y_rate;
-#endif
-
-    AP_Float                pilot_y_rate;
-    AP_Float                pilot_y_expo;
     AP_Int8                 surftrak_mode;
+    AP_Int8                 failsafe_dr_enable;
+    AP_Int16                failsafe_dr_timeout;
 };
 
 extern const AP_Param::Info        var_info[];

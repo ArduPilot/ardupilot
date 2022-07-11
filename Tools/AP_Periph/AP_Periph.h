@@ -11,6 +11,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_EFI/AP_EFI.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
 #include "../AP_Bootloader/app_comms.h"
@@ -18,6 +19,7 @@
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
+#include <AP_Stats/AP_Stats.h>
 
 #if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
@@ -91,6 +93,10 @@ public:
     void prepare_reboot();
     bool canfdout() const { return (g.can_fdmode == 1); }
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    void can_efi_update();
+#endif
+
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
     void check_for_serial_reboot_cmd(const int8_t serial_index);
 #endif
@@ -102,6 +108,10 @@ public:
 #endif
 
     AP_SerialManager serial_manager;
+
+#if AP_STATS_ENABLED
+    AP_Stats node_stats;
+#endif
 
 #ifdef HAL_PERIPH_ENABLE_GPS
     AP_GPS gps;
@@ -169,6 +179,7 @@ public:
 
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
+    uint32_t last_sample_ms;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
@@ -189,6 +200,11 @@ public:
     void hwesc_telem_update();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    AP_EFI efi;
+    uint32_t efi_update_ms;
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;

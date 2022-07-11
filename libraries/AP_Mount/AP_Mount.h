@@ -19,8 +19,7 @@
 ************************************************************/
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_MOUNT_ENABLED
 #define HAL_MOUNT_ENABLED !HAL_MINIMIZE_FEATURES
@@ -47,6 +46,7 @@ class AP_Mount_SoloGimbal;
 class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
+class AP_Mount_Gremsy;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -62,6 +62,7 @@ class AP_Mount
     friend class AP_Mount_Alexmos;
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
+    friend class AP_Mount_Gremsy;
 
 public:
     AP_Mount();
@@ -82,7 +83,8 @@ public:
         Mount_Type_SoloGimbal = 2,      /// Solo's gimbal
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
-        Mount_Type_SToRM32_serial = 5   /// SToRM32 mount using custom serial protocol
+        Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
+        Mount_Type_Gremsy = 6           /// Gremsy gimbal using MAVLink v2 Gimbal protocol
     };
 
     // init - detect and initialise all mounts
@@ -116,28 +118,40 @@ public:
     void set_mode_to_default() { set_mode_to_default(_primary); }
     void set_mode_to_default(uint8_t instance);
 
-    // set_angle_targets - sets angle targets in degrees
-    void set_angle_targets(float roll, float tilt, float pan) { set_angle_targets(_primary, roll, tilt, pan); }
-    void set_angle_targets(uint8_t instance, float roll, float tilt, float pan);
+    // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
+    // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
+    void set_yaw_lock(bool yaw_lock) { set_yaw_lock(_primary, yaw_lock); }
+    void set_yaw_lock(uint8_t instance, bool yaw_lock);
+
+    // set angle target in degrees
+    // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
+    void set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame) { set_angle_target(_primary, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame); }
+    void set_angle_target(uint8_t instance, float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame);
+
+    // sets rate target in deg/s
+    // yaw_lock should be true if the yaw rate is earth-frame, false if body-frame (e.g. rotates with body of vehicle)
+    void set_rate_target(float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock) { set_rate_target(_primary, roll_degs, pitch_degs, yaw_degs, yaw_lock); }
+    void set_rate_target(uint8_t instance, float roll_degs, float pitch_degs, float yaw_degs, bool yaw_lock);
 
     // set_roi_target - sets target location that mount should attempt to point towards
-    void set_roi_target(const struct Location &target_loc) { set_roi_target(_primary,target_loc); }
-    void set_roi_target(uint8_t instance, const struct Location &target_loc);
+    void set_roi_target(const Location &target_loc) { set_roi_target(_primary,target_loc); }
+    void set_roi_target(uint8_t instance, const Location &target_loc);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t instance, const uint8_t sysid);
-    void set_target_sysid(const uint8_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t instance, uint8_t sysid);
 
     // mavlink message handling:
     MAV_RESULT handle_command_long(const mavlink_command_long_t &packet);
     void handle_param_value(const mavlink_message_t &msg);
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // send a GIMBAL_REPORT message to GCS
-    void send_gimbal_report(mavlink_channel_t chan);
-
     // send a MOUNT_STATUS message to GCS:
     void send_mount_status(mavlink_channel_t chan);
+
+    // run pre-arm check.  returns false on failure and fills in failure_msg
+    // any failure_msg returned will not include a prefix
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
     // parameter var table
     static const struct AP_Param::GroupInfo        var_info[];
@@ -147,7 +161,7 @@ protected:
     static AP_Mount *_singleton;
 
     // frontend parameters
-    AP_Int8             _joystick_speed;    // joystick gain
+    AP_Int16            _rc_rate_max;       // Pilot rate control's maximum rate.  Set to zero to use angle control
 
     // front end members
     uint8_t             _num_instances;     // number of mounts instantiated
@@ -182,14 +196,6 @@ protected:
         AP_Float        _roll_stb_lead;     // roll lead control gain
         AP_Float        _pitch_stb_lead;    // pitch lead control gain
 
-        MAV_MOUNT_MODE  _mode;              // current mode (see MAV_MOUNT_MODE enum)
-        struct Location _roi_target;        // roi target location
-        bool _roi_target_set;
-
-        uint8_t _target_sysid;           // sysid to track
-        Location _target_sysid_location; // sysid target location
-        bool _target_sysid_location_set;
-
     } state[AP_MOUNT_MAX_INSTANCES];
 
 private:
@@ -203,7 +209,13 @@ private:
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_long_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
+    MAV_RESULT handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet);
     void handle_global_position_int(const mavlink_message_t &msg);
+    void handle_gimbal_device_information(const mavlink_message_t &msg);
+    void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);
+
+    // perform any required parameter conversion
+    void convert_params();
 };
 
 namespace AP {

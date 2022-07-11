@@ -725,6 +725,9 @@ def get_ram_map():
         ram_map = get_mcu_config('RAM_MAP_EXTERNAL_FLASH', False)
         if ram_map is not None:
             return ram_map
+    elif int(env_vars.get('USE_ALT_RAM_MAP',0)) == 1:
+        print("Using ALT_RAM_MAP")
+        return get_mcu_config('ALT_RAM_MAP', True)
     return get_mcu_config('RAM_MAP', True)
 
 def get_flash_pages_sizes():
@@ -2781,6 +2784,68 @@ def add_apperiph_defaults(f):
 #ifndef AP_ROBOTISSERVO_ENABLED
 #define AP_ROBOTISSERVO_ENABLED 0
 #endif
+
+#ifndef AP_STATS_ENABLED
+#define AP_STATS_ENABLED 0
+#endif
+
+/*
+ * GPS Backends - we selectively turn backends on.
+ *   Note also that f103-GPS explicitly disables some of these backends.
+ */
+#define AP_GPS_BACKEND_DEFAULT_ENABLED 0
+
+#ifndef AP_GPS_ERB_ENABLED
+#define AP_GPS_ERB_ENABLED 0
+#endif
+
+#ifndef AP_GPS_GSOF_ENABLED
+#define AP_GPS_GSOF_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
+#endif
+
+#ifndef AP_GPS_NMEA_ENABLED
+#define AP_GPS_NMEA_ENABLED 0
+#endif
+
+#ifndef AP_GPS_SBF_ENABLED
+#define AP_GPS_SBF_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
+#endif
+
+#ifndef AP_GPS_SBP_ENABLED
+#define AP_GPS_SBP_ENABLED 0
+#endif
+
+#ifndef AP_GPS_SBP2_ENABLED
+#define AP_GPS_SBP2_ENABLED 0
+#endif
+
+#ifndef AP_GPS_SIRF_ENABLED
+#define AP_GPS_SIRF_ENABLED 0
+#endif
+
+#ifndef AP_GPS_MAV_ENABLED
+#define AP_GPS_MAV_ENABLED 0
+#endif
+
+#ifndef AP_GPS_NOVA_ENABLED
+#define AP_GPS_NOVA_ENABLED defined(HAL_PERIPH_ENABLE_GPS)
+#endif
+
+#ifndef HAL_SIM_GPS_ENABLED
+#define HAL_SIM_GPS_ENABLED (AP_SIM_ENABLED && defined(HAL_PERIPH_ENABLE_GPS))
+#endif
+
+/*
+ * Airspeed Backends - we selectively turn backends *off*
+ */
+#ifndef AP_AIRSPEED_ANALOG_ENABLED
+#define AP_AIRSPEED_ANALOG_ENABLED 0
+#endif
+
+// disable various rangefinder backends
+#define AP_RANGEFINDER_ANALOG_ENABLED 0
+#define AP_RANGEFINDER_HC_SR04_ENABLED 0
+#define AP_RANGEFINDER_PWM_ENABLED 0
 
 ''')
 

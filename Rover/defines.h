@@ -102,3 +102,8 @@ enum frame_class {
     FRAME_BOAT = 2,
     FRAME_BALANCEBOT = 3,
 };
+
+// manual mode options
+enum ManualOptions {
+    SPEED_SCALING = (1 << 0),
+};

@@ -271,6 +271,8 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+    
+    bool allows_terrain_disable() const override { return true; }
 
 protected:
 
@@ -597,6 +599,13 @@ public:
 protected:
 
     bool _enter() override;
+
+private:
+
+    enum class SubMode {
+        climb,
+        RTL,
+    } submode;
 };
 
 class ModeQAcro : public Mode

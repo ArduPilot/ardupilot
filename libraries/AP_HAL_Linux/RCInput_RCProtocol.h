@@ -18,10 +18,7 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-#include <AP_RCProtocol/AP_RCProtocol.h>
-#include "RCInput.h"
-#include <stdarg.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \

@@ -400,11 +400,11 @@ public:
     void exit() override;
     void run() override;
 
-    bool requires_GPS() const override { return true; }
+    bool requires_GPS() const override;
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return mode() == SubMode::NAVGUIDED || mode() == SubMode::NAV_SCRIPT_TIME; }
+    bool in_guided_mode() const override { return _mode == SubMode::NAVGUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
 
     // Auto modes
     enum class SubMode : uint8_t {
@@ -419,10 +419,11 @@ public:
         LOITER_TO_ALT,
         NAV_PAYLOAD_PLACE,
         NAV_SCRIPT_TIME,
+        NAV_ATTITUDE_TIME,
     };
 
-    // Auto
-    SubMode mode() const { return _mode; }
+    // set submode.  returns true on success, false on failure
+    void set_submode(SubMode new_submode);
 
     // pause continue in auto mode
     bool pause() override;
@@ -500,6 +501,7 @@ private:
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
+    void nav_attitude_time_run();
 
     Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
 
@@ -511,7 +513,7 @@ private:
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
-    Location terrain_adjusted_location(const AP_Mission::Mission_Command& cmd) const;
+    bool shift_alt_to_current_alt(Location& target_loc) const;
 
     void do_takeoff(const AP_Mission::Mission_Command& cmd);
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
@@ -546,6 +548,7 @@ private:
 #if AP_SCRIPTING_ENABLED
     void do_nav_script_time(const AP_Mission::Mission_Command& cmd);
 #endif
+    void do_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
     bool verify_takeoff();
     bool verify_land();
@@ -567,6 +570,7 @@ private:
 #if AP_SCRIPTING_ENABLED
     bool verify_nav_script_time();
 #endif
+    bool verify_nav_attitude_time(const AP_Mission::Mission_Command& cmd);
 
     // Loiter control
     uint16_t loiter_time_max;                // How long we should stay in Loiter Mode for mission scripting (time in seconds)
@@ -622,6 +626,15 @@ private:
         float arg2;         // 2nd argument provided by mission command
     } nav_scripting;
 #endif
+
+    // nav attitude time command variables
+    struct {
+        int16_t roll_deg;   // target roll angle in degrees.  provided by mission command
+        int8_t pitch_deg;   // target pitch angle in degrees.  provided by mission command
+        int16_t yaw_deg;    // target yaw angle in degrees.  provided by mission command
+        float climb_rate;   // climb rate in m/s. provided by mission command
+        uint32_t start_ms;  // system time that nav attitude time command was received (used for timeout)
+    } nav_attitude_time;
 };
 
 #if AUTOTUNE_ENABLED == ENABLED
@@ -1471,6 +1484,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void exit() override;
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }

@@ -48,6 +48,7 @@ TARGET_HW_ATL_MANTIS_EDU               97
 Reserved  PX4 [BL] FMU v5X.x           51
 Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
+Reserved "PX4 [BL] FMU v6C.x"          56
  
 Reserved "GUMSTIX [BL] FMU v6"         54
 Reserved "ARK CAN FLOW"                80
@@ -163,7 +164,18 @@ AP_HW_DEVEBOXH7                      1061
 AP_HW_MatekL431                      1062
 AP_HW_CUBEORANGEPLUS                 1063
 AP_HW_CarbonixF405                   1064
-AP_HW_QioTekAdeptF427                1065
+AP_HW_QioTekAdeptF407                1065
+AP_HW_QioTekAdeptF427                1066
+AP_HW_FlyingMoonF407                 1067
+AP_HW_FlyingMoonF427                 1068
+AP_HW_CUBERED                        1069
+AP_HW_CUBERED_IO                     1070
+AP_HW_GreenSight_UltraBlue           1071
+AP_HW_GreenSight_microBlue           1072
+AP_HW_MAMBAH743_V4                   1073
+AP_HW_REAPERF745_V2                  1074
+AP_HW_SKYSTARSH7HD                   1075
+AP_HW_PixSurveyA1                    1076
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401

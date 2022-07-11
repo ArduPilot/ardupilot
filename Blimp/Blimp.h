@@ -187,12 +187,6 @@ private:
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf;
     }
 
-    // sensor health for logging
-    struct {
-        uint8_t baro        : 1;    // true if baro is healthy
-        uint8_t compass     : 1;    // true if compass is healthy
-    } sensor_health;
-
     // Motor Output
     Fins *motors;
 
@@ -297,7 +291,6 @@ private:
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
-    void fast_loop() override;
     void rc_loop();
     void throttle_loop();
     void update_batt_compass(void);
@@ -364,7 +357,6 @@ private:
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max);
-    void Log_Sensor_Health();
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
     void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);

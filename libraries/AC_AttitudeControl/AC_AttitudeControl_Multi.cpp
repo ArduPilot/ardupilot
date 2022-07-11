@@ -322,6 +322,20 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
         _throttle_rpy_mix -= MIN(0.5f * _dt, _throttle_rpy_mix - _throttle_rpy_mix_desired);
+
+        // if the mix is still higher than that being used, reset immediately
+        const float throttle_hover = _motors.get_throttle_hover();
+        const float throttle_in = _motors.get_throttle();
+        const float throttle_out = MAX(_motors.get_throttle_out(), throttle_in);
+        float mix_used;
+        // since throttle_out >= throttle_in at this point we don't need to check throttle_in < throttle_hover
+        if (throttle_out < throttle_hover) {
+            mix_used = (throttle_out - throttle_in) / (throttle_hover - throttle_in);
+        } else {
+            mix_used = throttle_out / throttle_hover;
+        }
+
+        _throttle_rpy_mix = MIN(_throttle_rpy_mix, MAX(mix_used, _throttle_rpy_mix_desired));
     }
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }

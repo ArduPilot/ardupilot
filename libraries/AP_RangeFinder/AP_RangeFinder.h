@@ -15,7 +15,8 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
@@ -23,6 +24,10 @@
 
 #ifndef AP_RANGEFINDER_ENABLED
 #define AP_RANGEFINDER_ENABLED 1
+#endif
+
+#ifndef AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED
+#define AP_RANGEFINDER_BACKEND_DEFAULT_ENABLED AP_RANGEFINDER_ENABLED
 #endif
 
 // Maximum number of range finder instances available on this platform

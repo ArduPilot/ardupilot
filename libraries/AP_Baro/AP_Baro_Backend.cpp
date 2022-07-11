@@ -1,4 +1,5 @@
 #include "AP_Baro_Backend.h"
+
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;

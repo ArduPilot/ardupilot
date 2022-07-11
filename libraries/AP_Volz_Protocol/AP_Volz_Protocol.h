@@ -36,7 +36,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_VOLZ_ENABLED
-#define AP_VOLZ_ENABLED 1
+#define AP_VOLZ_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
 #endif
 
 #if AP_VOLZ_ENABLED

@@ -104,8 +104,8 @@ PARAMETER_CONVERSION - Added: Aug-2021
 */
 void AP_RPM::convert_params(void)
 {
-    if (_params[0].type.configured_in_storage()) {
-        // _params[0].type will always be configured in storage after conversion is done the first time
+    if (_params[0].type.configured()) {
+        // _params[0].type will always be configured after conversion is done the first time
         return;
     }
 
@@ -189,9 +189,11 @@ void AP_RPM::update(void)
         }
     }
 
+#if HAL_LOGGING_ENABLED
     if (enabled(0) || enabled(1)) {
-        AP::logger().Write_RPM(*this);
+        Log_RPM();
     }
+#endif
 }
 
 /*
@@ -246,11 +248,16 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
         case RPM_TYPE_PWM:
         case RPM_TYPE_PIN:
             if (_params[i].pin == -1) {
-                hal.util->snprintf(buffer, buflen, "RPM[%u] no pin set", i + 1);
+                hal.util->snprintf(buffer, buflen, "RPM%u_PIN not set", unsigned(i + 1));
                 return false;
             }
             if (!hal.gpio->valid_pin(_params[i].pin)) {
-                hal.util->snprintf(buffer, buflen, "RPM[%u] pin %d invalid", unsigned(i + 1), int(_params[i].pin.get()));
+                uint8_t servo_ch;
+                if (hal.gpio->pin_to_servo_channel(_params[i].pin, servo_ch)) {
+                    hal.util->snprintf(buffer, buflen, "RPM%u_PIN=%d, set SERVO%u_FUNCTION=-1", unsigned(i + 1), int(_params[i].pin.get()), unsigned(servo_ch+1));
+                } else {
+                    hal.util->snprintf(buffer, buflen, "RPM%u_PIN=%d invalid", unsigned(i + 1), int(_params[i].pin.get()));
+                }
                 return false;
             }
             break;
@@ -258,6 +265,24 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
     }
     return true;
 }
+
+#if HAL_LOGGING_ENABLED
+void AP_RPM::Log_RPM()
+{
+    float rpm1 = -1, rpm2 = -1;
+
+    get_rpm(0, rpm1);
+    get_rpm(1, rpm2);
+
+    const struct log_RPM pkt{
+        LOG_PACKET_HEADER_INIT(LOG_RPM_MSG),
+        time_us     : AP_HAL::micros64(),
+        rpm1        : rpm1,
+        rpm2        : rpm2
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+#endif
 
 // singleton instance
 AP_RPM *AP_RPM::_singleton;

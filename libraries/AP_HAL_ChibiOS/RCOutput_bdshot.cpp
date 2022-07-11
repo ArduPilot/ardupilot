@@ -41,7 +41,7 @@ extern const AP_HAL::HAL& hal;
  * enable bi-directional telemetry request for a mask of channels. This is used
  * with DShot to get telemetry feedback
  */
-void RCOutput::set_bidir_dshot_mask(uint16_t mask)
+void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
     _bdshot.mask = (mask >> chan_offset);
     // we now need to reconfigure the DMA channels since they are affected by the value of the mask
@@ -477,7 +477,7 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
     }
 
     // check nothing bad happened
-    if ((flags & STM32_DMA_ISR_TEIF) != 0) {
+    if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
         INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
     }
     dmaStreamDisable(group->dma);
@@ -510,7 +510,7 @@ __RAMFUNC__ void RCOutput::bdshot_dma_ic_irq_callback(void *p, uint32_t flags)
     chSysLockFromISR();
 
     // check nothing bad happened
-    if ((flags & STM32_DMA_ISR_TEIF) != 0) {
+    if ((flags & (STM32_DMA_ISR_TEIF | STM32_DMA_ISR_DMEIF)) != 0) {
         INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
     }
 

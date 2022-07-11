@@ -39,10 +39,6 @@ Sub::Sub()
           circle_nav(inertial_nav, ahrs_view, pos_control),
           param_loader(var_info)
 {
-    // init sensor error logging flags
-    sensor_health.baro = true;
-    sensor_health.compass = true;
-
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     failsafe.pilot_input = true;
 #endif

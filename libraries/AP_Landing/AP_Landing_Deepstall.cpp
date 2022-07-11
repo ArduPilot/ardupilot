@@ -601,7 +601,7 @@ bool AP_Landing_Deepstall::verify_breakout(const Location &current_loc, const Lo
     const Vector2f location_delta = current_loc.get_distance_NE(target_loc);
     const float heading_error = degrees(landing.ahrs.groundspeed_vector().angle(location_delta));
 
-    // Check to see if the the plane is heading toward the land waypoint. We use 20 degrees (+/-10 deg)
+    // Check to see if the plane is heading toward the land waypoint. We use 20 degrees (+/-10 deg)
     // of margin so that the altitude to be within 5 meters of desired
 
     if (heading_error <= 10.0  && fabsf(height_error) < DEEPSTALL_LOITER_ALT_TOLERANCE) {

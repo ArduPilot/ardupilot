@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # encoding: utf-8
 
 from __future__ import print_function
@@ -89,10 +88,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AC_Avoidance',
     'AP_LandingGear',
     'AP_RobotisServo',
-    'AP_ToshibaCAN',
     'AP_NMEA_Output',
     'AP_Filesystem',
     'AP_ADSB',
+    'AP_ADSB/sagetech-sdk',
     'AC_PID',
     'AP_SerialLED',
     'AP_EFI',

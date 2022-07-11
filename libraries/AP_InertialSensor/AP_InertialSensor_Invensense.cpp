@@ -759,7 +759,9 @@ check_registers:
               events to help with log analysis, but don't shout at the
               GCS to prevent possible flood
             */
+#if HAL_LOGGING_ENABLED
             AP::logger().Write_MessageF("ICM20602 yofs fix: %x %x", y_ofs, _saved_y_ofs_high);
+#endif
             _register_write(MPUREG_ACC_OFF_Y_H, _saved_y_ofs_high);
         }
     }
@@ -971,6 +973,13 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
 
         /* bus-dependent initialization */
         if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+            /* reset signal path as recommended in the datasheet */
+            if (_mpu_type == Invensense_MPU6000 || _mpu_type == Invensense_MPU6500) {
+                _register_write(MPUREG_SIGNAL_PATH_RESET,
+                    BIT_SIGNAL_PATH_RESET_TEMP_RESET|BIT_SIGNAL_PATH_RESET_ACCEL_RESET|BIT_SIGNAL_PATH_RESET_GYRO_RESET);
+                hal.scheduler->delay(100);
+            }
+
             /* Disable I2C bus if SPI selected (Recommended in Datasheet to be
              * done just after the device is reset) */
             _last_stat_user_ctrl |= BIT_USER_CTRL_I2C_IF_DIS;
@@ -1004,7 +1013,7 @@ bool AP_InertialSensor_Invensense::_hardware_init(void)
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     if (tries == 5) {
-        hal.console->printf("Failed to boot Invensense 5 times\n");
+        DEV_PRINTF("Failed to boot Invensense 5 times\n");
         return false;
     }
 
@@ -1055,7 +1064,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
                                                    uint8_t size)
 {
     if (_registered) {
-        hal.console->printf("Error: can't passthrough when slave is already configured\n");
+        DEV_PRINTF("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -1081,7 +1090,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_read(uint8_t reg, uint8_t *buf,
 int AP_Invensense_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 {
     if (_registered) {
-        hal.console->printf("Error: can't passthrough when slave is already configured\n");
+        DEV_PRINTF("Error: can't passthrough when slave is already configured\n");
         return -1;
     }
 
@@ -1104,7 +1113,7 @@ int AP_Invensense_AuxiliaryBusSlave::passthrough_write(uint8_t reg, uint8_t val)
 int AP_Invensense_AuxiliaryBusSlave::read(uint8_t *buf)
 {
     if (!_registered) {
-        hal.console->printf("Error: can't read before configuring slave\n");
+        DEV_PRINTF("Error: can't read before configuring slave\n");
         return -1;
     }
 

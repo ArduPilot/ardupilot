@@ -61,10 +61,10 @@ enum class Fuel_Pressure_Status : uint8_t {
 };
 
 enum class Oil_Pressure_Status : uint8_t {
-    OIL_PRESSURE_STATUS_NOT_SUPPORTED = 0,
-    OIL_PRESSURE_OK                   = 1,
-    OIL_PRESSURE_BELOW_NOMINAL        = 2,
-    OIL_PRESSURE_ABOVE_NOMINAL        = 3
+    NOT_SUPPORTED        = 0,
+    OK                   = 1,
+    BELOW_NOMINAL        = 2,
+    ABOVE_NOMINAL        = 3
 };
 
 enum class Detonation_Status : uint8_t {

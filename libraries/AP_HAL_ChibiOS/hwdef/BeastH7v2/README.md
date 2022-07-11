@@ -9,8 +9,8 @@ The Beast H7 AIO is a flight controller produced by [iFlight](https://shop.iflig
  - MCU: BGA-STM32H743
  - Gyro: BMI270
  - 16Mb Onboard Flash
- - BEC output: 5V 2.5A 
- - No Barometer
+ - BEC output: 5V 2.5A
+ - Barometer: DPS310 or None
  - OSD: AT7456E
  - 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
  - I2C for external compass. UART3 pins are used for I2C (BRD_ALT_CONFIG=1)
@@ -36,9 +36,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 All UARTS support DMA.
 
 ## RC Input
- 
+
 RC input is configured on the (UART2_RX/UART2_TX) pins which forms part of the DJI connector. It supports all RC protocols.
-  
+
 ## OSD Support
 
 The Beast H7 v2 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).

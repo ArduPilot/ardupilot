@@ -37,16 +37,20 @@ public:
     void set_alt_cm(int32_t alt_cm, AltFrame frame);
 
     // get altitude (in cm) in the desired frame
-    // returns false on failure to get altitude in the desired frame which
-    // can only happen if the original frame or desired frame is above-terrain
+    // returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:
+    // - above-terrain and the terrain database can't supply terrain height amsl
+    // - above-home and home is not set
+    // - above-origin and origin is not set
     bool get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const WARN_IF_UNUSED;
 
     // get altitude frame
     AltFrame get_alt_frame() const;
 
     // converts altitude to new frame
-    // returns false on failure to convert which can only happen if
-    // the original frame or desired frame is above-terrain
+    // returns false on failure to convert which can only happen if the original frame or desired frame is:
+    // - above-terrain and the terrain database can't supply terrain height amsl
+    // - above-home and home is not set
+    // - above-origin and origin is not set
     bool change_alt_frame(AltFrame desired_frame);
 
     // get position as a vector (in cm) from origin (x,y only or x,y,z)
@@ -56,7 +60,7 @@ public:
     bool get_vector_xy_from_origin_NE(Vector2f &vec_ne) const WARN_IF_UNUSED;
     bool get_vector_from_origin_NEU(Vector3f &vec_neu) const WARN_IF_UNUSED;
 
-    // return distance in meters between two locations
+    // return horizontal distance in meters between two locations
     ftype get_distance(const struct Location &loc2) const;
 
     // return the altitude difference in meters taking into account alt frame.

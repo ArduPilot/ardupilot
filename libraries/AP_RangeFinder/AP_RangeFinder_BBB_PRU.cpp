@@ -16,10 +16,9 @@
    by Mirko Denecke <mirkix@gmail.com>
  */
 
-#include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI
-
 #include "AP_RangeFinder_BBB_PRU.h"
+
+#if AP_RANGEFINDER_BBB_PRU_ENABLED
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,4 +104,4 @@ void AP_RangeFinder_BBB_PRU::update(void)
     state.distance_m = rangerpru->distance * 0.01f;
     state.last_reading_ms = AP_HAL::millis();
 }
-#endif // CONFIG_HAL_BOARD_SUBTYPE
+#endif // AP_RANGEFINDER_BBB_PRU_ENABLED

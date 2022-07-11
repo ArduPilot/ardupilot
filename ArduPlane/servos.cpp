@@ -430,8 +430,8 @@ void Plane::throttle_voltage_comp(int8_t &min_throttle, int8_t &max_throttle) co
     const float ratio = g2.fwd_thr_batt_voltage_max / batt_voltage_resting_estimate;
 
     // Scale the throttle limits to prevent subsequent clipping
-    min_throttle = MAX((int8_t)(ratio * (float)min_throttle), -100);
-    max_throttle = MIN((int8_t)(ratio * (float)max_throttle),  100);
+    min_throttle = int8_t(MAX((ratio * (float)min_throttle), -100));
+    max_throttle = int8_t(MIN((ratio * (float)max_throttle),  100));
 
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
                                         constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * ratio, -100, 100));
@@ -911,10 +911,13 @@ void Plane::set_servos(void)
         }
     }
 
-    uint8_t override_pct;
+    float override_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (g2.ice_control.throttle_override(override_pct)) {
-        // the ICE controller wants to override the throttle for starting
+        // the ICE controller wants to override the throttle for starting, idle, or redline
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, override_pct);
+#if HAL_QUADPLANE_ENABLED
+        quadplane.vel_forward.integrator = 0;
+#endif
     }
 
     // run output mixer and send values to the hal for output
@@ -985,7 +988,7 @@ void Plane::servos_output(void)
 
     // support MANUAL_RCMASK
     if (g2.manual_rc_mask.get() != 0 && control_mode == &mode_manual) {
-        SRV_Channels::copy_radio_in_out_mask(uint16_t(g2.manual_rc_mask.get()));
+        SRV_Channels::copy_radio_in_out_mask(uint32_t(g2.manual_rc_mask.get()));
     }
 
     SRV_Channels::calc_pwm();

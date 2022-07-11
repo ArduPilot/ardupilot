@@ -20,8 +20,9 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Notify/AP_Notify.h>
 #include <RC_Channel/RC_Channel.h>
-
+#include <Filter/LowPassFilter.h>
 #include "AP_ICEngine.h"
+#include <AP_RPM/AP_RPM.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -133,8 +134,8 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: ICE options
-    // @Description: Options for ICE control
-    // @Bitmask: 0:DisableIgnitionRCFailsafe
+    // @Description: Options for ICE control. The DisableIgnitionRCFailsafe option will cause the ignition to be set off on any R/C failsafe.
+    // @Bitmask: 0:DisableIgnitionRCFailsafe,1:DisableRedineGovernor
     AP_GROUPINFO("OPTIONS", 15, AP_ICEngine, options, 0),
 
     // @Param: STARTCHN_MIN
@@ -143,6 +144,14 @@ const AP_Param::GroupInfo AP_ICEngine::var_info[] = {
     // @User: Standard
     // @Range: 0 1300
     AP_GROUPINFO("STARTCHN_MIN", 16, AP_ICEngine, start_chan_min_pwm, 0),
+
+    // @Param: REDLINE_RPM
+    // @DisplayName: RPM of the redline limit for the engine
+    // @Description: Maximum RPM for the engine provided by the manufacturer. A value of 0 disables this feature. See ICE_OPTIONS to enable or disable the governor.
+    // @User: Advanced
+    // @Range: 0 2000000
+    // @Units: RPM
+    AP_GROUPINFO("REDLINE_RPM", 17, AP_ICEngine, redline_rpm, 0),
 
     AP_GROUPEND
 };
@@ -158,6 +167,8 @@ AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
         AP_HAL::panic("AP_ICEngine must be singleton");
     }
     _singleton = this;
+
+    _rpm_filter.set_cutoff_frequency(1 / AP::scheduler().get_loop_period_s(), 0.5f);
 }
 
 /*
@@ -213,10 +224,12 @@ void AP_ICEngine::update(void)
         should_run = true;
     }
 
-    if ((options & uint16_t(Options::DISABLE_IGNITION_RC_FAILSAFE)) && AP_Notify::flags.failsafe_radio) {
+    if (option_set(Options::DISABLE_IGNITION_RC_FAILSAFE) && AP_Notify::flags.failsafe_radio) {
         // user has requested ignition kill on RC failsafe
         should_run = false;
     }
+
+    float rpm_value;
 
     // switch on current state to work out new state
     switch (state) {
@@ -266,11 +279,11 @@ void AP_ICEngine::update(void)
             gcs().send_text(MAV_SEVERITY_INFO, "Stopped engine");
         } else if (rpm_instance > 0) {
             // check RPM to see if still running
-            float rpm_value;
             if (!rpm.get_rpm(rpm_instance-1, rpm_value) ||
                 rpm_value < rpm_threshold) {
                 // engine has stopped when it should be running
                 state = ICE_START_DELAY;
+                gcs().send_text(MAV_SEVERITY_INFO, "Uncommanded engine stop");
             }
         }
         break;
@@ -288,6 +301,25 @@ void AP_ICEngine::update(void)
             // force ignition off when disarmed
             state = ICE_OFF;
         }
+    }
+
+    // check against redline RPM
+    if (rpm_instance > 0 && redline_rpm > 0 && rpm.get_rpm(rpm_instance-1, rpm_value)) {
+        // update the filtered RPM value
+        filtered_rpm_value =  _rpm_filter.apply(rpm_value);
+        if (!redline.flag && filtered_rpm_value > redline_rpm) {
+            // redline governor is off. rpm is too high. enable the governor
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine: Above redline RPM");
+            redline.flag = true;
+        } else if (redline.flag && filtered_rpm_value < redline_rpm * 0.9f) {
+            // redline governor is on. rpm is safely below. disable the governor
+            redline.flag = false;
+            // reset redline governor
+            redline.throttle_percentage = 0.0f;
+            redline.governor_integrator = 0.0f;
+        }
+    } else {
+        redline.flag = false;
     }
 
     /* now set output channels */
@@ -326,7 +358,7 @@ void AP_ICEngine::update(void)
   check for throttle override. This allows the ICE controller to force
   the correct starting throttle when starting the engine and maintain idle when disarmed
  */
-bool AP_ICEngine::throttle_override(uint8_t &percentage)
+bool AP_ICEngine::throttle_override(float &percentage)
 {
     if (!enable) {
         return false;
@@ -335,16 +367,44 @@ bool AP_ICEngine::throttle_override(uint8_t &percentage)
     if (state == ICE_RUNNING &&
         idle_percent > 0 &&
         idle_percent < 100 &&
-        (int16_t)idle_percent > SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))
+        idle_percent > percentage)
     {
-        percentage = (uint8_t)idle_percent;
+        percentage = idle_percent;
         return true;
     }
 
     if (state == ICE_STARTING || state == ICE_START_DELAY) {
-        percentage = (uint8_t)start_percent.get();
+        percentage = start_percent.get();
+        return true;
+    } else if (state != ICE_RUNNING && hal.util->get_soft_armed()) {
+        percentage = 0;
         return true;
     }
+    
+    if (redline.flag && !option_set(Options::DISABLE_REDLINE_GOVERNOR)) {
+        // limit the throttle from increasing above what the current output is
+        if (redline.throttle_percentage < 1.0f) {
+            redline.throttle_percentage = percentage;
+        }
+        if (percentage < redline.throttle_percentage - redline.governor_integrator) {
+            // the throttle before the override is much lower than what the integrator is at
+            // reset the integrator
+            redline.governor_integrator = 0;
+            redline.throttle_percentage = percentage;
+        } else if (percentage < redline.throttle_percentage) {
+            // the throttle is below the integrator set point
+            // remove the difference from the integrator
+            redline.governor_integrator -= redline.throttle_percentage - percentage;
+            redline.throttle_percentage = percentage;
+        } else if (filtered_rpm_value > redline_rpm) {
+            // reduce the throttle if still over the redline RPM
+            const float redline_setpoint_step = idle_slew * AP::scheduler().get_loop_period_s();
+            redline.governor_integrator += redline_setpoint_step;
+        }
+        percentage = redline.throttle_percentage - redline.governor_integrator;
+        return true;
+    }
+
     return false;
 }
 

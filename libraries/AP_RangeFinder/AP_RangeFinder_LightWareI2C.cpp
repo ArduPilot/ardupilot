@@ -13,6 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "AP_RangeFinder_LightWareI2C.h"
+
+#if AP_RANGEFINDER_LWI2C_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
@@ -188,14 +191,14 @@ void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const c
 bool AP_RangeFinder_LightWareI2C::init()
 {
     if (sf20_init()) {
-        hal.console->printf("Found SF20 native Lidar\n");
+        DEV_PRINTF("Found SF20 native Lidar\n");
         return true;
     }
     if (legacy_init()) {
-        hal.console->printf("Found SF20 legacy Lidar\n");
+        DEV_PRINTF("Found SF20 legacy Lidar\n");
         return true;
     }
-    hal.console->printf("SF20 not found\n");
+    DEV_PRINTF("SF20 not found\n");
     return false;
 }
 
@@ -242,7 +245,7 @@ bool AP_RangeFinder_LightWareI2C::sf20_init()
     sf20_get_version("?P\r\n", "p:", version);
 
     if (version[0]) {
-        hal.console->printf("SF20 Lidar version %s\n", version);
+        DEV_PRINTF("SF20 Lidar version %s\n", version);
     }
 
     // Makes sure that "address tagging" is turned off.
@@ -500,3 +503,5 @@ bool AP_RangeFinder_LightWareI2C::sf20_wait_on_reply(uint8_t *rx_two_byte)
     }
     return false;
 }
+
+#endif  // AP_RANGEFINDER_LWI2C_ENABLED

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
  The standard interface emitters must implement
 """

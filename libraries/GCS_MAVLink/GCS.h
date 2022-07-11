@@ -298,7 +298,6 @@ public:
     void send_vibration() const;
     void send_mount_status() const;
     void send_named_float(const char *name, float value) const;
-    void send_gimbal_report() const;
     void send_home_position() const;
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
@@ -319,6 +318,7 @@ public:
     void send_high_latency2() const;
 #endif // HAL_HIGH_LATENCY2_ENABLED
     void send_uavionix_adsb_out_status() const;
+    void send_autopilot_state_for_gimbal_device() const;
 
     // lock a channel, preventing use by MAVLink
     void lock(bool _lock) {
@@ -1082,7 +1082,7 @@ public:
     // frsky backend
     class AP_Frsky_Telem *frsky;
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_LTM_TELEM_ENABLED
     // LTM backend
     AP_LTM_Telem ltm_telemetry;
 #endif

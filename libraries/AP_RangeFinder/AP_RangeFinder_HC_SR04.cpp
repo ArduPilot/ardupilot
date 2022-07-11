@@ -25,10 +25,13 @@
  *   The second pin we use for triggering the ultransonic pulse
  */
 
+#include "AP_RangeFinder_HC_SR04.h"
+
+#if AP_RANGEFINDER_HC_SR04_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Params.h"
-#include "AP_RangeFinder_HC_SR04.h"
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -140,3 +143,4 @@ void AP_RangeFinder_HC_SR04::update(void)
     }
 }
 
+#endif  // AP_RANGEFINDER_HC_SR04_ENABLED

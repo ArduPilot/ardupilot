@@ -31,6 +31,9 @@ void Plane::adjust_altitude_target()
         control_mode == &mode_cruise) {
         return;
     }
+    if ((control_mode == &mode_loiter) && plane.stick_mixing_enabled() && (plane.g2.flight_options & FlightOptions::ENABLE_LOITER_ALT_CONTROL)) {
+       return;
+    }
 #if OFFBOARD_GUIDED == ENABLED
     if (control_mode == &mode_guided && ((guided_state.target_alt_time_ms != 0) || guided_state.target_alt > -0.001 )) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded

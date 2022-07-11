@@ -304,6 +304,12 @@ void AP_AHRS::reset_gyro_drift(void)
 
 void AP_AHRS::update(bool skip_ins_update)
 {
+    // periodically checks to see if we should update the AHRS
+    // orientation (e.g. based on the AHRS_ORIENTATION parameter)
+    // allow for runtime change of orientation
+    // this makes initial config easier
+    update_orientation();
+
     if (!skip_ins_update) {
         // tell the IMU to grab some data
         AP::ins().update();
@@ -613,7 +619,7 @@ void AP_AHRS::update_EKF3(void)
                     _accel_ef_ekf[i] = _dcm_matrix * accel;
                 }
             }
-            _accel_ef_ekf_blended = _accel_ef_ekf[_ins.get_primary_accel()];
+            _accel_ef_ekf_blended = _accel_ef_ekf[primary_imu>=0?primary_imu:_ins.get_primary_accel()];
             nav_filter_status filt_state;
             EKF3.getFilterStatus(filt_state);
             update_notify_from_filter_status(filt_state);
@@ -3205,14 +3211,6 @@ void AP_AHRS::set_alt_measurement_noise(float noise)
 #if HAL_NAVEKF3_AVAILABLE
     EKF3.set_baro_alt_noise(noise);
 #endif
-}
-
-/*
-  get the current view's rotation, or ROTATION_NONE
- */
-enum Rotation AP_AHRS::get_view_rotation(void) const
-{
-    return _view?_view->get_rotation():ROTATION_NONE;
 }
 
 // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed

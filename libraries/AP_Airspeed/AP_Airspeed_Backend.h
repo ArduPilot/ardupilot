@@ -19,7 +19,8 @@
  */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/Semaphores.h>
 #include "AP_Airspeed.h"
 
 class AP_Airspeed_Backend {
@@ -42,9 +43,7 @@ public:
     // return airspeed in m/s if available
     virtual bool get_airspeed(float& airspeed) {return false;}
 
-#if HAL_MSP_AIRSPEED_ENABLED
     virtual void handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
-#endif 
 
 protected:
     int8_t get_pin(void) const;

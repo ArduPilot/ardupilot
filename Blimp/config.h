@@ -132,10 +132,6 @@
 #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
 #endif
 
-#ifndef PREARM_DISPLAY_PERIOD
-# define PREARM_DISPLAY_PERIOD 30
-#endif
-
 // pre-arm baro vs inertial nav max alt disparity
 #ifndef PREARM_MAX_ALT_DISPARITY_CM
 # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters

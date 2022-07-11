@@ -26,6 +26,20 @@
 #define CH_16 15
 #define CH_17 16
 #define CH_18 17
+#define CH_19 18
+#define CH_20 19
+#define CH_21 20
+#define CH_22 21
+#define CH_23 22
+#define CH_24 23
+#define CH_25 24
+#define CH_26 25
+#define CH_27 26
+#define CH_28 27
+#define CH_29 28
+#define CH_30 29
+#define CH_31 30
+#define CH_32 31
 #define CH_NONE 255
 #endif
 
@@ -57,15 +71,15 @@ public:
      * so that output scaling can be performed correctly. The chanmask passed is added (ORed) into any existing mask.
      * The mask uses servo channel numbering
      */
-    virtual void     set_reversible_mask(uint16_t chanmask) {}
+    virtual void     set_reversible_mask(uint32_t chanmask) {}
     
     /*
      * mark the channels in chanmask as reversed.
      * The chanmask passed is added (ORed) into any existing mask.
      * The mask uses servo channel numbering
      */
-    virtual void     set_reversed_mask(uint16_t chanmask) {}
-    virtual uint16_t get_reversed_mask() { return 0; }
+    virtual void     set_reversed_mask(uint32_t chanmask) {}
+    virtual uint32_t get_reversed_mask() { return 0; }
 
     /*
      * Update channel masks at 1Hz allowing for actions such as dshot commands to be sent
@@ -165,7 +179,7 @@ public:
       as those in the same channel timer groups) may also be stopped,
       depending on the implementation
      */
-    virtual bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint16_t chanmask) { return false; }
+    virtual bool serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t chanmask) { return false; }
 
     /*
       write a set of bytes to an ESC, using settings from
@@ -209,7 +223,8 @@ public:
     static bool is_dshot_protocol(const enum output_mode mode);
 
 
-    // https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20Firmware%20specs/Digital_Cmd_Spec.txt
+    // BLHeli32: https://github.com/bitdump/BLHeli/blob/master/BLHeli_32%20ARM/BLHeli_32%20Firmware%20specs/Digital_Cmd_Spec.txt
+    // BLHeli_S: https://github.com/bitdump/BLHeli/blob/master/BLHeli_S%20SiLabs/Dshotprog%20spec%20BLHeli_S.txt
     enum BLHeliDshotCommand : uint8_t {
       DSHOT_RESET = 0,
       DSHOT_BEEP1 = 1,
@@ -225,6 +240,7 @@ public:
       DSHOT_SAVE = 12,
       DSHOT_NORMAL = 20,
       DSHOT_REVERSE = 21,
+      // The following options are only available on BLHeli32
       DSHOT_LED0_ON = 22,
       DSHOT_LED1_ON = 23,
       DSHOT_LED2_ON = 24,
@@ -239,15 +255,21 @@ public:
 
     enum DshotEscType {
       DSHOT_ESC_NONE = 0,
-      DSHOT_ESC_BLHELI = 1
+      DSHOT_ESC_BLHELI = 1,
+      DSHOT_ESC_BLHELI_S = 2
     };
 
-    virtual void    set_output_mode(uint16_t mask, enum output_mode mode) {}
+    virtual void    set_output_mode(uint32_t mask, enum output_mode mode) {}
 
     /*
      * get output mode banner to inform user of how outputs are configured
      */
     virtual bool get_output_mode_banner(char banner_msg[], uint8_t banner_msg_len) const { return false; }
+
+    /*
+     * return mask of channels that must be disabled because they share a group with a digital channel
+     */
+    virtual uint32_t get_disabled_channels(uint32_t digital_mask) { return 0; }
 
     /*
       set default update rate
@@ -258,18 +280,18 @@ public:
       enable telemetry request for a mask of channels. This is used
       with DShot to get telemetry feedback
      */
-    virtual void set_telem_request_mask(uint16_t mask) {}
+    virtual void set_telem_request_mask(uint32_t mask) {}
 
     /*
       enable bi-directional telemetry request for a mask of channels. This is used
       with DShot to get telemetry feedback
      */
-    virtual void set_bidir_dshot_mask(uint16_t mask) {}
+    virtual void set_bidir_dshot_mask(uint32_t mask) {}
 
     /*
       mark escs as active for the purpose of sending dshot commands
      */
-    virtual void set_active_escs_mask(uint16_t mask) {}
+    virtual void set_active_escs_mask(uint32_t mask) {}
 
     /*
       Set the dshot rate as a multiple of the loop rate
@@ -299,7 +321,7 @@ public:
       setup serial led output for a given channel number, with
       the given max number of LEDs in the chain.
      */
-    virtual bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint16_t clock_mask = 0) { return false; }
+    virtual bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint32_t clock_mask = 0) { return false; }
 
     /*
       setup serial led output data for a given output channel
@@ -318,6 +340,37 @@ public:
      * calculate the prescaler required to achieve the desire bitrate
      */
     static uint32_t calculate_bitrate_prescaler(uint32_t timer_clock, uint32_t target_frequency, bool is_dshot);
+
+    /*
+     * bit width values for different protocols
+     */
+    /*
+     * It seems ESCs are quite sensitive to the DSHOT duty cycle.
+     * Options are (ticks, percentage):
+     * 20/7/14, 35/70
+     * 11/4/8, 36/72
+     * 8/3/6, 37/75
+     */
+    // bitwidths: 8/3/6 == 37%/75%
+    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_DEFAULT = 8;
+    static constexpr uint32_t DSHOT_BIT_0_TICKS_DEFAULT = 3;
+    static constexpr uint32_t DSHOT_BIT_1_TICKS_DEFAULT = 6;
+    // bitwidths: 11/4/8 == 36%/72%
+    static constexpr uint32_t DSHOT_BIT_WIDTH_TICKS_S = 11;
+    static constexpr uint32_t DSHOT_BIT_0_TICKS_S = 4;
+    static constexpr uint32_t DSHOT_BIT_1_TICKS_S = 8;
+
+    static uint32_t DSHOT_BIT_WIDTH_TICKS;
+    static uint32_t DSHOT_BIT_0_TICKS;
+    static uint32_t DSHOT_BIT_1_TICKS;
+
+    // See WS2812B spec for expected pulse widths
+    static constexpr uint32_t NEOP_BIT_WIDTH_TICKS = 20;
+    static constexpr uint32_t NEOP_BIT_0_TICKS = 7;
+    static constexpr uint32_t NEOP_BIT_1_TICKS = 14;
+    // neopixel does not use pulse widths at all
+    static constexpr uint32_t PROFI_BIT_0_TICKS = 7;
+    static constexpr uint32_t PROFI_BIT_1_TICKS = 14;
 
 protected:
 

@@ -83,10 +83,10 @@
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 #define SCHED_TASK(func, _interval_ticks, _max_time_micros, _prio) SCHED_TASK_CLASS(Copter, &copter, func, _interval_ticks, _max_time_micros, _prio)
+#define FAST_TASK(func) FAST_TASK_CLASS(Copter, &copter, func)
 
 /*
-  scheduler table - all regular tasks apart from the fast_loop()
-  should be listed here.
+  scheduler table - all tasks should be listed here.
 
   All entries in this table must be ordered by priority.
 
@@ -110,6 +110,36 @@ SCHED_TASK_CLASS arguments:
 
  */
 const AP_Scheduler::Task Copter::scheduler_tasks[] = {
+    // update INS immediately to get current gyro data populated
+    FAST_TASK_CLASS(AP_InertialSensor, &copter.ins, update),
+    // run low level rate controllers that only require IMU data
+    FAST_TASK(run_rate_controller),
+    // send outputs to the motors library immediately
+    FAST_TASK(motors_output),
+     // run EKF state estimator (expensive)
+    FAST_TASK(read_AHRS),
+#if FRAME_CONFIG == HELI_FRAME
+    FAST_TASK(update_heli_control_dynamics),
+    #if MODE_AUTOROTATE_ENABLED == ENABLED
+    FAST_TASK(heli_update_autorotation),
+    #endif
+#endif //HELI_FRAME
+    // Inertial Nav
+    FAST_TASK(read_inertia),
+    // check if ekf has reset target heading or position
+    FAST_TASK(check_ekf_reset),
+    // run the attitude controllers
+    FAST_TASK(update_flight_mode),
+    // update home from EKF if necessary
+    FAST_TASK(update_home_from_EKF),
+    // check if we've landed or crashed
+    FAST_TASK(update_land_and_crash_detectors),
+#if HAL_MOUNT_ENABLED
+    // camera mount's fast update
+    FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
+#endif
+    FAST_TASK(Log_Video_Stabilisation),
+
     SCHED_TASK(rc_loop,              100,    130,  3),
     SCHED_TASK(throttle_loop,         50,     75,  6),
     SCHED_TASK_CLASS(AP_GPS,               &copter.gps,                 update,          50, 200,   9),
@@ -237,62 +267,6 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 constexpr int8_t Copter::_failsafe_priorities[7];
 
-// Main loop - 400hz
-void Copter::fast_loop()
-{
-    // update INS immediately to get current gyro data populated
-    ins.update();
-
-    // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
-
-    // send outputs to the motors library immediately
-    motors_output();
-
-    // run EKF state estimator (expensive)
-    // --------------------
-    read_AHRS();
-
-#if FRAME_CONFIG == HELI_FRAME
-    update_heli_control_dynamics();
-    #if MODE_AUTOROTATE_ENABLED == ENABLED
-        heli_update_autorotation();
-    #endif
-#endif //HELI_FRAME
-
-    // Inertial Nav
-    // --------------------
-    read_inertia();
-
-    // check if ekf has reset target heading or position
-    check_ekf_reset();
-
-    // run the attitude controllers
-    update_flight_mode();
-
-    // update home from EKF if necessary
-    update_home_from_EKF();
-
-    // check if we've landed or crashed
-    update_land_and_crash_detectors();
-
-#if HAL_MOUNT_ENABLED
-    // camera mount's fast update
-    camera_mount.update_fast();
-#endif
-
-    // log sensor health
-    if (should_log(MASK_LOG_ANY)) {
-        Log_Sensor_Health();
-    }
-
-    AP_Vehicle::fast_loop();
-
-    if (should_log(MASK_LOG_VIDEO_STABILISATION)) {
-        ahrs.write_video_stabilisation();
-    }
-}
-
 #if AP_SCRIPTING_ENABLED
 // start takeoff to given altitude (for use by scripting)
 bool Copter::start_takeoff(float alt)
@@ -418,6 +392,18 @@ bool Copter::set_circle_rate(float rate_dps)
     return true;
 }
 
+// set desired speed (m/s). Used for scripting.
+bool Copter::set_desired_speed(float speed)
+{
+    // exit if vehicle is not in auto mode
+    if (!flightmode->is_autopilot()) {
+        return false;
+    }
+
+    wp_nav->set_speed_xy(speed * 100.0f);
+    return true;
+}
+
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Copter::nav_scripting_enable(uint8_t mode)
 {
@@ -442,6 +428,12 @@ void Copter::nav_script_time_done(uint16_t id)
     }
 
     return mode_auto.nav_script_time_done(id);
+}
+
+// returns true if the EKF failsafe has triggered.  Only used by Lua scripts
+bool Copter::has_ekf_failsafed() const
+{
+    return failsafe.ekf;
 }
 
 #endif // AP_SCRIPTING_ENABLED
@@ -537,10 +529,10 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_CTUN)) {
         attitude_control->control_monitor_log();
 #if HAL_PROXIMITY_ENABLED
-        logger.Write_Proximity(g2.proximity);  // Write proximity sensor distances
+        g2.proximity.log();  // Write proximity sensor distances
 #endif
 #if BEACON_ENABLED == ENABLED
-        logger.Write_Beacon(g2.beacon);
+        g2.beacon.log();
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
@@ -581,6 +573,9 @@ void Copter::three_hz_loop()
     // check if we've lost terrain data
     failsafe_terrain_check();
 
+    // check for deadreckoning failsafe
+    failsafe_deadreckon_check();
+
 #if AC_FENCE == ENABLED
     // check if we have breached a fence
     fence_check();
@@ -601,12 +596,7 @@ void Copter::one_hz_loop()
         Log_Write_Data(LogDataID::AP_STATE, ap.value);
     }
 
-    arming.update();
-
     if (!motors->armed()) {
-        // make it possible to change ahrs orientation at runtime during initial config
-        ahrs.update_orientation();
-
         update_using_interlock();
 
         // check the user hasn't updated the frame class or type
@@ -747,6 +737,13 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
+// get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+bool Copter::get_rate_bf_targets(Vector3f& rate_bf_targets) const
+{
+    rate_bf_targets = attitude_control->rate_bf_targets();
+    return true;
+}
+
 /*
   constructor for main Copter class
  */
@@ -761,9 +758,6 @@ Copter::Copter(void)
     param_loader(var_info),
     flightmode(&mode_stabilize)
 {
-    // init sensor error logging flags
-    sensor_health.baro = true;
-    sensor_health.compass = true;
 }
 
 Copter copter;

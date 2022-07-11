@@ -23,6 +23,8 @@
  */
 #include "AP_RangeFinder_MaxsonarI2CXL.h"
 
+#if AP_RANGEFINDER_MAXSONARI2CXL_ENABLED
+
 #include <utility>
 
 #include <AP_HAL/AP_HAL.h>
@@ -151,3 +153,5 @@ void AP_RangeFinder_MaxsonarI2CXL::update(void)
         set_status(RangeFinder::Status::NoData);
     }
 }
+
+#endif  // AP_RANGEFINDER_MAXSONARI2CXL_ENABLED

@@ -814,7 +814,7 @@ bool AP_IOMCU::check_crc(void)
 
     fw = AP_ROMFS::find_decompress(fw_name, fw_size);
     if (!fw) {
-        hal.console->printf("failed to find %s\n", fw_name);
+        DEV_PRINTF("failed to find %s\n", fw_name);
         return false;
     }
     uint32_t crc = crc32_small(0, fw, fw_size);
@@ -833,13 +833,13 @@ bool AP_IOMCU::check_crc(void)
         }
     }
     if (io_crc == crc) {
-        hal.console->printf("IOMCU: CRC ok\n");
+        DEV_PRINTF("IOMCU: CRC ok\n");
         crc_is_ok = true;
         AP_ROMFS::free(fw);
         fw = nullptr;
         return true;
     } else {
-        hal.console->printf("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", (unsigned)crc, (unsigned)io_crc);
+        DEV_PRINTF("IOMCU: CRC mismatch expected: 0x%X got: 0x%X\n", (unsigned)crc, (unsigned)io_crc);
     }
 
     const uint16_t magic = REBOOT_BL_MAGIC;
@@ -1011,7 +1011,7 @@ void AP_IOMCU::check_iomcu_reset(void)
     if (last_iocmu_timestamp_ms == 0) {
         // initialisation
         last_iocmu_timestamp_ms = reg_status.timestamp_ms;
-        hal.console->printf("IOMCU startup\n");
+        DEV_PRINTF("IOMCU startup\n");
         return;
     }
     uint32_t dt_ms = reg_status.timestamp_ms - last_iocmu_timestamp_ms;
@@ -1064,22 +1064,25 @@ void AP_IOMCU::check_iomcu_reset(void)
     last_rc_protocols = 0;
 }
 
-// Check if pin number is valid for GPIO
+// Check if pin number is valid and configured for GPIO
 bool AP_IOMCU::valid_GPIO_pin(uint8_t pin) const
 {
-    return convert_pin_number(pin);
+    // sanity check pin number
+    if (!convert_pin_number(pin)) {
+        return false;
+    }
+
+    // check pin is enabled as GPIO
+    return ((GPIO.channel_mask & (1U << pin)) != 0);
 }
 
 // convert external pin numbers 101 to 108 to internal 0 to 7
 bool AP_IOMCU::convert_pin_number(uint8_t& pin) const
 {
-    if (pin < 101) {
+    if (pin < 101 || pin > 108) {
         return false;
     }
     pin -= 101;
-    if (pin > 7) {
-        return false;
-    }
     return true;
 }
 

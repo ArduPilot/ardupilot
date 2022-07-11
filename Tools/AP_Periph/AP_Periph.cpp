@@ -142,6 +142,10 @@ void AP_Periph_FW::init()
         printf("Reboot after watchdog reset\n");
     }
 
+#if AP_STATS_ENABLED
+    node_stats.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_GPS
     if (gps.get_type(0) != AP_GPS::GPS_Type::GPS_TYPE_NONE && g.gps_port >= 0) {
         serial_manager.set_protocol_and_baud(g.gps_port, AP_SerialManager::SerialProtocol_GPS, AP_SERIALMANAGER_GPS_BAUD);
@@ -181,6 +185,17 @@ void AP_Periph_FW::init()
     adsb_init();
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_EFI
+    if (efi.enabled() && g.efi_port >= 0) {
+        auto *uart = hal.serial(g.efi_port);
+        if (uart != nullptr) {
+            uart->begin(g.efi_baudrate);
+            serial_manager.set_protocol_and_baud(g.efi_port, AP_SerialManager::SerialProtocol_EFI, g.efi_baudrate);
+            efi.init();
+        }
+    }
+#endif
+    
 #ifdef HAL_PERIPH_ENABLE_AIRSPEED
     if (airspeed.enabled()){
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -331,6 +346,10 @@ void AP_Periph_FW::show_stack_free()
 
 void AP_Periph_FW::update()
 {
+#if AP_STATS_ENABLED
+    node_stats.update();
+#endif
+
     static uint32_t last_led_ms;
     uint32_t now = AP_HAL::native_millis();
     if (now - last_led_ms > 1000) {

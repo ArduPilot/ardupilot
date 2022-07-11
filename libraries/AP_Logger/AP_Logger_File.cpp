@@ -76,15 +76,15 @@ void AP_Logger_File::Init()
         bufsize *= 0.9;
     }
     if (bufsize >= _writebuf_chunk && bufsize != desired_bufsize) {
-        hal.console->printf("AP_Logger: reduced buffer %u/%u\n", (unsigned)bufsize, (unsigned)desired_bufsize);
+        DEV_PRINTF("AP_Logger: reduced buffer %u/%u\n", (unsigned)bufsize, (unsigned)desired_bufsize);
     }
 
     if (!_writebuf.get_size()) {
-        hal.console->printf("Out of memory for logging\n");
+        DEV_PRINTF("Out of memory for logging\n");
         return;
     }
 
-    hal.console->printf("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
+    DEV_PRINTF("AP_Logger_File: buffer size=%u\n", (unsigned)bufsize);
 
     _initialised = true;
 
@@ -201,6 +201,29 @@ int64_t AP_Logger_File::disk_space()
     return AP::FS().disk_space(_log_directory);
 }
 
+/*
+  convert a dirent to a log number
+ */
+bool AP_Logger_File::dirent_to_log_num(const dirent *de, uint16_t &log_num) const
+{
+    uint8_t length = strlen(de->d_name);
+    if (length < 5) {
+        return false;
+    }
+    if (strncmp(&de->d_name[length-4], ".BIN", 4) != 0) {
+        // doesn't end in .BIN
+        return false;
+    }
+
+    uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
+    if (thisnum > MAX_LOG_FILES) {
+        return false;
+    }
+    log_num = thisnum;
+    return true;
+}
+
+
 // find_oldest_log - find oldest log in _log_directory
 // returns 0 if no log was found
 uint16_t AP_Logger_File::find_oldest_log()
@@ -230,19 +253,9 @@ uint16_t AP_Logger_File::find_oldest_log()
     EXPECT_DELAY_MS(3000);
     for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
         EXPECT_DELAY_MS(3000);
-        uint8_t length = strlen(de->d_name);
-        if (length < 5) {
-            // not long enough for \d+[.]BIN
-            continue;
-        }
-        if (strncmp(&de->d_name[length-4], ".BIN", 4) != 0) {
-            // doesn't end in .BIN
-            continue;
-        }
-
-        uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
-        if (thisnum > MAX_LOG_FILES) {
-            // ignore files above our official maximum...
+        uint16_t thisnum;
+        if (!dirent_to_log_num(de, thisnum)) {
+            // not a log filename
             continue;
         }
         if (current_oldest_log == 0) {
@@ -310,12 +323,12 @@ void AP_Logger_File::Prep_MinSpace()
             break;
         }
         if (file_exists(filename_to_remove)) {
-            hal.console->printf("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
+            DEV_PRINTF("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
                                 filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
             if (AP::FS().unlink(filename_to_remove) == -1) {
                 _cached_oldest_log = 0;
-                hal.console->printf("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
+                DEV_PRINTF("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
                 free(filename_to_remove);
                 if (errno == ENOENT) {
                     // corruption - should always have a continuous
@@ -529,9 +542,6 @@ uint32_t AP_Logger_File::_get_log_size(const uint16_t log_num)
     struct stat st;
     EXPECT_DELAY_MS(3000);
     if (AP::FS().stat(fname, &st) != 0) {
-        if (_open_error_ms == 0) {
-            printf("Unable to fetch Log File Size (%s): %s\n", fname, strerror(errno));
-        }
         free(fname);
         return 0;
     }
@@ -617,7 +627,7 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
             int saved_errno = errno;
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
-            hal.console->printf("Log read open fail for %s - %s\n",
+            DEV_PRINTF("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
             return -1;            
@@ -661,29 +671,37 @@ void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
 }
 
 
-
 /*
   get the number of logs - note that the log numbers must be consecutive
  */
 uint16_t AP_Logger_File::get_num_logs()
 {
-    uint16_t ret = 0;
+    auto *d = AP::FS().opendir(_log_directory);
+    if (d == nullptr) {
+        return 0;
+    }
     uint16_t high = find_last_log();
-    uint16_t i;
-    for (i=high; i>0; i--) {
-        if (! log_exists(i)) {
-            break;
+    uint16_t ret = high;
+    uint16_t smallest_above_last = 0;
+
+    EXPECT_DELAY_MS(2000);
+    for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
+        EXPECT_DELAY_MS(100);
+        uint16_t thisnum;
+        if (!dirent_to_log_num(de, thisnum)) {
+            // not a log filename
+            continue;
         }
-        ret++;
-    }
-    if (i == 0) {
-        for (i=MAX_LOG_FILES; i>high; i--) {
-            if (! log_exists(i)) {
-                break;
-            }
-            ret++;
+        if (thisnum > high && (smallest_above_last == 0 || thisnum < smallest_above_last)) {
+            smallest_above_last = thisnum;
         }
     }
+    AP::FS().closedir(d);
+    if (smallest_above_last != 0) {
+        // we have wrapped, add in the logs with high numbers
+        ret += (MAX_LOG_FILES - smallest_above_last) + 1;
+    }
+
     return ret;
 }
 
@@ -772,7 +790,7 @@ void AP_Logger_File::start_new_log(void)
     }
 
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-        hal.console->printf("Out of space for logging\n");
+        DEV_PRINTF("Out of space for logging\n");
         return;
     }
 
@@ -816,7 +834,7 @@ void AP_Logger_File::start_new_log(void)
         if (open_error_ms_was_zero) {
             ::printf("Log open fail for %s - %s\n",
                      _write_filename, strerror(saved_errno));
-            hal.console->printf("Log open fail for %s - %s\n",
+            DEV_PRINTF("Log open fail for %s - %s\n",
                                 _write_filename, strerror(saved_errno));
         }
         return;
@@ -916,7 +934,7 @@ void AP_Logger_File::io_timer(void)
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-            hal.console->printf("Out of space for logging\n");
+            DEV_PRINTF("Out of space for logging\n");
             stop_logging();
             _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
             last_io_operation = "";

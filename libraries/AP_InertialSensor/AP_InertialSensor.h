@@ -7,7 +7,7 @@
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 /**
    maximum number of INS instances available on this platform. If more
@@ -35,6 +35,14 @@
 #define HAL_INS_TEMPERATURE_CAL_ENABLE !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
 #endif
 
+#ifndef HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
+#define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 2
+#endif
+
+// time for the estimated gyro rates to converge
+#ifndef HAL_INS_CONVERGANCE_MS
+#define HAL_INS_CONVERGANCE_MS 30000
+#endif
 
 #include <stdint.h>
 
@@ -239,45 +247,14 @@ public:
     uint8_t get_primary_accel(void) const { return _primary_accel; }
     uint8_t get_primary_gyro(void) const { return _primary_gyro; }
 
-    // Update the harmonic notch frequency
-    void update_harmonic_notch_freq_hz(float scaled_freq);
-    // Update the harmonic notch frequencies
-    void update_harmonic_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
-
     // get the gyro filter rate in Hz
     uint16_t get_gyro_filter_hz(void) const { return _gyro_filter_cutoff; }
 
     // get the accel filter rate in Hz
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
-    // harmonic notch current center frequency
-    float get_gyro_dynamic_notch_center_freq_hz(void) const { return _calculated_harmonic_notch_freq_hz[0]; }
-
-    // number of dynamic harmonic notches
-    uint8_t get_num_gyro_dynamic_notches(void) const { return _num_dynamic_harmonic_notches; }
-
-    // set of harmonic notch current center frequencies
-    const float* get_gyro_dynamic_notch_center_frequencies_hz(void) const { return _calculated_harmonic_notch_freq_hz; }
-
-    // number of harmonic notch current center frequencies
-    uint8_t get_num_gyro_dynamic_notch_center_frequencies(void) const { return _num_calculated_harmonic_notch_frequencies; }
-
-    // harmonic notch reference center frequency
-    float get_gyro_harmonic_notch_center_freq_hz(void) const { return _harmonic_notch_filter.center_freq_hz(); }
-
-    // harmonic notch reference scale factor
-    float get_gyro_harmonic_notch_reference(void) const { return _harmonic_notch_filter.reference(); }
-
-    // harmonic notch tracking mode
-    HarmonicNotchDynamicMode get_gyro_harmonic_notch_tracking_mode(void) const { return _harmonic_notch_filter.tracking_mode(); }
-
-    // harmonic notch harmonics
-    uint8_t get_gyro_harmonic_notch_harmonics(void) const { return _harmonic_notch_filter.harmonics(); }
-
-    // harmonic notch options
-    bool has_harmonic_option(HarmonicNotchFilterParams::Options option) {
-        return _harmonic_notch_filter.hasOption(option);
-    }
+    // setup the notch for throttle based tracking
+    bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float ref);
 
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
@@ -301,9 +278,6 @@ public:
 
     // check for vibration movement. True when all axis show nearly zero movement
     bool is_still();
-
-    // return true if harmonic notch enabled
-    bool gyro_harmonic_notch_enabled(void) const { return _harmonic_notch_filter.enabled(); }
 
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id) { return get_auxiliary_bus(backend_id, 0); }
     AuxiliaryBus *get_auxiliary_bus(int16_t backend_id, uint8_t instance);
@@ -368,7 +342,10 @@ public:
         void periodic();
 
         bool doing_sensor_rate_logging() const { return _doing_sensor_rate_logging; }
-        bool doing_post_filter_logging() const { return _doing_post_filter_logging; }
+        bool doing_post_filter_logging() const {
+            return (_doing_post_filter_logging && (post_filter || !_doing_sensor_rate_logging))
+                || (_doing_pre_post_filter_logging && post_filter);
+        }
 
         // class level parameters
         static const struct AP_Param::GroupInfo var_info[];
@@ -396,6 +373,7 @@ public:
         enum batch_opt_t {
             BATCH_OPT_SENSOR_RATE = (1<<0),
             BATCH_OPT_POST_FILTER = (1<<1),
+            BATCH_OPT_PRE_POST_FILTER = (1<<2),
         };
 
         void rotate_to_next_sensor();
@@ -408,14 +386,18 @@ public:
         bool Write_ISBH(const float sample_rate_hz) const;
         bool Write_ISBD() const;
 
+        bool has_option(batch_opt_t option) const { return _batch_options_mask & uint16_t(option); }
+
         uint64_t measurement_started_us;
 
-        bool initialised : 1;
-        bool isbh_sent : 1;
-        bool _doing_sensor_rate_logging : 1;
-        bool _doing_post_filter_logging : 1;
-        uint8_t instance : 3; // instance we are sending data for
-        AP_InertialSensor::IMU_SENSOR_TYPE type : 1;
+        bool initialised;
+        bool isbh_sent;
+        bool _doing_sensor_rate_logging;
+        bool _doing_post_filter_logging;
+        bool _doing_pre_post_filter_logging;
+        uint8_t instance; // instance we are sending data for
+        bool post_filter; // whether we are sending post-filter data
+        AP_InertialSensor::IMU_SENSOR_TYPE type;
         uint16_t isb_seqnum;
         int16_t *data_x;
         int16_t *data_y;
@@ -446,6 +428,49 @@ public:
 
     // force save of current calibration as valid
     void force_save_calibration(void);
+
+    // structure per harmonic notch filter. This is public to allow for
+    // easy iteration
+    class HarmonicNotch {
+    public:
+        HarmonicNotchFilterParams params;
+        HarmonicNotchFilterVector3f filter[INS_MAX_INSTANCES];
+
+        uint8_t num_dynamic_notches;
+
+        // the current center frequency for the notch
+        float calculated_notch_freq_hz[INS_MAX_NOTCHES];
+        uint8_t num_calculated_notch_frequencies;
+
+        // Update the harmonic notch frequency
+        void update_notch_freq_hz(float scaled_freq);
+
+        // Update the harmonic notch frequencies
+        void update_notch_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
+
+        // runtime update of notch parameters
+        void update_params(uint8_t instance, bool converging, float gyro_rate);
+
+        // Update the harmonic notch frequencies
+        void update_freq_hz(float scaled_freq);
+        void update_frequencies_hz(uint8_t num_freqs, const float scaled_freq[]);
+
+        // enable/disable the notch
+        void set_inactive(bool _inactive) {
+            inactive = _inactive;
+        }
+
+        bool is_inactive(void) const {
+            return inactive;
+        }
+
+    private:
+        // support for updating harmonic filter at runtime
+        float last_center_freq_hz[INS_MAX_INSTANCES];
+        float last_bandwidth_hz[INS_MAX_INSTANCES];
+        float last_attenuation_dB[INS_MAX_INSTANCES];
+        bool inactive;
+    } harmonic_notches[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS];
 
 private:
     // load backend drivers
@@ -506,19 +531,6 @@ private:
 #endif
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
-
-    // optional notch filter on gyro
-    HarmonicNotchFilterParams _notch_filter;
-    HarmonicNotchFilterVector3f _gyro_notch_filter[INS_MAX_INSTANCES];
-
-    // optional harmonic notch filter on gyro
-    HarmonicNotchFilterParams _harmonic_notch_filter;
-    HarmonicNotchFilterVector3f _gyro_harmonic_notch_filter[INS_MAX_INSTANCES];
-    // number of independent notches in the filter
-    uint8_t _num_dynamic_harmonic_notches;
-    // the current center frequency for the notch
-    float _calculated_harmonic_notch_freq_hz[INS_MAX_NOTCHES];
-    uint8_t _num_calculated_harmonic_notch_frequencies;
 
     // Most recent gyro reading
     Vector3f _gyro[INS_MAX_INSTANCES];

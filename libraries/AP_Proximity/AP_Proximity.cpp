@@ -28,6 +28,8 @@
 #include "AP_Proximity_Cygbot_D1.h"
 #include "AP_Proximity_LeddarVu8.h"
 
+#include <AP_Logger/AP_Logger.h>
+
 extern const AP_HAL::HAL &hal;
 
 // table of user settable parameters
@@ -533,6 +535,71 @@ void AP_Proximity::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
     drivers[primary_instance]->set_rangefinder_alt(use, healthy, alt_cm);
 }
 
+#if HAL_LOGGING_ENABLED
+// Write proximity sensor distances
+void AP_Proximity::log()
+{
+    // exit immediately if not enabled
+    if (get_status() == AP_Proximity::Status::NotConnected) {
+        return;
+    }
+
+    Proximity_Distance_Array dist_array{}; // raw distances stored here
+    Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
+    auto &logger { AP::logger() };
+    for (uint8_t i = 0; i < get_num_layers(); i++) {
+        const bool active = get_active_layer_distances(i, dist_array, filt_dist_array);
+        if (!active) {
+            // nothing on this layer
+            continue;
+        }
+        float dist_up;
+        if (!get_upward_distance(dist_up)) {
+            dist_up = 0.0f;
+        }
+
+        float closest_ang = 0.0f;
+        float closest_dist = 0.0f;
+        get_closest_object(closest_ang, closest_dist);
+
+        const struct log_Proximity pkt_proximity{
+                LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
+                time_us         : AP_HAL::micros64(),
+                instance        : i,
+                health          : (uint8_t)get_status(),
+                dist0           : filt_dist_array.distance[0],
+                dist45          : filt_dist_array.distance[1],
+                dist90          : filt_dist_array.distance[2],
+                dist135         : filt_dist_array.distance[3],
+                dist180         : filt_dist_array.distance[4],
+                dist225         : filt_dist_array.distance[5],
+                dist270         : filt_dist_array.distance[6],
+                dist315         : filt_dist_array.distance[7],
+                distup          : dist_up,
+                closest_angle   : closest_ang,
+                closest_dist    : closest_dist
+        };
+        logger.WriteBlock(&pkt_proximity, sizeof(pkt_proximity));
+
+        if (_raw_log_enable) {
+            const struct log_Proximity_raw pkt_proximity_raw{
+                LOG_PACKET_HEADER_INIT(LOG_RAW_PROXIMITY_MSG),
+                time_us         : AP_HAL::micros64(),
+                instance        : i,
+                raw_dist0       : dist_array.distance[0],
+                raw_dist45      : dist_array.distance[1],
+                raw_dist90      : dist_array.distance[2],
+                raw_dist135     : dist_array.distance[3],
+                raw_dist180     : dist_array.distance[4],
+                raw_dist225     : dist_array.distance[5],
+                raw_dist270     : dist_array.distance[6],
+                raw_dist315     : dist_array.distance[7],
+            };
+            logger.WriteBlock(&pkt_proximity_raw, sizeof(pkt_proximity_raw));
+        }
+    }
+}
+#endif
 
 AP_Proximity *AP_Proximity::_singleton;
 

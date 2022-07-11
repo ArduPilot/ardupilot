@@ -403,6 +403,30 @@ private:
     // are we in a guided takeoff?
     bool guided_takeoff:1;
 
+    /* if we arm in guided mode when we arm then go into a "waiting
+       for takeoff command" state. In this state we are waiting for
+       one of the following:
+
+       1) disarm
+       2) guided takeoff command
+       3) change to AUTO with a takeoff waypoint as first nav waypoint
+       4) change to another mode
+
+       while in this state we don't go to throttle unlimited, and will
+       refuse a change to AUTO mode if the first waypoint is not a
+       takeoff. If we try to switch to RTL then we will instead use
+       QLAND
+
+       This state is needed to cope with the takeoff sequence used
+       by QGC on common controllers such as the MX16, which do this on a "takeoff" swipe:
+
+          - changes mode to GUIDED
+          - arms
+          - changes mode to AUTO
+    */
+    bool guided_wait_takeoff;
+    bool guided_wait_takeoff_on_mode_enter;
+
     struct {
         // time when motors reached lower limit
         uint32_t lower_limit_start_ms;
@@ -524,6 +548,7 @@ private:
         OPTION_REPOSITION_LANDING=(1<<17),
         OPTION_ONLY_ARM_IN_QMODE_OR_AUTO=(1<<18),
         OPTION_TRANS_FAIL_TO_FW=(1<<19),
+        OPTION_FS_RTL=(1<<20),
     };
 
     AP_Float takeoff_failure_scalar;
@@ -533,6 +558,10 @@ private:
 
     float last_land_final_agl;
 
+    // min alt for navigation in takeoff
+    AP_Float takeoff_navalt_min;
+    uint32_t takeoff_last_run_ms;
+    float takeoff_start_alt;
 
     // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
     // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set

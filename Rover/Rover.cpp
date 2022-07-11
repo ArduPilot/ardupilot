@@ -214,6 +214,12 @@ bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
     return true;
 }
 
+// set desired nav speed (m/s). Used for scripting.
+bool Rover::set_desired_speed(float speed)
+{
+    return control_mode->set_desired_speed(speed);
+}
+
 // get control output (for use in scripting)
 // returns true on success and control_value is set to a value in the range -1 to +1
 bool Rover::get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value)
@@ -366,7 +372,7 @@ void Rover::update_logging1(void)
 
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
-        logger.Write_Beacon(g2.beacon);
+        g2.beacon.log();
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -380,7 +386,7 @@ void Rover::update_logging1(void)
 
 #if HAL_PROXIMITY_ENABLED
     if (should_log(MASK_LOG_RANGEFINDER)) {
-        logger.Write_Proximity(g2.proximity);
+        g2.proximity.log();
     }
 #endif
 }
@@ -410,9 +416,6 @@ void Rover::update_logging2(void)
  */
 void Rover::one_second_loop(void)
 {
-    // allow orientation change at runtime to aid config
-    ahrs.update_orientation();
-
     set_control_channels();
 
     // cope with changes to aux functions

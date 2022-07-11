@@ -32,7 +32,7 @@ extern const AP_HAL::HAL& hal;
 UC_REGISTRY_BINDER(MagCb, uavcan::equipment::ahrs::MagneticFieldStrength);
 UC_REGISTRY_BINDER(Mag2Cb, uavcan::equipment::ahrs::MagneticFieldStrength2);
 
-AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[] = {0};
+AP_Compass_UAVCAN::DetectedModules AP_Compass_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_UAVCAN::_sem_registry;
 
 AP_Compass_UAVCAN::AP_Compass_UAVCAN(AP_UAVCAN* ap_uavcan, uint8_t node_id, uint8_t sensor_id, uint32_t devid)

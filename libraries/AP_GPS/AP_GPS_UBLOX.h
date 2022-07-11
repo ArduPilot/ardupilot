@@ -346,7 +346,7 @@ private:
         uint8_t flags2; 
         uint8_t num_sv; 
         int32_t lon, lat; 
-        int32_t height, h_msl; 
+        int32_t h_ellipsoid, h_msl;
         uint32_t h_acc, v_acc; 
         int32_t velN, velE, velD, gspeed; 
         int32_t head_mot; 
@@ -757,7 +757,7 @@ private:
 #if GPS_MOVING_BASELINE
     // see if we should use uart2 for moving baseline config
     bool mb_use_uart2(void) const {
-        return (driver_options() & DriverOptions::UBX_MBUseUart2)?true:false;
+        return option_set(AP_GPS::DriverOptions::UBX_MBUseUart2)?true:false;
     }
 #endif
 

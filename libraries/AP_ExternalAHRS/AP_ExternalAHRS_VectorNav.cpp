@@ -244,7 +244,8 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
                                   Location::AltFrame::ABSOLUTE};
         state.have_location = true;
     }
-    
+
+#if AP_BARO_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
@@ -253,6 +254,7 @@ void AP_ExternalAHRS_VectorNav::process_packet1(const uint8_t *b)
 
         AP::baro().handle_external(baro);
     }
+#endif
 
     {
         AP_ExternalAHRS::mag_data_message_t mag;

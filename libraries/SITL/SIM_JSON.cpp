@@ -255,7 +255,7 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     const uint32_t received_bitmask = parse_sensors((const char *)(p1+1));
     if (received_bitmask == 0) {
-        // did not receve one of the mandatory fields
+        // did not receive one of the mandatory fields
         printf("Did not contain all mandatory fields\n");
         return;
     }

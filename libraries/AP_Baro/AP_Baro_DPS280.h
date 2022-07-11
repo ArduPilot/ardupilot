@@ -1,10 +1,16 @@
 #pragma once
 
+#include "AP_Baro_Backend.h"
+
+#ifndef AP_BARO_DPS280_ENABLED
+#define AP_BARO_DPS280_ENABLED AP_BARO_BACKEND_DEFAULT_ENABLED
+#endif
+
+#if AP_BARO_DPS280_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
 #include <AP_HAL/utility/OwnPtr.h>
-
-#include "AP_Baro_Backend.h"
 
 #ifndef HAL_BARO_DPS280_I2C_ADDR
  #define HAL_BARO_DPS280_I2C_ADDR  0x76
@@ -19,6 +25,10 @@ public:
 
     /* AP_Baro public interface: */
     void update() override;
+
+    static AP_Baro_Backend *probe_280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev) {
+        return probe(baro, std::move(dev), false);
+    }
 
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev, bool _is_dps310=false);
 
@@ -67,3 +77,4 @@ public:
 };
 
 
+#endif  // AP_BARO_DPS280_ENABLED

@@ -25,7 +25,7 @@ private:
 #if HAL_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS eAHRS;
 #endif // HAL_EXTERNAL_AHRS_ENABLED
-    AP_Scheduler scheduler{nullptr};
+    AP_Scheduler scheduler;
 
     uint32_t ins_counter;
     static const AP_Scheduler::Task scheduler_tasks[];

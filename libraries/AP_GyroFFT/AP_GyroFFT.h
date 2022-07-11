@@ -56,11 +56,13 @@ public:
     // update the engine state - runs at 400Hz
     void update();
     // update calculated values of dynamic parameters - runs at 1Hz
-    void update_parameters();
+    void update_parameters() { update_parameters(false); }
     // thread for processing gyro data via FFT
     void update_thread();
     // start the update thread
     bool start_update_thread();
+    // is the subsystem enabled
+    bool enabled() const { return _enable; }
 
     // check at startup that standard frequencies can be detected
     bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len);
@@ -72,6 +74,9 @@ public:
     void save_params_on_disarm();
     // dynamically enable or disable the analysis through the aux switch
     void set_analysis_enabled(bool enabled) { _analysis_enabled = enabled; };
+    // notch tuning
+    void start_notch_tune();
+    void stop_notch_tune();
 
     // detected peak frequency filtered at 1/3 the update rate
     const Vector3f& get_noise_center_freq_hz() const { return get_noise_center_freq_hz(FrequencyPeak::CENTER); }
@@ -206,6 +211,7 @@ private:
     uint16_t get_available_samples(uint8_t axis) {
         return _sample_mode == 0 ?_ins->get_raw_gyro_window(axis).available() : _downsampled_gyro_data[axis].available();
     }
+    void update_parameters(bool force);
     // semaphore for access to shared FFT data
     HAL_Semaphore _sem;
 
@@ -282,6 +288,8 @@ private:
     uint8_t _health;
     // engine health on roll/pitch/yaw
     Vector3<uint8_t> _rpy_health;
+    // averaged throttle output over averaging period
+    float _avg_throttle_out;
 
     // smoothing filter on the output
     MedianLowPassFilter3dFloat _center_freq_filter[FrequencyPeak::MAX_TRACKED_PEAKS];
@@ -333,6 +341,8 @@ private:
     AP_Int8 _harmonic_fit;
     // harmonic peak target
     AP_Int8 _harmonic_peak;
+    // number of output frames to retain for averaging
+    AP_Int8 _num_frames;
     AP_InertialSensor* _ins;
 #if DEBUG_FFT
     uint32_t _last_output_ms;

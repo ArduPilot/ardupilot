@@ -149,8 +149,8 @@ int16_t GCS_MAVLINK_Rover::vfr_hud_throttle() const
 
 void GCS_MAVLINK_Rover::send_rangefinder() const
 {
-    float distance_cm;
-    float voltage;
+    float distance = 0;
+    float voltage = 0;
     bool got_one = false;
 
     // report smaller distance of all rangefinders
@@ -160,8 +160,8 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
             continue;
         }
         if (!got_one ||
-            s->distance_cm() < distance_cm) {
-            distance_cm = s->distance_cm();
+            s->distance() < distance) {
+            distance = s->distance();
             voltage = s->voltage_mv();
             got_one = true;
         }
@@ -173,7 +173,7 @@ void GCS_MAVLINK_Rover::send_rangefinder() const
 
     mavlink_msg_rangefinder_send(
         chan,
-        distance_cm * 0.01f,
+        distance,
         voltage);
 }
 

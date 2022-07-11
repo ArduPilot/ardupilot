@@ -15,6 +15,8 @@
 
 #include "AP_RangeFinder_PWM.h"
 
+#if AP_RANGEFINDER_PWM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -29,6 +31,8 @@ AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
     AP_RangeFinder_Backend(_state, _params),
     estimated_terrain_height(_estimated_terrain_height)
 {
+    // this gives one mm per us
+    params.scaling.set_default(1.0);
 }
 
 /*
@@ -47,7 +51,8 @@ bool AP_RangeFinder_PWM::get_reading(float &reading_m)
         return false;
     }
 
-    reading_m = value_us * 10.0f; // correct for LidarLite.  Parameter needed?  Converts from decimetres -> m here
+    // LidarLite uses one mm per us
+    reading_m = value_us * 0.001 * params.scaling;
     return true;
 }
 
@@ -127,3 +132,5 @@ void AP_RangeFinder_PWM::update(void)
 bool AP_RangeFinder_PWM::out_of_range(void) const {
     return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }
+
+#endif  // AP_RANGEFINDER_PWM_ENABLED

@@ -17,9 +17,7 @@
 #include "AP_Proximity.h"
 
 #if HAL_PROXIMITY_ENABLED
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
-#include <AP_Common/Location.h>
 #include "AP_Proximity_Boundary_3D.h"
 
 #define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters

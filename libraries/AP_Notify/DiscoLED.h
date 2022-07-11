@@ -16,7 +16,7 @@
 */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/Led_Sysfs.h>

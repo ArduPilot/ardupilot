@@ -62,9 +62,8 @@ void Copter::failsafe_radio_on_event()
         announce_failsafe("Radio", "Continuing Auto");
         desired_action = FailsafeAction::NONE;
 
-    } else if ((flightmode->in_guided_mode()) &&
-      (failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) && (g.failsafe_gcs != FS_GCS_DISABLED)) {
-        // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode.  Only if the GCS failsafe is enabled.
+    } else if ((flightmode->in_guided_mode()) && failsafe_option(FailsafeOption::RC_CONTINUE_IF_GUIDED)) {
+        // Allow guided mode to continue when FS_OPTIONS is set to continue in guided mode
         announce_failsafe("Radio", "Continuing Guided Mode");
         desired_action = FailsafeAction::NONE;
 
@@ -302,10 +301,70 @@ void Copter::gpsglitch_check()
         ap.gps_glitching = gps_glitching;
         if (gps_glitching) {
             AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch");
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch or Compass error");
         } else {
             AP::logger().Write_Error(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
-            gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");
+        }
+    }
+}
+
+// dead reckoning alert and failsafe
+void Copter::failsafe_deadreckon_check()
+{
+    // update dead reckoning state
+    const char* dr_prefix_str = "Dead Reckoning";
+
+    // get EKF filter status
+    bool ekf_dead_reckoning = inertial_nav.get_filter_status().flags.dead_reckoning;
+
+    // alert user to start or stop of dead reckoning
+    const uint32_t now_ms = AP_HAL::millis();
+    if (dead_reckoning.active != ekf_dead_reckoning) {
+        dead_reckoning.active = ekf_dead_reckoning;
+        if (dead_reckoning.active) {
+            dead_reckoning.start_ms = now_ms;
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s started", dr_prefix_str);
+        } else {
+            dead_reckoning.start_ms = 0;
+            dead_reckoning.timeout = false;
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s stopped", dr_prefix_str);
+        }
+    }
+
+    // check for timeout
+    if (dead_reckoning.active && !dead_reckoning.timeout) {
+        const uint32_t dr_timeout_ms = uint32_t(constrain_float(g2.failsafe_dr_timeout * 1000.0f, 0.0f, UINT32_MAX));
+        if (now_ms - dead_reckoning.start_ms > dr_timeout_ms) {
+            dead_reckoning.timeout = true;
+            gcs().send_text(MAV_SEVERITY_CRITICAL,"%s timeout", dr_prefix_str);
+        }
+    }
+
+    // exit immediately if deadreckon failsafe is disabled
+    if (g2.failsafe_dr_enable <= 0) {
+        failsafe.deadreckon = false;
+        return;
+    }
+
+    // check for failsafe action
+    if (failsafe.deadreckon != ekf_dead_reckoning) {
+        failsafe.deadreckon = ekf_dead_reckoning;
+
+        // only take action in modes requiring position estimate
+        if (failsafe.deadreckon && copter.flightmode->requires_GPS()) {
+
+            // log error
+            AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
+
+            // immediately disarm while landed
+            if (should_disarm_on_failsafe()) {
+                arming.disarm(AP_Arming::Method::DEADRECKON_FAILSAFE);
+                return;
+            }
+
+            // take user specified action
+            do_failsafe_action((FailsafeAction)g2.failsafe_dr_enable.get(), ModeReason::DEADRECKON_FAILSAFE);
         }
     }
 }

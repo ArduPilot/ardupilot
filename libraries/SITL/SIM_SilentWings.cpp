@@ -130,7 +130,7 @@ void SilentWings::send_servos(const struct sitl_input &input)
         fprintf(stderr, "Fatal: Failed to allocate enough space for data\n"),
         exit(1);
     }
-    
+
     ssize_t sent = sock.sendto(buf, buflen, _sw_address, _sw_port);
     free(buf);
 
@@ -138,7 +138,7 @@ void SilentWings::send_servos(const struct sitl_input &input)
         fprintf(stderr, "Fatal: Failed to send on control socket\n"),
         exit(1);
     }
-    
+
     if (sent < buflen) {
         fprintf(stderr, "Failed to send all bytes on control socket\n");
     }
@@ -155,12 +155,12 @@ bool SilentWings::recv_fdm(void)
     memset(&pkt, 0, sizeof(pkt));
 
     ssize_t nread = sock.recv(&tmp_pkt, sizeof(pkt), 0);
-    
+
     // nread == -1 (255) means no data has arrived
     if (nread != sizeof(pkt)) {
         return false;
-    }  
-    
+    }
+
     memcpy(&pkt, &tmp_pkt, sizeof(pkt));
 
     // data received successfully
@@ -170,8 +170,8 @@ bool SilentWings::recv_fdm(void)
 
 void SilentWings::process_packet()
 {
-    // pkt.timestamp is the time of day in SilentWings, measured in ms 
-    // since midnight.  
+    // pkt.timestamp is the time of day in SilentWings, measured in ms
+    // since midnight.
     // TO DO: check what happens when a flight in SW crosses midnight
     if (inited_first_pkt_timestamp) {
         uint64_t tus = (pkt.timestamp - first_pkt_timestamp_ms) * 1.0e3f;
@@ -182,8 +182,8 @@ void SilentWings::process_packet()
         time_base_us = time_now_us;
         inited_first_pkt_timestamp = true;
     }
-    
-    dcm.from_euler(radians(pkt.roll), radians(pkt.pitch), radians(pkt.yaw));    
+
+    dcm.from_euler(radians(pkt.roll), radians(pkt.pitch), radians(pkt.yaw));
     accel_body = Vector3f(pkt.ax * GRAVITY_MSS, pkt.ay * GRAVITY_MSS, pkt.az * GRAVITY_MSS); // This is g-load.
     gyro = Vector3f(radians(pkt.d_roll), radians(pkt.d_pitch), radians(pkt.d_yaw));
     // SilentWings provides velocity in body frame.
@@ -202,7 +202,7 @@ void SilentWings::process_packet()
     position.y = posdelta.y;
     position.z = posdelta.z;
     update_position();
-    
+
     // In case Silent Wings' reported location and our location calculated using an offset from the home location diverge, we need
     // to reset the home location.
     if (curr_location.get_distance(location) > 4 || abs(curr_location.alt - location.alt)*0.01f > 2.0f || !home_initialized) {
@@ -222,21 +222,21 @@ void SilentWings::process_packet()
         home_initialized = true;
         update_position();
     }
-    
+
     // Auto-adjust to Silent Wings' frame rate
     // This affects the data rate (without this adjustment, the data rate is
     // low no matter what the output_udp_rate in SW's options.dat file is).
     double deltat = (AP_HAL::millis() - last_data_time_ms) / 1000.0f;
-    
+
     if (deltat < 0.01 && deltat > 0) {
         adjust_frame_time(1.0/deltat);
     }
-    
+
     last_data_time_ms = AP_HAL::millis();
-    
+
     report.data_count++;
     report.frame_count++;
-    
+
     if (0) {
         printf("Delta: %f Time: %" PRIu64 "\n", deltat, time_now_us);
         printf("Accel.x %f\n", accel_body.x);
@@ -289,7 +289,7 @@ void SilentWings::update(const struct sitl_input &input)
         // Time has been advanced by interim_update(.)
         send_servos(input);
     }
-    
+
     // This clause is triggered if and only if we haven't received
     // any data packets yet (and therefore didn't attempt
     // extrapolating data via interim_update(.) either).
@@ -301,16 +301,16 @@ void SilentWings::update(const struct sitl_input &input)
             sync_frame_time();
         }
     }
-    
+
     update_mag_field_bf();
-    
+
     uint32_t now = AP_HAL::millis();
-    
+
     if (report.last_report_ms == 0) {
         report.last_report_ms = now;
         printf("Resetting last report time to now\n");
     }
-    
+
     if (now - report.last_report_ms > 5000) {
         float dt = (now - report.last_report_ms) * 1.0e-3f;
         printf("Data rate: %.1f FPS  Frame rate: %.1f FPS\n",
@@ -318,7 +318,7 @@ void SilentWings::update(const struct sitl_input &input)
         report.last_report_ms = now;
         report.data_count = 0;
         report.frame_count = 0;
-    }    
+    }
 }
 
 #endif  // HAL_SIM_SILENTWINGS_ENABLED

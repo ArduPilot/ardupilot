@@ -365,6 +365,7 @@ void AP_BattMonitor::convert_dynamic_param_groups(uint8_t instance)
         ap_var_type type;
         const char* new_name;
     }  conversion_table[] = {
+        // PARAMETER_CONVERSION - Added: Aug-2021
             { 2,  AP_PARAM_INT8,  "VOLT_PIN"  },
             { 3,  AP_PARAM_INT8,  "CURR_PIN"  },
             { 4,  AP_PARAM_FLOAT, "VOLT_MULT" },
@@ -737,6 +738,19 @@ uint32_t AP_BattMonitor::get_mavlink_fault_bitmask(const uint8_t instance) const
         return 0;
     }
     return drivers[instance]->get_mavlink_fault_bitmask();
+}
+
+/*
+  check that all configured battery monitors are healthy
+ */
+bool AP_BattMonitor::healthy() const
+{
+    for (uint8_t i=0; i< _num_instances; i++) {
+        if (get_type(i) != Type::NONE && !healthy(i)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 namespace AP {

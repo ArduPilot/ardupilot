@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Math/AP_Math.h>
@@ -11,6 +11,9 @@
 #define AP_AIRSPEED_ENABLED 1
 #endif
 
+#ifndef AP_AIRSPEED_MSP_ENABLED
+#define AP_AIRSPEED_MSP_ENABLED (AP_AIRSPEED_ENABLED && HAL_MSP_SENSORS_ENABLED)
+#endif
 
 class AP_Airspeed_Backend;
 
@@ -22,9 +25,6 @@ class AP_Airspeed_Backend;
 #define AP_AIRSPEED_AUTOCAL_ENABLE AP_AIRSPEED_ENABLED
 #endif
 
-#ifndef HAL_MSP_AIRSPEED_ENABLED
-#define HAL_MSP_AIRSPEED_ENABLED HAL_MSP_SENSORS_ENABLED
-#endif
 class Airspeed_Calibration {
 public:
     friend class AP_Airspeed;
@@ -73,15 +73,11 @@ public:
     void calibrate(bool in_startup);
 
     // return the current airspeed in m/s
-    float get_airspeed(uint8_t i) const {
-        return state[i].airspeed;
-    }
+    float get_airspeed(uint8_t i) const;
     float get_airspeed(void) const { return get_airspeed(primary); }
 
     // return the unfiltered airspeed in m/s
-    float get_raw_airspeed(uint8_t i) const {
-        return state[i].raw_airspeed;
-    }
+    float get_raw_airspeed(uint8_t i) const;
     float get_raw_airspeed(void) const { return get_raw_airspeed(primary); }
 
     // return the current airspeed ratio (dimensionless)
@@ -110,32 +106,18 @@ public:
     }
 
     // return true if airspeed is enabled
-    bool enabled(uint8_t i) const {
-        if (i < AIRSPEED_MAX_SENSORS) {
-            return param[i].type.get() != TYPE_NONE;
-        }
-        return false;
-    }
+    bool enabled(uint8_t i) const;
     bool enabled(void) const { return enabled(primary); }
 
     // return the differential pressure in Pascal for the last airspeed reading
-    float get_differential_pressure(uint8_t i) const {
-        return state[i].last_pressure;
-    }
+    float get_differential_pressure(uint8_t i) const;
     float get_differential_pressure(void) const { return get_differential_pressure(primary); }
 
     // update airspeed ratio calibration
     void update_calibration(const Vector3f &vground, int16_t max_airspeed_allowed_during_cal);
 
     // return health status of sensor
-    bool healthy(uint8_t i) const {
-        bool ok = state[i].healthy && enabled(i);
-#ifndef HAL_BUILD_AP_PERIPH
-        // sanity check the offset parameter.  Zero is permitted if we are skipping calibration.
-        ok &= (fabsf(param[i].offset) > 0 || state[i].use_zero_offset || param[i].skip_cal);
-#endif
-        return ok;
-    }
+    bool healthy(uint8_t i) const;
     bool healthy(void) const { return healthy(primary); }
 
     // return true if all enabled sensors are healthy
@@ -174,6 +156,7 @@ public:
         TYPE_NMEA_WATER=13,
         TYPE_MSP=14,
         TYPE_I2C_ASP5033=15,
+        TYPE_SITL=100,
     };
 
     // get current primary sensor
@@ -185,14 +168,12 @@ public:
     static AP_Airspeed *get_singleton() { return _singleton; }
 
     // return the current corrected pressure, public for AP_Periph
-    float get_corrected_pressure(uint8_t i) const {
-        return state[i].corrected_pressure;
-    }
+    float get_corrected_pressure(uint8_t i) const;
     float get_corrected_pressure(void) const {
         return get_corrected_pressure(primary);
     }
 
-#if HAL_MSP_AIRSPEED_ENABLED
+#if AP_AIRSPEED_MSP_ENABLED
     void handle_msp(const MSP::msp_airspeed_data_message_t &pkt);
 #endif
     

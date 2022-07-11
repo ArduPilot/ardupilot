@@ -309,7 +309,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL for uBlox driver
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 #endif
@@ -560,7 +560,7 @@ void AP_GPS::send_blob_start(uint8_t instance, const char *_blob, uint16_t size)
  */
 void AP_GPS::send_blob_start(uint8_t instance)
 {
-    if (_type[instance] == GPS_TYPE_UBLOX && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) {
+    if (_type[instance] == GPS_TYPE_UBLOX && option_set(DriverOptions::UBX_Use115200)) {
         static const char blob[] = UBLOX_SET_BINARY_115200;
         send_blob_start(instance, blob, sizeof(blob));
         return;
@@ -569,7 +569,7 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if GPS_MOVING_BASELINE
     if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
          _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
-        ((_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2) == 0)) {
+        !option_set(DriverOptions::UBX_MBUseUart2)) {
         // we use 460800 when doing moving baseline as we need
         // more bandwidth. We don't do this if using UART2, as
         // in that case the RTCMv3 data doesn't go over the
@@ -632,13 +632,11 @@ void AP_GPS::detect_instance(uint8_t instance)
     // user has to explicitly set the MAV type, do not use AUTO
     // do not try to detect the MAV type, assume it's there
     case GPS_TYPE_MAV:
-#ifndef HAL_BUILD_AP_PERIPH
 #if AP_GPS_MAV_ENABLED
         dstate->auto_detected_baud = false; // specified, not detected
         new_gps = new AP_GPS_MAV(*this, state[instance], nullptr);
         goto found_gps;
 #endif //AP_GPS_MAV_ENABLED
-#endif
         break;
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
@@ -676,8 +674,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
 
-    // don't build the less common GPS drivers on F1 AP_Periph
-#if !defined(HAL_BUILD_AP_PERIPH) || !defined(STM32F1)
     switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
@@ -705,7 +701,6 @@ void AP_GPS::detect_instance(uint8_t instance)
     default:
         break;
     }
-#endif // HAL_BUILD_AP_PERIPH
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
         // try the next baud rate
@@ -743,13 +738,13 @@ void AP_GPS::detect_instance(uint8_t instance)
         if ((_type[instance] == GPS_TYPE_AUTO ||
              _type[instance] == GPS_TYPE_UBLOX) &&
             ((!_auto_config && _baudrates[dstate->current_baud] >= 38400) ||
-             (_baudrates[dstate->current_baud] >= 115200 && (_driver_options & AP_GPS_Backend::DriverOptions::UBX_Use115200)) ||
+             (_baudrates[dstate->current_baud] >= 115200 && option_set(DriverOptions::UBX_Use115200)) ||
              _baudrates[dstate->current_baud] == 230400) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], GPS_ROLE_NORMAL);
         }
 
-        const uint32_t ublox_mb_required_baud = (_driver_options.get() & AP_GPS_Backend::DriverOptions::UBX_MBUseUart2)?230400:460800;
+        const uint32_t ublox_mb_required_baud = option_set(DriverOptions::UBX_MBUseUart2)?230400:460800;
         if ((_type[instance] == GPS_TYPE_UBLOX_RTK_BASE ||
              _type[instance] == GPS_TYPE_UBLOX_RTK_ROVER) &&
             _baudrates[dstate->current_baud] == ublox_mb_required_baud &&
@@ -762,7 +757,6 @@ void AP_GPS::detect_instance(uint8_t instance)
             }
             new_gps = new AP_GPS_UBLOX(*this, state[instance], _port[instance], role);
         }
-#ifndef HAL_BUILD_AP_PERIPH
 #if AP_GPS_SBP2_ENABLED
         else if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
@@ -796,7 +790,6 @@ void AP_GPS::detect_instance(uint8_t instance)
         }
 #endif //AP_GPS_NMEA_ENABLED
 
-#endif // HAL_BUILD_AP_PERIPH
         if (new_gps) {
             goto found_gps;
         }

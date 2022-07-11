@@ -30,7 +30,7 @@ public:
     void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    bool has_pan_control() const override;
+    bool has_pan_control() const override { return false; }
 
     // set_mode - sets mount's mode
     void set_mode(enum MAV_MOUNT_MODE mode) override;
@@ -43,9 +43,6 @@ public:
     void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg) override;
 
-    // send a GIMBAL_REPORT message to the GCS
-    void send_gimbal_report(mavlink_channel_t chan) override;
-
     void update_fast() override;
 
 private:
@@ -56,7 +53,7 @@ private:
     void Log_Write_Gimbal(SoloGimbal &gimbal);
 
     bool _params_saved;
-
+    MountTarget _angle_rad;         // angle target
     SoloGimbal _gimbal;
 };
 

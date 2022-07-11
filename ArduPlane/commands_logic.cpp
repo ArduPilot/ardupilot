@@ -180,9 +180,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_DO_MOUNT_CONTROL:          // 205
         // point the camera to a specified angle
-        camera_mount.set_angle_targets(cmd.content.mount_control.roll, 
-                                       cmd.content.mount_control.pitch, 
-                                       cmd.content.mount_control.yaw);
+        camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
         break;
 #endif
 
@@ -617,13 +615,11 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     uint8_t cmd_acceptance_distance = LOWBYTE(cmd.p1); // radius in meters to accept reaching the wp
 
     if (cmd_passby > 0) {
-        float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
+        const float dist = prev_WP_loc.get_distance(flex_next_WP_loc);
+        const float bearing_deg = degrees(prev_WP_loc.get_bearing(flex_next_WP_loc));
 
-        if (!is_zero(dist)) {
-            float factor = (dist + cmd_passby) / dist;
-
-            flex_next_WP_loc.lat = flex_next_WP_loc.lat + (flex_next_WP_loc.lat - prev_WP_loc.lat) * (factor - 1.0f);
-            flex_next_WP_loc.lng = flex_next_WP_loc.lng + Location::diff_longitude(flex_next_WP_loc.lng,prev_WP_loc.lng) * (factor - 1.0f);
+        if (is_positive(dist)) {
+            flex_next_WP_loc.offset_bearing(bearing_deg, cmd_passby);
         }
     }
 
@@ -653,8 +649,8 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     } else if (cmd_passby == 0) {
         acceptance_distance_m = nav_controller->turn_distance(get_wp_radius(), auto_state.next_turn_angle);
     }
-
-    if (auto_state.wp_distance <= acceptance_distance_m) {
+    const float wp_dist = current_loc.get_distance(flex_next_WP_loc);
+    if (wp_dist <= acceptance_distance_m) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached waypoint #%i dist %um",
                           (unsigned)mission.get_current_nav_cmd().index,
                           (unsigned)current_loc.get_distance(flex_next_WP_loc));
@@ -713,6 +709,10 @@ bool Plane::verify_loiter_turns(const AP_Mission::Mission_Command &cmd)
 {
     bool result = false;
     uint16_t radius = HIGHBYTE(cmd.p1);
+    if (cmd.type_specific_bits & (1U<<0)) {
+        // special storage handling allows for larger radii
+        radius *= 10;
+    }
     update_loiter(radius);
 
     // LOITER_TURNS makes no sense as VTOL

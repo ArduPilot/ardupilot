@@ -98,12 +98,17 @@ void AP_InertialSensor::Write_Vibration() const
 // Write information about a series of IMU readings to log:
 bool AP_InertialSensor::BatchSampler::Write_ISBH(const float sample_rate_hz) const
 {
+    uint8_t instance_to_write = instance;
+    if (post_filter && (_doing_pre_post_filter_logging
+            || (_doing_post_filter_logging && _doing_sensor_rate_logging))) {
+        instance_to_write += (type == IMU_SENSOR_TYPE_ACCEL ? _imu._accel_count : _imu._gyro_count);
+    }
     const struct log_ISBH pkt{
         LOG_PACKET_HEADER_INIT(LOG_ISBH_MSG),
         time_us        : AP_HAL::micros64(),
         seqno          : isb_seqnum,
         sensor_type    : (uint8_t)type,
-        instance       : instance,
+        instance       : instance_to_write,
         multiplier     : multiplier,
         sample_count   : (uint16_t)_required_count,
         sample_us      : measurement_started_us,
@@ -132,6 +137,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 // @LoggerMessage: FTN
 // @Description: Filter Tuning Messages
 // @Field: TimeUS: microseconds since system startup
+// @Field: I: instance
 // @Field: NDn: number of active dynamic harmonic notches
 // @Field: NF1: dynamic harmonic notch centre frequency for motor 1
 // @Field: NF2: dynamic harmonic notch centre frequency for motor 2
@@ -147,10 +153,19 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 // @Field: NF12: dynamic harmonic notch centre frequency for motor 12
 void AP_InertialSensor::write_notch_log_messages() const
 {
-    const float* notches = get_gyro_dynamic_notch_center_frequencies_hz();
-    AP::logger().WriteStreaming(
-        "FTN", "TimeUS,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s-zzzzzzzzzzzz", "F-------------", "QBffffffffffff", AP_HAL::micros64(), get_num_gyro_dynamic_notch_center_frequencies(),
+    for (auto &notch : harmonic_notches) {
+        const uint8_t i = &notch - &harmonic_notches[0];
+        if (!notch.params.enabled()) {
+            continue;
+        }
+        const float* notches = notch.calculated_notch_freq_hz;
+        AP::logger().WriteStreaming(
+            "FTN", "TimeUS,I,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s#-zzzzzzzzzzzz", "F--------------", "QBBffffffffffff",
+            AP_HAL::micros64(),
+            i,
+            notch.num_calculated_notch_frequencies,
             notches[0], notches[1], notches[2], notches[3],
             notches[4], notches[5], notches[6], notches[7],
             notches[8], notches[9], notches[10], notches[11]);
+    }
 }

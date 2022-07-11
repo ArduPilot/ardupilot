@@ -226,6 +226,7 @@ void NavEKF3_core::InitialiseVariables()
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
     tasTimeout = true;
+    dragTimeout = true;
     badIMUdata = false;
     badIMUdata_ms = 0;
     goodIMUdata_ms = 0;

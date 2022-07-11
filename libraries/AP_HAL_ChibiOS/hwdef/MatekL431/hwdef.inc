@@ -43,7 +43,6 @@ define HAL_DISABLE_LOOP_DELAY
 define HAL_GCS_ENABLED 0
 define HAL_NO_MONITOR_THREAD
 define HAL_NO_LOGGING
-define HAL_MINIMIZE_FEATURES 0
 
 # we setup a small defaults.parm
 define AP_PARAM_MAX_EMBEDDED_PARAM 512

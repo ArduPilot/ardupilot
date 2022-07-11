@@ -1,5 +1,5 @@
 #include "AP_Mount_Servo.h"
-#if HAL_MOUNT_ENABLED
+#if HAL_MOUNT_SERVO_ENABLED
 
 extern const AP_HAL::HAL& hal;
 
@@ -18,84 +18,86 @@ void AP_Mount_Servo::init()
         _pan_idx  = SRV_Channel::k_mount2_pan;
         _open_idx = SRV_Channel::k_mount2_open;
     }
-
-    // check which servos have been assigned
-    check_servo_map();
 }
 
 // update mount position - should be called periodically
 void AP_Mount_Servo::update()
 {
-    static bool mount_open = 0;     // 0 is closed
-
-    // check servo map every three seconds to allow users to modify parameters
-    uint32_t now = AP_HAL::millis();
-    if (now - _last_check_servo_map_ms > 3000) {
-        check_servo_map();
-        _last_check_servo_map_ms = now;
-    }
-
-    switch(get_mode()) {
+    switch (get_mode()) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
-        case MAV_MOUNT_MODE_RETRACT:
-        {
+        case MAV_MOUNT_MODE_RETRACT: {
             _angle_bf_output_deg = _state._retract_angles.get();
+
+            // initialise _angle_rad to smooth transition if user changes to RC_TARGETTING
+            _angle_rad.roll = radians(_angle_bf_output_deg.x);
+            _angle_rad.pitch = radians(_angle_bf_output_deg.y);
+            _angle_rad.yaw = radians(_angle_bf_output_deg.z);
+            _angle_rad.yaw_is_ef = false;
             break;
         }
 
         // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL:
-        {
+        case MAV_MOUNT_MODE_NEUTRAL: {
             _angle_bf_output_deg = _state._neutral_angles.get();
+
+            // initialise _angle_rad to smooth transition if user changes to RC_TARGETTING
+            _angle_rad.roll = radians(_angle_bf_output_deg.x);
+            _angle_rad.pitch = radians(_angle_bf_output_deg.y);
+            _angle_rad.yaw = radians(_angle_bf_output_deg.z);
+            _angle_rad.yaw_is_ef = false;
             break;
         }
 
         // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-        {
-            // earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
-            stabilize();
+        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
+            switch (mavt_target.target_type) {
+            case MountTargetType::ANGLE:
+                _angle_rad = mavt_target.angle_rad;
+                break;
+            case MountTargetType::RATE:
+                update_angle_target_from_rate(mavt_target.rate_rads, _angle_rad);
+                break;
+            }
+            // update _angle_bf_output_deg based on angle target
+            update_angle_outputs(_angle_rad);
             break;
         }
 
         // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-        {
-            // update targets using pilot's rc inputs
-            update_targets_from_rc();
-            stabilize();
+        case MAV_MOUNT_MODE_RC_TARGETING: {
+            // update targets using pilot's RC inputs
+            MountTarget rc_target {};
+            if (get_rc_rate_target(rc_target)) {
+                update_angle_target_from_rate(rc_target, _angle_rad);
+            } else if (get_rc_angle_target(rc_target)) {
+                _angle_rad = rc_target;
+            }
+            // update _angle_bf_output_deg based on angle target
+            update_angle_outputs(_angle_rad);
             break;
         }
 
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-        {
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, true)) {
-                stabilize();
+        // point mount to a GPS location
+        case MAV_MOUNT_MODE_GPS_POINT: {
+            if (get_angle_target_to_roi(_angle_rad)) {
+                update_angle_outputs(_angle_rad);
             }
             break;
         }
 
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            // constantly update the home location:
-            if (!AP::ahrs().home_is_set()) {
-                break;
-            }
-            _state._roi_target = AP::ahrs().get_home();
-            _state._roi_target_set = true;
-            if (calc_angle_to_roi_target(_angle_ef_target_rad, _flags.tilt_control, _flags.pan_control, true)) {
-                stabilize();
+        case MAV_MOUNT_MODE_HOME_LOCATION: {
+            if (get_angle_target_to_home(_angle_rad)) {
+                update_angle_outputs(_angle_rad);
             }
             break;
+        }
 
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (calc_angle_to_sysid_target(_angle_ef_target_rad,
-                                           _flags.tilt_control,
-                                           _flags.pan_control,
-                                           true)) {
-                stabilize();
+        case MAV_MOUNT_MODE_SYSID_TARGET: {
+            if (get_angle_target_to_sysid(_angle_rad)) {
+                update_angle_outputs(_angle_rad);
             }
             break;
+        }
 
         default:
             //do nothing
@@ -103,11 +105,8 @@ void AP_Mount_Servo::update()
     }
 
     // move mount to a "retracted position" into the fuselage with a fourth servo
-    bool mount_open_new = (get_mode() == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
-    if (mount_open != mount_open_new) {
-        mount_open = mount_open_new;
-        move_servo(_open_idx, mount_open_new, 0, 1);
-    }
+    const bool mount_open = (get_mode() == MAV_MOUNT_MODE_RETRACT) ? 0 : 1;
+    move_servo(_open_idx, mount_open, 0, 1);
 
     // write the results to the servos
     move_servo(_roll_idx, _angle_bf_output_deg.x*10, _state._roll_angle_min*0.1f, _state._roll_angle_max*0.1f);
@@ -115,55 +114,44 @@ void AP_Mount_Servo::update()
     move_servo(_pan_idx,  _angle_bf_output_deg.z*10, _state._pan_angle_min*0.1f, _state._pan_angle_max*0.1f);
 }
 
-// set_mode - sets mount's mode
-void AP_Mount_Servo::set_mode(enum MAV_MOUNT_MODE mode)
+// returns true if this mount can control its pan (required for multicopters)
+bool AP_Mount_Servo::has_pan_control() const
 {
-    // record the mode change and return success
-    _state._mode = mode;
+    return SRV_Channels::function_assigned(_pan_idx);
 }
 
 // private methods
 
-// check_servo_map - detects which axis we control using the functions assigned to the servos in the RC_Channel_aux
-//  should be called periodically (i.e. 1hz or less)
-void AP_Mount_Servo::check_servo_map()
-{
-    _flags.roll_control = SRV_Channels::function_assigned(_roll_idx);
-    _flags.tilt_control = SRV_Channels::function_assigned(_tilt_idx);
-    _flags.pan_control = SRV_Channels::function_assigned(_pan_idx);
-}
-
 // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
 void AP_Mount_Servo::send_mount_status(mavlink_channel_t chan)
 {
-    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100, _state._mode);
+    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100, _mode);
 }
 
-// stabilize - stabilizes the mount relative to the Earth's frame
-//  input: _angle_ef_target_rad (earth frame targets in radians)
-//  output: _angle_bf_output_deg (body frame angles in degrees)
-void AP_Mount_Servo::stabilize()
+// update body-frame angle outputs from earth-frame angle targets
+void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    // only do the full 3D frame transform if we are doing pan control
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    // only do the full 3D frame transform if we are stabilising yaw
     if (_state._stab_pan) {
-        Matrix3f m;                         ///< holds 3 x 3 matrix, var is used as temp in calcs
-        Matrix3f cam;                       ///< Rotation matrix earth to camera. Desired camera from input.
-        Matrix3f gimbal_target;             ///< Rotation matrix from plane to camera. Then Euler angles to the servos.
+        Matrix3f m;                         // 3 x 3 rotation matrix used as temporary variable in calculations
+        Matrix3f ef_to_cam;                 // rotation matrix from earth-frame to camera. Desired camera from input.
+        Matrix3f gimbal_target_bf;          // rotation matrix from vehicle to camera then Euler angles to the servos
+        Vector3f gimbal_angle_bf_rad;       // gimbal angle targets in body-frame euler angles
         m = ahrs.get_rotation_body_to_ned();
         m.transpose();
-        cam.from_euler(_angle_ef_target_rad.x, _angle_ef_target_rad.y, _angle_ef_target_rad.z);
-        gimbal_target = m * cam;
-        gimbal_target.to_euler(&_angle_bf_output_deg.x, &_angle_bf_output_deg.y, &_angle_bf_output_deg.z);
-        _angle_bf_output_deg.x  = _state._stab_roll ? degrees(_angle_bf_output_deg.x) : degrees(_angle_ef_target_rad.x);
-        _angle_bf_output_deg.y  = _state._stab_tilt ? degrees(_angle_bf_output_deg.y) : degrees(_angle_ef_target_rad.y);
-        _angle_bf_output_deg.z = degrees(_angle_bf_output_deg.z);
+        ef_to_cam.from_euler(angle_rad.roll, angle_rad.pitch, get_ef_yaw_angle(angle_rad));
+        gimbal_target_bf = m * ef_to_cam;
+        gimbal_target_bf.to_euler(&gimbal_angle_bf_rad.x, &gimbal_angle_bf_rad.y, &gimbal_angle_bf_rad.z);
+        _angle_bf_output_deg.x = _state._stab_roll ? degrees(gimbal_angle_bf_rad.x) : degrees(angle_rad.roll);
+        _angle_bf_output_deg.y = _state._stab_tilt ? degrees(gimbal_angle_bf_rad.y) : degrees(angle_rad.pitch);
+        _angle_bf_output_deg.z = degrees(gimbal_angle_bf_rad.z);
     } else {
-        // otherwise base mount roll and tilt on the ahrs
-        // roll/tilt attitude, plus any requested angle
-        _angle_bf_output_deg.x = degrees(_angle_ef_target_rad.x);
-        _angle_bf_output_deg.y = degrees(_angle_ef_target_rad.y);
-        _angle_bf_output_deg.z = degrees(_angle_ef_target_rad.z);
+        // otherwise base roll and pitch on the ahrs roll and pitch angle plus any requested angle
+        _angle_bf_output_deg.x = degrees(angle_rad.roll);
+        _angle_bf_output_deg.y = degrees(angle_rad.pitch);
+        _angle_bf_output_deg.z = degrees(get_bf_yaw_angle(angle_rad));
         if (_state._stab_roll) {
             _angle_bf_output_deg.x -= degrees(ahrs.roll);
         }
@@ -221,4 +209,4 @@ void AP_Mount_Servo::move_servo(uint8_t function_idx, int16_t angle, int16_t ang
 	int16_t servo_out = closest_limit(angle, angle_min, angle_max);
 	SRV_Channels::move_servo((SRV_Channel::Aux_servo_function_t)function_idx, servo_out, angle_min, angle_max);
 }
-#endif // HAL_MOUNT_ENABLED
+#endif // HAL_MOUNT_SERVO_ENABLED

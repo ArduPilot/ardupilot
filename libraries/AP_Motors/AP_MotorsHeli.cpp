@@ -190,12 +190,6 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     _mav_type = MAV_TYPE_HELICOPTER;
 }
 
-// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-void AP_MotorsHeli::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
-{
-    set_initialised_ok(frame_class == MOTOR_FRAME_HELI);
-}
-
 // output_min - sets servos to neutral point with motors stopped
 void AP_MotorsHeli::output_min()
 {

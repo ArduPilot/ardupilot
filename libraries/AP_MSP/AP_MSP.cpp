@@ -21,6 +21,8 @@
 #include "AP_MSP_Telem_DJI.h"
 #include "AP_MSP_Telem_DisplayPort.h"
 
+#include <AP_Notify/AP_Notify.h>
+
 #include <ctype.h>
 #include <stdio.h>
 

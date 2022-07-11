@@ -75,7 +75,7 @@ UC_REGISTRY_BINDER(RelPosHeadingCb, ardupilot::gnss::RelPosHeading);
 #else
 #define NATIVE_TIME_OFFSET 0
 #endif
-AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[] = {0};
+AP_GPS_UAVCAN::DetectedModules AP_GPS_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_GPS_UAVCAN::_sem_registry;
 
 // Member Methods
@@ -955,14 +955,14 @@ bool AP_GPS_UAVCAN::handle_param_get_set_response_int(AP_UAVCAN* ap_uavcan, uint
     }
 
     if (strcmp(name, "GPS_MB_ONLY_PORT") == 0 && cfg_step == STEP_SET_MB_CAN_TX) {
-        if ((gps._driver_options & UAVCAN_MBUseDedicatedBus) && !value) {
+        if (option_set(AP_GPS::UAVCAN_MBUseDedicatedBus) && !value) {
             // set up so that another CAN port is used for the Moving Baseline Data
             // setting this value will allow another CAN port to be used as dedicated
             // line for the Moving Baseline Data
             value = 1;
             requires_save_and_reboot = true;
             return true;
-        } else if (!(gps._driver_options & UAVCAN_MBUseDedicatedBus) && value) {
+        } else if (!option_set(AP_GPS::UAVCAN_MBUseDedicatedBus) && value) {
             // set up so that all CAN ports are used for the Moving Baseline Data
             value = 0;
             requires_save_and_reboot = true;

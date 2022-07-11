@@ -33,6 +33,13 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_Generator, _type, 0, AP_PARAM_FLAG_ENABLE),
 
+    // @Param: OPTIONS
+    // @DisplayName: Generator Options
+    // @Description: Bitmask of options for generators
+    // @Bitmask: 0:Supress Maintenance-Required Warnings
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS", 2, AP_Generator, _options, 0),
+
     AP_GROUPEND
 };
 

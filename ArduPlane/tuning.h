@@ -83,6 +83,9 @@ private:
         TUNING_SET_ANG_ROLL_PITCH =          5,
         TUNING_SET_VXY =                     6,
         TUNING_SET_AZ =                      7,
+        TUNING_SET_RATE_PITCHDP =            8,
+        TUNING_SET_RATE_ROLLDP =             9,
+        TUNING_SET_RATE_YAWDP =             10,
     };
 
     AP_Float *get_param_pointer(uint8_t parm) override;
@@ -98,6 +101,9 @@ private:
     static const uint8_t tuning_set_ang_roll_pitch[];
     static const uint8_t tuning_set_vxy[];
     static const uint8_t tuning_set_az[];
+    static const uint8_t tuning_set_rate_pitchDP[];
+    static const uint8_t tuning_set_rate_rollDP[];
+    static const uint8_t tuning_set_rate_yawDP[];
 
     // mask of what params have been set
     uint64_t have_set;

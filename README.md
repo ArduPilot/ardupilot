@@ -94,7 +94,7 @@ for reviewing patches on their specific area.
   - ***Bug Master***
 - [Grant Morphett](https://github.com/gmorph):
   - ***Vehicle***: Rover
-- [Jacob Walser](https://github.com/jaxxzer):
+- [Willian Galvani](https://github.com/williangalvani):
   - ***Vehicle***: Sub
 - [Lucas De Marchi](https://github.com/lucasdemarchi):
   - ***Subsystem***: Linux

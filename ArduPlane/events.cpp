@@ -12,6 +12,9 @@ bool Plane::failsafe_in_landing_sequence() const
         return true;
     }
 #endif
+    if (mission.get_in_landing_sequence_flag()) {
+        return true;
+    }
     return false;
 }
 
@@ -54,7 +57,9 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::QAUTOTUNE:
 #endif
     case Mode::Number::QACRO:
-        if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
+        if (quadplane.options & QuadPlane::OPTION_FS_RTL) {
+            set_mode(mode_rtl, reason);
+        } else if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
             set_mode(mode_qrtl, reason);
         } else {
             set_mode(mode_qland, reason);
@@ -147,7 +152,9 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
 #endif
-        if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
+        if (quadplane.options & QuadPlane::OPTION_FS_RTL) {
+            set_mode(mode_rtl, reason);
+        } else if (quadplane.options & QuadPlane::OPTION_FS_QRTL) {
             set_mode(mode_qrtl, reason);
         } else {
             set_mode(mode_qland, reason);

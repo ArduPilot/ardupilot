@@ -53,7 +53,7 @@ public:
         return channel_bidir_dshot_mask.get() & (1U << motor_map[esc_index]);
     }
 
-    uint16_t get_bidir_dshot_mask() const { return channel_bidir_dshot_mask.get(); }
+    uint32_t get_bidir_dshot_mask() const { return channel_bidir_dshot_mask.get(); }
 
     static AP_BLHeli *get_singleton(void) {
         return _singleton;
@@ -231,6 +231,8 @@ private:
 
     // have we disabled motor outputs?
     bool motors_disabled;
+    // mask of channels that should normally be disabled
+    uint32_t motors_disabled_mask;
 
     // have we locked the UART?
     bool uart_locked;
@@ -240,7 +242,7 @@ private:
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
-    uint16_t motor_mask;
+    uint32_t motor_mask;
 
     // convert between servo number and FMU channel number for ESC telemetry
     uint8_t chan_offset;

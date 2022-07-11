@@ -17,6 +17,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Stats/AP_Stats.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_Notify/AP_Notify.h>
 
 #include "AP_MSP.h"
 #include "AP_MSP_Telem_DJI.h"

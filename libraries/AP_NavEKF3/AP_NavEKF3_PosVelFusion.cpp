@@ -442,7 +442,7 @@ void NavEKF3_core::SelectVelPosFusion()
         CalculateVelInnovationsAndVariances(extNavVelDelayed.vel, extNavVelDelayed.err, frontend->extNavVelVarAccScale, extNavVelInnov, extNavVelVarInnov);
 
         // record time innovations were calculated (for timeout checks)
-        extNavVelInnovTime_ms = AP_HAL::millis();
+        extNavVelInnovTime_ms = dal.millis();
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
 
@@ -457,7 +457,7 @@ void NavEKF3_core::SelectVelPosFusion()
         // calculate innovations and variances for reporting purposes only
         CalculateVelInnovationsAndVariances(gpsDataDelayed.vel, frontend->_gpsHorizVelNoise, frontend->gpsNEVelVarAccScale, gpsVelInnov, gpsVelVarInnov);
         // record time innovations were calculated (for timeout checks)
-        gpsVelInnovTime_ms = AP_HAL::millis();
+        gpsVelInnovTime_ms = dal.millis();
     }
 
     // detect position source changes.  Trigger position reset if position source is valid

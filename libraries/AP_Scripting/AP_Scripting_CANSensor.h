@@ -25,8 +25,9 @@ class ScriptingCANBuffer;
 class ScriptingCANSensor : public CANSensor {
 public:
 
-    ScriptingCANSensor():CANSensor("Script") {
-        register_driver(AP_CANManager::Driver_Type::Driver_Type_Scripting);
+    ScriptingCANSensor(AP_CANManager::Driver_Type dtype)
+        : CANSensor("Script") {
+        register_driver(dtype);
     }
 
     // handler for outgoing frames, using uint32
