@@ -70,7 +70,6 @@ try:
         'AHRS_ORIENTATION': 0.0,
         'SIMPLE': 0.0,
         'RC2_MAX': 1929.0,
-        'MNT_RC_RATE': 0.0,
         'RC8_FUNCTION': 0.0,
         'INS_ACCSCAL_X': 0.992788,
         'ACRO_P': 4.5,
@@ -220,7 +219,6 @@ try:
         'RATE_RLL_IMAX': 4500.0,
         'HLD_LAT_P': 1.0,
         'AHRS_GPS_MINSATS': 6.0,
-        'FLOW_TYPE': 0.0,
         'RC8_REV': 1.0,
         'SONAR_GAIN': 0.2,
         'RC2_TRIM': 1521.0,
@@ -315,6 +313,8 @@ try:
         'BATT_CURR_PIN': 12.0,
         'WPNAV_SPEED_UP': 250.0,
         'RC1_TRIM': 1524.0,
+        "MNT_JSTICK_SPD": 0.0,
+        "FLOW_ENABLE": 0.0,
     }
     assert logdata.messages == {}
     assert logdata.modeChanges == {
@@ -335,7 +335,7 @@ try:
     assert logdata.channels['CTUN']['CRate'].listData[51] == (421, 31)
     assert logdata.channels['CTUN']['CRate'].listData[115] == (563, -8)
     assert int(logdata.filesizeKB) == 307
-    assert logdata.durationSecs == 155
+    assert abs(logdata.durationSecs - 155.399) < 1e-9
     assert logdata.lineCount == 4750
 
     # test LogIterator class
