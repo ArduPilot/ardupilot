@@ -40,7 +40,7 @@ class Format(object):
                 return int(value)
             elif valueType in "nNZ":
                 return str(value)
-        except:
+        except ValueError:
             pass
         return value
 
@@ -261,7 +261,7 @@ class Channel(object):
             if line >= lineNumber:
                 return (self.listData[index][1], line)
             index += 1
-        raise Exception("Error finding nearest value for line %d" % lineNumber)
+        raise ValueError("Error finding nearest value for line %d" % lineNumber)
 
     def getNearestValueBack(self, lineNumber):
         '''Returns (value,lineNumber)'''
@@ -272,19 +272,19 @@ class Channel(object):
             if line <= lineNumber:
                 return (self.listData[index][1], line)
             index -= 1
-        raise Exception("Error finding nearest value for line %d" % lineNumber)
+        raise ValueError("Error finding nearest value for line %d" % lineNumber)
 
     def getNearestValue(self, lineNumber, lookForwards=True):
         '''find the nearest data value to the given lineNumber, defaults to first looking forwards. Returns (value,lineNumber)'''
         if lookForwards:
             try:
                 return self.getNearestValueFwd(lineNumber)
-            except:
+            except ValueError:
                 return self.getNearestValueBack(lineNumber)
         else:
             try:
                 return self.getNearestValueBack(lineNumber)
-            except:
+            except ValueError:
                 return self.getNearestValueFwd(lineNumber)
         raise Exception("Error finding nearest value for line %d" % lineNumber)
 
@@ -797,7 +797,7 @@ class DataflashLog(object):
                     break
                 try:
                     e = typ.from_buffer(data, offset)
-                except:
+                except ValueError:
                     print(
                         "data:{} offset:{} size:{} sizeof:{} sum:{}".format(
                             len(data), offset, typ.SIZE, ctypes.sizeof(typ), offset + typ.SIZE
