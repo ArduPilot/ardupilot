@@ -23,6 +23,7 @@
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <SITL/SIM_GPS.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 /**
    maximum number of GPS instances available on this platform. If more
