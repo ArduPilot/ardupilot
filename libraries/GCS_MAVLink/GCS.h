@@ -636,6 +636,8 @@ protected:
 
 private:
 
+    const AP_SerialManager::UARTState *uartstate;
+
     // last time we got a non-zero RSSI from RADIO_STATUS
     static struct LastRadioStatus {
         uint32_t remrssi_ms;
