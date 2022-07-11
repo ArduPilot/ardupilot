@@ -561,6 +561,7 @@ class sitl(Board):
             env.CXXFLAGS += [
                 "-fsanitize=undefined",
                 "-fsanitize=float-cast-overflow",
+                "-DUBSAN_ENABLED",
             ]
             env.LINKFLAGS += [
                 "-fsanitize=undefined",
