@@ -120,7 +120,7 @@ class TestAutotune(Test):
                         line = logdata.channels['ATUN']['RateMax'].getNearestValueFwd(linenext)[1]
                         if line > a.linestop:
                             break
-                    except:
+                    except ValueError:
                         break
                     atun = class_from_channel('ATUN')()
                     for key in logdata.channels['ATUN']:
