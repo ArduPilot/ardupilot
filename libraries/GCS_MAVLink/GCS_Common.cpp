@@ -944,7 +944,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_BATTERY2,              MSG_BATTERY2},
         { MAVLINK_MSG_ID_CAMERA_FEEDBACK,       MSG_CAMERA_FEEDBACK},
 #if HAL_MOUNT_ENABLED
-        { MAVLINK_MSG_ID_MOUNT_STATUS,          MSG_MOUNT_STATUS},
+        { MAVLINK_MSG_ID_GIMBAL_DEVICE_ATTITUDE_STATUS, MSG_GIMBAL_DEVICE_ATTITUDE_STATUS},
         { MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE},
 #endif
 #if AP_OPTICALFLOW_ENABLED
@@ -5139,13 +5139,13 @@ void GCS_MAVLINK::send_global_position_int()
 }
 
 #if HAL_MOUNT_ENABLED
-void GCS_MAVLINK::send_mount_status() const
+void GCS_MAVLINK::send_gimbal_device_attitude_status() const
 {
     AP_Mount *mount = AP::mount();
     if (mount == nullptr) {
         return;
     }
-    mount->send_mount_status(chan);
+    mount->send_gimbal_device_attitude_status(chan);
 }
 #endif
 
@@ -5455,10 +5455,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_local_position();
         break;
 
-    case MSG_MOUNT_STATUS:
+    case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
 #if HAL_MOUNT_ENABLED
-        CHECK_PAYLOAD_SIZE(MOUNT_STATUS);
-        send_mount_status();
+        CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
+        send_gimbal_device_attitude_status();
 #endif
         break;
     case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
