@@ -6,10 +6,9 @@
 
 # AP_FLAKE8_CLEAN
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 import bisect
-import collections
 import ctypes
 import sys
 
@@ -161,9 +160,13 @@ class BinaryFormat(ctypes.LittleEndianStructure):
         )
 
     def to_class(self):
-        labels = self.labels.decode('ascii') if self.labels else ""
+        labels = self.labels.decode(encoding="utf-8") if self.labels else ""
         members = dict(
-            NAME=self.name.decode('ascii'), MSG=self.type, SIZE=self.length, labels=labels.split(","), _pack_=True
+            NAME=self.name.decode(encoding="utf-8"),
+            MSG=self.type,
+            SIZE=self.length,
+            labels=labels.split(","),
+            _pack_=True,
         )
 
         if type(self.types[0]) == str:
@@ -190,7 +193,7 @@ class BinaryFormat(ctypes.LittleEndianStructure):
                 def get_message_attribute(x):
                     ret = getattr(x, attributename)
                     if str(format) in ['Z', 'n', 'N']:
-                        ret = ret.decode('ascii')
+                        ret = ret.decode(encoding="utf-8")
                     return ret
 
                 p = property(get_message_attribute)
@@ -239,6 +242,7 @@ class Channel(object):
         '''returns a segment of this data (from startLine to endLine, inclusive) as a new Channel instance'''
         segment = Channel()
         segment.dictData = {k: v for k, v in self.dictData.items() if k >= startLine and k <= endLine}
+        segment.listData = [(k, v) for k, v in self.listData if k >= startLine and k <= endLine]
         return segment
 
     def min(self):
@@ -365,6 +369,8 @@ class LogIterator:
                 self.iterators[lineLabel] = (index, lineNumber)
         return self
 
+    __next__ = next
+
     def jump(self, lineNumber):
         '''jump iterator to specified log line'''
         self.currentLine = lineNumber
@@ -417,16 +423,15 @@ class DataflashLogHelper:
             else:
                 return 1
 
-        od = collections.OrderedDict(sorted(logdata.modeChanges.items(), key=lambda t: t[0]))
+        changes = [{"line": k, "modeName": v[0], "modeNum": v[1]} for k, v in sorted(logdata.modeChanges.items())]
         chunks = []
-        for i in range(len(od.keys())):
-            if od.values()[i][0] == "LOITER":
-                startLine = od.keys()[i]
-                endLine = None
-                if i == len(od.keys()) - 1:
+        for i in range(len(changes)):
+            if changes[i]["modeName"] == "LOITER":
+                startLine = changes[i]["line"]
+                try:
+                    endLine = changes[i + 1]["line"]
+                except IndexError:
                     endLine = logdata.lineCount
-                else:
-                    endLine = od.keys()[i + 1] - 1
                 chunkTimeSeconds = (
                     DataflashLogHelper.getTimeAtLine(logdata, endLine)
                     - DataflashLogHelper.getTimeAtLine(logdata, startLine)
@@ -711,6 +716,7 @@ class DataflashLog(object):
         for line in f:
             lineNumber = lineNumber + 1
             numBytes += len(line) + 1
+            line = line.decode(encoding="utf-8")
             try:
                 line = line.strip('\n\r')
                 tokens = line.split(', ')

@@ -24,8 +24,6 @@ from __future__ import print_function
 import argparse
 import datetime
 import glob
-import imp
-import inspect
 import os
 import sys
 import time
@@ -74,16 +72,34 @@ class TestSuite(object):
         # to prevent one being loaded, move it out of that folder, or set that test's .enable attribute to False
         dirName = os.path.dirname(os.path.abspath(__file__))
         testScripts = glob.glob(dirName + '/tests/*.py')
-        testClasses = []
+
+        def getTests(module_path):
+            import inspect
+
+            tests = []
+            module_name = os.path.basename(module_path)[:-3]
+            if sys.version_info >= (3, 5):
+                from importlib.util import spec_from_file_location, module_from_spec
+
+                spec = spec_from_file_location(module_name, module_path)
+                m = module_from_spec(spec)
+                spec.loader.exec_module(m)
+            else:
+                from imp import load_source
+
+                m = load_source(module_name, module_path)
+            for _, _class in inspect.getmembers(m, inspect.isclass):
+                if _class.__module__ == m.__name__:
+                    tests.append(_class())
+            return tests
+
         for script in testScripts:
-            m = imp.load_source("m", script)
-            for name, obj in inspect.getmembers(m, inspect.isclass):
-                if name not in testClasses and inspect.getsourcefile(obj) == script:
-                    testClasses.append(name)
-                    self.tests.append(obj())
+            self.tests.extend(getTests(script))
 
         # and here's an example of explicitly loading a Test class if you wanted to do that
-        # m = imp.load_source("m", dirName + '/tests/TestBadParams.py')
+        # spec = importlib.util.spec_from_file_location("m", dirName + "/tests/TestBadParams.py")
+        # m = importlib.util.module_from_spec(spec)
+        # spec.loader.exec_module(m)
         # self.tests.append(m.TestBadParams())
 
     def run(self, logdata, verbose):
