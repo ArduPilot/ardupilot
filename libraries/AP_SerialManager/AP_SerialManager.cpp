@@ -643,22 +643,6 @@ int8_t AP_SerialManager::find_portnum(enum SerialProtocol protocol, uint8_t inst
     return int8_t(_state - &state[0]);
 }
 
-// get_mavlink_channel - provides the mavlink channel associated with a given protocol
-//  instance should be zero if searching for the first instance, 1 for the second, etc
-//  returns true if a channel is found, false if not
-bool AP_SerialManager::get_mavlink_channel(enum SerialProtocol protocol, uint8_t instance, mavlink_channel_t &mav_chan) const
-{
-    // check for MAVLink
-    if (protocol_match(protocol, SerialProtocol_MAVLink)) {
-        if (instance < MAVLINK_COMM_NUM_BUFFERS) {
-            mav_chan = (mavlink_channel_t)(MAVLINK_COMM_0 + instance);
-            return true;
-        }
-    }
-    // report failure
-    return false;
-}
-
 // should_forward_mavlink_telemetry - returns true if this port should forward telemetry
 bool AP_SerialManager::should_forward_mavlink_telemetry(enum SerialProtocol protocol, uint8_t instance) const
 {
