@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   build-gcc-ap_periph:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-base:latest
     steps:
       # git checkout the PR
@@ -54,7 +54,7 @@ jobs:
 
   autotest-can:
     needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container: 
       image: ardupilot/ardupilot-dev-base:latest
       options: --privileged
