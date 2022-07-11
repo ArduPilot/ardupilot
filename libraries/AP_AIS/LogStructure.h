@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
-#include "AP_AIS.h"
+#include "AP_AIS_config.h"
 
 #define LOG_IDS_FROM_AIS \
     LOG_AIS_RAW_MSG,\
