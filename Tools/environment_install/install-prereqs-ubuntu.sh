@@ -316,7 +316,8 @@ echo "Done!"
 SHELL_LOGIN=".profile"
 if $IS_DOCKER; then
     echo "Inside docker, we add the tools path into .bashrc directly"
-    SHELL_LOGIN=".bashrc"
+    SHELL_LOGIN=".ardupilot_env"
+    echo "# ArduPilot env file. Need to be loaded by your Shell." > ~/$SHELL_LOGIN
 fi
 
 heading "Adding ArduPilot Tools to environment"
@@ -377,4 +378,10 @@ if [[ $SKIP_AP_GIT_CHECK -ne 1 ]]; then
     echo "Done!"
   fi
 fi
+
+if $IS_DOCKER; then
+    echo "Finalizing ArduPilot env for Docker"
+    echo "source ~/.ardupilot_env">> ~/.bashrc
+fi
+
 echo "---------- $0 end ----------"
