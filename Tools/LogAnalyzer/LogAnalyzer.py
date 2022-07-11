@@ -154,7 +154,7 @@ class TestSuite(object):
                 xml = sys.stdout
             else:
                 xml = open(xmlFile, 'w')
-        except:
+        except IOError:
             sys.stderr.write("Error opening output xml file: %s" % xmlFile)
             sys.exit(1)
 
