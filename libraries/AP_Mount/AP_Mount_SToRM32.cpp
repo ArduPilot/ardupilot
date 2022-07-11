@@ -123,11 +123,11 @@ void AP_Mount_SToRM32::set_mode(enum MAV_MOUNT_MODE mode)
     _mode = mode;
 }
 
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_SToRM32::send_mount_status(mavlink_channel_t chan)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_SToRM32::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // return target angles as gimbal's actual attitude.  To-Do: retrieve actual gimbal attitude and send these instead
-    mavlink_msg_mount_status_send(chan, 0, 0, degrees(_angle_rad.pitch)*100, degrees(_angle_rad.roll)*100, degrees(get_bf_yaw_angle(_angle_rad))*100, _mode);
+    att_quat.from_euler(_angle_rad.roll, _angle_rad.pitch, get_bf_yaw_angle(_angle_rad));
+    return true;
 }
 
 // search for gimbal in GCS_MAVLink routing table

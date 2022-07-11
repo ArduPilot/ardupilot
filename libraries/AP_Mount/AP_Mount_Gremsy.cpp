@@ -121,31 +121,17 @@ bool AP_Mount_Gremsy::healthy() const
     return true;
 }
 
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_Gremsy::send_mount_status(mavlink_channel_t chan)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_Gremsy::get_attitude_quaternion(Quaternion& att_quat)
 {
-    // check we have space for the message
-    if (!HAVE_PAYLOAD_SPACE(chan, GIMBAL_DEVICE_ATTITUDE_STATUS)) {
-        return;
-    }
-
     // check we have received an updated message
     if (_gimbal_device_attitude_status.time_boot_ms == _sent_gimbal_device_attitude_status_ms) {
-        return;
+        return false;
     }
     _sent_gimbal_device_attitude_status_ms = _gimbal_device_attitude_status.time_boot_ms;
 
-    // forward on message to GCS
-    mavlink_msg_gimbal_device_attitude_status_send(chan,
-                                                   0,    // target system
-                                                   0,    // target component
-                                                   AP_HAL::millis(),    // autopilot system time
-                                                   _gimbal_device_attitude_status.flags,
-                                                   _gimbal_device_attitude_status.q,
-                                                   _gimbal_device_attitude_status.angular_velocity_x,
-                                                   _gimbal_device_attitude_status.angular_velocity_y,
-                                                   _gimbal_device_attitude_status.angular_velocity_z,
-                                                   _gimbal_device_attitude_status.failure_flags);
+    att_quat = _gimbal_device_attitude_status.q;
+    return true;
 }
 
 // search for gimbal in GCS_MAVLink routing table

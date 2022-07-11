@@ -742,13 +742,13 @@ void AP_Mount::handle_mount_control(const mavlink_message_t &msg)
     _backends[_primary]->handle_mount_control(packet);
 }
 
-/// Return mount status information
-void AP_Mount::send_mount_status(mavlink_channel_t chan)
+// send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
+void AP_Mount::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {
-    // call send_mount_status for each instance
+    // call send_gimbal_device_attitude_status for each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
-            _backends[instance]->send_mount_status(chan);
+            _backends[instance]->send_gimbal_device_attitude_status(chan);
         }
     }
 }

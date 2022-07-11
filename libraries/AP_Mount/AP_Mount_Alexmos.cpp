@@ -102,15 +102,19 @@ bool AP_Mount_Alexmos::has_pan_control() const
     return _gimbal_3axis;
 }
 
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_Alexmos::send_mount_status(mavlink_channel_t chan)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_Alexmos::get_attitude_quaternion(Quaternion& att_quat)
 {
     if (!_initialised) {
-        return;
+        return false;
     }
 
+    // request attitude from gimbal
     get_angles();
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_angle.y*100, _current_angle.x*100, _current_angle.z*100, _mode);
+
+    // construct quaternion
+    att_quat.from_euler(radians(_current_angle.x), radians(_current_angle.y), radians(_current_angle.z));
+    return true;
 }
 
 /*
