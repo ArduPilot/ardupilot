@@ -35,15 +35,20 @@ public:
     // set_mode - sets mount's mode
     void set_mode(enum MAV_MOUNT_MODE mode) override;
 
-    // send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-    void send_mount_status(mavlink_channel_t chan) override;
-
     // handle a GIMBAL_REPORT message
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) override;
     void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg) override;
 
     void update_fast() override;
+
+protected:
+
+    // returns true if heart beat should be suppressed for this gimbal
+    bool suppress_heartbeat() const override { return true; }
+
+    // get attitude as a quaternion.  returns true on success
+    bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
     // internal variables

@@ -120,13 +120,14 @@ bool AP_Mount_Servo::has_pan_control() const
     return SRV_Channels::function_assigned(_pan_idx);
 }
 
-// private methods
-
-// send_mount_status - called to allow mounts to send their status to GCS using the MOUNT_STATUS message
-void AP_Mount_Servo::send_mount_status(mavlink_channel_t chan)
+// get attitude as a quaternion.  returns true on success
+bool AP_Mount_Servo::get_attitude_quaternion(Quaternion& att_quat)
 {
-    mavlink_msg_mount_status_send(chan, 0, 0, _angle_bf_output_deg.y*100, _angle_bf_output_deg.x*100, _angle_bf_output_deg.z*100, _mode);
+    att_quat.from_euler(radians(_angle_bf_output_deg.x), radians(_angle_bf_output_deg.y), radians(_angle_bf_output_deg.z));
+    return true;
 }
+
+// private methods
 
 // update body-frame angle outputs from earth-frame angle targets
 void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)

@@ -36,14 +36,16 @@ public:
     // has_pan_control
     bool has_pan_control() const override { return true; }
 
-    // send_mount_status
-    void send_mount_status(mavlink_channel_t chan) override;
-
     // handle GIMBAL_DEVICE_INFORMATION message
     void handle_gimbal_device_information(const mavlink_message_t &msg) override;
 
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) override;
+
+protected:
+
+    // get attitude as a quaternion.  returns true on success
+    bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
 

@@ -82,8 +82,8 @@ public:
     // process MOUNT_CONTROL messages received from GCS. deprecated.
     void handle_mount_control(const mavlink_mount_control_t &packet);
 
-    // send_mount_status - called to allow mounts to send their status to GCS via MAVLink
-    virtual void send_mount_status(mavlink_channel_t chan) = 0;
+    // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
+    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
 
     // handle a GIMBAL_REPORT message
     virtual void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) {}
@@ -114,6 +114,12 @@ protected:
         float yaw;
         bool yaw_is_ef;
     };
+
+    // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
+    virtual bool suppress_heartbeat() const { return false; }
+
+    // get attitude as a quaternion.  returns true on success
+    virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
     // get pilot input (in the range -1 to +1) received through RC
     void get_rc_input(float& roll_in, float& pitch_in, float& yaw_in) const;
@@ -152,6 +158,9 @@ protected:
     // the resulting angle_rad yaw frame will match the rate_rad yaw frame
     // assumes a 50hz update rate
     void update_angle_target_from_rate(const MountTarget& rate_rad, MountTarget& angle_rad) const;
+
+    // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
+    uint16_t get_gimbal_device_flags() const;
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
