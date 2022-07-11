@@ -22,7 +22,6 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Param/AP_Param.h>
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
@@ -201,13 +200,6 @@ public:
     // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
     int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
 
-    // should_forward_mavlink_telemetry - returns true if this port should forward telemetry
-    bool should_forward_mavlink_telemetry(enum SerialProtocol protocol, uint8_t instance) const;
-
-    // get_mavlink_protocol - provides the specific MAVLink protocol for a
-    // given channel, or SerialProtocol_None if not found
-    SerialProtocol get_mavlink_protocol(mavlink_channel_t mav_chan) const;
-
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
@@ -229,26 +221,45 @@ public:
     // parameter var table
     static const struct AP_Param::GroupInfo var_info[];
 
+    class UARTState {
+        friend class AP_SerialManager;
+    public:
+        bool option_enabled(uint16_t option) const {
+            return (options & option) == option;
+        }
+        // returns a baudrate such as 9600.  May map from a special
+        // parameter value like "57" to "57600":
+        uint32_t baudrate() const {
+            return AP_SerialManager::map_baudrate(baud);
+        }
+        AP_SerialManager::SerialProtocol get_protocol() const {
+            return AP_SerialManager::SerialProtocol(protocol.get());
+        }
+    private:
+        AP_Int32 baud;
+        AP_Int16 options;
+        AP_Int8 protocol;
+    };
+
+    // search through managed serial connections looking for the
+    // instance-nth UART which is running protocol protocol.
+    // protocol_match is used to determine equivalence of one protocol
+    // to another, e.g. MAVLink2 is considered MAVLink1 for finding
+    // mavlink1 protocol instances.
+    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
+                                            uint8_t instance) const;
+
 private:
     static AP_SerialManager *_singleton;
 
     // array of uart info. See comment above about
     // SERIALMANAGER_MAX_PORTS
-    struct UARTState {
-        AP_Int32 baud;
-        AP_Int16 options;
-        AP_Int8 protocol;
-    } state[SERIALMANAGER_MAX_PORTS];
+    UARTState state[SERIALMANAGER_MAX_PORTS];
 
     // pass-through serial support
     AP_Int8 passthru_port1;
     AP_Int8 passthru_port2;
     AP_Int8 passthru_timeout;
-
-    // search through managed serial connections looking for the
-    // instance-nth UART which is running protocol protocol
-    const UARTState *find_protocol_instance(enum SerialProtocol protocol,
-                                      uint8_t instance) const;
 
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
