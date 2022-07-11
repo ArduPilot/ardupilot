@@ -1566,6 +1566,29 @@ void AP_Periph_FW::hwesc_telem_update()
 }
 #endif // HAL_PERIPH_ENABLE_HWESC
 
+void AP_Periph_FW::APD_ESC_Telem_update() {
+    if (!APD_ESC_Telem.update()) {
+        return;
+    }
+    
+    uavcan_equipment_esc_Status pkt {};
+    // pkt.esc_index = g.esc_number;
+    pkt.voltage = APD_ESC_Telem.decoded.voltage;
+    pkt.current = APD_ESC_Telem.decoded.bus_current;
+    pkt.temperature = APD_ESC_Telem.decoded.temperature;
+    pkt.rpm = APD_ESC_Telem.decoded.rpm;
+    // pkt.power_rating_pct = APD_ESC_Telem.decoded.
+
+    uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE] {};
+    uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !periph.canfdout());
+    canard_broadcast(UAVCAN_EQUIPMENT_ESC_STATUS_SIGNATURE,
+                    UAVCAN_EQUIPMENT_ESC_STATUS_ID,
+                    CANARD_TRANSFER_PRIORITY_LOW,
+                    &buffer[0],
+                    total_size);
+}
+
+
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
 /*
@@ -1677,6 +1700,9 @@ void AP_Periph_FW::can_update()
 #ifdef HAL_PERIPH_ENABLE_HWESC
     hwesc_telem_update();
 #endif
+
+    APD_ESC_Telem_update();
+
 #ifdef HAL_PERIPH_ENABLE_MSP
     msp_sensor_update();
 #endif

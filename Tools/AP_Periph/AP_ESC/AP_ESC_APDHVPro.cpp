@@ -2,10 +2,18 @@
 
 #include "AP_ESC_APDHVPro.h"
 
-AP_ESC_APDHVPro::AP_ESC_APDHVPro(AP_ESC &frontend) : AP_ESC_Backend(frontend) {
-    port = frontend.hal.serial(frontend.serial_port_num);
-    port->begin(frontend.serial_port_baud);
-    // port->set_options(AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
+AP_ESC_APDHVPro::AP_ESC_APDHVPro(void){
+    
+}
+
+void AP_ESC_APDHVPro::init(AP_HAL::UARTDriver *_uart) {
+    // uart = _uart;
+    // uart->begin(19200);
+    // uart->set_options(AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
+
+    port = _uart;
+    port->begin(19200);
+    port->set_options(AP_HAL::UARTDriver::OPTION_PULLDOWN_RX);
 }
 
 bool AP_ESC_APDHVPro::update() {
@@ -27,7 +35,8 @@ bool AP_ESC_APDHVPro::update() {
 
             if (read_ESC_telemetry_data(bytes_read)) {
                 last_read_ms = AP_HAL::native_millis();
-                copy_to_frontend();
+
+                parse_ESC_telemetry_data();
 
                 status = true;
             }
@@ -78,6 +87,8 @@ bool AP_ESC_APDHVPro::parse_ESC_telemetry_data() {
 
     return status;
 }
+
+
 
 int AP_ESC_APDHVPro::check_flectcher16() {
     int fCCRC16;

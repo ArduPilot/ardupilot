@@ -84,29 +84,33 @@ bool AP_ESC_APDHVPro::update() {
 bool AP_ESC_APDHVPro::read_ESC_telemetry_data(uint32_t bytes_read) {
     bool status = false;
 
-    uint32_t count = 0;
+    // uint32_t count = 0;
 
-    if (bytes_read < ESC_PACKET_SIZE) return false;
-    else count = ((bytes_read < BUFFER_LOOP_SIZE) ? bytes_read : BUFFER_LOOP_SIZE);
+    if (bytes_read < ESC_PACKET_SIZE) return status;
+    // else count = ((bytes_read < BUFFER_LOOP_SIZE) ? bytes_read : BUFFER_LOOP_SIZE);
 
-    // static int debug_count = 0;
-    // if (debug_count++ > 25) {
-    //     can_printf("APD ESC Telem : update() %d %d %d %d %d %d %d %d %d %d %d", (int)max_buffer[0], (int)max_buffer[1], (int)max_buffer[2], (int)max_buffer[3], (int)max_buffer[4], (int)max_buffer[5], (int)max_buffer[6], (int)max_buffer[7], (int)max_buffer[8], (int)max_buffer[9], (int)max_buffer[10]);
-    //     can_printf("APD ESC Telem : update() %d %d %d %d %d %d %d %d %d %d %d", (int)max_buffer[11], (int)max_buffer[12], (int)max_buffer[13], (int)max_buffer[14], (int)max_buffer[15], (int)max_buffer[16], (int)max_buffer[17], (int)max_buffer[18], (int)max_buffer[19], (int)max_buffer[20], (int)max_buffer[21]);
+    // // static int debug_count = 0;
+    // // if (debug_count++ > 25) {
+    // //     can_printf("APD ESC Telem : update() %d %d %d %d %d %d %d %d %d %d %d", (int)max_buffer[0], (int)max_buffer[1], (int)max_buffer[2], (int)max_buffer[3], (int)max_buffer[4], (int)max_buffer[5], (int)max_buffer[6], (int)max_buffer[7], (int)max_buffer[8], (int)max_buffer[9], (int)max_buffer[10]);
+    // //     can_printf("APD ESC Telem : update() %d %d %d %d %d %d %d %d %d %d %d", (int)max_buffer[11], (int)max_buffer[12], (int)max_buffer[13], (int)max_buffer[14], (int)max_buffer[15], (int)max_buffer[16], (int)max_buffer[17], (int)max_buffer[18], (int)max_buffer[19], (int)max_buffer[20], (int)max_buffer[21]);
 
-    //     debug_count = 0;
+    // //     debug_count = 0;
+    // // }
+
+    // for (int i = ESC_PACKET_SIZE - 2; i < count; i++) {
+    //     if (max_buffer[i] == 255 && max_buffer[i + 1] == 255) {
+    //         for (int j = 0; j < ESC_PACKET_SIZE; j++) {
+    //             raw_buffer[j] = max_buffer[i - ESC_PACKET_SIZE + j + 2];
+    //         }
+
+    //         status = true;
+    //         break;
+    //     }
     // }
 
-    for (int i = ESC_PACKET_SIZE - 2; i < count; i++) {
-        if (max_buffer[i] == 255 && max_buffer[i + 1] == 255) {
-            for (int j = 0; j < ESC_PACKET_SIZE; j++) {
-                raw_buffer[j] = max_buffer[i - ESC_PACKET_SIZE + j];
-            }
+    for (int i = 0; i < ESC_PACKET_SIZE; i++) raw_buffer[i] = max_buffer[i];
 
-            status = true;
-            break;
-        }
-    }
+    status = true;
 
     static int debug_count = 0;
     if (debug_count++ > 25) {
@@ -125,10 +129,10 @@ bool AP_ESC_APDHVPro::parse_ESC_telemetry_data() {
 
     int check_fletch = check_flectcher16();
 
-    decoded.voltage = (uint16_t)((raw_buffer[1] << 8) + raw_buffer[0]);
+    decoded.voltage = (uint16_t)(((raw_buffer[1] << 8) + raw_buffer[0])/100);
     // Temperature values needs computation later implementation
     decoded.temperature = (uint16_t)((raw_buffer[3] << 8) + raw_buffer[2]);
-    decoded.bus_current = (uint16_t)((raw_buffer[5] << 8) + raw_buffer[4]) / CURRENT_COEFFICIENT;
+    decoded.bus_current = (uint16_t)(((raw_buffer[5] << 8) + raw_buffer[4]) / CURRENT_COEFFICIENT);
     decoded.reserved1 = (uint16_t)((raw_buffer[7] << 8) + raw_buffer[6]);
     decoded.rpm = ((uint32_t)((raw_buffer[11] << 24) + (raw_buffer[10] << 16) + (raw_buffer[9] << 8) + raw_buffer[8])) / POLECOUNT;
     decoded.input_duty = (uint16_t)((raw_buffer[13] << 8) + raw_buffer[12]) / 10;
