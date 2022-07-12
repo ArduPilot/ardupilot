@@ -4760,10 +4760,6 @@ class AutoTestCopter(AutoTest):
                 })
 
                 try:
-                    self.progress(
-                        "Issue https://discuss.ardupilot.org/t/"
-                        "gimbal-limits-with-storm32-backend-mavlink-not-applied-correctly/51438"
-                    )
                     self.context_push()
                     self.set_parameters({
                         "RC12_MIN": 1000,
