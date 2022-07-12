@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AP_Proximity_config.h"
 
 #define LOG_IDS_FROM_PROXIMITY \
     LOG_PROXIMITY_MSG, \
@@ -70,8 +71,12 @@ struct PACKED log_Proximity_raw {
 };
 
 
+#if HAL_PROXIMITY_ENABLED
 #define LOG_STRUCTURE_FROM_PROXIMITY \
     { LOG_PROXIMITY_MSG, sizeof(log_Proximity), \
       "PRX", "QBBfffffffffff", "TimeUS,Layer,He,D0,D45,D90,D135,D180,D225,D270,D315,DUp,CAn,CDis", "s#-mmmmmmmmmhm", "F--00000000000", true }, \
     { LOG_RAW_PROXIMITY_MSG, sizeof(log_Proximity_raw), \
       "PRXR", "QBffffffff", "TimeUS,Layer,D0,D45,D90,D135,D180,D225,D270,D315", "s#mmmmmmmm", "F-00000000", true },
+#else
+#define LOG_STRUCTURE_FROM_PROXIMITY
+#endif
