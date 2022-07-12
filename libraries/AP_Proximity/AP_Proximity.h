@@ -170,8 +170,6 @@ private:
     // return true if the given instance exists
     bool valid_instance(uint8_t i) const;
 
-    void detect_instance(uint8_t instance);
-
     // parameters for all instances
     AP_Int8 _raw_log_enable;                            // enable logging raw distances
     AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled

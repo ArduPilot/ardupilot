@@ -97,16 +97,92 @@ void AP_Proximity::init()
         // init called a 2nd time?
         return;
     }
-    for (uint8_t i=0; i<PROXIMITY_MAX_INSTANCES; i++) {
-        detect_instance(i);
-        if (drivers[i] != nullptr) {
+
+    // instantiate backends
+    uint8_t serial_instance = 0;
+    for (uint8_t instance=0; instance<PROXIMITY_MAX_INSTANCES; instance++) {
+        switch (get_type(instance)) {
+        case Type::None:
+            break;
+        case Type::RPLidarA2:
+            if (AP_Proximity_RPLidarA2::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+        case Type::MAV:
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_MAV(*this, state[instance], params[instance]);
+            break;
+
+        case Type::TRTOWER:
+            if (AP_Proximity_TeraRangerTower::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+        case Type::TRTOWEREVO:
+            if (AP_Proximity_TeraRangerTowerEvo::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+
+        case Type::RangeFinder:
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_RangeFinder(*this, state[instance], params[instance]);
+            break;
+
+        case Type::SF40C:
+            if (AP_Proximity_LightWareSF40C::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+
+        case Type::SF45B:
+            if (AP_Proximity_LightWareSF45B::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = new AP_Proximity_LightWareSF45B(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+
+        case Type::CYGBOT_D1:
+#if AP_PROXIMITY_CYGBOT_ENABLED
+        if (AP_Proximity_Cygbot_D1::detect(serial_instance)) {
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance], params[instance], serial_instance);
+            serial_instance++;
+        }
+# endif
+        break;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        case Type::SITL:
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_SITL(*this, state[instance], params[instance]);
+            break;
+
+        case Type::AirSimSITL:
+            state[instance].instance = instance;
+            drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
+            break;
+#endif
+        } // switch (get_type(instance))
+
+        if (drivers[instance] != nullptr) {
             // we loaded a driver for this instance, so it must be
             // present (although it may not be healthy)
-            num_instances = i+1;
+            num_instances = instance+1;
         }
 
         // initialise status
-        state[i].status = Status::NotConnected;
+        state[instance].status = Status::NotConnected;
     }
 }
 
@@ -370,87 +446,6 @@ bool AP_Proximity::valid_instance(uint8_t i) const
     }
     return (Type)params[i].type.get() != Type::None;
 }
-
-//  detect if an instance of a proximity sensor is connected.
-void AP_Proximity::detect_instance(uint8_t instance)
-{
-    switch (get_type(instance)) {
-    case Type::None:
-        return;
-    case Type::RPLidarA2:
-        if (AP_Proximity_RPLidarA2::detect(instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], params[instance]);
-            return;
-        }
-        break;
-    case Type::MAV:
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_MAV(*this, state[instance], params[instance]);
-        return;
-
-    case Type::TRTOWER:
-        if (AP_Proximity_TeraRangerTower::detect(instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], params[instance]);
-            return;
-        }
-        break;
-    case Type::TRTOWEREVO:
-        if (AP_Proximity_TeraRangerTowerEvo::detect(instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance], params[instance]);
-            return;
-        }
-        break;
-
-    case Type::RangeFinder:
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_RangeFinder(*this, state[instance], params[instance]);
-        return;
-
-    case Type::SF40C:
-        if (AP_Proximity_LightWareSF40C::detect(instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance], params[instance]);
-            return;
-        }
-        break;
-
-    case Type::SF45B:
-        if (AP_Proximity_LightWareSF45B::detect(instance)) {
-            state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_LightWareSF45B(*this, state[instance], params[instance]);
-            return;
-        }
-        break;
-
-    case Type::CYGBOT_D1:
-#if AP_PROXIMITY_CYGBOT_ENABLED
-    if (AP_Proximity_Cygbot_D1::detect(instance)) {
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance], params[instance]);
-        return;
-    }
-# endif
-    break;
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    case Type::SITL:
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_SITL(*this, state[instance], params[instance]);
-        return;
-
-    case Type::AirSimSITL:
-        state[instance].instance = instance;
-        drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
-        return;
-
-#endif
-    }
-}
-
-
 
 AP_Proximity *AP_Proximity::_singleton;
 

@@ -25,22 +25,24 @@
 */
 AP_Proximity_Backend_Serial::AP_Proximity_Backend_Serial(AP_Proximity &_frontend,
                                                          AP_Proximity::Proximity_State &_state,
-                                                         AP_Proximity_Params &_params) :
+                                                         AP_Proximity_Params &_params,
+                                                         uint8_t serial_instance) :
     AP_Proximity_Backend(_frontend, _state, _params)
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
-    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0);
+    _uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, serial_instance);
     if (_uart != nullptr) {
         // start uart with larger receive buffer
-        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, 0), rxspace(), 0);
+        _uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar360, serial_instance), rxspace(), 0);
     }
 }
 
-// detect if a proximity sensor is connected by looking for a
-// configured serial port
-bool AP_Proximity_Backend_Serial::detect(uint8_t instance)
+// static detection function
+// detect if a proximity sensor is connected by looking for a configured serial port
+// serial_instance affects which serial port is used.  Should be 0 or 1 depending on whether this is the 1st or 2nd proximity sensor with a serial interface
+bool AP_Proximity_Backend_Serial::detect(uint8_t serial_instance)
 {
-    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Lidar360, instance);
+    return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_Lidar360, serial_instance);
 }
 
 #endif // HAL_PROXIMITY_ENABLED
