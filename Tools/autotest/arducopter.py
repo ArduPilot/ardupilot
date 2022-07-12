@@ -8283,15 +8283,15 @@ class AutoTestCopter(AutoTest):
 
         # move vehicle on x direction
         location = self.offset_location_ne(location=self.mav.location(), metres_north=0, metres_east=-300)
-        self.mav.mav.set_position_target_local_ned_send(
+        self.mav.mav.set_position_target_global_int_send(
             0, # system time in milliseconds
             1, # target system
             1, # target component
-            mavutil.mavlink.MAV_FRAME_BODY_NED, # coordinate frame MAV_FRAME_BODY_NED
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, # coordinate frame MAV_FRAME_BODY_NED
             MAV_POS_TARGET_TYPE_MASK.POS_ONLY, # type mask (pos only)
-            300, # position x
-            0, # position y
-            0, # position z
+            int(location.lat*1e7), # position x
+            int(location.lng*1e7), # position y
+            30, # position z
             0, # velocity x
             0, # velocity y
             0, # velocity z
