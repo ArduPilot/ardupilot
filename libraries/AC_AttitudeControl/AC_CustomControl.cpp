@@ -7,6 +7,7 @@
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // parameters from parent vehicle
+    // AP_NESTEDGROUPINFO(AC_AttitudeControl_Multi, 0),
 
     // @Param: CUST_CNT_ENB
     // @DisplayName: Custom Controller enabled
@@ -22,10 +23,15 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("CUST_CNT_MSK", 2, AC_CustomControl, _custom_controller_mask, 7),
 
+
     // custom controller related parameters
-    AP_SUBGROUPINFO(_pid_atti_rate_roll, "RA2_RLL_", 3, AC_CustomControl, AC_PID),
-    AP_SUBGROUPINFO(_pid_atti_rate_pitch, "RA2_PIT_", 4, AC_CustomControl, AC_PID),
-    AP_SUBGROUPINFO(_pid_atti_rate_yaw, "RA2_YAW_", 5, AC_CustomControl, AC_PID),
+    AP_SUBGROUPINFO(_p_angle_roll2, "ANG2_RLL_", 3, AC_CustomControl, AC_P),
+    AP_SUBGROUPINFO(_p_angle_pitch2, "ANG2_PIT_", 4, AC_CustomControl, AC_P),
+    AP_SUBGROUPINFO(_p_angle_yaw2, "ANG2_YAW_", 5, AC_CustomControl, AC_P),
+
+    AP_SUBGROUPINFO(_pid_atti_rate_roll, "RA2_RLL_", 6, AC_CustomControl, AC_PID),
+    AP_SUBGROUPINFO(_pid_atti_rate_pitch, "RA2_PIT_", 7, AC_CustomControl, AC_PID),
+    AP_SUBGROUPINFO(_pid_atti_rate_yaw, "RA2_YAW_", 8, AC_CustomControl, AC_PID),
 
     AP_GROUPEND
 };
@@ -33,9 +39,12 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
 // define variable initial values at contstruction
 AC_CustomControl::AC_CustomControl(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt):
 AC_AttitudeControl_Multi(ahrs,aparm,motors,dt),
-    _pid_atti_rate_roll(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, dt),
-    _pid_atti_rate_pitch(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, dt),
-    _pid_atti_rate_yaw(1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, dt)
+    _p_angle_roll2(AC_ATTITUDE_CONTROL_ANGLE_P),
+    _p_angle_pitch2(AC_ATTITUDE_CONTROL_ANGLE_P),
+    _p_angle_yaw2(AC_ATTITUDE_CONTROL_ANGLE_P),
+    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
+    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -90,15 +99,31 @@ void AC_CustomControl::rate_controller_run()
 }
 
 Vector3f AC_CustomControl::run_custom_controller(void) {
-    float target_roll, target_pitch, target_yaw;
-    _attitude_target.to_euler(target_roll, target_pitch, target_yaw);
+    Quaternion attitude_body;
+    _ahrs.get_quat_body_to_ned(attitude_body);
 
-    float roll_out, pitch_out, yaw_out;
-    roll_out = _pid_atti_rate_roll.update_all(target_roll, _ahrs.roll, 1);
-    pitch_out = _pid_atti_rate_pitch.update_all(target_pitch, _ahrs.pitch, 1);
-    yaw_out = _pid_atti_rate_yaw.update_all(target_yaw, _ahrs.yaw, 1);
+    // This vector represents the angular error to rotate the thrust vector using x and y and heading using z
+    Vector3f attitude_error;
+    thrust_heading_rotation_angles(_attitude_target, attitude_body, attitude_error, _thrust_angle, _thrust_error_angle);
 
-    return Vector3f(roll_out, pitch_out, yaw_out);
+    // recalculate ang vel feedforward from attitude target model
+    // rotation from the target frame to the body frame
+    Quaternion rotation_target_to_body = attitude_body.inverse() * _attitude_target;
+    // target angle velocity vector in the body frame
+    Vector3f ang_vel_body_feedforward = rotation_target_to_body * _ang_vel_target;
+
+    Vector3f target_rate;
+    target_rate[0] = _p_angle_roll2.kP() * attitude_error.x + ang_vel_body_feedforward[0];
+    target_rate[1] = _p_angle_pitch2.kP() * attitude_error.y + ang_vel_body_feedforward[1];
+    target_rate[2] = _p_angle_yaw2.kP() * attitude_error.z + ang_vel_body_feedforward[2];
+
+    Vector3f gyro_latest = _ahrs.get_gyro_latest();
+    Vector3f motor_out;
+    motor_out.x = _pid_atti_rate_roll.update_all(target_rate[0], gyro_latest[0], 1);
+    motor_out.y = _pid_atti_rate_pitch.update_all(target_rate[1], gyro_latest[1], 1);
+    motor_out.z = _pid_atti_rate_yaw.update_all(target_rate[2], gyro_latest[2], 1);
+
+    return motor_out;
 }
 
 
@@ -121,7 +146,8 @@ void AC_CustomControl::motor_set(Vector3f rpy) {
     }
 }
 
-
+// reset I terms and all of the filter to allow smooth transion 
+// to the primary controller
 void AC_CustomControl::reset_custom_controller(void) {
     _pid_atti_rate_roll.reset_I();
     _pid_atti_rate_pitch.reset_I();
@@ -131,7 +157,9 @@ void AC_CustomControl::reset_custom_controller(void) {
     _pid_atti_rate_yaw.reset_filter();
 }
 
-// reset unused main controller axis
+
+// reset I terms and all of the filter to allow smooth transion 
+// to the primary controller per axis
 void AC_CustomControl::reset_main_controller(void) 
 {
     if (_custom_controller_mask & (uint8_t)CustomControllerOption::ROLL) {
@@ -148,10 +176,13 @@ void AC_CustomControl::reset_main_controller(void)
     }
 }
 
-
-
 void AC_CustomControl::set_custom_controller(bool enabled)
 {
+    if (enabled && _custom_controller_enabled) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Custom controller is ON");
+    } else {
+        gcs().send_text(MAV_SEVERITY_INFO, "Custom controller is OFF");
+    }
     _custom_controller_active = enabled;
 }
 

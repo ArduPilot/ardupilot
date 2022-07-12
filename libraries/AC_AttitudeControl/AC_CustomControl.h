@@ -41,6 +41,12 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
+
+    // angle controller P objects
+    AC_P                _p_angle_roll2;
+    AC_P                _p_angle_pitch2;
+    AC_P                _p_angle_yaw2;
+
     // put controller related variable here
     AC_PID _pid_atti_rate_roll;
     AC_PID _pid_atti_rate_pitch;
