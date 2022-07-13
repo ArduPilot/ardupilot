@@ -547,6 +547,7 @@ class sitl(Board):
         cfg.define('AP_SIM_ENABLED', 1)
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
+        cfg.define('AP_GENERATOR_RICHENPOWER_ENABLED', 1)
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
