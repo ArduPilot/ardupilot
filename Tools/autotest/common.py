@@ -6142,6 +6142,10 @@ class AutoTest(ABC):
             **kwargs
         )
 
+    def assert_at_home(self, accuracy=1):
+        if self.distance_to_home() > accuracy:
+            raise NotAchievedException("Not at home")
+
     def wait_distance_to_nav_target(self,
                                     distance_min,
                                     distance_max,
