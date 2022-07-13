@@ -8678,6 +8678,48 @@ class AutoTestCopter(AutoTest):
         if not lines[-2].startswith("AP_Vehicle::update_arming"):
             raise NotAchievedException("Expected EFI last not (%s)" % lines[-2])
 
+    def RTL_TO_RALLY(self, target_system=1, target_component=1):
+        self.wait_ready_to_arm()
+        rally_loc = self.home_relative_loc_ne(50, -25)
+        rally_alt = 37
+        items = [
+            self.mav.mav.mission_item_int_encode(
+                target_system,
+                target_component,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
+                0, # current
+                0, # autocontinue
+                0, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(rally_loc.lat * 1e7), # latitude
+                int(rally_loc.lng * 1e7), # longitude
+                rally_alt, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_RALLY),
+        ]
+        self.upload_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+            items
+        )
+        self.set_parameters({
+            'RALLY_INCL_HOME': 0,
+        })
+        self.takeoff(10)
+        self.change_mode('RTL')
+        self.wait_location(rally_loc)
+        self.assert_altitude(rally_alt, relative=True)
+        self.progress("Ensuring we're descending")
+        self.wait_altitude(20, 25, relative=True)
+        self.change_mode('LOITER')
+        self.progress("Flying home")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+        self.change_mode('RTL')
+        self.wait_disarmed()
+        self.assert_at_home()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/common.py
@@ -9166,6 +9208,10 @@ class AutoTestCopter(AutoTest):
             Test("SMART_RTL",
                  "Check SMART_RTL",
                  self.test_SMART_RTL),
+
+            Test("RTL_TO_RALLY",
+                 "Check RTL to rally point",
+                 self.RTL_TO_RALLY),
 
             Test("FlyEachFrame",
                  "Fly each supported internal frame",
