@@ -71,6 +71,7 @@ BUILD_OPTIONS = [
     Feature('OSD', 'PLUSCODE', 'HAL_PLUSCODE_ENABLE', 'Enable PlusCode', 0, None),
     Feature('OSD', 'RUNCAM', 'HAL_RUNCAM_ENABLED', 'Enable RunCam', 0, None),
     Feature('OSD', 'SMARTAUDIO', 'HAL_SMARTAUDIO_ENABLED', 'Enable SmartAudio', 0, None),
+    Feature('OSD', 'TRAMP', 'AP_TRAMP_ENABLED', 'Enable IRC Tramp', 0, None),
     Feature('OSD', 'OSD_PARAM', 'OSD_PARAM_ENABLED', 'Enable OSD param', 0, 'OSD'),
     Feature('OSD', 'OSD_SIDEBARS', 'HAL_OSD_SIDEBAR_ENABLE', 'Enable Scrolling Sidebars', 0, 'OSD'),
 
