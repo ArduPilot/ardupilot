@@ -10,8 +10,8 @@
     # the ref parameters should be taken from a test
     # with the copter flying at constant speed in zero wind. This is used
     # to estimate the drag coefficient
-    "refSpd" : 14.88,    # m/s
-    "refAngle" : 8.91,   # degrees
+    "refSpd" : 25.0,    # m/s
+    "refAngle" : 30.0,   # degrees
     "refVoltage" : 46.9, # volts
     "refCurrent" : 65.36, # Amps
     "refAlt" : 26,       # meters AMSL
