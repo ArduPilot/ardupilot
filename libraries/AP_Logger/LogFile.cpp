@@ -6,6 +6,9 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <RC_Channel/RC_Channel.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AC_PID/AC_PID.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"

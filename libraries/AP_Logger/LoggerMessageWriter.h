@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AP_Logger_Backend.h"
+#include <AP_Rally/AP_Rally.h>
 
 class LoggerMessageWriter {
 public:

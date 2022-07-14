@@ -12,6 +12,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Rally/AP_Rally.h>
 
 AP_Logger *AP_Logger::_singleton;
 
