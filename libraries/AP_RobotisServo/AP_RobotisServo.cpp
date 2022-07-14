@@ -136,11 +136,14 @@ AP_RobotisServo::AP_RobotisServo(void)
 void AP_RobotisServo::init(void)
 {
     AP_SerialManager &serial_manager = AP::serialmanager();
-    port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Robotis,0);
+    port = serial_manager.find_serial(AP_SerialDevice::Protocol::Robotis,0);
     if (port) {
-        baudrate = serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Robotis, 0);
-        us_per_byte = 10 * 1e6 / baudrate;
-        us_gap = 4 * 1e6 / baudrate;
+        AP_SerialDevice_UART *dev_uart = port->get_serialdevice_uart();
+        if (dev_uart != nullptr) {
+            const uint32_t baudrate = dev_uart->get_baud();
+            us_per_byte = 10 * 1e6 / baudrate;
+            us_gap = 4 * 1e6 / baudrate;
+        }
     }
 }
 

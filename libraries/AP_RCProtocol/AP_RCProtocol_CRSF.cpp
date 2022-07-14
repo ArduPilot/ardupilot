@@ -170,7 +170,15 @@ AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol
     }
 #endif
 #if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0);
+    AP_SerialDevice *sd = AP::serialmanager().find_serial(AP_SerialDevice::Protocol::CRSF, 0);
+    if (sd == nullptr) {
+        return;
+    }
+    AP_SerialDevice_UART *sd_uart = sd->get_serialdevice_uart();
+    if (sd_uart == nullptr) {
+        return;
+    }
+    _uart = &(sd_uart->get_uart());
     if (_uart) {
         start_uart();
     }

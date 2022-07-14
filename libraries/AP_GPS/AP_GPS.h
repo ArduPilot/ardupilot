@@ -632,7 +632,7 @@ private:
     GPS_timing timing[GPS_MAX_INSTANCES];
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_RECEIVERS];
-    AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
+    AP_SerialDevice *_port[GPS_MAX_RECEIVERS];
 
     /// primary GPS instance
     uint8_t primary_instance;

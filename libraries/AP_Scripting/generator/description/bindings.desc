@@ -277,14 +277,14 @@ singleton RC_Channels method lua_rc_channel rename get_channel
 
 include AP_SerialManager/AP_SerialManager.h
 
-ap_object AP_HAL::UARTDriver method begin void uint32_t 1U UINT32_MAX
-ap_object AP_HAL::UARTDriver method read int16_t
-ap_object AP_HAL::UARTDriver method write uint32_t uint8_t 0 UINT8_MAX
-ap_object AP_HAL::UARTDriver method available uint32_t
-ap_object AP_HAL::UARTDriver method set_flow_control void AP_HAL::UARTDriver::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
+ap_object AP_SerialDevice method begin void uint32_t 1U UINT32_MAX
+ap_object AP_SerialDevice method read int16_t
+ap_object AP_SerialDevice method write uint32_t uint8_t 0 UINT8_MAX
+ap_object AP_SerialDevice method available uint32_t
+-- ap_object AP_SerialDevice method set_flow_control void AP_SerialDevice::flow_control'enum AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE AP_HAL::UARTDriver::FLOW_CONTROL_AUTO
 
 singleton AP_SerialManager rename serial
-singleton AP_SerialManager method find_serial AP_HAL::UARTDriver AP_SerialManager::SerialProtocol_Scripting'literal uint8_t 0 UINT8_MAX
+singleton AP_SerialManager method find_serial AP_SerialDevice AP_SerialDevice::Protocol::Scripting'literal uint8_t 0 UINT8_MAX
 
 include AP_Baro/AP_Baro.h
 singleton AP_Baro rename baro

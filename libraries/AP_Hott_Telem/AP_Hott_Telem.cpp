@@ -67,14 +67,28 @@ void AP_Hott_Telem::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
 
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Hott, 0);
-    if (uart) {
-        // register thread
-        if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Hott_Telem::loop, void),
-                                          "Hott",
-                                          1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
-            DEV_PRINTF("Failed to create Hott thread\n");
-        }
+    uart = serial_manager.find_serial_uart(AP_SerialDevice::Protocol::Hott, 0);
+    if (uart == nullptr) {
+        return;
+    }
+
+    AP_SerialDevice_UART *dev_uart = uart->get_serialdevice_uart();
+    if (dev_uart != nullptr) {
+        dev_uart->set_baud(19200);
+        dev_uart->set_bufsize_rx(10);
+        dev_uart->set_bufsize_rx(10);
+        dev_uart->set_unbuffered_writes(true);
+        dev_uart->set_blocking_writes(true);
+    }
+
+    // register thread
+    if (!hal.scheduler->thread_create(
+            FUNCTOR_BIND_MEMBER(&AP_Hott_Telem::loop, void),
+            "Hott",
+            1024,
+            AP_HAL::Scheduler::PRIORITY_BOOST,
+            1)) {
+        hal.console->printf("Failed to create Hott thread\n");
     }
 }
 
@@ -403,9 +417,7 @@ void AP_Hott_Telem::send_packet(const uint8_t *b, uint8_t len)
  */
 void AP_Hott_Telem::loop(void)
 {
-    uart->begin(19200, 10, 10);
-    uart->set_unbuffered_writes(true);
-    uart->set_blocking_writes(true);
+    uart->begin();
 
     while (true) {
         hal.scheduler->delay_microseconds(1500);

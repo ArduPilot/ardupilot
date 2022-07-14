@@ -132,7 +132,7 @@ void AP_RunCam::init()
 {
     AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
     if (serial_manager) {
-        uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_RunCam, 0);
+        uart = serial_manager->find_serial_uart(AP_SerialDevice::Protocol::RunCam, 0);
     }
     if (uart != nullptr) {
         /*
@@ -784,13 +784,15 @@ void AP_RunCam::drain()
 void AP_RunCam::start_uart()
 {
     // 8N1 communication
-    uart->configure_parity(0);
-    uart->set_stop_bits(1);
-    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    uart->set_blocking_writes(false);   // updates run in the main thread
-    uart->set_options(uart->get_options() | AP_HAL::UARTDriver::OPTION_NODMA_TX | AP_HAL::UARTDriver::OPTION_NODMA_RX);
-    uart->begin(115200, 10, 10);
-    uart->discard_input();
+    AP_HAL::UARTDriver &d = uart->get_uart();
+
+    d.configure_parity(0);
+    d.set_stop_bits(1);
+    d.set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+    d.set_blocking_writes(false);   // updates run in the main thread
+    d.set_options(d.get_options() | AP_HAL::UARTDriver::OPTION_NODMA_TX | AP_HAL::UARTDriver::OPTION_NODMA_RX);
+    d.begin(115200, 10, 10);
+    d.discard_input();
 }
 
 // get the device info (firmware version, protocol version and features)

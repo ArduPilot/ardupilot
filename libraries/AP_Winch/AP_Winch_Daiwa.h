@@ -66,7 +66,7 @@ private:
     static const int16_t output_dz = 100;   // output deadzone in scale of -1000 to +1000
     const float line_length_correction_factor = 0.003333f;  // convert winch counter to meters
 
-    AP_HAL::UARTDriver *uart;
+    AP_SerialDevice *uart;
     char buff[buff_len_max];    // buffer holding latest data from winch
     uint8_t buff_len;           // number of bytes in buff
 

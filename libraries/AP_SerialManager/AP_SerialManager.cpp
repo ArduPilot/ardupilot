@@ -25,23 +25,24 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #include <AP_MSP/AP_MSP.h>
 #include "AP_SerialManager.h"
+#include "AP_SerialDevice_UART.h"
 
 extern const AP_HAL::HAL& hal;
 
 #ifdef HAL_SERIAL2_PROTOCOL
 #define SERIAL2_PROTOCOL HAL_SERIAL2_PROTOCOL
 #else
-#define SERIAL2_PROTOCOL SerialProtocol_MAVLink2
+#define SERIAL2_PROTOCOL AP_SerialDevice::Protocol::MAVLink2
 #endif
 
 #ifndef HAL_SERIAL3_PROTOCOL
-#define SERIAL3_PROTOCOL SerialProtocol_GPS
+#define SERIAL3_PROTOCOL AP_SerialDevice::Protocol::GPS
 #else
 #define SERIAL3_PROTOCOL HAL_SERIAL3_PROTOCOL
 #endif
 
 #ifndef HAL_SERIAL4_PROTOCOL
-#define SERIAL4_PROTOCOL SerialProtocol_GPS
+#define SERIAL4_PROTOCOL AP_SerialDevice::Protocol::GPS
 #else
 #define SERIAL4_PROTOCOL HAL_SERIAL4_PROTOCOL
 #endif
@@ -50,12 +51,12 @@ extern const AP_HAL::HAL& hal;
 #define SERIAL5_PROTOCOL HAL_SERIAL5_PROTOCOL
 #define SERIAL5_BAUD HAL_SERIAL5_BAUD
 #else
-#define SERIAL5_PROTOCOL SerialProtocol_None
+#define SERIAL5_PROTOCOL AP_SerialDevice::Protocol::None
 #define SERIAL5_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #endif
 
 #ifndef HAL_SERIAL6_PROTOCOL
-#define SERIAL6_PROTOCOL SerialProtocol_None
+#define SERIAL6_PROTOCOL AP_SerialDevice::Protocol::None
 #define SERIAL6_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #else
 #define SERIAL6_PROTOCOL HAL_SERIAL6_PROTOCOL
@@ -63,7 +64,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_SERIAL7_PROTOCOL
-#define SERIAL7_PROTOCOL SerialProtocol_None
+#define SERIAL7_PROTOCOL AP_SerialDevice::Protocol::None
 #define SERIAL7_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #else
 #define SERIAL7_PROTOCOL HAL_SERIAL7_PROTOCOL
@@ -71,7 +72,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef HAL_SERIAL8_PROTOCOL
-#define SERIAL8_PROTOCOL SerialProtocol_None
+#define SERIAL8_PROTOCOL AP_SerialDevice::Protocol::None
 #define SERIAL8_BAUD AP_SERIALMANAGER_MAVLINK_BAUD/1000
 #else
 #define SERIAL8_PROTOCOL HAL_SERIAL8_PROTOCOL
@@ -101,17 +102,16 @@ extern const AP_HAL::HAL& hal;
 #undef SERIAL6_PROTOCOL
 #undef SERIAL7_PROTOCOL
 #undef SERIAL8_PROTOCOL
-#undef SERIAL9_PROTOCOL
-#define SERIAL0_PROTOCOL SerialProtocol_None
-#define SERIAL1_PROTOCOL SerialProtocol_None
-#define SERIAL2_PROTOCOL SerialProtocol_None
-#define SERIAL3_PROTOCOL SerialProtocol_None
-#define SERIAL4_PROTOCOL SerialProtocol_None
-#define SERIAL5_PROTOCOL SerialProtocol_None
-#define SERIAL6_PROTOCOL SerialProtocol_None
-#define SERIAL7_PROTOCOL SerialProtocol_None
-#define SERIAL8_PROTOCOL SerialProtocol_None
-#define SERIAL9_PROTOCOL SerialProtocol_None
+#define SERIAL0_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL1_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL2_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL3_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL4_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL5_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL6_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL7_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL8_PROTOCOL AP_SerialDevice::Protocol::None
+#define SERIAL9_PROTOCOL AP_SerialDevice::Protocol::None
 #endif // HAL_BUILD_AP_PERIPH
 
 const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
@@ -129,7 +129,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: 1:MAVlink1, 2:MAVLink2
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, SerialProtocol_MAVLink2),
+    AP_GROUPINFO("0_PROTOCOL",  11, AP_SerialManager, state[0].protocol, float(AP_SerialDevice::Protocol::MAVLink2)),
 #endif
 
 #if SERIALMANAGER_NUM_PORTS > 1
@@ -139,7 +139,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @Values: -1:None, 1:MAVLink1, 2:MAVLink2, 3:Frsky D, 4:Frsky SPort, 5:GPS, 7:Alexmos Gimbal Serial, 8:SToRM32 Gimbal Serial, 9:Rangefinder, 10:FrSky SPort Passthrough (OpenTX), 11:Lidar360, 13:Beacon, 14:Volz servo out, 15:SBus servo out, 16:ESC Telemetry, 17:Devo Telemetry, 18:OpticalFlow, 19:RobotisServo, 20:NMEA Output, 21:WindVane, 22:SLCAN, 23:RCIN, 24:MegaSquirt EFI, 25:LTM, 26:RunCam, 27:HottTelem, 28:Scripting, 29:Crossfire VTX, 30:Generator, 31:Winch, 32:MSP, 33:DJI FPV, 34:AirSpeed, 35:ADSB, 36:AHRS, 37:SmartAudio, 38:FETtecOneWire, 39:Torqeedo, 40:AIS, 41:CoDevESC, 42:DisplayPort, 43:MAVLink High Latency, 44:IRC Tramp
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, SerialProtocol_MAVLink2),
+    AP_GROUPINFO("1_PROTOCOL",  1, AP_SerialManager, state[1].protocol, float(AP_SerialDevice::Protocol::MAVLink2)),
 
     // @Param: 1_BAUD
     // @DisplayName: Telem1 Baud Rate
@@ -156,7 +156,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, SERIAL2_PROTOCOL),
+    AP_GROUPINFO("2_PROTOCOL",  3, AP_SerialManager, state[2].protocol, float(SERIAL2_PROTOCOL)),
 
     // @Param: 2_BAUD
     // @DisplayName: Telemetry 2 Baud Rate
@@ -173,7 +173,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, SERIAL3_PROTOCOL),
+    AP_GROUPINFO("3_PROTOCOL",  5, AP_SerialManager, state[3].protocol, float(SERIAL3_PROTOCOL)),
 
     // @Param: 3_BAUD
     // @DisplayName: Serial 3 (GPS) Baud Rate
@@ -190,7 +190,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, SERIAL4_PROTOCOL),
+    AP_GROUPINFO("4_PROTOCOL",  7, AP_SerialManager, state[4].protocol, float(SERIAL4_PROTOCOL)),
 
     // @Param: 4_BAUD
     // @DisplayName: Serial 4 Baud Rate
@@ -207,7 +207,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("5_PROTOCOL",  9, AP_SerialManager, state[5].protocol, SERIAL5_PROTOCOL),
+    AP_GROUPINFO("5_PROTOCOL",  9, AP_SerialManager, state[5].protocol, float(SERIAL5_PROTOCOL)),
 
     // @Param: 5_BAUD
     // @DisplayName: Serial 5 Baud Rate
@@ -226,7 +226,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("6_PROTOCOL",  12, AP_SerialManager, state[6].protocol, SERIAL6_PROTOCOL),
+    AP_GROUPINFO("6_PROTOCOL",  12, AP_SerialManager, state[6].protocol, float(SERIAL6_PROTOCOL)),
 
     // @Param: 6_BAUD
     // @DisplayName: Serial 6 Baud Rate
@@ -325,7 +325,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("7_PROTOCOL",  23, AP_SerialManager, state[7].protocol, SERIAL7_PROTOCOL),
+    AP_GROUPINFO("7_PROTOCOL",  23, AP_SerialManager, state[7].protocol, float(SERIAL7_PROTOCOL)),
 
     // @Param: 7_BAUD
     // @DisplayName: Serial 7 Baud Rate
@@ -350,7 +350,7 @@ const AP_Param::GroupInfo AP_SerialManager::var_info[] = {
     // @CopyValuesFrom: SERIAL1_PROTOCOL
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO("8_PROTOCOL",  26, AP_SerialManager, state[8].protocol, SERIAL8_PROTOCOL),
+    AP_GROUPINFO("8_PROTOCOL",  26, AP_SerialManager, state[8].protocol, float(SERIAL8_PROTOCOL)),
 
     // @Param: 8_BAUD
     // @DisplayName: Serial 8 Baud Rate
@@ -433,23 +433,24 @@ void AP_SerialManager::init()
       MAVLink. This fixes an issue where users trying to get SLCAN
       change SERIAL0_PROTOCOL to 22 and find they can no longer connect
      */
-    if (state[0].protocol != SerialProtocol_MAVLink &&
-        state[0].protocol != SerialProtocol_MAVLink2) {
-        state[0].protocol.set(SerialProtocol_MAVLink2);
+    if (AP_SerialDevice::Protocol(state[0].protocol.get()) != AP_SerialDevice::Protocol::MAVLink &&
+        AP_SerialDevice::Protocol(state[0].protocol.get()) != AP_SerialDevice::Protocol::MAVLink2) {
+        state[0].protocol.set((float)AP_SerialDevice::Protocol::MAVLink2);
     }
 #endif
+
+    init_serial_uart_devices();
 
     init_console();
 
     // initialise serial ports
     for (uint8_t i=1; i<SERIALMANAGER_NUM_PORTS; i++) {
-        auto *uart = hal.serial(i);
-
+        auto *uart = hal.serial(i);  // FIXME!
+        
         if (uart != nullptr) {
             set_options(i);
-            switch (state[i].protocol) {
-                case SerialProtocol_None:
-#if HAL_GCS_ENABLED
+            switch ((AP_SerialDevice::Protocol)state[i].protocol.get()) {
+                case AP_SerialDevice::Protocol::None:
                     // disable RX and TX pins in case they are shared
                     // with another peripheral (eg. RCIN pin). We
                     // don't do this if GCS is not enabled as in that
@@ -458,39 +459,39 @@ void AP_SerialManager::init()
                     uart->disable_rxtx();
 #endif
                     break;
-                case SerialProtocol_Console:
-                case SerialProtocol_MAVLink:
-                case SerialProtocol_MAVLink2:
+                case AP_SerialDevice::Protocol::Console:
+                case AP_SerialDevice::Protocol::MAVLink:
+                case AP_SerialDevice::Protocol::MAVLink2:
                 case SerialProtocol_MAVLinkHL:
-                    uart->begin(state[i].baudrate(),
+                    uart->begin(state[i].baudrate()),
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX,
                                          AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX);
                     break;
-                case SerialProtocol_FrSky_D:
+                case AP_SerialDevice::Protocol::FrSky_D:
                     // Note baudrate is hardcoded to 9600
                     state[i].baud = AP_SERIALMANAGER_FRSKY_D_BAUD/1000; // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
-                case SerialProtocol_FrSky_SPort:
-                case SerialProtocol_FrSky_SPort_Passthrough:
+                case AP_SerialDevice::Protocol::FrSky_SPort:
+                case AP_SerialDevice::Protocol::FrSky_SPort_Passthrough:
                     // Note baudrate is hardcoded to 57600
                     state[i].baud = AP_SERIALMANAGER_FRSKY_SPORT_BAUD/1000; // update baud param in case user looks at it
                     // begin is handled by AP_Frsky_telem library
                     break;
-                case SerialProtocol_GPS:
-                case SerialProtocol_GPS2:
-                    uart->begin(state[i].baudrate(),
+                case AP_SerialDevice::Protocol::GPS:
+                case AP_SerialDevice::Protocol::GPS2:
+                    uart->begin(state[i].baudrate()),
                                          AP_SERIALMANAGER_GPS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_GPS_BUFSIZE_TX);
                     break;
-                case SerialProtocol_AlexMos:
+                case AP_SerialDevice::Protocol::AlexMos:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud = AP_SERIALMANAGER_ALEXMOS_BAUD / 1000;   // update baud param in case user looks at it
                     uart->begin(AP_SERIALMANAGER_ALEXMOS_BAUD,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX);
                     break;
-                case SerialProtocol_SToRM32:
+                case AP_SerialDevice::Protocol::SToRM32:
                     // Note baudrate is hardcoded to 115200
                     state[i].baud = AP_SERIALMANAGER_SToRM32_BAUD / 1000;   // update baud param in case user looks at it
                     uart->begin(state[i].baudrate(),
@@ -498,9 +499,9 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_SToRM32_BUFSIZE_TX);
                     break;
                 case SerialProtocol_Aerotenna_USD1:
-                    state[i].protocol.set_and_save(SerialProtocol_Rangefinder);
+                    state[i].protocol.set_and_save(float(AP_SerialDevice::Protocol::Rangefinder));
                     break;
-                case SerialProtocol_Volz:
+                case AP_SerialDevice::Protocol::Volz:
                                     // Note baudrate is hardcoded to 115200
                                     state[i].baud = AP_SERIALMANAGER_VOLZ_BAUD;   // update baud param in case user looks at it
                                     uart->begin(state[i].baudrate(),
@@ -509,7 +510,7 @@ void AP_SerialManager::init()
                                     uart->set_unbuffered_writes(true);
                                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                                     break;
-                case SerialProtocol_Sbus1:
+                case AP_SerialDevice::Protocol::Sbus1:
                     state[i].baud = AP_SERIALMANAGER_SBUS1_BAUD / 1000;   // update baud param in case user looks at it
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_SBUS1_BUFSIZE_RX,
@@ -520,14 +521,14 @@ void AP_SerialManager::init()
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
-                case SerialProtocol_ESCTelemetry:
+                case AP_SerialDevice::Protocol::ESCTelemetry:
                     // ESC telemetry protocol from BLHeli32 ESCs. Note that baudrate is hardcoded to 115200
                     state[i].baud = 115200 / 1000;
                     uart->begin(state[i].baudrate(), 30, 30);
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
-                case SerialProtocol_Robotis:
+                case AP_SerialDevice::Protocol::Robotis:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX,
                                          AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX);
@@ -535,19 +536,19 @@ void AP_SerialManager::init()
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
-                case SerialProtocol_SLCAN:
+                case AP_SerialDevice::Protocol::SLCAN:
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_RX,
                                          AP_SERIALMANAGER_SLCAN_BUFSIZE_TX);
                     break;
 
 #ifndef HAL_BUILD_AP_PERIPH
-                case SerialProtocol_RCIN:
+                case AP_SerialDevice::Protocol::RCIN:
                     AP::RC().add_uart(uart);
                     break;
 #endif
                     
-                case SerialProtocol_EFI:
+                case AP_SerialDevice::Protocol::EFI:
                     state[i].baud.set_default(AP_SERIALMANAGER_EFI_MS_BAUD);
                     uart->begin(state[i].baudrate(),
                                          AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX,
@@ -555,12 +556,12 @@ void AP_SerialManager::init()
                     uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
-                case SerialProtocol_Generator:
+                case AP_SerialDevice::Protocol::Generator:
                     break;
 #if HAL_MSP_ENABLED                    
-                case SerialProtocol_MSP:
-                case SerialProtocol_DJI_FPV:
-                case SerialProtocol_MSP_DisplayPort:
+                case AP_SerialDevice::Protocol::MSP:
+                case AP_SerialDevice::Protocol::DJI_FPV:
+                case AP_SerialDevice::Protocol::MSP_DisplayPort:
                     // baudrate defaults to 115200
                     state[i].baud.set_default(AP_SERIALMANAGER_MSP_BAUD/1000);
                     uart->begin(state[i].baudrate(),
@@ -577,77 +578,109 @@ void AP_SerialManager::init()
     }
 }
 
-
-const AP_SerialManager::UARTState *AP_SerialManager::find_protocol_instance(enum SerialProtocol protocol, uint8_t instance) const
+uint8_t AP_SerialManager::count_protocol_instances(AP_SerialDevice::Protocol protocol) const
 {
-    uint8_t found_instance = 0;
+    uint8_t ret = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(serial_uart_device); i++) {
+        const AP_SerialDevice_UART *dev = serial_uart_device[i];
+        if (dev == nullptr) {
+            continue;
+        }
+        if (dev->using_protocol() != protocol) {
+            continue;
+        }
+        ret++;
+    }
+    return ret;
+}
 
-    // search for matching protocol
-    for(uint8_t i=0; i<SERIALMANAGER_NUM_PORTS; i++) {
-        if (protocol_match(protocol, (enum SerialProtocol)state[i].protocol.get())) {
-            if (found_instance == instance) {
-                return &state[i];
-            }
-            found_instance++;
+// create an AP_SerialDevice_UART object for each valid serial
+// protocol defined in the SERIALn_ parameter sets
+void AP_SerialManager::init_serial_uart_devices()
+{
+    uint8_t mav_chan_instance = 0;
+
+    for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
+        struct AP_SerialDevice_UART::UARTState &uart_state = state[i];
+
+        // skip over invalid protocols:
+        switch ((AP_SerialDevice::Protocol)uart_state.protocol) {
+        case AP_SerialDevice::Protocol::None...AP_SerialDevice::Protocol::NumProtocols:
+            break;
+        default:
+            continue;
+        }
+
+        AP_HAL::UARTDriver *port = hal.serial(i);
+        if (port == nullptr) {
+            return;
+        }
+
+        // set options before any user does begin()
+        port->set_options(uart_state.options);
+
+        const uint8_t instance = 1 + count_protocol_instances(uart_state.protocol);
+
+        serial_uart_device[i] = new AP_SerialDevice_UART(uart_state, instance, *port);
+        if (serial_uart_device[i] == nullptr) {
+            continue;
+        }
+
+        if (protocol_match(serial_uart_device[i]->using_protocol(), AP_SerialDevice::Protocol::MAVLink)) {
+            serial_uart_device[i]->mav_chan = (mavlink_channel_t)(MAVLINK_COMM_0 + mav_chan_instance++);
         }
     }
+}
+
+AP_SerialDevice *AP_SerialManager::find_serial(enum AP_SerialDevice::Protocol protocol, uint8_t instance) const
+{
+    uint8_t count = 0;
+    for (auto *dev : serial_uart_device) {
+        if (dev == nullptr) {
+            continue;
+        }
+        if (dev->using_protocol() != protocol) {
+            continue;
+        }
+        count++;
+        if (count-1 == instance) {
+            return dev;
+        }
+    }
+
+    // search configured network ports here
 
     // if we got this far we did not find the uart
     return nullptr;
 }
 
-// find_serial - searches available serial ports for the first instance that allows the given protocol
-//  instance should be zero if searching for the first instance, 1 for the second, etc
-//  returns uart on success, nullptr if a serial port cannot be found
-AP_HAL::UARTDriver *AP_SerialManager::find_serial(enum SerialProtocol protocol, uint8_t instance) const
-{
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
-    if (_state == nullptr) {
-        return nullptr;
-    }
-    const uint8_t serial_idx = _state - &state[0];
-
-    // set options before any user does begin()
-    AP_HAL::UARTDriver *port = hal.serial(serial_idx);
-    if (port) {
-        port->set_options(_state->options);
-    }
-    return port;
-}
-
-// have_serial - return true if we have the given serial protocol configured
-bool AP_SerialManager::have_serial(enum SerialProtocol protocol, uint8_t instance) const
-{
-    return find_protocol_instance(protocol, instance) != nullptr;
-}
-
 // find_baudrate - searches available serial ports for the first instance that allows the given protocol
 //  instance should be zero if searching for the first instance, 1 for the second, etc
 //  returns baudrate on success, 0 if a serial port cannot be found
-uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t instance) const
-{
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
-    if (_state == nullptr) {
-        return 0;
-    }
-    return state->baudrate();
-}
+// uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t instance) const
+// {
+//     const struct UARTState *_state = find_protocol_instance(protocol, instance);
+//     if (_state == nullptr) {
+//         return 0;
+//     }
+//     return state->baudrate();
+// }
 
-// find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
-int8_t AP_SerialManager::find_portnum(enum SerialProtocol protocol, uint8_t instance) const
-{
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
-    if (_state == nullptr) {
-        return -1;
-    }
-    return int8_t(_state - &state[0]);
-}
+// // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
+// int8_t AP_SerialManager::find_portnum(AP_SerialDevice::Protocol, uint8_t instance) const
+// {
+//     const struct UARTState *_state = find_protocol_instance(protocol, instance);
+//     if (_state == nullptr) {
+//         return -1;
+//     }
+//     return int8_t(_state - &state[0]);
+// }
 
 // get_serial_by_id - gets serial by serial id
-AP_HAL::UARTDriver *AP_SerialManager::get_serial_by_id(uint8_t id)
+AP_SerialDevice *AP_SerialManager::get_serial_by_id(uint8_t id)
 {
-    if (id < SERIALMANAGER_NUM_PORTS) {
-        return hal.serial(id);
+    if (id < ARRAY_SIZE(serial_uart_device)) {
+        return serial_uart_device[id];
     }
     return nullptr;
 }
@@ -704,7 +737,7 @@ uint32_t AP_SerialManager::map_baudrate(int32_t rate)
 }
 
 // protocol_match - returns true if the protocols match
-bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const
+bool AP_SerialDevice::protocol_match(AP_SerialDevice::Protocol protocol1, AP_SerialDevice::Protocol protocol2) const
 {
     // check for obvious match
     if (protocol1 == protocol2) {
@@ -712,14 +745,14 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
     }
 
     // mavlink match
-    if (((protocol1 == SerialProtocol_MAVLink) || (protocol1 == SerialProtocol_MAVLink2) || (protocol1 == SerialProtocol_MAVLinkHL)) &&
-        ((protocol2 == SerialProtocol_MAVLink) || (protocol2 == SerialProtocol_MAVLink2) || (protocol2 == SerialProtocol_MAVLinkHL))) {
+    if (((protocol1 == AP_SerialDevice::Protocol::MAVLink) || (protocol1 == AP_SerialDevice::Protocol::MAVLink2)) &&
+        ((protocol2 == AP_SerialDevice::Protocol::MAVLink) || (protocol2 == AP_SerialDevice::Protocol::MAVLink2))) {
         return true;
     }
 
     // gps match
-    if (((protocol1 == SerialProtocol_GPS) || (protocol1 == SerialProtocol_GPS2)) &&
-        ((protocol2 == SerialProtocol_GPS) || (protocol2 == SerialProtocol_GPS2))) {
+    if (((protocol1 == AP_SerialDevice::Protocol::GPS) || (protocol1 == AP_SerialDevice::Protocol::GPS2)) &&
+        ((protocol2 == AP_SerialDevice::Protocol::GPS) || (protocol2 == AP_SerialDevice::Protocol::GPS2))) {
         return true;
     }
 
@@ -727,29 +760,33 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
 }
 
 // setup any special options
-void AP_SerialManager::set_options(uint16_t i)
+void AP_SerialDevice_UART::set_options()
 {
-    struct UARTState &opt = state[i];
     // pass through to HAL
-    if (!hal.serial(i)->set_options(opt.options)) {
-        DEV_PRINTF("Unable to setup options for Serial%u\n", i);
+    if (!uart.set_options(state.options)) {
+        hal.console->printf("Unable to setup options for Serial");
     }
 }
 
 // get the passthru ports if enabled
-bool AP_SerialManager::get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
+bool AP_SerialManager::get_passthru(AP_SerialDevice *&port1, AP_SerialDevice *&port2, uint8_t &timeout_s,
                                     uint32_t &baud1, uint32_t &baud2) const
 {
     if (passthru_port2 < 0 ||
-        passthru_port2 >= SERIALMANAGER_NUM_PORTS ||
+        unsigned(passthru_port2) >= ARRAY_SIZE(serial_uart_device) ||
         passthru_port1 < 0 ||
-        passthru_port1 >= SERIALMANAGER_NUM_PORTS) {
+        unsigned(passthru_port1) >= ARRAY_SIZE(serial_uart_device)) {
         return false;
     }
-    port1 = hal.serial(passthru_port1);
-    port2 = hal.serial(passthru_port2);
-    baud1 = state[passthru_port1].baudrate();
-    baud2 = state[passthru_port2].baudrate();
+    port1 = serial_uart_device[passthru_port1];
+    port2 = serial_uart_device[passthru_port2];
+    AP_SerialDevice_UART *dev_uart1 = port1->get_serialdevice_uart();
+    AP_SerialDevice_UART *dev_uart2 = port2->get_serialdevice_uart();
+    if (dev_uart1 == nullptr || dev_uart2 == nullptr) {
+        return false;
+    }
+    baud1 = dev_uart1->get_baud();
+    baud2 = dev_uart2->get_baud();
     timeout_s = MAX(passthru_timeout, 0);
     return true;
 }
@@ -761,12 +798,12 @@ void AP_SerialManager::disable_passthru(void)
 }
 
 // accessor for AP_Periph to set baudrate and type
-void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate)
+void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, AP_SerialDevice::Protocol, uint32_t baudrate)
 {
-    if (sernum < SERIALMANAGER_NUM_PORTS) {
-        state[sernum].protocol.set(protocol);
-        state[sernum].baud.set(baudrate);
-    }
+    // if (sernum <= ARRAY_SIZE(state)) {
+    //     state[sernum].protocol.set(protocol);
+    //     state[sernum].baud.set(baudrate);
+    // }
 }
 
 

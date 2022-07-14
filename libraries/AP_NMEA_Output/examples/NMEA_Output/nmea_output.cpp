@@ -68,7 +68,7 @@ void setup(void)
         hal.console->printf("Failed to call setup\n");
         while(true);
     }
-    if (!AP_Param::set_by_name("SERIAL0_PROTOCOL", AP_SerialManager::SerialProtocol_NMEAOutput)) {
+    if (!AP_Param::set_by_name("SERIAL0_PROTOCOL", AP_SerialManager::SerialDevice::Protocol::NMEAOutput)) {
         hal.console->printf("Failed to set SERIAL0_PROTOCOL\n");
         while(true);
     }

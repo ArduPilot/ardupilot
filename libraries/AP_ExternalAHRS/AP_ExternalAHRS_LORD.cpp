@@ -74,10 +74,7 @@ AP_ExternalAHRS_LORD::AP_ExternalAHRS_LORD(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state)
 {
     auto &sm = AP::serialmanager();
-    uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
-
-    baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
-    port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
+    uart = sm.find_serial(AP_SerialDevice::Protocol::AHRS, 0);
 
     if (!uart) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS no UART");
@@ -96,7 +93,7 @@ void AP_ExternalAHRS_LORD::update_thread(void)
 {
     if (!port_open) {
         port_open = true;
-        uart->begin(baudrate);
+        uart->begin();
     }
 
     while (true) {
@@ -431,14 +428,6 @@ void AP_ExternalAHRS_LORD::post_filter() const
 
     AP::gps().handle_external(gps);
 }
-
-int8_t AP_ExternalAHRS_LORD::get_port(void) const
-{
-    if (!uart) {
-        return -1;
-    }
-    return port_num;
-};
 
 bool AP_ExternalAHRS_LORD::healthy(void) const
 {

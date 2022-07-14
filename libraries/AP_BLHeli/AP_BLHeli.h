@@ -208,11 +208,10 @@ private:
         uint32_t bad_frames;
         uint32_t unknown2;
     };
-    
-    
-    AP_HAL::UARTDriver *uart;
-    AP_HAL::UARTDriver *debug_uart;
-    AP_HAL::UARTDriver *telem_uart;
+
+    AP_SerialDevice *uart;
+    AP_SerialDevice *debug_uart;
+    AP_SerialDevice *telem_uart;
 
     static const uint8_t max_motors = AP_BLHELI_MAX_ESCS;
     uint8_t num_motors;

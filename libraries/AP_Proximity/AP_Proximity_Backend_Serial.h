@@ -4,6 +4,8 @@
 
 #if HAL_PROXIMITY_ENABLED
 
+class AP_SerialDevice;
+
 class AP_Proximity_Backend_Serial : public AP_Proximity_Backend
 {
 public:
@@ -15,7 +17,7 @@ public:
 protected:
     virtual uint16_t rxspace() const { return 0; };
 
-    AP_HAL::UARTDriver *_uart;              // uart for communicating with sensor
+    AP_SerialDevice *_uart;
 };
 
 #endif // HAL_PROXIMITY_ENABLED

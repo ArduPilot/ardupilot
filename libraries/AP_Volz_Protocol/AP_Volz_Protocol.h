@@ -68,7 +68,7 @@ public:
     void update();
 
 private:
-    AP_HAL::UARTDriver *port;
+    AP_SerialDevice *port;
     
     void init(void);
     void send_command(uint8_t data[VOLZ_DATA_FRAME_SIZE]);

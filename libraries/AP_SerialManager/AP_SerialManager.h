@@ -23,6 +23,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+#include "AP_SerialDevice_UART.h"
 
 #ifdef HAL_UART_NUM_SERIAL_PORTS
 #if HAL_UART_NUM_SERIAL_PORTS >= 4
@@ -63,10 +64,6 @@
 #define AP_SERIALMANAGER_MAVLINK_BAUD           57600
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
 #define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
-
-// LTM buffer sizes
-#define AP_SERIALMANAGER_LTM_BUFSIZE_RX         0
-#define AP_SERIALMANAGER_LTM_BUFSIZE_TX         32
 
 // FrSky default baud rates, use default buffer sizes
 #define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
@@ -123,56 +120,6 @@ public:
     AP_SerialManager(const AP_SerialManager &other) = delete;
     AP_SerialManager &operator=(const AP_SerialManager&) = delete;
 
-    enum SerialProtocol {
-        SerialProtocol_None = -1,
-        SerialProtocol_Console = 0, // unused
-        SerialProtocol_MAVLink = 1,
-        SerialProtocol_MAVLink2 = 2,                 // do not use - use MAVLink and provide instance of 1
-        SerialProtocol_FrSky_D = 3,                  // FrSky D protocol (D-receivers)
-        SerialProtocol_FrSky_SPort = 4,              // FrSky SPort protocol (X-receivers)
-        SerialProtocol_GPS = 5,
-        SerialProtocol_GPS2 = 6,                     // do not use - use GPS and provide instance of 1
-        SerialProtocol_AlexMos = 7,
-        SerialProtocol_SToRM32 = 8,
-        SerialProtocol_Rangefinder = 9,
-        SerialProtocol_FrSky_SPort_Passthrough = 10, // FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
-        SerialProtocol_Lidar360 = 11,                // Lightware SF40C, TeraRanger Tower or RPLidarA2
-        SerialProtocol_Aerotenna_USD1      = 12, // USD1 support - deprecated, users should use Rangefinder
-        SerialProtocol_Beacon = 13,
-        SerialProtocol_Volz = 14,                    // Volz servo protocol
-        SerialProtocol_Sbus1 = 15,
-        SerialProtocol_ESCTelemetry = 16,
-        SerialProtocol_Devo_Telem = 17,
-        SerialProtocol_OpticalFlow = 18,
-        SerialProtocol_Robotis = 19,
-        SerialProtocol_NMEAOutput = 20,
-        SerialProtocol_WindVane = 21,
-        SerialProtocol_SLCAN = 22,
-        SerialProtocol_RCIN = 23,
-        SerialProtocol_EFI = 24,                   // EFI serial protocol
-        SerialProtocol_LTM_Telem = 25,
-        SerialProtocol_RunCam = 26,
-        SerialProtocol_Hott = 27,
-        SerialProtocol_Scripting = 28,
-        SerialProtocol_CRSF = 29,
-        SerialProtocol_Generator = 30,
-        SerialProtocol_Winch = 31,
-        SerialProtocol_MSP = 32,
-        SerialProtocol_DJI_FPV = 33,
-        SerialProtocol_AirSpeed = 34,
-        SerialProtocol_ADSB = 35,
-        SerialProtocol_AHRS = 36,
-        SerialProtocol_SmartAudio = 37,
-        SerialProtocol_FETtecOneWire = 38,
-        SerialProtocol_Torqeedo = 39,
-        SerialProtocol_AIS = 40,
-        SerialProtocol_CoDevESC = 41,
-        SerialProtocol_MSP_DisplayPort = 42,
-        SerialProtocol_MAVLinkHL = 43,
-        SerialProtocol_Tramp = 44,
-        SerialProtocol_NumProtocols                    // must be the last value
-    };
-
     // get singleton instance
     static AP_SerialManager *get_singleton(void) {
         return _singleton;
@@ -184,11 +131,18 @@ public:
     // init - initialise serial ports
     void init();
 
+    AP_SerialDevice *get(uint8_t instance) const {
+        if (instance < ARRAY_SIZE(serial_uart_device)) {
+            return serial_uart_device[instance];
+        }
+        return nullptr;
+    }
+
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns uart on success, nullptr if a serial port cannot be found
-    // note that the SERIALn_OPTIONS are applied if the port is found
-    AP_HAL::UARTDriver *find_serial(enum SerialProtocol protocol, uint8_t instance) const;
+    AP_SerialDevice *find_serial(AP_SerialDevice::Protocol protocol, uint8_t instance) const;
+    AP_SerialDevice_UART *find_serial_uart(AP_SerialDevice::Protocol protocol, uint8_t instance) const;
 
     // have_serial - return true if we have the corresponding serial protocol configured
     bool have_serial(enum SerialProtocol protocol, uint8_t instance) const;
@@ -196,26 +150,29 @@ public:
     // find_baudrate - searches available serial ports for the first instance that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
     //  returns the baudrate of that protocol on success, 0 if a serial port cannot be found
-    uint32_t find_baudrate(enum SerialProtocol protocol, uint8_t instance) const;
+    // uint32_t find_baudrate(AP_SerialDevice::Protocol protocol, uint8_t instance) const;
 
     // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
-    int8_t find_portnum(enum SerialProtocol protocol, uint8_t instance) const;
+    int8_t find_portnum(AP_SerialDevice::Protocol protocol, uint8_t instance) const;
 
     // set_blocking_writes_all - sets block_writes on or off for all serial channels
     void set_blocking_writes_all(bool blocking);
 
     // get the passthru ports if enabled
-    bool get_passthru(AP_HAL::UARTDriver *&port1, AP_HAL::UARTDriver *&port2, uint8_t &timeout_s,
-                      uint32_t &baud1, uint32_t &baud2) const;
+    bool get_passthru(AP_SerialDevice *&port1,
+                      AP_SerialDevice *&port2,
+                      uint8_t &timeout_s,
+                      uint32_t &baud1,
+                      uint32_t &baud2) const;
 
     // disable passthru by settings SERIAL_PASS2 to -1
     void disable_passthru(void);
 
     // get Serial Port
-    AP_HAL::UARTDriver *get_serial_by_id(uint8_t id);
+    AP_SerialDevice *get_serial_by_id(uint8_t id);
 
     // accessors for AP_Periph to set baudrate and type
-    void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
+    void set_protocol_and_baud(uint8_t sernum, AP_SerialDevice::Protocol protocol, uint32_t baudrate);
 
     static uint32_t map_baudrate(int32_t rate);
 
@@ -253,20 +210,26 @@ public:
 private:
     static AP_SerialManager *_singleton;
 
-    // array of uart info. See comment above about
-    // SERIALMANAGER_MAX_PORTS
-    UARTState state[SERIALMANAGER_MAX_PORTS];
+    AP_SerialDevice_UART::UARTState state[SERIALMANAGER_NUM_PORTS];
+
+    // array of uart info
+    AP_SerialDevice_UART *serial_uart_device[SERIALMANAGER_NUM_PORTS];
 
     // pass-through serial support
     AP_Int8 passthru_port1;
     AP_Int8 passthru_port2;
     AP_Int8 passthru_timeout;
 
-    // protocol_match - returns true if the protocols match
-    bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
+    void init_serial_uart_devices();
+    uint8_t count_protocol_instances(AP_SerialDevice::Protocol protocol) const;
 
-    // setup any special options
-    void set_options(uint16_t i);
+    // search through managed serial connections looking for the
+    // instance-nth UART which is running protocol protocol
+    const AP_SerialDevice_UART::UARTState *find_protocol_instance(AP_SerialDevice::Protocol protocol,
+                                      uint8_t instance) const;
+
+    // protocol_match - returns true if the protocols match
+    bool protocol_match(AP_SerialDevice::Protocol protocol1, AP_SerialDevice::Protocol protocol2) const;
 
     bool init_console_done;
 };

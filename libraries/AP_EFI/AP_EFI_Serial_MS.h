@@ -30,7 +30,7 @@ public:
     void update() override;
 
 private:
-    AP_HAL::UARTDriver *port;
+    AP_SerialDevice *port;
     void parse_realtime_data();
     bool read_incoming_realtime_data();
     void send_request(uint8_t table, uint16_t first_offset, uint16_t last_offset);

@@ -43,7 +43,7 @@ constexpr uint8_t AP_MSP_Telem_Backend::arrows[8];
 
 using namespace MSP;
 
-AP_MSP_Telem_Backend::AP_MSP_Telem_Backend(AP_HAL::UARTDriver *uart) : AP_RCTelemetry(MSP_TIME_SLOT_MAX)
+AP_MSP_Telem_Backend::AP_MSP_Telem_Backend(AP_SerialDevice *uart) : AP_RCTelemetry(MSP_TIME_SLOT_MAX)
 {
     _msp_port.uart = uart;
 }
@@ -86,7 +86,7 @@ bool AP_MSP_Telem_Backend::init_uart()
 {
     if (_msp_port.uart != nullptr)  {
         // re-init port here for use in this thread
-        _msp_port.uart->begin(0);
+        _msp_port.uart->begin();
         return true;
     }
     return false;

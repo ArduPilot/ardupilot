@@ -44,7 +44,7 @@ private:
     // send_frames - sends updates down telemetry link
     void send_frames();
 
-    AP_HAL::UARTDriver *_port;              // UART used to send data to receiver
+    AP_SerialDevice *_port;              // UART used to send data to receiver
     uint32_t _last_frame_ms;
 
 };

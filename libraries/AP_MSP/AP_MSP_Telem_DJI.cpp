@@ -31,12 +31,19 @@ using namespace MSP;
 
 bool AP_MSP_Telem_DJI::init_uart()
 {
-    if (_msp_port.uart != nullptr)  {
-        _msp_port.uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        _msp_port.uart->begin(AP_SERIALMANAGER_MSP_BAUD, AP_SERIALMANAGER_MSP_BUFSIZE_RX, AP_SERIALMANAGER_MSP_BUFSIZE_TX);
-        return true;
+    if (_msp_port.uart == nullptr) {
+        return false;
     }
-    return false;
+
+    AP_SerialDevice_UART *dev_uart = _msp_port.uart->get_serialdevice_uart();
+    if (dev_uart != nullptr) {
+        dev_uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        dev_uart->set_bufsize_rx(AP_SERIALMANAGER_MSP_BUFSIZE_RX);
+        dev_uart->set_bufsize_tx(AP_SERIALMANAGER_MSP_BUFSIZE_TX);
+    }
+
+    _msp_port.uart->begin();
+    return true;
 }
 
 bool AP_MSP_Telem_DJI::is_scheduler_enabled() const

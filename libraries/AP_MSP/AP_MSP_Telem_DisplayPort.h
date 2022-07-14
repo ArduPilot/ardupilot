@@ -26,7 +26,9 @@ class AP_MSP_Telem_DisplayPort : public AP_MSP_Telem_Backend
 public:
     bool is_scheduler_enabled() const override { return false; }
     bool use_msp_thread() const override { return false; }
-    AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_MSP_DisplayPort; };
+    AP_SerialDevice::Protocol get_serial_protocol() const override {
+        return AP_SerialDevice::Protocol::MSP_DisplayPort;
+    };
 
     MSP::MSPCommandResult msp_process_out_fc_variant(MSP::sbuf_t *dst) override;
 };

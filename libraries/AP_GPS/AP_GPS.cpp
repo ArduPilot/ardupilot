@@ -443,7 +443,7 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
     uint8_t uart_idx = 0;
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (needs_uart((GPS_Type)_type[i].get())) {
-            _port[i] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, uart_idx);
+            _port[i] = serial_manager.find_serial(AP_SerialDevice::Protocol::GPS, uart_idx);
             uart_idx++;
         }
     }
@@ -629,6 +629,8 @@ void AP_GPS::send_blob_update(uint8_t instance)
 void AP_GPS::detect_instance(uint8_t instance)
 {
     const uint32_t now = AP_HAL::millis();
+    AP_SerialDevice_UART *dev_uart;
+    uint32_t baudrate;
 
     state[instance].status = NO_GPS;
     state[instance].hdop = GPS_UNKNOWN_DOP;
@@ -696,6 +698,12 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
 
+    dev_uart = _port[instance]->get_serialdevice_uart();
+    if (dev_uart == nullptr) {
+        // not a UART serial device; autobauding is not appropriate
+        dstate->auto_detected_baud = false;
+    }
+
     switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
@@ -730,9 +738,13 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
             dstate->current_baud = 0;
         }
-        uint32_t baudrate = _baudrates[dstate->current_baud];
-        _port[instance]->begin(baudrate);
-        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        if (dev_uart != nullptr) {
+            baudrate = _baudrates[dstate->current_baud];
+            dev_uart->begin(baudrate);
+            dev_uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        } else {
+            dev_uart->begin();
+        }
         dstate->last_baud_change_ms = now;
 
         if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {

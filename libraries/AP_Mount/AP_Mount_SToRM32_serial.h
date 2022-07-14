@@ -134,7 +134,7 @@ private:
 
 
     // internal variables
-    AP_HAL::UARTDriver *_port;
+    AP_SerialDevice *_port;
 
     bool _initialised;              // true once the driver has been initialised
     MountTarget _angle_rad;         // latest angle target

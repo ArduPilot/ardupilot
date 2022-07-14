@@ -1412,7 +1412,7 @@ void AP_BLHeli::init(void)
     if (num_motors != 0 && telem_rate > 0) {
         AP_SerialManager *serial_manager = AP_SerialManager::get_singleton();
         if (serial_manager) {
-            telem_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_ESCTelemetry,0);
+            telem_uart = serial_manager->find_serial(AP_SerialDevice::Protocol::ESCTelemetry,0);
         }
     }
 }

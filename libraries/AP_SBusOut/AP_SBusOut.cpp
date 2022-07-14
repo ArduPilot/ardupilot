@@ -186,6 +186,6 @@ void AP_SBusOut::init() {
     if (!serial_manager) {
         return;
     }
-    sbus1_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Sbus1,0);
+    sbus1_uart = serial_manager->find_serial(AP_SerialDevice::Protocol::Sbus1,0);
 }
 

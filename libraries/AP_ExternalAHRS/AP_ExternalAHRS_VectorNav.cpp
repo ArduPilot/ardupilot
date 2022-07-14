@@ -107,13 +107,18 @@ AP_ExternalAHRS_VectorNav::AP_ExternalAHRS_VectorNav(AP_ExternalAHRS *_frontend,
     AP_ExternalAHRS_backend(_frontend, _state)
 {
     auto &sm = AP::serialmanager();
-    uart = sm.find_serial(AP_SerialManager::SerialProtocol_AHRS, 0);
+    uart = sm.find_serial_uart(AP_SerialDevice::Protocol::AHRS, 0);
     if (!uart) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS no UART");
         return;
     }
-    baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
-    port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
+    {
+        AP_SerialDevice_UART *dev_uart = uart->get_serialdevice_uart();
+        if (dev_uart != nullptr) {
+            dev_uart->set_bufsize_rx(1024);
+            dev_uart->set_bufsize_tx(512);
+        }
+    }
 
     bufsize = MAX(VN_PKT1_LENGTH, VN_PKT2_LENGTH);
     pktbuf = new uint8_t[bufsize];
@@ -205,7 +210,7 @@ void AP_ExternalAHRS_VectorNav::update_thread()
     if (!port_opened) {
         // open port in the thread
         port_opened = true;
-        uart->begin(baudrate, 1024, 512);
+        uart->begin();
         send_config();
     }
 
@@ -350,15 +355,6 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
 
     AP::gps().handle_external(gps);
 }
-
-// get serial port number for the uart
-int8_t AP_ExternalAHRS_VectorNav::get_port(void) const
-{
-    if (!uart) {
-        return -1;
-    }
-    return port_num;
-};
 
 // accessors for AP_AHRS
 bool AP_ExternalAHRS_VectorNav::healthy(void) const

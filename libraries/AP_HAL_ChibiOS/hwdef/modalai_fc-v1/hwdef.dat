@@ -25,7 +25,7 @@ env OPTIMIZE -O2
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART4 USART2 USART6 USART3 OTG2
 
 # default the 2nd interface to MAVLink2
-define HAL_OTG2_PROTOCOL SerialProtocol_MAVLink2
+define HAL_OTG2_PROTOCOL SerialDevice::Protocol::MAVLink2
 
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1

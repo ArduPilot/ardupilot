@@ -27,7 +27,7 @@ protected:
     }
 
     // baudrate used during object construction:
-    uint32_t initial_baudrate(uint8_t serial_instance) const override {
+    uint32_t initial_baudrate() const override {
         return 115200;
     }
 

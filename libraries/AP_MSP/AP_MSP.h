@@ -87,10 +87,10 @@ private:
         uint8_t current_screen;                                 // defaults to screen 0
     } _msp_status;
 
-    bool init_backend(uint8_t backend_idx, AP_HAL::UARTDriver *uart, AP_SerialManager::SerialProtocol protocol);
+    bool init_backend(uint8_t backend_idx, AP_SerialDevice *uart, AP_SerialDevice::Protocol protocol);
     void update_osd_item_settings();
     void loop(void);
-    AP_MSP_Telem_Backend* find_protocol(const AP_SerialManager::SerialProtocol protocol) const;
+    AP_MSP_Telem_Backend* find_protocol(const AP_SerialDevice::Protocol protocol) const;
 
     static AP_MSP *_singleton;
 };

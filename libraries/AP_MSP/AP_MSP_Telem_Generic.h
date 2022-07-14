@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AP_MSP_Telem_Backend.h"
+#include <AP_SerialManager/AP_SerialDevice.h>
 
 #if HAL_MSP_ENABLED
 
@@ -25,7 +26,9 @@ class AP_MSP_Telem_Generic : public AP_MSP_Telem_Backend
     using AP_MSP_Telem_Backend::AP_MSP_Telem_Backend;
 public:
     bool is_scheduler_enabled() const override { return false; }
-    AP_SerialManager::SerialProtocol get_serial_protocol() const override { return AP_SerialManager::SerialProtocol::SerialProtocol_MSP; };
+    AP_SerialDevice::Protocol get_serial_protocol() const override {
+        return AP_SerialDevice::Protocol::MSP;
+    };
 };
 
 #endif //HAL_MSP_ENABLED

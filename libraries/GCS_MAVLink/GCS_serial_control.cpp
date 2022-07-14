@@ -32,7 +32,7 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(&msg, &packet);
 
-    AP_HAL::UARTDriver *port = nullptr;
+    AP_SerialDevice *port = nullptr;
     AP_HAL::BetterStream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
@@ -62,11 +62,11 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         break;
     }
     case SERIAL_CONTROL_DEV_GPS1:
-        stream = port = hal.serial(3);
+        stream = port = AP::serialmanager().get(3);
         AP::gps().lock_port(0, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS2:
-        stream = port = hal.serial(4);
+        stream = port = AP::serialmanager().get(4);
         AP::gps().lock_port(1, exclusive);
         break;
     case SERIAL_CONTROL_DEV_SHELL:
@@ -107,7 +107,10 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         // force flow control off for exclusive access. This protocol
         // is used to talk to bootloaders which may not have flow
         // control support
-        port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        AP_SerialDevice_UART *dev_uart = port->get_serialdevice_uart();
+        if (dev_uart) {
+            dev_uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        }
     }
 
     // optionally change the baudrate

@@ -48,7 +48,11 @@ bool AP_SmartAudio::init()
     }
 
     // init uart
-    _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SmartAudio, 0);
+    AP_SerialDevice_UART *sd = AP::serialmanager().find_serial_uart(AP_SerialDevice::Protocol::SmartAudio, 0);
+    if (sd  == nullptr) {
+        return false;
+    }
+    _port = &(sd->get_uart());
     if (_port!=nullptr) {
         _port->configure_parity(0);
         _port->set_stop_bits(2);

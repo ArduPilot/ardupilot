@@ -59,7 +59,7 @@ constexpr const char* AP_GPS_SBF::_initialisation_blob[];
 constexpr const char* AP_GPS_SBF::sbas_on_blob[];
 
 AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
-                       AP_HAL::UARTDriver *_port) :
+                       AP_SerialDevice *_port) :
     AP_GPS_Backend(_gps, _state, _port)
 {
     sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
@@ -70,6 +70,11 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
     if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
         state.gps_yaw_configured = true;
+    }
+
+    if (_port->get_serialdevice_uart() == nullptr) {
+        // don't try to configure baudrate
+        config_step = Config_State::SSO;
     }
 }
 
@@ -104,14 +109,19 @@ AP_GPS_SBF::read(void)
                 } else if (readyForCommand) {
                     if (config_string == nullptr) {
                         switch (config_step) {
-                            case Config_State::Baud_Rate:
-                                if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
+                            case Config_State::Baud_Rate: {
+                                AP_SerialDevice_UART *dev_uart = port->get_serialdevice_uart();
+                                if (dev_uart == nullptr) {
+                                    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                                    config_step = Config_State::SSO;
+                                } else if (asprintf(&config_string, "scs,COM%d,baud%d,bits8,No,bit1,%s\n",
                                              (int)gps._com_port[state.instance],
                                              230400,
-                                             port->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
+                                             dev_uart->get_flow_control() != AP_HAL::UARTDriver::flow_control::FLOW_CONTROL_ENABLE ? "none" : "RTS|CTS") == -1) {
                                     config_string = nullptr;
                                 }
                                 break;
+                            }
                             case Config_State::SSO:
                                 if (asprintf(&config_string, "sso,Stream%d,COM%d,PVTGeodetic+DOP+ReceiverStatus+VelCovGeodetic+BaseVectorGeod,msec100\n",
                                              (int)GPS_SBF_STREAM_NUMBER,

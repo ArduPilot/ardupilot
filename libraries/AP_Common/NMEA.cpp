@@ -16,6 +16,8 @@
 
 #include "NMEA.h"
 
+#include <AP_SerialManager/AP_SerialDevice.h>
+
 extern const AP_HAL::HAL &hal;
 
 /*
@@ -62,7 +64,7 @@ char *nmea_vaprintf(const char *fmt, va_list ap)
 /*
   formatted print of NMEA message to the port, with checksum appended
  */
-bool nmea_printf(AP_HAL::UARTDriver *uart, const char *fmt, ...)
+bool nmea_printf(AP_SerialDevice *uart, const char *fmt, ...)
 {
     va_list ap;
 

@@ -11,7 +11,7 @@ void AP_Mount_Alexmos::init()
     const AP_SerialManager& serial_manager = AP::serialmanager();
 
     // check for alexmos protcol
-    if ((_port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_AlexMos, 0))) {
+    if ((_port = serial_manager.find_serial(AP_SerialDevice::Protocol::AlexMos, 0))) {
         _initialised = true;
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters

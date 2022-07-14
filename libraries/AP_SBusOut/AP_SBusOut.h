@@ -7,8 +7,9 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
+
+class AP_SerialDevice;
 
 class AP_SBusOut {
 public:
@@ -27,7 +28,7 @@ public:
 
 private:
 
-    AP_HAL::UARTDriver *sbus1_uart;
+    AP_SerialDevice *sbus1_uart;
 
     void init(void);
 

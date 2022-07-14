@@ -42,8 +42,7 @@ public:
     void update();
 
 private:
-    AP_HAL::UARTDriver *port;
-    uint32_t baudrate;
+    AP_SerialDevice *port;
     uint32_t us_per_byte;
     uint32_t us_gap;
 

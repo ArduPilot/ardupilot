@@ -96,7 +96,7 @@ uint32_t PingProtocol::get_distance_mm() const
             (uint32_t)msg.payload[3] << 24;
 }
 
-void PingProtocol::send_message(AP_HAL::UARTDriver *uart, PingProtocol::MessageId msg_id, const uint8_t *payload, uint16_t payload_len) const
+void PingProtocol::send_message(AP_SerialDevice *uart, PingProtocol::MessageId msg_id, const uint8_t *payload, uint16_t payload_len) const
 {
     if (uart == nullptr) {
         return;

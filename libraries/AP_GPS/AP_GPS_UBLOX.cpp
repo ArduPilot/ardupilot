@@ -78,7 +78,7 @@ extern const AP_HAL::HAL& hal;
  # define MB_Debug(fmt, args ...)
 #endif
 
-AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role _role) :
+AP_GPS_UBLOX::AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::GPS_State &_state, AP_SerialDevice *_port, AP_GPS::GPS_Role _role) :
     AP_GPS_Backend(_gps, _state, _port),
     _next_message(STEP_PVT),
     _ublox_port(255),

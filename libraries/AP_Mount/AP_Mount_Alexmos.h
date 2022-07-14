@@ -275,7 +275,7 @@ private:
         alexmos_angles_speed angle_speed;
     } _buffer,_current_parameters;
 
-    AP_HAL::UARTDriver *_port;
+    AP_SerialDevice *_port;
     bool _initialised : 1;
 
     // result of the get_boardinfo

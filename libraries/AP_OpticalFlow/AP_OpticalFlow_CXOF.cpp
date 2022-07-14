@@ -51,7 +51,7 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_OpticalFlow_CXOF::AP_OpticalFlow_CXOF(OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
+AP_OpticalFlow_CXOF::AP_OpticalFlow_CXOF(OpticalFlow &_frontend, AP_SerialDevice *_uart) :
     OpticalFlow_backend(_frontend),
     uart(_uart)
 {
@@ -66,7 +66,7 @@ AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(OpticalFlow &_frontend)
     }
 
     // look for first serial driver with protocol defined as OpticalFlow
-    AP_HAL::UARTDriver *uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_OpticalFlow, 0);
+    AP_SerialDevice *uart = serial_manager->find_serial(AP_SerialDevice::Protocol::OpticalFlow, 0);
     if (uart == nullptr) {
         return nullptr;
     }
@@ -85,7 +85,11 @@ void AP_OpticalFlow_CXOF::init()
     }
 
     // open serial port with baud rate of 19200
-    uart->begin(19200);
+    AP_SerialDevice_UART *dev_uart = uart->get_serialdevice_uart();
+    if (dev_uart != nullptr) {
+        dev_uart->set_baud(19200);
+    }
+    uart->begin();
 
     last_frame_us = AP_HAL::micros();
 }

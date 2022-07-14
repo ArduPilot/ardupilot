@@ -26,14 +26,13 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
+class AP_SerialDevice;
+
 class AP_ExternalAHRS_LORD: public AP_ExternalAHRS_backend
 {
 public:
 
     AP_ExternalAHRS_LORD(AP_ExternalAHRS *frontend, AP_ExternalAHRS::state_t &state);
-
-    // get serial port number, -1 for not enabled
-    int8_t get_port(void) const override;
 
     // accessors for AP_AHRS
     bool healthy(void) const override;
@@ -60,11 +59,10 @@ private:
 
     void update_thread();
 
-    AP_HAL::UARTDriver *uart;
+    AP_SerialDevice *uart;
     HAL_Semaphore sem;
 
     uint32_t baudrate;
-    int8_t port_num;
     bool port_open = false;
 
     const uint8_t SYNC_ONE = 0x75;
