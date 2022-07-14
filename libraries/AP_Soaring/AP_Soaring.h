@@ -30,6 +30,7 @@
 
 
 class SoaringController {
+    Variometer::PolarParams _polarParams;
     ExtendedKalmanFilter _ekf{};
     AP_TECS &_tecs;
     Variometer _vario;
@@ -60,8 +61,6 @@ class SoaringController {
 
     LowPassFilter<float> _position_x_filter{1/60.0};
     LowPassFilter<float> _position_y_filter{1/60.0};
-
-    Variometer::PolarParams _polarParams;
 
 protected:
     AP_Int8 soar_active;
