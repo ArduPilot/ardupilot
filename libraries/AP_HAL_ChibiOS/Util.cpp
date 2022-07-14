@@ -461,7 +461,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 // request information on dma contention
 void Util::dma_info(ExpandingString &str)
 {
-#ifndef HAL_NO_SHARED_DMA
+#if AP_HAL_SHARED_DMA_ENABLED
     ChibiOS::Shared_DMA::dma_info(str);
 #endif
 }
