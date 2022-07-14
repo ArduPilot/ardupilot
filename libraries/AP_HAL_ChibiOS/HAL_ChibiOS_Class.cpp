@@ -213,7 +213,7 @@ static void main_loop()
     ChibiOS::I2CBus::clear_all();
 #endif
 
-#ifndef HAL_NO_SHARED_DMA
+#if AP_HAL_SHARED_DMA_ENABLED
     ChibiOS::Shared_DMA::init();
 #endif
 

@@ -224,7 +224,7 @@ __RAMFUNC__ void RCOutput::dshot_update_tick(void* p)
     chSysUnlockFromISR();
 }
 
-#ifndef HAL_NO_SHARED_DMA
+#if AP_HAL_SHARED_DMA_ENABLED
 // release locks on the groups that are pending in reverse order
 void RCOutput::dshot_collect_dma_locks(uint32_t time_out_us)
 {
@@ -279,7 +279,7 @@ void RCOutput::dshot_collect_dma_locks(uint32_t time_out_us)
         }
     }
 }
-#endif // HAL_NO_SHARED_DMA
+#endif // AP_HAL_SHARED_DMA_ENABLED
 
 /*
   setup the output frequency for a group and start pwm output
