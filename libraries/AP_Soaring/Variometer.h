@@ -78,7 +78,7 @@ public:
 
     float get_exp_thermalling_sink(void) const {return _expected_thermalling_sink;};
 
-    float calculate_circling_time_constant(const float thermal_bank);
+    float calculate_circling_time_constant(const float thermal_bank) const;
 
 private:
     const PolarParams &_polarParams;
