@@ -1044,7 +1044,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 // require an angle total of at least 2 centidegrees, due to special casing of 1 centidegree
                 if (((fabsf(cmd.content.location.get_distance(current_loc) - abs_radius) > 5.0f) &&
                       (cmd.content.location.get_distance(current_loc) < abs_radius)) ||
-                    (loiter.sum_cd < 2)) {
+                    (labs(loiter.sum_cd) < 2)) {
                     nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                     break;
                 }
