@@ -8,7 +8,7 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
-#include <AC_PID/AC_PID.h>
+#include <AC_PID/AP_PIDInfo.h>
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
