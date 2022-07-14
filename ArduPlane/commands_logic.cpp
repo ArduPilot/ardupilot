@@ -429,15 +429,6 @@ void Plane::do_landing_vtol_approach(const AP_Mission::Mission_Command& cmd)
     loc.sanitize(current_loc);
     set_next_WP(loc);
 
-    // only set the direction if the quadplane landing radius override is not 0
-    // if it's 0 update_loiter will manage the direction for us when we hand it
-    // 0 later in the controller
-    if (is_negative(quadplane.fw_land_approach_radius)) {
-        loiter.direction = -1;
-    } else if (is_positive(quadplane.fw_land_approach_radius)) {
-        loiter.direction = 1;
-    }
-
     vtol_approach_s.approach_stage = LOITER_TO_ALT;
 }
 #endif
@@ -1026,7 +1017,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
         case RTL:
             {
                 // fly home and loiter at RTL alt
-                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+                nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
                 if (plane.reached_loiter_target()) {
                     // decend to Q RTL alt
                     plane.do_RTL(plane.home.alt + plane.quadplane.qrtl_alt*100UL);
@@ -1037,7 +1028,7 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
             }
         case LOITER_TO_ALT:
             {
-                update_loiter(fabsf(quadplane.fw_land_approach_radius));
+                nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
 
                 if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_acheive_target_alt)) {
                     Vector3f wind = ahrs.wind_estimate();
