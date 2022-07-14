@@ -119,7 +119,7 @@ define HAL_NO_TIMER_THREAD
 define HAL_NO_RCIN_THREAD
 define HAL_NO_MONITOR_THREAD
 define HAL_NO_RCOUT_THREAD
-define HAL_NO_SHARED_DMA
+define AP_HAL_SHARED_DMA_ENABLED 0
 
 #defined to turn off undef warnings
 define __FPU_PRESENT 0
