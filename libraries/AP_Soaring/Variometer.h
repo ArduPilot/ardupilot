@@ -53,7 +53,7 @@ public:
         AP_Float B;
     };
 
-    Variometer(const AP_Vehicle::FixedWing &parms, PolarParams &polarParams);
+    Variometer(const AP_Vehicle::FixedWing &parms, const PolarParams &polarParams);
 
     float alt;
     float reading;
@@ -81,6 +81,6 @@ public:
     float calculate_circling_time_constant(const float thermal_bank);
 
 private:
-    PolarParams &_polarParams;
+    const PolarParams &_polarParams;
 };
 
