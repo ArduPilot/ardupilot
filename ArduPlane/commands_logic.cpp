@@ -1090,11 +1090,13 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 nav_controller->update_waypoint(start, end);
 
                 // check if we should move on to the next waypoint
-                Location breakout_loc = cmd.content.location;
-                breakout_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
+                Location breakout_stopping_loc = cmd.content.location;
+                breakout_stopping_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, quadplane.stopping_distance());
+                const bool past_finish_line = current_loc.past_interval_finish_line(start, breakout_stopping_loc);
 
-                const bool past_finish_line = current_loc.past_interval_finish_line(start, breakout_loc);
-                const bool half_radius = current_loc.get_distance(cmd.content.location) < 0.5 * abs_radius;
+                Location breakout_loc = cmd.content.location;
+                breakout_loc.offset_bearing(vtol_approach_s.approach_direction_deg + 180, abs_radius);
+                const bool half_radius = current_loc.line_path_proportion(breakout_loc, cmd.content.location) > 0.5;
                 bool lined_up = true;
                 Vector3f vel_NED;
                 if (ahrs.get_velocity_NED(vel_NED)) {
