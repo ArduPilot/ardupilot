@@ -190,6 +190,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes = &g.flight_mode1;
+    const uint8_t num_flight_modes = 6;
 
     AP_FixedWing::Rangefinder_State rangefinder_state;
 
@@ -966,7 +967,6 @@ private:
     // control_modes.cpp
     void read_control_switch();
     uint8_t readSwitch(void) const;
-    void reset_control_switch();
     void autotune_start(void);
     void autotune_restore(void);
     void autotune_enable(bool enable);

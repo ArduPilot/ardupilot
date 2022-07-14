@@ -142,7 +142,7 @@ void Plane::init_ardupilot()
 
     // set the correct flight mode
     // ---------------------------
-    reset_control_switch();
+    rc().reset_mode_switch();
 
     // initialise sensor
 #if AP_OPTICALFLOW_ENABLED
