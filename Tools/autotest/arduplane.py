@@ -1296,6 +1296,31 @@ class AutoTestPlane(AutoTest):
             on_radius_start_heading = None
             circle_time_start = 0
 
+    def MODE_SWITCH_RESET(self):
+        '''test the MODE_SWITCH_RESET auxiliary function'''
+        self.set_parameters({
+            "RC9_OPTION": 96,
+        })
+
+        self.progress("Using RC to change modes")
+        self.set_rc(8, 1500)
+        self.wait_mode('FBWA')
+
+        self.progress("Killing RC to engage RC failsafe")
+        self.set_parameter('SIM_RC_FAIL', 1)
+        self.wait_mode('RTL')
+
+        self.progress("Reinstating RC")
+        self.set_parameter('SIM_RC_FAIL', 0)
+
+        self.progress("Ensuring we don't automatically revert mode")
+        self.delay_sim_time(2)
+        self.assert_mode_is('RTL')
+
+        self.progress("Ensuring MODE_SWITCH_RESET switch resets to pre-failsafe mode")
+        self.set_rc(9, 2000)
+        self.wait_mode('FBWA')
+
     def FenceStatic(self):
         '''Test Basic Fence Functionality'''
         ex = None
@@ -4572,6 +4597,7 @@ class AutoTestPlane(AutoTest):
             self.GCSFailsafe,
             self.SDCardWPTest,
             self.NoArmWithoutMissionItems,
+            self.MODE_SWITCH_RESET,
         ])
         return ret
 

@@ -7213,6 +7213,10 @@ class AutoTest(ABC):
                 raise WaitModeTimeout("Did not change mode")
         self.progress("Got mode %s" % mode)
 
+    def assert_mode_is(self, mode):
+        if not self.mode_is(mode):
+            raise NotAchievedException("Expected mode %s" % str(mode))
+
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
         tstart = self.get_sim_time_cached()
