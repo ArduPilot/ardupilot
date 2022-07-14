@@ -141,6 +141,9 @@ define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 define HAL_COMPASS_MAX_SENSORS 1
 
+# add support for moving baseline yaw
+define GPS_MOVING_BASELINE 1
+
 # GPS+MAG+BARO+LEDs
 define HAL_PERIPH_ENABLE_GPS
 define HAL_PERIPH_ENABLE_MAG
