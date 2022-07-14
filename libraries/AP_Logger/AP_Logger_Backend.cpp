@@ -5,6 +5,7 @@
 #include "AP_Common/AP_FWVersion.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Rally/AP_Rally.h>
 
 extern const AP_HAL::HAL& hal;
 

@@ -2,6 +2,8 @@
 
 #include "AP_Logger.h"
 
+#include <AP_Common/Bitmask.h>
+
 class LoggerMessageWriter_DFLogStart;
 
 #define MAX_LOG_FILES 500
@@ -118,7 +120,7 @@ public:
     bool Write_EntireMission();
     bool Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
-                          const RallyLocation &rally_point);
+                          const class RallyLocation &rally_point);
     bool Write_Rally();
     bool Write_Format(const struct LogStructure *structure);
     bool Write_Message(const char *message);
