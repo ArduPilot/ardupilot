@@ -3295,10 +3295,12 @@ bool QuadPlane::verify_vtol_land(void)
     if (poscontrol.get_state() == QPOS_LAND_DESCEND && check_land_final()) {
         poscontrol.set_state(QPOS_LAND_FINAL);
 
+#if AP_ICENGINE_ENABLED
         // cut IC engine if enabled
         if (land_icengine_cut != 0) {
             plane.g2.ice_control.engine_control(0, 0, 0);
         }
+#endif  // AP_ICENGINE_ENABLED
         gcs().send_text(MAV_SEVERITY_INFO,"Land final started");
     }
 
