@@ -39,12 +39,12 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
 // define variable initial values at contstruction
 AC_CustomControl::AC_CustomControl(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt):
 AC_AttitudeControl_Multi(ahrs,aparm,motors,dt),
-    _p_angle_roll2(AC_ATTITUDE_CONTROL_ANGLE_P),
-    _p_angle_pitch2(AC_ATTITUDE_CONTROL_ANGLE_P),
-    _p_angle_yaw2(AC_ATTITUDE_CONTROL_ANGLE_P),
-    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f, dt)
+    _p_angle_roll2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
+    _p_angle_pitch2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
+    _p_angle_yaw2(AC_ATTITUDE_CONTROL_ANGLE_P * 0.90f),
+    _pid_atti_rate_roll(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, dt),
+    _pid_atti_rate_pitch(AC_ATC_MULTI_RATE_RP_P * 0.90f, AC_ATC_MULTI_RATE_RP_I * 0.90f, AC_ATC_MULTI_RATE_RP_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, dt),
+    _pid_atti_rate_yaw(AC_ATC_MULTI_RATE_YAW_P * 0.90f, AC_ATC_MULTI_RATE_YAW_I * 0.90f, AC_ATC_MULTI_RATE_YAW_D * 0.90f, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX * 0.90f, AC_ATC_MULTI_RATE_RP_FILT_HZ * 0.90f, AC_ATC_MULTI_RATE_YAW_FILT_HZ * 0.90f, 0.0f, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -85,15 +85,9 @@ void AC_CustomControl::rate_controller_run()
 
         motor_set(Vector3f(rpy_out[0], rpy_out[1], rpy_out[2]));
         ////////// end
-
-        // reset main controller incase we switch out of custom one
-        reset_main_controller();
     } else {
         // custom controller not enabled and switched on, run primary controller
         AC_AttitudeControl_Multi::rate_controller_run();
-
-        // reset custom controller filter, integrator etc.
-        reset_custom_controller();
     }
     
 }
@@ -158,29 +152,34 @@ void AC_CustomControl::reset_custom_controller(void) {
 }
 
 
-// reset I terms and all of the filter to allow smooth transion 
-// to the primary controller per axis
+// reset rate controller filters and move integrator to motor output
+// to allow smooth transion to the primary controller per axis
 void AC_CustomControl::reset_main_controller(void) 
 {
+    Vector3f gyro_latest = _ahrs.get_gyro_latest();
     if (_custom_controller_mask & (uint8_t)CustomControllerOption::ROLL) {
         get_rate_roll_pid().reset_filter();
-        get_rate_roll_pid().reset_I();
+        get_rate_roll_pid().set_integrator(_ang_vel_body.x - gyro_latest.x, _motors.get_roll());
     }
     if (_custom_controller_mask & (uint8_t)CustomControllerOption::PITCH) {
         get_rate_pitch_pid().reset_filter();
-        get_rate_pitch_pid().reset_I();
+        get_rate_pitch_pid().set_integrator(_ang_vel_body.y - gyro_latest.y, _motors.get_pitch());
     }
     if (_custom_controller_mask & (uint8_t)CustomControllerOption::YAW) {
         get_rate_yaw_pid().reset_filter();
-        get_rate_yaw_pid().reset_I();
+        get_rate_yaw_pid().set_integrator(_ang_vel_body.z - gyro_latest.z, _motors.get_yaw());
     }
 }
 
 void AC_CustomControl::set_custom_controller(bool enabled)
 {
     if (enabled && _custom_controller_enabled) {
+        // reset custom controller filter, integrator etc.
+        reset_custom_controller();
         gcs().send_text(MAV_SEVERITY_INFO, "Custom controller is ON");
     } else {
+        // reset main controller         
+        reset_main_controller();
         gcs().send_text(MAV_SEVERITY_INFO, "Custom controller is OFF");
     }
     _custom_controller_active = enabled;
