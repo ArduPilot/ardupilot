@@ -18,7 +18,7 @@
 #include "RPM_Backend.h"
 #include <AP_Generator/AP_Generator.h>
 
-#if HAL_GENERATOR_ENABLED
+#if AP_RPM_GENERATOR_ENABLED
 
 class AP_RPM_Generator : public AP_RPM_Backend
 {
@@ -30,5 +30,4 @@ public:
     void update(void) override;
 };
 
-#endif // HAL_GENERATOR_ENABLED
-
+#endif // AP_RPM_GENERATOR_ENABLED
