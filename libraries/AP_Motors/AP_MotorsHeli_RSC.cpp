@@ -234,6 +234,7 @@ void AP_MotorsHeli_RSC::set_throttle_curve()
 void AP_MotorsHeli_RSC::output(RotorControlState state)
 {
     // _rotor_RPM available to the RSC output
+#if AP_RPM_ENABLED
     const AP_RPM *rpm = AP_RPM::get_singleton();
     if (rpm != nullptr) {
         if (!rpm->get_rpm(0, _rotor_rpm)) {
@@ -244,6 +245,9 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         // No RPM because pointer is null
         _rotor_rpm = -1;
     }
+#else
+        _rotor_rpm = -1;
+#endif
 
     float dt;
     uint64_t now = AP_HAL::micros64();
