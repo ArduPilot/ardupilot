@@ -149,9 +149,7 @@
 #if WINCH_ENABLED == ENABLED
  # include <AP_Winch/AP_Winch.h>
 #endif
-#if RPM_ENABLED == ENABLED
- #include <AP_RPM/AP_RPM.h>
-#endif
+#include <AP_RPM/AP_RPM.h>
 
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
@@ -302,7 +300,7 @@ private:
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
 
-#if RPM_ENABLED == ENABLED
+#if AP_RPM_ENABLED
     AP_RPM rpm_sensor;
 #endif
 
