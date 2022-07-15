@@ -957,7 +957,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_LOCAL_POSITION_NED,    MSG_LOCAL_POSITION},
         { MAVLINK_MSG_ID_PID_TUNING,            MSG_PID_TUNING},
         { MAVLINK_MSG_ID_VIBRATION,             MSG_VIBRATION},
+#if AP_RPM_ENABLED
         { MAVLINK_MSG_ID_RPM,                   MSG_RPM},
+#endif
         { MAVLINK_MSG_ID_MISSION_ITEM_REACHED,  MSG_MISSION_ITEM_REACHED},
         { MAVLINK_MSG_ID_ATTITUDE_TARGET,       MSG_ATTITUDE_TARGET},
         { MAVLINK_MSG_ID_POSITION_TARGET_GLOBAL_INT,  MSG_POSITION_TARGET_GLOBAL_INT},
@@ -5035,6 +5037,7 @@ void GCS_MAVLINK::send_hwstatus()
         0);
 }
 
+#if AP_RPM_ENABLED
 void GCS_MAVLINK::send_rpm() const
 {
     AP_RPM *rpm = AP::rpm();
@@ -5056,6 +5059,7 @@ void GCS_MAVLINK::send_rpm() const
         rpm1,
         rpm2);
 }
+#endif  // AP_RPM_ENABLED
 
 void GCS_MAVLINK::send_sys_status()
 {
@@ -5408,10 +5412,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         send_gps_global_origin();
         break;
 
+#if AP_RPM_ENABLED
     case MSG_RPM:
         CHECK_PAYLOAD_SIZE(RPM);
         send_rpm();
         break;
+#endif
 
     case MSG_CURRENT_WAYPOINT:
     case MSG_MISSION_ITEM_REACHED:
