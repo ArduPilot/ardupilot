@@ -17,6 +17,8 @@
 #include "AP_RPM.h"
 #include "RPM_Backend.h"
 
+#if AP_RPM_ESC_TELEM_ENABLED
+
 class AP_RPM_ESC_Telem : public AP_RPM_Backend
 {
 public:
@@ -28,3 +30,5 @@ public:
 private:
     uint8_t instance;
 };
+
+#endif  // AP_RPM_ESC_TELEM_ENABLED

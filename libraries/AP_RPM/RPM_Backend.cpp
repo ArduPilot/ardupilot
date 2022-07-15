@@ -13,10 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "RPM_Backend.h"
+
+#if AP_RPM_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_RPM.h"
-#include "RPM_Backend.h"
 
 /*
   base class constructor. 
@@ -27,3 +30,5 @@ AP_RPM_Backend::AP_RPM_Backend(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_St
 {
     state.instance = instance;
 }
+
+#endif  // AP_RPM_ENABLED
