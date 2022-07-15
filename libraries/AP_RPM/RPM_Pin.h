@@ -17,6 +17,9 @@
 #include "AP_RPM.h"
 
 #include "RPM_Backend.h"
+
+#if AP_RPM_PIN_ENABLED
+
 #include <Filter/Filter.h>
 #include <AP_Math/AP_Math.h>
 
@@ -46,3 +49,5 @@ private:
                      uint32_t timestamp);
 
 };
+
+#endif  // AP_RPM_PIN_ENABLED

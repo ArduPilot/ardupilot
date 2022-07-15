@@ -13,8 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
 #include "RPM_Pin.h"
+
+#if AP_RPM_PIN_ENABLED
+
+#include <AP_HAL/AP_HAL.h>
 
 #include <AP_HAL/GPIO.h>
 #include <GCS_MAVLink/GCS.h>
@@ -111,3 +114,5 @@ void AP_RPM_Pin::update(void)
         state.rate_rpm = 0;
     }
 }
+
+#endif  // AP_RPM_PIN_ENABLED

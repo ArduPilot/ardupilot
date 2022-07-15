@@ -17,7 +17,7 @@
 
 #include "RPM_Generator.h"
 
-#if HAL_GENERATOR_ENABLED
+#if AP_RPM_GENERATOR_ENABLED
 extern const AP_HAL::HAL& hal;
 
 void AP_RPM_Generator::update(void)
@@ -35,4 +35,4 @@ void AP_RPM_Generator::update(void)
     }
 }
 
-#endif // HAL_GENERATOR_ENABLED
+#endif // AP_RPM_GENERATOR_ENABLED
