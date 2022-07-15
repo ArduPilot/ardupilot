@@ -35,8 +35,10 @@ void Rover::init_ardupilot()
 
     battery.init();
 
+#if AP_RPM_ENABLED
     // Initialise RPM sensor
     rpm_sensor.init();
+#endif
 
     rssi.init();
 
