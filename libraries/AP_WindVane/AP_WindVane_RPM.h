@@ -16,8 +16,6 @@
 
 #include "AP_WindVane_Backend.h"
 
-#include <AP_RPM/AP_RPM.h>
-
 class AP_WindVane_RPM : public AP_WindVane_Backend
 {
 public:
