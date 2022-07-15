@@ -15,15 +15,14 @@
 
 #pragma once
 
+#include "AP_EFI_config.h"
+
+#if HAL_EFI_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#ifndef HAL_EFI_ENABLED
-#define HAL_EFI_ENABLED !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
-#endif
-
-#if HAL_EFI_ENABLED
 #include "AP_EFI_Backend.h"
 #include "AP_EFI_State.h"
 
