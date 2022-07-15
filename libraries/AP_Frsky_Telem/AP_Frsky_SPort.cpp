@@ -113,6 +113,7 @@ void AP_Frsky_SPort::send(void)
                 }
                 break;
             case SENSOR_ID_RPM: // Sensor ID 4
+#if AP_RPM_ENABLED
                 {
                     const AP_RPM* rpm = AP::rpm();
                     if (rpm == nullptr) {
@@ -132,6 +133,7 @@ void AP_Frsky_SPort::send(void)
                         _SPort.rpm_call = 0;
                     }
                 }
+#endif  // AP_RPM_ENABLED
                 break;
             case SENSOR_ID_SP2UR: // Sensor ID  6
                 switch (_SPort.various_call) {
