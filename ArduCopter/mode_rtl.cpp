@@ -49,7 +49,7 @@ void ModeRTL::restart_without_terrain()
 ModeRTL::RTLAltType ModeRTL::get_alt_type() const
 {
     // sanity check parameter
-    if (g.rtl_alt_type < 0 || g.rtl_alt_type > (int)RTLAltType::RTL_ALTTYPE_TERRAIN) {
+    if (g.rtl_alt_type < (int)RTLAltType::RTL_ALTTYPE_RELATIVE || g.rtl_alt_type > (int)RTLAltType::RTL_ALTTYPE_TERRAIN) {
         return RTLAltType::RTL_ALTTYPE_RELATIVE;
     }
     return (RTLAltType)g.rtl_alt_type.get();
