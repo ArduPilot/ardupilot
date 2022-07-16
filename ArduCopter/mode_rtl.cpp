@@ -79,7 +79,7 @@ void ModeRTL::run(bool disarm_on_land)
         case SubMode::LOITER_AT_HOME:
             if (rtl_path.land || copter.failsafe.radio) {
                 land_start();
-            }else{
+            } else {
                 descent_start();
             }
             break;
@@ -190,7 +190,7 @@ void ModeRTL::climb_return_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
     }
@@ -248,7 +248,7 @@ void ModeRTL::loiterathome_run()
     if (auto_yaw.mode() == AUTO_YAW_HOLD) {
         // roll & pitch from waypoint controller, yaw rate from pilot
         attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    }else{
+    } else {
         // roll, pitch from waypoint controller, yaw heading from auto_heading()
         attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
     }
