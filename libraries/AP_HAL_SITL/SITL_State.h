@@ -107,6 +107,7 @@ private:
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
     uint32_t wind_start_delay_micros;
+    uint32_t last_wind_update_us;
 
     // simulated GPS devices
     SITL::GPS *gps[2];  // constrained by # of parameter sets
