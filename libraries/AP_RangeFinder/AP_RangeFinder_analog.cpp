@@ -89,7 +89,7 @@ void AP_RangeFinder_analog::update(void)
     float scaling = params.scaling;
     float offset  = params.offset;
     RangeFinder::Function function = (RangeFinder::Function)params.function.get();
-    int16_t _max_distance_cm = params.max_distance_cm;
+    float _max_distance_cm = params.max_distance_cm;
 
     switch (function) {
     case RangeFinder::Function::LINEAR:

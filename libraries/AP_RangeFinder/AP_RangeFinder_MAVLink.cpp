@@ -45,9 +45,9 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     }
 }
 
-int16_t AP_RangeFinder_MAVLink::max_distance_cm() const
+float AP_RangeFinder_MAVLink::max_distance_cm() const
 {
-    if (_max_distance_cm == 0 && _min_distance_cm == 0) {
+    if (is_zero(_max_distance_cm) && is_zero(_min_distance_cm)) {
         // we assume if both of these are zero that we ignore both
         return params.max_distance_cm;
     }
@@ -57,9 +57,9 @@ int16_t AP_RangeFinder_MAVLink::max_distance_cm() const
     }
     return _max_distance_cm;
 }
-int16_t AP_RangeFinder_MAVLink::min_distance_cm() const
+float AP_RangeFinder_MAVLink::min_distance_cm() const
 {
-    if (_max_distance_cm == 0 && _min_distance_cm == 0) {
+    if (is_zero(_max_distance_cm) && is_zero(_min_distance_cm)) {
         // we assume if both of these are zero that we ignore both
         return params.min_distance_cm;
     }
