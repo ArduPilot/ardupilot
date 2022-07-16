@@ -416,7 +416,7 @@ void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list 
                 vprintf(printfmt, arg_copy);
                 va_end(arg_copy);
             }
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
+#if HAL_GCS_ENABLED
             hal.util->snprintf(printfmt, sizeof(printfmt), "%s: %s", err_type, fmt);
             {
                 va_list arg_copy;
@@ -426,7 +426,7 @@ void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list 
             }
 #endif
         }
-#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && !defined(HAL_BUILD_AP_PERIPH)
+#if HAL_GCS_ENABLED
         gcs().update_receive();
         gcs().update_send();
 #endif
