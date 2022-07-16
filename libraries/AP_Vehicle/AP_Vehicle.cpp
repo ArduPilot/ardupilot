@@ -324,6 +324,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if AP_AIRSPEED_ENABLED
     SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors
 #endif
+#if COMPASS_CAL_ENABLED
+    SCHED_TASK_CLASS(Compass,      &vehicle.compass,        cal_update,     100, 200, 75),
+#endif
 #if HAL_RUNCAM_ENABLED
     SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
 #endif
@@ -350,7 +353,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK(publish_osd_info, 1, 10, 240),
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
-    SCHED_TASK(accel_cal_update,      10,    100, 245),
+    SCHED_TASK(accel_cal_update,                                                      10, 100, 245),
 #endif
 #if AP_FENCE_ENABLED
     SCHED_TASK_CLASS(AC_Fence,     &vehicle.fence,          update,                   10, 100, 248),
