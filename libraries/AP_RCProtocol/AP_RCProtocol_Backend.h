@@ -28,8 +28,11 @@ class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
 
 public:
-    AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
+    AP_RCProtocol_Backend(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t);
     virtual ~AP_RCProtocol_Backend() {}
+
+    AP_RCProtocol::rcprotocol_t protocol() const { return _protocol; }
+
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     virtual void process_handshake(uint32_t baudrate) {}
@@ -133,6 +136,8 @@ private:
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
+
+    AP_RCProtocol::rcprotocol_t _protocol;
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED

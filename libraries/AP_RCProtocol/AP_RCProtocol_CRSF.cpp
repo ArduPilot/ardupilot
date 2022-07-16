@@ -165,7 +165,7 @@ const uint16_t AP_RCProtocol_CRSF::RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES] = {
 
 AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_singleton;
 
-AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
+AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend, AP_RCProtocol::rcprotocol_t protocol) : AP_RCProtocol_Backend(_frontend, protocol)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
