@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Arming {
 public:
@@ -142,8 +142,8 @@ protected:
 
     // internal members
     bool                    armed;
-    uint32_t                last_accel_pass_ms[INS_MAX_INSTANCES];
-    uint32_t                last_gyro_pass_ms[INS_MAX_INSTANCES];
+    uint32_t                last_accel_pass_ms;
+    uint32_t                last_gyro_pass_ms;
 
     virtual bool barometer_checks(bool report);
 

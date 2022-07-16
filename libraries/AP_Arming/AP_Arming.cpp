@@ -332,12 +332,20 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
         // EKF is less sensitive to Z-axis error
         vec_diff.z *= 0.5f;
 
-        if (vec_diff.length() <= threshold) {
-            last_accel_pass_ms[i] = now;
-        }
-        if (now - last_accel_pass_ms[i] > 10000) {
+        if (vec_diff.length() > threshold) {
+            // this sensor disagrees with the primary sensor, so
+            // accels are inconsistent:
             return false;
         }
+    }
+
+    // we didn't return false in the loop above, so sensors are
+    // consistent right now:
+    last_accel_pass_ms = now;
+
+    // must pass for at least 10 seconds before we're considered consistent:
+    if (now - last_accel_pass_ms > 10000) {
+        return false;
     }
 
     return true;
@@ -359,14 +367,21 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
         // get next gyro vector
         const Vector3f &gyro_vec = ins.get_gyro(i);
         const Vector3f vec_diff = gyro_vec - prime_gyro_vec;
-        // allow for up to 5 degrees/s difference. Pass if it has
-        // been OK in last 10 seconds
-        if (vec_diff.length() <= radians(5)) {
-            last_gyro_pass_ms[i] = now;
-        }
-        if (now - last_gyro_pass_ms[i] > 10000) {
+        // allow for up to 5 degrees/s difference
+        if (vec_diff.length() > radians(5)) {
+            // this sensor disagrees with the primary sensor, so
+            // gyros are inconsistent:
             return false;
         }
+    }
+
+    // we didn't return false in the loop above, so sensors are
+    // consistent right now:
+    last_gyro_pass_ms = now;
+
+    // must pass for at least 10 seconds before we're considered consistent:
+    if (now - last_gyro_pass_ms > 10000) {
+        return false;
     }
 
     return true;
