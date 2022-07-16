@@ -407,7 +407,7 @@ public:
     AP_Int16        rtl_alt_final;
     AP_Int16        rtl_climb_min;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
-    AP_Int8         rtl_alt_type;
+    AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
 
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
