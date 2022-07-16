@@ -49,7 +49,6 @@ bool AP_RAMTRON::init(void)
         DEV_PRINTF("No RAMTRON device\n");
         return false;
     }
-    WITH_SEMAPHORE(dev->get_semaphore());
 
     struct cypress_rdid {
         uint8_t manufacturer[6];
@@ -65,8 +64,11 @@ bool AP_RAMTRON::init(void)
 
     uint8_t rdid[sizeof(cypress_rdid)];
 
-    if (!dev->read_registers(RAMTRON_RDID, rdid, sizeof(rdid))) {
-        return false;
+    {
+        WITH_SEMAPHORE(dev->get_semaphore());
+        if (!dev->read_registers(RAMTRON_RDID, rdid, sizeof(rdid))) {
+            return false;
+        }
     }
 
     for (uint8_t i = 0; i < ARRAY_SIZE(ramtron_ids); i++) {
