@@ -20,7 +20,7 @@ public:
     };
 
     // support up to 255 items of each type
-    typedef uint8_t oaid_num;
+    typedef uint16_t oaid_num;
 
     // id for uniquely identifying objects held in visibility graphs and paths
     class OAItemID {

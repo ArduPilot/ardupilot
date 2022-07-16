@@ -106,6 +106,11 @@ void AP_OAPathPlanner::init()
             AP_Param::load_object_from_eeprom(_oabendyruler, AP_OABendyRuler::var_info);
         }
         break;
+    case OA_PATHPLAN_RT_ASTAR:
+        if (_oart_astar == nullptr) {
+            _oart_astar = new AP_OART_AStar();
+        }
+        break;
     }
 
     _oadatabase.init();
@@ -301,7 +306,7 @@ void AP_OAPathPlanner::avoidance_thread()
             if (_oadijkstra == nullptr) {
                 continue;
             }
-            _oadijkstra->set_fence_margin(_margin_max);
+            _oadijkstra->set_config(_margin_max);
             const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
             switch (dijkstra_state) {
             case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
@@ -338,7 +343,7 @@ void AP_OAPathPlanner::avoidance_thread()
                 // only use proximity avoidance now for BendyRuler
                 proximity_only = true;
             }
-            _oadijkstra->set_fence_margin(_margin_max);
+            _oadijkstra->set_config(_margin_max);
             const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
             switch (dijkstra_state) {
             case AP_OADijkstra::DIJKSTRA_STATE_NOT_REQUIRED:
@@ -353,6 +358,30 @@ void AP_OAPathPlanner::avoidance_thread()
             }
             path_planner_used = OAPathPlannerUsed::Dijkstras;
             break;
+        }
+
+        case OA_PATHPLAN_RT_ASTAR: {
+            if (_oart_astar == nullptr) {
+                continue;
+            }
+            _oart_astar->set_config(_margin_max);
+            if(_oart_astar ->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, false)) {
+                res = OA_SUCCESS;
+            }
+            const AP_OART_AStar::AP_OART_Astar_State astar_rt_state = _oart_astar ->update(avoidance_request2.current_loc, avoidance_request2.destination, avoidance_request2.ground_speed_vec, origin_new, destination_new, false);
+            switch (astar_rt_state) {
+            case AP_OART_AStar::RT_ASTAR_STATE_NOT_REQUIRED:
+                res = OA_NOT_REQUIRED;
+                break;
+            case AP_OART_AStar::RT_ASTAR_STATE_ERROR:
+                res = OA_ERROR;
+                break;
+            case AP_OART_AStar::RT_ASTAR_STATE_SUCCESS:
+                res = OA_SUCCESS;
+                break;
+            }
+            // To-Do: make another WP Nav backend to handle RT-ASTAR, this is a quick hack
+            path_planner_used = OAPathPlannerUsed::BendyRulerHorizontal;
         }
 
         } // switch
