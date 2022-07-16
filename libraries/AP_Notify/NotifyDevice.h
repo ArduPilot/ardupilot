@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_Notify;
 
@@ -15,10 +14,10 @@ public:
     virtual void update() = 0;
 
     // handle a LED_CONTROL message, by default device ignore message
-    virtual void handle_led_control(const mavlink_message_t &msg) {}
+    virtual void handle_led_control(const struct mavlink_message_t &msg) {}
 
     // handle a PLAY_TUNE message, by default device ignore message
-    virtual void handle_play_tune(const mavlink_message_t &msg) {}
+    virtual void handle_play_tune(const struct mavlink_message_t &msg) {}
 
     // play a MML tune
     virtual void play_tune(const char *tune) {}
