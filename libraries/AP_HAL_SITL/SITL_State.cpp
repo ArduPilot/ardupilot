@@ -327,9 +327,21 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         wind_start_delay_micros = now;
     } else if (_sitl && (now - wind_start_delay_micros) > 5000000 ) {
         // The EKF does not like step inputs so this LPF keeps it happy.
-        wind_speed =     _sitl->wind_speed_active     = (0.95f*_sitl->wind_speed_active)     + (0.05f*_sitl->wind_speed);
-        wind_direction = _sitl->wind_direction_active = (0.95f*_sitl->wind_direction_active) + (0.05f*_sitl->wind_direction);
-        wind_dir_z =     _sitl->wind_dir_z_active     = (0.95f*_sitl->wind_dir_z_active)     + (0.05f*_sitl->wind_dir_z);
+        uint32_t dt_us = now - last_wind_update_us;
+        if (dt_us > 1000) {
+            last_wind_update_us = now;
+            // slew wind based on the configured time constant
+            const float dt = dt_us * 1.0e-6;
+            const float tc = MAX(_sitl->wind_change_tc, 0.1);
+            const float alpha = calc_lowpass_alpha_dt(dt, 1.0/tc);
+            _sitl->wind_speed_active     += (_sitl->wind_speed - _sitl->wind_speed_active) * alpha;
+            _sitl->wind_direction_active += (wrap_180(_sitl->wind_direction - _sitl->wind_direction_active)) * alpha;
+            _sitl->wind_dir_z_active     += (_sitl->wind_dir_z - _sitl->wind_dir_z_active) * alpha;
+            _sitl->wind_direction_active = wrap_180(_sitl->wind_direction_active);
+        }
+        wind_speed =     _sitl->wind_speed_active;
+        wind_direction = _sitl->wind_direction_active;
+        wind_dir_z =     _sitl->wind_dir_z_active;
         
         // pass wind into simulators using different wind types via param SIM_WIND_T*.
         switch (_sitl->wind_type) {
