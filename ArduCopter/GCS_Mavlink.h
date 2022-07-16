@@ -29,13 +29,17 @@ protected:
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet) override;
+#if HAL_MOUNT_ENABLED
     MAV_RESULT handle_command_mount(const mavlink_command_long_t &packet) override;
+#endif
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet) override;
     MAV_RESULT handle_command_long_packet(const mavlink_command_long_t &packet) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_pause_continue(const mavlink_command_int_t &packet);
 
+#if HAL_MOUNT_ENABLED
     void handle_mount_message(const mavlink_message_t &msg) override;
+#endif
 
     void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) override;
 
