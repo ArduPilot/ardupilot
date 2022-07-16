@@ -729,10 +729,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
     }
 }
 
+#if HAL_MOUNT_ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t &packet)
 {
     switch (packet.command) {
-#if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
@@ -742,12 +742,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_long_t
                 0.0f);
         }
         break;
-#endif
     default:
         break;
     }
     return GCS_MAVLINK::handle_command_mount(packet);
 }
+#endif
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_long_t &packet)
 {
@@ -1025,10 +1025,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
     return MAV_RESULT_DENIED;
 }
 
+#if HAL_MOUNT_ENABLED
 void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
-#if HAL_MOUNT_ENABLED
     case MAVLINK_MSG_ID_MOUNT_CONTROL:
         // if vehicle has a camera mount but it doesn't do pan control then yaw the entire vehicle instead
         if ((copter.camera_mount.get_mount_type() != copter.camera_mount.MountType::Mount_Type_None) &&
@@ -1039,10 +1039,10 @@ void GCS_MAVLINK_Copter::handle_mount_message(const mavlink_message_t &msg)
 
             break;
         }
-#endif
     }
     GCS_MAVLINK::handle_mount_message(msg);
 }
+#endif
 
 void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 {
