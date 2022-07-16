@@ -98,7 +98,6 @@ const AP_Scheduler::Task Sub::scheduler_tasks[] = {
 #if RPM_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_RPM,              &sub.rpm_sensor,   update,              10, 200,  66),
 #endif
-    SCHED_TASK_CLASS(Compass,             &sub.compass,      cal_update,         100, 100,  69),
     SCHED_TASK(terrain_update,        10,    100,  72),
 #if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper,          &sub.g2.gripper,   update,              10,  75,  75),
