@@ -122,6 +122,7 @@ struct PACKED log_POS {
 // @Field: ADes: desired vehicle vertical acceleration
 // @Field: A: achieved vehicle vertical acceleration
 // @Field: AOut: percentage of vertical thrust output current being used
+// @Field: AOutSlew: vertical thrust output slew rate
 struct PACKED log_Rate {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -137,6 +138,7 @@ struct PACKED log_Rate {
     float   control_accel;
     float   accel;
     float   accel_out;
+    float   throttle_slew;
 };
 
 // @LoggerMessage: VSTB
@@ -181,7 +183,7 @@ struct PACKED log_Video_Stabilisation {
     { LOG_POS_MSG, sizeof(log_POS), \
         "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
-        "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" , true }, \
+        "RATE", "Qfffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut,AOutSlew", "skk-kk-kk-oo--", "F?????????BB--" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo????", "F000000????" },
 
