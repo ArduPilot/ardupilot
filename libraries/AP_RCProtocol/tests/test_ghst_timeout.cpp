@@ -87,7 +87,7 @@ static uint64_t next_micros_wrap()
 
 TEST(GHST, inactive_before_first_frame)
 {
-    AP_RCProtocol_GHST &ghst = *new AP_RCProtocol_GHST(frontend());
+    AP_RCProtocol_GHST &ghst = *new AP_RCProtocol_GHST(frontend(), AP_RCProtocol::GHST);
 
     // no frame has ever been received: must not report active, even
     // while micros() is still below the timeouts
@@ -99,7 +99,7 @@ TEST(GHST, inactive_before_first_frame)
 
 TEST(GHST, active_at_normal_time)
 {
-    AP_RCProtocol_GHST &ghst = *new AP_RCProtocol_GHST(frontend());
+    AP_RCProtocol_GHST &ghst = *new AP_RCProtocol_GHST(frontend(), AP_RCProtocol::GHST);
 
     const uint64_t t0 = next_micros_wrap() + 1000000;  // well clear of a wrap
     hal.scheduler->stop_clock(t0);
@@ -121,7 +121,7 @@ TEST(GHST, active_at_normal_time)
 
 TEST(GHST, active_across_micros_wrap)
 {
-    AP_RCProtocol_GHST &ghst = *new AP_RCProtocol_GHST(frontend());
+    AP_RCProtocol_GHST &ghst = *new AP_RCProtocol_GHST(frontend(), AP_RCProtocol::GHST);
 
     // last frame arrives 50ms before the 32-bit micros() counter wraps
     const uint64_t wrap = next_micros_wrap();

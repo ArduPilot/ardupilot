@@ -53,62 +53,62 @@ extern const AP_HAL::HAL& hal;
 void AP_RCProtocol::init()
 {
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
-    backend[AP_RCProtocol::PPMSUM] = NEW_NOTHROW AP_RCProtocol_PPMSum(*this);
+    backend[AP_RCProtocol::PPMSUM] = NEW_NOTHROW AP_RCProtocol_PPMSum(*this, AP_RCProtocol::PPMSUM);
 #endif
 #if AP_RCPROTOCOL_IBUS_ENABLED
-    backend[AP_RCProtocol::IBUS] = NEW_NOTHROW AP_RCProtocol_IBUS(*this);
+    backend[AP_RCProtocol::IBUS] = NEW_NOTHROW AP_RCProtocol_IBUS(*this, AP_RCProtocol::IBUS);
 #endif
 #if AP_RCPROTOCOL_SBUS_ENABLED
-    backend[AP_RCProtocol::SBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, true, 100000);
+    backend[AP_RCProtocol::SBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, AP_RCProtocol::SBUS, true, 100000);
 #endif
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
-    backend[AP_RCProtocol::FASTSBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, true, 200000);
+    backend[AP_RCProtocol::FASTSBUS] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, AP_RCProtocol::FASTSBUS, true, 200000);
 #endif
 #if AP_RCPROTOCOL_DSM_ENABLED
-    backend[AP_RCProtocol::DSM] = NEW_NOTHROW AP_RCProtocol_DSM(*this);
+    backend[AP_RCProtocol::DSM] = NEW_NOTHROW AP_RCProtocol_DSM(*this, AP_RCProtocol::DSM);
 #endif
 #if AP_RCPROTOCOL_SUMD_ENABLED
-    backend[AP_RCProtocol::SUMD] = NEW_NOTHROW AP_RCProtocol_SUMD(*this);
+    backend[AP_RCProtocol::SUMD] = NEW_NOTHROW AP_RCProtocol_SUMD(*this, AP_RCProtocol::SUMD);
 #endif
 #if AP_RCPROTOCOL_SRXL_ENABLED
-    backend[AP_RCProtocol::SRXL] = NEW_NOTHROW AP_RCProtocol_SRXL(*this);
+    backend[AP_RCProtocol::SRXL] = NEW_NOTHROW AP_RCProtocol_SRXL(*this, AP_RCProtocol::SRXL);
 #endif
 #if AP_RCPROTOCOL_SBUS_NI_ENABLED
-    backend[AP_RCProtocol::SBUS_NI] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, false, 100000);
+    backend[AP_RCProtocol::SBUS_NI] = NEW_NOTHROW AP_RCProtocol_SBUS(*this, AP_RCProtocol::SBUS_NI, false, 100000);
 #endif
 #if AP_RCPROTOCOL_SRXL2_ENABLED
-    backend[AP_RCProtocol::SRXL2] = NEW_NOTHROW AP_RCProtocol_SRXL2(*this);
+    backend[AP_RCProtocol::SRXL2] = NEW_NOTHROW AP_RCProtocol_SRXL2(*this, AP_RCProtocol::SRXL2);
 #endif
 #if AP_RCPROTOCOL_CRSF_ENABLED
-    backend[AP_RCProtocol::CRSF] = NEW_NOTHROW AP_RCProtocol_CRSF(*this);
+    backend[AP_RCProtocol::CRSF] = NEW_NOTHROW AP_RCProtocol_CRSF(*this, AP_RCProtocol::CRSF);
 #endif
 #if AP_RCPROTOCOL_FPORT2_ENABLED
-    backend[AP_RCProtocol::FPORT2] = NEW_NOTHROW AP_RCProtocol_FPort2(*this, true);
+    backend[AP_RCProtocol::FPORT2] = NEW_NOTHROW AP_RCProtocol_FPort2(*this, AP_RCProtocol::FPORT2, true);
 #endif
 #if AP_RCPROTOCOL_ST24_ENABLED
-    backend[AP_RCProtocol::ST24] = NEW_NOTHROW AP_RCProtocol_ST24(*this);
+    backend[AP_RCProtocol::ST24] = NEW_NOTHROW AP_RCProtocol_ST24(*this, AP_RCProtocol::ST24);
 #endif
 #if AP_RCPROTOCOL_FPORT_ENABLED
-    backend[AP_RCProtocol::FPORT] = NEW_NOTHROW AP_RCProtocol_FPort(*this, true);
+    backend[AP_RCProtocol::FPORT] = NEW_NOTHROW AP_RCProtocol_FPort(*this, AP_RCProtocol::FPORT, true);
 #endif
 #if AP_RCPROTOCOL_DRONECAN_ENABLED
-    backend[AP_RCProtocol::DRONECAN] = NEW_NOTHROW AP_RCProtocol_DroneCAN(*this);
+    backend[AP_RCProtocol::DRONECAN] = NEW_NOTHROW AP_RCProtocol_DroneCAN(*this, AP_RCProtocol::DRONECAN);
 #endif
 #if AP_RCPROTOCOL_GHST_ENABLED
-    backend[AP_RCProtocol::GHST] = NEW_NOTHROW AP_RCProtocol_GHST(*this);
+    backend[AP_RCProtocol::GHST] = NEW_NOTHROW AP_RCProtocol_GHST(*this, AP_RCProtocol::GHST);
 #endif
 #if AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
-    backend[AP_RCProtocol::MAVLINK_RADIO] = NEW_NOTHROW AP_RCProtocol_MAVLinkRadio(*this);
+    backend[AP_RCProtocol::MAVLINK_RADIO] = NEW_NOTHROW AP_RCProtocol_MAVLinkRadio(*this, AP_RCProtocol::MAVLINK_RADIO);
 #endif
 #if AP_RCPROTOCOL_JOYSTICK_SFML_ENABLED
-    backend[AP_RCProtocol::JOYSTICK_SFML] = NEW_NOTHROW AP_RCProtocol_Joystick_SFML(*this);
+    backend[AP_RCProtocol::JOYSTICK_SFML] = NEW_NOTHROW AP_RCProtocol_Joystick_SFML(*this, AP_RCProtocol::JOYSTICK_SFML);
 #endif
 #if AP_RCPROTOCOL_UDP_ENABLED
-    const auto UDP_backend = NEW_NOTHROW AP_RCProtocol_UDP(*this);
+    const auto UDP_backend = NEW_NOTHROW AP_RCProtocol_UDP(*this, AP_RCProtocol::UDP);
     backend[AP_RCProtocol::UDP] = UDP_backend;
 #endif
 #if AP_RCPROTOCOL_FDM_ENABLED
-    const auto FDM_backend = NEW_NOTHROW AP_RCProtocol_FDM(*this);;
+    const auto FDM_backend = NEW_NOTHROW AP_RCProtocol_FDM(*this, AP_RCProtocol::FDM);
     backend[AP_RCProtocol::FDM] = FDM_backend;
 #if AP_RCPROTOCOL_UDP_ENABLED
     // the UDP-Packed16Bit backend gives way to the FDM backend:
@@ -116,13 +116,13 @@ void AP_RCProtocol::init()
 #endif  // AP_RCPROTOCOL_UDP_ENABLED
 #endif  // AP_RCPROTOCOL_FDM_ENABLED
 #if AP_RCPROTOCOL_RADIO_ENABLED
-    backend[AP_RCProtocol::RADIO] = NEW_NOTHROW AP_RCProtocol_Radio(*this);
+    backend[AP_RCProtocol::RADIO] = NEW_NOTHROW AP_RCProtocol_Radio(*this, AP_RCProtocol::RADIO);
 #endif
 #if AP_RCPROTOCOL_IOMCU_ENABLED
-    backend[AP_RCProtocol::IOMCU] = NEW_NOTHROW AP_RCProtocol_IOMCU(*this);
+    backend[AP_RCProtocol::IOMCU] = NEW_NOTHROW AP_RCProtocol_IOMCU(*this, AP_RCProtocol::IOMCU);
 #endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
-    backend[AP_RCProtocol::EMLID_RCIO] = NEW_NOTHROW AP_RCProtocol_Emlid_RCIO(*this);
+    backend[AP_RCProtocol::EMLID_RCIO] = NEW_NOTHROW AP_RCProtocol_Emlid_RCIO(*this, AP_RCProtocol::EMLID_RCIO);
 #endif
 }
 
@@ -140,18 +140,19 @@ bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
 #if AP_RCPROTOCOL_FDM_ENABLED && AP_RCPROTOCOL_UDP_ENABLED
     // force re-detection when FDM is active and active backend is UDP values
-    if (_detected_protocol == AP_RCProtocol::UDP &&
+    if (protocol_detected() == AP_RCProtocol::UDP &&
         ((AP_RCProtocol_FDM*)backend[AP_RCProtocol::FDM])->active()) {
         return true;
     }
 #endif  // AP_RCPROTOCOL_FDM_ENABLED && AP_RCPROTOCOL_UDP_ENABLED
 #if AP_RC_CHANNEL_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    if (_detected_protocol != AP_RCProtocol::NONE && !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
+    if (_active_backend != nullptr &&
+        !rc().option_is_enabled(RC_Channels::Option::MULTI_RECEIVER_SUPPORT)) {
         return false;
     }
 #else
     // on IOMCU don't allow protocol to change once detected
-    if (_detected_protocol != AP_RCProtocol::NONE) {
+    if (_active_backend != nullptr) {
         return false;
     }
 #endif
@@ -167,19 +168,20 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     rc_protocols_mask = rc().enabled_protocols();
 #endif
 
-    if (_detected_protocol != AP_RCProtocol::NONE &&
-        !protocol_enabled(_detected_protocol)) {
-        _detected_protocol = AP_RCProtocol::NONE;
+    if (_active_backend != nullptr &&
+        !protocol_enabled(_active_backend->protocol())) {
+        // backend was disabled at runtime
+        _active_backend = nullptr;
     }
-    
-    if (_detected_protocol != AP_RCProtocol::NONE && _detected_with_bytes && !searching) {
+
+    if (_active_backend != nullptr && _detected_with_bytes && !searching) {
         // we're using byte inputs, discard pulses
         return;
     }
     // first try current protocol
-    if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_pulse(width_s0, width_s1);
-        if (backend[_detected_protocol]->new_input()) {
+    if (_active_backend != nullptr && !searching) {
+        _active_backend->process_pulse(width_s0, width_s1);
+        if (_active_backend->new_input()) {
             _new_input = true;
             _last_input_ms = now;
         }
@@ -205,7 +207,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
                     continue;
                 }
                 _new_input = (input_count != backend[i]->get_rc_input_count());
-                _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
+                _active_backend = backend[i];
                 for (uint8_t j = 0; j < ARRAY_SIZE(backend); j++) {
                     if (backend[j]) {
                         backend[j]->reset_rc_frame_count();
@@ -251,20 +253,21 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     rc_protocols_mask = rc().enabled_protocols();
 #endif
 
-    if (_detected_protocol != AP_RCProtocol::NONE &&
-        !protocol_enabled(_detected_protocol)) {
-        _detected_protocol = AP_RCProtocol::NONE;
+    if (_active_backend != nullptr &&
+        !protocol_enabled(_active_backend->protocol())) {
+        // backend was disabled at runtime
+        _active_backend = nullptr;
     }
 
-    if (_detected_protocol != AP_RCProtocol::NONE && !_detected_with_bytes && !searching) {
+    if (_active_backend != nullptr && !_detected_with_bytes && !searching) {
         // we're using pulse inputs, discard bytes
         return false;
     }
 
     // first try current protocol
-    if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_byte(byte, baudrate);
-        if (backend[_detected_protocol]->new_input()) {
+    if (_active_backend != nullptr && !searching) {
+        _active_backend->process_byte(byte, baudrate);
+        if (_active_backend->new_input()) {
             _new_input = true;
             _last_input_ms = now;
         }
@@ -285,8 +288,8 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
                     continue;
                 }
-                _new_input = (input_count != backend[i]->get_rc_input_count());
-                _detected_protocol = (enum AP_RCProtocol::rcprotocol_t)i;
+                _active_backend = backend[i];
+                _new_input = (input_count != _active_backend->get_rc_input_count());
                 _last_input_ms = now;
                 _detected_with_bytes = true;
                 for (uint8_t j = 0; j < ARRAY_SIZE(backend); j++) {
@@ -307,7 +310,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 void AP_RCProtocol::process_handshake( uint32_t baudrate)
 {
     // if we ever succeeded before then do not handshake
-    if (_detected_protocol != AP_RCProtocol::NONE || _last_input_ms > 0) {
+    if (_active_backend != nullptr || _last_input_ms > 0) {
         return;
     }
 
@@ -380,7 +383,7 @@ void AP_RCProtocol::check_added_uart(void)
     if (added.uart->is_initialized() &&
         !hal.util->get_soft_armed() &&
         now - added.crsf_dma_warning_ms > 10000 &&
-        _detected_protocol == AP_RCProtocol::CRSF &&
+        protocol_detected() == AP_RCProtocol::CRSF &&
         !added.uart->is_rx_dma_enabled()) {
         added.crsf_dma_warning_ms = now;
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CRSF: no UART RX DMA, RC integrity may be impacted");
@@ -408,9 +411,9 @@ void AP_RCProtocol::check_added_uart(void)
         }
     // power loss on CRSF requires re-bootstrap because the baudrate is reset to the default. The CRSF side will
     // drop back down to 416k if it has received 200 incorrect characters (or none at all)
-    } else if (_detected_protocol != AP_RCProtocol::NONE
+    } else if (_active_backend != nullptr
         // protocols that want to be able to renegotiate should return false in is_rx_active()
-        && !backend[_detected_protocol]->is_rx_active()
+        && !_active_backend->is_rx_active()
         && now - added.last_config_change_ms > 1000) {
         added.opened = false;
     }
@@ -432,7 +435,7 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
         return false;
     }
 
-    if (_detected_protocol == protocol) {
+    if (p == _active_backend) {
         // we are using this protocol already, see if there is new
         // data.  Caller will handle the case where we stop presenting
         // data
@@ -463,19 +466,20 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
     }
 
     // we can provide data, change the detected protocol to be us:
-    _detected_protocol = protocol;
+    _active_backend = p;
     return true;
 }
 
 const char *AP_RCProtocol::detected_protocol_name() const
 {
-    switch (_detected_protocol) {
+    const rcprotocol_t detected_protocol = protocol_detected();
+    switch (detected_protocol) {
 #if AP_RCPROTOCOL_IOMCU_ENABLED
     case AP_RCProtocol::IOMCU:
         return ((AP_RCProtocol_IOMCU*)(backend[AP_RCProtocol::IOMCU]))->get_rc_protocol();
 #endif
     default:
-        return protocol_name_from_protocol(_detected_protocol);
+        return protocol_name_from_protocol(detected_protocol);
     }
 }
 
@@ -486,7 +490,7 @@ void AP_RCProtocol::announce_detected()
     if (name == nullptr) {
         return;
     }
-    switch (_detected_protocol) {
+    switch (protocol_detected()) {
 #if AP_RCPROTOCOL_IOMCU_ENABLED
     case AP_RCProtocol::IOMCU:
         src = "IOMCU";
@@ -552,14 +556,15 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_IOMCU_ENABLED
     // IOMCU takes precedence over serial-port-type-23 input etc:
     if (((AP_RCProtocol_IOMCU*)(backend[AP_RCProtocol::IOMCU]))->active()) {
-        _detected_protocol = AP_RCProtocol::IOMCU;
+        _active_backend = backend[AP_RCProtocol::IOMCU];
     }
 #endif
 
     // announce protocol changes:
-    if (_detected_protocol != _last_detected_protocol ||
+    const rcprotocol_t detected_protocol = protocol_detected();
+    if (detected_protocol != _last_detected_protocol ||
         using_uart() != _last_detected_using_uart) {
-        _last_detected_protocol = _detected_protocol;
+        _last_detected_protocol = detected_protocol;
         _last_detected_using_uart = using_uart();
         announce_detected();
     }
@@ -571,38 +576,38 @@ bool AP_RCProtocol::new_input()
 
 uint8_t AP_RCProtocol::num_channels()
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->num_channels();
+    if (_active_backend != nullptr) {
+        return _active_backend->num_channels();
     }
     return 0;
 }
 
 uint16_t AP_RCProtocol::read(uint8_t chan)
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->read(chan);
+    if (_active_backend != nullptr) {
+        return _active_backend->read(chan);
     }
     return 0;
 }
 
 void AP_RCProtocol::read(uint16_t *pwm, uint8_t n)
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        backend[_detected_protocol]->read(pwm, n);
+    if (_active_backend != nullptr) {
+        _active_backend->read(pwm, n);
     }
 }
 
 int16_t AP_RCProtocol::get_RSSI(void) const
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->get_RSSI();
+    if (_active_backend != nullptr) {
+        return _active_backend->get_RSSI();
     }
     return -1;
 }
 int16_t AP_RCProtocol::get_rx_link_quality(void) const
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->get_rx_link_quality();
+    if (_active_backend != nullptr) {
+        return _active_backend->get_rx_link_quality();
     }
     return -1;
 }
@@ -750,6 +755,15 @@ void AP_RCProtocol::handle_radio_rc_channels(const mavlink_radio_rc_channels_t* 
     backend[AP_RCProtocol::MAVLINK_RADIO]->update_radio_rc_channels(packet);
 };
 #endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+
+// return detected protocol
+enum AP_RCProtocol::rcprotocol_t AP_RCProtocol::protocol_detected(void) const
+{
+    if (_active_backend == nullptr) {
+        return rcprotocol_t::NONE;
+    }
+    return _active_backend->protocol();
+}
 
 namespace AP {
     AP_RCProtocol &RC()
