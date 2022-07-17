@@ -136,7 +136,7 @@ public:
 protected:
 
     // Parameters
-    AP_Int8                 require;
+    AP_Enum<Required>       require;
     AP_Int32                checks_to_perform;      // bitmask for which checks are required
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
@@ -193,6 +193,8 @@ protected:
     bool aux_auth_checks(bool display_failure);
 
     bool generator_checks(bool report) const;
+
+    bool opendroneid_checks(bool display_failure);
 
     virtual bool system_checks(bool report);
 
