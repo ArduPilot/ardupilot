@@ -183,6 +183,10 @@ void Copter::init_ardupilot()
     g2.scripting.init();
 #endif // AP_SCRIPTING_ENABLED
 
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+    custom_control.init();
+#endif
+
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);
