@@ -157,6 +157,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+#include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
+#endif
+
 #if AC_AVOID_ENABLED && !AP_FENCE_ENABLED
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
@@ -464,6 +468,10 @@ private:
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
 
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+    AC_CustomControl custom_control{ahrs_view, attitude_control, motors, scheduler.get_loop_period_s()};
+#endif
+
 #if MODE_CIRCLE_ENABLED == ENABLED
     AC_Circle *circle_nav;
 #endif
@@ -686,6 +694,10 @@ private:
     void rotate_body_frame_to_NE(float &x, float &y);
     uint16_t get_pilot_speed_dn() const;
     void run_rate_controller() { attitude_control->rate_controller_run(); }
+
+#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
+    void run_custom_controller() { custom_control.update(); }
+#endif
 
     // avoidance.cpp
     void low_alt_avoidance();
