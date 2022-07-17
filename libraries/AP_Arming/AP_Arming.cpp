@@ -48,6 +48,7 @@
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -91,7 +92,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Description: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, require rudder stick or GCS arming before arming motors and sends the minimum throttle PWM value to the throttle channel when disarmed.  If 2, require rudder stick or GCS arming and send 0 PWM to throttle channel when disarmed. See the ARMING_CHECK_* parameters to see what checks are done before arming. Note, if setting this parameter to 0 a reboot is required to arm the plane.  Also note, even with this parameter at 0, if ARMING_CHECK parameter is not also zero the plane may fail to arm throttle at boot due to a pre-arm check failure.
     // @Values: 0:Disabled,1:THR_MIN PWM when disarmed,2:0 PWM when disarmed
     // @User: Advanced
-    AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require,                 1,
+    AP_GROUPINFO_FLAGS_FRAME("REQUIRE",     0,      AP_Arming,  require, float(Required::YES_MIN_PWM),
                              AP_PARAM_FLAG_NO_SHIFT,
                              AP_PARAM_FRAME_PLANE | AP_PARAM_FRAME_ROVER),
 
@@ -185,7 +186,7 @@ uint16_t AP_Arming::compass_magfield_expected() const
 
 bool AP_Arming::is_armed()
 {
-    return (Required)require.get() == Required::NO || armed;
+    return armed || arming_required() == Required::NO;
 }
 
 uint32_t AP_Arming::get_enabled_checks() const
@@ -1397,10 +1398,25 @@ bool AP_Arming::generator_checks(bool display_failure) const
     return true;
 }
 
+// OpenDroneID Checks
+bool AP_Arming::opendroneid_checks(bool display_failure)
+{
+#if AP_OPENDRONEID_ENABLED
+    auto &opendroneid = AP::opendroneid();
+
+    char failure_msg[50] {};
+    if (!opendroneid.pre_arm_check(failure_msg, sizeof(failure_msg))) {
+        check_failed(display_failure, "OpenDroneID: %s", failure_msg);
+        return false;
+    }
+#endif
+    return true;
+}
+
 bool AP_Arming::pre_arm_checks(bool report)
 {
 #if !APM_BUILD_COPTER_OR_HELI
-    if (armed || require == (uint8_t)Required::NO) {
+    if (armed || arming_required() == Required::NO) {
         // if we are already armed or don't need any arming checks
         // then skip the checks
         return true;
@@ -1434,7 +1450,8 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  visodom_checks(report)
         &  aux_auth_checks(report)
         &  disarm_switch_checks(report)
-        &  fence_checks(report);
+        &  fence_checks(report)
+        &  opendroneid_checks(report);
 }
 
 bool AP_Arming::arm_checks(AP_Arming::Method method)
@@ -1487,7 +1504,12 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
 
 bool AP_Arming::mandatory_checks(bool report)
 {
-    return rc_in_calibration_check(report);
+    bool ret = true;
+#if AP_OPENDRONEID_ENABLED
+    ret &= opendroneid_checks(report);
+#endif
+    ret &= rc_in_calibration_check(report);
+    return ret;
 }
 
 //returns true if arming occurred successfully
@@ -1579,7 +1601,15 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 
 AP_Arming::Required AP_Arming::arming_required() 
 {
-    return (AP_Arming::Required)require.get();
+#if AP_OPENDRONEID_ENABLED
+    // cannot be disabled if OpenDroneID is present
+    if (AP::opendroneid().enabled()) {
+        if (require != Required::YES_MIN_PWM && require != Required::YES_ZERO_PWM) {
+            return Required::YES_MIN_PWM;
+        }
+    }
+#endif
+    return require;
 }
 
 // Copter and sub share the same RC input limits
