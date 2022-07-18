@@ -272,6 +272,7 @@ float AC_PID::get_ff()
 void AC_PID::reset_I()
 {
     _integrator = 0.0;
+    _pid_info.I = 0.0;
 }
 
 void AC_PID::load_gains()
