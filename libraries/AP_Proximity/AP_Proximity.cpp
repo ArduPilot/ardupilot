@@ -218,26 +218,6 @@ AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
     return Type::None;
 }
 
-// return sensor orientation
-uint8_t AP_Proximity::get_orientation(uint8_t instance) const
-{
-    if (!valid_instance(instance)) {
-        return 0;
-    }
-
-    return params[instance].orientation.get();
-}
-
-// return sensor yaw correction
-int16_t AP_Proximity::get_yaw_correction(uint8_t instance) const
-{
-    if (!valid_instance(instance)) {
-        return 0;
-    }
-
-    return params[instance].yaw_correction.get();
-}
-
 // return sensor health
 AP_Proximity::Status AP_Proximity::get_status(uint8_t instance) const
 {

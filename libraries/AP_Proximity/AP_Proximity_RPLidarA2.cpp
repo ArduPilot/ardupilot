@@ -305,8 +305,8 @@ void AP_Proximity_RPLidarA2::parse_response_data()
             Debug(2, "UART %02x %02x%02x %02x%02x", payload[0], payload[2], payload[1], payload[4], payload[3]); //show HEX values
             // check if valid SCAN packet: a valid packet starts with startbits which are complementary plus a checkbit in byte+1
             if ((payload.sensor_scan.startbit == !payload.sensor_scan.not_startbit) && payload.sensor_scan.checkbit) {
-                const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
-                const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f * angle_sign + frontend.get_yaw_correction(state.instance));
+                const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
+                const float angle_deg = wrap_360(payload.sensor_scan.angle_q6/64.0f * angle_sign + params.yaw_correction);
                 const float distance_m = (payload.sensor_scan.distance_q2/4000.0f);
 #if RP_DEBUG_LEVEL >= 2
                 const uint8_t quality = payload.sensor_scan.quality;

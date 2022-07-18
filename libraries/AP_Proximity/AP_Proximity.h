@@ -76,9 +76,7 @@ public:
     // return sensor type of a given instance
     Type get_type(uint8_t instance) const;
 
-    // return sensor orientation and yaw correction
-    uint8_t get_orientation(uint8_t instance) const;
-    int16_t get_yaw_correction(uint8_t instance) const;
+    // return distance filter frequency
     float get_filter_freq() const { return _filt_freq; }
 
     // return sensor health
