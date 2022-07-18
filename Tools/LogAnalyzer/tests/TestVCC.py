@@ -1,7 +1,7 @@
-from LogAnalyzer import Test,TestResult
-import DataflashLog
-
 import collections
+
+import DataflashLog
+from LogAnalyzer import Test, TestResult
 
 
 class TestVCC(Test):
@@ -22,21 +22,23 @@ class TestVCC(Test):
 
         # just a naive min/max test for now
         try:
-            vccMin  = logdata.channels["CURR"]["Vcc"].min()
-            vccMax  = logdata.channels["CURR"]["Vcc"].max()
+            vccMin = logdata.channels["CURR"]["Vcc"].min()
+            vccMax = logdata.channels["CURR"]["Vcc"].max()
         except KeyError as e:
-            vccMin  = logdata.channels["POWR"]["Vcc"].min()
-            vccMax  = logdata.channels["POWR"]["Vcc"].max()
+            vccMin = logdata.channels["POWR"]["Vcc"].min()
+            vccMax = logdata.channels["POWR"]["Vcc"].max()
             vccMin *= 1000
             vccMax *= 1000
 
-        vccDiff = vccMax - vccMin;
-        vccMinThreshold = 4.6 * 1000;
-        vccMaxDiff      = 0.3 * 1000;
+        vccDiff = vccMax - vccMin
+        vccMinThreshold = 4.6 * 1000
+        vccMaxDiff = 0.3 * 1000
         if vccDiff > vccMaxDiff:
             self.result.status = TestResult.StatusType.WARN
-            self.result.statusMessage = "VCC min/max diff %sv, should be <%sv" % (vccDiff/1000.0, vccMaxDiff/1000.0)
+            self.result.statusMessage = "VCC min/max diff %sv, should be <%sv" % (vccDiff / 1000.0, vccMaxDiff / 1000.0)
         elif vccMin < vccMinThreshold:
             self.result.status = TestResult.StatusType.FAIL
-            self.result.statusMessage = "VCC below minimum of %sv (%sv)" % (repr(vccMinThreshold/1000.0),repr(vccMin/1000.0))
-        
+            self.result.statusMessage = "VCC below minimum of %sv (%sv)" % (
+                repr(vccMinThreshold / 1000.0),
+                repr(vccMin / 1000.0),
+            )
