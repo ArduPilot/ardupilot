@@ -1497,11 +1497,24 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
 
     const uint8_t fragment = (flags >> 1U) & 0x03;
     const uint8_t sequence = (flags >> 3U) & 0x1F;
+    uint8_t* start_of_fragment_in_buffer = &rtcm_buffer->buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN * (uint16_t)fragment];
+    bool should_clear_previous_fragments = false;
 
-    // see if this fragment is consistent with existing fragments
-    if (rtcm_buffer->fragments_received &&
-        (rtcm_buffer->sequence != sequence ||
-         (rtcm_buffer->fragments_received & (1U<<fragment)))) {
+    if (rtcm_buffer->fragments_received) {
+        const bool sequence_nr_changed = rtcm_buffer->sequence != sequence;
+        const bool seen_this_fragment_index = rtcm_buffer->fragments_received & (1U << fragment);
+
+        // check whether this is a duplicate fragment. If it is, we can
+        // return early.
+        if (!sequence_nr_changed && seen_this_fragment_index && !memcmp(start_of_fragment_in_buffer, data, len)) {
+            return;
+        }
+
+        // not a duplicate
+        should_clear_previous_fragments = sequence_nr_changed || seen_this_fragment_index;
+    }
+
+    if (should_clear_previous_fragments) {
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
         rtcm_buffer->fragment_count = 0;
@@ -1513,7 +1526,7 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     rtcm_buffer->fragments_received |= (1U << fragment);
 
     // copy the data
-    memcpy(&rtcm_buffer->buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*(uint16_t)fragment], data, len);
+    memcpy(start_of_fragment_in_buffer, data, len);
 
     // when we get a fragment of less than max size then we know the
     // number of fragments. Note that this means if you want to send a
