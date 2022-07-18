@@ -28,7 +28,7 @@
 #include <sys/types.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Logger/AP_Logger.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 // ignore cast errors in this case to keep complexity down
 #pragma GCC diagnostic ignored "-Wcast-align"
