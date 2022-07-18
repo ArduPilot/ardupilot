@@ -96,6 +96,8 @@ public:
         VRX_BOARD_CORE10   = 36,
         VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_FMUV6    = 39,
+        FMUV6_BOARD_HOLYBRO_6X = 40,
+        FMUV6_BOARD_CUAV_6X = 41,
         PX4_BOARD_OLDDRIVERS = 100,
     };
 
@@ -249,6 +251,7 @@ private:
     bool spi_check_register_inv2(const char *devname, uint8_t regnum, uint8_t value, uint8_t read_flag = 0x80);
     void validate_board_type(void);
     void board_autodetect(void);
+    void detect_fmuv6_variant(void);
     bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
