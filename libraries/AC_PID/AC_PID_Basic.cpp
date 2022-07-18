@@ -139,6 +139,12 @@ void AC_PID_Basic::update_i(bool limit_neg, bool limit_pos)
     }
 }
 
+void AC_PID_Basic::reset_I()
+{
+    _integrator = 0.0; 
+    _pid_info.I = 0.0;
+}
+
 // save_gains - save gains to eeprom
 void AC_PID_Basic::save_gains()
 {
@@ -176,4 +182,5 @@ void AC_PID_Basic::set_integrator(float error, float i)
 void AC_PID_Basic::set_integrator(float i)
 {
     _integrator = constrain_float(i, -_kimax, _kimax);
+    _pid_info.I = _integrator;
 }
