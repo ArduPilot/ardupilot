@@ -37,6 +37,7 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 
+#include <SRV_Channel/SRV_Channel.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Stats/AP_Stats.h>                      // statistics library
