@@ -307,8 +307,8 @@ void AP_Proximity_LightWareSF40C::process_message()
 
         // process each point
         const float angle_inc_deg = (1.0f / point_total) * 360.0f;
-        const float angle_sign = (frontend.get_orientation(state.instance) == 1) ? -1.0f : 1.0f;
-        const float angle_correction = frontend.get_yaw_correction(state.instance);
+        const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
+        const float angle_correction = params.yaw_correction;
         const uint16_t dist_min_cm = distance_min() * 100;
         const uint16_t dist_max_cm = distance_max() * 100;
 
