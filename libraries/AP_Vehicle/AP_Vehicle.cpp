@@ -9,6 +9,7 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_RPM/AP_RPM.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Motors/AP_Motors.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/sdcard.h>
 #endif
