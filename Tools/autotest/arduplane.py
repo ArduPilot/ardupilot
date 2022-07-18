@@ -802,7 +802,6 @@ class AutoTestPlane(AutoTest):
         # waypoint:
         self.wait_distance_to_waypoint(8, 100, 10000000)
         self.set_current_waypoint(8)
-        self.drain_mav()
         # TODO: reflect on file to find this magic waypoint number?
         #        self.wait_waypoint(7, num_wp-1, timeout=500) # we
         #        tend to miss the final waypoint by a fair bit, and
