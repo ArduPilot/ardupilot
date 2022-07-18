@@ -141,9 +141,9 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
     _last_update_ms = AP_HAL::millis();
 
     // get user configured yaw correction from front end
-    const float param_yaw_offset = constrain_float(frontend.get_yaw_correction(state.instance), -360.0f, +360.0f);
+    const float param_yaw_offset = constrain_float(params.yaw_correction, -360.0f, +360.0f);
     const float yaw_correction = wrap_360(param_yaw_offset + packet.angle_offset);
-    if (frontend.get_orientation(state.instance) != 0) {
+    if (params.orientation != 0) {
         increment *= -1;
     }
 
