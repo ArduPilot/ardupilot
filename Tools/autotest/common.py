@@ -11059,12 +11059,12 @@ switch value'''
                 last_len_received_statustexts = len(received_statustexts)
                 self.progress("received statustexts: %s" % str([x.text for x in received_statustexts]))
                 self.progress("received frsky texts: %s" % str(received_frsky_texts))
-                for (want_sev, text) in received_frsky_texts:
+                for (want_sev, received_text) in received_frsky_texts:
                     for m in received_statustexts:
-                        if m.text == text:
+                        if m.text == received_text:
                             if want_sev != m.severity:
                                 raise NotAchievedException("Incorrect severity; want=%u got=%u" % (want_sev, severity))
-                            self.progress("Got statustext (%s)" % text)
+                            self.progress("Got statustext (%s)" % received_text)
                             break
         self.context_stop_collecting('STATUSTEXT')
 
