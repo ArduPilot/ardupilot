@@ -14,6 +14,7 @@ import math
 import os
 import re
 import shutil
+import signal
 import sys
 import time
 import traceback
@@ -2556,6 +2557,16 @@ class AutoTest(ABC):
         self.apply_default_parameters()
         self.progress("Reset SITL commandline to default")
 
+    def pause_SITL(self):
+        '''temporarily stop the SITL process from running.  Note that
+        simulation time will not move forward!'''
+        # self.progress("Pausing SITL")
+        self.sitl.kill(signal.SIGSTOP)
+
+    def unpause_SITL(self):
+        # self.progress("Unpausing SITL")
+        self.sitl.kill(signal.SIGCONT)
+
     def stop_SITL(self):
         self.progress("Stopping SITL")
         self.expect_list_remove(self.sitl)
@@ -2735,6 +2746,7 @@ class AutoTest(ABC):
         tstart = time.time()
         timeout = 120
         failed_to_drain = False
+        self.pause_SITL()
         while mav.recv_msg() is not None:
             count += 1
             if time.time() - tstart > timeout:
@@ -2743,6 +2755,7 @@ class AutoTest(ABC):
                 # just die if that seems to be the case:
                 failed_to_drain = True
                 quiet = False
+        self.unpause_SITL()
         if quiet:
             self.in_drain_mav = False
             return
