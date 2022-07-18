@@ -1,3 +1,6 @@
+# AP_FLAKE8_CLEAN
+
+
 import math
 
 from LogAnalyzer import Test, TestResult
@@ -36,5 +39,5 @@ class TestNaN(Test):
                                 field,
                             )
                             raise ValueError()
-                except ValueError as e:
+                except ValueError:
                     continue

@@ -1,3 +1,6 @@
+# AP_FLAKE8_CLEAN
+
+
 import DataflashLog
 from LogAnalyzer import Test, TestResult
 

@@ -1,3 +1,6 @@
+# AP_FLAKE8_CLEAN
+
+
 class VehicleType:
     Plane = 17
     Copter = 23

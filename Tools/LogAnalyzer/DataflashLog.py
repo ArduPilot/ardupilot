@@ -4,6 +4,8 @@
 # Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
 #
 
+# AP_FLAKE8_CLEAN
+
 from __future__ import print_function
 
 import bisect
@@ -31,8 +33,11 @@ class Format(object):
 
     @staticmethod
     def trycastToFormatType(value, valueType):
-        '''using format characters from libraries/DataFlash/DataFlash.h to cast strings to basic python int/float/string types
-        tries a cast, if it does not work, well, acceptable as the text logs do not match the format, e.g. MODE is expected to be int'''
+        """
+        Using format characters from libraries/DataFlash/DataFlash.h to cast strings to basic python int/float/string
+        types tries a cast, if it does not work, well, acceptable as the text logs do not match the format, e.g. MODE is
+        expected to be int
+        """
         try:
             if valueType in "fcCeELd":
                 return float(value)
@@ -78,7 +83,6 @@ class Format(object):
         def init(a, *x):
             if len(x) != len(a.labels):
                 raise ValueError("Invalid Length")
-            # print(list(zip(a.labels, x)))
             for (l, v) in zip(a.labels, x):
                 try:
                     setattr(a, l, v)
@@ -90,7 +94,6 @@ class Format(object):
 
         # finally, create the class
         cls = type('Log__{:s}'.format(self.name), (object,), members)
-        # print(members)
         return cls
 
 
@@ -213,8 +216,6 @@ class BinaryFormat(ctypes.LittleEndianStructure):
 
         if ctypes.sizeof(cls) != cls.SIZE:
             print("size mismatch for {} expected {} got {}".format(cls, ctypes.sizeof(cls), cls.SIZE), file=sys.stderr)
-            #            for i in cls.labels:
-            #                print("{} = {}".format(i,getattr(cls,'_'+i)))
             return None
 
         return cls
@@ -230,12 +231,9 @@ class Channel(object):
     # TODO: store data as a scipy spline curve so we can more easily interpolate and sample the slope?
 
     def __init__(self):
-        self.dictData = (
-            {}
-        )  #  dict of linenum->value      # store dupe data in dict and list for now, until we decide which is the better way to go
-        self.listData = (
-            []
-        )  #  list of (linenum,value)     # store dupe data in dict and list for now, until we decide which is the better way to go
+        # store dupe data in dict and list for now, until we decide which is the better way to go
+        self.dictData = {}  # dict of linenum->value
+        self.listData = []  # list of (linenum,value)
 
     def getSegment(self, startLine, endLine):
         '''returns a segment of this data (from startLine to endLine, inclusive) as a new Channel instance'''
@@ -257,7 +255,6 @@ class Channel(object):
         index = bisect.bisect_left(self.listData, (lineNumber, -99999))
         while index < len(self.listData):
             line = self.listData[index][0]
-            # print("Looking forwards for nearest value to line number %d, starting at line %d" % (lineNumber,line)) # TEMP
             if line >= lineNumber:
                 return (self.listData[index][1], line)
             index += 1
@@ -268,14 +265,16 @@ class Channel(object):
         index = bisect.bisect_left(self.listData, (lineNumber, -99999)) - 1
         while index >= 0:
             line = self.listData[index][0]
-            # print("Looking backwards for nearest value to line number %d, starting at line %d" % (lineNumber,line)) # TEMP
             if line <= lineNumber:
                 return (self.listData[index][1], line)
             index -= 1
         raise ValueError("Error finding nearest value for line %d" % lineNumber)
 
     def getNearestValue(self, lineNumber, lookForwards=True):
-        '''find the nearest data value to the given lineNumber, defaults to first looking forwards. Returns (value,lineNumber)'''
+        """
+        Find the nearest data value to the given lineNumber, defaults to first looking forwards.
+        Returns (value,lineNumber)
+        """
         if lookForwards:
             try:
                 return self.getNearestValueFwd(lineNumber)
@@ -299,8 +298,6 @@ class Channel(object):
     def getIndexOf(self, lineNumber):
         '''returns the index within this channel's listData of the given lineNumber, or raises an Exception if not found'''
         index = bisect.bisect_left(self.listData, (lineNumber, -99999))
-        # print("INDEX of line %d: %d" % (lineNumber,index))
-        # print("self.listData[index][0]: %d" % self.listData[index][0])
         if self.listData[index][0] == lineNumber:
             return index
         else:
@@ -308,9 +305,13 @@ class Channel(object):
 
 
 class LogIterator:
-    '''Smart iterator that can move through a log by line number and maintain an index into the nearest values of all data channels'''
+    """
+    Smart iterator that can move through a log by line number and maintain an index into the nearest values of all data
+    channels
+    """
 
-    # TODO: LogIterator currently indexes the next available value rather than the nearest value, we should make it configurable between next/nearest
+    # TODO: LogIterator currently indexes the next available value rather than the nearest value, we should make it
+    # configurable between next/nearest
 
     class LogIteratorSubValue:
         '''syntactic sugar to allow access by LogIterator[lineLabel][dataLabel]'''
@@ -355,7 +356,7 @@ class LogIterator:
             # check if the currentLine has gone past our the line we're pointing to for this type of data
             dataLabel = self.logdata.formats[lineLabel].labels[0]
             (index, lineNumber) = self.iterators[lineLabel]
-            # if so, and it is not the last entry in the log, then increment the indices for all dataLabels under that lineLabel
+            # if so, and it is not the last entry in the log, increment the indices for dataLabels under that lineLabel
             if (self.currentLine > lineNumber) and (
                 index < len(self.logdata.channels[lineLabel][dataLabel].listData) - 1
             ):
@@ -379,7 +380,7 @@ class DataflashLogHelper:
     @staticmethod
     def getTimeAtLine(logdata, lineNumber):
         '''returns the nearest GPS timestamp in milliseconds after the given line number'''
-        if not "GPS" in logdata.channels:
+        if "GPS" not in logdata.channels:
             raise Exception("no GPS log data found")
         # older logs use 'TIme', newer logs use 'TimeMS'
         # even newer logs use TimeUS
@@ -400,7 +401,10 @@ class DataflashLogHelper:
 
     @staticmethod
     def findLoiterChunks(logdata, minLengthSeconds=0, noRCInputs=True):
-        '''returns a list of (to,from) pairs defining sections of the log which are in loiter mode. Ordered from longest to shortest in time. If noRCInputs == True it only returns chunks with no control inputs'''
+        """
+        Returns a list of (to, from) pairs defining sections of the log which are in loiter mode, ordered from longest
+        to shortest in time. If `noRCInputs == True` it only returns chunks with no control inputs
+        """
         # TODO: implement noRCInputs handling when identifying stable loiter chunks, for now we're ignoring it
 
         def chunkSizeCompare(chunk1, chunk2):
@@ -430,9 +434,7 @@ class DataflashLogHelper:
                 ) / 1000.0
                 if chunkTimeSeconds > minLengthSeconds:
                     chunks.append((startLine, endLine))
-                    # print("LOITER chunk: %d to %d, %d lines" % (startLine,endLine,endLine-startLine+1))
-                    # print("  (time %d to %d, %d seconds)" % (DataflashLogHelper.getTimeAtLine(logdata,startLine), DataflashLogHelper.getTimeAtLine(logdata,endLine), chunkTimeSeconds))
-        chunks.sort(chunkSizeCompare)
+        chunks.sort(key=lambda chunk: chunk[1] - chunk[0])
         return chunks
 
     @staticmethod
@@ -445,7 +447,7 @@ class DataflashLogHelper:
         if "CTUN" in logdata.channels:
             try:
                 maxThrottle = logdata.channels["CTUN"]["ThrOut"].max()
-            except KeyError as e:
+            except KeyError:
                 # ThrOut was shorted to ThO at some stage...
                 maxThrottle = logdata.channels["CTUN"]["ThO"].max()
                 # at roughly the same time ThO became a range from 0 to 1
@@ -456,7 +458,10 @@ class DataflashLogHelper:
 
 
 class DataflashLog(object):
-    '''ArduPilot Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions to DataflashLogHelper class'''
+    """
+    ArduPilot Dataflash log file reader and container class. Keep this simple, add more advanced or specific functions
+    to DataflashLogHelper class
+    """
 
     knownHardwareTypes = ["APM", "PX4", "MPNG"]
 
@@ -539,7 +544,6 @@ class DataflashLog(object):
         elif format == 'auto':
             if self.filename == '<stdin>':
                 # assuming TXT format
-                #                raise ValueError("Invalid log format for stdin: {}".format(format))
                 head = ""
             else:
                 head = f.read(4)
@@ -620,7 +624,7 @@ class DataflashLog(object):
                 else:
                     # assume it has ModeNum:
                     self.modeChanges[lineNumber] = (modes[int(e.Mode)], e.ModeNum)
-            except ValueError as x:
+            except ValueError:
                 if hasattr(e, 'ThrCrs'):
                     self.modeChanges[lineNumber] = (e.Mode, e.ThrCrs)
                 else:
@@ -687,7 +691,7 @@ class DataflashLog(object):
             groupName = e.NAME
 
             # first time seeing this type of log line, create the channel storage
-            if not groupName in self.channels:
+            if groupName not in self.channels:
                 self.channels[groupName] = {}
                 for label in e.labels:
                     self.channels[groupName][label] = Channel()
@@ -708,7 +712,6 @@ class DataflashLog(object):
             lineNumber = lineNumber + 1
             numBytes += len(line) + 1
             try:
-                # print("Reading line: %d" % lineNumber)
                 line = line.strip('\n\r')
                 tokens = line.split(', ')
                 # first handle the log header lines
@@ -727,7 +730,8 @@ class DataflashLog(object):
                     elif len(tokens2) == 3 and tokens2[0] == "Free" and tokens2[1] == "RAM:":
                         self.freeRAM = int(tokens2[2])
                     elif tokens2[0] in knownHardwareTypes:
-                        self.hardwareType = line  # not sure if we can parse this more usefully, for now only need to report it back verbatim
+                        # not sure if we can parse this more usefully, for now only need to report it back verbatim
+                        self.hardwareType = line
                     elif (len(tokens2) == 2 or len(tokens2) == 3) and tokens2[1][
                         0
                     ].lower() == "v":  # e.g. ArduCopter V3.1 (5c6503e2)
@@ -777,7 +781,7 @@ class DataflashLog(object):
         while len(data) > offset + ctypes.sizeof(logheader):
             h = logheader.from_buffer(data, offset)
             if not (h.head1 == 0xA3 and h.head2 == 0x95):
-                if ignoreBadlines == False:
+                if ignoreBadlines is False:
                     raise ValueError(h)
                 else:
                     if h.head1 == 0xFF and h.head2 == 0xFF and h.msgid == 0xFF:

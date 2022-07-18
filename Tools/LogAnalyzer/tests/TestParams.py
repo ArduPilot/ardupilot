@@ -1,6 +1,8 @@
+# AP_FLAKE8_CLEAN
+
+
 import math  # for isnan()
 
-import DataflashLog
 from LogAnalyzer import Test, TestResult
 from VehicleType import VehicleType
 
@@ -54,8 +56,10 @@ class TestParams(Test):
                 self.result.statusMessage = self.result.statusMessage + name + " is NaN\n"
 
         try:
-            # add parameter checks below using the helper functions, any failures will trigger a FAIL status and accumulate info in statusMessage
-            # if more complex checking or correlations are required you can access parameter values directly using the logdata.parameters[paramName] dict
+            # add parameter checks below using the helper functions, any failures will trigger a FAIL status and
+            # accumulate info in statusMessage.
+            # If more complex checking or correlations are required you can access parameter values directly using the
+            # logdata.parameters[paramName] dict
             if logdata.vehicleType == VehicleType.Copter:
                 self.__checkParamIsEqual("MAG_ENABLE", 1, logdata)
                 if "THR_MIN" in logdata.parameters:

@@ -1,6 +1,5 @@
-import collections
+# AP_FLAKE8_CLEAN
 
-import DataflashLog
 from LogAnalyzer import Test, TestResult
 
 
@@ -15,7 +14,7 @@ class TestVCC(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        if not "CURR" in logdata.channels:
+        if "CURR" not in logdata.channels:
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No CURR log data"
             return
@@ -24,7 +23,7 @@ class TestVCC(Test):
         try:
             vccMin = logdata.channels["CURR"]["Vcc"].min()
             vccMax = logdata.channels["CURR"]["Vcc"].max()
-        except KeyError as e:
+        except KeyError:
             vccMin = logdata.channels["POWR"]["Vcc"].min()
             vccMax = logdata.channels["POWR"]["Vcc"].max()
             vccMin *= 1000
