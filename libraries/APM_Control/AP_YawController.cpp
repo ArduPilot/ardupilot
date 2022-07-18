@@ -343,7 +343,8 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
 
 void AP_YawController::reset_I()
 {
-    _integrator = 0;
+    _integrator = 0.0;
+    _pid_info.I = 0.0;
 }
 
 /*
