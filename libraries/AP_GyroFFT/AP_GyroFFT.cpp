@@ -25,6 +25,9 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#include <AP_Motors/AP_Motors.h>
+#endif
 #include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
