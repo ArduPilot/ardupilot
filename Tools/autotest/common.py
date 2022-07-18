@@ -11043,10 +11043,11 @@ switch value'''
 
         received_frsky_texts = []
         last_len_received_statustexts = 0
+        timeout = 7 * self.speedup # it can take a *long* time to get these messages down!
         while True:
             self.drain_mav()
             now = self.get_sim_time_cached()
-            if now - tstart > 60: # it can take a *long* time to get these messages down!
+            if now - tstart > timeout:
                 raise NotAchievedException("Did not get statustext in time")
             frsky.update()
             data = frsky.get_data(0x5000) # no timestamping on this data, so we can't catch legitimate repeats.
