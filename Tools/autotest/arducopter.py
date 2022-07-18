@@ -6668,7 +6668,6 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def wait_generator_speed_and_state(self, rpm_min, rpm_max, want_state, timeout=240):
-        self.drain_mav()
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
@@ -6812,7 +6811,6 @@ class AutoTestCopter(AutoTest):
         self.progress("Reset mission")
         self.set_rc(7, 2000)
         self.delay_sim_time(1)
-        self.drain_mav()
         self.wait_current_waypoint(0, timeout=10)
         self.set_rc(7, 1000)
 

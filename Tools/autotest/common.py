@@ -5554,7 +5554,6 @@ class AutoTest(ABC):
     #################################################
     def delay_sim_time(self, seconds_to_wait, reason=None):
         """Wait some second in SITL time."""
-        self.drain_mav()
         tstart = self.get_sim_time()
         tnow = tstart
         r = "Delaying %f seconds"
@@ -6663,7 +6662,6 @@ Also, ignores heartbeats not from our target system'''
 
     def wait_ekf_flags(self, required_value, error_bits, timeout=30):
         self.progress("Waiting for EKF value %u" % required_value)
-        self.drain_mav()
         last_print_time = 0
         tstart = self.get_sim_time()
         while timeout is None or self.get_sim_time_cached() < tstart + timeout:
@@ -7334,7 +7332,6 @@ Also, ignores heartbeats not from our target system'''
         '''mavlink2 required'''
         target_system = 1
         target_component = 1
-        self.drain_mav()
         self.progress("Sending mission_request_list")
         tstart = self.get_sim_time()
         self.mav.mav.mission_request_list_send(target_system,
@@ -7613,7 +7610,6 @@ Also, ignores heartbeats not from our target system'''
 
     def zero_mag_offset_parameters(self, compass_count=3):
         self.progress("Zeroing Mag OFS parameters")
-        self.drain_mav()
         self.get_sim_time()
         self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_SET_SENSOR_OFFSETS,
                      2, # param1 (compass0)
@@ -7658,7 +7654,6 @@ Also, ignores heartbeats not from our target system'''
 
     def forty_two_mag_dia_odi_parameters(self, compass_count=3):
         self.progress("Forty twoing Mag DIA and ODI parameters")
-        self.drain_mav()
         self.get_sim_time()
         params = [
             [("SIM_MAG_DIA_X", "COMPASS_DIA_X", 42.0),
@@ -7719,7 +7714,6 @@ Also, ignores heartbeats not from our target system'''
         def reset_pos_and_start_magcal(mavproxy, tmask):
             mavproxy.send("sitl_stop\n")
             mavproxy.send("sitl_attitude 0 0 0\n")
-            self.drain_mav()
             self.get_sim_time()
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
                          tmask, # p1: mag_mask
@@ -7776,7 +7770,6 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter():
                 # set frame class to pass arming check on copter
                 self.set_parameter("FRAME_CLASS", 1)
-            self.drain_mav()
             self.progress("Setting SITL Magnetometer model value")
             self.set_parameter("COMPASS_AUTO_ROT", 0)
             # MAG_ORIENT = 4
@@ -9030,7 +9023,6 @@ Also, ignores heartbeats not from our target system'''
     def poll_message(self, message_id, timeout=10):
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
-        self.drain_mav()
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
         self.send_poll_message(message_id)
         self.run_cmd_get_ack(
