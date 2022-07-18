@@ -2747,7 +2747,17 @@ class AutoTest(ABC):
         timeout = 120
         failed_to_drain = False
         self.pause_SITL()
-        while mav.recv_msg() is not None:
+        # sometimes we recv() when the process is likely to go away..
+        old_autoreconnect = mav.autoreconnect
+        mav.autoreconnect = False
+        while True:
+            try:
+                receive_result = mav.recv_msg()
+            except Exception:
+                mav.autoreconnect = True
+                raise
+            if receive_result is None:
+                break
             count += 1
             if time.time() - tstart > timeout:
                 # ArduPilot can produce messages faster than we can
@@ -2755,6 +2765,7 @@ class AutoTest(ABC):
                 # just die if that seems to be the case:
                 failed_to_drain = True
                 quiet = False
+        mav.autoreconnect = old_autoreconnect
         self.unpause_SITL()
         if quiet:
             self.in_drain_mav = False
