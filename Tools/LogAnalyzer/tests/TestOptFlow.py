@@ -1,6 +1,8 @@
+# AP_FLAKE8_CLEAN
+
+
 from math import sqrt
 
-import DataflashLog
 import matplotlib.pyplot as plt
 import numpy as np
 from LogAnalyzer import Test, TestResult
@@ -53,8 +55,12 @@ class TestFlow(Test):
                 2.0  # if the gyro rate is greter than this, the data will not be used by the curve fit (rad/sec)
             )
             param_std_threshold = 5.0  # maximum allowable 1-std uncertainty in scaling parameter (scale factor * 1000)
-            param_abs_threshold = 200  # max/min allowable scale factor parameter. Values of FLOW_FXSCALER and FLOW_FYSCALER outside the range of +-param_abs_threshold indicate a sensor configuration problem.
-            min_num_points = 100  # minimum number of points required for a curve fit - this is necessary, but not sufficient condition - the standard deviation estimate of the fit gradient is also important.
+            # max/min allowable scale factor parameter. Values of FLOW_FXSCALER and FLOW_FYSCALER outside the range
+            # of +-param_abs_threshold indicate a sensor configuration problem.
+            param_abs_threshold = 200
+            # minimum number of points required for a curve fit - this is necessary, but not sufficient condition - the
+            # standard deviation estimate of the fit gradient is also important.
+            min_num_points = 100
 
             # get the existing scale parameters
             flow_fxscaler = logdata.parameters["FLOW_FXSCALER"]
@@ -204,7 +210,8 @@ class TestFlow(Test):
                     bodyY_resampled.append(bodyY[i])
                     flowY_time_us_resampled.append(flow_time_us[i])
 
-            # fit a straight line to the flow vs body rate data and calculate the scale factor parameter required to achieve a slope of 1
+            # fit a straight line to the flow vs body rate data and calculate the scale factor parameter required to
+            # achieve a slope of 1
             coef_flow_x, cov_x = np.polyfit(
                 bodyX_resampled, flowX_resampled, 1, rcond=None, full=False, w=None, cov=True
             )
@@ -212,7 +219,8 @@ class TestFlow(Test):
                 bodyY_resampled, flowY_resampled, 1, rcond=None, full=False, w=None, cov=True
             )
 
-            # taking the exisiting scale factor parameters into account, calculate the parameter values reequired to achieve a unity slope
+            # taking the exisiting scale factor parameters into account, calculate the parameter values reequired to
+            # achieve a unity slope
             flow_fxscaler_new = int(1000 * (((1 + 0.001 * float(flow_fxscaler)) / coef_flow_x[0] - 1)))
             flow_fyscaler_new = int(1000 * (((1 + 0.001 * float(flow_fyscaler)) / coef_flow_y[0] - 1)))
 
@@ -220,8 +228,9 @@ class TestFlow(Test):
             if sqrt(cov_x[0][0]) > param_std_threshold or sqrt(cov_y[0][0]) > param_std_threshold:
                 FAIL()
                 self.result.statusMessage = (
-                    "FAIL: inaccurate fit - poor quality or insufficient data\nFLOW_FXSCALER 1STD = %u\nFLOW_FYSCALER 1STD = %u\n"
-                    % (round(1000 * sqrt(cov_x[0][0])), round(1000 * sqrt(cov_y[0][0])))
+                    "FAIL: inaccurate fit - poor quality or insufficient data"
+                    "\nFLOW_FXSCALER 1STD = %u"
+                    "\nFLOW_FYSCALER 1STD = %u\n" % (round(1000 * sqrt(cov_x[0][0])), round(1000 * sqrt(cov_y[0][0])))
                 )
 
             # Do a sanity check on the scale factors
@@ -234,7 +243,12 @@ class TestFlow(Test):
 
             # display recommended scale factors
             self.result.statusMessage = (
-                "Set FLOW_FXSCALER to %i\nSet FLOW_FYSCALER to %i\n\nCal plots saved to flow_calibration.pdf\nCal parameters saved to flow_calibration.param\n\nFLOW_FXSCALER 1STD = %u\nFLOW_FYSCALER 1STD = %u\n"
+                "Set FLOW_FXSCALER to %i"
+                "\nSet FLOW_FYSCALER to %i"
+                "\n\nCal plots saved to flow_calibration.pdf"
+                "\nCal parameters saved to flow_calibration.param"
+                "\n\nFLOW_FXSCALER 1STD = %u"
+                "\nFLOW_FYSCALER 1STD = %u\n"
                 % (
                     flow_fxscaler_new,
                     flow_fyscaler_new,

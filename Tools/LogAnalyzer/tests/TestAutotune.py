@@ -1,4 +1,5 @@
-import DataflashLog
+# AP_FLAKE8_CLEAN
+
 from LogAnalyzer import Test, TestResult
 from VehicleType import VehicleType
 
@@ -70,7 +71,7 @@ class TestAutotune(Test):
 
         for i in ['EV', 'ATDE', 'ATUN']:
             r = False
-            if not i in logdata.channels:
+            if i not in logdata.channels:
                 self.result.status = TestResult.StatusType.UNKNOWN
                 self.result.statusMessage = "No {} log data".format(i)
                 r = True
@@ -126,7 +127,9 @@ class TestAutotune(Test):
                     for key in logdata.channels['ATUN']:
                         setattr(atun, key, logdata.channels['ATUN'][key].getNearestValueFwd(linenext)[0])
                     linenext = logdata.channels['ATUN'][key].getNearestValueFwd(linenext)[1] + 1
-                    self.result.statusMessage += 'ATUN Axis:{atun.Axis} TuneStep:{atun.TuneStep} RateMin:{atun.RateMin:5.0f} RateMax:{atun.RateMax:5.0f} RPGain:{atun.RPGain:1.4f} RDGain:{atun.RDGain:1.4f} SPGain:{atun.SPGain:1.1f} (@line:{l})\n'.format(
-                        l=linenext, s=s, atun=atun
-                    )
+                    self.result.statusMessage += (
+                        "ATUN Axis:{atun.Axis} TuneStep:{atun.TuneStep} RateMin:{atun.RateMin:5.0f}"
+                        " RateMax:{atun.RateMax:5.0f} RPGain:{atun.RPGain:1.4f} RDGain:{atun.RDGain:1.4f}"
+                        " SPGain:{atun.SPGain:1.1f} (@line:{l})\n"
+                    ).format(l=linenext, atun=atun)
                 self.result.statusMessage += '\n'

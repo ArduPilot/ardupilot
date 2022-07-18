@@ -1,3 +1,6 @@
+# AP_FLAKE8_CLEAN
+
+
 import collections
 
 import DataflashLog
@@ -8,12 +11,12 @@ from VehicleType import VehicleType
 class TestPitchRollCoupling(Test):
     '''test for divergence between input and output pitch/roll, i.e. mechanical failure or bad PID tuning'''
 
-    # TODO: currently we're only checking for roll/pitch outside of max lean angle, will come back later to analyze roll/pitch in versus out values
+    # TODO: currently we're only checking for roll/pitch outside of max lean angle, will come back later to analyze
+    # roll/pitch in versus out values
 
     def __init__(self):
         Test.__init__(self)
         self.name = "Pitch/Roll"
-        self.enable = True  # TEMP
 
     def run(self, logdata, verbose):
         self.result = TestResult()
@@ -23,12 +26,12 @@ class TestPitchRollCoupling(Test):
             self.result.status = TestResult.StatusType.NA
             return
 
-        if not "ATT" in logdata.channels:
+        if "ATT" not in logdata.channels:
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No ATT log data"
             return
 
-        if not "CTUN" in logdata.channels:
+        if "CTUN" not in logdata.channels:
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No CTUN log data"
             return
@@ -38,7 +41,8 @@ class TestPitchRollCoupling(Test):
         else:
             self.ctun_baralt_att = 'BAlt'
 
-        # figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore acro/tune modes
+        # figure out where each mode begins and ends, so we can treat auto and manual modes differently and ignore
+        # acro/tune modes
         autoModes = [
             "RTL",
             "AUTO",

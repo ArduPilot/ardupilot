@@ -5,13 +5,15 @@
 # Initial code by Andrew Chapman (amchapman@gmail.com), 16th Jan 2014
 #
 
+# AP_FLAKE8_CLEAN
 
 # some logging oddities noticed while doing this, to be followed up on:
 #   - tradheli MOT labels Mot1,Mot2,Mot3,Mot4,GGain
 #   - Pixhawk doesn't output one of the FMT labels... forget which one
 #   - MAG offsets seem to be constant (only seen data on Pixhawk)
 #   - MAG offsets seem to be cast to int before being output? (param is -84.67, logged as -84)
-#   - copter+plane use 'V' in their vehicle type/version/build line, rover uses lower case 'v'. Copter+Rover give a build number, plane does not
+#   - copter+plane use 'V' in their vehicle type/version/build line, rover uses lower case 'v'.
+#     Copter+Rover give a build number, plane does not
 #   - CTUN.ThrOut on copter is 0-1000, on plane+rover it is 0-100
 
 # TODO: add test for noisy baro values
@@ -25,7 +27,6 @@ import glob
 import imp
 import inspect
 import os
-import pprint  # temp
 import sys
 import time
 from xml.sax.saxutils import escape
@@ -38,7 +39,8 @@ class TestResult(object):
     '''all tests return a standardized result type'''
 
     class StatusType:
-        # NA means not applicable for this log (e.g. copter tests against a plane log), UNKNOWN means it is missing data required for the test
+        # NA means not applicable for this log (e.g. copter tests against a plane log)
+        # UNKNOWN means it is missing data required for the test
         GOOD, FAIL, WARN, UNKNOWN, NA = range(5)
 
     status = None
@@ -46,7 +48,10 @@ class TestResult(object):
 
 
 class Test(object):
-    '''base class to be inherited by log tests. Each test should be quite granular so we have lots of small tests with clear results'''
+    """
+    Base class to be inherited by log tests. Each test should be quite granular so we have lots of small tests with
+    clear results
+    """
 
     def __init__(self):
         self.name = ""
@@ -140,7 +145,8 @@ class TestSuite(object):
 
         print('\n')
         print(
-            'The Log Analyzer is currently BETA code.\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)'
+            "The Log Analyzer is currently BETA code."
+            "\nFor any support or feedback on the log analyzer please email Andrew Chapman (amchapman@gmail.com)"
         )
         print('\n')
 
@@ -218,8 +224,6 @@ class TestSuite(object):
 
 
 def main():
-    dirName = os.path.dirname(os.path.abspath(__file__))
-
     # deal with command line arguments
     parser = argparse.ArgumentParser(description='Analyze an APM Dataflash log for known issues')
     parser.add_argument('logfile', type=argparse.FileType('r'), help='path to Dataflash log file (or - for stdin)')

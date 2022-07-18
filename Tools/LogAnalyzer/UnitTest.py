@@ -5,6 +5,8 @@
 #
 #
 
+# AP_FLAKE8_CLEAN
+
 # TODO: implement more unit+regression tests
 
 from __future__ import print_function
@@ -397,6 +399,6 @@ try:
 
     print("All unit/regression tests GOOD\n")
 
-except Exception as e:
+except Exception:
     print("Error found: " + traceback.format_exc())
     print("UNIT TEST FAILED\n")

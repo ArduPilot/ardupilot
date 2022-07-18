@@ -1,7 +1,9 @@
+# AP_FLAKE8_CLEAN
+
+
 import math
 from functools import reduce
 
-import DataflashLog
 from LogAnalyzer import Test, TestResult
 
 
