@@ -38,6 +38,7 @@ parser = argparse.ArgumentParser(description='ArduPilot IMU Filter Tester Tool. 
 parser.add_argument('file', nargs='?', default=None, help='bin log file containing raw IMU logs')
 parser.add_argument('--begin-time', '-b', type=int, default=0, help='start from second')
 parser.add_argument('--end-time', '-e', type=int, default=-1, help='end to second')
+parser.add_argument('--instance', type=int, default=0, help='IMU instance')
 
 args = parser.parse_args()
 
@@ -113,7 +114,7 @@ GYR_z = []
 params = {}
 
 while True:
-    m = mlog._parse_next()
+    m = mlog.recv_match(type=['PARM', 'GYR', 'ACC'])
     """
     @type m DFMessage
     """
@@ -142,13 +143,13 @@ while True:
     except AttributeError:
         pass
 
-    if m.fmt.name == "ACC1":
+    if m.fmt.name == "ACC" and m.I == args.instance:
         ACC_t.append(m_time_sec)
         ACC_x.append(m.AccX)
         ACC_y.append(m.AccY)
         ACC_z.append(m.AccZ)
 
-    elif m.fmt.name == "GYR1":
+    elif m.fmt.name == "GYR" and m.I == args.instance:
         GYR_t.append(m_time_sec)
         GYR_x.append(m.GyrX)
         GYR_y.append(m.GyrY)
