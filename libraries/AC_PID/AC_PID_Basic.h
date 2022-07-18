@@ -37,7 +37,7 @@ public:
     float get_error() const WARN_IF_UNUSED { return _error; }
 
     // reset the integrator
-    void reset_I() { _integrator = 0.0f; }
+    void reset_I();
 
     // input and D term filter will be reset to the next value provided to set_input()
     void reset_filter() { _reset_filter = true; }
