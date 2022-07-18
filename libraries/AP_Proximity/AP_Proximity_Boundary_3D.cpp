@@ -67,7 +67,7 @@ void AP_Proximity_Boundary_3D::set_face_attributes(const Face &face, float pitch
     if ((prx_instance != _prx_instance[face.layer][face.sector]) && _distance_valid[face.layer][face.sector] && (_filtered_distance[face.layer][face.sector].get() < distance)) {
         // check if recent
         const uint32_t now_ms = AP_HAL::millis();
-        if (now_ms - _last_update_ms[face.layer][face.sector] < 200) {
+        if (now_ms - _last_update_ms[face.layer][face.sector] < PROXIMITY_FACE_RESET_MS) {
             return;
         }
     }
