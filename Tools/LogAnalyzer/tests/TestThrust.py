@@ -1,6 +1,8 @@
+# AP_FLAKE8_CLEAN
+
+
 from __future__ import print_function
 
-import DataflashLog
 from LogAnalyzer import Test, TestResult
 from VehicleType import VehicleType
 
@@ -20,11 +22,11 @@ class TestThrust(Test):
             self.result.status = TestResult.StatusType.NA
             return
 
-        if not "CTUN" in logdata.channels:
+        if "CTUN" not in logdata.channels:
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No CTUN log data"
             return
-        if not "ATT" in logdata.channels:
+        if "ATT" not in logdata.channels:
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No ATT log data"
             return
@@ -49,7 +51,8 @@ class TestThrust(Test):
 
         highThrottleSegments = []
 
-        # find any contiguous chunks where CTUN.ThrOut > highThrottleThreshold, ignore high throttle if tilt > tiltThreshold, and discard any segments shorter than minSampleLength
+        # find any contiguous chunks where CTUN.ThrOut > highThrottleThreshold, ignore high throttle if
+        # tilt > tiltThreshold, and discard any segments shorter than minSampleLength
         start = None
         data = logdata.channels["CTUN"][throut_key].listData
         for i in range(0, len(data)):
@@ -61,11 +64,10 @@ class TestThrust(Test):
                 if (abs(roll) > tiltThreshold) or (abs(pitch) > tiltThreshold):
                     isBelowTiltThreshold = False
             if (value > highThrottleThreshold) and isBelowTiltThreshold:
-                if start == None:
+                if start is None:
                     start = i
-            elif start != None:
+            elif start is not None:
                 if (i - start) > minSampleLength:
-                    # print("Found high throttle chunk from line %d to %d (%d samples)" % (data[start][0],data[i][0],i-start+1))
                     highThrottleSegments.append((start, i))
                 start = None
 

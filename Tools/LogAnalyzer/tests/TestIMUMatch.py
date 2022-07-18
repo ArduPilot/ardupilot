@@ -1,8 +1,10 @@
+# AP_FLAKE8_CLEAN
+
+
 from __future__ import print_function
 
 from math import sqrt
 
-import DataflashLog
 from LogAnalyzer import Test, TestResult
 
 
@@ -23,12 +25,12 @@ class TestIMUMatch(Test):
         self.result = TestResult()
         self.result.status = TestResult.StatusType.GOOD
 
-        if ("IMU" in logdata.channels) and (not "IMU2" in logdata.channels):
+        if ("IMU" in logdata.channels) and ("IMU2" not in logdata.channels):
             self.result.status = TestResult.StatusType.NA
             self.result.statusMessage = "No IMU2"
             return
 
-        if (not "IMU" in logdata.channels) or (not "IMU2" in logdata.channels):
+        if ("IMU" not in logdata.channels) or ("IMU2" not in logdata.channels):
             self.result.status = TestResult.StatusType.UNKNOWN
             self.result.statusMessage = "No IMU log data"
             return
@@ -115,7 +117,6 @@ class TestIMUMatch(Test):
 
             diff_filtered = sqrt(xdiff_filtered**2 + ydiff_filtered**2 + zdiff_filtered**2)
             max_diff_filtered = max(max_diff_filtered, diff_filtered)
-            # print(max_diff_filtered)
             last_t = t
 
         if max_diff_filtered > fail_threshold:

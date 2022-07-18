@@ -1,4 +1,5 @@
-import DataflashLog
+# AP_FLAKE8_CLEAN
+
 from LogAnalyzer import Test, TestResult
 from VehicleType import VehicleType
 
@@ -19,7 +20,7 @@ class TestBalanceTwist(Test):
             return
 
         self.result.status = TestResult.StatusType.UNKNOWN
-        if not "RCOU" in logdata.channels:
+        if "RCOU" not in logdata.channels:
             return
 
         ch = []
@@ -50,7 +51,7 @@ class TestBalanceTwist(Test):
                 / (logdata.parameters["RC3_MAX"] - logdata.parameters["RC3_MIN"])
                 / 1000.0
             )
-        except KeyError as e:
+        except KeyError:
             min_throttle = (
                 logdata.parameters["MOT_PWM_MIN"]
                 / (logdata.parameters["MOT_PWM_MAX"] - logdata.parameters["RC3_MIN"])
