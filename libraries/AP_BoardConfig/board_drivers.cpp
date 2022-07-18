@@ -117,6 +117,8 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PIXHAWK_PRO:
     case PX4_BOARD_PCNC1:
     case PX4_BOARD_MINDPXV2:
+    case FMUV6_BOARD_HOLYBRO_6X:
+    case FMUV6_BOARD_CUAV_6X:
         break;
     default:
         config_error("Unknown board type");
@@ -370,8 +372,7 @@ void AP_BoardConfig::board_autodetect(void)
     state.board_type.set_and_notify(PX4_BOARD_FMUV5);
     DEV_PRINTF("Detected FMUv5\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV6)
-    state.board_type.set_and_notify(PX4_BOARD_FMUV5);
-    DEV_PRINTF("Detected FMUv6\n");
+    detect_fmuv6_variant();
 #elif defined(HAL_CHIBIOS_ARCH_BRAINV51)
     state.board_type.set_and_notify(VRX_BOARD_BRAIN51);
     DEV_PRINTF("Detected VR Brain 5.1\n");
@@ -486,3 +487,22 @@ void AP_BoardConfig::board_setup()
 #endif
 }
 
+
+#ifdef HAL_CHIBIOS_ARCH_FMUV6
+/*
+  detect which FMUV6 variant we are running on
+ */
+void AP_BoardConfig::detect_fmuv6_variant()
+{
+    if ((spi_check_register_inv2("icm20649", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649) &&
+         spi_check_register("icm42688", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688))) {
+        state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X);
+        DEV_PRINTF("Detected Holybro 6X\n");
+    } else if ((spi_check_register_inv2("icm20649_2", INV2REG_WHOAMI, INV2_WHOAMI_ICM20649) &&
+                spi_check_register("icm42688", INV3REG_WHOAMI, INV3_WHOAMI_ICM42688))) {
+        state.board_type.set_and_notify(FMUV6_BOARD_CUAV_6X);
+        DEV_PRINTF("Detected CUAV 6X\n");
+    }
+
+}
+#endif
