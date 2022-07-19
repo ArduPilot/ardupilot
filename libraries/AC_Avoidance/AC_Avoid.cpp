@@ -132,7 +132,7 @@ void AC_Avoid::adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desir
     // maximum component of desired  backup velocity in each quadrant 
     Vector2f quad_1_back_vel, quad_2_back_vel, quad_3_back_vel, quad_4_back_vel;
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0) {
         // Store velocity needed to back away from fence
         Vector2f backup_vel_fence;
@@ -365,7 +365,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
     const AP_AHRS &_ahrs = AP::ahrs();
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     // calculate distance below fence
     AC_Fence *fence = AP::fence();
     if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
@@ -661,7 +661,7 @@ float AC_Avoid::get_max_speed(float kP, float accel_cmss, float distance_cm, flo
     }
 }
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
 
 /*
  * Adjusts the desired velocity for the circular fence.
@@ -1086,7 +1086,7 @@ void AC_Avoid::adjust_velocity_exclusion_circles(float kP, float accel_cmss, Vec
     // desired backup velocity is sum of maximum velocity component in each quadrant 
     backup_vel = quad_1_back_vel + quad_2_back_vel + quad_3_back_vel + quad_4_back_vel;
 }
-#endif // AC_FENCE
+#endif // AP_FENCE_ENABLED
 
 /*
  * Adjusts the desired velocity for the beacon fence.
@@ -1109,7 +1109,7 @@ void AC_Avoid::adjust_velocity_beacon_fence(float kP, float accel_cmss, Vector2f
 
     // adjust velocity using beacon
     float margin = 0;
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     if (AP::fence()) {
         margin = AP::fence()->get_margin();
     }
