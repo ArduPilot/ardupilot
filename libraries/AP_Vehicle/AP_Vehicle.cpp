@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(ais, "AIS_",  13, AP_Vehicle, AP_AIS),
 #endif
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     // @Group: FENCE_
     // @Path: ../AC_Fence/AC_Fence.cpp
     AP_SUBGROUPINFO(fence, "FENCE_", 14, AP_Vehicle, AC_Fence),
@@ -238,7 +238,7 @@ void AP_Vehicle::setup()
     ais.init();
 #endif
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     fence.init();
 #endif
 
@@ -335,7 +335,7 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,      10,    100, 245),
 #endif
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     SCHED_TASK_CLASS(AC_Fence,     &vehicle.fence,          update,                   10, 100, 248),
 #endif
 #if AP_AIS_ENABLED

@@ -398,7 +398,7 @@ protected:
     AP_AIS ais;
 #endif
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AC_Fence fence;
 #endif
 
