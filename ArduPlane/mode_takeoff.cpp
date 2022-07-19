@@ -114,7 +114,7 @@ void ModeTakeoff::update()
 
         plane.set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
         
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
         plane.fence.auto_enable_fence_after_takeoff();
 #endif
     }

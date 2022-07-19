@@ -272,7 +272,7 @@ void Plane::update_logging2(void)
 void Plane::afs_fs_check(void)
 {
     // perform AFS failsafe checks
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     const bool fence_breached = fence.get_breaches() != 0;
 #else
     const bool fence_breached = false;
@@ -344,7 +344,7 @@ void Plane::one_second_loop()
 
 void Plane::three_hz_loop()
 {
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     fence_check();
 #endif
 }

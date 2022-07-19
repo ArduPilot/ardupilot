@@ -178,7 +178,7 @@ void Plane::read_radio()
 
     control_failsafe();
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     const bool stickmixing = fence_stickmixing();
 #else
     const bool stickmixing = true;
