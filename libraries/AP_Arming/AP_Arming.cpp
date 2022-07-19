@@ -1098,7 +1098,7 @@ bool AP_Arming::can_checks(bool report)
 
 bool AP_Arming::fence_checks(bool display_failure)
 {
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     const AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return true;
@@ -1387,7 +1387,7 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         // If a fence is set to auto-enable, turn on the fence
@@ -1494,7 +1494,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     }
 #endif
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         if(fence->auto_enabled() == AC_Fence::AutoEnable::ONLY_WHEN_ARMED) {
