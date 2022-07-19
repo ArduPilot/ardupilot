@@ -1064,7 +1064,7 @@ public:
 
     static class MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
     static class MissionItemProtocol_Rally *_missionitemprotocol_rally;
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     static class MissionItemProtocol_Fence *_missionitemprotocol_fence;
 #endif
     class MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
