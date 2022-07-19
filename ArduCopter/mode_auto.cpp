@@ -408,7 +408,7 @@ void ModeAuto::land_start()
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
@@ -674,7 +674,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         break;
     
     case MAV_CMD_DO_FENCE_ENABLE:
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
         if (cmd.p1 == 0) { //disable
             copter.fence.enable(false);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Disabled");
@@ -682,7 +682,7 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
             copter.fence.enable(true);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence Enabled");
         }
-#endif //AC_FENCE == ENABLED
+#endif //AP_FENCE_ENABLED
         break;
 
 #if NAV_GUIDED == ENABLED

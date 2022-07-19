@@ -284,7 +284,7 @@ void ModeRTL::descent_start()
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
@@ -382,7 +382,7 @@ void ModeRTL::land_start()
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // disable the fence on landing
     copter.fence.auto_disable_fence_for_landing();
 #endif
@@ -531,7 +531,7 @@ void ModeRTL::compute_return_target()
     // set returned target alt to new target_alt (don't change altitude type)
     rtl_path.return_target.set_alt_cm(target_alt, (alt_type == ReturnTargetAltType::RELATIVE) ? Location::AltFrame::ABOVE_HOME : Location::AltFrame::ABOVE_TERRAIN);
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // ensure not above fence altitude if alt fence is enabled
     // Note: because the rtl_path.climb_target's altitude is simply copied from the return_target's altitude,
     //       if terrain altitudes are being used, the code below which reduces the return_target's altitude can lead to

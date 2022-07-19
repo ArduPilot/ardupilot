@@ -573,7 +573,7 @@ void Copter::three_hz_loop()
     // check for deadreckoning failsafe
     failsafe_deadreckon_check();
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // check if we have breached a fence
     fence_check();
 #endif // AP_FENCE_ENABLED
