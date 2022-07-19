@@ -2124,7 +2124,7 @@ void AP_OSD_Screen::draw_hgt_abvterr(uint8_t x, uint8_t y)
 }
 #endif
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
 void AP_OSD_Screen::draw_fence(uint8_t x, uint8_t y)
 {
     AC_Fence *fenceptr = AP::fence();
@@ -2201,7 +2201,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(heading);
     DRAW_SETTING(wind);
     DRAW_SETTING(home);
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     DRAW_SETTING(fence);
 #endif
     DRAW_SETTING(roll_angle);
