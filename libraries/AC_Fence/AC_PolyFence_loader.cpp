@@ -1,8 +1,11 @@
 #include "AC_PolyFence_loader.h"
+
+#if AP_FENCE_ENABLED
+
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #ifndef AC_FENCE_DUMMY_METHODS_ENABLED
-#define AC_FENCE_DUMMY_METHODS_ENABLED  !(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub))
+#define AC_FENCE_DUMMY_METHODS_ENABLED  (!(APM_BUILD_TYPE(APM_BUILD_Rover) | APM_BUILD_COPTER_OR_HELI | APM_BUILD_TYPE(APM_BUILD_ArduPlane) | APM_BUILD_TYPE(APM_BUILD_ArduSub)))
 #endif
 
 #if !AC_FENCE_DUMMY_METHODS_ENABLED
@@ -1698,3 +1701,4 @@ bool AC_PolyFence_loader::get_return_point(Vector2l &ret) { return false; }
 #endif
 
 #endif // #if AC_FENCE_DUMMY_METHODS_ENABLED
+#endif // AP_FENCE_ENABLED
