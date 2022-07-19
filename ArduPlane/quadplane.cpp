@@ -3139,7 +3139,7 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     // todo: why are you doing this, I want to delete it.
     set_alt_target_current();
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     plane.fence.auto_enable_fence_after_takeoff();
 #endif
 
@@ -3271,7 +3271,7 @@ bool QuadPlane::verify_vtol_land(void)
             poscontrol.pilot_correction_done = false;
             pos_control->set_lean_angle_max_cd(0);
             poscontrol.xy_correction.zero();
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
             plane.fence.auto_disable_fence_for_landing();
 #endif
 #if LANDING_GEAR_ENABLED == ENABLED
