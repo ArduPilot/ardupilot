@@ -142,7 +142,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
         if (cmd.p1 == 0) { // disable fence
             plane.fence.enable(false);
             gcs().send_text(MAV_SEVERITY_INFO, "Fence disabled");
@@ -418,7 +418,7 @@ void Plane::do_land(const AP_Mission::Mission_Command& cmd)
         set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
     }
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     plane.fence.auto_disable_fence_for_landing();
 #endif
 }
@@ -601,7 +601,7 @@ bool Plane::verify_takeoff()
         auto_state.takeoff_complete = true;
         next_WP_loc = prev_WP_loc = current_loc;
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
         plane.fence.auto_enable_fence_after_takeoff();
 #endif
 

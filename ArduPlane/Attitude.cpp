@@ -65,7 +65,7 @@ bool Plane::stick_mixing_enabled(void)
         // never stick mix without valid RC
         return false;
     }
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     const bool stickmixing = fence_stickmixing();
 #else
     const bool stickmixing = true;

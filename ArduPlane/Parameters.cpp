@@ -1385,7 +1385,7 @@ void Plane::load_parameters(void)
         }
     }
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     enum ap_var_type ptype_fence_type;
     AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
     if (fence_type_new && !fence_type_new->configured()) {
@@ -1470,7 +1470,7 @@ void Plane::load_parameters(void)
             }
         }
     }
-#endif // AC_FENCE
+#endif // AP_FENCE_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
     g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
@@ -1523,7 +1523,7 @@ void Plane::load_parameters(void)
 #endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
     
     // PARAMETER_CONVERSION - Added: Mar-2022
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, 0, true);
 #endif
 

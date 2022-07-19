@@ -16,7 +16,7 @@ bool ModeQLand::_enter()
 #if LANDING_GEAR_ENABLED == ENABLED
     plane.g2.landing_gear.deploy_for_landing();
 #endif
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     plane.fence.auto_disable_fence_for_landing();
 #endif
     return true;
