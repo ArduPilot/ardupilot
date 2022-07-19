@@ -220,7 +220,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 
     control_mode = &new_mode;
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
     // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
     // but it should be harmless to disable the fence temporarily in these situations as well
