@@ -236,7 +236,7 @@ bool AP_Filesystem_Mission::get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, 
         }
         return mission->get_item(idx, item);
     }
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     case MAV_MISSION_TYPE_FENCE:
         return MissionItemProtocol_Fence::get_item_as_mission_item(idx, item);
 #endif
@@ -263,7 +263,7 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
     }
         
     case MAV_MISSION_TYPE_FENCE: {
-#if AC_FENCE
+#if AP_FENCE_ENABLED
         auto *fence = AP::fence();
         if (fence == nullptr) {
             return 0;
