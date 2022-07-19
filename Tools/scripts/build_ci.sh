@@ -32,6 +32,15 @@ echo "Compiler: $c_compiler"
 pymavlink_installed=0
 mavproxy_installed=0
 
+function install_pymavlink() {
+    if [ $pymavlink_installed -eq 0 ]; then
+        echo "Installing pymavlink"
+        git submodule update --init --recursive
+        (cd modules/mavlink/pymavlink && python setup.py build install --user)
+        pymavlink_installed=1
+    fi
+}
+
 function run_autotest() {
     NAME="$1"
     BVEHICLE="$2"
@@ -52,12 +61,7 @@ function run_autotest() {
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
         python -m pip uninstall -y pymavlink
     fi
-    if [ $pymavlink_installed -eq 0 ]; then
-        echo "Installing pymavlink"
-        git submodule update --init --recursive
-        (cd modules/mavlink/pymavlink && python setup.py build install --user)
-        pymavlink_installed=1
-    fi
+    install_pymavlink
     unset BUILDROOT
     echo "Running SITL $NAME test"
 
@@ -331,6 +335,19 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "configure-all" ]; then
         echo "Checking configure of all boards"
         ./Tools/scripts/configure_all.py
+        continue
+    fi
+
+    if [ "$t" == "build-options-defaults-test" ]; then
+        install_pymavlink
+        echo "Checking default options in build_options.py work"
+        time ./Tools/autotest/test_build_options.py \
+             --no-disable-all \
+             --no-disable-none \
+             --no-disable-in-turn \
+             --board=CubeOrange \
+             --build-targets=copter \
+             --build-targets=plane
         continue
     fi
 
