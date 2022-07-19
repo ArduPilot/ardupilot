@@ -764,7 +764,7 @@ private:
 #endif
 
     // fence.cpp
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     void fence_check();
 #endif
 

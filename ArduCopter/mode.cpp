@@ -312,7 +312,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     adsb.set_is_auto_mode((mode == Mode::Number::AUTO) || (mode == Mode::Number::RTL) || (mode == Mode::Number::GUIDED));
 #endif
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // pilot requested flight mode change during a fence breach indicates pilot is attempting to manually recover
     // this flight mode change could be automatic (i.e. fence, battery, GPS or GCS failsafe)
     // but it should be harmless to disable the fence temporarily in these situations as well
