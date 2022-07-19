@@ -168,7 +168,8 @@ AP_ICEngine::AP_ICEngine(const AP_RPM &_rpm) :
     }
     _singleton = this;
 
-    _rpm_filter.set_cutoff_frequency(1 / AP::scheduler().get_loop_period_s(), 0.5f);
+    // ICEngine runs at 10Hz
+    _rpm_filter.set_cutoff_frequency(10, 0.5f);
 }
 
 /*
