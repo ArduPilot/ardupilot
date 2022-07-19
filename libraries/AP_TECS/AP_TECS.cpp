@@ -664,17 +664,6 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         }
         _throttle_dem = (_STE_error + STEdot_error * throttle_damp) * K_STE2Thr + ff_throttle;
 
-        // Constrain throttle demand and record clipping
-        if (_throttle_dem > _THRmaxf) {
-            _thr_clip_status = ThrClipStatus::MAX;
-            _throttle_dem = _THRmaxf;
-        } else if (_throttle_dem < _THRminf) {
-            _thr_clip_status = ThrClipStatus::MIN;
-            _throttle_dem = _THRminf;
-        } else {
-            _thr_clip_status = ThrClipStatus::NONE;
-        }
-
         float THRminf_clipped_to_zero = constrain_float(_THRminf, 0, _THRmaxf);
 
         // Calculate integrator state upper and lower limits
@@ -720,13 +709,15 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _throttle_dem = _throttle_dem + _integTHR_state;
     }
 
-    // Constrain throttle demand and record clip status
+    // Constrain throttle demand and record clipping
     if (_throttle_dem > _THRmaxf) {
         _thr_clip_status = ThrClipStatus::MAX;
         _throttle_dem = _THRmaxf;
     } else if (_throttle_dem < _THRminf) {
         _thr_clip_status = ThrClipStatus::MIN;
         _throttle_dem = _THRminf;
+    } else {
+        _thr_clip_status = ThrClipStatus::NONE;
     }
 }
 
