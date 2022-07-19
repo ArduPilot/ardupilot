@@ -142,7 +142,7 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_preflight_calibration_baro
 
 MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavlink_command_long_t &mav_command_long)
 {
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return MAV_RESULT_UNSUPPORTED;
@@ -160,7 +160,7 @@ MAV_RESULT AP_Frsky_MAVliteMsgHandler::handle_command_do_fence_enable(const mavl
     }
 #else
     return MAV_RESULT_UNSUPPORTED;
-#endif // AC_FENCE
+#endif // AP_FENCE_ENABLED
 }
 
 /*

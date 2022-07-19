@@ -582,7 +582,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_ap_status(void)
     ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
     // generic failsafe
     ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery||AP_Notify::flags.failsafe_ekf||AP_Notify::flags.failsafe_gcs||AP_Notify::flags.failsafe_radio)<<AP_FS_OFFSET;
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     // fence status
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
