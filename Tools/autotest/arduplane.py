@@ -1735,7 +1735,7 @@ class AutoTestPlane(AutoTest):
         self.arm_vehicle()
         self.delay_sim_time(60)
         # simulate the effect of a blocked pitot tube
-        self.set_parameter("ARSPD_RATIO",0.1)
+        self.set_parameter("ARSPD_RATIO", 0.1)
         self.delay_sim_time(10)
         if (self.get_parameter("ARSPD_USE") == 0):
             self.progress("Faulty Sensor Disabled")
@@ -1743,14 +1743,14 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Airspeed Sensor Not Disabled")
         self.delay_sim_time(20)
         # simulate the effect of blockage partially clearing
-        self.set_parameter("ARSPD_RATIO",1.0)
+        self.set_parameter("ARSPD_RATIO", 1.0)
         self.delay_sim_time(60)
         if (self.get_parameter("ARSPD_USE") == 0):
             self.progress("Faulty Sensor Remains Disabled")
         else:
             raise NotAchievedException("Fault Sensor Re-Enabled")
         # simulate the effect of blockage fully clearing
-        self.set_parameter("ARSPD_RATIO",2.0)
+        self.set_parameter("ARSPD_RATIO", 2.0)
         self.delay_sim_time(60)
         if (self.get_parameter("ARSPD_USE") == 1):
             self.progress("Sensor Re-Enabled")
