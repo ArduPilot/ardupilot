@@ -11187,14 +11187,13 @@ switch value'''
     def read_message_via_mavlite(self, frsky, sport_to_mavlite):
         '''read bytes from frsky mavlite stream, trying to form up a mavlite
         message'''
-        self.drain_mav(quiet=True)
         tstart = self.get_sim_time()
+        timeout = 30 * self.speedup/10.0
+        if self.valgrind or self.callgrind:
+            timeout *= 10
         while True:
             self.drain_mav(quiet=True)
             tnow = self.get_sim_time_cached()
-            timeout = 30
-            if self.valgrind or self.callgrind:
-                timeout *= 10
             if tnow - tstart > timeout:
                 raise NotAchievedException("Did not get parameter via mavlite")
             frsky.update()
@@ -11205,11 +11204,10 @@ switch value'''
                 return message
 
     def read_parameter_via_mavlite(self, frsky, sport_to_mavlite, name):
-        self.drain_mav(quiet=True)
         tstart = self.get_sim_time()
         while True:
             tnow = self.get_sim_time_cached()
-            if tnow - tstart > 30:
+            if tnow - tstart > 30 * self.speedup / 10.0:
                 raise NotAchievedException("Did not get parameter via mavlite")
             message = self.read_message_via_mavlite(frsky, sport_to_mavlite)
             if message.msgid != mavutil.mavlink.MAVLINK_MSG_ID_PARAM_VALUE:
