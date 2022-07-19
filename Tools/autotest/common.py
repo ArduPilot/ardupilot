@@ -11146,6 +11146,8 @@ switch value'''
             }
             self.test_frsky_passthrough_do_wants(frsky, wants)
             self.zero_throttle()
+            self.progress("Wait for vehicle to slow down")
+            self.wait_groundspeed(0, 0.3)
             self.disarm_vehicle()
 
         self.progress("Counts of sensor_id polls sent:")
