@@ -38,7 +38,7 @@ void GCS::get_sensor_status_flags(uint32_t &present,
 
 MissionItemProtocol_Waypoints *GCS::_missionitemprotocol_waypoints;
 MissionItemProtocol_Rally *GCS::_missionitemprotocol_rally;
-#if AC_FENCE
+#if AP_FENCE_ENABLED
 MissionItemProtocol_Fence *GCS::_missionitemprotocol_fence;
 #endif
 
@@ -269,7 +269,7 @@ void GCS::update_sensor_status_flags()
     }
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH) && AC_FENCE
+#if !defined(HAL_BUILD_AP_PERIPH) && AP_FENCE_ENABLED
     const AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         if (fence->sys_status_enabled()) {
