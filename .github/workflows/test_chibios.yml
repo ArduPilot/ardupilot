@@ -28,7 +28,8 @@ jobs:
             fmuv3,
             revo-mini,
             MatekF405-Wing,
-            configure-all
+            configure-all,
+            build-options-defaults-test
         ]
         toolchain: [
             chibios,  # GCC-6
