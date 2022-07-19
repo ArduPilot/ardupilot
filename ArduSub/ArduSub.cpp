@@ -244,7 +244,7 @@ void Sub::three_hz_loop()
     // check if we've lost terrain data
     failsafe_terrain_check();
 
-#if AC_FENCE == ENABLED
+#if AP_FENCE_ENABLED
     // check if we have breached a fence
     fence_check();
 #endif // AP_FENCE_ENABLED
