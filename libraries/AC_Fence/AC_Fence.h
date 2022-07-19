@@ -1,16 +1,14 @@
 #pragma once
 
+#include "AC_Fence_config.h"
+
+#if AP_FENCE_ENABLED
+
 #include <inttypes.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_Fence/AC_PolyFence_loader.h>
-
-#ifndef AC_FENCE
-#define AC_FENCE 1
-#endif
-
-#if AC_FENCE
 
 // bit masks for enabled fence types.  Used for TYPE parameter
 #define AC_FENCE_TYPE_ALT_MAX                       1       // high alt fence which usually initiates an RTL
@@ -231,4 +229,4 @@ namespace AP {
     AC_Fence *fence();
 };
 
-#endif // AC_FENCE
+#endif // AP_FENCE_ENABLED

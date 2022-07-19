@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AC_Fence_config.h"
+
+#if AP_FENCE_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
@@ -434,3 +438,5 @@ private:
 
     uint16_t fence_storage_space_required(const AC_PolyFenceItem *new_items, uint16_t count);
 };
+
+#endif // AP_FENCE_ENABLED
