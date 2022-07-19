@@ -843,7 +843,7 @@ void Rover::load_parameters(void)
                                                       AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_ARMED);
 #endif
 
-#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AC_FENCE
+#if AP_AIRSPEED_ENABLED | AP_AIS_ENABLED | AP_FENCE_ENABLED
     // Find G2's Top Level Key
     AP_Param::ConversionInfo info;
     if (!AP_Param::find_top_level_key_by_pointer(&g2, info.old_key)) {
@@ -864,7 +864,7 @@ void Rover::load_parameters(void)
 #endif
 
 // PARAMETER_CONVERSION - Added: Mar-2022
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AP_Param::convert_class(info.old_key, &fence, fence.var_info, 17, 4049, false);
 #endif
 }
