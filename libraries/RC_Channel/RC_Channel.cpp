@@ -777,7 +777,7 @@ void RC_Channel::do_aux_function_runcam_osd_control(const AuxSwitchPos ch_flag)
 // enable or disable the fence
 void RC_Channel::do_aux_function_fence(const AuxSwitchPos ch_flag)
 {
-#if AC_FENCE
+#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return;
