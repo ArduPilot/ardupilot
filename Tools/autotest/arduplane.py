@@ -3897,9 +3897,13 @@ function'''
              "Test FrSky SPort mode",
              self.test_frsky_sport),
 
-            ("FRSkyPassThrough",
-             "Test FrSky PassThrough serial output",
-             self.test_frsky_passthrough),
+            ("FRSkyPassThroughStatustext",
+             "Test FrSky PassThrough serial output - statustext",
+             self.FRSkyPassThroughStatustext),
+
+            ("FRSkyPassThroughSensorIDs",
+             "Test FrSky PassThrough serial output - sensor ids",
+             self.FRSkyPassThroughSensorIDs),
 
             ("FRSkyMAVlite",
              "Test FrSky MAVlite serial output",
