@@ -18,7 +18,7 @@
 
 #include <AC_Fence/AC_Fence.h>
 
-#if AC_FENCE
+#if AP_FENCE_ENABLED
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Logger/AP_Logger.h>
@@ -962,5 +962,5 @@ bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vec
     // we should never reach here but just in case
     return false;
 }
-#endif // AC_FENCE
+#endif // AP_FENCE_ENABLED
 
