@@ -93,14 +93,14 @@ void AP_OAPathPlanner::init()
         }
         break;
     case OA_PATHPLAN_DIJKSTRA:
-#if AC_FENCE
+#if AP_FENCE_ENABLED
         if (_oadijkstra == nullptr) {
             _oadijkstra = new AP_OADijkstra(_options);
         }
 #endif
         break;
     case OA_PATHPLAN_DJIKSTRA_BENDYRULER:
-#if AC_FENCE
+#if AP_FENCE_ENABLED
         if (_oadijkstra == nullptr) {
             _oadijkstra = new AP_OADijkstra(_options);
         }
@@ -302,7 +302,7 @@ void AP_OAPathPlanner::avoidance_thread()
         }
 
         case OA_PATHPLAN_DIJKSTRA: {
-#if AC_FENCE
+#if AP_FENCE_ENABLED
             if (_oadijkstra == nullptr) {
                 continue;
             }
@@ -338,7 +338,7 @@ void AP_OAPathPlanner::avoidance_thread()
                 break;
             } else {
                 // cleared all obstacles, trigger Dijkstra's to calculate path based on current deviated position  
-#if AC_FENCE
+#if AP_FENCE_ENABLED
                 if (proximity_only == false) {
                     _oadijkstra->recalculate_path();
                 }
@@ -346,7 +346,7 @@ void AP_OAPathPlanner::avoidance_thread()
                 // only use proximity avoidance now for BendyRuler
                 proximity_only = true;
             }
-#if AC_FENCE
+#if AP_FENCE_ENABLED
             _oadijkstra->set_fence_margin(_margin_max);
             const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc, avoidance_request2.destination, origin_new, destination_new);
             switch (dijkstra_state) {
