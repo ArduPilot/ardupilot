@@ -22,7 +22,8 @@ class TestBuildOptions(object):
                  do_step_disable_none=False,
                  do_step_disable_defaults=True,
                  do_step_disable_in_turn=True,
-                 build_targets=None):
+                 build_targets=None,
+                 board="DevEBoxH7v2"):
         self.sizes_nothing_disabled = None
         self.match_glob = match_glob
         self.do_step_disable_all = do_step_disable_all
@@ -32,6 +33,7 @@ class TestBuildOptions(object):
         self.build_targets = build_targets
         if self.build_targets is None:
             self.build_targets = self.all_targets()
+        self._board = board
 
     @staticmethod
     def all_targets():
@@ -87,7 +89,7 @@ class TestBuildOptions(object):
 
     def board(self):
         '''returns board to build for'''
-        return "BeastH7v2"
+        return self._board
 
     def test_compile_with_defines(self, defines):
         extra_hwdef_filepath = "/tmp/extra.hwdef"
@@ -202,6 +204,10 @@ if __name__ == '__main__':
                       choices=TestBuildOptions.all_targets(),
                       action='append',
                       help='vehicle targets to build')
+    parser.add_option("--board",
+                      type='string',
+                      default="DevEBoxH7v2",
+                      help='board to build for')
 
     opts, args = parser.parse_args()
 
@@ -212,5 +218,6 @@ if __name__ == '__main__':
         do_step_disable_defaults=not opts.no_run_with_defaults,
         do_step_disable_in_turn=not opts.no_disable_in_turn,
         build_targets=opts.build_targets,
+        board=opts.board,
     )
     tbo.run()
