@@ -447,7 +447,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 
     // in the first call here, if a speedup option is specified, overwrite it
     if (is_equal(last_speedup, -1.0f) && !is_equal(get_speedup(), 1.0f)) {
-        sitl->speedup = get_speedup();
+        sitl->speedup.set(get_speedup());
     }
     
     if (!is_equal(last_speedup, float(sitl->speedup)) && sitl->speedup > 0) {
@@ -1031,7 +1031,7 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
         body_accel.z += sitl->shove.z;
     } else {
         sitl->shove.start_ms = 0;
-        sitl->shove.t = 0;
+        sitl->shove.t.set(0);
     }
 }
 
@@ -1120,7 +1120,7 @@ void Aircraft::add_twist_forces(Vector3f &rot_accel)
         rot_accel.z += sitl->twist.z;
     } else {
         sitl->twist.start_ms = 0;
-        sitl->twist.t = 0;
+        sitl->twist.t.set(0);
     }
 }
 

@@ -194,8 +194,8 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
 
 void SIM_Precland::set_default_location(float lat, float lon, int16_t yaw) {
     if (is_zero(_origin_lat) && is_zero(_origin_lon)) {
-        _origin_lat = lat;
-        _origin_lon = lon;
-        _orient_yaw = yaw;
+        _origin_lat.set(lat);
+        _origin_lon.set(lon);
+        _orient_yaw.set(yaw);
     }
 }
