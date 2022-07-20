@@ -535,7 +535,7 @@ public:
 
     // convert a vector from body to earth frame
     Vector3f body_to_earth(const Vector3f &v) const {
-        return v * get_rotation_body_to_ned();
+        return get_rotation_body_to_ned() * v;
     }
 
     // convert a vector from earth to body frame
