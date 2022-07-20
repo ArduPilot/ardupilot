@@ -19,7 +19,7 @@
    ICM-40609
    ICM-42688
    ICM-42605
-   ICM-40605
+   ICM-40605 - EOL
    IIM-42652
    ICM-42670
 
@@ -32,6 +32,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_Invensensev3.h"
 #include <utility>
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,6 +50,9 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 #define INV3REG_PWR_MGMT0     0x4e
 #define INV3REG_GYRO_CONFIG0  0x4f
 #define INV3REG_ACCEL_CONFIG0 0x50
+#define INV3REG_GYRO_CONFIG1  0x51
+#define INV3REG_GYRO_ACCEL_CONFIG0 0x52
+#define INV3REG_ACCEL_CONFIG1 0x53
 #define INV3REG_FIFO_CONFIG1  0x5f
 #define INV3REG_FIFO_CONFIG2  0x60
 #define INV3REG_FIFO_CONFIG3  0x61
@@ -219,17 +223,21 @@ void AP_InertialSensor_Invensensev3::start()
     // always use FIFO
     fifo_reset();
 
-    if (!_imu.register_gyro(gyro_instance, expected_ODR, dev->get_bus_id_devtype(devtype)) ||
-        !_imu.register_accel(accel_instance, expected_ODR, dev->get_bus_id_devtype(devtype))) {
+    // setup on-sensor filtering and scaling and backend rate
+    if (inv3_type == Invensensev3_Type::ICM42670) {
+        set_filter_and_scaling_icm42670();
+    } else {
+        set_filter_and_scaling();
+    }
+
+    if (!_imu.register_gyro(gyro_instance, backend_rate_hz, dev->get_bus_id_devtype(devtype)) ||
+        !_imu.register_accel(accel_instance, backend_rate_hz, dev->get_bus_id_devtype(devtype))) {
         return;
     }
 
-    // setup on-sensor filtering and scaling
-    set_filter_and_scaling();
-
     // update backend sample rate
-    _set_accel_raw_sample_rate(accel_instance, expected_ODR);
-    _set_gyro_raw_sample_rate(gyro_instance, expected_ODR);
+    _set_accel_raw_sample_rate(accel_instance, backend_rate_hz);
+    _set_gyro_raw_sample_rate(gyro_instance, backend_rate_hz);
 
     // indicate what multiplier is appropriate for the sensors'
     // readings to fit them into an int16_t:
@@ -248,8 +256,18 @@ void AP_InertialSensor_Invensensev3::start()
         AP_HAL::panic("Invensensev3: Unable to allocate FIFO buffer");
     }
 
-    // start the timer process to read samples
-    dev->register_periodic_callback(1e6 / expected_ODR, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev3::read_fifo, void));
+    // start the timer process to read samples, using the fastest rate avilable
+    dev->register_periodic_callback(1000000UL / backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev3::read_fifo, void));
+}
+
+// get a startup banner to output to the GCS
+bool AP_InertialSensor_Invensensev3::get_output_banner(char* banner, uint8_t banner_len) {
+    if (fast_sampling) {
+        snprintf(banner, banner_len, "IMU%u: fast sampling enabled %.1fkHz",
+            gyro_instance, backend_rate_hz * 0.001);
+        return true;
+    }
+    return false;
 }
 
 /*
@@ -420,32 +438,176 @@ void AP_InertialSensor_Invensensev3::register_write_bank(uint8_t bank, uint8_t r
 
 /*
   set the filter frequencies and scaling
+
+  The AAF for gyros needs to be high enough to avoid group delay and low enough to have
+  (ideally) 40dB at the nyquist frequency so that noise above this is not folded into the
+  range seen by ArduPilot. A reasonable approximation for the former is 1Khz and for the latter
+  1/4 of the sample frequency, so for 1/4 sample frequency > 1Khz we pick 1Khz and for 1/4 sample
+  frequency < 1Khz we use 1/4 sample frequency.
+
+  The AAF for accels is set lower to minimise noise and clipping. The constraint is that the
+  group delay between gyros and accels should be <5ms to avoid inertial nav errors.
+
+  The UI filter block cannot be disabled and is fixed at ODR/4. This is a 2p filter by default
+  (as is the AAF). Since the order of the UI filter does not appear to significantly affect
+  group delay at higher ODRs it is left at the default. The group delay of the AAF is not documented,
+  but we assume it is similar to the UI 2p performance:
+
+  2Khz  - 0.2ms
+  1Khz  - 0.4ms
+  666Hz - 0.6ms
+  500Hz - 0.8ms
+  333Hz - 2.0ms
+  190Hz - 2.4ms
+
+  Since the UI group delay is the same for both accels and gyros we only need to consider the
+  difference in group delay for the AAFs. At the highest ODR of 4Khz or 8Khz the group delay for
+  gyros will be 0.4ms thus the accel AAF can safely be set to ~190Hz.
  */
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
 {
-    if (inv3_type == Invensensev3_Type::ICM42670) {
-        // use low-noise mode
-        register_write(INV3REG_70_PWR_MGMT0, 0x0f);
-        hal.scheduler->delay_microseconds(300);
+    // 1KHz by default
+    backend_rate_hz = 1000;
+    uint8_t odr_config = 0x06;
 
-        // setup gyro for 1.6kHz, with 180Hz LPF
-        register_write(INV3REG_70_GYRO_CONFIG0, 0x05);
-        register_write(INV3REG_70_GYRO_CONFIG1, 0x01);
+    // AAF at ~1/4 of 1Khz by default for gyros- 258Hz
+    // AAF at 213Hz for accels
+    uint8_t aaf_delt = 6, accel_aaf_delt = 5;
+    uint16_t aaf_deltsqr = 36, accel_aaf_deltsqr = 25;
+    uint8_t aaf_bitshift = 10, accel_aaf_bitshift = 10;
 
-        // setup accel for 1.6kHz, with 180Hz LPF
-        register_write(INV3REG_70_ACCEL_CONFIG0, 0x05);
-        register_write(INV3REG_70_ACCEL_CONFIG1, 0x01);
-    } else {
-        // enable gyro and accel in low-noise modes
-        register_write(INV3REG_PWR_MGMT0, 0x0F);
-        hal.scheduler->delay_microseconds(300);
-
-        // setup gyro for 2kHz
-        register_write(INV3REG_GYRO_CONFIG0, 0x05);
-
-        // setup accel for 2kHz
-        register_write(INV3REG_ACCEL_CONFIG0, 0x05);
+    // limited filtering on ICM-42605
+    if (inv3_type == Invensensev3_Type::ICM42605) {
+        // 249Hz AAF gyros
+        aaf_delt = 21;
+        aaf_deltsqr = 440;
+        aaf_bitshift = 6;
+        // 184Hz AAF accels
+        accel_aaf_delt = 16;
+        accel_aaf_deltsqr = 256;
+        accel_aaf_bitshift = 7;
     }
+
+    // checked for
+    // ICM-40609
+    // ICM-42688
+    // ICM-42605
+    // IIM-42652
+    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
+        fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
+
+        if (fast_sampling) {
+            // constrain the gyro rate to be at least the loop rate
+            uint8_t loop_limit = 1;
+            if (get_loop_rate_hz() > 1000) {
+                loop_limit = 2;
+            }
+            if (get_loop_rate_hz() > 2000) {
+                loop_limit = 4;
+            }
+            // constrain the gyro rate to be a 2^N multiple
+            uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+
+            // calculate rate we will be giving samples to the backend
+            backend_rate_hz *= fast_sampling_rate;
+
+            // limited filtering on ICM-42605
+            if (inv3_type == Invensensev3_Type::ICM42605) {
+                switch (fast_sampling_rate) {
+                    case 2: // 2KHz
+                        odr_config = 0x05;
+                        // 507Hz AAF
+                        aaf_delt = 47;
+                        aaf_deltsqr = 2208;
+                        aaf_bitshift = 4;
+                        break;
+                    case 4: // 4KHz
+                        // 995Hz AAF
+                        aaf_delt = 63;
+                        aaf_deltsqr = 3968;
+                        aaf_bitshift = 3;
+                        odr_config = 0x04;
+                        break;
+                    case 8: // 8Khz
+                        // 995Hz AAF
+                        aaf_delt = 63;
+                        aaf_deltsqr = 3968;
+                        aaf_bitshift = 3;
+                        odr_config = 0x03;
+                        break;
+                    default: // 1Khz, 334Hz AAF
+                        break;
+                }
+            } else {
+                // ICM-42688 / ICM-40609 / IIM-426525
+                switch (fast_sampling_rate) {
+                    case 2: // 2KHz
+                        odr_config = 0x05;
+                        // 536Hz AAF
+                        aaf_delt = 12;
+                        aaf_deltsqr = 144;
+                        aaf_bitshift = 8;
+                        break;
+                    case 4: // 4KHz
+                        odr_config = 0x04;
+                        // 997Hz AAF
+                        aaf_delt = 21;
+                        aaf_deltsqr = 440;
+                        aaf_bitshift = 6;
+                        break;
+                    case 8: // 8Khz
+                        odr_config = 0x03;
+                        // 997Hz AAF
+                        aaf_delt = 21;
+                        aaf_deltsqr = 440;
+                        aaf_bitshift = 6;
+                        break;
+                    default: // 1KHz, 348Hz AAF
+                        break;
+                }
+            }
+        }
+    }
+
+    // enable gyro and accel in low-noise modes
+    register_write(INV3REG_PWR_MGMT0, 0x0F);
+    hal.scheduler->delay_microseconds(300);
+
+    // setup gyro for backend rate
+    register_write(INV3REG_GYRO_CONFIG0, odr_config);
+    // setup accel for backend rate
+    register_write(INV3REG_ACCEL_CONFIG0, odr_config);
+
+    // setup anti-alias filters for gyro at 1/4 ODR, notch left at default
+    register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC3, aaf_delt);   // GYRO_AAF_DELT
+    register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC4, (aaf_deltsqr & 0xFF)); // GYRO_AAF_DELTSQR
+    register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC5, ((aaf_bitshift<<4) & 0xF0) | ((aaf_deltsqr>>8) & 0x0F)); // GYRO_AAF_BITSHIFT | GYRO_AAF_DELTSQR
+
+    // setup accel AAF at fixed ~500Hz
+    register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC2, accel_aaf_delt<<1); // ACCEL_AAF_DELT | enabled bit
+    register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC3, (accel_aaf_deltsqr & 0xFF)); // ACCEL_AAF_DELTSQR
+    register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC4, ((accel_aaf_bitshift<<4) & 0xF0) | ((accel_aaf_deltsqr>>8) & 0x0F)); // ACCEL_AAF_BITSHIFT | ACCEL_AAF_DELTSQR
+}
+
+/*
+  set the filter frequencies and scaling for the ICM-42670
+ */
+void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
+{
+    backend_rate_hz = 1600;
+    // use low-noise mode
+    register_write(INV3REG_70_PWR_MGMT0, 0x0f);
+    hal.scheduler->delay_microseconds(300);
+
+    // setup gyro for 1.6kHz, 2000dps range
+    register_write(INV3REG_70_GYRO_CONFIG0, 0x05);
+    // Low noise mode uses an AAF with fixed bandwidth, so disable LPF
+    register_write(INV3REG_70_GYRO_CONFIG1, 0x30);
+
+    // setup accel for 1.6kHz, 16g range
+    register_write(INV3REG_70_ACCEL_CONFIG0, 0x05);
+    // AAF is not available for accels, so LPF at 180Hz
+    register_write(INV3REG_70_ACCEL_CONFIG1, 0x01);
 }
 
 /*
@@ -454,7 +616,6 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
 bool AP_InertialSensor_Invensensev3::check_whoami(void)
 {
     uint8_t whoami = register_read(INV3REG_WHOAMI);
-    expected_ODR = 2000;
 
     switch (whoami) {
     case INV3_ID_ICM40609:
@@ -480,7 +641,6 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_ICM42670:
         inv3_type = Invensensev3_Type::ICM42670;
         accel_scale = (GRAVITY_MSS / 2048);
-        expected_ODR = 1600;
         return true;
     }
     // not a value WHOAMI result
@@ -542,16 +702,6 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         
         // little-endian, fifo count in records
         register_write(INV3REG_70_INTF_CONFIG0, 0x40, true);
-    }
-    if (inv3_type == Invensensev3_Type::ICM42688) {
-        // setup anti-alias filters for 488Hz on gyro and accel, notch left at default
-        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC3, 11);   // GYRO_AAF_DELT
-        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC4, 122); // GYRO_AAF_DELTSQR
-        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC5, 0x80); // GYRO_AAF_BITSHIFT&GYRO_AAF_DELTSQR
-
-        register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC2, 11U<<1);
-        register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC3, 122);
-        register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC4, 0x80);
     }
 
     return true;
