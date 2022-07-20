@@ -8827,29 +8827,36 @@ Also, ignores heartbeats not from our target system'''
 
         # we should find at least one Armed event and one disarmed
         # event, and at least one ARM message for arm and disarm
-        self.progress("Checking for an arm event")
-        dfreader = self.dfreader_for_current_onboard_log()
-        m = dfreader.recv_match(type="EV", condition="EV.Id==10") # armed
-        if m is None:
-            raise NotAchievedException("Did not find an Armed EV message")
+        wants = set([
+            ("Armed EV message",  "EV", lambda e : e.Id == 10),
+            ("Disarmed EV message",  "EV", lambda e : e.Id == 11),
+            ("Armed ARM message",  "ARM", lambda a : a.ArmState == 1),
+            ("Disarmed ARM message",  "ARM", lambda a : a.ArmState == 0),
+        ])
 
-        self.progress("Checking for a disarm event")
         dfreader = self.dfreader_for_current_onboard_log()
-        m = dfreader.recv_match(type="EV", condition="EV.Id==11") # disarmed
-        if m is None:
-            raise NotAchievedException("Did not find a disarmed EV message")
+        types = set()
+        for (name, msgtype, l) in wants:
+            types.add(msgtype)
 
-        self.progress("Checking for ARM.ArmState==1")
-        dfreader = self.dfreader_for_current_onboard_log()
-        m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==1")
-        if m is None:
-            raise NotAchievedException("Did not find a armed ARM message")
+        while True:
+            m = dfreader.recv_match(type=types)
+            if m is None:
+                break
+            wantscopy = copy.copy(wants)
+            for want in wantscopy:
+                (name, msgtype, l) = want
+                if m.get_type() != msgtype:
+                    continue
+                if l(m):
+                    self.progress("Found %s" % name)
+                    wants.discard(want)
+                    if len(wants) == 0:
+                        break
 
-        self.progress("Checking for ARM.ArmState==0")
-        dfreader = self.dfreader_for_current_onboard_log()
-        m = dfreader.recv_match(type="ARM", condition="ARM.ArmState==0")
-        if m is None:
-            raise NotAchievedException("Did not find a disarmed ARM message")
+        if len(wants):
+            msg = ", ".join([x[0] for x in wants])
+            raise NotAchievedException("Did not find (%s)" % msg)
 
         self.progress("ALL PASS")
     # TODO : Test arming magic;
