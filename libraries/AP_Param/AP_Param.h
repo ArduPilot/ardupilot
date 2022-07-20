@@ -973,13 +973,6 @@ public:
         return _value;
     }
 
-    /// Copy assignment from T is equivalent to ::set.
-    ///
-    AP_ParamV<T,PT>& operator=(const T &v) {
-        _value = v;
-        return *this;
-    }
-
 protected:
     T        _value;
 };
