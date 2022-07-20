@@ -369,6 +369,7 @@ userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MA
 
 include AP_RPM/AP_RPM.h
 singleton AP_RPM rename RPM
+singleton AP_RPM depends AP_RPM_ENABLED
 singleton AP_RPM method get_rpm boolean uint8_t 0 RPM_MAX_INSTANCES float'Null
 
 include AP_Button/AP_Button.h
