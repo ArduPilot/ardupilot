@@ -5041,23 +5041,24 @@ class AutoTest(ABC):
             self.start_SITL(wipe=False)
             self.set_streamrate(self.sitl_streamrate())
 
-    def context_start_custom_binary(self, extra_defines={}):
-        # grab copy of current binary:
-        context = self.context_get()
-        if getattr(context, "old_binary", None) is not None:
-            raise ValueError("Not nestable at the moment")
-        with open(self.binary, "rb") as f:
-            self.old_binary = f.read()
-            f.close()
-        build_opts = copy.copy(self.build_opts)
-        build_opts["extra_defines"] = extra_defines
-        util.build_SITL(
-            'bin/arducopter', # FIXME!
-            **build_opts,
-        )
-        self.stop_SITL()
-        self.start_SITL(wipe=False)
-        self.set_streamrate(self.sitl_streamrate())
+    # the following method is broken under Python2; can't **build_opts
+    # def context_start_custom_binary(self, extra_defines={}):
+    #     # grab copy of current binary:
+    #     context = self.context_get()
+    #     if getattr(context, "old_binary", None) is not None:
+    #         raise ValueError("Not nestable at the moment")
+    #     with open(self.binary, "rb") as f:
+    #         self.old_binary = f.read()
+    #         f.close()
+    #     build_opts = copy.copy(self.build_opts)
+    #     build_opts["extra_defines"] = extra_defines
+    #     util.build_SITL(
+    #         'bin/arducopter', # FIXME!
+    #         **build_opts,
+    #     )
+    #     self.stop_SITL()
+    #     self.start_SITL(wipe=False)
+    #     self.set_streamrate(self.sitl_streamrate())
 
     class Context(object):
         def __init__(self, testsuite):
@@ -11088,7 +11089,8 @@ switch value'''
                 m = None
                 text = text.rstrip("\0")
                 self.progress("Received frsky text (%s)" % (text,))
-                self.progress("context texts: %s" % str([x.text for x in self.context_collection('STATUSTEXT')]))
+                self.progress("context texts: %s" %
+                              str([st.text for st in self.context_collection('STATUSTEXT')]))
                 m = self.statustext_in_collections(text)
                 if m is not None:
                     want_sev = m.severity
@@ -11101,7 +11103,7 @@ switch value'''
             received_statustexts = self.context_collection('STATUSTEXT')
             if len(received_statustexts) != last_len_received_statustexts:
                 last_len_received_statustexts = len(received_statustexts)
-                self.progress("received statustexts: %s" % str([x.text for x in received_statustexts]))
+                self.progress("received statustexts: %s" % str([st.text for st in received_statustexts]))
                 self.progress("received frsky texts: %s" % str(received_frsky_texts))
                 for (want_sev, received_text) in received_frsky_texts:
                     for m in received_statustexts:
