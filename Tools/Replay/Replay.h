@@ -31,7 +31,7 @@ class ReplayVehicle : public AP_Vehicle {
 public:
     friend class Replay;
 
-    ReplayVehicle() { unused = -1; }
+    ReplayVehicle() { unused.set(-1); }
     // HAL::Callbacks implementation.
     void load_parameters(void) override;
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
