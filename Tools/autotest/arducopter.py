@@ -4529,7 +4529,15 @@ class AutoTestCopter(AutoTest):
             "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
         })
 
-    def test_mount(self):
+    def setup_mavlink_mount(self, roll_servo=5, pitch_servo=6, yaw_servo=7):
+        '''configure a rpy servo mount; caller responsible for required rebooting'''
+        self.progress("Setting up mavlink mount")
+        self.set_parameters({
+            "MNT_TYPE": 4,
+        })
+        self.customise_SITL_commandline(["--gimbal"])
+
+    def test_mount(self, mount_type='servo'):
         ex = None
         self.context_push()
         old_srcSystem = self.mav.mav.srcSystem
@@ -4541,7 +4549,11 @@ class AutoTestCopter(AutoTest):
             too long.  This is probably a function of --speedup'''
             self.set_parameter("FS_GCS_ENABLE", 0)
 
-            self.setup_servo_mount()
+            if mount_type == 'servo':
+                self.setup_servo_mount()
+            elif mount_type == 'mavlink':
+                self.setup_mavlink_mount()
+
             self.reboot_sitl() # to handle MNT_TYPE changing
 
             # make sure we're getting mount status and gimbal reports
@@ -4553,9 +4565,7 @@ class AutoTestCopter(AutoTest):
                                 timeout=5)
 
             # test pitch isn't stabilising:
-            m = self.mav.recv_match(type='MOUNT_STATUS',
-                                    blocking=True,
-                                    timeout=5)
+            m = self.assert_receive_message('MOUNT_STATUS', timeout=5)
 
             if m.mount_mode != mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING:
                 raise NotAchievedException("Mount_Mode: Default Not MAV_MOUNT_MODE_RC_TARGETING")
@@ -9003,6 +9013,10 @@ class AutoTestCopter(AutoTest):
             ("Mount",
              "Test Camera/Antenna Mount",
              self.test_mount),  # 74s
+
+            ("MAVLinkMount",
+             "Test Camera/Antenna MAVLinkMount",
+             lambda : self.test_mount(mount_type='mavlink')),  # 74s
 
             ("MountYawVehicleForMountROI",
              "Test Camera/Antenna Mount vehicle yawing for ROI",
