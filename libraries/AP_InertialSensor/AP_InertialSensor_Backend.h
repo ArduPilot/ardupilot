@@ -122,6 +122,7 @@ public:
         DEVTYPE_INS_IIM42652 = 0x37,
         DEVTYPE_BMI270       = 0x38,
         DEVTYPE_INS_BMI085   = 0x39,
+        DEVTYPE_INS_ICM42670 = 0x3A,
     };
 
 protected:
