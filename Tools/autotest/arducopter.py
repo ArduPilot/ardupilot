@@ -4778,7 +4778,6 @@ class AutoTestCopter(AutoTest):
                 raise e
 
             self.progress("Testing mount ROI behaviour")
-            self.drain_mav_unparsed()
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             start = self.mav.location()
             self.progress("start=%s" % str(start))
@@ -6703,7 +6702,6 @@ class AutoTestCopter(AutoTest):
         self.wait_statustext("requested state is not RUN", timeout=60)
 
         self.set_message_rate_hz("GENERATOR_STATUS", 10)
-        self.drain_mav_unparsed()
 
         self.wait_generator_speed_and_state(0, 0, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_OFF)
 
