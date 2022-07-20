@@ -990,8 +990,8 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Did not go via circle mode")
         self.progress("Ensure we've had our throttle squashed to 950")
         self.wait_rc_channel_value(3, 950)
-        self.drain_mav_unparsed()
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.do_timesync_roundtrip()
+        m = self.assert_receive_message('SYS_STATUS')
         self.progress("Got (%s)" % str(m))
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
@@ -1004,10 +1004,10 @@ class AutoTestPlane(AutoTest):
 #        if (m.onboard_control_sensors_health & receiver_bit):
 #            raise NotAchievedException("Sensor healthy when it shouldn't be")
         self.set_parameter("SIM_RC_FAIL", 0)
-        self.drain_mav_unparsed()
         # have to allow time for RC to be fetched from SITL
         self.delay_sim_time(0.5)
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.do_timesync_roundtrip()
+        m = self.assert_receive_message('SYS_STATUS')
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
@@ -1026,8 +1026,8 @@ class AutoTestPlane(AutoTest):
         if (not self.get_mode_from_mode_mapping("CIRCLE") in
                 [x.custom_mode for x in self.context_stop_collecting("HEARTBEAT")]):
             raise NotAchievedException("Did not go via circle mode")
-        self.drain_mav_unparsed()
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.do_timesync_roundtrip()
+        m = self.assert_receive_message('SYS_STATUS')
         self.progress("Got (%s)" % str(m))
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
@@ -1043,8 +1043,8 @@ class AutoTestPlane(AutoTest):
         # have to allow time for RC to be fetched from SITL
         self.progress("Giving receiver time to recover")
         self.delay_sim_time(0.5)
-        self.drain_mav_unparsed()
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
+        self.do_timesync_roundtrip()
+        m = self.assert_receive_message('SYS_STATUS')
         self.progress("Testing receiver enabled")
         if (not (m.onboard_control_sensors_enabled & receiver_bit)):
             raise NotAchievedException("Receiver not enabled")
@@ -1146,12 +1146,11 @@ class AutoTestPlane(AutoTest):
         self.set_parameter("SIM_RC_FAIL", 2) # throttle-to-950
         self.wait_mode("CIRCLE")
         self.delay_sim_time(1) # give
-        self.drain_mav_unparsed()
+        self.do_timesync_roundtrip()
 
         self.progress("Checking fence is OK after receiver failure (bind-values)")
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
-        m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
-        self.progress("Got (%s)" % str(m))
+        m = self.assert_receive_message('SYS_STATUS')
         if (not (m.onboard_control_sensors_enabled & fence_bit)):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
@@ -1178,7 +1177,7 @@ class AutoTestPlane(AutoTest):
 
     def assert_fence_sys_status(self, present, enabled, health):
         self.delay_sim_time(1)
-        self.drain_mav_unparsed()
+        self.do_timesync_roundtrip()
         m = self.assert_receive_message('SYS_STATUS', timeout=1)
         tests = [
             ("present", present, m.onboard_control_sensors_present),
@@ -1246,7 +1245,6 @@ class AutoTestPlane(AutoTest):
             m = self.mav.recv_match(type='FENCE_STATUS', blocking=True, timeout=2)
             if m is not None:
                 raise NotAchievedException("Got FENCE_STATUS unexpectedly")
-            self.drain_mav_unparsed()
             self.set_parameter("FENCE_ACTION", 0) # report only
             self.assert_fence_sys_status(True, False, True)
             self.set_parameter("FENCE_ACTION", 1) # RTL

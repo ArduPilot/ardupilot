@@ -2391,7 +2391,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def click_three_in(self, mavproxy, target_system=1, target_component=1):
         mavproxy.send('rally clear\n')
-        self.drain_mav_unparsed()
+        self.drain_mav()
         # there are race conditions in MAVProxy.  Beware.
         mavproxy.send("click 1.0 1.0\n")
         mavproxy.send("rally add\n")
@@ -2427,7 +2427,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         lat = float(lat_s)
         lng = float(lng_s)
         mavproxy.send('click %s %s\n' % (lat_s, lng_s))
-        self.drain_mav_unparsed()
+        self.drain_mav()
         mavproxy.send('rally add\n')
         self.assert_receive_mission_ack(mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
                                         target_system=255,
@@ -2634,9 +2634,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subsubtest("rally move")
 
         self.start_subsubtest("rally movemulti")
-        self.drain_mav_unparsed()
+        self.drain_mav()
         mavproxy.send('rally clear\n')
-        self.drain_mav_unparsed()
+        self.drain_mav()
         # there are race conditions in MAVProxy.  Beware.
         mavproxy.send("click 1.0 1.0\n")
         mavproxy.send("rally add\n")
@@ -2662,7 +2662,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # MAVProxy currently sends three separate items up.  That's
         # not great and I don't want to lock that behaviour in here.
         self.delay_sim_time(10)
-        self.drain_mav_unparsed()
         expected_moved_items = copy.copy(unmoved_items)
         expected_moved_items[0].x = 1.0 * 1e7
         expected_moved_items[0].y = 2.0 * 1e7
@@ -2681,7 +2680,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # MAVProxy currently sends three separate items up.  That's
         # not great and I don't want to lock that behaviour in here.
         self.delay_sim_time(10)
-        self.drain_mav_unparsed()
         expected_moved_items = copy.copy(unmoved_items)
         expected_moved_items[0].x = 3.0 * 1e7
         expected_moved_items[0].y = 1.0 * 1e7
@@ -2722,7 +2720,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Removing first in list")
         mavproxy.send("rally remove 1\n")
         self.delay_sim_time(5)
-        self.drain_mav_unparsed()
         self.assert_mission_count_on_link(
             self.mav,
             1,
@@ -2739,7 +2736,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Removing remaining item")
         mavproxy.send("rally remove 1\n")
         self.delay_sim_time(5)
-        self.drain_mav_unparsed()
         self.assert_mission_count_on_link(
             self.mav,
             0,
@@ -2781,7 +2777,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Removing first in list")
         mavproxy.send("rally remove 1\n")
         self.delay_sim_time(5)
-        self.drain_mav_unparsed()
         self.assert_mission_count_on_link(
             self.mav,
             2,
@@ -2801,10 +2796,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy.send("rally move 1\n")
         # move has already been tested, assume it works...
         self.delay_sim_time(5)
-        self.drain_mav_unparsed()
         mavproxy.send("rally undo\n")
         self.delay_sim_time(5)
-        self.drain_mav_unparsed()
         undone_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
         self.check_rally_items_same(pure_items, undone_items)
 
@@ -3446,7 +3439,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.delay_sim_time(1)
         if self.get_parameter("MIS_TOTAL") != 0:
             raise NotAchievedException("Failed to clear mission")
-        self.drain_mav_unparsed()
         m = self.assert_receive_message('MISSION_CURRENT', timeout=5)
         if m.seq != 0:
             raise NotAchievedException("Bad mission current")
