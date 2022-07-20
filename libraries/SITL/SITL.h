@@ -33,6 +33,7 @@ namespace SITL {
 enum class LedLayout {
     ROWS=0,
     LUMINOUSBEE=1,
+    LUA_LED_MATRIX_IMAGE=2,
 };
     
 struct vector3f_array {

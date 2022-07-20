@@ -40,6 +40,7 @@ bool SITL_SFML_LED::layout_size(SITL::LedLayout layout, uint16_t &xsize, uint16_
 {
     switch (layout) {
     case SITL::LedLayout::ROWS:
+        // (max LED strip size) x (max number of channels)
         xsize = MAX_LEDS;
         ysize = 16;
         break;
@@ -48,6 +49,12 @@ bool SITL_SFML_LED::layout_size(SITL::LedLayout layout, uint16_t &xsize, uint16_
         xsize = 5 + 3 + 5;
         ysize = 5 + 3 + 5;
         break;
+
+    case SITL::LedLayout::LUA_LED_MATRIX_IMAGE:
+        xsize = 7;
+        ysize = 7;
+        break;
+
     default:
         return false;
     }
@@ -105,6 +112,71 @@ bool SITL_SFML_LED::layout_pos(SITL::LedLayout layout, uint8_t chan, uint8_t led
             return false;
         }
         break;
+    case SITL::LedLayout::LUA_LED_MATRIX_IMAGE:
+        /*
+          The Lua scripting example LED_matrix_image.lua has
+          a 7x7 grid of LEDs arranged in diagonal strips on PWM8
+        */
+        if (chan != 7) {
+            return false;
+        }
+
+        static uint16_t index[49][2] = {
+          {0, 6}, //0
+          {1, 6}, //1
+          {0, 5}, //2
+          {0, 4}, //3
+          {1, 5}, //4 
+          {2, 6}, //5
+          {3, 6}, //6
+          {2, 5}, //7
+          {1, 4}, //8
+          {0, 3}, //9
+          {0, 2}, //10
+          {1, 3}, //11
+          {2, 4}, //12
+          {3, 5}, //13
+          {4, 6}, //14
+          {5, 6}, //15
+          {4, 5}, //16
+          {3, 4}, //17
+          {2, 3}, //18
+          {1, 2}, //19
+          {0, 1}, //20
+          {0, 0}, //21
+          {1, 1}, //22
+          {2, 2}, //23
+          {3, 3}, //24
+          {4, 4}, //25
+          {5, 5}, //26
+          {6, 6}, //27
+          {6, 5}, //28
+          {5, 4}, //29
+          {4, 3}, //30
+          {3, 2}, //31
+          {2, 1}, //32
+          {1, 0}, //33
+          {2, 0}, //34
+          {3, 1}, //35
+          {4, 2}, //36
+          {5, 3}, //37
+          {6, 4}, //38
+          {6, 3}, //39
+          {5, 2}, //40
+          {4, 1}, //41
+          {3, 0}, //42
+          {4, 0}, //43
+          {5, 1}, //44
+          {6, 2}, //45
+          {6, 1}, //46
+          {5, 0}, //47
+          {6, 0}  //48
+        };
+
+        xpos = index[led][0];
+        ypos = index[led][1];
+        break;
+
     default:
         return false;
     }
