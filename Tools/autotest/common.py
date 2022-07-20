@@ -2752,6 +2752,9 @@ class AutoTest(ABC):
             self.get_sim_time()
 
     def drain_mav(self, mav=None, unparsed=False, quiet=True):
+        '''parse all data available on connection mav (defaulting to
+        self.mav).  It is assumed that mav is connected to the normal
+        simulation'''
         if unparsed:
             return self.drain_mav_unparsed(quiet=quiet, mav=mav)
         if mav is None:
@@ -3995,7 +3998,7 @@ class AutoTest(ABC):
             # the following hack is to get around MAVProxy statustext deduping:
             while time.time() - self.last_wp_load < 3:
                 self.progress("Waiting for MAVProxy de-dupe timer to expire")
-                self.drain_mav_unparsed()
+                self.drain_mav()
                 time.sleep(0.1)
             mavproxy.send('wp load %s\n' % path)
             mavproxy.expect('Loaded ([0-9]+) waypoints from')
@@ -4508,7 +4511,6 @@ class AutoTest(ABC):
     def disarm_vehicle(self, timeout=60, force=False):
         """Disarm vehicle with mavlink disarm message."""
         self.progress("Disarm motors with MAVLink cmd")
-        self.drain_mav_unparsed()
         p2 = 0
         if force:
             p2 = 21196 # magic force disarm value
@@ -10433,7 +10435,7 @@ switch value'''
             "--uartE=tcp:6735", # GPS2 is NMEA....
             "--uartF=tcpclient:127.0.0.1:6735", # serial5 spews to localhost:6735
         ])
-        self.drain_mav_unparsed()
+        self.do_timesync_roundtrip()
         self.wait_gps_fix_type_gte(3)
         gps1 = self.mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=10)
         self.progress("gps1=(%s)" % str(gps1))
@@ -11113,7 +11115,7 @@ switch value'''
         self.wait_ready_to_arm()
 
         # we need to start the engine to get some RPM readings, we do it for plane only
-        self.drain_mav_unparsed()
+        self.drain_mav()
         # anything with a lambda in here needs a proper test written.
         # This, at least makes sure we're getting some of each
         # message.  These are ordered according to the wfq scheduler
@@ -11547,7 +11549,7 @@ switch value'''
 
         self.assert_current_onboard_log_contains_message("RPM")
 
-        self.drain_mav_unparsed()
+        self.drain_mav()
         # anything with a lambda in here needs a proper test written.
         # This, at least makes sure we're getting some of each
         # message.
@@ -11607,7 +11609,6 @@ switch value'''
         ])
         frsky = FRSkyD(("127.0.0.1", 6735))
         self.wait_ready_to_arm()
-        self.drain_mav_unparsed()
         m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=1)
         gpi_abs_alt = int((m.alt+500) / 1000) # mm -> m
 
@@ -11649,8 +11650,7 @@ switch value'''
 
             if have_alt and have_battery:
                 break
-
-            self.drain_mav_unparsed()
+            self.drain_mav()
 
     def test_ltm_g(self, ltm):
         g = ltm.g()
@@ -11730,7 +11730,6 @@ switch value'''
         ])
         ltm = LTM(("127.0.0.1", 6735))
         self.wait_ready_to_arm()
-        self.drain_mav_unparsed()
 
         wants = {
             "g": self.test_ltm_g,
@@ -11738,7 +11737,7 @@ switch value'''
             "s": self.test_ltm_s,
         }
 
-        tstart = self.get_sim_time_cached()
+        tstart = self.get_sim_time()
         while True:
             self.progress("Still wanting (%s)" %
                           ",".join([("%s" % x) for x in wants.keys()]))
@@ -11772,7 +11771,6 @@ switch value'''
         ])
         devo = DEVO(("127.0.0.1", 6735))
         self.wait_ready_to_arm()
-        self.drain_mav_unparsed()
         m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=1)
 
         tstart = self.get_sim_time_cached()
@@ -11844,15 +11842,13 @@ switch value'''
         ])
         msp = MSP_DJI(("127.0.0.1", 6735))
         self.wait_ready_to_arm()
-        self.drain_mav_unparsed()
 
-        tstart = self.get_sim_time_cached()
+        tstart = self.get_sim_time()
         while True:
             self.drain_mav()
             if self.get_sim_time_cached() - tstart > 10:
                 raise NotAchievedException("Did not get location")
             msp.update()
-            self.drain_mav_unparsed(quiet=True)
             try:
                 f = msp.get_frame(msp.FRAME_GPS_RAW)
             except KeyError:
