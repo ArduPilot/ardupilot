@@ -100,9 +100,9 @@ TEST(MathTest, IsZero)
     EXPECT_TRUE(is_zero(FLT_MIN));
     EXPECT_TRUE(is_zero(-FLT_MIN));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_FALSE(is_zero(t_float));
-    t_float = 0.0f;
+    t_float.set(0.0f);
     EXPECT_TRUE(is_zero(t_float));
 }
 
@@ -113,9 +113,9 @@ TEST(MathTest, IsPositive)
     EXPECT_FALSE(is_positive(0.0f));
     EXPECT_FALSE(is_positive(-1.0f));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_TRUE(is_positive(t_float));
-    t_float = -0.1f;
+    t_float.set(-0.1f);
     EXPECT_FALSE(is_positive(t_float));
 }
 
@@ -126,9 +126,9 @@ TEST(MathTest, IsNegative)
     EXPECT_FALSE(is_negative(0.0f));
     EXPECT_FALSE(is_negative(1.0f));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_FALSE(is_negative(t_float));
-    t_float = -0.1f;
+    t_float.set(-0.1f);
     EXPECT_TRUE(is_negative(t_float));
 }
 
@@ -217,18 +217,18 @@ TEST(MathTest, MAX)
     EXPECT_EQ(2.0f, MAX(testushort, 2.0f));
     EXPECT_EQ(2.0f, MAX(testi32, 2.0f));
     AP_Float t_float;
-    t_float = 0.1f;
+    t_float.set(0.1f);
     EXPECT_EQ(2.0f, MAX(t_float, 2.0f));
     EXPECT_EQ(2.0f, MAX(2.0f, t_float));
     AP_Int8 t_int8;
-    t_int8 = 1;
+    t_int8.set(1);
     EXPECT_EQ(2, MAX(t_int8, 2));
     EXPECT_EQ(2, MAX(2, t_int8));
     AP_Int16 t_int16;
-    t_int16 = 1;
+    t_int16.set(1);
     EXPECT_EQ(2, MAX(t_int16, 2));
     AP_Int32 t_int32;
-    t_int32 = 1;
+    t_int32.set(1);
     EXPECT_EQ(2, MAX(t_int32, 2));
     EXPECT_EQ(2.0f, MAX(1.0f, 2.0f));
     EXPECT_EQ(2.0f, MAX(1.0f, 2));
@@ -275,7 +275,7 @@ TEST(MathTest, Square)
     EXPECT_EQ(1.f, sq_1);
     EXPECT_EQ(4.f, sq_2);
     AP_Float t_sqfloat;
-    t_sqfloat = sq(2);
+    t_sqfloat.set(sq(2));
     EXPECT_EQ(4.f, t_sqfloat);
 
     EXPECT_FLOAT_EQ(sq(2.3), 5.289999999999999);  // uses template sq
@@ -294,9 +294,9 @@ TEST(MathTest, Norm)
     float norm_5 = norm(3,4);
     float norm_6 = norm(4,3,12);
     AP_Float t_float1, t_float2, t_float3;
-    t_float1 = 4.0f;
-    t_float2 = 3.0f;
-    t_float3 = 12.f;
+    t_float1.set(4.0f);
+    t_float2.set(3.0f);
+    t_float3.set(12.f);
     float norm_7 = norm(t_float1, t_float2, t_float3);
 
     EXPECT_FLOAT_EQ(norm_1, 4.3174066f);
