@@ -147,7 +147,7 @@ AP_Follow::AP_Follow() :
 void AP_Follow::clear_offsets_if_required()
 {
     if (_offsets_were_zero) {
-        _offset = Vector3f();
+        _offset.set(Vector3f());
     }
     _offsets_were_zero = false;
 }
@@ -440,11 +440,11 @@ void AP_Follow::init_offsets_if_required(const Vector3f &dist_vec_ned)
     float target_heading_deg;
     if ((_offset_type == AP_FOLLOW_OFFSET_TYPE_RELATIVE) && get_target_heading_deg(target_heading_deg)) {
         // rotate offsets from north facing to vehicle's perspective
-        _offset = rotate_vector(-dist_vec_ned, -target_heading_deg);
+        _offset.set(rotate_vector(-dist_vec_ned, -target_heading_deg));
         gcs().send_text(MAV_SEVERITY_INFO, "Relative follow offset loaded");
     } else {
         // initialise offset in NED frame
-        _offset = -dist_vec_ned;
+        _offset.set(-dist_vec_ned);
         // ensure offset_type used matches frame of offsets saved
         _offset_type.set(AP_FOLLOW_OFFSET_TYPE_NED);
         gcs().send_text(MAV_SEVERITY_INFO, "N-E-D follow offset loaded");
