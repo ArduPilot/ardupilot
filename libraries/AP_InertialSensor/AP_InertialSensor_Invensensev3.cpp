@@ -72,7 +72,9 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 // registers for ICM-42670, multi-bank
 #define INV3REG_70_PWR_MGMT0  0x1F
 #define INV3REG_70_GYRO_CONFIG0  0x20
+#define INV3REG_70_GYRO_CONFIG1  0x23
 #define INV3REG_70_ACCEL_CONFIG0 0x21
+#define INV3REG_70_ACCEL_CONFIG1 0x24
 #define INV3REG_70_FIFO_COUNTH   0x3D
 #define INV3REG_70_FIFO_DATA     0x3F
 #define INV3REG_70_INTF_CONFIG0  0x35
@@ -426,11 +428,13 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
         register_write(INV3REG_70_PWR_MGMT0, 0x0f);
         hal.scheduler->delay_microseconds(300);
 
-        // setup gyro for 1.6kHz
+        // setup gyro for 1.6kHz, with 180Hz LPF
         register_write(INV3REG_70_GYRO_CONFIG0, 0x05);
+        register_write(INV3REG_70_GYRO_CONFIG1, 0x01);
 
-        // setup accel for 1.6kHz
+        // setup accel for 1.6kHz, with 180Hz LPF
         register_write(INV3REG_70_ACCEL_CONFIG0, 0x05);
+        register_write(INV3REG_70_ACCEL_CONFIG1, 0x01);
     } else {
         // enable gyro and accel in low-noise modes
         register_write(INV3REG_PWR_MGMT0, 0x0F);
