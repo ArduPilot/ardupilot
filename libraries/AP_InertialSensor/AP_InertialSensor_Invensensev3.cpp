@@ -27,10 +27,6 @@
   anti-aliasing filter, which means this driver can be a lot simpler
   than the Invensense and Invensensev2 drivers which need to handle
   8kHz sample rates to achieve decent aliasing protection
-
-  The sensor is a multi-bank design (4 banks) but as this driver only
-  needs access to the first bank and the default bank is the first
-  bank we can treat it as a single bank design
  */
 
 #include <AP_HAL/AP_HAL.h>
@@ -61,6 +57,17 @@ static const float GYRO_SCALE = (0.0174532f / 16.4f);
 #define INV3REG_FIFO_COUNTH   0x2e
 #define INV3REG_FIFO_DATA     0x30
 #define INV3REG_BANK_SEL      0x76
+
+// ICM42688 bank1
+#define INV3REG_GYRO_CONFIG_STATIC2 0x0B
+#define INV3REG_GYRO_CONFIG_STATIC3 0x0C
+#define INV3REG_GYRO_CONFIG_STATIC4 0x0D
+#define INV3REG_GYRO_CONFIG_STATIC5 0x0E
+
+// ICM42688 bank2
+#define INV3REG_ACCEL_CONFIG_STATIC2 0x03
+#define INV3REG_ACCEL_CONFIG_STATIC3 0x04
+#define INV3REG_ACCEL_CONFIG_STATIC4 0x05
 
 // registers for ICM-42670, multi-bank
 #define INV3REG_70_PWR_MGMT0  0x1F
@@ -372,12 +379,19 @@ void AP_InertialSensor_Invensensev3::register_write(uint8_t reg, uint8_t val, bo
  */
 uint8_t AP_InertialSensor_Invensensev3::register_read_bank(uint8_t bank, uint8_t reg)
 {
-    register_write(INV3REG_BLK_SEL_R, bank);
-    register_write(INV3REG_MADDR_R, reg);
-    hal.scheduler->delay_microseconds(10);
-    const uint8_t val = register_read(INV3REG_M_R);
-    hal.scheduler->delay_microseconds(10);
-    register_write(INV3REG_BLK_SEL_R, 0);
+    if (inv3_type == Invensensev3_Type::ICM42670) {
+        // the ICM42670 has a complex bank setup
+        register_write(INV3REG_BLK_SEL_R, bank);
+        register_write(INV3REG_MADDR_R, reg);
+        hal.scheduler->delay_microseconds(10);
+        const uint8_t val = register_read(INV3REG_M_R);
+        hal.scheduler->delay_microseconds(10);
+        register_write(INV3REG_BLK_SEL_R, 0);
+        return val;
+    }
+    register_write(INV3REG_BANK_SEL, bank);
+    const uint8_t val = register_read(reg);
+    register_write(INV3REG_BANK_SEL, 0);
     return val;
 }
 
@@ -387,28 +401,18 @@ uint8_t AP_InertialSensor_Invensensev3::register_read_bank(uint8_t bank, uint8_t
  */
 void AP_InertialSensor_Invensensev3::register_write_bank(uint8_t bank, uint8_t reg, uint8_t val)
 {
-    // wait for clock ready
-    for (uint8_t wait_tries=0; wait_tries<10; wait_tries++) {
-        if (register_read(INV3REG_70_MCLK_RDY) != 0) {
-            break;
-        }
-        hal.scheduler->delay_microseconds(10);
-    }
-    if (register_read(INV3REG_70_MCLK_RDY) == 0) {
-        return;
-    }
-    for (uint8_t tries=0; tries<10; tries++) {
+    if (inv3_type == Invensensev3_Type::ICM42670) {
+        // the ICM42670 has a complex bank setup
         register_write(INV3REG_BLK_SEL_W, bank);
         register_write(INV3REG_MADDR_W, reg);
         register_write(INV3REG_M_W, val);
         hal.scheduler->delay_microseconds(10);
         register_write(INV3REG_BLK_SEL_W, 0);
         hal.scheduler->delay_microseconds(10);
-        const uint8_t val2 = register_read_bank(bank, reg);
-        if (val == val2) {
-            break;
-        }
-        hal.scheduler->delay_microseconds(100);
+    } else {
+        register_write(INV3REG_BANK_SEL, bank);
+        register_write(reg, val);
+        register_write(INV3REG_BANK_SEL, 0);
     }
 }
 
@@ -534,6 +538,17 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         
         // little-endian, fifo count in records
         register_write(INV3REG_70_INTF_CONFIG0, 0x40, true);
+    }
+    if (inv3_type == Invensensev3_Type::ICM42688) {
+        // setup anti-alias filters for 488Hz on gyro and accel, notch disabled
+        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC2, 0xA1);
+        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC3, 11);   // GYRO_AAF_DELT
+        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC4, 122); // GYRO_AAF_DELTSQR
+        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC5, 0x80); // GYRO_AAF_BITSHIFT&GYRO_AAF_DELTSQR
+
+        register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC2, 11U<<1);
+        register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC3, 122);
+        register_write_bank(2, INV3REG_ACCEL_CONFIG_STATIC4, 0x80);
     }
 
     return true;
