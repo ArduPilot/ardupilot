@@ -1566,12 +1566,12 @@ AP_InertialSensor::_init_gyro()
                                 (unsigned)k,
                                 (double)ToDeg(best_diff[k]),
                                 (double)GYRO_INIT_MAX_DIFF_DPS);
-            _gyro_offset[k] = best_avg[k];
+            _gyro_offset[k].set(best_avg[k]);
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
         } else {
             _gyro_cal_ok[k] = true;
-            _gyro_offset[k] = new_gyro_offset[k];
+            _gyro_offset[k].set(new_gyro_offset[k]);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
             caltemp_gyro[k].set(0.5 * (get_temperature(k) + start_temperature[k]));
 #endif
@@ -2378,8 +2378,8 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
         DEV_PRINTF("\nFAILED\n");
         // restore old values
         for (uint8_t k=0; k<num_accels; k++) {
-            _accel_offset[k] = saved_offsets[k];
-            _accel_scale[k] = saved_scaling[k];
+            _accel_offset[k].set(saved_offsets[k]);
+            _accel_scale[k].set(saved_scaling[k]);
         }
     }
 
