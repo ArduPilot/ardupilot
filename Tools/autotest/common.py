@@ -2718,15 +2718,28 @@ class AutoTest(ABC):
         self.do_heartbeats()
 
     def drain_mav_unparsed(self, mav=None, quiet=True, freshen_sim_time=False):
+        '''drain all data on mavlink connection mav (defaulting to self.mav).
+        It is assumed that this connection is connected to the normal
+        simulation.'''
         if mav is None:
             mav = self.mav
         count = 0
         tstart = time.time()
+        self.pause_SITL()
+        # sometimes we recv() when the process is likely to go away..
+        old_autoreconnect = mav.autoreconnect
+        mav.autoreconnect = False
         while True:
-            this = mav.recv(1000000)
+            try:
+                this = mav.recv(1000000)
+            except Exception:
+                mav.autoreconnect = True
+                raise
             if len(this) == 0:
                 break
             count += len(this)
+        mav.autoreconnect = old_autoreconnect
+        self.unpause_SITL()
         if quiet:
             return
         tdelta = time.time() - tstart
