@@ -28,6 +28,8 @@ public:
     void accumulate() override;
 
     void start() override;
+    // get a startup banner to output to the GCS
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
 
     enum class Invensensev3_Type : uint8_t {
         ICM40609 = 0,
@@ -51,6 +53,7 @@ private:
     bool check_whoami();
 
     void set_filter_and_scaling(void);
+    void set_filter_and_scaling_icm42670(void);
     void fifo_reset();
 
     /* Read samples from FIFO */
@@ -79,7 +82,12 @@ private:
     const enum Rotation rotation;
 
     float accel_scale;
-    float expected_ODR;
+
+    // are we doing more than 1kHz sampling?
+    bool fast_sampling;
+
+    // what rate are we generating samples into the backend for gyros and accels?
+    uint16_t backend_rate_hz;
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
