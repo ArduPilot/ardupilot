@@ -544,8 +544,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         register_write(INV3REG_70_INTF_CONFIG0, 0x40, true);
     }
     if (inv3_type == Invensensev3_Type::ICM42688) {
-        // setup anti-alias filters for 488Hz on gyro and accel, notch disabled
-        register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC2, 0xA1);
+        // setup anti-alias filters for 488Hz on gyro and accel, notch left at default
         register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC3, 11);   // GYRO_AAF_DELT
         register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC4, 122); // GYRO_AAF_DELTSQR
         register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC5, 0x80); // GYRO_AAF_BITSHIFT&GYRO_AAF_DELTSQR
