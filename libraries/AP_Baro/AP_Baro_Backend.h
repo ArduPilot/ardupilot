@@ -77,7 +77,5 @@ protected:
     uint32_t _error_count;
 
     // set bus ID of this instance, for BARO_DEVID parameters
-    void set_bus_id(uint8_t instance, uint32_t id) {
-        _frontend.sensors[instance].bus_id.set(int32_t(id));
-    }
+    void set_bus_id(uint8_t instance, uint32_t id);
 };
