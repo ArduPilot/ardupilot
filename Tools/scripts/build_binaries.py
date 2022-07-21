@@ -225,7 +225,10 @@ is bob we will attempt to checkout bob-AVR'''
                     line = line.replace("'", "")
                     line = line.replace(" ", "")
                     boards = line.split(",")
-                    return board not in boards
+                    ret = board not in boards
+                    if ret:
+                        self.progress("Skipping board (%s) - not in board list" % board)
+                    return ret
         except IOError as e:
             if e.errno != 2:
                 raise
