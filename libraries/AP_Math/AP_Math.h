@@ -35,6 +35,9 @@ typedef Quaternion QuaternionF;
 // define AP_Param types AP_Vector3f and Ap_Matrix3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
+// set the value of a Vector3f and set as default
+void set_and_default_vector3f(AP_Vector3f &pv, const Vector3f &v);
+
 /*
  * Check whether two floats are equal
  */

@@ -510,3 +510,12 @@ uint32_t float_to_uint32(const float v)
 {
     return uint32_t(constrain_float(v, 0, UINT32_MAX));
 }
+
+
+// set the value of a Vector3f and set as default
+void set_and_default_vector3f(AP_Vector3f &pv, const Vector3f &v)
+{
+    ((AP_Float *)&pv.get().x)->set_and_default(v.x);
+    ((AP_Float *)&pv.get().y)->set_and_default(v.y);
+    ((AP_Float *)&pv.get().z)->set_and_default(v.z);
+}
