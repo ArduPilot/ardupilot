@@ -98,7 +98,7 @@ public:
     SIM() {
         // set a default compass offset
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
-            mag_ofs[i].set(Vector3f(5, 13, -18));
+            set_and_default_vector3f(mag_ofs[i], Vector3f(5, 13, -18));
         }
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
