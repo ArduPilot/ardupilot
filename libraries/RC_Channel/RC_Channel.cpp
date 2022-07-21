@@ -503,7 +503,9 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::SCRIPTING_6:
     case AUX_FUNC::SCRIPTING_7:
     case AUX_FUNC::SCRIPTING_8:
+#if AP_VIDEOTX_ENABLED
     case AUX_FUNC::VTX_POWER:
+#endif
     case AUX_FUNC::OPTFLOW_CAL:
     case AUX_FUNC::TURBINE_START:
     case AUX_FUNC::MOUNT1_ROLL:
