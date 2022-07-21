@@ -24,8 +24,20 @@
 #include "bouncebuffer.h"
 #include "stm32_util.h"
 #include "hwdef/common/usbcfg.h"
+#include "stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
+
+
+static void block_filesys_access()
+{
+    AP::FS().block_access();
+}
+
+static void free_filesys_access()
+{
+    AP::FS().free_access();
+}
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
@@ -121,7 +133,7 @@ bool sdcard_init()
     #else
                     &USBD2,
     #endif
-                    (BaseBlockDevice*)&SDCD1, blkbuf, txbuf,  NULL, NULL);
+                    (BaseBlockDevice*)&SDCD1, blkbuf, txbuf,  NULL, NULL, block_filesys_access, free_filesys_access);
             usbDisconnectBus(serusbcfg1.usbp);
             usbStop(serusbcfg1.usbp);
             chThdSleep(chTimeUS2I(1500));
