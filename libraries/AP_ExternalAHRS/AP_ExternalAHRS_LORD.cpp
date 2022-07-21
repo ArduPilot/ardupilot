@@ -292,7 +292,7 @@ void AP_ExternalAHRS_LORD::handle_gnss(const LORD_Packet &packet)
         switch ((GNSSPacketField) packet.payload[i+1]) {
         // GPS Time
         case GNSSPacketField::GPS_TIME: {
-            gnss_data.tow_ms = extract_double(packet.payload, i+2) * 1000; // Convert seconds to ms
+            gnss_data.tow_ms = double_to_uint32(extract_double(packet.payload, i+2) * 1000); // Convert seconds to ms
             gnss_data.week = be16toh_ptr(&packet.payload[i+10]);
             break;
         }
