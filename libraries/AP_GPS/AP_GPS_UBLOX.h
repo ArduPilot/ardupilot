@@ -38,6 +38,12 @@
  * The reason we need the NAV_SOL rate message at all is some uBlox
  * modules are configured with all ubx binary messages off, which
  * would mean we would never detect it.
+
+ * running a uBlox at less than 38400 will lead to packet
+ * corruption, as we can't receive the packets in the 200ms
+ * window for 5Hz fixes. The NMEA startup message should force
+ * the uBlox into 230400 no matter what rate it is configured
+ * for.
  */
 #define UBLOX_SET_BINARY_115200 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,115200,0*1C\r\n"
 
