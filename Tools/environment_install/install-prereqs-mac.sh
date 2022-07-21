@@ -124,8 +124,12 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
         source ~/$SHELL_LOGIN
     }
     echo "pyenv installed"
-    env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install 3.9.4
-    pyenv global 3.9.4
+    {
+        $(pyenv global 3.9.4)
+    } || {
+        env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install 3.9.4
+        pyenv global 3.9.4
+    }
 fi
 
 
