@@ -124,7 +124,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
 
     // @Param: ABORT_THR
     // @DisplayName: Landing abort using throttle
-    // @Description: Allow a landing abort to trigger with a throttle > 95%
+    // @Description: Allow a landing abort to trigger with an input throttle >= 90%. This works with or without stick-mixing enabled.
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("ABORT_THR", 12, AP_Landing, abort_throttle_enable, 0),
