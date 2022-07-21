@@ -55,9 +55,16 @@ public:
     bool format(void) override;
     AP_Filesystem_Backend::FormatStatus get_format_status() const override;
 
+    // block filesystem access
+    void block_access(void) override { sem.take_blocking(); }
+
+    // free filesystem access
+    void free_access(void) override { sem.give(); }
+
 private:
     void format_handler(void);
     FormatStatus format_status;
+    static HAL_Semaphore sem;
 };
 
 #endif  // #if AP_FILESYSTEM_FATFS_ENABLED
