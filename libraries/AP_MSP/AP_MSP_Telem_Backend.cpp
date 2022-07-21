@@ -828,7 +828,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
         if (msp->_osd_item_settings[i] != nullptr) {      // ok supported
             if (msp->_osd_item_settings[i]->enabled) {    // ok enabled
                 // let's check if we need to hide this dynamically
-                if (!BIT_IS_SET(osd_hidden_items_bitmask, i)) {
+                if (!BIT_IS_SET_64(osd_hidden_items_bitmask, i)) {
                     pos = MSP_OSD_POS(msp->_osd_item_settings[i]);
                 }
             }
