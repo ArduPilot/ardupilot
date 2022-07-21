@@ -204,6 +204,11 @@ inline uint64_t constrain_uint64(const uint64_t amt, const uint64_t low, const u
     return constrain_value(amt, low, high);
 }
 
+inline double constrain_double(const double amt, const double low, const double high)
+{
+    return constrain_value(amt, low, high);
+}
+
 // degrees -> radians
 static inline constexpr ftype radians(ftype deg)
 {
@@ -367,4 +372,6 @@ int16_t float_to_int16(const float v);
 uint16_t float_to_uint16(const float v);
 int32_t float_to_int32(const float v);
 uint32_t float_to_uint32(const float v);
+uint32_t double_to_uint32(const double v);
+int32_t double_to_int32(const double v);
 
