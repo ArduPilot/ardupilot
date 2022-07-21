@@ -19,6 +19,7 @@ jobs:
             base,  # GCC
         ]
         config: [
+            disco,
             Durandal,
             MatekF405,
             Pixhawk1-1M,
@@ -164,12 +165,16 @@ jobs:
         run: |
           python3 -m pip install -U weasyprint elf_diff anytree
           mkdir elf_diff
+          BIN_PREFIX="arm-none-eabi-"
+          if [ "${{matrix.config}}" = "disco" ]; then
+             BIN_PREFIX="arm-linux-gnueabihf-"
+          fi
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
           else
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+             python3 -m elf_diff --bin_prefix="$BIN_PREFIX" --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
           fi
           zip -r elf_diff.zip elf_diff
 
