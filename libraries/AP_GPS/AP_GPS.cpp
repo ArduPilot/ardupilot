@@ -753,13 +753,6 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 
     while (bytecount-- > 0) {
         uint8_t data = _port[instance]->read();
-        /*
-          running a uBlox at less than 38400 will lead to packet
-          corruption, as we can't receive the packets in the 200ms
-          window for 5Hz fixes. The NMEA startup message should force
-          the uBlox into 230400 no matter what rate it is configured
-          for.
-        */
 
 #if AP_GPS_UBLOX_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO ||
