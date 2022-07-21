@@ -510,3 +510,13 @@ uint32_t float_to_uint32(const float v)
 {
     return uint32_t(constrain_float(v, 0, UINT32_MAX));
 }
+
+uint32_t double_to_uint32(const double v)
+{
+    return uint32_t(constrain_double(v, 0, UINT32_MAX));
+}
+
+int32_t double_to_int32(const double v)
+{
+    return int32_t(constrain_double(v, INT32_MIN, UINT32_MAX));
+}
