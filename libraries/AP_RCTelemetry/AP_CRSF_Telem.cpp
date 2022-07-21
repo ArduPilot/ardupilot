@@ -389,7 +389,11 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
     case PARAMETERS:
         return _pending_request.frame_type > 0;
     case VTX_PARAMETERS:
+#if AP_VIDEOTX_ENABLED
         return AP::vtx().have_params_changed() ||_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
+#else
+        return false;
+#endif
     case PASSTHROUGH:
         return rc().crsf_custom_telemetry();
     case STATUS_TEXT:
@@ -421,9 +425,11 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
         case ATTITUDE:
             calc_attitude();
             break;
+#if AP_VIDEOTX_ENABLED
         case VTX_PARAMETERS: // update various VTX parameters
             update_vtx_params();
             break;
+#endif
         case BATTERY: // BATTERY
             calc_battery();
             break;
@@ -482,6 +488,7 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
         _enable_telemetry = true;
         break;
 
+#if AP_VIDEOTX_ENABLED
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
         process_vtx_frame((VTXFrame*)data);
         break;
@@ -489,6 +496,7 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX_TELEM:
         process_vtx_telem_frame((VTXTelemetryFrame*)data);
         break;
+#endif
 
     case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
         process_ping_frame((ParameterPingFrame*)data);
@@ -516,6 +524,7 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
     return true;
 }
 
+#if AP_VIDEOTX_ENABLED
 void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
     vtx->user_frequency = be16toh(vtx->user_frequency);
 
@@ -600,6 +609,7 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 
     _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
 }
+#endif  // AP_VIDEOTX_ENABLED
 
 // request for device info
 void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
@@ -737,6 +747,7 @@ void AP_CRSF_Telem::process_pending_requests()
     _pending_request.frame_type = 0;
 }
 
+#if AP_VIDEOTX_ENABLED
 void AP_CRSF_Telem::update_vtx_params()
 {
     AP_VideoTX& vtx = AP::vtx();
@@ -829,6 +840,7 @@ void AP_CRSF_Telem::update_vtx_params()
         _telem_size = len + 1;
     }
 }
+#endif  // AP_VIDEOTX_ENABLED
 
 // prepare parameter ping data
 void AP_CRSF_Telem::calc_parameter_ping()
