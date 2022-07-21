@@ -85,8 +85,8 @@ void AP_Frsky_Backend::calc_nav_alt(void)
         }
     }
 
-    _SPort_data.alt_nav_meters = (int16_t)current_height;
-    _SPort_data.alt_nav_cm = (current_height - _SPort_data.alt_nav_meters) * 100;
+    _SPort_data.alt_nav_meters = float_to_uint16(current_height);
+    _SPort_data.alt_nav_cm = float_to_uint16((current_height - _SPort_data.alt_nav_meters) * 100);
 }
 
 /*
@@ -121,12 +121,12 @@ void AP_Frsky_Backend::calc_gps_position(void)
         _SPort_data.lon_ew = (loc.lng < 0) ? 'W' : 'E';
 
         float alt = loc.alt * 0.01f;
-        _SPort_data.alt_gps_meters = (int16_t)alt;
-        _SPort_data.alt_gps_cm = (alt - _SPort_data.alt_gps_meters) * 100;
+        _SPort_data.alt_gps_meters = float_to_uint16(alt);
+        _SPort_data.alt_gps_cm = float_to_uint16((alt - _SPort_data.alt_gps_meters) * 100);
 
         const float speed = AP::ahrs().groundspeed();
-        _SPort_data.speed_in_meter = speed;
-        _SPort_data.speed_in_centimeter = (speed - _SPort_data.speed_in_meter) * 100;
+        _SPort_data.speed_in_meter = float_to_int16(speed);
+        _SPort_data.speed_in_centimeter = float_to_uint16((speed - _SPort_data.speed_in_meter) * 100);
     } else {
         _SPort_data.latdddmm = 0;
         _SPort_data.latmmmm = 0;
