@@ -66,7 +66,9 @@ void Plane::init_ardupilot()
 
     rssi.init();
 
+#if AP_RPM_ENABLED
     rpm_sensor.init();
+#endif
 
     // setup telem slots with serial ports
     gcs().setup_uarts();
