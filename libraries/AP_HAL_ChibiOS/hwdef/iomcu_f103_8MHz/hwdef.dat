@@ -95,10 +95,6 @@ define RCIN_ICU_TIMER ICUD1
 define RCIN_ICU_CHANNEL ICU_CHANNEL_1
 define STM32_RCIN_DMA_STREAM STM32_DMA_STREAM_ID(1, 2)
 
-# only use pulse input for PPM, other protocols
-# are on serial
-define HAL_RCIN_PULSE_PPM_ONLY
-
 #DMA Channel Not relevant for F1 series
 define STM32_RCIN_DMA_CHANNEL 0
 
