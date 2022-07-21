@@ -752,7 +752,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     uint16_t bytecount = MIN(8192U, _port[instance]->available());
 
     while (bytecount-- > 0) {
-        uint8_t data = _port[instance]->read();
+        const uint8_t data = _port[instance]->read();
+        (void)data;  // if all backends are compiled out then "data" is unused
 
 #if AP_GPS_UBLOX_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO ||
