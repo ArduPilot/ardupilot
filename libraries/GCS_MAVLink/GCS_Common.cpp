@@ -2974,6 +2974,19 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
         return MAV_RESULT_UNSUPPORTED;
     }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    {  // autotest relies in receiving the ACK for the reboot.  Ensure
+       // there is space for it:
+        const uint32_t tstart_ms = AP_HAL::millis();
+        while (AP_HAL::millis() - tstart_ms < 1000) {
+            if (HAVE_PAYLOAD_SPACE(chan, COMMAND_ACK)) {
+                break;
+            }
+            hal.scheduler->delay(10);
+        }
+    }
+#endif
+
     // send ack before we reboot
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED,
                                  0, 0, 0, 0);
