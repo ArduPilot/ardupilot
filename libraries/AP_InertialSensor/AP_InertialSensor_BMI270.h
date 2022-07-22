@@ -94,9 +94,12 @@ private:
     void configure_gyro();
 
     /**
+     * Reset FIFO.
+     */
+    void fifo_reset();
+
+    /**
      * Configure FIFO.
-     *
-     * @return true on success, false otherwise.
      */
     void configure_fifo();
 
