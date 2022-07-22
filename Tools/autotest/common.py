@@ -7419,13 +7419,16 @@ Also, ignores heartbeats not from our target system'''
         tstart = self.get_sim_time_cached()
         remaining_to_receive = set(range(0, m.count))
         next_to_request = 0
-        timeout = m.count / 10.0
+        timeout = m.count
         timeout *= self.speedup / 10.0
         timeout += 10
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("timeout downloading type=%s" %
-                                           (mavutil.mavlink.enums["MAV_MISSION_TYPE"][mission_type].name))
+            delta_t = self.get_sim_time_cached() - tstart
+            if delta_t > timeout:
+                raise NotAchievedException(
+                    "timeout downloading type=%s after %s seconds of %s allowed" %
+                    (mavutil.mavlink.enums["MAV_MISSION_TYPE"][mission_type].name,
+                     delta_t, timeout))
             if len(remaining_to_receive) == 0:
                 self.progress("All received")
                 return items
