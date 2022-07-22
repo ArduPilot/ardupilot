@@ -8518,6 +8518,7 @@ Also, ignores heartbeats not from our target system'''
             self.set_parameter("LOG_DISARMED", 1)
             self.delay_sim_time(3)
             self.set_parameter("LOG_DISARMED", 0)
+            self.delay_sim_time(3)
             mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
             # read the downloaded log - it must parse without error
