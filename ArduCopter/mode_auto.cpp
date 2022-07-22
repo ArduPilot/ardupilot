@@ -1176,7 +1176,7 @@ void ModeAuto::payload_place_run()
         return wp_run();
     case PayloadPlaceStateType_Calibrating_Hover_Start:
     case PayloadPlaceStateType_Calibrating_Hover:
-        return payload_place_run_loiter();
+        return payload_place_run_hover();
     case PayloadPlaceStateType_Descending_Start:
     case PayloadPlaceStateType_Descending:
         return payload_place_run_descend();
@@ -1184,10 +1184,10 @@ void ModeAuto::payload_place_run()
     case PayloadPlaceStateType_Releasing:
     case PayloadPlaceStateType_Released:
     case PayloadPlaceStateType_Ascending_Start:
-        return payload_place_run_loiter();
+        return payload_place_run_hover();
     case PayloadPlaceStateType_Ascending:
     case PayloadPlaceStateType_Done:
-        return wp_run();
+        return takeoff_run();
     }
 }
 
@@ -1213,13 +1213,10 @@ bool ModeAuto::payload_place_run_should_run()
     return true;
 }
 
-void ModeAuto::payload_place_run_loiter()
+void ModeAuto::payload_place_run_hover()
 {
-    // loiter...
     land_run_horizontal_control();
-
-    // call position controller
-    pos_control->update_z_controller();
+    land_run_vertical_control(true);
 }
 
 void ModeAuto::payload_place_run_descend()
@@ -1915,9 +1912,9 @@ bool ModeAuto::verify_payload_place()
             return false;
         }
         // we have a valid calibration.  Hopefully.
+        // todo: Add filter as single sample is vulnerable to noise
         nav_payload_place.hover_throttle_level = current_throttle_level;
-        const float hover_throttle_delta = fabsf(nav_payload_place.hover_throttle_level - motors->get_throttle_hover());
-        gcs().send_text(MAV_SEVERITY_INFO, "hover throttle delta: %f", static_cast<double>(hover_throttle_delta));
+        gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: payload hover throttle: %f", static_cast<double>(nav_payload_place.hover_throttle_level));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
         }
         FALLTHROUGH;
@@ -1932,13 +1929,14 @@ bool ModeAuto::verify_payload_place()
         debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
             nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()  > nav_payload_place.descend_max) {
-            nav_payload_place.state = PayloadPlaceStateType_Ascending;
-            gcs().send_text(MAV_SEVERITY_WARNING, "Reached maximum descent");
+            nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+            gcs().send_text(MAV_SEVERITY_WARNING, "PayloadPlace: Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
         }
         // see if we've been descending long enough to calibrate a descend-throttle-level:
         if (is_zero(nav_payload_place.descend_throttle_level) &&
             now - nav_payload_place.descend_start_timestamp > descend_throttle_calibrate_time) {
+            // todo: Add filter as single sample is vulnerable to noise
             nav_payload_place.descend_throttle_level = current_throttle_level;
         }
         // watch the throttle to determine whether the load has been placed
@@ -1964,16 +1962,18 @@ bool ModeAuto::verify_payload_place()
     case PayloadPlaceStateType_Releasing_Start:
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Releasing the gripper");
+            gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: Releasing the gripper");
             g2.gripper.release();
         } else {
-            gcs().send_text(MAV_SEVERITY_INFO, "Gripper not valid");
+            gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: Gripper not valid");
             nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
             break;
         }
 #else
         gcs().send_text(MAV_SEVERITY_INFO, "Gripper code disabled");
 #endif
+        // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
+        pos_control->init_z_controller_no_descent();
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
         FALLTHROUGH;
     case PayloadPlaceStateType_Releasing:
@@ -1989,14 +1989,12 @@ bool ModeAuto::verify_payload_place()
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
-        Location target_loc(inertial_nav.get_position_neu_cm(), Location::AltFrame::ABOVE_ORIGIN);
-        target_loc.alt = nav_payload_place.descend_start_altitude;
-        wp_start(target_loc);
+        auto_takeoff_start(inertial_nav.get_position_z_up_cm(), false);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending:
-        if (!copter.wp_nav->reached_wp_destination()) {
+        if (!auto_takeoff_complete) {
             return false;
         }
         nav_payload_place.state = PayloadPlaceStateType_Done;
