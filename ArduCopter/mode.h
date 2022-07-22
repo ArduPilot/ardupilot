@@ -507,7 +507,7 @@ private:
 
     void payload_place_run();
     bool payload_place_run_should_run();
-    void payload_place_run_loiter();
+    void payload_place_run_hover();
     void payload_place_run_descend();
     void payload_place_run_release();
 
