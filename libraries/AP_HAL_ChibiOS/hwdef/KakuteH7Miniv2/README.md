@@ -1,14 +1,14 @@
-# KakuteH7Mini Flight Controller
+# KakuteH7Mini v2 Flight Controller
 
-The KakuteH7Mini is a flight controller produced by [Holybro](http://www.holybro.com/).
+The KakuteH7Mini v2 is a flight controller produced by [Holybro](http://www.holybro.com/).
 
 ## Features
 
  - MCU - STM32H743 32-bit processor running at 480 MHz
- - IMU - MPU6000
+ - IMU - BMI270
  - Barometer - BMP280
  - OSD - AT7456E
- - Onboard Flash: 128Mbits
+ - Onboard Flash: 1GBit
  - 6x UARTs (1,2,3,4,6,7)
  - 9x PWM Outputs (8 Motor Output, 1 LED)
  - Battery input voltage: 2S-6S
@@ -16,7 +16,7 @@ The KakuteH7Mini is a flight controller produced by [Holybro](http://www.holybro
 
 ## Pinout
 
-![KakuteH7Mini Board](KakuteH7Mini_Board.jpg "KakuteH7Mini")
+![KakuteH7Mini v2 Board](../KakuteH7Mini/KakuteH7Mini_Board.jpg "KakuteH7Mini v2")
 
 ## UART Mapping
 
@@ -35,9 +35,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the R6 (UART6_RX) pin. It supports all serial RC
-protocols. For protocols requiring half-duplex serial to transmit
-telemetry (such as FPort) you should setup SERIAL6 as an RC input serial port,
-with half-duplex, pin-swap and inversion enabled.
+protocols except PPM. For protocols requiring half-duplex serial to transmit
+telemetry (such as FPort) you should setup SERIAL6 with half-duplex, pin-swap 
+and inversion enabled.
  
 ## FrSky Telemetry
  
@@ -48,11 +48,11 @@ FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set 
   
 ## OSD Support
 
-The KakuteH7Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The KakuteH7Mini v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
-The KakuteH7Mini supports up to 9 PWM outputs. The pads for motor output
+The KakuteH7Mini v2 supports up to 9 PWM outputs. The pads for motor output
 M1 to M4 on the motor connectors and M5 to M8 on separate pads, plus
 M9 for LED strip or another PWM output.
 
@@ -70,7 +70,7 @@ to use DShot. Channels 1-4 support bi-directional dshot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
+The board has a builtin voltage and current sensor. The current
 sensor can read up to 130 Amps. The voltage sensor can handle up to 6S
 LiPo batteries.
 
@@ -84,7 +84,7 @@ The correct battery setting parameters are:
 
 ## Compass
 
-The KakuteH7Mini does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The KakuteH7Mini v2 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Loading Firmware
 
