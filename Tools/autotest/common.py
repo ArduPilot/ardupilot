@@ -4475,7 +4475,6 @@ class AutoTest(ABC):
     def arm_vehicle(self, timeout=20, force=False):
         """Arm vehicle with mavlink arm message."""
         self.progress("Arm motors with MAVLink cmd")
-        self.drain_mav()
         p2 = 0
         if force:
             p2 = 2989
@@ -4502,7 +4501,7 @@ class AutoTest(ABC):
     def wait_armed(self, timeout=20):
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
-            self.wait_heartbeat()
+            self.wait_heartbeat(drain_mav=False)
             if self.mav.motors_armed():
                 self.progress("Motors ARMED")
                 return
