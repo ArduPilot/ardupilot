@@ -2666,6 +2666,9 @@ def process_line(line):
             bylabel.pop(u, '')
             alttype.pop(u, '')
             altlabel.pop(u, '')
+            for dev in spidev:
+                if u == dev[0]:
+                    spidev.remove(dev)
             # also remove all occurences of defines in previous lines if any
             for line in alllines[:]:
                 if line.startswith('define') and u == line.split()[1]:
