@@ -210,7 +210,6 @@ void AP_InertialSensor_BMI270::start()
 
     _dev->get_semaphore()->give();
 
-    // using headerless mode so gyro and accel ODRs must match
     if (!_imu.register_accel(_accel_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270)) ||
         !_imu.register_gyro(_gyro_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270))) {
         return;
@@ -318,8 +317,10 @@ void AP_InertialSensor_BMI270::check_err_reg()
 
 void AP_InertialSensor_BMI270::configure_accel()
 {
-    // set acc in high performance mode with normal filtering at 1600Hz
-    write_register(BMI270_REG_ACC_CONF, 1U<<7 | 0x2U<<4 | 0x0C);
+    // set acc in high performance mode with OSR4 filtering (751Hz/4) at 1600Hz
+    // see https://community.bosch-sensortec.com/t5/MEMS-sensors-forum/BMI270-OSR-mode-behaviour/td-p/52020
+    // OSR4 is a 188Hz filter cutoff, acc_bwp == 0, equivalent to other driver filters
+    write_register(BMI270_REG_ACC_CONF, 1U<<7 | 0x0C);
     // set acc to 16G full scale
     write_register(BMI270_REG_ACC_RANGE, 0x03);
 
@@ -328,8 +329,9 @@ void AP_InertialSensor_BMI270::configure_accel()
 
 void AP_InertialSensor_BMI270::configure_gyro()
 {
-    // set gyro in high performance filter mode, high performance noise mode. normal filtering at 1600Hz
-    write_register(BMI270_REG_GYRO_CONF, 1U<<7 | 1<<6 | 2<<4 | 0x0C);
+    // set gyro in high performance filter mode, high performance noise mode, normal filtering at 3.2KHz
+    // filter cutoff 751hz
+    write_register(BMI270_REG_GYRO_CONF, 1U<<7 | 1<<6 | 2<<4 | 0x0D);
     // set gyro to 2000dps full scale
     // for some reason you have to enable the ois_range bit (bit 3) for 2000dps as well
     // or else the gyro scale will be 250dps when in prefiltered FIFO mode (not documented in datasheet!)
@@ -340,20 +342,29 @@ void AP_InertialSensor_BMI270::configure_gyro()
 
 void AP_InertialSensor_BMI270::configure_fifo()
 {
-    // don't stop when full, disable sensortime frame
-    write_register(BMI270_REG_FIFO_CONFIG_0, 0x00);
+    // stop when full, disable sensortime frame
+    write_register(BMI270_REG_FIFO_CONFIG_0, 0x01);
     // accel + gyro data in FIFO together with headers
     write_register(BMI270_REG_FIFO_CONFIG_1, 1U<<7 | 1U<<6 | 1U<<4);
-    // unfiltered with gyro downsampled by 2^2 to give 1600Hz
-    write_register(BMI270_REG_FIFO_DOWNS, 0x02);
+    // filtered data downsampled by 2**1 to 1600Hz
+    write_register(BMI270_REG_FIFO_DOWNS, 1U<<7 | 1U<<3 | 0x01);
     // disable advanced power save, enable FIFO self-wake
     write_register(BMI270_REG_PWR_CONF, 0x02);
     // Enable the gyro, accelerometer and temperature sensor - disable aux interface
     write_register(BMI270_REG_PWR_CTRL, 0x0E);
-    // flush FIFO
-    write_register(BMI270_REG_CMD, BMI270_CMD_FIFOFLUSH);
+
+    fifo_reset();
 
     check_err_reg();
+}
+
+void AP_InertialSensor_BMI270::fifo_reset()
+{
+    // flush and reset FIFO
+    write_register(BMI270_REG_CMD, BMI270_CMD_FIFOFLUSH);
+
+    notify_accel_fifo_reset(_accel_instance);
+    notify_gyro_fifo_reset(_gyro_instance);
 }
 
 /*
@@ -361,6 +372,14 @@ void AP_InertialSensor_BMI270::configure_fifo()
  */
 void AP_InertialSensor_BMI270::read_fifo(void)
 {
+    // check for FIFO errors/overflow
+    uint8_t err = 0;
+    read_registers(BMI270_REG_ERR_REG, &err, 1);
+    if ((err>>6 & 1) == 1) {
+        fifo_reset();
+        return;
+    }
+
     uint8_t len[2];
     if (!read_registers(BMI270_REG_FIFO_LENGTH_LSB, len, 2)) {
         _inc_accel_error_count(_accel_instance);
@@ -418,17 +437,22 @@ void AP_InertialSensor_BMI270::read_fifo(void)
             break;
         case 0x48:
             // fifo config frame
-            frame_len = 2;
+            frame_len = 5;
             break;
         case 0x50:
             // sample drop frame
             frame_len = 2;
             break;
+        case 0x80:
+            // invalid frame
+            fifo_reset();
+            return;
         }
         p += frame_len;
         fifo_length -= frame_len;
     }
 
+    // temperature sensor updated every 10ms
     if (temperature_counter++ == 100) {
         temperature_counter = 0;
         uint8_t tbuf[2];
@@ -436,10 +460,12 @@ void AP_InertialSensor_BMI270::read_fifo(void)
             _inc_accel_error_count(_accel_instance);
             _inc_gyro_error_count(_gyro_instance);
         } else {
-            uint16_t temp_uint11 = (tbuf[0]<<3) | (tbuf[1]>>5);
-            int16_t temp_int11 = temp_uint11>1023?temp_uint11-2048:temp_uint11;
-            float temp_degc = temp_int11 * 0.125f + 23;
-            _publish_temperature(_accel_instance, temp_degc);
+            uint16_t tval = tbuf[0] | (tbuf[1] << 8);
+            if (tval != 0x8000) {   // 0x8000 is invalid
+                int16_t klsb = static_cast<int16_t>(tval);
+                float temp_degc = klsb * 0.002f + 23.0f;
+                _publish_temperature(_accel_instance, temp_degc);
+            }
         }
     }
 }
