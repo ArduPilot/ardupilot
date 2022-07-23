@@ -52,27 +52,6 @@ lock_file build.lck || {
 (
 date
 
-report() {
-    d="$1"
-    old="$2"
-    new="$3"
-    cat <<EOF | mail -s 'build failed' ardupilot.devel@google.com
-A build of $d failed at `date`
-
-You can view the build logs at https://autotest.ardupilot.org/
-
-A log of the commits since the last attempted build is below
-
-`git log $old $new`
-EOF
-}
-
-report_pull_failure() {
-    d="$1"
-    git show origin/master | mail -s 'APM pull failed' ardupilot.devel@google.com
-    exit 1
-}
-
 oldhash=$(cd APM && git rev-parse HEAD)
 
 echo "Updating APM"
@@ -81,7 +60,7 @@ git checkout -f master
 git fetch origin
 git submodule update --recursive --force
 git reset --hard origin/master
-git pull || report_pull_failure
+git pull
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
 popd
