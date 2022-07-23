@@ -805,7 +805,7 @@ function save_parameters() {
         var name = "" + inputs[v].name;
         if (name.startsWith("INS_")) {
             var value = inputs[v].value;
-            params += name + "=" + value + "\n";
+            params += name + "," + value + "\n";
         }
     }
     var blob = new Blob([params], { type: "text/plain;charset=utf-8" });
