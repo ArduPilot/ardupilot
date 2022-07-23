@@ -437,7 +437,7 @@ T Vector3<T>::angle(const Vector3<T> &v2) const
 
 // multiplication of transpose by a vector
 template <typename T>
-Vector3<T> Vector3<T>::operator *(const Matrix3<T> &m) const
+Vector3<T> Vector3<T>::row_times_mat(const Matrix3<T> &m) const
 {
     return Vector3<T>(*this * m.colx(),
                       *this * m.coly(),
