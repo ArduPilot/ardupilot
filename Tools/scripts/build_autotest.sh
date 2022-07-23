@@ -84,7 +84,6 @@ git reset --hard origin/master
 git pull || report_pull_failure
 git clean -f -f -x -d -d
 git tag autotest-$(date '+%Y-%m-%d-%H%M%S') -m "test tag `date`"
-cp ../config.mk .
 popd
 
 rsync -a APM/Tools/autotest/web-firmware/ buildlogs/binaries/
