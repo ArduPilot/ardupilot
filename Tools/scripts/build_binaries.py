@@ -641,18 +641,6 @@ is bob we will attempt to checkout bob-AVR'''
                                  (str(self.tags)))
             self.dirty = True
 
-    def pollute_env_from_file(self, filepath):
-        with open(filepath) as f:
-            for line in f:
-                try:
-                    (name, value) = str.split(line, "=")
-                except ValueError as e:
-                    self.progress("%s: split failed: %s" % (filepath, str(e)))
-                    continue
-                value = value.rstrip()
-                self.progress("%s: %s=%s" % (filepath, name, value))
-                os.environ[name] = value
-
     def remove_tmpdir(self):
         if os.path.exists(self.tmpdir):
             self.progress("Removing (%s)" % (self.tmpdir,))
@@ -704,10 +692,6 @@ is bob we will attempt to checkout bob-AVR'''
         self.binaries = os.path.join(self.buildlogs_dirpath(), "binaries")
         self.basedir = os.getcwd()
         self.error_strings = []
-
-        if os.path.exists("config.mk"):
-            # FIXME: narrow exception
-            self.pollute_env_from_file("config.mk")
 
         if not self.dirty:
             self.run_git_update_submodules()
