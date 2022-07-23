@@ -1,8 +1,5 @@
 // User specific config file.  Any items listed in config.h can be overridden here.
 
-// If you used to define your CONFIG_APM_HARDWARE setting here, it is no longer
-// valid! You should switch to using a HAL_BOARD flag in your local config.mk.
-
 // uncomment the lines below to disable features (flash sizes listed are for APM2 boards and will underestimate savings on Pixhawk and other boards)
 //#define LOGGING_ENABLED       DISABLED            // disable logging to save 11K of flash space
 //#define MOUNT                 DISABLED            // disable the camera gimbal to save 8K of flash space
