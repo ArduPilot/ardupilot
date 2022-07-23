@@ -133,6 +133,7 @@ class GCS_MAVLINK
 {
 public:
     friend class GCS;
+    friend class ScriptingMAVLink;
 
     GCS_MAVLINK(GCS_MAVLINK_Parameters &parameters, AP_HAL::UARTDriver &uart);
     virtual ~GCS_MAVLINK() {}
