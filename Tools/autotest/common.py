@@ -3212,9 +3212,10 @@ class AutoTest(ABC):
     #################################################
     # SIM UTILITIES
     #################################################
-    def get_sim_time(self, timeout=60):
+    def get_sim_time(self, timeout=60, drain_mav=True):
         """Get SITL time in seconds."""
-        self.drain_mav()
+        if drain_mav:
+            self.drain_mav()
         tstart = time.time()
         while True:
             self.drain_all_pexpects()
@@ -5615,7 +5616,7 @@ class AutoTest(ABC):
             r += " for %s" % reason
         self.progress(r % (seconds_to_wait,))
         while tstart + seconds_to_wait > tnow:
-            tnow = self.get_sim_time()
+            tnow = self.get_sim_time(drain_mav=False)
 
     def get_altitude(self, relative=False, timeout=30):
         '''returns vehicles altitude in metres, possibly relative-to-home'''
