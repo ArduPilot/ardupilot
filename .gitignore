@@ -81,7 +81,6 @@ Thumbs.db
 autotest.lck
 build
 cmake_install.cmake
-config.mk
 cscope.in.out
 cscope.out
 cscope.po.out
@@ -102,7 +101,6 @@ test.ArduCopter/*
 GPATH
 GRTAGS
 GTAGS
-config.mk
 *.apj
 .gdbinit
 /.vscode
