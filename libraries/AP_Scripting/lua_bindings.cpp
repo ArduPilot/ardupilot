@@ -1,6 +1,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "lua_bindings.h"
 
@@ -371,3 +372,88 @@ int lua_get_CAN_device2(lua_State *L) {
     return 1;
 }
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+
+#if HAL_HIGH_LATENCY2_ENABLED
+int lua_mavlink_get_MAVLink(lua_State *L) {
+
+    check_arguments(L, 2, "MAVlink:begin()");
+    bool use_mavlink1 = static_cast<bool>(lua_toboolean(L, 2));
+
+    if (AP::scripting()->_MAVlink_dev == nullptr) {
+        AP::scripting()->_MAVlink_dev = new ScriptingMAVLink(use_mavlink1);
+        if (AP::scripting()->_MAVlink_dev == nullptr) {
+            return luaL_argerror(L, 0, "MAVLink device nullptr");
+        }
+    }
+
+    return 0;
+}
+
+int lua_mavlink_create_high_latency_packet(lua_State *L) {
+    check_arguments(L, 1, "MAVlink:create_high_latency_packet");
+
+    if (AP::scripting()->_MAVlink_dev == nullptr) {
+        return luaL_argerror(L, 1, "MAVLink device nullptr");
+    }
+
+    uint8_t pkt[255];
+    uint16_t len = AP::scripting()->_MAVlink_dev->create_high_latency2(pkt);
+
+    if (len == 0) {
+        return luaL_error(L, "Error creating HL2 packet");
+    }
+
+    luaL_Buffer buffer;
+    luaL_buffinit(L, &buffer);
+    luaL_addlstring(&buffer, (char*)pkt, len);
+
+    luaL_pushresult(&buffer);
+
+    return 1;
+}
+
+int lua_mavlink_is_high_latency_enabled(lua_State *L) {
+    check_arguments(L, 1, "MAVlink:is_high_latency_enabled");
+
+    if (AP::scripting()->_MAVlink_dev == nullptr) {
+        return luaL_argerror(L, 1, "MAVLink device nullptr");
+    }
+
+    bool is_enabled = AP::scripting()->_MAVlink_dev->is_high_latency_enabled();
+
+    lua_pushboolean(L, is_enabled);
+
+    return 1;
+}
+
+int lua_mavlink_set_high_latency_enabled(lua_State *L) {
+    check_arguments(L, 2, "MAVlink:set_high_latency_enabled");
+
+    if (AP::scripting()->_MAVlink_dev == nullptr) {
+        return luaL_argerror(L, 1, "MAVLink device nullptr");
+    }
+
+    bool hl_enabled = static_cast<bool>(lua_toboolean(L, 2));
+    AP::scripting()->_MAVlink_dev->set_high_latency_enabled(hl_enabled);
+
+    return 1;
+}
+
+int lua_mavlink_receive(lua_State *L) {
+    check_arguments(L, 2, "MAVlink:receive");
+
+    if (AP::scripting()->_MAVlink_dev == nullptr) {
+        return luaL_argerror(L, 1, "MAVLink device nullptr");
+    }
+
+    // check incoming byte
+    const lua_Integer rx_byte = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((rx_byte >= 0) && (rx_byte <= UINT8_MAX)), 2, "rx byte out of range");
+    const uint8_t rx = static_cast<uint8_t>(rx_byte);
+
+    AP::scripting()->_MAVlink_dev->handle_rx_byte(rx);
+
+    return 0;
+
+}
+#endif //HAL_HIGH_LATENCY2_ENABLED

@@ -23,6 +23,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/I2CDevice.h>
 #include "AP_Scripting_CANSensor.h"
+#include "AP_Scripting_MAVLink.h"
 
 #ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
   #define SCRIPTING_MAX_NUM_I2C_DEVICE 4
@@ -74,6 +75,10 @@ public:
     // Scripting CAN sensor
     ScriptingCANSensor *_CAN_dev;
     ScriptingCANSensor *_CAN_dev2;
+#endif
+
+#if HAL_HIGH_LATENCY2_ENABLED
+    ScriptingMAVLink *_MAVlink_dev;
 #endif
 
     // mission item buffer

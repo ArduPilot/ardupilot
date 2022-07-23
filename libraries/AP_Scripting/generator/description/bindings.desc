@@ -555,3 +555,11 @@ userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint
 userdata uint32_t manual tofloat uint32_t_tofloat
 
+include AP_Scripting/AP_Scripting_MAVLink.h
+singleton ScriptingMAVLink depends HAL_HIGH_LATENCY2_ENABLED
+singleton ScriptingMAVLink rename MAVLink
+singleton ScriptingMAVLink manual begin lua_mavlink_get_MAVLink
+singleton ScriptingMAVLink manual create_high_latency_packet lua_mavlink_create_high_latency_packet
+singleton ScriptingMAVLink manual is_high_latency_enabled lua_mavlink_is_high_latency_enabled
+singleton ScriptingMAVLink manual set_high_latency_enabled lua_mavlink_set_high_latency_enabled
+singleton ScriptingMAVLink manual receive lua_mavlink_receive
