@@ -35,7 +35,7 @@ def wait_time(mav, simtime):
         if t2 - t1 > simtime:
             break
 
-cmd = '../Tools/autotest/sim_vehicle.py -D'
+cmd = '../autotest/sim_vehicle.py -D'
 mavproxy = pexpect.spawn(cmd, logfile=sys.stdout, timeout=30)
 mavproxy.expect("Frame")
 
