@@ -596,6 +596,7 @@ is bob we will attempt to checkout bob-AVR'''
                       self.get_exception_stacktrace(e))
 
     def AP_Periph_boards(self):
+        return ["Hitec-Airspeed"]
         return AP_PERIPH_BOARDS
 
     def build_arducopter(self, tag):
@@ -658,7 +659,7 @@ is bob we will attempt to checkout bob-AVR'''
         '''build Blimp binaries'''
         self.build_vehicle(tag,
                            "Blimp",
-                           self.board_list.find_autobuild_boards('Blimp')[:],
+                           ['CubeOrange'],
                            "Blimp",
                            "blimp")
 
@@ -749,12 +750,12 @@ is bob we will attempt to checkout bob-AVR'''
 
         for tag in self.tags:
             t0 = time.time()
-            self.build_arducopter(tag)
-            self.build_arduplane(tag)
-            self.build_rover(tag)
-            self.build_antennatracker(tag)
-            self.build_ardusub(tag)
-            self.build_AP_Periph(tag)
+            # self.build_arducopter(tag)
+            # self.build_arduplane(tag)
+            # self.build_rover(tag)
+            # self.build_antennatracker(tag)
+            # self.build_ardusub(tag)
+            # self.build_AP_Periph(tag)
             self.build_blimp(tag)
             self.history.record_run(githash, tag, t0, time.time()-t0)
 
@@ -776,6 +777,7 @@ if __name__ == '__main__':
     cmd_opts, cmd_args = parser.parse_args()
 
     tags = cmd_opts.tags
+#    tags = ["dirty"]
     if len(tags) == 0:
         # FIXME: wedge this defaulting into parser somehow
         tags = ["stable", "beta-4.3", "beta", "latest"]

@@ -1119,6 +1119,18 @@ if __name__ == "__main__":
         'clang-scan-build',
     ]
 
+    steps = [
+        'prerequisites',
+        'build.Binaries',
+        'build.All',
+        'build.Parameters',
+
+        'build.Tracker',
+        'defaults.Tracker',
+        'test.Tracker',
+    ]
+    moresteps = []
+
     # canonicalise the step names.  This allows
     # backwards-compatability from the hodge-podge
     # fly.ArduCopter/drive.APMrover2 to the more common test.Copter
