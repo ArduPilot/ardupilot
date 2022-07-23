@@ -84,7 +84,7 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
     state += KG*(TAS_mea - TAS_pred); // [3 x 1] + [3 x 1] * [1 x 1]
 
     // Update the covariance matrix
-    Vector3f HP2 = H_TAS * P;
+    Vector3f HP2 = H_TAS.row_times_mat(P);
     P -= KG.mul_rowcol(HP2);
 
     // force symmetry on the covariance matrix - necessary due to rounding
