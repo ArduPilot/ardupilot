@@ -261,42 +261,60 @@ function get_form(vname) {
 function run_filters(filters,freq,sample_rate,samples) {
     var integral_in = 0.0;
     var integral_out = 0.0;
-    var crossing_in_i = 0;
-    var crossing_sum = 0;
+    var crossing_lag = 0;
     var crossing_count = 0;
-    var last_in = 0.0;
     var last_out = 0.0;
+    var last_t = 0.0;
 
     for (var j=0;j<filters.length; j++) {
         filters[j].reset(0.0);
     }
 
-    for (var i=0;i<samples;i++) {
+    var period = 1 / freq;
+    // start integration at the closest multiple of period then
+    // offset to get whole number of periods before end
+    // (start and end at the same phase)
+    // could use the lag estimate to further offset the filter integration time
+    var int_start_time = Math.round(((0.1*samples)/sample_rate) / period) * period;
+    var end_offset = (samples/sample_rate) % period;
+    int_start_time += end_offset;
+
+    for (var i=-0;i<samples;i++) {
         var t = i / sample_rate;
-        var sample = Math.sin(t * Math.PI * 2.0 * freq);
-        if (i > samples/10) {
-            integral_in += Math.abs(sample);
-        }
-        if (sample >= 0 && last_in < 0) {
-            crossing_in_i = i;
-        }
-        last_in = sample;
+        var input = Math.sin(t * Math.PI * 2.0 * freq);
+        var output = input;
         for (var j=0;j<filters.length; j++) {
-            sample = filters[j].apply(sample);
+            output = filters[j].apply(output);
         }
-        if (i > samples/10) {
-            integral_out += Math.abs(sample);
+        if (t > int_start_time) {
+            // RMS amplitude of input and output to calculate attenuation
+            integral_in += Math.pow(input,2);
+            integral_out += Math.pow(output,2);
         }
-        if (sample >= 0 && last_out < 0) {
-            crossing_sum += (i-crossing_in_i);
+        if (output >= 0 && last_out < 0) {
+            // positive going zero crossing, latest value is best estimate
             crossing_count ++;
+            crossing_lag = linear_interpolate(last_t,t,0,last_out,output) - period*crossing_count;
         }
-        last_out = sample;
+        last_out = output;
+        last_t = t;
     }
-    var ratio = integral_out/integral_in;
-    var avg_lag = crossing_sum / crossing_count;
-    var lag = (360.0 * avg_lag * freq) / sample_rate;
+    var ratio = Math.sqrt(integral_out)/Math.sqrt(integral_in);
+    var lag = 360.0 * crossing_lag * freq;
+
+    // wrap to +- 180
+    while (lag > 180.0) {
+        lag -= 360.0;
+    }
+    while (lag < -180.0) {
+        lag += 360.0;
+    }
     return [ratio,lag];
+}
+
+function linear_interpolate(low_output, high_output, var_value, var_low, var_high) {
+    var p = (var_value - var_low) / (var_high - var_low);
+    return low_output + p * (high_output - low_output);
 }
 
 var chart;
@@ -305,8 +323,8 @@ function calculate_filter() {
     var sample_rate = get_form("GyroSampleRate");
     var filters = []
     var freq_max = get_form("MaxFreq");
-    var samples = 100000;
-    var freq_step = 1;
+    var samples = 10000;
+    var freq_step = 0.5;
     filters.push(new HarmonicNotchFilter(sample_rate,
                                          get_form("INS_HNTCH_ENABLE"),
                                          get_form("INS_HNTCH_MODE"),
@@ -330,51 +348,57 @@ function calculate_filter() {
     filters.push(new DigitalBiquadFilter(sample_rate,get_form("INS_GYRO_FILTER")));
     filters.push(new LPF_1P(sample_rate,get_form("FLTD")));
 
-    var num_notches = 0;
-    for (const f in filters) {
-        if ('notches' in filters[f]) {
-            num_notches += filters[f].notches.length;
-        }
-    }
-    samples /= (num_notches+1);
-    samples /= Math.max(1, freq_max/150.0);
-    // console.log("samples: " + samples)
-
     var scale = document.getElementById("ScaleLog");
     var use_dB = scale.checked;
     var attenuation = []
     var phase_lag = []
+    var min_phase_lag = 0.0;
     var max_phase_lag = 0.0;
     var phase_wrap = 0.0;
     var min_atten = 0.0;
     var max_atten = 1.0;
+    var last_phase = 0.0;
     var atten_string = "Attenuation";
     if (use_dB) {
         max_atten = 0;
         min_atten = -10;
         atten_string = "Attenuation (dB)";
     }
-    for (freq=1; freq<=freq_max; freq++) {
+
+    // start at zero
+    attenuation.push({x:0, y:0});
+    phase_lag.push({x:0, y:0});
+
+    for (freq=1; freq<=freq_max; freq+=freq_step) {
         var v = run_filters(filters, freq, sample_rate, samples);
         var aten = v[0];
+        var phase = v[1] + phase_wrap;
         if (use_dB) {
             // show power in decibels
             aten = 20 * Math.log10(aten);
+        } else {
+            // attenuation is opposite of ratio
+            aten = 1.0 - aten;
         }
-        min_atten = Math.min(min_atten, aten);
-        max_atten = Math.max(max_atten, aten);
-        attenuation.push({x:freq, y:aten});
-        var phase = v[1] + phase_wrap;
-        if (phase < max_phase_lag-100) {
-            // we have wrapped
+        var phase_diff = phase - last_phase;
+        if (phase_diff > 180) {
+            phase_wrap -= 360.0;
+            phase -= 360.0;
+        } else if (phase_diff < -180) {
             phase_wrap += 360.0;
             phase += 360.0;
         }
+        attenuation.push({x:freq, y:aten});
         phase_lag.push({x:freq, y:-phase});
-        if (phase > max_phase_lag) {
-            max_phase_lag = phase;
-        }
+
+        min_atten = Math.min(min_atten, aten);
+        max_atten = Math.max(max_atten, aten);
+        min_phase_lag = Math.min(min_phase_lag, phase)
+        max_phase_lag = Math.max(max_phase_lag, phase)
+        last_phase = phase;
     }
+    min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
+    min_phase_lag = Math.min(Math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
     max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
     max_phase_lag = Math.min(get_form("MaxPhaseLag"), max_phase_lag);
     if (chart) {
@@ -384,8 +408,9 @@ function calculate_filter() {
         chart.options.scales.yAxes[0].ticks.min = min_atten
         chart.options.scales.yAxes[0].ticks.max = max_atten;
         chart.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
+        chart.options.scales.yAxes[0].ticks.reverse = !use_dB;
         chart.options.scales.yAxes[1].ticks.min = -max_phase_lag;
-        chart.options.scales.yAxes[1].ticks.max = 0;
+        chart.options.scales.yAxes[1].ticks.max = -min_phase_lag;
         chart.update();
     } else {
         chart = new Chart("Attenuation", {
@@ -395,7 +420,8 @@ function calculate_filter() {
                     {
                         label: 'Attenuation',
                         yAxisID: 'Attenuation',
-                        pointRadius: 4,
+                        pointRadius: 0,
+                        hitRadius: 8,
                         borderColor: "rgba(0,0,255,1.0)",
                         pointBackgroundColor: "rgba(0,0,255,1.0)",
                         data: attenuation,
@@ -405,7 +431,8 @@ function calculate_filter() {
                     {
                         label: 'PhaseLag',
                         yAxisID: 'PhaseLag',
-                        pointRadius: 4,
+                        pointRadius: 0,
+                        hitRadius: 8,
                         borderColor: "rgba(255,0,0,1.0)",
                         pointBackgroundColor: "rgba(255,0,0,1.0)",
                         data: phase_lag,
@@ -422,13 +449,14 @@ function calculate_filter() {
                             scaleLabel: { display: true, labelString: atten_string },
                             id: 'Attenuation',
                             position: 'left',
-                            ticks: {min:min_atten, max:max_atten, stepSize:0.1}
+                            ticks: {min:min_atten, max:max_atten, stepSize:0.1, reverse:!use_dB}
                         },
                         {
                             scaleLabel: { display: true, labelString: "Phase Lag(deg)" },
                             id: 'PhaseLag',
                             position: 'right',
-                            ticks: {min:-max_phase_lag, max:0, stepSize:10}
+                            gridLines: {display:false},
+                            ticks: {min:-max_phase_lag, max:-min_phase_lag, stepSize:10}
                         }
                     ],
                     xAxes: [
@@ -437,7 +465,15 @@ function calculate_filter() {
                             ticks: {min:0, max:freq_max, stepSize:10}
                         }
                     ],
-                }
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            // round tooltip to two decimal places
+                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
+                        }
+                    }
+                 }
             }
         });
     }
