@@ -1494,8 +1494,10 @@ void AP_BLHeli::log_bidir_telemetry(void)
                 trpm = trpm * 200 / motor_poles;
             }
 
-            last_log_ms[last_telem_esc] = now;
-            DEV_PRINTF("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
+            if (trpm > 0) {
+                last_log_ms[last_telem_esc] = now;
+                DEV_PRINTF("ESC[%u] RPM=%u e=%.1f t=%u\n", last_telem_esc, trpm, hal.rcout->get_erpm_error_rate(motor_idx), (unsigned)AP_HAL::millis());
+            }
         }
     }
 
