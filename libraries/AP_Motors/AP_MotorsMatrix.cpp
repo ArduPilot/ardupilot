@@ -1043,7 +1043,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                     add_motors(motors, ARRAY_SIZE(motors));
                     break;
                 }
-                case MOTOR_FRAME_TYPE_CW_X:
+                case MOTOR_FRAME_TYPE_CW_X: {
                     _frame_type_string = "CW_X";
                     static const AP_MotorsMatrix::MotorDef motors[] {
                         {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  1 },
@@ -1057,6 +1057,40 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                             };
                     add_motors(motors, ARRAY_SIZE(motors));
                     break;
+                }
+                // BF/X cinelifters using two 4-in-1 ESCs are quite common
+                // see: https://fpvfrenzy.com/betaflight-motor-order/
+                case MOTOR_FRAME_TYPE_BF_X: {
+                    _frame_type_string = "BF_X";
+                    static const AP_MotorsMatrix::MotorDef motors[] {
+                        {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3 },
+                        {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1 },
+                        { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5 },
+                        {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7 },
+                        {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4 },
+                        {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2 },
+                        { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6 },
+                        {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8 },
+                    };
+                    add_motors(motors, ARRAY_SIZE(motors));
+                    break;
+                }
+                case MOTOR_FRAME_TYPE_BF_X_REV: {
+                    // betaflight octa quad X order, reversed motors
+                    _frame_type_string = "X_REV";
+                    static const AP_MotorsMatrix::MotorDef motors[] {
+                        {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3 },
+                        {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1 },
+                        { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  5 },
+                        {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7 },
+                        {  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4 },
+                        {   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2 },
+                        { -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6 },
+                        {  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8 },
+                    };
+                    add_motors(motors, ARRAY_SIZE(motors));
+                    break;
+                }
                 default:
                     // octaquad frame class does not support this frame type
                     _frame_type_string = "UNSUPPORTED";
