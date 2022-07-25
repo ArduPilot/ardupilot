@@ -245,6 +245,7 @@ private:
         MIS_ITEM_CHECK_TAKEOFF       = (1 << 3),
         MIS_ITEM_CHECK_VTOL_TAKEOFF  = (1 << 4),
         MIS_ITEM_CHECK_RALLY         = (1 << 5),
+        MIS_ITEM_CHECK_RETURN_TO_LAUNCH = (1 << 6),
         MIS_ITEM_CHECK_MAX
     };
 
