@@ -665,14 +665,25 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #endif //AP_GPS_MAV_ENABLED
 
     // user has to explicitly set the UAVCAN type, do not use AUTO
+    case GPS_TYPE_AUTO:
     case GPS_TYPE_UAVCAN:
     case GPS_TYPE_UAVCAN_RTK_BASE:
-    case GPS_TYPE_UAVCAN_RTK_ROVER:
+    case GPS_TYPE_UAVCAN_RTK_ROVER: {
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS
-        dstate->auto_detected_baud = false; // specified, not detected
-        return AP_GPS_UAVCAN::probe(*this, state[instance]);
+        AP_GPS_Backend *ret = AP_GPS_UAVCAN::probe(*this, state[instance]);
+        if (ret != nullptr) {
+            dstate->auto_detected_baud = false; // specified, not detected
+            if (_type[instance] == GPS_TYPE_AUTO) {
+                _type[instance] = GPS_TYPE_UAVCAN;
+            }
+            return ret;
+        }
 #endif
-        return nullptr; // We don't do anything here if UAVCAN is not supported
+        if (_type[instance] != GPS_TYPE_AUTO) {
+            return nullptr;
+        }
+        break;
+    }
 #if HAL_MSP_GPS_ENABLED
     case GPS_TYPE_MSP:
         dstate->auto_detected_baud = false; // specified, not detected

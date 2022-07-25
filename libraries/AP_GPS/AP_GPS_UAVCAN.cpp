@@ -231,6 +231,7 @@ AP_GPS_Backend* AP_GPS_UAVCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
     }
     // initialise the backend based on the UAVCAN Moving baseline selection
     switch (_gps.get_type(_state.instance)) {
+        case AP_GPS::GPS_TYPE_AUTO:
         case AP_GPS::GPS_TYPE_UAVCAN:
             backend = new AP_GPS_UAVCAN(_gps, _state, AP_GPS::GPS_ROLE_NORMAL);
             break;
