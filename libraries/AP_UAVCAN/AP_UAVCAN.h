@@ -202,6 +202,7 @@ public:
         DNA_CLEAR_DATABASE        = (1U<<0),
         DNA_IGNORE_DUPLICATE_NODE = (1U<<1),
         CANFD_ENABLED             = (1U<<2),
+        DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
     };
 
     // check if a option is set

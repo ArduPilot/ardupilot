@@ -475,8 +475,9 @@ void AP_UAVCAN_DNA_Server::handleNodeStatus(uint8_t node_id, const NodeStatusCb 
     if (node_id > MAX_NODE_ID) {
         return;
     }
-    if (cb.msg->health != uavcan::protocol::NodeStatus::HEALTH_OK ||
-        cb.msg->mode != uavcan::protocol::NodeStatus::MODE_OPERATIONAL) {
+    if ((cb.msg->health != uavcan::protocol::NodeStatus::HEALTH_OK ||
+        cb.msg->mode != uavcan::protocol::NodeStatus::MODE_OPERATIONAL) &&
+        !_ap_uavcan->option_is_set(AP_UAVCAN::Options::DNA_IGNORE_UNHEALTHY_NODE)) {
         //if node is not healthy or operational, clear resp health mask, and set fault_node_id
         fault_node_id = node_id;
         server_state = NODE_STATUS_UNHEALTHY;
@@ -714,6 +715,10 @@ bool AP_UAVCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) co
         return false;
     }
     case NODE_STATUS_UNHEALTHY: {
+        if (_ap_uavcan->option_is_set(AP_UAVCAN::Options::DNA_IGNORE_UNHEALTHY_NODE)) {
+            // ignore error
+            return true;
+        }
         snprintf(fail_msg, fail_msg_len, "Node %d unhealthy!", fault_node_id);
         return false;
     }
