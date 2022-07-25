@@ -630,7 +630,7 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
     if (_state == nullptr) {
         return 0;
     }
-    return state->baudrate();
+    return _state->baudrate();
 }
 
 // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found
