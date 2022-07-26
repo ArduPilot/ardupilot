@@ -28,31 +28,12 @@ void AP_ESC_APDHVPro::init(AP_HAL::UARTDriver *_uart) {
 bool AP_ESC_APDHVPro::update() {
     bool status = false;
 
-    // static int count = 0;
-
-    // if (count++ > 25)
-    // {
-    //     for (int idx = 0; idx < 5; idx++)
-    //     {
-    //         if (hal.serial(idx)->available())
-    //             can_printf("APD ESC Telem : update() %d", idx);
-    //     }
-
-    //     count = 0;
-    // }
-
     if (!port) {
         return status;
     }
 
-    // // we expect at least 50ms idle between frames
-    // bool frame_gap = (now - last_read_ms) > 10;
-    // can_printf("APD ESC Telem : update()");
-
     uint32_t size = port->available();
     if (size >= ESC_PACKET_SIZE) {
-
-        
 
         if (size > ESC_PACKET_SIZE * 2) {
             // port->discard_input();
@@ -65,13 +46,13 @@ bool AP_ESC_APDHVPro::update() {
 
                 parse_ESC_telemetry_data();
 
-                static int debug_count1 = 0;
-                if (debug_count1++ > 25) {
-                    can_printf("APD ESC Telem : V:%d, T:%d, I:%d", (int)decoded.voltage, (int)decoded.temperature, (int)decoded.bus_current);
-                    can_printf("APD ESC Telem : R:%d, S:%d, C:%d", (int)decoded.rpm, (int)decoded.status, (int)decoded.checksum);
+                // static int debug_count1 = 0;
+                // if (debug_count1++ > 25) {
+                //     can_printf("APD ESC Telem : V:%d, T:%d, I:%d", (int)decoded.voltage, (int)decoded.temperature, (int)decoded.bus_current);
+                //     can_printf("APD ESC Telem : R:%d, S:%d, C:%d", (int)decoded.rpm, (int)decoded.status, (int)decoded.checksum);
 
-                    debug_count1 = 0;
-                }
+                //     debug_count1 = 0;
+                // }
 
                 status = true;
             }
@@ -86,7 +67,8 @@ bool AP_ESC_APDHVPro::read_ESC_telemetry_data(uint32_t bytes_read) {
 
     // uint32_t count = 0;
 
-    if (bytes_read < ESC_PACKET_SIZE) return status;
+    if (bytes_read < ESC_PACKET_SIZE)
+        return status;
     // else count = ((bytes_read < BUFFER_LOOP_SIZE) ? bytes_read : BUFFER_LOOP_SIZE);
 
     // // static int debug_count = 0;
@@ -108,20 +90,29 @@ bool AP_ESC_APDHVPro::read_ESC_telemetry_data(uint32_t bytes_read) {
     //     }
     // }
 
-    for (int i = 0; i < ESC_PACKET_SIZE; i++) raw_buffer[i] = max_buffer[i];
+    for (int i = 0; i < ESC_PACKET_SIZE; i++) {
+        raw_buffer[i] = max_buffer[i];
+    }
 
     status = true;
 
-    static int debug_count = 0;
-    if (debug_count++ > 25) {
-        can_printf("APD Telem : %d %d %d %d %d %d %d %d %d %d %d", (int)raw_buffer[0], (int)raw_buffer[1], (int)raw_buffer[2], (int)raw_buffer[3], (int)raw_buffer[4], (int)raw_buffer[5], (int)raw_buffer[6], (int)raw_buffer[7], (int)raw_buffer[8], (int)raw_buffer[9], (int)raw_buffer[10]);
-        can_printf("APD Telem : %d %d %d %d %d %d %d %d %d %d %d", (int)raw_buffer[11], (int)raw_buffer[12], (int)raw_buffer[13], (int)raw_buffer[14], (int)raw_buffer[15], (int)raw_buffer[16], (int)raw_buffer[17], (int)raw_buffer[18], (int)raw_buffer[19], (int)raw_buffer[20], (int)raw_buffer[21]);
+    // static int debug_count = 0;
+    // if (debug_count++ > 25) {
+    //     can_printf("APD Telem : %d %d %d %d %d %d %d %d %d %d %d", (int)raw_buffer[0], (int)raw_buffer[1], (int)raw_buffer[2], (int)raw_buffer[3], (int)raw_buffer[4], (int)raw_buffer[5], (int)raw_buffer[6], (int)raw_buffer[7], (int)raw_buffer[8], (int)raw_buffer[9], (int)raw_buffer[10]);
+    //     can_printf("APD Telem : %d %d %d %d %d %d %d %d %d %d %d", (int)raw_buffer[11], (int)raw_buffer[12], (int)raw_buffer[13], (int)raw_buffer[14], (int)raw_buffer[15], (int)raw_buffer[16], (int)raw_buffer[17], (int)raw_buffer[18], (int)raw_buffer[19], (int)raw_buffer[20], (int)raw_buffer[21]);
 
-        debug_count = 0;
-    }
+    //     debug_count = 0;
+    // }
 
     return status;
 }
+
+#define SERIESRESISTOR 10000
+#define NOMINAL_RESISTANCE 10000
+#define NOMINAL_TEMPERATURE 25
+#define BCOEFFICIENT 3455
+
+#define TEMPERATURE_MAX_RESOLUTION 4096
 
 
 bool AP_ESC_APDHVPro::parse_ESC_telemetry_data() {
@@ -131,6 +122,9 @@ bool AP_ESC_APDHVPro::parse_ESC_telemetry_data() {
 
     decoded.voltage = (uint16_t)(((raw_buffer[1] << 8) + raw_buffer[0])/100);
     // Temperature values needs computation later implementation
+    float temp1 = (TEMPERATURE_MAX_RESOLUTION/(float)((raw_buffer[3] << 8) + raw_buffer[2])) - 1;
+    float temperature = (SERIESRESISTOR / temp1) / NOMINAL_RESISTANCE;
+
     decoded.temperature = (uint16_t)((raw_buffer[3] << 8) + raw_buffer[2]);
     decoded.bus_current = (uint16_t)(((raw_buffer[5] << 8) + raw_buffer[4]) / CURRENT_COEFFICIENT);
     decoded.reserved1 = (uint16_t)((raw_buffer[7] << 8) + raw_buffer[6]);
@@ -141,10 +135,11 @@ bool AP_ESC_APDHVPro::parse_ESC_telemetry_data() {
     decoded.reserved2 = raw_buffer[17];
     decoded.checksum = (uint16_t)((raw_buffer[19] << 8) + raw_buffer[18]);
 
-    if (check_fletch == (int)decoded.checksum) { }
-    else can_printf("APD Telem checksum: %d, %d", check_fletch, (int)decoded.checksum);
-
-    status = true;
+    // Currently, checksum code is not mandated
+    if (check_fletch == (int)decoded.checksum) { 
+        status = true;
+    }
+    // else can_printf("APD Telem checksum: %d, %d", check_fletch, (int)decoded.checksum);
 
     return status;
 }

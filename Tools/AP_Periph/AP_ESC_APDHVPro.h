@@ -9,7 +9,7 @@
 #define BUFFER_LOOP_SIZE 44
 #define ESC_PACKET_SIZE 22
 
-#define POLECOUNT 2
+#define POLECOUNT 42
 #define CURRENT_COEFFICIENT 12.5
 
 
