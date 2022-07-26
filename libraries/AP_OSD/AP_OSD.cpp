@@ -320,8 +320,10 @@ void AP_OSD::init()
 #if OSD_ENABLED
 void AP_OSD::osd_thread()
 {
+    const uint8_t scheduler_delay_ms = backend->get_scheduler_delay_ms();
+
     while (true) {
-        hal.scheduler->delay(100);
+        hal.scheduler->delay(scheduler_delay_ms);
         update_osd();
     }
 }

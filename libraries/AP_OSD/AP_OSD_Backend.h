@@ -56,6 +56,9 @@ public:
     // copy the backend specific symbol set to the OSD lookup table
     virtual void init_symbol_set(uint8_t *symbols, const uint8_t size);
 
+    // Default OSD thread scheduler delay is 10Hz
+    virtual uint8_t get_scheduler_delay_ms() const {return 100u;};
+
     AP_OSD * get_osd()
     {
         return &_osd;
