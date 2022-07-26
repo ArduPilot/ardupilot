@@ -137,6 +137,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: This sets the maximum rate that streaming log messages will be logged to the file backend. A value of zero means that rate limiting is disabled.
     // @Units: Hz
     // @Range: 0 1000
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("_FILE_RATEMAX",  8, AP_Logger, _params.file_ratemax, 0),
 
@@ -146,6 +147,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means that rate limiting is disabled.
     // @Units: Hz
     // @Range: 0 1000
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
 #endif
@@ -156,6 +158,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: This sets the maximum rate that streaming log messages will be logged to the mavlink backend. A value of zero means that rate limiting is disabled.
     // @Units: Hz
     // @Range: 0 1000
+    // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("_BLK_RATEMAX", 10, AP_Logger, _params.blk_ratemax, 0),
 #endif
