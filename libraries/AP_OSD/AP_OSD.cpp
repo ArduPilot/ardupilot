@@ -320,6 +320,9 @@ void AP_OSD::init()
 #if OSD_ENABLED
 void AP_OSD::osd_thread()
 {
+    // initialize thread specific code once
+    backend->osd_thread_run_once();
+
     while (true) {
         hal.scheduler->delay(100);
         update_osd();

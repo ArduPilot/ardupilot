@@ -56,6 +56,9 @@ public:
     // copy the backend specific symbol set to the OSD lookup table
     virtual void init_symbol_set(uint8_t *symbols, const uint8_t size);
 
+    // called by the OSD thread once
+    virtual void osd_thread_run_once() { return; }
+
     AP_OSD * get_osd()
     {
         return &_osd;

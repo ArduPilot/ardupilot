@@ -50,6 +50,14 @@ bool AP_OSD_MSP_DisplayPort::init(void)
     return true;
 }
 
+// called by the OSD thread once
+void AP_OSD_MSP_DisplayPort::osd_thread_run_once()
+{
+    if (_displayport != nullptr) {
+        _displayport->init_uart();
+    }
+}
+
 void AP_OSD_MSP_DisplayPort::clear(void)
 {
     // clear remote MSP screen
