@@ -51,6 +51,7 @@
 #include "AP_RangeFinder_MSP.h"
 #include "AP_RangeFinder_USD1_CAN.h"
 #include "AP_RangeFinder_Benewake_CAN.h"
+#include "AP_RangeFinder_RDS02UF.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -607,6 +608,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::Benewake_CAN:
 #if AP_RANGEFINDER_BENEWAKE_CAN_ENABLED
         _add_backend(new AP_RangeFinder_Benewake_CAN(state[instance], params[instance]), instance);
+        break;
+#endif
+#if AP_RANGEFINDER_RDS02UF_ENABLED
+    case Type::RDS02UF:
+        serial_create_fn = AP_RangeFinder_RDS02UF::create;
         break;
 #endif
     case Type::NONE:
