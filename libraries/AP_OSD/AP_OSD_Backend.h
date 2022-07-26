@@ -56,6 +56,9 @@ public:
     // copy the backend specific symbol set to the OSD lookup table
     virtual void init_symbol_set(uint8_t *symbols, const uint8_t size);
 
+    // does this backend require the screen to be drawn by the OSD thread
+    virtual bool is_draw_required() const {return true;};
+
     AP_OSD * get_osd()
     {
         return &_osd;
