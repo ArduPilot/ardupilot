@@ -658,9 +658,8 @@ AP_Logger_RateLimiter::AP_Logger_RateLimiter(const AP_Logger &_front, const AP_F
  */
 bool AP_Logger_RateLimiter::should_log_streaming(uint8_t msgid)
 {
-    if (rate_limit_hz <= 0) {
-        // no limiting (user changed the parameter)
-        return true;
+    if (front._log_pause) {
+        return false;
     }
     const uint16_t now = AP_HAL::millis16();
     uint16_t delta_ms = now - last_send_ms[msgid];
@@ -678,8 +677,8 @@ bool AP_Logger_RateLimiter::should_log_streaming(uint8_t msgid)
  */
 bool AP_Logger_RateLimiter::should_log(uint8_t msgid, bool writev_streaming)
 {
-    if (rate_limit_hz <= 0) {
-        // no limiting (user changed the parameter)
+    if (rate_limit_hz <= 0 && !front._log_pause) {
+        // no rate limiting if not paused and rate is zero(user changed the parameter)
         return true;
     }
     if (last_send_ms[msgid] == 0 && !writev_streaming) {

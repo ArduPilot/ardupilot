@@ -153,8 +153,8 @@ void AP_Logger_File::periodic_1Hz()
         }
     }
 
-    if (rate_limiter == nullptr && _front._params.file_ratemax > 0) {
-        // setup rate limiting
+    if (rate_limiter == nullptr && (_front._params.file_ratemax > 0 || _front._log_pause)) {
+        // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
         rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.file_ratemax);
     }
 }
