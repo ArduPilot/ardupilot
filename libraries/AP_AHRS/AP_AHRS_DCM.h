@@ -148,7 +148,7 @@ private:
     Vector3f        _accel_ef_blended;
 
     // Methods
-    void            matrix_update(float _G_Dt);
+    void            matrix_update(void);
     void            normalize(void);
     void            check_matrix(void);
     bool            renorm(Vector3f const &a, Vector3f &result);
