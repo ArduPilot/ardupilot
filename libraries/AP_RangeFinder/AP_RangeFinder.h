@@ -89,6 +89,7 @@ public:
         MSP = 32,
         USD1_CAN = 33,
         Benewake_CAN = 34,
+        RDS02UF = 35,
         SIM = 100,
     };
 
