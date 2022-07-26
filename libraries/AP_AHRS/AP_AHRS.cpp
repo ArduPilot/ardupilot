@@ -2994,8 +2994,9 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 uint8_t AP_AHRS::get_primary_IMU_index() const
 {
     int8_t imu = -1;
-    switch (ekf_type()) {
+    switch (active_EKF_type()) {
     case EKFType::NONE:
+        imu = AP::ins().get_primary_gyro();
         break;
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
