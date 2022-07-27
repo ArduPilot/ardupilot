@@ -55,8 +55,7 @@ public:
         Matrix3f dcm_matrix;
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
-        Vector3f accel_ef[INS_MAX_INSTANCES];  // must be INS_MAX_INSTANCES
-        Vector3f accel_ef_blended;
+        Vector3f accel_ef;
         Vector3f accel_bias;
     };
 

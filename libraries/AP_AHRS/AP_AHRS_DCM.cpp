@@ -122,10 +122,7 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.dcm_matrix = _body_dcm_matrix;
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
-
-    const uint8_t to_copy = MIN(sizeof(results.accel_ef), sizeof(_accel_ef));
-    memcpy(results.accel_ef, _accel_ef, to_copy);
-    results.accel_ef_blended = _accel_ef_blended;
+    results.accel_ef = _accel_ef;
 }
 
 /*
@@ -397,7 +394,7 @@ AP_AHRS_DCM::_P_gain(float spin_rate)
 float
 AP_AHRS_DCM::_yaw_gain(void) const
 {
-    const float VdotEFmag = _accel_ef[_active_accel_instance].xy().length();
+    const float VdotEFmag = _accel_ef.xy().length();
 
     if (VdotEFmag <= 4.0f) {
         return 0.2f*(4.5f - VdotEFmag);
@@ -654,9 +651,8 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const AP_InertialSensor &_ins = AP::ins();
 
     // rotate accelerometer values into the earth frame
-    uint8_t healthy_count = 0;
     for (uint8_t i=0; i<_ins.get_accel_count(); i++) {
-        if (_ins.use_accel(i) && healthy_count < 2) {
+        if (_ins.use_accel(i)) {
             /*
               by using get_delta_velocity() instead of get_accel() the
               accel value is sampled over the right time delta for
@@ -666,16 +662,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
             float delta_velocity_dt;
             _ins.get_delta_velocity(i, delta_velocity, delta_velocity_dt);
             if (delta_velocity_dt > 0) {
-                _accel_ef[i] = _dcm_matrix * (delta_velocity / delta_velocity_dt);
+                Vector3f accel_ef = _dcm_matrix * (delta_velocity / delta_velocity_dt);
                 // integrate the accel vector in the earth frame between GPS readings
-                _ra_sum[i] += _accel_ef[i] * deltat;
+                _ra_sum[i] += accel_ef * deltat;
             }
-            healthy_count++;
         }
     }
 
     // set _accel_ef_blended based on filtered accel
-    _accel_ef_blended = _dcm_matrix * _ins.get_accel();
+    _accel_ef = _dcm_matrix * _ins.get_accel();
 
     // keep a sum of the deltat values, so we know how much time
     // we have integrated over

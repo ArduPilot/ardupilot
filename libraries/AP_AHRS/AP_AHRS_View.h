@@ -141,8 +141,8 @@ public:
         return ahrs.groundspeed();
     }
 
-    const Vector3f &get_accel_ef_blended(void) const {
-        return ahrs.get_accel_ef_blended();
+    const Vector3f &get_accel_ef(void) const {
+        return ahrs.get_accel_ef();
     }
 
     uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {

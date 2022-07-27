@@ -158,7 +158,7 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
         yaw             : degrees(get_gyro().z),
         yaw_out         : motors.get_yaw()+motors.get_yaw_ff(),
         control_accel   : (float)accel_target.z,
-        accel           : (float)(-(get_accel_ef_blended().z + GRAVITY_MSS) * 100.0f),
+        accel           : (float)(-(get_accel_ef().z + GRAVITY_MSS) * 100.0f),
         accel_out       : motors.get_throttle()
     };
     AP::logger().WriteBlock(&pkt_rate, sizeof(pkt_rate));
