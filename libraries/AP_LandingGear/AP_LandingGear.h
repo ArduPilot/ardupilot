@@ -5,14 +5,6 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/AP_Common.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-#define DEFAULT_PIN_WOW 8
-#define DEFAULT_PIN_WOW_POL 1
-#else
-#define DEFAULT_PIN_WOW -1
-#define DEFAULT_PIN_WOW_POL 0
-#endif
-
 /// @class  AP_LandingGear
 /// @brief  Class managing the control of landing gear
 class AP_LandingGear {
