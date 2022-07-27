@@ -244,7 +244,7 @@ bool AR_PosControl::init()
     // set target velocity and acceleration
     _vel_desired = vel_NED.xy();
     _vel_target.zero();
-    _accel_desired = AP::ahrs().get_accel_ef_blended().xy();
+    _accel_desired = AP::ahrs().get_accel_ef().xy();
     _accel_target.zero();
 
     // clear reversed setting
@@ -335,7 +335,7 @@ void AR_PosControl::write_log()
     }
 
     // get acceleration
-    const Vector3f curr_accel_NED = AP::ahrs().get_accel_ef_blended() * 100.0;
+    const Vector3f curr_accel_NED = AP::ahrs().get_accel_ef() * 100.0;
 
     // convert position to required format
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;
