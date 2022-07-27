@@ -193,14 +193,12 @@ public:
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void);
 
-    const Vector3f &get_accel_ef(uint8_t i) const;
-    const Vector3f &get_accel_ef() const;
+    const Vector3f &get_accel_ef() const {
+        return _accel_ef;
+    }
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
-
-    // blended accelerometer values in the earth frame in m/s/s
-    const Vector3f &get_accel_ef_blended() const;
 
     // set the EKF's origin location in 10e7 degrees.  This should only
     // be called when the EKF has no absolute position reference (i.e. GPS)
@@ -710,8 +708,7 @@ private:
 
     Vector3f _gyro_drift;
     Vector3f _gyro_estimate;
-    Vector3f _accel_ef_ekf[INS_MAX_INSTANCES];
-    Vector3f _accel_ef_ekf_blended;
+    Vector3f _accel_ef;
     Vector3f _accel_bias;
 
     const uint16_t startup_delay_ms = 1000;

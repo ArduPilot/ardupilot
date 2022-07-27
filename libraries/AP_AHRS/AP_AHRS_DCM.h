@@ -144,8 +144,7 @@ private:
     static constexpr float _ki_yaw = 0.01f;
 
     // accelerometer values in the earth frame in m/s/s
-    Vector3f        _accel_ef[INS_MAX_INSTANCES];
-    Vector3f        _accel_ef_blended;
+    Vector3f        _accel_ef;
 
     // Methods
     void            matrix_update(void);
