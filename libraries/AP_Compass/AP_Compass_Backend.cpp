@@ -48,10 +48,6 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
 {
     Compass::mag_state &state = _compass._state[Compass::StateIndex(i)];
 
-    if (state.diagonals.get().is_zero()) {
-        state.diagonals.set(Vector3f(1.0f,1.0f,1.0f));
-    }
-
     const Vector3f &offsets = state.offset.get();
     const Vector3f &diagonals = state.diagonals.get();
     const Vector3f &offdiagonals = state.offdiagonals.get();
