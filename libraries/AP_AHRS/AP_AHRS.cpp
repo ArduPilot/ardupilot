@@ -2084,6 +2084,16 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         ret = false;
     }
 
+    if (!attitudes_consistent(failure_msg, failure_msg_len)) {
+        return false;
+    }
+
+    // ensure we're using the configured backend:
+    if (ekf_type() != active_EKF_type()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "AHRS: not using configured AHRS type");
+        return false;
+    }
+
     switch (ekf_type()) {
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:

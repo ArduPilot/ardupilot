@@ -277,9 +277,6 @@ public:
     // true if offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
-    // check all cores providing consistent attitudes for prearm checks
-    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
-
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng);
@@ -674,6 +671,9 @@ private:
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
     }
+
+    // check all cores providing consistent attitudes for prearm checks
+    bool attitudes_consistent(char *failure_msg, const uint8_t failure_msg_len) const;
 
     /*
      * Attitude-related private methods and attributes:
