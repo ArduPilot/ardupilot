@@ -3766,7 +3766,7 @@ float QuadPlane::transition_threshold(void)
 void QuadPlane::update_throttle_mix(void)
 {
     // update filtered acceleration
-    Vector3f accel_ef = ahrs.get_accel_ef_blended();
+    Vector3f accel_ef = ahrs.get_accel_ef();
     accel_ef.z += GRAVITY_MSS;
     throttle_mix_accel_ef_filter.apply(accel_ef, plane.scheduler.get_loop_period_s());
 
