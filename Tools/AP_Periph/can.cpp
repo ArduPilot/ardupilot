@@ -1240,6 +1240,7 @@ static void processRx(void)
 #if DEBUG_PKTS
             const int16_t res = 
 #endif
+            rx_frame.iface_id = ins.index;
             canardHandleRxFrame(&ins.canard, &rx_frame, timestamp);
 #if DEBUG_PKTS
             if (res < 0 &&
