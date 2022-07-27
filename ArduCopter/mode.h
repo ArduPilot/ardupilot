@@ -87,6 +87,11 @@ public:
     virtual uint32_t wp_distance() const { return 0; }
     virtual float crosstrack_error() const { return 0.0f;}
 
+    // functions to support MAV_CMD_DO_CHANGE_SPEED
+    virtual bool set_speed_xy(float speed_xy_cms) {return false;}
+    virtual bool set_speed_up(float speed_xy_cms) {return false;}
+    virtual bool set_speed_down(float speed_xy_cms) {return false;}
+
     int32_t get_alt_above_ground_cm(void);
 
     // pilot input processing
@@ -442,6 +447,10 @@ public:
 
     bool is_taking_off() const override;
     bool use_pilot_yaw() const override;
+
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
 
     bool requires_terrain_failsafe() const override { return true; }
 
@@ -967,6 +976,10 @@ public:
     bool limit_check();
 
     bool is_taking_off() const override;
+    
+    bool set_speed_xy(float speed_xy_cms) override;
+    bool set_speed_up(float speed_up_cms) override;
+    bool set_speed_down(float speed_down_cms) override;
 
     // initialises position controller to implement take-off
     // takeoff_alt_cm is interpreted as alt-above-home (in cm) or alt-above-terrain if a rangefinder is available
