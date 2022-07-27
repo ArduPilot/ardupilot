@@ -1461,6 +1461,11 @@ void AP_Param::setup_object_defaults(const void *object_pointer, const struct Gr
             void *ptr = (void *)(base + group_info[i].offset);
             set_value((enum ap_var_type)type, ptr,
                       get_default_value((const AP_Param *)ptr, &group_info[i].def_value));
+        } else if (type == AP_PARAM_VECTOR3F) {
+            // Single default for all components
+            void *ptr = (void *)(base + group_info[i].offset);
+            const float default_val = get_default_value((const AP_Param *)ptr, &group_info[i].def_value);
+            ((AP_Vector3f *)ptr)->set(Vector3f{default_val, default_val, default_val});
         }
     }
 }
