@@ -374,7 +374,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass soft-iron diagonal Z component
     // @Description: DIA_Z in the compass soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
-    AP_GROUPINFO("DIA",    24, Compass, _state._priv_instance[0].diagonals, 0),
+    AP_GROUPINFO("DIA",    24, Compass, _state._priv_instance[0].diagonals, 1.0),
 
     // @Param: ODI_X
     // @DisplayName: Compass soft-iron off-diagonal X component
@@ -412,7 +412,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass2 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass2 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
-    AP_GROUPINFO("DIA2",    26, Compass, _state._priv_instance[1].diagonals, 0),
+    AP_GROUPINFO("DIA2",    26, Compass, _state._priv_instance[1].diagonals, 1.0),
 
     // @Param: ODI2_X
     // @DisplayName: Compass2 soft-iron off-diagonal X component
@@ -450,7 +450,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @DisplayName: Compass3 soft-iron diagonal Z component
     // @Description: DIA_Z in the compass3 soft-iron calibration matrix: [[DIA_X, ODI_X, ODI_Y], [ODI_X, DIA_Y, ODI_Z], [ODI_Y, ODI_Z, DIA_Z]]
     // @User: Advanced
-    AP_GROUPINFO("DIA3",    28, Compass, _state._priv_instance[2].diagonals, 0),
+    AP_GROUPINFO("DIA3",    28, Compass, _state._priv_instance[2].diagonals, 1.0),
 
     // @Param: ODI3_X
     // @DisplayName: Compass3 soft-iron off-diagonal X component
