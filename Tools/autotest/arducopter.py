@@ -9240,7 +9240,8 @@ class AutoTestCopter(AutoTest):
 
             Test("DataFlashErase",
                  "Test DataFlash Block backend erase",
-                 self.test_dataflash_erase),
+                 self.test_dataflash_erase,
+                 attempts=8),
 
             Test("Callisto",
                  "Test Callisto",
