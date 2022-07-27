@@ -284,6 +284,30 @@ bool ModeGuided::is_taking_off() const
     return guided_mode == SubMode::TakeOff && !takeoff_complete;
 }
 
+bool ModeGuided::set_speed_xy(float speed_xy_cms)
+{
+    // initialise horizontal speed, acceleration
+    pos_control->set_max_speed_accel_xy(speed_xy_cms, wp_nav->get_wp_acceleration());
+    pos_control->set_correction_speed_accel_xy(speed_xy_cms, wp_nav->get_wp_acceleration());
+    return true;
+}
+
+bool ModeGuided::set_speed_up(float speed_up_cms)
+{
+    // initialize vertical speeds and acceleration
+    pos_control->set_max_speed_accel_z(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(wp_nav->get_default_speed_down(), speed_up_cms, wp_nav->get_accel_z());
+    return true;
+}
+
+bool ModeGuided::set_speed_down(float speed_down_cms)
+{
+    // initialize vertical speeds and acceleration
+    pos_control->set_max_speed_accel_z(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    pos_control->set_correction_speed_accel_z(speed_down_cms, wp_nav->get_default_speed_up(), wp_nav->get_accel_z());
+    return true;
+}
+
 // initialise guided mode's angle controller
 void ModeGuided::angle_control_start()
 {
