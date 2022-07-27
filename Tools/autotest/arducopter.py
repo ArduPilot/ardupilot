@@ -6986,7 +6986,13 @@ class AutoTestCopter(AutoTest):
     def fly_rangefinder_mavlink_distance_sensor(self):
         self.start_subtest("Test mavlink rangefinder using DISTANCE_SENSOR messages")
         self.context_push()
-        self.set_parameter('RTL_ALT_TYPE', 0)
+        self.set_parameters({
+            "RTL_ALT_TYPE": 0,
+            "LGR_ENABLE": 1,
+            "LGR_DEPLOY_ALT": 1,
+            "LGR_RETRACT_ALT": 10, # metres
+            "SERVO10_FUNCTION": 29
+        })
         ex = None
         try:
             self.set_parameter("SERIAL5_PROTOCOL", 1)
@@ -7039,11 +7045,6 @@ class AutoTestCopter(AutoTest):
                     255  # covariance
                 )
             self.arm_vehicle()
-            self.set_parameters({
-                "SERVO10_FUNCTION": 29,
-                "LGR_DEPLOY_ALT": 1,
-                "LGR_RETRACT_ALT": 10,  # metres
-            })
             self.delay_sim_time(1)  # servo function maps only periodically updated
 #            self.send_debug_trap()
 
