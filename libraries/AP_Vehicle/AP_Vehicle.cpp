@@ -75,6 +75,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(airspeed, "ARSPD", 10, AP_Vehicle, AP_Airspeed),
 #endif
 
+#if AP_OPENDRONEID_ENABLED
+    // @Group: DID_
+    // @Path: ../AP_OpenDroneID/AP_OpenDroneID.cpp
+    AP_SUBGROUPINFO(opendroneid, "DID_", 15, AP_Vehicle, AP_OpenDroneID),
+#endif
+
     AP_GROUPEND
 };
 
@@ -201,6 +207,10 @@ void AP_Vehicle::setup()
     generator.init();
 #endif
 
+#if AP_OPENDRONEID_ENABLED
+    opendroneid.init();
+#endif
+
 // init EFI monitoring
 #if HAL_EFI_ENABLED
     efi.init();
@@ -294,6 +304,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_GENERATOR_ENABLED
     SCHED_TASK_CLASS(AP_Generator, &vehicle.generator,      update,                   10,  50, 235),
+#endif
+#if AP_OPENDRONEID_ENABLED
+    SCHED_TASK_CLASS(AP_OpenDroneID, &vehicle.opendroneid,  update,                   10,  50, 236),
 #endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
