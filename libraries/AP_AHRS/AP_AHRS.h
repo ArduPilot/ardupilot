@@ -371,11 +371,6 @@ public:
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
-    // active EKF type for logging
-    uint8_t get_active_AHRS_type(void) const {
-        return uint8_t(active_EKF_type());
-    }
-
     // get the selected ekf type, for allocation decisions
     int8_t get_ekf_type(void) const {
         return _ekf_type;
