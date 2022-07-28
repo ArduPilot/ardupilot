@@ -1836,6 +1836,17 @@ class AutoTest(ABC):
                      0,
                      0)
 
+    def run_cmd_run_prearms(self):
+        self.run_cmd(mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0,
+                     0)
+
     def run_cmd_enable_high_latency(self, new_state):
         p1 = 0
         if new_state:
@@ -6590,6 +6601,9 @@ class AutoTest(ABC):
                 raise NotAchievedException("Sensor did not achieve state")
             if self.sensor_has_state(sensor, present=present, enabled=enabled, healthy=healthy, verbose=verbose):
                 break
+
+    def wait_not_ready_to_arm(self):
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, False)
 
     def wait_prearm_sys_status_healthy(self, timeout=60):
         self.do_timesync_roundtrip()

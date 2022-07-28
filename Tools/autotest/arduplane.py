@@ -160,12 +160,11 @@ class AutoTestPlane(AutoTest):
                            timeout=180)
         self.progress("RTL Complete")
 
-    def test_need_ekf_to_arm(self):
-        """Loiter where we are."""
+    def NeedEKFToArm(self):
+        """Ensure the EKF must be healthy for the vehicle to arm."""
         self.progress("Ensuring we need EKF to be healthy to arm")
-        self.wait_ready_to_arm()
+        self.set_parameter("SIM_GPS_DISABLE", 1)
         self.context_collect("STATUSTEXT")
-        self.reboot_sitl()
         tstart = self.get_sim_time()
         success = False
         while not success:
@@ -173,13 +172,16 @@ class AutoTestPlane(AutoTest):
                 raise NotAchievedException("Did not get correct failure reason")
             self.send_mavlink_arm_command()
             try:
-                self.wait_statustext(".*(AHRS not healthy|AHRS: Not healthy).*", timeout=1, check_context=True, regex=True)
+                self.wait_statustext(".*AHRS: not using configured AHRS type.*", timeout=1, check_context=True, regex=True)
                 success = True
                 continue
             except AutoTestTimeoutException:
                 pass
             if self.armed():
                 raise NotAchievedException("Armed unexpectedly")
+
+        self.set_parameter("SIM_GPS_DISABLE", 0)
+        self.wait_ready_to_arm()
 
     def fly_LOITER(self, num_circles=4):
         """Loiter where we are."""
@@ -3807,7 +3809,7 @@ function'''
 
             ("NeedEKFToArm",
              "Ensure we need EKF to be healthy to arm",
-             self.test_need_ekf_to_arm),
+             self.NeedEKFToArm),
 
             ("ThrottleFailsafeFence",
              "Fly fence survives throttle failsafe",
