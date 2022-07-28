@@ -1353,6 +1353,11 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
+    float undulation = 0.0;
+    int32_t height_elipsoid_mm = 0;
+    if (get_undulation(0, undulation)) {
+        height_elipsoid_mm = loc.alt*10 - undulation*1000;
+    }
     horizontal_accuracy(0, hacc);
     vertical_accuracy(0, vacc);
     speed_accuracy(0, sacc);
@@ -1368,7 +1373,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         ground_speed(0)*100,  // cm/s
         ground_course(0)*100, // 1/100 degrees,
         num_sats(0),
-        0,                    // TODO: Elipsoid height in mm
+        height_elipsoid_mm,   // Elipsoid height in mm
         hacc * 1000,          // one-sigma standard deviation in mm
         vacc * 1000,          // one-sigma standard deviation in mm
         sacc * 1000,          // one-sigma standard deviation in mm/s
@@ -1388,6 +1393,11 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
     float hacc = 0.0f;
     float vacc = 0.0f;
     float sacc = 0.0f;
+    float undulation = 0.0;
+    float height_elipsoid_mm = 0;
+    if (get_undulation(0, undulation)) {
+        height_elipsoid_mm = loc.alt*10 - undulation*1000;
+    }
     horizontal_accuracy(1, hacc);
     vertical_accuracy(1, vacc);
     speed_accuracy(1, sacc);
@@ -1406,7 +1416,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         state[1].rtk_num_sats,
         state[1].rtk_age_ms,
         gps_yaw_cdeg(1),
-        0,                    // TODO: Elipsoid height in mm
+        height_elipsoid_mm,   // Elipsoid height in mm
         hacc * 1000,          // one-sigma standard deviation in mm
         vacc * 1000,          // one-sigma standard deviation in mm
         sacc * 1000,          // one-sigma standard deviation in mm/s
@@ -1855,6 +1865,16 @@ void AP_GPS::calc_blended_state(void)
     timing[GPS_BLENDED_INSTANCE].last_fix_time_ms = 0;
     timing[GPS_BLENDED_INSTANCE].last_message_time_ms = 0;
 
+    if (state[0].have_undulation) {
+        state[GPS_BLENDED_INSTANCE].have_undulation = true;
+        state[GPS_BLENDED_INSTANCE].undulation = state[0].undulation;
+    } else if (state[1].have_undulation) {
+        state[GPS_BLENDED_INSTANCE].have_undulation = true;
+        state[GPS_BLENDED_INSTANCE].undulation = state[1].undulation;
+    } else {
+        state[GPS_BLENDED_INSTANCE].have_undulation = false;
+    }
+
     // combine the states into a blended solution
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         // use the highest status
@@ -2100,6 +2120,17 @@ bool AP_GPS::get_error_codes(uint8_t instance, uint32_t &error_codes) const
     return drivers[instance]->get_error_codes(error_codes);
 }
 
+// get the difference between WGS84 and AMSL. A positive value means
+// the AMSL height is higher than WGS84 ellipsoid height
+bool AP_GPS::get_undulation(uint8_t instance, float &undulation) const
+{
+    if (!state[instance].have_undulation) {
+        return false;
+    }
+    undulation = state[instance].undulation;
+    return true;
+}
+
 // Logging support:
 // Write an GPS packet
 void AP_GPS::Write_GPS(uint8_t i)
@@ -2133,9 +2164,11 @@ void AP_GPS::Write_GPS(uint8_t i)
 
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
+    float undulation = 0;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
+    get_undulation(i, undulation);
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
@@ -2147,7 +2180,8 @@ void AP_GPS::Write_GPS(uint8_t i)
         yaw_accuracy  : yaw_accuracy_deg,
         have_vv       : (uint8_t)have_vertical_velocity(i),
         sample_ms     : last_message_time_ms(i),
-        delta_ms      : last_message_delta_time_ms(i)
+        delta_ms      : last_message_delta_time_ms(i),
+        undulation    : undulation,
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
 }
