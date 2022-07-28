@@ -1960,6 +1960,8 @@ bool ModeAuto::verify_payload_place()
         nav_payload_place.state = PayloadPlaceStateType_Releasing_Start;
         FALLTHROUGH;
     case PayloadPlaceStateType_Releasing_Start:
+        // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
+        pos_control->init_z_controller_no_descent();
 #if GRIPPER_ENABLED == ENABLED
         if (g2.gripper.valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: Releasing the gripper");
@@ -1967,13 +1969,13 @@ bool ModeAuto::verify_payload_place()
         } else {
             gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: Gripper not valid");
             nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
-            break;
+            return false;
         }
 #else
         gcs().send_text(MAV_SEVERITY_INFO, "Gripper code disabled");
+        nav_payload_place.state = PayloadPlaceStateType_Ascending_Start;
+        return false;
 #endif
-        // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
-        pos_control->init_z_controller_no_descent();
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
         FALLTHROUGH;
     case PayloadPlaceStateType_Releasing:
@@ -1989,7 +1991,7 @@ bool ModeAuto::verify_payload_place()
         }
         FALLTHROUGH;
     case PayloadPlaceStateType_Ascending_Start: {
-        auto_takeoff_start(inertial_nav.get_position_z_up_cm(), false);
+        auto_takeoff_start(nav_payload_place.descend_start_altitude, false);
         nav_payload_place.state = PayloadPlaceStateType_Ascending;
         }
         FALLTHROUGH;
