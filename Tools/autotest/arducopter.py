@@ -4351,6 +4351,8 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
 
             self.load_mission("copter_payload_place.txt")
+            if self.mavproxy is not None:
+                self.mavproxy.send('wp list\n')
 
             self.set_parameter("AUTO_OPTIONS", 3)
             self.change_mode('AUTO')
@@ -4359,6 +4361,17 @@ class AutoTestCopter(AutoTest):
             self.arm_vehicle()
 
             self.wait_text("Gripper load releas", timeout=90)
+            dist_limit = 1
+            # this is a copy of the point in the mission file:
+            target_loc = mavutil.location(-35.363106,
+                                          149.165436,
+                                          0,
+                                          0)
+            dist = self.get_distance(target_loc, self.mav.location())
+            self.progress("dist=%f" % (dist,))
+            if dist > dist_limit:
+                raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
+                                           (dist, dist_limit))
 
             self.wait_disarmed()
 
