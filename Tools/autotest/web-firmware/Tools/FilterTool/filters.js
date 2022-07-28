@@ -398,7 +398,9 @@ function calculate_filter() {
     var filters = get_filters(sample_rate);
 
     var use_dB = document.getElementById("ScaleLog").checked;
+    setCookie("Scale", use_dB ? "Log" : "Linear");
     var use_RPM = document.getElementById("freq_Scale_RPM").checked;
+    setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
     var attenuation = []
     var phase_lag = []
     var min_phase_lag = 0.0;
@@ -461,6 +463,7 @@ function calculate_filter() {
     }
 
     var freq_log = document.getElementById("freq_ScaleLog").checked;
+    setCookie("feq_scale", freq_log ? "Log" : "Linear");
     if ((freq_log_scale != null) && (freq_log_scale != freq_log)) {
         // Scale changed, no easy way to update, delete chart and re-draw
         chart.clear();
@@ -586,7 +589,9 @@ function calculate_pid(axis_id) {
                         get_form(axis_prefix + "FLTD")));
 
     var use_dB = document.getElementById("PID_ScaleLog").checked;
+    setCookie("PID_Scale", use_dB ? "Log" : "Linear");
     var use_RPM =  document.getElementById("PID_freq_Scale_RPM").checked;
+    setCookie("PID_feq_unit", use_RPM ? "RPM" : "Hz");
     var attenuation = []
     var phase_lag = []
     var min_phase_lag = 0.0;
@@ -612,6 +617,7 @@ function calculate_pid(axis_id) {
         fast_sample_rate = get_form("GyroSampleRate");
         fast_filters = get_filters(fast_sample_rate);
     }
+    setCookie("filtering", fast_filters == null ? "Pre" : "Post");
 
 
     for (freq=freq_step; freq<=freq_max; freq+=freq_step) {
@@ -659,6 +665,7 @@ function calculate_pid(axis_id) {
     max_phase_lag = Math.min(get_form("PID_MaxPhaseLag"), max_phase_lag);
 
     var freq_log = document.getElementById("PID_freq_ScaleLog").checked;
+    setCookie("PID_feq_scale", use_dB ? "Log" : "Linear");
     if ((PID_freq_log_scale != null) && (PID_freq_log_scale != freq_log)) {
         // Scale changed, no easy way to update, delete chart and re-draw
         PID_chart.clear();
@@ -783,6 +790,13 @@ function load_cookies() {
         var inputs = document.forms[sections[i]].getElementsByTagName("input");
         for (const v in inputs) {
             var name = inputs[v].name;
+            if (inputs[v].type == "radio") {
+                // only checked buttons are included
+                if (inputs[v].value == getCookie(name)) {
+                    inputs[v].checked = true;
+                }
+                continue;
+            }
             inputs[v].value = parseFloat(getCookie(name,inputs[v].value));
         }
     }
