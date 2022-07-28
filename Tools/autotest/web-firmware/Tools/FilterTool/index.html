@@ -15,13 +15,14 @@
 
 The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
-<body onload="load_cookies(); fill_docs(); update_all_hidden(); calculate_filter(); calculate_pid(); ">
+<body onload="load(); fill_docs(); update_all_hidden(); calculate_filter(); calculate_pid();">
   <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
 <p>
   <input type="button" id="calculate" value="Calculate">
   <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
   <button class="styleClass" onclick="document.getElementById('param_file').click()">Load Parameters</button>
   <input type='file' id="param_file" style="display:none" onchange="load_parameters(this.files[0]);">
+  <input type="button" id="GetLink" value="Get Link" onclick="get_link();">
 
   <form id="params" action="">
 <fieldset style="max-width:1200px">
