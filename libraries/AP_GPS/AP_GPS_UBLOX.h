@@ -341,7 +341,7 @@ private:
         uint8_t flags2; 
         uint8_t num_sv; 
         int32_t lon, lat; 
-        int32_t height, h_msl; 
+        int32_t h_ellipsoid, h_msl;
         uint32_t h_acc, v_acc; 
         int32_t velN, velE, velD, gspeed; 
         int32_t head_mot; 
