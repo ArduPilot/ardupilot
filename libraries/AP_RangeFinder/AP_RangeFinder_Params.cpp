@@ -1,6 +1,15 @@
 #include "AP_RangeFinder_Params.h"
 #include "AP_RangeFinder.h"
 
+#ifndef AP_RANGEFINDER_DEFAULT_ORIENTATION
+#ifndef HAL_BUILD_AP_PERIPH
+#define AP_RANGEFINDER_DEFAULT_ORIENTATION ROTATION_PITCH_270
+#else
+// AP_Periph expects ROTATION_NONE
+#define AP_RANGEFINDER_DEFAULT_ORIENTATION ROTATION_NONE
+#endif
+#endif
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Param: TYPE
@@ -127,7 +136,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Description: Orientation of rangefinder
     // @Values: 0:Forward, 1:Forward-Right, 2:Right, 3:Back-Right, 4:Back, 5:Back-Left, 6:Left, 7:Forward-Left, 24:Up, 25:Down
     // @User: Advanced
-    AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, ROTATION_PITCH_270),
+    AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
     AP_GROUPEND
 };
