@@ -105,6 +105,13 @@ const AP_Param::GroupInfo SIM_Precland::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 9, SIM_Precland, _orient, ROTATION_PITCH_90),
 
+    // @Param: OPTIONS
+    // @DisplayName: SIM_Precland extra options
+    // @Description: SIM_Precland extra options
+    // @Bitmask: 0: Enable target distance
+    // @User: Advanced
+    AP_GROUPINFO("OPTIONS",  10, SIM_Precland, _options, 0),
+
     AP_GROUPEND
 };
 
