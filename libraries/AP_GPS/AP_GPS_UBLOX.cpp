@@ -1292,6 +1292,9 @@ AP_GPS_UBLOX::_parse_gps(void)
         } else {
             state.location.alt    = _buffer.posllh.altitude_msl / 10;
         }
+        state.have_undulation = true;
+        state.undulation = (_buffer.posllh.altitude_msl - _buffer.posllh.altitude_ellipsoid) * 0.001;
+
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.posllh.horizontal_accuracy*1.0e-3f;
@@ -1449,6 +1452,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         } else {
             state.location.alt    = _buffer.pvt.h_msl / 10;
         }
+        state.have_undulation = true;
+        state.undulation = (_buffer.pvt.h_msl - _buffer.pvt.h_ellipsoid) * 0.001;
         switch (_buffer.pvt.fix_type)
         {
             case 0:
