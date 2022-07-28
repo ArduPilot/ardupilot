@@ -4334,7 +4334,7 @@ class AutoTestCopter(AutoTest):
                 0.01 # size of target in radians, Y-axis
             )
 
-    def fly_payload_place_mission(self):
+    def PayLoadPlaceMission(self):
         """Test payload placing in auto."""
         self.context_push()
 
@@ -4347,24 +4347,17 @@ class AutoTestCopter(AutoTest):
                 "SIM_GRPS_ENABLE": 1,
                 "SIM_GRPS_PIN": 8,
                 "SERVO8_FUNCTION": 28,
-                "RC9_OPTION": 19,
             })
             self.reboot_sitl()
-            self.set_rc(9, 2000)
-            # load the mission:
+
             self.load_mission("copter_payload_place.txt")
 
-            self.progress("Waiting for location")
-            self.mav.location()
-            self.zero_throttle()
-            self.change_mode('STABILIZE')
+            self.set_parameter("AUTO_OPTIONS", 3)
+            self.change_mode('AUTO')
             self.wait_ready_to_arm()
 
             self.arm_vehicle()
 
-            self.change_mode('AUTO')
-
-            self.set_rc(3, 1500)
             self.wait_text("Gripper load releas", timeout=90)
 
             self.wait_disarmed()
@@ -8763,7 +8756,7 @@ class AutoTestCopter(AutoTest):
 
             ("PayLoadPlaceMission",
              "Payload Place Mission",
-             self.fly_payload_place_mission),  # 44s
+             self.PayLoadPlaceMission),  # 44s
 
             ("PrecisionLoiterCompanion",
              "Precision Loiter (Companion)",
