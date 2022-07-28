@@ -719,6 +719,14 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, EK3_PRIMARY_DEFAULT),
+
+    // @Param: LOG_LEVEL
+    // @DisplayName: Logging Level
+    // @Description: Determines how verbose the EKF3 streaming logging is. A value of 0 provides full logging(default), a value of 1 only XKF4 scaled innovations are logged, a value of 2 both XKF4 and GSF are logged, and a value of 3 disables all streaming logging of EKF3.
+    // @Range: 0 3
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("LOG_LEVEL", 9, NavEKF3, _log_level, 0),
     
     AP_GROUPEND
 };
