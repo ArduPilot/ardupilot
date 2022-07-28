@@ -4279,15 +4279,16 @@ class AutoTestCopter(AutoTest):
         #        print("r=%s" % str(r))
         return r * vector
 
-    def loiter_to_ne(self, x, y, z, timeout=40):
-        '''loiter to x, y, z from origin (in metres), z is *up*'''
+    def precision_loiter_to_pos(self, x, y, z, timeout=40):
+        '''send landing_target messages at vehicle until it arrives at
+        location to x, y, z from origin (in metres), z is *up*'''
         dest_ned = rotmat.Vector3(x, y, -z)
         tstart = self.get_sim_time()
         success_start = -1
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
-                raise NotAchievedException("Did not loiter to ne!")
+                raise NotAchievedException("Did not loiter to position!")
             m_pos = self.mav.recv_match(type='LOCAL_POSITION_NED',
                                         blocking=True)
             pos_ned = rotmat.Vector3(m_pos.x, m_pos.y, m_pos.z)
@@ -5885,41 +5886,30 @@ class AutoTestCopter(AutoTest):
 
         self.stop_mavproxy(mavproxy)
 
-    def fly_precision_companion(self):
+    def PrecisionLoiterCompanion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
         self.context_push()
 
         ex = None
         try:
-            self.set_parameter("PLND_ENABLED", 1)
-            # enable companion backend:
-            self.set_parameter("PLND_TYPE", 1)
-
+            self.set_parameters({
+                "PLND_ENABLED": 1,
+                "PLND_TYPE": 1,  # enable companion backend:
+                "RC7_OPTION": 39,  # set up a channel switch to enable precision loiter:
+            })
             self.set_analog_rangefinder_parameters()
-
-            # set up a channel switch to enable precision loiter:
-            self.set_parameter("RC7_OPTION", 39)
-
             self.reboot_sitl()
 
             self.progress("Waiting for location")
-            self.mav.location()
-            self.zero_throttle()
-            self.change_mode('STABILIZE')
+            self.change_mode('LOITER')
             self.wait_ready_to_arm()
 
             # we should be doing precision loiter at this point
-            start = self.mav.recv_match(type='LOCAL_POSITION_NED',
-                                        blocking=True)
+            start = self.assert_receive_message('LOCAL_POSITION_NED')
 
-            self.arm_vehicle()
-            self.set_rc(3, 1800)
-            alt_min = 10
-            self.wait_altitude(alt_min,
-                               (alt_min + 5),
-                               relative=True)
-            self.set_rc(3, 1500)
+            self.takeoff(20, mode='ALT_HOLD')
+
             # move away a little
             self.set_rc(2, 1550)
             self.wait_distance(5, accuracy=1)
@@ -5927,18 +5917,21 @@ class AutoTestCopter(AutoTest):
             self.change_mode('LOITER')
 
             # turn precision loiter on:
+            self.context_collect('STATUSTEXT')
             self.set_rc(7, 2000)
 
             # try to drag aircraft to a position 5 metres north-east-east:
-            self.loiter_to_ne(start.x + 5, start.y + 10, start.z + 10)
-            self.loiter_to_ne(start.x + 5, start.y - 10, start.z + 10)
+            self.precision_loiter_to_pos(start.x + 5, start.y + 10, start.z + 10)
+            self.wait_statustext("PrecLand: Target Found", check_context=True, timeout=10)
+            self.wait_statustext("PrecLand: Init Complete", check_context=True, timeout=10)
+            # .... then northwest
+            self.precision_loiter_to_pos(start.x + 5, start.y - 10, start.z + 10)
 
         except Exception as e:
             self.print_exception_caught(e)
             ex = e
 
         self.context_pop()
-        self.zero_throttle()
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         self.progress("All done")
@@ -8773,7 +8766,7 @@ class AutoTestCopter(AutoTest):
 
             ("PrecisionLoiterCompanion",
              "Precision Loiter (Companion)",
-             self.fly_precision_companion),  # 29s
+             self.PrecisionLoiterCompanion),  # 29s
 
             ("Landing",
              "Test landing",
