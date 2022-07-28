@@ -760,6 +760,68 @@ function calculate_pid(axis_id) {
     }
 }
 
+function load() {
+    var url_string = (window.location.href).toLowerCase();
+    if (url_string.indexOf('?') == -1) {
+        // no query params, load from cookies
+        load_cookies();
+        return;
+    }
+
+    // populate from query's
+    var params = new URL(url_string).searchParams;
+    var sections = ["params", "PID_params"];
+    for (var j = 0; j<sections.length; j++) {
+        var items = document.forms[sections[j]].getElementsByTagName("input");
+        for (var i=-0;i<items.length;i++) {
+            var name = items[i].name.toLowerCase();
+            if (params.has(name)) {
+                if (items[i].type == "radio") {
+                    // only checked buttons are included
+                    if (items[i].value.toLowerCase() == params.get(name)) {
+                        items[i].checked = true;
+                    }
+                    continue;
+                }
+                var value = parseFloat(params.get(name));
+                if (!isNaN(value)) {
+                    items[i].value = value;
+                }
+            }
+        }
+    }
+}
+
+// build url and query string for current view and copy to clipboard
+function get_link() {
+
+    if (!(navigator && navigator.clipboard && navigator.clipboard.writeText)) {
+        // copy not available
+        return
+    }
+
+    // get base url
+    var url =  new URL((window.location.href).split('?')[0]);
+
+    // Add all query strings
+    var sections = ["params", "PID_params"];
+    for (var j = 0; j<sections.length; j++) {
+        var items = document.forms[sections[j]].getElementsByTagName("input");
+        for (var i=-0;i<items.length;i++) {
+            if (items[i].type == "radio" && !items[i].checked) {
+                // Only add checked radio buttons
+                continue;
+            }
+            url.searchParams.append(items[i].name, items[i].value);
+        }
+    }
+
+    // copy to clipboard
+    navigator.clipboard.writeText(url.toString());
+
+}
+
+
 function setCookie(c_name, value) {
     var exdate = new Date();
     var exdays = 365;
