@@ -196,7 +196,7 @@ private:
 
     AP_RPM rpm_sensor;
 
-    AP_TECS TECS_controller{ahrs, aparm, landing};
+    AP_TECS TECS_controller{ahrs, aparm, landing, MASK_LOG_TECS};
     AP_L1_Control L1_controller{ahrs, &TECS_controller};
 
     // Attitude to servo controllers
