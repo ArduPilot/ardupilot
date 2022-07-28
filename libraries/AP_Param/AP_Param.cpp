@@ -2415,9 +2415,6 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
             num_read_only++;
         }
         idx++;
-#if AP_PARAM_DEFAULTS_ENABLED
-        add_default(vp, value, embedded_default_list);
-#endif
         if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
         }
@@ -2706,6 +2703,12 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
         }
     }
 #endif
+    for (uint16_t i=0; i<num_param_overrides; i++) {
+        if (ap == param_overrides[i].object_ptr) {
+            *default_value = param_overrides[i].value;
+            return;
+        }
+    }
     if (default_list != nullptr) {
         for (defaults_list *item = default_list; item; item = item->next) {
             if (item->ap == ap) {
@@ -2718,6 +2721,12 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
 
 void AP_Param::add_default(AP_Param *ap, float v, defaults_list*& list)
 {
+    const float q = nanf("");
+    if (!isnanf(get_default_value(ap, &q))) {
+        // the value is already overridden, don't add to defaults list
+        return;
+    }
+
     if (list != nullptr) {
         // check is param is already in list
         for (defaults_list *item = list; item; item = item->next) {

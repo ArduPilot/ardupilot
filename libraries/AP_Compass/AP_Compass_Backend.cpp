@@ -189,6 +189,7 @@ bool AP_Compass_Backend::register_compass(int32_t dev_id, uint8_t& instance) con
 void AP_Compass_Backend::set_dev_id(uint8_t instance, uint32_t dev_id)
 {
     _compass._state[Compass::StateIndex(instance)].dev_id.set_and_notify(dev_id);
+    _compass._state[Compass::StateIndex(instance)].dev_id.set_default(dev_id);
     _compass._state[Compass::StateIndex(instance)].detected_dev_id = dev_id;
 }
 

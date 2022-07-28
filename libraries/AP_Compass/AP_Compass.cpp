@@ -892,6 +892,7 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
     offdiagonals.set_and_save_ifchanged(state.offdiagonals);
     scale_factor.set_and_save_ifchanged(state.scale_factor);
     dev_id.set_and_save_ifchanged(state.dev_id);
+    dev_id.set_default(state.dev_id);
     motor_compensation.set_and_save_ifchanged(state.motor_compensation);
     expected_dev_id = state.expected_dev_id;
     detected_dev_id = state.detected_dev_id;
@@ -964,7 +965,7 @@ bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
             instance = i+COMPASS_MAX_INSTANCES;
             return false;
         } else if (extra_dev_id[i] == 0) {
-            extra_dev_id[_unreg_compass_count++].set(dev_id);
+            extra_dev_id[_unreg_compass_count++].set_and_default(dev_id);
             instance = i+COMPASS_MAX_INSTANCES;
             return false;
         }
@@ -1453,6 +1454,7 @@ void Compass::_detect_backends(void)
                         continue;
                     }
                     _priority_did_stored_list[i].set_and_save(detected_devid);
+                    _priority_did_stored_list[i].set_default(detected_devid);
                     _priority_did_list[i] = detected_devid;
                 }
             }
@@ -1712,6 +1714,7 @@ Compass::save_offsets(uint8_t i)
     if (id < COMPASS_MAX_INSTANCES) {
         _state[id].offset.save();  // save offsets
         _state[id].dev_id.set_and_save(_state[id].detected_dev_id);
+        _state[id].dev_id.set_default(_state[id].detected_dev_id);
     }
 }
 

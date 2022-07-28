@@ -719,7 +719,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
         _gyro_cal_ok[_gyro_count] = false;
     }
 
-    _gyro_id[_gyro_count].set((int32_t) id);
+    _gyro_id[_gyro_count].set_and_default((int32_t) id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
@@ -760,7 +760,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
         _accel_id_ok[_accel_count] = true;
     }
 
-    _accel_id[_accel_count].set((int32_t) id);
+    _accel_id[_accel_count].set_and_default((int32_t) id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_SIM_ENABLED)
         // assume this is the same sensor and save its ID to allow seamless
