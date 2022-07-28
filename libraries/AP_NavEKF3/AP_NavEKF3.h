@@ -358,7 +358,15 @@ private:
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
-    
+  
+    // values for EK3_LOG_LEVEL
+    enum class LogLevel {
+        ALL = 0,
+        XKF4 = 1,
+        XKF4_GSF = 2,
+        NONE = 3
+    };
+
     // EKF Mavlink Tuneable Parameters
     AP_Int8  _enable;               // zero to disable EKF3
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
@@ -424,6 +432,7 @@ private:
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
     AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
     AP_Int8 _primary_core;          // initial core number
+    AP_Enum<LogLevel> _log_level;   // log verbosity level
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
