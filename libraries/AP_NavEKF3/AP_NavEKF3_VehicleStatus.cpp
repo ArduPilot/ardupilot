@@ -237,9 +237,11 @@ void NavEKF3_core::calcGpsGoodToAlign(void)
 // update inflight calculaton that determines if GPS data is good enough for reliable navigation
 void NavEKF3_core::calcGpsGoodForFlight(void)
 {
-    // use a simple criteria based on the GPS receivers claimed speed accuracy and the EKF innovation consistency checks
+    // use simple criteria based on the GPS receiver's claimed vertical
+    // position accuracy and speed accuracy and the EKF innovation consistency
+    // checks
 
-    // set up varaibles and constants used by filter that is applied to GPS speed accuracy
+    // set up variables and constants used by filter that is applied to GPS speed accuracy
     const ftype alpha1 = 0.2f; // coefficient for first stage LPF applied to raw speed accuracy data
     const ftype tau = 10.0f; // time constant (sec) of peak hold decay
     if (lastGpsCheckTime_ms == 0) {
@@ -268,25 +270,51 @@ void NavEKF3_core::calcGpsGoodForFlight(void)
         gpsSpdAccPass = true;
     }
 
+    // Apply a threshold test with hysteresis to the GPS vertical position accuracy data
+    // Require a fail for one second and a pass for 3 seconds to transition
+    float gpsVAccRaw;
+    ftype gpsVAccThreshold = (ftype)frontend->_gpsVAccThreshold;
+    if (lastGpsVertAccFailTime_ms == 0) {
+        lastGpsVertAccFailTime_ms = imuSampleTime_ms;
+        lastGpsVertAccPassTime_ms = imuSampleTime_ms;
+    }
+    if (!dal.gps().vertical_accuracy(preferred_gps, gpsVAccRaw)) {
+        // No vertical accuracy data yet, let's treat it as a value above the threshold
+        gpsVAccRaw = gpsVAccThreshold + 1.0f;
+    }
+    if (gpsVAccThreshold <= 0 || gpsVAccRaw < gpsVAccThreshold) {
+        lastGpsVertAccPassTime_ms = imuSampleTime_ms;
+    } else {
+        lastGpsVertAccFailTime_ms = imuSampleTime_ms;
+    }
+    if ((imuSampleTime_ms - lastGpsVertAccPassTime_ms) > 1000) {
+        gpsVertAccPass = false;
+    } else if ((imuSampleTime_ms - lastGpsVertAccFailTime_ms) > 3000) {
+        gpsVertAccPass = true;
+    }
+
     // Apply a threshold test with hysteresis to the normalised position and velocity innovations
     // Require a fail for one second and a pass for 10 seconds to transition
-    if (lastInnovFailTime_ms == 0) {
-        lastInnovFailTime_ms = imuSampleTime_ms;
-        lastInnovPassTime_ms = imuSampleTime_ms;
+    if (lastGpsInnovFailTime_ms == 0) {
+        lastGpsInnovFailTime_ms = imuSampleTime_ms;
+        lastGpsInnovPassTime_ms = imuSampleTime_ms;
     }
     if (velTestRatio < 1.0f && posTestRatio < 1.0f) {
-        lastInnovPassTime_ms = imuSampleTime_ms;
+        lastGpsInnovPassTime_ms = imuSampleTime_ms;
     } else if (velTestRatio > 0.7f || posTestRatio > 0.7f) {
-        lastInnovFailTime_ms = imuSampleTime_ms;
+        lastGpsInnovFailTime_ms = imuSampleTime_ms;
     }
-    if ((imuSampleTime_ms - lastInnovPassTime_ms) > 1000) {
+    if ((imuSampleTime_ms - lastGpsInnovPassTime_ms) > 1000) {
         ekfInnovationsPass = false;
-    } else if ((imuSampleTime_ms - lastInnovFailTime_ms) > 10000) {
+    } else if ((imuSampleTime_ms - lastGpsInnovFailTime_ms) > 10000) {
         ekfInnovationsPass = true;
     }
 
     // both GPS speed accuracy and EKF innovations must pass
     gpsAccuracyGood = gpsSpdAccPass && ekfInnovationsPass;
+
+    // also update whether the GPS fix is good enough for altitude
+    gpsAccuracyGoodForAltitude = gpsAccuracyGood && gpsVertAccPass;
 }
 
 // Detect if we are in flight or on ground
