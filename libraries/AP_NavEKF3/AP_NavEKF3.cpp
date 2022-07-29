@@ -728,6 +728,15 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("LOG_LEVEL", 9, NavEKF3, _log_level, 0),
     
+    // @Param: GPS_VACC_MAX
+    // @DisplayName: GPS vertical accuracy threshold
+    // @Description: Vertical accuracy threshold for GPS as the altitude source. The GPS will not be used as an altitude source if the reported vertical accuracy of the GPS is larger than this threshold, falling back to baro instead. Set to zero to deactivate the threshold check.
+    // @Range: 0.0 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("GPS_VACC_MAX", 10, NavEKF3, _gpsVAccThreshold, 0.0f),
+
     AP_GROUPEND
 };
 
