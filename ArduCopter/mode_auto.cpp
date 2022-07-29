@@ -1607,7 +1607,7 @@ void ModeAuto::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 // do_nav_delay - Delay the next navigation command
 void ModeAuto::do_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    nav_delay_time_start_ms = millis();
+    nav_delay_time_start_ms = AP_HAL::millis();
 
     if (cmd.content.nav_delay.seconds > 0) {
         // relative delay
@@ -1627,7 +1627,7 @@ void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
     if (copter.mode_guided.init(true)) {
         nav_scripting.done = false;
         nav_scripting.id++;
-        nav_scripting.start_ms = millis();
+        nav_scripting.start_ms = AP_HAL::millis();
         nav_scripting.command = cmd.content.nav_script_time.command;
         nav_scripting.timeout_s = cmd.content.nav_script_time.timeout_s;
         nav_scripting.arg1 = cmd.content.nav_script_time.arg1;
@@ -1658,7 +1658,7 @@ void ModeAuto::do_nav_attitude_time(const AP_Mission::Mission_Command& cmd)
 
 void ModeAuto::do_wait_delay(const AP_Mission::Mission_Command& cmd)
 {
-    condition_start = millis();
+    condition_start = AP_HAL::millis();
     condition_value = cmd.content.delay.seconds * 1000;     // convert seconds to milliseconds
 }
 
@@ -2028,11 +2028,11 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
 
     // start our loiter timer
     if ( loiter_time == 0 ) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
     }
 
     // check if loiter timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -2067,7 +2067,7 @@ bool ModeAuto::verify_RTL()
 
 bool ModeAuto::verify_wait_delay()
 {
-    if (millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
+    if (AP_HAL::millis() - condition_start > (uint32_t)MAX(condition_value,0)) {
         condition_value = 0;
         return true;
     }
@@ -2103,7 +2103,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // start timer if necessary
     if (loiter_time == 0) {
-        loiter_time = millis();
+        loiter_time = AP_HAL::millis();
         if (loiter_time_max > 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
@@ -2111,7 +2111,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         if (loiter_time_max == 0) {
             // play a tone
             AP_Notify::events.waypoint_complete = 1;
@@ -2152,7 +2152,7 @@ bool ModeAuto::verify_spline_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // check if timer has run out
-    if (((millis() - loiter_time) / 1000) >= loiter_time_max) {
+    if (((AP_HAL::millis() - loiter_time) / 1000) >= loiter_time_max) {
         gcs().send_text(MAV_SEVERITY_INFO, "Reached command #%i",cmd.index);
         return true;
     }
@@ -2176,7 +2176,7 @@ bool ModeAuto::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 // verify_nav_delay - check if we have waited long enough
 bool ModeAuto::verify_nav_delay(const AP_Mission::Mission_Command& cmd)
 {
-    if (millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
+    if (AP_HAL::millis() - nav_delay_time_start_ms > nav_delay_time_max_ms) {
         nav_delay_time_max_ms = 0;
         return true;
     }
