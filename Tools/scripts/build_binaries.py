@@ -20,7 +20,6 @@ import string
 import subprocess
 import sys
 import traceback
-import gzip
 
 # local imports
 import generate_manifest
@@ -621,21 +620,9 @@ is bob we will attempt to checkout bob-AVR'''
         base_url = 'https://firmware.ardupilot.org'
         generator = generate_manifest.ManifestGenerator(self.binaries,
                                                         base_url)
-        content = generator.json()
-        new_json_filepath = os.path.join(self.binaries, "manifest.json.new")
-        self.write_string_to_filepath(content, new_json_filepath)
-        # provide a pre-compressed manifest.  For reference, a 7M manifest
-        # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
-        new_json_filepath_gz = os.path.join(self.binaries,
-                                            "manifest.json.gz.new")
-        with gzip.open(new_json_filepath_gz, 'wb') as gf:
-            if running_python3:
-                content = bytes(content, 'ascii')
-            gf.write(content)
-        json_filepath = os.path.join(self.binaries, "manifest.json")
-        json_filepath_gz = os.path.join(self.binaries, "manifest.json.gz")
-        shutil.move(new_json_filepath, json_filepath)
-        shutil.move(new_json_filepath_gz, json_filepath_gz)
+        generator.run()
+
+        generator.write_manifest_json(os.path.join(self.binaries, "manifest.json"))
         self.progress("Manifest generation successful")
 
         self.progress("Generating stable releases")
