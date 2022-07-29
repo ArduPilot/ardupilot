@@ -35,16 +35,27 @@ else:
     running_python3 = True
 
 
+def topdir():
+    '''return path to ardupilot checkout directory.  This is to cope with
+    running on developer's machines (where autotest is typically
+    invoked from the root directory), and on the autotest server where
+    it is invoked in the checkout's parent directory.
+    '''
+    for path in [
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."),
+            "",
+            ]:
+        if os.path.exists(os.path.join(path, "libraries", "AP_HAL_ChibiOS")):
+            return path
+    raise Exception("Unable to find ardupilot checkout dir")
+
+
 def is_chibios_build(board):
     '''see if a board is using HAL_ChibiOS'''
     # cope with both running from Tools/scripts or running from cwd
-    hwdef_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
-    if os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat")):
-        return True
-    hwdef_dir = os.path.join("libraries", "AP_HAL_ChibiOS", "hwdef")
-    if os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat")):
-        return True
-    return False
+    hwdef_dir = os.path.join(topdir(), "libraries", "AP_HAL_ChibiOS", "hwdef")
+
+    return os.path.exists(os.path.join(hwdef_dir, board, "hwdef.dat"))
 
 
 def get_required_compiler(vehicle, tag, board):
@@ -491,6 +502,20 @@ is bob we will attempt to checkout bob-AVR'''
                         files_to_copy.append((filepath, os.path.basename(filepath)))
                 if not os.path.exists(bare_path):
                     raise Exception("No elf file?!")
+
+                # attempt to run an extract_features.py to create features.txt:
+                features_text = None
+                ef_path = os.path.join(topdir(), "Tools", "scripts", "extract_features.py")
+                if os.path.exists(ef_path):
+                    try:
+                        features_text = self.run_program("EF", [ef_path, bare_path], show_output=False)
+                    except Exception as e:
+                        self.print_exception_caught(e)
+                        self.progress("Failed to extract features")
+                        pass
+                else:
+                    self.progress("Not extracting features as (%s) does not exist" % (ef_path,))
+
                 # only rename the elf if we have have other files to
                 # copy.  So linux gets "arducopter" and stm32 gets
                 # "arducopter.elf"
@@ -512,6 +537,9 @@ is bob we will attempt to checkout bob-AVR'''
                             if not os.path.exists(ddir):
                                 self.mkpath(ddir)
                             self.addfwversion(ddir, vehicle)
+                            features_filepath = os.path.join(ddir, "features.txt",)
+                            self.progress("Writing (%s)" % features_filepath)
+                            self.write_string_to_filepath(features_text, features_filepath)
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
@@ -521,10 +549,13 @@ is bob we will attempt to checkout bob-AVR'''
                         # must addfwversion even if path already
                         # exists as we re-use the "beta" directories
                         self.addfwversion(tdir, vehicle)
+                        features_filepath = os.path.join(tdir, "features.txt")
+                        self.progress("Writing (%s)" % features_filepath)
+                        self.write_string_to_filepath(features_text, features_filepath)
                         shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
-                        self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
+                        self.progress("Failed to copy %s to %s: %s" % (path, tdir, str(e)))
                 # why is touching this important? -pb20170816
                 self.touch_filepath(os.path.join(self.binaries,
                                                  vehicle_binaries_subdir, tag))
