@@ -49,17 +49,11 @@ void Plane::Log_Write_Attitude(void)
 }
 
 // do fast logging for plane
-void Plane::Log_Write_Fast(void)
+void Plane::Log_Write_FullRate(void)
 {
-    if (!should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
-        uint32_t now = AP_HAL::millis();
-        if (now - last_log_fast_ms < 40) {
-            // default to 25Hz
-            return;
-        }
-        last_log_fast_ms = now;
-    }
-    if (should_log(MASK_LOG_ATTITUDE_FAST | MASK_LOG_ATTITUDE_FULLRATE)) {
+    // MASK_LOG_ATTITUDE_FULLRATE logs at 400Hz, MASK_LOG_ATTITUDE_FAST at 25Hz, MASK_LOG_ATTIUDE_MED logs at 10Hz
+    // highest rate selected wins
+    if (should_log(MASK_LOG_ATTITUDE_FULLRATE)) {
         Log_Write_Attitude();
     }
 }

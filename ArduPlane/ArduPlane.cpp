@@ -101,9 +101,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100, 111),
     SCHED_TASK(compass_save,          0.1,    200, 114),
-    SCHED_TASK(Log_Write_Fast,        400,    300, 117),
-    SCHED_TASK(update_logging1,        25,    300, 120),
-    SCHED_TASK(update_logging2,        25,    300, 123),
+    SCHED_TASK(Log_Write_FullRate,        400,    300, 117),
+    SCHED_TASK(update_logging10,        10,    300, 120),
+    SCHED_TASK(update_logging25,        25,    300, 123),
 #if HAL_SOARING_ENABLED
     SCHED_TASK(update_soaring,         50,    400, 126),
 #endif
@@ -226,24 +226,29 @@ void Plane::update_compass(void)
 /*
   do 10Hz logging
  */
-void Plane::update_logging1(void)
+void Plane::update_logging10(void)
 {
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
+    bool log_faster = (should_log(MASK_LOG_ATTITUDE_FULLRATE) || should_log(MASK_LOG_ATTITUDE_FAST));
+    if (should_log(MASK_LOG_ATTITUDE_MED) && !log_faster) {
         Log_Write_Attitude();
-    }
-
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_IMU))
-        AP::ins().Write_IMU();
-
-    if (should_log(MASK_LOG_ATTITUDE_MED))
         ahrs.Write_AOA_SSA();
+    } else if (log_faster) {
+        ahrs.Write_AOA_SSA();
+    } 
 }
 
 /*
-  do 10Hz logging - part2
+  do 25Hz logging
  */
-void Plane::update_logging2(void)
+void Plane::update_logging25(void)
 {
+    // MASK_LOG_ATTITUDE_FULLRATE logs at 400Hz, MASK_LOG_ATTITUDE_FAST at 25Hz, MASK_LOG_ATTIUDE_MED logs at 10Hz
+    // highest rate selected wins
+    bool log_faster = should_log(MASK_LOG_ATTITUDE_FULLRATE);
+    if (should_log(MASK_LOG_ATTITUDE_FAST) && !log_faster) {
+        Log_Write_Attitude();
+    }
+
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
         AP::ins().write_notch_log_messages();
