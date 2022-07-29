@@ -4387,7 +4387,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_guided_change_submode(self):
+    def GuidedSubModeChange(self):
         """"Ensure we can move around in guided after a takeoff command."""
 
         '''start by disabling GCS failsafe, otherwise we immediately disarm
@@ -4415,6 +4415,16 @@ class AutoTestCopter(AutoTest):
         self.start_subtest("move the vehicle using MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED")
         self.fly_guided_stop(groundspeed_tolerance=0.1)
         self.fly_guided_move_local(5, 5, 10)
+
+        self.start_subtest("Checking that WP_YAW_BEHAVIOUR 0 works")
+        orig_heading = self.get_heading()
+        self.set_parameter('WP_YAW_BEHAVIOR', 0)
+        self.fly_guided_move_local(5, 0, 10)
+        # ensure our heading hasn't changed:
+        self.assert_heading(orig_heading)
+        self.fly_guided_move_local(0, 5, 10)
+        # ensure our heading hasn't changed:
+        self.assert_heading(orig_heading)
 
         self.start_subtest("Check target position received by vehicle using SET_MESSAGE_INTERVAL")
         self.test_guided_local_position_target(5, 5, 10)
@@ -8751,7 +8761,7 @@ class AutoTestCopter(AutoTest):
 
             ("GuidedSubModeChange",
              "Test submode change",
-             self.fly_guided_change_submode),
+             self.GuidedSubModeChange),
 
             ("MAV_CMD_CONDITION_YAW",
              "Test response to MAV_CMD_CONDITION_YAW",
