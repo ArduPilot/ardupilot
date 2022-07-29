@@ -25,6 +25,7 @@ import traceback
 import generate_manifest
 import gen_stable
 import build_binaries_history
+import extract_features
 
 import board_list
 from board_list import AP_PERIPH_BOARDS
@@ -489,6 +490,10 @@ is bob we will attempt to checkout bob-AVR'''
                         files_to_copy.append((filepath, os.path.basename(filepath)))
                 if not os.path.exists(bare_path):
                     raise Exception("No elf file?!")
+
+                ef = extract_features.ExtractFeatures(bare_path)
+                features_text = ef.extract()
+
                 # only rename the elf if we have have other files to
                 # copy.  So linux gets "arducopter" and stm32 gets
                 # "arducopter.elf"
@@ -510,6 +515,7 @@ is bob we will attempt to checkout bob-AVR'''
                             if not os.path.exists(ddir):
                                 self.mkpath(ddir)
                             self.addfwversion(ddir, vehicle)
+                            self.write_string_to_filepath(features_text, os.path.join(ddir, "features.txt"))
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
@@ -519,6 +525,7 @@ is bob we will attempt to checkout bob-AVR'''
                         # must addfwversion even if path already
                         # exists as we re-use the "beta" directories
                         self.addfwversion(tdir, vehicle)
+                        self.write_string_to_filepath(features_text, os.path.join(ddir, "features.txt"))
                         shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
@@ -623,6 +630,7 @@ is bob we will attempt to checkout bob-AVR'''
         generator.run()
 
         generator.write_manifest_json(os.path.join(self.binaries, "manifest.json"))
+        generator.write_features_json(os.path.join(self.binaries, "features.json"))
         self.progress("Manifest generation successful")
 
         self.progress("Generating stable releases")

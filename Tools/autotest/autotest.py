@@ -126,6 +126,7 @@ def build_binaries():
             "build_binaries.py",
             "build_sizes/build_sizes.py",
             "generate_manifest.py",
+            "extract_features.py",
             "gen_stable.py",
     ]:
         orig = util.reltopdir('Tools/scripts/%s' % thing)
