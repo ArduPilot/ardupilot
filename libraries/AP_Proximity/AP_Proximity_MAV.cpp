@@ -138,7 +138,13 @@ void AP_Proximity_MAV::handle_obstacle_distance_msg(const mavlink_message_t &msg
     // set distance min and max
     _distance_min = packet.min_distance * 0.01f;
     _distance_max = packet.max_distance * 0.01f;
-    _last_update_ms = AP_HAL::millis();
+
+    uint64_t packet_time_usec = packet.time_usec;
+    if (AP::rtc().convert_usec_to_system_boot_usec(packet_time_usec)) {
+        _last_update_ms = (uint32_t) (packet_time_usec / 1000);
+    } else {
+        _last_update_ms = AP_HAL::millis();
+    }
 
     // get user configured yaw correction from front end
     const float param_yaw_offset = constrain_float(frontend.get_yaw_correction(state.instance), -360.0f, +360.0f);

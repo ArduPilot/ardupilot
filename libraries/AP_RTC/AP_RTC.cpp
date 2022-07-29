@@ -248,6 +248,28 @@ time_t AP_RTC::mktime(const struct tm *t)
     return epoch;
 }
 
+/*
+ * Converts to time since system boot. Returns false if not possible.
+ * usec is modified iff true is returned.
+ */
+bool AP_RTC::convert_usec_to_system_boot_usec(uint64_t &usec) const
+{
+    const uint64_t time_since_boot_usec = AP_HAL::micros64();
+    if (usec <= time_since_boot_usec) {
+        // Do nothing because the time is already in time since system boot.
+        return true;
+    }
+
+    uint64_t current_time_usec;
+    if (!get_utc_usec(current_time_usec)) {
+        return false;
+    }
+
+    const uint64_t boot_time_usec = current_time_usec - time_since_boot_usec;
+    usec = usec - boot_time_usec;
+    return true;
+}
+
 // singleton instance
 AP_RTC *AP_RTC::_singleton;
 
