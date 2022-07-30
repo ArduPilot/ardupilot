@@ -2557,6 +2557,12 @@ void QuadPlane::vtol_position_controller(void)
                 target_accel_cms.zero();
                 target_speed_xy_cms = diff_wp_norm * position2_target_speed * 100;
                 have_target_yaw = true;
+
+                // adjust target yaw angle for wind
+                const Vector2f wind = plane.ahrs.wind_estimate().xy();
+                const float gnd_speed = plane.ahrs.groundspeed();
+                Vector2f target_speed_xy = diff_wp_norm * gnd_speed - wind;
+                target_yaw_deg = degrees(target_speed_xy.angle());
             }
         }
         const float target_speed_ms = target_speed_xy_cms.length() * 0.01;
