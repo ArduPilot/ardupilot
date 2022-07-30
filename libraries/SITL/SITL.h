@@ -87,6 +87,9 @@ struct sitl_fdm {
     } wind_vane_apparent;
 
     bool is_lock_step_scheduled;
+
+    // earthframe wind, from backends that know it
+    Vector3f wind_ef;
 };
 
 // number of rc output channels

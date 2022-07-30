@@ -408,6 +408,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.wind_vane_apparent.direction = wind_vane_apparent.direction;
     fdm.wind_vane_apparent.speed = wind_vane_apparent.speed;
 
+    fdm.wind_ef = wind_ef;
+
     if (is_smoothed) {
         fdm.xAccel = smoothing.accel_body.x;
         fdm.yAccel = smoothing.accel_body.y;
