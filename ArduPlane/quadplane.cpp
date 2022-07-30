@@ -2535,7 +2535,7 @@ void QuadPlane::vtol_position_controller(void)
         Vector2f target_accel_cms;
         bool have_target_yaw = false;
         float target_yaw_deg;
-        const float target_accel = accel_needed(distance, sq(closing_groundspeed));
+        const float target_accel = MIN(accel_needed(distance, sq(closing_groundspeed)), transition_decel*2);
         if (distance > 0.1) {
             Vector2f diff_wp_norm = diff_wp.normalized();
             target_speed_xy_cms = diff_wp_norm * target_speed * 100;
@@ -2547,6 +2547,7 @@ void QuadPlane::vtol_position_controller(void)
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL Overshoot d=%.1f cs=%.1f yerr=%.1f",
                                 distance, closing_groundspeed, yaw_err_deg);
                 poscontrol.overshoot = true;
+                pos_control->set_accel_desired_xy_cmss(Vector2f());
             }
             if (poscontrol.overshoot) {
                 /* we have overshot the landing point or our nose is
