@@ -23,7 +23,7 @@ ArduPilot 4.2 filter setup.
   <input type='file' id="param_file" style="display:none" onchange="load_parameters(this.files[0]);">
 
   <form id="params" action="">
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>Graph Settings</legend>
         <p>
                 <input type="radio" id="ScaleLog" name="Scale" value="Log">
@@ -40,7 +40,7 @@ ArduPilot 4.2 filter setup.
                 <input id="MaxPhaseLag" name="MaxPhaseLag" type="number" step="1" value="360"/>
 	</p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>INS Settings</legend>
         <p>
                 <label for="GyroSampleRate">Gyro Sample Rate</label>
@@ -51,21 +51,21 @@ ArduPilot 4.2 filter setup.
                 <input id="INS_GYRO_FILTER" name="INS_GYRO_FILTER" type="number" step="0.1" value="20.0"/>
 	</p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>PID Settings</legend>
         <p>
                 <label for="FLTD">Roll D Filter</label>
                 <input id="FLTD" name="FLTD" type="number" step="0.1" value="10.0"/>
 	</p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>Throttle Based</legend>
         <p>
                 <label for="Throttle">Throttle</label>
                 <input id="Throttle" name="Throttle" type="number" step="0.01" value="0.3"/>
 	</p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>ESC Telemetry</legend>
         <p>
                 <label for="NUM_MOTORS">Number of Motors</label>
@@ -76,7 +76,7 @@ ArduPilot 4.2 filter setup.
                 <input id="ESC_RPM" name="ESC_RPM" type="number" step="1" value="2500"/>
 	</p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>RPM/EFI Based</legend>
         <p>
                 <label for="RPM1">RPM1</label>
@@ -87,7 +87,7 @@ ArduPilot 4.2 filter setup.
                 <input id="RPM2" name="RPM2" type="number" step="1" value="2500"/>
 	</p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>First Notch Filter</legend>
         <p>
                 <label for="INS_HNTCH_ENABLE">INS_HNTCH_ENABLE</label>
@@ -130,7 +130,7 @@ ArduPilot 4.2 filter setup.
                 <label id="INS_HNTCH_OPTS.doc"></label>
         </p>
 </fieldset>
-<fieldset>
+<fieldset style="max-width:1200px">
   <legend>Second Notch Filter</legend>
         <p>
                 <label for="INS_HNTC2_ENABLE">INS_HNTC2_ENABLE</label>
