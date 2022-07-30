@@ -14,7 +14,7 @@
 
 The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
-<body onload="load_cookies(); calculate_filter(); fill_docs();">
+<body onload="load_cookies(); calculate_filter(); fill_docs(); update_all_hidden();">
   <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
 <p>
   <input type="button" id="calculate" value="Calculate">
@@ -91,7 +91,7 @@ ArduPilot 4.2 filter setup.
   <legend>First Notch Filter</legend>
         <p>
                 <label for="INS_HNTCH_ENABLE">INS_HNTCH_ENABLE</label>
-                <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="0"/>
+                <input id="INS_HNTCH_ENABLE" name="INS_HNTCH_ENABLE" type="number" step="1" value="0" onchange="update_hidden(this.id); fill_docs();"/>
                 <label id="INS_HNTCH_ENABLE.doc"></label>
         </p>
         <p>
@@ -134,7 +134,7 @@ ArduPilot 4.2 filter setup.
   <legend>Second Notch Filter</legend>
         <p>
                 <label for="INS_HNTC2_ENABLE">INS_HNTC2_ENABLE</label>
-                <input id="INS_HNTC2_ENABLE" name="INS_HNTC2_ENABLE" type="number" step="1" value="0"/>
+                <input id="INS_HNTC2_ENABLE" name="INS_HNTC2_ENABLE" type="number" step="1" value="0" onchange="update_hidden(this.id); fill_docs();"/>
                 <label id="INS_HNTC2_ENABLE.doc"></label>
         </p>
         <p>
