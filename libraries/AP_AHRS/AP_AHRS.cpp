@@ -790,7 +790,10 @@ Vector3f AP_AHRS::wind_estimate(void) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        wind.zero();
+        if (_sitl) {
+            const auto &fdm = _sitl->state;
+            wind = fdm.wind_ef;
+        }
         break;
 #endif
 
