@@ -581,7 +581,9 @@ function fill_docs()
         if (!doc) {
             continue;
         }
-        inputs[v].onchange = fill_docs;
+        if (inputs[v].onchange == null) {
+            inputs[v].onchange = fill_docs;
+        }
         var value = parseFloat(inputs[v].value);
         if (name.endsWith("_ENABLE")) {
             if (value >= 1) {
@@ -659,5 +661,41 @@ function fill_docs()
             doc.innerHTML = bits.join(", ");
         }
 
+    }
+}
+
+// update all hidden params, to be called at init
+function update_all_hidden()
+{
+    var enable_params = ["INS_HNTCH_ENABLE", "INS_HNTC2_ENABLE"];
+    for (var i=-0;i<enable_params.length;i++) {
+        update_hidden(enable_params[i])
+    }
+}
+
+// update hidden inputs based on param value
+function update_hidden(enable_param)
+{
+    var enabled = parseFloat(document.getElementById(enable_param).value) > 0;
+    var prefix = enable_param.split("_ENABLE")[0];
+
+    // find all elements with same prefix
+    var inputs = document.forms["params"].getElementsByTagName("*");
+    for (var i=-0;i<inputs.length;i++) {
+        var key = inputs[i].id;
+        if (key.length == 0) {
+            // no id, but bound to a valid one
+            if (inputs[i].htmlFor == null) {
+                continue;
+            }
+            key = inputs[i].htmlFor
+        }
+        if (key.startsWith(enable_param)) {
+            // found original param, don't change
+            continue;
+        }
+        if (key.startsWith(prefix)) {
+            inputs[i].hidden = !enabled;
+        }
     }
 }
