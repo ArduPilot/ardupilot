@@ -2556,13 +2556,21 @@ void QuadPlane::vtol_position_controller(void)
                    to our position2 threshold speed
                 */
                 target_accel_cms.zero();
-                target_speed_xy_cms = diff_wp_norm * position2_target_speed * 100;
+
+                // allow up to the WP speed when we are further away, slowing to the pos2 target speed
+                // when we are close
+                target_speed = linear_interpolate(position2_target_speed, scaled_wp_speed,
+                                                  distance,
+                                                  position2_dist_threshold*1.5,
+                                                  2*position2_dist_threshold + stopping_distance(rel_groundspeed_sq));
+
+                target_speed_xy_cms = diff_wp_norm * target_speed * 100;
                 have_target_yaw = true;
 
                 // adjust target yaw angle for wind
                 const Vector2f wind = plane.ahrs.wind_estimate().xy();
                 const float gnd_speed = plane.ahrs.groundspeed();
-                Vector2f target_speed_xy = diff_wp_norm * gnd_speed - wind;
+                Vector2f target_speed_xy = landing_velocity + diff_wp_norm * gnd_speed - wind;
                 target_yaw_deg = degrees(target_speed_xy.angle());
             }
         }
