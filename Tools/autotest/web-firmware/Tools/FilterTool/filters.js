@@ -296,63 +296,68 @@ function get_form(vname) {
     return v;
 }
 
-function run_filters(filters,freq,sample_rate,samples) {
-    var integral_in = 0.0;
-    var integral_out = 0.0;
-    var crossing_lag = 0;
-    var crossing_count = 0;
-    var last_out = 0.0;
-    var last_t = 0.0;
+function run_filters(filters,freq,sample_rate,samples,fast_filters = null,fast_sample_rate = null) {
 
     for (var j=0;j<filters.length; j++) {
         filters[j].reset(0.0);
     }
 
-    var period = 1 / freq;
-    // start integration at the closest multiple of period then
-    // offset to get whole number of periods before end
-    // (start and end at the same phase)
-    // could use the lag estimate to further offset the filter integration time
-    var int_start_time = Math.round(((0.1*samples)/sample_rate) / period) * period;
-    var end_offset = (samples/sample_rate) % period;
-    int_start_time += end_offset;
+    var num_best_fit_points = 100;
+    var best_fit_offset = samples - num_best_fit_points;
 
+    // Best fit to sin to get amplitude, phase and DC offset
+    // https://math.stackexchange.com/questions/3926007/least-squares-regression-of-sine-wave
+    // Expecting output to be of same frequency at input
+    // Z = a*sin(t*kt + p) + O
+    // A = a*cos(p)
+    // B = a*sin(p)
+    // S = sin(t*kt)
+    // C = cos(t*kt)
+
+    var X = ML.MatrixLib.Matrix.ones(num_best_fit_points, 3);
+    var y = ML.MatrixLib.Matrix.zeros(num_best_fit_points, 1);
+
+    var kt =  Math.PI * 2.0 * freq;
+    var fast_filter_t = 0;
+    var fast_dt = 1.0 / fast_sample_rate;
     for (var i=-0;i<samples;i++) {
         var t = i / sample_rate;
-        var input = Math.sin(t * Math.PI * 2.0 * freq);
+
+        // advance faster filters if any
+        if (fast_filters && fast_sample_rate) {
+            do {
+                // run filters upto current time
+                var output = Math.sin(fast_filter_t * kt);
+                for (var j=0;j<fast_filters.length; j++) {
+                    output = fast_filters[j].apply(output);
+                }
+                fast_filter_t += fast_dt;
+            } while ((fast_filter_t + fast_dt) <= t)
+            var input = output
+        } else {
+            var input = Math.sin(t * kt);
+        }
+
         var output = input;
         for (var j=0;j<filters.length; j++) {
             output = filters[j].apply(output);
         }
-        if (t > int_start_time) {
-            // RMS amplitude of input and output to calculate attenuation
-            integral_in += Math.pow(input,2);
-            integral_out += Math.pow(output,2);
+        if (i >= best_fit_offset) {
+            var index = i - best_fit_offset;
+            X.data[index][0] = Math.sin(t * kt);
+            X.data[index][1] = Math.cos(t * kt);
+            y.data[index][0] = output;
         }
-        if (output >= 0 && last_out < 0) {
-            // positive going zero crossing, latest value is best estimate
-            crossing_count ++;
-            crossing_lag = linear_interpolate(last_t,t,0,last_out,output) - period*crossing_count;
-        }
-        last_out = output;
-        last_t = t;
     }
-    var ratio = Math.sqrt(integral_out)/Math.sqrt(integral_in);
-    var lag = 360.0 * crossing_lag * freq;
 
-    // wrap to +- 180
-    while (lag > 180.0) {
-        lag -= 360.0;
-    }
-    while (lag < -180.0) {
-        lag += 360.0;
-    }
-    return [ratio,lag];
-}
+    // Z = a*sin(t*kt + p) + O
+    var ABO = ML.MatrixLib.solve(X, y);
 
-function linear_interpolate(low_output, high_output, var_value, var_low, var_high) {
-    var p = (var_value - var_low) / (var_high - var_low);
-    return low_output + p * (high_output - low_output);
+    var amplitude = Math.sqrt(ABO.get(0,0)*ABO.get(0,0) + ABO.get(1,0)*ABO.get(1,0));
+    var phase = Math.atan2(ABO.get(1,0),ABO.get(0,0)) * (-180.0 / Math.PI);
+    // var DC_offset = ABO.get(2,0);
+
+    return [amplitude,phase];
 }
 
 var chart;
