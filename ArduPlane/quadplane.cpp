@@ -1050,40 +1050,33 @@ float QuadPlane::get_pilot_throttle()
 }
 
 /*
-  get_pilot_desired_angle - transform pilot's roll or pitch input into a desired lean angle.
+  get_pilot_desired_lean_angles - transform pilot's roll or pitch input into a desired lean angle.
   The angle_max_cd and angle_limit_cd are mode dependent
 */
-void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_out_cd, float angle_max_cd, float angle_limit_cd) const
+void QuadPlane::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max_cd, float angle_limit_cd) const
 {
     // failsafe check
     if (plane.failsafe.rc_failsafe || plane.failsafe.throttle_counter > 0) {
-        roll_out_cd = 0;
-        pitch_out_cd = 0;
+        roll_out = 0;
+        pitch_out = 0;
         return;
     }
 
-    // fetch roll and pitch inputs
-    roll_out_cd = plane.channel_roll->get_control_in();
-    pitch_out_cd = plane.channel_pitch->get_control_in();
+    // fetch normalized roll and pitch inputs
+    // Beware that QuadPlane::tailsitter_check_input (called from Plane::read_radio)
+    // may alter the control_in values for roll and yaw, but not the corresponding
+    // radio_in values. This means that the results for norm_input would not necessarily
+    // be correct for tailsitters, so get_control_in() must be used instead.
+    float roll_in = plane.channel_roll->get_control_in();
+    roll_in /= plane.channel_roll->get_range();
+    float pitch_in = plane.channel_pitch->get_control_in();
+    pitch_in /= plane.channel_pitch->get_range();
 
     // limit max lean angle, always allow for 10 degrees
     angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);
 
-    // scale roll and pitch inputs to ANGLE_MAX parameter range
-    float scaler = angle_max_cd/4500.0;
-    roll_out_cd *= scaler;
-    pitch_out_cd *= scaler;
-
-    // apply circular limit
-    float total_in = norm(pitch_out_cd, roll_out_cd);
-    if (total_in > angle_limit_cd) {
-        float ratio = angle_limit_cd / total_in;
-        roll_out_cd *= ratio;
-        pitch_out_cd *= ratio;
-    }
-
-    // apply lateral tilt to euler roll conversion
-    roll_out_cd = 100 * degrees(atanf(cosf(radians(pitch_out_cd*0.01))*tanf(radians(roll_out_cd*0.01))));
+    // convert roll and pitch inputs to Euler angles
+    rc_input_to_roll_pitch(roll_in, pitch_in, angle_max_cd * 0.01,  angle_limit_cd * 0.01, roll_out, pitch_out);
 }
 
 /*
