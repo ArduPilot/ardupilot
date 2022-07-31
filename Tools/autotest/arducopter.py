@@ -7857,6 +7857,56 @@ class AutoTestCopter(AutoTest):
             self.context_pop()
         self.reboot_sitl()
 
+    def test_drag_estimation(self):
+        self.start_subtest("Scripting - drag estimation")
+
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+
+        ex = None
+        example_script = "copter-drag-estimation-flight.lua"
+        try:
+            self.install_example_script(example_script)
+
+            # set up some wind
+            wind_speed = 10
+            wind_dir = 63
+
+            self.set_parameters({
+                "SCR_ENABLE": 1,
+                "SCR_HEAP_SIZE": 128 * 1024,
+                "RC10_OPTION": 300,  # script 1
+                'SIM_WIND_SPD': wind_speed,
+                'SIM_WIND_DIR': wind_dir,
+            })
+            self.reboot_sitl()
+
+            self.wait_ready_to_arm()
+
+            # get into initial position
+            self.takeoff(40, mode='GUIDED')
+            self.set_parameter("SIM_SPEEDUP", 1)
+            self.guided_achieve_heading(270, accuracy=1)
+            self.fly_guided_move_local(10, 0, 40)
+            self.progress("Flipping the switch")
+            self.set_rc(10, 2000)
+            self.progress("Flipped the switch")
+            self.wait_statustext("phase=done", timeout=300)
+            self.do_RTL()
+
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+
+        self.remove_example_script(example_script)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
+        if ex is not None:
+            raise ex
+
     def test_copter_gps_zero(self):
         # https://github.com/ArduPilot/ardupilot/issues/14236
         self.progress("arm the vehicle and takeoff in Guided")
@@ -8791,6 +8841,10 @@ class AutoTestCopter(AutoTest):
             ("AuxFunctionsInMission",
              "Test use of auxilliary functions in missions",
              self.test_aux_functions_in_mission),
+
+            ("DragEstimation",
+             "Test drag estimation script",
+             self.test_drag_estimation),
 
             ("AutoTune",
              "Fly AUTOTUNE mode",
