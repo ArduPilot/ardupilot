@@ -36,11 +36,100 @@ class ExtractFeatures(object):
         # the substitutions will be upper-cased
         self.features = [
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
-            ('AP_AIRSPEED_{type}_ENABLED', 'AP_Airspeed_(?P<type>.*)::AP_Airspeed_(?P=type)',),
+            ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
+
             ('HAL_ADSB_ENABLED', 'AP_ADSB::AP_ADSB',),
+            ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
+            ('HAL_ADSB_UCP_ENABLED', 'AP_ADSB_uAvionix_UCP::update',),
+            ('AP_AIS_ENABLED', 'AP_AIS::AP_AIS',),
+
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
             ('BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
             ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
+
+            ('HAL_NAVEKF3_AVAILABLE', 'NavEKF3::NavEKF3',),
+            ('HAL_NAVEKF2_AVAILABLE', 'NavEKF2::NavEKF2',),
+            ('HAL_EXTERNAL_AHRS_ENABLED', r'AP_ExternalAHRS::init\b',),
+            ('HAL_INS_TEMPERATURE_CAL_ENABLE', 'AP_InertialSensor::TCal::Learn::save_calibration',),
+            ('HAL_VISUALODOM_ENABLED', 'AP_VisualOdom::init',),
+
+            ('AP_RANGEFINDER_ENABLED', 'RangeFinder::RangeFinder',),
+            ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::update\b',),
+
+            ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
+
+            ('AP_OPTICALFLOW_ENABLED', 'OpticalFlow::OpticalFlow',),
+            ('AP_OPTICALFLOW_{type}_ENABLED', r'AP_OpticalFlow_(?P<type>.*)::update\b',),
+
+            ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::update\b',),
+
+            ('AP_MOTORS_FRAME_{type}_ENABLED', r'AP_MotorsMatrix::setup_(?P<type>.*)_matrix\b',),
+
+            ('HAL_MSP_ENABLED', r'AP_MSP::init\b',),
+            ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::update\b',),
+            ('HAL_MSP_{type}_ENABLED', r'AP_(?P<type>.*)_MSP::read\b',),
+            ('HAL_WITH_MSP_DISPLAYPORT', r'AP_OSD_MSP_DisplayPort::init\b',),
+
+
+            ('AP_BATTMON_{type}_ENABLE', r'AP_BattMonitor_(?P<type>.*)::init\b',),
+            ('HAL_BATTMON_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
+
+            ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
+            ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
+            ('HAL_SOLO_GIMBAL_ENABLED', 'AP_Mount_SoloGimbal::init',),
+            ('HAL_MOUNT_STORM32SERIAL_ENABLED', 'AP_Mount_SToRM32_serial::init',),
+            ('HAL_MOUNT_STORM32MAVLINK_ENABLED', 'AP_Mount_SToRM32::init',),
+
+            ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
+            ('HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED', 'AP_CRSF_Telem::calc_text_selection',),
+            ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
+            ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
+
+            ('MODE_{type}_ENABLED', r'Mode(?P<type>.*)::init',),
+
+            ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
+
+            ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
+            ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
+            ('HAL_PROXIMITY_ENABLED', 'AP_Proximity::AP_Proximity',),
+            ('AC_AVOID_ENABLED', 'AC_Avoid::AC_Avoid',),
+            ('AC_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
+
+            ('AP_ICENGINE_ENABLED', 'AP_ICEngine::AP_ICEngine',),
+            ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
+            ('HAL_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
+            ('HAL_GENERATOR_ENABLED', 'AP_Generator::AP_Generator',),
+
+            ('OSD_ENABLED', 'AP_OSD::AP_OSD',),
+            ('HAL_PLUSCODE_ENABLE', 'AP_OSD_Screen::draw_pluscode',),
+            ('OSD_PARAM_ENABLED', 'AP_OSD_ParamScreen::AP_OSD_ParamScreen',),
+            ('HAL_OSD_SIDEBAR_ENABLE', 'AP_OSD_Screen::draw_sidebars',),
+
+            ('HAL_SMARTAUDIO_ENABLED', 'AP_SmartAudio::AP_SmartAudio',),
+            ('AP_TRAMP_ENABLED', 'AP_Tramp::AP_Tramp',),
+
+            ('HAL_QUADPLANE_ENABLED', 'QuadPlane::QuadPlane',),
+            ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
+            ('HAL_LANDING_DEEPSTALL_ENABLED', r'AP_Landing_Deepstall::terminate\b',),
+
+            ('GRIPPER_ENABLED', r'AP_Gripper::init\b',),
+            ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
+            ('LANDING_GEAR_ENABLED', r'AP_LandingGear::init\b',),
+            ('WINCH_ENABLED', 'AP_Winch::AP_Winch',),
+
+            ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
+            ('AP_ROBOTISSERVO_ENABLED', r'AP_RobotisServo::init\b',),
+            ('AP_FETTEC_ONEWIRE_ENABLED', r'AP_FETtecOneWire::init\b',),
+
+            ('RPM_ENABLED', 'AP_RPM::AP_RPM',),
+
+            ('GPS_MOVING_BASELINE', r'AP_GPS_Backend::calculate_moving_base_yaw\b',),
+
+            ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
+            ('HAL_DISPLAY_ENABLED', r'Display::init\b',),
+            ('HAL_NMEA_OUTPUT_ENABLED', r'AP_NMEA_Output::update\b',),
+            ('HAL_BARO_WIND_COMP_ENABLED', r'AP_Baro::wind_pressure_correction\b',),
+
         ]
 
     def progress(self, string):
