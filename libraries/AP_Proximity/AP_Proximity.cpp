@@ -26,6 +26,7 @@
 #include "AP_Proximity_SITL.h"
 #include "AP_Proximity_AirSimSITL.h"
 #include "AP_Proximity_Cygbot_D1.h"
+#include "AP_Proximity_LeddarVu8.h"
 
 #include <AP_Logger/AP_Logger.h>
 
@@ -38,7 +39,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1
+    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1, 14:Leddarvu8
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",   1, AP_Proximity, _type[0], 0, AP_PARAM_FLAG_ENABLE),
@@ -354,6 +355,16 @@ void AP_Proximity::detect_instance(uint8_t instance)
         return;
     }
 # endif
+    break;
+
+    case Type::LEDDAR_VU8:
+#if AP_PROXIMITY_LEDDARVU8_ENABLED
+    if (AP_Proximity_LeddarVu8::detect()) {
+        state[instance].instance = instance;
+        drivers[instance] = new AP_Proximity_LeddarVu8(*this, state[instance]);
+        return;
+    }
+#endif
     break;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
