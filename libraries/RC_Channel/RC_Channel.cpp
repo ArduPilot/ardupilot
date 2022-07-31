@@ -415,12 +415,31 @@ bool RC_Channel::read_6pos_switch(int8_t& position)
         return false;  // This is an error condition
     }
 
-    if      (pulsewidth < 1231) position = 0;
-    else if (pulsewidth < 1361) position = 1;
-    else if (pulsewidth < 1491) position = 2;
-    else if (pulsewidth < 1621) position = 3;
-    else if (pulsewidth < 1750) position = 4;
-    else position = 5;
+    switch (rc().get_switch_type()) {
+    case RC_Channels::SwitchType::OpenTX6Pos: {
+        // 6 position buttons on OpenTX radios such as Radiomaster T16S
+        // 1: 1100, 2: 1260 3: 1420, 4: 1580, 5: 1740, 6: 1900
+        constexpr uint16_t step = 160;
+        uint16_t base = 1100 + step/2;
+        for (position=0; position < 5; position++) {
+            if (pulsewidth < base) {
+                break;
+            }
+            base += step;
+        }
+        break;
+    }
+
+    case RC_Channels::SwitchType::Original:
+    default:
+        if      (pulsewidth < 1231) position = 0;
+        else if (pulsewidth < 1361) position = 1;
+        else if (pulsewidth < 1491) position = 2;
+        else if (pulsewidth < 1621) position = 3;
+        else if (pulsewidth < 1750) position = 4;
+        else position = 5;
+        break;
+    }
 
     if (!debounce_completed(position)) {
         return false;

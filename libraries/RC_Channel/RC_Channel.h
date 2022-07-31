@@ -565,6 +565,17 @@ public:
     void calibrating(bool b) { gcs_is_calibrating = b; }
     bool calibrating() { return gcs_is_calibrating; }
 
+    // RC_SWITCH_TYPE options
+    enum class SwitchType {
+        Original = 0,
+        OpenTX6Pos = 1,
+    };
+
+    // return RC_SWITCH_TYPE
+    RC_Channels::SwitchType get_switch_type(void) const {
+        return _switch_type;
+    }
+
 protected:
 
     enum class Option {
@@ -598,6 +609,7 @@ private:
     AP_Float _override_timeout;
     AP_Int32  _options;
     AP_Int32  _protocols;
+    AP_Enum<SwitchType> _switch_type;
 
     RC_Channel *flight_mode_channel() const;
 
