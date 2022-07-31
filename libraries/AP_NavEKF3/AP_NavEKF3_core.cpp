@@ -1983,6 +1983,17 @@ void NavEKF3_core::MagTableConstrain(void)
                                                    table_earth_field_ga.z+limit_ga);
 }
 
+// constrain states using limit on mag offsets
+void NavEKF3_core::MagOffsetConstrain(void)
+{
+    if (frontend->_mag_learn_limit > 0) {
+        const float limit_ga = frontend->_mag_learn_limit * 0.001;
+        stateStruct.body_magfield.x = constrain_float(stateStruct.body_magfield.x, -limit_ga, limit_ga);
+        stateStruct.body_magfield.y = constrain_float(stateStruct.body_magfield.y, -limit_ga, limit_ga);
+        stateStruct.body_magfield.z = constrain_float(stateStruct.body_magfield.z, -limit_ga, limit_ga);
+    }
+}
+
 // constrain states to prevent ill-conditioning
 void NavEKF3_core::ConstrainStates()
 {
@@ -2006,6 +2017,9 @@ void NavEKF3_core::ConstrainStates()
         // use table constrain
         MagTableConstrain();
     }
+
+    MagOffsetConstrain();
+
     // body magnetic field limit
     for (uint8_t i=19; i<=21; i++) statesArray[i] = constrain_ftype(statesArray[i],-0.5f,0.5f);
     // wind velocity limit 100 m/s (could be based on some multiple of max airspeed * EAS2TAS) - TODO apply circular limit
