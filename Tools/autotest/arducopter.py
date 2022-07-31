@@ -7573,6 +7573,25 @@ class AutoTestCopter(AutoTest):
         print("log difference: %s" % str(log_difference))
         return log_difference[0]
 
+    def WPSetAfterMissionEnd(self):
+        alt = 15
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 10, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, -10, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -10, -10, alt),
+        ]
+
+        self.upload_simple_relhome_mission(items)
+
+        self.takeoff(10, mode='LOITER')
+        self.change_mode('AUTO')
+
+        self.wait_waypoint(0, 2, timeout=500)
+        self.delay_sim_time(5)
+        self.set_current_waypoint(1)
+        self.wait_waypoint(0, 2, timeout=500)
+        self.do_RTL()
+
     def test_gps_blending(self):
         '''ensure we get dataflash log messages for blended instance'''
 
@@ -9253,6 +9272,10 @@ class AutoTestCopter(AutoTest):
             Test("Replay",
                  "Test Replay",
                  self.test_replay),
+
+            Test("WPSetAfterMissionEnd",
+                 "Make sure we can jump back to an earlier item after a mission finishes",
+                 self.WPSetAfterMissionEnd),
 
             Test("FETtecESC",
                  "Test FETtecESC",
