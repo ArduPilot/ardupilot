@@ -983,4 +983,19 @@ function update_hidden_mode()
     }
 }
 
+function check_nyquist()
+{
+    var checks = [["GyroSampleRate", "MaxFreq", "MaxFreq_warning"],
+                  ["SCHED_LOOP_RATE", "PID_MaxFreq", "PID_MaxFreq_warning"]];
+
+    for (var i = 0; i < checks.length; i++) {
+        var freq_limit = get_form(checks[i][0]) * 0.5;
+        var sample_rate = document.getElementById(checks[i][1]);
+        if (parseFloat(sample_rate.value) > freq_limit) {
+            sample_rate.value = freq_limit;
+            document.getElementById(checks[i][2]).innerHTML = "Nyquist limit of half sample rate";
+        } else {
+            document.getElementById(checks[i][2]).innerHTML = "";
+        }
+    }
 }
