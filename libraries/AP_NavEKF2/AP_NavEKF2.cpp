@@ -599,6 +599,21 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GSF_RST_MAX", 57, NavEKF2, _gsfResetMaxCount, 2),
     
+    // @Param: MAG_MIDRES
+    // @DisplayName: Interim Yaw Reset Switch
+    // @Description: This enables whether an interim/mid yaw reset will is enabled.
+    // @Values: 0:Disabled, 1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("MAG_MIDRES", 58, NavEKF2, _mag_inter_reset_enabled, 1),
+
+    // @Param: MAG_RESHGT
+    // @DisplayName: Final Yaw Reset Height
+    // @Description: Height at which the final inflight yaw reset will trigger. Height is measured from the takeoff altitude.
+    // @Range: 0 10
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("MAG_RESHGT", 59, NavEKF2, _mag_final_reset_height, 2.5f),
+
     AP_GROUPEND
 };
 
@@ -1580,4 +1595,13 @@ const EKFGSF_yaw *NavEKF2::get_yawEstimator(void) const
         return core[primary].get_yawEstimator();
     }
     return nullptr;
+}
+
+// check if the interim yaw reset is enabled
+bool NavEKF2::isInterimYawResetEnabled() const
+{
+    if (_mag_inter_reset_enabled == 1) {
+        return true;
+    }
+    return false;
 }

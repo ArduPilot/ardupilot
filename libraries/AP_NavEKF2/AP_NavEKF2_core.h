@@ -54,9 +54,6 @@
 // target EKF update time step
 #define EKF_TARGET_DT 0.01f
 
-// mag fusion final reset altitude
-#define EKF2_MAG_FINAL_RESET_ALT 2.5f
-
 // maximum number of yaw resets due to detected magnetic anomaly allowed per flight
 #define MAG_ANOMALY_RESET_MAX 2
 

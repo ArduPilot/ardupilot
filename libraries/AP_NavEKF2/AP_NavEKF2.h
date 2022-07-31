@@ -298,6 +298,9 @@ public:
 
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const;
+
+    // check if the interim yaw reset is enabled
+    bool isInterimYawResetEnabled(void) const;
     
 private:
     uint8_t num_cores; // number of allocated cores
@@ -362,6 +365,8 @@ private:
     AP_Int8 _gsfRunMask;            // mask controlling which EKF2 instances run a separate EKF-GSF yaw estimator
     AP_Int8 _gsfUseMask;            // mask controlling which EKF2 instances will use EKF-GSF yaw estimator data to assit with yaw resets
     AP_Int8 _gsfResetMaxCount;      // maximum number of times the EKF2 is allowed to reset it's yaw to the EKF-GSF estimate
+    AP_Int8  _mag_inter_reset_enabled;      // zero to disable an interim yaw reset
+    AP_Float _mag_final_reset_height;       // the height at which the final yaw reset will occur (m)
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
