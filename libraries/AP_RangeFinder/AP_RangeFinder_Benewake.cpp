@@ -44,7 +44,9 @@ extern const AP_HAL::HAL& hal;
 // byte 6 (TF02)        SIG             Reliability in 8 levels, 7 & 8 means reliable
 // byte 6 (TFmini)      Distance Mode   0x02 for short distance (mm), 0x07 for long distance (cm)
 // byte 6 (TF03)        (Reserved)
+// byte 6 (TFmini Plus) Temp_L          Temperature low 8 bits
 // byte 7 (TF02 only)   TIME            Exposure time in two levels 0x03 and 0x06
+// byte 7 (TFmini Plus) Temp_H          Temperature high 8 bits
 // byte 8               Checksum        Checksum byte, sum of bytes 0 to bytes 7
 
 // distance returned in reading_m, signal_ok is set to true if sensor reports a strong signal
@@ -93,7 +95,7 @@ bool AP_RangeFinder_Benewake::get_reading(float &reading_m)
                 if (checksum == linebuf[BENEWAKE_FRAME_LENGTH-1]) {
                     // calculate distance
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
-                    if (dist >= BENEWAKE_DIST_MAX_CM) {
+                    if (dist >= BENEWAKE_DIST_MAX_CM || dist == 0) {  // TFmini Plus: When the signal strength is lower than 100 or equal to 65535, the detection is unreliable, TFmini Plus will set distance value to 0.
                         // this reading is out of range
                         count_out_of_range++;
                     } else if (!has_signal_byte()) {
