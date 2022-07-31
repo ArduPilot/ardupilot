@@ -61,7 +61,8 @@ ArduPilot 4.2 filter setup.
         </table>
         <p>
                 <label for="MaxFreq">Maximum Displayed Frequency</label>
-                <input id="MaxFreq" name="MaxFreq" type="number" step="1" value="150"/>
+                <input id="MaxFreq" name="MaxFreq" type="number" step="1" value="150" onchange="check_nyquist();"/>
+                <label id="MaxFreq_warning"></label>
 	</p>
         <p>
                 <label for="MaxPhaseLag">Maximum Displayed Phase Lag</label>
