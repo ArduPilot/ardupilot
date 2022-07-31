@@ -2522,7 +2522,7 @@ void QuadPlane::vtol_position_controller(void)
 
                 // allow up to the WP speed when we are further away, slowing to the pos2 target speed
                 // when we are close
-                target_speed = linear_interpolate(position2_target_speed, scaled_wp_speed,
+                target_speed = linear_interpolate(position2_target_speed, wp_speed,
                                                   distance,
                                                   position2_dist_threshold*1.5,
                                                   2*position2_dist_threshold + stopping_distance(rel_groundspeed_sq));
@@ -2530,11 +2530,15 @@ void QuadPlane::vtol_position_controller(void)
                 target_speed_xy_cms = diff_wp_norm * target_speed * 100;
                 have_target_yaw = true;
 
-                // adjust target yaw angle for wind
+                // adjust target yaw angle for wind. We calculate yaw based on the target speed
+                // we want assuming no speed scaling due to direction
                 const Vector2f wind = plane.ahrs.wind_estimate().xy();
                 const float gnd_speed = plane.ahrs.groundspeed();
                 Vector2f target_speed_xy = landing_velocity + diff_wp_norm * gnd_speed - wind;
                 target_yaw_deg = degrees(target_speed_xy.angle());
+
+                // now limit speed to scaled wp speed, so we don't fly rapidly backwards
+                target_speed_xy.limit_length(scaled_wp_speed*100);
             }
         }
         const float target_speed_ms = target_speed_xy_cms.length() * 0.01;
