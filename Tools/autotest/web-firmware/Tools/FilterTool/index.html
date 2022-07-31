@@ -25,12 +25,40 @@ ArduPilot 4.2 filter setup.
   <form id="params" action="">
 <fieldset style="max-width:1200px">
   <legend>Graph Settings</legend>
-        <p>
-                <input type="radio" id="ScaleLog" name="Scale" value="Log">
-                <label for="LogScale">Log Scale</label><br>
-                <input type="radio" id="ScaleLinear" name="Scale" value="Linear" checked>
-                <label for="LinearScale">Linear Scale</label><br>
-        </p>
+        <table>
+                <tr>
+                        <td>
+                                <fieldset style="width:150px">
+                                        <legend>Magnitude scale</legend>
+                                        <input type="radio" id="ScaleLog" name="Scale" value="Log" checked>
+                                        <label for="LogScale">dB</label><br>
+                                        <input type="radio" id="ScaleLinear" name="Scale" value="Linear">
+                                        <label for="LinearScale">Linear</label><br>
+                                </fieldset>
+                        </td>
+                        <td>
+                                <fieldset style="width:150px">
+                                        <legend>Frequency scale</legend>
+                                        <table>
+                                                <tr>
+                                                        <td>
+                                                                <input type="radio" id="freq_ScaleLog" name="feq_scale" value="Log" checked>
+                                                                <label for="LogScale">Log</label><br>
+                                                                <input type="radio" id="freq_ScaleLinear" name="feq_scale" value="Linear">
+                                                                <label for="LinearScale">Linear</label><br>
+                                                        </td>
+                                                        <td>
+                                                                <input type="radio" id="freq_Scale_Hz" name="feq_unit" value="Hz" checked>
+                                                                <label for="Scale_unit_Hz">Hz</label><br>
+                                                                <input type="radio" id="freq_Scale_RPM" name="feq_unit" value="RPM">
+                                                                <label for="Scale_unit_RPM">RPM</label><br>
+                                                        </td>
+                                                </tr>
+                                        </table>
+                                </fieldset>
+                        </td>
+                </tr>
+        </table>
         <p>
                 <label for="MaxFreq">Maximum Displayed Frequency</label>
                 <input id="MaxFreq" name="MaxFreq" type="number" step="1" value="150"/>
