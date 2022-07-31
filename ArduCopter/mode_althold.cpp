@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#if MODE_ALTHOLD_ENABLED == ENABLED
 
 /*
  * Init and run calls for althold, flight mode
@@ -101,3 +102,5 @@ void ModeAltHold::run()
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 }
+
+#endif

@@ -925,7 +925,9 @@ private:
     ModeAcro mode_acro;
 #endif
 #endif
+#if MODE_ALTHOLD_ENABLED == ENABLED
     ModeAltHold mode_althold;
+#endif
 #if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
 #endif

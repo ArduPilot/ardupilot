@@ -218,6 +218,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// Alt hold - fly vehicle in Altitude hold mode
+#ifndef MODE_ALTHOLD_ENABLED
+# define MODE_ALTHOLD_ENABLED ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
 #ifndef MODE_AUTO_ENABLED
 # define MODE_AUTO_ENABLED ENABLED
