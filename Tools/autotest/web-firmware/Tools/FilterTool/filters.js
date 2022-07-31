@@ -424,9 +424,10 @@ function calculate_filter() {
         if (use_dB) {
             // show power in decibels
             aten = 20 * Math.log10(aten);
-        } else {
-            // attenuation is opposite of ratio
-            aten = 1.0 - aten;
+        }
+        var freq_value = freq;
+        if (use_RPM) {
+            freq_value *= 60;
         }
         var phase_diff = phase - last_phase;
         if (phase_diff > 180) {
@@ -436,8 +437,8 @@ function calculate_filter() {
             phase_wrap += 360.0;
             phase += 360.0;
         }
-        attenuation.push({x:freq, y:aten});
-        phase_lag.push({x:freq, y:-phase});
+        attenuation.push({x:freq_value, y:aten});
+        phase_lag.push({x:freq_value, y:-phase});
 
         min_atten = Math.min(min_atten, aten);
         max_atten = Math.max(max_atten, aten);
@@ -449,14 +450,28 @@ function calculate_filter() {
     min_phase_lag = Math.min(Math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
     max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
     max_phase_lag = Math.min(get_form("MaxPhaseLag"), max_phase_lag);
+
+    if (use_RPM) {
+        freq_max *= 60.0;
+    }
+
+    var freq_log = document.getElementById("freq_ScaleLog").checked;
+    if ((freq_log_scale != null) && (freq_log_scale != freq_log)) {
+        // Scale changed, no easy way to update, delete chart and re-draw
+        chart.clear();
+        chart.destroy();
+        chart = null;
+    }
+    freq_log_scale = freq_log;
+
     if (chart) {
         chart.data.datasets[0].data = attenuation;
         chart.data.datasets[1].data = phase_lag;
         chart.options.scales.xAxes[0].ticks.max = freq_max;
+        chart.options.scales.xAxes[0].scaleLabel.labelString = freq_string
         chart.options.scales.yAxes[0].ticks.min = min_atten
         chart.options.scales.yAxes[0].ticks.max = max_atten;
         chart.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
-        chart.options.scales.yAxes[0].ticks.reverse = !use_dB;
         chart.options.scales.yAxes[1].ticks.min = -max_phase_lag;
         chart.options.scales.yAxes[1].ticks.max = -min_phase_lag;
         chart.update();
