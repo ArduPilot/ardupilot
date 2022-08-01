@@ -2344,7 +2344,11 @@ void QuadPlane::vtol_position_controller(void)
         // use nav controller roll
         plane.calc_nav_roll();
 
-        const float stop_distance = stopping_distance();
+        // work out the point to enter airbrake mode. We want enough
+        // distance to stop, plus some margin for the time it takes to
+        // change the accel (jerk limit) plus the min time in airbrake
+        // mode. For simplicity we assume 2 seconds margin
+        const float stop_distance = stopping_distance() + 2*closing_speed;
 
         if (!suppress_z_controller && poscontrol.get_state() == QPOS_AIRBRAKE) {
             hold_hover(0);
@@ -3965,12 +3969,12 @@ float QuadPlane::get_land_airspeed(void)
                 approach_speed = cruise_speed;
             }
         }
-        const float time_to_landing = plane.auto_state.wp_distance / MAX(approach_speed, 5);
+        const float time_to_pos1 = (plane.auto_state.wp_distance - stopping_distance(sq(approach_speed))) / MAX(approach_speed, 5);
         /*
           slow down to landing approach speed as we get closer to landing
         */
         approach_speed = linear_interpolate(approach_speed, cruise_speed,
-                                            time_to_landing,
+                                            time_to_pos1,
                                             20, 60);
         return approach_speed;
     }
