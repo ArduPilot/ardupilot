@@ -36,6 +36,7 @@
 *.vbrain
 *.vrx
 *.zip
+!Tools/autotest/tilecache/**/*.zip
 *~
 .*.swo
 .*.swp

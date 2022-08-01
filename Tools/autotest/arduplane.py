@@ -2565,11 +2565,11 @@ function'''
 
     def TerrainMission(self):
 
-        mavproxy = self.start_mavproxy()
+        self.install_terrain_handlers_context()
 
         num_wp = self.load_mission("ap-terrain.txt")
 
-        self.wait_ready_to_arm(timeout=120*60)  # time to get terrain
+        self.wait_ready_to_arm()
         self.arm_vehicle()
 
         global max_alt
@@ -2586,8 +2586,6 @@ function'''
 
         self.fly_mission_waypoints(num_wp-1, mission_timeout=600)
 
-        self.stop_mavproxy(mavproxy)
-
         if max_alt < 200:
             raise NotAchievedException("Did not follow terrain")
 
@@ -2595,7 +2593,7 @@ function'''
         '''test AP_Terrain'''
         self.reboot_sitl()  # we know the terrain height at CMAC
 
-        mavproxy = self.start_mavproxy()
+        self.install_terrain_handlers_context()
 
         self.wait_ready_to_arm()
         loc = self.mav.location()
@@ -2635,8 +2633,6 @@ function'''
         if abs(report.terrain_height - expected_terrain_height) > 0.5:
             raise NotAchievedException("Expected terrain height=%f got=%f" %
                                        (expected_terrain_height, report.terrain_height))
-
-        self.stop_mavproxy(mavproxy)
 
     def test_loiter_terrain(self):
         default_rad = self.get_parameter("WP_LOITER_RAD")
