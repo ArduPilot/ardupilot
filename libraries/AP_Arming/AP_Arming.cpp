@@ -945,6 +945,14 @@ bool AP_Arming::system_checks(bool report)
             check_failed(ARMING_CHECK_SYSTEM, report, "Terrain out of memory");
             return false;
         }
+        if ((terrain != nullptr) && terrain->enabled()) {
+            uint16_t pending=0, loaded=0;
+            terrain->get_statistics(pending, loaded);
+            if (pending != 0 || terrain->status() != AP_Terrain::TerrainStatusOK) {
+                check_failed(ARMING_CHECK_SYSTEM, report, "Terrain data unhealthy");
+                return false;
+            }
+        }
 #endif
 #if AP_SCRIPTING_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
