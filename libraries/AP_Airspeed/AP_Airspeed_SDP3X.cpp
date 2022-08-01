@@ -42,11 +42,6 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Airspeed_SDP3X::AP_Airspeed_SDP3X(AP_Airspeed &_frontend, uint8_t _instance) :
-    AP_Airspeed_Backend(_frontend, _instance)
-{
-}
-
 /*
   send a 16 bit command code
  */
