@@ -35,6 +35,7 @@ public:
         ICM42605,
         ICM40605,
         IIM42652,
+        ICM42670,
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -59,6 +60,9 @@ private:
     uint8_t register_read(uint8_t reg);
     void register_write(uint8_t reg, uint8_t val, bool checked=false);
 
+    uint8_t register_read_bank(uint8_t bank, uint8_t reg);
+    void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
+    
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
@@ -75,6 +79,7 @@ private:
     const enum Rotation rotation;
 
     float accel_scale;
+    float expected_ODR;
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 
