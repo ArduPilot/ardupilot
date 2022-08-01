@@ -102,6 +102,7 @@ public:
         MSP = 32,
         USD1_CAN = 33,
         Benewake_CAN = 34,
+        TeraRanger_Serial = 35,
         SIM = 100,
     };
 
