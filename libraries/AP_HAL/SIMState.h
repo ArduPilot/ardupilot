@@ -13,6 +13,7 @@
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
+#include <SITL/SIM_RF_TeraRanger_Serial.h>
 #include <SITL/SIM_RF_LightWareSerial.h>
 #include <SITL/SIM_RF_LightWareSerialBinary.h>
 #include <SITL/SIM_RF_Lanbao.h>
@@ -127,6 +128,8 @@ private:
     SITL::RF_Benewake_TF03 *benewake_tf03;
     // simulated Benewake tfmini rangefinder:
     SITL::RF_Benewake_TFmini *benewake_tfmini;
+    // simulated TeraRangerSerial rangefinder:
+    SITL::RF_TeraRanger_Serial *teraranger_serial;
 
     // simulated LightWareSerial rangefinder - legacy protocol::
     SITL::RF_LightWareSerial *lightwareserial;
