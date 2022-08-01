@@ -7,11 +7,6 @@ MCU STM32H7xx STM32H743xx
 # crystal frequency
 OSCILLATOR_HZ 16000000
 
-# USB setup
-USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
-USB_PRODUCT 0x0053
-USB_STRING_MANUFACTURER "Holybro"
-
 # board ID for firmware load
 APJ_BOARD_ID 53
 
