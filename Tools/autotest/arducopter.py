@@ -488,9 +488,8 @@ class AutoTestCopter(AutoTest):
 
             self.change_mode('LOITER')
 
-            mavproxy = self.start_mavproxy()
-            self.wait_ready_to_arm(timeout=120*60)  # terrain takes time
-            self.stop_mavproxy(mavproxy)
+            self.install_terrain_handlers_context()
+            self.wait_ready_to_arm()
 
             self.arm_vehicle()
 
@@ -3225,10 +3224,7 @@ class AutoTestCopter(AutoTest):
         ex = None
         self.context_push()
 
-        # we must start mavproxy here as otherwise we can't get the
-        # terrain database tiles - this leads to random failures in
-        # CI!
-        mavproxy = self.start_mavproxy()
+        self.install_terrain_handlers_context()
 
         try:
             self.set_analog_rangefinder_parameters()
@@ -3277,8 +3273,6 @@ class AutoTestCopter(AutoTest):
             self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
-
-        self.stop_mavproxy(mavproxy)
 
         self.context_pop()
         self.reboot_sitl()
@@ -5779,10 +5773,7 @@ class AutoTestCopter(AutoTest):
 
         '''
 
-        # we must start mavproxy here as otherwise we can't get the
-        # terrain database tiles - this leads to random failures in
-        # CI!
-        mavproxy = self.start_mavproxy()
+        self.install_terrain_handlers_context()
 
         self.set_parameter("FS_GCS_ENABLE", 0)
         self.change_mode('GUIDED')
@@ -5842,8 +5833,6 @@ class AutoTestCopter(AutoTest):
                 (max_post_arming_home_offset_delta_mm, delta_between_original_home_alt_offset_and_new_home_alt_offset_mm))
 
         self.wait_disarmed()
-
-        self.stop_mavproxy(mavproxy)
 
     def PrecisionLoiterCompanion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
