@@ -7290,6 +7290,7 @@ class AutoTestCopter(AutoTest):
             ("lanbao", 26),
             ("benewake_tf03", 27),
             ("gyus42v2", 31),
+            ("teraranger_serial", 35),
         ]
         while len(drivers):
             do_drivers = drivers[0:3]
