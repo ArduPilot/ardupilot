@@ -14,7 +14,8 @@
 
 class AP_Airspeed_DroneCAN : public AP_Airspeed_Backend {
 public:
-    AP_Airspeed_DroneCAN(AP_Airspeed &_frontend, uint8_t _instance);
+
+    using AP_Airspeed_Backend::AP_Airspeed_Backend;
 
     bool init(void) override;
 
