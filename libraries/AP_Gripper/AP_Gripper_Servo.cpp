@@ -10,32 +10,30 @@ extern const AP_HAL::HAL& hal;
 
 void AP_Gripper_Servo::init_gripper()
 {
-    // move the servo to the release position
-    release();
+    // move the servo to the neutral position
+    SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.neutral_pwm);
 }
 
 void AP_Gripper_Servo::grab()
 {
+    // flag we are active and grabbing cargo
+    config.state = AP_Gripper::STATE_GRABBING;
+
     // move the servo to the grab position
     SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.grab_pwm);
     action_timestamp = AP_HAL::millis();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    is_releasing = false;
-    is_released = true;
-#endif
     gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbing");
     AP::logger().Write_Event(LogEvent::GRIPPER_GRAB);
 }
 
 void AP_Gripper_Servo::release()
 {
+    // flag we are releasing cargo
+    config.state = AP_Gripper::STATE_RELEASING;
+
     // move the servo to the release position
     SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.release_pwm);
     action_timestamp = AP_HAL::millis();
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    is_releasing = true;
-    is_released = false;
-#endif
     gcs().send_text(MAV_SEVERITY_INFO, "Gripper load releasing");
     AP::logger().Write_Event(LogEvent::GRIPPER_RELEASE);
 }
@@ -53,40 +51,38 @@ bool AP_Gripper_Servo::has_state_pwm(const uint16_t pwm) const
         // (e.g. last action was a grab not a release)
         return false;
     }
-    if (AP_HAL::millis() - action_timestamp < action_time) {
+    if (AP_HAL::millis() - action_timestamp < SERVO_ACTUATION_TIME) {
         // servo still moving....
         return false;
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (is_releasing) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load released");
-    } else {
-        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbed");
-    }
-#endif
     return true;
 }
 
-
 bool AP_Gripper_Servo::released() const
 {
-    return has_state_pwm(config.release_pwm);
+    return (config.state == AP_Gripper::STATE_RELEASED);
 }
 
 bool AP_Gripper_Servo::grabbed() const
 {
-    return has_state_pwm(config.grab_pwm);
+    return (config.state == AP_Gripper::STATE_GRABBED);
 }
 
 // type-specific periodic updates:
 void AP_Gripper_Servo::update_gripper() {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (is_releasing && !is_released) {
-        is_released = released();
-    } else if (!is_releasing && is_released) {
-        is_released = !grabbed();
+    // Check for successful grabbed or released
+    if (config.state == AP_Gripper::STATE_GRABBING && has_state_pwm(config.grab_pwm)) {
+        config.state = AP_Gripper::STATE_GRABBED;
+    } else if (config.state == AP_Gripper::STATE_RELEASING && has_state_pwm(config.release_pwm)) {
+        config.state = AP_Gripper::STATE_RELEASED;
     }
-#endif
+
+    // close the gripper again if autoclose_time > 0.0
+    if (config.state == AP_Gripper::STATE_RELEASED &&
+        (is_positive(config.autoclose_time)) &&
+        (AP_HAL::millis() - action_timestamp > (config.autoclose_time * 1000.0))) {
+        grab();
+    }
 };
 
 bool AP_Gripper_Servo::valid() const
