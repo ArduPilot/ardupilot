@@ -30,6 +30,7 @@
 #include "AP_RangeFinder_LeddarOne.h"
 #include "AP_RangeFinder_USD1_Serial.h"
 #include "AP_RangeFinder_TeraRangerI2C.h"
+#include "AP_RangeFinder_TeraRanger_Serial.h"
 #include "AP_RangeFinder_VL53L0X.h"
 #include "AP_RangeFinder_VL53L1X.h"
 #include "AP_RangeFinder_NMEA.h"
@@ -537,6 +538,11 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::BenewakeTF03:
 #if AP_RANGEFINDER_BENEWAKE_TF03_ENABLED
         serial_create_fn = AP_RangeFinder_Benewake_TF03::create;
+#endif
+        break;
+    case Type::TeraRanger_Serial:
+#if AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
+        serial_create_fn = AP_RangeFinder_TeraRanger_Serial::create;
 #endif
         break;
     case Type::PWM:
