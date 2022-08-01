@@ -290,12 +290,8 @@ class AutoTestQuadPlane(AutoTest):
             self.load_fence(fence)
         if self.mavproxy is not None:
             self.mavproxy.send('wp list\n')
-        # terrain can take a *long* time to load:
-        timeout = 120
-        if include_terrain_timeout:
-            timeout *= 1000  # yes, *that* long
-        mavproxy = self.start_mavproxy()
-        self.wait_ready_to_arm(timeout=timeout)
+        self.install_terrain_handlers_context()
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
@@ -303,13 +299,12 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         # wait for blood sample here
         self.set_current_waypoint(20)
-        self.wait_ready_to_arm(timeout=timeout)
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
 
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
-        self.stop_mavproxy(mavproxy)
 
     def enum_state_name(self, enum_name, state, pretrim=None):
         e = mavutil.mavlink.enums[enum_name]

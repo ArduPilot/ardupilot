@@ -30,6 +30,7 @@ import threading
 import enum
 
 from MAVProxy.modules.lib import mp_util
+from MAVProxy.modules.lib import mp_elevation
 
 from pymavlink import mavparm
 from pymavlink import mavwp, mavutil, DFReader
@@ -1541,6 +1542,17 @@ class AutoTest(ABC):
 
         self.last_sim_time_cached = 0
         self.last_sim_time_cached_wallclock = 0
+
+        # to autopilot we do not want to go to the internet for tiles,
+        # usually.  Set this to False to gather tiles from internet in
+        # the cae there are new tiles required, then add them to the
+        # repo and set this back to false:
+        self.terrain_in_offline_mode = True
+        self.elevationmodel = mp_elevation.ElevationModel(
+            cachedir=util.reltopdir("Tools/autotest/tilecache/srtm"),
+            offline=self.terrain_in_offline_mode
+        )
+        self.terrain_data_messages_sent = 0  # count of messages back
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -7014,6 +7026,8 @@ Also, ignores heartbeats not from our target system'''
         self.progress(fmt % ("**--tests_total_time--**", tests_total_time))
         self.progress("mavproxy_start was called %u times" %
                       (self.start_mavproxy_count,))
+        self.progress("Supplied terrain data to autopilot in %u messages" %
+                      (self.terrain_data_messages_sent,))
 
     def send_statustext(self, text):
         if sys.version_info.major >= 3 and not isinstance(text, bytes):
@@ -9490,6 +9504,61 @@ Also, ignores heartbeats not from our target system'''
         self.context_pop()
         self.reboot_sitl()
 
+    def install_terrain_handlers_context(self):
+        '''install a message handler into the current context which will
+        listen for an fulfill terrain requests from ArduPilot.  Will
+        die if the data is not available - but
+        self.terrain_in_offline_mode can be set to true in the
+        constructor to change this behaviour
+        '''
+
+        def check_terrain_requests(mav, m):
+            if m.get_type() != 'TERRAIN_REQUEST':
+                return
+            self.progress("Processing TERRAIN_REQUEST (%s)" %
+                          self.dump_message_verbose(m))
+            # swiped from mav_terrain.py
+            for bit in range(56):
+                if m.mask & (1 << bit) == 0:
+                    continue
+
+                lat = m.lat * 1.0e-7
+                lon = m.lon * 1.0e-7
+                bit_spacing = m.grid_spacing * 4
+                (lat, lon) = mp_util.gps_offset(lat, lon,
+                                                east=bit_spacing * (bit % 8),
+                                                north=bit_spacing * (bit // 8))
+                data = []
+                for i in range(4*4):
+                    y = i % 4
+                    x = i // 4
+                    (lat2, lon2) = mp_util.gps_offset(lat, lon,
+                                                      east=m.grid_spacing * y,
+                                                      north=m.grid_spacing * x)
+                    # if we are in online mode then we'll try to fetch
+                    # from the internet into the cache dir:
+                    for i in range(120):
+                        alt = self.elevationmodel.GetElevation(lat2, lon2)
+                        if alt is not None:
+                            break
+                        if self.terrain_in_offline_mode:
+                            break
+                        self.progress("No elevation data for (%f %f); retry" %
+                                      (lat2, lon2))
+                        time.sleep(1)
+                    if alt is None:
+                        # no data - we can't send the packet
+                        raise ValueError("No elevation data for (%f %f)" % (lat2, lon2))
+                    data.append(int(alt))
+                self.terrain_data_messages_sent += 1
+                self.mav.mav.terrain_data_send(m.lat,
+                                               m.lon,
+                                               m.grid_spacing,
+                                               bit,
+                                               data)
+
+        self.install_message_hook_context(check_terrain_requests)
+
     def test_set_position_global_int(self, timeout=100):
         """Test set position message in guided mode."""
         # Disable heading and yaw test on rover type
@@ -9503,10 +9572,7 @@ Also, ignores heartbeats not from our target system'''
             test_heading = True
             test_yaw_rate = True
 
-        # we must start mavproxy here as otherwise we can't get the
-        # terrain database tiles - this leads to random failures in
-        # CI!
-        mavproxy = self.start_mavproxy()
+        self.install_terrain_handlers_context()
 
         self.set_parameter("FS_GCS_ENABLE", 0)
         self.change_mode("GUIDED")
@@ -9712,8 +9778,6 @@ Also, ignores heartbeats not from our target system'''
                                     called_function=lambda plop, empty: send_yaw_rate(
                                         target_rate, None), minimum_duration=5)
 
-        self.stop_mavproxy(mavproxy)
-
         self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
@@ -9730,10 +9794,7 @@ Also, ignores heartbeats not from our target system'''
             test_heading = True
             test_yaw_rate = True
 
-        # we must start mavproxy here as otherwise we can't get the
-        # terrain database tiles - this leads to random failures in
-        # CI!
-        mavproxy = self.start_mavproxy()
+        self.install_terrain_handlers_context()
 
         self.set_parameter("FS_GCS_ENABLE", 0)
         self.change_mode("GUIDED")
@@ -10078,8 +10139,6 @@ Also, ignores heartbeats not from our target system'''
                                                                    frame),
                     minimum_duration=2
                 )
-
-        self.stop_mavproxy(mavproxy)
 
         self.progress("Getting back to home and disarm")
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)

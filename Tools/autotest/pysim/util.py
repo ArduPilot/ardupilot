@@ -556,7 +556,7 @@ def start_MAVProxy_SITL(atype,
         aircraft = 'test.%s' % atype
     cmd.extend(['--aircraft', aircraft])
     cmd.extend(options)
-    cmd.extend(['--default-modules', 'misc,terrain,wp,rally,fence,param,arm,mode,rc,cmdlong,output'])
+    cmd.extend(['--default-modules', 'misc,wp,rally,fence,param,arm,mode,rc,cmdlong,output'])
 
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
