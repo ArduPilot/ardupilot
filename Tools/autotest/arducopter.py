@@ -6137,7 +6137,7 @@ class AutoTestCopter(AutoTest):
         last_send = 0
         while True:
             now = self.get_sim_time_cached()
-            if now - tstart > 10:
+            if now - tstart > 100:
                 raise NotAchievedException("Did not get correct angle back")
 
             if now - last_send > 0.1:
