@@ -533,6 +533,9 @@ class AutoTestPlane(AutoTest):
         """Fly a mission from a file."""
         self.progress("Flying mission %s" % filename)
         num_wp = self.load_mission(filename, strict=strict)-1
+        self.fly_mission_waypoints(num_wp, mission_timeout=mission_timeout, quadplane=quadplane)
+
+    def fly_mission_waypoints(self, num_wp, mission_timeout=60.0, quadplane=False):
         self.set_current_waypoint(0, check_afterwards=False)
         self.context_push()
         self.context_collect('STATUSTEXT')
@@ -2562,10 +2565,31 @@ function'''
 
     def TerrainMission(self):
 
-        self.wait_ready_to_arm()
+        mavproxy = self.start_mavproxy()
+
+        num_wp = self.load_mission("ap-terrain.txt")
+
+        self.wait_ready_to_arm(timeout=120*60)  # time to get terrain
         self.arm_vehicle()
 
-        self.fly_mission("ap-terrain.txt", mission_timeout=600)
+        global max_alt
+        max_alt = 0
+
+        def record_maxalt(mav, m):
+            global max_alt
+            if m.get_type()  != 'GLOBAL_POSITION_INT':
+                return
+            if m.relative_alt/1000.0 > max_alt:
+                max_alt = m.relative_alt/1000.0
+
+        self.install_message_hook(record_maxalt)
+
+        self.fly_mission_waypoints(num_wp-1, mission_timeout=600)
+
+        self.stop_mavproxy(mavproxy)
+
+        if max_alt < 200:
+            raise NotAchievedException("Did not follow terrain")
 
     def Terrain(self):
         '''test AP_Terrain'''
