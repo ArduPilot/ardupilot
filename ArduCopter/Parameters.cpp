@@ -1137,6 +1137,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(command_model_pilot, "PILOT_Y_", 56, ParametersG2, AC_CommandModel),
 
+    // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
+    // https://github.com/skybrush-io/ardupilot
+
     AP_GROUPEND
 };
 
