@@ -150,6 +150,16 @@ protected:
 
     const char*         _frame_class_string = ""; // string representation of frame class
     const char*         _frame_type_string = "";  //  string representation of frame type
+
 private:
+    // setup motors matrix
+    bool setup_quad_matrix(motor_frame_type frame_type);
+    bool setup_hexa_matrix(motor_frame_type frame_type);
+    bool setup_octa_matrix(motor_frame_type frame_type);
+    bool setup_deca_matrix(motor_frame_type frame_type);
+    bool setup_dodecahexa_matrix(motor_frame_type frame_type);
+    bool setup_y6_matrix(motor_frame_type frame_type);
+    bool setup_octaquad_matrix(motor_frame_type frame_type);
+
     static AP_MotorsMatrix *_singleton;
 };
