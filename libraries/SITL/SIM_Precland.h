@@ -42,9 +42,9 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     AP_Int8 _enable;
-    AP_Float _origin_lat;
-    AP_Float _origin_lon;
-    AP_Float _origin_height;
+    AP_Float _device_lat;
+    AP_Float _device_lon;
+    AP_Float _device_height;
     AP_Int16 _orient_yaw;
     AP_Int8 _type;
     AP_Int32 _rate;

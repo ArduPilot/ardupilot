@@ -989,7 +989,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     if (precland && precland->is_enabled()) {
         precland->update(get_location(), get_position_relhome());
         if (precland->_over_precland_base) {
-            local_ground_level += precland->_origin_height;
+            local_ground_level += precland->_device_height;
         }
     }
 
