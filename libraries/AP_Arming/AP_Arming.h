@@ -176,6 +176,12 @@ protected:
 
     virtual bool mission_checks(bool report);
 
+    bool terrain_checks(bool report) const;
+
+    // expected to return true if the terrain database is required to have
+    // all data loaded
+    virtual bool terrain_database_required() const;
+
     bool rangefinder_checks(bool report);
 
     bool fence_checks(bool report);
