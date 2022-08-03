@@ -4275,4 +4275,28 @@ void QuadPlane::disable_yaw_rate_time_constant()
     attitude_control->set_yaw_rate_tc(0.0);
 }
 
+// Check if servo auto trim is allowed, only if countrol surfaces are fully in use
+bool QuadPlane::allow_servo_auto_trim()
+{
+    if (!available()) {
+        // Quadplane disabled, auto trim always allowed
+        return true;
+    }
+    if (in_vtol_mode()) {
+        // VTOL motors active in VTOL modes
+        return false;
+    }
+    if (!in_assisted_flight()) {
+        // In forward flight and VTOL motors not active
+        return true;
+    }
+    if (tailsitter.enabled() && ((options & QuadPlane::OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0)) {
+        // Tailsitter in forward flight, motors providing active stabalisation with motors only option
+        // Control surfaces are running as normal with I term active, motor I term is zeroed
+        return true;
+    }
+    // In forward flight with active VTOL motors
+    return false;
+}
+
 #endif  // HAL_QUADPLANE_ENABLED
