@@ -168,6 +168,9 @@ public:
     // called when we change mode (for any mode, not just Q modes)
     void mode_enter(void);
 
+    // Check if servo auto trim is allowed
+    bool allow_servo_auto_trim();
+
 private:
     AP_AHRS &ahrs;
     AP_Vehicle::MultiCopter aparm;

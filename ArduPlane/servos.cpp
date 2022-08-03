@@ -1037,7 +1037,7 @@ void Plane::servos_auto_trim(void)
         return;
     }
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.in_assisted_flight() || quadplane.in_vtol_mode()) {
+    if (!quadplane.allow_servo_auto_trim()) {
         // can't auto-trim with quadplane motors running
         return;
     }
