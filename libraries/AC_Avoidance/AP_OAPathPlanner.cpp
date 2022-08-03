@@ -270,6 +270,7 @@ void AP_OAPathPlanner::avoidance_thread()
             WITH_SEMAPHORE(_rsem);
             if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
                 // this is a very old request, don't process it
+                avoidance_result.ret_state = OA_NOT_REQUIRED;
                 continue;
             }
 
