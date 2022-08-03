@@ -8739,6 +8739,19 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.assert_at_home()
 
+    def NoRCOnBootPreArmFailure(self):
+        self.context_push()
+        for rc_failure_mode in 0, 1:
+            self.set_parameters({
+                "SIM_RC_FAIL": 1,  # no-pulses
+                "FS_THR_VALUE": 950,
+            })
+            self.reboot_sitl()
+            self.assert_prearm_failure("Throttle below failsafe",
+                                       other_prearm_failures_fatal=False)
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/common.py
@@ -8802,6 +8815,10 @@ class AutoTestCopter(AutoTest):
             ("AutoTune",
              "Fly AUTOTUNE mode",
              self.fly_autotune),  # 73s
+
+            ("NoRCOnBootPreArmFailure",
+             "Ensure we can't arm with no RC on boot if THR_FS_VALUE set",
+             self.NoRCOnBootPreArmFailure),
         ])
         return ret
 
