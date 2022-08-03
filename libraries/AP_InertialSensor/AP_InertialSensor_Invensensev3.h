@@ -88,8 +88,11 @@ private:
 
     // what rate are we generating samples into the backend for gyros and accels?
     uint16_t backend_rate_hz;
+    // pre-calculated backend period
+    uint32_t backend_period_us;
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device::PeriodicHandle periodic_handle;
 
     // which sensor type this is
     enum Invensensev3_Type inv3_type;
