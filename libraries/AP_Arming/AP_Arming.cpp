@@ -163,14 +163,16 @@ AP_Arming::AP_Arming()
 // performs pre-arm checks. expects to be called at 1hz.
 void AP_Arming::update(void)
 {
+    const uint32_t now_ms = AP_HAL::millis();
     // perform pre-arm checks & display failures every 30 seconds
-    static uint8_t pre_arm_display_counter = PREARM_DISPLAY_PERIOD/2;
-    pre_arm_display_counter++;
     bool display_fail = false;
-    if ((_arming_options & uint32_t(AP_Arming::ArmingOptions::DISABLE_PREARM_DISPLAY)) == 0 &&
-        pre_arm_display_counter >= PREARM_DISPLAY_PERIOD) {
+    if (now_ms - last_prearm_display_ms > PREARM_DISPLAY_PERIOD*1000) {
         display_fail = true;
-        pre_arm_display_counter = 0;
+        last_prearm_display_ms = now_ms;
+    }
+    // OTOH, the user may never want to display them:
+    if (option_enabled(Option::DISABLE_PREARM_DISPLAY)) {
+        display_fail = false;
     }
 
     pre_arm_checks(display_fail);
