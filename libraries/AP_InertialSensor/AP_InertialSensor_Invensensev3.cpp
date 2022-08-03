@@ -119,7 +119,7 @@ struct PACKED FIFOData {
 };
 
 #define INV3_SAMPLE_SIZE sizeof(FIFOData)
-#define INV3_FIFO_BUFFER_LEN 8
+#define INV3_FIFO_BUFFER_LEN 2
 
 AP_InertialSensor_Invensensev3::AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
                                                                AP_HAL::OwnPtr<AP_HAL::Device> _dev,
@@ -230,6 +230,9 @@ void AP_InertialSensor_Invensensev3::start()
         set_filter_and_scaling();
     }
 
+    // pre-calculate backend period
+    backend_period_us = 1000000UL / backend_rate_hz;
+
     if (!_imu.register_gyro(gyro_instance, backend_rate_hz, dev->get_bus_id_devtype(devtype)) ||
         !_imu.register_accel(accel_instance, backend_rate_hz, dev->get_bus_id_devtype(devtype))) {
         return;
@@ -257,7 +260,7 @@ void AP_InertialSensor_Invensensev3::start()
     }
 
     // start the timer process to read samples, using the fastest rate avilable
-    dev->register_periodic_callback(1000000UL / backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev3::read_fifo, void));
+    periodic_handle = dev->register_periodic_callback(backend_period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensensev3::read_fifo, void));
 }
 
 // get a startup banner to output to the GCS
@@ -315,9 +318,9 @@ bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, ui
 
         accel *= accel_scale;
         gyro *= GYRO_SCALE;
-
         const float temp = d.temperature * temp_sensitivity + temp_zero;
 
+        // these four calls are about 40us
         _rotate_and_correct_accel(accel_instance, accel);
         _rotate_and_correct_gyro(gyro_instance, gyro);
 
@@ -336,9 +339,9 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 {
     bool need_reset = false;
     uint16_t n_samples;
+
     const uint8_t reg_counth = (inv3_type == Invensensev3_Type::ICM42670)?INV3REG_70_FIFO_COUNTH:INV3REG_FIFO_COUNTH;
     const uint8_t reg_data   = (inv3_type == Invensensev3_Type::ICM42670)?INV3REG_70_FIFO_DATA:INV3REG_FIFO_DATA;
-
     if (!block_read(reg_counth, (uint8_t*)&n_samples, 2)) {
         goto check_registers;
     }
@@ -347,6 +350,10 @@ void AP_InertialSensor_Invensensev3::read_fifo()
         /* Not enough data in FIFO */
         goto check_registers;
     }
+
+    // adjust the periodic callback to be synchronous with the incoming data
+    // this means that we rarely run read_fifo() without updating the sensor data
+    dev->adjust_periodic_callback(periodic_handle, backend_period_us);
 
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
