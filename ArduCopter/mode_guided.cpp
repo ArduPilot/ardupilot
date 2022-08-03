@@ -365,6 +365,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 
         // log target
         copter.Log_Write_Guided_Position_Target(guided_mode, destination, terrain_alt, Vector3f(), Vector3f());
+        copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
         send_notification = true;
         return true;
     }
@@ -405,6 +406,7 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
 
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+    copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
 
     send_notification = true;
 
@@ -460,6 +462,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
         // log target
         copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
+        copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
         send_notification = true;
         return true;
     }
@@ -506,6 +509,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+    copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
 
     send_notification = true;
 
@@ -533,6 +537,7 @@ void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw
     // log target
     if (log_request) {
         copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+        copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
     }
 }
 
@@ -563,6 +568,7 @@ void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& accelera
     // log target
     if (log_request) {
         copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+        copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
     }
 }
 
@@ -601,6 +607,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
 
     // log target
     copter.Log_Write_Guided_Position_Target(guided_mode, guided_pos_target_cm.tofloat(), guided_pos_terrain_alt, guided_vel_target_cms, guided_accel_target_cmss);
+    copter.Log_Write_Guided_Attitude_Target(guided_mode, 0.0f, 0.0f, radians(yaw_cd*0.01f), Vector3f(0.0f, 0.0f, radians(yaw_rate_cds*0.01f)), 0.01f, 0.01f);
     return true;
 }
 
