@@ -1019,6 +1019,60 @@ bool AP_Arming::system_checks(bool report)
     return true;
 }
 
+bool AP_Arming::terrain_database_required() const
+{
+    AP_Mission *mission = AP::mission();
+    if (mission == nullptr) {
+        // no mission support?
+        return false;
+    }
+    if (mission->contains_terrain_relative()) {
+        return true;
+    }
+    return false;
+}
+
+// check terrain database is fit-for-purpose
+bool AP_Arming::terrain_checks(bool report) const
+{
+    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
+        return true;
+    }
+
+    if (!terrain_database_required()) {
+        return true;
+    }
+
+#if AP_TERRAIN_AVAILABLE
+
+    const AP_Terrain *terrain = AP_Terrain::get_singleton();
+    if (terrain == nullptr) {
+        // this is also a system error, and it is already complaining
+        // about it.
+        return false;
+    }
+
+    if (!terrain->enabled()) {
+        check_failed(ARMING_CHECK_PARAMETERS, report, "terrain disabled");
+        return false;
+    }
+
+    // check terrain data is loaded
+    uint16_t terr_pending, terr_loaded;
+    terrain->get_statistics(terr_pending, terr_loaded);
+    if (terr_pending != 0) {
+        check_failed(ARMING_CHECK_PARAMETERS, report, "waiting for terrain data");
+        return false;
+    }
+
+    return true;
+
+#else
+    check_failed(ARMING_CHECK_PARAMETERS, report, "terrain required but disabled");
+    return false;
+#endif
+}
+
 
 // check nothing is too close to vehicle
 bool AP_Arming::proximity_checks(bool report) const
@@ -1371,6 +1425,7 @@ bool AP_Arming::pre_arm_checks(bool report)
         &  servo_checks(report)
         &  board_voltage_checks(report)
         &  system_checks(report)
+        &  terrain_checks(report)
         &  can_checks(report)
         &  generator_checks(report)
         &  proximity_checks(report)
