@@ -215,7 +215,16 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
         return;
     }
     char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-    hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "PreArm: %s", fmt);
+
+    // metafmt is wrapped around the passed-in format string to
+    // prepend "PreArm" or "Arm", depending on what sorts of checks
+    // we're currently doing.
+    const char *metafmt = "PreArm: %s";  // it's formats all the way down
+    if (running_arming_checks) {
+        metafmt = "Arm: %s";
+    }
+    hal.util->snprintf(taggedfmt, sizeof(taggedfmt), metafmt, fmt);
+
     MAV_SEVERITY severity = check_severity(check);
     va_list arg_list;
     va_start(arg_list, fmt);
@@ -229,7 +238,16 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
         return;
     }
     char taggedfmt[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
-    hal.util->snprintf(taggedfmt, sizeof(taggedfmt), "PreArm: %s", fmt);
+
+    // metafmt is wrapped around the passed-in format string to
+    // prepend "PreArm" or "Arm", depending on what sorts of checks
+    // we're currently doing.
+    const char *metafmt = "PreArm: %s";  // it's formats all the way down
+    if (running_arming_checks) {
+        metafmt = "Arm: %s";
+    }
+    hal.util->snprintf(taggedfmt, sizeof(taggedfmt), metafmt, fmt);
+
     va_list arg_list;
     va_start(arg_list, fmt);
     gcs().send_textv(MAV_SEVERITY_CRITICAL, taggedfmt, arg_list);
@@ -1426,6 +1444,8 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         return false;
     }
 
+    running_arming_checks = true;  // so we show Arm: rather than Disarm: in messages
+
     if ((!do_arming_checks && mandatory_checks(true)) || (pre_arm_checks(true) && arm_checks(method))) {
         armed = true;
 
@@ -1435,6 +1455,8 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
         AP::logger().arming_failure();
         armed = false;
     }
+
+    running_arming_checks = false;
 
     if (armed && do_arming_checks && checks_to_perform == 0) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
