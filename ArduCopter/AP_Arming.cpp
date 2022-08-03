@@ -116,6 +116,17 @@ bool AP_Arming_Copter::board_voltage_checks(bool display_failure)
     return true;
 }
 
+// expected to return true if the terrain database is required to have
+// all data loaded
+bool AP_Arming_Copter::terrain_database_required() const
+{
+    if (copter.wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE &&
+        copter.mode_rtl.get_alt_type() == ModeRTL::RTLAltType::RTL_ALTTYPE_TERRAIN) {
+        return true;
+    }
+    return AP_Arming::terrain_database_required();
+}
+
 bool AP_Arming_Copter::parameter_checks(bool display_failure)
 {
     // check various parameter values
@@ -224,22 +235,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 }
                 break;
             case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
-#if AP_TERRAIN_AVAILABLE
-                if (!copter.terrain.enabled()) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "terrain disabled");
-                    return false;
-                }
-                // check terrain data is loaded
-                uint16_t terr_pending, terr_loaded;
-                copter.terrain.get_statistics(terr_pending, terr_loaded);
-                if (terr_pending != 0) {
-                    check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "waiting for terrain data");
-                    return false;
-                }
-#else
-                check_failed(ARMING_CHECK_PARAMETERS, display_failure, failure_template, "terrain disabled");
-                return false;
-#endif
+                // these checks are done in AP_Arming
                 break;
             }
         }

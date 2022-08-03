@@ -51,6 +51,10 @@ protected:
 
     void set_pre_arm_check(bool b);
 
+    // expected to return true if the terrain database is required to have
+    // all data loaded
+    bool terrain_database_required() const override;
+
 private:
 
     // actually contains the pre-arm checks.  This is wrapped so that
