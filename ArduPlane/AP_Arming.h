@@ -32,6 +32,7 @@ public:
 
 protected:
     bool ins_checks(bool report) override;
+    bool terrain_database_required() const override;
 
     bool quadplane_checks(bool display_failure);
     bool mission_checks(bool report) override;
