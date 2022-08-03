@@ -17,6 +17,18 @@ const AP_Param::GroupInfo AP_Arming_Plane::var_info[] = {
     AP_GROUPEND
 };
 
+// expected to return true if the terrain database is required to have
+// all data loaded
+bool AP_Arming_Plane::terrain_database_required() const
+{
+#if AP_TERRAIN_AVAILABLE
+    if (plane.g.terrain_follow) {
+        return true;
+    }
+#endif
+    return AP_Arming::terrain_database_required();
+}
+
 /*
   additional arming checks for plane
 
@@ -78,21 +90,6 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
     ret &= quadplane_checks(display_failure);
 #endif
 
-#if AP_TERRAIN_AVAILABLE
-    if (plane.g.terrain_follow || plane.mission.contains_terrain_relative()) {
-        // check terrain data is loaded and healthy
-        uint16_t terr_pending=0, terr_loaded=0;
-        plane.terrain.get_statistics(terr_pending, terr_loaded);
-        if (plane.terrain.status() != AP_Terrain::TerrainStatusOK) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "terrain data unhealthy");
-            ret = false;
-        } else if (terr_pending != 0) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "waiting for terrain data");
-            ret = false;
-        }
-    }
-#endif
-    
     if (plane.control_mode == &plane.mode_auto && plane.mission.num_commands() <= 1) {
         check_failed(display_failure, "No mission loaded");
         ret = false;
