@@ -2465,9 +2465,18 @@ bool AP_Mission::contains_item(MAV_CMD command) const
 }
 
 /*
-  return true if the mission has a terrain relative item
+  return true if the mission has a terrain relative item.  ~2200us for 530 items on H7
  */
-bool AP_Mission::contains_terrain_relative(void) const
+bool AP_Mission::contains_terrain_relative(void)
+{
+    if (_last_contains_relative_calculated_ms != _last_change_time_ms) {
+        _contains_terrain_relative = calculate_contains_terrain_relative();
+        _last_contains_relative_calculated_ms = _last_change_time_ms;
+    }
+    return _contains_terrain_relative;
+}
+
+bool AP_Mission::calculate_contains_terrain_relative(void) const
 {
     for (int i = 1; i < num_commands(); i++) {
         Mission_Command tmp;

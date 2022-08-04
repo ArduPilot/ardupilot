@@ -620,8 +620,8 @@ public:
     bool contains_item(MAV_CMD command) const;
 
     // returns true if the mission has a terrain relative mission item
-    bool contains_terrain_relative(void) const;
-    
+    bool contains_terrain_relative(void);
+
     // reset the mission history to prevent recalling previous mission histories when restarting missions.
     void reset_wp_history(void);
 
@@ -764,6 +764,10 @@ private:
     // last time that mission changed
     uint32_t _last_change_time_ms;
 
+    // memoisation of contains-relative:
+    bool _contains_terrain_relative;  // true if the mission has terrain-relative items
+    uint32_t _last_contains_relative_calculated_ms;  // will be equal to _last_change_time_ms if _contains_terrain_relative is up-to-date
+    bool calculate_contains_terrain_relative(void) const;
 
     // multi-thread support. This is static so it can be used from
     // const functions
