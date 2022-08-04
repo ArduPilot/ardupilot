@@ -1039,11 +1039,9 @@ bool AP_Arming::terrain_checks(bool report) const
         return false;
     }
 
-    // check terrain data is loaded
-    uint16_t terr_pending, terr_loaded;
-    terrain->get_statistics(terr_pending, terr_loaded);
-    if (terr_pending != 0) {
-        check_failed(ARMING_CHECK_PARAMETERS, report, "waiting for terrain data");
+    char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (!terrain->pre_arm_checks(fail_msg, sizeof(fail_msg))) {
+        check_failed(ARMING_CHECK_PARAMETERS, report, "%s", fail_msg);
         return false;
     }
 
