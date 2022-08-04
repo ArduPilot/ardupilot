@@ -107,6 +107,8 @@ public:
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }
 
+    bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const;
+
     // send any pending terrain request message
     bool send_cache_request(mavlink_channel_t chan);
     void send_request(mavlink_channel_t chan);
