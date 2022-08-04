@@ -364,6 +364,19 @@ void AP_Terrain::update(void)
 
 }
 
+bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) const
+{
+    // check no outstanding requests for data:
+    uint16_t terr_pending, terr_loaded;
+    get_statistics(terr_pending, terr_loaded);
+    if (terr_pending != 0) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "waiting for terrain data");
+        return false;
+    }
+
+    return true;
+}
+
 void AP_Terrain::log_terrain_data()
 {
     if (!allocate()) {
