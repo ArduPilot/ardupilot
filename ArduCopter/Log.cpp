@@ -336,6 +336,8 @@ struct PACKED log_Guided_Position_Target {
     float accel_target_x;
     float accel_target_y;
     float accel_target_z;
+    float yaw;
+    float yaw_rate;
 };
 
 // guided attitude target logging
@@ -357,7 +359,7 @@ struct PACKED log_Guided_Attitude_Target {
 // pos_target is lat, lon, alt OR offset from ekf origin in cm
 // terrain should be 0 if pos_target.z is alt-above-ekf-origin, 1 if alt-above-terrain
 // vel_target is cm/s
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target)
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target, float yaw_cd, float yaw_rate_cds)
 {
     const log_Guided_Position_Target pkt {
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_POSITION_TARGET_MSG),
@@ -372,7 +374,9 @@ void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, c
         vel_target_z    : vel_target.z,
         accel_target_x  : accel_target.x,
         accel_target_y  : accel_target.y,
-        accel_target_z  : accel_target.z
+        accel_target_z  : accel_target.z,
+        yaw             : yaw_cd * 0.01f,        //centidegrees to degrees
+        yaw_rate        : yaw_rate_cds * 0.01f   //centidegrees/s to degrees/s
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -534,9 +538,11 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: aX: Target acceleration, X-Axis
 // @Field: aY: Target acceleration, Y-Axis
 // @Field: aZ: Target acceleration, Z-Axis
+// @Field: Yaw: Target Yaw
+// @Field: YawRt: Target Yaw rate
 
     { LOG_GUIDED_POSITION_TARGET_MSG, sizeof(log_Guided_Position_Target),
-      "GUIP",  "QBfffbffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ", "s-mmm-nnnooo", "F-BBB-BBBBBB" , true },
+      "GUIP",  "QBfffbffffffff",    "TimeUS,Type,pX,pY,pZ,Terrain,vX,vY,vZ,aX,aY,aZ,Yaw,YawRt", "s-mmm-nnnooodk", "F-BBB-BBBBBB00" , true },
 
 // @LoggerMessage: GUIA
 // @Description: Guided mode attitude target information
@@ -582,7 +588,7 @@ void Copter::Log_Write_Data(LogDataID id, int16_t value) {}
 void Copter::Log_Write_Data(LogDataID id, uint16_t value) {}
 void Copter::Log_Write_Data(LogDataID id, float value) {}
 void Copter::Log_Write_Parameter_Tuning(uint8_t param, float tuning_val, float tune_min, float tune_max) {}
-void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target) {}
+void Copter::Log_Write_Guided_Position_Target(ModeGuided::SubMode target_type, const Vector3f& pos_target, bool terrain_alt, const Vector3f& vel_target, const Vector3f& accel_target, float yaw_cd, float yaw_rate_cds) {}
 void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode target_type, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate) {}
 void Copter::Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out) {}
 void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z) {}
