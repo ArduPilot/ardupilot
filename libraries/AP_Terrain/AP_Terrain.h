@@ -409,6 +409,7 @@ private:
     // cache the home altitude, as it is needed so often
     float home_height;
     Location home_loc;
+    bool have_home_height;
 
     // reference position for terrain adjustment, set at arming
     bool have_reference_loc;

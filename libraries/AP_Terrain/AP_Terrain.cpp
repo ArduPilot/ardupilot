@@ -166,6 +166,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
         // remember home altitude as a special case
         home_height = height;
         home_loc = loc;
+        have_home_height = true;
     }
 
     if (corrected && have_reference_offset) {
@@ -369,7 +370,11 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
     // check no outstanding requests for data:
     uint16_t terr_pending, terr_loaded;
     get_statistics(terr_pending, terr_loaded);
-    if (terr_pending != 0) {
+    if (terr_pending != 0 ||
+        !have_current_loc_height ||
+        !have_home_height ||
+        next_mission_index != 0 ||
+        next_rally_index != 0) {
         hal.util->snprintf(failure_msg, failure_msg_len, "waiting for terrain data");
         return false;
     }
