@@ -487,7 +487,9 @@ class AutoTestCopter(AutoTest):
 
             self.change_mode('LOITER')
 
-            self.wait_ready_to_arm()
+            mavproxy = self.start_mavproxy()
+            self.wait_ready_to_arm(timeout=120*60)  # terrain takes time
+            self.stop_mavproxy(mavproxy)
 
             self.arm_vehicle()
 
