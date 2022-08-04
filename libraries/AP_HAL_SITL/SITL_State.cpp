@@ -434,6 +434,17 @@ bool SITL_State::_read_rc_sitl_input()
     } pwm_pkt;
 
     const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
+
+    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
+        // discard anything we just read from the "receiver" and set
+        // values to bind values:
+        for (uint8_t i=0; i<ARRAY_SIZE(pwm_input); i++) {
+            pwm_input[0] = 1500;  // centre all inputs
+        }
+        pwm_input[2] = 950;  // reset throttle (assumed to be on channel 3...)
+        return size != -1;  // we must continue to drain _sitl_rc
+    }
+
     switch (size) {
     case -1:
         return false;
@@ -448,15 +459,6 @@ bool SITL_State::_read_rc_sitl_input()
             }
             uint16_t pwm = pwm_pkt.pwm[i];
             if (pwm != 0) {
-                if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
-                    if (i == 2) {
-                        // set throttle (assumed to be on channel 3...)
-                        pwm = 950;
-                    } else {
-                        // centre all other inputs
-                        pwm = 1500;
-                    }
-                }
                 pwm_input[i] = pwm;
             }
         }
