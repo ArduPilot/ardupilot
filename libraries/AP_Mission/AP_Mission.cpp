@@ -241,7 +241,7 @@ bool AP_Mission::clear()
     }
 
     // remove all commands
-    _cmd_total.set_and_save(0);
+    truncate(0);
 
     // clear index to commands
     _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
@@ -259,6 +259,7 @@ void AP_Mission::truncate(uint16_t index)
 {
     if ((unsigned)_cmd_total > index) {
         _cmd_total.set_and_save(index);
+        _last_change_time_ms = AP_HAL::millis();
     }
 }
 
