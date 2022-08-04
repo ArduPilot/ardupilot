@@ -56,6 +56,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         & oa_checks(display_failure)
         & gcs_failsafe_check(display_failure)
         & winch_checks(display_failure)
+        & rc_throttle_failsafe_checks(display_failure)
         & alt_checks(display_failure)
 #if AP_AIRSPEED_ENABLED
         & AP_Arming::airspeed_checks(display_failure)
@@ -65,6 +66,12 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
 
 bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
 {
+    if ((checks_to_perform != ARMING_CHECK_ALL) &&
+        (checks_to_perform & ARMING_CHECK_RC) == 0) {
+        // this check has been disabled
+        return true;
+    }
+
     // throttle failsafe.  In this case the parameter also gates the
     // no-pulses RC failure case - the radio-in value can be zero due
     // to not having received any RC pulses at all.  Note that if we
@@ -625,10 +632,6 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // check throttle
     if ((checks_to_perform == ARMING_CHECK_ALL) || (checks_to_perform & ARMING_CHECK_RC)) {
-        if (!rc_throttle_failsafe_checks(true)) {
-            return false;
-        }
-
          #if FRAME_CONFIG == HELI_FRAME
         const char *rc_item = "Collective";
         #else
