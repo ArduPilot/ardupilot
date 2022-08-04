@@ -288,10 +288,6 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         return false;
     }
 #endif
-    // further checks enabled with parameters
-    if (!check_enabled(ARMING_CHECK_PARAMETERS)) {
-        return true;
-    }
 
     return true;
 }
