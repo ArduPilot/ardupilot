@@ -6,13 +6,14 @@
 
 
 #include "AC_CustomControl_Backend.h"
+// #include "AC_CustomControl_Empty.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Custom control type
     // @Description: Custom control type to be used
-    // @Values: 0:None
+    // @Values: 0:None, 1:Empty
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_TYPE", 1, AC_CustomControl, _controller_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -23,6 +24,9 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // @Bitmask: 0:Roll, 1:Pitch, 2:Yaw
     // @User: Advanced
     AP_GROUPINFO("_AXIS_MASK", 2, AC_CustomControl, _custom_controller_mask, 0),
+
+    // parameters for empty controller. only used as a template, no need for param table 
+    // AP_SUBGROUPVARPTR(_backend, "1_", 6, AC_CustomControl, _backend_var_info[0]),
 
     AP_GROUPEND
 };
@@ -43,6 +47,11 @@ void AC_CustomControl::init(void)
     switch (CustomControlType(_controller_type))
     {
         case CustomControlType::CONT_NONE:
+            break;
+        case CustomControlType::CONT_EMPTY: // This is template backend. Don't initialize it.
+            // This is template backend. Don't initialize it.
+            // _backend = new AC_CustomControl_Empty(*this, _ahrs, _att_control, _motors, _dt);
+            // _backend_var_info[get_type()] = AC_CustomControl_Empty::var_info;
             break;
         default:
             return;
