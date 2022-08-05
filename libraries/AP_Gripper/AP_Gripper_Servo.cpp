@@ -16,6 +16,19 @@ void AP_Gripper_Servo::init_gripper()
 
 void AP_Gripper_Servo::grab()
 {
+    // check if we are already grabbing
+    if (config.state == AP_Gripper::STATE_GRABBING) {
+        // do nothing
+        return;
+    }
+
+    // check if we are already grabbed
+    if (config.state == AP_Gripper::STATE_GRABBED) {
+        // inform user that we are already grabbed
+        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load grabbing");
+        return;
+    }
+
     // flag we are active and grabbing cargo
     config.state = AP_Gripper::STATE_GRABBING;
 
@@ -28,6 +41,19 @@ void AP_Gripper_Servo::grab()
 
 void AP_Gripper_Servo::release()
 {
+    // check if we are already releasing
+    if (config.state == AP_Gripper::STATE_RELEASING) {
+        // do nothing
+        return;
+    }
+
+    // check if we are already released
+    if (config.state == AP_Gripper::STATE_RELEASED) {
+        // inform user that we are already released
+        gcs().send_text(MAV_SEVERITY_INFO, "Gripper load released");
+        return;
+    }
+    
     // flag we are releasing cargo
     config.state = AP_Gripper::STATE_RELEASING;
 
