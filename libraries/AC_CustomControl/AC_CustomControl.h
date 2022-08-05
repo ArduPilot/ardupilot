@@ -13,7 +13,7 @@
 #if AP_CUSTOMCONTROL_ENABLED
 
 #ifndef CUSTOMCONTROL_MAX_TYPES
-#define CUSTOMCONTROL_MAX_TYPES 1
+#define CUSTOMCONTROL_MAX_TYPES 2
 #endif
 
 class AC_CustomControl_Backend;
@@ -44,6 +44,7 @@ protected:
     enum class CustomControlType : uint8_t {
         CONT_NONE            = 0,
         CONT_EMPTY           = 1,
+        CONT_PID             = 2,
     };            // controller that should be used     
 
     enum class  CustomControlOption {
