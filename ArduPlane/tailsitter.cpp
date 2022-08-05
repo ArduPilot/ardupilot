@@ -236,7 +236,7 @@ void Tailsitter::setup()
 
         // Do not allow arming in forward flight modes
         // motors will become active due to assisted flight airmode, the vehicle will try very hard to get level
-        quadplane.options.set(quadplane.options.get() | QuadPlane::OPTION_ONLY_ARM_IN_QMODE_OR_AUTO);
+        quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
     transition = new Tailsitter_Transition(quadplane, motors, *this);
@@ -361,7 +361,7 @@ void Tailsitter::output(void)
         quadplane.hold_stabilize(throttle);
         quadplane.motors_output(true);
 
-        if ((quadplane.options & QuadPlane::OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY) != 0) {
+        if (quadplane.option_is_set(QuadPlane::OPTION::TAILSIT_Q_ASSIST_MOTORS_ONLY)) {
             // only use motors for Q assist, control surfaces remain under plane control
             // zero copter I terms and use plane
             quadplane.attitude_control->reset_rate_controller_I_terms();

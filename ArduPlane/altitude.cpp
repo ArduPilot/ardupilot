@@ -180,7 +180,7 @@ float Plane::relative_ground_altitude(bool use_rangefinder_if_available)
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() &&
-        !(quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)) {
+        !quadplane.option_is_set(QuadPlane::OPTION::MISSION_LAND_FW_APPROACH)) {
         // when doing a VTOL landing we can use the waypoint height as
         // ground height. We can't do this if using the
         // LAND_FW_APPROACH as that uses the wp height as the approach
