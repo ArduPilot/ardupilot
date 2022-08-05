@@ -43,6 +43,7 @@ protected:
     // add custom controller here
     enum class CustomControlType : uint8_t {
         CONT_NONE            = 0,
+        CONT_EMPTY           = 1,
     };            // controller that should be used     
 
     enum class  CustomControlOption {
