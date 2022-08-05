@@ -7,13 +7,14 @@
 
 #include "AC_CustomControl_Backend.h"
 // #include "AC_CustomControl_Empty.h"
+#include "AC_CustomControl_PID.h"
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Custom control type
     // @Description: Custom control type to be used
-    // @Values: 0:None, 1:Empty
+    // @Values: 0:None, 1:Empty, 2:PID
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_TYPE", 1, AC_CustomControl, _controller_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -27,6 +28,9 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
 
     // parameters for empty controller. only used as a template, no need for param table 
     // AP_SUBGROUPVARPTR(_backend, "1_", 6, AC_CustomControl, _backend_var_info[0]),
+
+    // parameters for PID controller
+    AP_SUBGROUPVARPTR(_backend, "2_", 7, AC_CustomControl, _backend_var_info[1]),
 
     AP_GROUPEND
 };
@@ -52,6 +56,10 @@ void AC_CustomControl::init(void)
             // This is template backend. Don't initialize it.
             // _backend = new AC_CustomControl_Empty(*this, _ahrs, _att_control, _motors, _dt);
             // _backend_var_info[get_type()] = AC_CustomControl_Empty::var_info;
+            break;
+        case CustomControlType::CONT_PID:
+            _backend = new AC_CustomControl_PID(*this, _ahrs, _att_control, _motors, _dt);
+            _backend_var_info[get_type()] = AC_CustomControl_PID::var_info;
             break;
         default:
             return;
