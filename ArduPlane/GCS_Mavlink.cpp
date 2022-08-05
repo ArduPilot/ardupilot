@@ -982,7 +982,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
                 const bool attempt_go_around =
                     (!plane.quadplane.available()) ||
                     ((!plane.quadplane.in_vtol_auto()) &&
-                     (!(plane.quadplane.options & QuadPlane::OPTION_MISSION_LAND_FW_APPROACH)));
+                     !plane.quadplane.option_is_set(QuadPlane::OPTION::MISSION_LAND_FW_APPROACH));
 #else
                 const bool attempt_go_around = true;
 #endif
