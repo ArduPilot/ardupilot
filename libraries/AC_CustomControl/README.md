@@ -1,6 +1,6 @@
 # Custom Controller
 
-Custom controller library allows you to implement and easily run your own controller inside ArduPilot in a systematic way. Original-primary-mains means existing controller and custom-secondary means new controller. This library aimed to not interfere with other parts of the main controller or vehicle level code. The controller output is sent to the control allocation library, known as the mixer, the same way the main controller does.
+Custom controller library allows you to implement and easily run your own controller inside ArduPilot in a systematic way. Original-primary-mains means existing controller and custom-secondary means new controller. This library aimed to not interfere with other parts of the main controller or vehicle level code. The controller output is sent to the control allocation library, known as the mixer, the same way the main controller does. The custom controller library has the following features:
 
 ## Features 
 
@@ -39,25 +39,40 @@ After running the custom controller, mixer input is sent to the motor library vi
 ### Bumpless Transfer
 When switching from the custom controller to the main controller it is important to reset the main controller target, error, d-term filters and set each axis integrator properly. Otherwise, a sudden jump in the controller error signal or motor output will be observed, which could result in a jerky motion. To allow a smooth transition between controllers, the main controller reset function is called when switching out of the custom controller which reset all three axis of the main controller.
 
-The attitude target and rate target are also made equal to the current attitude and gyro rate to make the error signal grow from zero. In order to avoid impulse input to the controller, the target resetting is not performed when the feedforward is disabled by setting `ATC_RATE_FF_ENAB` parameter to 0. 
-
-The reset is performed inside `reset_main_atti_controller` function. An example of reset per axis is given here.
+The attitude target and rate target are also made equal to the current attitude and gyro rate to make the error signal grow from zero in `reset_main_atti_controller`. In order to avoid impulse input to the controller, the target resetting is not performed when the feedforward is disabled by setting `ATC_RATE_FF_ENAB` parameter to 0. 
 
 ```C++
-_atti_control->get_rate_roll_pid().reset_filter();
-_atti_control->get_rate_roll_pid().set_integrator(_atti_control->rate_bf_targets().x - gyro_latest.x, _motors->get_roll());
+void AC_CustomControl::reset_main_att_controller(void)
+{
+    // reset attitude and rate target, if feedforward is enabled
+    if (_att_control->get_bf_feedforward()) {
+        _att_control->relax_attitude_controllers();
+    }
+
+    _att_control->get_rate_roll_pid().set_integrator(0.0);
+    _att_control->get_rate_pitch_pid().set_integrator(0.0);
+    _att_control->get_rate_yaw_pid().set_integrator(0.0);
+}
 ```
 
 ## Backend Type
 Currently, there 4 custom controller backend available. These are 
 - Empty backend `CC_TYPE` = 1
 - PID backend `CC_TYPE` = 2
+- INDI backend `CC_TYPE` = 3
+- ADRC backend `CC_TYPE` = 4
 
 ### Empty Controller - `CC_TYPE` = 1
 The empty controller does not do any calculations. It is created to make it easier to copy and implement your new controller. The main controller is not reset when switching from an empty controller.
 
 ### PID Controller - `CC_TYPE` = 2
 PID controller backend has the same controller architecture as the main controller. It doesn't have any safeguarding mechanism such as acceleration limiting or rate limiting. The default gains are scaled 0.9 times to differentiate the custom controller response from the main one. Since this controller does not have acceleration limiting, specifically a square root controller, it would be safer to give a gentle command while flying with it. Although it has the same architecture as the main one, a proper reset functionality is not implemented intentionally to make it easier to detect the effect of improper resetting.
+
+### INDI Controller - `CC_TYPE` = 3
+Incremental Nonlinear Dynamic Inversion(INDI) is a nonlinear control method. Although the SITL rpm measurement feature is not implemented, this controller can fly the default SITL model. Take a look at this PR [#20511](https://github.com/ArduPilot/ardupilot/pull/20511) for further detail.
+
+### ADRC Controller - `CC_TYPE` = 4
+Active Disturbance Rejection Control(ADRC) is a nonlinear control method. This controller can fly the default SITL model. Take a look at this PR [#20243](https://github.com/ArduPilot/ardupilot/pull/20243) for further detail.
 
 ## How To Use It 
 The custom controller is enabled by default in SITL. You can test it using PID backend.
