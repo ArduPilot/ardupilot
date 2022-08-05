@@ -183,6 +183,22 @@ public:
         k_mast_rotation         = 137,
         k_alarm                 = 138,
         k_alarm_inverted        = 139,
+        k_rcin1_mapped          = 140,
+        k_rcin2_mapped          = 141,
+        k_rcin3_mapped          = 142,
+        k_rcin4_mapped          = 143,
+        k_rcin5_mapped          = 144,
+        k_rcin6_mapped          = 145,
+        k_rcin7_mapped          = 146,
+        k_rcin8_mapped          = 147,
+        k_rcin9_mapped          = 148,
+        k_rcin10_mapped         = 149,
+        k_rcin11_mapped         = 150,
+        k_rcin12_mapped         = 151,
+        k_rcin13_mapped         = 152,
+        k_rcin14_mapped         = 153,
+        k_rcin15_mapped         = 154,
+        k_rcin16_mapped         = 155,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
