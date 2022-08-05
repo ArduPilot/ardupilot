@@ -535,29 +535,32 @@ private:
 
     // additional options
     AP_Int32 options;
-    enum {
-        OPTION_LEVEL_TRANSITION=(1<<0),
-        OPTION_ALLOW_FW_TAKEOFF=(1<<1),
-        OPTION_ALLOW_FW_LAND=(1<<2),
-        OPTION_RESPECT_TAKEOFF_FRAME=(1<<3),
-        OPTION_MISSION_LAND_FW_APPROACH=(1<<4),
-        OPTION_FS_QRTL=(1<<5),
-        OPTION_IDLE_GOV_MANUAL=(1<<6),
-        OPTION_Q_ASSIST_FORCE_ENABLE=(1<<7),
-        OPTION_TAILSIT_Q_ASSIST_MOTORS_ONLY=(1<<8),
-        OPTION_AIRMODE_UNUSED=(1<<9),
-        OPTION_DISARMED_TILT=(1<<10),
-        OPTION_DELAY_ARMING=(1<<11),
-        OPTION_DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
-        OPTION_DISABLE_GROUND_EFFECT_COMP=(1<<13),
-        OPTION_INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
-        OPTION_THR_LANDING_CONTROL=(1<<15),
-        OPTION_DISABLE_APPROACH=(1<<16),
-        OPTION_REPOSITION_LANDING=(1<<17),
-        OPTION_ONLY_ARM_IN_QMODE_OR_AUTO=(1<<18),
-        OPTION_TRANS_FAIL_TO_FW=(1<<19),
-        OPTION_FS_RTL=(1<<20),
+    enum class OPTION {
+        LEVEL_TRANSITION=(1<<0),
+        ALLOW_FW_TAKEOFF=(1<<1),
+        ALLOW_FW_LAND=(1<<2),
+        RESPECT_TAKEOFF_FRAME=(1<<3),
+        MISSION_LAND_FW_APPROACH=(1<<4),
+        FS_QRTL=(1<<5),
+        IDLE_GOV_MANUAL=(1<<6),
+        Q_ASSIST_FORCE_ENABLE=(1<<7),
+        TAILSIT_Q_ASSIST_MOTORS_ONLY=(1<<8),
+        AIRMODE_UNUSED=(1<<9),
+        DISARMED_TILT=(1<<10),
+        DELAY_ARMING=(1<<11),
+        DISABLE_SYNTHETIC_AIRSPEED_ASSIST=(1<<12),
+        DISABLE_GROUND_EFFECT_COMP=(1<<13),
+        INGORE_FW_ANGLE_LIMITS_IN_Q_MODES=(1<<14),
+        THR_LANDING_CONTROL=(1<<15),
+        DISABLE_APPROACH=(1<<16),
+        REPOSITION_LANDING=(1<<17),
+        ONLY_ARM_IN_QMODE_OR_AUTO=(1<<18),
+        TRANS_FAIL_TO_FW=(1<<19),
+        FS_RTL=(1<<20),
     };
+    bool option_is_set(OPTION option) const {
+        return (options.get() & int32_t(option)) != 0;
+    }
 
     AP_Float takeoff_failure_scalar;
     AP_Float maximum_takeoff_airspeed;
