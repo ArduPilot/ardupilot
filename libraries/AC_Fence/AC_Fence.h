@@ -26,18 +26,8 @@
 #define AC_FENCE_ACTION_GUIDED                      6       // guided mode, with target waypoint as fence return point
 #define AC_FENCE_ACTION_GUIDED_THROTTLE_PASS        7       // guided mode, but pilot retains manual throttle control
 
-// default boundaries
-#define AC_FENCE_ALT_MAX_DEFAULT                    100.0f  // default max altitude is 100m
-#define AC_FENCE_ALT_MIN_DEFAULT                    -10.0f  // default maximum depth in meters
-#define AC_FENCE_CIRCLE_RADIUS_DEFAULT              300.0f  // default circular fence radius is 300m
-#define AC_FENCE_ALT_MAX_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further up
-#define AC_FENCE_ALT_MIN_BACKUP_DISTANCE            20.0f   // after fence is broken we recreate the fence 20m further down
-#define AC_FENCE_CIRCLE_RADIUS_BACKUP_DISTANCE      20.0f   // after fence is broken we recreate the fence 20m further out
-#define AC_FENCE_MARGIN_DEFAULT                     2.0f    // default distance in meters that autopilot's should maintain from the fence to avoid a breach
-
 // give up distance
 #define AC_FENCE_GIVE_UP_DISTANCE                   100.0f  // distance outside the fence at which we should give up and just land.  Note: this is not used by library directly but is intended to be used by the main code
-#define AC_FENCE_MANUAL_RECOVERY_TIME_MIN           10000   // pilot has 10seconds to recover during which time the autopilot will not attempt to re-take control
 
 class AC_Fence
 {
