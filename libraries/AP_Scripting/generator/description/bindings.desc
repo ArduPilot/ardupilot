@@ -54,6 +54,7 @@ singleton AP_AHRS method set_home boolean Location
 singleton AP_AHRS method get_origin boolean Location'Null
 singleton AP_AHRS method set_origin boolean Location
 singleton AP_AHRS method initialised boolean
+singleton AP_AHRS method get_posvelyaw_source_set uint8_t
 
 include AP_Arming/AP_Arming.h
 
