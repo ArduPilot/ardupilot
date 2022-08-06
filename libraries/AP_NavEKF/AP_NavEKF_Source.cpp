@@ -524,6 +524,12 @@ bool AP_NavEKF_Source::wheel_encoder_enabled(void) const
     return false;
 }
 
+// returns active source set
+uint8_t AP_NavEKF_Source::get_active_source_set() const
+{
+    return active_source_set;
+}
+
 // return true if GPS yaw is enabled on any source
 bool AP_NavEKF_Source::gps_yaw_enabled(void) const
 {
