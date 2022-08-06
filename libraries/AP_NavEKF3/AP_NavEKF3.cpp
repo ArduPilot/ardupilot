@@ -1239,6 +1239,12 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     }
 }
 
+// returns active source set used by EKF3
+uint8_t NavEKF3::get_active_source_set() const
+{
+    return sources.get_active_source_set();
+}
+
 // reset body axis gyro bias estimates
 void NavEKF3::resetGyroBias(void)
 {
