@@ -51,7 +51,5 @@ protected:
 
 private:
 
-    uint32_t action_timestamp; // ms; time grab or release happened
-
     bool has_state_pwm(const uint16_t pwm) const;
 };
