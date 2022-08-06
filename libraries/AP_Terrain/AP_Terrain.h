@@ -342,6 +342,9 @@ private:
     void write_block(void);
     void read_block(void);
 
+    // check for missing data in squares surrounding loc:
+    bool update_surrounding_tiles(const Location &loc);
+
     /*
       check for missing mission terrain data
      */
@@ -425,6 +428,10 @@ private:
     // temporarily unavailable
     bool have_current_loc_height;
     float last_current_loc_height;
+
+    // true if we have all of the data for the squares around the
+    // current location:
+    bool have_surrounding_tiles;
 
     // next mission command to check
     uint16_t next_mission_index;
