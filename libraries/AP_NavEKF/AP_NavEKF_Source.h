@@ -103,6 +103,9 @@ public:
     // return true if wheel encoder is enabled on any source
     bool wheel_encoder_enabled(void) const;
 
+    // returns active source set 
+    uint8_t get_active_source_set() const;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
