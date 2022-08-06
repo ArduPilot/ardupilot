@@ -562,6 +562,24 @@ bool ModeAuto::use_pilot_yaw(void) const
     return (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
 }
 
+bool ModeAuto::set_speed_xy(float speed_xy_cms)
+{
+    copter.wp_nav->set_speed_xy(speed_xy_cms);
+    return true;
+}
+
+bool ModeAuto::set_speed_up(float speed_up_cms)
+{
+    copter.wp_nav->set_speed_up(speed_up_cms);
+    return true;
+}
+
+bool ModeAuto::set_speed_down(float speed_down_cms)
+{
+    copter.wp_nav->set_speed_down(speed_down_cms);
+    return true;
+}
+
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 {

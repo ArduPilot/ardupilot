@@ -235,7 +235,7 @@ int32_t AP_SteerController::get_steering_out_lat_accel(float desired_accel)
 int32_t AP_SteerController::get_steering_out_angle_error(int32_t angle_err)
 {
     if (_tau < 0.1f) {
-        _tau = 0.1f;
+        _tau.set(0.1f);
     }
 	
 	// Calculate the desired steering rate (deg/sec) from the angle error

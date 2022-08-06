@@ -2231,12 +2231,13 @@ void QuadPlane::poscontrol_init_approach(void)
  */
 void QuadPlane::log_QPOS(void)
 {
-    AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist,TSpd,TAcc", "QBfff",
+    AP::logger().WriteStreaming("QPOS", "TimeUS,State,Dist,TSpd,TAcc,OShoot", "QBfffB",
                                 AP_HAL::micros64(),
                                 poscontrol.get_state(),
                                 plane.auto_state.wp_distance,
                                 poscontrol.target_speed,
-                                poscontrol.target_accel);
+                                poscontrol.target_accel,
+                                poscontrol.overshoot);
 }
 
 /*
@@ -2274,6 +2275,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         state = s;
         qp.log_QPOS();
         last_log_ms = now;
+        overshoot = false;
     }
     last_state_change_ms = now;
 
@@ -2379,7 +2381,11 @@ void QuadPlane::vtol_position_controller(void)
         // use nav controller roll
         plane.calc_nav_roll();
 
-        const float stop_distance = stopping_distance();
+        // work out the point to enter airbrake mode. We want enough
+        // distance to stop, plus some margin for the time it takes to
+        // change the accel (jerk limit) plus the min time in airbrake
+        // mode. For simplicity we assume 2 seconds margin
+        const float stop_distance = stopping_distance() + 2*closing_speed;
 
         if (!suppress_z_controller && poscontrol.get_state() == QPOS_AIRBRAKE) {
             hold_hover(0);
@@ -2495,6 +2501,7 @@ void QuadPlane::vtol_position_controller(void)
         const float distance = diff_wp.length();
         const Vector2f rel_groundspeed_vector = landing_closing_velocity();
         const float rel_groundspeed_sq = rel_groundspeed_vector.length_squared();
+        const float closing_groundspeed = rel_groundspeed_vector * diff_wp.normalized();
 
         // calculate speed we should be at to reach the position2
         // target speed at the position2 distance threshold, assuming
@@ -2530,11 +2537,50 @@ void QuadPlane::vtol_position_controller(void)
 
         Vector2f target_speed_xy_cms;
         Vector2f target_accel_cms;
-        const float target_accel = accel_needed(distance, rel_groundspeed_sq);
+        bool have_target_yaw = false;
+        float target_yaw_deg;
+        const float target_accel = MIN(accel_needed(distance, sq(closing_groundspeed)), transition_decel*2);
         if (distance > 0.1) {
             Vector2f diff_wp_norm = diff_wp.normalized();
             target_speed_xy_cms = diff_wp_norm * target_speed * 100;
             target_accel_cms = diff_wp_norm * (-target_accel*100);
+            target_yaw_deg = degrees(diff_wp_norm.angle());
+            const float yaw_err_deg = wrap_180(target_yaw_deg - degrees(plane.ahrs.yaw));
+            bool overshoot = (closing_groundspeed < 0 || fabsf(yaw_err_deg) > 60);
+            if (overshoot && !poscontrol.overshoot) {
+                gcs().send_text(MAV_SEVERITY_INFO,"VTOL Overshoot d=%.1f cs=%.1f yerr=%.1f",
+                                distance, closing_groundspeed, yaw_err_deg);
+                poscontrol.overshoot = true;
+                pos_control->set_accel_desired_xy_cmss(Vector2f());
+            }
+            if (poscontrol.overshoot) {
+                /* we have overshot the landing point or our nose is
+                   off by more than 60 degrees. Zero target accel and
+                   point nose at the landing point. Set target speed
+                   to our position2 threshold speed
+                */
+                target_accel_cms.zero();
+
+                // allow up to the WP speed when we are further away, slowing to the pos2 target speed
+                // when we are close
+                target_speed = linear_interpolate(position2_target_speed, wp_speed,
+                                                  distance,
+                                                  position2_dist_threshold*1.5,
+                                                  2*position2_dist_threshold + stopping_distance(rel_groundspeed_sq));
+
+                target_speed_xy_cms = diff_wp_norm * target_speed * 100;
+                have_target_yaw = true;
+
+                // adjust target yaw angle for wind. We calculate yaw based on the target speed
+                // we want assuming no speed scaling due to direction
+                const Vector2f wind = plane.ahrs.wind_estimate().xy();
+                const float gnd_speed = plane.ahrs.groundspeed();
+                Vector2f target_speed_xy = landing_velocity + diff_wp_norm * gnd_speed - wind;
+                target_yaw_deg = degrees(target_speed_xy.angle());
+
+                // now limit speed to scaled wp speed, so we don't fly rapidly backwards
+                target_speed_xy.limit_length(scaled_wp_speed*100);
+            }
         }
         const float target_speed_ms = target_speed_xy_cms.length() * 0.01;
 
@@ -2579,10 +2625,17 @@ void QuadPlane::vtol_position_controller(void)
 
         // call attitude controller
         disable_yaw_rate_time_constant();
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                      plane.nav_pitch_cd,
-                                                                      desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
-        if ((plane.auto_state.wp_distance < position2_dist_threshold) && tiltrotor.tilt_angle_achieved()) {
+        if (have_target_yaw) {
+            attitude_control->input_euler_angle_roll_pitch_yaw(plane.nav_roll_cd,
+                                                               plane.nav_pitch_cd,
+                                                               target_yaw_deg*100, true);
+        } else {
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
+                                                                          plane.nav_pitch_cd,
+                                                                          desired_auto_yaw_rate_cds() + get_weathervane_yaw_rate_cds());
+        }
+        if ((plane.auto_state.wp_distance < position2_dist_threshold) && tiltrotor.tilt_angle_achieved() &&
+            fabsf(rel_groundspeed_sq) < sq(3*position2_target_speed)) {
             // if continuous tiltrotor only advance to position 2 once tilts have finished moving
             poscontrol.set_state(QPOS_POSITION2);
             poscontrol.pilot_correction_done = false;
@@ -3924,6 +3977,16 @@ Vector2f QuadPlane::landing_desired_closing_velocity()
 
     // base target speed based on sqrt of distance
     float target_speed = safe_sqrt(2*transition_decel*dist);
+
+    // don't let the target speed go above landing approach speed
+    const float eas2tas = plane.ahrs.get_EAS2TAS();
+    float land_speed = plane.aparm.airspeed_cruise_cm * 0.01;
+    float tecs_land_airspeed = plane.TECS_controller.get_land_airspeed();
+    if (is_positive(tecs_land_airspeed)) {
+        land_speed = tecs_land_airspeed;
+    }
+    target_speed = MIN(target_speed, eas2tas * land_speed);
+
     Vector2f target_speed_xy = diff_wp.normalized() * target_speed;
 
     return target_speed_xy;
@@ -3934,26 +3997,38 @@ Vector2f QuadPlane::landing_desired_closing_velocity()
 */
 float QuadPlane::get_land_airspeed(void)
 {
-    if (poscontrol.get_state() == QPOS_APPROACH ||
+    const auto qstate = poscontrol.get_state();
+    if (qstate == QPOS_APPROACH ||
         plane.control_mode == &plane.mode_rtl) {
-        float land_airspeed = plane.TECS_controller.get_land_airspeed();
-        if (!is_positive(land_airspeed)) {
-            land_airspeed = plane.aparm.airspeed_cruise_cm * 0.01;
+        const float cruise_speed = plane.aparm.airspeed_cruise_cm * 0.01;
+        float approach_speed = cruise_speed;
+        float tecs_land_airspeed = plane.TECS_controller.get_land_airspeed();
+        if (is_positive(tecs_land_airspeed)) {
+            approach_speed = tecs_land_airspeed;
+        } else {
+            if (qstate == QPOS_APPROACH) {
+                // default to half way between min airspeed and cruise
+                // airspeed when on the approach
+                approach_speed = 0.5*(cruise_speed+plane.aparm.airspeed_min);
+            } else {
+                // otherwise cruise
+                approach_speed = cruise_speed;
+            }
         }
-        float cruise_airspeed = plane.aparm.airspeed_cruise_cm * 0.01;
-        float time_to_landing = plane.auto_state.wp_distance / MAX(land_airspeed, 5);
+        const float time_to_pos1 = (plane.auto_state.wp_distance - stopping_distance(sq(approach_speed))) / MAX(approach_speed, 5);
         /*
           slow down to landing approach speed as we get closer to landing
-         */
-        land_airspeed = linear_interpolate(land_airspeed, cruise_airspeed,
-                                           time_to_landing,
-                                           20, 60);
-        return land_airspeed;
+        */
+        approach_speed = linear_interpolate(approach_speed, cruise_speed,
+                                            time_to_pos1,
+                                            20, 60);
+        return approach_speed;
     }
-    Vector2f vel = landing_desired_closing_velocity();
 
-    const float eas2tas = plane.ahrs.get_EAS2TAS();
+    // calculate speed based on landing desired velocity
+    Vector2f vel = landing_desired_closing_velocity();
     const Vector3f wind = plane.ahrs.wind_estimate();
+    const float eas2tas = plane.ahrs.get_EAS2TAS();
     vel.x -= wind.x;
     vel.y -= wind.y;
     vel /= eas2tas;

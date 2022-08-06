@@ -4429,6 +4429,22 @@ class AutoTest(ABC):
             0,
             0)
 
+    def send_mavlink_run_prearms_command(self):
+        target_sysid = 1
+        target_compid = 1
+        self.mav.mav.command_long_send(
+            target_sysid,
+            target_compid,
+            mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0)
+
     def analog_rangefinder_parameters(self):
         return {
             "RNGFND1_TYPE": 1,
@@ -6632,7 +6648,50 @@ class AutoTest(ABC):
         if m is not None:
             raise NotAchievedException("Fence status received unexpectedly")
 
-    def assert_prearm_failure(self, expected_statustext, timeout=5, ignore_prearm_failures=[]):
+    def assert_prearm_failure(self,
+                              expected_statustext,
+                              timeout=5,
+                              ignore_prearm_failures=[],
+                              other_prearm_failures_fatal=True):
+        seen_statustext = False
+        seen_command_ack = False
+
+        self.drain_mav()
+        tstart = self.get_sim_time_cached()
+        arm_last_send = 0
+        while True:
+            if seen_command_ack and seen_statustext:
+                break
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException(
+                    "Did not see failure-to-arm messages (statustext=%s command_ack=%s" %
+                    (seen_statustext, seen_command_ack))
+            if now - arm_last_send > 1:
+                arm_last_send = now
+                self.send_mavlink_run_prearms_command()
+            m = self.mav.recv_match(blocking=True, timeout=1)
+            if m is None:
+                continue
+            if m.get_type() == "STATUSTEXT":
+                if expected_statustext in m.text:
+                    self.progress("Got: %s" % str(m))
+                    seen_statustext = True
+                elif other_prearm_failures_fatal and "PreArm" in m.text and m.text[8:] not in ignore_prearm_failures:
+                    self.progress("Got: %s" % str(m))
+                    raise NotAchievedException("Unexpected prearm failure (%s)" % m.text)
+
+            if m.get_type() == "COMMAND_ACK":
+                print("Got: %s" % str(m))
+                if m.command == mavutil.mavlink.MAV_CMD_RUN_PREARM_CHECKS:
+                    if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                        raise NotAchievedException("command-ack says we didn't run prearms")
+                    self.progress("Got: %s" % str(m))
+                    seen_command_ack = True
+            if self.mav.motors_armed():
+                raise NotAchievedException("Armed when we shouldn't have")
+
+    def assert_arm_failure(self, expected_statustext, timeout=5, ignore_prearm_failures=[]):
         seen_statustext = False
         seen_command_ack = False
 

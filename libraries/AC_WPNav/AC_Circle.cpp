@@ -135,7 +135,7 @@ void AC_Circle::set_center(const Location& center)
 void AC_Circle::set_rate(float deg_per_sec)
 {
     if (!is_equal(deg_per_sec, _rate.get())) {
-        _rate = deg_per_sec;
+        _rate.set(deg_per_sec);
     }
 }
 

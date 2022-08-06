@@ -141,7 +141,7 @@ void AC_Fence::enable(bool value)
     } else if (!_enabled && value) {
         AP::logger().Write_Event(LogEvent::FENCE_ENABLE);
     }
-    _enabled = value;
+    _enabled.set(value);
     if (!value) {
         clear_breach(AC_FENCE_TYPE_ALT_MIN | AC_FENCE_TYPE_ALT_MAX | AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON);
         disable_floor();

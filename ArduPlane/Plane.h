@@ -868,7 +868,7 @@ private:
     // Log.cpp
     uint32_t last_log_fast_ms;
 
-    void Log_Write_Fast(void);
+    void Log_Write_FullRate(void);
     void Log_Write_Attitude(void);
     void Log_Write_Control_Tuning();
     void Log_Write_OFG_Guided();
@@ -1006,8 +1006,8 @@ private:
     void airspeed_ratio_update(void);
 #endif
     void compass_save(void);
-    void update_logging1(void);
-    void update_logging2(void);
+    void update_logging10(void);
+    void update_logging25(void);
     void update_control_mode(void);
     void update_fly_forward(void);
     void update_flight_stage();

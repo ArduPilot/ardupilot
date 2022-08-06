@@ -143,7 +143,7 @@ void AC_Autorotation::init_hs_controller()
     _healthy_rpm_counter = 0;
 
     // Protect against divide by zero
-    _param_head_speed_set_point = MAX(_param_head_speed_set_point,500);
+    _param_head_speed_set_point.set(MAX(_param_head_speed_set_point,500));
 }
 
 
@@ -213,7 +213,7 @@ float AC_Autorotation::get_rpm(bool update_counter)
     if (rpm != nullptr) {
         //Check requested rpm instance to ensure either 0 or 1.  Always defaults to 0.
         if ((_param_rpm_instance > 1) || (_param_rpm_instance < 0)) {
-            _param_rpm_instance = 0;
+            _param_rpm_instance.set(0);
         }
 
         //Get RPM value

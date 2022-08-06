@@ -82,7 +82,7 @@ public:
     uint32_t get_motor_mask() override;
 
     // ext_gyro_gain - set external gyro gain in range 0 ~ 1000
-    void ext_gyro_gain(float gain)  override { if (gain >= 0 && gain <= 1000) { _ext_gyro_gain_std = gain; }}
+    void ext_gyro_gain(float gain)  override { if (gain >= 0 && gain <= 1000) { _ext_gyro_gain_std.set(gain); }}
 
     // has_flybar - returns true if we have a mechical flybar
     bool has_flybar() const  override { return _flybar_mode; }

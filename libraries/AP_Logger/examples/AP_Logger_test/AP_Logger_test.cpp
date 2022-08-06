@@ -52,7 +52,7 @@ void AP_LoggerTest::setup(void)
 {
     hal.console->printf("Logger Log Test 1.0\n");
 
-    log_bitmask = (uint32_t)-1;
+    log_bitmask.set((uint32_t)-1);
     logger.Init(log_structure, ARRAY_SIZE(log_structure));
     logger.set_vehicle_armed(true);
     logger.Write_Message("AP_Logger Test");

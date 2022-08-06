@@ -133,7 +133,7 @@ void AC_AutoTune_Multi::backup_gains_and_initialise()
 {
     AC_AutoTune::backup_gains_and_initialise();
 
-    aggressiveness = constrain_float(aggressiveness, 0.05f, 0.2f);
+    aggressiveness.set(constrain_float(aggressiveness, 0.05f, 0.2f));
 
     orig_bf_feedforward = attitude_control->get_bf_feedforward();
 

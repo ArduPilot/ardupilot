@@ -87,6 +87,9 @@ struct sitl_fdm {
     } wind_vane_apparent;
 
     bool is_lock_step_scheduled;
+
+    // earthframe wind, from backends that know it
+    Vector3f wind_ef;
 };
 
 // number of rc output channels
@@ -384,10 +387,10 @@ public:
         return (AP_HAL::Util::safety_state)_safety_switch_state.get();
     }
     void force_safety_off() {
-        _safety_switch_state = (uint8_t)AP_HAL::Util::SAFETY_ARMED;
+        _safety_switch_state.set((uint8_t)AP_HAL::Util::SAFETY_ARMED);
     }
     bool force_safety_on() {
-        _safety_switch_state = (uint8_t)AP_HAL::Util::SAFETY_DISARMED;
+        _safety_switch_state.set((uint8_t)AP_HAL::Util::SAFETY_DISARMED);
         return true;
     }
 

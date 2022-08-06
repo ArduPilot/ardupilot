@@ -99,7 +99,7 @@ void AP_SmartRTL::init()
     }
 
     // constrain the path length, in case the user decided to make the path unreasonably long.
-    _points_max = constrain_int16(_points_max, 0, SMARTRTL_POINTS_MAX);
+    _points_max.set(constrain_int16(_points_max, 0, SMARTRTL_POINTS_MAX));
 
     // check if user has disabled SmartRTL
     if (_points_max == 0 || !is_positive(_accuracy)) {

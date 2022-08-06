@@ -383,7 +383,7 @@ void AP_WindVane::record_home_heading()
 bool AP_WindVane::start_direction_calibration()
 {
     if (enabled() && (_calibration == 0)) {
-        _calibration = 1;
+        _calibration.set(1);
         return true;
     }
     return false;
@@ -393,7 +393,7 @@ bool AP_WindVane::start_direction_calibration()
 bool AP_WindVane::start_speed_calibration()
 {
     if (enabled() && (_calibration == 0)) {
-        _calibration = 2;
+        _calibration.set(2);
         return true;
     }
     return false;

@@ -1905,7 +1905,7 @@ bool Compass::configured(uint8_t i)
     // if dev_id loaded from eeprom is different from detected dev id or dev_id loaded from eeprom is different from cached dev_id, compass is unconfigured
     if (_state[id].dev_id != _state[id].detected_dev_id || _state[id].dev_id != dev_id_cache_value) {
         // restore cached value
-        _state[id].dev_id = dev_id_cache_value;
+        _state[id].dev_id.set(dev_id_cache_value);
         // return failure
         return false;
     }
@@ -1957,7 +1957,7 @@ bool Compass::configured(char *failure_msg, uint8_t failure_msg_len)
 void Compass::motor_compensation_type(const uint8_t comp_type)
 {
     if (_motor_comp_type <= AP_COMPASS_MOT_COMP_CURRENT && _motor_comp_type != (int8_t)comp_type) {
-        _motor_comp_type = (int8_t)comp_type;
+        _motor_comp_type.set((int8_t)comp_type);
         _thr = 0; // set current  throttle to zero
         for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
             set_motor_compensation(i, Vector3f(0,0,0)); // clear out invalid compensation vectors

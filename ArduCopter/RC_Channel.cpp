@@ -268,15 +268,15 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 #if MODE_ACRO_ENABLED == ENABLED
             switch(ch_flag) {
                 case AuxSwitchPos::LOW:
-                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::OFF;
+                    copter.g.acro_trainer.set((uint8_t)ModeAcro::Trainer::OFF);
                     AP::logger().Write_Event(LogEvent::ACRO_TRAINER_OFF);
                     break;
                 case AuxSwitchPos::MIDDLE:
-                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::LEVELING;
+                    copter.g.acro_trainer.set((uint8_t)ModeAcro::Trainer::LEVELING);
                     AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LEVELING);
                     break;
                 case AuxSwitchPos::HIGH:
-                    copter.g.acro_trainer = (uint8_t)ModeAcro::Trainer::LIMITED;
+                    copter.g.acro_trainer.set((uint8_t)ModeAcro::Trainer::LIMITED);
                     AP::logger().Write_Event(LogEvent::ACRO_TRAINER_LIMITED);
                     break;
             }

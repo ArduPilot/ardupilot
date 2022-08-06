@@ -126,9 +126,12 @@ public:
     Method last_disarm_method() const { return _last_disarm_method; }
 
     // enum for ARMING_OPTIONS parameter
-    enum class ArmingOptions : int32_t {
+    enum class Option : int32_t {
         DISABLE_PREARM_DISPLAY   = (1U << 0),
     };
+    bool option_enabled(Option option) const {
+        return (_arming_options & uint32_t(option)) != 0;
+    }
 
 protected:
 
@@ -256,6 +259,8 @@ private:
     // method that was last used for disarm; invalid unless the
     // vehicle has been disarmed at least once.
     Method _last_disarm_method = Method::UNKNOWN;
+
+    uint32_t last_prearm_display_ms;  // last time we send statustexts for prearm failures
 };
 
 namespace AP {

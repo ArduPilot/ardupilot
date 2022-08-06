@@ -91,7 +91,7 @@ float AC_InputManager_Heli::get_pilot_desired_collective(int16_t control_in)
     // calculate expo-scaled acro collective
     // range check expo
     if (_acro_col_expo > 1.0f) {
-        _acro_col_expo = 1.0f;
+        _acro_col_expo.set(1.0f);
     }
 
     if (_acro_col_expo <= 0.0f) {

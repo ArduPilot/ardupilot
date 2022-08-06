@@ -28,6 +28,8 @@ public:
     void accumulate() override;
 
     void start() override;
+    // get a startup banner to output to the GCS
+    bool get_output_banner(char* banner, uint8_t banner_len) override;
 
     enum class Invensensev3_Type : uint8_t {
         ICM40609 = 0,
@@ -35,6 +37,7 @@ public:
         ICM42605,
         ICM40605,
         IIM42652,
+        ICM42670,
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -50,6 +53,7 @@ private:
     bool check_whoami();
 
     void set_filter_and_scaling(void);
+    void set_filter_and_scaling_icm42670(void);
     void fifo_reset();
 
     /* Read samples from FIFO */
@@ -59,6 +63,9 @@ private:
     uint8_t register_read(uint8_t reg);
     void register_write(uint8_t reg, uint8_t val, bool checked=false);
 
+    uint8_t register_read_bank(uint8_t bank, uint8_t reg);
+    void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
+    
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
@@ -75,6 +82,12 @@ private:
     const enum Rotation rotation;
 
     float accel_scale;
+
+    // are we doing more than 1kHz sampling?
+    bool fast_sampling;
+
+    // what rate are we generating samples into the backend for gyros and accels?
+    uint16_t backend_rate_hz;
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
 

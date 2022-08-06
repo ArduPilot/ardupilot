@@ -450,7 +450,7 @@ void AP_Scheduler::task_info(ExpandingString &str)
 
     // dynamically enable statistics collection
     if (!(_options & uint8_t(Options::RECORD_TASK_INFO))) {
-        _options |= uint8_t(Options::RECORD_TASK_INFO);
+        _options.set(_options | uint8_t(Options::RECORD_TASK_INFO));
         return;
     }
 

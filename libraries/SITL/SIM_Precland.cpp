@@ -123,14 +123,13 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
             static_cast<int32_t>(_origin_lon * 1.0e7f),
             static_cast<int32_t>(_origin_height),
             Location::AltFrame::ABOVE_HOME);
-    Vector3f centerf;
-    if (!origin_center.get_vector_from_origin_NEU(centerf)) {
+    Vector2f centerf;
+    if (!origin_center.get_vector_xy_from_origin_NE(centerf)) {
         _healthy = false;
         return;
     }
     centerf = centerf * 0.01f;        // cm to m
-    centerf.z = -centerf.z;           // neu to ned
-    Vector3d center(centerf.x, centerf.y, centerf.z);   // convert to make the further vector operations easy
+    Vector3d center(centerf.x, centerf.y, -_origin_height);   // convert to make the further vector operations easy
 
     // axis of cone or cylinder inside which the vehicle receives signals from simulated precland device
     Vector3d axis{1, 0, 0};
@@ -194,8 +193,8 @@ void SIM_Precland::update(const Location &loc, const Vector3d &position)
 
 void SIM_Precland::set_default_location(float lat, float lon, int16_t yaw) {
     if (is_zero(_origin_lat) && is_zero(_origin_lon)) {
-        _origin_lat = lat;
-        _origin_lon = lon;
-        _orient_yaw = yaw;
+        _origin_lat.set(lat);
+        _origin_lon.set(lon);
+        _orient_yaw.set(yaw);
     }
 }
