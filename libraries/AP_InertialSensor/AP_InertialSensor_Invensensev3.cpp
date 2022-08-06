@@ -119,7 +119,7 @@ struct PACKED FIFOData {
 };
 
 #define INV3_SAMPLE_SIZE sizeof(FIFOData)
-#define INV3_FIFO_BUFFER_LEN 2
+#define INV3_FIFO_BUFFER_LEN 8
 
 AP_InertialSensor_Invensensev3::AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
                                                                AP_HAL::OwnPtr<AP_HAL::Device> _dev,
@@ -300,17 +300,9 @@ bool AP_InertialSensor_Invensensev3::accumulate_samples(const FIFOData *data, ui
 
         // we have a header to confirm we don't have FIFO corruption! no more mucking
         // about with the temperature registers
-        if (inv3_type == Invensensev3_Type::ICM42670) {
-            if ((d.header & 0xFC) != 0x68) {
-                // no or bad data
-                return false;
-            }
-
-        } else {
-            if ((d.header & 0xF8) != 0x68) {
-                // no or bad data
-                return false;
-            }
+        if ((d.header & 0xFC) != 0x68) {
+            // no or bad data
+            return false;
         }
 
         Vector3f accel{float(d.accel[0]), float(d.accel[1]), float(d.accel[2])};
