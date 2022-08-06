@@ -49,17 +49,15 @@ void Plane::fence_check()
                                         (plane.control_mode_reason == ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) ||
                                         (plane.control_mode_reason == ModeReason::QRTL_INSTEAD_OF_RTL) ||
                                         (plane.control_mode_reason == ModeReason::QLAND_INSTEAD_OF_RTL);
-    if (orig_breaches && (current_mode_breach || (previous_mode_breach && previous_mode_complete))) {
+    if (current_mode_breach || (previous_mode_breach && previous_mode_complete)) {
         // we have already triggered, don't trigger again until the
         // user disables/re-enables using the fence channel switch
         return;
     }
-    
-     if(new_breaches && plane.is_flying()) {
-         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
-     }
 
-    if (new_breaches || orig_breaches) {
+    if (new_breaches) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Fence Breached");
+
         // if the user wants some kind of response and motors are armed
         const uint8_t fence_act = fence.get_action();
         switch (fence_act) {
