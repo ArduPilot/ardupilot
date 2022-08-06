@@ -56,7 +56,4 @@ private:
 
     // UAVCAN driver fd
     int _uavcan_fd = -1;
-
-    // internal variables
-    uint32_t    _last_grab_or_release;
 };
