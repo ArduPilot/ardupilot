@@ -98,6 +98,9 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
+    //returns index of the active source set used
+    uint8_t get_active_source_set() const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
