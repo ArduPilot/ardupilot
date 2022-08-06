@@ -3148,6 +3148,16 @@ void AP_AHRS::set_posvelyaw_source_set(uint8_t source_set_idx)
 #endif
 }
 
+//returns active source set used, 0=primary, 1=secondary, 2=tertiary
+uint8_t AP_AHRS::get_posvelyaw_source_set() const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    return EKF3.get_active_source_set();
+#else
+    return 0;
+#endif   
+}
+
 void AP_AHRS::Log_Write()
 {
 #if HAL_NAVEKF2_AVAILABLE
