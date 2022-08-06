@@ -144,6 +144,7 @@ enum LoggingParameters {
 #define MASK_LOG_IMU_FAST               (1UL<<18)
 #define MASK_LOG_IMU_RAW                (1UL<<19)
 #define MASK_LOG_VIDEO_STABILISATION    (1UL<<20)
+#define MASK_LOG_FTN_FAST               (1UL<<21)
 #define MASK_LOG_ANY                    0xFFFF
 
 // Radio failsafe definitions (FS_THR parameter)
