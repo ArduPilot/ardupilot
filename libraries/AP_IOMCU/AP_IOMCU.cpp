@@ -362,14 +362,16 @@ void AP_IOMCU::write_log()
 // @LoggerMessage: IOMC
 // @Description: IOMCU diagnostic information
 // @Field: TimeUS: Time since system startup
+// @Field: RSErr: Status Read error count (zeroed on successful read)
 // @Field: Mem: Free memory
 // @Field: TS: IOMCU uptime
 // @Field: NPkt: Number of packets received by IOMCU
 // @Field: Nerr: Protocol failures on MCU side
 // @Field: Nerr2: Reported number of failures on IOMCU side
 // @Field: NDel: Number of delayed packets received by MCU
-            AP::logger().WriteStreaming("IOMC", "TimeUS,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHIIIII",
+            AP::logger().WriteStreaming("IOMC", "TimeUS,RSErr,Mem,TS,NPkt,Nerr,Nerr2,NDel", "QHHIIIII",
                                AP_HAL::micros64(),
+                               read_status_errors,
                                reg_status.freemem,
                                reg_status.timestamp_ms,
                                reg_status.total_pkts,
