@@ -291,6 +291,15 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "CubeOrange-ODID" ]; then
+        echo "Building CubeOrange-ODID"
+        $waf configure --board CubeOrange-ODID
+        $waf clean
+        $waf copter
+        $waf plane
+        continue
+    fi
+    
     if [ "$t" == "fmuv2-plane" ]; then
         echo "Building fmuv2 plane"
         $waf configure --board fmuv2
