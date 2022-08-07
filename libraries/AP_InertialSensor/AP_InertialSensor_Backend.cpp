@@ -205,6 +205,9 @@ void AP_InertialSensor_Backend::apply_gyro_filters(const uint8_t instance, const
         }
     }
 
+    // apply the loop rate notch filter to attentuate any notch induced noise
+    gyro_filtered = _imu._gyro_loop_rate_filter[instance].apply(gyro_filtered);
+
     // apply the low pass filter last to attentuate any notch induced noise
     gyro_filtered = _imu._gyro_filter[instance].apply(gyro_filtered);
 
@@ -722,6 +725,9 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     if (_last_gyro_filter_hz != _gyro_filter_cutoff() || sensors_converging()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
         _last_gyro_filter_hz = _gyro_filter_cutoff();
+        // update the shot noise notch while the sensors are converging
+        _imu._gyro_loop_rate_filter[instance].init_with_A_and_Q(gyro_rate, _imu.get_loop_rate_hz(),
+                                                                AP_LOOP_RATE_NOTCH_A, AP_LOOP_RATE_NOTCH_Q);
     }
 
     for (auto &notch : _imu.harmonic_notches) {

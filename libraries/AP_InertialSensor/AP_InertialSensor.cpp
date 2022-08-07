@@ -949,8 +949,11 @@ AP_InertialSensor::init(uint16_t loop_rate)
                                          notch.params.bandwidth_hz(), notch.params.attenuation_dB());
                 }
             }
+            _gyro_loop_rate_filter[i].init_with_A_and_Q(_gyro_raw_sample_rates[i], loop_rate,
+                                                        AP_LOOP_RATE_NOTCH_A, AP_LOOP_RATE_NOTCH_Q);
         }
     }
+
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     /*

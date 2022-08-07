@@ -6,6 +6,9 @@
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ     5.0f    // accel vibration floor filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FILT_HZ           2.0f    // accel vibration filter hz
 #define AP_INERTIAL_SENSOR_ACCEL_PEAK_DETECT_TIMEOUT_MS 500     // peak-hold detector timeout
+#define AP_LOOP_RATE_NOTCH_Q 1.288758958835685f     // f/8
+#define AP_LOOP_RATE_NOTCH_A 0.1f                   // 40dB
+
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
@@ -518,6 +521,7 @@ private:
     // Low Pass filters for gyro and accel
     LowPassFilter2pVector3f _accel_filter[INS_MAX_INSTANCES];
     LowPassFilter2pVector3f _gyro_filter[INS_MAX_INSTANCES];
+    NotchFilterVector3f _gyro_loop_rate_filter[INS_MAX_INSTANCES];
     Vector3f _accel_filtered[INS_MAX_INSTANCES];
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
 #if HAL_WITH_DSP
