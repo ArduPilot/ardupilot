@@ -242,6 +242,7 @@ void AP_IOMCU::thread_main(void)
             // read status at 20Hz
             read_status();
             last_status_read_ms = AP_HAL::millis();
+            write_log();
         }
 
         if (now - last_servo_read_ms > 50) {
@@ -350,8 +351,6 @@ void AP_IOMCU::read_status()
             force_safety_off();
         }
     }
-
-    write_log();
 }
 
 void AP_IOMCU::write_log()
