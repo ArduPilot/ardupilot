@@ -269,6 +269,8 @@ private:
     void handle_repeated_failures();
     void check_iomcu_reset();
 
+    void write_log();  // handle onboard logging
+
     static AP_IOMCU *singleton;
 
     enum {

@@ -351,6 +351,11 @@ void AP_IOMCU::read_status()
         }
     }
 
+    write_log();
+}
+
+void AP_IOMCU::write_log()
+{
     uint32_t now = AP_HAL::millis();
     if (now - last_log_ms >= 1000U) {
         last_log_ms = now;
