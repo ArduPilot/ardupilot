@@ -114,6 +114,9 @@ bool AP_OABendyRuler::update(const Location& current_loc, const Location& destin
         ground_course_deg = degrees(ground_speed_vec.angle());
     }
 
+    // consider self driving speed, planning frequency is 1Hz default
+    _margin_max += ground_speed_vec.length() * 1.0f;
+
     bool ret;
     switch (get_type()) {
         case OABendyType::OA_BENDY_VERTICAL:
