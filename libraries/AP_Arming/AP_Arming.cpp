@@ -124,7 +124,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: MIS_ITEMS
     // @DisplayName: Required mission items
     // @Description: Bitmask of mission items that are required to be planned in order to arm the aircraft
-    // @Bitmask: 0:Land,1:VTOL Land,2:DO_LAND_START,3:Takeoff,4:VTOL Takeoff,5:Rallypoint
+    // @Bitmask: 0:Land,1:VTOL Land,2:DO_LAND_START,3:Takeoff,4:VTOL Takeoff,5:Rallypoint,6:All WPs within fence
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
