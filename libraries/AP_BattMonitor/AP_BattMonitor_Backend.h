@@ -74,6 +74,8 @@ public:
     // return mavlink fault bitmask (see MAV_BATTERY_FAULT enum)
     virtual uint32_t get_mavlink_fault_bitmask() const { return 0; }
 
+    virtual void handle_mavlink_battery_message(const mavlink_message_t &msg) {}
+
     // logging functions 
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;

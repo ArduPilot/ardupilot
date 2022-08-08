@@ -16,6 +16,7 @@
 #include "AP_BattMonitor_INA2xx.h"
 #include "AP_BattMonitor_LTC2946.h"
 #include "AP_BattMonitor_Torqeedo.h"
+#include "AP_BattMonitor_MAVLink_Battery.h"
 
 #include <AP_HAL/AP_HAL.h>
 
@@ -298,6 +299,9 @@ AP_BattMonitor::init()
                 drivers[instance] = new AP_BattMonitor_Torqeedo(*this, state[instance], _params[instance]);
                 break;
 #endif
+            case Type::MAVLink_Battery:
+            	drivers[instance] = new AP_BattMonitor_MAVLink_Battery(*this, state[instance], _params[instance]);
+            	break;
             case Type::NONE:
             default:
                 break;
@@ -751,6 +755,29 @@ bool AP_BattMonitor::healthy() const
         }
     }
     return true;
+}
+
+void AP_BattMonitor::handle_mavlink_battery_message(const mavlink_message_t &msg) {
+    switch (msg.msgid) {
+        case  MAVLINK_MSG_ID_BATTERY_STATUS: 
+            select_battery_driver(msg, mavlink_msg_battery_status_get_id(&msg));   
+            break;
+        case MAVLINK_MSG_ID_SMART_BATTERY_INFO:
+            select_battery_driver(msg, mavlink_msg_smart_battery_info_get_id(&msg));
+            break;
+        default:
+            return;
+    }               
+}
+
+/*
+  battery id must match battery driver number (battery monitor instance)
+ */
+void AP_BattMonitor::select_battery_driver(const mavlink_message_t &msg, uint8_t instance) {	
+	if (drivers[instance] == nullptr) {
+		return;
+	} 
+	drivers[instance]->handle_mavlink_battery_message(msg);
 }
 
 namespace AP {
