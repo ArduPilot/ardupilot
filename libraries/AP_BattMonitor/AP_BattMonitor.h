@@ -48,6 +48,7 @@ class AP_BattMonitor_Generator;
 class AP_BattMonitor_INA2XX;
 class AP_BattMonitor_LTC2946;
 class AP_BattMonitor_Torqeedo;
+class AP_BattMonitor_MAVLink_Battery;
 
 class AP_BattMonitor
 {
@@ -67,6 +68,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_LTC2946;
 
     friend class AP_BattMonitor_Torqeedo;
+    friend class AP_BattMonitor_MAVLink_Battery;
 
 public:
 
@@ -101,6 +103,7 @@ public:
         INA2XX                     = 21,
         LTC2946                    = 22,
         Torqeedo                   = 23,
+        MAVLink_Battery            = 24,
     };
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
@@ -247,6 +250,10 @@ public:
 
     // Returns mavlink fault state
     uint32_t get_mavlink_fault_bitmask(const uint8_t instance) const;
+
+    // handle mavlink msg 
+    void handle_mavlink_battery_message(const mavlink_message_t &msg);
+    void select_battery_driver(const mavlink_message_t &msg, uint8_t instance);
 
     static const struct AP_Param::GroupInfo var_info[];
 

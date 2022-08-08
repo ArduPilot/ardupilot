@@ -748,6 +748,18 @@ void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
 #endif
 }
 
+/*
+  pass battery msg to battery monitor
+ */
+void GCS_MAVLINK::handle_battery_msg(const mavlink_message_t &msg)
+{
+    AP_BattMonitor* bat_mon = AP_BattMonitor::get_singleton();
+    if (bat_mon == nullptr) {
+        return;
+    }
+    bat_mon->handle_mavlink_battery_message(msg);
+}
+
 void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
 {
     va_list arg_list;
@@ -3692,6 +3704,15 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_send_autopilot_version(msg);
         break;
 
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY) 
+    case MAVLINK_MSG_ID_BATTERY_STATUS:
+    	handle_battery_msg(msg);  
+        break;
+
+    case MAVLINK_MSG_ID_SMART_BATTERY_INFO:
+    	handle_battery_msg(msg);
+        break;
+#endif
     case MAVLINK_MSG_ID_MISSION_WRITE_PARTIAL_LIST:
     case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
     case MAVLINK_MSG_ID_MISSION_COUNT:
