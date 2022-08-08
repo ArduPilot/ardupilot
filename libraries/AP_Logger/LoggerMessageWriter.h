@@ -47,7 +47,7 @@ public:
     void process() override;
 
 private:
-    enum Stage {
+    enum class Stage {
         WRITE_NEW_MISSION_MESSAGE = 0,
         WRITE_MISSION_ITEMS,
         DONE
@@ -64,7 +64,7 @@ public:
     void process() override;
 
 private:
-    enum Stage {
+    enum class Stage {
         WRITE_NEW_RALLY_MESSAGE = 0,
         WRITE_ALL_RALLY_POINTS,
         DONE
@@ -82,7 +82,7 @@ public:
     void process() override;
 
 private:
-    enum Stage {
+    enum class Stage {
         WRITE_NEW_FENCE_MESSAGE = 0,
         WRITE_FENCE_ITEMS,
         DONE
@@ -144,7 +144,7 @@ public:
 
 private:
 
-    enum Stage {
+    enum class Stage {
         FORMATS = 0,
         UNITS,
         MULTIPLIERS,
