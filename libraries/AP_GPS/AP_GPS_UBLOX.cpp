@@ -1287,11 +1287,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.posllh.itow;
         state.location.lng    = _buffer.posllh.longitude;
         state.location.lat    = _buffer.posllh.latitude;
-        if (option_set(AP_GPS::HeightEllipsoid)) {
-            state.location.alt    = _buffer.posllh.altitude_ellipsoid / 10;
-        } else {
-            state.location.alt    = _buffer.posllh.altitude_msl / 10;
-        }
+        state.location.alt    = gps.get_location_altitude_frame(_buffer.posllh.altitude_msl, _buffer.posllh.altitude_ellipsoid) / 10;
+        state.height_above_WGS84 = _buffer.posllh.altitude_ellipsoid * 0.001;
+        state.have_height_above_WGS84 = true;
+
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.posllh.horizontal_accuracy*1.0e-3f;
@@ -1444,11 +1443,10 @@ AP_GPS_UBLOX::_parse_gps(void)
         _last_pos_time        = _buffer.pvt.itow;
         state.location.lng    = _buffer.pvt.lon;
         state.location.lat    = _buffer.pvt.lat;
-        if (option_set(AP_GPS::HeightEllipsoid)) {
-            state.location.alt    = _buffer.pvt.h_ellipsoid / 10;
-        } else {
-            state.location.alt    = _buffer.pvt.h_msl / 10;
-        }
+        state.location.alt    = gps.get_location_altitude_frame(_buffer.pvt.h_msl, _buffer.pvt.h_ellipsoid) / 10;
+        state.height_above_WGS84 = _buffer.posllh.altitude_ellipsoid * 0.001;
+        state.have_height_above_WGS84 = true;
+
         switch (_buffer.pvt.fix_type)
         {
             case 0:
@@ -1510,6 +1508,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         
         // time
         state.time_week_ms    = _buffer.pvt.itow;
+        state.time_accuracy   = _buffer.pvt.t_acc;  // Time accuracy in nano-seconds
+        state.have_time_accuracy = true;
 #if UBLOX_FAKE_3DLOCK
         state.location.lng = 1491652300L;
         state.location.lat = -353632610L;

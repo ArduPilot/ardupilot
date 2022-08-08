@@ -120,8 +120,8 @@ private:
          uint8_t Error;
          double Latitude;
          double Longitude;
-         double Height;
-         float Undulation;
+         double Height;         // Ellipsoidal height with respect to datum given by the DATUM field
+         float Undulation;      // Geoid undulation (meters) with respect to the WGS84 ellipsoid
          float Vn;
          float Ve;
          float Vu;

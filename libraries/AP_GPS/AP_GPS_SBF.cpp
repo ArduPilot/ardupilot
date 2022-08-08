@@ -25,6 +25,9 @@
 #include <stdio.h>
 #include <ctype.h>
 
+/// DEBUG ONLY TO REMOVE
+#include <AP_Logger/AP_Logger.h>
+
 #if AP_GPS_SBF_ENABLED
 extern const AP_HAL::HAL& hal;
 
@@ -415,7 +418,21 @@ AP_GPS_SBF::process_message(void)
         if (temp.Latitude > -200000) {
             state.location.lat = (int32_t)(temp.Latitude * RAD_TO_DEG_DOUBLE * (double)1e7);
             state.location.lng = (int32_t)(temp.Longitude * RAD_TO_DEG_DOUBLE * (double)1e7);
-            state.location.alt = (int32_t)(((float)temp.Height - temp.Undulation) * 1e2f);
+
+            state.have_height_above_WGS84 = true;
+            state.height_above_WGS84 = float(temp.Height);
+
+            // CHECK THIS likely should be set to never return ASML........ terrain following issues?.....
+            // See "mosaic-X5 Reference Guide": page 137 Section 3.2.9 Datum Definition 
+            state.location.alt = gps.get_location_altitude_frame(int32_t((float(temp.Height) - temp.Undulation)* 100), int32_t(temp.Height * 100));
+
+            // DEBUG to test the GPS
+            AP::logger().Write("TEST",
+            "TimeUS," "Instance," "WGS84," "ASML," "UDULATION", // labels
+            "s"           "#"     "m"      "m"     "m"        , // units
+            "F"           "-"     "0"      "0"     "0"        , // multipliers
+            "Q"           "B"     "f"      "f"     "f"        , // types
+             AP_HAL::millis(), state.instance, float(temp.Height), (float(temp.Height) - temp.Undulation), temp.Undulation);
         }
 
         if (temp.NrSV != 255) {

@@ -15,7 +15,8 @@
 
 //  Novatel/Tersus/ComNav GPS driver for ArduPilot.
 //  Code by Michael Oborne
-//  Derived from http://www.novatel.com/assets/Documents/Manuals/om-20000129.pdf
+//  Derived from https://hexagondownloads.blob.core.windows.net/public/Novatel/assets/Documents/Manuals/om-20000129/om-20000129.pdf
+//  NovAtel OEM6® Family Firmware Reference Manual
 
 #pragma once
 
@@ -110,7 +111,7 @@ private:
         double lat;            ///< latitude (deg)
         double lng;            ///< longitude (deg)
         double hgt;            ///< height above mean sea level (m)
-        float undulation;      ///< relationship between the geoid and the ellipsoid (m)
+        float undulation;      ///< relationship between the geoid and the ellipsoid (m), the default setting uses the EGM96 Geoid model
         uint32_t datumid;      ///< datum id number
         float latsdev;         ///< latitude standard deviation (m)
         float lngsdev;         ///< longitude standard deviation (m)

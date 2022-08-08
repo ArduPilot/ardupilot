@@ -147,7 +147,11 @@ AP_GPS_ERB::_parse_gps(void)
         _last_pos_time        = _buffer.pos.time;
         state.location.lng    = (int32_t)(_buffer.pos.longitude * (double)1e7);
         state.location.lat    = (int32_t)(_buffer.pos.latitude * (double)1e7);
-        state.location.alt    = (int32_t)(_buffer.pos.altitude_msl * 100);
+        state.location.alt    = gps.get_location_altitude_frame(int32_t(_buffer.pos.altitude_msl * 100.0), int32_t(_buffer.pos.altitude_ellipsoid * 100.0));
+
+        state.height_above_WGS84 = float(_buffer.pos.altitude_ellipsoid);
+        state.have_height_above_WGS84 = true;
+
         state.status          = next_fix;
         _new_position = true;
         state.horizontal_accuracy = _buffer.pos.horizontal_accuracy * 1.0e-3f;

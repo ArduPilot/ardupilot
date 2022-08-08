@@ -282,6 +282,14 @@ AP_GPS_SBP::_attempt_state_update()
         state.location.alt      = (int32_t) (pos_llh->height * 100);
         state.num_sats          = pos_llh->n_sats;
 
+        // This driver has no capability to return both WGS84 ellipsoid height and geoid height AMSL
+        if (pos_llh->flags | (1<<3)) {
+            state.have_height_above_WGS84 = false;
+        } else {
+            state.height_above_WGS84      = float(pos_llh->height);
+            state.have_height_above_WGS84 = true;
+        }
+
         if (pos_llh->flags == 0) {
             state.status = AP_GPS::GPS_OK_FIX_3D;
         } else if (pos_llh->flags == 2) {

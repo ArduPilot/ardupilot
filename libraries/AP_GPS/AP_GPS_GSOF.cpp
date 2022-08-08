@@ -296,11 +296,14 @@ AP_GPS_GSOF::process_message(void)
                 }
                 valid++;
             }
-            else if (output_type == 2) // position
+            else if (output_type == 2) // GSOF message: LLH position, https://receiverhelp.trimble.com/oem-gnss/#GSOFmessages_LLH.html
             {
                 state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a)) * (double)1e7);
                 state.location.lng = (int32_t)(RAD_TO_DEG_DOUBLE * (SwapDouble(gsof_msg.data, a + 8)) * (double)1e7);
-                state.location.alt = (int32_t)(SwapDouble(gsof_msg.data, a + 16) * 100);
+                state.location.alt = (int32_t)(SwapDouble(gsof_msg.data, a + 16) * 100);    // Altitude field is in meters referenced from the WGS84 ellipsoid
+
+                state.height_above_WGS84 = float(state.location.alt) * 0.01;
+                state.have_height_above_WGS84 = true;
 
                 state.last_gps_time_ms = AP_HAL::millis();
 

@@ -204,7 +204,10 @@ AP_GPS_NOVA::process_message(void)
 
         state.location.lat = (int32_t) (bestposu.lat * (double)1e7);
         state.location.lng = (int32_t) (bestposu.lng * (double)1e7);
-        state.location.alt = (int32_t) (bestposu.hgt * 100);
+
+        state.height_above_WGS84 = float(bestposu.hgt) - bestposu.undulation;   // see page 327, Section 2.4.170 Undulation
+        state.have_height_above_WGS84 = true;
+        state.location.alt = gps.get_location_altitude_frame(int32_t(bestposu.hgt * 100), int32_t(state.height_above_WGS84 * 100));
 
         state.num_sats = bestposu.svsused;
 

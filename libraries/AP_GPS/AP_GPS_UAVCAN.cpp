@@ -411,8 +411,17 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         Location loc = { };
         loc.lat = cb.msg->latitude_deg_1e8 / 10;
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
-        loc.alt = cb.msg->height_msl_mm / 10;
+        loc.alt = gps.get_location_altitude_frame(cb.msg->height_msl_mm, cb.msg->height_ellipsoid_mm) / 10;
         interim_state.location = loc;
+
+        // INT32_MAX is used to signal if the CAN GPS is unable to provide WGS84 altitude
+        if (cb.msg->height_ellipsoid_mm == INT32_MAX)
+        {
+            interim_state.have_height_above_WGS84 = false;
+        } else {
+            interim_state.have_height_above_WGS84 = true;
+        }
+        interim_state.height_above_WGS84 = cb.msg->height_ellipsoid_mm  * 0.001;
 
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
             Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
@@ -535,8 +544,17 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         Location loc = { };
         loc.lat = cb.msg->latitude_deg_1e8 / 10;
         loc.lng = cb.msg->longitude_deg_1e8 / 10;
-        loc.alt = cb.msg->height_msl_mm / 10;
+        loc.alt = gps.get_location_altitude_frame(cb.msg->height_msl_mm, cb.msg->height_ellipsoid_mm) / 10;
         interim_state.location = loc;
+
+        // INT32_MAX is used to signal if the CAN GPS is unable to provide WGS84 altitude
+        if (cb.msg->height_ellipsoid_mm == INT32_MAX)
+        {
+            interim_state.have_height_above_WGS84 = false;
+        } else {
+            interim_state.have_height_above_WGS84 = true;
+        }
+        interim_state.height_above_WGS84 = cb.msg->height_ellipsoid_mm  * 0.001;
 
         if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
             Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);

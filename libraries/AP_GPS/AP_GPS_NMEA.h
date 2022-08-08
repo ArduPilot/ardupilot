@@ -135,7 +135,8 @@ private:
     int32_t _new_date;                                                  ///< date parsed from a term
     int32_t _new_latitude;                                      ///< latitude parsed from a term
     int32_t _new_longitude;                                     ///< longitude parsed from a term
-    int32_t _new_altitude;                                      ///< altitude parsed from a term
+    int32_t _new_altitude;                                      ///< altitude, AMSL Reference Geoid, parsed from a term
+    int32_t _new_undulation;                                    ///< height of the geoid above the ellipsoid, in cm
     int32_t _new_speed;                                                 ///< speed parsed from a term
     int32_t _new_course;                                        ///< course parsed from a term
     float   _new_gps_yaw;                                        ///< yaw parsed from a term

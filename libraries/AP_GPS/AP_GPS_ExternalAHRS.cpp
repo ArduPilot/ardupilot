@@ -51,7 +51,10 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     Location loc = {};
     loc.lat = pkt.latitude;
     loc.lng = pkt.longitude;
-    loc.alt = pkt.msl_altitude;
+    loc.alt = gps.get_location_altitude_frame(pkt.msl_altitude, pkt.wgs84_altitude);
+
+    state.height_above_WGS84 = float(pkt.wgs84_altitude) * 0.01;
+    state.have_height_above_WGS84 = true;
 
     state.location = loc;
     state.hdop = pkt.hdop;

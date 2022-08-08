@@ -5,6 +5,7 @@
 
 #define LOG_IDS_FROM_GPS                        \
     LOG_GPS_MSG,                                \
+    LOG_GPS2_MSG,                               \
     LOG_GPA_MSG,                                \
     LOG_GPS_RAW_MSG,                            \
     LOG_GPS_RAWH_MSG,                           \
@@ -50,6 +51,18 @@ struct PACKED log_GPS {
     uint8_t  used;
 };
 
+// @LoggerMessage: GPS2
+// @Description: Auxillary GNSS information
+// @Field: TimeUS: Time since system startup
+// @Field: I: GPS instance number
+// @Field: AltE: altitude above the WGS84 ellipsoid
+struct PACKED log_GPS2 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  instance;
+    float    alt_above_ellipsoid;
+};
+
 // @LoggerMessage: GPA
 // @Description: GPS accuracy information
 // @Field: I: GPS instance number
@@ -62,6 +75,7 @@ struct PACKED log_GPS {
 // @Field: VV: true if vertical velocity is available
 // @Field: SMS: time since system startup this sample was taken
 // @Field: Delta: system time delta between the last two reported positions
+// @Field: TAcc: Time accuracy
 struct PACKED log_GPA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -74,6 +88,7 @@ struct PACKED log_GPA {
     uint8_t  have_vv;
     uint32_t sample_ms;
     uint16_t delta_ms;
+    float t_acc;
 };
 
 /*
@@ -199,8 +214,10 @@ struct PACKED log_GPS_RAWS {
 #define LOG_STRUCTURE_FROM_GPS \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#---SmDUmnhnh-", "F----0BGGB000--" , true }, \
+    { LOG_GPS2_MSG, sizeof(log_GPS2), \
+      "GPS2",  "QBf", "TimeUS,I,AltE", "s#m", "F-0", true }, \
     { LOG_GPA_MSG,  sizeof(log_GPA), \
-      "GPA",  "QBCCCCfBIH", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta", "s#mmmnd-ss", "F-BBBB0-CC" , true }, \
+      "GPA",  "QBCCCCfBIHf", "TimeUS,I,VDop,HAcc,VAcc,SAcc,YAcc,VV,SMS,Delta,TAcc", "s#mmmnd-sss", "F-BBBB0-CC0" , true }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
       "UBX1", "QBHBBHI",  "TimeUS,Instance,noisePerMS,jamInd,aPower,agcCnt,config", "s#-----", "F------"  , true }, \
     { LOG_GPS_UBX2_MSG, sizeof(log_Ubx2), \

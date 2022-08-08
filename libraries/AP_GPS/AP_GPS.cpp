@@ -504,6 +504,14 @@ bool AP_GPS::vertical_accuracy(uint8_t instance, float &vacc) const
     return false;
 }
 
+bool AP_GPS::time_accuracy(uint8_t instance, float &t_acc) const
+{
+    if (state[instance].have_time_accuracy) {
+        t_acc = state[instance].time_accuracy * 1.0E-9;
+        return true;
+    }
+    return false;
+}
 
 /**
    convert GPS week and milliseconds to unix epoch in milliseconds
@@ -700,10 +708,16 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #if AP_GPS_SBF_ENABLED
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
+        // the SBF only outputs data with respect to WGS84 as the altitude reference system. , ADDED: AUG-2022
+        // It cannot report ASML aka EGM96 geoid model
+        _driver_options.set_default(DriverOptions::HeightEllipsoid);
         return new AP_GPS_SBF(*this, state[instance], _port[instance]);
 #endif //AP_GPS_SBF_ENABLED
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
+        // the GSOF driver orignally used WGS84 as the default altitude reference system, ADDED: AUG-2022
+        // It cannot report ASML aka EGM96 geoid model
+        _driver_options.set_default(DriverOptions::HeightEllipsoid);
         return new AP_GPS_GSOF(*this, state[instance], _port[instance]);
 #endif //AP_GPS_GSOF_ENABLED
 #if AP_GPS_NOVA_ENABLED
@@ -782,12 +796,16 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #if AP_GPS_SBP2_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
+            // the SBP2 orignally used WGS84 as the default altitude reference system, ADDED: AUG-2022
+            _driver_options.set_default(DriverOptions::HeightEllipsoid);
             return new AP_GPS_SBP2(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP2_ENABLED
 #if AP_GPS_SBP_ENABLED
         if ((_type[instance] == GPS_TYPE_AUTO || _type[instance] == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
+            // the SBP orignally used WGS84 as the default altitude reference system, ADDED: AUG-2022
+            _driver_options.set_default(DriverOptions::HeightEllipsoid);
             return new AP_GPS_SBP(*this, state[instance], _port[instance]);
         }
 #endif //AP_GPS_SBP_ENABLED
@@ -1032,6 +1050,16 @@ void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
     }
 }
 #endif //#if GPS_MOVING_BASELINE
+
+// Set the location altitude frame: geoid (AKA AMSL) or  WGS84 ellipsoid
+const int32_t& AP_GPS::get_location_altitude_frame(const int32_t &geoid_alt, const int32_t &ellipsoid_alt) const
+{
+    if (option_set(AP_GPS::HeightEllipsoid)) {
+        return ellipsoid_alt;
+    } else {
+        return geoid_alt;
+    }
+}
 
 /*
   update all GPS instances
@@ -2133,9 +2161,11 @@ void AP_GPS::Write_GPS(uint8_t i)
 
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
+    float t_acc = 0.0;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
+    time_accuracy(i, t_acc);
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
@@ -2147,9 +2177,18 @@ void AP_GPS::Write_GPS(uint8_t i)
         yaw_accuracy  : yaw_accuracy_deg,
         have_vv       : (uint8_t)have_vertical_velocity(i),
         sample_ms     : last_message_time_ms(i),
-        delta_ms      : last_message_delta_time_ms(i)
+        delta_ms      : last_message_delta_time_ms(i),
+        t_acc         : t_acc,
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+
+    const struct log_GPS2 pkt3 {
+        LOG_PACKET_HEADER_INIT(LOG_GPS2_MSG),
+        time_us             : time_us,
+        instance            : i,
+        alt_above_ellipsoid : height_above_WGS84(i),
+    };
+    AP::logger().WriteBlock(&pkt3, sizeof(pkt3));
 }
 
 /*

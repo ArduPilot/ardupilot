@@ -18,6 +18,7 @@
 //	Code by Niels Joubert
 //
 //  Swift Binary Protocol format: http://docs.swift-nav.com/
+//  Swift Navigation Binary Protocol Specification v4.1.4.pdf
 //
 #pragma once
 
@@ -77,6 +78,7 @@ private:
     static const uint16_t SBP_BASELINE_NED_MSGTYPE   = 0x020C;
     static const uint16_t SBP_VEL_ECEF_MSGTYPE       = 0x020D;
     static const uint16_t SBP_VEL_NED_MSGTYPE        = 0x020E;
+    static const uint16_t SBP_POS_LLH_ACC_MSGTYPE    = 0x0218;
     static const uint16_t SBP_TRACKING_STATE_MSGTYPE = 0x0013;
     static const uint16_t SBP_IAR_STATE_MSGTYPE      = 0x0019;
     static const uint16_t SBP_EXT_EVENT_MSGTYPE      = 0x0101;
@@ -122,13 +124,13 @@ private:
 
     // Geodetic position solution.
     struct PACKED sbp_pos_llh_t {
-        uint32_t tow;         //< GPS Time of Week (unit: ms)
-        double lat;           //< Latitude (unit: degrees)
-        double lon;           //< Longitude (unit: degrees)
-        double height;        //< Height (unit: meters)
-        uint16_t h_accuracy;  //< Horizontal position accuracy estimate (unit: mm)
-        uint16_t v_accuracy;  //< Vertical position accuracy estimate (unit: mm)
-        uint8_t n_sats;       //< Number of satellites used in solution
+        uint32_t tow;               //< GPS Time of Week (unit: ms)
+        double lat;                 //< Latitude (unit: degrees)
+        double lon;                 //< Longitude (unit: degrees)
+        double height_ellipsoid;    //< Height above WGS84 Ellipsoid (unit: meters)
+        uint16_t h_accuracy;        //< Horizontal position accuracy estimate (unit: mm)
+        uint16_t v_accuracy;        //< Vertical position accuracy estimate (unit: mm)
+        uint8_t n_sats;             //< Number of satellites used in solution
         struct PACKED flags {
             uint8_t fix_mode:3;  //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX, 5: Dead Reckoning, 6: SBAS Position
             uint8_t ins_mode:2;  //< Inertial navigation mode (0: none, 1: INS used)
@@ -151,6 +153,30 @@ private:
             uint8_t res:3;       //< Reserved
         } flags;
     }; // 22 bytes
+
+
+    // Geodetic position solution.
+    struct PACKED sbp_pos_llh_acc {
+        uint32_t tow;                   //< GPS Time of Week (unit: ms)
+        double lat;                     //< Latitude (unit: degrees)
+        double lon;                     //< Longitude (unit: degrees)
+        double height_ellipsoid;        //< Height above WGS84 Ellipsoid (unit: meters)
+        double height_msl;              //< Height above the geoid, mean sea-level (unit: meters)
+        float h_accuracy;               //< Horizontal position accuracy estimate (unit: meters)
+        float v_accuracy;               //< Vertical position accuracy estimate (unit: meters)
+        float ct_accuracy;              // Cross track error (unit: meters)
+        float at_accuracy;              // Along-track error (unit: meters)
+        float h_ellipse_semi_major;     // Semi major axis of the estimated horizontal error ellipse (units: meters)
+        float h_ellipse_semi_minor;     // Semi minor axis of the estimated horizontal error ellipse (units: meters)
+        float h_ellipse_orientation;    // (units: degrees) Orientation of the semi major axis of the estimated horizontal error ellipse with respect to North
+        uint8_t confidence_and_geoid;   // The lower bits describe the configured confidence level for the estimated position error. The middle bits describe the geoid model used to calculate the orthometric height.
+        uint8_t n_sats;                 //< Number of satellites used in solution
+        struct PACKED flags {
+            uint8_t fix_mode:3;         //< Fix mode (0: invalid, 1: SPP, 2: DGNSS, 3: Float RTX, 4: Fixed RTX, 5: Dead Reckoning, 6: SBAS Position
+            uint8_t ins_mode:2;         //< Inertial navigation mode (0: none, 1: INS used)
+            uint8_t res:3;              //< Reserved
+        } flags;
+    }; // 67 bytes
 
     // Messages reporting accurately-timestamped external events, e.g. camera shutter time.
     struct PACKED sbp_ext_event_t {
@@ -179,6 +205,7 @@ private:
     struct sbp_gps_time_t  last_gps_time;
     struct sbp_dops_t      last_dops;
     struct sbp_pos_llh_t   last_pos_llh;
+    struct sbp_pos_llh_acc last_pos_llh_acc;
     struct sbp_vel_ned_t   last_vel_ned;
     struct sbp_ext_event_t last_event;
 

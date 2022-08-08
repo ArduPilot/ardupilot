@@ -292,7 +292,10 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_GGA:
                     _last_GGA_ms = now;
                     if (_last_KSXT_pos_ms == 0) {
-                        state.location.alt  = _new_altitude;
+                        state.height_above_WGS84 = float(_new_altitude - _new_undulation) * 0.01;
+                        state.have_height_above_WGS84 = true;
+
+                        state.location.alt  = gps.get_location_altitude_frame(_new_altitude, _new_altitude - _new_undulation);
                         state.location.lat  = _new_latitude;
                         state.location.lng  = _new_longitude;
                     }
@@ -374,7 +377,11 @@ bool AP_GPS_NMEA::_term_complete()
                 case _GPS_SENTENCE_KSXT:
                     state.location.lat     = _ksxt.fields[2]*1.0e7;
                     state.location.lng     = _ksxt.fields[1]*1.0e7;
-                    state.location.alt     = _ksxt.fields[3]*1.0e2;
+
+                    state.height_above_WGS84 = _ksxt.fields[3] - (float(_new_undulation) * 0.01);
+                    state.have_height_above_WGS84 = true;
+                    state.location.alt  = gps.get_location_altitude_frame(_ksxt.fields[3] * 100, (_ksxt.fields[3] * 100) - _new_undulation);
+
                     _last_KSXT_pos_ms = now;
                     if (_ksxt.fields[9] >= 1) {
                         // we have 3D fix
@@ -521,7 +528,10 @@ bool AP_GPS_NMEA::_term_complete()
                 _new_longitude = -_new_longitude;
             break;
         case _GPS_SENTENCE_GGA + 9: // Altitude (GPGGA)
-            _new_altitude = _parse_decimal_100(_term);
+            _new_altitude = _parse_decimal_100(_term);      // Altitude AMSL reference geoid, im cm
+            break;
+        case _GPS_SENTENCE_GGA + 11: // Undulation (GPGGA): Height of the geoid above the ellipsoid, in meters
+            _new_undulation = _parse_decimal_100(_term);    // cm
             break;
 
         // course and speed

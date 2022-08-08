@@ -299,8 +299,8 @@ private:
         uint32_t itow;                                  // GPS msToW
         int32_t longitude;
         int32_t latitude;
-        int32_t altitude_ellipsoid;
-        int32_t altitude_msl;
+        int32_t altitude_ellipsoid;                     // altitude AMSL using the WGS84 ellipsoid (in mm)
+        int32_t altitude_msl;                           // altitude AMSL using the EGM96 geoid (in mm)
         uint32_t horizontal_accuracy;
         uint32_t vertical_accuracy;
     };

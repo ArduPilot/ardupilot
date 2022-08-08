@@ -200,6 +200,11 @@ AP_GPS_SBP2::_sbp_process_message() {
             check_new_itow(last_pos_llh.tow, parser_state.msg_len);
             break;
 
+        case SBP_POS_LLH_ACC_MSGTYPE:
+            memcpy(&last_pos_llh_acc, parser_state.msg_buff, sizeof(struct sbp_pos_llh_acc));
+            check_new_itow(last_pos_llh_acc.tow, parser_state.msg_len);
+            break;
+
         case SBP_DOPS_MSGTYPE:
             memcpy(&last_dops, parser_state.msg_buff, sizeof(struct sbp_dops_t));
             check_new_itow(last_dops.tow, parser_state.msg_len);
@@ -333,7 +338,11 @@ AP_GPS_SBP2::_attempt_state_update()
         //
         state.location.lat      = (int32_t) (last_pos_llh.lat * (double)1e7);
         state.location.lng      = (int32_t) (last_pos_llh.lon * (double)1e7);
-        state.location.alt      = (int32_t) (last_pos_llh.height * 100);
+        state.location.alt      = gps.get_location_altitude_frame(int32_t(last_pos_llh_acc.height_msl * 100.0), int32_t(last_pos_llh.height_ellipsoid * 100.0));
+
+        state.height_above_WGS84 = (float) last_pos_llh.height_ellipsoid;
+        state.have_height_above_WGS84 = true;
+
         state.num_sats          = last_pos_llh.n_sats;
 
         switch (last_pos_llh.flags.fix_mode) {
