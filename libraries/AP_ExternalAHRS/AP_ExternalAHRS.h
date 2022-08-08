@@ -122,6 +122,7 @@ public:
         int32_t  longitude;
         int32_t  latitude;
         int32_t  msl_altitude;       // cm
+        float    wgs84_altitude;     // WGS84 ellipsoidal altitude (meters)
         float  ned_vel_north;
         float  ned_vel_east;
         float  ned_vel_down;

@@ -326,6 +326,7 @@ void AP_ExternalAHRS_LORD::handle_gnss(const LORD_Packet &packet)
         case GNSSPacketField::LLH_POSITION: {
             gnss_data.lat = extract_double(packet.payload, i+2) * 1.0e7; // Decimal degrees to degrees
             gnss_data.lon = extract_double(packet.payload, i+10) * 1.0e7;
+            gnss_data.wgs84_altitude = extract_double(packet.payload, i+18);
             gnss_data.msl_altitude = extract_double(packet.payload, i+26) * 1.0e2; // Meters to cm
             gnss_data.horizontal_position_accuracy = extract_float(packet.payload, i+34);
             gnss_data.vertical_position_accuracy = extract_float(packet.payload, i+38);
@@ -394,7 +395,8 @@ void AP_ExternalAHRS_LORD::post_filter() const
         state.velocity = Vector3f{filter_data.ned_velocity_north, filter_data.ned_velocity_east, filter_data.ned_velocity_down};
         state.have_velocity = true;
 
-        state.location = Location{filter_data.lat, filter_data.lon, gnss_data.msl_altitude, Location::AltFrame::ABSOLUTE};
+        const int32_t altitude = AP::gps().get_location_altitude_frame(gnss_data.msl_altitude, int32_t(gnss_data.wgs84_altitude * 100));
+        state.location = Location{filter_data.lat, filter_data.lon, altitude, Location::AltFrame::ABSOLUTE};
         state.have_location = true;
     }
 
@@ -414,6 +416,7 @@ void AP_ExternalAHRS_LORD::post_filter() const
         longitude: filter_data.lon,
         latitude: filter_data.lat,
         msl_altitude: gnss_data.msl_altitude,
+        wgs84_altitude: gnss_data.wgs84_altitude,
 
         ned_vel_north: filter_data.ned_velocity_north,
         ned_vel_east: filter_data.ned_velocity_east,
@@ -422,9 +425,11 @@ void AP_ExternalAHRS_LORD::post_filter() const
 
     if (gps.fix_type >= 3 && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
+
+        const int32_t altitude = AP::gps().get_location_altitude_frame(gnss_data.msl_altitude, int32_t(gnss_data.wgs84_altitude * 100));
         state.origin = Location{int32_t(filter_data.lat),
                                 int32_t(filter_data.lon),
-                                int32_t(gnss_data.msl_altitude),
+                                int32_t(altitude),
                                 Location::AltFrame::ABSOLUTE};
         state.have_origin = true;
     }

@@ -40,7 +40,30 @@ extern const AP_HAL::HAL &hal;
  */
 void AP_ExternalAHRS_VectorNav::send_config(void) const
 {
+    // Header | CMD | Register ID | Async Mode | Rate Divisor | OutputGroup 
+    // $VN    | WRG | 75          | 3          |              | 0x35 = Common, IMU, GPS1, Attitude
+    //
+    // Group 1 Common | Group 3 IMU | Group 4 Attitude  | Group 5 INS
+    // 0x0003         | 0x0F2C      | 0x0147            | 0x0613
+    // TimeStartup    | UncompAccel | Reserved          | InsStatus
+    // TimeGPS        | UncompGyro  | YawPitchRoll      | PosLla
+    //                | Pres        | Quaternion        | VelNED
+    //                | Mag         | LinearAccelBody   | PosU
+    //                | Accel       | YprU              | VelU
+    //                | AngularRate |                   |
+    //                | Reserved??? |                   |
     nmea_printf(uart, "$VNWRG,75,3,%u,35,0003,0F2C,0147,0613", unsigned(400/get_rate()));
+
+    // Header | CMD | Register ID | Async Mode | Rate Divisor | OutputGroup 
+    // $VN    | WRG | 76          | 3          | 80           | 0x4E = TIME. IMU, GPS1, GPS2
+    //
+    // Group 1 TIME | Group 3 IMU | Group 4 GPS1  | Group 5 GPS2
+    // 0x0002       | 0x0010      | 0x20B8        | 0x2018
+    // TimeGps      | Press       | NumSats       | NumSats
+    //              |             | Fix           | Fix
+    //              |             | PosLla        |
+    //              |             | VelNed        |
+    //              |             | DOP           | DOP
     nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,2018");
 }
 
@@ -333,7 +356,10 @@ void AP_ExternalAHRS_VectorNav::process_packet2(const uint8_t *b)
 
     gps.latitude = pkt2.GPS1posLLA[0] * 1.0e7;
     gps.longitude = pkt2.GPS1posLLA[1] * 1.0e7;
-    gps.msl_altitude = pkt2.GPS1posLLA[2] * 1.0e2;
+
+    // Altitude above mean sea-level is not provided 
+    // gps.msl_altitude = pkt2.GPS1posLLA[2] * 1.0e2;
+    gps.wgs84_altitude = pkt2.GPS1posLLA[2];
 
     gps.ned_vel_north = pkt2.GPS1velNED[0];
     gps.ned_vel_east = pkt2.GPS1velNED[1];

@@ -107,6 +107,7 @@ private:
         int32_t lon;
         int32_t lat;
         int32_t msl_altitude;
+        float wgs84_altitude;           // WGS84 ellipsoidal altitude (cm)
         float ned_velocity_north;
         float ned_velocity_east;
         float ned_velocity_down;
