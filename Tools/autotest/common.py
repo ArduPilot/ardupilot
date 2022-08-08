@@ -1434,11 +1434,12 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    def __init__(self, name, description, function, attempts=1):
+    def __init__(self, name, description, function, attempts=1, speedup=None):
         self.name = name
         self.description = description
         self.function = function
         self.attempts = attempts
+        self.speedup = speedup
 
 
 class AutoTest(ABC):
@@ -5590,6 +5591,13 @@ class AutoTest(ABC):
             if m.heading == int(heading):
                 return
 
+    def assert_heading(self, heading, accuracy=1):
+        '''assert vehicle yaw is to heading (0-360)'''
+        m = self.assert_receive_message('VFR_HUD')
+        if self.heading_delta(heading, m.heading) > accuracy:
+            raise NotAchievedException("Unexpected heading=%f want=%f" %
+                                       (m.heading, heading))
+
     def do_set_relay(self, relay_num, on_off, timeout=10):
         """Set relay with a command long message."""
         self.progress("Set relay %d to %d" % (relay_num, on_off))
@@ -6058,16 +6066,22 @@ class AutoTest(ABC):
                  str(maximum),
                  str(sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else str(last_value)))
 
+    def heading_delta(self, heading1, heading2):
+        '''return angle between two 0-360 headings'''
+        return math.fabs((heading1 - heading2 + 180) % 360 - 180)
+
+    def get_heading(self, timeout=1):
+        '''return heading 0-359'''
+        m = self.assert_receive_message('VFR_HUD', timeout=timeout)
+        return m.heading
+
     def wait_heading(self, heading, accuracy=5, timeout=30, **kwargs):
         """Wait for a given heading."""
         def get_heading_wrapped(timeout2):
-            msg = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=timeout2)
-            if msg:
-                return msg.heading
-            raise MsgRcvTimeoutException("Failed to get heading")
+            return self.get_heading(timeout=timeout2)
 
         def validator(value2, target2):
-            return math.fabs((value2 - target2 + 180) % 360 - 180) <= accuracy
+            return self.heading_delta(value2, target2) <= accuracy
 
         self.wait_and_maintain(
             value_name="Heading",
@@ -7107,6 +7121,8 @@ Also, ignores heartbeats not from our target system'''
 
         start_time = time.time()
 
+        orig_speedup = None
+
         ex = None
         try:
             self.check_rc_defaults()
@@ -7116,6 +7132,10 @@ Also, ignores heartbeats not from our target system'''
             self.set_current_waypoint(0, check_afterwards=False)
             self.drain_mav()
             self.drain_all_pexpects()
+            if test.speedup is not None:
+                self.progress("Overriding speedup to %u" % test.speedup)
+                orig_speedup = self.get_parameter("SIM_SPEEDUP")
+                self.set_parameter("SIM_SPEEDUP", test.speedup)
 
             test_function()
         except Exception as e:
@@ -7128,6 +7148,9 @@ Also, ignores heartbeats not from our target system'''
                     self.mav.message_hooks.remove(h)
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
+
+        if orig_speedup is not None:
+            self.set_parameter("SIM_SPEEDUP", orig_speedup)
 
         passed = True
         if ex is not None:
