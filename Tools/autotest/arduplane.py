@@ -1525,6 +1525,9 @@ class AutoTestPlane(AutoTest):
         self.wait_circling_point_with_radius(rally_loc, return_radius)
         self.set_parameter("FENCE_ALT_MIN", 0) # Clear fence breach
 
+        # 10 second fence min retrigger time
+        self.delay_sim_time(15)
+
         # Fly up before re-triggering fence breach. Fly to fence return point
         self.change_altitude(self.homeloc.alt+30)
         self.set_parameters({
