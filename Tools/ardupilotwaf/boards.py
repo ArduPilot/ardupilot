@@ -547,6 +547,9 @@ class sitl(Board):
 
         cfg.define('HAL_WITH_SPI', 1)
         cfg.define('HAL_WITH_RAMTRON', 1)
+        if Utils.unversioned_sys_platform() != 'cygwin' and sys.platform != 'darwin':
+            # enable OpenDroneID, but not on cygwin or macos due to compiler version used
+            cfg.define('AP_OPENDRONEID_ENABLED', 1)
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
