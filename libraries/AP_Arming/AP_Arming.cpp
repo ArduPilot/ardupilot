@@ -1027,7 +1027,7 @@ bool AP_Arming::terrain_database_required() const
         // no mission support?
         return false;
     }
-    if (mission->contains_terrain_relative()) {
+    if (mission->contains_terrain_alt_items()) {
         return true;
     }
     return false;
