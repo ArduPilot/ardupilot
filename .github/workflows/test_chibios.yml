@@ -33,20 +33,8 @@ jobs:
         ]
         toolchain: [
             chibios,  # GCC-6
-            #chibios-clang,
         ]
-        gcc: [6, 10]
-        exclude:
-          - gcc: 10
-            toolchain: chibios-clang
-          - gcc: 6
-            config: fmuv2-plane
-          - gcc: 6
-            config: revo-mini
-          - gcc: 6
-            config: MatekF405-Wing
-          - gcc: 6
-            config: CubeOrange-ODID
+        gcc: [10]
         include:
           - config: stm32h7
             toolchain: chibios-py2
