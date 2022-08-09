@@ -142,6 +142,9 @@ private:
     mavlink_open_drone_id_arm_status_t arm_status;
     uint32_t last_arm_status_ms;
 
+    // last time we sent a lost transmitter message
+    uint32_t last_lost_tx_ms;
+
     // transmit functions to manually send a static MAVLink message
     void send_dynamic_out();
     void send_static_out();
