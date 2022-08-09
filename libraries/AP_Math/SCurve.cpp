@@ -16,6 +16,10 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#if APM_BUILD_COPTER_OR_HELI
+#include <AP_Logger/AP_Logger.h>
+#endif
 #include "SCurve.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -862,6 +866,48 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
         ::printf("SCurve::calculate_path invalid outputs\n");
 #endif
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+
+#if APM_BUILD_COPTER_OR_HELI
+        // @LoggerMessage: SCVE
+        // @Description: Debug message for SCurve internal error
+        // @Field: TimeUS: Time since system startup
+        // @Field: Sm: duration of the raised cosine jerk profile
+        // @Field: Jm: maximum value of the raised cosine jerk profile
+        // @Field: V0: initial velocity magnitude
+        // @Field: Am: maximum constant acceleration
+        // @Field: Vm: maximum constant velocity
+        // @Field: L: Length of the path
+        // @Field: Jm_out: maximum value of the raised cosine jerk profile
+        // @Field: tj_out: segment duration
+        // @Field: t2_out: segment duration
+        // @Field: t4_out: segment duration
+        // @Field: t6_out: segment duration
+
+        static bool logged_scve;  // only log once
+        if (!logged_scve) {
+            logged_scve = true;
+            AP::logger().Write(
+                "SCVE",
+                "TimeUS,Sm,Jm,V0,Am,Vm,L,Jm_out,tj_out,t2_out,t4_out,t6_out",
+                "s-----------",
+                "F-----------",
+                "Qfffffffffff",
+                AP_HAL::micros64(),
+                (double)Sm,
+                (double)Jm,
+                (double)V0,
+                (double)Am,
+                (double)Vm,
+                (double)L,
+                (double)Jm_out,
+                (double)tj_out,
+                (double)t2_out,
+                (double)t4_out,
+                (double)t6_out
+                );
+        }
+#endif  // APM_BUILD_COPTER_OR_HELI
+
         Jm_out = 0.0f;
         t2_out = 0.0f;
         t4_out = 0.0f;
