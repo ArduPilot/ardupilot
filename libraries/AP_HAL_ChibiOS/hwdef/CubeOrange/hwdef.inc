@@ -279,8 +279,8 @@ COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
 COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180_YAW_90
 
 # offset the internal compass for EM impact of the IMU heater
-# this is in sensor frame mGauss
-define HAL_AK09916_HEATER_OFFSET Vector3f(30,10,235)
+# this is in body frame mGauss
+define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SPI,4,1,9),Vector3f(10,30,-235)}
 
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
