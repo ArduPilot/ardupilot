@@ -541,7 +541,7 @@ userdata uint32_t manual_operator __sub uint32_t___sub
 userdata uint32_t manual_operator __mul uint32_t___mul
 userdata uint32_t manual_operator __div uint32_t___div
 userdata uint32_t manual_operator __mod uint32_t___mod
-userdata uint32_t manual_operator __idiv uint32_t___idiv
+userdata uint32_t manual_operator __idiv uint32_t___div
 userdata uint32_t manual_operator __band uint32_t___band
 userdata uint32_t manual_operator __bor uint32_t___bor
 userdata uint32_t manual_operator __bxor uint32_t___bxor
