@@ -312,7 +312,7 @@ void AP_OpenDroneID::send_location_message()
     {
         WITH_SEMAPHORE(_sem);
         // take semaphore so CAN gets a consistent packet
-        pkt_location = {
+        pkt_location = mavlink_open_drone_id_location_t{
         latitude : latitude,
         longitude : longitude,
         altitude_barometric : altitude_barometric,
