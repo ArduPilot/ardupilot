@@ -489,9 +489,13 @@ void Copter::loop_rate_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
+        Log_Write_PIDS(); // only logs if PIDS bitmask is set
     }
     if (should_log(MASK_LOG_FTN_FAST)) {
         AP::ins().write_notch_log_messages();
+    }
+    if (should_log(MASK_LOG_IMU_FAST)) {
+        AP::ins().Write_IMU();
     }
 }
 
@@ -503,8 +507,12 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
     }
-    // log EKF attitude data
-    if (should_log(MASK_LOG_ATTITUDE_MED) || should_log(MASK_LOG_ATTITUDE_FAST)) {
+    if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
+    // log at 10Hz if PIDS bitmask is selected, even if no ATT bitmask is selected; logs at looprate if ATT_FAST and PIDS bitmask set
+        Log_Write_PIDS();
+    }
+    // log EKF attitude data always at 10Hz unless ATTITUDE_FAST, then do it in the 25Hz loop
+    if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_EKF_POS();
     }
     if (should_log(MASK_LOG_MOTBATT)) {
@@ -551,7 +559,7 @@ void Copter::twentyfive_hz_logging()
         Log_Write_EKF_POS();
     }
 
-    if (should_log(MASK_LOG_IMU)) {
+    if (should_log(MASK_LOG_IMU) && !(should_log(MASK_LOG_IMU_FAST))) {
         AP::ins().Write_IMU();
     }
 

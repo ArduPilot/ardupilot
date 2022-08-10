@@ -71,7 +71,12 @@ void Copter::Log_Write_Attitude()
     targets.z = wrap_360_cd(targets.z);
     ahrs.Write_Attitude(targets);
     ahrs_view->Write_Rate(*motors, *attitude_control, *pos_control);
-    if (should_log(MASK_LOG_PID)) {
+ }
+
+// Write PIDS packets
+void Copter::Log_Write_PIDS()
+{
+   if (should_log(MASK_LOG_PID)) {
         logger.Write_PID(LOG_PIDR_MSG, attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
