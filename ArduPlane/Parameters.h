@@ -455,8 +455,6 @@ public:
     AP_Int32 terrain_follow;
     AP_Int16 terrain_lookahead;
 #endif
-    AP_Int16 glide_slope_min;
-    AP_Float glide_slope_threshold;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
 #if HAL_WITH_IO_MCU

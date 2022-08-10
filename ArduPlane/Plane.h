@@ -111,6 +111,7 @@
 #include "avoidance_adsb.h"
 #endif
 #include "AP_Arming.h"
+#include <AP_AltitudePlanner/AP_AltitudePlanner.h>
 
 /*
   main APM:Plane class
@@ -250,6 +251,9 @@ private:
     AP_OSD osd;
 #endif
 
+    // Altitude management library
+    AP_AltitudePlanner altitudePlanner{aparm};
+    
     ModeCircle mode_circle;
     ModeStabilize mode_stabilize;
     ModeTraining mode_training;
@@ -636,9 +640,7 @@ private:
     AP_Terrain terrain;
 #endif
 
-    AP_Landing landing{mission,ahrs,&TECS_controller,nav_controller,aparm,
-            FUNCTOR_BIND_MEMBER(&Plane::set_target_altitude_proportion, void, const Location&, float),
-            FUNCTOR_BIND_MEMBER(&Plane::constrain_target_altitude_location, void, const Location&, const Location&),
+    AP_Landing landing{mission,ahrs,&TECS_controller,nav_controller,aparm,altitudePlanner,
             FUNCTOR_BIND_MEMBER(&Plane::adjusted_altitude_cm, int32_t),
             FUNCTOR_BIND_MEMBER(&Plane::adjusted_relative_altitude_cm, int32_t),
             FUNCTOR_BIND_MEMBER(&Plane::disarm_if_autoland_complete, void),
@@ -713,34 +715,18 @@ private:
     // The location of the current/active waypoint.  Used for altitude ramp, track following and loiter calculations.
     Location next_WP_loc {};
 
-    // Altitude control
+    // The location of the active waypoint in Guided mode.
+    struct Location guided_WP_loc {};
+
+    // FBWB altitude control
     struct {
-        // target altitude above sea level in cm. Used for barometric
-        // altitude navigation
-        int32_t amsl_cm;
-
-        // Altitude difference between previous and current waypoint in
-        // centimeters. Used for glide slope handling
-        int32_t offset_cm;
-
-#if AP_TERRAIN_AVAILABLE
-        // are we trying to follow terrain?
-        bool terrain_following;
-
-        // target altitude above terrain in cm, valid if terrain_following
-        // is set
-        int32_t terrain_alt_cm;
-
-        // lookahead value for height error reporting
-        float lookahead;
-#endif
 
         // last input for FBWB/CRUISE height control
         float last_elevator_input;
 
         // last time we checked for pilot control of height
         uint32_t last_elev_check_us;
-    } target_altitude {};
+    } fbwb_altitude {};
 
     float relative_altitude;
 
@@ -824,23 +810,10 @@ private:
     void setup_glide_slope(void);
     int32_t get_RTL_altitude_cm() const;
     float relative_ground_altitude(bool use_rangefinder_if_available);
-    void set_target_altitude_current(void);
-    void set_target_altitude_current_adjusted(void);
-    void set_target_altitude_location(const Location &loc);
-    int32_t relative_target_altitude_cm(void);
-    void change_target_altitude(int32_t change_cm);
-    void set_target_altitude_proportion(const Location &loc, float proportion);
-    void constrain_target_altitude_location(const Location &loc1, const Location &loc2);
-    int32_t calc_altitude_error_cm(void);
-    void check_fbwb_minimum_altitude(void);
-    void reset_offset_altitude(void);
-    void set_offset_altitude_location(const Location &start_loc, const Location &destination_loc);
-    bool above_location_current(const Location &loc);
     void setup_terrain_target_alt(Location &loc) const;
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
-    float height_above_target(void);
     float lookahead_adjustment(void);
     float rangefinder_correction(void);
     void rangefinder_height_update(void);

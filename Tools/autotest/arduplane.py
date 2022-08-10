@@ -3812,6 +3812,15 @@ function'''
 
         self.fly_home_land_and_disarm(timeout=180)
 
+    def fly_circuit_mission(self):
+
+        self.customise_SITL_commandline([], wipe=True)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.fly_mission("ap-circuit.txt", mission_timeout=600)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
@@ -4082,6 +4091,10 @@ function'''
             ("GlideSlopeThresh",
              "Test rebuild glide slope if above and climbing",
              self.test_glide_slope_threshold),
+
+            ("Circuit",
+             "Test simple circuit",
+             self.fly_circuit_mission),
 
             ("LogUpload",
              "Log upload",

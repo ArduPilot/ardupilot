@@ -157,7 +157,7 @@ bool ModeQRTL::update_target_altitude()
                                    rad_min, MAX(rad_min, MIN(rad_max, rad_min+sink_dist)));
     Location loc = plane.next_WP_loc;
     loc.alt += alt*100;
-    plane.set_target_altitude_location(loc);
+    plane.altitudePlanner.set_target_altitude_location(loc);
     return true;
 }
 

@@ -51,18 +51,18 @@ void Plane::loiter_angle_update(void)
           target, fetch the terrain information
         */
         float altitude_agl = 0;
-        if (target_altitude.terrain_following) {
+        if (altitudePlanner.is_terrain_following()) {
             if (terrain.status() == AP_Terrain::TerrainStatusOK &&
                 terrain.height_above_terrain(altitude_agl, true)) {
                 terrain_status_ok = true;
             }
         }
         if (terrain_status_ok &&
-            fabsf(altitude_agl - target_altitude.terrain_alt_cm*0.01) < 5) {
+            fabsf(altitude_agl - altitudePlanner.get_target_terrain_alt_cm()*0.01) < 5) {
             reached_target_alt = true;
         } else
 #endif
-        if (!terrain_status_ok && labs(current_loc.alt - target_altitude.amsl_cm) < 500) {
+        if (!terrain_status_ok && labs(current_loc.alt - altitudePlanner.get_target_amsl_cm()) < 500) {
             reached_target_alt = true;
         }
     }
@@ -372,14 +372,14 @@ void Plane::update_loiter(uint16_t radius)
 void Plane::update_fbwb_speed_height(void)
 {
     uint32_t now = micros();
-    if (now - target_altitude.last_elev_check_us >= 100000) {
+    if (now - fbwb_altitude.last_elev_check_us >= 100000) {
         // we don't run this on every loop as it would give too small granularity on quadplanes at 300Hz, and
         // give below 1cm altitude change, which would result in no climb or descent
-        float dt = (now - target_altitude.last_elev_check_us) * 1.0e-6;
+        float dt = (now - fbwb_altitude.last_elev_check_us) * 1.0e-6;
         dt = constrain_float(dt, 0.1, 0.15);
 
-        target_altitude.last_elev_check_us = now;
-
+        fbwb_altitude.last_elev_check_us = now;
+        
         float elevator_input = channel_pitch->get_control_in() * (1/4500.0);
 
         if (g.flybywire_elev_reverse) {
@@ -387,33 +387,34 @@ void Plane::update_fbwb_speed_height(void)
         }
 
         int32_t alt_change_cm = g.flybywire_climb_rate * elevator_input * dt * 100;
-        change_target_altitude(alt_change_cm);
 
-        if (is_zero(elevator_input) && !is_zero(target_altitude.last_elevator_input)) {
+        altitudePlanner.change_target_altitude(alt_change_cm);
+        
+        if (is_zero(elevator_input) && !is_zero(fbwb_altitude.last_elevator_input)) {
             // the user has just released the elevator, lock in
             // the current altitude
-            set_target_altitude_current();
+            altitudePlanner.set_target_altitude_current();
         }
 
 #if HAL_SOARING_ENABLED
         if (g2.soaring_controller.is_active()) {
             if (g2.soaring_controller.get_throttle_suppressed()) {
                 // we're in soaring mode with throttle suppressed
-                set_target_altitude_current();
+                altitudePlanner.set_target_altitude_current();;
             } else {
                 // we're in soaring mode climbing back to altitude. Set target to SOAR_ALT_CUTOFF plus 10m to ensure we positively climb
                 // through SOAR_ALT_CUTOFF, thus triggering throttle suppression and return to glide.
-                target_altitude.amsl_cm = 100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().alt;
+                altitudePlanner.set_target_amsl_cm(100*plane.g2.soaring_controller.get_alt_cutoff() + 1000 + AP::ahrs().get_home().alt);
             }
         }
 #endif
 
-        target_altitude.last_elevator_input = elevator_input;
+        fbwb_altitude.last_elevator_input = elevator_input;
     }
 
-    check_fbwb_minimum_altitude();
+    altitudePlanner.check_fbwb_minimum_altitude(g.FBWB_min_altitude_cm);
 
-    altitude_error_cm = calc_altitude_error_cm();
+    altitude_error_cm = altitudePlanner.calc_altitude_error_cm();
 
     calc_throttle();
     calc_nav_pitch();

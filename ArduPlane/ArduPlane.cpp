@@ -21,6 +21,7 @@
  */
 
 #include "Plane.h"
+#include <AP_AltitudePlanner/AP_AltitudePlanner.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, priority) SCHED_TASK_CLASS(Plane, &plane, func, rate_hz, max_time_micros, priority)
 
@@ -548,7 +549,11 @@ void Plane::update_alt()
             distance_beyond_land_wp = current_loc.get_distance(next_WP_loc);
         }
 
-        float target_alt = relative_target_altitude_cm();
+        // Calculate lookahead.
+        float lookahead = lookahead_adjustment();
+        float range_correction = rangefinder_correction();
+        
+        float target_alt = altitudePlanner.relative_target_altitude_cm(lookahead, range_correction);
 
         if (control_mode == &mode_rtl && !rtl.done_climb && (g2.rtl_climb_min > 0 || (plane.g2.flight_options & FlightOptions::CLIMB_BEFORE_TURN))) {
             // ensure we do the initial climb in RTL. We add an extra
@@ -661,7 +666,7 @@ float Plane::tecs_hgt_afe(void)
     */
     float hgt_afe;
     if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
-        hgt_afe = height_above_target();
+        hgt_afe = altitudePlanner.height_above_target(current_loc, next_WP_loc);
         hgt_afe -= rangefinder_correction();
     } else {
         // when in normal flight we pass the hgt_afe as relative

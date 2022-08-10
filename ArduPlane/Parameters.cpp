@@ -92,7 +92,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @Units: m
     // @User: Advanced
-    GSCALAR(glide_slope_min, "GLIDE_SLOPE_MIN", 15),
+    ASCALAR(glide_slope_min, "GLIDE_SLOPE_MIN", 15),
 
     // @Param: GLIDE_SLOPE_THR
     // @DisplayName: Glide slope threshold
@@ -101,7 +101,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Increment: 1
     // @Units: m
     // @User: Advanced
-    GSCALAR(glide_slope_threshold, "GLIDE_SLOPE_THR", 5.0),
+    ASCALAR(glide_slope_threshold, "GLIDE_SLOPE_THR", 5.0),
 
     // @Param: STICK_MIXING
     // @DisplayName: Stick Mixing

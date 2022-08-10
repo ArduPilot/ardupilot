@@ -1,6 +1,7 @@
 #include "Plane.h"
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
+#include <AP_AltitudePlanner/AP_AltitudePlanner.h>
 
 /*
   read the rangefinder and update height estimate
@@ -21,7 +22,7 @@ void Plane::read_rangefinder(void)
         if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
             // ensure the rangefinder is powered-on when land alt is higher than home altitude.
             // This is done using the target alt which we know is below us and we are sinking to it
-            height = height_above_target();
+            height = altitudePlanner.height_above_target(current_loc, next_WP_loc);
         } else {
             // otherwise just use the best available baro estimate above home.
             height = relative_altitude;

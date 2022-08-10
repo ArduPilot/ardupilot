@@ -11,7 +11,7 @@ bool ModeCruise::_enter()
     plane.g2.soaring_controller.init_cruising();
 #endif
 
-    plane.set_target_altitude_current();
+    plane.altitudePlanner.set_target_altitude_current();
 
     return true;
 }
