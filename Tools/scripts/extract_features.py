@@ -13,6 +13,7 @@ import string
 import subprocess
 import sys
 import time
+import build_options
 
 
 if sys.version_info[0] < 3:
@@ -27,14 +28,19 @@ class ExtractFeatures(object):
         self.filename = filename
         self.nm = 'arm-none-eabi-nm'
 
-        # feature_name should match the equivalent feature in build_options.py
-        # ('FEATURE_NAME', 'EXPECTED_SYMBOL')
+        # feature_name should match the equivalent feature in
+        # build_options.py ('FEATURE_NAME', 'EXPECTED_SYMBOL').
+        # EXPECTED_SYMBOL is a regular expression which will be matched
+        # against "define" in build_options's feature list, and
+        # FEATURE_NAME will have substitutions made from the match.
+        # the substitutions will be upper-cased
         self.features = [
-            ('AIRSPEED', 'AP_Airspeed::AP_Airspeed',),
-            ('AP_ADSB', 'AP_ADSB::AP_ADSB',),
-            ('AP_EFI', 'AP_EFI::AP_EFI',),
-            ('BEACON', 'AP_Beacon::AP_Beacon',),
-            ('TORQEEDO', 'AP_Torqeedo::AP_Torqeedo'),
+            ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
+            ('AP_AIRSPEED_{type}_ENABLED', 'AP_Airspeed_(?P<type>.*)::AP_Airspeed_(?P=type)',),
+            ('HAL_ADSB_ENABLED', 'AP_ADSB::AP_ADSB',),
+            ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
+            ('BEACON_ENABLED', 'AP_Beacon::AP_Beacon',),
+            ('HAL_TORQEEDO_ENABLED', 'AP_Torqeedo::AP_Torqeedo'),
         ]
 
     def progress(self, string):
@@ -96,13 +102,12 @@ class ExtractFeatures(object):
             else:
                 self.symbols_without_arguments[extracted_symbol_name] = attributes
 
-        def find(self, name):
-            if '(' not in name:
-                # look for symbols without arguments
-                # print("Looking for (%s)" % str(name))
-                return self.symbols_without_arguments[name]
-
-            return self.symbols[name]
+        def dict_for_symbol(self, symbol):
+            if '(' not in symbol:
+                some_dict = self.symbols_without_arguments
+            else:
+                some_dict = self.symbols
+            return some_dict
 
     def extract_symbols_from_elf(self, filename):
         '''parses ELF in filename, returns dict of symbols=>attributes'''
@@ -135,15 +140,30 @@ class ExtractFeatures(object):
 
     def run(self):
 
+        build_options_defines = set([x.define for x in build_options.BUILD_OPTIONS])
+
         symbols = self.extract_symbols_from_elf(filename)
 
-        for (feature_name, symbol) in self.features:
-            try:
-                symbols.find(symbol)
-            except KeyError:
-                continue
-
-            print("%s" % str(feature_name))
+        for (feature_define, symbol) in self.features:
+            some_dict = symbols.dict_for_symbol(symbol)
+            # look for symbols without arguments
+            # print("Looking for (%s)" % str(name))
+            for s in some_dict.keys():
+                m = re.match(symbol, s)
+                # print("matching %s with %s" % (symbol, s))
+                if m is None:
+                    continue
+                d = m.groupdict()
+                for key in d.keys():
+                    d[key] = d[key].upper()
+                # filter to just the defines present in
+                # build_options.py - otherwise we end up with (e.g.)
+                # AP_AIRSPEED_BACKEND_ENABLED, even 'though that
+                # doesn't exist in the ArduPilot codebase.
+                some_define = feature_define.format(**d)
+                if some_define not in build_options_defines:
+                    continue
+                print(some_define)
 
 
 if __name__ == '__main__':
