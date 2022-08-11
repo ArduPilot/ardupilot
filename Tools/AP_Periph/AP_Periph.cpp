@@ -57,15 +57,6 @@ void loop(void)
 
 static uint32_t start_ms;
 
-/*
-  declare constant app_descriptor in flash
- */
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-const struct app_descriptor app_descriptor __attribute__((section(".app_descriptor")));
-#else
-const struct app_descriptor app_descriptor;
-#endif
-
 AP_Periph_FW::AP_Periph_FW()
 #if HAL_LOGGING_ENABLED
     : logger(g.log_bitmask)
@@ -131,12 +122,7 @@ void AP_Periph_FW::init()
     logger.Init(log_structure, ARRAY_SIZE(log_structure));
 #endif
 
-    printf("Booting %08x:%08x %u/%u len=%u 0x%08x\n",
-           app_descriptor.image_crc1,
-           app_descriptor.image_crc2,
-           app_descriptor.version_major, app_descriptor.version_minor,
-           app_descriptor.image_size,
-           app_descriptor.git_hash);
+    check_firmware_print();
 
     if (hal.util->was_watchdog_reset()) {
         printf("Reboot after watchdog reset\n");
