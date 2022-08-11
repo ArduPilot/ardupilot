@@ -324,6 +324,7 @@ void AP_OpenDroneID::send_location_message()
         speed_vertical : int16_t(climb_rate * 100.0), // Climb rate (cm/s)
         target_system : 0,
         target_component : 0,
+        id_or_mac : {},
         status : uint8_t(uav_status),
         height_reference : MAV_ODID_HEIGHT_REF_OVER_TAKEOFF,           // height reference enum: Above takeoff location or above ground
         horizontal_accuracy : uint8_t(horizontal_accuracy_mav),
