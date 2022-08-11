@@ -501,16 +501,19 @@ is bob we will attempt to checkout bob-AVR'''
                         tdir = os.path.join(os.path.dirname(os.path.dirname(
                             os.path.dirname(ddir))), tag, bname)
                         if tag == "latest":
-                            # we keep a permanent archive of all "latest" builds,
-                            # their path including a build timestamp:
-                            self.mkpath(ddir)
+                            # we keep a permanent archive of all
+                            # "latest" builds, their path including a
+                            # build timestamp:
+                            if not os.path.exists(ddir):
+                                self.mkpath(ddir)
+                                self.addfwversion(ddir, vehicle)
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, ddir)
-                            self.addfwversion(ddir, vehicle)
                         # the most recent build of every tag is kept around:
                         self.progress("Copying %s to %s" % (path, tdir))
-                        self.mkpath(tdir)
-                        self.addfwversion(tdir, vehicle)
+                        if not os.path.exists(tdir):
+                            self.mkpath(tdir)
+                            self.addfwversion(tdir, vehicle)
                         shutil.copy(path, tdir)
                     except Exception as e:
                         self.print_exception_caught(e)
