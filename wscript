@@ -225,6 +225,10 @@ submodules at specific revisions.
                  default=False,
                  help="enable generation of scripting documentation")
 
+    g.add_option('--enable-opendroneid', action='store_true',
+                 default=False,
+                 help="Enables OpenDroneID")
+    
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
