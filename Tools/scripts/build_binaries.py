@@ -370,24 +370,6 @@ is bob we will attempt to checkout bob-AVR'''
             if e.errno != 17:  # EEXIST
                 raise e
 
-    def copyit(self, afile, adir, tag, src):
-        '''copies afile into various places, adding metadata'''
-        bname = os.path.basename(adir)
-        tdir = os.path.join(os.path.dirname(os.path.dirname(
-            os.path.dirname(adir))), tag, bname)
-        if tag == "latest":
-            # we keep a permanent archive of all "latest" builds,
-            # their path including a build timestamp:
-            self.mkpath(adir)
-            self.progress("Copying %s to %s" % (afile, adir,))
-            shutil.copy(afile, adir)
-            self.addfwversion(adir, src)
-        # the most recent build of every tag is kept around:
-        self.progress("Copying %s to %s" % (afile, tdir))
-        self.mkpath(tdir)
-        self.addfwversion(tdir, src)
-        shutil.copy(afile, tdir)
-
     def touch_filepath(self, filepath):
         '''creates a file at filepath, or updates the timestamp on filepath'''
         if os.path.exists(filepath):
@@ -514,7 +496,22 @@ is bob we will attempt to checkout bob-AVR'''
 
                 for path in files_to_copy:
                     try:
-                        self.copyit(path, ddir, tag, vehicle)
+                        '''copy path into various places, adding metadata'''
+                        bname = os.path.basename(ddir)
+                        tdir = os.path.join(os.path.dirname(os.path.dirname(
+                            os.path.dirname(ddir))), tag, bname)
+                        if tag == "latest":
+                            # we keep a permanent archive of all "latest" builds,
+                            # their path including a build timestamp:
+                            self.mkpath(ddir)
+                            self.progress("Copying %s to %s" % (path, ddir,))
+                            shutil.copy(path, ddir)
+                            self.addfwversion(ddir, vehicle)
+                        # the most recent build of every tag is kept around:
+                        self.progress("Copying %s to %s" % (path, tdir))
+                        self.mkpath(tdir)
+                        self.addfwversion(tdir, vehicle)
+                        shutil.copy(path, tdir)
                     except Exception as e:
                         self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
