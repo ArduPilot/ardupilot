@@ -34,3 +34,6 @@
 [submodule "modules/DroneCAN/libcanard"]
 	path = modules/DroneCAN/libcanard
 	url = https://github.com/DroneCAN/libcanard
+[submodule "modules/wolfssl"]
+	path = modules/wolfssl
+	url = https://github.com/wolfssl/wolfssl
