@@ -94,6 +94,16 @@ class Board:
                 ENABLE_ONVIF=0,
             )
 
+        # allow enable of OpenDroneID for any board
+        if cfg.options.enable_opendroneid:
+            env.ENABLE_OPENDRONEID = True
+            env.DEFINES.update(
+                AP_OPENDRONEID_ENABLED=1,
+            )
+            cfg.msg("Enabled OpenDroneID", 'yes')
+        else:
+            cfg.msg("Enabled OpenDroneID", 'no', color='YELLOW')
+
         # allow enable of firmware ID checking for any board
         if cfg.options.enable_check_firmware:
             env.CHECK_FIRMWARE_ENABLED = True
