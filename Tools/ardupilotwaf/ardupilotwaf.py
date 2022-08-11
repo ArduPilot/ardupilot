@@ -111,6 +111,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_CustomRotations',
     'AP_AIS',
     'AP_OpenDroneID',
+    'AP_CheckFirmware',
 ]
 
 def get_legacy_defines(sketch_name, bld):

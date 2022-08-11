@@ -236,17 +236,11 @@ class set_app_descriptor(Task.Task):
     def keyword(self):
         return "app_descriptor"
     def run(self):
-        if not 'APP_DESCRIPTOR' in self.env:
-            return
-        if self.env.APP_DESCRIPTOR == 'MissionPlanner':
-            descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
-        else:
-            Logs.error("Bad APP_DESCRIPTOR %s" % self.env.APP_DESCRIPTOR)
-            return
+        descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
         img = open(self.inputs[0].abspath(), 'rb').read()
         offset = img.find(descriptor)
         if offset == -1:
-            Logs.error("Failed to find %s APP_DESCRIPTOR" % self.env.APP_DESCRIPTOR)
+            Logs.info("No APP_DESCRIPTOR found")
             return
         offset += 8
         # next 8 bytes is 64 bit CRC. We set first 4 bytes to
@@ -263,7 +257,7 @@ class set_app_descriptor(Task.Task):
         githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION', self.generator.bld.git_head_hash(short=True)),16))
         desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
-        Logs.info("Applying %s APP_DESCRIPTOR %08x%08x" % (self.env.APP_DESCRIPTOR, crc1, crc2))
+        Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(self.inputs[0].abspath(), 'wb').write(img)
 
 class generate_apj(Task.Task):
@@ -387,12 +381,12 @@ def chibios_firmware(self):
         default_params_task.set_run_after(self.link_task)
         generate_bin_task.set_run_after(default_params_task)
 
-    if self.env.APP_DESCRIPTOR:
-        app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
-        app_descriptor_task.set_run_after(generate_bin_task)
-        generate_apj_task.set_run_after(app_descriptor_task)
-        if hex_task is not None:
-            hex_task.set_run_after(app_descriptor_task)
+    # we need to setup the app descriptor so the bootloader can validate the firmware
+    app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
+    app_descriptor_task.set_run_after(generate_bin_task)
+    generate_apj_task.set_run_after(app_descriptor_task)
+    if hex_task is not None:
+        hex_task.set_run_after(app_descriptor_task)
 
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw', src=apj_target)
