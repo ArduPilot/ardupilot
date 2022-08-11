@@ -362,6 +362,9 @@ public:
 
         // 254,255: reserved
 
+        k_param_L1_controller = 256,
+        k_param_helispdhgtctrl,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
