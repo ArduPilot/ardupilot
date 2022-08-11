@@ -5922,6 +5922,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.delay_sim_time(10)
         self.assert_prearm_failure("Motors Emergency Stopped")
         self.context_pop()
+        self.reboot_sitl()
 
     def assert_mode(self, mode):
         if not self.mode_is(mode):
@@ -5933,6 +5934,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         for (x, want) in (0, 'MANUAL'), (1, 'ACRO'), (3, 3):
             self.change_mode(x)
             self.assert_mode(want)
+
+    def StickMixingAuto(self):
+        items = []
+        self.set_parameter('STICK_MIXING', 1)
+        # home
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),)
+        # 1 waypoint a long way away
+        items.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 0),)
+        self.upload_simple_relhome_mission(items)
+        if self.mavproxy is not None:
+            # handy for getting pretty pictures
+            self.mavproxy.send("wp list\n")
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(1, 1150)
+        self.wait_heading(45)
+        self.wait_heading(90)
+        self.disarm_vehicle()
 
     def tests(self):
         '''return list of all tests'''
@@ -6183,6 +6203,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("EStopAtBoot",
              "Ensure EStop prevents arming when asserted at boot time",
              self.EStopAtBoot),
+
+            ("StickMixingAuto",
+             "Ensure Stick Mixing works in auto",
+             self.StickMixingAuto),
 
         ])
         return ret
