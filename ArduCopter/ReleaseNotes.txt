@@ -1,5 +1,27 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.3-rc1 12-Aug-2022
+Changes from 4.2.2
+1) OpenDroneId support (aka RemoteID)
+2) New autopilot support
+    a) CubeOrange+
+    b) Foxeer Reaper F745
+    c) MFE PixSurveyA1
+    d) Pixhawk6C and Pixhawk6X
+3) Bug Fixes and minor enhancements
+    a) Battery monitor health check fixed to check all enabled monitors
+    b) ICE Lutan EFI update serial flood fixed
+    c) ICM42xxx IMU filter settings improved and allow for faster sample rates
+    d) INA2xx batteries may init after startup
+    e) KakuteH7 OSD parameter menu enabled
+    f) Lua script support to set desired speed in Auto mode
+    g) Notch filter ordering bug on loss of RPM source fixed
+    h) Payload Place mission command obeys specified altitude type (was always terrain alt)
+    i) PreArm check that MOT_PWM_MIN/MAX are non-zero
+    j) PreArm check of Rangefinder pin conflict and servo outputs
+    k) SCurve logs debug if internal error occurs
+    l) WSL2 upload fixed (developer issue only)
+------------------------------------------------------------------
 Copter 4.2.2 18-Jul-2022 / 4.2.2-rc2 04-Jul-2022
 No changes from 4.2.2
 ------------------------------------------------------------------
