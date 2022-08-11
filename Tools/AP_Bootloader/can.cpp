@@ -38,7 +38,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include <stdio.h>
 #include <AP_HAL_ChibiOS/CANIface.h>
-
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 
 static CanardInstance canard;
 static uint32_t canard_memory_pool[4096/4];
@@ -83,16 +83,6 @@ static struct {
     uint8_t sector;
     uint32_t sector_ofs;
 } fw_update;
-
-enum {
-    FAIL_REASON_NO_APP_SIG = 10,
-    FAIL_REASON_BAD_LENGTH_APP = 11,
-    FAIL_REASON_BAD_BOARD_ID = 12,
-    FAIL_REASON_BAD_CRC = 13,
-    FAIL_REASON_IN_UPDATE = 14,
-    FAIL_REASON_WATCHDOG = 15,
-    FAIL_REASON_BAD_LENGTH_DESCRIPTOR = 16,
-};
 
 /*
   get cpu unique ID
@@ -238,7 +228,9 @@ static void handle_file_read_response(CanardInstance* ins, CanardRxTransfer* tra
     if (len < UAVCAN_PROTOCOL_FILE_READ_RESPONSE_DATA_MAX_LENGTH) {
         fw_update.node_id = 0;
         flash_write_flush();
-        if (can_check_firmware()) {
+        const auto ok = check_good_firmware();
+        node_status.vendor_specific_status_code = uint8_t(ok);
+        if (ok == check_fw_result_t::CHECK_FW_OK) {
             jump_to_app();
         }
     }
@@ -624,64 +616,6 @@ void can_set_node_id(uint8_t node_id)
     initial_node_id = node_id;
 }
 
-/*
-  check firmware CRC to see if it matches
- */
-bool can_check_firmware(void)
-{
-    if (fw_update.node_id != 0) {
-        // we're doing an update, don't boot this fw
-        node_status.vendor_specific_status_code = FAIL_REASON_IN_UPDATE;
-        return false;
-    }
-    const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
-    const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
-    const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
-    const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
-    if (ad == nullptr) {
-        // no application signature
-        node_status.vendor_specific_status_code = FAIL_REASON_NO_APP_SIG;
-        printf("No app sig\n");
-        return false;
-    }
-    // check length
-    if (ad->image_size > flash_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_APP;
-        printf("Bad fw length %u\n", ad->image_size);
-        return false;
-    }
-
-    bool id_ok = (ad->board_id == APJ_BOARD_ID);
-#ifdef ALT_BOARD_ID
-    id_ok |= (ad->board_id == ALT_BOARD_ID);
-#endif
-
-    if (!id_ok) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_BOARD_ID;
-        printf("Bad board_id %u should be %u\n", ad->board_id, APJ_BOARD_ID);
-        return false;
-    }
-
-    const uint8_t desc_len = offsetof(app_descriptor, version_major) - offsetof(app_descriptor, image_crc1);
-    uint32_t len1 = ((const uint8_t *)&ad->image_crc1) - flash;
-    if ((len1 + desc_len) > ad->image_size) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_LENGTH_DESCRIPTOR;
-        printf("Bad fw descriptor length %u\n", ad->image_size);
-        return false;
-    }
-
-    uint32_t len2 = ad->image_size - (len1 + desc_len);
-    uint32_t crc1 = crc32_small(0, flash, len1);
-    uint32_t crc2 = crc32_small(0, (const uint8_t *)&ad->version_major, len2);
-    if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
-        node_status.vendor_specific_status_code = FAIL_REASON_BAD_CRC;
-        printf("Bad app CRC 0x%08x:0x%08x 0x%08x:0x%08x\n", ad->image_crc1, ad->image_crc2, crc1, crc2);
-        return false;
-    }
-    printf("Good firmware\n");
-    return true;
-}
-
 // check for a firmware update marker left by app
 bool can_check_update(void)
 {
@@ -742,6 +676,7 @@ bool can_check_update(void)
 
 void can_start()
 {
+    node_status.vendor_specific_status_code = uint8_t(check_good_firmware());
     node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
 
 #if HAL_USE_CAN
@@ -770,7 +705,7 @@ void can_start()
         get_random_range(UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MAX_FOLLOWUP_DELAY_MS);
 
     if (stm32_was_watchdog_reset()) {
-        node_status.vendor_specific_status_code = FAIL_REASON_WATCHDOG;
+        node_status.vendor_specific_status_code = uint8_t(check_fw_result_t::FAIL_REASON_WATCHDOG);
     }
 }
 
