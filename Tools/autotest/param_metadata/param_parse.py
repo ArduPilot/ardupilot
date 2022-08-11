@@ -14,7 +14,7 @@ import sys
 from argparse import ArgumentParser
 
 from param import (Library, Parameter, Vehicle, known_group_fields,
-                   known_param_fields, required_param_fields, known_units)
+                   known_param_fields, required_param_fields, required_library_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
 from rstlatexpdfemit import RSTLATEXPDFEmit
@@ -250,7 +250,9 @@ def process_library(vehicle, library, pathprefix=None):
             global current_param
             current_param = p.name
             fields = prog_param_fields.findall(field_text)
+            field_list = []
             for field in fields:
+                field_list.append(field[0])
                 if field[0] in known_param_fields:
                     value = re.sub('@PREFIX@', library.name, field[1])
                     setattr(p, field[0], value)
@@ -258,6 +260,10 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field[0], field[1])
                 else:
                     error("param: unknown parameter metadata field %s" % field[0])
+            for req_field in required_library_param_fields:
+                if req_field not in field_list:
+                    error("missing parameter metadata field '%s' in %s" % (req_field, current_param))
+
             debug("matching %s" % field_text)
             fields = prog_param_tagged_fields.findall(field_text)
             # a parameter is considered to be vehicle-specific if
