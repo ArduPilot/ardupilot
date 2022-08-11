@@ -72,6 +72,7 @@
 #define AP_ARMING_BOARD_VOLTAGE_MAX     5.8f
 #define AP_ARMING_ACCEL_ERROR_THRESHOLD 0.75f
 #define AP_ARMING_AHRS_GPS_ERROR_MAX    10      // accept up to 10m difference between AHRS and GPS
+#define AP_ARMING_MAX_DIST 500
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
   #define ARMING_RUDDER_DEFAULT         (uint8_t)RudderArming::ARMONLY
@@ -142,6 +143,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Values: 0:None,1:Disable prearm display
     // @User: Advanced
     AP_GROUPINFO_FRAME("OPTIONS", 9,   AP_Arming, _arming_options, 0, AP_PARAM_FRAME_COPTER),
+
+    // @Param: WPDST_MAX
+    // @DisplayName: Maximum allowed distance to first waypoint.
+    // @Description: Maximum allowed distance in meters to first waypoint for a pre-arm check. Prevents a fly away. Set param to 0, to allow any distance.
+    // @Units: m
+    // @Range: 0 30000
+    // @User: Advanced
+    AP_GROUPINFO("WPDST_MAX", 10, AP_Arming, _max_arm_dist_m, AP_ARMING_MAX_DIST),
 
     AP_GROUPEND
 };

@@ -141,6 +141,7 @@ protected:
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
     AP_Int32                _required_mission_items;
+    AP_Float                _max_arm_dist_m; //maximum allowed distance to first waypoint (m)
     AP_Int32                _arming_options;
 
     // internal members
