@@ -4231,7 +4231,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
 {
     AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
-        return MAV_RESULT_UNSUPPORTED;
+        return MAV_RESULT_FAILED;
     }
 
     const uint32_t seq = (uint32_t)packet.param1;
