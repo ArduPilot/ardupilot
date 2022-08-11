@@ -632,6 +632,9 @@ public:
         return (_options.get() & AP_MISSION_MASK_CONTINUE_AFTER_LAND) != 0;
     }
 
+    // get first navigation command which also has valid location, taking into account resuming mission
+    bool get_starting_nav_cmd_with_loc(Mission_Command& cmd);
+
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
