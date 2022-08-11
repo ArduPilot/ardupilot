@@ -302,6 +302,7 @@ void AP_Spektrum_Telem::calc_rpm()
     // battery voltage in centivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     _telem.rpm.volts = htobe16(((uint16_t)roundf(_battery.voltage(0) * 100.0f)));
     _telem.rpm.temperature = htobe16(int16_t(roundf(32.0f + AP::baro().get_temperature(0) * 9.0f / 5.0f)));
+#if AP_RPM_ENABLED
     const AP_RPM *rpm = AP::rpm();
     float rpm_value;
     if (!rpm || !rpm->get_rpm(0, rpm_value) || rpm_value < 999.0f) {
@@ -310,6 +311,7 @@ void AP_Spektrum_Telem::calc_rpm()
     _telem.rpm.microseconds = htobe16(uint16_t(roundf(MICROSEC_PER_MINUTE / rpm_value)));
     _telem.rpm.dBm_A = 0x7F;
     _telem.rpm.dBm_B = 0x7F;
+#endif
     _telem_pending = true;
 }
 
