@@ -487,14 +487,18 @@ is bob we will attempt to checkout bob-AVR'''
                 for extension in extensions:
                     filepath = "".join([bare_path, extension])
                     if os.path.exists(filepath):
-                        files_to_copy.append(filepath)
+                        files_to_copy.append((filepath, os.path.basename(filepath)))
                 if not os.path.exists(bare_path):
                     raise Exception("No elf file?!")
-                # only copy the elf if we don't have other files to copy
-                if len(files_to_copy) == 0:
-                    files_to_copy.append(bare_path)
+                # only rename the elf if we have have other files to
+                # copy.  So linux gets "arducopter" and stm32 gets
+                # "arducopter.elf"
+                target_elf_filename = os.path.basename(bare_path)
+                if len(files_to_copy) > 0:
+                    target_elf_filename += ".elf"
+                files_to_copy.append((bare_path, target_elf_filename))
 
-                for path in files_to_copy:
+                for (path, target_filename) in files_to_copy:
                     try:
                         '''copy path into various places, adding metadata'''
                         bname = os.path.basename(ddir)
@@ -508,13 +512,13 @@ is bob we will attempt to checkout bob-AVR'''
                                 self.mkpath(ddir)
                                 self.addfwversion(ddir, vehicle)
                             self.progress("Copying %s to %s" % (path, ddir,))
-                            shutil.copy(path, ddir)
+                            shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
                         self.progress("Copying %s to %s" % (path, tdir))
                         if not os.path.exists(tdir):
                             self.mkpath(tdir)
                             self.addfwversion(tdir, vehicle)
-                        shutil.copy(path, tdir)
+                        shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, ddir, str(e)))
