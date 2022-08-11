@@ -28,6 +28,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_OpenDroneID_config.h"
 
 #ifndef AP_OPENDRONEID_ENABLED
 // default to off. Enabled in hwdef.dat
