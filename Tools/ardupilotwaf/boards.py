@@ -253,6 +253,10 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
+            if cfg.options.signed_fw:
+                env.DEFINES.update(
+                    ENABLE_HEAP = 1,
+                )
         else:
             env.DEFINES.update(
                 ENABLE_HEAP = 1,
@@ -576,6 +580,7 @@ class sitl(Board):
         cfg.define('HAL_WITH_RAMTRON', 1)
         cfg.define('AP_GENERATOR_RICHENPOWER_ENABLED', 1)
         cfg.define('AP_OPENDRONEID_ENABLED', 1)
+        cfg.define('AP_SIGNED_FIRMWARE', 0)
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)
@@ -1010,6 +1015,17 @@ class chibios(Board):
                 env.CXXFLAGS += [ '-Werror' ]
         else:
             cfg.msg("Enabling -Werror", "no")
+
+        if cfg.options.signed_fw:
+            cfg.define('AP_SIGNED_FIRMWARE', 1)
+            env.CFLAGS += [
+                '-DAP_SIGNED_FIRMWARE=1',
+            ]
+        else:
+            cfg.define('AP_SIGNED_FIRMWARE', 0)
+            env.CFLAGS += [
+                '-DAP_SIGNED_FIRMWARE=0',
+            ]
 
         try:
             import intelhex
