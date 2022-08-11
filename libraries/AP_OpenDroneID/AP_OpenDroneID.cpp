@@ -176,6 +176,12 @@ void AP_OpenDroneID::send_static_out()
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost transmitter");
     }
 
+    // we need to notify user if we lost system msg with operator location
+    if (now_ms - last_system_ms > 5000 && now_ms - last_lost_operator_msg_ms > 5000) {
+        last_lost_operator_msg_ms = now_ms;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
+    }
+    
     const uint32_t msg_spacing_ms = _mavlink_dynamic_period_ms / 4;
     if (now_ms - last_msg_send_ms >= msg_spacing_ms) {
         // allow update of channel during setup, this makes it easy to debug with a GCS
