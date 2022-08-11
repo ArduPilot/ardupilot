@@ -540,7 +540,10 @@ def generate_hwdef_h(env):
         else:
             # update to using hwdef-bl.dat
             env.HWDEF = env.HWDEF.replace('hwdef.dat', 'hwdef-bl.dat')
-        env.BOOTLOADER_OPTION="--bootloader"
+        if (env.SECURE_BL):
+            env.BOOTLOADER_OPTION="--bootloader --secure-bl"
+        else:
+            env.BOOTLOADER_OPTION="--bootloader"
     else:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)

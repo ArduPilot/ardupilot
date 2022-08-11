@@ -175,6 +175,11 @@ def options(opt):
         default=False,
         help='Configure for building a bootloader.')
 
+    g.add_option('--secure-bl',
+        action='store_true',
+        default=False,
+        help='Configure for building a secure bootloader.')
+
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',
@@ -391,6 +396,9 @@ def configure(cfg):
 
     _set_build_context_variant(cfg.env.BOARD)
     cfg.setenv(cfg.env.BOARD)
+
+    if cfg.options.secure_bl:
+        cfg.env.SECURE_BL = True
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug

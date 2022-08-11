@@ -1011,6 +1011,19 @@ class chibios(Board):
         else:
             cfg.msg("Enabling -Werror", "no")
 
+        if cfg.options.secure_bl:
+            from Crypto.PublicKey import ECC
+            cfg.define('WOLFSSL_USER_SETTINGS', 1)
+            cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
+            cfg.define('SECURE', 1)
+            env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
+            env.GIT_SUBMODULES += ['wolfssl']
+            env.BUILD_WOLFSSL = True
+            cfg.load('wolfssl')
+            env.CFLAGS += [
+                '-DSECURE=1',
+            ]
+
         try:
             import intelhex
             env.HAVE_INTEL_HEX = True
@@ -1023,6 +1036,8 @@ class chibios(Board):
         super(chibios, self).build(bld)
         bld.ap_version_append_str('CHIBIOS_GIT_VERSION', bld.git_submodule_head_hash('ChibiOS', short=True))
         bld.load('chibios')
+        if bld.env.BUILD_WOLFSSL:
+            bld.load('wolfssl')
 
     def pre_build(self, bld):
         '''pre-build hook that gets called before dynamic sources'''
