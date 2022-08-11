@@ -35,6 +35,7 @@
 #if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 
 extern "C" {
     int main(void);
@@ -103,7 +104,8 @@ int main(void)
         try_boot = false;
         timeout = 0;
     }
-    if (!can_check_firmware()) {
+    const auto ok = check_good_firmware();
+    if (ok != check_fw_result_t::CHECK_FW_OK) {
         // bad firmware CRC, don't try and boot
         timeout = 0;
         try_boot = false;
@@ -123,7 +125,15 @@ int main(void)
         try_boot = false;
         timeout = 0;
     }
+#elif AP_CHECK_FIRMWARE_ENABLED
+    const auto ok = check_good_firmware();
+    if (ok != check_fw_result_t::CHECK_FW_OK) {
+        // bad firmware, don't try and boot
+        timeout = 0;
+        try_boot = false;
+    }
 #endif
+
 #if defined(HAL_GPIO_PIN_VBUS) && defined(HAL_ENABLE_VBUS_CHECK)
 #if HAL_USE_SERIAL_USB == TRUE
     else if (palReadLine(HAL_GPIO_PIN_VBUS) == 0)  {
