@@ -833,6 +833,22 @@ bool AP_Arming::mission_checks(bool report)
                 return false;
             }
           }
+
+        if (_max_arm_dist_m > 0) {
+            AP_Mission::Mission_Command cmd;
+            Location ahrs_loc;
+            if (!AP::ahrs().get_location(ahrs_loc)) {
+                check_failed(ARMING_CHECK_MISSION, report, "Can't check distance to waypoint without position");
+                return false;
+            }
+            if (mission->get_starting_nav_cmd_with_loc(cmd)) {
+                float dist_to_wp = ahrs_loc.get_distance(cmd.content.location);
+                if (dist_to_wp > _max_arm_dist_m) {
+                    check_failed(ARMING_CHECK_MISSION, report, "First WP more than %im away (ARMING_WPDST_MAX).", (int)_max_arm_dist_m);
+                    return false;
+                }
+            }
+        }
     }
 
     return true;
