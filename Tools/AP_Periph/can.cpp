@@ -31,7 +31,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
-#include "../AP_Bootloader/app_comms.h"
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
