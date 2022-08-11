@@ -55,6 +55,7 @@
 #include <AP_CustomRotations/AP_CustomRotations.h>
 #include <AP_AIS/AP_AIS.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
