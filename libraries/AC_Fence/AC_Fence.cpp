@@ -134,6 +134,13 @@ const AP_Param::GroupInfo AC_Fence::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FRAME("AUTOENABLE", 10, AC_Fence, _auto_enabled, static_cast<uint8_t>(AutoEnable::ALWAYS_DISABLED), AP_PARAM_FRAME_PLANE),
 
+    // @Param{Plane}: OPTIONS
+    // @DisplayName: Fence options
+    // @Description: 0:Disable mode change following fence action until fence breach is cleared
+    // @Bitmask: 0:Disable mode change following fence action until fence breach is cleared
+    // @User: Standard
+    AP_GROUPINFO_FRAME("OPTIONS", 11, AC_Fence, _options, static_cast<uint16_t>(OPTIONS::DISABLE_MODE_CHANGE), AP_PARAM_FRAME_PLANE),
+
     AP_GROUPEND
 };
 

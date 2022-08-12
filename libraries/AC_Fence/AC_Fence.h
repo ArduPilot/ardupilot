@@ -146,6 +146,13 @@ public:
     AC_PolyFence_loader &polyfence();
     const AC_PolyFence_loader &polyfence() const;
 
+    enum class OPTIONS {
+        DISABLE_MODE_CHANGE = 1 << 0,
+    };
+    bool option_enabled(OPTIONS opt) const {
+        return (_options.get() & int16_t(opt)) != 0;
+    }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -186,6 +193,7 @@ private:
     AP_Int8         _total;                 // number of polygon points saved in eeprom
     AP_Int8         _ret_rally;             // return to fence return point or rally point/home
     AP_Int16        _ret_altitude;          // return to this altitude
+    AP_Int16        _options;               // options bitmask, see OPTIONS enum
 
     // backup fences
     float           _alt_max_backup;        // backup altitude upper limit in meters used to refire the breach if the vehicle continues to move further away
