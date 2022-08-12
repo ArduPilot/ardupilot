@@ -603,7 +603,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method)) {
-        check_failed(true, "Mode not armable");
+        check_failed(true, "%s mode not armable", copter.flightmode->name());
         return false;
     }
 
