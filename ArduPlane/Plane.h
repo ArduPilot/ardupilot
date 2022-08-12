@@ -979,6 +979,7 @@ private:
     // fence.cpp
     void fence_check();
     bool fence_stickmixing() const;
+    bool in_fence_recovery() const;
 #endif
 
     // ArduPlane.cpp

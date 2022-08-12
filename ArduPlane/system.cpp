@@ -244,6 +244,16 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     }
 #endif  // HAL_QUADPLANE_ENABLED
 
+#if AP_FENCE_ENABLED
+    // may not be allowed to change mode if recovering from fence breach
+    if (hal.util->get_soft_armed() && fence.enabled() && fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
+                                            fence.get_breaches() && in_fence_recovery()) {
+        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, in fence recovery", new_mode.name());
+        AP_Notify::events.user_mode_change_failed = 1;
+        return false;
+    }
+#endif
+
     // backup current control_mode and previous_mode
     Mode &old_previous_mode = *previous_mode;
     Mode &old_mode = *control_mode;
