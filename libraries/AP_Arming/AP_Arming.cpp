@@ -49,6 +49,11 @@
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+#include <AR_Motors/AP_MotorsUGV.h>
+#else
+#include <AP_Motors/AP_Motors_Class.h>
+#endif
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -888,6 +893,23 @@ bool AP_Arming::servo_checks(bool report) const
             }
         }
     }
+#if HAL_WITH_IO_MCU && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover))
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+    AP_MotorsUGV *motors = AP::motors_ugv();
+#else
+    AP_Motors *motors = AP::motors();
+#endif
+    if (motors != nullptr && motors->is_digital_pwm_type()) {
+        uint32_t mask = motors->get_motor_mask();
+        for (uint8_t i = 0; i < 8; i++) {
+            if (mask & 1U<<i) {
+                SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+                check_failed(report, "SERVO%u_FUNCTION set to Motor%u on non-digital channel", unsigned(function), i + 1);
+                check_passed = false;
+            }
+        }
+    }
+#endif
 
 #if HAL_WITH_IO_MCU
     if (!iomcu.healthy()) {
