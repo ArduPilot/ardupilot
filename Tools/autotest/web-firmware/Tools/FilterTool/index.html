@@ -15,7 +15,7 @@
 
 The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
-<body onload="load(); fill_docs(); update_all_hidden(); calculate_filter(); calculate_pid();">
+<body onload="load(); fill_docs(); update_all_hidden(); check_nyquist(); calculate_filter(); calculate_pid();">
   <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
   <canvas id="Phase" style="width:100%;max-width:1200px;"></canvas>
 <p>
@@ -76,7 +76,7 @@ ArduPilot 4.2 filter setup.
   <legend>INS Settings</legend>
         <p>
                 <label for="GyroSampleRate">Gyro Sample Rate</label>
-                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000"/>
+                <input id="GyroSampleRate" name="GYRO_SAMPLE_RATE" type="number" step="1" value="2000" onchange="check_nyquist();"/>
 	</p>
         <p>
                 <label for="INS_GYRO_FILTER">INS_GYRO_FILTER</label>
@@ -271,7 +271,7 @@ ArduPilot 4.2 filter setup.
         <legend>Loop Rate</legend>
                <p>
                         <label for="SCHED_LOOP_RATE">SCHED_LOOP_RATE</label>
-                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400"/>
+                        <input id="SCHED_LOOP_RATE" name="SCHED_LOOP_RATE" type="number" step="1" value="400" onchange="check_nyquist();"/>
                 </p>
         </fieldset>
         <fieldset style="max-width:1200px">
