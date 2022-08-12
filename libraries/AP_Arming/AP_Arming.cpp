@@ -828,6 +828,26 @@ bool AP_Arming::mission_checks(bool report)
                 return false;
             }
           }
+
+        if (_required_mission_items & MIS_ITEM_CHECK_WP_IN_FENCE) {
+            AP_Mission::Mission_Command cmd;
+            AC_Fence *fence = AP::fence();
+            if (fence == nullptr) {
+                check_failed(ARMING_CHECK_MISSION, report, "No fence library present");
+                #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                    AP_HAL::panic("Mission checks requested, but no fence was allocated");
+                #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+                return false;
+            }
+            uint16_t cmd_index = 0;
+            while (mission->get_next_nav_cmd(cmd_index, cmd)) {
+                if (!fence->check_destination_within_fence(cmd.content.location)) {
+                    check_failed(ARMING_CHECK_MISSION, report, "There are mission items outside the fence");
+                    return false;
+                }
+                cmd_index = cmd.index + 1;
+            }
+        }
     }
 
     return true;
