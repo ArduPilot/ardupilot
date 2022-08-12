@@ -19,6 +19,7 @@ from common import AutoTest
 from common import AutoTestTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
+from common import WaitModeTimeout
 from pymavlink.rotmat import Vector3
 from pysim import vehicleinfo
 
@@ -3111,7 +3112,7 @@ function'''
 
     def test_fence_breached_change_mode(self):
         """ Attempts to change mode while a fence is breached.
-            This should revert to the mode specified by the fence action. """
+            mode should change should fail if fence option bit is set"""
         self.set_parameters({
             "FENCE_ACTION": 1,
             "FENCE_TYPE": 4,
@@ -3133,7 +3134,7 @@ function'''
         self.wait_ready_to_arm()
         self.takeoff(alt=50)
         self.change_mode("CRUISE")
-        self.wait_distance(90, accuracy=15)
+        self.wait_distance(250, accuracy=15)
 
         self.progress("Enable fence and initiate fence action")
         self.do_fence_enable()
@@ -3141,8 +3142,28 @@ function'''
         self.wait_mode("RTL") # We should RTL because of fence breach
 
         self.progress("User mode change to cruise should retrigger fence action")
-        self.change_mode("CRUISE")
-        self.wait_mode("RTL", timeout=5)
+        try:
+            # mode change should time out, 'WaitModeTimeout' exception is the desired resut
+            # cant wait too long or the vehicle will be inside fence and allow the mode change
+            self.change_mode("CRUISE", timeout=10)
+            raise NotAchievedException("Should not change mode in fence breach")
+        except WaitModeTimeout:
+            pass
+        except Exception as e:
+            raise e
+
+        # enable mode change
+        self.set_parameter("FENCE_OPTIONS", 0)
+        self.progress("Check user mode change to LOITER is allowed")
+        self.change_mode("LOITER")
+
+        # Fly for 20 seconds and make sure still in LOITER mode
+        self.delay_sim_time(20)
+        if not self.mode_is("LOITER"):
+            raise NotAchievedException("Fence should not re-trigger")
+
+        # reset options parameter
+        self.set_parameter("FENCE_OPTIONS", 1)
 
         self.progress("Test complete, disable fence and come home")
         self.do_fence_disable()
@@ -3899,7 +3920,7 @@ function'''
              self.test_fence_alt_ceil_floor),
 
             ("FenceBreachedChangeMode",
-             "Tests retrigger of fence action when changing of mode while fence is breached",
+             "Tests manual mode change after fence breach, as set with FENCE_OPTIONS",
              self.test_fence_breached_change_mode),
 
             ("FenceNoFenceReturnPoint",
