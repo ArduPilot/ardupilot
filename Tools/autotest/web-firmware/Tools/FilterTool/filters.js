@@ -402,6 +402,8 @@ function calculate_filter() {
     setCookie("Scale", use_dB ? "Log" : "Linear");
     var use_RPM = document.getElementById("freq_Scale_RPM").checked;
     setCookie("feq_unit", use_RPM ? "RPM" : "Hz");
+    var unwrap_pahse = document.getElementById("ScaleUnWrap").checked;
+    setCookie("PhaseScale", unwrap_pahse ? "unwrap" : "wrap");
     var attenuation = []
     var phase_lag = []
     var min_phase_lag = 0.0;
@@ -437,13 +439,15 @@ function calculate_filter() {
         if (use_RPM) {
             freq_value *= 60;
         }
-        var phase_diff = phase - last_phase;
-        if (phase_diff > 180) {
-            phase_wrap -= 360.0;
-            phase -= 360.0;
-        } else if (phase_diff < -180) {
-            phase_wrap += 360.0;
-            phase += 360.0;
+        if (unwrap_pahse) {
+            var phase_diff = phase - last_phase;
+            if (phase_diff > 180) {
+                phase_wrap -= 360.0;
+                phase -= 360.0;
+            } else if (phase_diff < -180) {
+                phase_wrap += 360.0;
+                phase += 360.0;
+            }
         }
         attenuation.push({x:freq_value, y:aten});
         phase_lag.push({x:freq_value, y:-phase});
@@ -454,10 +458,16 @@ function calculate_filter() {
         max_phase_lag = Math.max(max_phase_lag, phase)
         last_phase = phase;
     }
-    min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
-    min_phase_lag = Math.min(Math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
-    max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
-    max_phase_lag = Math.min(get_form("MaxPhaseLag"), max_phase_lag);
+
+    if (unwrap_pahse) {
+        min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
+        min_phase_lag = Math.min(Math.max(-get_form("MaxPhaseLag"), min_phase_lag), 0);
+        max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
+        max_phase_lag = Math.min(get_form("MaxPhaseLag"), max_phase_lag);
+    } else {
+        min_phase_lag = -180;
+        max_phase_lag = 180; 
+    }
 
     if (use_RPM) {
         freq_max *= 60.0;
@@ -640,6 +650,8 @@ function calculate_pid(axis_id) {
     setCookie("PID_Scale", use_dB ? "Log" : "Linear");
     var use_RPM =  document.getElementById("PID_freq_Scale_RPM").checked;
     setCookie("PID_feq_unit", use_RPM ? "RPM" : "Hz");
+    var unwrap_pahse = document.getElementById("PID_ScaleUnWrap").checked;
+    setCookie("PID_PhaseScale", unwrap_pahse ? "unwrap" : "wrap");
     var attenuation = []
     var phase_lag = []
     var min_phase_lag = 0.0;
@@ -680,13 +692,15 @@ function calculate_pid(axis_id) {
         if (use_RPM) {
             freq_value *= 60;
         }
-        var phase_diff = phase - last_phase;
-        if (phase_diff > 180) {
-            phase_wrap -= 360.0;
-            phase -= 360.0;
-        } else if (phase_diff < -180) {
-            phase_wrap += 360.0;
-            phase += 360.0;
+        if (unwrap_pahse) {
+            var phase_diff = phase - last_phase;
+            if (phase_diff > 180) {
+                phase_wrap -= 360.0;
+                phase -= 360.0;
+            } else if (phase_diff < -180) {
+                phase_wrap += 360.0;
+                phase += 360.0;
+            }
         }
         attenuation.push({x:freq_value, y:aten});
         phase_lag.push({x:freq_value, y:-phase});
@@ -707,10 +721,15 @@ function calculate_pid(axis_id) {
     min_atten = mean_atten - atten_range;
     max_atten = mean_atten + atten_range;
 
-    min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
-    min_phase_lag = Math.min(Math.max(-get_form("PID_MaxPhaseLag"), min_phase_lag), 0);
-    max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
-    max_phase_lag = Math.min(get_form("PID_MaxPhaseLag"), max_phase_lag);
+    if (unwrap_pahse) {
+        min_phase_lag = Math.floor((min_phase_lag-10)/10)*10;
+        min_phase_lag = Math.min(Math.max(-get_form("PID_MaxPhaseLag"), min_phase_lag), 0);
+        max_phase_lag = Math.ceil((max_phase_lag+10)/10)*10;
+        max_phase_lag = Math.min(get_form("PID_MaxPhaseLag"), max_phase_lag);
+    } else {
+        min_phase_lag = -180;
+        max_phase_lag = 180; 
+    }
 
     var freq_log = document.getElementById("PID_freq_ScaleLog").checked;
     setCookie("PID_feq_scale", use_dB ? "Log" : "Linear");

@@ -41,6 +41,15 @@ ArduPilot 4.2 filter setup.
                         </td>
                         <td>
                                 <fieldset style="width:150px">
+                                        <legend>Phase scale</legend>
+                                        <input type="radio" id="ScaleUnWrap" name="PhaseScale" value="unwrap" checked>
+                                        <label for="ScaleUnWrap">un-wrapped</label><br>
+                                        <input type="radio" id="ScaleWrap" name="PhaseScale" value="wrap">
+                                        <label for="ScaleWrap">±180</label><br>
+                                </fieldset>
+                        </td>
+                        <td>
+                                <fieldset style="width:150px">
                                         <legend>Frequency scale</legend>
                                         <table>
                                                 <tr>
@@ -222,6 +231,15 @@ ArduPilot 4.2 filter setup.
                                                         <label for="LogScale">dB</label><br>
                                                         <input type="radio" id="PID_ScaleLinear" name="PID_Scale" value="Linear">
                                                         <label for="LinearScale">Linear</label><br>
+                                                </fieldset>
+                                        </td>
+                                        <td>
+                                                <fieldset style="width:150px">
+                                                        <legend>Phase scale</legend>
+                                                        <input type="radio" id="PID_ScaleUnWrap" name="PID_PhaseScale" value="unwrap" checked>
+                                                        <label for="ScaleUnWrap">un-wrapped</label><br>
+                                                        <input type="radio" id="PID_ScaleWrap" name="PID_PhaseScale" value="wrap">
+                                                        <label for="ScaleWrap">±180</label><br>
                                                 </fieldset>
                                         </td>
                                         <td>
