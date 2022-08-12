@@ -33,8 +33,14 @@ else:
 class SizeCompareBranches(object):
     '''script to build and compare branches using elf_diff'''
 
-    def __init__(self, branch=None, master_branch="master", board="MatekF405-Wing", vehicle="plane",
-                 bin_dir=None, pdf_file=None):
+    def __init__(self,
+                 branch=None,
+                 master_branch="master",
+                 board="MatekF405-Wing",
+                 vehicle="plane",
+                 bin_dir=None,
+                 pdf_file=None,
+                 extra_hwdef=None):
         if branch is None:
             raise Exception("branch required")  # FIXME: narrow exception
         self.master_branch = master_branch
@@ -43,6 +49,7 @@ class SizeCompareBranches(object):
         self.vehicle = vehicle
         self.bin_dir = bin_dir
         self.pdf_file = pdf_file
+        self.extra_hwdef = extra_hwdef
 
         if self.bin_dir is None:
             self.bin_dir = self.find_bin_dir()
@@ -124,7 +131,10 @@ class SizeCompareBranches(object):
         self.run_git(["checkout", branch])
         self.run_git(["submodule", "update", "--recursive"])
         shutil.rmtree("build", ignore_errors=True)
-        self.run_waf(["configure", "--board", board])
+        waf_configure_args = ["configure", "--board", board]
+        if self.extra_hwdef is not None:
+            waf_configure_args.extend(["--extra-hwdef", self.extra_hwdef])
+        self.run_waf(waf_configure_args)
         self.run_waf([vehicle])
         shutil.rmtree(outdir, ignore_errors=True)
         shutil.copytree("build", outdir)
@@ -198,6 +208,11 @@ if __name__ == '__main__':
                       type="string",
                       default="MatekF405-Wing",
                       help="board to build for")
+    parser.add_option("",
+                      "--extra-hwdef",
+                      type="string",
+                      default=None,
+                      help="configure with this extra hwdef file")
 #    parser.add_option("",
 #                      "--pdf_file",
 #                      type="string",
@@ -216,6 +231,7 @@ if __name__ == '__main__':
         master_branch=cmd_opts.master_branch,
         board=cmd_opts.board,
         vehicle=cmd_opts.vehicle,
+        extra_hwdef=cmd_opts.extra_hwdef,
         #        pdf_file=cmd_opts.pdf_file
     )
     x.run()
