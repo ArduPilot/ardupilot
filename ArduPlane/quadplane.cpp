@@ -2366,7 +2366,7 @@ void QuadPlane::vtol_position_controller(void)
 
     case QPOS_APPROACH:
         if (in_vtol_mode()) {
-            // this means we're not running update_transition() and
+            // this means we're not running transition update code and
             // thus not doing qassist checking, force POSITION1 mode
             // now. We don't expect this to trigger, it is a failsafe
             // for a logic error
