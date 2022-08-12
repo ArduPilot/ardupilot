@@ -3305,6 +3305,46 @@ function'''
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
+    def test_fence_script_applet_arming_checks(self):
+        """ Applet for Arming Checks will prevent a vehicle from enabling a GeoFence
+            When there are no fences present
+            """
+        self .start_subtest("Fence Arming Script Applet validation")
+        self.context_push()
+        ex = None
+
+        applet_script = "arming-checks.lua"
+        try:
+            """Initialize the FC"""
+            self.set_parameter("SCR_ENABLE", 1)
+            self.install_applet_script(applet_script)
+            self.reboot_sitl()
+            """Make sure here is no fence - then try to enable the fence"""
+            self.clear_fence()
+            self.wait_ekf_happy()
+
+            self .start_subsubtest("FENCE_ENABLE")
+            self.set_parameter("FENCE_ENABLE", 1)
+            self.assert_prearm_failure("PreArm: FENCE_ENABLE = 1 but no fence present")
+            self.set_parameter("FENCE_ENABLE", 0)
+
+            """Now try to autoenable - only fires in AUTO or TAKEOFF (use TAKEOFF since we don't have a mission"""
+            self .start_subsubtest("FENCE_AUTOENABLE")
+            self.change_mode('TAKEOFF')
+            self.set_parameter("FENCE_AUTOENABLE", 1)
+            self.assert_prearm_failure("PreArm: FENCE_AUTOENABLE > 0 but no fence present")
+            self.set_parameter("FENCE_AUTOENABLE", 0)
+
+        except Exception as e:
+            ex = e
+            self.print_exception_caught(e)
+
+        self.remove_applet_script(applet_script)
+        self.context_pop()
+
+        if ex is not None:
+            raise ex
+
     def run_auxfunc(self,
                     function,
                     level,
@@ -3922,6 +3962,10 @@ function'''
             ("FenceDisableUnderAction",
              "Tests Disabling fence while undergoing action caused by breach",
              self.test_fence_disable_under_breach_action),
+
+            ("FenceArmingApplet",
+             "Test applet for arming checks for Fence",
+             self.test_fence_script_applet_arming_checks),
 
             ("ADSB",
              "Test ADSB",

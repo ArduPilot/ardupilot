@@ -1,4 +1,4 @@
--- Location stuff (this is a commented line)
+ -- Location stuff (this is a commented line)
 
 include AP_Common/Location.h
 
@@ -347,6 +347,7 @@ singleton AP_Mission method num_commands uint16_t
 singleton AP_Mission method get_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t'Null
 singleton AP_Mission method set_item boolean uint16_t 0 UINT16_MAX mavlink_mission_item_int_t
 singleton AP_Mission method clear boolean
+singleton AP_Mission method get_landing_sequence_start uint16_t
 
 userdata mavlink_mission_item_int_t field param1 float'skip_check read write
 userdata mavlink_mission_item_int_t field param2 float'skip_check read write
@@ -526,6 +527,9 @@ singleton AP_Mount method set_angle_target void uint8_t 0 UINT8_MAX float'skip_c
 singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
 
+include AC_Fence/AC_Fence.h  depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
+singleton AC_Fence method present boolean
+
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write
 
@@ -554,4 +558,3 @@ userdata uint32_t manual_operator __bnot uint32_t___bnot
 userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint
 userdata uint32_t manual tofloat uint32_t_tofloat
-
