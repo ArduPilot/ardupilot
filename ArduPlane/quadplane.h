@@ -223,9 +223,6 @@ private:
     // check for quadplane assistance needed
     bool should_assist(float aspeed, bool have_airspeed);
 
-    // update transition handling
-    void update_transition(void);
-
     // check for an EKF yaw reset
     void check_yaw_reset(void);
     
