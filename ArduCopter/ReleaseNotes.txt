@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.3-rc2 13-Aug-2022
+Changes from 4.2.3-rc1
+1) BlueRobotics Navigator autopilot filesystem fix
+------------------------------------------------------------------
 Copter 4.2.3-rc1 12-Aug-2022
 Changes from 4.2.2
 1) OpenDroneId support (aka RemoteID)
