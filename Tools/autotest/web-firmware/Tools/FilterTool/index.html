@@ -17,6 +17,7 @@ The following form will display the attenuation and phase lag for an
 ArduPilot 4.2 filter setup.
 <body onload="load(); fill_docs(); update_all_hidden(); calculate_filter(); calculate_pid();">
   <canvas id="Attenuation" style="width:100%;max-width:1200px"></canvas>
+  <canvas id="Phase" style="width:100%;max-width:1200px;"></canvas>
 <p>
   <input type="button" id="calculate" value="Calculate">
   <input type="button" id="SaveParams" value="Save Parameters" onclick="save_parameters();">
@@ -202,6 +203,7 @@ ArduPilot 4.2 filter setup.
 <h2>PIDs</h2>
 <h3><label id="PID_title">Title</label></h3>
 <canvas id="PID_Attenuation" style="width:100%;max-width:1200px"></canvas>
+<canvas id="PID_Phase" style="width:100%;max-width:1200px"></canvas>
 <p>
 <input type="button" id="CalculateRoll" value="Caculate Roll" onclick="calculate_pid(this.id);">
 <input type="button" id="CalculatePitch" value="Caculate Pitch" onclick="calculate_pid(this.id);">

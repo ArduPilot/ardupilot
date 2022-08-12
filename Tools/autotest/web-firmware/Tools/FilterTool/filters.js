@@ -360,7 +360,8 @@ function run_filters(filters,freq,sample_rate,samples,fast_filters = null,fast_s
     return [amplitude,phase];
 }
 
-var chart;
+var chart_attenuation;
+var chart_phase;
 var freq_log_scale;
 
 function get_filters(sample_rate) {
@@ -466,25 +467,25 @@ function calculate_filter() {
     setCookie("feq_scale", freq_log ? "Log" : "Linear");
     if ((freq_log_scale != null) && (freq_log_scale != freq_log)) {
         // Scale changed, no easy way to update, delete chart and re-draw
-        chart.clear();
-        chart.destroy();
-        chart = null;
+        chart_attenuation.clear();
+        chart_attenuation.destroy();
+        chart_attenuation = null;
+        chart_phase.clear();
+        chart_phase.destroy();
+        chart_phase = null;
     }
     freq_log_scale = freq_log;
 
-    if (chart) {
-        chart.data.datasets[0].data = attenuation;
-        chart.data.datasets[1].data = phase_lag;
-        chart.options.scales.xAxes[0].ticks.max = freq_max;
-        chart.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        chart.options.scales.yAxes[0].ticks.min = min_atten
-        chart.options.scales.yAxes[0].ticks.max = max_atten;
-        chart.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
-        chart.options.scales.yAxes[1].ticks.min = -max_phase_lag;
-        chart.options.scales.yAxes[1].ticks.max = -min_phase_lag;
-        chart.update();
+    if (chart_attenuation) {
+        chart_attenuation.data.datasets[0].data = attenuation;
+        chart_attenuation.options.scales.xAxes[0].ticks.max = freq_max;
+        chart_attenuation.options.scales.xAxes[0].scaleLabel.labelString = freq_string
+        chart_attenuation.options.scales.yAxes[0].ticks.min = min_atten
+        chart_attenuation.options.scales.yAxes[0].ticks.max = max_atten;
+        chart_attenuation.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
+        chart_attenuation.update();
     } else {
-        chart = new Chart("Attenuation", {
+        chart_attenuation = new Chart("Attenuation", {
             type : "scatter",
             data: {
                 datasets: [
@@ -499,6 +500,59 @@ function calculate_filter() {
                         showLine: true,
                         fill: false
                     },
+                ]
+            },
+            options: {
+                aspectRatio: 3,
+                legend: {display: false},
+                scales: {
+                    yAxes: [
+                        {
+                            scaleLabel: { display: true, labelString: atten_string },
+                            id: 'Magnitude',
+                            ticks: {min:min_atten, max:max_atten}
+                        },
+                    ],
+                    xAxes: [
+                        {
+                            type: (freq_log ? "logarithmic" : "linear"),
+                            scaleLabel: { display: true, labelString: freq_string },
+                            ticks:
+                            {
+                                min:0.0,
+                                max:freq_max,
+                                callback: function(value, index, ticks) {
+                                    return value;
+                                },
+                            }
+                        }
+                    ],
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            // round tooltip to two decimal places
+                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
+                        }
+                    }
+                 }
+            }
+        });
+    }
+
+
+    if (chart_phase) {
+        chart_phase.data.datasets[0].data = phase_lag;
+        chart_phase.options.scales.xAxes[0].ticks.max = freq_max;
+        chart_phase.options.scales.xAxes[0].scaleLabel.labelString = freq_string
+        chart_phase.options.scales.yAxes[0].ticks.min = -max_phase_lag;
+        chart_phase.options.scales.yAxes[0].ticks.max = -min_phase_lag;
+        chart_phase.update();
+    } else {
+        chart_phase = new Chart("Phase", {
+            type : "scatter",
+            data: {
+                datasets: [
                     {
                         label: 'Phase',
                         yAxisID: 'Phase',
@@ -513,20 +567,13 @@ function calculate_filter() {
                 ]
             },
             options: {
-                legend: {display: true},
+                aspectRatio: 3,
+                legend: {display: false},
                 scales: {
                     yAxes: [
                         {
-                            scaleLabel: { display: true, labelString: atten_string },
-                            id: 'Magnitude',
-                            position: 'left',
-                            ticks: {min:min_atten, max:max_atten}
-                        },
-                        {
                             scaleLabel: { display: true, labelString: "Phase (deg)" },
                             id: 'Phase',
-                            position: 'right',
-                            gridLines: {display:false},
                             ticks: {min:-max_phase_lag, max:-min_phase_lag}
                         }
                     ],
@@ -558,7 +605,8 @@ function calculate_filter() {
     }
 }
 
-var PID_chart;
+var PID_attenuation;
+var PID_phase;
 var PID_freq_log_scale;
 
 function calculate_pid(axis_id) {
@@ -668,25 +716,25 @@ function calculate_pid(axis_id) {
     setCookie("PID_feq_scale", use_dB ? "Log" : "Linear");
     if ((PID_freq_log_scale != null) && (PID_freq_log_scale != freq_log)) {
         // Scale changed, no easy way to update, delete chart and re-draw
-        PID_chart.clear();
-        PID_chart.destroy();
-        PID_chart = null;
+        PID_attenuation.clear();
+        PID_attenuation.destroy();
+        PID_attenuation = null;
+        PID_phase.clear();
+        PID_phase.destroy();
+        PID_phase = null;
     }
     PID_freq_log_scale = freq_log;
 
-    if (PID_chart) {
-        PID_chart.data.datasets[0].data = attenuation;
-        PID_chart.data.datasets[1].data = phase_lag;
-        PID_chart.options.scales.xAxes[0].ticks.max = freq_max;
-        PID_chart.options.scales.xAxes[0].scaleLabel.labelString = freq_string
-        PID_chart.options.scales.yAxes[0].ticks.min = min_atten
-        PID_chart.options.scales.yAxes[0].ticks.max = max_atten;
-        PID_chart.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
-        PID_chart.options.scales.yAxes[1].ticks.min = -max_phase_lag;
-        PID_chart.options.scales.yAxes[1].ticks.max = -min_phase_lag;
-        PID_chart.update();
+    if (PID_attenuation) {
+        PID_attenuation.data.datasets[0].data = attenuation;
+        PID_attenuation.options.scales.xAxes[0].ticks.max = freq_max;
+        PID_attenuation.options.scales.xAxes[0].scaleLabel.labelString = freq_string
+        PID_attenuation.options.scales.yAxes[0].ticks.min = min_atten
+        PID_attenuation.options.scales.yAxes[0].ticks.max = max_atten;
+        PID_attenuation.options.scales.yAxes[0].scaleLabel.labelString = atten_string;
+        PID_attenuation.update();
     } else {
-        PID_chart = new Chart("PID_Attenuation", {
+        PID_attenuation = new Chart("PID_Attenuation", {
             type : "scatter",
             data: {
                 datasets: [
@@ -701,6 +749,60 @@ function calculate_pid(axis_id) {
                         showLine: true,
                         fill: false
                     },
+                ]
+            },
+            options: {
+                aspectRatio: 3,
+                legend: {display: false},
+                scales: {
+                    yAxes: [
+                        {
+                            scaleLabel: { display: true, labelString: atten_string },
+                            id: 'Gain',
+                            position: 'left',
+                            ticks: {min:min_atten, max:max_atten}
+                        },
+                    ],
+                    xAxes: [
+                        {
+                            type: (freq_log ? "logarithmic" : "linear"),
+                            scaleLabel: { display: true, labelString: freq_string },
+                            ticks:
+                            {
+                                min:0.0,
+                                max:freq_max,
+                                callback: function(value, index, ticks) {
+                                    return value;
+                                },
+                            }
+                        }
+                    ],
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            // round tooltip to two decimal places
+                            return tooltipItem.xLabel.toFixed(2) + ', ' + tooltipItem.yLabel.toFixed(2);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    
+    if (PID_phase) {
+        PID_phase.data.datasets[0].data = phase_lag;
+        PID_phase.options.scales.xAxes[0].ticks.max = freq_max;
+        PID_phase.options.scales.xAxes[0].scaleLabel.labelString = freq_string
+        PID_phase.options.scales.yAxes[0].ticks.min = -max_phase_lag;
+        PID_phase.options.scales.yAxes[0].ticks.max = -min_phase_lag;
+        PID_phase.update();
+    } else {
+        PID_phase = new Chart("PID_Phase", {
+            type : "scatter",
+            data: {
+                datasets: [
                     {
                         label: 'PhaseLag',
                         yAxisID: 'PhaseLag',
@@ -715,20 +817,13 @@ function calculate_pid(axis_id) {
                 ]
             },
             options: {
-                legend: {display: true},
+                aspectRatio: 3,
+                legend: {display: false},
                 scales: {
                     yAxes: [
                         {
-                            scaleLabel: { display: true, labelString: atten_string },
-                            id: 'Gain',
-                            position: 'left',
-                            ticks: {min:min_atten, max:max_atten}
-                        },
-                        {
                             scaleLabel: { display: true, labelString: "Phase (deg)" },
                             id: 'PhaseLag',
-                            position: 'right',
-                            gridLines: {display:false},
                             ticks: {min:-max_phase_lag, max:-min_phase_lag}
                         }
                     ],
