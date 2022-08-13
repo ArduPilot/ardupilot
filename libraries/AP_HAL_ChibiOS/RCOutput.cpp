@@ -2034,11 +2034,9 @@ bool RCOutput::force_safety_on(void)
     if (AP_BoardConfig::io_enabled()) {
         return iomcu.force_safety_on();
     }
-    return false;
-#else
+#endif
     safety_state = AP_HAL::Util::SAFETY_DISARMED;
     return true;
-#endif
 }
 
 /*
@@ -2049,10 +2047,10 @@ void RCOutput::force_safety_off(void)
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
         iomcu.force_safety_off();
+        return;
     }
-#else
-    safety_state = AP_HAL::Util::SAFETY_ARMED;
 #endif
+    safety_state = AP_HAL::Util::SAFETY_ARMED;
 }
 
 /*
