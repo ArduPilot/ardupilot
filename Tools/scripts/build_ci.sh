@@ -3,7 +3,11 @@
 # This helps when doing large merges
 # Andrew Tridgell, November 2011
 
+XOLDPWD=$PWD  # profile changes directory :-(
+
 . ~/.profile
+
+cd $XOLDPWD
 
 set -ex
 
