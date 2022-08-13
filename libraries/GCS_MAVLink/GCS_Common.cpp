@@ -6011,6 +6011,11 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
  */
 void GCS::update_passthru(void)
 {
+#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    // examples don't have AP::serialmanager
+    return;
+#endif
+
     WITH_SEMAPHORE(_passthru.sem);
     uint32_t now = AP_HAL::millis();
     uint32_t baud1, baud2;
