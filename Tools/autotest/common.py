@@ -7486,8 +7486,9 @@ Also, ignores heartbeats not from our target system'''
                                         mission_type)
         remaining_to_send = set(range(0, len(items)))
         sent = set()
+        timeout = (10 + len(items)/10.0)
         while True:
-            if self.get_sim_time_cached() - tstart > (10 + len(items)/10.0):
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("timeout uploading %s" % str(mission_type))
             if len(remaining_to_send) == 0:
                 self.progress("All sent")
@@ -7534,6 +7535,9 @@ Also, ignores heartbeats not from our target system'''
             self.mav.mav.send(items[m.seq])
             remaining_to_send.discard(m.seq)
             sent.add(m.seq)
+
+            timeout += 10  # we received a good request for item; be generous with our timeouts
+
         m = self.assert_receive_message('MISSION_ACK', timeout=1)
         if m.mission_type != mission_type:
             raise NotAchievedException("Mission ack not of expected mission type")
@@ -7609,6 +7613,7 @@ Also, ignores heartbeats not from our target system'''
             if m.seq != next_to_request:
                 raise NotAchievedException("Received waypoint is out of sequence")
             self.progress("Item %u OK" % m.seq)
+            timeout += 10  # we received an item; be generous with our timeouts
             items.append(m)
             next_to_request += 1
             remaining_to_receive.discard(m.seq)
