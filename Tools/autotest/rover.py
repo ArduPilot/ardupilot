@@ -1239,11 +1239,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
-    def test_rally_points(self):
-        self.reboot_sitl() # to ensure starting point is as expected
-
+    def Rally(self):
         self.load_rally("rover-test-rally.txt")
-        accuracy = self.get_parameter("WP_RADIUS")
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -1257,7 +1254,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                -105.229401,
                                0,
                                0)
-        self.wait_location(loc, accuracy=accuracy)
+        accuracy = self.get_parameter("WP_RADIUS")
+        self.wait_location(loc, accuracy=accuracy, minimum_duration=10)
         self.disarm_vehicle()
 
     def fence_with_bad_frame(self, target_system=1, target_component=1):
@@ -6070,7 +6068,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             ("Rally",
              "Test Rally Points",
-             self.test_rally_points),
+             self.Rally),
 
             ("Offboard",
              "Test Offboard Control",
