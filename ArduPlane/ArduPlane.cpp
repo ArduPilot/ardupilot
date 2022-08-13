@@ -296,10 +296,6 @@ void Plane::one_second_loop()
     // make it possible to change control channel ordering at runtime
     set_control_channels();
 
-#if HAL_WITH_IO_MCU
-    iomcu.setup_mixing(&rcmap, g.override_channel.get(), g.mixing_gain, g2.manual_rc_mask);
-#endif
-
 #if HAL_ADSB_ENABLED
     adsb.set_stall_speed_cm(aparm.airspeed_min * 100); // convert m/s to cm/s
     adsb.set_max_speed(aparm.airspeed_max);

@@ -125,7 +125,7 @@ public:
         k_param_takeoff_flap_percent,
         k_param_flap_slewrate,
         k_param_rtl_autoland,
-        k_param_override_channel,
+        k_param_override_channel, // unused - mixing functionality removed from IOMCU
         k_param_stall_prevention,
         k_param_optflow,
         k_param_cli_enabled_old, // unused - CLI removed
@@ -459,9 +459,6 @@ public:
     AP_Float glide_slope_threshold;
     AP_Int8 rangefinder_landing;
     AP_Int8 flap_slewrate;
-#if HAL_WITH_IO_MCU
-    AP_Int8 override_channel;
-#endif
     AP_Int16 gcs_pid_mask;
 };
 

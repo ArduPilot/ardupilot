@@ -704,15 +704,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(flap_2_speed,           "FLAP_2_SPEED",   FLAP_2_SPEED),
 
-#if HAL_WITH_IO_MCU
     // @Param: OVERRIDE_CHAN
     // @DisplayName: IO override channel
     // @Description: If set to a non-zero value then this is an RC input channel number to use for giving IO manual control in case the main FMU microcontroller on a board with a IO co-processor fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the IO microcontroller will directly control the servos. Note that IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on the FMU will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels on boards with an IOMCU.
     // @Range: 0 16
     // @Increment: 1
     // @User: Advanced
-    GSCALAR(override_channel,      "OVERRIDE_CHAN",  0),
-#endif
 
     // @Param: RTL_AUTOLAND
     // @DisplayName: RTL auto land
