@@ -7,6 +7,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -183,5 +184,10 @@ static void run_test()
         hal.console->read();
     }
 }
+
+const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
+    AP_GROUPEND
+};
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();
