@@ -886,7 +886,7 @@ bool AP_Arming::servo_checks(bool report) const
     }
 
 #if HAL_WITH_IO_MCU
-    if (!iomcu.healthy()) {
+    if (!iomcu.healthy() && AP_BoardConfig::io_enabled()) {
         check_failed(report, "IOMCU is unhealthy");
         check_passed = false;
     }
