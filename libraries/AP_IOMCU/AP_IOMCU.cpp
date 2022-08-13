@@ -35,7 +35,6 @@ enum ioevents {
     IOEVENT_SET_HEATER_TARGET,
     IOEVENT_SET_DEFAULT_RATE,
     IOEVENT_SET_SAFETY_MASK,
-    IOEVENT_MIXING,
     IOEVENT_GPIO,
 };
 
@@ -136,14 +135,6 @@ void AP_IOMCU::thread_main(void)
             }
         }
         mask &= ~EVENT_MASK(IOEVENT_INIT);
-
-        if (mask & EVENT_MASK(IOEVENT_MIXING)) {
-            if (!write_registers(PAGE_MIXING, 0, sizeof(mixing)/2, (const uint16_t *)&mixing)) {
-                event_failed(mask);
-                continue;
-            }
-        }
-        mask &= ~EVENT_MASK(IOEVENT_MIXING);
 
         if (mask & EVENT_MASK(IOEVENT_FORCE_SAFETY_OFF)) {
             if (!write_register(PAGE_SETUP, PAGE_REG_SETUP_FORCE_SAFETY_OFF, FORCE_SAFETY_MAGIC)) {
@@ -918,66 +909,6 @@ void AP_IOMCU::bind_dsm(uint8_t mode)
 }
 
 /*
-  setup for mixing. This allows fixed wing aircraft to fly in manual
-  mode if the FMU dies
- */
-bool AP_IOMCU::setup_mixing(RCMapper *rcmap, int8_t override_chan,
-                            float mixing_gain, uint16_t manual_rc_mask)
-{
-    if (!is_chibios_backend) {
-        return false;
-    }
-    bool changed = false;
-#define MIX_UPDATE(a,b) do { if ((a) != (b)) { a = b; changed = true; }} while (0)
-
-    // update mixing structure, checking for changes
-    for (uint8_t i=0; i<IOMCU_MAX_CHANNELS; i++) {
-        const SRV_Channel *c = SRV_Channels::srv_channel(i);
-        if (!c) {
-            continue;
-        }
-        MIX_UPDATE(mixing.servo_trim[i], c->get_trim());
-        MIX_UPDATE(mixing.servo_min[i], c->get_output_min());
-        MIX_UPDATE(mixing.servo_max[i], c->get_output_max());
-        MIX_UPDATE(mixing.servo_function[i], c->get_function());
-        MIX_UPDATE(mixing.servo_reversed[i], c->get_reversed());
-    }
-    // update RCMap
-    MIX_UPDATE(mixing.rc_channel[0], rcmap->roll());
-    MIX_UPDATE(mixing.rc_channel[1], rcmap->pitch());
-    MIX_UPDATE(mixing.rc_channel[2], rcmap->throttle());
-    MIX_UPDATE(mixing.rc_channel[3], rcmap->yaw());
-    for (uint8_t i=0; i<4; i++) {
-        const RC_Channel *c = RC_Channels::rc_channel(mixing.rc_channel[i]-1);
-        if (!c) {
-            continue;
-        }
-        MIX_UPDATE(mixing.rc_min[i], c->get_radio_min());
-        MIX_UPDATE(mixing.rc_max[i], c->get_radio_max());
-        MIX_UPDATE(mixing.rc_trim[i], c->get_radio_trim());
-        MIX_UPDATE(mixing.rc_reversed[i], c->get_reverse());
-
-        // cope with reversible throttle
-        if (i == 2 && c->get_type() == RC_Channel::ControlType::ANGLE) {
-            MIX_UPDATE(mixing.throttle_is_angle, 1);
-        } else {
-            MIX_UPDATE(mixing.throttle_is_angle, 0);
-        }
-    }
-
-    MIX_UPDATE(mixing.rc_chan_override, override_chan);
-    MIX_UPDATE(mixing.mixing_gain, (uint16_t)(mixing_gain*1000));
-    MIX_UPDATE(mixing.manual_rc_mask, manual_rc_mask);
-
-    // and enable
-    MIX_UPDATE(mixing.enabled, 1);
-    if (changed) {
-        trigger_event(IOEVENT_MIXING);
-    }
-    return true;
-}
-
-/*
   return the RC protocol name
  */
 const char *AP_IOMCU::get_rc_protocol(void)
@@ -1042,11 +973,7 @@ void AP_IOMCU::check_iomcu_reset(void)
     }
     last_safety_off = reg_status.flag_safety_off;
 
-    // we need to ensure the mixer data and the rates are sent over to
-    // the IOMCU
-    if (mixing.enabled) {
-        trigger_event(IOEVENT_MIXING);
-    }
+    // we need to ensure the rates are sent over to the IOMCU
     trigger_event(IOEVENT_SET_RATES);
     trigger_event(IOEVENT_SET_DEFAULT_RATE);
     if (rate.oneshot_enabled) {
