@@ -35,12 +35,6 @@ public:
     void rcin_serial_update();
     void page_status_update(void);
     void fill_failsafe_pwm(void);
-    void run_mixer(void);
-    int16_t mix_input_angle(uint8_t channel, uint16_t radio_in) const;
-    int16_t mix_input_range(uint8_t channel, uint16_t radio_in) const;
-    uint16_t mix_output_angle(uint8_t channel, int16_t angle) const;
-    uint16_t mix_output_range(uint8_t channel, int16_t value) const;
-    int16_t mix_elevon_vtail(int16_t angle1, int16_t angle2, bool first_output) const;
     void dsm_bind_step(void);
 
     struct {
@@ -102,16 +96,10 @@ public:
         uint16_t sbus_rate_hz;
     } rate;
 
-    // MIXER values
-    struct page_mixing mixing;
-
     // GPIO masks
     struct page_GPIO GPIO;
     uint8_t last_GPIO_channel_mask;
     void GPIO_write();
-
-    // true when override channel active
-    bool override_active;
 
     // sbus rate handling
     uint32_t sbus_last_ms;
