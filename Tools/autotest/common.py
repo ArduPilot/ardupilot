@@ -5972,6 +5972,11 @@ class AutoTest(ABC):
              str(target),
              str(sum_of_achieved_values / count_of_achieved_values) if count_of_achieved_values != 0 else str(last_value)))
 
+    def validate_kwargs(self, kwargs, valid={}):
+        for key in kwargs:
+            if key not in valid:
+                raise NotAchievedException("Invalid kwarg %s" % str(key))
+
     def wait_and_maintain_range(self,
                                 value_name,
                                 minimum,
@@ -5981,6 +5986,11 @@ class AutoTest(ABC):
                                 timeout=30,
                                 print_diagnostics_as_target_not_range=False,
                                 **kwargs):
+        self.validate_kwargs(kwargs, valid=frozenset([
+            "called_function",
+            "minimum_duration",
+        ]))
+
         if print_diagnostics_as_target_not_range:
             target = (minimum + maximum) / 2
             accuracy = (maximum - minimum) / 2
