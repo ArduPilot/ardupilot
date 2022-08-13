@@ -71,6 +71,11 @@ bool AP_Arming_Rover::gps_checks(bool display_failure)
 
 bool AP_Arming_Rover::pre_arm_checks(bool report)
 {
+    if (armed) {
+        // if we are already armed then skip the checks
+        return true;
+    }
+
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return true;
