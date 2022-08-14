@@ -49,7 +49,7 @@ static AP_Filesystem_Param fs_param;
 static AP_Filesystem_Sys fs_sys;
 
 #include <AP_Mission/AP_Mission.h>
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
 #include "AP_Filesystem_Mission.h"
 static AP_Filesystem_Mission fs_mission;
 #endif
@@ -65,7 +65,7 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
     { "@PARAM/", fs_param },
     { "@SYS/", fs_sys },
     { "@SYS", fs_sys },
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
     { "@MISSION/", fs_mission },
 #endif
 };

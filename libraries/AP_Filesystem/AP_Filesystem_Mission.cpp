@@ -23,7 +23,7 @@
 #include <GCS_MAVLink/MissionItemProtocol_Rally.h>
 #include <GCS_MAVLink/MissionItemProtocol_Fence.h>
 
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
 
 extern const AP_HAL::HAL& hal;
 extern int errno;
