@@ -35,7 +35,7 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::update_mission_data(void)
 {
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
     const AP_Mission *mission = AP::mission();
     if (mission == nullptr) {
         return;
@@ -112,7 +112,7 @@ void AP_Terrain::update_mission_data(void)
             next_mission_pos = 0;
         }
     }
-#endif  // HAL_MISSION_ENABLED
+#endif  // AP_MISSION_ENABLED
 }
 
 /*
