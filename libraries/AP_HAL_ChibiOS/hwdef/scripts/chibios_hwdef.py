@@ -2779,8 +2779,8 @@ def add_apperiph_defaults(f):
 #define HAL_LOGGING_MAVLINK_ENABLED 0
 #endif
 
-#ifndef HAL_MISSION_ENABLED
-#define HAL_MISSION_ENABLED 0
+#ifndef AP_MISSION_ENABLED
+#define AP_MISSION_ENABLED 0
 #endif
 
 #ifndef HAL_RALLY_ENABLED
