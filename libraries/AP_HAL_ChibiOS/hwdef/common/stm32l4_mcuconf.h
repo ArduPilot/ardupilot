@@ -224,11 +224,6 @@
 #define STM32_I2C_DMA_ERROR_HOOK(i2cp)      STM32_DMA_ERROR_HOOK(i2cp)
 
 /*
- * PWM driver system settings.
- */
-#define STM32_PWM_USE_ADVANCED              FALSE
-
-/*
  * RTC driver system settings.
  */
 #define STM32_RTC_PRESA_VALUE               32
