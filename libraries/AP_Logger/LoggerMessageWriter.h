@@ -78,7 +78,7 @@ class LoggerMessageWriter_DFLogStart : public LoggerMessageWriter {
 public:
     LoggerMessageWriter_DFLogStart() :
         _writesysinfo()
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
         , _writeentiremission()
 #endif
 #if HAL_RALLY_ENABLED
@@ -90,7 +90,7 @@ public:
     virtual void set_logger_backend(class AP_Logger_Backend *backend) override {
         LoggerMessageWriter::set_logger_backend(backend);
         _writesysinfo.set_logger_backend(backend);
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
         _writeentiremission.set_logger_backend(backend);
 #endif
 #if HAL_RALLY_ENABLED
@@ -107,7 +107,7 @@ public:
 
     // reset some writers so we push stuff out to logs again.  Will
     // only work if we are in state DONE!
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
     bool writeentiremission();
 #endif
 #if HAL_RALLY_ENABLED
@@ -145,7 +145,7 @@ private:
 
 
     LoggerMessageWriter_WriteSysInfo _writesysinfo;
-#if HAL_MISSION_ENABLED
+#if AP_MISSION_ENABLED
     LoggerMessageWriter_WriteEntireMission _writeentiremission;
 #endif
 #if HAL_RALLY_ENABLED
