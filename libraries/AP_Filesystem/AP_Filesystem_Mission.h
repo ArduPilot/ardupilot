@@ -15,6 +15,10 @@
 
 #pragma once
 
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_MISSION_ENABLED
+
 #include "AP_Filesystem_backend.h"
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Common/ExpandingString.h>
@@ -72,3 +76,5 @@ private:
     // see if a block of memory is all zero
     bool all_zero(const uint8_t *b, uint8_t size) const;
 };
+
+#endif  // AP_FILESYSTEM_MISSION_ENABLED
