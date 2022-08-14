@@ -150,6 +150,9 @@ private:
     // last time we sent a lost transmitter message
     uint32_t last_lost_tx_ms;
 
+    // last time we sent a lost operator location notice
+    uint32_t last_lost_operator_msg_ms;
+    
     // transmit functions to manually send a static MAVLink message
     void send_dynamic_out();
     void send_static_out();
