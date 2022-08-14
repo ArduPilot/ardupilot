@@ -158,18 +158,22 @@ void AP_OpenDroneID::update()
     send_static_out();
 }
 
+// local payload space check which treats invalid channel as having space
+// needed to populate the message structures for the DroneCAN backend
+#define ODID_HAVE_PAYLOAD_SPACE(id) (_chan == MAV_CHAN_INVALID || HAVE_PAYLOAD_SPACE(_chan, id))
+
 void AP_OpenDroneID::send_dynamic_out()
 {
     const uint32_t now = AP_HAL::millis();
     if (now - _last_send_location_ms >= _mavlink_dynamic_period_ms &&
-        HAVE_PAYLOAD_SPACE(_chan, OPEN_DRONE_ID_LOCATION)) {
+        ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_LOCATION)) {
         _last_send_location_ms = now;
         send_location_message();
     }
 
     // operator location needs to be sent at the same rate as location for FAA compliance
     if (now - _last_send_system_update_ms >= _mavlink_dynamic_period_ms &&
-        HAVE_PAYLOAD_SPACE(_chan, OPEN_DRONE_ID_SYSTEM_UPDATE)) {
+        ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SYSTEM_UPDATE)) {
         _last_send_system_update_ms = now;
         send_system_update_message();
     }
@@ -198,25 +202,25 @@ void AP_OpenDroneID::send_static_out()
         bool sent_ok = false;
         switch (next_msg_to_send) {
         case NEXT_MSG_BASIC_ID:
-            if (HAVE_PAYLOAD_SPACE(_chan, OPEN_DRONE_ID_BASIC_ID)) {
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_BASIC_ID)) {
                 send_basic_id_message();
                 sent_ok = true;
             }
             break;
         case NEXT_MSG_SYSTEM:
-            if (HAVE_PAYLOAD_SPACE(_chan, OPEN_DRONE_ID_SYSTEM)) {
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SYSTEM)) {
                 send_system_message();
                 sent_ok = true;
             }
             break;
         case NEXT_MSG_SELF_ID:
-            if (HAVE_PAYLOAD_SPACE(_chan, OPEN_DRONE_ID_SELF_ID)) {
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SELF_ID)) {
                 send_self_id_message();
                 sent_ok = true;
             }
             break;
         case NEXT_MSG_OPERATOR_ID:
-            if (HAVE_PAYLOAD_SPACE(_chan, OPEN_DRONE_ID_OPERATOR_ID)) {
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_OPERATOR_ID)) {
                 send_operator_id_message();
                 sent_ok = true;
             }
