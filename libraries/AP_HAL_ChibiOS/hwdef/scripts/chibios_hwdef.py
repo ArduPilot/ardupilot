@@ -749,8 +749,8 @@ def get_ram_map():
     if args.bootloader:
         ram_map = get_mcu_config('RAM_MAP_BOOTLOADER', False)
         if ram_map is not None:
-            app_ram_map = get_mcu_config('RAM_MAP', True)
-            if app_ram_map[0][0] != ram_map[0][0]:
+            app_ram_map = get_mcu_config('RAM_MAP', False)
+            if app_ram_map is not None and app_ram_map[0][0] != ram_map[0][0]:
                 # we need to find the location of app_ram_map[0] in ram_map
                 for i in range(len(ram_map)):
                     if app_ram_map[0][0] == ram_map[i][0]:
@@ -921,7 +921,10 @@ def write_mcu_config(f):
         build_flags.append('USE_FATFS=no')
         env_vars['DISABLE_SCRIPTING'] = True
     if 'OTG1' in bytype:
-        f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
+        if mcu_type.startswith('STM32H730'):
+            f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
+        else:
+            f.write('#define STM32_USB_USE_OTG1                  TRUE\n')
         f.write('#define HAL_USE_USB TRUE\n')
         f.write('#define HAL_USE_SERIAL_USB TRUE\n')
     if 'OTG2' in bytype:
@@ -1005,7 +1008,8 @@ def write_mcu_config(f):
         f.write('#define CRT0_AREAS_NUMBER 3\n')
         f.write('#define CRT1_RAMFUNC_ENABLE TRUE\n') # this will enable loading program sections to RAM
         f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
-        f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
+        if not mcu_type.startswith('STM32H730'):
+            f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
         f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
     else:
         f.write('#define CRT0_AREAS_NUMBER 1\n')
@@ -1372,7 +1376,7 @@ MEMORY
     ram2  : org = 0x%08x, len = %u
 }
 
-INCLUDE common_extf.ld
+INCLUDE common.ld
 ''' % (ext_flash_base, ext_flash_length,
        instruction_ram_base, instruction_ram_length,
        ram0_start, ram0_len,
@@ -1381,15 +1385,20 @@ INCLUDE common_extf.ld
 
 def copy_common_linkerscript(outdir):
     dirpath = os.path.dirname(os.path.realpath(__file__))
-    if not get_config('EXT_FLASH_SIZE_MB', default=0, type=int) or args.bootloader:
-        shutil.copy(os.path.join(dirpath, "../common/common.ld"),
-                    os.path.join(outdir, "common.ld"))
-    elif get_config('INT_FLASH_PRIMARY', default=False, type=int):
-        shutil.copy(os.path.join(dirpath, "../common/common_mixf.ld"),
-                    os.path.join(outdir, "common_mixf.ld"))
+
+    if args.bootloader:
+        linker = 'common.ld'
     else:
-        shutil.copy(os.path.join(dirpath, "../common/common_extf.ld"),
-                    os.path.join(outdir, "common_extf.ld"))
+        linker = get_mcu_config('LINKER_CONFIG')
+    if linker is None:
+        if not get_config('EXT_FLASH_SIZE_MB', default=0, type=int):
+            linker = 'common.ld'
+        elif get_config('INT_FLASH_PRIMARY', default=False, type=int):
+            linker = 'common_mixf.ld'
+        else:
+            linker = 'common_extf.ld'
+    shutil.copy(os.path.join(dirpath, "../common", linker),
+                os.path.join(outdir, "common.ld"))
 
 def get_USB_IDs():
     '''return tuple of USB VID/PID'''
@@ -2128,7 +2137,9 @@ def write_PWM_config(f, ordered_timers):
     f.write('\n')
     f.write('// PWM output config\n')
     groups = []
-    have_complementary = False
+    # complementary channels require advanced features
+    # which are only available on timers 1 and 8
+    need_advanced = False
 
     for t in pwm_timers:
         group = len(groups) + 1
@@ -2148,7 +2159,6 @@ def write_PWM_config(f, ordered_timers):
             chan_list[chan - 1] = pwm - 1
             if compl:
                 chan_mode[chan - 1] = 'PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH'
-                have_complementary = True
             else:
                 chan_mode[chan - 1] = 'PWM_OUTPUT_ACTIVE_HIGH'
             alt_functions[chan - 1] = p.af
@@ -2156,6 +2166,7 @@ def write_PWM_config(f, ordered_timers):
         groups.append('HAL_PWM_GROUP%u' % group)
         if n in [1, 8]:
             # only the advanced timers do 8MHz clocks
+            need_advanced = True
             advanced_timer = 'true'
         else:
             advanced_timer = 'false'
@@ -2207,7 +2218,7 @@ def write_PWM_config(f, ordered_timers):
                  alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
                  pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
     f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
-    if have_complementary:
+    if need_advanced:
         f.write('#define STM32_PWM_USE_ADVANCED TRUE\n')
 
 
@@ -2428,10 +2439,15 @@ def write_peripheral_enable(f):
         if type.startswith('SPI'):
             f.write('#define STM32_SPI_USE_%s                  TRUE\n' % type)
         if type.startswith('OTG'):
-            f.write('#define STM32_USB_USE_%s                  TRUE\n' % type)
+            if mcu_type.startswith('STM32H730'):
+                f.write('#define STM32_USB_USE_OTG2                TRUE\n')
+            else:
+                f.write('#define STM32_USB_USE_%s                  TRUE\n' % type)
         if type.startswith('I2C'):
             f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
         if type.startswith('QUADSPI'):
+            f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
+        if type.startswith('OCTOSPI'):
             f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
 
 
