@@ -15,6 +15,11 @@
 /*
   ArduPilot filesystem interface for parameters
  */
+
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_PARAM_ENABLED
+
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_Param.h"
 #include <AP_Param/AP_Param.h>
@@ -646,3 +651,5 @@ bool AP_Filesystem_Param::finish_upload(const rfile &r)
     }
     return true;
 }
+
+#endif  // AP_FILESYSTEM_PARAM_ENABLED

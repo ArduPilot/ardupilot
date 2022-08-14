@@ -15,6 +15,11 @@
 /*
   ArduPilot filesystem interface for mission/fence/rally
  */
+
+#include "AP_Filesystem_config.h"
+
+#if AP_FILESYSTEM_MISSION_ENABLED
+
 #include "AP_Filesystem.h"
 #include "AP_Filesystem_Mission.h"
 #include <AP_Mission/AP_Mission.h>
@@ -22,8 +27,6 @@
 #include <AP_Rally/AP_Rally.h>
 #include <GCS_MAVLink/MissionItemProtocol_Rally.h>
 #include <GCS_MAVLink/MissionItemProtocol_Fence.h>
-
-#if AP_MISSION_ENABLED
 
 extern const AP_HAL::HAL& hal;
 extern int errno;
@@ -406,4 +409,4 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
     return true;
 }
 
-#endif
+#endif  // AP_FILESYSTEM_MISSION_ENABLED
