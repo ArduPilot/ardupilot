@@ -105,7 +105,7 @@ bool AP_ToneAlarm::init()
     if (pNotify->buzzer_enabled() == false) {
         return false;
     }
-#if ((defined(HAL_PWM_ALARM) || defined(HAL_PWM_ALT_ALARM) || HAL_DSHOT_ALARM) && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || \
+#if ((defined(HAL_PWM_ALARM) || defined(HAL_PWM_ALT_ALARM) || HAL_DSHOT_ALARM_ENABLED) && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || \
     CONFIG_HAL_BOARD == HAL_BOARD_LINUX || \
     CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!hal.util->toneAlarm_init(pNotify->get_buzzer_types())) {
