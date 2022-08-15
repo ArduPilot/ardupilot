@@ -354,7 +354,7 @@ void AP_Notify::add_backends(void)
 // ChibiOS noise makers
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     ADD_BACKEND(new Buzzer());
-#if HAL_PWM_COUNT > 0 || HAL_DSHOT_ALARM
+#if HAL_PWM_COUNT > 0 || HAL_DSHOT_ALARM_ENABLED
     ADD_BACKEND(new AP_ToneAlarm());
 #endif
 
