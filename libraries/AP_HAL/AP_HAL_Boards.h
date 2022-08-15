@@ -277,6 +277,10 @@
 #define HAL_WITH_MCU_MONITORING 0
 #endif
 
+#ifndef AP_CRASHDUMP_ENABLED
+#define AP_CRASHDUMP_ENABLED 0
+#endif
+
 #ifndef HAL_HNF_MAX_FILTERS
 // On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
