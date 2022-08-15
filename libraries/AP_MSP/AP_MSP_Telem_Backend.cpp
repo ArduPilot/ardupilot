@@ -527,7 +527,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
 void AP_MSP_Telem_Backend::msp_handle_opflow(const MSP::msp_opflow_data_message_t &pkt)
 {
 #if HAL_MSP_OPTICALFLOW_ENABLED
-    OpticalFlow *optflow = AP::opticalflow();
+    AP_OpticalFlow *optflow = AP::opticalflow();
     if (optflow == nullptr) {
         return;
     }
