@@ -21,6 +21,7 @@ jobs:
           choco install cygwin32-gcc-g++ python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git libexpat procps gettext --source cygwin
           C:\Cygwin\bin\bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
           C:\Cygwin\bin\bash --login -c "python -m pip install empy pexpect"
+          C:\Cygwin\bin\bash --login -c "python -m pip install dronecan --upgrade"
       - name: Build SITL
         env:
           HOME: ${{ runner.workspace }}/ardupilot
