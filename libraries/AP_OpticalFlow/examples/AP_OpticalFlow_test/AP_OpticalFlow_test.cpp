@@ -32,7 +32,7 @@ public:
 
 static DummyVehicle vehicle;
 #if AP_OPTICALFLOW_ENABLED
-static OpticalFlow optflow;
+static AP_OpticalFlow optflow;
 #endif
 
 void setup()

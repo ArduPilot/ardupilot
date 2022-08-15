@@ -30,10 +30,6 @@
 #define OPTICALFLOW_ONBOARD_ID 1
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_Onboard::AP_OpticalFlow_Onboard(OpticalFlow &_frontend) :
-    OpticalFlow_backend(_frontend)
-{}
-
 void AP_OpticalFlow_Onboard::init(void)
 {
     /* register callback to get gyro data */
@@ -54,7 +50,7 @@ void AP_OpticalFlow_Onboard::update()
         return;
     }
 
-    struct OpticalFlow::OpticalFlow_state state;
+    struct AP_OpticalFlow::OpticalFlow_state state;
     state.surface_quality = data_frame.quality;
     if (data_frame.delta_time > 0) {
         const Vector2f flowScaler = _flowScaler();
