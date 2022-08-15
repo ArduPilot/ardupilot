@@ -163,7 +163,7 @@ private:
 
     // Optical flow sensor
 #if AP_OPTICALFLOW_ENABLED
-    OpticalFlow optflow;
+    AP_OpticalFlow optflow;
 #endif
 
     // system time in milliseconds of last recorded yaw reset from ekf
