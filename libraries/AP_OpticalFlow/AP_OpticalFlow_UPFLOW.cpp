@@ -53,14 +53,14 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_OpticalFlow_UPFLOW::AP_OpticalFlow_UPFLOW(OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
+AP_OpticalFlow_UPFLOW::AP_OpticalFlow_UPFLOW(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
     OpticalFlow_backend(_frontend),
     uart(_uart)
 {
 }
 
 // detect the device
-AP_OpticalFlow_UPFLOW *AP_OpticalFlow_UPFLOW::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_UPFLOW *AP_OpticalFlow_UPFLOW::detect(AP_OpticalFlow &_frontend)
 {
     AP_SerialManager *serial_manager = AP::serialmanager().get_singleton();
     if (serial_manager == nullptr) {
@@ -156,7 +156,7 @@ void AP_OpticalFlow_UPFLOW::update(void)
         return;
     }
 
-    struct OpticalFlow::OpticalFlow_state state {};
+    struct AP_OpticalFlow::OpticalFlow_state state {};
 
     state.surface_quality = updata.quality;
 

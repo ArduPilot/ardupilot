@@ -26,7 +26,7 @@ public:
     void handle_msg(const mavlink_message_t &msg) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_MAV *detect(OpticalFlow &_frontend);
+    static AP_OpticalFlow_MAV *detect(AP_OpticalFlow &_frontend);
 
 private:
 

@@ -25,7 +25,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_OpticalFlow_SITL::AP_OpticalFlow_SITL(OpticalFlow &_frontend) :
+AP_OpticalFlow_SITL::AP_OpticalFlow_SITL(AP_OpticalFlow &_frontend) :
     OpticalFlow_backend(_frontend),
     _sitl(AP::sitl())
 {
@@ -52,7 +52,7 @@ void AP_OpticalFlow_SITL::update(void)
                   radians(_sitl->state.pitchRate), 
                   radians(_sitl->state.yawRate));
 
-    OpticalFlow::OpticalFlow_state state;
+    AP_OpticalFlow::OpticalFlow_state state;
 
     // NED velocity vector in m/s
     Vector3f velocity(_sitl->state.speedN,

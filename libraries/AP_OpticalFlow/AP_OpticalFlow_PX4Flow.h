@@ -14,7 +14,9 @@ class AP_OpticalFlow_PX4Flow : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_PX4Flow(OpticalFlow &_frontend);
+    using OpticalFlow_backend::OpticalFlow_backend;
+
+    CLASS_NO_COPY(AP_OpticalFlow_PX4Flow);
 
     // init - initialise the sensor
     void init() override {}
@@ -23,7 +25,7 @@ public:
     void update(void) override;
 
     // detect if the sensor is available
-    static AP_OpticalFlow_PX4Flow *detect(OpticalFlow &_frontend);
+    static AP_OpticalFlow_PX4Flow *detect(AP_OpticalFlow &_frontend);
 
 private:
     AP_HAL::OwnPtr<AP_HAL::Device> dev;

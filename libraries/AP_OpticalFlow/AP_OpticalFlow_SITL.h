@@ -8,7 +8,7 @@ class AP_OpticalFlow_SITL : public OpticalFlow_backend
 {
 public:
     /// constructor
-    AP_OpticalFlow_SITL(OpticalFlow &_frontend);
+    AP_OpticalFlow_SITL(AP_OpticalFlow &_frontend);
 
     // init - initialise the sensor
     void init() override;
@@ -22,6 +22,6 @@ private:
 
     uint8_t next_optflow_index;
     uint8_t optflow_delay;
-    OpticalFlow::OpticalFlow_state optflow_data[20];
+    AP_OpticalFlow::OpticalFlow_state optflow_data[20];
 };
 #endif // CONFIG_HAL_BOARD
