@@ -382,12 +382,17 @@ def chibios_firmware(self):
         generate_bin_task.set_run_after(default_params_task)
 
     # we need to setup the app descriptor so the bootloader can validate the firmware
-    app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
-    app_descriptor_task.set_run_after(generate_bin_task)
-    generate_apj_task.set_run_after(app_descriptor_task)
-    if hex_task is not None:
-        hex_task.set_run_after(app_descriptor_task)
-
+    if not self.bld.env.BOOTLOADER:
+        app_descriptor_task = self.create_task('set_app_descriptor', src=bin_target)
+        app_descriptor_task.set_run_after(generate_bin_task)
+        generate_apj_task.set_run_after(app_descriptor_task)
+        if hex_task is not None:
+            hex_task.set_run_after(app_descriptor_task)
+    else:
+        generate_apj_task.set_run_after(generate_bin_task)
+        if hex_task is not None:
+            hex_task.set_run_after(generate_bin_task)
+        
     if self.bld.options.upload:
         _upload_task = self.create_task('upload_fw', src=apj_target)
         _upload_task.set_run_after(generate_apj_task)
