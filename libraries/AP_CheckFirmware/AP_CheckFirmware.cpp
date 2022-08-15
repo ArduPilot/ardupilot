@@ -8,12 +8,43 @@
 #if AP_CHECK_FIRMWARE_ENABLED
 
 #if defined(HAL_BOOTLOADER_BUILD)
+
+#if AP_SIGNED_FIRMWARE
+#include "../../Tools/AP_Bootloader/support.h"
+#include <string.h>
+#include <wolfssl/options.h>
+//#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/wolfcrypt/sha256.h>
+#include <wolfssl/wolfcrypt/random.h>
+#include <wolfssl/wolfcrypt/ecc.h>
+#include <wolfssl/wolfcrypt/asn_public.h>
+
+wc_Sha256 sha;
+
+struct __attribute__((__packed__)) secure_data {
+    uint8_t sig[8] = {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29};
+    struct __attribute__((__packed__)) {
+        char QX[65] = {};
+        char QY[65] = {};
+        uint8_t reserved[2] = {};
+    } public_key[10];
+};
+
+const struct secure_data public_keys __attribute__((section(".ecc_raw")));
+
+ecc_key publicKey;
+#endif
+
 /*
   check firmware CRC and board ID to see if it matches
  */
 check_fw_result_t check_good_firmware(void)
 {
+#if AP_SIGNED_FIRMWARE
+    const uint8_t sig[8] = { 0x41, 0xa3, 0xe5, 0xf2, 0x65, 0x69, 0x92, 0x07 };
+#else
     const uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
+#endif
     const uint8_t *flash = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024);
     const uint32_t flash_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB))*1024;
     const app_descriptor *ad = (const app_descriptor *)memmem(flash, flash_size-sizeof(app_descriptor), sig, sizeof(sig));
@@ -47,7 +78,54 @@ check_fw_result_t check_good_firmware(void)
     if (crc1 != ad->image_crc1 || crc2 != ad->image_crc2) {
         return check_fw_result_t::FAIL_REASON_BAD_CRC;
     }
-    return check_fw_result_t::CHECK_FW_OK;
+
+    check_fw_result_t ret = check_fw_result_t::CHECK_FW_OK;
+
+#if AP_SIGNED_FIRMWARE
+    uint8_t hash[32];
+    int err = wc_ecc_init(&publicKey);
+    if (err != MP_OKAY) {
+        wc_ecc_free(&publicKey);
+        uprintf("Failed to init public key in bootloader\r\n");
+        return check_fw_result_t::FAIL_REASON_BAD_PUBLIC_KEY;
+    }
+
+    // verify signature
+    wc_InitSha256(&sha);
+    wc_Sha256Update(&sha, flash, len1);
+    wc_Sha256Update(&sha, (const uint8_t *)&ad->version_major, len2);
+    wc_Sha256Final(&sha, hash);
+
+    // do ecc verify
+    for (auto public_key : public_keys.public_key) {
+        ret = check_fw_result_t::CHECK_FW_OK;
+        if ((ad->signature_length > 72) || (ad->signature_length == 0)) {
+            uprintf("Invalid signature length\r\n");
+            ret = check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
+            continue;
+        }
+
+        err = wc_ecc_import_raw(&publicKey, public_key.QX, public_key.QY, NULL, "SECP256R1");
+        if (err != MP_OKAY) {
+            wc_ecc_free(&publicKey);
+            uprintf("Failed to import public key\r\n");
+            ret = check_fw_result_t::FAIL_REASON_BAD_PUBLIC_KEY;
+            continue;
+        }
+
+        int verified = 0;
+        int wc_ret = wc_ecc_verify_hash(ad->signature, ad->signature_length, hash, sizeof(hash), &verified, &publicKey);
+        if (verified == 0 || wc_ret != 0) {
+            wc_ecc_free(&publicKey);
+            uprintf("Failed to verify signature\r\n");
+            ret = check_fw_result_t::FAIL_REASON_VERIFICATION;
+            continue;
+        }
+        break;
+    }
+#endif
+
+    return ret;
 }
 #endif // HAL_BOOTLOADER_BUILD
 
