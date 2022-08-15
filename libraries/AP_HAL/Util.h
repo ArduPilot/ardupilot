@@ -196,8 +196,11 @@ public:
     // log info on stack usage
     virtual void log_stack_info(void) {}
 
+#if AP_CRASHDUMP_ENABLED
     virtual size_t last_crash_dump_size() const { return 0; }
     virtual void* last_crash_dump_ptr() const { return nullptr; }
+#endif
+
 protected:
     // we start soft_armed false, so that actuators don't send any
     // values until the vehicle code has fully started
