@@ -240,7 +240,7 @@ private:
 
 #if AP_OPTICALFLOW_ENABLED
     // Optical flow sensor
-    OpticalFlow optflow;
+    AP_OpticalFlow optflow;
 #endif
 
     // Rally Ponints

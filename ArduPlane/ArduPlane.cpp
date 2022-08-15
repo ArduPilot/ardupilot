@@ -83,7 +83,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_ICEngine,      &plane.g2.ice_control, update,     10, 100,  81),
 #endif
 #if AP_OPTICALFLOW_ENABLED
-    SCHED_TASK_CLASS(OpticalFlow, &plane.optflow, update,    50,    50,  87),
+    SCHED_TASK_CLASS(AP_OpticalFlow, &plane.optflow, update,    50,    50,  87),
 #endif
     SCHED_TASK(one_second_loop,         1,    400,  90),
     SCHED_TASK(three_hz_loop,           3,     75,  93),
