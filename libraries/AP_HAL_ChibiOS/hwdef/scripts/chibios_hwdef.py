@@ -972,10 +972,10 @@ def write_mcu_config(f):
 
     if flash_size >= 2048 and not args.bootloader:
         # lets pick a flash sector for Crash log
-        f.write('#define HAL_CRASHDUMP_ENABLE 1\n')
+        f.write('#define AP_CRASHDUMP_ENABLED 1\n')
         env_vars['ENABLE_CRASHDUMP'] = 1
     else:
-        f.write('#define HAL_CRASHDUMP_ENABLE 0\n')
+        f.write('#define AP_CRASHDUMP_ENABLED 0\n')
         env_vars['ENABLE_CRASHDUMP'] = 0
 
     if args.bootloader:
