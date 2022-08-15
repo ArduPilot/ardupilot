@@ -1146,6 +1146,21 @@ def write_mcu_config(f):
     if not args.bootloader:
         f.write('''#define STM32_DMA_REQUIRED TRUE\n\n''')
 
+    if args.bootloader:
+        # do not enable flash protection in bootloader, even if hwdef
+        # requests it:
+        f.write('''
+#undef HAL_FLASH_PROTECTION
+#define HAL_FLASH_PROTECTION 0
+''')
+    else:
+        # flash protection is off by default:
+        f.write('''
+#ifndef HAL_FLASH_PROTECTION
+#define HAL_FLASH_PROTECTION 0
+#endif
+''')
+
 def write_ldscript(fname):
     '''write ldscript.ld for this board'''
     flash_size = get_config('FLASH_USE_MAX_KB', type=int, default=0)
