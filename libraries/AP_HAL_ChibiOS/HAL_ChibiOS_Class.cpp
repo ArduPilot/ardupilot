@@ -249,7 +249,7 @@ static void main_loop()
     utilInstance.apply_persistent_params();
 #endif
 
-#ifdef HAL_FLASH_PROTECTION
+#if HAL_FLASH_PROTECTION
     if (AP_BoardConfig::unlock_flash()) {
         stm32_flash_unprotect_flash();
     } else {

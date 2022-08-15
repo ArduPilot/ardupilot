@@ -284,7 +284,7 @@ void stm32_flash_lock(void)
 #endif
 }
 
-#if defined(STM32H7) && defined(HAL_FLASH_PROTECTION)
+#if defined(STM32H7) && HAL_FLASH_PROTECTION
 static void stm32_flash_wait_opt_idle(void)
 {
     __DSB();
@@ -863,7 +863,7 @@ void stm32_flash_protect_flash(bool bootloader, bool protect)
 {
     (void)bootloader;
     (void)protect;
-#if defined(STM32H7) && !defined(HAL_BOOTLOADER_BUILD) && defined(HAL_FLASH_PROTECTION)
+#if defined(STM32H7) && HAL_FLASH_PROTECTION
     uint32_t prg1 = FLASH->WPSN_CUR1;
     uint32_t prg2 = FLASH->WPSN_CUR2;
 #ifndef STORAGE_FLASH_PAGE
@@ -925,7 +925,7 @@ void stm32_flash_protect_flash(bool bootloader, bool protect)
  */
 void stm32_flash_unprotect_flash()
 {
-#if defined(STM32H7) && defined(HAL_FLASH_PROTECTION)
+#if defined(STM32H7) && HAL_FLASH_PROTECTION
     stm32_flash_opt_clear_errors();
     stm32_flash_clear_errors();
 
