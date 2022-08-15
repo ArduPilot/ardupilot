@@ -51,14 +51,14 @@
 extern const AP_HAL::HAL& hal;
 
 // constructor
-AP_OpticalFlow_CXOF::AP_OpticalFlow_CXOF(OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
+AP_OpticalFlow_CXOF::AP_OpticalFlow_CXOF(AP_OpticalFlow &_frontend, AP_HAL::UARTDriver *_uart) :
     OpticalFlow_backend(_frontend),
     uart(_uart)
 {
 }
 
 // detect the device
-AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(OpticalFlow &_frontend)
+AP_OpticalFlow_CXOF *AP_OpticalFlow_CXOF::detect(AP_OpticalFlow &_frontend)
 {
     AP_SerialManager *serial_manager = AP::serialmanager().get_singleton();
     if (serial_manager == nullptr) {
@@ -159,7 +159,7 @@ void AP_OpticalFlow_CXOF::update(void)
         return;
     }
 
-    struct OpticalFlow::OpticalFlow_state state {};
+    struct AP_OpticalFlow::OpticalFlow_state state {};
 
     // average surface quality scaled to be between 0 and 255
     state.surface_quality = (constrain_int16(qual_sum / count, 64, 78) - 64) * 255 / 14;
