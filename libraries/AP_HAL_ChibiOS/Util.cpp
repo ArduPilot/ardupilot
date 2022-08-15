@@ -29,7 +29,7 @@
 #include <AP_Common/ExpandingString.h>
 #include "sdcard.h"
 #include "shared_dma.h"
-#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM || HAL_CANMANAGER_ENABLED || HAL_USE_PWM == TRUE
+#if defined(HAL_PWM_ALARM) || HAL_DSHOT_ALARM_ENABLED || HAL_CANMANAGER_ENABLED || HAL_USE_PWM == TRUE
 #include <AP_Notify/AP_Notify.h>
 #endif
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
@@ -171,7 +171,7 @@ bool Util::toneAlarm_init(uint8_t types)
 #endif
     _toneAlarm_types = types;
 
-#if HAL_USE_PWM != TRUE && !HAL_DSHOT_ALARM && !HAL_CANMANAGER_ENABLED
+#if HAL_USE_PWM != TRUE && !HAL_DSHOT_ALARM_ENABLED && !HAL_CANMANAGER_ENABLED
     // Nothing to do
     return false;
 #else
@@ -209,7 +209,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
         }
     }
 #endif // HAL_USE_PWM
-#if HAL_DSHOT_ALARM
+#if HAL_DSHOT_ALARM_ENABLED
     // don't play the motors while flying
     if (!(_toneAlarm_types & AP_Notify::Notify_Buzz_DShot) || get_soft_armed() || hal.rcout->get_dshot_esc_type() != RCOutput::DSHOT_ESC_BLHELI) {
         return;
@@ -228,7 +228,7 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
     } else {  // G+
         hal.rcout->send_dshot_command(RCOutput::DSHOT_BEEP5, RCOutput::ALL_CHANNELS, duration_ms);
     }
-#endif // HAL_DSHOT_ALARM
+#endif // HAL_DSHOT_ALARM_ENABLED
 }
 
 /*
