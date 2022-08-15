@@ -3028,6 +3028,10 @@ def add_bootloader_defaults(f):
 #ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
 #define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
 #endif
+
+#ifndef HAL_GCS_ENABLED
+#define HAL_GCS_ENABLED 0
+#endif
 ''')
 
 def add_iomcu_firmware_defaults(f):
