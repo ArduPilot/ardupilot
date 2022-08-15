@@ -31,7 +31,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @DisplayName: Minimum PWM
     // @Description: minimum PWM pulse width in microseconds. Typically 1000 is lower limit, 1500 is neutral and 2000 is upper limit.
     // @Units: PWM
-    // @Range: 500 2200
+    // @Range: 800 2200
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("MIN",  1, SRV_Channel, servo_min, 1100),
