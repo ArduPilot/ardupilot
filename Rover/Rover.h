@@ -124,7 +124,7 @@ private:
     AP_Arming_Rover arming;
 
 #if AP_OPTICALFLOW_ENABLED
-    OpticalFlow optflow;
+    AP_OpticalFlow optflow;
 #endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
