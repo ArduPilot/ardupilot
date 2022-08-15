@@ -722,10 +722,9 @@ void Util::log_stack_info(void)
 #endif
 }
 
-#if !defined(HAL_BOOTLOADER_BUILD)
+#if AP_CRASHDUMP_ENABLED
 size_t Util::last_crash_dump_size() const
 {
-#if HAL_CRASHDUMP_ENABLE
     // get dump size
     uint32_t size = stm32_crash_dump_size();
     char* dump_start = (char*)stm32_crash_dump_addr();
@@ -738,22 +737,16 @@ size_t Util::last_crash_dump_size() const
         size = stm32_crash_dump_max_size();
     }
     return size;
-#endif
-    return 0;
 }
 
 void* Util::last_crash_dump_ptr() const
 {
-#if HAL_CRASHDUMP_ENABLE
     if (last_crash_dump_size() == 0) {
         return nullptr;
     }
     return (void*)stm32_crash_dump_addr();
-#else
-    return nullptr;
-#endif
 }
-#endif // HAL_BOOTLOADER_BUILD
+#endif // AP_CRASHDUMP_ENABLED
 
 // set armed state
 void Util::set_soft_armed(const bool b)

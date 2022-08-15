@@ -23,7 +23,7 @@
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/stm32_util.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#if HAL_CRASHDUMP_ENABLE
+#if AP_CRASHDUMP_ENABLED
 #include <CrashCatcher.h>
 #endif
 #include <ch.h>
@@ -52,7 +52,7 @@ extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
 
-#if !HAL_CRASHDUMP_ENABLE
+#if !AP_CRASHDUMP_ENABLED
 // do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
