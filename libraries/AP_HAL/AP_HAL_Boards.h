@@ -285,6 +285,10 @@
 #define AP_SIGNED_FIRMWARE 0
 #endif
 
+#ifndef HAL_DSHOT_ALARM_ENABLED
+#define HAL_DSHOT_ALARM_ENABLED 0
+#endif
+
 #ifndef HAL_HNF_MAX_FILTERS
 // On an F7 The difference in CPU load between 1 notch and 24 notches is about 2%
 // The difference in CPU load between 1Khz backend and 2Khz backend is about 10%
