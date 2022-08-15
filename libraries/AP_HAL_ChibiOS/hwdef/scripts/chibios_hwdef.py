@@ -2949,6 +2949,8 @@ def add_bootloader_defaults(f):
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
 #endif
+
+#define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
 ''')
 
 def add_iomcu_firmware_defaults(f):
