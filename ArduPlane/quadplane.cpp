@@ -2577,9 +2577,6 @@ void QuadPlane::vtol_position_controller(void)
                 const float gnd_speed = plane.ahrs.groundspeed();
                 Vector2f target_speed_xy = landing_velocity + diff_wp_norm * gnd_speed - wind;
                 target_yaw_deg = degrees(target_speed_xy.angle());
-
-                // now limit speed to scaled wp speed, so we don't fly rapidly backwards
-                target_speed_xy.limit_length(scaled_wp_speed*100);
             }
         }
         const float target_speed_ms = target_speed_xy_cms.length() * 0.01;
