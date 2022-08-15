@@ -4149,6 +4149,12 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
 
     if (quadplane.back_trans_pitch_limit_ms <= 0) {
         // time based pitch envelope disabled
+
+        // limit pitch max
+        if (pitch_cd > angle_max) {
+            pitch_cd = angle_max;
+            ret = true;
+        }
         return ret;
     }
 
@@ -4158,6 +4164,12 @@ bool SLT_Transition::set_VTOL_roll_pitch_limit(int32_t& roll_cd, int32_t& pitch_
     if (last_fw_mode_ms == 0 || dt > limit_time_ms) {
         // we are beyond the time limit, don't apply envelope
         last_fw_mode_ms = 0;
+
+        // limit pitch max
+        if (pitch_cd > angle_max) {
+            pitch_cd = angle_max;
+            ret = true;
+        }
         return ret;
     }
 
