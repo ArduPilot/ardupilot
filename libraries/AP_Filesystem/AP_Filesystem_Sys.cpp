@@ -135,9 +135,11 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     if (strcmp(fname, "persistent.parm") == 0) {
         hal.util->load_persistent_params(*r.str);
     }
+#if AP_CRASHDUMP_ENABLED
     if (strcmp(fname, "crash_dump.bin") == 0) {
         r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
-    } else
+    }
+#endif
     if (strcmp(fname, "storage.bin") == 0) {
         // we don't want to store the contents of storage.bin
         // we read directly from the storage driver
@@ -270,8 +272,10 @@ int AP_Filesystem_Sys::stat(const char *pathname, struct stat *stbuf)
     // read every file for a directory listing
     if (strcmp(pathname_noslash, "storage.bin") == 0) {
         stbuf->st_size = HAL_STORAGE_SIZE;
+#if AP_CRASHDUMP_ENABLED
     } else if (strcmp(pathname_noslash, "crash_dump.bin") == 0) {
         stbuf->st_size = hal.util->last_crash_dump_size();
+#endif
     } else {
         stbuf->st_size = 100000;
     }
