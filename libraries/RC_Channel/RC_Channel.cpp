@@ -1158,7 +1158,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
 
     case AUX_FUNC::OPTFLOW_CAL: {
 #if AP_OPTICALFLOW_ENABLED
-        OpticalFlow *optflow = AP::opticalflow();
+        AP_OpticalFlow *optflow = AP::opticalflow();
         if (optflow == nullptr) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "OptFlow Cal: failed sensor not enabled");
             break;
