@@ -2989,6 +2989,11 @@ def add_apperiph_defaults(f):
 #ifndef AP_FENCE_ENABLED
 #define AP_FENCE_ENABLED 0
 #endif
+
+// periph does not save temperature cals etc:
+#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
+#endif
 ''')
 
 def add_bootloader_defaults(f):
@@ -3018,6 +3023,11 @@ def add_bootloader_defaults(f):
 #endif
 
 #define HAL_MAX_CAN_PROTOCOL_DRIVERS 0
+
+// bootloader does not save temperature cals etc:
+#ifndef HAL_ENABLE_SAVE_PERSISTENT_PARAMS
+#define HAL_ENABLE_SAVE_PERSISTENT_PARAMS 0
+#endif
 ''')
 
 def add_iomcu_firmware_defaults(f):
