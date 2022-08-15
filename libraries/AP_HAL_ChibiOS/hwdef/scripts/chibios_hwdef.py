@@ -2345,6 +2345,9 @@ def write_hwdef_header(outfilename):
     write_AIRSPEED_config(f)
     write_board_validate_macro(f)
     add_apperiph_defaults(f)
+    add_bootloader_defaults(f)
+    add_iomcu_firmware_defaults(f)
+    add_normal_firmware_defaults(f)
     write_check_firmware(f)
 
     write_peripheral_enable(f)
@@ -2784,6 +2787,8 @@ def add_apperiph_defaults(f):
 
     print("Setting up as AP_Periph")
     f.write('''
+// AP_Periph defaults
+
 #ifndef HAL_SCHEDULER_ENABLED
 #define HAL_SCHEDULER_ENABLED 0
 #endif
@@ -2913,6 +2918,51 @@ def add_apperiph_defaults(f):
 
 ''')
 
+def add_bootloader_defaults(f):
+    '''add default defines for peripherals'''
+    if not args.bootloader:
+        return
+
+    print("Setting up as Bootloader")
+    f.write('''
+// AP_Bootloader defaults
+
+#define HAL_DSHOT_ALARM_ENABLED 0
+''')
+
+def add_iomcu_firmware_defaults(f):
+    '''add default defines IO firmwares'''
+    if env_vars.get('IOMCU_FW', 0) == 0:
+        # not IOMCU firmware
+        return
+
+    print("Setting up as IO firmware")
+    f.write('''
+// IOMCU Firmware defaults
+
+#define HAL_DSHOT_ALARM_ENABLED 0
+''')
+
+def add_normal_firmware_defaults(f):
+    '''add default defines to builds with are not bootloader, periph or IOMCU'''
+    if env_vars.get('IOMCU_FW', 0) != 0:
+        # IOMCU firmware
+        return
+    if env_vars.get('AP_PERIPH', 0) != 0:
+        # Periph firmware
+        return
+    if args.bootloader:
+        # guess
+        return
+
+    print("Setting up as normal firmware")
+    f.write('''
+// firmware defaults
+
+#ifndef HAL_DSHOT_ALARM_ENABLED
+#define HAL_DSHOT_ALARM_ENABLED (HAL_PWM_COUNT>0)
+#endif
+''')
 
 # process input file
 for fname in args.hwdef:
