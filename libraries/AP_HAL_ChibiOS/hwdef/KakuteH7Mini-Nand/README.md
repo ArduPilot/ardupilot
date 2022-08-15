@@ -1,6 +1,6 @@
-# KakuteH7Mini v2 Flight Controller
+# KakuteH7Mini-Nand Flight Controller
 
-The KakuteH7Mini v2 is a flight controller produced by [Holybro](http://www.holybro.com/).
+The KakuteH7Mini-Nand is a flight controller produced by [Holybro](http://www.holybro.com/).
 
 ## Features
 
@@ -16,7 +16,7 @@ The KakuteH7Mini v2 is a flight controller produced by [Holybro](http://www.holy
 
 ## Pinout
 
-![KakuteH7Mini v2 Board](../KakuteH7Mini/KakuteH7Mini_Board.jpg "KakuteH7Mini v2")
+![KakuteH7Mini-Nand Board](../KakuteH7Mini/KakuteH7Mini_Board.jpg "KakuteH7Mini-Nand")
 
 ## UART Mapping
 
@@ -48,11 +48,11 @@ FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set 
   
 ## OSD Support
 
-The KakuteH7Mini v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+The KakuteH7Mini-Nand supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
-The KakuteH7Mini v2 supports up to 9 PWM outputs. The pads for motor output
+The KakuteH7Mini-Nand supports up to 9 PWM outputs. The pads for motor output
 M1 to M4 on the motor connectors and M5 to M8 on separate pads, plus
 M9 for LED strip or another PWM output.
 
@@ -84,7 +84,7 @@ The correct battery setting parameters are:
 
 ## Compass
 
-The KakuteH7Mini v2 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The KakuteH7Mini-Nand does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Loading Firmware
 

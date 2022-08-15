@@ -1,4 +1,4 @@
-# KakuteH7Mini v2 with larger flash chip
+# KakuteH7Mini Nand with larger flash chip
 
 include ../KakuteH7Mini/hwdef.dat
 
