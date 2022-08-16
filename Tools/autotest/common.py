@@ -7255,9 +7255,16 @@ Also, ignores heartbeats not from our target system'''
             passed = False
 
         if len(self.contexts) != old_contexts_length:
-            self.progress("context count mismatch (want=%u got=%u)" %
+            self.progress("context count mismatch (want=%u got=%u); popping extras" %
                           (old_contexts_length, len(self.contexts)))
             passed = False
+            # pop off old contexts to clean up message hooks etc
+            while len(self.contexts) > old_contexts_length:
+                try:
+                    self.context_pop()
+                except Exception as e:
+                    self.print_exception_caught(e, send_statustext=False)
+            self.progress("Done popping extra contexts")
 
         # make sure we don't leave around stray listeners:
         if len(self.mav.message_hooks) != len(start_message_hooks):
