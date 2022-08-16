@@ -865,7 +865,9 @@ class AutoTestQuadPlane(AutoTest):
         self.progress("Setting engine-start RC switch to LOW")
         self.set_rc(rc_engine_start_chan, 1000)
         self.wait_rpm(1, 0, 0, minimum_duration=1)
-        self.disarm_vehicle()
+        # ICE provides forward thrust, which can make us think we're flying:
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
 
     def ICEngineMission(self):
         rc_engine_start_chan = 11
