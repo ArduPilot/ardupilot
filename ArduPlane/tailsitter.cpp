@@ -289,7 +289,7 @@ void Tailsitter::output(void)
     float tilt_right = 0.0f;
 
     // throttle 0 to 1
-    float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
+    float throttle = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle) * 0.01;
 
     // handle forward flight modes and transition to VTOL modes
     if (!active() || in_vtol_transition()) {

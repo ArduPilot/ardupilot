@@ -40,7 +40,7 @@ float Plane::calc_speed_scaler(void)
 #endif
     } else if (hal.util->get_soft_armed()) {
         // scale assumed surface movement using throttle output
-        float throttle_out = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), 1);
+        float throttle_out = MAX(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle), 1);
         speed_scaler = sqrtf(THROTTLE_CRUISE / throttle_out);
         // This case is constrained tighter as we don't have real speed info
         speed_scaler = constrain_float(speed_scaler, 0.6f, 1.67f);
@@ -186,7 +186,7 @@ float Plane::stabilize_pitch_get_pitch_out(float speed_scaler)
     const bool quadplane_in_transition = false;
 #endif
 
-    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
+    int32_t demanded_pitch = nav_pitch_cd + g.pitch_trim_cd + SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
     if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
         disable_integrator = true;

@@ -1669,7 +1669,7 @@ void SLT_Transition::update()
             // scale from all VTOL throttle at airspeed_reached_tilt to all forward throttle at fully forward tilt
             // this removes a step change in throttle once assistance is stoped
             const float ratio = (constrain_float(quadplane.tiltrotor.current_tilt, airspeed_reached_tilt, quadplane.tiltrotor.get_fully_forward_tilt()) - airspeed_reached_tilt) / (quadplane.tiltrotor.get_fully_forward_tilt() - airspeed_reached_tilt);
-            const float fw_throttle = MAX(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
+            const float fw_throttle = MAX(SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle),0) * 0.01;
             throttle_scaled = constrain_float(throttle_scaled * (1.0-ratio) + fw_throttle * ratio, 0.0, 1.0);
         }
         quadplane.assisted_flight = true;
@@ -2446,7 +2446,7 @@ void QuadPlane::vtol_position_controller(void)
             transition->set_last_fw_pitch();
 
             // switch to vfwd for throttle control
-            vel_forward.integrator = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+            vel_forward.integrator = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle);
             vel_forward.last_ms = now_ms;
         }
 
@@ -4060,7 +4060,7 @@ bool QuadPlane::air_mode_active() const
  */
 float QuadPlane::FW_vector_throttle_scaling()
 {
-    const float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
+    const float throttle = SRV_Channels::get_slew_limited_output_scaled(SRV_Channel::k_throttle) * 0.01;
     // scale relative to a fixed 0.5 mid throttle so that changes in TRIM_THROTTLE in missions don't change
     // the scaling of tilt
     const float mid_throttle = 0.5;

@@ -101,6 +101,9 @@ bool Mode::enter()
 
         // update RC failsafe, as mode change may have necessitated changing the failsafe throttle
         plane.control_failsafe();
+
+        // slew rate limit throttle if needed in new mode
+        plane.throttle_slew_limit(SRV_Channel::k_throttle);
     }
 
     return enter_result;
