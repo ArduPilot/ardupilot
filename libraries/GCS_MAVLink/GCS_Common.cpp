@@ -2964,6 +2964,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_long_t &pa
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return MAV_RESULT_ACCEPTED;
         }
+#if HAL_ENABLE_DFU_BOOT
+        if (is_equal(packet.param4, 99.0f)) {
+            send_text(MAV_SEVERITY_WARNING,"Entering DFU mode");
+            hal.util->boot_to_dfu();
+            return MAV_RESULT_ACCEPTED;
+        }
+#endif
     }
 
     if (hal.util->get_soft_armed()) {
