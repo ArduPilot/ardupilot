@@ -2634,8 +2634,8 @@ function'''
             raise NotAchievedException("Expected terrain height=%f got=%f" %
                                        (expected_terrain_height, report.terrain_height))
 
-    def test_loiter_terrain(self):
-        default_rad = self.get_parameter("WP_LOITER_RAD")
+    def TerrainLoiter(self):
+        self.context_push()
         self.set_parameters({
             "TERRAIN_FOLLOW": 1, # enable terrain following in loiter
             "WP_LOITER_RAD": 2000, # set very large loiter rad to get some terrain changes
@@ -2646,26 +2646,18 @@ function'''
         self.change_mode("LOITER")
         self.progress("loitering at %um" % alt)
         tstart = self.get_sim_time()
+        timeout = 60*15  # enough time to do one and a bit circles
         while True:
             now = self.get_sim_time_cached()
-            if now - tstart > 60*15: # enough time to do one and a bit circles
+            if now - tstart > timeout:
                 break
-            terrain = self.mav.recv_match(
-                type='TERRAIN_REPORT',
-                blocking=True,
-                timeout=1
-            )
-            if terrain is None:
-                raise NotAchievedException("Did not get TERRAIN_REPORT message")
+            terrain = self.assert_receive_message('TERRAIN_REPORT')
             rel_alt = terrain.current_height
             self.progress("%um above terrain" % rel_alt)
             if rel_alt > alt*1.2 or rel_alt < alt * 0.8:
                 raise NotAchievedException("Not terrain following")
+        self.context_pop()
         self.progress("Returning home")
-        self.set_parameters({
-            "TERRAIN_FOLLOW": 0,
-            "WP_LOITER_RAD": default_rad,
-        })
         self.fly_home_land_and_disarm(240)
 
     def fly_external_AHRS(self, sim, eahrs_type, mission):
@@ -3995,9 +3987,9 @@ function'''
              "Test terrain following in mission",
              self.TerrainMission),
 
-            ("Terrain-loiter",
+            ("TerrainLoiter",
              "Test terrain following in loiter",
-             self.test_loiter_terrain),
+             self.TerrainLoiter),
 
             ("VectorNavEAHRS",
              "Test VectorNav EAHRS support",
@@ -4112,6 +4104,5 @@ function'''
 
     def disabled_tests(self):
         return {
-            "Terrain-loiter": "Loading of terrain data is not reliable",
             "Landing-Drift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
         }
