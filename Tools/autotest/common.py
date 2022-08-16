@@ -12187,13 +12187,14 @@ switch value'''
             (8, "NOVA", 15, "NOVA"),  # no attempt to auto-detect this in AP_GPS
             # (9, "FILE"),
         ]
+        self.context_collect("STATUSTEXT")
         for (sim_gps_type, name, gps_type, detect_name) in sim_gps:
             self.start_subtest("Checking GPS type %s" % name)
             self.set_parameter("SIM_GPS_TYPE", sim_gps_type)
             if gps_type is None:
                 gps_type = 1  # auto-detect
             self.set_parameter("GPS_TYPE", gps_type)
-            self.context_collect("STATUSTEXT")
+            self.context_clear_collection('STATUSTEXT')
             self.reboot_sitl()
             self.wait_statustext("detected as %s" % detect_name, check_context=True)
             n = self.poll_home_position(timeout=120)
