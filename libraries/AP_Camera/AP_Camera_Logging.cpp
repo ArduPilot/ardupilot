@@ -3,6 +3,7 @@
 #if AP_CAMERA_ENABLED
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
 
 // Write a Camera packet
 void AP_Camera::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)
