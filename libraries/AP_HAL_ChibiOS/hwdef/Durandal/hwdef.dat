@@ -348,3 +348,6 @@ define HAL_BATT_CURR_SCALE 36.364
 
 # Enable Sagetech MXS ADSB transponder
 define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
+
+# uncomment to enable DFU boot
+# ENABLE_DFU_BOOT 1
