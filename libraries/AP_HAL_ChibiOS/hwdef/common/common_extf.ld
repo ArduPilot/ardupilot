@@ -220,6 +220,7 @@ SECTIONS
            positive isn't found by the bootloader (eg. ROMFS) */
         KEEP(*libch.a:vectors.o);
         KEEP(*libch.a:crt0_v7m.o);
+        KEEP(*(.ecc_raw));
         KEEP(*(.app_descriptor));
         *(.text)
         *(.text.*)
