@@ -240,6 +240,26 @@ void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate
 void NMI_Handler(void);
 void NMI_Handler(void) { while (1); }
 
+void __entry_hook(void);
+void __entry_hook()
+{
+    // read the persistent data
+    AP_HAL::Util::PersistentData pd;
+    stm32_watchdog_load((uint32_t *)&pd, (sizeof(pd)+3)/4);
+    if (pd.boot_to_dfu) {
+        pd.boot_to_dfu = false;
+        stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
+#if defined(STM32H7)
+        const uint32_t *app_base = (const uint32_t *)(0x1FF09800); 
+#else
+        const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
+#endif
+        __set_MSP(*app_base);
+        ((void (*)())*(&app_base[1]))();
+        while(true);
+    }
+}
+
 }
 namespace AP_HAL {
 

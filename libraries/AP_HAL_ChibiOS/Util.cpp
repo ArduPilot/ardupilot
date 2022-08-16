@@ -748,6 +748,15 @@ void* Util::last_crash_dump_ptr() const
 }
 #endif // AP_CRASHDUMP_ENABLED
 
+#if HAL_ENABLE_DFU_BOOT && !defined(HAL_BOOTLOADER_BUILD)
+void Util::boot_to_dfu()
+{
+    hal.util->persistent_data.boot_to_dfu = true;
+    stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    hal.scheduler->reboot(false);
+}
+#endif
+
 // set armed state
 void Util::set_soft_armed(const bool b)
 {
@@ -757,3 +766,9 @@ void Util::set_soft_armed(const bool b)
 #endif
 }
 
+void Util::boot_to_dfu()
+{
+    hal.util->persistent_data.boot_to_dfu = true;
+    stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    hal.scheduler->reboot(false);
+}

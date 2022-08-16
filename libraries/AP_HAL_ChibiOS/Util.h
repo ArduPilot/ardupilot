@@ -152,4 +152,5 @@ private:
     void* last_crash_dump_ptr() const override;
 #endif
 
+    void boot_to_dfu() override;
 };
