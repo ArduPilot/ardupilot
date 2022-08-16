@@ -19,7 +19,9 @@
 #include <string.h>
 #include <stm32_dma.h>
 #include <hrt.h>
-
+#if defined(SECURE) && SECURE
+#include "user_settings.h"
+#endif
 static int64_t utc_time_offset;
 
 /*
@@ -501,6 +503,13 @@ static bool stm32_rand_generate(uint32_t *val)
         return false;
     }
     return true;
+}
+
+uint32_t wolfssl_rand_get(void)
+{
+    uint32_t val;
+    while (!stm32_rand_generate(&val)) {}
+    return val;
 }
 
 bool stm32_rand_generate_blocking(unsigned char* output, unsigned int sz, uint32_t timeout_us)
