@@ -225,7 +225,7 @@ protected:
     // Does initial configuration to bring up and setup chip
     bool detect_device();
 
-    // Configures device to normal working state, currently 4-4-4 QSPI
+    // Configures device to normal working state, currently 4-4-4 WSPI
     bool configure_device();
 
     // Enables commands that modify flash data or settings
@@ -247,13 +247,13 @@ protected:
     // sends instruction to write a register value in the chip
     bool write_reg(uint8_t read_ins, uint8_t write_val);
 
-    // Sends QSPI command without data
+    // Sends WSPI command without data
     bool send_cmd(uint8_t ins);
 
     // Is device in quad spi mode
     bool _quad_spi_mode;
 
-    AP_HAL::OwnPtr<AP_HAL::QSPIDevice> _dev;
+    AP_HAL::OwnPtr<AP_HAL::WSPIDevice> _dev;
 
     enum xip_entry_methods {
         XIP_ENTRY_METHOD_1,
