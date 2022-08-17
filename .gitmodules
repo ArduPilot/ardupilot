@@ -36,4 +36,4 @@
 	url = https://github.com/DroneCAN/libcanard
 [submodule "modules/wolfssl"]
 	path = modules/wolfssl
-	url = https://github.com/wolfssl/wolfssl
+	url = https://github.com/ardupilot/wolfssl
