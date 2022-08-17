@@ -39,17 +39,23 @@ static const struct WSPIDriverInfo {
 } wspi_devices[] = { HAL_WSPI_BUS_LIST };
 
 #define WSPIDEV_MODE1 0
+#if HAL_USE_QUADSPI
 #define WSPIDEV_MODE3 STM32_DCR_CK_MODE
+#else
+#define WSPIDEV_MODE3 STM32_DCR1_CK_MODE
+#endif
 
 // device list comes from hwdef.dat
 WSPIDesc WSPIDeviceManager::device_table[] = { HAL_WSPI_DEVICE_LIST };
 
 // Check clock sanity during runtime
+#if defined(STM32_WSPI_USE_QUADSPI1) && STM32_WSPI_USE_QUADSPI1
 #if (STM32_QSPICLK < HAL_QSPI1_CLK)
 #error "Flash speed must not be greater than QSPI Clock"
 #endif
 #if (STM32_QSPICLK % HAL_QSPI1_CLK)
 #warning "QSPI clock not an integer multiple of flash speed"
+#endif
 #endif
 
 #if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
@@ -58,6 +64,24 @@ WSPIDesc WSPIDeviceManager::device_table[] = { HAL_WSPI_DEVICE_LIST };
 #endif
 #if (STM32_QSPICLK % HAL_QSPI2_CLK)
 #warning "WSPI clock not an integer multiple of flash speed"
+#endif
+#endif
+
+#if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
+#if (STM32_OSPICLK < HAL_OSPI1_CLK)
+#error "Flash speed must not be greater than OSPI Clock"
+#endif
+#if (STM32_OSPICLK % HAL_OSPI1_CLK)
+#warning "OSPI clock not an integer multiple of flash speed"
+#endif
+#endif
+
+#if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
+#if (STM32_OSPICLK < HAL_OSPI2_CLK)
+#error "Flash speed must not be greater than OSPI Clock"
+#endif
+#if (STM32_OSPICLK % HAL_OSPI2_CLK)
+#warning "OSPI clock not an integer multiple of flash speed"
 #endif
 #endif
 
@@ -112,9 +136,15 @@ bool WSPIDevice::acquire_bus(bool acquire)
             // Initialise and Start WSPI driver
             bus.wspicfg.end_cb = nullptr;
             bus.wspicfg.error_cb = nullptr;
+#if HAL_USE_QUADSPI
             bus.wspicfg.dcr = STM32_DCR_FSIZE(device_desc.size_pow2) |
                               STM32_DCR_CSHT(device_desc.ncs_clk_delay - 1)   |
                               device_desc.mode;
+#else
+            bus.wspicfg.dcr1 = STM32_DCR1_DEVSIZE(device_desc.size_pow2) |
+                              STM32_DCR1_CSHT(device_desc.ncs_clk_delay - 1)   |
+                              device_desc.mode;
+#endif
             wspiStart(wspi_devices[device_desc.bus].driver, &bus.wspicfg);
         }
     } else {
