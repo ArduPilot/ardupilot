@@ -23,16 +23,16 @@
 #include "Device.h"
 #include "utility/OwnPtr.h"
 
-#ifndef HAL_USE_QSPI_DEFAULT_CFG
-#define HAL_USE_QSPI_DEFAULT_CFG 1
+#ifndef HAL_USE_WSPI_DEFAULT_CFG
+#define HAL_USE_WSPI_DEFAULT_CFG 1
 #endif
 
 namespace AP_HAL
 {
 
 // Underlying HAL implementation can override these
-#if HAL_USE_QSPI_DEFAULT_CFG
-namespace QSPI
+#if HAL_USE_WSPI_DEFAULT_CFG
+namespace WSPI
 {
 constexpr uint32_t CFG_CMD_MODE_MASK        =   (3LU << 8LU);
 constexpr uint32_t CFG_CMD_MODE_NONE        =   (0LU << 8LU);
@@ -80,13 +80,13 @@ constexpr uint32_t CFG_DATA_DDR             =  (1LU << 31LU);
 
 constexpr uint32_t CFG_SIOO                 =  (1LU << 28LU);
 }
-#endif //#if HAL_USE_QSPI_DEFAULT_CFG
+#endif //#if HAL_USE_WSPI_DEFAULT_CFG
 
-class QSPIDevice : public Device
+class WSPIDevice : public Device
 {
 public:
 
-    QSPIDevice() : Device(BUS_TYPE_QSPI) { }
+    WSPIDevice() : Device(BUS_TYPE_WSPI) { }
 
     /* See AP_HAL::Device::transfer() */
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
@@ -101,21 +101,21 @@ protected:
     uint32_t _trx_flags;
 };
 
-class QSPIDeviceManager
+class WSPIDeviceManager
 {
 public:
-    virtual OwnPtr<QSPIDevice> get_device(const char *name)
+    virtual OwnPtr<WSPIDevice> get_device(const char *name)
     {
         return nullptr;
     }
 
-    /* Return the number of QSPI devices currently registered. */
+    /* Return the number of WSPI devices currently registered. */
     virtual uint8_t get_count() const
     {
         return 0;
     }
 
-    /* Get qspi device name at @idx */
+    /* Get wspi device name at @idx */
     virtual const char *get_device_name(uint8_t idx) const
     {
         return nullptr;
