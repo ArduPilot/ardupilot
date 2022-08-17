@@ -858,11 +858,17 @@ bool AP_FlashIface_JEDEC::read(uint32_t offset, uint8_t* data, uint32_t size)
         cmd.addr    =   read_ptr;
         cmd.alt     =   0;
         cmd.cfg     =   AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
-                        AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
                         AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
-                        AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
                         AP_HAL::WSPI::CFG_ALT_SIZE_8 |
+#if HAL_USE_QUADSPI
+                        AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
+                        AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
                         AP_HAL::WSPI::CFG_ALT_MODE_FOUR_LINES;
+#else
+                        AP_HAL::WSPI::CFG_ADDR_MODE_EIGHT_LINES |
+                        AP_HAL::WSPI::CFG_DATA_MODE_EIGHT_LINES |
+                        AP_HAL::WSPI::CFG_ALT_MODE_EIGHT_LINES;
+#endif
         if (_desc.fast_read_mode_clocks == 1){
             cmd.dummy = _desc.fast_read_dummy_cycles - 1;
         } else {
@@ -928,15 +934,21 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
         case AP_FlashIface_JEDEC::XIP_ENTRY_METHOD_1:
         {
             // Set WSPI module for XIP mode
-            AP_HAL::QSPIDevice::CommandHeader cmd;
+            AP_HAL::WSPIDevice::CommandHeader cmd;
             cmd.cmd = _desc.fast_read_ins;  // generally 0xEB for 1-4-4 access
             cmd.alt = 0xF0;                 // add M0-7 bits in alt to make up 32-bit address phase, sec 8.2.11 W25Q64JV reference
-            cmd.cfg = AP_HAL::QSPI::CFG_ADDR_SIZE_24 |
-                      AP_HAL::QSPI::CFG_CMD_MODE_ONE_LINE |
-                      AP_HAL::QSPI::CFG_ADDR_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_DATA_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_ALT_MODE_FOUR_LINES |
-                      AP_HAL::QSPI::CFG_ALT_SIZE_8;
+            cmd.cfg = AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
+                      AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+#if HAL_USE_QUADSPI
+                      AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
+                      AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
+                      AP_HAL::WSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
+#else
+                      AP_HAL::WSPI::CFG_ADDR_MODE_EIGHT_LINES |
+                      AP_HAL::WSPI::CFG_DATA_MODE_EIGHT_LINES |
+                      AP_HAL::WSPI::CFG_ALT_MODE_EIGHT_LINES |  /* Always 4 lines, note.*/
+#endif
+                      AP_HAL::WSPI::CFG_ALT_SIZE_8;
             cmd.addr = 0;
             cmd.dummy = _desc.fast_read_dummy_cycles;
             _dev->set_cmd_header(cmd);
@@ -960,9 +972,15 @@ bool AP_FlashIface_JEDEC::start_xip_mode(void** addr)
             cmd.alt = 0;
             cmd.cfg = AP_HAL::WSPI::CFG_ADDR_SIZE_24 |
                       AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+#if HAL_USE_QUADSPI
                       AP_HAL::WSPI::CFG_ADDR_MODE_FOUR_LINES |
                       AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES |
                       AP_HAL::WSPI::CFG_ALT_MODE_FOUR_LINES |  /* Always 4 lines, note.*/
+#else
+                      AP_HAL::WSPI::CFG_ADDR_MODE_EIGHT_LINES |
+                      AP_HAL::WSPI::CFG_DATA_MODE_EIGHT_LINES |
+                      AP_HAL::WSPI::CFG_ALT_MODE_EIGHT_LINES |
+#endif
                       AP_HAL::WSPI::CFG_ALT_SIZE_8 |
                       AP_HAL::WSPI::CFG_SIOO;
             cmd.addr = 0;
