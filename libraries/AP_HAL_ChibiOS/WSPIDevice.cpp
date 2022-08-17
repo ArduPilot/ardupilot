@@ -18,7 +18,7 @@
  */
 
 #include <hal.h>
-#include "QSPIDevice.h"
+#include "WSPIDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -28,21 +28,21 @@
 #include "Scheduler.h"
 #include <stdio.h>
 
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
 
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
-static const struct QSPIDriverInfo {
+static const struct WSPIDriverInfo {
     WSPIDriver *driver;
     uint8_t busid; // used for device IDs in parameters
-} qspi_devices[] = { HAL_QSPI_BUS_LIST };
+} wspi_devices[] = { HAL_WSPI_BUS_LIST };
 
-#define QSPIDEV_MODE1 0
-#define QSPIDEV_MODE3 STM32_DCR_CK_MODE
+#define WSPIDEV_MODE1 0
+#define WSPIDEV_MODE3 STM32_DCR_CK_MODE
 
 // device list comes from hwdef.dat
-QSPIDesc QSPIDeviceManager::device_table[] = { HAL_QSPI_DEVICE_LIST };
+WSPIDesc WSPIDeviceManager::device_table[] = { HAL_WSPI_DEVICE_LIST };
 
 // Check clock sanity during runtime
 #if (STM32_QSPICLK < HAL_QSPI1_CLK)
@@ -57,11 +57,11 @@ QSPIDesc QSPIDeviceManager::device_table[] = { HAL_QSPI_DEVICE_LIST };
 #error "Flash speed must not be greater than QSPI Clock"
 #endif
 #if (STM32_QSPICLK % HAL_QSPI2_CLK)
-#warning "QSPI clock not an integer multiple of flash speed"
+#warning "WSPI clock not an integer multiple of flash speed"
 #endif
 #endif
 
-bool QSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
+bool WSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len)
 {
     if (!acquire_bus(true)) {
@@ -74,14 +74,14 @@ bool QSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     bool ret = true;
     if (send_len == 0 && recv_len == 0) {
         // This is just a command
-        ret = !wspiCommand(qspi_devices[device_desc.bus].driver, &mode);
+        ret = !wspiCommand(wspi_devices[device_desc.bus].driver, &mode);
     } else if (send_len > 0 && recv == 0) {
         // This is a send cmd
-        ret = !wspiSend(qspi_devices[device_desc.bus].driver, &mode, send_len, send);
+        ret = !wspiSend(wspi_devices[device_desc.bus].driver, &mode, send_len, send);
     } else if (send_len == 0 && recv_len >= 1) {
         // This is a receive cmd,
         // we only consume first byte of send
-        ret = !wspiReceive(qspi_devices[device_desc.bus].driver, &mode, recv_len, recv);
+        ret = !wspiReceive(wspi_devices[device_desc.bus].driver, &mode, recv_len, recv);
     } else {
         // Can't handle this transaction type
         ret = false;
@@ -91,7 +91,7 @@ bool QSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     return ret;
 }
 
-void QSPIDevice::set_cmd_header(const CommandHeader& cmd_hdr)
+void WSPIDevice::set_cmd_header(const CommandHeader& cmd_hdr)
 {
     mode.cmd   = cmd_hdr.cmd;
     mode.cfg   = cmd_hdr.cfg;
@@ -101,46 +101,46 @@ void QSPIDevice::set_cmd_header(const CommandHeader& cmd_hdr)
 }
 
 
-bool QSPIDevice::acquire_bus(bool acquire)
+bool WSPIDevice::acquire_bus(bool acquire)
 {
     if (!bus.semaphore.check_owner()) {
         return false;
     }
     if (acquire) {
-        wspiAcquireBus(qspi_devices[device_desc.bus].driver);
-        if (qspi_devices[device_desc.bus].driver->config != &bus.wspicfg) {
+        wspiAcquireBus(wspi_devices[device_desc.bus].driver);
+        if (wspi_devices[device_desc.bus].driver->config != &bus.wspicfg) {
             // Initialise and Start WSPI driver
             bus.wspicfg.end_cb = nullptr;
             bus.wspicfg.error_cb = nullptr;
             bus.wspicfg.dcr = STM32_DCR_FSIZE(device_desc.size_pow2) |
                               STM32_DCR_CSHT(device_desc.ncs_clk_delay - 1)   |
                               device_desc.mode;
-            wspiStart(qspi_devices[device_desc.bus].driver, &bus.wspicfg);
+            wspiStart(wspi_devices[device_desc.bus].driver, &bus.wspicfg);
         }
     } else {
-        wspiReleaseBus(qspi_devices[device_desc.bus].driver);
+        wspiReleaseBus(wspi_devices[device_desc.bus].driver);
     }
     return true;
 }
 
 
 // Enters Memory mapped or eXecution In Place or 0-4-4 mode
-bool QSPIDevice::enter_xip_mode(void** map_ptr)
+bool WSPIDevice::enter_xip_mode(void** map_ptr)
 {
     if (!acquire_bus(true)) {
         return false;
     }
-    wspiMapFlash(qspi_devices[device_desc.bus].driver, &mode, (uint8_t**)map_ptr);
+    wspiMapFlash(wspi_devices[device_desc.bus].driver, &mode, (uint8_t**)map_ptr);
     acquire_bus(false);
     return true;
 }
 
-bool QSPIDevice::exit_xip_mode()
+bool WSPIDevice::exit_xip_mode()
 {
     if (!acquire_bus(true)) {
         return false;
     }
-    wspiUnmapFlash(qspi_devices[device_desc.bus].driver);
+    wspiUnmapFlash(wspi_devices[device_desc.bus].driver);
     acquire_bus(false);
     return true;
 }
@@ -148,8 +148,8 @@ bool QSPIDevice::exit_xip_mode()
 /*
   return a SPIDevice given a string device name
  */
-AP_HAL::OwnPtr<AP_HAL::QSPIDevice>
-QSPIDeviceManager::get_device(const char *name)
+AP_HAL::OwnPtr<AP_HAL::WSPIDevice>
+WSPIDeviceManager::get_device(const char *name)
 {
     /* Find the bus description in the table */
     uint8_t i;
@@ -159,21 +159,21 @@ QSPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::QSPIDevice>(nullptr);
+        return AP_HAL::OwnPtr<AP_HAL::WSPIDevice>(nullptr);
     }
 
-    QSPIDesc &desc = device_table[i];
+    WSPIDesc &desc = device_table[i];
 
     // find the bus
-    QSPIBus *busp;
-    for (busp = buses; busp; busp = (QSPIBus *)busp->next) {
+    WSPIBus *busp;
+    for (busp = buses; busp; busp = (WSPIBus *)busp->next) {
         if (busp->bus == desc.bus) {
             break;
         }
     }
     if (busp == nullptr) {
         // create a new one
-        busp = new QSPIBus(desc.bus);
+        busp = new WSPIBus(desc.bus);
         if (busp == nullptr) {
             return nullptr;
         }
@@ -183,7 +183,7 @@ QSPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::QSPIDevice>(new QSPIDevice(*busp, desc));
+    return AP_HAL::OwnPtr<AP_HAL::WSPIDevice>(new WSPIDevice(*busp, desc));
 }
 
-#endif // #if HAL_USE_QSPI == TRUE && defined(HAL_QPI_DEVICE_LIST)
+#endif // #if HAL_USE_WSPI == TRUE && defined(HAL_QPI_DEVICE_LIST)

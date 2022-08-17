@@ -122,8 +122,8 @@ static Empty::Flash flashDriver;
 static ChibiOS::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 #endif
 
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
-static ChibiOS::QSPIDeviceManager qspiDeviceManager;
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+static ChibiOS::WSPIDeviceManager wspiDeviceManager;
 #endif
 
 #if HAL_WITH_IO_MCU
@@ -146,8 +146,8 @@ HAL_ChibiOS::HAL_ChibiOS() :
         &uartJDriver,
         &i2cDeviceManager,
         &spiDeviceManager,
-#if HAL_USE_WSPI == TRUE && defined(HAL_QSPI_DEVICE_LIST)
-        &qspiDeviceManager,
+#if HAL_USE_WSPI == TRUE && defined(HAL_WSPI_DEVICE_LIST)
+        &wspiDeviceManager,
 #else
         nullptr,
 #endif
