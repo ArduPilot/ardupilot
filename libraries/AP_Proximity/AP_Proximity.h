@@ -116,7 +116,7 @@ public:
     // mavlink related methods
     //
 
-    // handle mavlink DISTANCE_SENSOR messages
+    // handle mavlink messages
     void handle_msg(const mavlink_message_t &msg);
 
     // methods for mavlink SYS_STATUS message (send_sys_status)
