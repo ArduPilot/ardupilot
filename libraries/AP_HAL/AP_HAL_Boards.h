@@ -313,6 +313,13 @@
 #define HAL_CANFD_SUPPORTED 0
 #endif
 
+#ifndef HAL_USE_QUADSPI
+#define HAL_USE_QUADSPI 0
+#endif
+#ifndef HAL_USE_OCTOSPI
+#define HAL_USE_OCTOSPI 0
+#endif
+
 #ifndef __RAMFUNC__
 #define __RAMFUNC__
 #endif
