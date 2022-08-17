@@ -78,7 +78,7 @@ static Util utilInstance(&sitlState);
 static HALSITL::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 #endif
 
-static Empty::QSPIDeviceManager qspi_mgr_instance;
+static Empty::WSPIDeviceManager wspi_mgr_instance;
 
 HAL_SITL::HAL_SITL() :
     AP_HAL::HAL(
@@ -94,7 +94,7 @@ HAL_SITL::HAL_SITL() :
         &sitlUart9Driver,   /* uartJ */
         &i2c_mgr_instance,
         &spi_mgr_instance,  /* spi */
-        &qspi_mgr_instance,
+        &wspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
         &sitlUart0Driver,   /* console */
