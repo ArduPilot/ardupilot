@@ -2919,6 +2919,8 @@ def process_line(line):
         spidev.append(a[1:])
     elif a[0] == 'QSPIDEV':
         wspidev.append(a[1:])
+    elif a[0] == 'OSPIDEV':
+        wspidev.append(a[1:])
     elif a[0] == 'IMU':
         imu_list.append(a[1:])
     elif a[0] == 'COMPASS':
