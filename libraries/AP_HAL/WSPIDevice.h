@@ -34,6 +34,7 @@ namespace AP_HAL
 #if HAL_USE_WSPI_DEFAULT_CFG
 namespace WSPI
 {
+#if HAL_USE_QUADSPI
 constexpr uint32_t CFG_CMD_MODE_MASK        =   (3LU << 8LU);
 constexpr uint32_t CFG_CMD_MODE_NONE        =   (0LU << 8LU);
 constexpr uint32_t CFG_CMD_MODE_ONE_LINE    =   (1LU << 8LU);
@@ -48,7 +49,6 @@ constexpr uint32_t CFG_ADDR_MODE_NONE        =  (0LU << 10LU);
 constexpr uint32_t CFG_ADDR_MODE_ONE_LINE    =  (1LU << 10LU);
 constexpr uint32_t CFG_ADDR_MODE_TWO_LINES   =  (2LU << 10LU);
 constexpr uint32_t CFG_ADDR_MODE_FOUR_LINES  =  (3LU << 10LU);
-
 
 constexpr uint32_t CFG_ADDR_SIZE_MASK   =  (3LU << 12LU);
 constexpr uint32_t CFG_ADDR_SIZE_8      =  (0LU << 12LU);
@@ -79,6 +79,57 @@ constexpr uint32_t CFG_DATA_MODE_FOUR_LINES =  (3LU << 24LU);
 constexpr uint32_t CFG_DATA_DDR             =  (1LU << 31LU);
 
 constexpr uint32_t CFG_SIOO                 =  (1LU << 28LU);
+#else   // OCTOSPI
+constexpr uint32_t CFG_CMD_MODE_MASK        =   (7LU << 0LU);
+constexpr uint32_t CFG_CMD_MODE_NONE        =   (0LU << 0LU);
+constexpr uint32_t CFG_CMD_MODE_ONE_LINE    =   (1LU << 0LU);
+constexpr uint32_t CFG_CMD_MODE_TWO_LINES   =   (2LU << 0LU);
+constexpr uint32_t CFG_CMD_MODE_FOUR_LINES  =   (3LU << 0LU);
+constexpr uint32_t CFG_CMD_MODE_EIGHT_LINES  =  (4LU << 0LU);
+
+constexpr uint32_t CFG_CMD_SIZE_MASK     =  (3LU << 4LU);
+constexpr uint32_t CFG_CMD_SIZE_8        =  (0LU << 4LU);
+
+constexpr uint32_t CFG_ADDR_MODE_MASK        =  (7LU << 8LU);
+constexpr uint32_t CFG_ADDR_MODE_NONE        =  (0LU << 8LU);
+constexpr uint32_t CFG_ADDR_MODE_ONE_LINE    =  (1LU << 8LU);
+constexpr uint32_t CFG_ADDR_MODE_TWO_LINES   =  (2LU << 8LU);
+constexpr uint32_t CFG_ADDR_MODE_FOUR_LINES  =  (3LU << 8LU);
+constexpr uint32_t CFG_ADDR_MODE_EIGHT_LINES  = (4LU << 8LU);
+
+
+constexpr uint32_t CFG_ADDR_SIZE_MASK   =  (3LU << 12LU);
+constexpr uint32_t CFG_ADDR_SIZE_8      =  (0LU << 12LU);
+constexpr uint32_t CFG_ADDR_SIZE_16     =  (1LU << 12LU);
+constexpr uint32_t CFG_ADDR_SIZE_24     =  (2LU << 12LU);
+constexpr uint32_t CFG_ADDR_SIZE_32     =  (3LU << 12LU);
+
+constexpr uint32_t CFG_ALT_MODE_MASK        =  (7LU << 16LU);
+constexpr uint32_t CFG_ALT_MODE_NONE        =  (0LU << 16LU);
+constexpr uint32_t CFG_ALT_MODE_ONE_LINE    =  (1LU << 16LU);
+constexpr uint32_t CFG_ALT_MODE_TWO_LINES   =  (2LU << 16LU);
+constexpr uint32_t CFG_ALT_MODE_FOUR_LINES  =  (3LU << 16LU);
+constexpr uint32_t CFG_ALT_MODE_EIGHT_LINES  = (4LU << 16LU);
+
+constexpr uint32_t CFG_ALT_DDR              =  (1LU << 19LU);
+
+constexpr uint32_t CFG_ALT_SIZE_MASK        =  (3LU << 20LU);
+constexpr uint32_t CFG_ALT_SIZE_8           =  (0LU << 20LU);
+constexpr uint32_t CFG_ALT_SIZE_16          =  (1LU << 20LU);
+constexpr uint32_t CFG_ALT_SIZE_24          =  (2LU << 20LU);
+constexpr uint32_t CFG_ALT_SIZE_32          =  (3LU << 20LU);
+
+constexpr uint32_t CFG_DATA_MODE_MASK       =  (7LU << 24LU);
+constexpr uint32_t CFG_DATA_MODE_NONE       =  (0LU << 24LU);
+constexpr uint32_t CFG_DATA_MODE_ONE_LINE   =  (1LU << 24LU);
+constexpr uint32_t CFG_DATA_MODE_TWO_LINES  =  (2LU << 24LU);
+constexpr uint32_t CFG_DATA_MODE_FOUR_LINES =  (3LU << 24LU);
+constexpr uint32_t CFG_DATA_MODE_EIGHT_LINES=  (4LU << 24LU);
+
+constexpr uint32_t CFG_DATA_DDR             =  (1LU << 27LU);
+
+constexpr uint32_t CFG_SIOO                 =  (1LU << 31LU);
+#endif // HAL_USE_QUADSPI
 }
 #endif //#if HAL_USE_WSPI_DEFAULT_CFG
 
