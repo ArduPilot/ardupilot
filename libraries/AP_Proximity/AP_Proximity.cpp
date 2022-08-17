@@ -249,19 +249,36 @@ AP_Proximity::Status AP_Proximity::get_status() const
 // get maximum and minimum distances (in meters) of primary sensor
 float AP_Proximity::distance_max() const
 {
-    if (!valid_instance(primary_instance)) {
-        return 0.0f;
+    float dist_max = 0;
+
+    // return longest distance from all backends
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (valid_instance(i)) {
+            dist_max = MAX(dist_max, drivers[i]->distance_max());
+        }
     }
-    // get maximum distance from backend
-    return drivers[primary_instance]->distance_max();
+    return dist_max;
 }
 float AP_Proximity::distance_min() const
 {
-    if (!valid_instance(primary_instance)) {
-        return 0.0f;
+    float dist_min = 0;
+    bool found_dist_min = false;
+
+    // calculate shortest distance from all backends
+    for (uint8_t i=0; i<num_instances; i++) {
+        if (valid_instance(i)) {
+            const float disti_min = drivers[i]->distance_min();
+            if (!found_dist_min || (disti_min <= dist_min)) {
+                dist_min = disti_min;
+                found_dist_min = true;
+            }
+        }
     }
-    // get minimum distance from backend
-    return drivers[primary_instance]->distance_min();
+
+    if (found_dist_min) {
+        return dist_min;
+    }
+    return 0;
 }
 
 
