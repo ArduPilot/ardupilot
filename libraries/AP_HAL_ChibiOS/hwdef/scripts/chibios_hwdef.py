@@ -83,7 +83,7 @@ altlabel = {}
 # list of SPI devices
 spidev = []
 
-# list of QSPI devices
+# list of WSPI devices
 qspidev = []
 
 # dictionary of ROMFS files
@@ -92,7 +92,7 @@ romfs = {}
 # SPI bus list
 spi_list = []
 
-# list of QSPI devices
+# list of WSPI devices
 qspi_list = []
 
 # all config lines in order
@@ -1497,9 +1497,9 @@ def write_SPI_config(f):
     write_SPI_table(f)
 
 
-def write_QSPI_table(f):
+def write_WSPI_table(f):
     '''write SPI device table'''
-    f.write('\n// QSPI device table\n')
+    f.write('\n// WSPI device table\n')
     devlist = []
     for dev in qspidev:
         if len(dev) != 6:
@@ -1519,17 +1519,17 @@ def write_QSPI_table(f):
 
         devidx = len(devlist)
         f.write(
-            '#define HAL_QSPI_DEVICE%-2u QSPIDesc(%-17s, %2u, QSPIDEV_%s, %7s, %2u, %2u)\n'
+            '#define HAL_WSPI_DEVICE%-2u WSPIDesc(%-17s, %2u, WSPIDEV_%s, %7s, %2u, %2u)\n'
             % (devidx, name, qspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
-        devlist.append('HAL_QSPI_DEVICE%u' % devidx)
-    f.write('#define HAL_QSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
+        devlist.append('HAL_WSPI_DEVICE%u' % devidx)
+    f.write('#define HAL_WSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
     for dev in qspidev:
         f.write("#define HAL_HAS_WSPI_%s 1\n" % dev[0].upper().replace("-", "_"))
         f.write("#define HAL_QSPI%d_CLK (%s)" % (int(bus[7:]), speed))
     f.write("\n")
 
 
-def write_QSPI_config(f):
+def write_WSPI_config(f):
     '''write SPI config defines'''
     global qspi_list
     # only the bootloader must reset the QSPI clock otherwise it is not possible to 
@@ -1550,12 +1550,12 @@ def write_QSPI_config(f):
     devlist = []
     for dev in qspi_list:
         n = int(dev[7:])
-        devlist.append('HAL_QSPI%u_CONFIG' % n)
+        devlist.append('HAL_WSPI%u_CONFIG' % n)
         f.write(
-            '#define HAL_QSPI%u_CONFIG { &WSPID%u, %u}\n'
+            '#define HAL_WSPI%u_CONFIG { &WSPID%u, %u}\n'
             % (n, n, n))
-    f.write('#define HAL_QSPI_BUS_LIST %s\n\n' % ','.join(devlist))
-    write_QSPI_table(f)
+    f.write('#define HAL_WSPI_BUS_LIST %s\n\n' % ','.join(devlist))
+    write_WSPI_table(f)
 
 def write_check_firmware(f):
     '''add AP_CHECK_FIRMWARE_ENABLED if needed'''
@@ -2546,7 +2546,7 @@ def write_hwdef_header(outfilename):
 
     write_mcu_config(f)
     write_SPI_config(f)
-    write_QSPI_config(f)
+    write_WSPI_config(f)
     write_ADC_config(f)
     write_GPIO_config(f)
     write_IMU_config(f)
