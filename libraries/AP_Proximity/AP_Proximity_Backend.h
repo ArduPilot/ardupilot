@@ -42,7 +42,7 @@ public:
     // get distance upwards in meters. returns true on success
     virtual bool get_upward_distance(float &distance) const { return false; }
 
-    // handle mavlink DISTANCE_SENSOR messages
+    // handle mavlink messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
     // store rangefinder values
