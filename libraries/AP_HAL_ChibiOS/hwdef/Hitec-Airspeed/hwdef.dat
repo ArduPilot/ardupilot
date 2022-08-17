@@ -99,6 +99,8 @@ define IO_THD_WA_SIZE      512
 
 define AP_PARAM_MAX_EMBEDDED_PARAM 128
 
+define HAL_NO_RCIN_THREAD
+define HAL_NO_RCOUT_THREAD
 
 
 # keep ROMFS uncompressed as we don't have enough RAM
