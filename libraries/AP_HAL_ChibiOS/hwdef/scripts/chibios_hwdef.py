@@ -33,7 +33,7 @@ f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
 f1_vtypes = ['CRL', 'CRH', 'ODR']
 f1_input_sigs = ['RX', 'MISO', 'CTS']
 f1_output_sigs = ['TX', 'MOSI', 'SCK', 'RTS', 'CH1', 'CH2', 'CH3', 'CH4']
-af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI']
+af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI']
 
 default_gpio = ['INPUT', 'FLOATING']
 
@@ -84,7 +84,7 @@ altlabel = {}
 spidev = []
 
 # list of WSPI devices
-qspidev = []
+wspidev = []
 
 # dictionary of ROMFS files
 romfs = {}
@@ -93,7 +93,7 @@ romfs = {}
 spi_list = []
 
 # list of WSPI devices
-qspi_list = []
+wspi_list = []
 
 # all config lines in order
 alllines = []
@@ -1501,54 +1501,57 @@ def write_WSPI_table(f):
     '''write SPI device table'''
     f.write('\n// WSPI device table\n')
     devlist = []
-    for dev in qspidev:
+    for dev in wspidev:
         if len(dev) != 6:
-            print("Badly formed QSPIDEV line %s" % dev)
+            print("Badly formed WSPIDEV line %s" % dev)
         name = '"' + dev[0] + '"'
         bus = dev[1]
         mode = dev[2]
         speed = dev[3]
         size_pow2 = dev[4]
         ncs_clk_delay = dev[5]
-        if not bus.startswith('QUADSPI') or bus not in qspi_list:
-            error("Bad QUADSPI bus in QSPIDEV line %s" % dev)
+        if not bus.startswith('QUADSPI') and not bus.startswith('OCTOSPI') or bus not in wspi_list:
+            error("Bad QUADSPI/OCTOSPI bus in QSPIDEV line %s" % dev)
         if mode not in ['MODE1', 'MODE3']:
-            error("Bad MODE in QSPIDEV line %s" % dev)
+            error("Bad MODE in WSPIDEV line %s" % dev)
         if not speed.endswith('*MHZ') and not speed.endswith('*KHZ'):
-            error("Bad speed value %s in SPIDEV line %s" % (speed, dev))
+            error("Bad speed value %s in WSPIDEV line %s" % (speed, dev))
 
         devidx = len(devlist)
         f.write(
             '#define HAL_WSPI_DEVICE%-2u WSPIDesc(%-17s, %2u, WSPIDEV_%s, %7s, %2u, %2u)\n'
-            % (devidx, name, qspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
+            % (devidx, name, wspi_list.index(bus), mode, speed, int(size_pow2), int(ncs_clk_delay)))
         devlist.append('HAL_WSPI_DEVICE%u' % devidx)
     f.write('#define HAL_WSPI_DEVICE_LIST %s\n\n' % ','.join(devlist))
-    for dev in qspidev:
+    for dev in wspidev:
         f.write("#define HAL_HAS_WSPI_%s 1\n" % dev[0].upper().replace("-", "_"))
-        f.write("#define HAL_QSPI%d_CLK (%s)" % (int(bus[7:]), speed))
+        if dev[1].startswith('QUADSPI'):
+            f.write("#define HAL_QSPI%d_CLK (%s)" % (int(bus[7:]), speed))
+        else:
+            f.write("#define HAL_OSPI%d_CLK (%s)" % (int(bus[7:]), speed))
     f.write("\n")
 
 
 def write_WSPI_config(f):
     '''write SPI config defines'''
-    global qspi_list
+    global wspi_list
     # only the bootloader must reset the QSPI clock otherwise it is not possible to 
     # bootstrap into external flash
     if not args.bootloader:
         f.write('#define STM32_QSPI_NO_RESET TRUE\n')
 
-    if len(qspidev) == 0:
+    if len(wspidev) == 0:
         # nothing to do
         return
     for t in list(bytype.keys()) + list(alttype.keys()):
-        if t.startswith('QUADSPI'):
-            qspi_list.append(t)
-    qspi_list = sorted(qspi_list)
-    if len(qspi_list) == 0:
+        if t.startswith('QUADSPI') or t.startswith('OCTOSPI'):
+            wspi_list.append(t)
+    wspi_list = sorted(wspi_list)
+    if len(wspi_list) == 0:
         return
     f.write('#define HAL_USE_WSPI TRUE\n')
     devlist = []
-    for dev in qspi_list:
+    for dev in wspi_list:
         n = int(dev[7:])
         devlist.append('HAL_WSPI%u_CONFIG' % n)
         f.write(
@@ -2806,7 +2809,7 @@ def valid_type(ptype, label):
     '''check type of a pin line is valid'''
     patterns = [ 'INPUT', 'OUTPUT', 'TIM\d+', 'USART\d+', 'UART\d+', 'ADC\d+',
                 'SPI\d+', 'OTG\d+', 'SWD', 'CAN\d?', 'I2C\d+', 'CS',
-                'SDMMC\d+', 'SDIO', 'QUADSPI\d' ]
+                'SDMMC\d+', 'SDIO', 'QUADSPI\d', 'OCTOSPI\d'  ]
     matches = False
     for p in patterns:
         if re.match(p, ptype):
@@ -2915,7 +2918,7 @@ def process_line(line):
     elif a[0] == 'SPIDEV':
         spidev.append(a[1:])
     elif a[0] == 'QSPIDEV':
-        qspidev.append(a[1:])
+        wspidev.append(a[1:])
     elif a[0] == 'IMU':
         imu_list.append(a[1:])
     elif a[0] == 'COMPASS':
