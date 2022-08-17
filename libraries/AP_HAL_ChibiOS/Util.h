@@ -20,6 +20,9 @@
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
 #include <ch.h>
+#if !defined(HAL_BOOTLOADER_BUILD)
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 class ExpandingString;
 
@@ -150,7 +153,9 @@ private:
     // get last crash dump
     size_t last_crash_dump_size() const override;
     void* last_crash_dump_ptr() const override;
-#endif
 
+#if HAL_GCS_ENABLED
     void boot_to_dfu() override;
+#endif
+#endif
 };
