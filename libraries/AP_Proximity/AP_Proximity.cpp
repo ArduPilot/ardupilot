@@ -185,7 +185,7 @@ void AP_Proximity::init()
             drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
             break;
 #endif
-        } // switch (get_type(instance))
+        }
 
         if (drivers[instance] != nullptr) {
             // we loaded a driver for this instance, so it must be
@@ -310,7 +310,7 @@ bool AP_Proximity::get_object_angle_and_distance(uint8_t object_number, float& a
     return boundary.get_horizontal_object_angle_and_distance(object_number, angle_deg, distance);
 }
 
-// handle mavlink DISTANCE_SENSOR messages
+// handle mavlink messages
 void AP_Proximity::handle_msg(const mavlink_message_t &msg)
 {
     for (uint8_t i=0; i<num_instances; i++) {
