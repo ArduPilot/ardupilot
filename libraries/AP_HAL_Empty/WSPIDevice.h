@@ -17,21 +17,21 @@
 #pragma once
 
 #include <AP_HAL/HAL.h>
-#include <AP_HAL/QSPIDevice.h>
+#include <AP_HAL/WSPIDevice.h>
 #include <AP_HAL/utility/OwnPtr.h>
 
-#ifndef HAL_USE_QSPI_DEFAULT_CFG
-#define HAL_USE_QSPI_DEFAULT_CFG 1
+#ifndef HAL_USE_WSPI_DEFAULT_CFG
+#define HAL_USE_WSPI_DEFAULT_CFG 1
 #endif
 
 namespace Empty
 {
 
-class QSPIDevice : public AP_HAL::QSPIDevice
+class WSPIDevice : public AP_HAL::WSPIDevice
 {
 public:
 
-    QSPIDevice() { }
+    WSPIDevice() { }
 
     /* See AP_HAL::Device::transfer() */
     bool transfer(const uint8_t *send, uint32_t send_len,
@@ -52,7 +52,7 @@ public:
     }
 };
 
-class QSPIDeviceManager : public AP_HAL::QSPIDeviceManager
+class WSPIDeviceManager : public AP_HAL::WSPIDeviceManager
 {
 };
 
