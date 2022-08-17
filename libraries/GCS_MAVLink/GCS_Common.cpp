@@ -133,7 +133,7 @@ bool GCS_MAVLINK::init(uint8_t instance)
     // whether this port is considered "private" is stored on the uart
     // rather than in our own parameters:
     if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_MAVLINK_NO_FORWARD)) {
-        set_channel_private(chan);
+        //set_channel_private(chan);
     }
 
     /*
