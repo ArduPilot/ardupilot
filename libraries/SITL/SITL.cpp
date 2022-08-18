@@ -174,6 +174,9 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // motor harmonics
     AP_GROUPINFO("VIB_MOT_HMNC", 60, SIM,  vibe_motor_harmonics, 1),
 
+    // motor mask, allowing external simulators to mark motors
+    AP_GROUPINFO("VIB_MOT_MASK", 5, SIM,  vibe_motor_mask, 0),
+    
     // max motor vibration frequency
     AP_GROUPINFO("VIB_MOT_MAX", 61, SIM,  vibe_motor, 0.0f),
     // minimum throttle for simulated ins noise
