@@ -36,7 +36,6 @@ MultiCopter::MultiCopter(const char *frame_str) :
 
     mass = frame->get_mass();
     frame_height = 0.1;
-    num_motors = frame->num_motors;
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
     lock_step_scheduled = true;
 }
@@ -44,6 +43,7 @@ MultiCopter::MultiCopter(const char *frame_str) :
 // calculate rotational and linear accelerations
 void MultiCopter::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel)
 {
+    motor_mask |= ((1U<<frame->num_motors)-1U) << frame->motor_offset;
     frame->calculate_forces(*this, input, rot_accel, body_accel, rpm);
 
     add_shove_forces(rot_accel, body_accel);

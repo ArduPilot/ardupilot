@@ -538,7 +538,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         thrust += mthrust;
         // simulate motor rpm
         if (!is_zero(AP::sitl()->vibe_motor)) {
-            rpm[i] = motors[i].get_command() * AP::sitl()->vibe_motor * 60.0f;
+            rpm[motor_offset+i] = motors[i].get_command() * AP::sitl()->vibe_motor * 60.0f;
         }
     }
 

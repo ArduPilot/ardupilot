@@ -169,6 +169,9 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
     AP_GROUPINFO("SAFETY_STATE",    59, SIM,  _safety_switch_state, 0),
 
+    // motor harmonics
+    AP_GROUPINFO("VIB_MOT_HMNC", 60, SIM,  vibe_motor_harmonics, 1),
+    
     // max motor vibration frequency
     AP_GROUPINFO("VIB_MOT_MAX", 61, SIM,  vibe_motor, 0.0f),
     // minimum throttle for simulated ins noise

@@ -109,7 +109,6 @@ FlightAxis::FlightAxis(const char *frame_str) :
     Aircraft(frame_str)
 {
     use_time_sync = false;
-    num_motors = 2;
     rate_hz = 250 / target_speedup;
     heli_demix = strstr(frame_str, "helidemix") != nullptr;
     rev4_servos = strstr(frame_str, "rev4") != nullptr;
