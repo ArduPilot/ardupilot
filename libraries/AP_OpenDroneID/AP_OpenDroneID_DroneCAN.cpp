@@ -28,6 +28,8 @@
 #include <dronecan/remoteid/System.hpp>
 #include <dronecan/remoteid/ArmStatus.hpp>
 
+#include <GCS_MAVLink/GCS_MAVLink.h>
+
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
 static uavcan::Publisher<dronecan::remoteid::Location>* dc_location[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<dronecan::remoteid::BasicID>* dc_basic_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];
@@ -236,6 +238,9 @@ static void handle_arm_status(AP_UAVCAN* ap_uavcan, uint8_t node_id, const ArmSt
     strncpy_noterm(status.error, msg.error.c_str(), sizeof(status.error));
 
     AP::opendroneid().set_arm_status(status);
+
+    // Push DroneCAN Arm Message to GCS
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_OPEN_DRONE_ID_ARM_STATUS,(const char*)&status);
 }
 
 // copy arm status for DroneCAN
