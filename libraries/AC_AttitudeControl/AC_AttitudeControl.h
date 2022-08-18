@@ -268,6 +268,13 @@ public:
     // Return angular velocity in radians used in the angular velocity controller
     Vector3f rate_bf_targets() const { return _ang_vel_body + _sysid_ang_vel_body; }
 
+    void get_rpy_rate(float &roll_rate, float &pitch_rate, float &yaw_rate) {
+        Vector3f rates = rate_bf_targets();
+        roll_rate = rates.x;
+        pitch_rate = rates.y;
+        yaw_rate = rates.z;
+    }
+
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled.set(enable_or_disable); }
 
