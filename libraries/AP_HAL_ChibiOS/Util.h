@@ -154,7 +154,7 @@ private:
     size_t last_crash_dump_size() const override;
     void* last_crash_dump_ptr() const override;
 
-#if HAL_GCS_ENABLED
+#if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
 #endif
 #endif

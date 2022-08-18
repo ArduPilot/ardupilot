@@ -2317,6 +2317,13 @@ def write_hwdef_header(outfilename):
 #define SECURE 1
 ''')
 
+    enable_dfu_boot = get_config('ENABLE_DFU_BOOT', default=0)
+    if enable_dfu_boot:
+        env_vars['ENABLE_DFU_BOOT'] = 1
+        f.write('''
+#define HAL_ENABLE_DFU_BOOT TRUE
+''')
+
     dma_noshare.extend(get_config('DMA_NOSHARE', default='', aslist=True))
 
     write_mcu_config(f)

@@ -458,6 +458,8 @@ def load_env_vars(env):
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_MALLOC_GUARD=yes'
     if env.ENABLE_STATS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_STATS=yes'
+    if env.ENABLE_DFU_BOOT and env.BOOTLOADER:
+        env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
 
 
 def setup_optimization(env):
