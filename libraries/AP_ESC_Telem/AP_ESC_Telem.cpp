@@ -67,10 +67,7 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS && i < nfreqs; i++) {
         float rpm;
         if (get_rpm(i, rpm)) {
-            freqs[i] = rpm * (1.0f / 60.0f);
-            valid_escs++;
-        } else {
-            freqs[i] = 0.0f;
+            freqs[valid_escs++] = rpm * (1.0f / 60.0f);
         }
     }
 
