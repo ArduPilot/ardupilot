@@ -43,8 +43,8 @@ private:
     uint64_t next_accel_sample;
     float gyro_time;
     float accel_time;
-    float gyro_motor_phase[12];
-    float accel_motor_phase[12];
+    float gyro_motor_phase[32];
+    float accel_motor_phase[32];
     uint32_t temp_start_ms;
 
     static uint8_t bus_id;

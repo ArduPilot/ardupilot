@@ -136,19 +136,23 @@ void AP_InertialSensor_SITL::generate_accel()
 
         // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
         if (!is_zero(sitl->vibe_motor) && motors_on) {
-            for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
+            uint32_t mask = sitl->state.motor_mask;
+            uint8_t mbit;
+            while ((mbit = __builtin_ffs(mask)) != 0) {
+                const uint8_t motor = mbit-1;
+                mask &= ~(1U<<motor);
                 uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics);
-                const float base_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
+                const float base_freq = calculate_noise(sitl->state.rpm[motor] / 60.0f, freq_variation);
                 while (harmonics != 0) {
                     const uint8_t bit = __builtin_ffs(harmonics);
                     harmonics &= ~(1U<<(bit-1U));
-                    const float phase = accel_motor_phase[i] * float(bit);
+                    const float phase = accel_motor_phase[motor] * float(bit);
                     accel.x += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
                     accel.y += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
                     accel.z += sinf(phase) * calculate_noise(accel_noise * sitl->vibe_motor_scale, noise_variation);
                 }
                 const float phase_incr = base_freq * 2 * M_PI / (accel_sample_hz * nsamples);
-                accel_motor_phase[i] = wrap_PI(accel_motor_phase[i] + phase_incr);
+                accel_motor_phase[motor] = wrap_PI(accel_motor_phase[motor] + phase_incr);
             }
         }
 
@@ -241,19 +245,23 @@ void AP_InertialSensor_SITL::generate_gyro()
 
         // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
         if (!is_zero(sitl->vibe_motor) && motors_on) {
-            for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
+            uint32_t mask = sitl->state.motor_mask;
+            uint8_t mbit;
+            while ((mbit = __builtin_ffs(mask)) != 0) {
+                const uint8_t motor = mbit-1;
+                mask &= ~(1U<<motor);
                 uint32_t harmonics = uint32_t(sitl->vibe_motor_harmonics);
-                const float base_freq = calculate_noise(sitl->state.rpm[sitl->state.vtol_motor_start+i] / 60.0f, freq_variation);
+                const float base_freq = calculate_noise(sitl->state.rpm[motor] / 60.0f, freq_variation);
                 while (harmonics != 0) {
                     const uint8_t bit = __builtin_ffs(harmonics);
                     harmonics &= ~(1U<<(bit-1U));
-                    const float phase = gyro_motor_phase[i] * float(bit);
+                    const float phase = gyro_motor_phase[motor] * float(bit);
                     p += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
                     q += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
                     r += sinf(phase) * calculate_noise(gyro_noise * sitl->vibe_motor_scale, noise_variation);
                 }
                 const float phase_incr = base_freq * 2 * M_PI / (gyro_sample_hz * nsamples);
-                gyro_motor_phase[i] = wrap_PI(gyro_motor_phase[i] + phase_incr);
+                gyro_motor_phase[motor] = wrap_PI(gyro_motor_phase[motor] + phase_incr);
             }
         }
 
