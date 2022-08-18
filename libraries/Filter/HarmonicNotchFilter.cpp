@@ -144,12 +144,41 @@ void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint8_t harmo
     _harmonics = harmonics;
 
     if (_num_filters > 0) {
+        WITH_SEMAPHORE(_sem);
         _filters = new NotchFilter<T>[_num_filters];
         if (_filters == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to allocate %u bytes for notch filter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
             _num_filters = 0;
         }
     }
+}
+
+/*
+  expand the number of filters at runtime, allowing for RPM sources such as lua scripts
+ */
+template <class T>
+void HarmonicNotchFilter<T>::expand_filter_count(uint8_t num_notches)
+{
+    uint8_t num_filters = _num_harmonics * num_notches * _composite_notches;
+    if (num_filters <= _num_filters) {
+        // enough already
+        return;
+    }
+    if (_alloc_has_failed) {
+        // we've failed to allocate before, don't try again
+        return;
+    }
+    auto filters = new NotchFilter<T>[num_filters];
+    if (filters == nullptr) {
+        _alloc_has_failed = true;
+        return;
+    }
+    WITH_SEMAPHORE(_sem);
+    memcpy(filters, _filters, sizeof(filters[0])*_num_filters);
+    auto _old_filters = _filters;
+    _filters = filters;
+    _num_filters = num_filters;
+    delete[] _old_filters;
 }
 
 /*
@@ -209,6 +238,11 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     // adjust the frequencies to be in the allowable range
     const float nyquist_limit = _sample_freq_hz * 0.48f;
 
+    if (num_centers > _num_filters) {
+        // alloc realloc of filters
+        expand_filter_count(num_centers);
+    }
+
     _num_enabled_filters = 0;
 
     // update all of the filters using the new center frequencies and existing A & Q
@@ -255,6 +289,7 @@ T HarmonicNotchFilter<T>::apply(const T &sample)
     }
 
     T output = sample;
+    WITH_SEMAPHORE(_sem);
     for (uint8_t i = 0; i < _num_enabled_filters; i++) {
         output = _filters[i].apply(output);
     }
