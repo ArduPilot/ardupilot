@@ -516,6 +516,7 @@ singleton AP_Follow method get_target_heading_deg boolean float'Null
 include AC_AttitudeControl/AC_AttitudeControl.h depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BUILD_COPTER_OR_HELI
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
+singleton AC_AttitudeControl method get_rpy_rate void float'Ref float'Ref float'Ref
 
 include AP_Mount/AP_Mount.h
 singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
