@@ -42,29 +42,10 @@ if len(sys.argv) == 3:
     d["image"] = base64.b64encode(zlib.compress(img,9)).decode('utf-8')
     d["image_size"] = len(img)
     d["flash_free"] = d["flash_total"] - d["image_size"]
+    d["signed_firmware"] = True
     f = open(sys.argv[1], "w")
     f.write(json.dumps(d, indent=4))
     f.close()
-
-    # while len(img) % 4 != 0:
-    #     img += b'\0'
-    # digest = SHA256.new(img)
-    # signer = DSS.new(key, 'fips-186-3', encoding='der')
-    # signature = signer.sign(digest)
-    # img += bytes(bytearray([0xFF for i in range(d["flash_free"] - 2048)])) # 2KB of flash is reserved at the end 
-    # img += len(signature).to_bytes(76 - len(signature), 'big')
-    # img += signature
-    # img += d["image_size"].to_bytes(4, 'little')
-    # img += b'\x46\x49\x58\x53' # magic
-    # print(len(signature), len(len(signature).to_bytes(76 - len(signature), 'big')))
-    # print(binascii.hexlify(bytearray(signature)))
-    # d["image"] = base64.b64encode(zlib.compress(img,9)).decode('utf-8')
-    # d["image_size"] = len(img)
-    # d["flash_free"] = d["flash_total"] - d["image_size"]
-    # apj_file = sys.argv[1]
-    # f = open(apj_file, "w")
-    # f.write(json.dumps(d, indent=4))
-    # f.close()
 else:
     print("Usage: make_secure_fw.py <apj_file> <key_file>")
     sys.exit(1)
