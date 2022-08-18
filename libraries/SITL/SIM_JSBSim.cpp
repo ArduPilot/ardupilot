@@ -64,7 +64,6 @@ JSBSim::JSBSim(const char *frame_str) :
     }
     control_port = 5505 + instance*10;
     fdm_port = 5504 + instance*10;
-    num_motors = 2;
 
     printf("JSBSim backend started: control_port=%u fdm_port=%u\n",
            control_port, fdm_port);
