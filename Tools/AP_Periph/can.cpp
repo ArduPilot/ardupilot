@@ -38,7 +38,7 @@
 #include <AP_HAL_SITL/CANSocketIface.h>
 #endif
 
-#define IFACE_ALL ((1<<(HAL_NUM_CAN_IFACES+1))-1)
+#define IFACE_ALL ((1U<<(HAL_NUM_CAN_IFACES+1U))-1U)
 
 #include "i2c.h"
 #include <utility>
@@ -735,9 +735,9 @@ static void handle_lightscommand(CanardInstance* ins, CanardRxTransfer* transfer
         uavcan_equipment_indication_SingleLightCommand &cmd = req.commands.data[i];
         // to get the right color proportions we scale the green so that is uses the
         // same number of bits as red and blue
-        uint8_t red = cmd.color.red<<3;
-        uint8_t green = (cmd.color.green>>1)<<3;
-        uint8_t blue = cmd.color.blue<<3;
+        uint8_t red = cmd.color.red<<3U;
+        uint8_t green = (cmd.color.green>>1U)<<3U;
+        uint8_t blue = cmd.color.blue<<3U;
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
         const int8_t brightness = periph.notify.get_rgb_led_brightness_percent();
 #elif defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY)
@@ -1191,7 +1191,7 @@ static void processTx(void)
                 continue;
             }
     #if CANARD_MULTI_IFACE
-            if (!(txf->iface_mask & (1<<ins.index))) {
+            if (!(txf->iface_mask & (1U<<ins.index))) {
                 continue;
             }
     #endif
@@ -1446,7 +1446,7 @@ static bool can_do_dna()
                                                 &allocation_request[0],
                                                 (uint16_t) (uid_size + 1)
 #if CANARD_MULTI_IFACE
-                                                ,(1 << dronecan.dna_interface)
+                                                ,(1U << dronecan.dna_interface)
 #endif
 #if HAL_CANFD_SUPPORTED
                                                 ,false
@@ -2097,7 +2097,7 @@ void AP_Periph_FW::send_moving_baseline_msg()
                         &buffer[0],
                         total_size
 #if CANARD_MULTI_IFACE
-                        ,(1<<gps_mb_can_port)
+                        ,(1U<<gps_mb_can_port)
 #endif
 #if HAL_CANFD_SUPPORTED
                        ,canfdout()
