@@ -20,7 +20,7 @@ parser.add_argument(
 parser.add_argument(
     '--bootloader', action='store_true', default=False, help='configure for bootloader')
 parser.add_argument(
-    '--secure-bl', action='store_true', default=False, help='configure for secure BL')
+    '--signed-fw', action='store_true', default=False, help='configure for signed FW')
 parser.add_argument(
     'hwdef', type=str, nargs='+', default=None, help='hardware definition file')
 parser.add_argument(
@@ -1136,7 +1136,7 @@ def write_mcu_config(f):
 #define DISABLE_SERIAL_ESC_COMM TRUE
 #define CH_CFG_USE_DYNAMIC FALSE
 ''')
-        if not env_vars['EXT_FLASH_SIZE_MB'] and not args.secure_bl:
+        if not env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
             f.write('''
 #define CH_CFG_USE_MEMCORE FALSE
 #define CH_CFG_USE_SEMAPHORES FALSE
@@ -1311,7 +1311,7 @@ def write_USB_config(f):
     if args.bootloader:
         default_product += "-BL"
     product_string = get_config("USB_STRING_PRODUCT", default="\"%s\""%default_product)
-    if args.bootloader and args.secure_bl:
+    if args.bootloader and args.signed_fw:
         product_string = product_string.replace("-BL", "-Secure-BL-v10")
         print(product_string)
     f.write('#define HAL_USB_STRING_PRODUCT %s\n' % product_string)
@@ -2312,9 +2312,13 @@ def write_hwdef_header(outfilename):
 
 ''')
 
-    if args.secure_bl:
+    if args.signed_fw:
         f.write('''
-#define SECURE 1
+#define AP_SIGNED_FIRMWARE 1
+''')
+    else:
+        f.write('''
+#define AP_SIGNED_FIRMWARE 0
 ''')
 
     enable_dfu_boot = get_config('ENABLE_DFU_BOOT', default=0)
@@ -2322,6 +2326,11 @@ def write_hwdef_header(outfilename):
         env_vars['ENABLE_DFU_BOOT'] = 1
         f.write('''
 #define HAL_ENABLE_DFU_BOOT TRUE
+''')
+    else:
+        env_vars['ENABLE_DFU_BOOT'] = 0
+        f.write('''
+#define HAL_ENABLE_DFU_BOOT FALSE
 ''')
 
     dma_noshare.extend(get_config('DMA_NOSHARE', default='', aslist=True))

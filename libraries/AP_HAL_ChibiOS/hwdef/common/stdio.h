@@ -47,9 +47,9 @@ void free(void *ptr);
 void *realloc(void* ptr, size_t size) __attribute__((deprecated));
 extern int (*vprintf_console_hook)(const char *fmt, va_list arg);
 void malloc_check(const void *ptr);
-#if defined(SECURE) && SECURE
-void *wolfssl_realloc(void *ptr, size_t size);
-#endif
+void* std_realloc(void *addr, size_t size);
+uint32_t wolfssl_rand_get(void);
+
 #define L_tmpnam 32
 
 #ifdef __cplusplus
