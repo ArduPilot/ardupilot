@@ -75,6 +75,18 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPINFO(params[1], "2", 22, AP_Proximity, AP_Proximity_Params),
 #endif
 
+#if PROXIMITY_MAX_INSTANCES > 2
+    // @Group: 3
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[2], "3", 23, AP_Proximity, AP_Proximity_Params),
+#endif
+
+#if PROXIMITY_MAX_INSTANCES > 3
+    // @Group: 4
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[3], "4", 24, AP_Proximity, AP_Proximity_Params),
+#endif
+
     AP_GROUPEND
 };
 
