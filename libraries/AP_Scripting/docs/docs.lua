@@ -2022,6 +2022,12 @@ AC_AttitudeControl = {}
 ---@return number -- yaw slew rate
 function AC_AttitudeControl:get_rpy_srate() end
 
+-- return current desired rates on roll/pitch/yaw
+---@return number -- desired roll rate
+---@return number -- desired pitch rate
+---@return number -- desired yaw rate
+function AC_AttitudeControl:get_rpy_rate() end
+
 -- desc
 ---@class follow
 follow = {}
