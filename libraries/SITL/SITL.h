@@ -327,6 +327,10 @@ public:
 
     // amplitude scaling of motor noise relative to gyro/accel noise
     AP_Float vibe_motor_scale;
+
+    // what servos are motors
+    AP_Int32 vibe_motor_mask;
+    
     // minimum throttle for addition of ins noise
     AP_Float ins_noise_throttle_min;
 
