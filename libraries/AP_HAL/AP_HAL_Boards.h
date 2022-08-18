@@ -313,3 +313,7 @@
 #ifndef __FASTRAMFUNC__
 #define __FASTRAMFUNC__
 #endif
+
+#ifndef HAL_ENABLE_DFU_BOOT
+#define HAL_ENABLE_DFU_BOOT 0
+#endif
