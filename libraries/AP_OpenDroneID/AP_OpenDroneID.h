@@ -28,6 +28,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_OpenDroneID_config.h"
 
 #ifndef AP_OPENDRONEID_ENABLED
 // default to off. Enabled in hwdef.dat
@@ -118,7 +119,8 @@ private:
 
     mavlink_channel_t _chan; // MAVLink channel that communicates with the Remote ID Transceiver
     const mavlink_channel_t MAV_CHAN_INVALID = mavlink_channel_t(255U);
-    uint32_t _last_send_dynamic_messages_ms;
+    uint32_t _last_send_location_ms;
+    uint32_t _last_send_system_update_ms;
     uint32_t _last_send_static_messages_ms;
     const uint32_t _mavlink_dynamic_period_ms = 1000; //how often are mavlink dynamic messages sent in ms. E.g. 1000 = 1 Hz
     const uint32_t _mavlink_static_period_ms = 5000; //how often are mavlink static messages sent in ms
@@ -138,6 +140,9 @@ private:
     // last time we got a SYSTEM message
     uint32_t last_system_ms;
 
+    // last time we got a SYSTEM_UPDATE message
+    uint32_t last_system_update_ms;
+
     // arm status from the transmitter
     mavlink_open_drone_id_arm_status_t arm_status;
     uint32_t last_arm_status_ms;
@@ -153,6 +158,7 @@ private:
     void send_static_out();
     void send_basic_id_message();
     void send_system_message();
+    void send_system_update_message();
     void send_self_id_message();
     void send_operator_id_message();
     void send_location_message();
