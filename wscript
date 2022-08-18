@@ -175,10 +175,10 @@ def options(opt):
         default=False,
         help='Configure for building a bootloader.')
 
-    g.add_option('--secure-bl',
+    g.add_option('--signed-fw',
         action='store_true',
         default=False,
-        help='Configure for building a secure bootloader.')
+        help='Configure for signed firmware support.')
 
     g.add_option('--no-autoconfig',
         dest='autoconfig',
@@ -397,8 +397,9 @@ def configure(cfg):
     _set_build_context_variant(cfg.env.BOARD)
     cfg.setenv(cfg.env.BOARD)
 
-    if cfg.options.secure_bl:
-        cfg.env.SECURE_BL = True
+    if cfg.options.signed_fw:
+        cfg.env.AP_SIGNED_FIRMWARE = True
+        cfg.options.enable_check_firmware = True
 
     cfg.env.BOARD = cfg.options.board
     cfg.env.DEBUG = cfg.options.debug

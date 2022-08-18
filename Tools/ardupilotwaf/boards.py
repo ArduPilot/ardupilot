@@ -253,6 +253,10 @@ class Board:
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
+            if cfg.options.signed_fw:
+                env.DEFINES.update(
+                    ENABLE_HEAP = 1,
+                )
         else:
             env.DEFINES.update(
                 ENABLE_HEAP = 1,
@@ -1011,17 +1015,23 @@ class chibios(Board):
         else:
             cfg.msg("Enabling -Werror", "no")
 
-        if cfg.options.secure_bl:
-            from Crypto.PublicKey import ECC
-            cfg.define('WOLFSSL_USER_SETTINGS', 1)
-            cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
-            cfg.define('SECURE', 1)
-            env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
-            env.GIT_SUBMODULES += ['wolfssl']
-            env.BUILD_WOLFSSL = True
-            cfg.load('wolfssl')
+        if cfg.options.signed_fw:
+            if cfg.options.bootloader:    
+                from Crypto.PublicKey import ECC
+                cfg.define('WOLFSSL_USER_SETTINGS', 1)
+                cfg.define('SKIP_WOLFSSL_BINDINGS', 1)
+                env.INCLUDES += [ cfg.srcnode.find_dir('modules/wolfssl').abspath() ]
+                env.GIT_SUBMODULES += ['wolfssl']
+                env.BUILD_WOLFSSL = True
+                cfg.load('wolfssl')
+            cfg.define('AP_SIGNED_FIRMWARE', 1)
             env.CFLAGS += [
-                '-DSECURE=1',
+                '-DAP_SIGNED_FIRMWARE=1',
+            ]
+        else:
+            cfg.define('AP_SIGNED_FIRMWARE', 0)
+            env.CFLAGS += [
+                '-DAP_SIGNED_FIRMWARE=0',
             ]
 
         try:

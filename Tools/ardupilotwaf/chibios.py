@@ -236,7 +236,11 @@ class set_app_descriptor(Task.Task):
     def keyword(self):
         return "app_descriptor"
     def run(self):
-        descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
+        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+            descriptor = b'\x41\xa3\xe5\xf2\x65\x69\x92\x07'
+        else:
+            descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
+
         img = open(self.inputs[0].abspath(), 'rb').read()
         offset = img.find(descriptor)
         if offset == -1:
@@ -251,11 +255,17 @@ class set_app_descriptor(Task.Task):
         upload_tools = self.env.get_flat('UPLOAD_TOOLS')
         sys.path.append(upload_tools)
         from uploader import crc32
-        desc_len = 92
+        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+            desc_len = 92
+        else:
+            desc_len = 16
         crc1 = to_unsigned(crc32(bytearray(img[:offset])))
         crc2 = to_unsigned(crc32(bytearray(img[offset+desc_len:])))
         githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION', self.generator.bld.git_head_hash(short=True)),16))
-        desc = struct.pack('<IIIII72s', crc1, crc2, len(img), githash, 0, bytes(bytearray([0 for i in range(72)])))
+        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+            desc = struct.pack('<IIIII72s', crc1, crc2, len(img), githash, 0, bytes(bytearray([0 for i in range(72)])))
+        else:
+            desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
         Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
         open(self.inputs[0].abspath(), 'wb').write(img)
@@ -542,15 +552,16 @@ def generate_hwdef_h(env):
         else:
             # update to using hwdef-bl.dat
             env.HWDEF = env.HWDEF.replace('hwdef.dat', 'hwdef-bl.dat')
-        if (env.SECURE_BL):
-            env.BOOTLOADER_OPTION="--bootloader --secure-bl"
-        else:
-            env.BOOTLOADER_OPTION="--bootloader"
+        env.BOOTLOADER_OPTION="--bootloader"
     else:
         if len(env.HWDEF) == 0:
             env.HWDEF = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat' % env.BOARD)
         env.BOOTLOADER_OPTION=""
 
+    if env.AP_SIGNED_FIRMWARE:
+        print(env.BOOTLOADER_OPTION)
+        env.BOOTLOADER_OPTION += " --signed-fw"
+        print(env.BOOTLOADER_OPTION)
     hwdef_script = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ChibiOS/hwdef/scripts/chibios_hwdef.py')
     hwdef_out = env.BUILDROOT
     if not os.path.exists(hwdef_out):
