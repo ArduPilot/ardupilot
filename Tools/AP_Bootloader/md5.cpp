@@ -18,7 +18,11 @@
 /* This code slightly modified to fit into Samba by 
    abartlet@samba.org Jun 2001 */
 
-#include "includes.h"
+// swiped and modified from tridge's junk code repository -pb20220818
+#include "md5.h"
+#include <string.h>
+
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 static void MD5Transform(uint32 buf[4], uint32 const in[16]);
 

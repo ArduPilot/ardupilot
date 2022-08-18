@@ -30,6 +30,7 @@
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #include "support.h"
 #include "bl_protocol.h"
+#include "flash_from_sd.h"
 #include "can.h"
 #include <stdio.h>
 #if EXT_FLASH_SIZE_MB
@@ -178,6 +179,12 @@ int main(void)
         // keep trying until we get it working
         // there's no future without it
         chThdSleep(chTimeMS2I(20));
+    }
+#endif
+
+#if AP_BOOTLOADER_FLASH_FROM_SD_ENABLED
+    if (flash_from_sd()) {
+        jump_to_app();
     }
 #endif
 

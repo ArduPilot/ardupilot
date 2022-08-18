@@ -5,6 +5,12 @@
 #define HEADER_MD5_H 
 #endif
 
+// swiped and modified from tridge's junk code repository -pb20220818
+#include "stdint.h"
+#define uint32 uint32_t
+// ignore cast errors in this case to keep complexity down
+// on x86 where replay is run we don't care about cast alignment
+
 struct MD5Context {
 	uint32 buf[4];
 	uint32 bits[2];
