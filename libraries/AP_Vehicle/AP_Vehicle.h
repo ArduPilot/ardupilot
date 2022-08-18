@@ -51,6 +51,7 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
 #endif
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
