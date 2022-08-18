@@ -63,8 +63,8 @@ struct sitl_fdm {
     double battery_current; // Amps
     double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
-    uint8_t vtol_motor_start;
-    float rpm[12];         // RPM of all motors
+    uint32_t motor_mask;
+    float rpm[32];         // RPM of all motors
     uint8_t rcin_chan_count;
     float  rcin[12];         // RC input 0..1
     double range;           // rangefinder value

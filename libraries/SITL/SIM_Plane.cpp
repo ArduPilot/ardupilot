@@ -36,7 +36,6 @@ Plane::Plane(const char *frame_str) :
     */
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
     frame_height = 0.1f;
-    num_motors = 1;
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
     lock_step_scheduled = true;
@@ -354,7 +353,8 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
     
     // simulate engine RPM
-    rpm[0] = thrust * 7000;
+    motor_mask |= (1U<<2);
+    rpm[2] = thrust * 7000;
     
     // scale thrust to newtons
     thrust *= thrust_scale;
