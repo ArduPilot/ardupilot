@@ -2814,8 +2814,8 @@ def add_apperiph_defaults(f):
     f.write('''
 // AP_Periph defaults
 
-#ifndef HAL_SCHEDULER_ENABLED
-#define HAL_SCHEDULER_ENABLED 0
+#ifndef AP_SCHEDULER_ENABLED
+#define AP_SCHEDULER_ENABLED 0
 #endif
 
 #ifndef HAL_LOGGING_ENABLED
