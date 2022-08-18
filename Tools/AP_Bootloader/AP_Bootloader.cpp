@@ -109,6 +109,7 @@ int main(void)
         // bad firmware CRC, don't try and boot
         timeout = 0;
         try_boot = false;
+        led_set(LED_BAD_FW);
     }
 #ifndef BOOTLOADER_DEV_LIST
     else if (timeout != 0) {
@@ -131,6 +132,7 @@ int main(void)
         // bad firmware, don't try and boot
         timeout = 0;
         try_boot = false;
+        led_set(LED_BAD_FW);
     }
 #endif
 
