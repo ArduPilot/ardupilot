@@ -126,7 +126,9 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
         return false;
     }
 
-    if (last_system_ms == 0 || now_ms - last_system_ms > max_age_ms) {
+    if (last_system_ms == 0 ||
+        (now_ms - last_system_ms > max_age_ms &&
+         (now_ms - last_system_update_ms > max_age_ms))) {
         strncpy(failmsg, "SYSTEM not available", failmsg_len);
         return false;
     }
@@ -144,7 +146,6 @@ void AP_OpenDroneID::update()
     if (_enable == 0) {
         return;
     }
-    const uint32_t now = AP_HAL::millis();
 
     const bool armed = hal.util->get_soft_armed();
     if (armed && !_was_armed) {
@@ -153,17 +154,29 @@ void AP_OpenDroneID::update()
     }
     _was_armed = armed;
 
-    if (now - _last_send_dynamic_messages_ms >= _mavlink_dynamic_period_ms) {
-        _last_send_dynamic_messages_ms = now;
-        send_dynamic_out();
-    }
-
+    send_dynamic_out();
     send_static_out();
 }
 
+// local payload space check which treats invalid channel as having space
+// needed to populate the message structures for the DroneCAN backend
+#define ODID_HAVE_PAYLOAD_SPACE(id) (_chan == MAV_CHAN_INVALID || HAVE_PAYLOAD_SPACE(_chan, id))
+
 void AP_OpenDroneID::send_dynamic_out()
 {
-    send_location_message();
+    const uint32_t now = AP_HAL::millis();
+    if (now - _last_send_location_ms >= _mavlink_dynamic_period_ms &&
+        ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_LOCATION)) {
+        _last_send_location_ms = now;
+        send_location_message();
+    }
+
+    // operator location needs to be sent at the same rate as location for FAA compliance
+    if (now - _last_send_system_update_ms >= _mavlink_dynamic_period_ms &&
+        ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SYSTEM_UPDATE)) {
+        _last_send_system_update_ms = now;
+        send_system_update_message();
+    }
 }
 
 void AP_OpenDroneID::send_static_out()
@@ -171,9 +184,15 @@ void AP_OpenDroneID::send_static_out()
     const uint32_t now_ms = AP_HAL::millis();
 
     // we need to notify user if we lost the transmitter
-    if (now_ms - last_arm_status_ms > 5000 && now_ms - last_lost_tx_ms > 5000) {
-        last_lost_tx_ms = now_ms;
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost transmitter");
+    if (now_ms - last_arm_status_ms > 5000) {
+        if (now_ms - last_lost_tx_ms > 5000) {
+            last_lost_tx_ms = now_ms;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost transmitter");
+        }
+    } else if (last_lost_tx_ms != 0) {
+        // we're OK again
+        last_lost_tx_ms = 0;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ODID: transmitter OK");
     }
 
     // we need to notify user if we lost system msg with operator location
@@ -182,35 +201,49 @@ void AP_OpenDroneID::send_static_out()
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ODID: lost operator location");
     }
     
-    const uint32_t msg_spacing_ms = _mavlink_dynamic_period_ms / 4;
+    const uint32_t msg_spacing_ms = _mavlink_static_period_ms / 4;
     if (now_ms - last_msg_send_ms >= msg_spacing_ms) {
         // allow update of channel during setup, this makes it easy to debug with a GCS
         _chan = mavlink_channel_t(gcs().get_channel_from_port_number(_mav_port));
-
-        last_msg_send_ms = now_ms;
+        bool sent_ok = false;
         switch (next_msg_to_send) {
         case NEXT_MSG_BASIC_ID:
-            send_basic_id_message();
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_BASIC_ID)) {
+                send_basic_id_message();
+                sent_ok = true;
+            }
             break;
         case NEXT_MSG_SYSTEM:
-            send_system_message();
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SYSTEM)) {
+                send_system_message();
+                sent_ok = true;
+            }
             break;
         case NEXT_MSG_SELF_ID:
-            send_self_id_message();
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_SELF_ID)) {
+                send_self_id_message();
+                sent_ok = true;
+            }
             break;
         case NEXT_MSG_OPERATOR_ID:
-            send_operator_id_message();
+            if (ODID_HAVE_PAYLOAD_SPACE(OPEN_DRONE_ID_OPERATOR_ID)) {
+                send_operator_id_message();
+                sent_ok = true;
+            }
             break;
         case NEXT_MSG_ENUM_END:
             break;
         }
-        next_msg_to_send = next_msg((uint8_t(next_msg_to_send) + 1) % uint8_t(NEXT_MSG_ENUM_END));
+        if (sent_ok) {
+            last_msg_send_ms = now_ms;
+            next_msg_to_send = next_msg((uint8_t(next_msg_to_send) + 1) % uint8_t(NEXT_MSG_ENUM_END));
+        }
     }
 }
 
 // The send_location_message
 // all open_drone_id send functions use data stored in the open drone id class.
-//This location send function is an exception. It uses live location data from the ArduPilot system.
+// This location send function is an exception. It uses live location data from the ArduPilot system.
 void AP_OpenDroneID::send_location_message()
 {
     auto &ahrs = AP::ahrs();
@@ -318,7 +351,7 @@ void AP_OpenDroneID::send_location_message()
     {
         WITH_SEMAPHORE(_sem);
         // take semaphore so CAN gets a consistent packet
-        pkt_location = {
+        pkt_location = mavlink_open_drone_id_location_t{
         latitude : latitude,
         longitude : longitude,
         altitude_barometric : altitude_barometric,
@@ -330,6 +363,7 @@ void AP_OpenDroneID::send_location_message()
         speed_vertical : int16_t(climb_rate * 100.0), // Climb rate (cm/s)
         target_system : 0,
         target_component : 0,
+        id_or_mac : {},
         status : uint8_t(uav_status),
         height_reference : MAV_ODID_HEIGHT_REF_OVER_TAKEOFF,           // height reference enum: Above takeoff location or above ground
         horizontal_accuracy : uint8_t(horizontal_accuracy_mav),
@@ -367,9 +401,25 @@ void AP_OpenDroneID::send_system_message()
 void AP_OpenDroneID::send_self_id_message()
 {
     need_send_self_id |= dronecan_send_all;
-    // note that packet is filled in by the GCS
     if (_chan != MAV_CHAN_INVALID) {
         mavlink_msg_open_drone_id_self_id_send_struct(_chan, &pkt_self_id);
+    }
+}
+
+void AP_OpenDroneID::send_system_update_message()
+{
+    need_send_system |= dronecan_send_all;
+    // note that packet is filled in by the GCS
+    if (_chan != MAV_CHAN_INVALID) {
+        const auto pkt_system_update = mavlink_open_drone_id_system_update_t {
+        operator_latitude : pkt_system.operator_latitude,
+        operator_longitude : pkt_system.operator_longitude,
+        operator_altitude_geo : pkt_system.operator_altitude_geo,
+        timestamp : pkt_system.timestamp,
+        target_system : pkt_system.target_system,
+        target_component : pkt_system.target_component,
+        };
+        mavlink_msg_open_drone_id_system_update_send_struct(_chan, &pkt_system_update);
     }
 }
 
@@ -600,6 +650,21 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
         mavlink_msg_open_drone_id_system_decode(&msg, &pkt_system);
         last_system_ms = AP_HAL::millis();
         break;
+    case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM_UPDATE: {
+        mavlink_open_drone_id_system_update_t pkt_system_update;
+        mavlink_msg_open_drone_id_system_update_decode(&msg, &pkt_system_update);
+        pkt_system.operator_latitude = pkt_system_update.operator_latitude;
+        pkt_system.operator_longitude = pkt_system_update.operator_longitude;
+        pkt_system.operator_altitude_geo = pkt_system_update.operator_altitude_geo;
+        pkt_system.timestamp = pkt_system_update.timestamp;
+        last_system_update_ms = AP_HAL::millis();
+        if (last_system_ms != 0) {
+            // we can only mark system as updated if we have the other
+            // information already
+            last_system_ms = last_system_update_ms;
+        }
+        break;
+    }
     }
 }
 
