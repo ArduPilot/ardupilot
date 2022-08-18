@@ -1109,7 +1109,9 @@ def write_mcu_config(f):
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
 #define HAL_NO_UARTDRIVER
+#ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
+#endif
 #define HAL_USE_EMPTY_STORAGE 1
 #ifndef HAL_STORAGE_SIZE
 #define HAL_STORAGE_SIZE 16384
@@ -1136,11 +1138,19 @@ def write_mcu_config(f):
 #endif
 #define HAL_NO_ROMFS_SUPPORT TRUE
 #define CH_CFG_USE_TM FALSE
+#ifndef CH_CFG_USE_REGISTRY
 #define CH_CFG_USE_REGISTRY FALSE
+#endif
+#ifndef CH_CFG_USE_WAITEXIT
 #define CH_CFG_USE_WAITEXIT FALSE
+#endif
+#ifndef CH_CFG_USE_MEMPOOLS
 #define CH_CFG_USE_MEMPOOLS FALSE
+#endif
 #define CH_DBG_FILL_THREADS FALSE
+#ifndef CH_CFG_USE_MUTEXES
 #define CH_CFG_USE_MUTEXES FALSE
+#endif
 #define CH_CFG_USE_EVENTS FALSE
 #define CH_CFG_USE_EVENTS_TIMEOUT FALSE
 #define HAL_USE_EMPTY_STORAGE 1
@@ -1149,14 +1159,22 @@ def write_mcu_config(f):
 #endif
 #define HAL_USE_RTC FALSE
 #define DISABLE_SERIAL_ESC_COMM TRUE
+#ifndef CH_CFG_USE_DYNAMIC
 #define CH_CFG_USE_DYNAMIC FALSE
+#endif
 #define DISABLE_WATCHDOG 1
 ''')
         if not env_vars['EXT_FLASH_SIZE_MB'] and not args.signed_fw:
             f.write('''
+#ifndef CH_CFG_USE_MEMCORE
 #define CH_CFG_USE_MEMCORE FALSE
+#endif
+#ifndef CH_CFG_USE_SEMAPHORES
 #define CH_CFG_USE_SEMAPHORES FALSE
+#endif
+#ifndef CH_CFG_USE_HEAP
 #define CH_CFG_USE_HEAP FALSE
+#endif
 ''')
     if env_vars.get('ROMFS_UNCOMPRESSED', False):
         f.write('#define HAL_ROMFS_UNCOMPRESSED\n')
@@ -3014,6 +3032,8 @@ def add_bootloader_defaults(f):
 // AP_Bootloader defaults
 
 #define HAL_DSHOT_ALARM_ENABLED 0
+#define HAL_LOGGING_ENABLED 0
+#define HAL_SCHEDULER_ENABLED 0
 
 // bootloaders *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
