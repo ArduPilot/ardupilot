@@ -14,6 +14,15 @@
  *
  * Code by Andrew Tridgell and Siddharth Bharat Purohit
  */
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef HAL_SCHEDULER_ENABLED
+#define HAL_SCHEDULER_ENABLED 1
+#endif
+
+#if HAL_SCHEDULER_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include <hal.h>
@@ -788,5 +797,6 @@ void Scheduler::check_stack_free(void)
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
-
 #endif // CH_CFG_USE_DYNAMIC
+
+#endif  // HAL_SCHEDULER_ENABLED

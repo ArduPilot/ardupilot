@@ -17,6 +17,7 @@
 #include <hal.h>
 #include "SPIDevice.h"
 #include "sdcard.h"
+#include "bouncebuffer.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Filesystem/AP_Filesystem.h>
@@ -26,8 +27,10 @@ extern const AP_HAL::HAL& hal;
 
 #ifdef USE_POSIX
 static FATFS SDC_FS; // FATFS object
-static bool sdcard_running;
+#ifndef HAL_BOOTLOADER_BUILD
 static HAL_Semaphore sem;
+#endif
+static bool sdcard_running;
 #endif
 
 #if HAL_USE_SDC
@@ -52,9 +55,13 @@ static SPIConfig highspeed;
 bool sdcard_init()
 {
 #ifdef USE_POSIX
+#ifndef HAL_BOOTLOADER_BUILD
     WITH_SEMAPHORE(sem);
 
     uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
+#else
+    uint8_t sd_slowdown = 0;  // maybe take from a define?
+#endif
 #if HAL_USE_SDC
 
 #if STM32_SDC_USE_SDMMC2 == TRUE
@@ -134,7 +141,7 @@ bool sdcard_init()
     }
 #endif
     sdcard_running = false;
-#endif
+#endif  // USE_POSIX
     return false;
 }
 
