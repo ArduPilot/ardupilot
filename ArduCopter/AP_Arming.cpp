@@ -16,10 +16,11 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return true;
     }
 
-    // check if motor interlock and Emergency Stop aux switches are used
+    // check if motor interlock and either Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
-        rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP)){
+        (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
+        rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP))){
         check_failed(display_failure, "Interlock/E-Stop Conflict");
         return false;
     }
