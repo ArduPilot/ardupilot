@@ -152,6 +152,10 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
+    if [ "$t" == "sitltest-sailboat" ]; then
+        run_autotest "Rover" "build.Rover" "test.Sailboat"
+        continue
+    fi
     if [ "$t" == "sitltest-tracker" ]; then
         run_autotest "Tracker" "build.Tracker" "test.Tracker"
         continue
