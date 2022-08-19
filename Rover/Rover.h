@@ -19,6 +19,7 @@
 
 #include <cmath>
 #include <stdarg.h>
+#include <stdint.h>
 
 // Libraries
 #include <AP_Common/AP_Common.h>
@@ -37,18 +38,21 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_OSD/AP_OSD.h>
 #include <AR_Motors/AP_MotorsUGV.h>
+#include <AP_Mission/AP_Mission.h>
+#include <AP_Mission/AP_Mission_ChangeDetector.h>
+#include <AR_WPNav/AR_WPNav_OA.h>
+
+// Configuration
+#include "defines.h"
+#include "config.h"
 
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
 // Local modules
-#include "mode.h"
 #include "AP_Arming.h"
 #include "sailboat.h"
-// Configuration
-#include "config.h"
-#include "defines.h"
 #if ADVANCED_FAILSAFE == ENABLED
 #include "afs_rover.h"
 #endif
@@ -57,6 +61,8 @@
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
 #include "RC_Channel.h"                  // RC Channel Library
+
+#include "mode.h"
 
 class Rover : public AP_Vehicle {
 public:
