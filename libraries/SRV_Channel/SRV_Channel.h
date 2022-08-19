@@ -538,9 +538,7 @@ public:
     static bool have_digital_outputs() { return digital_mask != 0; }
 
     // Set E - stop
-    static void set_emergency_stop(bool state) {
-        emergency_stop = state;
-    }
+    static void set_emergency_stop(bool state);
 
     // get E - stop
     static bool get_emergency_stop() { return emergency_stop;}
