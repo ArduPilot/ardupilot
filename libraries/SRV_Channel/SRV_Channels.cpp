@@ -21,6 +21,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include "SRV_Channel.h"
+#include <AP_Logger/AP_Logger.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -601,4 +602,17 @@ bool SRV_Channels::is_GPIO(uint8_t channel)
         return true;
     }
     return false;
+}
+
+// Set E - stop
+void SRV_Channels::set_emergency_stop(bool state) {
+#if HAL_LOGGING_ENABLED
+    if (state != emergency_stop) {
+        AP_Logger *logger = AP_Logger::get_singleton();
+        if (logger && logger->logging_enabled()) {
+            logger->Write_Event(state ? LogEvent::MOTORS_EMERGENCY_STOPPED : LogEvent::MOTORS_EMERGENCY_STOP_CLEARED);
+        }
+    }
+#endif
+    emergency_stop = state;
 }
