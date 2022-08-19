@@ -63,6 +63,7 @@ jobs:
       matrix:
         config: [
             sitltest-rover,
+            sitltest-sailboat,
             sitltest-balancebot
         ]
 
