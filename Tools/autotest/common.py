@@ -6543,7 +6543,7 @@ class AutoTest(ABC):
                               (seq, wp_dist, m.alt, current_wp, wpnum_end))
                 last_wp_msg = self.get_sim_time_cached()
             if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
-                self.progress("test: Starting new waypoint %u" % seq)
+                self.progress("WW: Starting new waypoint %u" % seq)
                 tstart = self.get_sim_time()
                 current_wp = seq
                 # the wp_dist check is a hack until we can sort out
