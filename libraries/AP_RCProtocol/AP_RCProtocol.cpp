@@ -68,7 +68,7 @@ AP_RCProtocol::~AP_RCProtocol()
 
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
 {
-#ifndef IOMCU_FW
+#if !defined(IOMCU_FW) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_detected_protocol != AP_RCProtocol::NONE && !rc().multiple_receiver_support()) {
         return false;
     }
