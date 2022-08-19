@@ -1,3 +1,20 @@
+Release 4.2.3beta3 19th August 2022
+-----------------------------------
+
+This is a minor stable release with a few new features and bug
+fixes. The changes from beta1 are:
+
+- OpenDroneID improvements
+- added --enable-opendroneid configure option
+- added --enable-check-firmware configure option
+- reverted notch filter changes from beta3 due to issue on some aircraft
+- enable OSD menus on KakuteH7
+- added prearm checks for rangefinder pin conflicts
+- added diagnostics for scurve internal error
+- allow absolute paths for linux boards in param defaults
+- fixed AIRBRAKE rc option warning
+
+
 Release 4.2.3beta2 10th August 2022
 -----------------------------------
 
