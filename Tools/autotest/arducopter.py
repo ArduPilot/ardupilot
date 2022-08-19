@@ -4407,8 +4407,9 @@ class AutoTestCopter(AutoTest):
         self.fly_guided_move_local(5, 5, 10)
 
         self.start_subtest("Checking that WP_YAW_BEHAVIOUR 0 works")
-        orig_heading = self.get_heading()
         self.set_parameter('WP_YAW_BEHAVIOR', 0)
+        self.delay_sim_time(2)
+        orig_heading = self.get_heading()
         self.fly_guided_move_local(5, 0, 10)
         # ensure our heading hasn't changed:
         self.assert_heading(orig_heading)
