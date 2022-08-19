@@ -112,7 +112,8 @@ void Mode::auto_takeoff_run()
     // get terrain offset
     float terr_offset = 0.0f;
     if (auto_takeoff_terrain_alt && !wp_nav->get_terrain_offset(terr_offset)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "auto takeoff: failed to get terrain offset");
+        // trigger terrain failsafe
+        copter.failsafe_terrain_on_event();
         return;
     }
 
