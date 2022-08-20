@@ -4218,8 +4218,8 @@ class AutoTest(ABC):
         for (t, want_rate) in message_rates.items():
             if t not in counts:
                 raise NotAchievedException("Wanted %s but got none" % t)
-            self.progress("Got (%u)" % counts[t])
-            got_rate = counts[t] / delta_time_us * 1000000
+            self.progress("Got (%u) in (%uus)" % (counts[t], delta_time_us))
+            got_rate = float(counts[t]) / delta_time_us * 1000000
 
             if abs(want_rate - got_rate) > 5:
                 raise NotAchievedException("Not getting %s data at wanted rate want=%f got=%f" %
