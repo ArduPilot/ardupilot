@@ -1,5 +1,13 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.3-rc3 20-Aug-2022
+Changes from 4.2.3-rc2
+1) OpenDroneId improvements including reporting if operator location is lost
+2) Firmware ID and CRC check (disabled by default)
+3) Bug Fixes
+    a) Auto takeoff with terrain altitude frame fix (could cause climb away if rangefinder became out of range)
+    b) Revert Notch filter ordering on loss of RPM source (see 4.2.3-rc1's 3g below) because fix is incomplete
+------------------------------------------------------------------
 Copter 4.2.3-rc2 13-Aug-2022
 Changes from 4.2.3-rc1
 1) BlueRobotics Navigator autopilot filesystem fix
