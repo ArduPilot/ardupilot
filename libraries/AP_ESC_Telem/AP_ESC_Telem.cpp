@@ -79,13 +79,14 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
     uint8_t valid_escs = 0;
 
     // average the rpm of each motor as reported by BLHeli and convert to Hz
-    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS && i < nfreqs; i++) {
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS && valid_escs < nfreqs; i++) {
         float rpm;
         if (get_rpm(i, rpm)) {
-            freqs[i] = rpm * (1.0f / 60.0f);
-            valid_escs++;
-        } else {
-            freqs[i] = 0.0f;
+            freqs[valid_escs++] = rpm * (1.0f / 60.0f);
+        } else if (_rpm_data[i].last_update_us > 0) {
+            // if we have ever received data on an ESC, mark it as valid but with no data
+            // this prevents large frequency shifts when ESCs disappear
+            freqs[valid_escs++] = 0.0f;
         }
     }
 
