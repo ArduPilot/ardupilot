@@ -25,12 +25,14 @@ class Board(object):
             'Sub',
         ]
 
+
 def in_blacklist(blacklist, b):
     '''return true if board b is in the blacklist, including wildcards'''
     for bl in blacklist:
         if fnmatch.fnmatch(b, bl):
             return True
     return False
+
 
 class BoardList(object):
 
