@@ -521,6 +521,11 @@ void Copter::allocate_motors(void)
     convert_tradheli_parameters();
 #endif
 
+#if HAL_PROXIMITY_ENABLED
+    // convert PRX to PRX1_ parameters
+    convert_prx_parameters();
+#endif
+
     // param count could have changed
     AP_Param::invalidate_count();
 }
