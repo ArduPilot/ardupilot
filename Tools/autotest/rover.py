@@ -4555,7 +4555,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode("SMART_RTL")
 
         self.progress("Ensure we go via intermediate point")
-        self.wait_distance_to_location(loc, 0, 5)
+        self.wait_distance_to_location(loc, 0, 5, timeout=60)
 
         self.progress("Ensure we get home")
         self.wait_distance_to_home(3, 7, timeout=30)
