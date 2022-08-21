@@ -323,8 +323,8 @@ bool AP_Arming_Copter::motor_checks(bool display_failure)
         // check we have an ESC present for every SERVOx_FUNCTION = motorx
         // find and report first missing ESC, extra ESCs are OK
         AP_ToshibaCAN *tcan = AP_ToshibaCAN::get_tcan(tcan_index);
-        const uint16_t motors_mask = copter.motors->get_motor_mask();
-        const uint16_t esc_mask = tcan->get_present_mask();
+        const uint32_t motors_mask = copter.motors->get_motor_mask();
+        const uint32_t esc_mask = tcan->get_present_mask();
         uint8_t escs_missing = 0;
         uint8_t first_missing = 0;
         for (uint8_t i = 0; i < 16; i++) {

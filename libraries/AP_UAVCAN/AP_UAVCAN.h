@@ -30,6 +30,7 @@
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 #include <uavcan/protocol/param/GetSet.hpp>
 #include <uavcan/protocol/param/ExecuteOpcode.hpp>
+#include <SRV_Channel/SRV_Channel.h>
 
 #ifndef UAVCAN_NODE_POOL_SIZE
 #define UAVCAN_NODE_POOL_SIZE 8192
@@ -40,7 +41,7 @@
 #endif
 
 #ifndef UAVCAN_SRV_NUMBER
-#define UAVCAN_SRV_NUMBER 18
+#define UAVCAN_SRV_NUMBER NUM_SERVO_CHANNELS
 #endif
 
 #define AP_UAVCAN_SW_VERS_MAJOR 1

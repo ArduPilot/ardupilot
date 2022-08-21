@@ -1,11 +1,19 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_ESC_Telem_Backend.h"
 
 #if HAL_WITH_ESC_TELEM
 
-#define ESC_TELEM_MAX_ESCS   12
+#ifdef NUM_SERVO_CHANNELS
+ #define ESC_TELEM_MAX_ESCS NUM_SERVO_CHANNELS
+#elif !HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024
+ #define ESC_TELEM_MAX_ESCS 32
+#else
+ #define ESC_TELEM_MAX_ESCS 16
+#endif
+
 #define ESC_TELEM_DATA_TIMEOUT_MS 5000UL
 #define ESC_RPM_DATA_TIMEOUT_US 1000000UL
 
@@ -16,8 +24,9 @@ public:
     AP_ESC_Telem();
 
     /* Do not allow copies */
-    AP_ESC_Telem(const AP_ESC_Telem &other) = delete;
-    AP_ESC_Telem &operator=(const AP_ESC_Telem&) = delete;
+    CLASS_NO_COPY(AP_ESC_Telem);
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     static AP_ESC_Telem *get_singleton();
 
@@ -68,7 +77,7 @@ public:
 
     // get mask of ESCs that sent valid telemetry data in the last
     // ESC_TELEM_DATA_TIMEOUT_MS
-    uint16_t get_active_esc_mask() const;
+    uint32_t get_active_esc_mask() const;
 
     // return the last time telemetry data was received in ms for the given ESC or 0 if never
     uint32_t get_last_telem_data_ms(uint8_t esc_index) const {
@@ -95,8 +104,11 @@ private:
 
     uint32_t _last_telem_log_ms[ESC_TELEM_MAX_ESCS];
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
+    uint8_t next_idx;
 
     bool _have_data;
+
+    AP_Int8 mavlink_offset;
 
     static AP_ESC_Telem *_singleton;
 };
@@ -105,4 +117,5 @@ namespace AP {
     AP_ESC_Telem &esc_telem();
 };
 
-#endif
+#endif // HAL_WITH_ESC_TELEM
+

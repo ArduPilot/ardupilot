@@ -381,9 +381,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.velocity_air_bf = velocity_air_bf;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
-    fdm.num_motors = num_motors;
-    fdm.vtol_motor_start = vtol_motor_start;
-    memcpy(fdm.rpm, rpm, num_motors * sizeof(float));
+    fdm.motor_mask = motor_mask | sitl->vibe_motor_mask;
+    memcpy(fdm.rpm, rpm, sizeof(fdm.rpm));
     fdm.rcin_chan_count = rcin_chan_count;
     fdm.range = rangefinder_range();
     memcpy(fdm.rcin, rcin, rcin_chan_count * sizeof(float));

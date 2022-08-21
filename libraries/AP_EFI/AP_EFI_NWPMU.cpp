@@ -36,7 +36,7 @@ void AP_EFI_NWPMU::handle_frame(AP_HAL::CANFrame &frame)
 {
     const uint32_t id =  frame.id & AP_HAL::CANFrame::MaskExtID;
 
-    WITH_SEMAPHORE(sem);
+    WITH_SEMAPHORE(get_sem());
 
     switch ((NWPMU_ID)id) {
     case NWPMU_ID::ECU_1: {

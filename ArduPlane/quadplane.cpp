@@ -730,7 +730,7 @@ bool QuadPlane::setup(void)
 
     // setup the trim of any motors used by AP_Motors so I/O board
     // failsafe will disable motors
-    uint16_t mask = plane.quadplane.motors->get_motor_mask();
+    uint32_t mask = plane.quadplane.motors->get_motor_mask();
     hal.rcout->set_failsafe_pwm(mask, plane.quadplane.motors->get_pwm_output_min());
 
     // default QAssist state as set with Q_OPTIONS
@@ -2187,6 +2187,7 @@ void QuadPlane::poscontrol_init_approach(void)
     }
     poscontrol.pilot_correction_done = false;
     poscontrol.xy_correction.zero();
+    poscontrol.slow_descent = false;
 }
 
 /*
@@ -3524,13 +3525,13 @@ void QuadPlane::guided_start(void)
     setup_target_position();
     int32_t from_alt;
     int32_t to_alt;
+    poscontrol_init_approach();
     if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,from_alt) && plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE,to_alt)) {
         poscontrol.slow_descent = from_alt > to_alt;
     } else {
         // default back to old method
         poscontrol.slow_descent = (plane.current_loc.alt > plane.next_WP_loc.alt);
     }
-    poscontrol_init_approach();
 }
 
 /*

@@ -30,7 +30,9 @@ class HarmonicNotchFilter {
 public:
     ~HarmonicNotchFilter();
     // allocate a bank of notch filters for this harmonic notch filter
-    void allocate_filters(uint8_t num_notches, uint8_t harmonics, bool double_notch);
+    void allocate_filters(uint8_t num_notches, uint8_t harmonics, uint8_t composite_notches);
+    // expand filter bank with new filters
+    void expand_filter_count(uint8_t num_notches);
     // initialize the underlying filters using the provided filter parameters
     void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
     // update the underlying filters' center frequencies using center_freq_hz as the fundamental
@@ -43,6 +45,7 @@ public:
     void reset();
 
 private:
+    HAL_Semaphore _sem;
     // underlying bank of notch filters
     NotchFilter<T>*  _filters;
     // sample frequency for each filter
@@ -55,8 +58,8 @@ private:
     float _Q;
     // a bitmask of the harmonics to use
     uint8_t _harmonics;
-    // whether to use double-notches
-    bool _double_notch;
+    // number of notches that make up a composite notch
+    uint8_t _composite_notches;
     // number of allocated filters
     uint8_t _num_filters;
     // pre-calculated number of harmonics
@@ -64,6 +67,9 @@ private:
     // number of enabled filters
     uint8_t _num_enabled_filters;
     bool _initialised;
+
+    // have we failed to expand filters?
+    bool _alloc_has_failed;
 };
 
 // Harmonic notch update mode
@@ -84,7 +90,9 @@ public:
     enum class Options {
         DoubleNotch = 1<<0,
         DynamicHarmonic = 1<<1,
-        LoopRateUpdate = 2<<1,
+        LoopRateUpdate = 1<<2,
+        EnableOnAllIMUs = 1<<3,
+        TripleNotch = 1<<4,
     };
 
     HarmonicNotchFilterParams(void);

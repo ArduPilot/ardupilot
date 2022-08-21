@@ -80,8 +80,6 @@ QuadPlane::QuadPlane(const char *frame_str) :
         printf("Failed to find frame '%s'\n", frame_type);
         exit(1);
     }
-    num_motors = 1 + frame->num_motors;
-    vtol_motor_start = 1;
 
     if (strstr(frame_str, "cl84")) {
         // setup retract servos at front
@@ -120,7 +118,8 @@ void QuadPlane::update(const struct sitl_input &input)
     Vector3f quad_rot_accel;
     Vector3f quad_accel_body;
 
-    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, &rpm[1], false);
+    motor_mask |= ((1U<<frame->num_motors)-1U) << frame->motor_offset;
+    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, rpm, false);
 
     // rotate frames for copter tailsitters
     if (copter_tailsitter) {

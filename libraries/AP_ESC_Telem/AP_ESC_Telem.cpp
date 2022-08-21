@@ -26,12 +26,27 @@
 
 extern const AP_HAL::HAL& hal;
 
+// table of user settable parameters
+const AP_Param::GroupInfo AP_ESC_Telem::var_info[] = {
+
+    // @Param: _MAV_OFS
+    // @DisplayName: ESC Telemetry mavlink offset
+    // @Description: Offset to apply to ESC numbers when reporting as ESC_TELEMETRY packets over MAVLink. This allows high numbered motors to be displayed as low numbered ESCs for convenience on GCS displays. A value of 4 would send ESC on output 5 as ESC number 1 in ESC_TELEMETRY packets
+    // @Increment: 1
+    // @Range: 0 31
+    // @User: Standard
+    AP_GROUPINFO("_MAV_OFS", 1, AP_ESC_Telem, mavlink_offset, 0),
+    
+    AP_GROUPEND
+};
+
 AP_ESC_Telem::AP_ESC_Telem()
 {
     if (_singleton) {
         AP_HAL::panic("Too many AP_ESC_Telem instances");
     }
     _singleton = this;
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
 // return the average motor RPM
@@ -64,7 +79,7 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
     uint8_t valid_escs = 0;
 
     // average the rpm of each motor as reported by BLHeli and convert to Hz
-    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS && i < nfreqs; i++) {
+    for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS && valid_escs < nfreqs; i++) {
         float rpm;
         if (get_rpm(i, rpm)) {
             freqs[valid_escs++] = rpm * (1.0f / 60.0f);
@@ -76,8 +91,8 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
 
 // get mask of ESCs that sent valid telemetry data in the last
 // ESC_TELEM_DATA_TIMEOUT_MS
-uint16_t AP_ESC_Telem::get_active_esc_mask() const {
-    uint16_t ret = 0;
+uint32_t AP_ESC_Telem::get_active_esc_mask() const {
+    uint32_t ret = 0;
     const uint32_t now = AP_HAL::millis();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
         if (now - _telem_data[i].last_update_ms >= ESC_TELEM_DATA_TIMEOUT_MS) {
@@ -94,7 +109,7 @@ uint16_t AP_ESC_Telem::get_active_esc_mask() const {
 
 // return number of active ESCs present
 uint8_t AP_ESC_Telem::get_num_active_escs() const {
-    uint16_t active = get_active_esc_mask();
+    uint32_t active = get_active_esc_mask();
     return __builtin_popcount(active);
 }
 
@@ -232,8 +247,6 @@ bool AP_ESC_Telem::get_usage_seconds(uint8_t esc_index, uint32_t& usage_s) const
 void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 {
 #if HAL_GCS_ENABLED
-    static_assert(ESC_TELEM_MAX_ESCS <= 12, "AP_ESC_Telem::send_esc_telemetry_mavlink() only supports up-to 12 motors");
-
     if (!_have_data) {
         // we've never had any data
         return;
@@ -241,21 +254,35 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
     uint32_t now = AP_HAL::millis();
     uint32_t now_us = AP_HAL::micros();
-    // loop through 3 groups of 4 ESCs
-    for (uint8_t i = 0; i < 3; i++) {
+
+    // loop through groups of 4 ESCs
+    const uint8_t esc_offset = constrain_int16(mavlink_offset, 0, ESC_TELEM_MAX_ESCS-1);
+    const uint8_t num_idx = ESC_TELEM_MAX_ESCS/4;
+    for (uint8_t idx = 0; idx < num_idx; idx++) {
+        const uint8_t i = (next_idx + idx) % num_idx;
 
         // return if no space in output buffer to send mavlink messages
         if (!HAVE_PAYLOAD_SPACE((mavlink_channel_t)mav_chan, ESC_TELEMETRY_1_TO_4)) {
+            // not enough mavlink buffer space, start at this index next time
+            next_idx = i;
             return;
         }
-#define ESC_DATA_STALE(idx) \
-        (now - _telem_data[idx].last_update_ms > ESC_TELEM_DATA_TIMEOUT_MS \
-            && now_us - _rpm_data[idx].last_update_us > ESC_RPM_DATA_TIMEOUT_US)
 
-        // skip this group of ESCs if no data to send
-        if (ESC_DATA_STALE(i * 4) && ESC_DATA_STALE(i * 4 + 1) && ESC_DATA_STALE(i * 4 + 2) && ESC_DATA_STALE(i * 4 + 3)) {
+        bool all_stale = true;
+        for (uint8_t j=0; j<4; j++) {
+            const uint8_t esc_id = (i * 4 + j) + esc_offset;
+            if (esc_id < ESC_TELEM_MAX_ESCS &&
+                (now - _telem_data[esc_id].last_update_ms <= ESC_TELEM_DATA_TIMEOUT_MS ||
+                 now_us - _rpm_data[esc_id].last_update_us <= ESC_RPM_DATA_TIMEOUT_US)) {
+                all_stale = false;
+                break;
+            }
+        }
+        if (all_stale) {
+            // skip this group of ESCs if no data to send
             continue;
         }
+
 
         // arrays to hold output
         uint8_t temperature[4] {};
@@ -267,7 +294,11 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
 
         // fill in output arrays
         for (uint8_t j = 0; j < 4; j++) {
-            const uint8_t esc_id = i * 4 + j;
+            const uint8_t esc_id = (i * 4 + j) + esc_offset;
+            if (esc_id >= ESC_TELEM_MAX_ESCS) {
+                continue;
+            }
+
             temperature[j] = _telem_data[esc_id].temperature_cdeg / 100;
             voltage[j] = constrain_float(_telem_data[esc_id].voltage * 100.0f, 0, UINT16_MAX);
             current[j] = constrain_float(_telem_data[esc_id].current * 100.0f, 0, UINT16_MAX);
@@ -281,21 +312,47 @@ void AP_ESC_Telem::send_esc_telemetry_mavlink(uint8_t mav_chan)
             count[j] = _telem_data[esc_id].count;
         }
 
+        // use a function pointer to reduce flash space
+        typedef void (*esc_telem_send_fn_t)(mavlink_channel_t, const uint8_t *, const uint16_t *, const uint16_t *, const uint16_t *, const uint16_t *, const uint16_t *);
+        esc_telem_send_fn_t fn = nullptr;
+
         // send messages
         switch (i) {
             case 0:
-                mavlink_msg_esc_telemetry_1_to_4_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                fn = mavlink_msg_esc_telemetry_1_to_4_send;
                 break;
             case 1:
-                mavlink_msg_esc_telemetry_5_to_8_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                fn = mavlink_msg_esc_telemetry_5_to_8_send;
                 break;
             case 2:
-                mavlink_msg_esc_telemetry_9_to_12_send((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
+                fn = mavlink_msg_esc_telemetry_9_to_12_send;
                 break;
-            default:
+            case 3:
+                fn = mavlink_msg_esc_telemetry_13_to_16_send;
                 break;
+#if ESC_TELEM_MAX_ESCS > 16
+            case 4:
+                fn = mavlink_msg_esc_telemetry_17_to_20_send;
+                break;
+            case 5:
+                fn = mavlink_msg_esc_telemetry_21_to_24_send;
+                break;
+            case 6:
+                fn = mavlink_msg_esc_telemetry_25_to_28_send;
+                break;
+            case 7:
+                fn = mavlink_msg_esc_telemetry_29_to_32_send;
+                break;
+#endif
+        }
+        if (fn != nullptr) {
+            fn((mavlink_channel_t)mav_chan, temperature, voltage, current, current_tot, rpm, count);
         }
     }
+    // we checked for all sends without running out of buffer space,
+    // start at zero next time
+    next_idx = 0;
+
 #endif // HAL_GCS_ENABLED
 }
 

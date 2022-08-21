@@ -20,6 +20,7 @@
 #include "AP_EFI_Serial_MS.h"
 #include "AP_EFI_Serial_Lutan.h"
 #include "AP_EFI_NWPMU.h"
+#include "AP_EFI_DroneCAN.h"
 #include <AP_Logger/AP_Logger.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -33,7 +34,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -85,8 +86,13 @@ void AP_EFI::init(void)
         backend = new AP_EFI_NWPMU(*this);
 #endif
         break;
+    case Type::DroneCAN:
+#if HAL_EFI_DRONECAN_ENABLED
+        backend = new AP_EFI_DroneCAN(*this);
+#endif
+        break;
     default:
-        gcs().send_text(MAV_SEVERITY_INFO, "Unknown EFI type");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unknown EFI type");
         break;
     }
 }
@@ -96,7 +102,9 @@ void AP_EFI::update()
 {
     if (backend) {
         backend->update();
+#if HAL_LOGGING_ENABLED
         log_status();
+#endif
     }
 }
 
@@ -105,6 +113,7 @@ bool AP_EFI::is_healthy(void) const
     return (backend && (AP_HAL::millis() - state.last_updated_ms) < HEALTHY_LAST_RECEIVED_MS);
 }
 
+#if HAL_LOGGING_ENABLED
 /*
   write status to log
  */
@@ -208,6 +217,7 @@ void AP_EFI::log_status(void)
                            state.ecu_index);
     }
 }
+#endif // LOGGING_ENABLED
 
 /*
   send EFI_STATUS
@@ -238,6 +248,13 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         0,  // pressure/temperature compensation
         0  // ignition voltage (spark supply voltage)
         );
+}
+
+// get a copy of state structure
+void AP_EFI::get_state(EFI_State &_state)
+{
+    WITH_SEMAPHORE(sem);
+    _state = state;
 }
 
 namespace AP {

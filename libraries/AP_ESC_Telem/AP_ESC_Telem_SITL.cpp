@@ -36,13 +36,19 @@ void AP_ESC_Telem_SITL::update()
         return;
     }
 
-    if (is_zero(sitl->throttle)) {
+    if (AP_HAL::millis64() < 6000) {
+        // this prevents us sending blank data at startup, which triggers
+        // ESC telem messages for all channels
         return;
     }
 
 #if HAL_WITH_ESC_TELEM
-    for (uint8_t i = 0; i < sitl->state.num_motors; i++) {
-        update_rpm(i, sitl->state.rpm[sitl->state.vtol_motor_start+i]);
+    uint32_t mask = sitl->state.motor_mask;
+    uint8_t bit;
+    while ((bit = __builtin_ffs(mask)) != 0) {
+        uint8_t motor = bit-1;
+        mask &= ~(1U<<motor);
+        update_rpm(motor, sitl->state.rpm[motor]);
     }
 #endif
 

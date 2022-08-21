@@ -59,9 +59,10 @@ uint16_t SRV_Channels::override_counter[NUM_SERVO_CHANNELS];
 AP_BLHeli *SRV_Channels::blheli_ptr;
 #endif
 
-uint16_t SRV_Channels::disabled_mask;
-uint16_t SRV_Channels::digital_mask;
-uint16_t SRV_Channels::reversible_mask;
+uint32_t SRV_Channels::disabled_mask;
+uint32_t SRV_Channels::digital_mask;
+uint32_t SRV_Channels::reversible_mask;
+uint32_t SRV_Channels::invalid_mask;
 
 bool SRV_Channels::disabled_passthrough;
 bool SRV_Channels::initialised;
@@ -230,11 +231,116 @@ const AP_Param::GroupInfo SRV_Channels::var_info[] = {
     // @Param: _GPIO_MASK
     // @DisplayName: Servo GPIO mask
     // @Description: This sets a bitmask of outputs which will be available as GPIOs. Any auxillary output with either the function set to -1 or with the corresponding bit set in this mask will be available for use as a GPIO pin
-    // @Bitmask: 0:Servo 1, 1:Servo 2, 2:Servo 3, 3:Servo 4, 4:Servo 5, 5:Servo 6, 6:Servo 7, 7:Servo 8, 8:Servo 9, 9:Servo 10, 10:Servo 11, 11:Servo 12, 12:Servo 13, 13:Servo 14, 14:Servo 15, 15:Servo 16
+    // @Bitmask: 0:Servo 1, 1:Servo 2, 2:Servo 3, 3:Servo 4, 4:Servo 5, 5:Servo 6, 6:Servo 7, 7:Servo 8, 8:Servo 9, 9:Servo 10, 10:Servo 11, 11:Servo 12, 12:Servo 13, 13:Servo 14, 14:Servo 15, 15:Servo 16, 16:Servo 17, 17:Servo 18, 18:Servo 19, 19:Servo 20, 20:Servo 21, 21:Servo 22, 22:Servo 23, 23:Servo 24, 24:Servo 25, 25:Servo 26, 26:Servo 27, 27:Servo 28, 28:Servo 29, 29:Servo 30, 30:Servo 31, 31:Servo 32
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("_GPIO_MASK",  26, SRV_Channels, gpio_mask, 0),
-    
+
+#if (NUM_SERVO_CHANNELS >= 17)
+    // @Param: _32_ENABLE
+    // @DisplayName: Enable outputs 17 to 31
+    // @Description: This allows for up to 32 outputs, enabling parameters for outputs above 16
+    // @User: Advanced
+    // @Values: 0:Disabled,1:Enabled
+    AP_GROUPINFO_FLAGS("_32_ENABLE", 43, SRV_Channels, enable_32_channels, 0, AP_PARAM_FLAG_ENABLE),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 17)
+    // @Group: 17_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[16], "17_",  27, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 18)
+    // @Group: 18_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[17], "18_", 28, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 19)
+    // @Group: 19_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[18], "19_",  29, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 20)
+    // @Group: 20_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[19], "20_",  30, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 21)
+    // @Group: 21_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[20], "21_",  31, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 22)
+    // @Group: 22_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[21], "22_",  32, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 23)
+    // @Group: 23_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[22], "23_",  33, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 24)
+    // @Group: 24_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[23], "24_",  34, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 25)
+    // @Group: 25_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[24], "25_",  35, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 26)
+    // @Group: 26_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[25], "26_",  36, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 27)
+    // @Group: 27_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[26], "27_",  37, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 28)
+    // @Group: 28_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[27], "28_",  38, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 29)
+    // @Group: 29_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[28], "29_",  39, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 30)
+    // @Group: 30_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[29], "30_",  40, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 31)
+    // @Group: 31_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[30], "31_",  41, SRV_Channels, SRV_Channel),
+#endif
+
+#if (NUM_SERVO_CHANNELS >= 32)
+    // @Group: 32_
+    // @Path: SRV_Channel.cpp
+    AP_SUBGROUPINFO(obj_channels[31], "32_",  42, SRV_Channels, SRV_Channel),
+#endif
+
     AP_GROUPEND
 };
 
@@ -252,6 +358,12 @@ SRV_Channels::SRV_Channels(void)
     // setup ch_num on channels
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
         channels[i].ch_num = i;
+#if NUM_SERVO_CHANNELS > 16
+        if (i >= 16) {
+            // default to GPIO, this disables the pin and stops logging
+            channels[i].function.set_default(SRV_Channel::k_GPIO);
+        }
+#endif
     }
 
 #if AP_FETTEC_ONEWIRE_ENABLED

@@ -40,7 +40,7 @@ public:
 
 private:
 
-    bool initialised;
+    bool initialised, need_reset;
     float b0, b1, b2, a1, a2, a0_inv;
     T ntchsig, ntchsig1, ntchsig2, signal2, signal1;
 };
