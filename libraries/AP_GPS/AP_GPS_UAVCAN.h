@@ -92,6 +92,7 @@ private:
     void handle_aux_msg(const AuxCb &cb);
     void handle_heading_msg(const HeadingCb &cb);
     void handle_status_msg(const StatusCb &cb);
+    void handle_velocity(const float vx, const float vy, const float vz);
 
 #if GPS_MOVING_BASELINE
     void handle_moving_baseline_msg(const MovingBaselineDataCb &cb, uint8_t node_id);

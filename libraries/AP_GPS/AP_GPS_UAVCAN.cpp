@@ -373,6 +373,27 @@ AP_GPS_UAVCAN* AP_GPS_UAVCAN::get_uavcan_backend(AP_UAVCAN* ap_uavcan, uint8_t n
     return nullptr;
 }
 
+/*
+  handle velocity element of message
+ */
+void AP_GPS_UAVCAN::handle_velocity(const float vx, const float vy, const float vz)
+{
+    if (!uavcan::isNaN(vx)) {
+        const Vector3f vel(vx, vy, vz);
+        interim_state.velocity = vel;
+        interim_state.ground_speed = vel.xy().length();
+        interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
+        // assume we have vertical velocity if we ever get a non-zero Z velocity
+        if (!isnanf(vel.z) && !is_zero(vel.z)) {
+            interim_state.have_vertical_velocity = true;
+        } else {
+            interim_state.have_vertical_velocity = state.have_vertical_velocity;
+        }
+    } else {
+        interim_state.have_vertical_velocity = false;
+    }
+}
+
 void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
 {
     if (seen_fix2) {
@@ -416,15 +437,7 @@ void AP_GPS_UAVCAN::handle_fix_msg(const FixCb &cb)
         interim_state.undulation = (cb.msg->height_msl_mm - cb.msg->height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
 
-        if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
-            Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
-            interim_state.velocity = vel;
-            interim_state.ground_speed = vel.xy().length();
-            interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-            interim_state.have_vertical_velocity = true;
-        } else {
-            interim_state.have_vertical_velocity = false;
-        }
+        handle_velocity(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
 
         float pos_cov[9];
         cb.msg->position_covariance.unpackSquareMatrix(pos_cov);
@@ -542,15 +555,7 @@ void AP_GPS_UAVCAN::handle_fix2_msg(const Fix2Cb &cb)
         interim_state.undulation = (cb.msg->height_msl_mm - cb.msg->height_ellipsoid_mm) * 0.001;
         interim_state.location = loc;
 
-        if (!uavcan::isNaN(cb.msg->ned_velocity[0])) {
-            Vector3f vel(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
-            interim_state.velocity = vel;
-            interim_state.ground_speed = vel.xy().length();
-            interim_state.ground_course = wrap_360(degrees(atan2f(vel.y, vel.x)));
-            interim_state.have_vertical_velocity = true;
-        } else {
-            interim_state.have_vertical_velocity = false;
-        }
+        handle_velocity(cb.msg->ned_velocity[0], cb.msg->ned_velocity[1], cb.msg->ned_velocity[2]);
 
         if (cb.msg->covariance.size() == 6) {
             if (!uavcan::isNaN(cb.msg->covariance[0])) {
