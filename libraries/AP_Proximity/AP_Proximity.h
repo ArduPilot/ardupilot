@@ -25,7 +25,7 @@
 #include "AP_Proximity_Params.h"
 #include "AP_Proximity_Boundary_3D.h"
 
-#define PROXIMITY_MAX_INSTANCES             2   // Maximum number of proximity sensor instances available on this platform
+#define PROXIMITY_MAX_INSTANCES             3   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_SENSOR_ID_START 10
 
 class AP_Proximity_Backend;
