@@ -1514,6 +1514,32 @@ void Copter::convert_pid_parameters(void)
     SRV_Channels::upgrade_parameters();
 }
 
+#if HAL_PROXIMITY_ENABLED
+void Copter::convert_prx_parameters()
+{
+    // convert PRX to PRX1_ parameters for Copter-4.3
+    // PARAMETER_CONVERSION - Added: Aug-2022
+    const AP_Param::ConversionInfo prx_conversion_info[] = {
+        { Parameters::k_param_g2, 72, AP_PARAM_INT8, "PRX1_TYPE" },
+        { Parameters::k_param_g2, 136, AP_PARAM_INT8, "PRX1_ORIENT" },
+        { Parameters::k_param_g2, 200, AP_PARAM_INT16, "PRX1_YAW_CORR" },
+        { Parameters::k_param_g2, 264, AP_PARAM_INT16, "PRX1_IGN_ANG1" },
+        { Parameters::k_param_g2, 328, AP_PARAM_INT8, "PRX1_IGN_WID1" },
+        { Parameters::k_param_g2, 392, AP_PARAM_INT16, "PRX1_IGN_ANG2" },
+        { Parameters::k_param_g2, 456, AP_PARAM_INT8, "PRX1_IGN_WID2" },
+        { Parameters::k_param_g2, 520, AP_PARAM_INT16, "PRX1_IGN_ANG3" },
+        { Parameters::k_param_g2, 584, AP_PARAM_INT8, "PRX1_IGN_WID3" },
+        { Parameters::k_param_g2, 648, AP_PARAM_INT16, "PRX1_IGN_ANG4" },
+        { Parameters::k_param_g2, 712, AP_PARAM_INT8, "PRX1_IGN_WID4" },
+        { Parameters::k_param_g2, 1224, AP_PARAM_FLOAT, "PRX1_MIN" },
+        { Parameters::k_param_g2, 1288, AP_PARAM_FLOAT, "PRX1_MAX" },
+    };
+    for (const auto &info : prx_conversion_info) {
+        AP_Param::convert_old_parameter(&info, 1.0);
+    }
+}
+#endif
+
 #if LANDING_GEAR_ENABLED == ENABLED
 /*
   convert landing gear parameters
