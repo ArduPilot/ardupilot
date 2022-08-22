@@ -395,16 +395,6 @@ bool AP_Proximity::get_upward_distance(float &distance) const
     return get_upward_distance(primary_instance, distance);
 }
 
-// set alt as read from dowward facing rangefinder. Tilt is already adjusted for.
-void AP_Proximity::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
-{
-    if (!valid_instance(primary_instance)) {
-        return;
-    }
-    // store alt at the backend
-    drivers[primary_instance]->set_rangefinder_alt(use, healthy, alt_cm);
-}
-
 #if HAL_LOGGING_ENABLED
 // Write proximity sensor distances
 void AP_Proximity::log()

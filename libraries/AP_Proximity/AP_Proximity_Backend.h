@@ -19,9 +19,6 @@
 #if HAL_PROXIMITY_ENABLED
 #include <AP_Common/AP_Common.h>
 
-#define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters
-#define PROXIMITY_ALT_DETECT_TIMEOUT_MS 500 // alt readings should arrive within this much time
-
 class AP_Proximity_Backend
 {
 public:
@@ -45,9 +42,6 @@ public:
     // handle mavlink messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
-    // store rangefinder values
-    void set_rangefinder_alt(bool use, bool healthy, float alt_cm);
-
 protected:
 
     // set status and update valid_count
@@ -64,12 +58,6 @@ protected:
     bool ignore_reading(float pitch, float yaw, float distance_m, bool check_for_ign_area = true) const;
     bool ignore_reading(float yaw, float distance_m, bool check_for_ign_area = true) const { return ignore_reading(0.0f, yaw, distance_m, check_for_ign_area); }
 
-    // get alt from rangefinder in meters. This reading is corrected for vehicle tilt
-    bool get_rangefinder_alt(float &alt_m) const;
-
-    // Check if Obstacle defined by body-frame yaw and pitch is near ground
-    bool check_obstacle_near_ground(float pitch, float yaw, float distance) const;
-
     // database helpers. All angles are in degrees
     static bool database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned);
     // Note: "angle" refers to yaw (in body frame) towards the obstacle
@@ -78,12 +66,6 @@ protected:
         database_push(angle, 0.0f, distance, timestamp_ms, current_pos, body_to_ned);
     };
     static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
-
-    // used for ground detection
-    uint32_t _last_downward_update_ms;
-    bool     _rangefinder_use;
-    bool     _rangefinder_healthy;
-    float    _rangefinder_alt;
 
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
