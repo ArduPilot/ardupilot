@@ -392,7 +392,14 @@ bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
 
 bool AP_Proximity::get_upward_distance(float &distance) const
 {
-    return get_upward_distance(primary_instance, distance);
+    // get upward distance from backend
+    for (uint8_t i=0; i<num_instances; i++) {
+        // return first good upward distance
+        if (get_upward_distance(primary_instance, distance)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #if HAL_LOGGING_ENABLED
