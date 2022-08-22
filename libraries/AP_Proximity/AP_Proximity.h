@@ -155,6 +155,9 @@ public:
     // 3D boundary
     AP_Proximity_Boundary_3D boundary;
 
+    // Check if Obstacle defined by body-frame yaw and pitch is near ground
+    bool check_obstacle_near_ground(float pitch, float yaw, float distance) const;
+
 protected:
 
     // parameters for backends
@@ -174,6 +177,17 @@ private:
     AP_Int8 _raw_log_enable;                            // enable logging raw distances
     AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
     AP_Float _filt_freq;                               // cutoff frequency for low pass filter
+
+    // get alt from rangefinder in meters. This reading is corrected for vehicle tilt
+    bool get_rangefinder_alt(float &alt_m) const;
+
+    struct RangeFinderState {
+        bool use;                          // true if enabled
+        bool healthy;                      // true if we can trust the altitude from the rangefinder
+        int16_t alt_cm;                    // tilt compensated altitude (in cm) from rangefinder
+        uint32_t last_downward_update_ms;  // last update ms
+    } _rangefinder_state;
+
 };
 
 namespace AP {

@@ -16,13 +16,9 @@
 #include "AP_Proximity_Backend.h"
 
 #if HAL_PROXIMITY_ENABLED
-#include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Avoidance/AP_OADatabase.h>
-#include <AP_HAL/AP_HAL.h>
-
-extern const AP_HAL::HAL& hal;
 
 /*
   base class constructor. 
@@ -85,69 +81,7 @@ bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance
     }
 
    // check if obstacle is near land
-   return check_obstacle_near_ground(pitch, yaw, distance_m);
-}
-
-// store rangefinder values
-void AP_Proximity_Backend::set_rangefinder_alt(bool use, bool healthy, float alt_cm)
-{
-    _last_downward_update_ms = AP_HAL::millis();
-    _rangefinder_use = use;
-    _rangefinder_healthy = healthy;
-    _rangefinder_alt = alt_cm * 0.01f;
-}
-
-// get alt from rangefinder in meters
-bool AP_Proximity_Backend::get_rangefinder_alt(float &alt_m) const
-{
-    if (!_rangefinder_use || !_rangefinder_healthy) {
-        // range finder is not healthy
-        return false;
-    }
-
-    const uint32_t dt = AP_HAL::millis() - _last_downward_update_ms;
-    if (dt > PROXIMITY_ALT_DETECT_TIMEOUT_MS) {
-        return false;
-    }
-
-    // readings are healthy
-    alt_m = _rangefinder_alt;
-    return true;
-}
-
-// Check if Obstacle defined by body-frame yaw and pitch is near ground
-bool AP_Proximity_Backend::check_obstacle_near_ground(float pitch, float yaw, float distance) const
-{
-    if (!frontend._ign_gnd_enable) {
-        return false;
-    }
-    if (!hal.util->get_soft_armed()) {
-        // don't run this feature while vehicle is disarmed, otherwise proximity data will not show up on GCS
-        return false;
-    }
-    if ((pitch > 90.0f) || (pitch < -90.0f)) {
-        // sanity check on pitch
-        return false;
-    }
-    // Assume object is yaw and pitch bearing and distance meters away from the vehicle
-    Vector3f object_3D;
-    object_3D.offset_bearing(wrap_180(yaw), (pitch * -1.0f), distance);
-    const Matrix3f body_to_ned = AP::ahrs().get_rotation_body_to_ned();
-    const Vector3f rotated_object_3D = body_to_ned * object_3D;
-
-    float alt = FLT_MAX;
-    if (!get_rangefinder_alt(alt)) {
-        return false;
-    }
-
-    if (rotated_object_3D.z > -0.5f) {
-        // obstacle is at the most 0.5 meters above vehicle
-        if ((alt - PROXIMITY_GND_DETECT_THRESHOLD) < rotated_object_3D.z) {
-            // obstacle is near or below ground
-            return true;
-        }
-    }
-    return false;
+   return frontend.check_obstacle_near_ground(pitch, yaw, distance_m);
 }
 
 // returns true if database is ready to be pushed to and all cached data is ready
