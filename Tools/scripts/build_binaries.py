@@ -510,14 +510,16 @@ is bob we will attempt to checkout bob-AVR'''
                             # build timestamp:
                             if not os.path.exists(ddir):
                                 self.mkpath(ddir)
-                                self.addfwversion(ddir, vehicle)
+                            self.addfwversion(ddir, vehicle)
                             self.progress("Copying %s to %s" % (path, ddir,))
                             shutil.copy(path, os.path.join(ddir, target_filename))
                         # the most recent build of every tag is kept around:
                         self.progress("Copying %s to %s" % (path, tdir))
                         if not os.path.exists(tdir):
                             self.mkpath(tdir)
-                            self.addfwversion(tdir, vehicle)
+                        # must addfwversion even if path already
+                        # exists as we re-use the "beta" directories
+                        self.addfwversion(tdir, vehicle)
                         shutil.copy(path, os.path.join(tdir, target_filename))
                     except Exception as e:
                         self.print_exception_caught(e)
