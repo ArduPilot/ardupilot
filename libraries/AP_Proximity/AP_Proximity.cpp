@@ -231,7 +231,7 @@ AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
 }
 
 // return sensor health
-AP_Proximity::Status AP_Proximity::get_status(uint8_t instance) const
+AP_Proximity::Status AP_Proximity::get_instance_status(uint8_t instance) const
 {
     // sanity check instance number
     if (!valid_instance(instance)) {
@@ -243,10 +243,36 @@ AP_Proximity::Status AP_Proximity::get_status(uint8_t instance) const
 
 AP_Proximity::Status AP_Proximity::get_status() const
 {
-    return get_status(primary_instance);
+    for (uint8_t i=0; i<num_instances; i++) {
+        const Status sensors_status = get_instance_status(i);
+        if (sensors_status != Status::Good) {
+            // return first bad status
+            return sensors_status;
+        }
+    }
+    // All valid sensors seem to be working
+    return Status::Good;
 }
 
-// get maximum and minimum distances (in meters) of primary sensor
+// prearm checks
+bool AP_Proximity::prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const
+{
+    for (uint8_t i=0; i<num_instances; i++) {
+        switch (get_instance_status(i)) {
+        case Status::NoData:
+            hal.util->snprintf(failure_msg, failure_msg_len, "PRX%d: No Data", i + 1);
+            return false;
+        case Status::NotConnected:
+            hal.util->snprintf(failure_msg, failure_msg_len, "PRX%d: Not Connected", i + 1);
+            return false;
+        case Status::Good:
+            break;
+        }
+    }
+    return true;
+}
+
+// get maximum and minimum distances (in meters)
 float AP_Proximity::distance_max() const
 {
     float dist_max = 0;
@@ -338,15 +364,17 @@ void AP_Proximity::handle_msg(const mavlink_message_t &msg)
 }
 
 // methods for mavlink SYS_STATUS message (send_sys_status)
-// these methods cover only the primary instance
 bool AP_Proximity::sensor_present() const
 {
     return get_status() != Status::NotConnected;
 }
+
 bool AP_Proximity::sensor_enabled() const
 {
+    // check atleast one sensor is enabled
     return get_type(primary_instance) != Type::None;
 }
+
 bool AP_Proximity::sensor_failed() const
 {
     return get_status() != Status::Good;

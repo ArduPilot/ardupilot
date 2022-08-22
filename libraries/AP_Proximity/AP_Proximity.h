@@ -80,10 +80,13 @@ public:
     float get_filter_freq() const { return _filt_freq; }
 
     // return sensor health
-    Status get_status(uint8_t instance) const;
+    Status get_instance_status(uint8_t instance) const;
     Status get_status() const;
 
-    // get maximum and minimum distances (in meters) of primary sensor
+    // prearm checks
+    bool prearm_healthy(char *failure_msg, const uint8_t failure_msg_len) const;
+
+    // get maximum and minimum distances (in meters)
     float distance_max() const;
     float distance_min() const;
 
@@ -120,7 +123,6 @@ public:
     void handle_msg(const mavlink_message_t &msg);
 
     // methods for mavlink SYS_STATUS message (send_sys_status)
-    // these methods cover only the primary instance
     bool sensor_present() const;
     bool sensor_enabled() const;
     bool sensor_failed() const;
