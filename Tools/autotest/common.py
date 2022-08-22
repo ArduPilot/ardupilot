@@ -3791,13 +3791,16 @@ class AutoTest(ABC):
     def assert_receive_message(self, type, timeout=1, verbose=False, very_verbose=False, mav=None):
         if mav is None:
             mav = self.mav
-        m = mav.recv_match(type=type, blocking=True, timeout=timeout)
+        m = None
+        tstart = time.time()  # timeout in wallclock
+        while m is None:
+            m = mav.recv_match(type=type, blocking=True, timeout=0.05)
+            if time.time() - tstart > timeout:
+                raise NotAchievedException("Did not get %s" % type)
         if verbose:
             self.progress("Received (%s)" % str(m))
         if very_verbose:
             self.progress(self.dump_message_verbose(m))
-        if m is None:
-            raise NotAchievedException("Did not get %s" % type)
         return m
 
     def assert_receive_named_value_float(self, name, timeout=10):
