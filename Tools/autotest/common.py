@@ -5780,7 +5780,7 @@ class AutoTest(ABC):
             target=altitude_min,
             current_value_getter=lambda: self.get_altitude(
                 relative=relative,
-                timeout=timeout,
+                timeout=0.05,
             ),
             accuracy=(altitude_max - altitude_min),
             validator=lambda value2, target2: validator(value2, target2),
