@@ -1078,15 +1078,12 @@ bool AP_Arming::proximity_checks(bool report) const
     if (proximity == nullptr) {
         return true;
     }
-    if (proximity->get_status() == AP_Proximity::Status::NotConnected) {
-        return true;
-    }
-
-    // return false if proximity sensor unhealthy
-    if (proximity->get_status() < AP_Proximity::Status::Good) {
-        check_failed(report, "check proximity sensor");
+    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
+    if (!proximity->prearm_healthy(buffer, ARRAY_SIZE(buffer))) {
+        check_failed(report, "%s", buffer);
         return false;
     }
+    return true;
 #endif
 
     return true;
