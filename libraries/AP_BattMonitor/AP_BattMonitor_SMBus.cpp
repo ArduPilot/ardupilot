@@ -160,7 +160,7 @@ bool AP_BattMonitor_SMBus::read_word(uint8_t reg, uint16_t& data) const
 
     // check PEC
     if (_pec_supported) {
-        const uint8_t pec = get_PEC(_address, reg, true, buff, 2);
+        const uint8_t pec = get_PEC(_dev->get_bus_address(), reg, true, buff, 2);
         if (pec != buff[2]) {
             return false;
         }
