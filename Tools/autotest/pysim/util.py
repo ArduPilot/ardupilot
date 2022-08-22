@@ -1,5 +1,9 @@
 from __future__ import print_function
 
+'''
+AP_FLAKE8_CLEAN
+'''
+
 import atexit
 import math
 import os
@@ -24,9 +28,9 @@ else:
 
 RADIUS_OF_EARTH = 6378100.0  # in meters
 
-
 # List of open terminal windows for macosx
 windowID = []
+
 
 def m2ft(x):
     """Meters to feet."""
@@ -57,9 +61,11 @@ def topdir():
     d = os.path.dirname(d)
     return d
 
+
 def relcurdir(path):
     """Return a path relative to current dir"""
     return os.path.relpath(path, os.getcwd())
+
 
 def reltopdir(path):
     """Returns the normalized ABSOLUTE path for 'path', where path is a path relative to topdir"""
@@ -99,7 +105,19 @@ def relwaf():
     return "./modules/waf/waf-light"
 
 
-def waf_configure(board, j=None, debug=False, math_check_indexes=False, coverage=False, ekf_single=False, postype_single=False, sitl_32bit=False, extra_args=[], extra_hwdef=None, ubsan=False, ubsan_abort=False, extra_defines={}):
+def waf_configure(board,
+                  j=None,
+                  debug=False,
+                  math_check_indexes=False,
+                  coverage=False,
+                  ekf_single=False,
+                  postype_single=False,
+                  sitl_32bit=False,
+                  extra_args=[],
+                  extra_hwdef=None,
+                  ubsan=False,
+                  ubsan_abort=False,
+                  extra_defines={}):
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
@@ -138,6 +156,7 @@ def waf_build(target=None):
     if target is not None:
         cmd.append(target)
     run_cmd(cmd, directory=topdir(), checkfail=True)
+
 
 def build_SITL(
         build_target,
@@ -210,6 +229,7 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
+
 def build_replay(board, j=None, debug=False, clean=False):
     # first configure
     waf_configure(board, j=j, debug=debug)
@@ -223,8 +243,20 @@ def build_replay(board, j=None, debug=False, clean=False):
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
 
-def build_tests(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
-                ekf_single=False, postype_single=False, sitl_32bit=False, ubsan=False, ubsan_abort=False, extra_configure_args=[]):
+
+def build_tests(board,
+                j=None,
+                debug=False,
+                clean=False,
+                configure=True,
+                math_check_indexes=False,
+                coverage=False,
+                ekf_single=False,
+                postype_single=False,
+                sitl_32bit=False,
+                ubsan=False,
+                ubsan_abort=False,
+                extra_configure_args=[]):
 
     # first configure
     if configure:
@@ -247,6 +279,7 @@ def build_tests(board, j=None, debug=False, clean=False, configure=True, math_ch
     # then build
     run_cmd([relwaf(), "tests"], directory=topdir(), checkfail=True, show=True)
     return True
+
 
 # list of pexpect children to close on exit
 close_list = []
@@ -299,7 +332,6 @@ def pexpect_close_all():
 
 def pexpect_drain(p):
     """Drain any pending input."""
-    import pexpect
     try:
         p.read_nonblocking(1000, timeout=0)
     except Exception:
@@ -326,12 +358,14 @@ def kill_screen_gdb():
     cmd = ["screen", "-X", "-S", "ardupilot-gdb", "quit"]
     subprocess.Popen(cmd)
 
+
 def kill_mac_terminal():
     global windowID
     for window in windowID:
         cmd = ("osascript -e \'tell application \"Terminal\" to close "
-            "(window(get index of window id %s))\'" % window)
+               "(window(get index of window id %s))\'" % window)
         os.system(cmd)
+
 
 def start_SITL(binary,
                valgrind=False,
@@ -422,7 +456,7 @@ def start_SITL(binary,
         if sys.platform == "darwin" and os.getenv('DISPLAY'):
             cmd.extend(['lldb', '-s', '/tmp/x.lldb', '--'])
         elif os.environ.get('DISPLAY'):
-            cmd.extend(['xterm', '-e', 'lldb', '-s','/tmp/x.lldb', '--'])
+            cmd.extend(['xterm', '-e', 'lldb', '-s', '/tmp/x.lldb', '--'])
         else:
             raise RuntimeError("DISPLAY was not set")
 
@@ -449,7 +483,7 @@ def start_SITL(binary,
         # somewhere for MAVProxy to connect to:
         cmd.append('--uartC=tcp:2')
         if not enable_fgview_output:
-            cmd.append("--disable-fgview");
+            cmd.append("--disable-fgview")
 
     cmd.extend(customisations)
 
@@ -461,7 +495,7 @@ def start_SITL(binary,
         mydir = os.path.dirname(os.path.realpath(__file__))
         autotest_dir = os.path.realpath(os.path.join(mydir, '..'))
         runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), 'mactest']
-        runme.extend(cmd) 
+        runme.extend(cmd)
         print(runme)
         print(cmd)
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
@@ -496,7 +530,6 @@ def start_SITL(binary,
     else:
         print("Running: %s" % cmd_as_shell(cmd))
 
-
         first = cmd[0]
         rest = cmd[1:]
         child = pexpect.spawn(first, rest, logfile=sys.stdout, encoding=ENCODING, timeout=5)
@@ -519,6 +552,7 @@ def mavproxy_cmd():
     '''return path to which mavproxy to use'''
     return os.getenv('MAVPROXY_CMD', 'mavproxy.py')
 
+
 def MAVProxy_version():
     '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
     command = "%s --version" % mavproxy_cmd()
@@ -528,6 +562,7 @@ def MAVProxy_version():
     if match is None:
         raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
     return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
 
 def start_MAVProxy_SITL(atype,
                         aircraft=None,
@@ -864,6 +899,7 @@ def constrain(value, minv, maxv):
     if value > maxv:
         value = maxv
     return value
+
 
 def load_local_module(fname):
     '''load a python module from within the ardupilot tree'''
