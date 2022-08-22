@@ -147,6 +147,7 @@ class BoardList(object):
             "omnibusf4pro-one",
             "skyviper-f412-rev1",
             "*-ODID",
+            "*-ODID-heli",
         ]
 
         ret = filter(lambda x : not in_blacklist(blacklist, x), ret)
