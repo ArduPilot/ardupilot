@@ -11,8 +11,14 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   build:
+    permissions:
+      checks: write  # for coverallsapp/github-action to create new checks
+      contents: read  # for actions/checkout to fetch code
     runs-on: ubuntu-20.04
     container:
       image: ardupilot/ardupilot-dev-coverage:latest
@@ -89,6 +95,8 @@ jobs:
 
 
   finish:
+    permissions:
+      checks: write  # for coverallsapp/github-action to create new checks
     if: always()
     needs: build
     runs-on: ubuntu-latest
