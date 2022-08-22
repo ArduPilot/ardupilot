@@ -32,7 +32,7 @@ public:
     CLASS_NO_COPY(OpticalFlow_backend);
 
     // init - initialise sensor
-    virtual void init() = 0;
+    virtual void init() {}
 
     // read latest values from sensor and fill in x,y and totals.
     virtual void update() = 0;
