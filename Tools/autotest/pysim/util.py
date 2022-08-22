@@ -367,6 +367,26 @@ def kill_mac_terminal():
         os.system(cmd)
 
 
+class FakeMacOSXSpawn(object):
+    '''something that looks like a pspawn child so we can ignore attempts
+    to pause (and otherwise kill(1) SITL.  MacOSX using osascript to
+    start/stop sitl
+    '''
+    def __init__(self):
+        pass
+
+    def progress(self, message):
+        print(message)
+
+    def kill(self, sig):
+        # self.progress("FakeMacOSXSpawn: ignoring kill(%s)" % str(sig))
+        pass
+
+    def isalive(self):
+        self.progress("FakeMacOSXSpawn: assuming process is alive")
+        return True
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -496,7 +516,6 @@ def start_SITL(binary,
         autotest_dir = os.path.realpath(os.path.join(mydir, '..'))
         runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), 'mactest']
         runme.extend(cmd)
-        print(runme)
         print(cmd)
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
         out = out.decode('utf-8')
@@ -516,6 +535,7 @@ def start_SITL(binary,
             windowID.append(tabs[0])
         else:
             print("Cannot find %s process terminal" % binary)
+        child = FakeMacOSXSpawn()
     elif gdb and not os.getenv('DISPLAY'):
         subprocess.Popen(cmd)
         atexit.register(kill_screen_gdb)
