@@ -160,7 +160,7 @@ void AP_OpticalFlow::init(uint32_t log_bit)
 #endif
         break;
     case Type::SITL:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if AP_OPTICALFLOW_SITL_ENABLED
         backend = new AP_OpticalFlow_SITL(*this);
 #endif
         break;
