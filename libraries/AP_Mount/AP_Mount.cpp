@@ -635,10 +635,7 @@ MAV_RESULT AP_Mount::handle_command_do_mount_control(const mavlink_command_long_
         return MAV_RESULT_FAILED;
     }
 
-    // send message to backend
-    _backends[_primary]->control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
-
-    return MAV_RESULT_ACCEPTED;
+    return _backends[_primary]->handle_command_do_mount_control(packet);
 }
 
 MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_command_long_t &packet)
