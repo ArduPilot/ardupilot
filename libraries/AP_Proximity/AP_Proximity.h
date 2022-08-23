@@ -167,7 +167,6 @@ private:
     static AP_Proximity *_singleton;
     Proximity_State state[PROXIMITY_MAX_INSTANCES];
     AP_Proximity_Backend *drivers[PROXIMITY_MAX_INSTANCES];
-    uint8_t primary_instance;
     uint8_t num_instances;
 
     // return true if the given instance exists
