@@ -96,53 +96,80 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
 // process MOUNT_CONTROL messages received from GCS. deprecated.
 void AP_Mount_Backend::handle_mount_control(const mavlink_mount_control_t &packet)
 {
-    control((int32_t)packet.input_a, (int32_t)packet.input_b, (int32_t)packet.input_c, _mode);
+    switch (get_mode()) {
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        // input_a : Pitch in centi-degrees
+        // input_b : Roll in centi-degrees
+        // input_c : Yaw in centi-degrees (interpreted as body-frame)
+        set_angle_target(packet.input_b * 0.01, packet.input_a * 0.01, packet.input_c * 0.01, false);
+        break;
+
+    case MAV_MOUNT_MODE_GPS_POINT: {
+        // input_a : lat in degE7
+        // input_b : lon in degE7
+        // input_c : alt  in cm (interpreted as above home)
+        const Location target_location {
+            packet.input_a,
+            packet.input_b,
+            packet.input_c,
+            Location::AltFrame::ABOVE_HOME
+        };
+        set_roi_target(target_location);
+        break;
+    }
+
+    case MAV_MOUNT_MODE_RETRACT:
+    case MAV_MOUNT_MODE_NEUTRAL:
+    case MAV_MOUNT_MODE_RC_TARGETING:
+    case MAV_MOUNT_MODE_SYSID_TARGET:
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+    default:
+        // no effect in these modes
+        break;
+    }
 }
 
-void AP_Mount_Backend::control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode)
+// handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
+MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_command_long_t &packet)
 {
-    set_mode(mount_mode);
+    const MAV_MOUNT_MODE new_mode = (MAV_MOUNT_MODE)packet.param7;
 
     // interpret message fields based on mode
-    switch (get_mode()) {
-        case MAV_MOUNT_MODE_RETRACT:
-        case MAV_MOUNT_MODE_NEUTRAL:
-            // do nothing with request if mount is retracted or in neutral position
-            break;
+    switch (new_mode) {
+    case MAV_MOUNT_MODE_RETRACT:
+    case MAV_MOUNT_MODE_NEUTRAL:
+    case MAV_MOUNT_MODE_RC_TARGETING:
+    case MAV_MOUNT_MODE_HOME_LOCATION:
+        // simply set mode
+        set_mode(new_mode);
+        return MAV_RESULT_ACCEPTED;
 
-        // set earth frame target angles from mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            set_angle_target(roll_or_lon*0.01f, pitch_or_lat*0.01f, yaw_or_alt*0.01f, false);
-            break;
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+        // set body-frame target angles (in degrees) from mavlink message
+        // param1: pitch (in degrees)
+        // param2: roll in degrees
+        // param3: yaw in degrees
+        set_angle_target(packet.param2, packet.param1, packet.param3, false);
+        return MAV_RESULT_ACCEPTED;
 
-        // Load neutral position and start RC Roll,Pitch,Yaw control with stabilization
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            // do nothing if pilot is controlling the roll, pitch and yaw
-            break;
-
+    case MAV_MOUNT_MODE_GPS_POINT: {
         // set lat, lon, alt position targets from mavlink message
+        // param4: altitude in meters
+        // param5: latitude in degrees * 1E7
+        // param6: longitude in degrees * 1E7
+        const Location target_location {
+            (int32_t)packet.param5,         // latitude in degrees * 1E7
+            (int32_t)packet.param6,         // longitude in degrees * 1E7
+            (int32_t)packet.param4 * 100,   // alt converted from meters to cm
+            Location::AltFrame::ABOVE_HOME
+        };
+        set_roi_target(target_location);
+        return MAV_RESULT_ACCEPTED;
+    }
 
-        case MAV_MOUNT_MODE_GPS_POINT: {
-            const Location target_location{
-                pitch_or_lat,
-                roll_or_lon,
-                yaw_or_alt,
-                Location::AltFrame::ABOVE_HOME
-            };
-            set_roi_target(target_location);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_HOME_LOCATION: {
-            // set the target gps location
-            _roi_target = AP::ahrs().get_home();
-            _roi_target_set = true;
-            break;
-        }
-
-        default:
-            // do nothing
-            break;
+    default:
+        // invalid mode
+        return MAV_RESULT_FAILED;
     }
 }
 
