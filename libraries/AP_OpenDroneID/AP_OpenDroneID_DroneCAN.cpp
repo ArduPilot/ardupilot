@@ -21,6 +21,8 @@
 #if AP_OPENDRONEID_ENABLED
 
 #include <AP_UAVCAN/AP_UAVCAN.h>
+
+#if HAL_ENABLE_LIBUAVCAN_DRIVERS
 #include <dronecan/remoteid/Location.hpp>
 #include <dronecan/remoteid/BasicID.hpp>
 #include <dronecan/remoteid/SelfID.hpp>
@@ -30,7 +32,6 @@
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
 static uavcan::Publisher<dronecan::remoteid::Location>* dc_location[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<dronecan::remoteid::BasicID>* dc_basic_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];
 static uavcan::Publisher<dronecan::remoteid::SelfID>* dc_self_id[HAL_MAX_CAN_PROTOCOL_DRIVERS];
@@ -251,5 +252,5 @@ void AP_OpenDroneID::set_arm_status(mavlink_open_drone_id_arm_status_t &status)
     last_arm_status_ms = AP_HAL::millis();
 }
 
-#endif
+#endif // HAL_ENABLE_LIBUAVCAN_DRIVERS
 #endif // AP_OPENDRONEID_ENABLED
