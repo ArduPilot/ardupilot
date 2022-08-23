@@ -73,8 +73,8 @@ public:
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
 
-    // control - control the mount
-    virtual void control(int32_t pitch_or_lat, int32_t roll_or_lon, int32_t yaw_or_alt, MAV_MOUNT_MODE mount_mode);
+    // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
+    MAV_RESULT handle_command_do_mount_control(const mavlink_command_long_t &packet);
     
     // process MOUNT_CONFIGURE messages received from GCS. deprecated.
     void handle_mount_configure(const mavlink_mount_configure_t &msg);
