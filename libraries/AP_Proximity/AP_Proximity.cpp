@@ -213,13 +213,6 @@ void AP_Proximity::update()
 
     // check if any face has valid distance when it should not
     boundary.check_face_timeout();
-
-    // work out primary instance - first sensor returning good data
-    for (int8_t i=num_instances-1; i>=0; i--) {
-        if (drivers[i] != nullptr && (state[i].status == Status::Good)) {
-            primary_instance = i;
-        }
-    }
 }
 
 AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
@@ -372,7 +365,7 @@ bool AP_Proximity::sensor_present() const
 bool AP_Proximity::sensor_enabled() const
 {
     // check atleast one sensor is enabled
-    return get_type(primary_instance) != Type::None;
+    return (num_instances > 0);
 }
 
 bool AP_Proximity::sensor_failed() const
@@ -395,7 +388,7 @@ bool AP_Proximity::get_upward_distance(float &distance) const
     // get upward distance from backend
     for (uint8_t i=0; i<num_instances; i++) {
         // return first good upward distance
-        if (get_upward_distance(primary_instance, distance)) {
+        if (get_upward_distance(i, distance)) {
             return true;
         }
     }
