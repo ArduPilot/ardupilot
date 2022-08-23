@@ -49,7 +49,7 @@ public:
 	AP_Proximity_Boundary_3D();
 
     // stores the layer and sector as a single object to access and modify the 3-D boundary
-    // Objects of this class are used temporarily to modify the boundary, i,e they are not persistant or stored anywhere  
+    // Objects of this class are used temporarily to modify the boundary, i,e they are not persistant or stored anywhere
     class Face
     {
     public:
@@ -102,7 +102,7 @@ public:
     // get distance for a face.  returns true on success and fills in distance argument with distance in meters
     bool get_distance(const Face &face, float &distance) const;
 
-    // Get the total number of obstacles 
+    // Get the total number of obstacles
     uint8_t get_obstacle_count() const;
 
     // Returns a body frame vector (in cm) to an obstacle
@@ -117,7 +117,7 @@ public:
     //   returns true on success, false if no valid readings
     bool get_closest_object(float& angle_deg, float &distance) const;
 
-    // get number of objects, angle and distance - used for non-GPS avoidance
+    // get number of objects horizontally
     uint8_t get_horizontal_object_count() const;
     bool get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
@@ -144,8 +144,8 @@ private:
 
     // get the next sector which is CW to the passed sector
     uint8_t get_next_sector(uint8_t sector) const {return ((sector >= PROXIMITY_NUM_SECTORS-1) ? 0 : sector+1); }
-    
-    // get the prev sector which is CCW to the passed sector 
+
+    // get the prev sector which is CCW to the passed sector
     uint8_t get_prev_sector(uint8_t sector) const {return ((sector <= 0) ? PROXIMITY_NUM_SECTORS-1 : sector-1); }
 
     // Converts obstacle_num passed from avoidance library into appropriate face of the boundary
