@@ -238,6 +238,10 @@ submodules at specific revisions.
                  default=False,
                  help="Enables firmware ID checking on boot")
 
+    g.add_option('--enable-custom-controller', action='store_true',
+                 default=False,
+                 help="Enables custom controller")
+
     g = opt.ap_groups['linux']
 
     linux_options = ('--prefix', '--destdir', '--bindir', '--libdir')
