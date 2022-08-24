@@ -7,7 +7,7 @@
 // detects if the vehicle should be allowed to takeoff or not and sets the motors.blocked flag
 void Copter::takeoff_check()
 {
-#if HAL_WITH_ESC_TELEM
+#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // If takeoff check is disabled or vehicle is armed and flying then clear block and return
     if ((g2.takeoff_rpm_min <= 0) || (motors->armed() && !ap.land_complete)) {
         motors->set_spoolup_block(false);

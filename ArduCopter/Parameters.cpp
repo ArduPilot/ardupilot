@@ -1151,12 +1151,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TKOFF_SLEW_TIME", 57, ParametersG2, takeoff_throttle_slew_time, 2.0),
 
+#if FRAME_CONFIG != HELI_FRAME
     // @Param: TKOFF_RPM_MIN
     // @DisplayName: Takeoff Check RPM minimum
     // @Description: Takeoff is not permitted until motors report at least this RPM.  Set to zero to disable check
     // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("TKOFF_RPM_MIN", 58, ParametersG2, takeoff_rpm_min, 0),
+#endif
 
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
