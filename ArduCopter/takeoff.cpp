@@ -60,7 +60,7 @@ void Mode::_TakeOff::start(float alt_cm)
     // indicate we are taking off
     copter.set_land_complete(false);
     // tell position controller to reset alt target and reset I terms
-    copter.flightmode->set_throttle_takeoff();
+    copter.pos_control->init_z_controller();
 
     // initialise takeoff state
     _running = true;

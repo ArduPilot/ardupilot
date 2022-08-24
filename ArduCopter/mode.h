@@ -203,7 +203,7 @@ protected:
     private:
         bool _running;
         float take_off_start_alt;
-        float take_off_complete_alt ;
+        float take_off_complete_alt;
     };
 
     static _TakeOff takeoff;
@@ -296,7 +296,6 @@ public:
     bool set_mode(Mode::Number mode, ModeReason reason);
     void set_land_complete(bool b);
     GCS_Copter &gcs();
-    void set_throttle_takeoff(void);
     uint16_t get_pilot_speed_dn(void);
     // end pass-through functions
 };

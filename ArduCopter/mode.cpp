@@ -1012,14 +1012,6 @@ GCS_Copter &Mode::gcs()
     return copter.gcs();
 }
 
-// set_throttle_takeoff - allows modes to tell throttle controller we
-// are taking off so I terms can be cleared
-void Mode::set_throttle_takeoff()
-{
-    // initialise the vertical position controller
-    pos_control->init_z_controller();
-}
-
 uint16_t Mode::get_pilot_speed_dn()
 {
     return copter.get_pilot_speed_dn();
