@@ -95,34 +95,3 @@ void AP_BattMonitor_SMBus_Solo::timer()
 
     read_cycle_count();
 }
-
-// read_block - returns number of characters read if successful, zero if unsuccessful
-uint8_t AP_BattMonitor_SMBus_Solo::read_block(uint8_t reg, uint8_t* data, uint8_t max_len) const
-{
-    uint8_t buff[max_len+2];    // buffer to hold results (2 extra byte returned holding length and PEC)
-
-    // read bytes
-    if (!_dev->read_registers(reg, buff, sizeof(buff))) {
-        return 0;
-    }
-
-    // get length
-    uint8_t bufflen = buff[0];
-
-    // sanity check length returned by smbus
-    if (bufflen == 0 || bufflen > max_len) {
-        return 0;
-    }
-
-    // check PEC
-    uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
-    if (pec != buff[bufflen+1]) {
-        return 0;
-    }
-
-    // copy data (excluding PEC)
-    memcpy(data, &buff[1], bufflen);
-
-    // return success
-    return bufflen;
-}
