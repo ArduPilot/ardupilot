@@ -1,6 +1,7 @@
 #include "AC_PrecLand_StateMachine.h"
 #include <AC_PrecLand/AC_PrecLand.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 static const float MAX_POS_ERROR_M = 0.75f;  // Maximum possition error for retry locations
 static const uint32_t FAILSAFE_INIT_TIMEOUT_MS = 7000;   // Timeout in ms before failsafe measures are started. During this period vehicle is completely stopped to give user the time to take over
