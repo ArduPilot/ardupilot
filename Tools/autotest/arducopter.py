@@ -7480,6 +7480,8 @@ class AutoTestCopter(AutoTest):
         })
         self.reboot_sitl()
 
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
         current_log_filepath = self.current_onboard_log_filepath()
         self.progress("Current log path: %s" % str(current_log_filepath))
 
@@ -7692,7 +7694,9 @@ class AutoTestCopter(AutoTest):
         self.context_push()
         current_log_filepath = bit()
 
-        self.progress("Running replay on (%s)" % current_log_filepath)
+        self.progress("Running replay on (%s) (%u bytes)" % (
+            (current_log_filepath, os.path.getsize(current_log_filepath))
+        ))
 
         util.run_cmd(
             ['build/sitl/tool/Replay', current_log_filepath],
