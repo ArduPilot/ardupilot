@@ -338,7 +338,7 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
     // clear i term when we're taking off
-    set_throttle_takeoff();
+    pos_control->init_z_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
     auto_takeoff_start(alt_target_cm, alt_target_terrain);

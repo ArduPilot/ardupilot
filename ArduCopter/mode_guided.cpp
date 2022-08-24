@@ -143,7 +143,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     auto_yaw.set_mode(AUTO_YAW_HOLD);
 
     // clear i term when we're taking off
-    set_throttle_takeoff();
+    pos_control->init_z_controller();
 
     // initialise alt for WP_NAVALT_MIN and set completion alt
     auto_takeoff_start(alt_target_cm, alt_target_terrain);
@@ -1042,7 +1042,7 @@ void ModeGuided::angle_control_run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
         if (motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
             set_land_complete(false);
-            set_throttle_takeoff();
+            pos_control->init_z_controller();
         }
         return;
     }
