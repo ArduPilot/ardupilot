@@ -143,6 +143,8 @@ const uint8_t AP_InertialSensor_BMI270::maximum_fifo_config_file[] = { BMI270_RE
 
 #define BMI270_HARDWARE_INIT_MAX_TRIES 5
 
+const uint32_t BACKEND_PERIOD_US = 1000000UL / BMI270_BACKEND_SAMPLE_RATE;
+
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_BMI270::AP_InertialSensor_BMI270(AP_InertialSensor &imu,
@@ -219,9 +221,8 @@ void AP_InertialSensor_BMI270::start()
     set_gyro_orientation(_gyro_instance, _rotation);
     set_accel_orientation(_accel_instance, _rotation);
 
-    /* Call _poll_data() at 1600Hz */
-    _dev->register_periodic_callback(1000000UL / BMI270_BACKEND_SAMPLE_RATE,
-        FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI270::poll_data, void));
+    /* Call read_fifo() at 1600Hz */
+    periodic_handle = _dev->register_periodic_callback(BACKEND_PERIOD_US, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_BMI270::read_fifo, void));
 }
 
 bool AP_InertialSensor_BMI270::update()
@@ -407,6 +408,10 @@ void AP_InertialSensor_BMI270::read_fifo(void)
         return;
     }
 
+    // adjust the periodic callback to be synchronous with the incoming data
+    // this means that we rarely run read_fifo() without updating the sensor data
+    _dev->adjust_periodic_callback(periodic_handle, BACKEND_PERIOD_US);
+
     const uint8_t *p = &data[0];
     while (fifo_length >= 12) {
         /*
@@ -499,11 +504,6 @@ void AP_InertialSensor_BMI270::parse_gyro_frame(const uint8_t* d)
 
     _rotate_and_correct_gyro(_gyro_instance, gyro);
     _notify_new_gyro_raw_sample(_gyro_instance, gyro);
-}
-
-void AP_InertialSensor_BMI270::poll_data()
-{
-    read_fifo();
 }
 
 bool AP_InertialSensor_BMI270::hardware_init()
