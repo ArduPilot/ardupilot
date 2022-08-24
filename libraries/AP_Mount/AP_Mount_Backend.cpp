@@ -1,6 +1,7 @@
 #include "AP_Mount_Backend.h"
 #if HAL_MOUNT_ENABLED
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
