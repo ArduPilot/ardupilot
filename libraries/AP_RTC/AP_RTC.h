@@ -30,6 +30,13 @@ public:
      */
     bool get_utc_usec(uint64_t &usec) const;
 
+    /*
+     * Converts to time since system boot. Returns false if not possible.
+     * usec is modified iff true is returned.
+     */
+    bool convert_usec_to_system_boot_usec(uint64_t &usec) const;
+
+
     // set the system time.  If the time has already been set by
     // something better (according to source_type), this set will be
     // ignored.
