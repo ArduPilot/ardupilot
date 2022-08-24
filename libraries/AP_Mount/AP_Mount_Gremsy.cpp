@@ -2,6 +2,8 @@
 
 #if HAL_MOUNT_GREMSY_ENABLED
 
+#include <GCS_MAVLink/GCS.h>
+
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_GREMSY_RESEND_MS  1000     // resend angle targets to gimbal at least once per second
