@@ -65,38 +65,6 @@ void AP_BattMonitor_SMBus_SUI::timer()
     update_health();
 }
 
-// read_block - returns true if successful
-bool AP_BattMonitor_SMBus_SUI::read_block(uint8_t reg, uint8_t* data, uint8_t len) const
-{
-    // buffer to hold results (2 extra byte returned holding length and PEC)
-    uint8_t buff[len+2];
-
-    // read bytes
-    if (!_dev->read_registers(reg, buff, sizeof(buff))) {
-        return false;
-    }
-
-    // get length
-    uint8_t bufflen = buff[0];
-
-    // sanity check length returned by smbus
-    if (bufflen == 0 || bufflen > len) {
-        return false;
-    }
-
-    // check PEC
-    uint8_t pec = get_PEC(_address, reg, true, buff, bufflen+1);
-    if (pec != buff[bufflen+1]) {
-        return false;
-    }
-
-    // copy data (excluding PEC)
-    memcpy(data, &buff[1], bufflen);
-
-    // return success
-    return true;
-}
-
 // read_bare_block - returns true if successful
 bool AP_BattMonitor_SMBus_SUI::read_block_bare(uint8_t reg, uint8_t* data, uint8_t len) const
 {
@@ -129,7 +97,7 @@ void AP_BattMonitor_SMBus_SUI::read_cell_voltages()
         // we can't read voltage of all cells. get overall pack voltage to work out
         // an average for remaining cells
         uint16_t total_mv;
-        if (read_block(BATTMONITOR_SMBUS_VOLTAGE, (uint8_t *)&total_mv, sizeof(total_mv))) {
+        if (read_word(BATTMONITOR_SMBUS_VOLTAGE, total_mv)) {
             // if total voltage is below pack_voltage_mv then we will
             // read zero volts for the extra cells.
             total_mv = MAX(total_mv, pack_voltage_mv);
