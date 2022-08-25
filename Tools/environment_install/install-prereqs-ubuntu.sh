@@ -83,9 +83,7 @@ elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'impish' ]; then
+         [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -226,10 +224,8 @@ then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
          [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ] ||
-         [ ${RELEASE_CODENAME} == 'impish' ]; then
+         [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 else
@@ -241,7 +237,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
   elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-           [ ${RELEASE_CODENAME} == 'hirsute' ] ||
            [ ${RELEASE_CODENAME} == 'focal' ] ||
            [ ${RELEASE_CODENAME} == 'ulyssa'  ]; then
     SITL_PKGS+=" libjpeg8-dev"
@@ -257,11 +252,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   fi
   if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'hirsute' ] ||
          [ ${RELEASE_CODENAME} == 'focal' ] ||
          [ ${RELEASE_CODENAME} == 'ulyssa' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ] ||
-         [ ${RELEASE_CODENAME} == 'impish' ]; then
+         [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
