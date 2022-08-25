@@ -16,12 +16,18 @@
 #include <hal.h>
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include "hwdef/common/stm32_util.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if HAL_USE_PWM == TRUE
-#ifndef DISABLE_DSHOT
+#if HAL_DSHOT_ENABLED
+
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 
 using namespace ChibiOS;
 
@@ -33,7 +39,7 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
         return false;
     }
 
-    if (irq.waiter || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
+    if (soft_serial_waiting() || (group.dshot_state != DshotState::IDLE && group.dshot_state != DshotState::RECV_COMPLETE)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
@@ -42,9 +48,10 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     TOGGLE_PIN_DEBUG(81);
 #endif
     // first make sure we have the DMA channel before anything else
-
+#if AP_HAL_SHARED_DMA_ENABLED
     osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
     group.dma_handle->lock();
+#endif
 
     // only the timer thread releases the locks
     group.dshot_waiter = rcout_thread_ctx;
@@ -102,6 +109,11 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
     }
     // not an FMU channel
     if (chan < chan_offset) {
+#if HAL_WITH_IO_MCU
+        if (AP_BoardConfig::io_dshot()) {
+            iomcu.send_dshot_command(command, chan, command_timeout_ms, repeat_count, priority);
+        }
+#endif
         return;
     }
 
@@ -167,5 +179,5 @@ void RCOutput::update_channel_masks() {
 #endif
 }
 
-#endif // DISABLE_DSHOT
+#endif // HAL_DSHOT_ENABLED
 #endif // HAL_USE_PWM
