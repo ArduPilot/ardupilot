@@ -715,6 +715,9 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 print("The parameter file (%s) does not exist" % (x,))
                 sys.exit(1)
         path = ",".join(paths)
+        if cmd_opts.count > 1:
+            # we are in a subdirectory when using -n
+            path = os.path.join("..", path)
         progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
