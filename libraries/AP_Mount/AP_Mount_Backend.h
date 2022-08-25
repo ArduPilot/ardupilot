@@ -162,6 +162,9 @@ protected:
     // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
     uint16_t get_gimbal_device_flags() const;
 
+    // sent warning to GCS
+    void send_warning_to_GCS(const char* warning_str);
+
     AP_Mount    &_frontend; // reference to the front end which holds parameters
     AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
     uint8_t     _instance;  // this instance's number
@@ -182,6 +185,8 @@ protected:
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
     bool _target_sysid_location_set;// true if _target_sysid has been set
+
+    uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 };
 
 #endif // HAL_MOUNT_ENABLED
