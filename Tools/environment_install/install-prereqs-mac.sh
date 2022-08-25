@@ -148,7 +148,7 @@ if [[ $DO_AP_STM_ENV -eq 1 ]]; then
     install_arm_none_eabi_toolchain
 fi
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect geocoder flake8 empy"
+PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect geocoder flake8 empy dronecan"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
     PYTHON_PKGS="$PYTHON_PKGS intelhex gnureadline"
