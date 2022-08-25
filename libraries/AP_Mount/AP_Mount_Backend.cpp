@@ -144,16 +144,32 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
         set_mode(new_mode);
         return MAV_RESULT_ACCEPTED;
 
-    case MAV_MOUNT_MODE_MAVLINK_TARGETING:
+    case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
         // set body-frame target angles (in degrees) from mavlink message
-        // param1: pitch (in degrees)
-        // param2: roll in degrees
-        // param3: yaw in degrees
+        const float pitch_deg = packet.param1;  // param1: pitch (in degrees)
+        const float roll_deg = packet.param2;   // param2: roll in degrees
+        const float yaw_deg = packet.param3;    // param3: yaw in degrees
+
+        // warn if angles are invalid to catch angles sent in centi-degrees
+        if ((fabsf(pitch_deg) > 90) || (fabsf(roll_deg) > 180) || (fabsf(yaw_deg) > 360)) {
+            send_warning_to_GCS("invalid angle targets");
+            return MAV_RESULT_FAILED;
+        }
+
         set_angle_target(packet.param2, packet.param1, packet.param3, false);
         return MAV_RESULT_ACCEPTED;
+    }
 
     case MAV_MOUNT_MODE_GPS_POINT: {
         // set lat, lon, alt position targets from mavlink message
+
+        // warn if lat, lon appear to be in param1,2 instead of param5,6 as this indicates
+        // sender is relying on a bug in AP-4.2's (and earlier) handling of MAV_CMD_DO_MOUNT_CONTROL
+        if (!is_zero(packet.param1) && !is_zero(packet.param2) && is_zero(packet.param5) && is_zero(packet.param6)) {
+            send_warning_to_GCS("GPS_POINT target invalid");
+            return MAV_RESULT_FAILED;
+        }
+
         // param4: altitude in meters
         // param5: latitude in degrees * 1E7
         // param6: longitude in degrees * 1E7
@@ -403,6 +419,18 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountTarget& angle_rad) const
         return false;
     }
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
+}
+
+// sent warning to GCS.  Warnings are throttled to at most once every 30 seconds
+void AP_Mount_Backend::send_warning_to_GCS(const char* warning_str)
+{
+    uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _last_warning_ms < 30000) {
+        return;
+    }
+
+    gcs().send_text(MAV_SEVERITY_WARNING, "Mount: %s", warning_str);
+    _last_warning_ms = now_ms;
 }
 
 #endif // HAL_MOUNT_ENABLED
