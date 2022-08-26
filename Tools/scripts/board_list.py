@@ -138,6 +138,9 @@ class BoardList(object):
             "fmuv3-bdshot",
             "OMNIBUSF7V2-bdshot",
 
+            # renamed to KakuteH7Mini-Nand
+            "KakuteH7Miniv2",
+
             # other
             "crazyflie2",
             "CubeOrange-joey",
