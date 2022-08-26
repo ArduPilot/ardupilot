@@ -37,7 +37,7 @@ function bind_add_param(name, idx, default_value)
 end
 
 -- setup quicktune specific parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 11), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 12), 'could not add param table')
 
 local QUIK_ENABLE      = bind_add_param('ENABLE',         1, 0) 
 local QUIK_AXES        = bind_add_param('AXES',           2, 7)
@@ -50,6 +50,7 @@ local QUIK_RP_PI_RATIO = bind_add_param('RP_PI_RATIO',    8, 1.0)
 local QUIK_Y_PI_RATIO  = bind_add_param('Y_PI_RATIO',     9, 10)
 local QUIK_AUTO_FILTER = bind_add_param('AUTO_FILTER',   10, 1)
 local QUIK_AUTO_SAVE   = bind_add_param('AUTO_SAVE',     11, 0)
+local QUIK_RC_FUNC     = bind_add_param('RC_FUNC',       12, 300)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
@@ -354,7 +355,7 @@ end
 local last_warning = get_time()
 function update()
    if quick_switch == nil then
-      quick_switch = rc:find_channel_for_option(300)
+      quick_switch = rc:find_channel_for_option(math.floor(QUIK_RC_FUNC:get()))
    end
    if quick_switch == nil or QUIK_ENABLE:get() < 1 then
       return
