@@ -46,7 +46,7 @@ public:
     // return true if healthy
     virtual bool healthy() const { return true; }
 
-    // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
+    // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
     // get mount's mode
@@ -114,6 +114,10 @@ protected:
         float yaw;
         bool yaw_is_ef;
     };
+
+    // returns true if user has configured a valid yaw angle range
+    // allows user to disable yaw even on 3-axis gimbal
+    bool yaw_range_valid() const { return (_state._pan_angle_min < _state._pan_angle_max); }
 
     // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
     virtual bool suppress_heartbeat() const { return false; }

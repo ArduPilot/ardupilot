@@ -133,13 +133,6 @@ void AP_Mount_SToRM32_serial::update()
     }
 }
 
-// has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-bool AP_Mount_SToRM32_serial::has_pan_control() const
-{
-    // we do not have yaw control
-    return false;
-}
-
 // set_mode - sets mount's mode
 void AP_Mount_SToRM32_serial::set_mode(enum MAV_MOUNT_MODE mode)
 {

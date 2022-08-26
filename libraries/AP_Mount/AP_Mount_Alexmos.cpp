@@ -99,7 +99,7 @@ void AP_Mount_Alexmos::update()
 // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
 bool AP_Mount_Alexmos::has_pan_control() const
 {
-    return _gimbal_3axis;
+    return _gimbal_3axis && yaw_range_valid();
 }
 
 // get attitude as a quaternion.  returns true on success
