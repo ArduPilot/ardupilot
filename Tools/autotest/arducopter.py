@@ -4861,7 +4861,7 @@ class AutoTestCopter(AutoTest):
             roi_alt = 0
             self.progress("Using MAV_CMD_DO_SET_ROI_SYSID")
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_SYSID,
-                         250,
+                         self.mav.source_system,
                          0,
                          0,
                          0,
