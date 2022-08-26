@@ -33,7 +33,7 @@ public:
     void update() override;
 
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
-    bool has_pan_control() const override;
+    bool has_pan_control() const override { return yaw_range_valid(); };
 
     // set_mode - sets mount's mode
     void set_mode(enum MAV_MOUNT_MODE mode) override;
