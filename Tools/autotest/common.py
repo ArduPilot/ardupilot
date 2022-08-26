@@ -2517,11 +2517,13 @@ class AutoTest(ABC):
                                    set_streamrate_callback=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
+        self.mav.close()
         self.stop_SITL()
         self.start_SITL(model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
                         wipe=wipe)
+        self.mav.do_connect()
         tstart = time.time()
         while True:
             if time.time() - tstart > 30:
