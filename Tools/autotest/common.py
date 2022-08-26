@@ -2759,7 +2759,7 @@ class AutoTest(ABC):
             try:
                 this = mav.recv(1000000)
             except Exception:
-                mav.autoreconnect = True
+                mav.autoreconnect = old_autoreconnect
                 raise
             if len(this) == 0:
                 break
