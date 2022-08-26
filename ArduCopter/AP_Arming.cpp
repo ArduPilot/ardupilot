@@ -498,7 +498,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         }
     }
 
-    // check EKF's compass, position and velocity variances are below failsafe threshold
+    // check EKF's compass, position, height and velocity variances are below failsafe threshold
     if (copter.g.fs_ekf_thresh > 0.0f) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
@@ -513,6 +513,10 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
         }
         if (vel_variance >= copter.g.fs_ekf_thresh) {
             check_failed(display_failure, "EKF velocity variance");
+            return false;
+        }
+        if (hgt_variance >= copter.g.fs_ekf_thresh) {
+            check_failed(display_failure, "EKF height variance");
             return false;
         }
     }
