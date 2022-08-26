@@ -1888,6 +1888,7 @@ class AutoTest(ABC):
         old_bootcount = self.get_parameter('STAT_BOOTCNT')
         # ardupilot SITL may actually NAK the reboot; replace with
         # run_cmd when we don't do that.
+        do_context = False
         if self.valgrind or self.callgrind:
             self.reboot_check_valgrind_log()
             self.progress("Stopping and restarting SITL")
@@ -1901,9 +1902,36 @@ class AutoTest(ABC):
                 self.stop_SITL()
                 self.start_SITL(wipe=False)
         else:
-            self.progress("Executing reboot command")
-            self.run_cmd_reboot()
+            # receiving an ACK from the process turns out to be really
+            # quite difficult.  So just send it and hope for the best.
+            self.progress("Sending reboot command")
+            self.send_cmd(
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0)
+            do_context = True
+        if do_context:
+            self.context_push()
+
+            def hook(mav, m):
+                if m.get_type() != 'COMMAND_ACK':
+                    return
+                if m.command != mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN:
+                    return
+                self.progress("While awaiting reboot received (%s)" % str(m))
+                if m.result != mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                    raise NotAchievedException("Bad reboot ACK detected")
+            self.install_message_hook_context(hook)
+
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
+
+        if do_context:
+            self.context_pop()
 
     def send_cmd_enter_cpu_lockup(self):
         """Poke ArduPilot to stop the main loop from running"""
