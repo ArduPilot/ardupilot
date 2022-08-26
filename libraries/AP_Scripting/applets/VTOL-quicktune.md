@@ -17,6 +17,11 @@ are:
 
 this must be set to 1 to enable the script
 
+## QUIK_RC_FUNC
+
+The RCz_OPTIONS scripting function binding to be used for this script.
+Default RCz_OPTIONS binding is 300 (scripting1).
+
 ## QUIK_AXES
 
 This is the set of axes that the tune will run on. The default is 7,
@@ -108,15 +113,18 @@ refresh parameters. Then set QUIK_ENABLE to 1.
 You will then need to setup a 3 position switch on an available RC
 input channel for controlling the tune (or 2 position if you set
 QUIK_AUTO_SAVE). If for example channel 6 is available with a 3
-position switch then you should set RC6_OPTION=300 to association the
+position switch then you should set RC6_OPTION=300 (scripting1) to associate the
 tuning control with that switch.
+
+If needed, the QUIK_RC_FUNC option can be used to associate the tuning switch
+with a different scripting binding such as RCz_OPTION = 302 (scripting3).
 
 You should then takeoff and put the vehicle into QLOITER mode (for
 quadplanes) or LOITER mode (for multicopters) and have it in a steady
 hover in low wind.
 
-Then move the control switch you setup with option 300 to the middle
-position. This will start the tuning process. You will see text
+Then move the control switch you setup with option 300 (or via QUIK_RC_FUNC)
+to the middle position. This will start the tuning process. You will see text
 messages on the ground station showing the progress of the tune. As
 the aircraft reaches the oscillation limit of each parameter it will
 start a small oscillation, then it will reduce that gain by the
