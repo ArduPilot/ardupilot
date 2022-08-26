@@ -34,7 +34,7 @@ public:
     bool healthy() const override;
 
     // has_pan_control
-    bool has_pan_control() const override { return true; }
+    bool has_pan_control() const override { return yaw_range_valid(); }
 
     // handle GIMBAL_DEVICE_INFORMATION message
     void handle_gimbal_device_information(const mavlink_message_t &msg) override;

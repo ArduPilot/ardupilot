@@ -117,7 +117,7 @@ void AP_Mount_Servo::update()
 // returns true if this mount can control its pan (required for multicopters)
 bool AP_Mount_Servo::has_pan_control() const
 {
-    return SRV_Channels::function_assigned(_pan_idx);
+    return SRV_Channels::function_assigned(_pan_idx) && yaw_range_valid();
 }
 
 // get attitude as a quaternion.  returns true on success
