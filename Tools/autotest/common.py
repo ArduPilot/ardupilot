@@ -1474,8 +1474,6 @@ class AutoTest(ABC):
                  build_opts={}):
 
         self.start_time = time.time()
-        global __autotest__ # FIXME; make progress a non-staticmethod
-        __autotest__ = self
 
         if binary is None:
             raise ValueError("Should always have a binary")
@@ -1566,8 +1564,7 @@ class AutoTest(ABC):
 
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
-        global __autotest__
-        delta_time = time.time() - __autotest__.start_time
+        delta_time = time.time() - self.start_time
         formatted_text = "AT-%06.1f: %s" % (delta_time, text)
         print(formatted_text)
         if (send_statustext and
