@@ -78,15 +78,19 @@ class TestBuildOptions(object):
                 if f.label == depname:
                     dep = f
             if dep is None:
-                raise ValueError("Invalid dep (%s)" % dep)
+                raise ValueError("Invalid dep (%s) for feature (%s)" %
+                                 (depname, feature.label))
             ret.update(self.get_defines(dep, options))
         return ret
 
     def test_feature(self, feature, options):
-        # defines = self.get_defines(feature, options)
-        defines = {
-            feature.define: 0,
-        }
+        defines = self.get_defines(feature, options)
+
+        if len(defines.keys()) > 1:
+            self.progress("Disabling %s also disables (%s)" % (
+                feature.define,
+                ",".join(defines.keys())))
+
         self.test_compile_with_defines(defines)
 
     def board(self):
@@ -171,7 +175,14 @@ class TestBuildOptions(object):
             defines[feature.define] = feature.default
         self.test_compile_with_defines(defines)
 
+    def check_deps_consistency(self):
+        # self.progress("Checking deps consistency")
+        options = self.get_build_options_from_ardupilot_tree()
+        for feature in options:
+            self.get_defines(feature, options)
+
     def run(self):
+        self.check_deps_consistency()
         if self.do_step_run_with_defaults:
             self.progress("Running run-with-defaults step")
             self.run_with_defaults()
