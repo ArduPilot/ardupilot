@@ -92,6 +92,11 @@ bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
     const char *rc_item = "Throttle";
 #endif
 
+    if (!rc().has_had_rc_receiver()) {
+        check_failed(ARMING_CHECK_RC, display_failure, "RC not found");
+        return false;
+    }
+
     // check throttle is not too low - must be above failsafe throttle
     if (copter.channel_throttle->get_radio_in() < copter.g.failsafe_throttle_value) {
         check_failed(ARMING_CHECK_RC, display_failure, "%s below failsafe", rc_item);
