@@ -154,6 +154,9 @@ private:
     // get vehicle body frame 3D vector from vehicle to target.  returns true on success, false on failure
     bool retrieve_los_meas(Vector3f& target_vec_unit_body);
 
+    // get vehicle body frame NED position relative from vehicle to target.  returns true on success, false on failure
+    bool retrieve_local_offset_ned_meas(Vector3f& target_local_offset_ned);
+
     // calculate target's position and velocity relative to the vehicle (used as input to position controller)
     // results are stored in_target_pos_rel_out_NE, _target_vel_rel_out_NE
     void run_output_prediction();

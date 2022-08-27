@@ -629,8 +629,72 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
     }
 }
 
+bool AC_PrecLand::retrieve_local_offset_ned_meas(Vector3f& target_local_offset_ned)
+{
+    // Try to get target position from local FRD target position
+    if (_backend->have_los_meas_local_frd()) { //We have local offset measurement
+        if(_backend->los_meas_local_frd_time_ms() != _last_backend_los_meas_ms){ // Measurement not processed yet
+            
+            Vector3f _target_local_frd;
+            const AP_AHRS &_ahrs = AP::ahrs();
+             
+            if (_backend->get_los_local_frd_target(_target_local_frd)) {// Get offset NED position                
+                _target_local_frd.rotate_xy(_ahrs.yaw);
+                target_local_offset_ned = _target_local_frd;
+                _last_backend_los_meas_ms = _backend->los_meas_local_frd_time_ms();  
+                return true;
+            }
+        }   
+        return false; // We have measurement, but it is not updated.
+    }
+
+    // Try to get relative target position directly
+    if (_backend->have_los_meas_local_offset_ned()) { //We have local offset measurement
+        if(_backend->los_meas_local_offset_ned_time_ms() != _last_backend_los_meas_ms){ // Measurement not processed yet
+            
+            if (_backend->get_los_local_offset_ned_target(target_local_offset_ned)) {// Get offset NED position                
+               
+                _last_backend_los_meas_ms = _backend->los_meas_local_offset_ned_time_ms();
+                return true;
+            }
+        }   
+        return false; // We have measurement, but it is not updated.
+    }
+    
+    // Try to get relative position from absolute NED measurements
+    if (_backend->have_los_meas_local_ned()){ //We have local absolute measurement
+        if(_backend->los_meas_local_ned_time_ms() != _last_backend_los_meas_ms){ // Measurement not processed yet
+           
+            Vector3f _target_local_ned;
+            const AP_AHRS &_ahrs = AP::ahrs();
+            Vector3f _vehicle_pos_NED;
+            if (_backend->get_los_local_ned_target(_target_local_ned) &&
+                (_ahrs.get_relative_position_NED_origin(_vehicle_pos_NED))) {// Get offset NED position 
+                
+                _last_backend_los_meas_ms = _backend->los_meas_local_ned_time_ms();
+                target_local_offset_ned = _target_local_ned - _vehicle_pos_NED;
+                return true;
+            } 
+        }       
+        return false; // But it is not updated
+    }
+    return false;
+}
+
 bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
+    // Process NED data if provided 
+    if (retrieve_local_offset_ned_meas(_target_pos_rel_meas_NED)){
+
+        _last_target_pos_rel_origin_NED = _target_pos_rel_meas_NED;
+        const AP_AHRS &_ahrs = AP::ahrs();
+        Vector3f _vehicle_pos_NED;
+        if (_ahrs.get_relative_position_NED_origin(_vehicle_pos_NED)) {
+                _last_vehicle_pos_NED = _vehicle_pos_NED;
+            }
+        return true;
+    }
+
     Vector3f target_vec_unit_body;
     if (retrieve_los_meas(target_vec_unit_body)) {
         const struct inertial_data_frame_s *inertial_data_delayed = (*_inertial_history)[0];

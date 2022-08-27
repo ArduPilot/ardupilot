@@ -31,6 +31,39 @@ public:
     // return true if there is a valid los measurement available
     virtual bool have_los_meas() = 0;
 
+    // provides a local FRD position
+    // FRD local frame (x: Front, y: Right, z: Down) with origin that travels with the vehicle Z - down to earth.
+    // returns same as have_los_meas_local_frd() 
+    virtual bool get_los_local_frd_target(Vector3f& local_frd){return false;};
+
+    // returns system time in milliseconds of last los measurement
+    virtual uint32_t los_meas_local_frd_time_ms(){return 0;};
+
+    // return true if there is a valid los measurement available
+    virtual bool have_los_meas_local_frd(){return false;};
+
+    // provides a local  NED position
+    // NED local tangent frame (x: North, y: East, z: Down) with origin fixed relative to earth.
+    // returns same as have_los_meas_local_ned()
+    virtual bool get_los_local_ned_target(Vector3f& local_ned){return false;};
+
+    // returns system time in milliseconds of last los measurement
+    virtual uint32_t los_meas_local_ned_time_ms(){return 0;};
+
+    // return true if there is a valid los measurement available
+    virtual bool have_los_meas_local_ned(){return false;};
+
+    // provides a local offset NED position
+    // NED local tangent frame (x: North, y: East, z: Down) with origin that travels with the vehicle.
+    // returns same as have_los_meas_local_offset_ned() 
+    virtual bool get_los_local_offset_ned_target(Vector3f& local_offset_ned){return false;};
+
+    // returns system time in milliseconds of last los measurement
+    virtual uint32_t los_meas_local_offset_ned_time_ms(){return 0;};
+
+    // return true if there is a valid los measurement available
+    virtual bool have_los_meas_local_offset_ned(){return false;};
+
     // returns distance to target in meters (0 means distance is not known)
     virtual float distance_to_target() { return 0.0f; };
 
