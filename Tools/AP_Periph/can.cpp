@@ -1824,6 +1824,21 @@ void AP_Periph_FW::can_battery_update(void)
 #endif
 }
 
+#ifdef HAL_PERIPH_ENABLE_GPS
+/*
+  convert large values to NaN for float16
+ */
+static void check_float16_range(float *v, uint8_t len)
+{
+    for (uint8_t i=0; i<len; i++) {
+        const float f16max = 65519;
+        if (isinf(v[i]) || v[i] <= -f16max || v[i] >= f16max) {
+            v[i] = nanf("");
+        }
+    }
+}
+#endif
+
 /*
   update CAN GPS
  */
@@ -1896,6 +1911,7 @@ void AP_Periph_FW::can_gps_update(void)
         if (gps.horizontal_accuracy(hacc)) {
             pkt.position_covariance.data[0] = pkt.position_covariance.data[4] = sq(hacc);
         }
+        check_float16_range(pkt.position_covariance.data, pkt.position_covariance.len);
 
         pkt.velocity_covariance.len = 9;
 
@@ -1904,6 +1920,7 @@ void AP_Periph_FW::can_gps_update(void)
             float vc3 = sq(sacc);
             pkt.velocity_covariance.data[0] = pkt.velocity_covariance.data[4] = pkt.velocity_covariance.data[8] = vc3;
         }
+        check_float16_range(pkt.velocity_covariance.data, pkt.velocity_covariance.len);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_FIX_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_gnss_Fix_encode(&pkt, buffer, !periph.canfdout());
@@ -1994,6 +2011,8 @@ void AP_Periph_FW::can_gps_update(void)
             float vc3 = sq(sacc);
             pkt.covariance.data[3] = pkt.covariance.data[4] = pkt.covariance.data[5] = vc3;
         }
+
+        check_float16_range(pkt.covariance.data, pkt.covariance.len);
 
         uint8_t buffer[UAVCAN_EQUIPMENT_GNSS_FIX2_MAX_SIZE] {};
         uint16_t total_size = uavcan_equipment_gnss_Fix2_encode(&pkt, buffer, !periph.canfdout());
