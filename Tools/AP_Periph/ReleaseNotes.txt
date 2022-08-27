@@ -1,3 +1,16 @@
+Release 1.4.0beta1 27th Aug 2022
+--------------------------------
+
+This is a major release with a significant number of changes:
+
+ - use new AP_CheckFirmware system
+ - fixed passing of WGS84 height from GPS
+ - support CANFD on STM32H7
+ - fixes for moving baseline yaw with DroneCAN GPS
+ - fixed GPS dropout issues on F4 and L4 GPS
+ - added EFI peripheral support
+ - fixed non-contiguous mask for ESC telem
+
 Release 1.3.1 15th Apr 2022
 ---------------------------
 
