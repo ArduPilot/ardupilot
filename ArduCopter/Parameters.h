@@ -666,6 +666,9 @@ public:
     AP_Int8                 surftrak_mode;
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
+
+    // ramp time of throttle during take-off
+    AP_Float takeoff_throttle_slew_time;
 };
 
 extern const AP_Param::Info        var_info[];

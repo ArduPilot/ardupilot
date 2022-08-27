@@ -1137,6 +1137,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_SUBGROUPINFO(command_model_pilot, "PILOT_Y_", 56, ParametersG2, AC_CommandModel),
 
+    // @Param: TKOFF_SLEW_TIME
+    // @DisplayName: Slew time of throttle during take-off
+    // @Description: Time to slew the throttle from minimum to maximum while checking for a succsessful takeoff.
+    // @Units: s
+    // @Range: 0.25 5.0
+    // @User: Standard
+    AP_GROUPINFO("TKOFF_SLEW_TIME", 57, ParametersG2, takeoff_throttle_slew_time, 2.0),
+
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
 
