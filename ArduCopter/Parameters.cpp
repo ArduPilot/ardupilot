@@ -961,7 +961,11 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(arot, "AROT_", 37, ParametersG2, AC_Autorotation),
 #endif
 
-
+#if AP_OPENDRONEID_ENABLED
+    // @Group: DID_
+    // @Path: ../libraries/AP_OpenDroneID/AP_OpenDroneID.cpp
+    AP_SUBGROUPINFO(opendroneid, "DID_", 60, ParametersG2, AP_OpenDroneID),
+#endif
 
     AP_GROUPEND
 };

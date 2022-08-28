@@ -67,6 +67,7 @@
 #include <AP_TempCalibration/AP_TempCalibration.h>
 #include <AC_AutoTune/AC_AutoTune.h>
 #include <AP_Common/AP_FWVersion.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 
 // Configuration
 #include "defines.h"
