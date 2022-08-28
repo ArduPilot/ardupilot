@@ -98,6 +98,8 @@ protected:
 
     virtual bool barometer_checks(bool report);
 
+    virtual bool opendroneid_checks(bool display_failure);
+
     bool airspeed_checks(bool report);
 
     bool logging_checks(bool report);
