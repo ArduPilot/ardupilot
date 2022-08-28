@@ -2587,9 +2587,12 @@ function'''
                     return
                 if airspeed[0] is None or airspeed[1] is None:
                     return
+                if airspeed[0] < 2 or airspeed[1] < 2:
+                    # this mismatch can occur on takeoff, or when we
+                    # smack into the ground at the end of the mission
+                    return
                 if not initial_airspeed_threshold_reached:
-                    if (airspeed[0] < 2 or airspeed[1] < 2 and
-                            not (airspeed[0] > 10 or airspeed[1] > 10)):
+                    if not (airspeed[0] > 10 or airspeed[1] > 10):
                         return
                     initial_airspeed_threshold_reached = True
                 delta = abs(airspeed[0] - airspeed[1])
