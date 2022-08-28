@@ -78,7 +78,7 @@ const AP_Param::GroupInfo AP_Scripting::var_info[] = {
     // @Param: DEBUG_OPTS
     // @DisplayName: Scripting Debug Level
     // @Description: Debugging options
-    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time, 2:Suppress logging scripts to dataflash, 3:log runtime memory usage and execution time
+    // @Bitmask: 0:No Scripts to run message if all scripts have stopped, 1:Runtime messages for memory usage and execution time, 2:Suppress logging scripts to dataflash, 3:log runtime memory usage and execution time, 4:Disable pre-arm check
     // @User: Advanced
     AP_GROUPINFO("DEBUG_OPTS", 4, AP_Scripting, _debug_options, 0),
 
@@ -283,7 +283,7 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
 
 bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
 {
-    if (!enabled()) {
+    if (!enabled() || ((_debug_options.get() & uint8_t(lua_scripts::DebugLevel::DISABLE_PRE_ARM)) != 0)) {
         return true;
     }
 
