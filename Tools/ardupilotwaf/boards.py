@@ -67,6 +67,26 @@ class Board:
         # allow GCS disable for AP_DAL example
         if cfg.options.no_gcs:
             env.CXXFLAGS += ['-DHAL_NO_GCS=1']
+
+        # allow enable of OpenDroneID for any board
+        if cfg.options.enable_opendroneid:
+            env.ENABLE_OPENDRONEID = True
+            env.DEFINES.update(
+                AP_OPENDRONEID_ENABLED=1,
+            )
+            cfg.msg("Enabled OpenDroneID", 'yes')
+        else:
+            cfg.msg("Enabled OpenDroneID", 'no', color='YELLOW')
+
+        # allow enable of firmware ID checking for any board
+        if cfg.options.enable_check_firmware:
+            env.CHECK_FIRMWARE_ENABLED = True
+            env.DEFINES.update(
+                AP_CHECK_FIRMWARE_ENABLED=1,
+            )
+            cfg.msg("Enabled firmware ID checking", 'yes')
+        else:
+            cfg.msg("Enabled firmware ID checking", 'no', color='YELLOW')
             
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
@@ -461,6 +481,7 @@ class sitl(Board):
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
         )
 
+        cfg.define('AP_OPENDRONEID_ENABLED', 1)
 
         if self.with_can:
             cfg.define('HAL_NUM_CAN_IFACES', 2)

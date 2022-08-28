@@ -107,6 +107,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ExternalAHRS',
     'AP_VideoTX',
     'AP_FETtecOneWire',
+    'AP_CheckFirmware',
+    'AP_OpenDroneID',
 ]
 
 def get_legacy_defines(sketch_name):

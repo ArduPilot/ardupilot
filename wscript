@@ -271,7 +271,16 @@ configuration in order to save typing.
         action='store_true',
         default=False,
         help='force single precision postype_t')
-    
+
+    g.add_option('--enable-opendroneid', action='store_true',
+                 default=False,
+                 help="Enables OpenDroneID")
+
+    g.add_option('--enable-check-firmware', action='store_true',
+                 default=False,
+                 help="Enables firmware ID checking on boot")
+
+
 def _collect_autoconfig_files(cfg):
     for m in sys.modules.values():
         paths = []
