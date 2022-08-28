@@ -1,0 +1,11 @@
+#
+# DroneCAN version of MAVLink OPEN_DRONE_ID_OPERATOR_ID
+# see MAVLink XML for detailed description
+#
+uint8[<=20] id_or_mac
+
+uint8 ODID_OPERATOR_ID_TYPE_CAA = 0 # CAA (Civil Aviation Authority) registered operator ID
+uint8 operator_id_type
+
+uint8[<=20] operator_id
+
