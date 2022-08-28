@@ -951,6 +951,8 @@ bool AP_Arming::heater_min_temperature_checks(bool report)
  */
 bool AP_Arming::system_checks(bool report)
 {
+    char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
         if (!hal.storage->healthy()) {
             check_failed(ARMING_CHECK_SYSTEM, report, "Param storage failed");
@@ -965,8 +967,8 @@ bool AP_Arming::system_checks(bool report)
 #endif
 #if AP_SCRIPTING_ENABLED
         const AP_Scripting *scripting = AP_Scripting::get_singleton();
-        if ((scripting != nullptr) && scripting->enabled() && scripting->init_failed()) {
-            check_failed(ARMING_CHECK_SYSTEM, report, "Scripting out of memory");
+        if ((scripting != nullptr) && !scripting->arming_checks(sizeof(buffer), buffer)) {
+            check_failed(ARMING_CHECK_SYSTEM, report, "%s", buffer);
             return false;
         }
 #endif
@@ -979,15 +981,13 @@ bool AP_Arming::system_checks(bool report)
 #endif
     }
     if (AP::internalerror().errors() != 0) {
-        uint8_t buffer[32];
-        AP::internalerror().errors_as_string(buffer, ARRAY_SIZE(buffer));
+        AP::internalerror().errors_as_string((uint8_t*)buffer, ARRAY_SIZE(buffer));
         check_failed(report, "Internal errors 0x%x l:%u %s", (unsigned int)AP::internalerror().errors(), AP::internalerror().last_error_line(), buffer);
         return false;
     }
 
     if (check_enabled(ARMING_CHECK_PARAMETERS)) {
         auto *rpm = AP::rpm();
-        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
         if (rpm && !rpm->arming_checks(sizeof(buffer), buffer)) {
             check_failed(ARMING_CHECK_PARAMETERS, report, "%s", buffer);
             return false;
