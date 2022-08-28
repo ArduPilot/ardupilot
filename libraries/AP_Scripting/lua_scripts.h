@@ -70,6 +70,7 @@ public:
         RUNTIME_MSG = 1U << 1,
         SUPPRESS_SCRIPT_LOG = 1U << 2,
         LOG_RUNTIME = 1U << 3,
+        DISABLE_PRE_ARM = 1U << 4,
     };
 
 private:
