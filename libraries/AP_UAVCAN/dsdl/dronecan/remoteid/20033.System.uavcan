@@ -1,0 +1,40 @@
+#
+# DroneCAN version of MAVLink OPEN_DRONE_ID_SYSTEM
+# see MAVLink XML for detailed description
+#
+uint8[<=20] id_or_mac
+
+uint8 ODID_OPERATOR_LOCATION_TYPE_TAKEOFF = 0 # The location of the operator is the same as the take-off location
+uint8 ODID_OPERATOR_LOCATION_TYPE_LIVE_GNSS = 1 # The location of the operator is based on live GNSS data
+uint8 ODID_OPERATOR_LOCATION_TYPE_FIXED = 2 # The location of the operator is a fixed location
+uint8 operator_location_type
+
+uint8 ODID_CLASSIFICATION_TYPE_EU = 0
+uint8 classification_type
+
+int32 operator_latitude # degE7
+int32 operator_longitude # degE7
+uint16 area_count # default 1
+uint16 area_radius # meters
+float32 area_ceiling # meters, use -1000 if unknown, WGS84
+float32 area_floor # meters, use -1000 if unknown, WGS84
+
+uint8 ODID_CATEGORY_EU_UNDECLARED = 0 # The category for the UA, according to the EU specification, is undeclared
+uint8 ODID_CATEGORY_EU_OPEN = 1 # The category for the UA, according to the EU specification, is the Open category
+uint8 ODID_CATEGORY_EU_SPECIFIC = 2 # The category for the UA, according to the EU specification, is the Specific category
+uint8 ODID_CATEGORY_EU_CERTIFIED = 3 # The category for the UA, according to the EU specification, is the Certified category
+uint8 category_eu
+
+uint8 ODID_CLASS_EU_UNDECLARED = 0 # The class for the UA, according to the EU specification, is undeclared
+uint8 ODID_CLASS_EU_CLASS_0 = 1 # The class for the UA, according to the EU specification, is Class 0
+uint8 ODID_CLASS_EU_CLASS_1 = 2 # The class for the UA, according to the EU specification, is Class 1
+uint8 ODID_CLASS_EU_CLASS_2 = 3 # The class for the UA, according to the EU specification, is Class 2
+uint8 ODID_CLASS_EU_CLASS_3 = 4 # The class for the UA, according to the EU specification, is Class 3
+uint8 ODID_CLASS_EU_CLASS_4 = 5 # The class for the UA, according to the EU specification, is Class 4
+uint8 ODID_CLASS_EU_CLASS_5 = 6 # The class for the UA, according to the EU specification, is Class 5
+uint8 ODID_CLASS_EU_CLASS_6 = 7 # The class for the UA, according to the EU specification, is Class 6
+uint8 class_eu
+
+float32 operator_altitude_geo # meters, use -1000 if unknown, WGS84
+uint32 timestamp # Unix seconds since 00:00:00 01/01/2019
+

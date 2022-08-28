@@ -1,0 +1,78 @@
+#
+# DroneCAN version of MAVLink OPEN_DRONE_ID_LOCATION
+# see MAVLink XML for detailed description
+#
+uint8[<=20] id_or_mac
+
+uint8 ODID_STATUS_UNDECLARED = 0 # The status of the (UA) Unmanned Aircraft is undefined
+uint8 ODID_STATUS_GROUND = 1 # The UA is on the ground
+uint8 ODID_STATUS_AIRBORNE = 2 # The UA is in the air
+uint8 ODID_STATUS_EMERGENCY = 3 # The UA is having an emergency
+uint8 status
+
+uint16 direction # centi-deg, 0-35999
+uint16 speed_horizontal # cm/s, max 25425, if unknown use 25500
+int16  speed_vertical # positive up, max +/-6200, if unknown use 6300
+int32  latitude # degE7
+int32  longitude # degE7
+float32 altitude_barometric # meters, for unknown use -1000, ref is 29.92inHg or 1013.2mb
+float32 altitude_geodetic # meters, for unknown use -1000, WGS84
+
+
+uint8 ODID_HEIGHT_REF_OVER_TAKEOFF = 0 # The height field is relative to the take-off location
+uint8 ODID_HEIGHT_REF_OVER_GROUND = 1 # The height field is relative to ground
+uint8 height_reference
+
+float32 height # meters, for unknown use -1000
+
+uint8 ODID_HOR_ACC_UNKNOWN = 0 # The horizontal accuracy is unknown
+uint8 ODID_HOR_ACC_10NM = 1 # The horizontal accuracy is smaller than 10 Nautical Miles. 18.52 km
+uint8 ODID_HOR_ACC_4NM = 2 # The horizontal accuracy is smaller than 4 Nautical Miles. 7.408 km
+uint8 ODID_HOR_ACC_2NM = 3 # The horizontal accuracy is smaller than 2 Nautical Miles. 3.704 km
+uint8 ODID_HOR_ACC_1NM = 4 # The horizontal accuracy is smaller than 1 Nautical Miles. 1.852 km
+uint8 ODID_HOR_ACC_0_5NM = 5 # The horizontal accuracy is smaller than 0.5 Nautical Miles. 926 m
+uint8 ODID_HOR_ACC_0_3NM = 6 # The horizontal accuracy is smaller than 0.3 Nautical Miles. 555.6 m
+uint8 ODID_HOR_ACC_0_1NM = 7 # The horizontal accuracy is smaller than 0.1 Nautical Miles. 185.2 m
+uint8 ODID_HOR_ACC_0_05NM = 8 # The horizontal accuracy is smaller than 0.05 Nautical Miles. 92.6 m
+uint8 ODID_HOR_ACC_30_METER = 9 # The horizontal accuracy is smaller than 30 meter
+uint8 ODID_HOR_ACC_10_METER = 10 # The horizontal accuracy is smaller than 10 meter
+uint8 ODID_HOR_ACC_3_METER = 11 # The horizontal accuracy is smaller than 3 meter
+uint8 ODID_HOR_ACC_1_METER = 12 # The horizontal accuracy is smaller than 1 meter
+uint8 horizontal_accuracy
+
+uint8 ODID_VER_ACC_UNKNOWN = 0 # The vertical accuracy is unknown
+uint8 ODID_VER_ACC_150_METER = 1 # The vertical accuracy is smaller than 150 meter
+uint8 ODID_VER_ACC_45_METER = 2 # The vertical accuracy is smaller than 45 meter
+uint8 ODID_VER_ACC_25_METER = 3 # The vertical accuracy is smaller than 25 meter
+uint8 ODID_VER_ACC_10_METER = 4 # The vertical accuracy is smaller than 10 meter
+uint8 ODID_VER_ACC_3_METER = 5 # The vertical accuracy is smaller than 3 meter
+uint8 ODID_VER_ACC_1_METER = 6 # The vertical accuracy is smaller than 1 meter
+uint8 vertical_accuracy
+uint8 barometer_accuracy
+
+uint8 ODID_SPEED_ACC_UNKNOWN = 0 # The speed accuracy is unknown
+uint8 ODID_SPEED_ACC_10_METERS_PER_SECOND = 1 # The speed accuracy is smaller than 10 meters per second
+uint8 ODID_SPEED_ACC_3_METERS_PER_SECOND = 2 # The speed accuracy is smaller than 3 meters per second
+uint8 ODID_SPEED_ACC_1_METERS_PER_SECOND = 3 # The speed accuracy is smaller than 1 meters per second
+uint8 ODID_SPEED_ACC_0_3_METERS_PER_SECOND = 4 # The speed accuracy is smaller than 0.3 meters per second
+uint8 speed_accuracy
+
+float32 timestamp # seconds after the full hour with reference to UTC time. Use 0xFFFF if unknown
+
+uint8 ODID_TIME_ACC_0_1_SECOND = 1 # The timestamp accuracy is smaller than or equal to 0.1 second
+uint8 ODID_TIME_ACC_0_2_SECOND = 2 # The timestamp accuracy is smaller than or equal to 0.2 second
+uint8 ODID_TIME_ACC_0_3_SECOND = 3 # The timestamp accuracy is smaller than or equal to 0.3 second
+uint8 ODID_TIME_ACC_0_4_SECOND = 4 # The timestamp accuracy is smaller than or equal to 0.4 second
+uint8 ODID_TIME_ACC_0_5_SECOND = 5 # The timestamp accuracy is smaller than or equal to 0.5 second
+uint8 ODID_TIME_ACC_0_6_SECOND = 6 # The timestamp accuracy is smaller than or equal to 0.6 second
+uint8 ODID_TIME_ACC_0_7_SECOND = 7 # The timestamp accuracy is smaller than or equal to 0.7 second
+uint8 ODID_TIME_ACC_0_8_SECOND = 8 # The timestamp accuracy is smaller than or equal to 0.8 second
+uint8 ODID_TIME_ACC_0_9_SECOND = 9 # The timestamp accuracy is smaller than or equal to 0.9 second
+uint8 ODID_TIME_ACC_1_0_SECOND = 10 # The timestamp accuracy is smaller than or equal to 1.0 second
+uint8 ODID_TIME_ACC_1_1_SECOND = 11 # The timestamp accuracy is smaller than or equal to 1.1 second
+uint8 ODID_TIME_ACC_1_2_SECOND = 12 # The timestamp accuracy is smaller than or equal to 1.2 second
+uint8 ODID_TIME_ACC_1_3_SECOND = 13 # The timestamp accuracy is smaller than or equal to 1.3 second
+uint8 ODID_TIME_ACC_1_4_SECOND = 14 # The timestamp accuracy is smaller than or equal to 1.4 second
+uint8 ODID_TIME_ACC_1_5_SECOND = 15 # The timestamp accuracy is smaller than or equal to 1.5 second
+uint8 timestamp_accuracy
+
