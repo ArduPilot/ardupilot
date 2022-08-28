@@ -154,9 +154,8 @@ void AP_Scripting::init(void) {
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Scripting::thread, void),
                                       "Scripting", SCRIPTING_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_SCRIPTING, 0)) {
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Could not create scripting stack (%d)", SCRIPTING_STACK_SIZE);
-        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting failed to start");
-        _init_failed = true;
+        gcs().send_text(MAV_SEVERITY_ERROR, "Scripting: %s", "failed to start");
+        _thread_failed = true;
     }
 }
 
@@ -222,6 +221,7 @@ void AP_Scripting::thread(void) {
         // reset flags
         _stop = false;
         _restart = false;
+        _init_failed = false;
 
         lua_scripts *lua = new lua_scripts(_script_vm_exec_count, _script_heap_size, _debug_options, terminal);
         if (lua == nullptr || !lua->heap_allocated()) {
@@ -279,6 +279,31 @@ void AP_Scripting::handle_mission_command(const AP_Mission::Mission_Command& cmd
                                       AP_HAL::millis()};
 
     mission_data->push(cmd);
+}
+
+bool AP_Scripting::arming_checks(size_t buflen, char *buffer) const
+{
+    if (!enabled()) {
+        return true;
+    }
+
+    if (_thread_failed) {
+        hal.util->snprintf(buffer, buflen, "Scripting: %s", "failed to start");
+        return false;
+    }
+
+    if (_init_failed) {
+        hal.util->snprintf(buffer, buflen, "Scripting: %s", "out of memory");
+        return false;
+    }
+
+    const char *error_buf = lua_scripts::get_last_error_message();
+    if (error_buf != nullptr) {
+        hal.util->snprintf(buffer, buflen, "Scripting: %s", error_buf);
+        return false;
+    }
+
+    return true;
 }
 
 AP_Scripting *AP_Scripting::_singleton = nullptr;
