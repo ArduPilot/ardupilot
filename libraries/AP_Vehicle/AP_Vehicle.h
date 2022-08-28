@@ -46,6 +46,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
+#include <AP_OpenDroneID/AP_OpenDroneID.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -325,6 +326,10 @@ protected:
     AP_MSP msp;
 #endif
 
+#if AP_OPENDRONEID_ENABLED
+    AP_OpenDroneID opendroneid;
+#endif
+    
 #if GENERATOR_ENABLED
     AP_Generator generator;
 #endif
