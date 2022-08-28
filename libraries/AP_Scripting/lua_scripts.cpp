@@ -531,12 +531,9 @@ void lua_scripts::run(void) {
         // re-print the latest error message every 10 seconds 10 times
         const uint8_t error_prints = 10;
         if ((print_error_count < error_prints) && (AP_HAL::millis() - last_print_ms > 10000)) {
+            // note that we do not clear the buffer after we have finished printing, this allows it to be used for a pre-arm check
             print_error(MAV_SEVERITY_DEBUG);
             print_error_count++;
-            if ((print_error_count >= error_prints) && (error_msg_buf != nullptr)) {
-                hal.util->heap_realloc(_heap, error_msg_buf, 0);
-                error_msg_buf = nullptr;
-            }
         }
     }
 

@@ -38,7 +38,6 @@ public:
     AP_Scripting &operator=(const AP_Scripting&) = delete;
 
     void init(void);
-    bool init_failed(void) const { return _init_failed; }
 
     bool enabled(void) const { return _enable != 0; };
     bool should_run(void) const { return enabled() && !_stop; }
@@ -50,6 +49,8 @@ public:
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet);
 
     void handle_mission_command(const class AP_Mission::Mission_Command& cmd);
+
+    bool arming_checks(size_t buflen, char *buffer) const;
 
    // User parameters for inputs into scripts 
    AP_Float _user[6];
@@ -102,6 +103,7 @@ private:
     AP_Int8 _debug_options;
     AP_Int16 _dir_disable;
 
+    bool _thread_failed; // thread allocation failed
     bool _init_failed;  // true if memory allocation failed
     bool _restart; // true if scripts should be restarted
     bool _stop; // true if scripts should be stopped
