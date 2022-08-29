@@ -10,11 +10,17 @@ import subprocess
 import sys
 import fnmatch
 
-board_pattern = '*'
+# get command line arguments
+from argparse import ArgumentParser
+parser = ArgumentParser(description='make_secure_bl')
+parser.add_argument("--signing-key", type=str, default=None, help="signing key for secure bootloader")
+parser.add_argument("pattern", type=str, default='*', help="board wildcard pattern")
+args = parser.parse_args()
 
-# allow argument for pattern of boards to build
-if len(sys.argv)>1:
-    board_pattern = sys.argv[1]
+if args.signing_key is not None and os.path.basename(args.signing_key).lower().find("private") != -1:
+    # prevent the easy mistake of using private key
+    print("You must use the public key in the bootloader")
+    sys.exit(1)
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
@@ -39,7 +45,12 @@ def run_program(cmd_list):
     return True
 
 def build_board(board):
-    if not run_program(["./waf", "configure", "--board", board, "--bootloader", "--no-submodule-update", "--Werror"]):
+    configure_args = "--board %s --bootloader --no-submodule-update --Werror" % board
+    configure_args = configure_args.split()
+    if args.signing_key is not None:
+        print("Building secure bootloader")
+        configure_args.append("--signed-fw")
+    if not run_program(["./waf", "configure"] + configure_args):
         return False
     if not run_program(["./waf", "clean"]):
         return False
@@ -48,13 +59,19 @@ def build_board(board):
     return True
 
 for board in get_board_list():
-    if not fnmatch.fnmatch(board, board_pattern):
+    if not fnmatch.fnmatch(board, args.pattern):
         continue
     print("Building for %s" % board)
     if not build_board(board):
         failed_boards.add(board)
         continue
-    shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, 'Tools/bootloaders/%s_bl.bin' % board)
+    bl_file = 'Tools/bootloaders/%s_bl.bin' % board
+    shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, bl_file)
+    if args.signing_key is not None:
+        print("Signing bootloader with %s" % args.signing_key)
+        if not run_program(["./Tools/scripts/signing/make_secure_bl.py", bl_file, args.signing_key]):
+            print("Failed to sign bootloader for %s" % board)
+            sys.exit(1)
     if not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x08000000", 'Tools/bootloaders/%s_bl.bin' % board, 'Tools/bootloaders/%s_bl.hex' % board]):
         failed_boards.add(board)
         continue
