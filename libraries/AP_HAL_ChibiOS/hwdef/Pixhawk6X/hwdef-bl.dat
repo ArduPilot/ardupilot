@@ -71,3 +71,6 @@ define HAL_LED_ON 0
 
 define HAL_USE_EMPTY_STORAGE 1
 define HAL_STORAGE_SIZE 16384
+
+# enable DFU by default
+ENABLE_DFU_BOOT 1
