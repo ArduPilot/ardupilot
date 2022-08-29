@@ -17,6 +17,7 @@
 #include "RPM_Pin.h"
 #include "RPM_SITL.h"
 #include "RPM_EFI.h"
+#include "RPM_Generator.h"
 #include "RPM_HarmonicNotch.h"
 #include "RPM_ESC_Telem.h"
 
@@ -78,6 +79,11 @@ void AP_RPM::init(void)
 #if HAL_EFI_ENABLED
         case RPM_TYPE_EFI:
             drivers[i] = new AP_RPM_EFI(*this, i, state[i]);
+            break;
+#endif
+#if HAL_GENERATOR_ENABLED
+        case RPM_TYPE_GENERATOR:
+            drivers[i] = new AP_RPM_Generator(*this, i, state[i]);
             break;
 #endif
         // include harmonic notch last
