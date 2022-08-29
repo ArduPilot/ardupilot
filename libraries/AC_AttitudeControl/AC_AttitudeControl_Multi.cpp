@@ -232,6 +232,12 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
+    AP_SUBGROUPINFO(_pid2_rate_roll,  "RA2_RLL_",  50, AC_AttitudeControl_Multi, AP_ADRC),
+    AP_SUBGROUPINFO(_pid2_rate_pitch, "RA2_PIT_",  51, AC_AttitudeControl_Multi, AP_ADRC),
+    AP_SUBGROUPINFO(_pid2_rate_yaw,   "RA2_YAW_",  52, AC_AttitudeControl_Multi, AP_ADRC),
+    AP_GROUPINFO("ALT_ACTIVE", 53, AC_AttitudeControl_Multi, alt_pid_active, 0),
+    AP_GROUPINFO("ALT_MASK",   54, AC_AttitudeControl_Multi, alt_pid_mask, 7),
+
     AP_GROUPEND
 };
 
@@ -240,7 +246,10 @@ AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_
     _motors_multi(motors),
     _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
     _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
-    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f, dt)
+    _pid_rate_yaw(AC_ATC_MULTI_RATE_YAW_P, AC_ATC_MULTI_RATE_YAW_I, AC_ATC_MULTI_RATE_YAW_D, 0.0f, AC_ATC_MULTI_RATE_YAW_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, AC_ATC_MULTI_RATE_YAW_FILT_HZ, 0.0f, dt),
+    _pid2_rate_roll(100, dt),
+    _pid2_rate_pitch(100, dt),
+    _pid2_rate_yaw(10, dt)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

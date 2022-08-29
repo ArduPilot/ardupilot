@@ -403,6 +403,17 @@ bool RC_Channel_Plane::do_aux_function(const aux_func_t ch_option, const AuxSwit
         plane.autotune_enable(ch_flag == AuxSwitchPos::HIGH);
         break;
 
+#if HAL_QUADPLANE_ENABLED
+    case AUX_FUNC::ALT_RATE_CONTROL: {
+        const bool enable = ch_flag==AuxSwitchPos::HIGH;
+        if (plane.quadplane.available()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "AltRateControl: %s", enable?"ON":"OFF");
+            plane.quadplane.attitude_control->set_alt_rate_control(enable);
+        }
+        break;
+    }
+#endif
+        
     default:
         return RC_Channel::do_aux_function(ch_option, ch_flag);
     }

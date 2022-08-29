@@ -47,9 +47,12 @@ public:
 	virtual ~AC_AttitudeControl_Multi() {}
 
     // pid accessors
-    AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
-    AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
-    AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    AP_Int8 alt_pid_active;
+    AP_Int8 alt_pid_mask;
+
+    AC_PID& get_rate_roll_pid() override { return (alt_pid_active && (alt_pid_mask&1))?_pid2_rate_roll:_pid_rate_roll; }
+    AC_PID& get_rate_pitch_pid() override { return (alt_pid_active && (alt_pid_mask&2))?_pid2_rate_pitch:_pid_rate_pitch; }
+    AC_PID& get_rate_yaw_pid() override { return (alt_pid_active && (alt_pid_mask&4))?_pid2_rate_yaw:_pid_rate_yaw; }
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -78,6 +81,11 @@ public:
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
+    // enable/disable alternative rate control
+    void set_alt_rate_control(bool enable) override {
+        alt_pid_active.set(enable);
+    }
+    
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -93,6 +101,10 @@ protected:
     AC_PID                _pid_rate_roll;
     AC_PID                _pid_rate_pitch;
     AC_PID                _pid_rate_yaw;
+
+    AP_ADRC                _pid2_rate_roll;
+    AP_ADRC                _pid2_rate_pitch;
+    AP_ADRC                _pid2_rate_yaw;
 
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
