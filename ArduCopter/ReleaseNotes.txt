@@ -1,5 +1,9 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.2.3 30-Aug-2022
+Changes from 4.2.3-rc3
+1) OpenDroneId bug fix to consume open-drone-id-system-update message
+------------------------------------------------------------------
 Copter 4.2.3-rc3 20-Aug-2022
 Changes from 4.2.3-rc2
 1) OpenDroneId improvements including reporting if operator location is lost
