@@ -42,6 +42,7 @@ public:
         RPM_TYPE_EFI     = 3,
         RPM_TYPE_HNTCH   = 4,
         RPM_TYPE_ESC_TELEM  = 5,
+        RPM_TYPE_GENERATOR  = 6,
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         RPM_TYPE_SITL   = 10,
 #endif
