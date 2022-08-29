@@ -199,13 +199,7 @@ void RCOutput_PCA9685::write(uint8_t ch, uint16_t period_us)
     if (_is_gpio_mask & (1U << ch)) {
         return;
     }
-    _pulses_buffer[ch] = period_us;
-    _pending_write_mask |= (1U << ch);
-
-    if (!_corking) {
-        _corking = true;
-        push();
-    }
+    write_raw(ch, period_us);
 }
 
 void RCOutput_PCA9685::write_gpio(uint8_t chan, bool active)
@@ -213,8 +207,13 @@ void RCOutput_PCA9685::write_gpio(uint8_t chan, bool active)
     if (chan >= (PWM_CHAN_COUNT - _channel_offset)) {
         return;
     }
-    _is_relay_mask |= (1U << ch);
-    _pulses_buffer[ch] = active;
+    _is_gpio_mask |= (1U << chan);
+    write_raw(chan, active);
+}
+
+void RCOutput_PCA9685::write_raw(uint8_t ch, uint16_t period_us) {
+    /* Common code used by both write() and write_gpio() */
+    _pulses_buffer[ch] = period_us;
     _pending_write_mask |= (1U << ch);
 
     if (!_corking) {
