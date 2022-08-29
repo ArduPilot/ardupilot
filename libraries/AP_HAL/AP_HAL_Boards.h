@@ -311,8 +311,13 @@
 #ifndef HAL_USE_QUADSPI
 #define HAL_USE_QUADSPI 0
 #endif
+
 #ifndef HAL_USE_OCTOSPI
 #define HAL_USE_OCTOSPI 0
+#endif
+
+#ifndef HAL_ENABLE_DSHOT
+#define HAL_ENABLE_DSHOT 1
 #endif
 
 #ifndef __RAMFUNC__
