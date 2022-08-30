@@ -26,7 +26,7 @@ void AP_Mount_Servo::update()
     switch (get_mode()) {
         // move mount to a "retracted position" or to a position where a fourth servo can retract the entire mount into the fuselage
         case MAV_MOUNT_MODE_RETRACT: {
-            _angle_bf_output_deg = _state._retract_angles.get();
+            _angle_bf_output_deg = _params.retract_angles.get();
 
             // initialise _angle_rad to smooth transition if user changes to RC_TARGETTING
             _angle_rad.roll = radians(_angle_bf_output_deg.x);
@@ -38,7 +38,7 @@ void AP_Mount_Servo::update()
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
-            _angle_bf_output_deg = _state._neutral_angles.get();
+            _angle_bf_output_deg = _params.neutral_angles.get();
 
             // initialise _angle_rad to smooth transition if user changes to RC_TARGETTING
             _angle_rad.roll = radians(_angle_bf_output_deg.x);
@@ -109,9 +109,9 @@ void AP_Mount_Servo::update()
     move_servo(_open_idx, mount_open, 0, 1);
 
     // write the results to the servos
-    move_servo(_roll_idx, _angle_bf_output_deg.x*10, _state._roll_angle_min*0.1f, _state._roll_angle_max*0.1f);
-    move_servo(_tilt_idx, _angle_bf_output_deg.y*10, _state._tilt_angle_min*0.1f, _state._tilt_angle_max*0.1f);
-    move_servo(_pan_idx,  _angle_bf_output_deg.z*10, _state._pan_angle_min*0.1f, _state._pan_angle_max*0.1f);
+    move_servo(_roll_idx, _angle_bf_output_deg.x*10, _params.roll_angle_min*10, _params.roll_angle_max*10);
+    move_servo(_tilt_idx, _angle_bf_output_deg.y*10, _params.pitch_angle_min*10, _params.pitch_angle_max*10);
+    move_servo(_pan_idx,  _angle_bf_output_deg.z*10, _params.yaw_angle_min*10, _params.yaw_angle_max*10);
 }
 
 // returns true if this mount can control its pan (required for multicopters)
@@ -146,16 +146,16 @@ void AP_Mount_Servo::update_angle_outputs(const MountTarget& angle_rad)
     // lead filter
     const Vector3f &gyro = ahrs.get_gyro();
 
-    if (requires_stabilization && !is_zero(_state._roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
+    if (requires_stabilization && !is_zero(_params.roll_stb_lead) && fabsf(ahrs.pitch) < M_PI/3.0f) {
         // Compute rate of change of euler roll angle
         float roll_rate = gyro.x + (ahrs.sin_pitch() / ahrs.cos_pitch()) * (gyro.y * ahrs.sin_roll() + gyro.z * ahrs.cos_roll());
-        _angle_bf_output_deg.x -= degrees(roll_rate) * _state._roll_stb_lead;
+        _angle_bf_output_deg.x -= degrees(roll_rate) * _params.roll_stb_lead;
     }
 
-    if (requires_stabilization && !is_zero(_state._pitch_stb_lead)) {
+    if (requires_stabilization && !is_zero(_params.pitch_stb_lead)) {
         // Compute rate of change of euler pitch angle
         float pitch_rate = ahrs.cos_pitch() * gyro.y - ahrs.sin_roll() * gyro.z;
-        _angle_bf_output_deg.y -= degrees(pitch_rate) * _state._pitch_stb_lead;
+        _angle_bf_output_deg.y -= degrees(pitch_rate) * _params.pitch_stb_lead;
     }
 }
 

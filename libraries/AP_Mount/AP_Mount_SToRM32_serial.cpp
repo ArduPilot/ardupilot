@@ -8,8 +8,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Mount_SToRM32_serial::AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
-    AP_Mount_Backend(frontend, state, instance),
+AP_Mount_SToRM32_serial::AP_Mount_SToRM32_serial(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(frontend, params, instance),
     _reply_type(ReplyType_UNKNOWN)
 {}
 
@@ -21,7 +21,7 @@ void AP_Mount_SToRM32_serial::init()
     _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_SToRM32, 0);
     if (_port) {
         _initialised = true;
-        set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
+        set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
 
 }
@@ -43,7 +43,7 @@ void AP_Mount_SToRM32_serial::update()
     switch(get_mode()) {
         // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
         case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &target = _state._retract_angles.get();
+            const Vector3f &target = _params.retract_angles.get();
             _angle_rad.roll = ToRad(target.x);
             _angle_rad.pitch = ToRad(target.y);
             _angle_rad.yaw = ToRad(target.z);
@@ -53,7 +53,7 @@ void AP_Mount_SToRM32_serial::update()
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &target = _state._neutral_angles.get();
+            const Vector3f &target = _params.neutral_angles.get();
             _angle_rad.roll = ToRad(target.x);
             _angle_rad.pitch = ToRad(target.y);
             _angle_rad.yaw = ToRad(target.z);

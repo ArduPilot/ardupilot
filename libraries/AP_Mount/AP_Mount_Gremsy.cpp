@@ -8,8 +8,8 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_GREMSY_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
 #define AP_MOUNT_GREMSY_ATTITUDE_INTERVAL_US    10000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 100hz
 
-AP_Mount_Gremsy::AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
-    AP_Mount_Backend(frontend, state, instance)
+AP_Mount_Gremsy::AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(frontend, params, instance)
 {}
 
 // update mount position
@@ -32,7 +32,7 @@ void AP_Mount_Gremsy::update()
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _state._neutral_angles.get();
+            const Vector3f &angle_bf_target = _params.neutral_angles.get();
             send_gimbal_device_set_attitude(ToRad(angle_bf_target.x), ToRad(angle_bf_target.y), ToRad(angle_bf_target.z), false);
             }
             break;
@@ -193,12 +193,12 @@ void AP_Mount_Gremsy::handle_gimbal_device_information(const mavlink_message_t &
     mavlink_msg_gimbal_device_information_decode(&msg, &info);
 
     // set parameter defaults from gimbal information
-    _state._roll_angle_min.set_default(degrees(info.roll_min) * 100);
-    _state._roll_angle_max.set_default(degrees(info.roll_max) * 100);
-    _state._tilt_angle_min.set_default(degrees(info.pitch_min) * 100);
-    _state._tilt_angle_max.set_default(degrees(info.pitch_max) * 100);
-    _state._pan_angle_min.set_default(degrees(info.yaw_min) * 100);
-    _state._pan_angle_max.set_default(degrees(info.yaw_max) * 100);
+    _params.roll_angle_min.set_default(degrees(info.roll_min));
+    _params.roll_angle_max.set_default(degrees(info.roll_max));
+    _params.pitch_angle_min.set_default(degrees(info.pitch_min));
+    _params.pitch_angle_max.set_default(degrees(info.pitch_max));
+    _params.yaw_angle_min.set_default(degrees(info.yaw_min));
+    _params.yaw_angle_max.set_default(degrees(info.yaw_max));
 
     const uint8_t fw_ver_major = info.firmware_version & 0x000000FF;
     const uint8_t fw_ver_minor = (info.firmware_version & 0x0000FF00) >> 8;

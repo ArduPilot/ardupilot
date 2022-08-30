@@ -68,8 +68,8 @@ class AP_Mount_Alexmos : public AP_Mount_Backend
 {
 public:
     //constructor
-    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance)
+    AP_Mount_Alexmos(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance):
+        AP_Mount_Backend(frontend, params, instance)
     {}
 
     // init - performs any required initialisation for this instance

@@ -10,8 +10,8 @@
 
 extern const AP_HAL::HAL& hal;
 
-AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance) :
-    AP_Mount_Backend(frontend, state, instance),
+AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
+    AP_Mount_Backend(frontend, params, instance),
     _gimbal()
 {}
 
@@ -19,7 +19,7 @@ AP_Mount_SoloGimbal::AP_Mount_SoloGimbal(AP_Mount &frontend, AP_Mount::mount_sta
 void AP_Mount_SoloGimbal::init()
 {
     _initialised = true;
-    set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
+    set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
 }
 
 void AP_Mount_SoloGimbal::update_fast()
@@ -47,7 +47,7 @@ void AP_Mount_SoloGimbal::update()
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
             _gimbal.set_lockedToBody(false);
-            const Vector3f &target = _state._neutral_angles.get();
+            const Vector3f &target = _params.neutral_angles.get();
             _angle_rad.roll = radians(target.x);
             _angle_rad.pitch = radians(target.y);
             _angle_rad.yaw = radians(target.z);
