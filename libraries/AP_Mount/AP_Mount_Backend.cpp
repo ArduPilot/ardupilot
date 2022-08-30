@@ -60,9 +60,6 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 void AP_Mount_Backend::handle_mount_configure(const mavlink_mount_configure_t &packet)
 {
     set_mode((MAV_MOUNT_MODE)packet.mount_mode);
-    _state._stab_roll.set(packet.stab_roll);
-    _state._stab_tilt.set(packet.stab_pitch);
-    _state._stab_pan.set(packet.stab_yaw);
 }
 
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
