@@ -1220,7 +1220,7 @@ bool ModeAuto::payload_place_run_should_run()
         return false;
     }
     // must not be landed
-    if (copter.ap.land_complete) {
+    if (copter.ap.land_complete && (nav_payload_place.state == PayloadPlaceStateType_FlyToLocation || nav_payload_place.state == PayloadPlaceStateType_Calibrating_Hover_Start)) {
         return false;
     }
     // interlock must be enabled (i.e. unsafe)
@@ -1881,6 +1881,7 @@ bool ModeAuto::verify_payload_place()
 {
     const uint16_t hover_throttle_calibrate_time = 2000; // milliseconds
     const uint16_t descend_throttle_calibrate_time = 2000; // milliseconds
+    const uint16_t measure_time = 1000; // milliseconds
     const float hover_throttle_placed_fraction = 0.7; // i.e. if throttle is less than 70% of hover we have placed
     const float descent_throttle_placed_fraction = 0.9; // i.e. if throttle is less than 90% of descent throttle we have placed
     const uint16_t placed_time = 500; // how long we have to be below a throttle threshold before considering placed
@@ -1889,7 +1890,7 @@ bool ModeAuto::verify_payload_place()
     const uint32_t now = AP_HAL::millis();
 
     // if we discover we've landed then immediately release the load:
-    if (copter.ap.land_complete) {
+    if (copter.ap.land_complete || copter.ap.land_complete_maybe) {
         switch (nav_payload_place.state) {
         case PayloadPlaceStateType_FlyToLocation:
         case PayloadPlaceStateType_Calibrating_Hover_Start:
@@ -1917,21 +1918,23 @@ bool ModeAuto::verify_payload_place()
         payload_place_start();
         return false;
     case PayloadPlaceStateType_Calibrating_Hover_Start:
-        // hover for 1 second to get an idea of what our hover
-        // throttle looks like
+        // hover for 2 seconds to measure hover thrust
         debug("Calibrate start");
         nav_payload_place.hover_start_timestamp = now;
+        nav_payload_place.hover_throttle_level = 1.0;
         nav_payload_place.state = PayloadPlaceStateType_Calibrating_Hover;
         FALLTHROUGH;
     case PayloadPlaceStateType_Calibrating_Hover: {
-        if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
-            // still calibrating...
-            debug("Calibrate Timer: %d", now - nav_payload_place.hover_start_timestamp);
+        if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time - measure_time) {
+            // waiting for aircraft to settle
             return false;
         }
-        // we have a valid calibration.  Hopefully.
-        // todo: Add filter as single sample is vulnerable to noise
-        nav_payload_place.hover_throttle_level = current_throttle_level;
+        if (now - nav_payload_place.hover_start_timestamp < hover_throttle_calibrate_time) {
+            // measure hover thrust
+            nav_payload_place.hover_throttle_level = MIN(nav_payload_place.hover_throttle_level, current_throttle_level);
+            return false;
+        }
+        // hover thrust has been measured
         gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: payload hover throttle: %f", static_cast<double>(nav_payload_place.hover_throttle_level));
         nav_payload_place.state = PayloadPlaceStateType_Descending_Start;
         }
@@ -1939,11 +1942,11 @@ bool ModeAuto::verify_payload_place()
     case PayloadPlaceStateType_Descending_Start:
         nav_payload_place.descend_start_timestamp = now;
         nav_payload_place.descend_start_altitude = inertial_nav.get_position_z_up_cm();
-        nav_payload_place.descend_throttle_level = 0;
+        nav_payload_place.descend_throttle_level = 1.0;
         nav_payload_place.state = PayloadPlaceStateType_Descending;
         FALLTHROUGH;
     case PayloadPlaceStateType_Descending:
-        // make sure we don't descend too far:
+        // make sure we don't descend too far
         debug("descended: %f cm (%f cm max)", (nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()), nav_payload_place.descend_max);
         if (!is_zero(nav_payload_place.descend_max) &&
             nav_payload_place.descend_start_altitude - inertial_nav.get_position_z_up_cm()  > nav_payload_place.descend_max) {
@@ -1951,27 +1954,22 @@ bool ModeAuto::verify_payload_place()
             gcs().send_text(MAV_SEVERITY_WARNING, "PayloadPlace: Reached maximum descent");
             return false; // we'll do any cleanups required next time through the loop
         }
-        // see if we've been descending long enough to calibrate a descend-throttle-level:
-        if (is_zero(nav_payload_place.descend_throttle_level) &&
-            now - nav_payload_place.descend_start_timestamp > descend_throttle_calibrate_time) {
-            // todo: Add filter as single sample is vulnerable to noise
-            nav_payload_place.descend_throttle_level = current_throttle_level;
+        // if the aircraft has been descending long enough, calibrate the decent thrust
+        if ((now - nav_payload_place.descend_start_timestamp > descend_throttle_calibrate_time - measure_time) && 
+            (now - nav_payload_place.descend_start_timestamp < descend_throttle_calibrate_time)) {
+            // measure decent thrust
+            nav_payload_place.descend_throttle_level = MIN(nav_payload_place.descend_throttle_level, current_throttle_level);
         }
-        // watch the throttle to determine whether the load has been placed
-        // debug("hover ratio: %f   descend ratio: %f\n", current_throttle_level/nav_payload_place.hover_throttle_level, ((nav_payload_place.descend_throttle_level == 0) ? -1.0f : current_throttle_level/nav_payload_place.descend_throttle_level));
-        if (current_throttle_level/nav_payload_place.hover_throttle_level > hover_throttle_placed_fraction &&
-            (is_zero(nav_payload_place.descend_throttle_level) ||
-             current_throttle_level/nav_payload_place.descend_throttle_level > descent_throttle_placed_fraction)) {
+        // check for reduced thrust requirement indicating possible payload touch down
+        if (current_throttle_level > hover_throttle_placed_fraction * nav_payload_place.hover_throttle_level &&
+            (now - nav_payload_place.descend_start_timestamp < descend_throttle_calibrate_time ||
+             current_throttle_level > descent_throttle_placed_fraction * nav_payload_place.descend_throttle_level)) {
             // throttle is above both threshold ratios (or above hover threshold ration and descent threshold ratio not yet valid)
-            nav_payload_place.place_start_timestamp = 0;
-            return false;
-        }
-        if (nav_payload_place.place_start_timestamp == 0) {
-            // we've only just now hit the correct throttle level
             nav_payload_place.place_start_timestamp = now;
             return false;
-        } else if (now - nav_payload_place.place_start_timestamp < placed_time) {
-            // keep going down....
+        }
+        if (now - nav_payload_place.place_start_timestamp < placed_time) {
+            // continue decent
             debug("Place Timer: %d", now - nav_payload_place.place_start_timestamp);
             return false;
         }
