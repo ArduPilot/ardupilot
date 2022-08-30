@@ -28,9 +28,9 @@ class AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Backend(AP_Mount &frontend, AP_Mount::mount_state& state, uint8_t instance) :
+    AP_Mount_Backend(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance) :
         _frontend(frontend),
-        _state(state),
+        _params(params),
         _instance(instance)
     {}
 
@@ -117,7 +117,7 @@ protected:
 
     // returns true if user has configured a valid yaw angle range
     // allows user to disable yaw even on 3-axis gimbal
-    bool yaw_range_valid() const { return (_state._pan_angle_min < _state._pan_angle_max); }
+    bool yaw_range_valid() const { return (_params.yaw_angle_min < _params.yaw_angle_max); }
 
     // returns true if mavlink heartbeat should be suppressed for this gimbal (only used by Solo gimbal)
     virtual bool suppress_heartbeat() const { return false; }
@@ -170,7 +170,7 @@ protected:
     void send_warning_to_GCS(const char* warning_str);
 
     AP_Mount    &_frontend; // reference to the front end which holds parameters
-    AP_Mount::mount_state &_state;    // references to the parameters and state for this backend
+    AP_Mount_Params &_params; // parameters for this backend
     uint8_t     _instance;  // this instance's number
 
     MAV_MOUNT_MODE  _mode;          // current mode (see MAV_MOUNT_MODE enum)

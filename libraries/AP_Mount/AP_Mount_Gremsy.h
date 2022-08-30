@@ -22,7 +22,7 @@ class AP_Mount_Gremsy : public AP_Mount_Backend
 
 public:
     // Constructor
-    AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
+    AP_Mount_Gremsy(AP_Mount &frontend, AP_Mount_Params &params, uint8_t instance);
 
     // init
     void init() override {}

@@ -21,8 +21,8 @@ class AP_Mount_Servo : public AP_Mount_Backend
 {
 public:
     // Constructor
-    AP_Mount_Servo(AP_Mount &frontend, AP_Mount::mount_state &state, bool requires_stab, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance),
+    AP_Mount_Servo(AP_Mount &frontend, AP_Mount_Params &params, bool requires_stab, uint8_t instance):
+        AP_Mount_Backend(frontend, params, instance),
         requires_stabilization(requires_stab),
         _roll_idx(SRV_Channel::k_none),
         _tilt_idx(SRV_Channel::k_none),
