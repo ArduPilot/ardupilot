@@ -84,7 +84,8 @@ public:
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
         Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
-        Mount_Type_Gremsy = 6           /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+        Mount_Type_Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
+        Mount_Type_BrushlessPWM = 7     /// Brushless (stabilized) gimbal using PWM protocol
     };
 
     // init - detect and initialise all mounts
@@ -173,9 +174,6 @@ protected:
         // Parameters
         AP_Int8         _type;              // mount type (None, Servo or MAVLink, see MountType enum)
         AP_Int8         _default_mode;      // default mode on startup and when control is returned from autopilot
-        AP_Int8         _stab_roll;         // 1 = mount should stabilize earth-frame roll axis, 0 = no stabilization
-        AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
-        AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
 
         // Mount's physical limits
         AP_Int16        _roll_angle_min;    // min roll in 0.01 degree units
