@@ -19,7 +19,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 19, AP_Mount, state[0]._type, 0, AP_PARAM_FLAG_ENABLE),
@@ -83,26 +83,9 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 3 was used for control_angles
 
-    // @Param: _STAB_ROLL
-    // @DisplayName: Stabilize mount's roll angle
-    // @Description: enable roll stabilisation relative to Earth
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("_STAB_ROLL",  4, AP_Mount, state[0]._stab_roll, 0),
-
-    // @Param: _STAB_TILT
-    // @DisplayName: Stabilize mount's pitch/tilt angle
-    // @Description: enable tilt/pitch stabilisation relative to Earth
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("_STAB_TILT", 5, AP_Mount, state[0]._stab_tilt,  0),
-
-    // @Param: _STAB_PAN
-    // @DisplayName: Stabilize mount pan/yaw angle
-    // @Description: enable pan/yaw stabilisation relative to Earth
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("_STAB_PAN",   6, AP_Mount, state[0]._stab_pan,  0),
+    // 4 was _STAB_ROLL
+    // 5 was _STAB_TILT
+    // 6 was _STAB_PAN
 
     // 7 was _RC_IN_ROLL
 
@@ -263,26 +246,9 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // 3 was used for control_angles
 
-    // @Param: 2_STAB_ROLL
-    // @DisplayName: Stabilize Mount2's roll angle
-    // @Description: enable roll stabilisation relative to Earth
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("2_STAB_ROLL",     28, AP_Mount, state[1]._stab_roll, 0),
-
-    // @Param: 2_STAB_TILT
-    // @DisplayName: Stabilize Mount2's pitch/tilt angle
-    // @Description: enable tilt/pitch stabilisation relative to Earth
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("2_STAB_TILT",     29, AP_Mount, state[1]._stab_tilt,  0),
-
-    // @Param: 2_STAB_PAN
-    // @DisplayName: Stabilize mount2 pan/yaw angle
-    // @Description: enable pan/yaw stabilisation relative to Earth
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Standard
-    AP_GROUPINFO("2_STAB_PAN",      30, AP_Mount, state[1]._stab_pan,  0),
+    // 28 was 2_STAB_ROLL
+    // 29 was 2_STAB_TILT
+    // 30 was 2_STAB_PAN
 
     // 31 was 2_RC_IN_ROLL
 
@@ -365,7 +331,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -416,7 +382,7 @@ void AP_Mount::init()
         // check for servo mounts
         if (mount_type == Mount_Type_Servo) {
 #if HAL_MOUNT_SERVO_ENABLED
-            _backends[instance] = new AP_Mount_Servo(*this, state[instance], instance);
+            _backends[instance] = new AP_Mount_Servo(*this, state[instance], true, instance);
             _num_instances++;
 #endif
 
@@ -454,6 +420,13 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_Gremsy(*this, state[instance], instance);
             _num_instances++;
 #endif // HAL_MOUNT_GREMSY_ENABLED
+
+#if HAL_MOUNT_SERVO_ENABLED
+        // check for BrushlessPWM mounts (uses Servo backend)
+        } else if (mount_type == Mount_Type_BrushlessPWM) {
+            _backends[instance] = new AP_Mount_Servo(*this, state[instance], false, instance);
+            _num_instances++;
+#endif
         }
 
         // init new instance
@@ -591,9 +564,6 @@ MAV_RESULT AP_Mount::handle_command_do_mount_configure(const mavlink_command_lon
         return MAV_RESULT_FAILED;
     }
     _backends[_primary]->set_mode((MAV_MOUNT_MODE)packet.param1);
-    state[_primary]._stab_roll.set(packet.param2);
-    state[_primary]._stab_tilt.set(packet.param3);
-    state[_primary]._stab_pan.set(packet.param4);
 
     return MAV_RESULT_ACCEPTED;
 }
