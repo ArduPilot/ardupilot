@@ -15,7 +15,7 @@ void AP_Mount_Alexmos::init()
         _initialised = true;
         get_boardinfo();
         read_params(0); //we request parameters for profile 0 and therfore get global and profile parameters
-        set_mode((enum MAV_MOUNT_MODE)_state._default_mode.get());
+        set_mode((enum MAV_MOUNT_MODE)_params.default_mode.get());
     }
 }
 
@@ -32,7 +32,7 @@ void AP_Mount_Alexmos::update()
     switch (get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &target = _state._retract_angles.get();
+            const Vector3f &target = _params.retract_angles.get();
             _angle_rad.roll = radians(target.x);
             _angle_rad.pitch = radians(target.y);
             _angle_rad.yaw = radians(target.z);
@@ -42,7 +42,7 @@ void AP_Mount_Alexmos::update()
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &target = _state._neutral_angles.get();
+            const Vector3f &target = _params.neutral_angles.get();
             _angle_rad.roll = radians(target.x);
             _angle_rad.pitch = radians(target.y);
             _angle_rad.yaw = radians(target.z);

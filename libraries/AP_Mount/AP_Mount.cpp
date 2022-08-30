@@ -16,325 +16,15 @@
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
-    // @Param: _TYPE
-    // @DisplayName: Mount Type
-    // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM
-    // @RebootRequired: True
-    // @User: Standard
-    AP_GROUPINFO_FLAGS("_TYPE", 19, AP_Mount, state[0]._type, 0, AP_PARAM_FLAG_ENABLE),
-
-    // @Param: _DEFLT_MODE
-    // @DisplayName: Mount default operating mode
-    // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,6:Home Location
-    // @User: Standard
-    AP_GROUPINFO("_DEFLT_MODE", 0, AP_Mount, state[0]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
-
-    // @Param: _RETRACT_X
-    // @DisplayName: Mount roll angle when in retracted position
-    // @Description: Mount roll angle when in retracted position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: _RETRACT_Y
-    // @DisplayName: Mount tilt/pitch angle when in retracted position
-    // @Description: Mount tilt/pitch angle when in retracted position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: _RETRACT_Z
-    // @DisplayName: Mount yaw/pan angle when in retracted position
-    // @Description: Mount yaw/pan angle when in retracted position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("_RETRACT",    1, AP_Mount, state[0]._retract_angles, 0),
-
-    // @Param: _NEUTRAL_X
-    // @DisplayName: Mount roll angle when in neutral position
-    // @Description: Mount roll angle when in neutral position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: _NEUTRAL_Y
-    // @DisplayName: Mount tilt/pitch angle when in neutral position
-    // @Description: Mount tilt/pitch angle when in neutral position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: _NEUTRAL_Z
-    // @DisplayName: Mount pan/yaw angle when in neutral position
-    // @Description: Mount pan/yaw angle when in neutral position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("_NEUTRAL",    2, AP_Mount, state[0]._neutral_angles, 0),
-
-    // 3 was used for control_angles
-
-    // 4 was _STAB_ROLL
-    // 5 was _STAB_TILT
-    // 6 was _STAB_PAN
-
-    // 7 was _RC_IN_ROLL
-
-    // @Param: _ANGMIN_ROL
-    // @DisplayName: Minimum roll angle
-    // @Description: Minimum physical roll angular position of mount.
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ANGMIN_ROL", 8, AP_Mount, state[0]._roll_angle_min, -4500),
-
-    // @Param: _ANGMAX_ROL
-    // @DisplayName: Maximum roll angle
-    // @Description: Maximum physical roll angular position of the mount
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ANGMAX_ROL", 9, AP_Mount, state[0]._roll_angle_max, 4500),
-
-    // 10 was _RC_IN_TILT
-
-    // @Param: _ANGMIN_TIL
-    // @DisplayName: Minimum tilt angle
-    // @Description: Minimum physical tilt (pitch) angular position of mount.
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ANGMIN_TIL", 11, AP_Mount, state[0]._tilt_angle_min, -4500),
-
-    // @Param: _ANGMAX_TIL
-    // @DisplayName: Maximum tilt angle
-    // @Description: Maximum physical tilt (pitch) angular position of the mount
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ANGMAX_TIL", 12, AP_Mount, state[0]._tilt_angle_max, 4500),
-
-    // 13 was _RC_IN_PAN
-
-    // @Param: _ANGMIN_PAN
-    // @DisplayName: Minimum pan angle
-    // @Description: Minimum physical pan (yaw) angular position of mount.
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ANGMIN_PAN",  14, AP_Mount, state[0]._pan_angle_min,  -4500),
-
-    // @Param: _ANGMAX_PAN
-    // @DisplayName: Maximum pan angle
-    // @Description: Maximum physical pan (yaw) angular position of the mount
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("_ANGMAX_PAN",  15, AP_Mount, state[0]._pan_angle_max,  4500),
-
-    // 16 was _JSTICK_SPD
-
-    // @Param: _LEAD_RLL
-    // @DisplayName: Roll stabilization lead time
-    // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: s
-    // @Range: 0.0 0.2
-    // @Increment: .005
-    // @User: Standard
-    AP_GROUPINFO("_LEAD_RLL", 17, AP_Mount, state[0]._roll_stb_lead, 0.0f),
-
-    // @Param: _LEAD_PTCH
-    // @DisplayName: Pitch stabilization lead time
-    // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: s
-    // @Range: 0.0 0.2
-    // @Increment: .005
-    // @User: Standard
-    AP_GROUPINFO("_LEAD_PTCH", 18, AP_Mount, state[0]._pitch_stb_lead, 0.0f),
-
-    // 19 _TYPE, now at top with enable flag
-
-    // 20 formerly _OFF_JNT
-
-    // 21 formerly _OFF_ACC
-
-    // 22 formerly _OFF_GYRO
-
-    // 23 formerly _K_RATE
-
-    // @Param: _RC_RATE
-    // @DisplayName: Mount RC Rate
-    // @Description: Pilot rate control's maximum rate.  Set to zero to use angle control
-    // @Units: deg/s
-    // @Range: 0 90
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("_RC_RATE",  24, AP_Mount, _rc_rate_max, 0),
+    // @Group: 1
+    // @Path: AP_Mount_Params.cpp
+    AP_SUBGROUPINFO(_params[0], "1", 43, AP_Mount, AP_Mount_Params),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
-    // @Param: 2_DEFLT_MODE
-    // @DisplayName: Mount default operating mode
-    // @Description: Mount default operating mode on startup and after control is returned from autopilot
-    // @Values: 0:Retracted,1:Neutral,2:MavLink Targeting,3:RC Targeting,4:GPS Point,6:Home Location
-    // @User: Standard
-    AP_GROUPINFO("2_DEFLT_MODE",    25, AP_Mount, state[1]._default_mode, MAV_MOUNT_MODE_RC_TARGETING),
-
-    // @Param: 2_RETRACT_X
-    // @DisplayName: Mount2 roll angle when in retracted position
-    // @Description: Mount2 roll angle when in retracted position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: 2_RETRACT_Y
-    // @DisplayName: Mount2 tilt/pitch angle when in retracted position
-    // @Description: Mount2 tilt/pitch angle when in retracted position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: 2_RETRACT_Z
-    // @DisplayName: Mount2 yaw/pan angle when in retracted position
-    // @Description: Mount2 yaw/pan angle when in retracted position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("2_RETRACT",       26, AP_Mount, state[1]._retract_angles, 0),
-
-    // @Param: 2_NEUTRAL_X
-    // @DisplayName: Mount2 roll angle when in neutral position
-    // @Description: Mount2 roll angle when in neutral position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: 2_NEUTRAL_Y
-    // @DisplayName: Mount2 tilt/pitch angle when in neutral position
-    // @Description: Mount2 tilt/pitch angle when in neutral position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-
-    // @Param: 2_NEUTRAL_Z
-    // @DisplayName: Mount2 pan/yaw angle when in neutral position
-    // @Description: Mount2 pan/yaw angle when in neutral position
-    // @Units: deg
-    // @Range: -180.00 179.99
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("2_NEUTRAL",       27, AP_Mount, state[1]._neutral_angles, 0),
-
-    // 3 was used for control_angles
-
-    // 28 was 2_STAB_ROLL
-    // 29 was 2_STAB_TILT
-    // 30 was 2_STAB_PAN
-
-    // 31 was 2_RC_IN_ROLL
-
-    // @Param: 2_ANGMIN_ROL
-    // @DisplayName: Mount2's minimum roll angle
-    // @Description: Mount2's minimum physical roll angular position
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("2_ANGMIN_ROL",    32, AP_Mount, state[1]._roll_angle_min, -4500),
-
-    // @Param: 2_ANGMAX_ROL
-    // @DisplayName: Mount2's maximum roll angle
-    // @Description: Mount2's maximum physical roll angular position
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("2_ANGMAX_ROL",    33, AP_Mount, state[1]._roll_angle_max, 4500),
-
-    // 34 was 2_RC_IN_TILT
-
-    // @Param: 2_ANGMIN_TIL
-    // @DisplayName: Mount2's minimum tilt angle
-    // @Description: Mount2's minimum physical tilt (pitch) angular position
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("2_ANGMIN_TIL",    35, AP_Mount, state[1]._tilt_angle_min, -4500),
-
-    // @Param: 2_ANGMAX_TIL
-    // @DisplayName: Mount2's maximum tilt angle
-    // @Description: Mount2's maximum physical tilt (pitch) angular position
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("2_ANGMAX_TIL",    36, AP_Mount, state[1]._tilt_angle_max, 4500),
-
-    // 37 was 2_RC_IN_PAN
-
-    // @Param: 2_ANGMIN_PAN
-    // @DisplayName: Mount2's minimum pan angle
-    // @Description: Mount2's minimum physical pan (yaw) angular position
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("2_ANGMIN_PAN",    38, AP_Mount, state[1]._pan_angle_min,  -4500),
-
-    // @Param: 2_ANGMAX_PAN
-    // @DisplayName: Mount2's maximum pan angle
-    // @Description: MOunt2's maximum physical pan (yaw) angular position
-    // @Units: cdeg
-    // @Range: -18000 17999
-    // @Increment: 10
-    // @User: Standard
-    AP_GROUPINFO("2_ANGMAX_PAN",    39, AP_Mount, state[1]._pan_angle_max,  4500),
-
-    // @Param: 2_LEAD_RLL
-    // @DisplayName: Mount2's Roll stabilization lead time
-    // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate, compensating for servo delay. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: s
-    // @Range: 0.0 0.2
-    // @Increment: .005
-    // @User: Standard
-    AP_GROUPINFO("2_LEAD_RLL",      40, AP_Mount, state[1]._roll_stb_lead, 0.0f),
-
-    // @Param: 2_LEAD_PTCH
-    // @DisplayName: Mount2's Pitch stabilization lead time
-    // @Description: Causes the servo angle output to lead the current angle of the vehicle by some amount of time based on current angular rate. Increase until the servo is responsive but doesn't overshoot. Does nothing with pan stabilization enabled.
-    // @Units: s
-    // @Range: 0.0 0.2
-    // @Increment: .005
-    // @User: Standard
-    AP_GROUPINFO("2_LEAD_PTCH",      41, AP_Mount, state[1]._pitch_stb_lead, 0.0f),
-
-    // @Param: 2_TYPE
-    // @DisplayName: Mount2 Type
-    // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM
-    // @User: Standard
-    AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
-#endif // AP_MOUNT_MAX_INSTANCES > 1
+    // @Group: 2
+    // @Path: AP_Mount_Params.cpp
+    AP_SUBGROUPINFO(_params[1], "2", 44, AP_Mount, AP_Mount_Params),
+#endif
 
     AP_GROUPEND
 };
@@ -361,11 +51,11 @@ void AP_Mount::init()
     }
 
     // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
-    if (!state[0]._type.configured()) {
+    if (!_params[0].type.configured()) {
         if (SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_pan) ||
             SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_tilt) ||
             SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_roll)) {
-                state[0]._type.set_and_save(Mount_Type_Servo);
+            _params[0].type.set_and_save(Mount_Type_Servo);
         }
     }
 
@@ -382,49 +72,49 @@ void AP_Mount::init()
         // check for servo mounts
         if (mount_type == Mount_Type_Servo) {
 #if HAL_MOUNT_SERVO_ENABLED
-            _backends[instance] = new AP_Mount_Servo(*this, state[instance], true, instance);
+            _backends[instance] = new AP_Mount_Servo(*this, _params[instance], true, instance);
             _num_instances++;
 #endif
 
 #if HAL_SOLO_GIMBAL_ENABLED
         // check for Solo mounts
         } else if (mount_type == Mount_Type_SoloGimbal) {
-            _backends[instance] = new AP_Mount_SoloGimbal(*this, state[instance], instance);
+            _backends[instance] = new AP_Mount_SoloGimbal(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_SOLO_GIMBAL_ENABLED
 
 #if HAL_MOUNT_ALEXMOS_ENABLED
         // check for Alexmos mounts
         } else if (mount_type == Mount_Type_Alexmos) {
-            _backends[instance] = new AP_Mount_Alexmos(*this, state[instance], instance);
+            _backends[instance] = new AP_Mount_Alexmos(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_STORM32MAVLINK_ENABLED
         // check for SToRM32 mounts using MAVLink protocol
         } else if (mount_type == Mount_Type_SToRM32) {
-            _backends[instance] = new AP_Mount_SToRM32(*this, state[instance], instance);
+            _backends[instance] = new AP_Mount_SToRM32(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_STORM32SERIAL_ENABLED
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
-            _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
+            _backends[instance] = new AP_Mount_SToRM32_serial(*this, _params[instance], instance);
             _num_instances++;
 #endif
 
 #if HAL_MOUNT_GREMSY_ENABLED
         // check for Gremsy mounts
         } else if (mount_type == Mount_Type_Gremsy) {
-            _backends[instance] = new AP_Mount_Gremsy(*this, state[instance], instance);
+            _backends[instance] = new AP_Mount_Gremsy(*this, _params[instance], instance);
             _num_instances++;
 #endif // HAL_MOUNT_GREMSY_ENABLED
 
 #if HAL_MOUNT_SERVO_ENABLED
         // check for BrushlessPWM mounts (uses Servo backend)
         } else if (mount_type == Mount_Type_BrushlessPWM) {
-            _backends[instance] = new AP_Mount_Servo(*this, state[instance], false, instance);
+            _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
 #endif
         }
@@ -476,7 +166,7 @@ AP_Mount::MountType AP_Mount::get_mount_type(uint8_t instance) const
         return Mount_Type_None;
     }
 
-    return (MountType)state[instance]._type.get();
+    return (MountType)_params[instance].type.get();
 }
 
 // has_pan_control - returns true if the mount has yaw control (required for copters)
@@ -502,11 +192,11 @@ MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
     return _backends[instance]->get_mode();
 }
 
-// set_mode_to_default - restores the mode to it's default mode held in the MNT_MODE parameter
+// set_mode_to_default - restores the mode to it's default mode held in the MNTx__DEFLT_MODE parameter
 //      this operation requires 60us on a Pixhawk/PX4
 void AP_Mount::set_mode_to_default(uint8_t instance)
 {
-    set_mode(instance, (enum MAV_MOUNT_MODE)state[instance]._default_mode.get());
+    set_mode(instance, (enum MAV_MOUNT_MODE)_params[instance].default_mode.get());
 }
 
 // set_mode - sets mount's mode
@@ -696,7 +386,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
 {
     // check type parameters
     for (uint8_t i=0; i<AP_MOUNT_MAX_INSTANCES; i++) {
-        if ((state[i]._type != Mount_Type_None) && (_backends[i] == nullptr)) {
+        if ((_params[i].type != Mount_Type_None) && (_backends[i] == nullptr)) {
             strncpy(failure_msg, "check TYPE", failure_msg_len);
             return false;
         }
@@ -820,10 +510,10 @@ void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg
 void AP_Mount::convert_params()
 {
     // convert JSTICK_SPD to RC_RATE
-    if (!_rc_rate_max.configured()) {
+    if (!_params[0].rc_rate_max.configured()) {
         int8_t jstick_spd = 0;
         if (AP_Param::get_param_by_index(this, 16, AP_PARAM_INT8, &jstick_spd) && (jstick_spd > 0)) {
-            _rc_rate_max.set_and_save(jstick_spd * 0.3);
+            _params[0].rc_rate_max.set_and_save(jstick_spd * 0.3);
         }
     }
 }
