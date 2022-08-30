@@ -104,12 +104,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_STAB_PAN",   6, AP_Mount, state[0]._stab_pan,  0),
 
-    // @Param: _RC_IN_ROLL
-    // @DisplayName: roll RC input channel
-    // @Description: 0 for none, any other for the RC channel to be used to control roll movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
-    // @User: Standard
-    AP_GROUPINFO("_RC_IN_ROLL",  7, AP_Mount, state[0]._roll_rc_in, 0),
+    // 7 was _RC_IN_ROLL
 
     // @Param: _ANGMIN_ROL
     // @DisplayName: Minimum roll angle
@@ -129,12 +124,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_ROL", 9, AP_Mount, state[0]._roll_angle_max, 4500),
 
-    // @Param: _RC_IN_TILT
-    // @DisplayName: tilt (pitch) RC input channel
-    // @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
-    // @User: Standard
-    AP_GROUPINFO("_RC_IN_TILT",  10, AP_Mount, state[0]._tilt_rc_in,    0),
+    // 10 was _RC_IN_TILT
 
     // @Param: _ANGMIN_TIL
     // @DisplayName: Minimum tilt angle
@@ -154,12 +144,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_ANGMAX_TIL", 12, AP_Mount, state[0]._tilt_angle_max, 4500),
 
-    // @Param: _RC_IN_PAN
-    // @DisplayName: pan (yaw) RC input channel
-    // @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
-    // @User: Standard
-    AP_GROUPINFO("_RC_IN_PAN",  13, AP_Mount, state[0]._pan_rc_in,       0),
+    // 13 was _RC_IN_PAN
 
     // @Param: _ANGMIN_PAN
     // @DisplayName: Minimum pan angle
@@ -299,12 +284,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_STAB_PAN",      30, AP_Mount, state[1]._stab_pan,  0),
 
-    // @Param: 2_RC_IN_ROLL
-    // @DisplayName: Mount2's roll RC input channel
-    // @Description: 0 for none, any other for the RC channel to be used to control roll movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
-    // @User: Standard
-    AP_GROUPINFO("2_RC_IN_ROLL",    31, AP_Mount, state[1]._roll_rc_in, 0),
+    // 31 was 2_RC_IN_ROLL
 
     // @Param: 2_ANGMIN_ROL
     // @DisplayName: Mount2's minimum roll angle
@@ -324,12 +304,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_ANGMAX_ROL",    33, AP_Mount, state[1]._roll_angle_max, 4500),
 
-    // @Param: 2_RC_IN_TILT
-    // @DisplayName: Mount2's tilt (pitch) RC input channel
-    // @Description: 0 for none, any other for the RC channel to be used to control tilt (pitch) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
-    // @User: Standard
-    AP_GROUPINFO("2_RC_IN_TILT",    34, AP_Mount, state[1]._tilt_rc_in,    0),
+    // 34 was 2_RC_IN_TILT
 
     // @Param: 2_ANGMIN_TIL
     // @DisplayName: Mount2's minimum tilt angle
@@ -349,12 +324,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("2_ANGMAX_TIL",    36, AP_Mount, state[1]._tilt_angle_max, 4500),
 
-    // @Param: 2_RC_IN_PAN
-    // @DisplayName: Mount2's pan (yaw) RC input channel
-    // @Description: 0 for none, any other for the RC channel to be used to control pan (yaw) movements
-    // @Values: 0:Disabled,5:RC5,6:RC6,7:RC7,8:RC8,9:RC9,10:RC10,11:RC11,12:RC12
-    // @User: Standard
-    AP_GROUPINFO("2_RC_IN_PAN",     37, AP_Mount, state[1]._pan_rc_in,       0),
+    // 37 was 2_RC_IN_PAN
 
     // @Param: 2_ANGMIN_PAN
     // @DisplayName: Mount2's minimum pan angle

@@ -177,11 +177,6 @@ protected:
         AP_Int8         _stab_tilt;         // 1 = mount should stabilize earth-frame pitch axis
         AP_Int8         _stab_pan;          // 1 = mount should stabilize earth-frame yaw axis
 
-        // RC input channels from receiver used for direct angular input from pilot
-        AP_Int8         _roll_rc_in;        // pilot provides roll input on this channel
-        AP_Int8         _tilt_rc_in;        // pilot provides tilt input on this channel
-        AP_Int8         _pan_rc_in;         // pilot provides pan input on this channel
-
         // Mount's physical limits
         AP_Int16        _roll_angle_min;    // min roll in 0.01 degree units
         AP_Int16        _roll_angle_max;    // max roll in 0.01 degree units
