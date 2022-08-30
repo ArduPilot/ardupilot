@@ -280,6 +280,16 @@ class ManifestGenerator():
             firmware['bootloader_str'].append('MindPX BL FMU v2.x')
             firmware['USBID'].append('0x26AC/0x0030')
 
+        if board_id == 53:
+            # special case for 6X, they always get the px4 bootloader IDs as an option
+            firmware['bootloader_str'].append('PX4 BL FMU v6X.x')
+            firmware['USBID'].append('0x3185/0x0035')
+
+        if board_id == 56:
+            # special case for 6C, they always get the px4 bootloader IDs as an option
+            firmware['bootloader_str'].append('PX4 BL FMU v6C.x')
+            firmware['USBID'].append('0x3185/0x0035')
+            
         if platform in brand_map:
             (brand_name, manufacturer) = brand_map[platform]
             firmware['brand_name'] = brand_name
