@@ -143,6 +143,12 @@ def configure(cfg):
         return
 
     _set_pkgconfig_crosscompilation_wrapper(cfg)
+    print(f"{sys.platform=} {cfg.env.TOOLCHAIN=}")
+    if cfg.env.TOOLCHAIN.startswith("emcc"):
+        # cfg.find_program('emcc', quiet=True)
+        cfg.load('c_emscripten')
+        return
+
     if sys.platform.startswith("cygwin"):
         # on cygwin arm-none-eabi-ar doesn't support the @FILE syntax for splitting long lines
         cfg.find_program('ar', var='AR', quiet=True)

@@ -52,6 +52,10 @@ Scheduler::Scheduler(SITL_State *sitlState) :
 {
 }
 
+#if defined (__wasm__) || defined (__EMSCRIPTEN__)
+#include <fenv.h>
+#endif
+
 #ifdef UBSAN_ENABLED
 /*
   catch ubsan errors and append to a log file
@@ -190,10 +194,12 @@ void Scheduler::set_system_initialized() {
         AP_HAL::panic(
             "PANIC: scheduler system initialized called more than once");
     }
-    int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
+    // int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
+    int exceptions = 0x08 | 0x04;
 #ifndef __i386__
     // i386 with gcc doesn't work with FE_INVALID
-    exceptions |= FE_INVALID;
+    // exceptions |= FE_INVALID;
+    exceptions |= 0x01;
 #endif
 #if !defined(HAL_BUILD_AP_PERIPH)
     if (_sitlState->_sitl == nullptr || _sitlState->_sitl->float_exception) {
@@ -315,7 +321,7 @@ void *Scheduler::thread_create_trampoline(void *ctx)
 {
     struct thread_attr *a = (struct thread_attr *)ctx;
     a->f[0]();
-    
+
     WITH_SEMAPHORE(_thread_sem);
     if (threads == a) {
         threads = a->next;
@@ -347,7 +353,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     // even an empty thread takes 2500 bytes on Linux, so always add 2300, giving us 200 bytes
     // safety margin
     stack_size += 2300;
-    
+
     pthread_t thread {};
     const uint32_t alloc_stack = MAX(size_t(PTHREAD_STACK_MIN),stack_size);
 

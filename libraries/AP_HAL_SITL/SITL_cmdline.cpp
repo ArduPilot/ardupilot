@@ -203,7 +203,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = nullptr;
-    const char *model_str = nullptr;
+    const char *model_str = "vectored_6dof";
     _use_fg_view = true;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
@@ -702,5 +702,5 @@ bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw
     ::printf("Failed to find location '%s'\n", home_str);
     return false;
 }
-    
+
 #endif

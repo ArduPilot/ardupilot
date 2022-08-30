@@ -164,6 +164,7 @@ class Board:
             cfg.msg("Configured VSCode Intellisense:", 'no', color='YELLOW')
 
     def cc_version_gte(self, cfg, want_major, want_minor):
+        print(f"{cfg.env.CC_VERSION=}")
         (major, minor, patchlevel) = cfg.env.CC_VERSION
         return (int(major) > want_major or
                 (int(major) == want_major and int(minor) >= want_minor))
@@ -222,7 +223,7 @@ class Board:
             want_version = cfg.options.assert_cc_version
             if have_version != want_version:
                 cfg.fatal("cc version mismatch: %s should be %s" % (have_version, want_version))
-        
+
         if 'clang' in cfg.env.COMPILER_CC:
             env.CFLAGS += [
                 '-fcolor-diagnostics',
@@ -356,9 +357,11 @@ class Board:
                 '-Werror=implicit-fallthrough',
             ]
         else:
+            pass
+            '''
             env.CXXFLAGS += [
                 '-Wno-format-contains-nul',
-                '-Werror=unused-but-set-variable'
+                #'-Werror=unused-but-set-variable'
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
@@ -374,6 +377,7 @@ class Board:
                 env.CXXFLAGS += [
                     '-Werror=sizeof-pointer-div',
                 ]
+            '''
 
         if cfg.options.Werror:
             errors = ['-Werror',
@@ -430,7 +434,7 @@ class Board:
 
         if cfg.options.postype_single:
             env.CXXFLAGS += ['-DHAL_WITH_POSTYPE_DOUBLE=0']
-            
+
         if cfg.options.osd or cfg.options.osd_fonts:
             env.CXXFLAGS += ['-DOSD_ENABLED=1', '-DHAL_MSP_ENABLED=1']
 
@@ -725,6 +729,105 @@ class sitl(Board):
         return self.__class__.__name__
 
 
+class webassembly(Board):
+
+    def __init__(self):
+        self.with_can = False
+
+    def configure_env(self, cfg, env):
+        cfg.options.disable_scripting = True
+        print(f"configure env {self=} {cfg=} {env=}")
+        super(webassembly, self).configure_env(cfg, env)
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_SITL',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
+            HAL_PROBE_EXTERNAL_I2C_BAROS = 1,
+        )
+
+        cfg.env.STATIC_LINKING = True
+
+        #cfg.define('HAL_OS_FATFS_IO', 0)
+        #cfg.define('HAL_OS_POSIX_IO', 0)
+        cfg.define('AP_SIM_ENABLED', 1)
+        #cfg.define('HAL_WITH_SPI', 1)
+        cfg.define('HAL_WITH_RAMTRON', 1)
+        cfg.define('AP_GENERATOR_RICHENPOWER_ENABLED', 1)
+        cfg.define('AP_OPENDRONEID_ENABLED', 1)
+        cfg.define('AP_SIGNED_FIRMWARE', 0)
+
+        if self.with_can:
+            cfg.define('HAL_NUM_CAN_IFACES', 2)
+            cfg.define('UAVCAN_EXCEPTIONS', 0)
+            cfg.define('UAVCAN_SUPPORT_CANFD', 1)
+
+        env.CXXFLAGS += [
+            '-Werror=float-equal'
+        ]
+
+        if not cfg.env.DEBUG:
+            env.CXXFLAGS += [
+                '-O3',
+            ]
+
+        env.LIB += [
+            'm',
+        ]
+
+        #cfg.check_librt(env)
+        cfg.check_feenableexcept()
+
+        # env.LINKFLAGS += ['-pthread',]
+
+        env.AP_LIBRARIES += [
+            'AP_HAL_SITL',
+        ]
+
+        if not cfg.env.AP_PERIPH:
+            env.AP_LIBRARIES += [
+                'SITL',
+            ]
+
+        if cfg.options.enable_sfml:
+            if not cfg.check_SFML(env):
+                cfg.fatal("Failed to find SFML libraries")
+
+        if cfg.options.enable_sfml_joystick:
+            if not cfg.check_SFML(env):
+                cfg.fatal("Failed to find SFML libraries")
+            env.CXXFLAGS += ['-DSFML_JOYSTICK']
+
+        if cfg.options.sitl_osd:
+            env.CXXFLAGS += ['-DWITH_SITL_OSD','-DOSD_ENABLED=1']
+            for f in os.listdir('libraries/AP_OSD/fonts'):
+                if fnmatch.fnmatch(f, "font*bin"):
+                    env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
+
+
+        # include locations.txt so SITL on windows can lookup by name
+        env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
+
+        # embed any scripts from ROMFS/scripts
+        if os.path.exists('ROMFS/scripts'):
+            for f in os.listdir('ROMFS/scripts'):
+                if fnmatch.fnmatch(f, "*.lua"):
+                    env.ROMFS_FILES += [('scripts/'+f,'ROMFS/scripts/'+f)]
+
+
+        if len(env.ROMFS_FILES) > 0:
+            env.CXXFLAGS += ['-DHAL_HAVE_AP_ROMFS_EMBEDDED_H']
+
+        if cfg.options.sitl_rgbled:
+            env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
+
+    def get_name(self):
+        return self.__class__.__name__
+
+
 class sitl_periph_gps(sitl):
     def configure_env(self, cfg, env):
         cfg.env.AP_PERIPH = 1
@@ -769,7 +872,7 @@ class esp32(Board):
             print("USING EXPRESSIF IDF:"+str(env.idf))
             return cfg.root.find_dir(env.IDF+p).abspath()
         try:
-            env.IDF = os.environ['IDF_PATH'] 
+            env.IDF = os.environ['IDF_PATH']
         except:
             env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
 
@@ -781,7 +884,7 @@ class esp32(Board):
         )
 
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
-        
+
         # this makes sure we get the correct subtype
         env.DEFINES.update(
             ENABLE_HEAP = 0,
@@ -880,7 +983,7 @@ class chibios(Board):
             '-Wfatal-errors',
             '-Werror=uninitialized',
             '-Werror=init-self',
-            '-Werror=unused-but-set-variable',
+            #'-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
             '-Wno-trigraphs',
             '-fno-strict-aliasing',
@@ -981,7 +1084,7 @@ class chibios(Board):
             env.CXXFLAGS += [ '-DHAL_CHIBIOS_ENABLE_MALLOC_GUARD' ]
         else:
             cfg.msg("Enabling malloc guard", "no")
-            
+
         if cfg.env.ENABLE_STATS:
             cfg.msg("Enabling ChibiOS thread statistics", "yes")
             env.CFLAGS += [ '-DHAL_ENABLE_THREAD_STATISTICS' ]
@@ -1266,7 +1369,7 @@ class vnav(linux):
         env.DEFINES.update(
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_LINUX_VNAV',
         )
-        
+
 class disco(linux):
     toolchain = 'arm-linux-gnueabihf'
 
@@ -1358,3 +1461,10 @@ class SITL_x86_64_linux_gnu(SITL_static):
 
 class SITL_arm_linux_gnueabihf(SITL_static):
     toolchain = 'arm-linux-gnueabihf'
+
+class SITL_webassembly(webassembly):
+    toolchain = 'emcc'
+
+    def configure_env(self, cfg, env):
+        super(SITL_webassembly, self).configure_env(cfg, env)
+        cfg.env.STATIC_LINKING = True

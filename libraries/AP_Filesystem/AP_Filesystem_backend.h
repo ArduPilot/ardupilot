@@ -32,7 +32,7 @@ public:
 
     FileData(void *_backend) :
         backend(_backend) {}
-    
+
     // destructor to free data
     ~FileData();
 private:
@@ -75,7 +75,7 @@ public:
 
     // format sdcard
     virtual bool format(void) { return false; }
-    
+
     /*
       load a full file. Use delete to free the data
      */

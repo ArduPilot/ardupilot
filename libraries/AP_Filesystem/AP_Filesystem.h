@@ -56,7 +56,7 @@ struct dirent {
 #define AP_FILESYSTEM_FORMAT_ENABLED HAL_USE_SDMMC
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if (CONFIG_HAL_BOARD == HAL_BOARD_LINUX || CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #include "AP_Filesystem_posix.h"
 #endif
 
@@ -115,12 +115,12 @@ public:
 
     // format filesystem
     bool format(void);
-    
+
     /*
       load a full file. Use delete to free the data
      */
     FileData *load_file(const char *filename);
-    
+
 private:
     struct Backend {
         const char *prefix;

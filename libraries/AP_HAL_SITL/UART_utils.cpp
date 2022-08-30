@@ -15,9 +15,8 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-
 #include "UARTDriver.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !(defined (__wasm__) || defined (__EMSCRIPTEN__))
 
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__)
 #define USE_TERMIOS
@@ -51,7 +50,7 @@ bool HALSITL::UARTDriver::set_speed(int speed) const
     if (ioctl(_fd, TCGETS2, &tc) == -1) {
         return false;
     }
-    
+
     /* speed is configured by c_[io]speed */
     tc.c_cflag &= ~CBAUD;
     tc.c_cflag |= BOTHER;
@@ -135,4 +134,17 @@ void HALSITL::UARTDriver::set_stop_bits(int n)
 #endif
 }
 
+#else
+bool HALSITL::UARTDriver::set_speed(int speed) const
+{
+    return false;
+}
+
+void HALSITL::UARTDriver::configure_parity(uint8_t v)
+{
+}
+
+void HALSITL::UARTDriver::set_stop_bits(int n)
+{
+}
 #endif

@@ -162,16 +162,16 @@ static void mat_LU_decompose(const T* A, T* L, T* U, T *P, uint16_t n)
     }
     for(uint16_t i = 0; i < n; i++) {
         for(uint16_t j = 0; j < n; j++) {
-            if(j <= i) {    
+            if(j <= i) {
                 U[j*n + i] = APrime[j*n + i];
                 for(uint16_t k = 0; k < j; k++) {
-                    U[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                    U[j*n + i] -= L[j*n + k] * U[k*n + i];
                 }
             }
             if(j >= i) {
                 L[j*n + i] = APrime[j*n + i];
                 for(uint16_t k = 0; k < i; k++) {
-                    L[j*n + i] -= L[j*n + k] * U[k*n + i]; 
+                    L[j*n + i] -= L[j*n + k] * U[k*n + i];
                 }
                 L[j*n + i] /= U[i*n + i];
             }
@@ -286,7 +286,7 @@ static bool inverse4x4(const T m[],T invOut[])
     T inv[16], det;
     uint16_t i;
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && false
     //disable FE_INEXACT detection as it fails on mac os runs
     int old = fedisableexcept(FE_INEXACT | FE_OVERFLOW);
     if (old < 0) {
@@ -416,8 +416,8 @@ static bool inverse4x4(const T m[],T invOut[])
 
     for (i = 0; i < 16; i++)
         invOut[i] = inv[i] * det;
-    
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && false
     if (old >= 0 && feenableexcept(old) < 0) {
         // hal.console->printf("inverse4x4(): warning: error on restoring floating exception mask\n");
     }

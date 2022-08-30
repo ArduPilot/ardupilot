@@ -26,9 +26,9 @@
 
 #if HAVE_FILESYSTEM_SUPPORT
 
+#include <AP_Math/AP_Math.h>
 #include "posix_compat.h"
 #include <stdarg.h>
-#include <AP_Math/AP_Math.h>
 
 struct apfs_file {
     int fd;
