@@ -715,9 +715,9 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("RC3_TRIM", 1100);
     AP_Param::set_default_by_name("COMPASS_OFFS_MAX", 1000);
     AP_Param::set_default_by_name("INS_GYR_CAL", 0);
-    AP_Param::set_default_by_name("MNT_TYPE", 1);
-    AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
-    AP_Param::set_default_by_name("MNT_RC_RATE", 30);
+    AP_Param::set_default_by_name("MNT1_TYPE", 1);
+    AP_Param::set_default_by_name("MNT1_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
+    AP_Param::set_default_by_name("MNT1_RC_RATE", 30);
     AP_Param::set_default_by_name("RC7_OPTION", 214);   // MOUNT1_YAW
     AP_Param::set_default_by_name("RC8_OPTION", 213);   // MOUNT1_PITCH
     // We should ignore this parameter since ROVs are neutral buoyancy
