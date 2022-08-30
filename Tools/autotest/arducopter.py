@@ -4584,10 +4584,10 @@ class AutoTestCopter(AutoTest):
         '''configure a rpy servo mount; caller responsible for required rebooting'''
         self.progress("Setting up servo mount")
         self.set_parameters({
-            "MNT_TYPE": 1,
-            "MNT_STAB_ROLL": 1,
-            "MNT_STAB_TILT": 1,
-            "MNT_RC_IN_TILT": 6,
+            "MNT1_TYPE": 1,
+            "MNT1_PITCH_MIN": -45,
+            "MNT1_PITCH_MAX": 45,
+            "RC6_OPTION": 213,  # MOUNT1_PITCH
             "SERVO%u_FUNCTION" % roll_servo: 8, # roll
             "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
             "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
@@ -4609,8 +4609,8 @@ class AutoTestCopter(AutoTest):
         '''set mount mode'''
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_MOUNT_CONFIGURE,
                      mount_mode,
-                     1, # stabilize roll
-                     1, # stabilize pitch
+                     0, # stabilize roll (unsupported)
+                     0, # stabilize pitch (unsupported)
                      0, 0, 0, 0)
 
     def test_mount(self):
@@ -4735,9 +4735,15 @@ class AutoTestCopter(AutoTest):
             try:
                 self.context_push()
                 self.set_parameters({
-                    'MNT_RC_IN_ROLL': 11,
-                    'MNT_RC_IN_TILT': 12,
-                    'MNT_RC_IN_PAN': 13,
+                    'RC6_OPTION': 0,
+                    'RC11_OPTION': 212,    # MOUNT1_ROLL
+                    'RC12_OPTION': 213,    # MOUNT1_PITCH
+                    'RC13_OPTION': 214,    # MOUNT1_YAW
+                    'RC12_MIN': 1100,
+                    'RC12_MAX': 1900,
+                    'RC12_TRIM': 1500,
+                    'MNT1_PITCH_MIN': -45,
+                    'MNT1_PITCH_MAX': 45,
                 })
                 self.progress("Testing RC angular control")
                 # default RC min=1100 max=1900
@@ -4751,9 +4757,9 @@ class AutoTestCopter(AutoTest):
                 rc12_in = 1400
                 rc12_min = 1100 # default
                 rc12_max = 1900 # default
-                angmin_tilt = -45.0 # default
-                angmax_tilt = 45.0 # default
-                expected_pitch = (float(rc12_in-rc12_min)/float(rc12_max-rc12_min) * (angmax_tilt-angmin_tilt)) + angmin_tilt
+                mpitch_min = -45.0
+                mpitch_max = 45.0
+                expected_pitch = (float(rc12_in-rc12_min)/float(rc12_max-rc12_min) * (mpitch_max-mpitch_min)) + mpitch_min
                 self.progress("expected mount pitch: %f" % expected_pitch)
                 if expected_pitch != -11.25:
                     raise NotAchievedException("Calculation wrong - defaults changed?!")
@@ -4772,8 +4778,8 @@ class AutoTestCopter(AutoTest):
                     self.set_parameters({
                         "RC12_MIN": 1000,
                         "RC12_MAX": 2000,
-                        "MNT_ANGMIN_TIL": -9000,
-                        "MNT_ANGMAX_TIL": 1000,
+                        "MNT1_PITCH_MIN": -90,
+                        "MNT1_PITCH_MAX": 10,
                     })
                     self.set_rc(12, 1000)
                     self.test_mount_pitch(-90.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
@@ -4787,7 +4793,7 @@ class AutoTestCopter(AutoTest):
                 self.set_rc(12, 1500)
 
                 self.progress("Testing RC rate control")
-                self.set_parameter('MNT_RC_RATE', 10)
+                self.set_parameter('MNT1_RC_RATE', 10)
                 self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
                 self.set_rc(12, 1300)
                 self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
@@ -4802,7 +4808,7 @@ class AutoTestCopter(AutoTest):
                 self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
                 self.progress("Reverting to angle mode")
-                self.set_parameter('MNT_RC_RATE', 0)
+                self.set_parameter('MNT1_RC_RATE', 0)
                 self.set_rc(12, 1500)
                 self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
@@ -4945,7 +4951,7 @@ class AutoTestCopter(AutoTest):
 
         self.mav.mav.srcSystem = old_srcSystem
         self.disarm_vehicle(force=True)
-        self.reboot_sitl() # to handle MNT_TYPE changing
+        self.reboot_sitl() # to handle MNT1_TYPE changing
 
         if ex is not None:
             raise ex
@@ -4956,7 +4962,7 @@ class AutoTestCopter(AutoTest):
         self.set_parameter("SYSID_MYGCS", self.mav.source_system)
         yaw_servo = 7
         self.setup_servo_mount(yaw_servo=yaw_servo)
-        self.reboot_sitl() # to handle MNT_TYPE changing
+        self.reboot_sitl() # to handle MNT1_TYPE changing
 
         self.progress("checking ArduCopter yaw-aircraft-for-roi")
         ex = None
