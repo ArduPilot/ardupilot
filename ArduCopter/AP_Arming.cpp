@@ -92,7 +92,7 @@ bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
 
     // check throttle is not too low - must be above failsafe throttle
     if (copter.channel_throttle->get_radio_in() < copter.g.failsafe_throttle_value) {
-        check_failed(ARMING_CHECK_RC, true, "%s below failsafe", rc_item);
+        check_failed(ARMING_CHECK_RC, display_failure, "%s below failsafe", rc_item);
         return false;
     }
 
