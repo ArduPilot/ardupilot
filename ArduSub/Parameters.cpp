@@ -718,8 +718,8 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("MNT_TYPE", 1);
     AP_Param::set_default_by_name("MNT_DEFLT_MODE", MAV_MOUNT_MODE_RC_TARGETING);
     AP_Param::set_default_by_name("MNT_RC_RATE", 30);
-    AP_Param::set_by_name("MNT_RC_IN_PAN", 7);
-    AP_Param::set_by_name("MNT_RC_IN_TILT", 8);
+    AP_Param::set_default_by_name("RC7_OPTION", 214);   // MOUNT1_YAW
+    AP_Param::set_default_by_name("RC8_OPTION", 213);   // MOUNT1_PITCH
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 
