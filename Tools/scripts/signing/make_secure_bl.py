@@ -18,16 +18,12 @@ from argparse import ArgumentParser
 parser = ArgumentParser(description='make_secure_bl')
 parser.add_argument("--omit-ardupilot-keys", action='store_true', default=False, help="omit ArduPilot signing keys")
 parser.add_argument("bootloader", type=str, default=None, help="bootloader")
-parser.add_argument("keys", type=str, nargs='+', help="keys")
+parser.add_argument("keys", nargs='*', type=str, default=[], help="keys")
 args = parser.parse_args()
     
 descriptor = b'\x4e\xcf\x4e\xa5\xa6\xb6\xf7\x29'
 max_keys = 10
 key_len = 32
-
-if len(args.keys) <= 0:
-    print("At least one key file required")
-    sys.exit(1)
 
 img = open(args.bootloader, 'rb').read()
 
@@ -53,6 +49,10 @@ if not args.omit_ardupilot_keys:
 
 if len(keys) > max_keys:
     print("Too many key files %u, max is %u" % (len(keys), max_keys))
+    sys.exit(1)
+
+if len(keys) <= 0:
+    print("At least one key file required")
     sys.exit(1)
 
 def decode_key(ktype, key):
