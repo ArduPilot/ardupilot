@@ -5952,6 +5952,31 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_heading(90)
         self.disarm_vehicle()
 
+    def ExtraLoggingCheck(self):
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "LOG_DISARMED": 0,
+        })
+        self.reboot_sitl()
+
+        old_onboard_logs = self.log_list()
+        self.arm_vehicle(force=True)
+        self.delay_sim_time(1)
+        new_onboard_logs = self.log_list()
+        delta = set(new_onboard_logs) - set(old_onboard_logs)
+        if len(delta) != 1:
+            raise NotAchievedException("Expected exactly one new log")
+        self.disarm_vehicle()
+
+        old_onboard_logs = self.log_list()
+        self.arm_vehicle(force=True)
+        self.delay_sim_time(10)
+        new_onboard_logs = self.log_list()
+        delta = set(new_onboard_logs) - set(old_onboard_logs)
+        if len(delta) != 1:
+            raise NotAchievedException("Expected exactly one new log")
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -6201,6 +6226,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("EStopAtBoot",
              "Ensure EStop prevents arming when asserted at boot time",
              self.EStopAtBoot),
+
+            ("ExtraLoggingCheck",
+             "Ensure log files created when vehicle armed and LOG_FILE_DSRMROT=1",
+             self.ExtraLoggingCheck),
 
             ("StickMixingAuto",
              "Ensure Stick Mixing works in auto",
