@@ -21,6 +21,7 @@
 #include <AP_Filesystem/posix_compat.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_HAL/Semaphores.h>
 
 #include "lua/src/lua.hpp"
 
@@ -135,6 +136,7 @@ private:
     // must be static for use in atpanic
     static void print_error(MAV_SEVERITY severity);
     static char *error_msg_buf;
+    static HAL_Semaphore error_msg_buf_sem;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
 
@@ -142,7 +144,10 @@ public:
     // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
     static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
 
-    // return last error message, nullptr if none
+    // return last error message, nullptr if none, must use semaphore as this is updated in the scripting thread
     static const char* get_last_error_message() { return error_msg_buf; }
+
+    // get semaphore for above error buffer
+    static AP_HAL::Semaphore* get_last_error_semaphore() { return &error_msg_buf_sem; }
 
 };

@@ -27,6 +27,7 @@ extern const AP_HAL::HAL& hal;
 bool lua_scripts::overtime;
 jmp_buf lua_scripts::panic_jmp;
 char *lua_scripts::error_msg_buf;
+HAL_Semaphore lua_scripts::error_msg_buf_sem;
 uint8_t lua_scripts::print_error_count;
 uint32_t lua_scripts::last_print_ms;
 
@@ -52,14 +53,19 @@ void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
 }
 
 void lua_scripts::print_error(MAV_SEVERITY severity) {
+    error_msg_buf_sem.take_blocking();
     if (error_msg_buf == nullptr) {
+        error_msg_buf_sem.give();
         return;
     }
     last_print_ms = AP_HAL::millis();
     GCS_SEND_TEXT(severity, "Lua: %s", error_msg_buf);
+    error_msg_buf_sem.give();
 }
 
 void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) {
+    error_msg_buf_sem.take_blocking();
+
     // reset buffer and print count
     print_error_count = 0;
     if (error_msg_buf) {
@@ -81,6 +87,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
     if (len <= 0) {
         // nothing to print, something has gone wrong
         va_end(arg_list);
+        error_msg_buf_sem.give();
         return;
     }
 
@@ -89,6 +96,7 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
     if (!error_msg_buf) {
         // allocation failed
         va_end(arg_list);
+        error_msg_buf_sem.give();
         return;
     }
 
@@ -98,6 +106,8 @@ void lua_scripts::set_and_print_new_error_message(MAV_SEVERITY severity, const c
 
     // print to cosole and GCS
     DEV_PRINTF("Lua: %s\n", error_msg_buf);
+
+    error_msg_buf_sem.give();
     print_error(severity);
 }
 
@@ -547,8 +557,10 @@ void lua_scripts::run(void) {
         lua_state = nullptr;
     }
 
+    error_msg_buf_sem.take_blocking();
     if (error_msg_buf != nullptr) {
         hal.util->heap_realloc(_heap, error_msg_buf, 0);
         error_msg_buf = nullptr;
     }
+    error_msg_buf_sem.give();
 }
