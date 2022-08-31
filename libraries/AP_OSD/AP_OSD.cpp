@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: OSD type
     // @Description: OSD type. TXONLY makes the OSD parameter selection available to other modules even if there is no native OSD support on the board, for instance CRSF.
-    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY
+    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY,5:MSP_DISPLAYPORT
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
