@@ -45,8 +45,12 @@ void Sub::poshold_run()
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
         attitude_control.set_throttle_out(0.5f ,true, g.throttle_filt);
         attitude_control.relax_attitude_controllers();
-        pos_control.init_xy_controller_stopping_point();
         pos_control.relax_z_controller(0.5f);
+        const Vector2f &curr_pos = inertial_nav.get_position_xy_cm();
+        pos_control.set_pos_target_xy_cm(curr_pos.x, curr_pos.y);
+        pos_control.set_accel_desired_xy_cmss(Vector2f(0.0, 0.0));
+        pos_control.set_vel_desired_xy_cms(Vector2f(0.0, 0.0));
+        pos_control.update_xy_controller();
         last_pilot_heading = ahrs.yaw_sensor;
         return;
     }
