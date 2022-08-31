@@ -50,15 +50,6 @@ void AP_Mount::init()
         return;
     }
 
-    // default mount to servo mount if rc output channels to control roll, tilt or pan have been defined
-    if (!_params[0].type.configured()) {
-        if (SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_pan) ||
-            SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_tilt) ||
-            SRV_Channels::function_assigned(SRV_Channel::Aux_servo_function_t::k_mount_roll)) {
-            _params[0].type.set_and_save(Mount_Type_Servo);
-        }
-    }
-
     // perform any required parameter conversion
     convert_params();
 
