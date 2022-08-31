@@ -85,6 +85,15 @@ WSPIDesc WSPIDeviceManager::device_table[] = { HAL_WSPI_DEVICE_LIST };
 #endif
 #endif
 
+bool WSPIDevice::is_busy()
+{
+#if HAL_USE_OCTOSPI
+    return (wspi_devices[device_desc.bus].driver->ospi->SR & OCTOSPI_SR_BUSY) != 0U;
+#else
+    return (wspi_devices[device_desc.bus].driver->qspi->SR & QUADSPI_SR_BUSY) != 0U;
+#endif
+}
+
 bool WSPIDevice::transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len)
 {
