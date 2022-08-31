@@ -34,5 +34,5 @@ struct PACKED log_Fence {
 #else
 #define LOG_STRUCTURE_FROM_FENCE \
     { LOG_FENCE_MSG, sizeof(log_Fence), \
-      "FNCE", "QBBBLLBf", "TimeUS,Tot,Seq,Type,Lat,Lng,Count,Radius", "s---DU-m", "F---GG--" }
+      "FNCE", "QBBBLLBf", "TimeUS,Tot,Seq,Type,Lat,Lng,Count,Radius", "s---DU-m", "F---GG--" },
 #endif
