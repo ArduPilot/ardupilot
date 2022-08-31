@@ -146,6 +146,8 @@ public:
     // Set command header for upcomming transfer call(s)
     virtual void set_cmd_header(const CommandHeader& cmd_hdr) override = 0;
 
+    virtual bool is_busy() = 0;
+
     virtual AP_HAL::Semaphore* get_semaphore() override = 0;
 
 protected:
