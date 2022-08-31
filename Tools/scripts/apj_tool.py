@@ -229,11 +229,14 @@ if __name__ == '__main__':
 
     defaults = embedded_defaults(args.firmware_file)
 
-    if not defaults.find():
+    have_defaults = defaults.find()
+
+    if not have_defaults and not args.extract:
         print("Error: Param defaults support not found in firmware")
         sys.exit(1)
-    
-    print("Found param defaults max_length=%u length=%u" % (defaults.max_len, defaults.length))
+
+    if have_defaults:
+        print("Found param defaults max_length=%u length=%u" % (defaults.max_len, defaults.length))
 
     if args.set_file:
         # load new defaults from a file
