@@ -288,7 +288,7 @@ class ManifestGenerator():
         if board_id == 56:
             # special case for 6C, they always get the px4 bootloader IDs as an option
             firmware['bootloader_str'].append('PX4 BL FMU v6C.x')
-            firmware['USBID'].append('0x3185/0x0035')
+            firmware['USBID'].append('0x3185/0x0038')
             
         if platform in brand_map:
             (brand_name, manufacturer) = brand_map[platform]
