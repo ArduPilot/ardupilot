@@ -111,6 +111,7 @@ public:
 #endif
     }
 
+    bool is_busy() override;
     bool acquire_bus(bool acquire);
 
     // Enters Memory mapped or eXecution In Place or 0-4-4 mode
