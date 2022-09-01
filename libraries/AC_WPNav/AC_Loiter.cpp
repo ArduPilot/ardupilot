@@ -118,8 +118,8 @@ void AC_Loiter::init_target()
     _pos_control.set_correction_speed_accel_xy(LOITER_VEL_CORRECTION_MAX, _accel_cmss);
     _pos_control.set_pos_error_max_xy_cm(LOITER_POS_CORRECTION_MAX);
 
-    // initialise position controller
-    _pos_control.init_xy_controller();
+    // initialise position controller and move target accelerations smoothly towards zero
+    _pos_control.relax_velocity_controller_xy();
 
     // initialise predicted acceleration and angles from the position controller
     _predicted_accel.x = _pos_control.get_accel_target_cmss().x;
