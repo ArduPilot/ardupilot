@@ -441,6 +441,11 @@ bool SITL_State::_read_rc_sitl_input()
 
     const ssize_t size = _sitl_rc_in.recv(&pwm_pkt, sizeof(pwm_pkt), 0);
 
+    // if we are simulating no pulses RC failure, do not update pwm_input
+    if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_NoPulses) {
+        return size != -1; // we must continue to drain _sitl_rc
+    }
+
     if (_sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
         // discard anything we just read from the "receiver" and set
         // values to bind values:
