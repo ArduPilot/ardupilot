@@ -311,6 +311,7 @@ singleton AP_ESC_Telem method get_voltage boolean uint8_t 0 NUM_SERVO_CHANNELS f
 singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
 singleton AP_ESC_Telem method update_rpm void uint8_t 0 NUM_SERVO_CHANNELS uint16_t'skip_check float'skip_check
+singleton AP_ESC_Telem method set_rpm_scale void uint8_t 0 NUM_SERVO_CHANNELS float'skip_check
 
 include AP_Param/AP_Param.h
 singleton AP_Param rename param
