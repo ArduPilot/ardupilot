@@ -477,14 +477,12 @@ void AC_PosControl::init_xy_controller_stopping_point()
 ///     This function decays the output acceleration by 95% every half second to achieve a smooth transition to zero requested acceleration.
 void AC_PosControl::relax_velocity_controller_xy()
 {
-    init_xy();
-
-    // decay resultant acceleration and therefore current attitude target to zero
+    // decay acceleration and therefore current attitude target to zero
+    // this will be reset by init_xy_controller() if !is_active_xy()
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
+    _accel_target.xy() *= decay;
 
-    _accel_target.x *= decay;
-    _accel_target.y *= decay;
-    _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
+    init_xy();
 }
 
 /// init_xy - initialise the position controller to the current position, velocity and acceleration.
@@ -508,12 +506,12 @@ void AC_PosControl::init_xy()
     _vel_target.x = curr_vel.x;
     _vel_target.y = curr_vel.y;
 
+    // Set desired accel to zero because raw acceleration is prone to noise
+    _accel_desired.xy().zero();
 
-    const Vector3f &curr_accel = _ahrs.get_accel_ef_blended() * 100.0f;
-    _accel_desired.xy() = curr_accel.xy();
-    _accel_desired.xy().limit_length(_accel_max_xy_cmss);
-
-    lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+    if (!is_active_xy()) {
+        lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+    }
 
     // initialise I terms from lean angles
     _pid_vel_xy.reset_filter();
@@ -1075,9 +1073,9 @@ Vector3f AC_PosControl::lean_angles_to_accel(const Vector3f& att_target_euler) c
     const float cos_yaw = cosf(att_target_euler.z);
 
     return Vector3f{
-        (GRAVITY_MSS * 100) * (-cos_yaw * sin_pitch * cos_roll - sin_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
-        (GRAVITY_MSS * 100) * (-sin_yaw * sin_pitch * cos_roll + cos_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
-        (GRAVITY_MSS * 100)
+        (GRAVITY_MSS * 100.0f) * (-cos_yaw * sin_pitch * cos_roll - sin_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
+        (GRAVITY_MSS * 100.0f) * (-sin_yaw * sin_pitch * cos_roll + cos_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
+        (GRAVITY_MSS * 100.0f)
     };
 }
 
