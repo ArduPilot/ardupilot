@@ -2296,16 +2296,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("Asserted mission count (type=%u) is %u after %fs" % (
             (mission_type, m.count, delta)))
 
-    def get_mission_item_int_on_link(self, item, mav, target_system, target_component, mission_type):
+    def get_mission_item_int_on_link(self, item, mav, target_system, target_component, mission_type, delay_fn=None):
         self.drain_mav(mav=mav, unparsed=True)
         mav.mav.mission_request_int_send(target_system,
                                          target_component,
                                          item,
                                          mission_type)
-        m = mav.recv_match(type='MISSION_ITEM_INT',
-                           blocking=True,
-                           timeout=60,
-                           condition='MISSION_ITEM_INT.mission_type==%u' % mission_type)
+        m = self.assert_receive_message(
+            'MISSION_ITEM_INT',
+            timeout=60,
+            condition='MISSION_ITEM_INT.mission_type==%u' % mission_type,
+            delay_fn=delay_fn)
         if m is None:
             raise NotAchievedException("Did not receive MISSION_ITEM_INT")
         if m.mission_type != mission_type:
@@ -3086,12 +3087,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 target_component,
                 mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
             self.progress("Get first item on new link")
+
+            def drain_self_mav_fn():
+                self.drain_mav(self.mav)
             m2 = self.get_mission_item_int_on_link(
                 2,
                 mav2,
                 target_system,
                 target_component,
-                mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+                mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+                delay_fn=drain_self_mav_fn)
             self.progress("Get first item on original link")
             m = self.get_mission_item_int_on_link(
                 2,

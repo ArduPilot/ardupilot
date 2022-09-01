@@ -3858,15 +3858,26 @@ class AutoTest(ABC):
             if self.get_sim_time_cached() - tstart > timeout:
                 return
 
-    def assert_receive_message(self, type, timeout=1, verbose=False, very_verbose=False, mav=None):
+    def assert_receive_message(self,
+                               type,
+                               timeout=1,
+                               verbose=False,
+                               very_verbose=False,
+                               mav=None,
+                               condition=None,
+                               delay_fn=None):
         if mav is None:
             mav = self.mav
         m = None
         tstart = time.time()  # timeout in wallclock
-        while m is None:
-            m = mav.recv_match(type=type, blocking=True, timeout=0.05)
+        while True:
+            m = mav.recv_match(type=type, blocking=True, timeout=0.05, condition=condition)
+            if m is not None:
+                break
             if time.time() - tstart > timeout:
                 raise NotAchievedException("Did not get %s" % type)
+            if delay_fn is not None:
+                delay_fn()
         if verbose:
             self.progress("Received (%s)" % str(m))
         if very_verbose:
