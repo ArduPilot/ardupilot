@@ -456,12 +456,12 @@ void AC_PosControl::init_xy_controller_stopping_point()
 ///     This function decays the output acceleration by 95% every half second to achieve a smooth transition to zero requested acceleration.
 void AC_PosControl::relax_velocity_controller_xy()
 {
-    init_xy_controller();
-
-    // decay resultant acceleration and therefore current attitude target to zero
+    // decay acceleration and therefore current attitude target to zero
+    // this will be reset by init_xy_controller() if !is_active_xy()
     float decay = 1.0 - _dt / (_dt + POSCONTROL_RELAX_TC);
     _accel_target.xy() *= decay;
-    _pid_vel_xy.set_integrator(_accel_target - _accel_desired);
+
+    init_xy_controller();
 }
 
 /// reduce response for landing
@@ -496,7 +496,9 @@ void AC_PosControl::init_xy_controller()
     // Set desired accel to zero because raw acceleration is prone to noise
     _accel_desired.xy().zero();
 
-    lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+    if (!is_active_xy()) {
+        lean_angles_to_accel_xy(_accel_target.x, _accel_target.y);
+    }
 
     // limit acceleration using maximum lean angles
     float angle_max = MIN(_attitude_control.get_althold_lean_angle_max_cd(), get_lean_angle_max_cd());
@@ -1026,9 +1028,9 @@ Vector3f AC_PosControl::lean_angles_to_accel(const Vector3f& att_target_euler) c
     const float cos_yaw = cosf(att_target_euler.z);
 
     return Vector3f{
-        (GRAVITY_MSS * 100) * (-cos_yaw * sin_pitch * cos_roll - sin_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
-        (GRAVITY_MSS * 100) * (-sin_yaw * sin_pitch * cos_roll + cos_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
-        (GRAVITY_MSS * 100)
+        (GRAVITY_MSS * 100.0f) * (-cos_yaw * sin_pitch * cos_roll - sin_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
+        (GRAVITY_MSS * 100.0f) * (-sin_yaw * sin_pitch * cos_roll + cos_yaw * sin_roll) / MAX(cos_roll * cos_pitch, 0.1f),
+        (GRAVITY_MSS * 100.0f)
     };
 }
 
