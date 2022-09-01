@@ -306,56 +306,6 @@ class AutoTestQuadPlane(AutoTest):
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
 
-    def enum_state_name(self, enum_name, state, pretrim=None):
-        e = mavutil.mavlink.enums[enum_name]
-        e_value = e[state]
-        name = e_value.name
-        if pretrim is not None:
-            if not pretrim.startswith(pretrim):
-                raise NotAchievedException("Expected %s to pretrim" % (pretrim))
-            name = name.replace(pretrim, "")
-        return name
-
-    def vtol_state_name(self, state):
-        return self.enum_state_name("MAV_VTOL_STATE", state, pretrim="MAV_VTOL_STATE_")
-
-    def landed_state_name(self, state):
-        return self.enum_state_name("MAV_LANDED_STATE", state, pretrim="MAV_LANDED_STATE_")
-
-    def assert_extended_sys_state(self, vtol_state, landed_state):
-        m = self.assert_receive_message('EXTENDED_SYS_STATE', timeout=1)
-        if m.vtol_state != vtol_state:
-            raise ValueError("Bad MAV_VTOL_STATE.  Want=%s got=%s" %
-                             (self.vtol_state_name(vtol_state),
-                              self.vtol_state_name(m.vtol_state)))
-        if m.landed_state != landed_state:
-            raise ValueError("Bad MAV_LANDED_STATE.  Want=%s got=%s" %
-                             (self.landed_state_name(landed_state),
-                              self.landed_state_name(m.landed_state)))
-
-    def wait_extended_sys_state(self, vtol_state, landed_state, timeout=10):
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time() - tstart > timeout:
-                raise NotAchievedException("Did not achieve vol/landed states")
-            self.progress("Waiting for MAV_VTOL_STATE=%s MAV_LANDED_STATE=%s" %
-                          (self.vtol_state_name(vtol_state),
-                           self.landed_state_name(landed_state)))
-            m = self.assert_receive_message('EXTENDED_SYS_STATE', verbose=True)
-            if m.landed_state != landed_state:
-                self.progress("Wrong MAV_LANDED_STATE (want=%s got=%s)" %
-                              (self.landed_state_name(landed_state),
-                               self.landed_state_name(m.landed_state)))
-                continue
-            if m.vtol_state != vtol_state:
-                self.progress("Wrong MAV_VTOL_STATE (want=%s got=%s)" %
-                              (self.vtol_state_name(vtol_state),
-                               self.vtol_state_name(m.vtol_state)))
-                continue
-
-            self.progress("vtol and landed states match")
-            return
-
     def EXTENDED_SYS_STATE_SLT(self):
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
         self.change_mode("QHOVER")
