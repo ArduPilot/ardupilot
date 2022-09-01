@@ -171,6 +171,13 @@ bool AP_ESC_Telem::get_rpm(uint8_t esc_index, float& rpm) const
         && (now - rpmdata.last_update_us < ESC_RPM_DATA_TIMEOUT_US)) {
         const float slew = MIN(1.0f, (now - rpmdata.last_update_us) * rpmdata.update_rate_hz * (1.0f / 1e6f));
         rpm = (rpmdata.prev_rpm + (rpmdata.rpm - rpmdata.prev_rpm) * slew);
+
+#if AP_SCRIPTING_ENABLED
+        if ((1U<<esc_index) & rpm_scale_mask) {
+            rpm *= rpm_scale_factor[esc_index];
+        }
+#endif
+
         return true;
     }
     return false;
@@ -506,6 +513,19 @@ void AP_ESC_Telem::update()
         }
     }
 }
+
+#if AP_SCRIPTING_ENABLED
+/*
+  set RPM scale factor from script
+*/
+void AP_ESC_Telem::set_rpm_scale(const uint8_t esc_index, const float scale_factor)
+{
+    if (esc_index < ESC_TELEM_MAX_ESCS) {
+        rpm_scale_factor[esc_index] = scale_factor;
+        rpm_scale_mask |= (1U<<esc_index);
+    }
+}
+#endif
 
 AP_ESC_Telem *AP_ESC_Telem::_singleton = nullptr;
 

@@ -100,6 +100,14 @@ public:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available
     // can also be called from scripting
     void update_rpm(const uint8_t esc_index, const float new_rpm, const float error_rate);
+
+#if AP_SCRIPTING_ENABLED
+    /*
+      set RPM scale factor from script
+     */
+    void set_rpm_scale(const uint8_t esc_index, const float scale_factor);
+#endif
+
 private:
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
@@ -114,6 +122,12 @@ private:
     uint32_t _last_rpm_log_us[ESC_TELEM_MAX_ESCS];
     uint8_t next_idx;
 
+#if AP_SCRIPTING_ENABLED
+    // allow for scaling of RPMs via lua scripts
+    float rpm_scale_factor[ESC_TELEM_MAX_ESCS];
+    uint32_t rpm_scale_mask;
+#endif
+    
     bool _have_data;
 
     AP_Int8 mavlink_offset;
