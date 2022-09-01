@@ -8840,8 +8840,12 @@ class AutoTestCopter(AutoTest):
                 "SIM_RC_FAIL": rc_failure_mode,
             })
             self.reboot_sitl()
-            self.assert_prearm_failure("Throttle below failsafe",
-                                       other_prearm_failures_fatal=False)
+            if rc_failure_mode == 1:
+                self.assert_prearm_failure("RC not found",
+                                           other_prearm_failures_fatal=False)
+            elif rc_failure_mode == 2:
+                self.assert_prearm_failure("Throttle below failsafe",
+                                           other_prearm_failures_fatal=False)
         self.context_pop()
         self.reboot_sitl()
 
