@@ -55,6 +55,7 @@ brand_map = {
     'CUAVv5Nano' : ('CUAVv5 Nano', 'CUAV'),
     'CUAVv5Nano-bdshot' : ('CUAVv5 Nano', 'CUAV'),
     'CUAV-Nora' : ('CUAV Nora', 'CUAV'),
+    'CUAV-Nora-bdshot' : ('CUAV Nora', 'CUAV'),
     'CUAV-X7' : ('CUAV X7', 'CUAV'),
     'CUAV-X7-bdshot' : ('CUAV X7', 'CUAV'),
     'DrotekP3Pro' : ('Pixhawk 3 Pro', 'Drotek'),
