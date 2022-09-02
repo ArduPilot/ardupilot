@@ -36,7 +36,7 @@ offset += 8
 desc = b''
 desc_len = 0
 
-keys = args.keys[:]
+keys = []
 
 if not args.omit_ardupilot_keys:
     print("Adding ArduPilot keys")
@@ -46,6 +46,8 @@ if not args.omit_ardupilot_keys:
         for f in files:
             if f.endswith(".dat"):
                 keys.append(os.path.relpath(os.path.join(keydir, f)))
+
+keys += args.keys[:]
 
 if len(keys) > max_keys:
     print("Too many key files %u, max is %u" % (len(keys), max_keys))
