@@ -70,24 +70,30 @@ class TestBuildOptions(object):
         ret = {
             feature.define: 0,
         }
-        if feature.dependency is None:
-            return ret
-        for depname in feature.dependency.split(','):
-            dep = None
-            for f in options:
-                if f.label == depname:
-                    dep = f
-            if dep is None:
-                raise ValueError("Invalid dep (%s) for feature (%s)" %
-                                 (depname, feature.label))
-            ret.update(self.get_defines(dep, options))
+        added_one = True
+        while added_one:
+            added_one = False
+            for option in options:
+                if option.define in ret:
+                    continue
+                if option.dependency is None:
+                    continue
+                for dep in option.dependency.split(','):
+                    f = self.get_option_by_label(dep, options)
+                    if f.define not in ret:
+                        continue
+
+                    print("%s requires %s" % (option.define, f.define))
+                    added_one = True
+                    ret[option.define] = 0
+                    break
         return ret
 
     def test_feature(self, feature, options):
         defines = self.get_defines(feature, options)
 
         if len(defines.keys()) > 1:
-            self.progress("Disabling %s also disables (%s)" % (
+            self.progress("Disabling %s disables (%s)" % (
                 feature.define,
                 ",".join(defines.keys())))
 
@@ -153,6 +159,12 @@ class TestBuildOptions(object):
             self.test_feature(feature, options)
             count += 1
             self.disable_in_turn_check_sizes(feature, self.sizes_nothing_disabled)
+
+    def get_option_by_label(self, label, options):
+        for x in options:
+            if x.label == label:
+                return x
+        raise ValueError("No such")
 
     def run_disable_all(self):
         options = self.get_build_options_from_ardupilot_tree()
