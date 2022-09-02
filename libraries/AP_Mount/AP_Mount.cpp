@@ -278,14 +278,21 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
         return MAV_RESULT_ACCEPTED;
     }
 
-    // To-Do: handle gimbal device id
+    // check gimbal device id.  0 is primary, 1 is 1st gimbal, 2 is 2nd gimbal, etc
+    if ((packet.param7 < 0) || (packet.param7 > AP_MOUNT_MAX_INSTANCES)) {
+        return MAV_RESULT_FAILED;
+    }
+    const uint8_t gimbal_instance = (packet.param7 < 1) ? get_primary() : (uint8_t)packet.param7 - 1;
+    if (!check_instance(gimbal_instance)) {
+        return MAV_RESULT_FAILED;
+    }
 
     // param1 : pitch_angle (in degrees)
     // param2 : yaw angle (in degrees)
     const float pitch_angle_deg = packet.param1;
     const float yaw_angle_deg = packet.param2;
     if (!isnan(pitch_angle_deg) && !isnan(yaw_angle_deg)) {
-        set_angle_target(0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        set_angle_target(gimbal_instance, 0, pitch_angle_deg, yaw_angle_deg, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -294,7 +301,7 @@ MAV_RESULT AP_Mount::handle_command_do_gimbal_manager_pitchyaw(const mavlink_com
     const float pitch_rate_degs = packet.param3;
     const float yaw_rate_degs = packet.param4;
     if (!isnan(pitch_rate_degs) && !isnan(yaw_rate_degs)) {
-        set_rate_target(0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
+        set_rate_target(gimbal_instance, 0, pitch_rate_degs, yaw_rate_degs, flags & GIMBAL_MANAGER_FLAGS_YAW_LOCK);
         return MAV_RESULT_ACCEPTED;
     }
 
