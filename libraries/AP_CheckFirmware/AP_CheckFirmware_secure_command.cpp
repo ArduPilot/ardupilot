@@ -164,6 +164,23 @@ bool AP_CheckFirmware::write_bootloader(const struct bl_data *bld)
 }
 
 /*
+  return true if all keys are zeros
+ */
+bool AP_CheckFirmware::all_zero_keys(const struct ap_secure_data *sec_data)
+{
+    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
+    /*
+      look over all public keys, if one matches then we are OK
+     */
+    for (const auto &public_key : sec_data->public_key) {
+        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
   check signature in a command against bootloader public keys
  */
 bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
@@ -172,21 +189,18 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
     if (sec_data == nullptr) {
         return false;
     }
+    if (all_zero_keys(sec_data)) {
+        // allow through if no keys are setup
+        return true;
+    }
     if (pkt.sig_length != 64) {
         // monocypher signatures are 64 bytes
         return false;
     }
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
-    bool all_zero_keys = true;
     /*
       look over all public keys, if one matches then we are OK
      */
     for (const auto &public_key : sec_data->public_key) {
-        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) == 0) {
-            continue;
-        }
-        all_zero_keys = false;
-
         crypto_check_ctx ctx {};
         crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
         crypto_check_init(actx, &pkt.data[pkt.data_length], public_key.key);
@@ -202,7 +216,7 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
             return true;
         }
     }
-    return all_zero_keys;
+    return false;
 }
 
 /*
@@ -378,6 +392,28 @@ void AP_CheckFirmware::handle_msg(mavlink_channel_t chan, const mavlink_message_
         break;
     }
     }
+}
+
+/*
+  check that a bootloader is OK to flash. We don't want to allow
+  flashing of a bootloader unless we either have no public keys setup
+  or the bootloader has public keys embedded. This prevents an easy
+  mistake of including an insecure bootloader in ROMFS with a secure build
+ */
+bool AP_CheckFirmware::check_signed_bootloader(const uint8_t *fw, uint32_t fw_size)
+{
+    const struct ap_secure_data *sec_data = find_public_keys();
+    if (sec_data == nullptr || all_zero_keys(sec_data)) {
+        // current bootloader doesn't have public keys, so OK to load any bootloader
+        return true;
+    }
+    const uint8_t key[] = AP_PUBLIC_KEY_SIGNATURE;
+    sec_data = (const struct ap_secure_data *)memmem(fw, fw_size, key, sizeof(key));
+    if (sec_data == nullptr || all_zero_keys(sec_data)) {
+        // new bootloader doesn't have any public keys, not allowed
+        return false;
+    }
+    return true;
 }
 
 #endif // AP_CHECK_FIRMWARE_ENABLED
