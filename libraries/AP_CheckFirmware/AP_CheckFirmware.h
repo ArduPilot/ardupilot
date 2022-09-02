@@ -134,6 +134,8 @@ public:
     static struct bl_data *read_bootloader(void);
     static bool write_bootloader(const struct bl_data *bld);
     static bool set_public_keys(uint8_t key_idx, uint8_t num_keys, const uint8_t *key_data);
+    static bool all_zero_keys(const struct ap_secure_data *sec_data);
+    static bool check_signed_bootloader(const uint8_t *fw, uint32_t fw_size);
 
 private:
     static uint8_t session_key[8];
