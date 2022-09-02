@@ -52,6 +52,7 @@ def build(bld):
                      'AP_Airspeed',
                      'AP_RangeFinder',
                      'AP_ROMFS',
+                     'AP_TemperatureSensor',
                      'AP_MSP',
                      'SRV_Channel',
                      'AP_Notify',
