@@ -228,6 +228,10 @@ void AP_Periph_FW::init()
     }
 #endif
     
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    temperature_sensor.init();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_NOTIFY
     notify.init();
 #endif
@@ -424,6 +428,10 @@ void AP_Periph_FW::update()
         gcs().update_send();
 #endif
     }
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    temperature_sensor.update();
+#endif
 
 #if HAL_LOGGING_ENABLED
     logger.periodic_tasks();

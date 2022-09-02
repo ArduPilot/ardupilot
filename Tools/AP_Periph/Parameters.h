@@ -61,6 +61,7 @@ public:
         k_param_efi_baudrate,
         k_param_esc_telem_rate,
         k_param_can_slcan_cport,
+        k_param_temperature_sensor,
     };
 
     AP_Int16 format_version;
