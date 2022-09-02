@@ -55,10 +55,16 @@ class ExtractFeatures(object):
 
             ('AP_RANGEFINDER_ENABLED', 'RangeFinder::RangeFinder',),
             ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::update\b',),
+            ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::get_reading\b',),
+            ('AP_RANGEFINDER_{type}_ENABLED', r'AP_RangeFinder_(?P<type>.*)::model_dist_max_cm\b',),
+            ('AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED', r'AP_RangeFinder_LightWareSerial::get_reading\b',),
+            ('AP_RANGEFINDER_LWI2C_ENABLED', r'AP_RangeFinder_LightWareI2C::update\b',),
+            ('AP_RANGEFINDER_MAXBOTIX_SERIAL_ENABLED', r'AP_RangeFinder_MaxsonarSerialLV::get_reading\b',),
+            ('AP_RANGEFINDER_TRI2C_ENABLED', r'AP_RangeFinder_TeraRangerI2C::update\b',),
 
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
 
-            ('AP_OPTICALFLOW_ENABLED', 'OpticalFlow::OpticalFlow',),
+            ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
             ('AP_OPTICALFLOW_{type}_ENABLED', r'AP_OpticalFlow_(?P<type>.*)::update\b',),
 
             ('AP_BARO_{type}_ENABLED', r'AP_Baro_(?P<type>.*)::update\b',),
@@ -85,7 +91,8 @@ class ExtractFeatures(object):
             ('AP_LTM_TELEM_ENABLED', 'AP_LTM_Telem::init',),
             ('HAL_HIGH_LATENCY2_ENABLED', 'GCS_MAVLINK::handle_control_high_latency',),
 
-            ('MODE_{type}_ENABLED', r'Mode(?P<type>.*)::init',),
+            ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
+            ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
 
             ('HAL_RUNCAM_ENABLED', 'AP_RunCam::AP_RunCam',),
 
@@ -130,6 +137,8 @@ class ExtractFeatures(object):
             ('HAL_NMEA_OUTPUT_ENABLED', r'AP_NMEA_Output::update\b',),
             ('HAL_BARO_WIND_COMP_ENABLED', r'AP_Baro::wind_pressure_correction\b',),
 
+            ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
+            ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3::writeExtNavVelData'),
         ]
 
     def progress(self, string):
