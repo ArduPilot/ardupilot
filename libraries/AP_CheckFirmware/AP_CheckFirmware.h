@@ -6,6 +6,9 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_OpenDroneID/AP_OpenDroneID_config.h>
 #include <AP_HAL/AP_HAL.h>
+#ifndef HAL_BOOTLOADER_BUILD
+#include <GCS_MAVLink/GCS.h>
+#endif
 
 #ifndef AP_CHECK_FIRMWARE_ENABLED
 #define AP_CHECK_FIRMWARE_ENABLED AP_OPENDRONEID_ENABLED
@@ -82,9 +85,61 @@ struct app_descriptor {
 
 static_assert(sizeof(app_descriptor) == APP_DESCRIPTOR_TOTAL_LENGTH, "app_descriptor incorrect length");
 
+#if AP_SIGNED_FIRMWARE
+
+#define AP_PUBLIC_KEY_LEN 32
+#define AP_PUBLIC_KEY_MAX_KEYS 10
+#define AP_PUBLIC_KEY_SIGNATURE {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29}
+
+struct PACKED ap_secure_data {
+    uint8_t sig[8] = AP_PUBLIC_KEY_SIGNATURE;
+    struct PACKED {
+        uint8_t key[AP_PUBLIC_KEY_LEN] = {};
+    } public_key[AP_PUBLIC_KEY_MAX_KEYS];
+};
+#endif
+
 #ifdef HAL_BOOTLOADER_BUILD
 check_fw_result_t check_good_firmware(void);
-#endif
+#else
 void check_firmware_print(void);
+
+#ifdef HAL_GCS_ENABLED
+class AP_CheckFirmware {
+public:
+    // handle a message from the GCS. This is static as we don't have an AP_CheckFirmware object
+    static void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
+    static void handle_secure_command(mavlink_channel_t chan, const mavlink_secure_command_t &pkt);
+    static bool check_signature(const mavlink_secure_command_t &pkt);
+    static const struct ap_secure_data *find_public_keys(void);
+
+    /*
+      in memory structure representing the current bootloader. It has two
+      data regions to cope with persistent data at the end of the
+      bootloader sector
+    */
+    struct bl_data {
+        uint32_t length1;
+        uint8_t *data1;
+        uint32_t offset2;
+        uint32_t length2;
+        uint8_t *data2;
+
+        // destructor
+        ~bl_data(void) {
+            delete[] data1;
+            delete[] data2;
+        }
+    };
+    static struct bl_data *read_bootloader(void);
+    static bool write_bootloader(const struct bl_data *bld);
+    static bool set_public_keys(uint8_t key_idx, uint8_t num_keys, const uint8_t *key_data);
+
+private:
+    static uint8_t session_key[8];
+};
+#endif
+
+#endif // HAL_BOOTLOADER_BUILD
 
 #endif // AP_CHECK_FIRMWARE_ENABLED

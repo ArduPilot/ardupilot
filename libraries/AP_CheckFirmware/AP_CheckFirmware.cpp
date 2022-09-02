@@ -14,17 +14,7 @@
 #include <string.h>
 #include "monocypher.h"
 
-#define AP_PUBLIC_KEY_LEN 32
-#define AP_PUBLIC_KEY_MAX_KEYS 10
-
-struct PACKED secure_data {
-    uint8_t sig[8] = {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29};
-    struct PACKED {
-        uint8_t key[AP_PUBLIC_KEY_LEN] = {};
-    } public_key[AP_PUBLIC_KEY_MAX_KEYS];
-};
-
-const struct secure_data public_keys __attribute__((section(".ecc_raw")));
+const struct ap_secure_data public_keys __attribute__((section(".ecc_raw")));
 
 /*
   check a signature against bootloader keys
@@ -155,5 +145,6 @@ void check_firmware_print(void)
                         app_descriptor.version_minor);
 }
 #endif
+
 
 #endif // AP_CHECK_FIRMWARE_ENABLED
