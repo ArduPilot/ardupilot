@@ -14,11 +14,14 @@
 #include <string.h>
 #include "monocypher.h"
 
+#define AP_PUBLIC_KEY_LEN 32
+#define AP_PUBLIC_KEY_MAX_KEYS 10
+
 struct PACKED secure_data {
     uint8_t sig[8] = {0x4e, 0xcf, 0x4e, 0xa5, 0xa6, 0xb6, 0xf7, 0x29};
     struct PACKED {
-        uint8_t key[32] = {};
-    } public_key[10];
+        uint8_t key[AP_PUBLIC_KEY_LEN] = {};
+    } public_key[AP_PUBLIC_KEY_MAX_KEYS];
 };
 
 const struct secure_data public_keys __attribute__((section(".ecc_raw")));
@@ -32,6 +35,7 @@ static check_fw_result_t check_firmware_signature(const app_descriptor *ad,
 {
     // 8 byte signature version
     static const uint64_t sig_version = 30437LLU;
+    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
 
     if (ad->signature_length != 72) {
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
@@ -40,10 +44,16 @@ static check_fw_result_t check_firmware_signature(const app_descriptor *ad,
         return check_fw_result_t::FAIL_REASON_BAD_FIRMWARE_SIGNATURE;
     }
 
+    bool all_zero_keys = true;
     /*
       look over all public keys, if one matches then we are OK
      */
     for (const auto &public_key : public_keys.public_key) {
+        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) == 0) {
+            continue;
+        }
+        all_zero_keys = false;
+
         crypto_check_ctx ctx {};
         crypto_check_ctx_abstract *actx = (crypto_check_ctx_abstract*)&ctx;
         crypto_check_init(actx, &ad->signature[sizeof(sig_version)], public_key.key);
@@ -55,6 +65,12 @@ static check_fw_result_t check_firmware_signature(const app_descriptor *ad,
             return check_fw_result_t::CHECK_FW_OK;
         }
     }
+
+    if (all_zero_keys) {
+        // bootloader is unlocked if it has no public keys
+        return check_fw_result_t::CHECK_FW_OK;
+    }
+
     // none of the public keys matched
     return check_fw_result_t::FAIL_REASON_VERIFICATION;
 }
