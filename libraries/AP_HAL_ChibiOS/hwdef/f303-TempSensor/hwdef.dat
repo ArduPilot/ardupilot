@@ -1,0 +1,29 @@
+include ../f303-periph/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.TempSensor"
+
+# These are tied to ground
+undef PA5
+undef PA6
+undef PA7
+
+undef SPI
+undef SPI1
+SERIAL_ORDER EMPTY USART1 USART2
+
+
+# setup for 3 PWM
+undef PB0
+PB0 TIM3_CH3 TIM3 PWM(1) GPIO(2)
+PB1 TIM3_CH4 TIM3 PWM(2) GPIO(3)
+
+define HAL_PERIPH_ENABLE_RC_OUT
+
+
+define HAL_PERIPH_ENABLE_BATTERY
+PA1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+
+define HAL_WITH_ESC_TELEM 1
+
+define AP_TEMPERATURE_SENSOR_ENABLED 1
+
