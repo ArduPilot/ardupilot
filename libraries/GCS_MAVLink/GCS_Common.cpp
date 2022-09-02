@@ -4036,6 +4036,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_lo
     case AP_HAL::Util::FlashBootloader::NO_CHANGE:
         // consider NO_CHANGE as success (so as not to display error to user)
         return MAV_RESULT_ACCEPTED;
+#if AP_SIGNED_FIRMWARE
+    case AP_HAL::Util::FlashBootloader::NOT_SIGNED:
+        gcs().send_text(MAV_SEVERITY_ERROR, "Bootloader not signed");
+        break;
+#endif
     default:
         break;
     }
