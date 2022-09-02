@@ -820,13 +820,22 @@ void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
     mavlink_set_attitude_target_t packet;
     mavlink_msg_set_attitude_target_decode(&msg, &packet);
 
-    // exit if vehicle is not in Guided mode
-    if (!rover.control_mode->in_guided_mode()) {
+    // ensure type_mask specifies to use thrust
+    if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE) != 0) {
         return;
     }
 
-    // ensure type_mask specifies to use thrust
-    if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE) != 0) {
+    if (rover.control_mode == &rover.mode_guided_nogps) {
+        float turn_rate_rads = 0.0;
+        if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_YAW_RATE_IGNORE) == 0) {
+            turn_rate_rads = packet.body_yaw_rate;
+        }
+        rover.mode_guided_nogps.set_desired_turn_rate_and_throttle(degrees(turn_rate_rads), packet.thrust);
+        return;
+    }
+
+    // exit if vehicle is not in Guided mode
+    if (!rover.control_mode->in_guided_mode()) {
         return;
     }
 

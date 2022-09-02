@@ -82,6 +82,8 @@ public:
     friend class ModeAcro;
     friend class ModeAuto;
     friend class ModeGuided;
+    friend class ModeGuidedNoGPS;
+    friend class ModeGuidedNoGPS::YawRateAndThrottle;
     friend class ModeHold;
     friend class ModeLoiter;
     friend class ModeSteering;
@@ -223,6 +225,7 @@ private:
     ModeManual mode_manual;
     ModeAcro mode_acro;
     ModeGuided mode_guided;
+    ModeGuidedNoGPS mode_guided_nogps;
     ModeAuto mode_auto;
     ModeLoiter mode_loiter;
     ModeSteering mode_steering;

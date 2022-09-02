@@ -5510,7 +5510,11 @@ class AutoTest(ABC):
                             timeout=30,
                             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         base_mode = mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
-        custom_mode = self.get_mode_from_mode_mapping(mode)
+        if type(mode) == int:
+            custom_mode = mode
+        else:
+            custom_mode = self.get_mode_from_mode_mapping(mode)
+
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_SET_MODE,
             base_mode,

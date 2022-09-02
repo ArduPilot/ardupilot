@@ -547,6 +547,9 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::GUIDED:
         ret = &mode_guided;
         break;
+    case Mode::Number::GUIDED_NOGPS:
+        ret = &mode_guided_nogps;
+        break;
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;

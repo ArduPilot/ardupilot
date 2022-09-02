@@ -23,7 +23,8 @@ public:
         RTL          = 11,
         SMART_RTL    = 12,
         GUIDED       = 15,
-        INITIALISING = 16
+        INITIALISING = 16,
+        GUIDED_NOGPS = 17,
     };
 
     // Constructor
@@ -485,6 +486,48 @@ protected:
     } limit;
 };
 
+class ModeGuidedNoGPS : public Mode
+{
+    friend class Rover;
+
+public:
+
+    virtual bool requires_position() const override { return false; }
+    virtual bool requires_velocity() const override { return false; }
+
+    uint32_t mode_number() const override { return GUIDED_NOGPS; }
+    const char *name4() const override { return "GNGP"; }
+
+    // throttle is normalised -1 to 1
+    bool set_desired_turn_rate_and_throttle(float turn_rate_degs, float throttle);
+
+protected:
+
+    bool _enter() override;
+    void update() override;
+
+    class SubMode {
+    public:
+        virtual void update() = 0;
+    };
+    class YawRateAndThrottle : public SubMode {
+    public:
+        CLASS_NO_COPY(YawRateAndThrottle);
+        YawRateAndThrottle() {}
+        bool enter(float _desired_yaw_rate_rads, float _throttle) {
+            gcs().send_text(MAV_SEVERITY_INFO, "in: %f", desired_yaw_rate_rads);
+            desired_yaw_rate_rads = _desired_yaw_rate_rads;
+            throttle = _throttle;
+            return true;
+        }
+        void update() override;
+    private:
+        float desired_yaw_rate_rads;
+        float throttle;  // normalised -1 to 1
+    } submode_yaw_rate_and_throttle;
+
+    SubMode *submode;
+};
 
 class ModeHold : public Mode
 {

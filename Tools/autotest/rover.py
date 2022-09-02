@@ -21,6 +21,7 @@ from common import AutoTestTimeoutException
 from common import MsgRcvTimeoutException
 from common import NotAchievedException
 from common import PreconditionFailedException
+from common import WaitModeTimeout
 
 from pymavlink import mavextra
 from pymavlink import mavutil
@@ -5910,6 +5911,92 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # self.context_pop()
 
+    def GuidedNoGPS(self, target_sysid=1, target_compid=1):
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('MANUAL')
+        self.set_parameters({
+            "GPS_TYPE": 0,
+        })
+        self.delay_sim_time(10)
+        passed = False
+        try:
+            self.change_mode('GUIDED', timeout=1)
+        except WaitModeTimeout:
+            passed = True
+        if not passed:
+            raise NotAchievedException("Entered guided mode when I shouldn't")
+
+        # self.change_mode(17)
+        self.run_cmd_do_set_mode(17)
+
+        self.GuidedNoGPS_assert_achieve_throttle_and_yaw_rate(20, 10, target_sysid=target_sysid, target_compid=target_compid)
+        self.GuidedNoGPS_assert_achieve_throttle_and_yaw_rate(20, -10, target_sysid=target_sysid, target_compid=target_compid)
+
+        self.disarm_vehicle()
+
+    def GuidedNoGPS_assert_achieve_throttle_and_yaw_rate(self,
+                                                         desthrottle,
+                                                         des_yaw_rate,
+                                                         maintain=100,
+                                                         target_sysid=1,
+                                                         target_compid=1):
+        '''use set_attitude_target to achieve desired throttle and yaw rate -
+        yaw rate in degrees/second, throttle as a percentage'''
+
+        tstart = self.get_sim_time()
+        throttle_ok = False
+        turn_rate_ok = False
+        pass_start = 0
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > maintain+100:
+                raise AutoTestTimeoutException("Didn't get to throttle/yawrate")
+            self.mav.mav.set_attitude_target_send(
+                0, # time_boot_ms
+                target_sysid,
+                target_compid,
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE,
+                mavextra.euler_to_quat([0,
+                                        math.radians(0),
+                                        math.radians(0)]), # att
+                0, # roll rate (rad/s)
+                0, # pitch rate
+                math.radians(des_yaw_rate), # yaw rate
+                desthrottle * 0.01) # thrust
+
+            m = self.assert_receive_message('VFR_HUD')
+            got_throttle = m.throttle
+            if got_throttle == desthrottle:
+                throttle_ok = True
+
+            m = self.assert_receive_message('ATTITUDE')
+            got_yaw_rate = math.degrees(m.yawspeed)
+            if abs(got_yaw_rate - des_yaw_rate) < 1:
+                turn_rate_ok = True
+
+            if pass_start is None:
+                tdelta = None
+            else:
+                tdelta = self.get_sim_time_cached() - pass_start
+
+            self.progress("want_yaw_rate=%0.2f got_yaw_rate=%0.2f want_throttle=%u got_throttle=%u time=%s/%f" %
+                          (des_yaw_rate, got_yaw_rate, desthrottle, got_throttle, tdelta, maintain))
+
+            if throttle_ok and turn_rate_ok:
+                if tdelta is None:
+                    pass_start = self.get_sim_time_cached()
+                    continue
+                if tdelta > maintain:
+                    break
+            else:
+                pass_start = None
+
+        self.progress("Achieved yaw rate / throttle")
+
     def EStopAtBoot(self):
         self.context_push()
         self.set_parameters({
@@ -6177,6 +6264,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ("EndMissionBehavior",
              "Test end mission behavior",
              self.test_end_mission_behavior),
+
+            ("GuidedNoGPS",
+             "Test GuidedNoGPS mode",
+             self.GuidedNoGPS),
 
             ("FlashStorage",
              "Test flash storage (for parameters etc)",
