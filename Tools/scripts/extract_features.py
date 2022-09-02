@@ -233,6 +233,7 @@ class ExtractFeatures(object):
 
         symbols = self.extract_symbols_from_elf(filename)
 
+        remaining_build_options_defines = build_options_defines
         for (feature_define, symbol) in self.features:
             some_dict = symbols.dict_for_symbol(symbol)
             # look for symbols without arguments
@@ -253,6 +254,9 @@ class ExtractFeatures(object):
                 if some_define not in build_options_defines:
                     continue
                 print(some_define)
+                remaining_build_options_defines.discard(some_define)
+        for remaining in sorted(remaining_build_options_defines):
+            print("!" + remaining)
 
 
 if __name__ == '__main__':
