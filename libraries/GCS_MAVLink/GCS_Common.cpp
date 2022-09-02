@@ -3889,6 +3889,13 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP::opendroneid().handle_msg(chan, msg);
         break;
 #endif
+
+#if AP_SIGNED_FIRMWARE
+    case MAVLINK_MSG_ID_SECURE_COMMAND:
+    case MAVLINK_MSG_ID_SECURE_COMMAND_REPLY:
+        AP_CheckFirmware::handle_msg(chan, msg);
+        break;
+#endif
     }
 
 }
