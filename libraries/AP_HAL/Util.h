@@ -107,6 +107,7 @@ public:
         NO_CHANGE=1,
         FAIL=2,
         NOT_AVAILABLE=3,
+        NOT_SIGNED=4,
     };
 
     // overwrite bootloader (probably with one from ROMFS)
