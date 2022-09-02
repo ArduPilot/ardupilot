@@ -886,6 +886,25 @@ class AutoTestQuadPlane(AutoTest):
         self.change_mode('AUTO')
         self.wait_disarmed(timeout=300)
 
+    def Ship(self):
+        self.context_push()
+        self.set_parameters({
+            'SIM_SHIP_ENABLE': 1,
+            'SIM_SHIP_SPEED': 1,  # the default of 3 will break this test
+        })
+        self.change_mode('QLOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        # self.delay_sim_time(1)
+        # self.send_debug_trap()
+        # output here is a bit weird as we also receive altitude from
+        # the simulated ship....
+        self.wait_altitude(20, 30, relative=True)
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def MidAirDisarmDisallowed(self):
         self.start_subtest("Basic arm in qloiter")
         self.set_parameter("FLIGHT_OPTIONS", 0)
@@ -1000,6 +1019,10 @@ class AutoTestQuadPlane(AutoTest):
             ("BootInAUTO",
              "Test behaviour when booting in auto",
              self.BootInAUTO),
+
+            ("Ship",
+             "Ensure we can take off from simulated ship",
+             self.Ship),
 
             ("LogUpload",
              "Log upload",
