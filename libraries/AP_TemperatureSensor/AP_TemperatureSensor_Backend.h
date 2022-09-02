@@ -18,8 +18,12 @@
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
 #include <AP_HAL/Semaphores.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 
 class AP_TemperatureSensor_Backend
+#if HAL_WITH_ESC_TELEM
+ : public AP_ESC_Telem_Backend
+#endif
 {
 public:
     // constructor. This incorporates initialisation as well.
@@ -43,6 +47,7 @@ public:
 protected:
 
     void set_temperature(const float temperature);
+    void update_external_libraries(const float temperature);
 
     AP_TemperatureSensor                            &_front;    // reference to front-end
     AP_TemperatureSensor::TemperatureSensor_State   &_state;    // reference to this instance's state (held in the front-end)

@@ -29,4 +29,6 @@ public:
     AP_Int8 bus;                    // I2C bus number
     AP_Int8 bus_address;            // I2C address
     
+    AP_Int8 source;                 // AP_TemperatureSensor::Source, library mapping
+    AP_Int32 source_id;             // library instance mapping
 };

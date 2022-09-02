@@ -19,6 +19,7 @@
 #include "AP_TemperatureSensor_Backend.h"
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 /*
     base class constructor.
@@ -56,6 +57,43 @@ void AP_TemperatureSensor_Backend::set_temperature(const float temperature)
         _state.temperature = temperature;
         _state.last_time_ms = AP_HAL::millis();
     }
+
+    update_external_libraries(temperature);
+}
+
+void AP_TemperatureSensor_Backend::update_external_libraries(const float temperature)
+{
+#if HAL_WITH_ESC_TELEM
+    AP_ESC_Telem_Backend::TelemetryData t;
+#endif
+
+    switch ((AP_TemperatureSensor::Source)_params.source.get()) {
+#if HAL_WITH_ESC_TELEM
+        case AP_TemperatureSensor::Source::ESC:
+            t.temperature_cdeg = temperature * 100;
+            update_telem_data(_params.source_id-1, t, AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL);
+            break;
+
+        case AP_TemperatureSensor::Source::Motor:
+            t.motor_temp_cdeg = temperature * 100;
+            update_telem_data(_params.source_id-1, t, AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL);
+            break;
+#endif
+
+#if !defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_BATTERY)
+        case AP_TemperatureSensor::Source::Battery_Index:
+            AP::battery().set_temperature(temperature, _params.source_id-1);
+            break;
+        case AP_TemperatureSensor::Source::Battery_ID_SerialNumber:
+            AP::battery().set_temperature_by_serial_number(temperature, _params.source_id);
+            break;
+#endif
+
+        case AP_TemperatureSensor::Source::None:
+        default:
+            break;
+    }
+
 }
 
 #endif // AP_TEMPERATURE_SENSOR_ENABLED

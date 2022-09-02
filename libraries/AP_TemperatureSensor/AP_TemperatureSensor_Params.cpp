@@ -63,6 +63,18 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("ADDR", 3, AP_TemperatureSensor_Params, bus_address, AP_TEMPERATURE_SENSOR_I2C_ADDR_DEFAULT),
 
+    // @Param: SRC
+    // @DisplayName: Sensor Source
+    // @Description: Sensor Source is used to match up the source of the temperature data and populate the appropriate system-component. If 0 (None) then the data is only available via log.
+    // @Values: 0: None, 1:ESC, 2:Motor, 3:Battery Index, 4:Battery ID/SerialNumber
+    // @User: Standard
+    AP_GROUPINFO("SRC", 4, AP_TemperatureSensor_Params, source, AP_TEMPERATURE_SENSOR_SOURCE_DEFAULT),
+
+    // @Param: SRC_ID
+    // @DisplayName: Sensor Source Identification
+    // @Description: Sensor Source Identification is used to populate a specific instance of a system component. Examples: TEMP_SRC = 1 (ESC), TEMP_SRC_INDEX = 1 will set the temp of ESC1. TEMP_SRC = 3 (BatteryIndex),TEMP_SRC_INDEX=2 will set the temp of BATT2. TEMP_SRC = 4 (BatteryId?SerialNum),TEMP_SRC_INDEX=42 will set the temp of all batteries that have param BATTn_SERIAL = 42.
+    AP_GROUPINFO("SRC_ID", 5, AP_TemperatureSensor_Params, source_id, AP_TEMPERATURE_SENSOR_SOURCE_ID_DEFAULT),
+
     AP_GROUPEND
 };
 
