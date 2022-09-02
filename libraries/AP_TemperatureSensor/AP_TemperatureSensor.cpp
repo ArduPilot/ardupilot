@@ -188,6 +188,16 @@ bool AP_TemperatureSensor::healthy(const uint8_t instance) const
     return instance < _num_instances && drivers[instance] != nullptr && drivers[instance]->healthy();
 }
 
+AP_TemperatureSensor::Source AP_TemperatureSensor::get_source(const uint8_t instance) const
+{
+    return healthy(instance) ? (AP_TemperatureSensor::Source)_params[instance].source.get() : AP_TemperatureSensor::Source::None;
+}
+
+int32_t AP_TemperatureSensor::get_source_id(const uint8_t instance) const
+{
+    return healthy(instance) ? _params[instance].source_id.get() : 0;
+}
+
 namespace AP {
 AP_TemperatureSensor &temperature_sensor() {
     return *AP_TemperatureSensor::get_singleton();
