@@ -236,13 +236,16 @@ class ExtractFeatures(object):
 
         return ret
 
-    def run(self):
+    def create_string(self):
+
+        ret = ""
 
         build_options_defines = set([x.define for x in build_options.BUILD_OPTIONS])
 
-        symbols = self.extract_symbols_from_elf(filename)
+        symbols = self.extract_symbols_from_elf(self.filename)
 
         remaining_build_options_defines = build_options_defines
+        compiled_in_feature_defines = []
         for (feature_define, symbol) in self.features:
             some_dict = symbols.dict_for_symbol(symbol)
             # look for symbols without arguments
@@ -262,10 +265,18 @@ class ExtractFeatures(object):
                 some_define = feature_define.format(**d)
                 if some_define not in build_options_defines:
                     continue
-                print(some_define)
+                compiled_in_feature_defines.append(some_define)
                 remaining_build_options_defines.discard(some_define)
+
+        for compiled_in_feature_define in sorted(compiled_in_feature_defines):
+            ret += compiled_in_feature_define + "\n"
         for remaining in sorted(remaining_build_options_defines):
-            print("!" + remaining)
+            ret += "!" + remaining + "\n"
+
+        return ret
+
+    def run(self):
+        print(self.create_string())
 
 
 if __name__ == '__main__':
