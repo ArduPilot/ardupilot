@@ -14,6 +14,7 @@
 #include <AP_EFI/AP_EFI.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
+#include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include "../AP_Bootloader/app_comms.h"
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include "hwing_esc.h"
@@ -230,6 +231,9 @@ public:
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    AP_TemperatureSensor temperature_sensor;
+#endif
 
 #if defined(HAL_PERIPH_ENABLE_NOTIFY) || defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY)
     void update_rainbow();

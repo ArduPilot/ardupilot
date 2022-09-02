@@ -1651,7 +1651,9 @@ void AP_Periph_FW::esc_telem_update()
             pkt.current = nan;
         }
         int16_t temperature;
-        if (esc_telem.get_temperature(i, temperature)) {
+        if (esc_telem.get_motor_temperature(i, temperature)) {
+            pkt.temperature = C_TO_KELVIN(temperature*0.01);
+        } else if (esc_telem.get_temperature(i, temperature)) {
             pkt.temperature = C_TO_KELVIN(temperature*0.01);
         } else {
             pkt.temperature = nan;

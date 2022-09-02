@@ -396,6 +396,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
 #endif
 #endif
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // @Group: TEMP
+    // @Path: ../libraries/AP_TemperatureSensor/AP_TemperatureSensor.cpp
+    GOBJECT(temperature_sensor,         "TEMP",     AP_TemperatureSensor),
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_MSP
     // @Param: MSP_PORT
     // @DisplayName: MSP Serial Port
