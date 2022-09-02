@@ -1349,6 +1349,11 @@ static void process1HzTasks(uint64_t timestamp_usec)
         case AP_HAL::Util::FlashBootloader::NO_CHANGE:
             can_printf("Bootloader unchanged\n");
             break;
+#if AP_SIGNED_FIRMWARE
+        case AP_HAL::Util::FlashBootloader::NOT_SIGNED:
+            can_printf("Bootloader not signed\n");
+            break;
+#endif
         default:
             can_printf("Flash bootloader FAILED\n");
             break;
