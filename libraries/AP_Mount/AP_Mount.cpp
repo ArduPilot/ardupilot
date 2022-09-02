@@ -11,6 +11,7 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 #include "AP_Mount_Gremsy.h"
+#include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
 
@@ -500,11 +501,88 @@ void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg
 // perform any required parameter conversion
 void AP_Mount::convert_params()
 {
-    // convert JSTICK_SPD to RC_RATE
-    if (!_params[0].rc_rate_max.configured()) {
-        int8_t jstick_spd = 0;
-        if (AP_Param::get_param_by_index(this, 16, AP_PARAM_INT8, &jstick_spd) && (jstick_spd > 0)) {
-            _params[0].rc_rate_max.set_and_save(jstick_spd * 0.3);
+    // exit immediately if MNT1_TYPE has already been configured
+    if (_params[0].type.configured()) {
+        return;
+    }
+
+    // below conversions added Sep 2022 ahead of 4.3 release
+
+    // convert MNT_TYPE to MNT1_TYPE
+    int8_t mnt_type = 0;
+    IGNORE_RETURN(AP_Param::get_param_by_index(this, 19, AP_PARAM_INT8, &mnt_type));
+    if (mnt_type > 0) {
+        int8_t stab_roll = 0;
+        int8_t stab_pitch = 0;
+        IGNORE_RETURN(AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &stab_roll));
+        IGNORE_RETURN(AP_Param::get_param_by_index(this, 5, AP_PARAM_INT8, &stab_pitch));
+        if (mnt_type == 1 && stab_roll == 0 && stab_pitch == 0)  {
+            // Servo type without stabilization is changed to BrushlessPWM
+            mnt_type = (int8_t)Mount_Type_BrushlessPWM;
+        }
+    }
+    _params[0].type.set_and_save(mnt_type);
+
+    // convert MNT_JSTICK_SPD to MNT1_RC_RATE
+    int8_t jstick_spd = 0;
+    if (AP_Param::get_param_by_index(this, 16, AP_PARAM_INT8, &jstick_spd) && (jstick_spd > 0)) {
+        _params[0].rc_rate_max.set_and_save(jstick_spd * 0.3);
+    }
+
+    // find Mount's top level key
+    uint16_t k_param_mount_key;
+    if (!AP_Param::find_top_level_key_by_pointer(this, k_param_mount_key)) {
+        return;
+    }
+
+    // table of mount parameters to be converted without scaling
+    static const AP_Param::ConversionInfo mnt_param_conversion_info[] {
+        { k_param_mount_key, 0, AP_PARAM_INT8, "MNT1_DEFLT_MODE" },
+        { k_param_mount_key, 1, AP_PARAM_VECTOR3F, "MNT1_RETRACT" },
+        { k_param_mount_key, 2, AP_PARAM_VECTOR3F, "MNT1_NEUTRAL" },
+        { k_param_mount_key, 17, AP_PARAM_FLOAT, "MNT1_LEAD_RLL" },
+        { k_param_mount_key, 18, AP_PARAM_FLOAT, "MNT1_LEAD_PTCH" },
+    };
+    uint8_t table_size = ARRAY_SIZE(mnt_param_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&mnt_param_conversion_info[i], 1.0f);
+    }
+
+    // mount parameters conversion from centi-degrees to degrees
+    static const AP_Param::ConversionInfo mnt_param_deg_conversion_info[] {
+        { k_param_mount_key, 8, AP_PARAM_INT16, "MNT1_ROLL_MIN" },
+        { k_param_mount_key, 9, AP_PARAM_INT16, "MNT1_ROLL_MAX" },
+        { k_param_mount_key, 11, AP_PARAM_INT16, "MNT1_PITCH_MIN" },
+        { k_param_mount_key, 12, AP_PARAM_INT16, "MNT1_PITCH_MAX" },
+        { k_param_mount_key, 14, AP_PARAM_INT16, "MNT1_YAW_MIN" },
+        { k_param_mount_key, 15, AP_PARAM_INT16, "MNT1_YAW_MAX" },
+    };
+    table_size = ARRAY_SIZE(mnt_param_deg_conversion_info);
+    for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&mnt_param_deg_conversion_info[i], 0.01f);
+    }
+
+    // struct and array holding mapping between old param table index and new RCx_OPTION value
+    struct MountRCConversionTable {
+        uint8_t old_rcin_idx;
+        uint16_t new_rc_option;
+    };
+    const struct MountRCConversionTable mnt_rc_conversion_table[] = {
+        {7, 212},   // MTN_RC_IN_ROLL to RCx_OPTION = 212 (MOUNT1_ROLL)
+        {10, 213},  // MTN_RC_IN_TILT to RCx_OPTION = 213 (MOUNT1_PITCH)
+        {13, 214},  // MTN_RC_IN_PAN to RCx_OPTION = 214 (MOUNT1_YAW)
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(mnt_rc_conversion_table); i++) {
+        int8_t mnt_rcin = 0;
+        if (AP_Param::get_param_by_index(this, mnt_rc_conversion_table[i].old_rcin_idx, AP_PARAM_INT8, &mnt_rcin) && (mnt_rcin > 0)) {
+            // get pointers to the appropriate RCx_OPTION parameter
+            char pname[17];
+            enum ap_var_type ptype;
+            snprintf(pname, sizeof(pname), "RC%u_OPTION", (unsigned)mnt_rcin);
+            AP_Int16 *rcx_option = (AP_Int16 *)AP_Param::find(pname, &ptype);
+            if ((rcx_option != nullptr) && !rcx_option->configured()) {
+                rcx_option->set_and_save(mnt_rc_conversion_table[i].new_rc_option);
+            }
         }
     }
 }
