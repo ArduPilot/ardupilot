@@ -45,6 +45,10 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if AP_SIGNED_FIRMWARE && !defined(HAL_BOOTLOADER_BUILD)
+#include <AP_CheckFirmware/AP_CheckFirmware.h>
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
@@ -268,6 +272,18 @@ Util::FlashBootloader Util::flash_bootloader()
         Debug("failed to find %s\n", fw_name);
         return FlashBootloader::NOT_AVAILABLE;
     }
+
+#if AP_SIGNED_FIRMWARE
+    if (!AP_CheckFirmware::check_signed_bootloader(fw, fw_size)) {
+        // don't allow flashing of an unsigned bootloader in a secure
+        // setup. This prevents the easy mistake of leaving an
+        // unsigned bootloader in ROMFS, which would give a trivail
+        // way to bypass signing
+        AP_ROMFS::free(fw);
+        return FlashBootloader::NOT_SIGNED;
+    }
+#endif
+
     // make sure size is multiple of 32
     fw_size = (fw_size + 31U) & ~31U;
 
