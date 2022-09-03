@@ -320,7 +320,7 @@ function update_slew_gain()
       local ax_stage = string.sub(slew_parm, -1)
       adjust_gain(slew_parm, P:get()+slew_delta)
       slew_steps = slew_steps - 1
-      logger.write('QUIK','SRate,Gain,Param', 'ffn', get_slew_rate(axis), P:get(), axis .. ax_stage)
+      logger:write('QUIK','SRate,Gain,Param', 'ffn', get_slew_rate(axis), P:get(), axis .. ax_stage)
       if slew_steps == 0 then
          gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f", slew_parm, P:get()))
          slew_parm = nil
@@ -459,7 +459,7 @@ function update()
          adjust_gain(P_name, new_P)
       end
       setup_slew_gain(pname, new_gain)
-      logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
+      logger:write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
       gcs:send_text(6, string.format("Tuning: %s done", pname))
       advance_stage(axis)
       last_stage_change = get_time()
@@ -469,7 +469,7 @@ function update()
          new_gain = 0.001
       end
       adjust_gain(pname, new_gain)
-      logger.write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
+      logger:write('QUIK','SRate,Gain,Param', 'ffn', srate, P:get(), axis .. stage)
       if get_time() - last_gain_report > 3 then
          last_gain_report = get_time()
          gcs:send_text(MAV_SEVERITY_INFO, string.format("%s %.4f sr:%.2f", pname, new_gain, srate))

@@ -2,8 +2,8 @@
 
 -- Load CAN driver1. The first will attach to a protocol of 10, the 2nd to a protocol of 12
 -- this allows the script to distinguish packets on two CAN interfaces
-local driver1 = CAN.get_device(5)
-local driver2 = CAN.get_device2(5)
+local driver1 = CAN:get_device(5)
+local driver2 = CAN:get_device2(5)
 
 if not driver1 and not driver2 then
    gcs:send_text(0,"No scripting CAN interfaces found")
