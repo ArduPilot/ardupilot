@@ -343,6 +343,21 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "signing" ]; then
+        echo "Building signed firmwares"
+        sudo apt-get update
+        sudo apt-get install -y python3-dev
+        python3 -m pip install pymonocypher
+        ./Tools/scripts/signing/generate_keys.py testkey
+        $waf configure --board CubeOrange-ODID --signed-fw --private-key testkey_private_key.dat
+        $waf copter
+        $waf configure --board MatekL431-DShot --signed-fw --private-key testkey_private_key.dat
+        $waf AP_Periph
+        ./Tools/scripts/build_bootloaders.py --signing-key testkey_public_key.dat CubeOrange-ODID
+        ./Tools/scripts/build_bootloaders.py --signing-key testkey_public_key.dat MatekL431-DShot
+        continue
+    fi
+    
     if [ "$t" == "python-cleanliness" ]; then
         echo "Checking Python code cleanliness"
         ./Tools/scripts/run_flake8.py
