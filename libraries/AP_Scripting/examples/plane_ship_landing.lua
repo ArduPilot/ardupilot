@@ -253,7 +253,7 @@ function check_approach_tangent()
       local holdoff_dist = get_holdoff_distance()
       local error1 = math.abs(wrap_180(target_bearing_deg - ground_bearing_deg))
       local error2 = math.abs(wrap_180(ground_bearing_deg - (target_heading + SHIP_LAND_ANGLE:get())))
-      logger.write('SLND','TBrg,GBrg,Dist,HDist,Err1,Err2','ffffff',target_bearing_deg, ground_bearing_deg, distance, holdoff_dist, error1, error2)
+      logger:write('SLND','TBrg,GBrg,Dist,HDist,Err1,Err2','ffffff',target_bearing_deg, ground_bearing_deg, distance, holdoff_dist, error1, error2)
       if (error1 < margin and
           distance < 2.5*holdoff_dist and
           distance > 0.7*holdoff_dist and

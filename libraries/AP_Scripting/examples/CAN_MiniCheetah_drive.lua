@@ -2,7 +2,7 @@
 -- https://os.mbed.com/users/benkatz/code/HKC_MiniCheetah/docs/tip/CAN__com_8cpp_source.html
 
 -- Load CAN driver with a buffer size of 20
-local driver = CAN.get_device(20)
+local driver = CAN:get_device(20)
 
 local target_ID = uint32_t(1)
 
