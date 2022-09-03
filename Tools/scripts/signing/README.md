@@ -32,7 +32,7 @@ accept firmwares signed with one of the public keys in the bootloader.
 To build a secure bootloader run this command:
 
 ```
- Tools/scripts/build_bootloaders.py BOARDNAME --signing-key=NAME_public.key
+ Tools/scripts/build_bootloaders.py BOARDNAME --signing-key=NAME_public_key.dat
 ```
 
 That will update the bootloader in Tools/bootloaders/BOARDNAME_bl.bin
