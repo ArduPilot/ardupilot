@@ -11,31 +11,6 @@
 
 extern const AP_HAL::HAL &hal;
 
-uint8_t AP_CheckFirmware::session_key[8];
-
-/*
-  make a session key
- */
-static void make_session_key(uint8_t key[8])
-{
-    struct {
-        uint32_t time_us;
-        uint8_t unique_id[12];
-        uint16_t rand1;
-        uint16_t rand2;
-    } data {};
-    static_assert(sizeof(data) % 4 == 0, "data must be multiple of 4 bytes");
-
-    // get data which will not apply on a different board, and includes some randomness
-    uint8_t uid_len = 12;
-    hal.util->get_system_id_unformatted(data.unique_id, uid_len);
-    data.time_us = AP_HAL::micros();
-    data.rand1 = get_random16();
-    data.rand2 = get_random16();
-    const uint64_t c64 = crc_crc64((const uint32_t *)&data, sizeof(data)/sizeof(uint32_t));
-    memcpy(key, (uint8_t *)&c64, 8);
-}
-
 /*
   find public keys in bootloader, or return NULL if signature not found
 
@@ -53,6 +28,24 @@ const struct ap_secure_data *AP_CheckFirmware::find_public_keys(void)
     return nullptr;
 #endif
 }
+
+/*
+  return true if all keys are zeros
+ */
+bool AP_CheckFirmware::all_zero_keys(const struct ap_secure_data *sec_data)
+{
+    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
+    /*
+      look over all public keys, if one matches then we are OK
+     */
+    for (const auto &public_key : sec_data->public_key) {
+        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 /*
@@ -134,6 +127,33 @@ AP_CheckFirmware::bl_data *AP_CheckFirmware::read_bootloader(void)
 #endif
 }
 
+#if HAL_GCS_ENABLED
+uint8_t AP_CheckFirmware::session_key[8];
+
+/*
+  make a session key
+ */
+static void make_session_key(uint8_t key[8])
+{
+    struct {
+        uint32_t time_us;
+        uint8_t unique_id[12];
+        uint16_t rand1;
+        uint16_t rand2;
+    } data {};
+    static_assert(sizeof(data) % 4 == 0, "data must be multiple of 4 bytes");
+
+    // get data which will not apply on a different board, and includes some randomness
+    uint8_t uid_len = 12;
+    hal.util->get_system_id_unformatted(data.unique_id, uid_len);
+    data.time_us = AP_HAL::micros();
+    data.rand1 = get_random16();
+    data.rand2 = get_random16();
+    const uint64_t c64 = crc_crc64((const uint32_t *)&data, sizeof(data)/sizeof(uint32_t));
+    memcpy(key, (uint8_t *)&c64, 8);
+}
+
+
 /*
   write bootloader from memory
  */
@@ -161,23 +181,6 @@ bool AP_CheckFirmware::write_bootloader(const struct bl_data *bld)
 #else
     return false;
 #endif
-}
-
-/*
-  return true if all keys are zeros
- */
-bool AP_CheckFirmware::all_zero_keys(const struct ap_secure_data *sec_data)
-{
-    const uint8_t zero_key[AP_PUBLIC_KEY_LEN] {};
-    /*
-      look over all public keys, if one matches then we are OK
-     */
-    for (const auto &public_key : sec_data->public_key) {
-        if (memcmp(public_key.key, zero_key, AP_PUBLIC_KEY_LEN) != 0) {
-            return false;
-        }
-    }
-    return true;
 }
 
 /*
@@ -393,6 +396,8 @@ void AP_CheckFirmware::handle_msg(mavlink_channel_t chan, const mavlink_message_
     }
     }
 }
+
+#endif // HAL_GCS_ENABLED
 
 /*
   check that a bootloader is OK to flash. We don't want to allow
