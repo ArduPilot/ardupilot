@@ -63,6 +63,14 @@ then load that secure firmware as usual with your ground station, for
 example using load custom firmware in MissionPlanner or
 Tools/scripts/uploader.py on Linux.
 
+Alternatively you can set the private key in the configure step, which
+allows for build and upload in one step for faster development:
+
+```
+ ./waf configure --board BOARDNAME --signed-fw --private-key NAME_private_key.dat
+ ./waf copter --upload
+```
+
 ## Flashing the secure bootloader
 
 There are two methods of getting the secure bootloader onto the
@@ -118,3 +126,24 @@ space for the bootloader. This includes all boards based on the
 STM32H7 and STM32F7. You can use secure boot on older other boards if
 you change the hwdef.dat and hwdef-bl.dat to add more space for the
 bootloader.
+
+## Public key update over MAVLink
+
+If you have a private key corresponding to one of the public keys in
+the bootloader on a board then you can use the MAVLink2 SECURE_COMMAND
+messages to change the public keys, or even remove all public keys to
+allow the use of unsigned firmwares.
+
+MAVProxy version 1.8.55 and later has a "securecommand" module which
+gives you commands for:
+
+ - generating a session key for remote update
+ - fetching the current public keys
+ - setting new public keys as additonal or replacement keys
+ - removing all public keys
+
+It is expected that future versions of MissionPlanner will include a
+plugin with the same functionality.
+
+Using SECURE_COMMAND in combination with MAVLink forwarding you can
+hand over management of a vehicle between vendors.
