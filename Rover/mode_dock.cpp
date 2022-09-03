@@ -227,6 +227,9 @@ float ModeDock::apply_slowdown(float desired_speed)
     
     desired_speed = MAX(dock_speed_slowdown_lmt, fabsf(desired_speed) * (1 - error_ratio * slowdown_weight));
 
+    // restrict speed to avoid going beyond stopping distance
+    desired_speed = MIN(desired_speed, safe_sqrt(2 * fabsf(_distance_to_destination - stopping_dist) * g2.pos_control.get_accel_max()));
+
     // we worked on absolute value of speed before
     // make it negative again if reversed
     if (g2.pos_control.get_reversed()) {
