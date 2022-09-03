@@ -176,6 +176,7 @@ AP_HW_MAMBAH743_V4                   1073
 AP_HW_REAPERF745_V2                  1074
 AP_HW_SKYSTARSH7HD                   1075
 AP_HW_PixSurveyA1                    1076
+AP_HW_AEROFOX_AIRSPEED                    1077
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
