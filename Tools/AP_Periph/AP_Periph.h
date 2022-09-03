@@ -52,9 +52,9 @@ void stm32_watchdog_init();
 void stm32_watchdog_pat();
 #endif
 /*
-  app descriptor compatible with MissionPlanner
+  app descriptor for firmware checking
  */
-extern const struct app_descriptor app_descriptor;
+extern const app_descriptor_t app_descriptor;
 
 extern "C" {
 void can_printf(const char *fmt, ...) FMT_PRINTF(1,2);
