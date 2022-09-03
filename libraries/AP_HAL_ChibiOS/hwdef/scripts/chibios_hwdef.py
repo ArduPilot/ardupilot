@@ -1313,7 +1313,6 @@ def write_USB_config(f):
     product_string = get_config("USB_STRING_PRODUCT", default="\"%s\""%default_product)
     if args.bootloader and args.signed_fw:
         product_string = product_string.replace("-BL", "-Secure-BL-v10")
-        print(product_string)
     f.write('#define HAL_USB_STRING_PRODUCT %s\n' % product_string)
     
     f.write('#define HAL_USB_STRING_SERIAL %s\n' % get_config("USB_STRING_SERIAL", default="\"%SERIAL%\""))
