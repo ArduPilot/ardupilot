@@ -7766,6 +7766,7 @@ class AutoTestCopter(AutoTest):
 28 100
 29 200
 """)
+                f.close()
 
             # other tests may have explicitly set rates, so wipe parameters:
             def custom_stream_rate_setter():
