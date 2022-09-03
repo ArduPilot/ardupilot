@@ -180,6 +180,11 @@ def options(opt):
         default=False,
         help='Configure for signed firmware support.')
 
+    g.add_option('--private-key',
+                 action='store',
+                 default=None,
+            help='path to private key for signing firmware.')
+    
     g.add_option('--no-autoconfig',
         dest='autoconfig',
         action='store_false',

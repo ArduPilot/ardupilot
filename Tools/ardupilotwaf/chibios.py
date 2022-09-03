@@ -13,6 +13,7 @@ import sys
 import re
 import pickle
 import struct
+import base64
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -229,6 +230,29 @@ def to_unsigned(i):
         i += 2**32
     return i
 
+def sign_firmware(image, private_keyfile):
+    '''sign firmware with private key'''
+    try:
+        import monocypher
+    except ImportError:
+        Logs.error("Please install monocypher with: python3 -m pip install pymonocypher")
+        return None
+    try:
+        key = open(private_keyfile, 'r').read()
+    except Exception as ex:
+        Logs.error("Failed to open %s" % private_keyfile)
+        return None
+    keytype = "PRIVATE_KEYV1:"
+    if not key.startswith(keytype):
+        Logs.error("Bad private key file %s" % private_keyfile)
+        return None
+    key = base64.b64decode(key[len(keytype):])
+    sig = monocypher.signature_sign(key, image)
+    sig_len = len(sig)
+    sig_version = 30437
+    return struct.pack("<IQ64s", sig_len+8, sig_version, sig)
+
+
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
@@ -259,11 +283,21 @@ class set_app_descriptor(Task.Task):
             desc_len = 92
         else:
             desc_len = 16
-        crc1 = to_unsigned(crc32(bytearray(img[:offset])))
-        crc2 = to_unsigned(crc32(bytearray(img[offset+desc_len:])))
+        img1 = bytearray(img[:offset])
+        img2 = bytearray(img[offset+desc_len:])
+        crc1 = to_unsigned(crc32(img1))
+        crc2 = to_unsigned(crc32(img2))
         githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION', self.generator.bld.git_head_hash(short=True)),16))
         if self.generator.bld.env.AP_SIGNED_FIRMWARE:
-            desc = struct.pack('<IIIII72s', crc1, crc2, len(img), githash, 0, bytes(bytearray([0 for i in range(72)])))
+            sig = bytearray([0 for i in range(76)])
+            if self.generator.bld.env.PRIVATE_KEY:
+                sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
+                if sig_signed:
+                    Logs.info("Signed firmware")
+                    sig = sig_signed
+                else:
+                    self.generator.bld.fatal("Signing failed")
+            desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
         else:
             desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
         img = img[:offset] + desc + img[offset+desc_len:]
