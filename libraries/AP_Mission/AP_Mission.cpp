@@ -859,7 +859,7 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
         nan_mask = ~(1 << 3); // param 4 can be nan
         break;
     case MAV_CMD_NAV_VTOL_LAND:
-        nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
+        nan_mask = ~((1 << 2) | (1 << 3) | (1 << 6)); // param 3, 4 and 7 can be nan
         break;
     default:
         nan_mask = 0xff;
@@ -881,6 +881,10 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     if (((nan_mask & (1 << 3)) && isnan(packet.param4)) ||
         isinf(packet.param4)) {
         return MAV_MISSION_INVALID_PARAM4;
+    }
+    if (((nan_mask & (1 << 6)) && isnan(packet.z)) ||
+        isinf(packet.z)) {
+        return MAV_MISSION_INVALID_PARAM7;
     }
     return MAV_MISSION_ACCEPTED;
 }
