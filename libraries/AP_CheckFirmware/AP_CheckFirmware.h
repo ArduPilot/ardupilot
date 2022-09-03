@@ -47,13 +47,16 @@ enum class check_fw_result_t : uint8_t {
  by the bootloader to confirm that the firmware is not corrupt and is
  suitable for this board. The build dependent values in this structure
  are filled in by set_app_descriptor() in the waf build
+
+ Note that we need to define both structures to make it possible to
+ boot a signed firmware using a bootloader setup for unsigned
  */
-struct app_descriptor {
-#if AP_SIGNED_FIRMWARE
-    uint8_t sig[8] = { 0x41, 0xa3, 0xe5, 0xf2, 0x65, 0x69, 0x92, 0x07 };
-#else
-    uint8_t sig[8] = { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 };
-#endif
+
+#define AP_APP_DESCRIPTOR_SIGNATURE_SIGNED   { 0x41, 0xa3, 0xe5, 0xf2, 0x65, 0x69, 0x92, 0x07 }
+#define AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED { 0x40, 0xa2, 0xe4, 0xf1, 0x64, 0x68, 0x91, 0x06 }
+
+struct app_descriptor_unsigned {
+    uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_UNSIGNED;
     // crc1 is the crc32 from firmware start to start of image_crc1
     uint32_t image_crc1 = 0;
     // crc2 is the crc32 from the start of version_major to the end of the firmware
@@ -62,11 +65,6 @@ struct app_descriptor {
     uint32_t image_size = 0;
     uint32_t git_hash = 0;
 
-#if AP_SIGNED_FIRMWARE
-    // firmware signature
-    uint32_t signature_length = 0;
-    uint8_t signature[72] = {};
-#endif
     // software version number
     uint8_t  version_major = APP_FW_MAJOR;
     uint8_t version_minor = APP_FW_MINOR;
@@ -74,16 +72,42 @@ struct app_descriptor {
     // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
     uint16_t  board_id = APJ_BOARD_ID;
     uint8_t reserved[8] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+};
 
+struct app_descriptor_signed {
+    uint8_t sig[8] = AP_APP_DESCRIPTOR_SIGNATURE_SIGNED;
+    // crc1 is the crc32 from firmware start to start of image_crc1
+    uint32_t image_crc1 = 0;
+    // crc2 is the crc32 from the start of version_major to the end of the firmware
+    uint32_t image_crc2 = 0;
+    // total size of firmware image in bytes
+    uint32_t image_size = 0;
+    uint32_t git_hash = 0;
+
+    // firmware signature
+    uint32_t signature_length = 0;
+    uint8_t signature[72] = {};
+
+    // software version number
+    uint8_t  version_major = APP_FW_MAJOR;
+    uint8_t version_minor = APP_FW_MINOR;
+    // APJ_BOARD_ID (hardware version). This is also used in CAN NodeInfo
+    // with high byte in HardwareVersion.major and low byte in HardwareVersion.minor
+    uint16_t  board_id = APJ_BOARD_ID;
+    uint8_t reserved[8] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 };
 
 #if AP_SIGNED_FIRMWARE
-#define APP_DESCRIPTOR_TOTAL_LENGTH (36+72+4)
+typedef struct app_descriptor_signed app_descriptor_t;
 #else
-#define APP_DESCRIPTOR_TOTAL_LENGTH 36
+typedef struct app_descriptor_unsigned app_descriptor_t;
 #endif
 
-static_assert(sizeof(app_descriptor) == APP_DESCRIPTOR_TOTAL_LENGTH, "app_descriptor incorrect length");
+#define APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH 36
+#define APP_DESCRIPTOR_SIGNED_TOTAL_LENGTH (APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH+72+4)
+
+static_assert(sizeof(app_descriptor_unsigned) == APP_DESCRIPTOR_UNSIGNED_TOTAL_LENGTH, "app_descriptor_unsigned incorrect length");
+static_assert(sizeof(app_descriptor_signed) == APP_DESCRIPTOR_SIGNED_TOTAL_LENGTH, "app_descriptor_signed incorrect length");
 
 #if AP_SIGNED_FIRMWARE
 
@@ -104,13 +128,14 @@ check_fw_result_t check_good_firmware(void);
 #else
 void check_firmware_print(void);
 
-#ifdef HAL_GCS_ENABLED
 class AP_CheckFirmware {
 public:
+#if HAL_GCS_ENABLED
     // handle a message from the GCS. This is static as we don't have an AP_CheckFirmware object
     static void handle_msg(mavlink_channel_t chan, const mavlink_message_t &msg);
     static void handle_secure_command(mavlink_channel_t chan, const mavlink_secure_command_t &pkt);
     static bool check_signature(const mavlink_secure_command_t &pkt);
+#endif
     static const struct ap_secure_data *find_public_keys(void);
 
     /*
@@ -138,9 +163,10 @@ public:
     static bool check_signed_bootloader(const uint8_t *fw, uint32_t fw_size);
 
 private:
+#if HAL_GCS_ENABLED
     static uint8_t session_key[8];
-};
 #endif
+};
 
 #endif // HAL_BOOTLOADER_BUILD
 
