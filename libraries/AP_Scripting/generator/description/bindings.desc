@@ -550,6 +550,43 @@ singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_ch
 singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
 singleton AP_Mount method get_attitude_euler boolean uint8_t 0 UINT8_MAX float'Null float'Null float'Null
 
+-- ----EFI Library----
+include AP_EFI/AP_EFI_Scripting.h
+include AP_EFI/AP_EFI_State.h
+
+userdata Cylinder_Status depends (AP_EFI_SCRIPTING_ENABLED == 1)
+userdata Cylinder_Status field ignition_timing_deg float'skip_check write
+userdata Cylinder_Status field injection_time_ms float'skip_check write
+userdata Cylinder_Status field cylinder_head_temperature float'skip_check write
+userdata Cylinder_Status field exhaust_gas_temperature float'skip_check write
+userdata Cylinder_Status field lambda_coefficient float'skip_check write
+
+userdata EFI_State depends (AP_EFI_SCRIPTING_ENABLED == 1)
+userdata EFI_State field last_updated_ms uint32_t'skip_check write
+userdata EFI_State field general_error boolean write
+userdata EFI_State field engine_load_percent uint8_t write 0 UINT8_MAX
+userdata EFI_State field engine_speed_rpm uint32_t'skip_check write
+userdata EFI_State field spark_dwell_time_ms float'skip_check write
+userdata EFI_State field atmospheric_pressure_kpa float'skip_check write
+userdata EFI_State field intake_manifold_pressure_kpa float'skip_check write
+userdata EFI_State field intake_manifold_temperature float'skip_check write
+userdata EFI_State field coolant_temperature float'skip_check write
+userdata EFI_State field oil_pressure float'skip_check write
+userdata EFI_State field oil_temperature float'skip_check write
+userdata EFI_State field fuel_pressure float'skip_check write
+userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check write
+userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check write
+userdata EFI_State field throttle_position_percent uint8_t write 0 UINT8_MAX
+userdata EFI_State field ecu_index uint8_t write 0 UINT8_MAX
+userdata EFI_State field cylinder_status Cylinder_Status'skip_check write
+
+include AP_EFI/AP_EFI.h
+singleton AP_EFI depends AP_EFI_SCRIPTING_ENABLED == 1
+singleton AP_EFI rename efi
+singleton AP_EFI method handle_scripting void EFI_State
+
+-- ----END EFI Library----
+
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write
 
