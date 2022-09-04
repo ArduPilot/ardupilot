@@ -143,9 +143,6 @@ public:
     // set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
     void set_enable_bailout(bool bailout) { _heliflags.enable_bailout = bailout; }
 
-    // return true if the servo test is still running/pending
-    bool servo_test_running() const { return _heliflags.servo_test_running; }
-
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
 
@@ -156,6 +153,9 @@ public:
 
     // use leaking integrator management scheme
     bool using_leaky_integrator() const { return heli_option(HeliOption::USE_LEAKY_I); }
+
+    // Run arming checks
+    bool arming_checks(size_t buflen, char *buffer) const override;
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
