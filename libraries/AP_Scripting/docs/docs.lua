@@ -296,7 +296,8 @@ function mavlink_mission_item_int_t_ud:param1(value) end
 local Parameter_ud = {}
 
 ---@return Parameter_ud
-function Parameter() end
+---@param name? string
+function Parameter(name) end
 
 -- desc
 ---@param value number
