@@ -11,6 +11,7 @@
 
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
+#include "AP_Compass_AK8975.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_HMC5843.h"
