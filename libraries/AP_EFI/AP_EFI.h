@@ -79,11 +79,12 @@ public:
     enum class Type : uint8_t {
         NONE       = 0,
         MegaSquirt = 1,
-        NWPMU     = 2,
-        Lutan     = 3,
+        NWPMU      = 2,
+        Lutan      = 3,
         // LOWEHEISER = 4,
         DroneCAN = 5,
         CurrawongECU = 6,
+        SCRIPTING  = 7,
     };
 
     static AP_EFI *get_singleton(void) {
@@ -92,6 +93,11 @@ public:
 
     // send EFI_STATUS
     void send_mavlink_status(mavlink_channel_t chan);
+
+#if AP_SCRIPTING_ENABLED
+    // Ingest EFI_State from scripting driver
+    void handle_scripting(const EFI_State &efi_state);
+#endif
 
 protected:
 
