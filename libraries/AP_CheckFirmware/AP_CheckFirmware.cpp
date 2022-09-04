@@ -14,7 +14,7 @@
 #include <string.h>
 #include "monocypher.h"
 
-const struct ap_secure_data public_keys __attribute__((section(".ecc_raw")));
+const struct ap_secure_data public_keys __attribute__((section(".apsec_data")));
 
 /*
   return true if all public keys are zero. We allow boot of an
