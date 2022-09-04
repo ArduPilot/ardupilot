@@ -44,7 +44,9 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     }
 
     // always check motors
-    if (!motor_checks(display_failure)) {
+    char failure_msg[50] {};
+    if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
+        check_failed(display_failure, "Motors: %s", failure_msg);
         return false;
     }
 
@@ -300,26 +302,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             return false;
         }
     }
-
-    return true;
-}
-
-// check motor setup was successful
-bool AP_Arming_Copter::motor_checks(bool display_failure)
-{
-    // check motors initialised  correctly
-    if (!copter.motors->initialised_ok()) {
-        check_failed(display_failure, "Check firmware or FRAME_CLASS");
-        return false;
-    }
-
-	// servo_test check
-#if FRAME_CONFIG == HELI_FRAME
-    if (copter.motors->servo_test_running()) {
-        check_failed(display_failure, "Servo Test is still running");
-        return false;
-    }
-#endif
 
     return true;
 }
