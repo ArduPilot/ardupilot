@@ -22,6 +22,8 @@
 #include "AP_EFI_NWPMU.h"
 #include "AP_EFI_DroneCAN.h"
 #include "AP_EFI_Currawong_ECU.h"
+#include "AP_EFI_Scripting.h"
+
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -36,7 +38,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -104,6 +106,11 @@ void AP_EFI::init(void)
     case Type::CurrawongECU:
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
         backend = new AP_EFI_Currawong_ECU(*this);
+#endif
+        break;
+    case Type::SCRIPTING:
+#if AP_EFI_SCRIPTING_ENABLED
+        backend = new AP_EFI_Scripting(*this);
 #endif
         break;
     default:
@@ -271,6 +278,19 @@ void AP_EFI::get_state(EFI_State &_state)
     WITH_SEMAPHORE(sem);
     _state = state;
 }
+
+#if AP_EFI_SCRIPTING_ENABLED && AP_SCRIPTING_ENABLED
+
+void AP_EFI::handle_scripting(const EFI_State &efi_state)
+{
+    if (!backend || (Type(type.get()) != Type::SCRIPTING)) {
+        return;
+    }
+
+    backend->handle_scripting(efi_state);
+}
+
+#endif
 
 namespace AP {
 AP_EFI *EFI()
