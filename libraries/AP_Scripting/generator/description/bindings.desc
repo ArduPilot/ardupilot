@@ -326,6 +326,7 @@ singleton AP_Param method add_table boolean uint8_t 0 200 string uint8_t 1 63
 singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string float'skip_check
 
 include AP_Scripting/AP_Scripting_helpers.h
+userdata Parameter creation lua_new_Parameter
 userdata Parameter method init boolean string
 userdata Parameter method init_by_info boolean uint16_t 0 UINT16_MAX uint32_t'skip_check ap_var_type'enum AP_PARAM_INT8 AP_PARAM_FLOAT
 userdata Parameter method get boolean float'Null
