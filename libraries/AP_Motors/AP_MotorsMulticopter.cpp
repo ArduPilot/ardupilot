@@ -799,3 +799,26 @@ void AP_MotorsMulticopter::convert_pwm_min_max_param(int16_t radio_min, int16_t 
     _pwm_min.set_and_save(radio_min);
     _pwm_max.set_and_save(radio_max);
 }
+
+bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
+{
+    // run base class checks
+    if (!AP_Motors::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
+    // Check output function is setup for each motor
+    for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        if (!motor_enabled[i]) {
+            continue;
+        }
+        uint8_t chan;
+        SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(i);
+        if (!SRV_Channels::find_channel(function, chan)) {
+            hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor%u", i + 1);
+            return false;
+        }
+    }
+
+    return true;
+}
