@@ -1,5 +1,5 @@
-Release 1.4.0beta1 27th Aug 2022
---------------------------------
+Release 1.4.0 4th Sep 2022
+--------------------------
 
 This is a major release with a significant number of changes:
 
