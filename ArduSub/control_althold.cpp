@@ -107,14 +107,11 @@ void Sub::control_depth() {
     float target_climb_rate_cm_s = get_pilot_desired_climb_rate(500 + g.pilot_speed_up * earth_frame_rc_inputs.z);
     target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -get_pilot_speed_dn(), g.pilot_speed_up);
     pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
-    // desired_climb_rate returns 0 when within the deadzone.
-    //we allow full control to the pilot, but as soon as there's no input, we handle being at surface/bottom
-    if (fabsf(target_climb_rate_cm_s) < 0.05f)  {
-        if (ap.at_surface) {
-            pos_control.set_pos_target_z_cm(MIN(pos_control.get_pos_target_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
-        } else if (ap.at_bottom) {
-            pos_control.set_pos_target_z_cm(MAX(inertial_nav.get_altitude() + 10.0f, pos_control.get_pos_target_z_cm())); // set target to 10 cm above bottom
-        }
+
+    if (ap.at_surface) {
+        pos_control.set_alt_target_with_slew(MIN(pos_control.get_pos_target_z_cm(), g.surface_depth - 1.0f)); // set target to 1 cm below surface level
+    } else if (ap.at_bottom) {
+        pos_control.set_alt_target_with_slew(MAX(inertial_nav.get_altitude() + 10.0f, pos_control.get_pos_target_z_cm())); // set target to 10 cm above bottom
     }
     pos_control.update_z_controller();
     // Read the output of the z controller and rotate it so it always points up
