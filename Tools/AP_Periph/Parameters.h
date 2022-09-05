@@ -59,6 +59,7 @@ public:
         k_param_efi,
         k_param_efi_port,
         k_param_efi_baudrate,
+        k_param_esc_telem_rate,
     };
 
     AP_Int16 format_version;
@@ -117,6 +118,9 @@ public:
     AP_Int8 esc_pwm_type;
 #if HAL_WITH_ESC_TELEM && !HAL_GCS_ENABLED
     AP_Int8 esc_telem_port;
+#endif
+#if HAL_WITH_ESC_TELEM
+    AP_Int32 esc_telem_rate;
 #endif
 #endif
 
