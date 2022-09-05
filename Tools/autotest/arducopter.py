@@ -8946,6 +8946,7 @@ class AutoTestCopter(AutoTest):
              self.TakeoffAlt,
              self.SplineLastWaypoint,
              self.Gripper,
+             self.TestLocalHomePosition,
              self.TestGripperMission,
              self.VisionPosition,
              self.ATTITUDE_FAST,
