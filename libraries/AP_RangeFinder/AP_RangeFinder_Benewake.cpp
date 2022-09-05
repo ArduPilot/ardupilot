@@ -93,8 +93,12 @@ bool AP_RangeFinder_Benewake::get_reading(float &reading_m)
                 if (checksum == linebuf[BENEWAKE_FRAME_LENGTH-1]) {
                     // calculate distance
                     uint16_t dist = ((uint16_t)linebuf[3] << 8) | linebuf[2];
-                    if (dist >= BENEWAKE_DIST_MAX_CM) {
-                        // this reading is out of range
+                    if (dist >= BENEWAKE_DIST_MAX_CM || dist == uint16_t(model_dist_max_cm())) {
+                        // this reading is out of range. Note that we
+                        // consider getting exactly the model dist max
+                        // is out of range. This fixes an issue with
+                        // the TF03 which can give exactly 18000 cm
+                        // when out of range
                         count_out_of_range++;
                     } else if (!has_signal_byte()) {
                         // no signal byte from TFmini so add distance to sum
