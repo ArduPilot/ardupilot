@@ -742,6 +742,7 @@ struct PACKED log_VER {
 // @Field: U: True if sensor is being used
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
+// @Field: TR: innovation test ratio
 // @Field: Pri: True if sensor is the primary sensor
 
 // @LoggerMessage: CMD
