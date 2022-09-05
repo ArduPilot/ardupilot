@@ -37,8 +37,6 @@ void AP_Periph_FW::rcout_init()
     }
 #endif
 
-    SRV_Channels::init();
-
 #if HAL_PWM_COUNT > 0
     for (uint8_t i=0; i<HAL_PWM_COUNT; i++) {
         servo_channels.set_default_function(i, SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + i));
@@ -58,20 +56,17 @@ void AP_Periph_FW::rcout_init()
         }
     }
 
-    // setup ESCs with the desired PWM type, allowing for DShot
-    const auto esc_type = (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get();
-    hal.rcout->set_output_mode(esc_mask, esc_type);
-
-    if (esc_type >= AP_HAL::RCOutput::MODE_PWM_DSHOT150 &&
-        esc_type <= AP_HAL::RCOutput::MODE_PWM_DSHOT1200) {
-        SRV_Channels::set_digital_outputs(esc_mask, 0);
-    }
-
     // run this once and at 1Hz to configure aux and esc ranges
     rcout_init_1Hz();
 
+    // setup ESCs with the desired PWM type, allowing for DShot
+    SRV_Channels::init(esc_mask, (AP_HAL::RCOutput::output_mode)g.esc_pwm_type.get());
+
     // run DShot at 1kHz
-    hal.rcout->set_dshot_rate(0, 400);
+    hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), 400);
+#if HAL_WITH_ESC_TELEM
+    esc_telem_update_period_ms = 1000 / constrain_int32(g.esc_telem_rate.get(), 1, 1000);
+#endif
 }
 
 void AP_Periph_FW::rcout_init_1Hz()
@@ -142,7 +137,7 @@ void AP_Periph_FW::rcout_update()
     SRV_Channels::push();
 #if HAL_WITH_ESC_TELEM
     uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_esc_telem_update_ms >= 20) {
+    if (now_ms - last_esc_telem_update_ms >= esc_telem_update_period_ms) {
         last_esc_telem_update_ms = now_ms;
         esc_telem_update();
     }
