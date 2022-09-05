@@ -35,6 +35,10 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_ESC_TELEM_PORT_DEFAULT -1
 #endif
 
+#ifndef AP_PERIPH_ESC_TELEM_RATE_DEFAULT
+#define AP_PERIPH_ESC_TELEM_RATE_DEFAULT 50
+#endif
+
 #ifndef AP_PERIPH_BARO_ENABLE_DEFAULT
 #define AP_PERIPH_BARO_ENABLE_DEFAULT 1
 #endif
@@ -368,6 +372,17 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(esc_telem_port, "ESC_TELEM_PORT", AP_PERIPH_ESC_TELEM_PORT_DEFAULT),
+#endif
+
+#if HAL_WITH_ESC_TELEM
+    // @Param: ESC_TELEM_RATE
+    // @DisplayName: ESC Telemetry update rate
+    // @Description: This is the rate at which ESC Telemetry will be sent across the CAN bus
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    GSCALAR(esc_telem_rate, "ESC_TELEM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT),
 #endif
 #endif
 

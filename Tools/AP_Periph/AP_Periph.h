@@ -211,6 +211,7 @@ public:
     AP_ESC_Telem esc_telem;
     uint32_t last_esc_telem_update_ms;
     void esc_telem_update();
+    uint32_t esc_telem_update_period_ms;
 #endif
 
     SRV_Channels servo_channels;
