@@ -2578,13 +2578,21 @@ void GCS_MAVLINK::send_home_position() const
 
     const Location &home = AP::ahrs().get_home();
 
+    // get home position from origin
+    Vector3f home_pos_neu_cm;
+    if (!home.get_vector_from_origin_NEU(home_pos_neu_cm)) {
+        return;
+    }
+
     const float q[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     mavlink_msg_home_position_send(
         chan,
         home.lat,
         home.lng,
         home.alt * 10,
-        0.0f, 0.0f, 0.0f,
+        home_pos_neu_cm.x * 0.01f, // position of home on x-axis in meters
+        home_pos_neu_cm.y * 0.01f, // position of home on y-axis in meters
+        home_pos_neu_cm.z * -0.01f, // position of home on z-axis in meters in NED frame
         q,
         0.0f, 0.0f, 0.0f,
         AP_HAL::micros64());
