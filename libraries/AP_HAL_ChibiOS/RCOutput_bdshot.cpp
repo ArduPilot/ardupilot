@@ -99,7 +99,15 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
             // when switching from output to input
             palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
-                | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_MID1);
+                | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP |
+#ifdef PAL_STM32_OSPEED_MID1
+                PAL_STM32_OSPEED_MID1
+#elif defined(PAL_STM32_OSPEED_MEDIUM)
+                PAL_STM32_OSPEED_MEDIUM
+#else
+#error "Cannot set bdshot line speed"
+#endif
+                );
         }
 
         if (!group.is_chan_enabled(i) || !(_bdshot.mask & (1 << group.chan[i]))) {
@@ -239,7 +247,9 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     dmaStreamSetPeripheral(ic_dma, &(group->pwm_drv->tim->DMAR));
     dmaStreamSetMemory0(ic_dma, group->dma_buffer);
     dmaStreamSetTransactionSize(ic_dma, GCR_TELEMETRY_BIT_LEN);
+#if STM32_DMA_ADVANCED
     dmaStreamSetFIFO(ic_dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
+#endif
     dmaStreamSetMode(ic_dma,
                     STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel) |
                     STM32_DMA_CR_DIR_P2M | STM32_DMA_CR_PSIZE_WORD | STM32_DMA_CR_MSIZE_WORD |
@@ -248,7 +258,8 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
 
     // setup for transfers. 0x0D is the register
     // address offset of the CCR registers in the timer peripheral
-    group->pwm_drv->tim->DCR = (0x0D + group->bdshot.telem_tim_ch[curr_ch]) | STM32_TIM_DCR_DBL(0);
+    const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4 + group->bdshot.telem_tim_ch[curr_ch];
+    group->pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(0);
 
     // Start Timer
     group->pwm_drv->tim->EGR |= STM32_TIM_EGR_UG;
