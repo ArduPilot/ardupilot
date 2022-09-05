@@ -1303,8 +1303,9 @@ void AP_BLHeli::update(void)
 /*
   Initialize BLHeli, called by SRV_Channels::init()
   Used to install protocol handler
+  The motor mask of enabled motors can be passed in
  */
-void AP_BLHeli::init(void)
+void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
 {
     initialised = true;
 
@@ -1333,7 +1334,7 @@ void AP_BLHeli::init(void)
     }
 #endif
 
-    uint32_t mask = uint32_t(channel_mask.get());
+    mask |= uint32_t(channel_mask.get());
 
     /*
       allow mode override - this makes it possible to use DShot for
@@ -1342,7 +1343,9 @@ void AP_BLHeli::init(void)
     // +1 converts from AP_Motors::pwm_type to AP_HAL::RCOutput::output_mode and saves doing a param conversion
     // this is the only use of the param, but this is still a bit of a hack
     const int16_t type = output_type.get() + 1;
-    AP_HAL::RCOutput::output_mode otype = ((type > AP_HAL::RCOutput::MODE_PWM_NONE) && (type < AP_HAL::RCOutput::MODE_NEOPIXEL)) ? AP_HAL::RCOutput::output_mode(type) : AP_HAL::RCOutput::MODE_PWM_NONE;
+    if (otype == AP_HAL::RCOutput::MODE_PWM_NONE) {
+        otype = ((type > AP_HAL::RCOutput::MODE_PWM_NONE) && (type < AP_HAL::RCOutput::MODE_NEOPIXEL)) ? AP_HAL::RCOutput::output_mode(type) : AP_HAL::RCOutput::MODE_PWM_NONE;
+    }
     switch (otype) {
     case AP_HAL::RCOutput::MODE_PWM_ONESHOT:
     case AP_HAL::RCOutput::MODE_PWM_ONESHOT125:
