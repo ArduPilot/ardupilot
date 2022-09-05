@@ -395,11 +395,11 @@ SRV_Channels::SRV_Channels(void)
 }
 
 // SRV_Channels initialization
-void SRV_Channels::init(void)
+void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 {
     // initialize BLHeli late so that all of the masks it might setup don't get trodden on by motor initialization
 #if HAL_SUPPORT_RCOUT_SERIAL
-    blheli_ptr->init();
+    blheli_ptr->init(motor_mask, mode);
 #endif
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
