@@ -653,6 +653,22 @@ void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vect
     attitude_controller_run_quat();
 }
 
+// Command a thrust vector and heading rate
+void AC_AttitudeControl::input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading)
+{
+    switch (heading.heading_mode) {
+    case HeadingMode::Rate_Only:
+        input_thrust_vector_rate_heading(thrust_vector, heading.yaw_rate_cds);
+        break;
+    case HeadingMode::Angle_Only:
+        input_thrust_vector_heading(thrust_vector, heading.yaw_angle_cd, 0.0);
+        break;
+    case HeadingMode::Angle_And_Rate:
+        input_thrust_vector_heading(thrust_vector, heading.yaw_angle_cd, heading.yaw_rate_cds);
+        break;
+    }
+}
+
 Quaternion AC_AttitudeControl::attitude_from_thrust_vector(Vector3f thrust_vector, float heading_angle) const
 {
     const Vector3f thrust_vector_up{0.0f, 0.0f, -1.0f};
