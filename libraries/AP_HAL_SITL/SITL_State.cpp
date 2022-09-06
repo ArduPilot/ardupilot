@@ -272,6 +272,12 @@ SITL::SerialDevice *SITL_State::create_serial_sim(const char *name, const char *
         }
         leddarone = new SITL::RF_LeddarOne();
         return leddarone;
+    } else if (streq(name, "rds02uf")) {
+        if (rds02uf != nullptr) {
+            AP_HAL::panic("Only one rds02uf at a time");
+        }
+        rds02uf = new SITL::RF_RDS02UF();
+        return rds02uf;
     } else if (streq(name, "USD1_v0")) {
         if (USD1_v0 != nullptr) {
             AP_HAL::panic("Only one USD1_v0 at a time");
@@ -597,6 +603,9 @@ void SITL_State::_fdm_input_local(void)
     }
     if (leddarone != nullptr) {
         leddarone->update(sitl_model->rangefinder_range());
+    }
+    if (rds02uf != nullptr) {
+        rds02uf->update(sitl_model->rangefinder_range());
     }
     if (USD1_v0 != nullptr) {
         USD1_v0->update(sitl_model->rangefinder_range());
