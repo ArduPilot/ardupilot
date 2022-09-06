@@ -32,21 +32,21 @@ void ModeStabilize::run()
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     }
 
-    bool limit_throttle_out = false;
+    float pilot_desired_throttle = get_pilot_desired_throttle();
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
         // Motors Stopped
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms();
-        limit_throttle_out = true;
+        pilot_desired_throttle = 0.0f;
         break;
 
     case AP_Motors::SpoolState::GROUND_IDLE:
         // Landed
         attitude_control->reset_yaw_target_and_rate();
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        limit_throttle_out = true;
+        pilot_desired_throttle = 0.0f;
         break;
 
     case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
@@ -66,7 +66,5 @@ void ModeStabilize::run()
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
 
     // output pilot's throttle
-    attitude_control->set_throttle_out(limit_throttle_out ? 0 : get_pilot_desired_throttle(),
-                                       true,
-                                       g.throttle_filt);
+    attitude_control->set_throttle_out(pilot_desired_throttle, true, g.throttle_filt);
 }
