@@ -77,11 +77,6 @@ void AP_Motors::armed(bool arm)
 
 void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
 {
-    // check if spoolup has been blocked
-    if (_spoolup_block && (spool == DesiredSpoolState::THROTTLE_UNLIMITED)) {
-        return;
-    }
-
     if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
         _spool_desired = spool;
     }
