@@ -62,7 +62,6 @@
 #include <AP_Terrain/AP_Terrain.h>
 #include <AP_JSButton/AP_JSButton.h>   // Joystick/gamepad button function assignment
 #include <AP_LeakDetector/AP_LeakDetector.h> // Leak detector
-#include <AP_TemperatureSensor/TSYS01.h>
 #include <AP_Proximity/AP_Proximity.h>
 
 // Local modules
@@ -140,8 +139,6 @@ private:
     AP_Logger logger;
 
     AP_LeakDetector leak_detector;
-
-    TSYS01 celsius;
 
     struct {
         bool enabled:1;
