@@ -4130,21 +4130,35 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif
 
 #if HAL_INS_ENABLED
+    const uint32_t now = AP_HAL::millis();
     if (is_equal(packet.param5,2.0f)) {
+        // reject any time we've done a calibration recently
+        if ((now - last_accel_cal_ms) < 5000) {
+            return MAV_RESULT_TEMPORARILY_REJECTED;
+        }
+
         if (!calibrate_gyros()) {
+            last_accel_cal_ms = AP_HAL::millis();
             return MAV_RESULT_FAILED;
         }
         Vector3f trim_rad = AP::ahrs().get_trim();
         if (!AP::ins().calibrate_trim(trim_rad)) {
+            last_accel_cal_ms = AP_HAL::millis();
             return MAV_RESULT_FAILED;
         }
         // reset ahrs's trim to suggested values from calibration routine
         AP::ahrs().set_trim(trim_rad);
+        last_accel_cal_ms = AP_HAL::millis();
         return MAV_RESULT_ACCEPTED;
     }
 
     if (is_equal(packet.param5,4.0f)) {
+        if ((now - last_accel_cal_ms) < 5000) {
+            return MAV_RESULT_TEMPORARILY_REJECTED;
+        }
+
         // simple accel calibration
+        last_accel_cal_ms = AP_HAL::millis();
         return AP::ins().simple_accel_cal();
     }
 
