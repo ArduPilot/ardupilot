@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
+#include "../../lua_types.h"
 
 char keyword_alias[]               = "alias";
 char keyword_rename[]              = "rename";
@@ -94,28 +95,6 @@ enum trace_level {
   TRACE_USERDATA  = (1 << 3),
   TRACE_SINGLETON = (1 << 4),
   TRACE_DEPENDS   = (1 << 5),
-};
-
-enum access_flags {
-  ACCESS_FLAG_READ  = (1 << 0),
-  ACCESS_FLAG_WRITE = (1 << 1),
-};
-
-enum field_type {
-  TYPE_BOOLEAN = 0,
-  TYPE_FLOAT,
-  TYPE_INT8_T,
-  TYPE_INT16_T,
-  TYPE_INT32_T,
-  TYPE_UINT8_T,
-  TYPE_UINT16_T,
-  TYPE_UINT32_T,
-  TYPE_NONE,
-  TYPE_STRING,
-  TYPE_ENUM,
-  TYPE_LITERAL,
-  TYPE_USERDATA,
-  TYPE_AP_OBJECT
 };
 
 const char * type_labels[TYPE_USERDATA + 1] = { "bool",
@@ -1498,75 +1477,9 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
 
 void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
-  fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
-
-  char *index_string = "";
-  int write_arg_number = 2;
-  if (field->array_len != NULL) {
-    index_string = "[index]";
-    write_arg_number = 3;
-
-    fprintf(source, "\n    const lua_Integer raw_index = luaL_checkinteger(L, 2);\n");
-    fprintf(source, "    luaL_argcheck(L, ((raw_index >= 0) && (raw_index < MIN(%s, UINT8_MAX))), 2, \"index out of range\");\n",field->array_len);
-    fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
-
-    fprintf(source, "    switch(lua_gettop(L)-1) {\n");
-
-  } else {
-    fprintf(source, "    switch(lua_gettop(L)) {\n");
-  }
-
-  if (field->access_flags & ACCESS_FLAG_READ) {
-    fprintf(source, "        case 1:\n");
-    switch (field->type.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
-        break;
-      case TYPE_FLOAT:
-        fprintf(source, "            lua_pushnumber(L, ud->%s%s);\n", field->name, index_string);
-        break;
-      case TYPE_INT8_T:
-      case TYPE_INT16_T:
-      case TYPE_INT32_T:
-      case TYPE_UINT8_T:
-      case TYPE_UINT16_T:
-      case TYPE_ENUM:
-        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
-        break;
-      case TYPE_UINT32_T:
-        fprintf(source, "            new_uint32_t(L);\n");
-        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s%s;\n", field->name, index_string);
-        break;
-      case TYPE_NONE:
-        error(ERROR_INTERNAL, "Can't access a NONE field");
-        break;
-      case TYPE_LITERAL:
-        error(ERROR_INTERNAL, "Can't access a literal field");
-        break;
-      case TYPE_STRING:
-        fprintf(source, "            lua_pushstring(L, ud->%s%s);\n", field->name, index_string);
-        break;
-      case TYPE_USERDATA:
-        error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
-        break;
-      case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
-        error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
-        break;
-    }
-    fprintf(source, "            return 1;\n");
-  }
-
-  if (field->access_flags & ACCESS_FLAG_WRITE) {
-    fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ", field->name);
-    fprintf(source, "            ud->%s%s = data_%i;\n", field->name, index_string, write_arg_number);
-    fprintf(source, "            return 0;\n");
-    fprintf(source, "         }\n");
-  }
-
-  fprintf(source, "        default:\n");
-  fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
-  fprintf(source, "    }\n");
+  fprintf(source, "    return lua_userdata_field(L, \"%s\", field_type(%u), 0x%x, offsetof(%s, %s), sizeof(((%s*)(0))->%s));\n",
+          data->name, field->type.type, field->access_flags,
+          data->name, field->name, data->name, field->name);
   fprintf(source, "}\n\n");
 }
 

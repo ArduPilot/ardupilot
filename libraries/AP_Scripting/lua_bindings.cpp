@@ -371,3 +371,81 @@ int lua_get_CAN_device2(lua_State *L) {
     return 1;
 }
 #endif // HAL_MAX_CAN_PROTOCOL_DRIVERS
+
+
+/*
+  userdata field access
+ */
+int lua_userdata_field(lua_State *L, const char *type_name, enum field_type type, uint8_t access_flags, uint16_t field_offset, uint8_t field_size)
+{
+    #if 1
+    return 0;
+#else
+    void *data = luaL_checkudata(L, 1, type_name);
+    switch(lua_gettop(L)) {
+    case 1: // read
+            switch (type) {
+            case TYPE_BOOLEAN:
+                lua_pushinteger(L, *(bool *)data);
+                break;
+            case TYPE_FLOAT:
+                lua_pushnumber(L, *(float *)data);
+                break;
+            case TYPE_INT8_T:
+                lua_pushnumber(L, *(int8_t *)data);
+                break;
+            case TYPE_INT16_T:
+                lua_pushnumber(L, *(int16_t *)data);
+                break;
+            case TYPE_UINT8_T:
+                lua_pushnumber(L, *(uint8_t *)data);
+                break;
+            case TYPE_UINT16_T:
+                lua_pushnumber(L, *(uint16_t *)data);
+                break;
+            case TYPE_ENUM: {
+                switch (field_size) {
+                case 1:
+                    lua_pushnumber(L, *(uint8_t *)data);
+                    break;
+                case 2:
+                    lua_pushnumber(L, *(uint16_t *)data);
+                    break;
+                case 4:
+                    lua_pushnumber(L, *(uint32_t *)data);
+                    break;
+                }
+                break;
+            }
+            case TYPE_UINT32_T:
+                new_uint32_t(L);
+                *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s%s;\n", field->name, index_string);
+-        break;
+-      case TYPE_NONE:
+-        error(ERROR_INTERNAL, "Can't access a NONE field");
+-        break;
+-      case TYPE_LITERAL:
+-        error(ERROR_INTERNAL, "Can't access a literal field");
+-        break;
+-      case TYPE_STRING:
+-        fprintf(source, "            lua_pushstring(L, ud->%s%s);\n", field->name, index_string);
+-        break;
+-      case TYPE_USERDATA:
+-        error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
+-        break;
+-      case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
+-        error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
+-        break;
+            lua_pushinteger(L, ud->frame);
+            return 1;
+        case 2: {
+            const lua_Integer raw_data_2 = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, ((raw_data_2 >= MAX(0, 0)) && (raw_data_2 <= MIN(UINT8_MAX, UINT8_MAX))), 2, "frame out of range");
+            const uint8_t data_2 = static_cast<uint8_t>(raw_data_2);
+            ud->frame = data_2;
+            return 0;
+         }
+        default:
+            return luaL_argerror(L, lua_gettop(L), "too many arguments");
+#endif
+}

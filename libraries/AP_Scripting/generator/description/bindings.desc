@@ -352,16 +352,16 @@ userdata mavlink_mission_item_int_t field param1 float'skip_check read write
 userdata mavlink_mission_item_int_t field param2 float'skip_check read write
 userdata mavlink_mission_item_int_t field param3 float'skip_check read write
 userdata mavlink_mission_item_int_t field param4 float'skip_check read write
-userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
-userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field x int32_t'skip_check read write
+userdata mavlink_mission_item_int_t field y int32_t'skip_check read write
 userdata mavlink_mission_item_int_t field z float'skip_check read write
-userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
-userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
+userdata mavlink_mission_item_int_t field seq uint16_t'skip_check read write
+userdata mavlink_mission_item_int_t field command uint16_t'skip_check read write
 -- userdata mavlink_mission_item_int_t field target_system uint8_t read write 0 UINT8_MAX
 -- userdata mavlink_mission_item_int_t field target_component uint8_t read write 0 UINT8_MAX
-userdata mavlink_mission_item_int_t field frame uint8_t read write  0 UINT8_MAX
-userdata mavlink_mission_item_int_t field current uint8_t read write  0 UINT8_MAX
--- userdata mavlink_mission_item_int_t field autocontinue uint8_t read write  0 UINT8_MAX
+userdata mavlink_mission_item_int_t field frame uint8_t'skip_check read write
+userdata mavlink_mission_item_int_t field current uint8_t'skip_check read write
+-- userdata mavlink_mission_item_int_t field autocontinue uint8_t'skip_check read write
 
 
 include AP_RPM/AP_RPM.h
