@@ -533,4 +533,17 @@ public:
     float control_monitor_rms_output_pitch_D(void) const;
     float control_monitor_rms_output_pitch(void) const;
     float control_monitor_rms_output_yaw(void) const;
+
+    // structure for angle and/or rate target
+    enum class HeadingMode {
+        Angle_Only,
+        Angle_And_Rate,
+        Rate_Only
+    };
+    struct HeadingCommand {
+        float yaw_angle_cd;
+        float yaw_rate_cds;
+        HeadingMode heading_mode;
+    };
+    void input_thrust_vector_heading(const Vector3f& thrust_vector, HeadingCommand heading);
 };
