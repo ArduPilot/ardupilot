@@ -1151,7 +1151,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TKOFF_SLEW_TIME", 57, ParametersG2, takeoff_throttle_slew_time, 2.0),
 
-#if FRAME_CONFIG != HELI_FRAME
+#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // @Param: TKOFF_RPM_MIN
     // @DisplayName: Takeoff Check RPM minimum
     // @Description: Takeoff is not permitted until motors report at least this RPM.  Set to zero to disable check
