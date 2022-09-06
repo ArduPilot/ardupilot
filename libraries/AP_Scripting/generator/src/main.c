@@ -608,6 +608,19 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
     sanatize_name(&(type->data.ud.sanatized_name), type->data.ud.name);
   }
 
+  // only allow no range check on float, int32 and uint32
+  if (type->flags & TYPE_FLAGS_NO_RANGE_CHECK) {
+    switch (type->type) {
+      case TYPE_FLOAT:
+      case TYPE_INT32_T:
+      case TYPE_UINT32_T:
+        break;
+      default:
+        error(ERROR_USERDATA, "%s types cannot skip range check", data_type);
+        break;
+    }
+  }
+
   // sanity check that only supported types are nullable
   if (type->flags & (TYPE_FLAGS_NULLABLE | TYPE_FLAGS_REFERNCE)) {
     // a switch is a very verbose way to do this, but forces users to consider new types added

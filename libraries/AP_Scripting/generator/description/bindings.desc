@@ -194,7 +194,7 @@ singleton AP_Relay method toggle void uint8_t 0 AP_RELAY_NUM_RELAYS
 include GCS_MAVLink/GCS.h
 singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
-singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t 0U UINT32_MAX int32_t -1 INT32_MAX
+singleton GCS method set_message_interval MAV_RESULT'enum uint8_t 0 MAVLINK_COMM_NUM_BUFFERS uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
 
 include AP_ONVIF/AP_ONVIF.h depends ENABLE_ONVIF == 1
@@ -232,7 +232,7 @@ singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
 singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
 singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null float'Null float'Null
-singleton AP_Vehicle method nav_script_time_done void uint16_t'skip_check
+singleton AP_Vehicle method nav_script_time_done void uint16_t 0 UINT16_MAX
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_speed boolean float'skip_check
@@ -310,7 +310,7 @@ singleton AP_ESC_Telem method get_current boolean uint8_t 0 NUM_SERVO_CHANNELS f
 singleton AP_ESC_Telem method get_voltage boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_consumption_mah boolean uint8_t 0 NUM_SERVO_CHANNELS float'Null
 singleton AP_ESC_Telem method get_usage_seconds boolean uint8_t 0 NUM_SERVO_CHANNELS uint32_t'Null
-singleton AP_ESC_Telem method update_rpm void uint8_t 0 NUM_SERVO_CHANNELS uint16_t'skip_check float'skip_check
+singleton AP_ESC_Telem method update_rpm void uint8_t 0 NUM_SERVO_CHANNELS uint16_t 0 UINT16_MAX float'skip_check
 singleton AP_ESC_Telem method set_rpm_scale void uint8_t 0 NUM_SERVO_CHANNELS float'skip_check
 
 include AP_Param/AP_Param.h
@@ -327,7 +327,7 @@ singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string fl
 
 include AP_Scripting/AP_Scripting_helpers.h
 userdata Parameter method init boolean string
-userdata Parameter method init_by_info boolean uint16_t 0 UINT16_MAX uint32_t 0U UINT32_MAX ap_var_type'enum AP_PARAM_INT8 AP_PARAM_FLOAT
+userdata Parameter method init_by_info boolean uint16_t 0 UINT16_MAX uint32_t'skip_check ap_var_type'enum AP_PARAM_INT8 AP_PARAM_FLOAT
 userdata Parameter method get boolean float'Null
 userdata Parameter method set boolean float'skip_check
 userdata Parameter method set_and_save boolean float'skip_check
@@ -354,8 +354,8 @@ userdata mavlink_mission_item_int_t field param1 float'skip_check read write
 userdata mavlink_mission_item_int_t field param2 float'skip_check read write
 userdata mavlink_mission_item_int_t field param3 float'skip_check read write
 userdata mavlink_mission_item_int_t field param4 float'skip_check read write
-userdata mavlink_mission_item_int_t field x int32_t read write -INT32_MAX INT32_MAX
-userdata mavlink_mission_item_int_t field y int32_t read write -INT32_MAX INT32_MAX
+userdata mavlink_mission_item_int_t field x int32_t read write'skip_check
+userdata mavlink_mission_item_int_t field y int32_t read write'skip_check
 userdata mavlink_mission_item_int_t field z float'skip_check read write
 userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
 userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
@@ -394,8 +394,8 @@ singleton AP_MotorsMatrix method set_throttle_factor boolean int8_t 0 (AP_MOTORS
 
 include AP_Frsky_Telem/AP_Frsky_SPort.h
 singleton AP_Frsky_SPort rename frsky_sport
-singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint16_t 0 UINT16_MAX int32_t -INT32_MAX INT32_MAX
-singleton AP_Frsky_SPort method prep_number uint16_t int32_t INT32_MIN INT32_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
+singleton AP_Frsky_SPort method sport_telemetry_push boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint16_t 0 UINT16_MAX int32_t'skip_check
+singleton AP_Frsky_SPort method prep_number uint16_t int32_t'skip_check uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
 include AC_AttitudeControl/AC_AttitudeControl_Multi_6DoF.h depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
 singleton AC_AttitudeControl_Multi_6DoF depends APM_BUILD_TYPE(APM_BUILD_ArduCopter)
@@ -467,7 +467,7 @@ include AP_HAL/AP_HAL.h
 
 userdata AP_HAL::CANFrame depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 userdata AP_HAL::CANFrame rename CANFrame
-userdata AP_HAL::CANFrame field id uint32_t read write 0U UINT32_MAX
+userdata AP_HAL::CANFrame field id uint32_t read write'skip_check
 userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t read write 0 UINT8_MAX
 userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
 userdata AP_HAL::CANFrame method isExtended boolean
@@ -475,7 +475,7 @@ userdata AP_HAL::CANFrame method isRemoteTransmissionRequest boolean
 userdata AP_HAL::CANFrame method isErrorFrame boolean
 
 ap_object ScriptingCANBuffer depends HAL_MAX_CAN_PROTOCOL_DRIVERS
-ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t 0U UINT32_MAX
+ap_object ScriptingCANBuffer method write_frame boolean AP_HAL::CANFrame uint32_t'skip_check
 ap_object ScriptingCANBuffer method read_frame boolean AP_HAL::CANFrame'Null
 
 
