@@ -24,32 +24,29 @@
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
 
-#define RDS02_HEAD1 0x55
-#define RDS02_HEAD2 0x55
-#define RDS02_END 0xAA
+#define RDS02_HEAD1                 0x55
+#define RDS02_HEAD2                 0x55
+#define RDS02_END                   0xAA
 
-#define RDS02UF_HEAD_LEN 2
-#define RDS02UF_PRE_DATA_LEN 6
-#define RDS02UF_DATA_LEN 10
-#define RDS02_DATA_Y_INDEX_L 13
-#define RDS02_DATA_Y_INDEX_H 14
-#define RDS02_DATA_FC_L    8
-#define RDS02_DATA_FC_H    9
-#define RDS02_TARGET_INFO  0x70C
-#define RDS02UF_DIST_MAX_CM           2000
-#define RDS02UF_DIST_MIN_CM           150
-#define AP_RANGEFINDER_RDS02UF_TIMEOUT_MS   200
+#define RDS02UF_HEAD_LEN            2
+#define RDS02UF_ERROR_CODE_INDEX    3
+#define RDS02UF_PRODUCTS_FC_INDEX_L 4
+#define RDS02UF_PRODUCTS_FC_INDEX_H 5
+#define RDS02UF_PRE_DATA_LEN        6
+#define RDS02UF_DATA_LEN            10
+#define RDS02_DATA_Y_INDEX_L        13
+#define RDS02_DATA_Y_INDEX_H        14
+#define RDS02_TARGET_FC_INDEX_L     8
+#define RDS02_TARGET_FC_INDEX_H     9
+#define RDS02_TARGET_INFO_FC        0x070C
+#define RDS02UF_DIST_MAX_M          20.0
+#define RDS02UF_DIST_MIN_M          1.5
+#define RDS02UF_IGNORE_ID_BYTE      0x0F0F
+#define RDS02UF_UAV_PRODUCTS_ID     0x03FF
+#define RDS02UF_TIMEOUT_MS          200
 
 
 extern const AP_HAL::HAL& hal;
-
-AP_RangeFinder_RDS02UF::AP_RangeFinder_RDS02UF(
-    RangeFinder::RangeFinder_State &_state,
-    AP_RangeFinder_Params &_params):
-    AP_RangeFinder_Backend_Serial(_state, _params)
-{
-    
-}
 
 // return last value measured by sensor
 bool AP_RangeFinder_RDS02UF::get_reading(float &reading_m)
@@ -58,30 +55,33 @@ bool AP_RangeFinder_RDS02UF::get_reading(float &reading_m)
         return false;
     }
 
-    // read any available lines from the lidar
+    // read any available data from the lidar
     float sum = 0.0f;
     uint16_t count = 0;
-    int16_t nbytes = uart->available();
+    uint32_t nbytes = uart->available();
     while (nbytes-- > 0) {
-        uint8_t c = uart->read();
+        int16_t c = uart->read();
+        if (c < 0) {
+            continue;
+        }
         if (decode(c)) {
             sum += _distance_m;
             count++;
         }
     }
 
-    // return false on failure
-    if (count == 0) {
-        return false;
-    }
-
-    if (AP_HAL::millis() - state.last_reading_ms > AP_RANGEFINDER_RDS02UF_TIMEOUT_MS) {
+    if (AP_HAL::millis() - state.last_reading_ms > RDS02UF_TIMEOUT_MS) {
         set_status(RangeFinder::Status::NoData);
         reading_m = 0.0f;
     } else {
         // return average of all measurements
         reading_m = sum / count;
         update_status();
+    }
+
+    // return false if no new readings
+    if (count == 0) {
+        return false;
     }
 
     // return average of all measurements
@@ -98,113 +98,121 @@ bool AP_RangeFinder_RDS02UF::decode(uint8_t c)
     bool ret = false;
     switch (decode_state)
     {
-        case STATE0_SYNC_1:
+        case RDS02UF_PARSE_STATE::STATE0_SYNC_1:
             if (data == RDS02_HEAD1) {
-                rev_buffer[parserbuf_index] = data;
-                parserbuf_index++;
-                decode_state = STATE1_SYNC_2;
+                parser_buffer[parser_index] = data;
+                parser_index++;
+                decode_state = RDS02UF_PARSE_STATE::STATE1_SYNC_2;
             }
             break;
-        case STATE1_SYNC_2:
+        case RDS02UF_PARSE_STATE::STATE1_SYNC_2:
             if (data == RDS02_HEAD2) {
-                rev_buffer[parserbuf_index] = data;
-                parserbuf_index++;
-                decode_state = STATE2_ADDRESS;
+                parser_buffer[parser_index] = data;
+                parser_index++;
+                decode_state = RDS02UF_PARSE_STATE::STATE2_ADDRESS;
             } else {
-                parserbuf_index = 0;
-                decode_state = STATE0_SYNC_1;
+                parser_index = 0;
+                decode_state = RDS02UF_PARSE_STATE::STATE0_SYNC_1;
             }
             break;
-        case STATE2_ADDRESS: // address
-            rev_buffer[parserbuf_index] = data;
-            parserbuf_index++;
-            decode_state = STATE3_ERROR_CODE;
+        case RDS02UF_PARSE_STATE::STATE2_ADDRESS: // address
+            parser_buffer[parser_index] = data;
+            parser_index++;
+            decode_state = RDS02UF_PARSE_STATE::STATE3_ERROR_CODE;
             break;
-        case STATE3_ERROR_CODE: // error_code
-            rev_buffer[parserbuf_index] = data;
-            parserbuf_index++;
-            decode_state = STATE4_FC_CODE_L;
+        case RDS02UF_PARSE_STATE::STATE3_ERROR_CODE: // error_code
+            parser_buffer[parser_index] = data;
+            parser_index++;
+            decode_state = RDS02UF_PARSE_STATE::STATE4_FC_CODE_L;
             break;
-        case STATE4_FC_CODE_L: // fc_code low
-            rev_buffer[parserbuf_index] = data;
-            parserbuf_index++;
-            decode_state = STATE5_FC_CODE_H;
+        case RDS02UF_PARSE_STATE::STATE4_FC_CODE_L: // fc_code low
+            parser_buffer[parser_index] = data;
+            parser_index++;
+            decode_state = RDS02UF_PARSE_STATE::STATE5_FC_CODE_H;
             break;
-        case STATE5_FC_CODE_H: // fc_code high
-            rev_buffer[parserbuf_index] = data;
-            parserbuf_index++;
-            decode_state = STATE6_LENGTH_L;
+        case RDS02UF_PARSE_STATE::STATE5_FC_CODE_H: // fc_code high
+            parser_buffer[parser_index] = data;
+            parser_index++;
+            decode_state = RDS02UF_PARSE_STATE::STATE6_LENGTH_L;
             break;
-        case STATE6_LENGTH_L: // lengh_low
-            rev_buffer[parserbuf_index] = data;
-            parserbuf_index++;
-            decode_state = STATE7_LENGTH_H;
+        case RDS02UF_PARSE_STATE::STATE6_LENGTH_L: // lengh_low
+            parser_buffer[parser_index] = data;
+            parser_index++;
+            decode_state = RDS02UF_PARSE_STATE::STATE7_LENGTH_H;
             break;
-        case STATE7_LENGTH_H: // lengh_high
+        case RDS02UF_PARSE_STATE::STATE7_LENGTH_H: // lengh_high
         {
-            uint8_t read_len = data << 8 | rev_buffer[parserbuf_index-1];
+            uint8_t read_len = data << 8 | parser_buffer[parser_index-1];
             if ( read_len == RDS02UF_DATA_LEN)	// rds02uf data length is 10
             {
-                rev_buffer[parserbuf_index] = data;
-                parserbuf_index++;
-                decode_state = STATE8_REAL_DATA;
+                parser_buffer[parser_index] = data;
+                parser_index++;
+                decode_state = RDS02UF_PARSE_STATE::STATE8_REAL_DATA;
             }else{
-                parserbuf_index = 0;
-                decode_state = STATE0_SYNC_1;
+                parser_index = 0;
+                decode_state = RDS02UF_PARSE_STATE::STATE0_SYNC_1;
             }
             break;
         }
-        case STATE8_REAL_DATA: // real_data
-            rev_buffer[parserbuf_index] = data;
-            parserbuf_index++;
-            if ( parserbuf_index == (RDS02UF_HEAD_LEN + RDS02UF_PRE_DATA_LEN + RDS02UF_DATA_LEN) ) {
-                decode_state = STATE9_CRC;
+        case RDS02UF_PARSE_STATE::STATE8_REAL_DATA: // real_data
+            parser_buffer[parser_index] = data;
+            parser_index++;
+            if ( parser_index == (RDS02UF_HEAD_LEN + RDS02UF_PRE_DATA_LEN + RDS02UF_DATA_LEN) ) {
+                decode_state = RDS02UF_PARSE_STATE::STATE9_CRC;
             }
             break;
-        case STATE9_CRC: // crc
+        case RDS02UF_PARSE_STATE::STATE9_CRC: // crc
         {
-	        uint8_t crc_data = 0;
-            crc_data = crc8(&rev_buffer[2], RDS02UF_PRE_DATA_LEN + RDS02UF_DATA_LEN);
-            rev_buffer[parserbuf_index] = data;
+	        uint8_t crc_data;
+            crc_data = crc8(&parser_buffer[2], RDS02UF_PRE_DATA_LEN + RDS02UF_DATA_LEN);
+            parser_buffer[parser_index] = data;
             if (crc_data == data || data == 0xff) {
-                parserbuf_index++;
-                decode_state = STATE10_END_1;
+                parser_index++;
+                decode_state = RDS02UF_PARSE_STATE::STATE10_END_1;
             } else {
-                parserbuf_index = 0;
-                decode_state = STATE0_SYNC_1;
+                parser_index = 0;
+                decode_state = RDS02UF_PARSE_STATE::STATE0_SYNC_1;
             }
             break;
         }
-        case STATE10_END_1: //
+        case RDS02UF_PARSE_STATE::STATE10_END_1: //
             if (data == RDS02_END) {
-                rev_buffer[parserbuf_index] = data;
-                parserbuf_index++;
-                decode_state = STATE11_END_2;
+                parser_buffer[parser_index] = data;
+                parser_index++;
+                decode_state = RDS02UF_PARSE_STATE::STATE11_END_2;
             } else {
-                parserbuf_index = 0;
-                decode_state = STATE0_SYNC_1;
+                parser_index = 0;
+                decode_state = RDS02UF_PARSE_STATE::STATE0_SYNC_1;
             }
             break;
-        case STATE11_END_2: //
+        case RDS02UF_PARSE_STATE::STATE11_END_2: //
         {
-            uint16_t fc_code = (rev_buffer[STATE5_FC_CODE_H] << 8 | rev_buffer[STATE4_FC_CODE_L]);
-            uint8_t err_code = rev_buffer[STATE3_ERROR_CODE];
+            uint16_t fc_code = (parser_buffer[RDS02UF_PRODUCTS_FC_INDEX_H] << 8 | parser_buffer[RDS02UF_PRODUCTS_FC_INDEX_L]);
+            uint8_t err_code = parser_buffer[RDS02UF_ERROR_CODE_INDEX];
+
             if (data == RDS02_END)
             {
-                if (fc_code == 0x03ff && err_code == 0) {// get targer information
-                    uint16_t data_fc = (rev_buffer[RDS02_DATA_FC_H] << 8 | rev_buffer[RDS02_DATA_FC_L]);
-                    if((data_fc & 0xf0f) == RDS02_TARGET_INFO){	// data_fc = 0x70C + ID * 0x10, ID: 0~0xF
-                        float distance = (rev_buffer[RDS02_DATA_Y_INDEX_H] * 256 + rev_buffer[RDS02_DATA_Y_INDEX_L]) / 100.0f;
-                        _distance_m = distance;
-                        _distance_m = MIN(MAX(RDS02UF_DIST_MIN_CM, uint16_t(_distance_m*100)), RDS02UF_DIST_MAX_CM) * 0.01f;
+                if (fc_code == RDS02UF_UAV_PRODUCTS_ID && err_code == 0) {// get targer information
+                    uint16_t read_info_fc = (parser_buffer[RDS02_TARGET_FC_INDEX_H] << 8 | parser_buffer[RDS02_TARGET_FC_INDEX_L]);
+                    if((read_info_fc & RDS02UF_IGNORE_ID_BYTE) == RDS02_TARGET_INFO_FC){	// read_info_fc = 0x70C + ID * 0x10, ID: 0~0xF
+                        _distance_m = (parser_buffer[RDS02_DATA_Y_INDEX_H] * 256 + parser_buffer[RDS02_DATA_Y_INDEX_L]) / 100.0f;
+                        if (_distance_m > RDS02UF_DIST_MAX_M)
+                        {
+                            _distance_m = RDS02UF_DIST_MAX_M;
+                            set_status(RangeFinder::Status::OutOfRangeHigh);
+                        }else if (_distance_m < RDS02UF_DIST_MIN_M)
+                        {
+                            _distance_m = RDS02UF_DIST_MIN_M;
+                            set_status(RangeFinder::Status::OutOfRangeLow);
+                        }
                         ret = true;
                         state.last_reading_ms = AP_HAL::millis();
                     }
 
                 }
             }
-			parserbuf_index = 0;
-			decode_state = STATE0_SYNC_1;
+			parser_index = 0;
+			decode_state = RDS02UF_PARSE_STATE::STATE0_SYNC_1;
 			break;
         }
     }
@@ -217,6 +225,6 @@ uint8_t AP_RangeFinder_RDS02UF::crc8(uint8_t* pbuf, int32_t len)
      uint8_t* data = pbuf;
      uint8_t crc = 0;
      while ( len-- )
-     crc = crc8_table[crc^*(data++)];
+        crc = crc8_table[crc^*(data++)];
      return crc;
 }

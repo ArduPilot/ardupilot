@@ -45,14 +45,7 @@ protected:
 
 
 private:
-    AP_RangeFinder_RDS02UF(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params);
-
-    uint8_t decode_state;
-    uint8_t parserbuf_index;
-    uint8_t rev_buffer[RDS02_BUFFER_SIZE];
-    float _distance_m;
-
-    void ParseRds02(uint8_t *data_in, uint8_t datalengh);
+    using AP_RangeFinder_Backend_Serial::AP_RangeFinder_Backend_Serial;
 
     // Data Format for Benewake Rds02UF
     // ===============================
@@ -70,7 +63,7 @@ private:
     // 11) END_1 0xAA
     // 12) END_2 0xAA
     /// enum for handled messages
-    enum RDS02UF_PARSE_STATE {
+    enum class RDS02UF_PARSE_STATE {
         STATE0_SYNC_1 = 0,
         STATE1_SYNC_2,
         STATE2_ADDRESS,
@@ -84,6 +77,13 @@ private:
         STATE10_END_1,
         STATE11_END_2
     };
+
+    RDS02UF_PARSE_STATE decode_state;
+    uint8_t parser_index;
+    uint8_t parser_buffer[RDS02_BUFFER_SIZE];
+    float _distance_m;
+
+    void ParseRds02(uint8_t *data_in, uint8_t datalengh);
 
     // get a distance reading
     bool get_reading(float &reading_m) override;
