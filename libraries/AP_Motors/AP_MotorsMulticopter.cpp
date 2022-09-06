@@ -612,7 +612,10 @@ void AP_MotorsMulticopter::output_logic()
             // constrain ramp value and update mode
             if (_spin_up_ratio >= 1.0f) {
                 _spin_up_ratio = 1.0f;
-                _spool_state = SpoolState::SPOOLING_UP;
+                if (!get_spoolup_block()) {
+                    // Only advance from ground idle if spoolup checks have passed
+                    _spool_state = SpoolState::SPOOLING_UP;
+                }
             }
             break;
 
