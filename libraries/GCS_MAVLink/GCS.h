@@ -652,6 +652,8 @@ private:
 
     void log_mavlink_stats();
 
+    uint32_t last_accel_cal_ms; // used to rate limit accel cals for bad links
+
     MAV_RESULT _set_mode_common(const MAV_MODE base_mode, const uint32_t custom_mode);
 
     // send a (textual) message to the GCS that a received message has
