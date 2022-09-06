@@ -5933,6 +5933,66 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_mav_change_altitude(self):
+        self.progress("Test MAV_CMD_DO_CHANGE_ALTITUDE command")
+
+        MAV_FRAME_GLOBAL_RELATIVE_ALT = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT
+
+        # this command is only allowed in GUIDED
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.takeoff(alt_min=5)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+                    0, # param1
+                    MAV_FRAME_GLOBAL_RELATIVE_ALT, # param2
+                    0, # param3 - 7 unused
+                    0,
+                    0,
+                    0,
+                    0,
+                    want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+
+        self.change_mode("GUIDED")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+                    30, # param1 desired altitude
+                    MAV_FRAME_GLOBAL_RELATIVE_ALT, # param2
+                    0, # param3 - 7 unused
+                    0,
+                    0,
+                    0,
+                    0,
+                    want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+        self.wait_for_alt(alt_min=30)
+
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+                    5, # param1
+                    MAV_FRAME_GLOBAL_RELATIVE_ALT, # param2
+                    0, # param3 - 7 unused
+                    0,
+                    0,
+                    0,
+                    0,
+                    want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
+        )
+        self.wait_for_alt(alt_min=5)
+
+        # Send command with unsupported frame
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+                    0, # param1
+                    0, # param2
+                    0, # param3 - 7 unused
+                    0,
+                    0,
+                    0,
+                    0,
+                    want_result=mavutil.mavlink.MAV_RESULT_FAILED
+        )
+        self.land_and_disarm()
+
     def loiter_requires_position(self):
         # ensure we can't switch to LOITER without position
         self.progress("Ensure we can't enter LOITER without position")
@@ -8829,6 +8889,10 @@ class AutoTestCopter(AutoTest):
             ("GCSFailsafe",
              "Test GCS Failsafe",
              self.fly_gcs_failsafe),  # 239s
+            
+            ("MavChangeAltitude", 
+             "Test changing only altitude through mavlink", 
+             self.test_mav_change_altitude)
 
             ("CustomController",
              "Test Custom Controller",

@@ -1004,6 +1004,30 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         GCS_MAVLINK_Copter::convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
         return handle_command_pause_continue(packet_int);
     }
+
+    case MAV_CMD_DO_CHANGE_ALTITUDE: {
+        // param1 : Altitude in meters
+        // param2 : Frame of new altitude MAV_FRAME   
+        if (!copter.flightmode->in_guided_mode()) {
+            return MAV_RESULT_FAILED;
+        }
+
+        uint8_t frame = packet.param2;
+        // check for supported coordinate frames
+        if (frame != MAV_FRAME_GLOBAL_RELATIVE_ALT && frame != MAV_FRAME_GLOBAL_RELATIVE_ALT_INT) {
+            return MAV_RESULT_FAILED;
+        }
+
+        const Vector3f dest(copter.mode_guided.get_target_pos().x, copter.mode_guided.get_target_pos().y, packet.param1 * 100.0f);
+
+        if (!copter.mode_guided.set_destination(dest)) {
+            // altitude outside of fence
+            return MAV_RESULT_FAILED;
+        }
+
+        return MAV_RESULT_ACCEPTED;
+    }
+
     default:
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
