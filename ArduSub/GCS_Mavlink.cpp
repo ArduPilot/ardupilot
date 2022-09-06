@@ -98,7 +98,7 @@ void GCS_MAVLINK_Sub::send_scaled_pressure3()
 {
 #if AP_TEMPERATURE_SENSOR_ENABLED
     float temperature;
-    if (!sub.temperature_sensor.temperature(temperature)) {
+    if (!sub.temperature_sensor.get_temperature(temperature)) {
         return;
     }
     mavlink_msg_scaled_pressure3_send(
