@@ -95,16 +95,18 @@ uint8_t AP_ESC_Telem::get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) con
     return MIN(valid_escs, nfreqs);
 }
 
-// get mask of ESCs that sent valid telemetry data in the last
-// ESC_TELEM_DATA_TIMEOUT_MS
+// get mask of ESCs that sent valid telemetry and/or rpm data in the last
+// ESC_TELEM_DATA_TIMEOUT_MS/ESC_RPM_DATA_TIMEOUT_US
 uint32_t AP_ESC_Telem::get_active_esc_mask() const {
     uint32_t ret = 0;
     const uint32_t now = AP_HAL::millis();
+    uint32_t now_us = AP_HAL::micros();
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
-        if (now - _telem_data[i].last_update_ms >= ESC_TELEM_DATA_TIMEOUT_MS) {
+        if (now - _telem_data[i].last_update_ms >= ESC_TELEM_DATA_TIMEOUT_MS
+            && now_us - _rpm_data[i].last_update_us >= ESC_RPM_DATA_TIMEOUT_US) {
             continue;
         }
-        if (_telem_data[i].last_update_ms == 0) {
+        if (_telem_data[i].last_update_ms == 0 && _rpm_data[i].last_update_us == 0) {
             // have never seen telem from this ESC
             continue;
         }
