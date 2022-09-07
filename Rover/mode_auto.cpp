@@ -391,7 +391,7 @@ void ModeAuto::send_guided_position_target()
         uint8_t sysid;
         uint8_t compid;
         mavlink_channel_t chan;
-        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan)) {
+        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_ONBOARD_CONTROLLER, sysid, compid, chan, 0)) {
             gcs().chan(chan-MAVLINK_COMM_0)->send_set_position_target_global_int(sysid, compid, guided_target.loc);
         }
     }
