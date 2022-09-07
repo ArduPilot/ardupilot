@@ -277,40 +277,40 @@ void AP_InertialSensor_BMI270::check_err_reg()
             read_registers(BMI270_REG_INTERNAL_STATUS, &status, 1);
             switch (status & 0xF) {
             case 0:
-                AP_HAL::panic("BMI270: not_init\n");
+                AP_HAL::panic("BMI270: not_init");
                 break;
             case 2:
-                AP_HAL::panic("BMI270: init_err\n");
+                AP_HAL::panic("BMI270: init_err");
                 break;
             case 3:
-                AP_HAL::panic("BMI270: drv_err\n");
+                AP_HAL::panic("BMI270: drv_err");
                 break;
             case 4:
-                AP_HAL::panic("BMI270: sns_stop\n");
+                AP_HAL::panic("BMI270: sns_stop");
                 break;
             case 5:
-                AP_HAL::panic("BMI270: nvm_error\n");
+                AP_HAL::panic("BMI270: nvm_error");
                 break;
             case 6:
-                AP_HAL::panic("BMI270: start_up_error\n");
+                AP_HAL::panic("BMI270: start_up_error");
                 break;
             case 7:
-                AP_HAL::panic("BMI270: compat_error\n");
+                AP_HAL::panic("BMI270: compat_error");
                 break;
             case 1: // init ok
                 if ((status>>5 & 1) == 1) {
-                    AP_HAL::panic("BMI270: axes_remap_error\n");
+                    AP_HAL::panic("BMI270: axes_remap_error");
                 } else if ((status>>6 & 1) == 1) {
-                    AP_HAL::panic("BMI270: odr_50hz_error\n");
+                    AP_HAL::panic("BMI270: odr_50hz_error");
                 }
                 break;
             }
         } else if ((err>>6 & 1) == 1) {
-            AP_HAL::panic("BMI270: fifo_err\n");
+            AP_HAL::panic("BMI270: fifo_err");
         } else if ((err>>7 & 1) == 1) {
-            AP_HAL::panic("BMI270: aux_err\n");
+            AP_HAL::panic("BMI270: aux_err");
         } else {
-            AP_HAL::panic("BMI270: internal error detected %d\n", err>>1 & 0xF);
+            AP_HAL::panic("BMI270: internal error detected %d", err>>1 & 0xF);
         }
     }
 #endif
