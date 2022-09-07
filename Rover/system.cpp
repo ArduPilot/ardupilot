@@ -100,6 +100,11 @@ void Rover::init_ardupilot()
     g2.torqeedo.init();
 #endif
 
+#if AP_OPTICALFLOW_ENABLED
+    // initialise optical flow sensor
+    optflow.init(MASK_LOG_OPTFLOW);
+#endif      // AP_OPTICALFLOW_ENABLED
+
     relay.init();
 
 #if HAL_MOUNT_ENABLED

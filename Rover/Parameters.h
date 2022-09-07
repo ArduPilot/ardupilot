@@ -222,6 +222,7 @@ public:
         k_param_notify,
         k_param_button,
         k_param_osd,
+        k_param_optflow,
 
         k_param_logger = 253,  // Logging Group
 

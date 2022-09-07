@@ -108,6 +108,16 @@ bool Rover::ekf_over_threshold()
         over_thresh_count++;
     }
 
+    bool optflow_healthy = false;
+#if AP_OPTICALFLOW_ENABLED
+    optflow_healthy = optflow.healthy();
+#endif
+    if (!optflow_healthy && (vel_variance >= (2.0f * g.fs_ekf_thresh))) {
+        over_thresh_count += 2;
+    } else if (vel_variance >= g.fs_ekf_thresh) {
+        over_thresh_count++;
+    }
+    
     if (over_thresh_count >= 2) {
         return true;
     }
