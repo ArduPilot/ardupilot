@@ -136,7 +136,7 @@ void AP_Mount_SToRM32::find_gimbal()
         return;
     }
 
-    if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, _sysid, _compid, _chan)) {
+    if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, _sysid, _compid, _chan, 0)) {
         _initialised = true;
     }
 }
