@@ -152,7 +152,8 @@ void AP_Mount_Gremsy::find_gimbal()
     if (!_found_gimbal) {
         mavlink_channel_t chan;
         uint8_t sysid, compid;
-        if (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, sysid, compid, chan)) {
+        uint8_t found_instance = 0;
+        while (GCS_MAVLINK::find_by_mavtype(MAV_TYPE_GIMBAL, sysid, compid, chan, found_instance) && (found_instance < 10)) {
             if (((_instance == 0) && (compid == MAV_COMP_ID_GIMBAL)) ||
                 ((_instance == 1) && (compid == MAV_COMP_ID_GIMBAL2))) {
                 _found_gimbal = true;
@@ -160,8 +161,10 @@ void AP_Mount_Gremsy::find_gimbal()
                 _compid = compid;
                 _chan = chan;
             }
-        } else {
-            // have not yet found a gimbal so return
+            found_instance++;
+        }
+        if (!_found_gimbal) {
+            // still have not yet found a gimbal so return
             return;
         }
     }
