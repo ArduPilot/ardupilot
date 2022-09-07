@@ -372,9 +372,10 @@ public:
     
     /*
       search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
+      instance should be zero if searching for the first instance, 1 for the second, etc
       returns if a matching component is found
      */
-    static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
+    static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel, uint8_t instance) { return routing.find_by_mavtype(mav_type, sysid, compid, channel, instance); }
 
     // update signing timestamp on GPS lock
     static void update_signing_timestamp(uint64_t timestamp_usec);

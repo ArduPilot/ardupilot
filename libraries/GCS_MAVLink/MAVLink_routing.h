@@ -38,10 +38,11 @@ public:
     void send_to_components(uint32_t msgid, const char *pkt, uint8_t pkt_len);
 
     /*
-      search for the first vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
+      search for the vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
+      instance should be zero if searching for the first instance, 1 for the second, etc
       returns true if a match is found
      */
-    bool find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel);
+    bool find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel, uint8_t instance);
 
 private:
     // a simple linear routing table. We don't expect to have a lot of

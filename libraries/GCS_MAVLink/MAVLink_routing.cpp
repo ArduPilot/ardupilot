@@ -244,17 +244,23 @@ void MAVLink_routing::send_to_components(const char *pkt, const mavlink_msg_entr
 
 /*
   search for the first vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
+  instance should be zero if searching for the first instance, 1 for the second, etc
   returns true if a match is found
  */
-bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel)
+bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel, uint8_t instance)
 {
+    uint8_t found_instance = 0;
+
     // check learned routes
     for (uint8_t i=0; i<num_routes; i++) {
         if (routes[i].mavtype == mavtype) {
-            sysid = routes[i].sysid;
-            compid = routes[i].compid;
-            channel = routes[i].channel;
-            return true;
+            if (found_instance == instance) {
+                sysid = routes[i].sysid;
+                compid = routes[i].compid;
+                channel = routes[i].channel;
+                return true;
+            }
+            found_instance++;
         }
     }
 
