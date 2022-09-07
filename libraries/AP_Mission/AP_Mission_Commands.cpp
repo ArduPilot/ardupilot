@@ -245,9 +245,7 @@ bool AP_Mission::start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Miss
         return true;
     }
 
+#endif // HAL_MOUNT_ENABLED
     // if we got this far then message is not handled
     return false;
-#else
-    return false;
-#endif // HAL_MOUNT_ENABLED
 }
