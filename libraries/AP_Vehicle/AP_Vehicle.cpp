@@ -105,6 +105,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_OpenDroneID/AP_OpenDroneID.cpp
     AP_SUBGROUPINFO(opendroneid, "DID_", 15, AP_Vehicle, AP_OpenDroneID),
 #endif
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // @Group: TEMP
+    // @Path: ../AP_TemperatureSensor/AP_TemperatureSensor.cpp
+    AP_SUBGROUPINFO(temperature_sensor, "TEMP", 16, AP_Vehicle, AP_TemperatureSensor),
+#endif
+
     AP_GROUPEND
 };
 
@@ -248,6 +255,10 @@ void AP_Vehicle::setup()
     efi.init();
 #endif
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    temperature_sensor.init();
+#endif
+
 #if AP_AIS_ENABLED
     ais.init();
 #endif
@@ -351,6 +362,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
+#endif
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    SCHED_TASK_CLASS(AP_TemperatureSensor, &vehicle.temperature_sensor, update,        5, 50, 242),
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(accel_cal_update,                                                      10, 100, 245),

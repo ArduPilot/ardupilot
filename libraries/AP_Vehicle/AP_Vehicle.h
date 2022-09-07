@@ -51,6 +51,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_VideoTX/AP_SmartAudio.h>
 #include <AP_VideoTX/AP_Tramp.h>
+#include <AP_TemperatureSensor/AP_TemperatureSensor.h>
 #include <SITL/SITL.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
 #include <AP_AIS/AP_AIS.h>
@@ -406,6 +407,10 @@ protected:
 
 #if AP_FENCE_ENABLED
     AC_Fence fence;
+#endif
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    AP_TemperatureSensor temperature_sensor;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
