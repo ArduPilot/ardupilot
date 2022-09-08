@@ -7946,6 +7946,95 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
+    def test_mission_prearms(self):
+        self.context_push()
+        self.wait_prearm_sys_status_healthy()
+        item_bits = {
+            0: mavutil.mavlink.MAV_CMD_NAV_LAND,
+            1: mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND,
+            2: mavutil.mavlink.MAV_CMD_DO_LAND_START,
+            3: mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            4: mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
+        }
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+
+        self.start_subtest("ensure prearm fails when required mission items are missing")
+        for bit in item_bits:
+            self.set_parameter("ARMING_MIS_ITEMS", 2 ** bit)
+            self.assert_prearm_failure("Missing mission item")
+
+        self.start_subtest("ensure prearm succeeds when required mission items are present")
+        for bit, item in item_bits.items():
+            self.set_parameter("ARMING_MIS_ITEMS", 2 ** bit)
+            self.upload_simple_relhome_mission([(item, 0, 0, 0)])
+            self.arm_vehicle()
+            self.disarm_vehicle()
+
+        self.start_subtest("ensure prearm fails when missing a rally point")
+        self.set_parameter("ARMING_MIS_ITEMS", 2 ** 5)
+        self.assert_prearm_failure("rally")
+
+        self.start_subtest("ensure prearm succeeds when a rally point is present")
+        rally_loc = self.home_relative_loc_ne(50, -25)
+        rally_alt = 37
+        items = [
+            self.mav.mav.mission_item_int_encode(
+                1,
+                1,
+                0, # seq
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
+                0, # current
+                0, # autocontinue
+                0, # p1
+                0, # p2
+                0, # p3
+                0, # p4
+                int(rally_loc.lat * 1e7), # latitude
+                int(rally_loc.lng * 1e7), # longitude
+                rally_alt, # altitude
+                mavutil.mavlink.MAV_MISSION_TYPE_RALLY),
+        ]
+        self.upload_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+            items
+        )
+        self.set_parameters({
+            'RALLY_INCL_HOME': 0,
+        })
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("ensure prearm fails when first WP is too far")
+        self.set_parameter("ARMING_WPDST_MAX", 500)
+        self.upload_simple_relhome_mission(
+            [
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 510, 1, 0),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 490, 1, 0),
+            ]
+        )
+        self.assert_prearm_failure("First WP more than")
+
+        self.start_subtest("ensure prearm succeeds when first WP is close enough")
+        self.upload_simple_relhome_mission(
+            [
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 490, 1, 0),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 510, 1, 0),
+            ]
+        )
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("ensure prearm succeeds with infinite loop missions")
+        # Activate all mission checks
+        self.load_mission("inf_loop.txt")
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.context_pop()
+
     def get_ground_effect_duration_from_current_onboard_log(self, bit, ignore_multi=False):
         '''returns a duration in seconds we were expecting to interact with
         the ground.  Will die if there's more than one such block of
@@ -9362,6 +9451,10 @@ class AutoTestCopter(AutoTest):
             Test("MultipleGPS",
                  "Test multi-GPS behaviour",
                  self.MultipleGPS),
+
+            Test("MissionPreArms",
+                 "Mission prearm checks",
+                 self.test_mission_prearms),
 
             Test("LogUpload",
                  "Log upload",

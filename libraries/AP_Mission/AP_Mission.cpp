@@ -2601,6 +2601,29 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
     return true;
 }
 
+// Get first navigation command which also has valid location.
+// Takes into account mission restart and jumps,but never increments jump counter.
+bool AP_Mission::get_starting_nav_cmd_with_loc(Mission_Command& cmd)
+{
+    uint16_t cmd_index = _restart ? AP_MISSION_CMD_INDEX_NONE : _nav_cmd.index;
+    if (cmd_index == AP_MISSION_CMD_INDEX_NONE) {
+        cmd_index = AP_MISSION_FIRST_REAL_COMMAND;
+    }
+    // Checks only a small number of commands to not get stuck in loops/large missions
+    for (uint8_t i=0; i < 32; i++) {
+        if (!get_next_nav_cmd(cmd_index, cmd)) {
+            // Reached end of mission
+            return false;
+        }
+        if (!is_takeoff_next(cmd.index) && stored_in_location(cmd.id)
+            && cmd.content.location.lat != 0 && cmd.content.location.lng != 0) {
+            return true;
+        }
+        cmd_index = cmd.index + 1;
+    }
+    return false;
+}
+
 // singleton instance
 AP_Mission *AP_Mission::_singleton;
 
