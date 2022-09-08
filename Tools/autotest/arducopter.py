@@ -4633,9 +4633,7 @@ class AutoTestCopter(AutoTest):
     def get_mount_roll_pitch_yaw_deg(self):
         '''return mount (aka gimbal) roll, pitch and yaw angles in degrees'''
         # wait for gimbal attitude message
-        m = self.mav.recv_match(type='GIMBAL_DEVICE_ATTITUDE_STATUS',
-                                blocking=True,
-                                timeout=5)
+        m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
 
         # convert quaternion to euler angles and return
         q = quaternion.Quaternion(m.q)
@@ -4667,9 +4665,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl() # to handle MNT_TYPE changing
 
             # make sure we're getting gimbal device attitude status
-            self.mav.recv_match(type='GIMBAL_DEVICE_ATTITUDE_STATUS',
-                                blocking=True,
-                                timeout=5)
+            self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
 
             # change mount to neutral mode (point forward, not stabilising)
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
