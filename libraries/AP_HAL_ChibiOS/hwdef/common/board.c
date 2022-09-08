@@ -244,13 +244,24 @@ void __early_init(void) {
   SCB->ITCMCR |= 1; // ITCM enable
   SCB->DTCMCR |= 1; // DTCM enable
 
-  // disable cache on SRAM4 so we can use it for DMA
-  mpuConfigureRegion(MPU_REGION_5,
-                     0x38000000U,
+#ifdef STM32_NOCACHE_MPU_REGION_1
+  // disable cache on configured regions so they can be used for DMA
+  // this requires some coordination with the memory map in the MCU configuration script
+  mpuConfigureRegion(STM32_NOCACHE_MPU_REGION_1,
+                     STM32_NOCACHE_MPU_REGION_1_BASE,
                      MPU_RASR_ATTR_AP_RW_RW |
                      MPU_RASR_ATTR_NON_CACHEABLE |
-                     MPU_RASR_SIZE_64K |
+                     STM32_NOCACHE_MPU_REGION_1_SIZE |
                      MPU_RASR_ENABLE);
+#endif
+#ifdef STM32_NOCACHE_MPU_REGION_2
+  mpuConfigureRegion(STM32_NOCACHE_MPU_REGION_2,
+                     STM32_NOCACHE_MPU_REGION_2_BASE,
+                     MPU_RASR_ATTR_AP_RW_RW |
+                     MPU_RASR_ATTR_NON_CACHEABLE |
+                     STM32_NOCACHE_MPU_REGION_2_SIZE |
+                     MPU_RASR_ENABLE);
+#endif
 #endif
 }
 
