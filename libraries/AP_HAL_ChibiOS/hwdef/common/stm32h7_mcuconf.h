@@ -64,11 +64,26 @@
 /*
  * Memory attributes settings.
  */
+//  Disable ChibiOS memory protection which is fixed to SRAM1-3
 #define STM32_NOCACHE_ENABLE                FALSE
 //#define STM32_NOCACHE_MPU_REGION            MPU_REGION_6
 //#define STM32_NOCACHE_RBAR                  0x24000000U
 //#define STM32_NOCACHE_RASR                  MPU_RASR_SIZE_16K
 
+// enable memory protection on SRAM4, used for bdshot
+#define STM32_NOCACHE_MPU_REGION_1          MPU_REGION_5
+#define STM32_NOCACHE_MPU_REGION_1_BASE     0x38000000U
+#if defined(STM32H730xx) // SRAM4 16k on H730
+#define STM32_NOCACHE_MPU_REGION_1_SIZE     MPU_RASR_SIZE_16K
+#else
+#define STM32_NOCACHE_MPU_REGION_1_SIZE     MPU_RASR_SIZE_64K
+#endif
+// enable memory protection on part of AXI used for SDMMC
+#if defined(STM32H730xx)
+#define STM32_NOCACHE_MPU_REGION_2          MPU_REGION_4
+#define STM32_NOCACHE_MPU_REGION_2_BASE     0x2403C000
+#define STM32_NOCACHE_MPU_REGION_2_SIZE     MPU_RASR_SIZE_16K
+#endif
 /*
  * PWR system settings.
  * Reading STM32 Reference Manual is required, settings in PWR_CR3 are
