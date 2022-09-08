@@ -2717,6 +2717,7 @@ function'''
             "INS_GYR_CAL": 1,
         })
         self.reboot_sitl()
+        self.delay_sim_time(5)
         self.progress("Running accelcal")
         self.run_cmd(mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
                      0, 0, 0, 0, 4, 0, 0,
