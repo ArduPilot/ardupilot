@@ -87,7 +87,6 @@ bool bouncebuffer_setup_read(struct bouncebuffer_t *bouncebuffer, uint8_t **buf,
 #endif
 #if defined(STM32H7)
     osalDbgAssert((((uint32_t)*buf)&31) == 0, "bouncebuffer read align");
-    stm32_cacheBufferInvalidate(*buf, (size+31)&~31);
 #endif
     bouncebuffer->busy = true;
     return true;
@@ -100,6 +99,9 @@ void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t
 {
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
         osalDbgAssert((bouncebuffer->busy == true), "bouncebuffer finish_read");
+#if defined(STM32H7)
+        stm32_cacheBufferInvalidate(buf, (size+31)&~31);
+#endif
         if (bouncebuffer->orig_buf) {
             memcpy(bouncebuffer->orig_buf, buf, size);
         }
