@@ -5965,6 +5965,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         target = start
         (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
         self.progress("Setting target to %f %f" % (start.lat, start.lng))
+        stopping_dist = 0.5
 
         self.set_parameters({
             "SIM_PLD_ENABLE": 1,
@@ -5976,6 +5977,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "SIM_PLD_ORIENT": 4,    # emit beams towards south, vehicle's heading must be north to see it
             "SIM_PLD_OPTIONS": 1,
             "DOCK_SPEED": 2,
+            "DOCK_STOP_DIST": stopping_dist,
         })
 
         for type in range(0, 3):  # CYLINDRICAL FOV, CONICAL FOV, SPHERICAL FOV
@@ -5994,11 +5996,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.disarm_vehicle()
                 self.assert_receive_message('GLOBAL_POSITION_INT')
                 new_pos = self.mav.location()
-                delta = self.get_distance(target, new_pos)
-                self.progress("Docked %f metres from target position" % delta)
+                delta = abs(self.get_distance(target, new_pos) - stopping_dist)
+                self.progress("Docked %f metres from stopping point" % delta)
                 max_delta = 0.5
                 if delta > max_delta:
-                    raise NotAchievedException("Did not dock close enough to target position (%fm > %fm" % (delta, max_delta))
+                    raise NotAchievedException("Did not dock close enough to stopping point (%fm > %fm" % (delta, max_delta))
 
                 if not self.current_onboard_log_contains_message("PL"):
                     raise NotAchievedException("Did not see expected PL message")
