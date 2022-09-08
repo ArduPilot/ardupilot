@@ -92,11 +92,6 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Heli" "build.Helicopter" "test.Helicopter"
         continue
     fi
-    # travis-ci
-    if [ "$t" == "sitltest-copter-tests1" ]; then
-        run_autotest "Copter" "build.Copter" "test.CopterTests1"
-        continue
-    fi
     #github actions ci
     if [ "$t" == "sitltest-copter-tests1a" ]; then
         run_autotest "Copter" "build.Copter" "test.CopterTests1a"
@@ -118,13 +113,6 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.Copter" "test.CopterTests1e"
         continue
     fi
-
-    # travis-ci
-    if [ "$t" == "sitltest-copter-tests2" ]; then
-        run_autotest "Copter" "build.Copter" "test.CopterTests2"
-        continue
-    fi
-    #github actions ci
     if [ "$t" == "sitltest-copter-tests2a" ]; then
         run_autotest "Copter" "build.Copter" "test.CopterTests2a"
         continue

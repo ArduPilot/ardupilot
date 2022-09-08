@@ -308,14 +308,12 @@ def should_run_step(step):
 
 __bin_names = {
     "Copter": "arducopter",
-    "CopterTests1": "arducopter",
     "CopterTests1a": "arducopter",
     "CopterTests1b": "arducopter",
     "CopterTests1c": "arducopter",
     "CopterTests1d": "arducopter",
     "CopterTests1e": "arducopter",
 
-    "CopterTests2": "arducopter",
     "CopterTests2a": "arducopter",
     "CopterTests2b": "arducopter",
 
@@ -384,13 +382,11 @@ def find_specific_test_to_run(step):
 
 tester_class_map = {
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1": arducopter.AutoTestCopterTests1,               # travis-ci
     "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
     "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
     "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
     "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
     "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2": arducopter.AutoTestCopterTests2,               # travis-ci
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
     "test.Plane": arduplane.AutoTestPlane,
@@ -1117,14 +1113,12 @@ if __name__ == "__main__":
     ]
 
     moresteps = [
-        'test.CopterTests1',
         'test.CopterTests1a',
         'test.CopterTests1b',
         'test.CopterTests1c',
         'test.CopterTests1d',
         'test.CopterTests1e',
 
-        'test.CopterTests2',
         'test.CopterTests2a',
         'test.CopterTests2b',
 
@@ -1155,14 +1149,12 @@ if __name__ == "__main__":
         "defaults.ArduSub": "defaults.Sub",
         "defaults.APMrover2": "defaults.Rover",
         "defaults.AntennaTracker": "defaults.Tracker",
-        "fly.ArduCopterTests1": "test.CopterTests1",
         "fly.ArduCopterTests1a": "test.CopterTests1a",
         "fly.ArduCopterTests1b": "test.CopterTests1b",
         "fly.ArduCopterTests1c": "test.CopterTests1c",
         "fly.ArduCopterTests1d": "test.CopterTests1d",
         "fly.ArduCopterTests1e": "test.CopterTests1e",
 
-        "fly.ArduCopterTests2": "test.CopterTests2",
         "fly.ArduCopterTests2a": "test.CopterTests2a",
         "fly.ArduCopterTests2b": "test.CopterTests2b",
 
