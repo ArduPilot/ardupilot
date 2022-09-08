@@ -8532,16 +8532,6 @@ class AutoTestCopter(AutoTest):
         self.change_mode('AUTO')
         self.wait_disarmed()
 
-    # a wrapper around all the 1A,1B,1C..etc tests for travis
-    def tests1(self):
-        ret = ([])
-        ret.extend(self.tests1a())
-        ret.extend(self.tests1b())
-        ret.extend(self.tests1c())
-        ret.extend(self.tests1d())
-        ret.extend(self.tests1e())
-        return ret
-
     def ATTITUDE_FAST(self):
         '''ensure that when ATTITDE_FAST is set we get many messages'''
         self.context_push()
@@ -9173,13 +9163,6 @@ class AutoTestCopter(AutoTest):
         ])
         return ret
 
-    # a wrapper around all the 2A,2B,2C..etc tests for travis
-    def tests2(self):
-        ret = ([])
-        ret.extend(self.tests2a())
-        ret.extend(self.tests2b())
-        return ret
-
     def tests2a(self):
         '''return list of all tests'''
         ret = ([
@@ -9379,8 +9362,13 @@ class AutoTestCopter(AutoTest):
 
     def tests(self):
         ret = []
-        ret.extend(self.tests1())
-        ret.extend(self.tests2())
+        ret.extend(self.tests1a())
+        ret.extend(self.tests1b())
+        ret.extend(self.tests1c())
+        ret.extend(self.tests1d())
+        ret.extend(self.tests1e())
+        ret.extend(self.tests2a())
+        ret.extend(self.tests2b())
         return ret
 
     def disabled_tests(self):
@@ -9391,11 +9379,6 @@ class AutoTestCopter(AutoTest):
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
         }
-
-
-class AutoTestCopterTests1(AutoTestCopter):
-    def tests(self):
-        return self.tests1()
 
 
 class AutoTestCopterTests1a(AutoTestCopter):
@@ -9421,11 +9404,6 @@ class AutoTestCopterTests1d(AutoTestCopter):
 class AutoTestCopterTests1e(AutoTestCopter):
     def tests(self):
         return self.tests1e()
-
-
-class AutoTestCopterTests2(AutoTestCopter):
-    def tests(self):
-        return self.tests2()
 
 
 class AutoTestCopterTests2a(AutoTestCopter):
