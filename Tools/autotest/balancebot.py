@@ -18,11 +18,10 @@ from common import NotAchievedException
 testdir = os.path.dirname(os.path.realpath(__file__))
 
 
-def log_name(self):
-    return "BalanceBot"
-
-
 class AutoTestBalanceBot(AutoTestRover):
+
+    def log_name(self):
+        return "BalanceBot"
 
     def vehicleinfo_key(self):
         return "Rover"

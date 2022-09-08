@@ -2441,6 +2441,9 @@ class AutoTest(ABC):
         except OSError:
             pass
         vehicle = self.log_name()
+        if vehicle == 'BalanceBot':
+            # same binary and parameters as Rover
+            return
         vehicle_map = {
             "ArduCopter": "Copter",
             "HeliCopter": "Copter",
@@ -10535,6 +10538,9 @@ switch value'''
 
     def test_parameters(self):
         '''general small tests for parameter system'''
+        if self.is_balancebot():
+            # same binary and parameters as Rover
+            return
         self.test_parameter_documentation()
         self.test_parameters_mis_total()
         self.test_parameters_download()
