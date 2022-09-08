@@ -232,7 +232,7 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
         pushd $ROS_WS_ROOT
         catkin init
         pushd src
-        git clone https://github.com/snktshrma/ardupilot_ros.git
+        git clone https://github.com/ArduPilot/ardupilot_ros.git
         wget https://github.com/ArduPilot/companion/raw/master/Common/ROS/ap_navigation.zip
         unzip ap_navigation.zip
         popd
