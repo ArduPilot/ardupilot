@@ -10866,6 +10866,7 @@ switch value'''
     def ahrstrim(self):
         self.start_subtest("Attitude Correctness")
         self.ahrstrim_attitude_correctness()
+        self.delay_sim_time(5)
         self.start_subtest("Preflight Calibration")
         self.ahrstrim_preflight_cal()
 
