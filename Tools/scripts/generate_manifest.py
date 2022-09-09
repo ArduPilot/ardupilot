@@ -242,7 +242,7 @@ class ManifestGenerator():
         # map of vendor specific USB IDs
         USBID_MAP = {
             'CubeBlack': ['0x2DAE/0x1011'],
-            'CubeOrange': ['0x2DAE/0x1016'],
+            'CubeOrange': ['0x2DAE/0x1016', '0x2DAE/0x1017'],
             'CubePurple': ['0x2DAE/0x1005'],
             'CubeYellow': ['0x2DAE/0x1002'],
             'Pixhawk4': ['0x3162/0x0047'],
