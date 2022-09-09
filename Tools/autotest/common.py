@@ -7231,7 +7231,10 @@ Also, ignores heartbeats not from our target system'''
             if ex is None:
                 ex = ArmedAtEndOfTestException("Still armed at end of test")
             self.progress("Armed at end of test; force-rebooting SITL")
-            self.disarm_vehicle(force=True)
+            try:
+                self.disarm_vehicle(force=True)
+            except AutoTestTimeoutException:
+                reset_needed = True
             self.forced_post_test_sitl_reboots += 1
             if reset_needed:
                 self.progress("Force-resetting SITL")
