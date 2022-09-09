@@ -1138,8 +1138,8 @@ class AutoTestCopter(AutoTest):
             self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 10)
         else:
             self.set_rc(3, 1700)
-        # we may never see ourselves as armed is a heartbeat
-        self.wait_statustext("Takeoff blocked: ESC RPM too low")
+        # we may never see ourselves as armed in a heartbeat
+        self.wait_statustext("Takeoff blocked: ESC RPM too low", check_context=True)
         self.zero_throttle()
         self.disarm_vehicle()
         self.wait_disarmed()
