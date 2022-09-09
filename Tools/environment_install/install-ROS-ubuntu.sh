@@ -219,6 +219,14 @@ cmake ..
 make -j4
 sudo make install
 cd ~
+
+echo "source /usr/share/gazebo/setup.sh" >> ~/.bashrc
+
+echo "export GAZEBO_MODEL_PATH=~/ardupilot_gazebo/models:${GAZEBO_MODEL_PATH}" >> ~/.bashrc
+echo "export GAZEBO_MODEL_PATH=~/ardupilot_gazebo/models_gazebo:${GAZEBO_MODEL_PATH}" >> ~/.bashrc
+echo "export GAZEBO_RESOURCE_PATH=~/ardupilot_gazebo/worlds:${GAZEBO_RESOURCE_PATH}" >> ~/.bashrc
+echo "export GAZEBO_PLUGIN_PATH=~/ardupilot_gazebo/build:${GAZEBO_PLUGIN_PATH}" >> ~/.bashrc
+
 # Use this to install dependencies of packages in a workspace
 # rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
 # Environment Setup - Don't add /opt/ros/${ROS_VERSION}/setup.bash if it's already in bashrc
