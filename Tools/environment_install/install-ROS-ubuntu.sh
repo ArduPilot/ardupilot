@@ -209,8 +209,10 @@ heading "${green}Initializaing rosdep${reset}"
 sudo rosdep init || true
 # To find available packages, use:
 rosdep update
+
 # Use this to install dependencies of packages in a workspace
 # rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
+
 # Environment Setup - Don't add /opt/ros/${ROS_VERSION}/setup.bash if it's already in bashrc
 if maybe_prompt_user "Do you want to add ROS_HOSTNAME and ROS_MASTER_URI to your .bashrc [N/y]?" ; then
     heading "${green}Adding setup.bash, ROS_MASTER_URI and ROS_HOSTNAME to .bashrc ${reset}"
@@ -245,6 +247,28 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
 else
     echo "Skipping adding ardupilot_ws to your home folder."
 fi
+
+heading "${green}Installing Ardupilot_ros Gazebo Plugin${reset}"
+
+# Installing ardupilot_gazebo
+git clone https://github.com/ArduPilot/ardupilot_gazebo
+pushd ardupilot_gazebo
+mkdir build
+pushd build
+cmake ..
+make
+sudo make install
+popd
+popd
+rm -rf ardupilot_gazebo
+
+echo "source /usr/share/gazebo/setup.sh" >> ~/.bashrc
+
+echo "export GAZEBO_MODEL_PATH=~/ardupilot_gazebo/models:${GAZEBO_MODEL_PATH}" >> ~/.bashrc
+echo "export GAZEBO_MODEL_PATH=~/ardupilot_gazebo/models_gazebo:${GAZEBO_MODEL_PATH}" >> ~/.bashrc
+echo "export GAZEBO_RESOURCE_PATH=~/ardupilot_gazebo/worlds:${GAZEBO_RESOURCE_PATH}" >> ~/.bashrc
+echo "export GAZEBO_PLUGIN_PATH=~/ardupilot_gazebo/build:${GAZEBO_PLUGIN_PATH}" >> ~/.bashrc
+
 
 heading "${green}Adding setup.bash, ROS_MASTER_URI and ROS_HOSTNAME to .bashrc ${reset}"
 grep -q -F "source $ROS_WS_ROOT/devel/setup.bash" ~/.bashrc || echo "source $ROS_WS_ROOT/devel/setup.bash" >> ~/.bashrc
