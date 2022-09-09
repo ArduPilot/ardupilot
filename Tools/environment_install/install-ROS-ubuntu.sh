@@ -209,6 +209,16 @@ heading "${green}Initializaing rosdep${reset}"
 sudo rosdep init || true
 # To find available packages, use:
 rosdep update
+
+# Installing ardupilot_gazebo
+git clone https://github.com/SwiftGust/ardupilot_gazebo
+cd ardupilot_gazebo
+mkdir build
+cd build
+cmake ..
+make -j4
+sudo make install
+cd ~
 # Use this to install dependencies of packages in a workspace
 # rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
 # Environment Setup - Don't add /opt/ros/${ROS_VERSION}/setup.bash if it's already in bashrc
