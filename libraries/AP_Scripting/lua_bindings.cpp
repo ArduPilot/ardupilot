@@ -320,6 +320,55 @@ int lua_get_i2c_device(lua_State *L) {
     return 1;
 }
 
+int AP_HAL__I2CDevice_read_registers(lua_State *L) {
+    const int args = lua_gettop(L);
+    bool multi_register;
+    if (args == 2) {
+        multi_register = false;
+    } else if (args == 3) {
+        multi_register = true;
+    } else {
+        return luaL_argerror(L, args, "expected 1 or 2 arguments");
+    }
+
+    AP_HAL::I2CDevice * ud = *check_AP_HAL__I2CDevice(L, 1);
+    if (ud == NULL) {
+        return luaL_error(L, "Internal error, null pointer");
+    }
+
+    const lua_Integer raw_first_reg = luaL_checkinteger(L, 2);
+    luaL_argcheck(L, ((raw_first_reg >= MAX(0, 0)) && (raw_first_reg <= MIN(UINT8_MAX, UINT8_MAX))), 2, "argument out of range");
+    const uint8_t first_reg = static_cast<uint8_t>(raw_first_reg);
+
+    uint8_t recv_length = 1;
+    if (multi_register) {
+        const lua_Integer raw_recv_length = luaL_checkinteger(L, 3);
+        luaL_argcheck(L, ((raw_recv_length >= MAX(0, 0)) && (raw_recv_length <= MIN(UINT8_MAX, UINT8_MAX))), 3, "argument out of range");
+        recv_length = static_cast<uint8_t>(raw_recv_length);
+    }
+
+    uint8_t data[recv_length];
+
+    ud->get_semaphore()->take_blocking();
+    const bool success = static_cast<bool>(ud->read_registers(first_reg, data, recv_length));
+    ud->get_semaphore()->give();
+
+    if (success) {
+        if (!multi_register) {
+            lua_pushinteger(L, data[0]);
+        } else {
+            // push to table
+            lua_newtable(L);
+            for (uint8_t i=0; i < recv_length; i++) {
+                lua_pushinteger(L, i+1);
+                lua_pushinteger(L, data[i]);
+                lua_settable(L, -3);
+            }
+        }
+    }
+    return success;
+}
+
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
 int lua_get_CAN_device(lua_State *L) {
 
