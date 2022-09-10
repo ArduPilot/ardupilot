@@ -216,7 +216,7 @@ class AutoTestCopter(AutoTest):
         self.progress("Copter staging 50 meters east of home at 50 meters altitude In mode Alt Hold")
 
     # loiter - fly south west, then loiter within 5m position and altitude
-    def loiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
+    def ModeLoiter(self, holdtime=10, maxaltchange=5, maxdistchange=5):
         """Hold loiter position."""
         self.takeoff(10, mode="LOITER")
 
@@ -274,7 +274,8 @@ class AutoTestCopter(AutoTest):
             if m.alt <= min_alt:
                 raise NotAchievedException("Altitude not maintained: want >%f got=%f" % (min_alt, m.alt))
 
-    def test_mode_ALT_HOLD(self):
+    def ModeAltHold(self):
+        '''Test AltHold Mode'''
         self.takeoff(10, mode="ALT_HOLD")
         self.watch_altitude_maintained(9, 11, timeout=5)
         # feed in full elevator and aileron input and make sure we
@@ -327,9 +328,8 @@ class AutoTestCopter(AutoTest):
                 "FS_GCS_ENABLE": paramValue,
             })
 
-    # fly a square in alt_hold mode
-    def fly_square(self, side=50, timeout=300):
-
+    def RecordThenPlayMission(self, side=50, timeout=300):
+        '''Use switches to toggle in mission, then fly it'''
         self.takeoff(20, mode="ALT_HOLD")
 
         """Fly a square, flying N then E ."""
@@ -467,8 +467,8 @@ class AutoTestCopter(AutoTest):
 
         raise AutoTestTimeoutException("Did not get home and disarm")
 
-    def fly_loiter_to_alt(self):
-        """loiter to alt"""
+    def LoiterToAlt(self):
+        """Loiter-To-Alt"""
 
         self.context_push()
 
@@ -515,7 +515,8 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     # Tests all actions and logic behind the radio failsafe
-    def fly_throttle_failsafe(self, side=60, timeout=360):
+    def ThrottleFailsafe(self, side=60, timeout=360):
+        '''Test Throttle Failsafe'''
         self.start_subtest("If you haven't taken off yet RC failure should be instant disarm")
         self.change_mode("STABILIZE")
         self.set_parameter("DISARM_DELAY", 0)
@@ -728,7 +729,8 @@ class AutoTestCopter(AutoTest):
         self.reboot_sitl()
 
     # Tests all actions and logic behind the GCS failsafe
-    def fly_gcs_failsafe(self, side=60, timeout=360):
+    def GCSFailsafe(self, side=60, timeout=360):
+        '''Test GCS Failsafe'''
         try:
             self.test_gcs_failsafe(side=side, timeout=timeout)
         except Exception as ex:
@@ -902,7 +904,8 @@ class AutoTestCopter(AutoTest):
         self.set_parameter('FS_OPTIONS', 0)
         self.progress("All GCS failsafe tests complete")
 
-    def test_custom_controller(self, timeout=300):
+    def CustomController(self, timeout=300):
+        '''Test Custom Controller'''
         self.progress("Configure custom controller parameters")
         self.set_parameters({
             'CC_TYPE': 2,
@@ -942,7 +945,8 @@ class AutoTestCopter(AutoTest):
         self.progress("Custom controller test complete")
 
     # Tests all actions and logic behind the battery failsafe
-    def fly_battery_failsafe(self, timeout=300):
+    def BatteryFailsafe(self, timeout=300):
+        '''Fly Battery Failsafe'''
         self.context_push()
         ex = None
         try:
@@ -1097,8 +1101,8 @@ class AutoTestCopter(AutoTest):
 
         self.progress("All Battery failsafe tests complete")
 
-    # Tests the vibration failsafe
-    def test_vibration_failsafe(self):
+    def VibrationFailsafe(self):
+        '''Test Vibration Failsafe'''
         self.context_push()
 
         # takeoff in Loiter to 20m
@@ -1145,7 +1149,8 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
 
     # Tests the motor failsafe
-    def test_takeoff_check(self):
+    def TakeoffCheck(self):
+        '''Test takeoff check'''
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,
             'SIM_ESC_TELEM': 1,
@@ -1213,7 +1218,7 @@ class AutoTestCopter(AutoTest):
 
     # Tests any EK3 accel bias is subtracted from the correct IMU data
     def EK3AccelBias(self):
-
+        '''Test EK3 Accel Bias data'''
         self.context_push()
 
         self.start_test("Test zero bias")
@@ -1282,13 +1287,13 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
-    # fly_stability_patch - fly south, then hold loiter within 5m
+    # StabilityPatch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
-    def fly_stability_patch(self,
-                            holdtime=30,
-                            maxaltchange=5,
-                            maxdistchange=10):
-
+    def StabilityPatch(self,
+                       holdtime=30,
+                       maxaltchange=5,
+                       maxdistchange=10):
+        '''Fly stability patch'''
         self.takeoff(10, mode="LOITER")
 
         # first south
@@ -1414,12 +1419,14 @@ class AutoTestCopter(AutoTest):
         self.set_rc(2, 1500)
         self.do_RTL()
 
-    def fly_fence_avoid_test(self, timeout=180):
+    def HorizontalAvoidFence(self, timeout=180):
+        '''Test horizontal Avoidance fence'''
         self.fly_fence_avoid_test_radius_check(avoid_behave=1, timeout=timeout)
         self.fly_fence_avoid_test_radius_check(avoid_behave=0, timeout=timeout)
 
     # fly_fence_test - fly east until you hit the horizontal circular fence
-    def fly_fence_test(self, timeout=180):
+    def HorizontalFence(self, timeout=180):
+        '''Test horizontal fence'''
         # enable fence, disable avoidance
         self.set_parameters({
             "FENCE_ENABLE": 1,
@@ -1517,8 +1524,9 @@ class AutoTestCopter(AutoTest):
             "Fence test failed to reach home (%fm distance) - "
             "timed out after %u seconds" % (home_distance, timeout,))
 
-    # fly_alt_max_fence_test - fly up until you hit the fence ceiling
-    def fly_alt_max_fence_test(self):
+    # MaxAltFence - fly up until you hit the fence ceiling
+    def MaxAltFence(self):
+        '''Test Max Alt Fence'''
         self.takeoff(10, mode="LOITER")
         """Hold loiter position."""
 
@@ -1555,7 +1563,8 @@ class AutoTestCopter(AutoTest):
         self.zero_throttle()
 
     # fly_alt_min_fence_test - fly down until you hit the fence floor
-    def fly_alt_min_fence_test(self):
+    def MinAltFence(self):
+        '''Test Min Alt Fence'''
         self.takeoff(30, mode="LOITER", timeout=60)
 
         # enable fence, disable avoidance
@@ -1597,9 +1606,10 @@ class AutoTestCopter(AutoTest):
 
         self.zero_throttle()
 
-    def fly_fence_floor_enabled_landing(self):
-        """ fly_fence_floor_enabled_landing. Ensures we can initiate and complete
-        an RTL while the fence is enabled. """
+    def FenceFloorEnabledLanding(self):
+        """Ensures we can initiate and complete an RTL while the fence is
+        enabled.
+        """
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
         self.progress("Test Landing while fence floor enabled")
@@ -1635,7 +1645,7 @@ class AutoTestCopter(AutoTest):
         self.do_fence_disable()
         self.assert_fence_disabled()
 
-    def fly_gps_glitch_loiter_test(self, timeout=30, max_distance=20):
+    def GPSGlitchLoiter(self, timeout=30, max_distance=20):
         """fly_gps_glitch_loiter_test. Fly south east in loiter and test
         reaction to gps glitch."""
         self.takeoff(10, mode="LOITER")
@@ -1747,7 +1757,7 @@ class AutoTestCopter(AutoTest):
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
-    def fly_gps_glitch_loiter_test2(self):
+    def GPSGlitchLoiter2(self):
         """test vehicle handles GPS glitch (aka EKF Reset) without twitching"""
         self.context_push()
         self.takeoff(10, mode="LOITER")
@@ -1773,8 +1783,8 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
-    # fly_gps_glitch_auto_test - fly mission and test reaction to gps glitch
-    def fly_gps_glitch_auto_test(self, timeout=180):
+    def GPSGlitchAuto(self, timeout=180):
+        '''fly mission and test reaction to gps glitch'''
         # set-up gps glitch array
         glitch_lat = [0.0002996,
                       0.0006958,
@@ -1877,7 +1887,8 @@ class AutoTestCopter(AutoTest):
     #   fly_simple - assumes the simple bearing is initialised to be
     #   directly north flies a box with 100m west, 15 seconds north,
     #   50 seconds east, 15 seconds south
-    def fly_simple(self, side=50):
+    def SimpleMode(self, side=50):
+        '''Fly in SIMPLE mode'''
         self.takeoff(10, mode="LOITER")
 
         # set SIMPLE mode for all flight modes
@@ -1921,7 +1932,8 @@ class AutoTestCopter(AutoTest):
         self.do_RTL(timeout=500)
 
     # fly_super_simple - flies a circle around home for 45 seconds
-    def fly_super_simple(self, timeout=45):
+    def SuperSimpleCircle(self, timeout=45):
+        '''Fly a circle in SUPER SIMPLE mode'''
         self.takeoff(10, mode="LOITER")
 
         # fly forward 20m
@@ -1961,7 +1973,8 @@ class AutoTestCopter(AutoTest):
         self.do_RTL()
 
     # fly_circle - flies a circle with 20m radius
-    def fly_circle(self, holdtime=36):
+    def ModeCircle(self, holdtime=36):
+        '''Fly CIRCLE mode'''
         # the following should not be required.  But there appears to
         # be a physics failure in the simulation which is causing CI
         # to fall over a lot.  -pb 202007021209
@@ -2001,8 +2014,8 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    # test_mag_fail - test failover of compass in EKF
-    def test_mag_fail(self):
+    def MagFail(self):
+        '''test failover of compass in EKF'''
         # we want both EK2 and EK3
         self.set_parameters({
             "EK2_ENABLE": 1,
@@ -2052,7 +2065,8 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def fly_flip(self):
+    def ModeFlip(self):
+        '''Fly Flip Mode'''
         ex = None
         try:
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
@@ -2106,7 +2120,7 @@ class AutoTestCopter(AutoTest):
                 "EK3_SRC1_VELZ": 0,
             })
 
-    def optical_flow(self):
+    def OpticalFlow(self):
         '''test optical low works'''
         self.start_subtest("Make sure no crash if no rangefinder")
         self.set_parameter("SIM_FLOW_ENABLE", 1)
@@ -2119,8 +2133,8 @@ class AutoTestCopter(AutoTest):
         self.delay_sim_time(5)
         self.wait_statustext("Need Position Estimate", timeout=300)
 
-    # fly_optical_flow_limits - test EKF navigation limiting
-    def fly_optical_flow_limits(self):
+    def OpticalFlowLimits(self):
+        '''test EKF navigation limiting'''
         ex = None
         self.context_push()
         try:
@@ -2185,8 +2199,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    # fly_optical_flow_calibration - test optical flow calibration
-    def fly_optical_flow_calibration(self):
+    def OpticalFlowCalibration(self):
+        '''test optical flow calibration'''
         ex = None
         self.context_push()
         try:
@@ -2268,7 +2282,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_autotune(self):
+    def AutoTune(self):
         """Test autotune mode"""
 
         rlld = self.get_parameter("ATC_RAT_RLL_D")
@@ -2306,7 +2320,7 @@ class AutoTestCopter(AutoTest):
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
                                    (self.get_sim_time() - tstart))
 
-    def fly_autotune_switch(self):
+    def AutoTuneSwitch(self):
         """Test autotune on a switch with gains being saved"""
 
         # autotune changes a set of parameters on the vehicle which
@@ -2407,8 +2421,8 @@ class AutoTestCopter(AutoTest):
         raise NotAchievedException("AUTOTUNE failed (%u seconds)" %
                                    (self.get_sim_time() - tstart))
 
-    # fly_auto_test - fly mission which tests a significant number of commands
-    def fly_auto_test(self):
+    def CopterMission(self):
+        '''fly mission which tests a significant number of commands'''
         # Fly mission #1
         self.progress("# Load copter_mission")
         # load the waypoint count
@@ -2443,8 +2457,8 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
 
-    # fly_auto_test using CAN GPS - fly mission which tests normal operation alongside CAN GPS
-    def fly_auto_test_using_can_gps(self):
+    def CANGPSCopterMission(self):
+        '''fly mission which tests normal operation alongside CAN GPS'''
         self.set_parameters({
             "CAN_P1_DRIVER": 1,
             "GPS_TYPE": 9,
@@ -2551,10 +2565,10 @@ class AutoTestCopter(AutoTest):
         self.start_sup_program(instance=0)
         self.context_stop_collecting('STATUSTEXT')
         self.context_pop()
-        self.fly_auto_test()
+        self.CopterMission()
 
-    # test takeoff altitude
-    def test_takeoff_alt(self):
+    def TakeoffAlt(self):
+        '''Test Takeoff command altitude'''
         # Test case #1 (set target altitude to relative -10m from the ground, -10m is invalid, so it is set to 1m)
         self.progress("Testing relative alt from the ground")
         self.do_takeoff_alt("copter_takeoff.txt", 1, False)
@@ -2599,7 +2613,7 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
 
-    def fly_motor_fail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
+    def MotorFail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
         """Test flight with reduced motor efficiency"""
 
         # we only expect an octocopter to survive ATM:
@@ -2730,7 +2744,7 @@ class AutoTestCopter(AutoTest):
         tend = self.get_sim_time()
         return tstart, tend, vfr_hud.throttle
 
-    def fly_motor_vibration(self):
+    def MotorVibration(self):
         """Test flight with motor vibration"""
         self.context_push()
 
@@ -2809,7 +2823,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_vision_position(self):
+    def VisionPosition(self):
         """Disable GPS navigation, enable Vicon input."""
         # scribble down a location we can set origin to:
 
@@ -2907,7 +2921,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_body_frame_odom(self):
+    def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
 
         if self.get_parameter("AHRS_EKF_TYPE") != 3:
@@ -2966,7 +2980,7 @@ class AutoTestCopter(AutoTest):
         if not self.current_onboard_log_contains_message("XKFD"):
             raise NotAchievedException("Did not find expected XKFD message")
 
-    def fly_gps_vicon_switching(self):
+    def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
         self.customise_SITL_commandline(["--uartF=sim:vicon:"])
 
@@ -3045,7 +3059,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_rtl_speed(self):
+    def RTLSpeed(self):
         """Test RTL Speed parameters"""
         rtl_speed_ms = 7
         wpnav_speed_ms = 4
@@ -3074,7 +3088,7 @@ class AutoTestCopter(AutoTest):
         self.monitor_groundspeed(wpnav_speed_ms, tolerance=0.6, timeout=5)
         self.do_RTL()
 
-    def fly_nav_delay(self):
+    def NavDelay(self):
         """Fly a simple mission that has a delay in it."""
 
         self.load_mission("copter_nav_delay.txt")
@@ -3121,7 +3135,8 @@ class AutoTestCopter(AutoTest):
         if calculated_delay < want_delay:
             raise NotAchievedException("Did not delay for long enough")
 
-    def test_rangefinder(self):
+    def RangeFinder(self):
+        '''Test RangeFinder Basic Functionality'''
         ex = None
         self.context_push()
 
@@ -3203,12 +3218,13 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_terrain_spline_mission(self):
+    def SplineTerrain(self):
+        '''Test Splines and Terrain'''
         self.set_parameter("TERRAIN_ENABLE", 0)
         self.fly_mission("wp.txt")
 
     def WPNAV_SPEED(self):
-        '''ensure resetting WPNAV_SPEED works'''
+        '''ensure resetting WPNAV_SPEED during a mission works'''
 
         loc = self.poll_home_position()
         alt = 20
@@ -3238,7 +3254,7 @@ class AutoTestCopter(AutoTest):
         self.do_RTL()
 
     def WPNAV_SPEED_UP(self):
-        '''ensure resetting WPNAV_SPEED_UP works'''
+        '''Change speed (up) during mission'''
 
         items = []
 
@@ -3263,7 +3279,7 @@ class AutoTestCopter(AutoTest):
         self.do_RTL(timeout=240)
 
     def WPNAV_SPEED_DN(self):
-        '''ensure resetting WPNAV_SPEED_DN works'''
+        '''Change speed (down) during mission'''
 
         items = []
 
@@ -3296,7 +3312,8 @@ class AutoTestCopter(AutoTest):
         self.wait_waypoint(num_wp-1, num_wp-1)
         self.wait_disarmed()
 
-    def test_surface_tracking(self):
+    def SurfaceTracking(self):
+        '''Test Surface Tracking'''
         ex = None
         self.context_push()
 
@@ -3404,8 +3421,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_parachute(self):
-
+    def Parachute(self):
+        '''Test Parachute Functionality'''
         self.set_rc(9, 1000)
         self.set_parameters({
             "CHUTE_ENABLED": 1,
@@ -3567,7 +3584,8 @@ class AutoTestCopter(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
-    def test_motortest(self, timeout=60):
+    def MotorTest(self, timeout=60):
+        '''Run Motor Tests'''
         self.start_subtest("Testing PWM output")
         pwm_in = 1300
         # default frame is "+" - start motor of 2 is "B", which is
@@ -3608,7 +3626,7 @@ class AutoTestCopter(AutoTest):
         self.wait_statustext("finished motor test")
         self.end_subtest("Testing percentage output")
 
-    def fly_precision_landing_drivers(self):
+    def PrecisionLanding(self):
         """Use PrecLand backends precision messages to land aircraft."""
 
         self.context_push()
@@ -3838,7 +3856,7 @@ class AutoTestCopter(AutoTest):
                                       timeout=1)
             self.progress("Received ack: %s" % str(ack))
 
-    def fly_nav_delay_abstime(self):
+    def NavDelayAbsTime(self):
         """fly a simple mission that has a delay in it"""
         self.fly_nav_delay_abstime_x(87)
 
@@ -3886,7 +3904,7 @@ class AutoTestCopter(AutoTest):
         if error > 2:
             raise NotAchievedException("delay outside expectations")
 
-    def fly_nav_takeoff_delay_abstime(self):
+    def NavDelayTakeoffAbsTime(self):
         """make sure taking off at a specific time works"""
         self.load_mission("copter_nav_delay_takeoff.txt")
 
@@ -3927,9 +3945,8 @@ class AutoTestCopter(AutoTest):
         if not took_off:
             raise NotAchievedException("Did not take off")
 
-    def fly_zigzag_mode(self):
+    def ModeZigZag(self):
         '''test zigzag mode'''
-
         # set channel 8 for zigzag savewp and recentre it
         self.set_parameter("RC8_OPTION", 61)
 
@@ -4013,7 +4030,8 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def test_setting_modes_via_modeswitch(self):
+    def SetModesViaModeSwitch(self):
+        '''Set modes via modeswitch'''
         self.context_push()
         ex = None
         try:
@@ -4055,7 +4073,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_setting_modes_via_auxswitch(self):
+    def SetModesViaAuxSwitch(self):
+        '''"Set modes via auxswitch"'''
         self.context_push()
         ex = None
         try:
@@ -4500,7 +4519,8 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def test_gripper_mission(self):
+    def TestGripperMission(self):
+        '''Test Gripper mission items'''
         self.context_push()
         ex = None
         try:
@@ -4522,7 +4542,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_spline_last_waypoint(self):
+    def SplineLastWaypoint(self):
+        '''Test Spline as last waypoint'''
         self.context_push()
         ex = None
         try:
@@ -4542,7 +4563,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_manual_throttle_mode_change(self):
+    def ManualThrottleModeChange(self):
+        '''Check manual throttle mode changes denied on high throttle'''
         self.set_parameter("FS_GCS_ENABLE", 0) # avoid GUIDED instant disarm
         self.change_mode("STABILIZE")
         self.wait_ready_to_arm()
@@ -4648,7 +4670,8 @@ class AutoTestCopter(AutoTest):
                      0, # stabilize pitch (unsupported)
                      0, 0, 0, 0)
 
-    def test_mount(self):
+    def Mount(self):
+        '''Test Camera/Antenna Mount'''
         ex = None
         self.context_push()
         old_srcSystem = self.mav.mav.srcSystem
@@ -4990,6 +5013,7 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def MountYawVehicleForMountROI(self):
+        '''Test Camera/Antenna Mount vehicle yawing for ROI'''
         self.context_push()
 
         self.set_parameter("SYSID_MYGCS", self.mav.source_system)
@@ -5083,7 +5107,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_throw_mode(self):
+    def ThrowMode(self):
+        '''Fly Throw Mode'''
         # test boomerang mode:
         self.progress("Throwing vehicle away")
         self.set_parameters({
@@ -5142,7 +5167,7 @@ class AutoTestCopter(AutoTest):
 
         return freq, hover_throttle, peakdb
 
-    def fly_dynamic_notches(self):
+    def DynamicNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with dynamic notches")
         self.context_push()
@@ -5213,7 +5238,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_esc_telemetry_notches(self):
+    def DynamicRpmNotches(self):
         """Use dynamic harmonic notch to control motor noise via ESC telemetry."""
         self.progress("Flying with ESC telemetry driven dynamic notches")
 
@@ -5490,16 +5515,16 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_gyro_fft_harmonic(self):
+    def GyroFFTHarmonic(self):
         """Use dynamic harmonic notch to control motor noise with harmonic matching of the first harmonic."""
         self.test_gyro_fft_harmonic(False)
 
-    def fly_gyro_fft_continuous_averaging(self):
+    def GyroFFTContinuousAveraging(self):
         """Use dynamic harmonic notch with FFT averaging to control motor noise
            with harmonic matching of the first harmonic."""
         self.test_gyro_fft_harmonic(True)
 
-    def fly_gyro_fft(self):
+    def GyroFFT(self):
         """Use dynamic harmonic notch to control motor noise."""
         # basic gyro sample rate test
         self.progress("Flying with gyro FFT - Gyro sample rate")
@@ -5650,7 +5675,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_gyro_fft_average(self):
+    def GyroFFTAverage(self):
         """Use dynamic harmonic notch to control motor noise setup via FFT averaging."""
         # basic gyro sample rate test
         self.progress("Flying with gyro FFT harmonic - Gyro sample rate")
@@ -5792,7 +5817,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_brake_mode(self):
+    def BrakeMode(self):
+        '''Fly Brake Mode'''
         # test brake mode
         self.progress("Testing brake mode")
         self.takeoff(10, mode="LOITER")
@@ -5840,7 +5866,8 @@ class AutoTestCopter(AutoTest):
             if delta < 1:
                 break
 
-    def test_altitude_types(self):
+    def AltTypes(self):
+        '''Test Different Altitude Types'''
         '''start by disabling GCS failsafe, otherwise we immediately disarm
         due to (apparently) not receiving traffic from the GCS for
         too long.  This is probably a function of --speedup'''
@@ -6006,15 +6033,17 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
-    def test_arm_feature(self):
+    def ArmFeatures(self):
+        '''Arm features'''
         self.loiter_requires_position()
 
-        super(AutoTestCopter, self).test_arm_feature()
+        super(AutoTestCopter, self).ArmFeatures()
 
-    def test_parameter_checks(self):
+    def ParameterChecks(self):
+        '''Test Arming Parameter Checks'''
         self.test_parameter_checks_poscontrol("PSC")
 
-    def fly_poshold_takeoff(self):
+    def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
 
@@ -6084,8 +6113,8 @@ class AutoTestCopter(AutoTest):
         ret[5] = 1800 # mode switch
         return ret
 
-    def test_manual_control(self):
-        '''test manual_control mavlink message'''
+    def MANUAL_CONTROL(self):
+        '''test MANUAL_CONTROL mavlink message'''
         self.set_parameter("SYSID_MYGCS", self.mav.source_system)
 
         self.change_mode('STABILIZE')
@@ -6201,6 +6230,7 @@ class AutoTestCopter(AutoTest):
             break
 
     def OBSTACLE_DISTANCE_3D(self):
+        '''Check round-trip behaviour of distance sensors'''
         self.context_push()
         self.set_parameters({
             "SERIAL5_PROTOCOL": 1,
@@ -6403,11 +6433,13 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_proximity_avoidance_test(self):
+    def AC_Avoidance_Proximity(self):
+        '''Test proximity avoidance slide behaviour'''
         self.fly_proximity_avoidance_test_alt_no_avoid()
         self.fly_proximity_avoidance_test_corners()
 
-    def fly_fence_avoidance_test(self):
+    def AC_Avoidance_Fence(self):
+        '''Test fence avoidance slide behaviour'''
         self.context_push()
         ex = None
         try:
@@ -6436,7 +6468,8 @@ class AutoTestCopter(AutoTest):
             hdg=heading
         )
 
-    def fly_follow_mode(self):
+    def ModeFollow(self):
+        '''Fly follow mode'''
         foll_ofs_x = 30 # metres
         self.set_parameters({
             "FOLL_ENABLE": 1,
@@ -6497,7 +6530,8 @@ class AutoTestCopter(AutoTest):
             if m.lat != 0 or m.lon != 0:
                 return m
 
-    def fly_beacon_position(self):
+    def BeaconPosition(self):
+        '''Fly Beacon Position'''
         self.reboot_sitl()
 
         self.wait_ready_to_arm(require_absolute=True)
@@ -6587,7 +6621,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_beacon_avoidance_test(self):
+    def AC_Avoidance_Beacon(self):
+        '''Test beacon avoidance slide behaviour'''
         self.context_push()
         ex = None
         try:
@@ -6628,7 +6663,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_wind_baro_compensation(self):
+    def BaroWindCorrection(self):
+        '''Test wind estimation and baro position error compensation'''
         self.context_push()
         ex = None
         try:
@@ -6727,7 +6763,8 @@ class AutoTestCopter(AutoTest):
             break
         self.progress("Got generator speed and state")
 
-    def test_richenpower(self):
+    def RichenPower(self):
+        '''Test RichenPower generator'''
         self.set_parameters({
             "SERIAL5_PROTOCOL": 30,
             "SIM_RICH_ENABLE": 1,
@@ -6787,7 +6824,8 @@ class AutoTestCopter(AutoTest):
         if not self.current_onboard_log_contains_message("GEN"):
             raise NotAchievedException("Did not find expected GEN message")
 
-    def test_ie24(self):
+    def IE24(self):
+        '''Test IntelligentEnergy 2.4kWh generator'''
         self.context_push()
         ex = None
         try:
@@ -6832,7 +6870,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_aux_switch_options(self):
+    def AuxSwitchOptions(self):
+        '''Test random aux mode options'''
         self.set_parameter("RC7_OPTION", 58) # clear waypoints
         self.load_mission("copter_loiter_to_alt.txt")
         self.set_rc(7, 1000)
@@ -6854,7 +6893,8 @@ class AutoTestCopter(AutoTest):
         self.wait_current_waypoint(0, timeout=10)
         self.set_rc(7, 1000)
 
-    def test_aux_functions_in_mission(self):
+    def AuxFunctionsInMission(self):
+        '''Test use of auxilliary functions in missions'''
         self.load_mission("aux_functions.txt")
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
@@ -6907,7 +6947,8 @@ class AutoTestCopter(AutoTest):
         if not self.current_onboard_log_contains_message("RFND"):
             raise NotAchievedException("No RFND messages in log")
 
-    def fly_proximity_mavlink_distance_sensor(self):
+    def MAVProximity(self):
+        '''Test MAVLink proximity driver'''
         self.start_subtest("Test mavlink proximity sensor using DISTANCE_SENSOR messages")  # noqa
         self.context_push()
         ex = None
@@ -7135,7 +7176,7 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_gsf(self):
+    def GSF(self):
         '''test the Gaussian Sum filter'''
         ex = None
         self.context_push()
@@ -7217,7 +7258,8 @@ class AutoTestCopter(AutoTest):
         self.progress("mavlink rangefinder OK")
         self.land_and_disarm()
 
-    def fly_rangefinder_driver_maxbotix(self):
+    def MaxBotixI2CXL(self):
+        '''Test maxbotix rangefinder drivers'''
         ex = None
         try:
             self.context_push()
@@ -7294,7 +7336,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def fly_rangefinder_drivers(self):
+    def RangeFinderDrivers(self):
+        '''Test rangefinder drivers'''
         self.set_parameters({
             "RTL_ALT": 500,
             "RTL_ALT_TYPE": 1,
@@ -7357,7 +7400,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
 
-    def fly_rangefinder_drivers_maxalt(self):
+    def RangeFinderDriversMaxAlt(self):
         '''test max-height behaviour'''
         # lightwareserial goes to 130m when out of range
         self.set_parameters({
@@ -7388,7 +7431,8 @@ class AutoTestCopter(AutoTest):
 
         self.do_RTL()
 
-    def fly_ship_takeoff(self):
+    def ShipTakeoff(self):
+        '''Fly Simulated Ship Takeoff'''
         # test ship takeoff
         self.wait_groundspeed(0, 2)
         self.set_parameters({
@@ -7406,7 +7450,8 @@ class AutoTestCopter(AutoTest):
         # ship will have moved on, so we land on the water which isn't moving
         self.wait_groundspeed(0, 2)
 
-    def test_parameter_validation(self):
+    def ParameterValidation(self):
+        '''Test parameters are checked for validity'''
         # wait 10 seconds for initialisation
         self.delay_sim_time(10)
         self.progress("invalid; min must be less than max:")
@@ -7425,6 +7470,7 @@ class AutoTestCopter(AutoTest):
         self.assert_prearm_failure("Check MOT_PWM_MIN/MAX")
 
     def SensorErrorFlags(self):
+        '''Test we get ERR messages when sensors have issues'''
         self.reboot_sitl()
 
         for (param_names, param_value, expected_subsys, expected_ecode, desc) in [
@@ -7451,7 +7497,8 @@ class AutoTestCopter(AutoTest):
             if not success:
                 raise NotAchievedException("Did not find %s log message" % desc)
 
-    def test_alt_estimate_prearm(self):
+    def AltEstimation(self):
+        '''Test that Alt Estimation is mandatory for ALT_HOLD'''
         self.context_push()
         ex = None
         try:
@@ -7493,7 +7540,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_ekf_source(self):
+    def EKFSource(self):
+        '''Check EKF Source Prearms work'''
         self.context_push()
         ex = None
         try:
@@ -7580,7 +7628,7 @@ class AutoTestCopter(AutoTest):
         })
 
         old_onboard_logs = sorted(self.log_list())
-        self.fly_beacon_position()
+        self.BeaconPosition()
         new_onboard_logs = sorted(self.log_list())
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
@@ -7593,14 +7641,15 @@ class AutoTestCopter(AutoTest):
         })
 
         old_onboard_logs = sorted(self.log_list())
-        self.fly_optical_flow_limits()
+        self.OpticalFlowLimits()
         new_onboard_logs = sorted(self.log_list())
 
         log_difference = [x for x in new_onboard_logs if x not in old_onboard_logs]
         print("log difference: %s" % str(log_difference))
         return log_difference[0]
 
-    def test_gps_blending(self):
+    def GPSBlending(self):
+        '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
 
         self.context_push()
@@ -7674,7 +7723,8 @@ class AutoTestCopter(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_callisto(self):
+    def Callisto(self):
+        '''Test Callisto'''
         self.customise_SITL_commandline(
             ["--defaults", ','.join(self.model_defaults_filepath('Callisto')), ],
             model="octa-quad:@ROMFS/models/Callisto.json",
@@ -7683,7 +7733,8 @@ class AutoTestCopter(AutoTest):
         self.takeoff(10)
         self.do_RTL()
 
-    def fly_each_frame(self):
+    def FlyEachFrame(self):
+        '''Fly each supported internal frame'''
         vinfo = vehicleinfo.VehicleInfo()
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
@@ -7753,7 +7804,7 @@ class AutoTestCopter(AutoTest):
 
             self.do_RTL()
 
-    def test_replay(self):
+    def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
         util.build_SITL('tool/Replay', clean=False, configure=False)
@@ -7796,6 +7847,7 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("check_replay failed")
 
     def DefaultIntervalsFromFiles(self):
+        '''Test setting default mavlink message intervals from files'''
         ex = None
         intervals_filepath = util.reltopdir("message-intervals-chan0.txt")
         self.progress("Using filepath (%s)" % intervals_filepath)
@@ -7833,6 +7885,7 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def BaroDrivers(self):
+        '''Test Baro Drivers'''
         sensors = [
             ("MS5611", 2),
         ]
@@ -7887,7 +7940,8 @@ class AutoTestCopter(AutoTest):
             self.context_pop()
         self.reboot_sitl()
 
-    def test_copter_gps_zero(self):
+    def PositionWhenGPSIsZero(self):
+        '''Ensure position doesn't zero when GPS lost'''
         # https://github.com/ArduPilot/ardupilot/issues/14236
         self.progress("arm the vehicle and takeoff in Guided")
         self.takeoff(20, mode='GUIDED')
@@ -7909,7 +7963,8 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.reboot_sitl()
 
-    def test_SMART_RTL(self):
+    def SMART_RTL(self):
+        '''Check SMART_RTL'''
         self.context_push()
         ex = None
         try:
@@ -7987,7 +8042,7 @@ class AutoTestCopter(AutoTest):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
     def ThrowDoubleDrop(self):
-        # test boomerang mode:
+        '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
         self.set_parameters({
             "SIM_SHOVE_Z": -11,
@@ -8041,6 +8096,7 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed(timeout=240)
 
     def GroundEffectCompensation_takeOffExpected(self):
+        '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.progress("Making sure we'll have a short log to look at")
@@ -8144,10 +8200,12 @@ class AutoTestCopter(AutoTest):
         pass
 
     def MAV_CMD_CONDITION_YAW(self):
+        '''Test response to MAV_CMD_CONDITION_YAW'''
         self.MAV_CMD_CONDITION_YAW_absolute()
         self.MAV_CMD_CONDITION_YAW_relative()
 
     def GroundEffectCompensation_touchDownExpected(self):
+        '''Test EKF's handling of touchdown-expected'''
         self.zero_throttle()
         self.change_mode('ALT_HOLD')
         self.set_parameter("LOG_FILE_DSRMROT", 1)
@@ -8183,6 +8241,7 @@ class AutoTestCopter(AutoTest):
         self.upload_simple_relhome_mission(items)
 
     def RefindGPS(self):
+        '''Refind the GPS and attempt to RTL rather than continue to land'''
         # https://github.com/ArduPilot/ardupilot/issues/14236
         self.progress("arm the vehicle and takeoff in Guided")
         self.takeoff(20, mode='GUIDED')
@@ -8205,6 +8264,7 @@ class AutoTestCopter(AutoTest):
         self.do_RTL()
 
     def GPSForYaw(self):
+        '''Moving baseline GPS yaw'''
         self.context_push()
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.reboot_sitl()
@@ -8229,6 +8289,7 @@ class AutoTestCopter(AutoTest):
             raise ex
 
     def AP_Avoidance(self):
+        '''ADSB-based avoidance'''
         self.set_parameters({
             "AVD_ENABLE": 1,
             "ADSB_TYPE": 1,  # mavlink
@@ -8269,6 +8330,7 @@ class AutoTestCopter(AutoTest):
         self.context_pop()
 
     def PAUSE_CONTINUE(self):
+        '''Test MAV_CMD_DO_PAUSE_CONTINUE in AUTO mode'''
         self.load_mission(filename="copter_mission.txt", strict=False)
         self.set_parameter(name="AUTO_OPTIONS", value=3)
         self.change_mode(mode="AUTO")
@@ -8288,6 +8350,7 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed(timeout=500)
 
     def PAUSE_CONTINUE_GUIDED(self):
+        '''Test MAV_CMD_DO_PAUSE_CONTINUE in GUIDED mode'''
         self.start_subtest("Started test for Pause/Continue in GUIDED mode with LOCATION!")
         self.change_mode(mode="GUIDED")
         self.wait_ready_to_arm()
@@ -8438,6 +8501,7 @@ class AutoTestCopter(AutoTest):
         self.do_RTL(timeout=120)
 
     def DO_CHANGE_SPEED(self):
+        '''Change speed during misison using waypoint items'''
         self.load_mission("mission.txt", strict=False)
 
         self.set_parameters({
@@ -8675,6 +8739,7 @@ class AutoTestCopter(AutoTest):
             self.fettec_assert_good_mask(good_mask)
 
     def FETtecESC(self):
+        '''Test FETtecESC'''
         self.set_parameters({
             "SERIAL5_PROTOCOL": 38,
             "SERVO_FTW_MASK": 0b11101000,
@@ -8695,6 +8760,7 @@ class AutoTestCopter(AutoTest):
         self.FETtecESC_flight()
 
     def PerfInfo(self):
+        '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
         # sometimes we need to trigger collection....
         content = self.fetch_file_via_ftp("@SYS/tasks.txt")
@@ -8711,6 +8777,7 @@ class AutoTestCopter(AutoTest):
             raise NotAchievedException("Expected EFI last not (%s)" % lines[-2])
 
     def RTL_TO_RALLY(self, target_system=1, target_component=1):
+        '''Check RTL to rally point'''
         self.wait_ready_to_arm()
         rally_loc = self.home_relative_loc_ne(50, -25)
         rally_alt = 37
@@ -8753,6 +8820,7 @@ class AutoTestCopter(AutoTest):
         self.assert_at_home()
 
     def NoRCOnBootPreArmFailure(self):
+        '''Ensure we can't arm with no RC on boot if THR_FS_VALUE set'''
         self.context_push()
         for rc_failure_mode in 1, 2:
             self.set_parameters({
@@ -8768,398 +8836,123 @@ class AutoTestCopter(AutoTest):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/common.py
         ret.extend([
-            ("NavDelayTakeoffAbsTime",
-             "Fly Nav Delay (takeoff)",
-             self.fly_nav_takeoff_delay_abstime),  # 19s
-
-            ("NavDelayAbsTime",
-             "Fly Nav Delay (AbsTime)",
-             self.fly_nav_delay_abstime),  # 20s
-
-            ("NavDelay",
-             "Fly Nav Delay",
-             self.fly_nav_delay),  # 19s
-
-            ("GuidedSubModeChange",
-             "Test submode change",
-             self.GuidedSubModeChange),
-
-            ("MAV_CMD_CONDITION_YAW",
-             "Test response to MAV_CMD_CONDITION_YAW",
-             self.MAV_CMD_CONDITION_YAW),
-
-            ("LoiterToAlt",
-             "Loiter-To-Alt",
-             self.fly_loiter_to_alt),  # 25s
-
-            ("PayLoadPlaceMission",
-             "Payload Place Mission",
-             self.PayLoadPlaceMission),  # 44s
-
-            ("PrecisionLoiterCompanion",
-             "Precision Loiter (Companion)",
-             self.PrecisionLoiterCompanion),  # 29s
-
-            ("Landing",
-             "Test landing",
-             self.Landing),
-
-            ("PrecisionLandingSITL",
-             "Precision Landing drivers (SITL)",
-             self.fly_precision_landing_drivers),  # 29s
-
-            ("SetModesViaModeSwitch",
-             "Set modes via modeswitch",
-             self.test_setting_modes_via_modeswitch),
-
-            ("SetModesViaAuxSwitch",
-             "Set modes via auxswitch",
-             self.test_setting_modes_via_auxswitch),
-
-            ("AuxSwitchOptions",
-             "Test random aux mode options",
-             self.test_aux_switch_options),
-
-            ("AuxFunctionsInMission",
-             "Test use of auxilliary functions in missions",
-             self.test_aux_functions_in_mission),
-
-            ("AutoTune",
-             "Fly AUTOTUNE mode",
-             self.fly_autotune),  # 73s
-
-            ("NoRCOnBootPreArmFailure",
-             "Ensure we can't arm with no RC on boot if THR_FS_VALUE set",
-             self.NoRCOnBootPreArmFailure),
+             self.NavDelayTakeoffAbsTime,
+             self.NavDelayAbsTime,
+             self.NavDelay,
+             self.GuidedSubModeChange,
+             self.MAV_CMD_CONDITION_YAW,
+             self.LoiterToAlt,
+             self.PayLoadPlaceMission,
+             self.PrecisionLoiterCompanion,
+             self.Landing,
+             self.PrecisionLanding,
+             self.SetModesViaModeSwitch,
+             self.SetModesViaAuxSwitch,
+             self.AuxSwitchOptions,
+             self.AuxFunctionsInMission,
+             self.AutoTune,
+             self.NoRCOnBootPreArmFailure,
         ])
         return ret
 
     def tests1b(self):
         '''return list of all tests'''
         ret = ([
-            ("ThrowMode", "Fly Throw Mode", self.fly_throw_mode),
-
-            ("BrakeMode", "Fly Brake Mode", self.fly_brake_mode),
-
-            ("RecordThenPlayMission",
-             "Use switches to toggle in mission, then fly it",
-             self.fly_square),  # 27s
-
-            ("ThrottleFailsafe",
-             "Test Throttle Failsafe",
-             self.fly_throttle_failsafe),  # 173s
-
-            ("GCSFailsafe",
-             "Test GCS Failsafe",
-             self.fly_gcs_failsafe),  # 239s
-
-            ("CustomController",
-             "Test Custom Controller",
-             self.test_custom_controller),
-
-            # this group has the smallest runtime right now at around
-            #  5mins, so add more tests here, till its around
-            #  9-10mins, then make a new group
+             self.ThrowMode,
+             self.BrakeMode,
+             self.RecordThenPlayMission,
+             self.ThrottleFailsafe,
+             self.GCSFailsafe,
+             self.CustomController,
         ])
         return ret
 
     def tests1c(self):
         '''return list of all tests'''
         ret = ([
-            ("BatteryFailsafe",
-             "Fly Battery Failsafe",
-             self.fly_battery_failsafe),  # 164s
-
-            ("VibrationFailsafe",
-             "Test Vibration Failsafe",
-             self.test_vibration_failsafe),
-
-            ("EK3AccelBias",
-             "Test EK3 Accel Bias data",
-             self.EK3AccelBias),
-
-            ("StabilityPatch",
-             "Fly stability patch",
-             lambda: self.fly_stability_patch(30)),  # 17s
-
-            ("OBSTACLE_DISTANCE_3D",
-             "Check round-trip behaviour of distance sensors",
-             self.OBSTACLE_DISTANCE_3D),  # ??s
-
-            ("AC_Avoidance_Proximity",
-             "Test proximity avoidance slide behaviour",
-             self.fly_proximity_avoidance_test),  # 41s
-
-            ("AC_Avoidance_Fence",
-             "Test fence avoidance slide behaviour",
-             self.fly_fence_avoidance_test),
-
-            ("AC_Avoidance_Beacon",
-             "Test beacon avoidance slide behaviour",
-             self.fly_beacon_avoidance_test),  # 28s
-
-            ("BaroWindCorrection",
-             "Test wind estimation and baro position error compensation",
-             self.fly_wind_baro_compensation),
-
-            ("SetpointGlobalPos",
-             "Test setpoint global position",
-             self.test_set_position_global_int),
-
-            ("ThrowDoubleDrop",
-             "Test a more complicated drop-mode scenario",
-             self.ThrowDoubleDrop),
-
-            ("SetpointGlobalVel",
-             "Test setpoint global velocity",
-             self.test_set_velocity_global_int),
-
-            ("SplineTerrain",
-             "Test Splines and Terrain",
-             self.test_terrain_spline_mission),
-
-            ("TakeoffCheck",
-             "Test takeoff check",
-             self.test_takeoff_check),
+             self.BatteryFailsafe,
+             self.VibrationFailsafe,
+             self.EK3AccelBias,
+             self.StabilityPatch,
+             self.OBSTACLE_DISTANCE_3D,
+             self.AC_Avoidance_Proximity,
+             self.AC_Avoidance_Fence,
+             self.AC_Avoidance_Beacon,
+             self.BaroWindCorrection,
+             self.SetpointGlobalPos,
+             self.ThrowDoubleDrop,
+             self.SetpointGlobalVel,
+             self.SplineTerrain,
+             self.TakeoffCheck,
         ])
         return ret
 
     def tests1d(self):
         '''return list of all tests'''
         ret = ([
-            ("HorizontalFence",
-             "Test horizontal fence",
-             self.fly_fence_test),  # 20s
-
-            ("HorizontalAvoidFence",
-             "Test horizontal Avoidance fence",
-             self.fly_fence_avoid_test),
-
-            ("MaxAltFence",
-             "Test Max Alt Fence",
-             self.fly_alt_max_fence_test),  # 26s
-
-            ("MinAltFence",
-             "Test Min Alt Fence",
-             self.fly_alt_min_fence_test), # 26s
-
-            ("FenceFloorEnabledLanding",
-             "Test Landing with Fence floor enabled",
-             self.fly_fence_floor_enabled_landing),
-
-            ("AutoTuneSwitch",
-             "Fly AUTOTUNE on a switch",
-             self.fly_autotune_switch),  # 105s
-
-            ("GPSGlitchLoiter",
-             "GPS Glitch Loiter Test",
-             self.fly_gps_glitch_loiter_test),  # 30s
-
-            ("GPSGlitchLoiter2",
-             "GPS Glitch Loiter Test2",
-             self.fly_gps_glitch_loiter_test2),  # 30s
-
-            ("GPSGlitchAuto",
-             "GPS Glitch Auto Test",
-             self.fly_gps_glitch_auto_test),
-
-            ("ModeAltHold",
-             "Test AltHold Mode",
-             self.test_mode_ALT_HOLD),
-
-            ("ModeLoiter",
-             "Test Loiter Mode",
-             self.loiter),
-
-            ("SimpleMode",
-             "Fly in SIMPLE mode",
-             self.fly_simple),
-
-            ("SuperSimpleCircle",
-             "Fly a circle in SUPER SIMPLE mode",
-             self.fly_super_simple),  # 38s
-
-            ("ModeCircle",
-             "Fly CIRCLE mode",
-             self.fly_circle),  # 27s
-
-            ("MagFail",
-             "Test magnetometer failure",
-             self.test_mag_fail),
-
-            ("OpticalFlow",
-             "Test Optical Flow",
-             self.optical_flow),
-
-            ("OpticalFlowLimits",
-             "Fly Optical Flow limits",
-             self.fly_optical_flow_limits),  # 27s
-
-            ("OpticalFlowCalibration",
-             "Fly Optical Flow calibration",
-             self.fly_optical_flow_calibration),
-
-            ("MotorFail",
-             "Fly motor failure test",
-             self.fly_motor_fail),
-
-            ("Flip",
-             "Fly Flip Mode",
-             self.fly_flip),
-
-            ("CopterMission",
-             "Fly copter mission",
-             self.fly_auto_test),  # 37s
-
-            ("TakeoffAlt",
-             "Test Takeoff command altitude",
-             self.test_takeoff_alt), # 12s
-
-            ("SplineLastWaypoint",
-             "Test Spline as last waypoint",
-             self.test_spline_last_waypoint),
-
-            ("Gripper",
-             "Test gripper",
-             self.test_gripper), # 28s
-
-            ("TestGripperMission",
-             "Test Gripper mission items",
-             self.test_gripper_mission),
-
-            ("VisionPosition",
-             "Fly Vision Position",
-             self.fly_vision_position), # 24s
-
-            ("ATTITUDE_FAST",
-             "Ensure ATTITUTDE_FAST logging works",
-             self.ATTITUDE_FAST),
-
-            ("BaseLoggingRates",
-             "Ensure base logging rates as expected",
-             self.BaseLoggingRates),
-
-            ("BodyFrameOdom",
-             "Fly Body Frame Odometry Code",
-             self.fly_body_frame_odom), # 24s
-
-            ("GPSViconSwitching",
-             "Fly GPS and Vicon Switching",
-             self.fly_gps_vicon_switching),
+             self.HorizontalFence,
+             self.HorizontalAvoidFence,
+             self.MaxAltFence,
+             self.MinAltFence,
+             self.FenceFloorEnabledLanding,
+             self.AutoTuneSwitch,
+             self.GPSGlitchLoiter,
+             self.GPSGlitchLoiter2,
+             self.GPSGlitchAuto,
+             self.ModeAltHold,
+             self.ModeLoiter,
+             self.SimpleMode,
+             self.SuperSimpleCircle,
+             self.ModeCircle,
+             self.MagFail,
+             self.OpticalFlow,
+             self.OpticalFlowLimits,
+             self.OpticalFlowCalibration,
+             self.MotorFail,
+             self.ModeFlip,
+             self.CopterMission,
+             self.TakeoffAlt,
+             self.SplineLastWaypoint,
+             self.Gripper,
+             self.TestGripperMission,
+             self.VisionPosition,
+             self.ATTITUDE_FAST,
+             self.BaseLoggingRates,
+             self.BodyFrameOdom,
+             self.GPSViconSwitching,
         ])
         return ret
 
     def tests1e(self):
         '''return list of all tests'''
         ret = ([
-            ("BeaconPosition",
-             "Fly Beacon Position",
-             self.fly_beacon_position), # 56s
-
-            ("RTLSpeed",
-             "Fly RTL Speed",
-             self.fly_rtl_speed),
-
-            ("Mount",
-             "Test Camera/Antenna Mount",
-             self.test_mount),  # 74s
-
-            ("MountYawVehicleForMountROI",
-             "Test Camera/Antenna Mount vehicle yawing for ROI",
-             self.MountYawVehicleForMountROI),
-
-            ("Button",
-             "Test Buttons",
-             self.test_button),
-
-            ("ShipTakeoff",
-             "Fly Simulated Ship Takeoff",
-             self.fly_ship_takeoff),
-
-            ("RangeFinder",
-             "Test RangeFinder Basic Functionality",
-             self.test_rangefinder),  # 23s
-
-            ("BaroDrivers",
-             "Test Baro Drivers",
-             self.BaroDrivers),
-
-            ("SurfaceTracking",
-             "Test Surface Tracking",
-             self.test_surface_tracking),  # 45s
-
-            ("Parachute",
-             "Test Parachute Functionality",
-             self.test_parachute),
-
-            ("ParameterChecks",
-             "Test Arming Parameter Checks",
-             self.test_parameter_checks),
-
-            ("ManualThrottleModeChange",
-             "Check manual throttle mode changes denied on high throttle",
-             self.fly_manual_throttle_mode_change),
-
-            ("MANUAL_CONTROL",
-             "Test mavlink MANUAL_CONTROL",
-             self.test_manual_control),
-
-            ("ZigZag",
-             "Fly ZigZag Mode",
-             self.fly_zigzag_mode),  # 58s
-
-            ("PosHoldTakeOff",
-             "Fly POSHOLD takeoff",
-             self.fly_poshold_takeoff),
-
-            ("FOLLOW",
-             "Fly follow mode",
-             self.fly_follow_mode),  # 80s
-
-            ("RangeFinderDrivers",
-             "Test rangefinder drivers",
-             self.fly_rangefinder_drivers),  # 62s
-
-            ("RangeFinderDriversMaxAlt",
-             "Test rangefinder drivers - test max alt",
-             self.fly_rangefinder_drivers_maxalt),  # 25s
-
-            ("MaxBotixI2CXL",
-             "Test maxbotix rangefinder drivers",
-             self.fly_rangefinder_driver_maxbotix),  # 62s
-
-            ("MAVProximity",
-             "Test MAVLink proximity driver",
-             self.fly_proximity_mavlink_distance_sensor,
-             ),
-
-            ("ParameterValidation",
-             "Test parameters are checked for validity",
-             self.test_parameter_validation),
-
-            ("AltTypes",
-             "Test Different Altitude Types",
-             self.test_altitude_types),
-
-            ("PAUSE_CONTINUE",
-             "Test MAV_CMD_DO_PAUSE_CONTINUE in AUTO mode",
-             self.PAUSE_CONTINUE),
-
-            ("PAUSE_CONTINUE_GUIDED",
-             "Test MAV_CMD_DO_PAUSE_CONTINUE in GUIDED mode",
-             self.PAUSE_CONTINUE_GUIDED),
-
-            ("RichenPower",
-             "Test RichenPower generator",
-             self.test_richenpower),
-
-            ("IE24",
-             "Test IntelligentEnergy 2.4kWh generator",
-             self.test_ie24),
-
-            ("LogUpload",
-             "Log upload",
-             self.log_upload),
+             self.BeaconPosition,
+             self.RTLSpeed,
+             self.Mount,
+             self.MountYawVehicleForMountROI,
+             self.Button,
+             self.ShipTakeoff,
+             self.RangeFinder,
+             self.BaroDrivers,
+             self.SurfaceTracking,
+             self.Parachute,
+             self.ParameterChecks,
+             self.ManualThrottleModeChange,
+             self.MANUAL_CONTROL,
+             self.ModeZigZag,
+             self.PosHoldTakeOff,
+             self.ModeFollow,
+             self.RangeFinderDrivers,
+             self.RangeFinderDriversMaxAlt,
+             self.MaxBotixI2CXL,
+             self.MAVProximity,
+             self.ParameterValidation,
+             self.AltTypes,
+             self.PAUSE_CONTINUE,
+             self.PAUSE_CONTINUE_GUIDED,
+             self.RichenPower,
+             self.IE24,
+             self.LogUpload,
         ])
         return ret
 
@@ -9168,195 +8961,66 @@ class AutoTestCopter(AutoTest):
         ret = ([
             # something about SITLCompassCalibration appears to fail
             # this one, so we put it first:
-            ("FixedYawCalibration",
-             "Test Fixed Yaw Calibration",  # about 20 secs
-             self.test_fixed_yaw_calibration),
+            self.FixedYawCalibration,
 
-            # we run this single 8min-and-40s test on its own, apart from
-            #   requiring FixedYawCalibration right before it because without it, it fails to calibrate
-            ("SITLCompassCalibration", # this autotest appears to interfere with FixedYawCalibration, no idea why.
-             "Test SITL onboard compass calibration",
-             self.test_mag_calibration),
+            # we run this single 8min-and-40s test on its own, apart
+            #   from requiring FixedYawCalibration right before it
+            #   because without it, it fails to calibrate this
+            #   autotest appears to interfere with
+            #   FixedYawCalibration, no idea why.
+            self.SITLCompassCalibration,
         ])
         return ret
 
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
-            Test("MotorVibration",
-                 "Fly motor vibration test",
-                 self.fly_motor_vibration),
-
-            Test("DynamicNotches",
-                 "Fly Dynamic Notches",
-                 self.fly_dynamic_notches,
-                 attempts=8),
-
-            Test("PositionWhenGPSIsZero",
-                 "Ensure position doesn't zero when GPS lost",
-                 self.test_copter_gps_zero),
-
-            Test("DynamicRpmNotches",
-                 "Fly Dynamic Notches driven by ESC Telemetry",
-                 self.fly_esc_telemetry_notches,
-                 attempts=8),
-
-            Test("RefindGPS",
-                 "Refind the GPS and attempt to RTL rather than continue to land",
-                 self.RefindGPS),
-
-            Test("GyroFFT",
-                 "Fly Gyro FFT",
-                 self.fly_gyro_fft,
-                 attempts=8),
-
-            Test("GyroFFTHarmonic",
-                 "Fly Gyro FFT Harmonic Matching",
-                 self.fly_gyro_fft_harmonic,
-                 attempts=8),
-
-            Test("GyroFFTAverage",
-                 "Fly Gyro FFT Averaging",
-                 self.fly_gyro_fft_average,
-                 attempts=1),
-
-            Test("GyroFFTContinuousAveraging",
-                 "Fly Gyro FFT Continuous averaging",
-                 self.fly_gyro_fft_continuous_averaging,
-                 attempts=8),
-
-            Test("CompassReordering",
-                 "Test Compass reordering when priorities are changed",
-                 self.test_mag_reordering),  # 40sec?
-
-            Test("CRSF",
-                 "Test RC CRSF",
-                 self.test_crsf),  # 20secs ish
-
-            Test("MotorTest",
-                 "Run Motor Tests",
-                 self.test_motortest),  # 20secs ish
-
-            Test("AltEstimation",
-                 "Test that Alt Estimation is mandatory for ALT_HOLD",
-                 self.test_alt_estimate_prearm),  # 20secs ish
-
-            Test("EKFSource",
-                 "Check EKF Source Prearms work",
-                 self.test_ekf_source),
-
-            Test("GSF",
-                 "Check GSF",
-                 self.test_gsf),
-
-            Test("AP_Avoidance",
-                 "ADSB-based avoidance",
-                 self.AP_Avoidance),
-
-            Test("SMART_RTL",
-                 "Check SMART_RTL",
-                 self.test_SMART_RTL),
-
-            Test("RTL_TO_RALLY",
-                 "Check RTL to rally point",
-                 self.RTL_TO_RALLY),
-
-            Test("FlyEachFrame",
-                 "Fly each supported internal frame",
-                 self.fly_each_frame),
-
-            Test("GPSBlending",
-                 "Test GPS Blending",
-                 self.test_gps_blending),
-
-            Test("DataFlash",
-                 "Test DataFlash Block backend",
-                 self.test_dataflash_sitl),
-
-            Test("DataFlashErase",
-                 "Test DataFlash Block backend erase",
-                 self.test_dataflash_erase,
-                 attempts=8),
-
-            Test("Callisto",
-                 "Test Callisto",
-                 self.test_callisto),
-
-            Test("PerfInfo",
-                 "Test Scheduler PerfInfo output",
-                 self.PerfInfo),
-
-            Test("Replay",
-                 "Test Replay",
-                 self.test_replay),
-
-            Test("FETtecESC",
-                 "Test FETtecESC",
-                 self.FETtecESC),
-
-            Test("ProximitySensors",
-                 "Test Proximity Sensors",
-                 self.ProximitySensors),
-
-            Test("GroundEffectCompensation_touchDownExpected",
-                 "Test EKF's handling of touchdown-expected",
-                 self.GroundEffectCompensation_touchDownExpected),
-
-            Test("GroundEffectCompensation_takeOffExpected",
-                 "Test EKF's handling of takeoff-expected",
-                 self.GroundEffectCompensation_takeOffExpected),
-
-            Test("DO_CHANGE_SPEED",
-                 "Change speed during misison using waypoint items",
-                 self.DO_CHANGE_SPEED),
-
-            Test("AUTO_LAND_TO_BRAKE",
-                 "Change to LAND while descending in AUTO land phase",
-                 self.AUTO_LAND_TO_BRAKE),
-
-            Test("WPNAV_SPEED",
-                 "Change speed during misison",
-                 self.WPNAV_SPEED),
-
-            Test("WPNAV_SPEED_UP",
-                 "Change speed (up) during misison",
-                 self.WPNAV_SPEED_UP),
-
-            Test("WPNAV_SPEED_DN",
-                 "Change speed (down) during misison",
-                 self.WPNAV_SPEED_DN),
-
-            Test("SensorErrorFlags",
-                 "Test we get ERR messages when sensors have issues",
-                 self.SensorErrorFlags),
-
-            Test("GPSForYaw",
-                 "Moving baseline GPS yaw",
-                 self.GPSForYaw),
-
-            ("DefaultIntervalsFromFiles",
-             "Test setting default mavlink message intervals from files",
-             self.DefaultIntervalsFromFiles),
-
-            Test("GPSTypes",
-                 "Test simulated GPS types",
-                 self.GPSTypes),
-
-            Test("MultipleGPS",
-                 "Test multi-GPS behaviour",
-                 self.MultipleGPS),
-
-            Test("LogUpload",
-                 "Log upload",
-                 self.log_upload),
+            self.MotorVibration,
+            Test(self.DynamicNotches, attempts=8),
+            self.PositionWhenGPSIsZero,
+            Test(self.DynamicRpmNotches, attempts=8),
+            self.RefindGPS,
+            Test(self.GyroFFT, attempts=8),
+            Test(self.GyroFFTHarmonic, attempts=8),
+            self.GyroFFTAverage,
+            Test(self.GyroFFTContinuousAveraging, attempts=8),
+            self.CompassReordering,
+            self.CRSF,
+            self.MotorTest,
+            self.AltEstimation,
+            self.EKFSource,
+            self.GSF,
+            self.AP_Avoidance,
+            self.SMART_RTL,
+            self.RTL_TO_RALLY,
+            self.FlyEachFrame,
+            self.GPSBlending,
+            self.DataFlash,
+            Test(self.DataFlashErase, attempts=8),
+            self.Callisto,
+            self.PerfInfo,
+            self.Replay,
+            self.FETtecESC,
+            self.ProximitySensors,
+            self.GroundEffectCompensation_touchDownExpected,
+            self.GroundEffectCompensation_takeOffExpected,
+            self.DO_CHANGE_SPEED,
+            self.AUTO_LAND_TO_BRAKE,
+            self.WPNAV_SPEED,
+            self.WPNAV_SPEED_UP,
+            self.WPNAV_SPEED_DN,
+            self.SensorErrorFlags,
+            self.GPSForYaw,
+            self.DefaultIntervalsFromFiles,
+            self.GPSTypes,
+            self.MultipleGPS,
+            self.LogUpload,
         ])
         return ret
 
     def testcan(self):
         ret = ([
-            ("CANGPSCopterMission",
-             "Fly copter mission",
-             self.fly_auto_test_using_can_gps),
+            self.CANGPSCopterMission,
         ])
         return ret
 

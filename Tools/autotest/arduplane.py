@@ -550,7 +550,8 @@ class AutoTestPlane(AutoTest):
         self.context_pop()
         self.progress("Mission OK")
 
-    def fly_do_reposition(self):
+    def DO_REPOSITION(self):
+        '''Test mavlink DO_REPOSITION command'''
         self.progress("Takeoff")
         self.takeoff(alt=50)
         self.set_rc(3, 1500)
@@ -575,7 +576,8 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm()
 
-    def fly_deepstall(self):
+    def DeepStall(self):
+        '''Test DeepStall Landing'''
         # self.fly_deepstall_absolute()
         self.fly_deepstall_relative()
 
@@ -648,6 +650,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm(timeout=240)
 
     def SmartBattery(self):
+        '''Test smart battery logging etc'''
         self.set_parameters({
             "BATT_MONITOR": 16, # Maxell battery monitor
         })
@@ -674,7 +677,7 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Expected BCL2 message")
 
     def DO_CHANGE_SPEED(self):
-        '''test DO_CHANGE_SPEED both as a mavlink command and as a mission item'''
+        '''Test DO_CHANGE_SPEED command/item'''
         # the following lines ensure we revert these parameter values
         # - DO_CHANGE_AIRSPEED is a permanent vehicle change!
         self.set_parameters({
@@ -814,7 +817,7 @@ class AutoTestPlane(AutoTest):
         #        this is probably too noisy anyway?
         self.wait_disarmed(timeout=timeout)
 
-    def fly_flaps(self):
+    def TestFlaps(self):
         """Test flaps functionality."""
         filename = "flaps.txt"
         self.context_push()
@@ -907,8 +910,8 @@ class AutoTestPlane(AutoTest):
                 self.disarm_vehicle()
             raise ex
 
-    def test_rc_relay(self):
-        '''test toggling channel 12 toggles relay'''
+    def TestRCRelay(self):
+        '''Test Relay RC Channel Option'''
         self.set_parameter("RC12_OPTION", 28) # Relay On/Off
         self.set_rc(12, 1000)
         self.reboot_sitl() # needed for RC12_OPTION to take effect
@@ -934,8 +937,8 @@ class AutoTestPlane(AutoTest):
         if off:
             raise NotAchievedException("SIM_PIN_MASK doesn't reflect OFF")
 
-    def test_rc_option_camera_trigger(self):
-        '''test toggling channel 12 takes picture'''
+    def TestRCCamera(self):
+        '''Test RC Option - Camera Trigger'''
         self.set_parameter("RC12_OPTION", 9) # CameraTrigger
         self.reboot_sitl() # needed for RC12_OPTION to take effect
 
@@ -970,6 +973,7 @@ class AutoTestPlane(AutoTest):
         self.fly_home_land_and_disarm()
 
     def ThrottleFailsafe(self):
+        '''Fly throttle failsafe'''
         self.change_mode('MANUAL')
         m = self.mav.recv_match(type='SYS_STATUS', blocking=True)
         receiver_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER
@@ -1113,7 +1117,8 @@ class AutoTestPlane(AutoTest):
         self.context_pop()
         self.reboot_sitl()
 
-    def test_throttle_failsafe_fence(self):
+    def ThrottleFailsafeFence(self):
+        '''Fly fence survives throttle failsafe'''
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
 
         self.progress("Checking fence is not present before being configured")
@@ -1161,7 +1166,8 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
 
-    def test_gripper_mission(self):
+    def TestGripperMission(self):
+        '''Test Gripper mission items'''
         self.context_push()
         ex = None
         try:
@@ -1241,7 +1247,8 @@ class AutoTestPlane(AutoTest):
             on_radius_start_heading = None
             circle_time_start = 0
 
-    def test_fence_static(self):
+    def FenceStatic(self):
+        '''Test Basic Fence Functionality'''
         ex = None
         try:
             self.progress("Checking for bizarre healthy-when-not-present-or-enabled")
@@ -1416,14 +1423,16 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_fence_rtl(self):
+    def FenceRTL(self):
+        '''Test Fence RTL'''
         self.progress("Testing FENCE_ACTION_RTL no rally point")
         # have to disable the fence once we've breached or we breach
         # it as part of the loiter-at-home!
         self.test_fence_breach_circle_at(self.home_position_as_mav_location(),
                                          disable_on_breach=True)
 
-    def test_fence_rtl_rally(self):
+    def FenceRTLRally(self):
+        '''Test Fence RTL Rally'''
         ex = None
         target_system = 1
         target_component = 1
@@ -1455,7 +1464,7 @@ class AutoTestPlane(AutoTest):
         if ex is not None:
             raise ex
 
-    def test_fence_ret_rally(self):
+    def FenceRetRally(self):
         """ Tests the FENCE_RET_RALLY flag, either returning to fence return point,
             or rally point """
         target_system = 1
@@ -1542,7 +1551,8 @@ class AutoTestPlane(AutoTest):
         self.do_fence_disable() # Disable fence so we can land
         self.fly_home_land_and_disarm() # Pack it up, we're going home.
 
-    def test_parachute(self):
+    def Parachute(self):
+        '''Test Parachute'''
         self.set_rc(9, 1000)
         self.set_parameters({
             "CHUTE_ENABLED": 1,
@@ -1561,7 +1571,8 @@ class AutoTestPlane(AutoTest):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
-    def test_parachute_sinkrate(self):
+    def ParachuteSinkRate(self):
+        '''Test Parachute (SinkRate triggering)'''
         self.set_rc(9, 1000)
         self.set_parameters({
             "CHUTE_ENABLED": 1,
@@ -1672,8 +1683,8 @@ class AutoTestPlane(AutoTest):
 
         self.check_attitudes_match(1, 2)
 
-    def test_main_flight(self):
-
+    def MainFlight(self):
+        '''Lots of things in one flight'''
         self.change_mode('MANUAL')
 
         self.progress("Asserting we do support transfer of fence via mission item protocol")
@@ -1712,7 +1723,8 @@ class AutoTestPlane(AutoTest):
         self.run_subtest("Mission test",
                          lambda: self.fly_mission("ap1.txt", strict=False))
 
-    def airspeed_autocal(self):
+    def AIRSPEED_AUTOCAL(self):
+        '''Test AIRSPEED_AUTOCAL'''
         self.progress("Ensure no AIRSPEED_AUTOCAL on ground")
         self.set_parameters({
             "ARSPD_AUTOCAL": 1,
@@ -1815,13 +1827,16 @@ class AutoTestPlane(AutoTest):
         finally:
             self.remove_message_hook(validate_global_position_int_against_simstate)
 
-    def deadreckoning(self):
+    def Deadreckoning(self):
+        '''Test deadreckoning support'''
         self.deadreckoning_main()
 
-    def deadreckoning_no_airspeed_sensor(self):
+    def DeadreckoningNoAirSpeed(self):
+        '''Test deadreckoning support with no airspeed sensor'''
         self.deadreckoning_main(disable_airspeed_sensor=True)
 
-    def climb_before_turn(self):
+    def ClimbBeforeTurn(self):
+        '''Test climb-before-turn'''
         self.wait_ready_to_arm()
         self.set_parameters({
             "FLIGHT_OPTIONS": 0,
@@ -1879,7 +1894,8 @@ class AutoTestPlane(AutoTest):
 
         self.fly_home_land_and_disarm(timeout=240)
 
-    def rtl_climb_min(self):
+    def RTL_CLIMB_MIN(self):
+        '''Test RTL_CLIMB_MIN'''
         self.wait_ready_to_arm()
         rtl_climb_min = 100
         self.set_parameter("RTL_CLIMB_MIN", rtl_climb_min)
@@ -1925,7 +1941,8 @@ class AutoTestPlane(AutoTest):
     def sample_enable_parameter(self):
         return "Q_ENABLE"
 
-    def test_rangefinder(self):
+    def RangeFinder(self):
+        '''Test RangeFinder Basic Functionality'''
         ex = None
         self.context_push()
         self.progress("Making sure we don't ordinarily get RANGEFINDER")
@@ -1989,11 +2006,13 @@ class AutoTestPlane(AutoTest):
     def default_mode(self):
         return "MANUAL"
 
-    def test_pid_tuning(self):
+    def PIDTuning(self):
+        '''Test PID Tuning'''
         self.change_mode("FBWA") # we don't update PIDs in MANUAL
-        super(AutoTestPlane, self).test_pid_tuning()
+        super(AutoTestPlane, self).PIDTuning()
 
-    def test_setting_modes_via_auxswitches(self):
+    def AuxModeSwitch(self):
+        '''Set modes via auxswitches'''
         self.set_parameter("FLTMODE1", 1)  # circle
         self.set_rc(8, 950)
         self.wait_mode("CIRCLE")
@@ -2039,8 +2058,7 @@ class AutoTestPlane(AutoTest):
             last_collision = now
 
     def SimADSB(self):
-        '''trivial tests to ensure simulated ADSB sensor continues to
-function'''
+        '''Tests to ensure simulated ADSB sensor continues to function'''
         self.set_parameters({
             "SIM_ADSB_COUNT": 1,
             "ADSB_TYPE": 1,
@@ -2049,6 +2067,7 @@ function'''
         self.assert_receive_message('ADSB_VEHICLE', timeout=30)
 
     def ADSB(self):
+        '''Test ADSB'''
         self.ADSB_f_action_rtl()
         self.ADSB_r_action_resume_or_loiter()
 
@@ -2153,7 +2172,8 @@ function'''
         if ex is not None:
             raise ex
 
-    def fly_do_guided_request(self, target_system=1, target_component=1):
+    def GuidedRequest(self, target_system=1, target_component=1):
+        '''Test handling of MISSION_ITEM in guided mode'''
         self.progress("Takeoff")
         self.takeoff(alt=50)
         self.set_rc(3, 1500)
@@ -2239,6 +2259,7 @@ function'''
         self.fly_home_land_and_disarm()
 
     def LOITER(self):
+        '''Test Loiter mode'''
         # first test old loiter behavour
         self.set_parameter("FLIGHT_OPTIONS", 0)
         self.takeoff(alt=200)
@@ -2306,11 +2327,13 @@ function'''
         '''In lockup Plane should copy RC inputs to RC outputs'''
         self.plane_CPUFailsafe()
 
-    def test_large_missions(self):
+    def LargeMissions(self):
+        '''Test Manipulation of Large missions'''
         self.load_mission("Kingaroy-vlarge.txt", strict=False)
         self.load_mission("Kingaroy-vlarge2.txt", strict=False)
 
-    def fly_soaring(self):
+    def Soaring(self):
+        '''Test Soaring feature'''
 
         model = "plane-soaring"
 
@@ -2421,7 +2444,8 @@ function'''
 
         self.progress("Mission OK")
 
-    def fly_soaring_speed_to_fly(self):
+    def SpeedToFly(self):
+        '''Test soaring speed-to-fly'''
 
         model = "plane-soaring"
 
@@ -2553,7 +2577,8 @@ function'''
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
-    def test_airspeed_drivers(self):
+    def AirspeedDrivers(self):
+        '''Test AirSpeed drivers'''
         airspeed_sensors = [
             ("MS5525", 3, 1),
             ("DLVR", 7, 2),
@@ -2608,7 +2633,7 @@ function'''
         self.reboot_sitl()
 
     def TerrainMission(self):
-
+        '''Test terrain following in mission'''
         self.install_terrain_handlers_context()
 
         num_wp = self.load_mission("ap-terrain.txt")
@@ -2679,6 +2704,7 @@ function'''
                                        (expected_terrain_height, report.terrain_height))
 
     def TerrainLoiter(self):
+        '''Test terrain following in loiter'''
         self.context_push()
         self.set_parameters({
             "TERRAIN_FOLLOW": 1, # enable terrain following in loiter
@@ -2727,10 +2753,12 @@ function'''
         self.arm_vehicle()
         self.fly_mission(mission)
 
-    def test_vectornav(self):
+    def VectorNavEAHRS(self):
+        '''Test VectorNav EAHRS support'''
         self.fly_external_AHRS("VectorNav", 1, "ap1.txt")
 
-    def test_lord(self):
+    def LordEAHRS(self):
+        '''Test LORD Microstrain EAHRS support'''
         self.fly_external_AHRS("LORD", 2, "ap1.txt")
 
     def get_accelvec(self, m):
@@ -2739,7 +2767,8 @@ function'''
     def get_gyrovec(self, m):
         return Vector3(m.xgyro, m.ygyro, m.zgyro) * 0.001 * math.degrees(1)
 
-    def test_imu_tempcal(self):
+    def IMUTempCal(self):
+        '''Test IMU temperature calibration'''
         self.progress("Setting up SITL temperature profile")
         self.set_parameters({
             "SIM_IMUT1_ENABLE" : 1,
@@ -2908,7 +2937,8 @@ function'''
         # parameters).  So wipe the vehicle's eeprom:
         self.reset_SITL_commandline()
 
-    def ekf_lane_switch(self):
+    def EKFlaneswitch(self):
+        '''Test EKF3 Affinity and Lane Switching'''
 
         self.context_push()
         ex = None
@@ -3106,7 +3136,8 @@ function'''
         if ex is not None:
             raise ex
 
-    def test_fence_alt_ceil_floor(self):
+    def FenceAltCeilFloor(self):
+        '''Tests the fence ceiling and floor'''
         fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
         self.set_parameters({
             "FENCE_TYPE": 9,     # Set fence type to max and min alt
@@ -3151,7 +3182,8 @@ function'''
 
         self.fly_home_land_and_disarm(timeout=150)
 
-    def test_fence_breached_change_mode(self):
+    def FenceBreachedChangeMode(self):
+        '''Tests manual mode change after fence breach, as set with FENCE_OPTIONS'''
         """ Attempts to change mode while a fence is breached.
             mode should change should fail if fence option bit is set"""
         self.set_parameters({
@@ -3210,7 +3242,8 @@ function'''
         self.do_fence_disable()
         self.fly_home_land_and_disarm()
 
-    def test_fence_breach_no_return_point(self):
+    def FenceNoFenceReturnPoint(self):
+        '''Tests calculated return point during fence breach when no fence return point present'''
         """ Attempts to change mode while a fence is breached.
             This should revert to the mode specified by the fence action. """
         want_radius = 100 # Fence Return Radius
@@ -3285,7 +3318,8 @@ function'''
         self.do_fence_disable()
         self.fly_home_land_and_disarm()
 
-    def test_fence_breach_no_return_point_no_inclusion(self):
+    def FenceNoFenceReturnPointInclusion(self):
+        '''Tests using home as fence return point when none is present, and no inclusion fence is uploaded'''
         """ Test result when a breach occurs and No fence return point is present and
             no inclusion fence is present and exclusion fence is present """
         want_radius = 100 # Fence Return Radius
@@ -3333,7 +3367,8 @@ function'''
         self.do_fence_disable()
         self.fly_home_land_and_disarm()
 
-    def test_fence_disable_under_breach_action(self):
+    def FenceDisableUnderAction(self):
+        '''Tests Disabling fence while undergoing action caused by breach'''
         """ Fence breach will cause the vehicle to enter guided mode.
             Upon breach clear, check the vehicle is in the expected mode"""
         self.set_parameters({
@@ -3374,7 +3409,8 @@ function'''
             want_result=want_result
         )
 
-    def fly_aux_function(self):
+    def MAV_DO_AUX_FUNCTION(self):
+        '''Test triggering Auxiliary Functions via mavlink'''
         self.context_collect('STATUSTEXT')
         self.run_auxfunc(64, 2)  # 64 == reverse throttle
         self.wait_statustext("RevThrottle: ENABLE", check_context=True)
@@ -3396,7 +3432,8 @@ function'''
             want_result=mavutil.mavlink.MAV_RESULT_DENIED
         )
 
-    def fly_each_frame(self):
+    def FlyEachFrame(self):
+        '''Fly each supported internal frame'''
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
@@ -3444,6 +3481,7 @@ function'''
             self.wait_disarmed()
 
     def RCDisableAirspeedUse(self):
+        '''Test RC DisableAirspeedUse option'''
         self.set_parameter("RC9_OPTION", 106)
         self.delay_sim_time(5)
         self.set_rc(9, 1000)
@@ -3466,6 +3504,7 @@ function'''
             True)
 
     def WatchdogHome(self):
+        '''Ensure home is restored after watchdog reset'''
         if self.gdb:
             # we end up signalling the wrong process.  I think.
             # Probably need to have a "sitl_pid()" method to get the
@@ -3519,6 +3558,7 @@ function'''
             raise ex
 
     def AUTOTUNE(self):
+        '''Test AutoTune mode'''
         self.takeoff(100)
         self.change_mode('AUTOTUNE')
         self.context_collect('STATUSTEXT')
@@ -3569,8 +3609,8 @@ function'''
         self.change_mode('FBWA')
         self.fly_home_land_and_disarm(timeout=tdelta+240)
 
-    def fly_landing_baro_drift(self):
-
+    def LandingDrift(self):
+        '''Circuit with baro drift'''
         self.customise_SITL_commandline([], wipe=True)
 
         self.set_analog_rangefinder_parameters()
@@ -3607,6 +3647,7 @@ function'''
         self.wait_disarmed(timeout=180)
 
     def DCMFallback(self):
+        '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
         self.delay_sim_time(30)
         self.wait_ready_to_arm()
@@ -3631,7 +3672,7 @@ function'''
         self.fly_home_land_and_disarm()
 
     def ForcedDCM(self):
-
+        '''Switch to DCM mid-flight'''
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
@@ -3644,6 +3685,7 @@ function'''
         self.fly_home_land_and_disarm()
 
     def MegaSquirt(self):
+        '''Test MegaSquirt EFI'''
         self.assert_not_receiving_message('EFI_STATUS')
         self.set_parameters({
             'SIM_EFI_TYPE': 1,
@@ -3661,7 +3703,8 @@ function'''
         if m.intake_manifold_temperature < 20:
             raise NotAchievedException("Bad intake manifold temperature")
 
-    def test_glide_slope_threshold(self):
+    def GlideSlopeThresh(self):
+        '''Test rebuild glide slope if above and climbing'''
 
         # Test that GLIDE_SLOPE_THRESHOLD correctly controls re-planning glide slope
         # in the scenario that aircraft is above planned slope and slope is positive (climbing).
@@ -3866,6 +3909,7 @@ function'''
         self.fly_home_land_and_disarm(timeout=180)
 
     def MidAirDisarmDisallowed(self):
+        '''Ensure mid-air disarm is not possible'''
         self.takeoff(50)
         disarmed = False
         try:
@@ -3885,289 +3929,82 @@ function'''
         '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
         ret.extend([
-
-            ("AuxModeSwitch",
-             "Set modes via auxswitches",
-             self.test_setting_modes_via_auxswitches),
-
-            ("TestRCCamera",
-             "Test RC Option - Camera Trigger",
-             self.test_rc_option_camera_trigger),
-
-            ("TestRCRelay", "Test Relay RC Channel Option", self.test_rc_relay),
-
-            ("ThrottleFailsafe",
-             "Fly throttle failsafe",
-             self.ThrottleFailsafe),
-
-            ("NeedEKFToArm",
-             "Ensure we need EKF to be healthy to arm",
-             self.NeedEKFToArm),
-
-            ("ThrottleFailsafeFence",
-             "Fly fence survives throttle failsafe",
-             self.test_throttle_failsafe_fence),
-
-            ("TestFlaps", "Flaps", self.fly_flaps),
-
-            ("DO_CHANGE_SPEED",
-             "Test DO_CHANGE_SPEED command/item",
-             self.DO_CHANGE_SPEED),
-
-            ("DO_REPOSITION",
-             "Test mavlink DO_REPOSITION command",
-             self.fly_do_reposition),
-
-            ("GuidedRequest",
-             "Test handling of MISSION_ITEM in guided mode",
-             self.fly_do_guided_request),
-
-            ("MainFlight",
-             "Lots of things in one flight",
-             self.test_main_flight),
-
-            ("TestGripperMission",
-             "Test Gripper mission items",
-             self.test_gripper_mission),
-
-            ("Parachute", "Test Parachute", self.test_parachute),
-
-            ("ParachuteSinkRate", "Test Parachute (SinkRate triggering)", self.test_parachute_sinkrate),
-
-            ("AIRSPEED_AUTOCAL", "Test AIRSPEED_AUTOCAL", self.airspeed_autocal),
-
-            ("RangeFinder",
-             "Test RangeFinder Basic Functionality",
-             self.test_rangefinder),
-
-            ("FenceStatic",
-             "Test Basic Fence Functionality",
-             self.test_fence_static),
-
-            ("FenceRTL",
-             "Test Fence RTL",
-             self.test_fence_rtl),
-
-            ("FenceRTLRally",
-             "Test Fence RTL Rally",
-             self.test_fence_rtl_rally),
-
-            ("FenceRetRally",
-             "Test Fence Ret_Rally",
-             self.test_fence_ret_rally),
-
-            ("FenceAltCeilFloor",
-             "Tests the fence ceiling and floor",
-             self.test_fence_alt_ceil_floor),
-
-            ("FenceBreachedChangeMode",
-             "Tests manual mode change after fence breach, as set with FENCE_OPTIONS",
-             self.test_fence_breached_change_mode),
-
-            ("FenceNoFenceReturnPoint",
-             "Tests calculated return point during fence breach when no fence return point present",
-             self.test_fence_breach_no_return_point),
-
-            ("FenceNoFenceReturnPointInclusion",
-             "Tests using home as fence return point when none is present, and no inclusion fence is uploaded",
-             self.test_fence_breach_no_return_point_no_inclusion),
-
-            ("FenceDisableUnderAction",
-             "Tests Disabling fence while undergoing action caused by breach",
-             self.test_fence_disable_under_breach_action),
-
-            ("ADSB",
-             "Test ADSB",
-             self.ADSB),
-
-            ("SimADSB",
-             "Test SIM_ADSB",
-             self.SimADSB),
-
-            ("Button",
-             "Test Buttons",
-             self.test_button),
-
-            ("FRSkySPort",
-             "Test FrSky SPort mode",
-             self.test_frsky_sport),
-
-            ("FRSkyPassThroughStatustext",
-             "Test FrSky PassThrough serial output - statustext",
-             self.FRSkyPassThroughStatustext),
-
-            ("FRSkyPassThroughSensorIDs",
-             "Test FrSky PassThrough serial output - sensor ids",
-             self.FRSkyPassThroughSensorIDs),
-
-            ("FRSkyMAVlite",
-             "Test FrSky MAVlite serial output",
-             self.test_frsky_mavlite),
-
-            ("FRSkyD",
-             "Test FrSkyD serial output",
-             self.test_frsky_d),
-
-            ("LTM",
-             "Test LTM serial output",
-             self.test_ltm),
-
-            ("DEVO",
-             "Test DEVO serial output",
-             self.DEVO),
-
-            ("AdvancedFailsafe",
-             "Test Advanced Failsafe",
-             self.test_advanced_failsafe),
-
-            ("LOITER",
-             "Test Loiter mode",
-             self.LOITER),
-
-            ("MAV_CMD_NAV_LOITER_TURNS",
-             "Test NAV_LOITER_TURNS mission item",
-             self.MAV_CMD_NAV_LOITER_TURNS),
-
-            ("DeepStall",
-             "Test DeepStall Landing",
-             self.fly_deepstall),
-
-            ("WatchdogHome",
-             "Ensure home is restored after watchdog reset",
-             self.WatchdogHome),
-
-            ("LargeMissions",
-             "Test Manipulation of Large missions",
-             self.test_large_missions),
-
-            ("Soaring",
-             "Test Soaring feature",
-             self.fly_soaring),
-
-            ("Terrain",
-             "Test AP_Terrain",
-             self.Terrain),
-
-            ("TerrainMission",
-             "Test terrain following in mission",
-             self.TerrainMission),
-
-            ("TerrainLoiter",
-             "Test terrain following in loiter",
-             self.TerrainLoiter),
-
-            ("VectorNavEAHRS",
-             "Test VectorNav EAHRS support",
-             self.test_vectornav),
-
-            ("LordEAHRS",
-             "Test LORD Microstrain EAHRS support",
-             self.test_lord),
-
-            ("Deadreckoning",
-             "Test deadreckoning support",
-             self.deadreckoning),
-
-            ("DeadreckoningNoAirSpeed",
-             "Test deadreckoning support with no airspeed sensor",
-             self.deadreckoning_no_airspeed_sensor),
-
-            ("EKFlaneswitch",
-             "Test EKF3 Affinity and Lane Switching",
-             self.ekf_lane_switch),
-
-            ("AirspeedDrivers",
-             "Test AirSpeed drivers",
-             self.test_airspeed_drivers),
-
-            ("RTL_CLIMB_MIN",
-             "Test RTL_CLIMB_MIN",
-             self.rtl_climb_min),
-
-            ("ClimbBeforeTurn",
-             "Test climb-before-turn",
-             self.climb_before_turn),
-
-            ("IMUTempCal",
-             "Test IMU temperature calibration",
-             self.test_imu_tempcal),
-
-            ("MAV_DO_AUX_FUNCTION",
-             "Test triggering Auxiliary Functions via mavlink",
-             self.fly_aux_function),
-
-            ("SmartBattery",
-             "Test smart battery logging etc",
-             self.SmartBattery),
-
-            ("FlyEachFrame",
-             "Fly each supported internal frame",
-             self.fly_each_frame),
-
-            ("RCDisableAirspeedUse",
-             "Test RC DisableAirspeedUse option",
-             self.RCDisableAirspeedUse),
-
-            ("AHRS_ORIENTATION",
-             "Test AHRS_ORIENTATION parameter",
-             self.AHRS_ORIENTATION),
-
-            ("AHRSTrim",
-             "AHRS trim testing",
-             self.ahrstrim),
-
-            ("Landing-Drift",
-             "Circuit with baro drift",
-             self.fly_landing_baro_drift),
-
-            ("ForcedDCM",
-             "Switch to DCM mid-flight",
-             self.ForcedDCM),
-
-            ("DCMFallback",
-             "Really annoy the EKF and force fallback",
-             self.DCMFallback),
-
-            ("MAVFTP",
-             "Test MAVProxy can talk FTP to autopilot",
-             self.MAVFTP),
-
-            ("AUTOTUNE",
-             "Test AutoTune mode",
-             self.AUTOTUNE),
-
-            ("MegaSquirt",
-             "Test MegaSquirt EFI",
-             self.MegaSquirt),
-
-            ("MSP_DJI",
-             "Test MSP DJI serial output",
-             self.test_msp_dji),
-
-            ("SpeedToFly",
-             "Test soaring speed-to-fly",
-             self.fly_soaring_speed_to_fly),
-
-            ("GlideSlopeThresh",
-             "Test rebuild glide slope if above and climbing",
-             self.test_glide_slope_threshold),
-
-            ("LogUpload",
-             "Log upload",
-             self.log_upload),
-
-            ("HIGH_LATENCY2",
-             "Set sending of HIGH_LATENCY2",
-             self.HIGH_LATENCY2),
-
-            ("MidAirDisarmDisallowed",
-             "Ensure mid-air disarm is not possible",
-             self.MidAirDisarmDisallowed),
-
+            self.AuxModeSwitch,
+            self.TestRCCamera,
+            self.TestRCRelay,
+            self.ThrottleFailsafe,
+            self.NeedEKFToArm,
+            self.ThrottleFailsafeFence,
+            self.TestFlaps,
+            self.DO_CHANGE_SPEED,
+            self.DO_REPOSITION,
+            self.GuidedRequest,
+            self.MainFlight,
+            self.TestGripperMission,
+            self.Parachute,
+            self.ParachuteSinkRate,
+            self.AIRSPEED_AUTOCAL,
+            self.RangeFinder,
+            self.FenceStatic,
+            self.FenceRTL,
+            self.FenceRTLRally,
+            self.FenceRetRally,
+            self.FenceAltCeilFloor,
+            self.FenceBreachedChangeMode,
+            self.FenceNoFenceReturnPoint,
+            self.FenceNoFenceReturnPointInclusion,
+            self.FenceDisableUnderAction,
+            self.ADSB,
+            self.SimADSB,
+            self.Button,
+            self.FRSkySPort,
+            self.FRSkyPassThroughStatustext,
+            self.FRSkyPassThroughSensorIDs,
+            self.FRSkyMAVlite,
+            self.FRSkyD,
+            self.LTM,
+            self.DEVO,
+            self.AdvancedFailsafe,
+            self.LOITER,
+            self.MAV_CMD_NAV_LOITER_TURNS,
+            self.DeepStall,
+            self.WatchdogHome,
+            self.LargeMissions,
+            self.Soaring,
+            self.Terrain,
+            self.TerrainMission,
+            self.TerrainLoiter,
+            self.VectorNavEAHRS,
+            self.LordEAHRS,
+            self.Deadreckoning,
+            self.DeadreckoningNoAirSpeed,
+            self.EKFlaneswitch,
+            self.AirspeedDrivers,
+            self.RTL_CLIMB_MIN,
+            self.ClimbBeforeTurn,
+            self.IMUTempCal,
+            self.MAV_DO_AUX_FUNCTION,
+            self.SmartBattery,
+            self.FlyEachFrame,
+            self.RCDisableAirspeedUse,
+            self.AHRS_ORIENTATION,
+            self.AHRSTrim,
+            self.LandingDrift,
+            self.ForcedDCM,
+            self.DCMFallback,
+            self.MAVFTP,
+            self.AUTOTUNE,
+            self.MegaSquirt,
+            self.MSP_DJI,
+            self.SpeedToFly,
+            self.GlideSlopeThresh,
+            self.LogUpload,
+            self.HIGH_LATENCY2,
+            self.MidAirDisarmDisallowed,
         ])
         return ret
 
     def disabled_tests(self):
         return {
-            "Landing-Drift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
+            "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
         }
