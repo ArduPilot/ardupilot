@@ -32,7 +32,8 @@ class AutoTestSailboat(AutoTestRover):
             self.frame = 'sailboat'
         super(AutoTestSailboat, self).init()
 
-    def drive_rtl_mission(self, timeout=120):
+    def DriveRTL(self, timeout=120):
+        '''Drive an RTL Mission'''
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
@@ -74,19 +75,17 @@ class AutoTestSailboat(AutoTestRover):
 
         self.progress("RTL Mission OK")
 
+    def DriveMission(self):
+        '''sail a simple mission'''
+        self.drive_mission("balancebot1.txt", strict=False)
+
     def tests(self):
         '''return list of all tests'''
         ret = ([])
 
         ret.extend([
-            ("DriveRTL",
-             "Drive an RTL Mission",
-             self.drive_rtl_mission),
-
-            ("DriveMission",
-             "Drive Mission %s" % "balancebot1.txt",
-             lambda: self.drive_mission("balancebot1.txt", strict=False)),
-
+            self.DriveRTL,
+            self.DriveMission,
         ])
         return ret
 

@@ -1435,9 +1435,11 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    def __init__(self, name, description, function, attempts=1, speedup=None):
-        self.name = name
-        self.description = description
+    def __init__(self, function, attempts=1, speedup=None):
+        self.name = function.__name__
+        self.description = function.__doc__
+        if self.description is None:
+            raise ValueError("%s is missing a docstring" % self.name)
         self.function = function
         self.attempts = attempts
         self.speedup = speedup
@@ -2432,8 +2434,8 @@ class AutoTest(ABC):
 
         return ids
 
-    def test_onboard_logging_generation(self):
-        '''just generates, as we can't do a lot of testing'''
+    def LoggerDocumentation(self):
+        '''Test Onboard Logging Generation'''
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "LogMessages.xml")
         parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'logger_metadata', 'parse.py')
         try:
@@ -3036,7 +3038,8 @@ class AutoTest(ABC):
         if ex is not None:
             raise ex
 
-    def test_log_download(self):
+    def LogDownload(self):
+        '''Test Onboard Log Download'''
         if self.is_tracker():
             # tracker starts armed, which is annoying
             return
@@ -3625,14 +3628,15 @@ class AutoTest(ABC):
         if len(post_arming_list) <= len(pre_arming_list):
             raise NotAchievedException("Did not get a log on forced arm")
 
-    def test_onboard_logging(self):
+    def Logging(self):
+        '''Test Onboard Logging'''
         if self.is_tracker():
             return
         self.onboard_logging_forced_arm()
         self.onboard_logging_log_disarmed()
         self.onboard_logging_not_log_disarmed()
 
-    def test_log_download_mavproxy(self, upload_logs=False):
+    def TestLogDownloadMAVProxy(self, upload_logs=False):
         """Download latest log."""
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
@@ -3647,7 +3651,8 @@ class AutoTest(ABC):
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
 
-    def log_upload(self):
+    def LogUpload(self):
+        '''upload logs to ArduPilot firmware server'''
         self.progress("Log upload disabled as CI artifacts are good")
         return
         if len(self.fail_list) > 0 and os.getenv("AUTOTEST_UPLOAD"):
@@ -4687,7 +4692,8 @@ class AutoTest(ABC):
             return
 
     def CPUFailsafe(self):
-        '''Most vehicles just disarm on failsafe'''
+        '''Ensure we do something appropriate when the main loop stops'''
+        # Most vehicles just disarm on failsafe
         # customising the SITL commandline ensures the process will
         # get stopped/started at the end of the test
         if self.frame is None:
@@ -5487,7 +5493,8 @@ class AutoTest(ABC):
         m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
         return m.capabilities
 
-    def test_get_autopilot_capabilities(self):
+    def GetCapabilities(self):
+        '''Get Capabilities'''
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT)
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION)
 
@@ -7739,7 +7746,8 @@ Also, ignores heartbeats not from our target system'''
             self.progress("GroundSpeed OK (got=%f) (want=%f)" %
                           (m.groundspeed, want))
 
-    def fly_test_set_home(self):
+    def SetHome(self):
+        '''Setting and fetching of home'''
         if self.is_tracker():
             # tracker starts armed...
             self.disarm_vehicle(force=True)
@@ -7961,7 +7969,9 @@ Also, ignores heartbeats not from our target system'''
         for count in range(2, compass_count + 1):
             self.verify_parameter_values({"COMPASS_ORIENT%d" % count: 0})
 
-    def test_mag_calibration(self, compass_count=3, timeout=1000):
+    # this autotest appears to interfere with FixedYawCalibration, no idea why.
+    def SITLCompassCalibration(self, compass_count=3, timeout=1000):
+        '''Test Fixed Yaw Calibration"'''
         def reset_pos_and_start_magcal(mavproxy, tmask):
             mavproxy.send("sitl_stop\n")
             mavproxy.send("sitl_attitude 0 0 0\n")
@@ -8339,7 +8349,8 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("%s has wrong value; want=%f got=%f transforms=%s (old parameter name=%s)" %
                                            (newkey, expected_value, current_value, str(transforms), key))
 
-    def test_mag_reordering(self):
+    def CompassReordering(self):
+        '''Test Compass reordering when priorities are changed'''
         self.context_push()
         ex = None
         try:
@@ -8441,7 +8452,10 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def test_fixed_yaw_calibration(self):
+    # something about SITLCompassCalibration appears to fail
+    # this one, so we put it first:
+    def FixedYawCalibration(self):
+        '''Test Fixed Yaw Calibration'''
         self.context_push()
         ex = None
         try:
@@ -8534,7 +8548,8 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def test_dataflash_over_mavlink(self):
+    def DataFlashOverMAVLink(self):
+        '''Test DataFlash over MAVLink'''
         self.context_push()
         ex = None
         mavproxy = self.start_mavproxy()
@@ -8599,8 +8614,8 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def test_dataflash_sitl(self):
-        """Test the basic functionality of block logging"""
+    def DataFlash(self):
+        """Test DataFlash SITL backend"""
         self.context_push()
         ex = None
         mavproxy = self.start_mavproxy()
@@ -8696,7 +8711,7 @@ Also, ignores heartbeats not from our target system'''
         if herrors > header_errors:
             raise NotAchievedException("Error parsing log file %s, %d header errors" % (logname, herrors))
 
-    def test_dataflash_erase(self):
+    def DataFlashErase(self):
         """Test that erasing the dataflash chip and creating a new log is error free"""
         mavproxy = self.start_mavproxy()
 
@@ -8778,8 +8793,8 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def test_arm_feature(self):
-        """Common feature to test."""
+    def ArmFeatures(self):
+        '''Arm features'''
         # TEST ARMING/DISARM
         if self.get_parameter("ARMING_CHECK") != 1.0 and not self.is_sub():
             raise ValueError("Arming check should be 1")
@@ -9165,7 +9180,8 @@ Also, ignores heartbeats not from our target system'''
         if notachieved_ex is not None:
             raise notachieved_ex
 
-    def test_set_message_interval(self):
+    def SET_MESSAGE_INTERVAL(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL'''
         self.start_subtest('Basic tests')
         self.test_set_message_interval_basic()
         self.start_subtest('Many-message tests')
@@ -9319,7 +9335,8 @@ Also, ignores heartbeats not from our target system'''
 
         return msgs
 
-    def test_request_message(self, timeout=60):
+    def REQUEST_MESSAGE(self, timeout=60):
+        '''Test MAV_CMD_REQUEST_MESSAGE'''
         rate = round(self.get_message_rate("CAMERA_FEEDBACK", 10))
         if rate != 0:
             raise PreconditionFailedException("Receiving camera feedback")
@@ -9370,7 +9387,8 @@ Also, ignores heartbeats not from our target system'''
     def clear_fence(self):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
 
-    def test_config_error_loop(self):
+    # Sub does not instantiate AP_Stats.  Also see https://github.com/ArduPilot/ardupilot/issues/10247  # noqa
+    def ConfigErrorLoop(self):
         '''test the sensor config error loop works and that parameter sets are persistent'''
         parameter_name = "SERVO8_MIN"
         old_parameter_value = self.get_parameter(parameter_name)
@@ -9412,7 +9430,8 @@ Also, ignores heartbeats not from our target system'''
         if self.get_parameter(parameter_name) != new_parameter_value:
             raise NotAchievedException("Parameter value did not stick")
 
-    def test_initial_mode(self):
+    def InitialMode(self):
+        '''Test initial mode switching'''
         if self.is_copter():
             init_mode = (9, "LAND")
         if self.is_rover():
@@ -9435,7 +9454,8 @@ Also, ignores heartbeats not from our target system'''
         self.context_pop()
         self.reboot_sitl()
 
-    def test_gripper(self):
+    def Gripper(self):
+        '''Test gripper'''
         self.context_push()
         self.set_parameters({
             "GRIP_ENABLE": 1,
@@ -9586,7 +9606,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.install_message_hook_context(check_terrain_requests)
 
-    def test_set_position_global_int(self, timeout=100):
+    def SetpointGlobalPos(self, timeout=100):
         """Test set position message in guided mode."""
         # Disable heading and yaw test on rover type
 
@@ -9809,7 +9829,7 @@ Also, ignores heartbeats not from our target system'''
         self.do_RTL(distance_min=0, distance_max=wp_accuracy)
         self.disarm_vehicle()
 
-    def test_set_velocity_global_int(self, timeout=30):
+    def SetpointGlobalVel(self, timeout=30):
         """Test set position message in guided mode."""
         # Disable heading and yaw rate test on rover type
         if self.is_rover():
@@ -10536,7 +10556,7 @@ switch value'''
         self.start_subsubtest("Check all parameters are documented")
         self.test_parameter_documentation_get_all_parameters()
 
-    def test_parameters(self):
+    def Parameters(self):
         '''general small tests for parameter system'''
         if self.is_balancebot():
             # same binary and parameters as Rover
@@ -10583,7 +10603,8 @@ switch value'''
         if m is not None:
             raise PreconditionFailedException("Receiving %s messags" % message)
 
-    def test_pid_tuning(self):
+    def PIDTuning(self):
+        '''Test PID Tuning'''
         self.assert_not_receiving_message('PID_TUNING', timeout=5)
         self.set_parameter("GCS_PID_MASK", 1)
         self.progress("making sure we are now getting PID_TUNING messages")
@@ -10592,7 +10613,8 @@ switch value'''
     def sample_mission_filename(self):
         return "flaps.txt"
 
-    def test_advanced_failsafe(self):
+    def AdvancedFailsafe(self):
+        '''Test Advanced Failsafe'''
         self.context_push()
         ex = None
         try:
@@ -10677,7 +10699,8 @@ switch value'''
             if m.fix_type >= fix_type:
                 break
 
-    def nmea_output(self):
+    def NMEAOutput(self):
+        '''Test AHRS NMEA Output can be read by out NMEA GPS'''
         self.set_parameter("SERIAL5_PROTOCOL", 20) # serial5 is NMEA output
         self.set_parameter("GPS_TYPE2", 5) # GPS2 is NMEA
         self.customise_SITL_commandline([
@@ -10715,7 +10738,8 @@ switch value'''
         mavproxy.send("module unload %s\n" % module)
         mavproxy.expect("Unloaded module %s" % module)
 
-    def accelcal(self):
+    def AccelCal(self):
+        '''Accelerometer Calibration testing'''
         ex = None
         mavproxy = self.start_mavproxy()
         try:
@@ -10869,14 +10893,16 @@ switch value'''
                 self.context_pop()
                 self.reboot_sitl()
 
-    def ahrstrim(self):
+    def AHRSTrim(self):
+        '''AHRS trim testing'''
         self.start_subtest("Attitude Correctness")
         self.ahrstrim_attitude_correctness()
         self.delay_sim_time(5)
         self.start_subtest("Preflight Calibration")
         self.ahrstrim_preflight_cal()
 
-    def test_button(self):
+    def Button(self):
+        '''Test Buttons'''
         self.set_parameter("SIM_PIN_MASK", 0)
         self.set_parameter("BTN_ENABLE", 1)
         self.drain_mav()
@@ -11527,7 +11553,8 @@ switch value'''
                 "Did not receive expected result in command_ack; want=%u got=%u" %
                 (want_result, got_result))
 
-    def test_frsky_mavlite(self):
+    def FRSkyMAVlite(self):
+        '''Test FrSky MAVlite serial output'''
         self.set_parameter("SERIAL5_PROTOCOL", 10) # serial5 is FRSky passthrough
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
@@ -11799,7 +11826,8 @@ switch value'''
             if rpm.rpm1 >= min_rpm:
                 return
 
-    def test_frsky_sport(self):
+    def FRSkySPort(self):
+        '''Test FrSky SPort mode'''
         self.set_parameter("SERIAL5_PROTOCOL", 4) # serial5 is FRSky sport
         self.set_parameter("RPM1_TYPE", 10) # enable SITL RPM sensor
         self.customise_SITL_commandline([
@@ -11871,7 +11899,8 @@ switch value'''
             self.zero_throttle()
             self.disarm_vehicle(force=True)
 
-    def test_frsky_d(self):
+    def FRSkyD(self):
+        '''Test FrSkyD serial output'''
         self.set_parameter("SERIAL5_PROTOCOL", 3) # serial5 is FRSky output
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
@@ -11992,7 +12021,8 @@ switch value'''
         # FIXME.  Actually check the field values are correct :-)
         return True
 
-    def test_ltm(self):
+    def LTM(self):
+        '''Test LTM serial output'''
         self.set_parameter("SERIAL5_PROTOCOL", 25) # serial5 is LTM output
         self.customise_SITL_commandline([
             "--uartF=tcp:6735" # serial5 spews to localhost:6735
@@ -12033,6 +12063,7 @@ switch value'''
         return math.trunc(dd * 1.0e7)
 
     def DEVO(self):
+        '''Test DEVO serial output'''
         self.context_push()
         self.set_parameter("SERIAL5_PROTOCOL", 17) # serial5 is DEVO output
         self.customise_SITL_commandline([
@@ -12103,7 +12134,8 @@ switch value'''
         self.context_pop()
         self.reboot_sitl()
 
-    def test_msp_dji(self):
+    def MSP_DJI(self):
+        '''Test MSP DJI serial output'''
         self.set_parameter("SERIAL5_PROTOCOL", 33) # serial5 is MSP DJI output
         self.set_parameter("MSP_OPTIONS", 1) # telemetry (unpolled) mode
         self.customise_SITL_commandline([
@@ -12127,7 +12159,8 @@ switch value'''
             if dist < 1:
                 break
 
-    def test_crsf(self):
+    def CRSF(self):
+        '''Test RC CRSF'''
         self.context_push()
         ex = None
         try:
@@ -12340,43 +12373,16 @@ switch value'''
 
     def tests(self):
         return [
-            Test("PIDTuning",
-                 "Test PID Tuning",
-                 self.test_pid_tuning),
-
-            Test("ArmFeatures", "Arm features", self.test_arm_feature),
-
-            Test("SetHome",
-                 "Test Set Home",
-                 self.fly_test_set_home),
-
-            Test("ConfigErrorLoop",
-                 "Test Config Error Loop",
-                 self.test_config_error_loop),
-
-            Test("CPUFailsafe",
-                 "Ensure we do something appropriate when the main loop stops",
-                 self.CPUFailsafe),
-
-            Test("Parameters",
-                 "Test Parameter Set/Get",
-                 self.test_parameters),
-
-            Test("LoggerDocumentation",
-                 "Test Onboard Logging Generation",
-                 self.test_onboard_logging_generation),
-
-            Test("Logging",
-                 "Test Onboard Logging",
-                 self.test_onboard_logging),
-
-            Test("GetCapabilities",
-                 "Get Capabilities",
-                 self.test_get_autopilot_capabilities),
-
-            Test("InitialMode",
-                 "Test initial mode switching",
-                 self.test_initial_mode),
+            self.PIDTuning,
+            self.ArmFeatures,
+            self.SetHome,
+            self.ConfigErrorLoop,
+            self.CPUFailsafe,
+            self.Parameters,
+            self.LoggerDocumentation,
+            self.Logging,
+            self.GetCapabilities,
+            self.InitialMode,
         ]
 
     def post_tests_announcements(self):
@@ -12401,8 +12407,7 @@ switch value'''
             if type(test) == Test:
                 all_tests.append(test)
                 continue
-            (name, desc, func) = test
-            actual_test = Test(name, desc, func)
+            actual_test = Test(test)
             all_tests.append(actual_test)
 
         disabled = self.disabled_tests()

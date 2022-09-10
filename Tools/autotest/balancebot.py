@@ -31,7 +31,8 @@ class AutoTestBalanceBot(AutoTestRover):
             self.frame = 'balancebot'
         super(AutoTestBalanceBot, self).init()
 
-    def test_do_set_mode_via_command_long(self):
+    def DO_SET_MODE(self):
+        '''Set mode via MAV_COMMAND_DO_SET_MODE'''
         self.do_set_mode_via_command_long("HOLD")
         self.do_set_mode_via_command_long("MANUAL")
 
@@ -48,13 +49,14 @@ class AutoTestBalanceBot(AutoTestRover):
         '''balancebot tends to wander backwards, away from the target'''
         return 8
 
-    def drive_rtl_mission(self):
+    def DriveRTL(self):
+        '''Drive an RTL Mission'''
         # if we Hold then the balancebot continues to wander
         # indefinitely at ~1m/s, hence we set to Acro
         self.set_parameter("MIS_DONE_BEHAVE", 2)
-        super(AutoTestBalanceBot, self).drive_rtl_mission()
+        super(AutoTestBalanceBot, self).DriveRTL()
 
-    def test_wheelencoders(self):
+    def TestWheelEncoder(self):
         '''make sure wheel encoders are generally working'''
         ex = None
         try:
@@ -95,6 +97,10 @@ class AutoTestBalanceBot(AutoTestRover):
         if ex is not None:
             raise ex
 
+    def DriveMission(self):
+        '''Drive Mission rover1.txt'''
+        self.drive_mission("balancebot1.txt", strict=False)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -103,32 +109,13 @@ inherit Rover's tests!'''
         ret = AutoTest.tests(self)
 
         ret.extend([
-
-            ("DriveRTL",
-             "Drive an RTL Mission",
-             self.drive_rtl_mission),
-
-            ("DriveMission",
-             "Drive Mission %s" % "balancebot1.txt",
-             lambda: self.drive_mission("balancebot1.txt", strict=False)),
-
-            ("TestWheelEncoder",
-             "Test wheel encoders",
-             self.test_wheelencoders),
-
-            ("GetBanner", "Get Banner", self.do_get_banner),
-
-            ("DO_SET_MODE",
-             "Set mode via MAV_COMMAND_DO_SET_MODE",
-             self.test_do_set_mode_via_command_long),
-
-            ("ServoRelayEvents",
-             "Test ServoRelayEvents",
-             self.test_servorelayevents),
-
-            ("LogUpload",
-             "Upload logs",
-             self.log_upload),
+            self.DriveRTL,
+            self.DriveMission,
+            self.TestWheelEncoder,
+            self.GetBanner,
+            self.DO_SET_MODE,
+            self.ServoRelayEvents,
+            self.LogUpload,
         ])
         return ret
 
