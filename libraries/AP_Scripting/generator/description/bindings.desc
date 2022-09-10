@@ -416,7 +416,7 @@ include AP_HAL/I2CDevice.h
 ap_object AP_HAL::I2CDevice semaphore-pointer
 ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
 ap_object AP_HAL::I2CDevice method write_register boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
-ap_object AP_HAL::I2CDevice method read_registers boolean uint8_t 0 UINT8_MAX &uint8_t'Null 1'literal
+ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers
 ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
 
 
