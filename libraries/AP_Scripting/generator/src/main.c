@@ -1124,8 +1124,11 @@ void handle_ap_object(void) {
       }
       string_copy(&(node->dependency), depends);
 
+  } else if (strcmp(type, keyword_manual) == 0) {
+    handle_manual(node, ALIAS_TYPE_MANUAL);
+
   } else {
-    error(ERROR_SINGLETON, "AP_Objects only support renames, methods or semaphore keyowrds (got %s)", type);
+    error(ERROR_SINGLETON, "AP_Objects only support renames, methods, semaphore or manual keywords (got %s)", type);
   }
 
   // check that we didn't just add 2 singleton flags
