@@ -543,13 +543,13 @@ uint8_t AC_Fence::check()
 {
     uint8_t ret = 0;
 
+    // clear any breach from a non-enabled fence
+    clear_breach(~_enabled_fences);
+
     // return immediately if disabled
     if ((!_enabled && !_auto_enabled) || !_enabled_fences) {
         return 0;
     }
-
-    // clear any breach from a non-enabled fence
-    clear_breach(~_enabled_fences);
 
     // check if pilot is attempting to recover manually
     if (_manual_recovery_start_ms != 0) {
