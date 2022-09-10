@@ -57,7 +57,8 @@ class AutoTestHelicopter(AutoTestCopter):
         chan_pwm = (servo.servo1_raw + servo.servo2_raw + servo.servo3_raw)/3.0
         return chan_pwm
 
-    def rotor_runup_complete_checks(self):
+    def RotorRunup(self):
+        '''Test rotor runip'''
         # Takeoff and landing in Loiter
         TARGET_RUNUP_TIME = 10
         self.zero_throttle()
@@ -91,8 +92,8 @@ class AutoTestHelicopter(AutoTestCopter):
         self.mav.wait_heartbeat()
 
     # fly_avc_test - fly AVC mission
-    def fly_avc_test(self):
-        # Arm
+    def AVCMission(self):
+        '''fly AVC mission'''
         self.change_mode('STABILIZE')
         self.wait_ready_to_arm()
 
@@ -159,7 +160,8 @@ class AutoTestHelicopter(AutoTestCopter):
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def fly_each_frame(self):
+    def FlyEachFrame(self):
+        '''Fly each supported internal frame'''
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
@@ -196,7 +198,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Setting hover collective")
         self.set_rc(3, 1500)
 
-    def fly_heli_poshold_takeoff(self):
+    def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
         self.context_push()
 
@@ -258,8 +260,8 @@ class AutoTestHelicopter(AutoTestCopter):
         if ex is not None:
             raise ex
 
-    def fly_heli_stabilize_takeoff(self):
-        """"""
+    def StabilizeTakeOff(self):
+        """Fly stabilize takeoff"""
         self.context_push()
 
         ex = None
@@ -296,7 +298,7 @@ class AutoTestHelicopter(AutoTestCopter):
         if ex is not None:
             raise ex
 
-    def fly_spline_waypoint(self, timeout=600):
+    def SplineWaypoint(self, timeout=600):
         """ensure basic spline functionality works"""
         self.load_mission("copter_spline_mission.txt", strict=False)
         self.change_mode("LOITER")
@@ -317,8 +319,8 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Lowering rotor speed")
         self.set_rc(8, 1000)
 
-    def fly_autorotation(self, timeout=600):
-        """ensure basic spline functionality works"""
+    def AutoRotation(self, timeout=600):
+        """Check engine-out behaviour"""
         self.set_parameter("AROT_ENABLE", 1)
         start_alt = 100 # metres
         self.set_parameter("PILOT_TKOFF_ALT", start_alt * 100)
@@ -368,7 +370,8 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(8, 1000)    # Lower rotor speed
 
     # FIXME move this & plane's version to common
-    def test_airspeed_drivers(self, timeout=600):
+    def AirspeedDrivers(self, timeout=600):
+        '''Test AirSpeed drivers'''
 
         # set the start location to CMAC to use same test script as other vehicles
         self.sitl_start_loc = mavutil.location(-35.362881, 149.165222, 582.000000, 90.0)   # CMAC
@@ -428,39 +431,15 @@ class AutoTestHelicopter(AutoTestCopter):
         '''return list of all tests'''
         ret = AutoTest.tests(self)
         ret.extend([
-            ("AVCMission", "Fly AVC mission", self.fly_avc_test),
-
-            ("RotorRunUp",
-             "Test rotor runup",
-             self.rotor_runup_complete_checks),
-
-            ("PosHoldTakeOff",
-             "Fly POSHOLD takeoff",
-             self.fly_heli_poshold_takeoff),
-
-            ("StabilizeTakeOff",
-             "Fly stabilize takeoff",
-             self.fly_heli_stabilize_takeoff),
-
-            ("SplineWaypoint",
-             "Fly Spline Waypoints",
-             self.fly_spline_waypoint),
-
-            ("AutoRotation",
-             "Fly AutoRotation",
-             self.fly_autorotation),
-
-            ("FlyEachFrame",
-             "Fly each supported internal frame",
-             self.fly_each_frame),
-
-            ("LogUpload",
-             "Log upload",
-             self.log_upload),
-
-            ("AirspeedDrivers",
-             "Test AirSpeed drivers",
-             self.test_airspeed_drivers),
+            self.AVCMission,
+            self.RotorRunup,
+            self.PosHoldTakeOff,
+            self.StabilizeTakeOff,
+            self.SplineWaypoint,
+            self.AutoRotation,
+            self.FlyEachFrame,
+            self.LogUpload,
+            self.AirspeedDrivers,
         ])
         return ret
 
