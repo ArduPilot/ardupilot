@@ -104,7 +104,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: SPIN_MIN
     // @DisplayName: Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
-    // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @Values: 0.0:Low, 0.15:Default, 0.25:High
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, _spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
@@ -821,6 +821,15 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
             hal.util->snprintf(buffer, buflen, "no SERVOx_FUNCTION set to Motor%u", i + 1);
             return false;
         }
+    }
+
+    if (_spin_min > 0.3) {
+        hal.util->snprintf(buffer, buflen, "SPIN_MIN too high %.2f, max 0.3", _spin_min.get());
+        return false;
+    }
+    if (_spin_arm > _spin_min) {
+        hal.util->snprintf(buffer, buflen, "SPIN_ARM higher than SPIN_MIN");
+        return false;
     }
 
     return true;
