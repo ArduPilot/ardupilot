@@ -67,6 +67,8 @@ protected:
     };
     static void database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned);
 
+    HAL_Semaphore _sem;
+
     AP_Proximity &frontend;
     AP_Proximity::Proximity_State &state;   // reference to this instances state
     AP_Proximity_Params &params;            // parameters for this backend

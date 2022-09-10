@@ -56,6 +56,7 @@ public:
         AirSimSITL = 12,
 #endif
         CYGBOT_D1 = 13,
+        MR72 = 14,
     };
 
     enum class Status {
@@ -145,7 +146,11 @@ public:
     struct Proximity_State {
         uint8_t instance;   // the instance number of this proximity sensor
         Status status;      // sensor status
+
+        const struct AP_Param::GroupInfo *var_info; // stores extra parameter information for the sensor (if it exists)
     };
+
+    static const struct AP_Param::GroupInfo *backend_var_info[PROXIMITY_MAX_INSTANCES];
 
     // parameter list
     static const struct AP_Param::GroupInfo var_info[];
