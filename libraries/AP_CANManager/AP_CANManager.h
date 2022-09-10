@@ -65,6 +65,7 @@ public:
         Driver_Type_Scripting = 10,
         Driver_Type_Benewake = 11,
         Driver_Type_Scripting2 = 12,
+        Driver_Type_MR72 = 13,
     };
 
     void init(void);
