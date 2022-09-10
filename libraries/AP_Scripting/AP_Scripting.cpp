@@ -236,6 +236,13 @@ void AP_Scripting::thread(void) {
         }
         delete lua;
 
+        // clear allocated i2c devices
+        for (uint8_t i=0; i<SCRIPTING_MAX_NUM_I2C_DEVICE; i++) {
+            delete _i2c_dev[i];
+            _i2c_dev[i] = nullptr;
+        }
+        num_i2c_devices = 0;
+
         bool cleared = false;
         while(true) {
             // 1hz check if we should restart
