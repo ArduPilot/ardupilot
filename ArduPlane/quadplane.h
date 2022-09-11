@@ -373,7 +373,9 @@ private:
 
     struct {
         AP_Float gain;
+		AP_Float p;
         float integrator;
+		float proportional;
         uint32_t last_ms;
         float last_pct;
     } vel_forward;

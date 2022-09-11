@@ -264,6 +264,14 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // 60 is used above for VELZ_MAX_DN
     // 61 was used above for TAILSIT_ANG_VT
+	
+	// @Param: VFWD_P
+	// @DisplayName: Forward velocity hold gain
+	// @Description: Proportional Control of forward motor in vtol modes. A value of 0.05 is a good place to start if you want to use the forward motor for velocity control. No forward motor will be used in QSTABILIZE or QHOVER modes. Use QLOITER for position hold with the forward motor.
+	// @Range: 0 0.5
+	// @Increment: 0.01
+	// @User: Standard
+	AP_GROUPINFO("VFWD_P", 62, QuadPlane, vel_forward.p, 0),
 
     AP_GROUPEND
 };
@@ -3373,6 +3381,7 @@ float QuadPlane::forward_throttle_pct()
     Vector3f vel_error_body = ahrs.get_rotation_body_to_ned().transposed() * ((desired_velocity_cms*0.01f) - vel_ned);
 
     float fwd_vel_error = vel_error_body.x;
+	vel_forward.proportional = fwd_vel_error * vel_forward.p*100;
 
     // scale forward velocity error by maximum airspeed
     fwd_vel_error /= MAX(plane.aparm.airspeed_max, 5);
@@ -3400,7 +3409,7 @@ float QuadPlane::forward_throttle_pct()
         // we always allow the fwd motor to run. Otherwise a bad
         // lidar could cause the aircraft not to be able to
         // approach the landing point when landing below the takeoff point
-        vel_forward.last_pct = vel_forward.integrator;
+        vel_forward.last_pct = vel_forward.integrator + vel_forward.proportional;
     } else if ((in_vtol_land_final() && motors->limit.throttle_lower) ||
               (plane.g.rangefinder_landing && (plane.rangefinder.status_orient(ROTATION_PITCH_270) == RangeFinder::Status::OutOfRangeLow))) {
         // we're in the settling phase of landing or using a rangefinder that is out of range low, disable fwd motor
@@ -3412,7 +3421,7 @@ float QuadPlane::forward_throttle_pct()
         float alt_cutoff = MAX(0,vel_forward_alt_cutoff);
         float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
 
-        vel_forward.last_pct = linear_interpolate(0, vel_forward.integrator,
+        vel_forward.last_pct = linear_interpolate(0, (vel_forward.integrator+vel_forward.proportional),
                                                   height_above_ground, alt_cutoff, alt_cutoff+2);
     }
     if (is_zero(vel_forward.last_pct)) {
