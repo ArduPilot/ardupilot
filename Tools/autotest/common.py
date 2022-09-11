@@ -4766,7 +4766,7 @@ class AutoTest(ABC):
         """Arm vehicle with mavlink arm message send from MAVProxy."""
         self.progress("Arm motors with MavProxy")
         mavproxy.send('arm throttle\n')
-        self.mav.motors_armed_wait()
+        self.wait_armed()
         self.progress("ARMED")
         return True
 
