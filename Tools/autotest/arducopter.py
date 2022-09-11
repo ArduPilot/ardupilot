@@ -421,8 +421,7 @@ class AutoTestCopter(AutoTest):
             os.path.join(testdir, "ch7_mission.txt"))
         self.stop_mavproxy(mavproxy)
         if not num_wp:
-            self.fail_list.append("save_mission_to_file")
-            self.progress("save_mission_to_file failed")
+            raise NotAchievedException("save_mission_to_file failed")
 
         self.progress("test: Fly a mission from 1 to %u" % num_wp)
         self.change_mode('AUTO')
