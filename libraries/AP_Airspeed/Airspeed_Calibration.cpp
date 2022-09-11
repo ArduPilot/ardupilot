@@ -6,14 +6,12 @@
  */
 
 #include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Baro/AP_Baro.h>
 
 #include "AP_Airspeed.h"
 
-extern const AP_HAL::HAL& hal;
 
 // constructor - fill in all the initial values
 Airspeed_Calibration::Airspeed_Calibration()
