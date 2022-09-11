@@ -418,11 +418,11 @@ def run_specific_test(step, *args, **kwargs):
 
     print("Got %s" % str(tester))
     for a in tester.tests():
-        if not hasattr(a, 'name'):
-            a = Test(a[0], a[1], a[2])
+        if type(a) != 'Test':
+            a = Test(a)
         print("Got %s" % (a.name))
         if a.name == test:
-            return tester.run_tests([a])
+            return (tester.autotest(tests=[a], allow_skips=False), tester)
     print("Failed to find test %s on %s" % (test, testname))
     sys.exit(1)
 
@@ -832,11 +832,9 @@ def list_subtests_for_vehicle(vehicle_type):
         subtests = tester.tests()
         sorted_list = []
         for subtest in subtests:
-            if type(subtest) is tuple:
-                (name, description, function) = subtest
-                sorted_list.append([name, description])
-            else:
-                sorted_list.append([subtest.name, subtest.description])
+            if type(subtest) != 'Test':
+                subtest = Test(subtest)
+            sorted_list.append([subtest.name, subtest.description])
         sorted_list.sort()
         for subtest in sorted_list:
             print("%s " % subtest[0], end='')

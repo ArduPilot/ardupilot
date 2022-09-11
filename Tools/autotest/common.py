@@ -12403,17 +12403,19 @@ switch value'''
             print("Had to force-reset SITL %u times" %
                   (self.forced_post_test_sitl_reboots,))
 
-    def autotest(self):
+    def autotest(self, tests=None, allow_skips=True):
         """Autotest used by ArduPilot autotest CI."""
+        if tests is None:
+            tests = self.tests()
         all_tests = []
-        for test in self.tests():
-            if type(test) == Test:
-                all_tests.append(test)
-                continue
-            actual_test = Test(test)
-            all_tests.append(actual_test)
+        for test in tests:
+            if type(test) != Test:
+                test = Test(test)
+            all_tests.append(test)
 
         disabled = self.disabled_tests()
+        if not allow_skips:
+            disabled = {}
         tests = []
         for test in all_tests:
             if test.name in disabled:
