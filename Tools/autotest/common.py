@@ -3651,24 +3651,6 @@ class AutoTest(ABC):
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
 
-    def LogUpload(self):
-        '''upload logs to ArduPilot firmware server'''
-        self.progress("Log upload disabled as CI artifacts are good")
-        return
-        if len(self.fail_list) > 0 and os.getenv("AUTOTEST_UPLOAD"):
-            # optionally upload logs to server so we can see travis failure logs
-            import datetime
-            import glob
-            import subprocess
-            logdir = self.buildlogs_dirpath()
-            datedir = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
-            flist = glob.glob("logs/*.BIN")
-            for e in ['BIN', 'bin', 'tlog']:
-                flist += glob.glob(os.path.join(logdir, '*.%s' % e))
-            self.progress("Uploading %u logs to https://firmware.ardupilot.org/CI-Logs/%s" % (len(flist), datedir))
-            cmd = ['rsync', '-avz'] + flist + ['cilogs@autotest.ardupilot.org::CI-Logs/%s/' % datedir]
-            subprocess.call(cmd)
-
     def show_gps_and_sim_positions(self, on_off):
         """Allow to display gps and actual position on map."""
         if on_off is True:

@@ -3998,7 +3998,6 @@ class AutoTestPlane(AutoTest):
             self.MSP_DJI,
             self.SpeedToFly,
             self.GlideSlopeThresh,
-            self.LogUpload,
             self.HIGH_LATENCY2,
             self.MidAirDisarmDisallowed,
         ])

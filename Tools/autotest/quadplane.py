@@ -946,6 +946,5 @@ class AutoTestQuadPlane(AutoTest):
             self.MidAirDisarmDisallowed,
             self.BootInAUTO,
             self.Ship,
-            self.LogUpload,
         ])
         return ret
