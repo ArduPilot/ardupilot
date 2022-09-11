@@ -25,7 +25,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     }
     state[i].failures.last_check_ms = now_ms;
 
-    if (!is_positive(_wind_max)) {
+    if (!is_positive(_wind_max) && !is_positive(_wind_gate)) {
         // nothing to do
         return;
     }
@@ -54,20 +54,18 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     } else {
         state[i].failures.test_ratio = 0.0f;
     }
-    bool data_is_inconsistent;
-    if ((AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY & _options) != 0) {
+    bool data_is_inconsistent = false;
+    if (is_positive(_wind_gate) && (AP_Airspeed::OptionsMask::USE_EKF_CONSISTENCY & _options) != 0) {
         float gate_size = MAX(_wind_gate, 0.0f);
         if (param[i].use == 0) {
             // require a smaller inconsistency for a disabled sensor to be declared consistent
             gate_size *= 0.7f;
         }
         data_is_inconsistent = state[i].failures.test_ratio > gate_size;
-    } else {
-        data_is_inconsistent = false;
     }
 
     const float speed_diff = fabsf(state[i].airspeed-gps.ground_speed());
-    const bool data_is_implausible = speed_diff > _wind_max;
+    const bool data_is_implausible = is_positive(_wind_max) && speed_diff > _wind_max;
     // update health_probability with LowPassFilter
     if (data_is_implausible || data_is_inconsistent) {
         // bad, decay fast
@@ -100,11 +98,11 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
 
         // set warn to max if not set or larger than max
         float wind_warn = _wind_warn;
-        if (!is_positive(wind_warn) || (wind_warn > _wind_max)) {
+        if ((!is_positive(wind_warn) || (wind_warn > _wind_max)) && is_positive(_wind_max)) {
             wind_warn = _wind_max;
         }
 
-        if ((speed_diff > wind_warn) && ((now_ms - state[i].failures.last_warn_ms) > 15000)) {
+        if (is_positive(wind_warn) && (speed_diff > wind_warn) && ((now_ms - state[i].failures.last_warn_ms) > 15000)) {
             state[i].failures.last_warn_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Airspeed %d warning %0.1fm/s air to gnd speed diff", i+1, speed_diff);
         }
