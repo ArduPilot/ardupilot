@@ -778,6 +778,8 @@ protected:
     AP_Int8 hdg_corr_enable; // enable heading correction
     AP_Float hdg_corr_weight; // heading correction weight
     AP_Float stopping_dist; // how far away from the docking target should we start stopping
+    AP_Float dock_slow_dist_max_m; // Maximum distance to start slowdown
+    AP_Float dock_slow_dist_min_m; // Minimum distance to start slowdown
 
     bool _enter() override;
 
