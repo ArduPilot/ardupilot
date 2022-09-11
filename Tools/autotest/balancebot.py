@@ -115,7 +115,6 @@ inherit Rover's tests!'''
             self.GetBanner,
             self.DO_SET_MODE,
             self.ServoRelayEvents,
-            self.LogUpload,
         ])
         return ret
 

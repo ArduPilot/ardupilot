@@ -438,7 +438,6 @@ class AutoTestHelicopter(AutoTestCopter):
             self.SplineWaypoint,
             self.AutoRotation,
             self.FlyEachFrame,
-            self.LogUpload,
             self.AirspeedDrivers,
         ])
         return ret

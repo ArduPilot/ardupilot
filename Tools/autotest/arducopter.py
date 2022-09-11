@@ -8976,7 +8976,6 @@ class AutoTestCopter(AutoTest):
              self.PAUSE_CONTINUE_GUIDED,
              self.RichenPower,
              self.IE24,
-             self.LogUpload,
              self.MAVLandedStateTakeoff,
         ])
         return ret
@@ -9039,7 +9038,6 @@ class AutoTestCopter(AutoTest):
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
-            self.LogUpload,
         ])
         return ret
 
