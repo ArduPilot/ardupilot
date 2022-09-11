@@ -1445,6 +1445,29 @@ class Test(object):
         self.speedup = speedup
 
 
+class Result(object):
+    '''a test result - pass, fail, exception, runtime, ....'''
+    def __init__(self, test):
+        self.test = test
+        self.reason = None
+        self.exception = None
+        self.debug_filename = None
+        # self.passed = False
+
+    def __str__(self):
+        ret = "  %s (%s)" % (self.test.name, self.test.description)
+        if self.passed:
+            return ret + " OK"
+        if self.reason is not None:
+            ret += " (" + self.reason + ")"
+        if self.exception is not None:
+            ret += " (" + str(self.exception) + ")"
+        if self.debug_filename is not None:
+            ret += " (see " + self.debug_filename + ")"
+
+        return ret
+
+
 class AutoTest(ABC):
     """Base abstract class.
     It implements the common function for all vehicle types.
@@ -1514,7 +1537,6 @@ class AutoTest(ABC):
         self.max_set_rc_timeout = 0
         self.last_wp_load = 0
         self.forced_post_test_sitl_reboots = 0
-        self.skip_list = []
         self.run_tests_called = False
         self._show_test_timings = _show_test_timings
         self.test_timings = dict()
@@ -7102,10 +7124,11 @@ Also, ignores heartbeats not from our target system'''
     def run_one_test(self, test, interact=False):
         '''new-style run-one-test used by run_tests'''
         for i in range(0, test.attempts-1):
-            if self.run_one_test_attempt(test, interact=interact, attempt=i+2, do_fail_list=False):
-                return
+            result = self.run_one_test_attempt(test, interact=interact, attempt=i+2)
+            if result.passed:
+                return result
             self.progress("Run attempt failed.  Retrying")
-        self.run_one_test_attempt(test, interact=interact, attempt=1)
+        return self.run_one_test_attempt(test, interact=interact, attempt=1)
 
     def print_exception_caught(self, e, send_statustext=True):
         self.progress("Exception caught: %s" %
@@ -7122,7 +7145,7 @@ Also, ignores heartbeats not from our target system'''
             for line in f:
                 self.progress(line.rstrip())
 
-    def run_one_test_attempt(self, test, interact=False, attempt=1, do_fail_list=True):
+    def run_one_test_attempt(self, test, interact=False, attempt=1):
         '''called by run_one_test to actually run the test in a retry loop'''
         name = test.name
         desc = test.description
@@ -7188,6 +7211,8 @@ Also, ignores heartbeats not from our target system'''
             self.print_exception_caught(e, send_statustext=False)
             passed = False
 
+        result = Result(test)
+
         ardupilot_alive = False
         try:
             self.wait_heartbeat()
@@ -7201,7 +7226,9 @@ Also, ignores heartbeats not from our target system'''
                     tool_filepath = os.path.join(self.rootdir(), 'Tools', 'scripts', tool)
                     if util.run_cmd([tool_filepath, str(self.sitl.pid)]) != 0:
                         self.progress("Failed %s" % (tool,))
-                        return False
+                        result.description
+                        result.passed = False
+                        return result
             else:
                 self.progress("pexpect says it is dead")
 
@@ -7281,8 +7308,8 @@ Also, ignores heartbeats not from our target system'''
         else:
             self.progress('FAILED: "%s": %s (see %s)' %
                           (prettyname, repr(ex), test_output_filename))
-            if do_fail_list:
-                self.fail_list.append((prettyname, ex, test_output_filename))
+            result.exception = ex
+            result.debug_filename = test_output_filename
             if interact:
                 self.progress("Starting MAVProxy interaction as directed")
                 self.mavproxy.interact()
@@ -7299,7 +7326,8 @@ Also, ignores heartbeats not from our target system'''
 
         tee.close()
 
-        return passed
+        result.passed = passed
+        return result
 
     def defaults_filepath(self):
         return None
@@ -10276,10 +10304,6 @@ switch value'''
         '''TODO: sanity checks?'''
         pass
 
-    def test_skipped(self, test, reason):
-        self.progress("##### %s is skipped: %s" % (test, reason))
-        self.skip_list.append((test, reason))
-
     def last_onboard_log(self):
         '''return number of last onboard log'''
         mavproxy = self.start_mavproxy()
@@ -10332,7 +10356,7 @@ switch value'''
             raise ValueError("run_tests called twice")
         self.run_tests_called = True
 
-        self.fail_list = []
+        result_list = []
 
         try:
             self.init()
@@ -10349,11 +10373,14 @@ switch value'''
 
             for test in tests:
                 self.drain_mav_unparsed()
-                self.run_one_test(test)
+                result_list.append(self.run_one_test(test))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
-            self.fail_list.append(["Failed with timeout", None, None])
+            result = Result(test)
+            result.passed = False
+            result.reason = "Failed with timeout"
+            result_list.append(result)
             if self.logs_dir:
                 if glob.glob("core*") or glob.glob("ap-*.core"):
                     self.check_logs("FRAMEWORK")
@@ -10365,20 +10392,7 @@ switch value'''
             self.rc_thread = None
         self.close()
 
-        if len(self.skip_list):
-            self.progress("Skipped tests:")
-            for skipped in self.skip_list:
-                (test, reason) = skipped
-                print("  %s (see %s)" % (test.name, reason))
-
-        if len(self.fail_list):
-            self.progress("Failing tests:")
-            for failure in self.fail_list:
-                (desc, exception, debug_filename) = failure
-                print("  %s (%s) (see %s)" % (desc, exception, debug_filename))
-            return False
-
-        return True
+        return result_list
 
     def dictdiff(self, dict1, dict2):
         fred = copy.copy(dict1)
@@ -12376,16 +12390,32 @@ switch value'''
         disabled = self.disabled_tests()
         if not allow_skips:
             disabled = {}
+        skip_list = []
         tests = []
         for test in all_tests:
             if test.name in disabled:
-                self.test_skipped(test, disabled[test.name])
+                self.progress("##### %s is skipped: %s" % (test, disabled[test.name]))
+                skip_list.append((test, disabled[test.name]))
                 continue
             tests.append(test)
 
-        ret = self.run_tests(tests)
+        results = self.run_tests(tests)
+
+        if len(skip_list):
+            self.progress("Skipped tests:")
+            for skipped in skip_list:
+                (test, reason) = skipped
+                print("  %s (see %s)" % (test.name, reason))
+
+        self.fail_list = list(filter(lambda x : not x.passed, results))
+        if len(self.fail_list):
+            self.progress("Failing tests:")
+            for failure in self.fail_list:
+                print(str(failure))
+
         self.post_tests_announcements()
-        return ret
+
+        return len(self.fail_list) == 0
 
     def mavfft_fttd(self, sensor_type, sensor_instance, since, until):
         '''display fft for raw ACC data in current logfile'''
