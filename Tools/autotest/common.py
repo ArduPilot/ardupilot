@@ -7319,26 +7319,6 @@ Also, ignores heartbeats not from our target system'''
 
         return passed
 
-    def check_test_syntax(self, test_file):
-        """Check mistake on autotest function syntax."""
-        self.start_test("Check for syntax mistake in autotest lambda")
-        if not os.path.isfile(test_file):
-            self.progress("File %s does not exist" % test_file)
-        test_file = test_file.rstrip('c')
-        try:
-            with open(test_file) as f:
-                # check for lambda: test_function without paranthesis
-                faulty_strings = re.findall(r"lambda\s*:\s*\w+.\w+\s*\)", f.read())
-                if faulty_strings:
-                    desc = "Syntax error in autotest lambda at : \n"
-                    for x in range(len(faulty_strings)):
-                        desc += faulty_strings[x] + "\n"
-                    raise ErrorException(desc)
-        except ErrorException as msg:
-            self.progress("FAILED: Check for syntax mistake in autotest lambda. \n" + str(msg))
-            exit(1)
-        self.progress("PASSED: Check for syntax mistake in autotest lambda")
-
     def defaults_filepath(self):
         return None
 
@@ -7472,8 +7452,6 @@ Also, ignores heartbeats not from our target system'''
 
     def init(self):
         """Initilialize autotest feature."""
-        self.check_test_syntax(test_file=self.test_filepath())
-
         self.mavproxy_logfile = self.open_mavproxy_logfile()
 
         if self.frame is None:
