@@ -785,8 +785,7 @@ def run_tests(steps):
             print("  %s:" % key)
             for testinstance in failed_testinstances[key]:
                 for failure in testinstance.fail_list:
-                    (desc, exception, debug_filename) = failure
-                    print("    %s (%s) (see %s)" % (desc, exception, debug_filename))
+                    print("  " + str(failure))
 
         print("FAILED %u tests: %s" % (len(failed), failed))
 
