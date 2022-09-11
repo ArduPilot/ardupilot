@@ -6125,7 +6125,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.EndMissionBehavior,
             self.FlashStorage,
             self.FRAMStorage,
-            self.LogUpload,
             self.DepthFinder,
             self.ChangeModeByNumber,
             self.EStopAtBoot,

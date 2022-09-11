@@ -413,7 +413,6 @@ class AutoTestSub(AutoTest):
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
-            self.LogUpload,
         ])
 
         return ret
