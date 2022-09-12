@@ -1,3 +1,49 @@
+Release 4.3.0beta1 13th Sep 2022
+--------------------------------
+
+This is the first beta of the 4.3.0 stable release. There are a lot of
+changes since the 4.2.3 stable release. Key changes are:
+
+- added new boards AtomRCF405, KakuteH7Mini-Nand, SkystarsH7HD
+- added bi-directional dshot for several new boards
+- EK3_GPS_VACC_MAX threshold to control when GPS altitude is used as alt source
+- EKF ring buffer fix for slow sensor updates
+- EKF3 source set change captured in replay logs
+- numerous gimbal support improvements
+- improved RemoteId support
+- SecureBoot support with remote update of secure boot public keys
+- crash_dump.bin file saved to SD Card on startup (includes details re cause of software failures)
+- several new pre-arm checks (AHRS type, scripts, terrain)
+- numerous scripting improvements
+- fixed scripting restart leaking memory
+- Benewake H30 radar support
+- BMI270 IMU performance improvements
+- Logging pause with auxiliary switch
+- TeraRanger Neo rangefinder support
+- support for both AMSL and ellipsoid height in most GPS drivers
+- Custom controller support
+- parameter defaults sent with param FTP and onboard logs
+- Sim on Hardware allows simulator to run on autopilot
+- added Q_LAND_ALTCHG parameter
+- added climb before QRTL for safer QRTL from low altitudes
+- added support for logging pre and post filtered FFT data
+- support triple-notch harmonic notch filter
+- support up to 32 actuators (with SERVO_32_ENABLE parameter)
+- support EFI input over DroneCAN
+- by default only run notch filter on first IMU
+- added ESC_TLM_MAV_OFS parameter for mapping ESCs to MAVLink ESC telemetry
+- added Q_NAVALT_MIN for quadplane takeoff
+- added ICE redline governor
+- added in-flight FFT notch tuning option
+- added Sagetech ADSB support
+- added INS_HNTCH_FM_RAT parameter for handling under-hover throttle
+- improvements to filtering on ICM42xxx IMUs
+- added option parameters to NAV_VTOL_LAND mission item for fixed wing approach
+
+Please report flight tests of the 4.3.0beta series on discuss.ardupilot.org
+
+Happy flying!
+
 Release 4.2.3 21st August 2022
 ------------------------------
 
