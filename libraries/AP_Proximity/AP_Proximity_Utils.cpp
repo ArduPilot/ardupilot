@@ -20,7 +20,6 @@
 
 #if HAL_PROXIMITY_ENABLED
 
-#define PROXIMITY_GND_DETECT_THRESHOLD 1.0f // set ground detection threshold to be 1 meters
 #define PROXIMITY_ALT_DETECT_TIMEOUT_MS 500 // alt readings should arrive within this much time
 
 extern const AP_HAL::HAL& hal;
@@ -79,7 +78,7 @@ bool AP_Proximity::check_obstacle_near_ground(float pitch, float yaw, float dist
 
     if (rotated_object_3D.z > -0.5f) {
         // obstacle is at the most 0.5 meters above vehicle
-        if ((alt - PROXIMITY_GND_DETECT_THRESHOLD) < rotated_object_3D.z) {
+        if ((alt - _alt_min) < rotated_object_3D.z) {
             // obstacle is near or below ground
             return true;
         }

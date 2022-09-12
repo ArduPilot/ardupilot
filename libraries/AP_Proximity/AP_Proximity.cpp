@@ -65,6 +65,14 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // 19 was _MIN
     // 20 was _MAX
 
+    // @Param{Copter}: _ALT_MIN
+    // @DisplayName: Proximity lowest altitude.
+    // @Description: Minimum altitude below which proximity should not work.
+    // @Units: m
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("_ALT_MIN", 25, AP_Proximity, _alt_min, 1.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+
     // @Group: 1
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[0], "1", 21, AP_Proximity, AP_Proximity_Params),
