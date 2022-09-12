@@ -9,19 +9,13 @@ local PARAM_TABLE_KEY = 83
 local PARAM_TABLE_PREFIX = "FOLL_"
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 2), 'could not add param table')
 
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
 function bind_add_param(name, index, default_value)
    assert(param:add_param(PARAM_TABLE_KEY, index,  name, default_value), string.format('could not add %s', PARAM_TABLE_PREFIX .. name))
-   return bind_param(PARAM_TABLE_PREFIX .. name)
+   return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
-local FOLL_OFS_X = bind_param("FOLL_OFS_X")
-local FOLL_OFS_Y = bind_param("FOLL_OFS_Y")
+local FOLL_OFS_X = Parameter("FOLL_OFS_X")
+local FOLL_OFS_Y = Parameter("FOLL_OFS_Y")
 local FOLL_ORB_RADIUS = bind_add_param("ORB_RADIUS", 1, 5)
 local FOLL_ORB_TIME = bind_add_param("ORB_TIME", 2, 10)
 

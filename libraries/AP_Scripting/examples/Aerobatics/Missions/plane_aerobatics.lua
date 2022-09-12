@@ -21,22 +21,16 @@ assert(param:add_param(PARAM_TABLE_KEY, 6,  'SPD_I', 25), 'could not add param9'
 DO_JUMP = 177
 k_throttle = 70
 
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
-local HGT_P = bind_param("AEROM_HGT_P") -- height P gain
-local HGT_I = bind_param("AEROM_HGT_I") -- height I gain
-local HGT_KE_BIAS = bind_param("AEROM_HGT_KE_ADD") -- height knifeedge addition for pitch
-local THR_PIT_FF = bind_param("AEROM_THR_PIT_FF") -- throttle FF from pitch
-local SPD_P = bind_param("AEROM_SPD_P") -- speed P gain
-local SPD_I = bind_param("AEROM_SPD_I") -- speed I gain
-local TRIM_THROTTLE = bind_param("TRIM_THROTTLE")
-local TRIM_ARSPD_CM = bind_param("TRIM_ARSPD_CM")
-local RLL2SRV_TCONST = bind_param("RLL2SRV_TCONST")
-local PITCH_TCONST = bind_param("PTCH2SRV_TCONST")
+local HGT_P = Parameter("AEROM_HGT_P") -- height P gain
+local HGT_I = Parameter("AEROM_HGT_I") -- height I gain
+local HGT_KE_BIAS = Parameter("AEROM_HGT_KE_ADD") -- height knifeedge addition for pitch
+local THR_PIT_FF = Parameter("AEROM_THR_PIT_FF") -- throttle FF from pitch
+local SPD_P = Parameter("AEROM_SPD_P") -- speed P gain
+local SPD_I = Parameter("AEROM_SPD_I") -- speed I gain
+local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
+local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
+local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
 
 local last_roll_err = 0.0
 local last_id = 0

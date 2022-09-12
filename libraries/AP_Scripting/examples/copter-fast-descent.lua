@@ -44,17 +44,12 @@ assert(param:add_param(PARAM_TABLE_KEY, 5, 'SPEED_DN', 10), 'could not add FDST_
 assert(param:add_param(PARAM_TABLE_KEY, 6, 'YAW_BEHAVE', 0), 'could not add FDST_YAW_BEHAVE param') -- 0:yaw does not change 1:yaw points toward center
 
 -- bind parameters to variables
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-local activate_type = bind_param("FDST_ACTIVATE")       -- activate type 0:Guided, 1:Auto's NAV_SCRIPT_TIME
-local alt_above_home_min = bind_param("FDST_ALT_MIN")   -- copter will stop at this altitude above home
-local circle_radius_max = bind_param("FDST_RADIUS")     -- target circle's maximum radius
-local speed_xy_max = bind_param("FDST_SPEED_XY")        -- max target horizontal speed
-local speed_z_max = bind_param("FDST_SPEED_DN")         -- target descent rate
-local yaw_behave = bind_param("FDST_YAW_BEHAVE")        -- 0:yaw is static, 1:yaw points towards center of circle
+local activate_type = Parameter("FDST_ACTIVATE")       -- activate type 0:Guided, 1:Auto's NAV_SCRIPT_TIME
+local alt_above_home_min = Parameter("FDST_ALT_MIN")   -- copter will stop at this altitude above home
+local circle_radius_max = Parameter("FDST_RADIUS")     -- target circle's maximum radius
+local speed_xy_max = Parameter("FDST_SPEED_XY")        -- max target horizontal speed
+local speed_z_max = Parameter("FDST_SPEED_DN")         -- target descent rate
+local yaw_behave = Parameter("FDST_YAW_BEHAVE")        -- 0:yaw is static, 1:yaw points towards center of circle
 
 -- the main update function
 function update()
