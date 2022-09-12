@@ -173,9 +173,10 @@ private:
     bool valid_instance(uint8_t i) const;
 
     // parameters for all instances
-    AP_Int8 _raw_log_enable;                            // enable logging raw distances
+    AP_Int8 _raw_log_enable;                           // enable logging raw distances
     AP_Int8 _ign_gnd_enable;                           // true if land detection should be enabled
     AP_Float _filt_freq;                               // cutoff frequency for low pass filter
+    AP_Float _alt_min;                                 // Minimum altitude -in meters- below which proximity should not work.
 
     // get alt from rangefinder in meters. This reading is corrected for vehicle tilt
     bool get_rangefinder_alt(float &alt_m) const;
