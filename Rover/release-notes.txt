@@ -1,5 +1,77 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta1 14-Sep-2022
+Changes from 4.2.3
+1) Rover specific enhancements
+    a) Aux switch for SaveWP displays, "Mission Cleared" if vehicle not armed
+    b) Dock mode using modified precision landing library
+    c) Manual mode steering scaling with speed can be disabled using MANUAL_OPTIONS parameter
+    d) S-Curves for Auto, Guided, RTL
+2) Rover specific bug fixes
+    a) Wheel encoder timestamp fix (WRC_xx params may need to be changed)
+    b) Auto mode stick mixing fixed (see STICK_MIXING parameter)
+    c) Arming check removed to support mixed Ackerman and skid-stering vehicles
+3) New autopilot support
+    a) AtomRCF405
+    b) CubeOrange-SimOnHardWare
+    c) DevEBoxH7v2
+    d) KakuteH7Mini-Nand
+    e) SkystarsH7HD
+    f) bi-directional dshot (aka "bdshot") versions for CubeOrange, PH4-mini, Pixhawk-1M
+4) EKF enhancements and fixes
+    a) EK3_GPS_VACC_MAX threshold to control when GPS altitude is used as alt source
+    b) EKF ring buffer fix for very slow sensor updates (those that update once every few seconds)
+    c) EKF3 source set change captured in Replay logs
+5) Gimbal enhancements
+    a) Angle limit params renamed and scaled to degrees (e.g. MNT1_ROLL_MIN, MNT1_PITCH_MIN, etc)
+    b) Auto mode support of DO_GIMBAL_MANAGER_PITCHYAW command
+    c) BrushlessPWM driver (set MNT1_TYPE = 7) is unstabilized Servo driver
+    d) Dual mount support (see MNT1_, MNT2 params)
+    e) Gremsy driver added (set MNT1_TYPE = 6)
+    f) MAVLink gimbalv2 support including sending GIMBAL_DEVICE_STATUS_UPDATE (replaces MOUNT_STATUS message)
+    g) "Mount Lock" auxiliary switch supports follow and lock modes in RC targetting (aka earth-frame and body-frame)    
+    h) RC channels to control gimbal set using RCx_OPTION = 212 (Roll), 213 (Pitch) or 214 (Yaw)
+    i) RC targetting rotation rate in deg/sec (see MNT1_RC_RATE which replaces MNT_JSTICK_SPD)
+    j) Yaw can be disabled on 3-axis gimbals (set MNTx_YAW_MIN = MNTx_YAW_MAX)
+7) RemoteId and SecureBoot enhancements
+    a) Remote update of secure boot's public keys (also allows remote unlocking of bootloader)
+8) Safety enhancements
+    a) crash_dump.bin file saved to SD Card on startup (includes details re cause of software failures)
+    b) Disabling Fence clears any active breaches (e.g. FENCE_TYPE = 0 will clear breaches)
+    c) "GPS Glitch" message clarified to "GPS Glitch or Compass error"
+    d) Pre-arm check that configured AHRS is being used (e.g. checks AHRS_EKF_TYPE not changed since boot)
+    e) Pre-arm check that gimbals are healthy (currently only for Gremsy gimbals, others in future release)
+    f) Pre-arm check that scripts are running
+    g) Pre-arm messages are correctly prefixed with "PreArm:" (instead of "Arm:")
+    h) RC auxiliary switch option for Arm / Emergency Stop
+    i) RC failsafe made pre-arm check (previously only triggered at arming)
+    j) RC failsafe option (see FS_OPTIONS) to continue in Guided obeyed even if GCS failsafe disabled
+9) Scripting enhancements
+    a) CAN2 port bindings to allow scripts to communicate on 2nd CAN bus
+    b) ESC RPM bindings to allow scripts to report engine RPM
+    c) Gimbal bingings to allow scripts to control gimbal
+    d) Pre-arm check bindings (allows scripts to check if pre-arm checks have passed)
+    e) Restarting scripts supported (may require GCS support to be added)
+    f) Semicolon (:) and period (.) supported (e.g both Logger:write() and Logger.write will work)
+10) Sensor driver enhancements
+    a) Benewake H30 radar support
+    b) BMI270 IMU performance improvements
+    c) Logging pause-able with auxiliary switch.  see RCx_OPTION = 165 (Pause Stream Logging)
+    d) Proximity sensor support for up to 3 sensors
+    e) RichenPower generator maintenance-required messages can be suppressed using GEN_OPTIONS param
+    f) TeraRanger Neo rangefinder support
+    g) UBlox GPS support to provide ellipsoid altitude instead of AMSL (see GPS_DRV_OPTIONS)
+11) Bug fixes
+    a) Accel calibration throws away queued commands from GCS (avoids commands being run long after they were sent)
+    b) Cygbot proximity sensor fix to support different orientations (see PRXx_ORIENT)
+    c) Lutan EFI message flood reduced
+    d) Missions download to GCS corruption avoided by checking serial buffer has space
+    e) Safety switch disabled if IOMCU is disabled (see BRD_IO_ENABLE=0)
+12) Developer items
+    a) Parameter defaults recorded in @SYS/defaults.parm and onboard logs
+    b) ROS+ArduPilot environment installation script
+    c) Sim on Hardware allows simulator to run on autopilot (good for exhibitions)
+------------------------------------------------------------------
 Rover 4.2.3 30-Aug-2022
 Changes from 4.2.3-rc3
 1) OpenDroneId bug fix to consume open-drone-id-system-update message
