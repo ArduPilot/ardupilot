@@ -1,5 +1,102 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.0-beta1 14-Sep-2022
+Changes from 4.2.3
+1) New autopilot support
+    a) AtomRCF405
+    b) CubeOrange-SimOnHardWare
+    c) DevEBoxH7v2
+    d) KakuteH7Mini-Nand
+    e) KakuteH7v2
+    f) Mamba F405 Mk4
+    g) SkystarsH7HD
+    h) bi-directional dshot (aka "bdshot") versions for CubeOrange, CubeYellow, KakuteF7, KakuteH7, MatekF405-Wing, Matek F765, PH4-mini, Pixhawk-1M
+2) EKF enhancements and fixes
+    a) EK3_GPS_VACC_MAX threshold to control when GPS altitude is used as alt source
+    b) EKF ring buffer fix for very slow sensor updates (those that update once every few seconds)
+    c) EKF3 source set change captured in Replay logs
+3) Gimbal enhancements
+    a) Angle limit params renamed and scaled to degrees (e.g. MNT1_ROLL_MIN, MNT1_PITCH_MIN, etc)
+    b) BrushlessPWM driver (set MNT1_TYPE = 7) is unstabilized Servo driver
+    c) Dual mount support (see MNT1_, MNT2 params)
+    d) Gremsy driver added (set MNT1_TYPE = 6)
+    e) MAVLink gimbalv2 support including sending GIMBAL_DEVICE_STATUS_UPDATE (replaces MOUNT_STATUS message)
+    f) "Mount Lock" auxiliary switch supports follow and lock modes in RC targetting (aka earth-frame and body-frame)    
+    g) RC channels to control gimbal set using RCx_OPTION = 212 (Roll), 213 (Pitch) or 214 (Yaw)
+    h) RC targetting rotation rate in deg/sec (see MNT1_RC_RATE which replaces MNT_JSTICK_SPD)
+    i) Yaw can be disabled on 3-axis gimbals (set MNTx_YAW_MIN = MNTx_YAW_MAX)
+4) Navigation and Flight mode enhancements
+    a) Auto mode ATTITUDE_TIME command allows specifying lean angle for specified number of seconds (GPS not required)
+    b) Auto mode support of DO_GIMBAL_MANAGER_PITCHYAW command
+    c) Auto mode LOITER_TURNS command max radius increased to 2.5km
+    d) AutoTune allows higher ANGLE_P gains
+    e) Guided mode support DO_CHANGE_SPEED commands
+    f) Manual modes throttle mix reduced (improves landing)
+    g) Payload touchdown detection reliability improved    
+    h) Takeoff detection improved to reduce chance of flip before takeoff if GPS moves
+    i) TKOFF_SLEW_TIME allows slower takeoffs in Auto, Guided, etc
+5) Notch filter enhancements
+    a) Attitude and filter logging at main loop rate
+    b) Batch sampler logging both pre and post-filter
+    c) FFT frame averaging
+    d) In-flight throttle notch parameter learning using averaged FFTs
+    e) Triple harmonic notch 
+5) RemoteId and SecureBoot enhancements
+    a) Remote update of secure boot's public keys (also allows remote unlocking of bootloader)
+6) Safety enhancements
+    a) Arming checks of FRAME_CLASS/TYPE made mandatory (even if ARMING_CHECK=0)
+    b) crash_dump.bin file saved to SD Card on startup (includes details re cause of software failures)
+    c) Dead-reckoning for 30sec on loss of GPS (requires wind estimation be enabled)
+    d) Dead-reckoning Lua script (On loss of GPS flies towards home for specified number of seconds)
+    e) Disabling Fence clears any active breaches (e.g. FENCE_TYPE = 0 will clear breaches)
+    f) "GPS Glitch" message clarified to "GPS Glitch or Compass error"
+    g) Pre-arm check that configured AHRS is being used (e.g. checks AHRS_EKF_TYPE not changed since boot)
+    h) Pre-arm check that gimbals are healthy (currently only for Gremsy gimbals, others in future release)
+    i) Pre-arm check that all motors are setup
+    j) Pre-arm check that scripts are running
+    k) Pre-arm check that terrain data loaded if RTL_ALT_TYPE set to Terrain
+    l) Pre-arm messages are correctly prefixed with "PreArm:" (instead of "Arm:")
+    m) RC auxiliary switch option for Arm / Emergency Stop
+    n) RC failsafe made pre-arm check (previously only triggered at arming)
+    o) RC failsafe option (see FS_OPTIONS) to continue in Guided obeyed even if GCS failsafe disabled
+    p) TKOFF_RPM_MIN checks all motors spinning before takeoff
+    q) Vibration compensation disabled in manual modes
+7) Scripting enhancements
+    a) CAN2 port bindings to allow scripts to communicate on 2nd CAN bus
+    b) ESC RPM bindings to allow scripts to report engine RPM
+    c) Gimbal bingings to allow scripts to control gimbal
+    d) Pre-arm check bindings (allows scripts to check if pre-arm checks have passed)
+    e) Semicolon (:) and period (.) supported (e.g both Logger:write() and Logger.write will work)
+8) Sensor driver enhancements
+    a) Benewake H30 radar support
+    b) BMI270 IMU performance improvements
+    c) IRC Tramp VTX suppor
+    d) Logging pause-able with auxiliary switch.  see RCx_OPTION = 165 (Pause Stream Logging)
+    e) Proximity sensor support for up to 3 sensors
+    f) Precision Landing consumes LANDING_TARGET MAVLink message's PositionX,Y,Z fields
+    g) RichenPower generator maintenance-required messages can be suppressed using GEN_OPTIONS param
+    h) TeraRanger Neo rangefinder support
+    i) GPS support to provide ellipsoid altitude instead of AMSL (see GPS_DRV_OPTIONS)
+    j) W25N01GV 1Gb flash support
+9) Bug fixes
+    a) Accel calibration throws away queued commands from GCS (avoids commands being run long after they were sent)
+    b) Airmode throttle mix at zero throttle fix
+    c) Cygbot proximity sensor fix to support different orientations (see PRXx_ORIENT)
+    d) Loiter fix to avoid potential wobble on 2nd takeoff (was not clearing non-zero attitude target from previous landing)
+    e) Lutan EFI message flood reduced
+    f) Missions download to GCS corruption avoided by checking serial buffer has space
+    g) Payload place fix so vehicle flies to specified Lat,Lon (if provided).  Previously it could get stuck
+    h) Safety switch disabled if IOMCU is disabled (see BRD_IO_ENABLE=0)
+    i) Script restart memory leak fixed
+    j) Takeoff vertical velocity limits enforced correctly even if PILOT_TKOFF_ALT set to a significant height
+10) Developer items
+    a) Custom controller support
+    b) Fast loop task list available in real-time using @SYS/tasks.txt
+    c) Parameter defaults sent to GCS with param FTP and recorded in onboard logs
+    d) ROS+ArduPilot environment installation script
+    e) Sim on Hardware allows simulator to run on autopilot (good for exhibitions)
+    f) Timer info available in real-time using @SYS/timers.txt
+------------------------------------------------------------------
 Copter 4.2.3 30-Aug-2022
 Changes from 4.2.3-rc3
 1) OpenDroneId bug fix to consume open-drone-id-system-update message
