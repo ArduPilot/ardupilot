@@ -99,11 +99,21 @@ void AP_Periph_FW::rcout_esc(int16_t *rc, uint8_t num_channels)
     rcout_has_new_data_to_update = true;
 }
 
-void AP_Periph_FW::rcout_srv(uint8_t actuator_id, const float command_value)
+void AP_Periph_FW::rcout_srv_unitless(uint8_t actuator_id, const float command_value)
 {
 #if HAL_PWM_COUNT > 0
     const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
     SRV_Channels::set_output_norm(function, command_value);
+
+    rcout_has_new_data_to_update = true;
+#endif
+}
+
+void AP_Periph_FW::rcout_srv_PWM(uint8_t actuator_id, const float command_value)
+{
+#if HAL_PWM_COUNT > 0
+    const SRV_Channel::Aux_servo_function_t function = SRV_Channel::Aux_servo_function_t(SRV_Channel::k_rcin1 + actuator_id - 1);
+    SRV_Channels::set_output_pwm(function, uint16_t(command_value+0.5));
 
     rcout_has_new_data_to_update = true;
 #endif
