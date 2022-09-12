@@ -299,7 +299,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_HWSTATUS,
     MSG_SIMSTATE,
     MSG_SYSTEM_TIME,
     MSG_AHRS2,
