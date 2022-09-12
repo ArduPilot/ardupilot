@@ -71,22 +71,17 @@ assert(param:add_param(PARAM_TABLE_KEY, 8, 'FLY_TIMEOUT', 30), 'could not add DR
 assert(param:add_param(PARAM_TABLE_KEY, 9, 'NEXT_MODE', 6), 'could not add DR_NEXT_MODE param')     -- mode to switch to after GPS recovers or timeout elapses
 
 -- bind parameters to variables
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-local enable = bind_param("DR_ENABLE")                  -- 1 = enabled, 0 = disabled
-local enable_dist = bind_param("DR_ENABLE_DIST")        -- distance from home (in meters) beyond which the dead reckoning will be enabled
-local gps_speed_acc_max = bind_param("DR_GPS_SACC_MAX") -- GPS speed accuracy max threshold
-local gps_sat_count_min = bind_param("DR_GPS_SAT_MIN")  -- GPS satellite count min threshold
-local gps_trigger_sec = bind_param("DR_GPS_TRIGG_SEC")  -- GPS checks must fail for this many seconds before dead reckoning will be triggered
-local fly_angle = bind_param("DR_FLY_ANGLE")            -- lean angle (in degrees) during deadreckoning
-local fly_alt_min = bind_param("DR_FLY_ALT_MIN")        -- min alt above home (in meters) during deadreckoning
-local fly_timeoout = bind_param("DR_FLY_TIMEOUT")       -- deadreckoning timeout (in seconds)
-local next_mode = bind_param("DR_NEXT_MODE")            -- mode to switch to after GPS recovers or timeout elapses
-local wpnav_speedup = bind_param("WPNAV_SPEED_UP")      -- maximum climb rate from WPNAV_SPEED_UP
-local wpnav_accel_z = bind_param("WPNAV_ACCEL_Z")       -- maximum vertical acceleration from WPNAV_ACCEL_Z
+local enable = Parameter("DR_ENABLE")                  -- 1 = enabled, 0 = disabled
+local enable_dist = Parameter("DR_ENABLE_DIST")        -- distance from home (in meters) beyond which the dead reckoning will be enabled
+local gps_speed_acc_max = Parameter("DR_GPS_SACC_MAX") -- GPS speed accuracy max threshold
+local gps_sat_count_min = Parameter("DR_GPS_SAT_MIN")  -- GPS satellite count min threshold
+local gps_trigger_sec = Parameter("DR_GPS_TRIGG_SEC")  -- GPS checks must fail for this many seconds before dead reckoning will be triggered
+local fly_angle = Parameter("DR_FLY_ANGLE")            -- lean angle (in degrees) during deadreckoning
+local fly_alt_min = Parameter("DR_FLY_ALT_MIN")        -- min alt above home (in meters) during deadreckoning
+local fly_timeoout = Parameter("DR_FLY_TIMEOUT")       -- deadreckoning timeout (in seconds)
+local next_mode = Parameter("DR_NEXT_MODE")            -- mode to switch to after GPS recovers or timeout elapses
+local wpnav_speedup = Parameter("WPNAV_SPEED_UP")      -- maximum climb rate from WPNAV_SPEED_UP
+local wpnav_accel_z = Parameter("WPNAV_ACCEL_Z")       -- maximum vertical acceleration from WPNAV_ACCEL_Z
 
 -- modes deadreckoning may be activated from
 -- comment out lines below to remove protection from these modes
