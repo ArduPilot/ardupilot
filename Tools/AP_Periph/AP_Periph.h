@@ -219,7 +219,8 @@ public:
     void rcout_init();
     void rcout_init_1Hz();
     void rcout_esc(int16_t *rc, uint8_t num_channels);
-    void rcout_srv(const uint8_t actuator_id, const float command_value);
+    void rcout_srv_unitless(const uint8_t actuator_id, const float command_value);
+    void rcout_srv_PWM(const uint8_t actuator_id, const float command_value);
     void rcout_update();
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
