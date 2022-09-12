@@ -19,6 +19,9 @@ public:
     //clear framebuffer
     void clear() override {};
 
+    // MSP OSD does not require the screen to be drawn by the OSD thread
+    bool is_draw_required() const override {return false;};
+
 private:
     void setup_defaults(void);
 };
