@@ -20,15 +20,8 @@ assert(param:add_param(PARAM_TABLE_KEY, 2, 'TEST2', 5.7), 'could not add param2'
 
 gcs:send_text(0, string.format("Added two parameters"))
 
--- bind a parameter to a variable
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
-local param1 = bind_param("MY_TEST")
-local param2 = bind_param("MY_TEST2")
+local param1 = Parameter("MY_TEST")
+local param2 = Parameter("MY_TEST2")
 
 gcs:send_text(0, string.format("param1=%f", param1:get()))
 gcs:send_text(0, string.format("param2=%f", param2:get()))

@@ -27,14 +27,7 @@ assert(param:add_param(PARAM_TABLE_KEY, 10, 'TRICK_ANG', 90), 'could not add par
 assert(param:add_param(PARAM_TABLE_KEY, 11, 'TRICK_RAT', 90), 'could not add param11')  -- used for trick loop rate, axial roll rates, etc
 
 
--- bind a parameter to a variable
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
-local trick_id = bind_param("AERO_TRICK_ID")
+local trick_id = Parameter("AERO_TRICK_ID")
 local sw_last = 0
 local sw_current = 0
 local last_selection = 0
