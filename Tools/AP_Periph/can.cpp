@@ -796,11 +796,14 @@ static void handle_act_command(CanardInstance* ins, CanardRxTransfer* transfer)
     }
 
     for (uint8_t i=0; i < data_count; i++) {
-        if (data[i].command_type != UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS) {
-            // this is the only type we support
-            continue;
+        switch (data[i].command_type) {
+        case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
+            periph.rcout_srv_unitless(data[i].actuator_id, data[i].command_value);
+            break;
+        case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
+            periph.rcout_srv_PWM(data[i].actuator_id, data[i].command_value);
+            break;
         }
-        periph.rcout_srv(data[i].actuator_id, data[i].command_value);
     }
 }
 #endif // HAL_PERIPH_ENABLE_RC_OUT
