@@ -579,7 +579,6 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_HWSTATUS,
     MSG_WIND,
     MSG_RANGEFINDER,
     MSG_DISTANCE_SENSOR,
