@@ -418,7 +418,7 @@ def run_specific_test(step, *args, **kwargs):
 
     print("Got %s" % str(tester))
     for a in tester.tests():
-        if type(a) != 'Test':
+        if type(a) != Test:
             a = Test(a)
         print("Got %s" % (a.name))
         if a.name == test:
@@ -831,7 +831,7 @@ def list_subtests_for_vehicle(vehicle_type):
         subtests = tester.tests()
         sorted_list = []
         for subtest in subtests:
-            if type(subtest) != 'Test':
+            if type(subtest) != Test:
                 subtest = Test(subtest)
             sorted_list.append([subtest.name, subtest.description])
         sorted_list.sort()
