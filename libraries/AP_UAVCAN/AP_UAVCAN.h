@@ -203,6 +203,7 @@ public:
         DNA_IGNORE_DUPLICATE_NODE = (1U<<1),
         CANFD_ENABLED             = (1U<<2),
         DNA_IGNORE_UNHEALTHY_NODE = (1U<<3),
+        USE_ACTUATOR_PWM          = (1U<<4),
     };
 
     // check if a option is set
