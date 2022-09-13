@@ -2941,6 +2941,7 @@ write_hwdef_header(os.path.join(outdir, "hwdef.h"))
 write_ldscript(os.path.join(outdir, "ldscript.ld"))
 
 romfs_add_dir(['scripts'])
+romfs_add_dir(['param'])
 
 write_ROMFS(outdir)
 
