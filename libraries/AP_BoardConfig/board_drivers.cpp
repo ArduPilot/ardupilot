@@ -510,6 +510,7 @@ void AP_BoardConfig::detect_fmuv6_variant()
                 spi_check_register("bmi088_g", BMI088REG_CHIPID, CHIPID_BMI088_G))) {
         state.board_type.set_and_notify(FMUV6_BOARD_CUAV_6X);
         DEV_PRINTF("Detected CUAV 6X\n");
+        AP_Param::load_defaults_file("@ROMFS/param/CUAV_V6X_defaults.parm", false);
     }
 
 }
