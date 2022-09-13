@@ -15,7 +15,7 @@ import sys
 import subprocess
 
 
-class PreCommitFlake8(object):
+class AP_PreCommit(object):
 
     def __init__(self):
         pass
@@ -89,5 +89,5 @@ class PreCommitFlake8(object):
 
 
 if __name__ == '__main__':
-    precommit = PreCommitFlake8()
+    precommit = AP_PreCommit()
     sys.exit(precommit.run())
