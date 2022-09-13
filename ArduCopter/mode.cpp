@@ -609,11 +609,13 @@ void Mode::land_run_vertical_control(bool pause_descent)
             }
             // check if we should descend or not
             const float max_horiz_pos_error_cm = copter.precland.get_max_xy_error_before_descending_cm();
+            Vector3f target_pos_meas;
+            copter.precland.get_target_position_measurement_cm(target_pos_meas);
             if (target_error_cm > max_horiz_pos_error_cm && !is_zero(max_horiz_pos_error_cm)) {
                 // doing precland but too far away from the obstacle
                 // do not descend
                 cmb_rate = 0.0f;
-            } else if (copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
+            } else if (target_pos_meas.z > 35.0f && target_pos_meas.z < 200.0f) {
                 // very close to the ground and doing prec land, lets slow down to make sure we land on target
                 // compute desired descent velocity
                 const float precland_acceptable_error_cm = 15.0f;
