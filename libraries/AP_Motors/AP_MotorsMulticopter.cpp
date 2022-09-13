@@ -19,6 +19,13 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    #define AP_MOTORS_PARAM_PREFIX "Q_M_"
+#else
+    #define AP_MOTORS_PARAM_PREFIX "MOT_"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // parameters for the motor class
@@ -823,12 +830,17 @@ bool AP_MotorsMulticopter::arming_checks(size_t buflen, char *buffer) const
         }
     }
 
+    // Check param config
     if (_spin_min > 0.3) {
-        hal.util->snprintf(buffer, buflen, "SPIN_MIN too high %.2f, max 0.3", _spin_min.get());
+        hal.util->snprintf(buffer, buflen, "%sSPIN_MIN too high %.2f > 0.3", AP_MOTORS_PARAM_PREFIX, _spin_min.get());
         return false;
     }
     if (_spin_arm > _spin_min) {
-        hal.util->snprintf(buffer, buflen, "SPIN_ARM higher than SPIN_MIN");
+        hal.util->snprintf(buffer, buflen, "%sSPIN_ARM > %sSPIN_MIN", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
+        return false;
+    }
+    if (!check_mot_pwm_params()) {
+        hal.util->snprintf(buffer, buflen, "Check %sPWM_MIN and %sPWM_MAX", AP_MOTORS_PARAM_PREFIX, AP_MOTORS_PARAM_PREFIX);
         return false;
     }
 
