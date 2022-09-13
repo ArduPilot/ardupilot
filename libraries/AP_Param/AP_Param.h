@@ -547,6 +547,8 @@ public:
     static bool load_int32(uint16_t key, uint32_t group_element, int32_t &value);
 #endif
 
+    static bool load_defaults_file(const char *filename, bool last_pass);
+
 protected:
 
     // store default value in linked list
@@ -696,14 +698,11 @@ private:
 
     static bool parse_param_line(char *line, char **vname, float &value, bool &read_only);
 
-#if HAL_OS_POSIX_IO == 1
     /*
       load a parameter defaults file. This happens as part of load_all()
      */
     static bool count_defaults_in_file(const char *filename, uint16_t &num_defaults);
     static bool read_param_defaults_file(const char *filename, bool last_pass);
-    static bool load_defaults_file(const char *filename, bool last_pass);
-#endif
 
     /*
       load defaults from embedded parameters
