@@ -252,12 +252,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Invalid MultiCopter FRAME_CLASS");
             return false;
         }
-
-        // checks MOT_PWM_MIN/MAX for acceptable values
-        if (!copter.motors->check_mot_pwm_params()) {
-            check_failed(ARMING_CHECK_PARAMETERS, display_failure, "Check MOT_PWM_MIN/MAX");
-            return false;
-        }
         #endif // HELI_FRAME
 
         // checks when using range finder for RTL
