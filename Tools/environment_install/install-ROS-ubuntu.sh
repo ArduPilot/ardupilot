@@ -233,6 +233,7 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
         catkin init
         pushd src
         git clone https://github.com/ArduPilot/ardupilot_ros.git
+        git clone https://github.com/GT-RAIL/robot_pose_publisher.git
         popd
         sudo apt update
         rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
