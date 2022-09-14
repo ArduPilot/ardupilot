@@ -301,7 +301,7 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     
 #endif // AIRSPEED_MAX_SENSORS
 
-    // Note that 21, 22, 23 and 26 are used above by the _OPTIONS, _WIND_MAX, _WIND_WARN and _WIND_GATE parameters.  Do not use them!!
+    // Note that 21, 22, 23, 24, 25 and 26 are used above by the _OPTIONS, _DEVID, __WIND_MAX, _WIND_WARN and _WIND_GATE parameters.  Do not use them!!
 
     // NOTE: Index 63 is used by AIRSPEED_TYPE, Do not use it!: AP_Param converts an index of 0 to 63 so that the index may be bit shifted
     AP_GROUPEND
