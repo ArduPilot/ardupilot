@@ -264,7 +264,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
     uint32_t last_watchdog_save = AP_HAL::millis();
     uint8_t fill_count = 0;
 
-    while (!HALSITL::Scheduler::_should_reboot) {
+    while (true) {
         if (HALSITL::Scheduler::_should_exit) {
             ::fprintf(stderr, "Exitting\n");
             exit(0);

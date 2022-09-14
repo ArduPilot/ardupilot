@@ -50,7 +50,6 @@ public:
     uint64_t stopped_clock_usec() const { return _stopped_clock_usec; }
 
     static void _run_io_procs();
-    static bool _should_reboot;
     static bool _should_exit;
 
     /*
