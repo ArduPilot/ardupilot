@@ -67,7 +67,7 @@ uint8_t GCS_Periph::sysid_this_mav() const
     return periph.g.sysid_this_mav;
 }
 
-MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_long_t &packet)
+MAV_RESULT GCS_MAVLINK_Periph::handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg)
 {
     hal.scheduler->delay(10);
     periph.prepare_reboot();
