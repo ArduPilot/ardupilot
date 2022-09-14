@@ -1725,11 +1725,13 @@ class AutoTestPlane(AutoTest):
 
     def PitotBlockage(self):
         '''Test detection and isolation of a blocked pitot tube'''
-        self.set_parameter("ARSPD_OPTIONS",15)
-        self.set_parameter("ARSPD_USE",1)
-        self.set_parameter("SIM_WIND_SPD",10)
-        self.set_parameter("SIM_WIND_DIR",0)
-        self.set_parameter("ARSPD_WIND_MAX",15)
+        self.set_parameters({
+            "ARSPD_OPTIONS":15,
+            "ARSPD_USE": 1,
+            "SIM_WIND_SPD": 10,
+            "SIM_WIND_DIR": 0,
+            "ARSPD_WIND_MAX":15,
+        })        
         self.wait_ready_to_arm()
         self.change_mode("TAKEOFF")
         self.arm_vehicle()
