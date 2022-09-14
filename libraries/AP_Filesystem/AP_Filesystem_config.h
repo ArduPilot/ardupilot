@@ -4,6 +4,12 @@
 
 #include <AP_Mission/AP_Mission_config.h>
 
+#if HAL_OS_POSIX_IO || HAL_OS_FATFS_IO
+#define HAVE_FILESYSTEM_SUPPORT 1
+#else
+#define HAVE_FILESYSTEM_SUPPORT 0
+#endif
+
 #ifndef AP_FILESYSTEM_PARAM_ENABLED
 #define AP_FILESYSTEM_PARAM_ENABLED 1
 #endif
