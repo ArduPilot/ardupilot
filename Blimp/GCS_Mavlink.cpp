@@ -430,12 +430,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_do_set_roi(const Location &roi_loc)
     return MAV_RESULT_ACCEPTED;
 }
 
-MAV_RESULT GCS_MAVLINK_Blimp::handle_preflight_reboot(const mavlink_command_long_t &packet)
-{
-    // call parent
-    return GCS_MAVLINK::handle_preflight_reboot(packet);
-}
-
 bool GCS_MAVLINK_Blimp::set_home_to_current_location(bool _lock)
 {
     return blimp.set_home_to_current_location(_lock);
