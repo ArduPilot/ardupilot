@@ -876,8 +876,8 @@ struct PACKED log_VER {
 // @Field: TimeUS: Time since system startup
 // @Field: TS: target system for command
 // @Field: TC: target component for command
-// @Field: SS: target system for command
-// @Field: SC: target component for command
+// @Field: SS: source system for command
+// @Field: SC: source component for command
 // @Field: Fr: command frame
 // @Field: Cmd: mavlink command enum value
 // @Field: P1: first parameter from mavlink packet
