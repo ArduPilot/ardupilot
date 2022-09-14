@@ -1731,11 +1731,10 @@ class AutoTestPlane(AutoTest):
             "SIM_WIND_SPD": 10,
             "SIM_WIND_DIR": 0,
             "ARSPD_WIND_MAX":15,
-        })        
+        })
         self.change_mode("TAKEOFF")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.delay_sim_time(60)
         # simulate the effect of a blocked pitot tube
         self.set_parameter("ARSPD_RATIO", 0.1)
         self.delay_sim_time(10)
