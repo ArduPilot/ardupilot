@@ -3,7 +3,7 @@
 /* ************************************************************ */
 #pragma once
 
-#include <AP_Filesystem/AP_Filesystem_Available.h>
+#include <AP_Filesystem/AP_Filesystem_config.h>
 
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 1
