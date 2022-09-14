@@ -31,7 +31,7 @@ private:
     uint32_t telem_delay() const override { return 0; }
     void handleMessage(const mavlink_message_t &msg) override { handle_common_message(msg); }
     bool handle_guided_request(AP_Mission::Mission_Command &cmd) override { return true; }
-    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet) override;
+    MAV_RESULT handle_preflight_reboot(const mavlink_command_long_t &packet, const mavlink_message_t &msg) override;
 
 protected:
 
