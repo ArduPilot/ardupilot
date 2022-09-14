@@ -272,6 +272,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
         if (fill_count++ % 10 == 0) {
             // only fill every 10 loops. This still gives us a lot of
             // protection, but saves a lot of CPU
+            fill_count = 1u;
             fill_stack_nan();
         }
         callbacks->loop();
