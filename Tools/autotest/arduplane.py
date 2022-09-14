@@ -1732,8 +1732,8 @@ class AutoTestPlane(AutoTest):
             "SIM_WIND_DIR": 0,
             "ARSPD_WIND_MAX":15,
         })        
-        self.wait_ready_to_arm()
         self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.delay_sim_time(60)
         # simulate the effect of a blocked pitot tube
