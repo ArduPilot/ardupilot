@@ -234,8 +234,14 @@ if maybe_prompt_user "Add ardupilot-ws to your home folder [N/y]?" ; then
         pushd src
         git clone https://github.com/ArduPilot/ardupilot_ros.git
         popd
+        wstool init src
+        wstool merge -t src https://raw.githubusercontent.com/cartographer-project/cartographer_ros/master/cartographer_ros.rosinstall
+        wstool update -t src
+        sudo rosdep init
         sudo apt update
         rosdep install --from-paths src --ignore-src --rosdistro=${ROS_DISTRO} -y
+        sudo source src/cartographer/scripts/install_abseil.sh
+        sudo apt-get remove ros-${ROS_DISTRO}-abseil-cpp
         catkin build
         popd
     else
