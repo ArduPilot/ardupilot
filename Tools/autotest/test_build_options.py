@@ -164,7 +164,7 @@ class TestBuildOptions(object):
         for x in options:
             if x.label == label:
                 return x
-        raise ValueError("No such")
+        raise ValueError("No such option (%s)" % label)
 
     def run_disable_all(self):
         options = self.get_build_options_from_ardupilot_tree()
