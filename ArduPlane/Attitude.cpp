@@ -352,6 +352,10 @@ void Plane::stabilize_yaw(float speed_scaler)
       now calculate steering_control.rudder for the rudder
      */
     calc_nav_yaw_coordinated(speed_scaler);
+    /*
+      When not running the yaw rate controller, we need to reset the rate
+    */
+    yawController.reset_rate_PID();
 }
 
 
