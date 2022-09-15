@@ -522,6 +522,20 @@ function Quaternion_ud:earth_to_body(vec) end
 ---@return Quaternion_ud
 function Quaternion_ud:inverse() end
 
+-- Integrates angular velocity over small time delta
+---@param angular_velocity Vector3f_ud
+---@param time_delta number
+function Quaternion_ud:from_angular_velocity(angular_velocity, time_delta) end
+
+-- Constructs Quaternion from axis and angle
+---@param axis Vector3f_ud
+---@param angle number
+function Quaternion_ud:from_axis_angle(axis, angle) end
+
+-- Converts Quaternion to axis-angle representation
+---@param axis_angle Vector3f_ud
+function Quaternion_ud:to_axis_angle(axis_angle) end
+
 -- Construct quaternion from Euler angles
 ---@param roll number
 ---@param pitch number
