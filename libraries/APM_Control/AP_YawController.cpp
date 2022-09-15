@@ -164,6 +164,7 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     uint32_t dt = tnow - _last_t;
     if (_last_t == 0 || dt > 1000) {
         dt = 0;
+        _pid_info.I = 0;
     }
     _last_t = tnow;
 
@@ -343,8 +344,15 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
 
 void AP_YawController::reset_I()
 {
-    _integrator = 0.0;
-    _pid_info.I = 0.0;
+    _pid_info.I = 0;
+    rate_pid.reset_I();
+    _integrator = 0;
+}
+
+void AP_YawController::reset_rate_PID()
+{
+    rate_pid.reset_I();
+    rate_pid.reset_filter();
 }
 
 /*
