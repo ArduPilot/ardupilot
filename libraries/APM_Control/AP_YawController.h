@@ -26,6 +26,8 @@ public:
 
     void reset_I();
 
+    void reset_rate_PID();
+
     /*
       reduce the integrator, used when we have a low scale factor in a quadplane hover
     */
@@ -43,6 +45,7 @@ public:
     // start/stop auto tuner
     void autotune_start(void);
     void autotune_restore(void);
+    
 
     static const struct AP_Param::GroupInfo var_info[];
 
