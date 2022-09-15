@@ -112,6 +112,8 @@ public:
     // the axis vector must be length 1, theta should less than 0.17 radians (i.e. 10 degrees)
     void        from_axis_angle_fast(const Vector3<T> &axis, T theta);
 
+    void        from_angular_velocity(const Vector3<T>& angular_velocity, float time_delta);
+
     // rotate by the provided rotation vector
     // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
     void        rotate_fast(const Vector3<T> &v);
