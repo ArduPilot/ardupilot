@@ -534,6 +534,19 @@ void QuaternionT<T>::from_axis_angle_fast(const Vector3<T> &axis, T theta)
     q4 = axis.z * st2;
 }
 
+template <typename T>
+void QuaternionT<T>::from_angular_velocity(const Vector3<T>& angular_velocity, float time_delta)
+{
+    const float half_time_delta = 0.5f*time_delta;
+
+    q1 = 1.0;
+    q2 = half_time_delta*angular_velocity.x;
+    q3 = half_time_delta*angular_velocity.y;
+    q4 = half_time_delta*angular_velocity.z;
+    normalize();
+}
+
+
 // rotate by the provided axis angle
 // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
 template <typename T>
