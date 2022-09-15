@@ -462,6 +462,11 @@ function Vector3f_ud:normalize() end
 ---@return number
 function Vector3f_ud:length() end
 
+-- Computes angle between this vector and vector v2
+---@param v2 Vector3f_ud 
+---@return number
+function Vector3f_ud:angle(v2) end
+
 -- desc
 ---@param param1 number -- XY rotation in radians
 function Vector3f_ud:rotate_xy(param1) end
@@ -470,6 +475,77 @@ function Vector3f_ud:rotate_xy(param1) end
 ---@return Vector2f_ud
 function Vector3f_ud:xy() end
 
+-- desc
+---@class Quaternion_ud
+local Quaternion_ud = {}
+
+---@return Quaternion_ud
+function Quaternion() end
+
+-- get field
+---@return number
+function Quaternion_ud:q4() end
+
+-- set field
+---@param value number
+function Quaternion_ud:q4(value) end
+
+-- get field
+---@return number
+function Quaternion_ud:q3() end
+
+-- set field
+---@param value number
+function Quaternion_ud:q3(value) end
+
+-- get field
+---@return number
+function Quaternion_ud:q2() end
+
+-- set field
+---@param value number
+function Quaternion_ud:q2(value) end
+
+-- get field
+---@return number
+function Quaternion_ud:q1() end
+
+-- set field
+---@param value number
+function Quaternion_ud:q1(value) end
+
+-- Applies rotation to vector argument
+---@param vec Vector3f_ud
+function Quaternion_ud:earth_to_body(vec) end
+
+-- Returns inverse of quaternion
+---@return Quaternion_ud
+function Quaternion_ud:inverse() end
+
+-- Construct quaternion from Euler angles
+---@param roll number
+---@param pitch number
+---@param yaw number
+function Quaternion_ud:from_euler(roll, pitch, yaw) end
+
+-- Returns yaw component of quaternion
+---@return number
+function Quaternion_ud:get_euler_yaw() end
+
+-- Returns pitch component of quaternion
+---@return number
+function Quaternion_ud:get_euler_pitch() end
+
+-- Returns roll component of quaternion
+---@return number
+function Quaternion_ud:get_euler_roll() end
+
+-- Mutates quaternion have length 1
+function Quaternion_ud:normalize() end
+
+-- Returns length or norm of quaternion
+---@return number
+function Quaternion_ud:length() end
 
 -- desc
 ---@class Location_ud
