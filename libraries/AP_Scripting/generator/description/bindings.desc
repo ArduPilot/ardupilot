@@ -55,6 +55,7 @@ singleton AP_AHRS method get_origin boolean Location'Null
 singleton AP_AHRS method set_origin boolean Location
 singleton AP_AHRS method initialised boolean
 singleton AP_AHRS method get_posvelyaw_source_set uint8_t
+singleton AP_AHRS method get_quaternion boolean Quaternion'Null
 
 include AP_Arming/AP_Arming.h
 
@@ -128,6 +129,7 @@ userdata Vector3f method scale Vector3f float'skip_check
 userdata Vector3f method copy Vector3f
 userdata Vector3f method xy Vector2f
 userdata Vector3f method rotate_xy void float'skip_check
+userdata Vector3f method angle float Vector3f
 
 userdata Vector2f field x float'skip_check read write
 userdata Vector2f field y float'skip_check read write
@@ -142,6 +144,22 @@ userdata Vector2f operator +
 userdata Vector2f operator -
 userdata Vector2f method copy Vector2f
 
+userdata Quaternion field q1 float'skip_check read write
+userdata Quaternion field q2 float'skip_check read write
+userdata Quaternion field q3 float'skip_check read write
+userdata Quaternion field q4 float'skip_check read write
+userdata Quaternion method length float
+userdata Quaternion method normalize void
+userdata Quaternion operator *
+userdata Quaternion method get_euler_roll float
+userdata Quaternion method get_euler_pitch float
+userdata Quaternion method get_euler_yaw float
+userdata Quaternion method from_euler void float'skip_check float'skip_check float'skip_check 
+userdata Quaternion method inverse Quaternion
+userdata Quaternion method earth_to_body void Vector3f
+userdata Quaternion method to_axis_angle void Vector3f
+userdata Quaternion method from_axis_angle  void Vector3f float'skip_check
+userdata Quaternion method from_angular_velocity void Vector3f float'skip_check
 
 include AP_Notify/AP_Notify.h
 singleton AP_Notify rename notify
