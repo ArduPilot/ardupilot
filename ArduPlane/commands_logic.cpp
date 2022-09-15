@@ -1159,10 +1159,12 @@ void Plane::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
     nav_scripting.done = false;
     nav_scripting.id++;
     nav_scripting.start_ms = AP_HAL::millis();
+    nav_scripting.current_ms = 0;
 
     // start with current roll rate, pitch rate and throttle
     nav_scripting.roll_rate_dps = plane.rollController.get_pid_info().target;
     nav_scripting.pitch_rate_dps = plane.pitchController.get_pid_info().target;
+    nav_scripting.yaw_rate_dps = degrees(ahrs.get_gyro().z);
     nav_scripting.throttle_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
 }
 
