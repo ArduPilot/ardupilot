@@ -684,7 +684,7 @@ void SRV_Channels::adjust_trim(SRV_Channel::Aux_servo_function_t function, float
         } else if (change < 0 && trim_scaled > 0.4f) {
             new_trim--;
         } else {
-            return;
+            continue;
         }
         c.servo_trim.set(new_trim);
 
