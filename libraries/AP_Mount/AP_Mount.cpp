@@ -11,6 +11,7 @@
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
 #include "AP_Mount_Gremsy.h"
+#include "AP_Mount_Siyi.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -109,6 +110,14 @@ void AP_Mount::init()
             _backends[instance] = new AP_Mount_Servo(*this, _params[instance], false, instance);
             _num_instances++;
 #endif
+
+#if HAL_MOUNT_SIYI_ENABLED
+        // check for Siyi gimbal
+        } else if (mount_type == Mount_Type_Siyi) {
+            _backends[instance] = new AP_Mount_Siyi(*this, _params[instance], instance);
+            _num_instances++;
+#endif // HAL_MOUNT_SIYI_ENABLED
+
         }
 
         // init new instance
