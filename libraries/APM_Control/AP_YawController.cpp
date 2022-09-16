@@ -21,6 +21,8 @@
 #include "AP_YawController.h"
 #include <AP_AHRS/AP_AHRS.h>
 
+#include <../ArduPlane/quadplane.h>
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_YawController::var_info[] = {
@@ -330,7 +332,14 @@ float AP_YawController::get_rate_out(float desired_rate, float scaler, bool disa
     // remember the last output to trigger the I limit
     _last_out = out;
 
-    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min) {
+    // Only run autotune if in un-assisted forward flight
+#if HAL_QUADPLANE_ENABLED
+    const bool assisted_flight = QuadPlane::get_singleton()->in_assisted_flight();
+#else
+    const bool assisted_flight = false;
+#endif
+
+    if (autotune != nullptr && autotune->running && aspeed > aparm.airspeed_min && !assisted_flight) {
         // fake up an angular error based on a notional time constant of 0.5s
         const float angle_err_deg = desired_rate * gains.tau;
         // let autotune have a go at the values
