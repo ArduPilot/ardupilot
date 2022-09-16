@@ -48,6 +48,7 @@ class AP_Mount_Alexmos;
 class AP_Mount_SToRM32;
 class AP_Mount_SToRM32_serial;
 class AP_Mount_Gremsy;
+class AP_Mount_Siyi;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -64,6 +65,7 @@ class AP_Mount
     friend class AP_Mount_SToRM32;
     friend class AP_Mount_SToRM32_serial;
     friend class AP_Mount_Gremsy;
+    friend class AP_Mount_Siyi;
 
 public:
     AP_Mount();
@@ -86,7 +88,8 @@ public:
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
         Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
         Mount_Type_Gremsy = 6,          /// Gremsy gimbal using MAVLink v2 Gimbal protocol
-        Mount_Type_BrushlessPWM = 7     /// Brushless (stabilized) gimbal using PWM protocol
+        Mount_Type_BrushlessPWM = 7,    /// Brushless (stabilized) gimbal using PWM protocol
+        Mount_Type_Siyi = 8,            /// Siyi gimbal using custom serial protocol
     };
 
     // init - detect and initialise all mounts
