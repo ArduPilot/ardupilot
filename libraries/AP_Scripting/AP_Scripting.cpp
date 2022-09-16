@@ -195,7 +195,10 @@ bool AP_Scripting::repl_start(void) {
     }
 
     // create a new folder
-    AP::FS().mkdir(REPL_DIRECTORY);
+    int ret = AP::FS().mkdir(REPL_DIRECTORY);
+    if (ret == -1 && errno != EEXIST) {
+        return false;
+    }
     // delete old files in case we couldn't
     AP::FS().unlink(REPL_DIRECTORY "/in");
     AP::FS().unlink(REPL_DIRECTORY "/out");
