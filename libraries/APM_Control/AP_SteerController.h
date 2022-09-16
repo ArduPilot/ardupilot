@@ -50,6 +50,9 @@ public:
         _reverse = reverse;
     }
 
+    // Returns true if controller has been run recently
+    bool active() const;
+
 private:
     AP_Float _tau;
 	AP_Float _K_FF;
