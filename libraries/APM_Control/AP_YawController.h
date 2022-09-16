@@ -14,6 +14,9 @@ public:
     AP_YawController(const AP_YawController &other) = delete;
     AP_YawController &operator=(const AP_YawController&) = delete;
 
+    // return true if rate control or damping is enabled
+    bool enabled() const { return rate_control_enabled() || (_K_D > 0.0); } 
+
     // return true if rate control is enabled
     bool rate_control_enabled(void) const { return _rate_enable != 0; }
 
