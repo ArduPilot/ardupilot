@@ -153,7 +153,7 @@ void AP_CRSF_Telem::setup_custom_telemetry()
 void AP_CRSF_Telem::update_custom_telemetry_rates(AP_RCProtocol_CRSF::RFMode rf_mode)
 {
     // ignore rf mode changes if we are processing parameter packets
-    if (_custom_telem.disable_telemetry) {
+    if (_custom_telem.disable_telemetry_timeout_ms > 0) {
         return;
     }
 
@@ -348,7 +348,6 @@ void AP_CRSF_Telem::disable_telemetry(uint32_t enable_at_ms)
 {
     debug("disable telemetry");
     _custom_telem.disable_telemetry_timeout_ms = enable_at_ms;
-
     set_scheduler_entry(HEARTBEAT, 50, 200);            // heartbeat        5Hz
     disable_tx_entries();
 }
@@ -356,6 +355,7 @@ void AP_CRSF_Telem::disable_telemetry(uint32_t enable_at_ms)
 void AP_CRSF_Telem::enable_telemetry()
 {
     debug("enable telemetry");
+    _custom_telem.disable_telemetry_timeout_ms = 0;
     // setup the crossfire scheduler for custom telemetry
     set_scheduler_entry(HEARTBEAT, 2000, 5000);     // 0.2Hz
     enable_tx_entries();
@@ -373,13 +373,13 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
     */
     bool expired = _custom_telem.disable_telemetry_timeout_ms > 0
         && now_ms > _custom_telem.disable_telemetry_timeout_ms;
-    if (!_custom_telem.disable_telemetry
+    if (_custom_telem.disable_telemetry_timeout_ms == 0
         && _pending_request.frame_type > 0
         && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO
         && !hal.util->get_soft_armed()) {
         // fast window start
         disable_telemetry(now_ms + 5000);
-    } else if (expired && _custom_telem.disable_telemetry) {
+    } else if (expired) {
         // fast window stop
         enable_telemetry();
     }
@@ -735,6 +735,11 @@ void AP_CRSF_Telem::update_vtx_params()
 
     if (!vtx.get_enabled() || !vtx_is_alive) {
         return;
+    }
+
+    // disable other telemetry to allow requests to get through
+    if (_custom_telem.disable_telemetry_timeout_ms == 0) {
+        disable_telemetry(AP_HAL::millis() + 1000);
     }
 
     if (!_vtx_freq_change_pending && (vtx.update_band() || vtx.update_channel() || vtx.update_frequency())) {

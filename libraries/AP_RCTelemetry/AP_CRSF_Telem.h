@@ -345,7 +345,6 @@ private:
     struct {
         bool init_done;
         uint32_t disable_telemetry_timeout_ms;
-        bool disable_telemetry;
     } _custom_telem;
 
     struct {
