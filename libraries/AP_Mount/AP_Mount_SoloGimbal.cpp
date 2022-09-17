@@ -103,18 +103,6 @@ void AP_Mount_SoloGimbal::update()
     }
 }
 
-// set_mode - sets mount's mode
-void AP_Mount_SoloGimbal::set_mode(enum MAV_MOUNT_MODE mode)
-{
-    // exit immediately if not initialised
-    if (!_initialised) {
-        return;
-    }
-
-    // record the mode change
-    _mode = mode;
-}
-
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_SoloGimbal::get_attitude_quaternion(Quaternion& att_quat)
 {
