@@ -371,8 +371,13 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
 {
     const uint8_t gyro_count = ins.get_gyro_count();
-    if (gyro_count <= 1) {
+    switch (gyro_count) {
+    case 0u:
+        return false;
+    case 1u:
         return true;
+    default:
+        break;
     }
 
     const Vector3f &prime_gyro_vec = ins.get_gyro();
