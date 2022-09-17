@@ -32,9 +32,6 @@ public:
     // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
     bool has_pan_control() const override { return false; }
 
-    // set_mode - sets mount's mode
-    void set_mode(enum MAV_MOUNT_MODE mode) override;
-
     // handle a GIMBAL_REPORT message
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg) override;
     void handle_gimbal_torque_report(mavlink_channel_t chan, const mavlink_message_t &msg);
