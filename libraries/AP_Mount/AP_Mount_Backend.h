@@ -53,7 +53,7 @@ public:
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
     // set mount's mode
-    virtual void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
+    void set_mode(enum MAV_MOUNT_MODE mode) { _mode = mode; }
 
     // set yaw_lock.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
