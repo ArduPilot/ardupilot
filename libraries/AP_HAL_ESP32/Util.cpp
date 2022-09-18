@@ -214,7 +214,7 @@ Util::FlashBootloader Util::flash_bootloader()
  */
 
 
-bool Util::get_system_id(char buf[40])
+bool Util::get_system_id(char buf[50])
 {
     //uint8_t serialid[12];
     char board_name[14] = "esp32-buzz   ";
