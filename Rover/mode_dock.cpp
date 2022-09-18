@@ -60,6 +60,7 @@ bool ModeDock::_enter()
 {
     // refuse to enter the mode if dock is not in sight
     if (!rover.precland.enabled() || !rover.precland.target_acquired()) {
+        gcs().send_text(MAV_SEVERITY_NOTICE, "Dock: target not acquired");
         return false;
     }
 
