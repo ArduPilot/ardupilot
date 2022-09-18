@@ -69,7 +69,7 @@ public:
 
     uint32_t available_memory(void) override;
 
-    bool get_system_id(char buf[40]) override;
+    bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
 #ifdef ENABLE_HEAP
