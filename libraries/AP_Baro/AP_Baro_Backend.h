@@ -58,6 +58,7 @@ public:
         DEVTYPE_BARO_MSP      = 0x0E,
         DEVTYPE_BARO_ICP101XX = 0x0F,
         DEVTYPE_BARO_ICP201XX = 0x10,
+        DEVTYPE_BARO_BME680   = 0x11,
     };
     
 protected:
