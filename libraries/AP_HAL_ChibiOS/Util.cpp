@@ -372,22 +372,24 @@ Util::FlashBootloader Util::flash_bootloader()
 /*
   display system identifer - board type and serial number
  */
-bool Util::get_system_id(char buf[40])
+bool Util::get_system_id(char buf[50])
 {
     uint8_t serialid[12];
-    char board_name[14];
+    char board_name[24];
 
     memcpy(serialid, (const void *)UDID_START, 12);
-    strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 13);
-    board_name[13] = 0;
+    // avoid board names greater than 23 chars (sizeof includes null char, so allow 24 bytes total)
+    static_assert(sizeof(CHIBIOS_SHORT_BOARD_NAME) <= 24, "CHIBIOS_SHORT_BOARD_NAME must be 23 characters or less");
+    strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 23);
+    board_name[23] = 0;
 
     // this format is chosen to match the format used by HAL_PX4
-    snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
+    snprintf(buf, 50, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
              board_name,
              (unsigned)serialid[3], (unsigned)serialid[2], (unsigned)serialid[1], (unsigned)serialid[0],
              (unsigned)serialid[7], (unsigned)serialid[6], (unsigned)serialid[5], (unsigned)serialid[4],
              (unsigned)serialid[11], (unsigned)serialid[10], (unsigned)serialid[9],(unsigned)serialid[8]);
-    buf[39] = 0;
+    buf[49] = 0;
     return true;
 }
 
