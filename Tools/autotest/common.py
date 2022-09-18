@@ -1973,6 +1973,8 @@ class AutoTest(ABC):
 
     def reboot_sitl(self, required_bootcount=None):
         """Reboot SITL instance and wait for it to reconnect."""
+        if self.armed():
+            raise NotAchievedException("Reboot attempted while armed")
         self.progress("Rebooting SITL")
         self.reboot_sitl_mav(required_bootcount=required_bootcount)
         self.do_heartbeats(force=True)
