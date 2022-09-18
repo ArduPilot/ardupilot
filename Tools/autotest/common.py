@@ -4465,6 +4465,7 @@ class AutoTest(ABC):
 
     def armed(self):
         """Return true if vehicle is armed and safetyoff"""
+        self.wait_heartbeat()
         return self.mav.motors_armed()
 
     def send_mavlink_arm_command(self):
