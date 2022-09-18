@@ -48,6 +48,7 @@
 #include "AP_Baro_ExternalAHRS.h"
 #include "AP_Baro_ICP101XX.h"
 #include "AP_Baro_ICP201XX.h"
+#include "AP_Baro_BME680.h"
 
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -834,6 +835,10 @@ void AP_Baro::_probe_i2c_barometers(void)
 #endif
 #if AP_BARO_LPS2XH_ENABLED
         { PROBE_LPS25H, AP_Baro_LPS2XH::probe, HAL_BARO_LPS25H_I2C_ADDR },
+#endif
+#if AP_BARO_BME680_ENABLED
+        { PROBE_BME680, AP_Baro_BME680::probe, HAL_BARO_BME680_I2C_ADDR },
+        { PROBE_BME680, AP_Baro_BME680::probe, HAL_BARO_BME680_I2C_ADDR2 },
 #endif
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
