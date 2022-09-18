@@ -27,6 +27,9 @@ undef SDIO
 undef HAL_BOARD_LOG_DIRECTORY
 undef HAL_BOARD_TERRAIN_DIRECTORY
 
+# short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
+define CHIBIOS_SHORT_BOARD_NAME "skyviper-v245"
+
 SERIAL_ORDER OTG1 USART2 EMPTY UART4
 
 # enable AP_Radio support
