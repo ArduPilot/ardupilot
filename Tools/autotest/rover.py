@@ -6096,12 +6096,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.print_exception_caught(e)
                 ex = e
                 break
+
         self.context_pop()
-        self.reboot_sitl()
-        self.progress("All done")
 
         if ex is not None:
             raise ex
+
+        self.reboot_sitl()
+        self.progress("All done")
 
     def tests(self):
         '''return list of all tests'''
