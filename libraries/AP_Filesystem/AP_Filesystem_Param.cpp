@@ -469,8 +469,8 @@ int AP_Filesystem_Param::stat(const char *name, struct stat *stbuf)
         return -1;
     }
     memset(stbuf, 0, sizeof(*stbuf));
-    // give fixed size to avoid needing to scan entire file
-    stbuf->st_size = 1024*1024;
+    // give size estimation to avoid needing to scan entire file
+    stbuf->st_size = AP_Param::count_parameters() * 12;
     return 0;
 }
 
