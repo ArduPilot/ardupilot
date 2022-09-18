@@ -279,7 +279,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
     }
     case Stage::SYSTEM_ID:
-        char sysid[40];
+        char sysid[50];
         if (hal.util->get_system_id(sysid)) {
             if (! _logger_backend->Write_Message(sysid)) {
                 return; // call me again
