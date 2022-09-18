@@ -6,6 +6,9 @@ MCU STM32F4xx STM32F412Rx
 # board ID for firmware load
 APJ_BOARD_ID 9
 
+# short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
+define CHIBIOS_SHORT_BOARD_NAME "skyviper-jour"
+
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
