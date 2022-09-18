@@ -3982,7 +3982,7 @@ void GCS_MAVLINK::send_banner()
     }
 
     // send system ID if we can
-    char sysid[40];
+    char sysid[50];
     if (hal.util->get_system_id(sysid)) {
         send_text(MAV_SEVERITY_INFO, "%s", sysid);
     }
