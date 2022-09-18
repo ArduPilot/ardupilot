@@ -150,7 +150,7 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
   as get_system_id_unformatted will already be ascii, we use the same
   ID here
  */
-bool Util::get_system_id(char buf[40])
+bool Util::get_system_id(char buf[50])
 {
     uint8_t len = 40;
     return get_system_id_unformatted((uint8_t *)buf, len);
