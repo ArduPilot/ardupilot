@@ -120,7 +120,7 @@ public:
       Buf should be filled with a printable string and must be null
       terminated
      */
-    virtual bool get_system_id(char buf[40]) { return false; }
+    virtual bool get_system_id(char buf[50]) { return false; }
     virtual bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) { return false; }
 
     /**
