@@ -577,6 +577,16 @@ void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_mess
 #endif
 }
 
+uint32_t AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask(void)
+{
+    // Note: we only set the BOXARM bit (bit 0) which is the same for BF, INAV and DJI VTX
+    // When armed we simply return 1 (1 == 1 << 0)
+    if (hal.util->get_soft_armed()) {
+        return 1U;
+    }
+    return 0U;
+}
+
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_api_version(sbuf_t *dst)
 {
     const struct {
