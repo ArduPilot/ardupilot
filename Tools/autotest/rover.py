@@ -6049,8 +6049,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
 
         start = self.mav.location()
-        target = start
-        (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
+        target = self.offset_location_ne(start, 50, 0)
         self.progress("Setting target to %f %f" % (start.lat, start.lng))
         stopping_dist = 0.5
 
@@ -6072,14 +6071,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             try:
                 self.set_parameter("SIM_PLD_TYPE", type)
                 self.reboot_sitl()
+                self.change_mode('GUIDED')
                 self.wait_ready_to_arm()
                 self.arm_vehicle()
-                self.reach_heading_manual(0)
-                self.set_rc(3, 1400)
-                self.wait_distance(25)
-                self.set_rc_default()
+                initial_position = self.offset_location_ne(target, -20, -2)
+                self.drive_to_location(initial_position)
                 self.change_mode(8) # DOCK mode
-                self.wait_groundspeed(0, 0.03, timeout=120)
+                self.wait_distance_to_location(target, 0, 0.5, timeout=120)
                 self.disarm_vehicle()
                 self.assert_receive_message('GLOBAL_POSITION_INT')
                 new_pos = self.mav.location()
