@@ -220,6 +220,26 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_I2C(uint8_t inv2_instance
     return sensor;
 }
 
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev, 
+                                             enum Rotation rotation)
+{
+    if (!dev) {
+        return nullptr;
+    }
+    AP_AK09916_BusDriver *bus = new AP_AK09916_BusDriver_HALDevice(std::move(dev));
+    if (!bus) {
+        return nullptr;
+    }
+
+    AP_Compass_AK09916 *sensor = new AP_Compass_AK09916(bus, false, rotation);
+    if (!sensor || !sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+
+    return sensor;
+}
+
 bool AP_Compass_AK09916::init()
 {
     AP_HAL::Semaphore *bus_sem = _bus->get_semaphore();

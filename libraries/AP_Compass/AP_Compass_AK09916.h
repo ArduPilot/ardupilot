@@ -54,6 +54,11 @@ public:
                                              bool force_external,
                                              enum Rotation rotation);
 
+    /* Probe for AK09916 on auxiliary bus of ICM20948, connected through I2C */
+    static AP_Compass_Backend *probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+                                             enum Rotation rotation);
+
+
     /* Probe for AK09916 on auxiliary bus of ICM20948, connected through SPI by default */
     static AP_Compass_Backend *probe_ICM20948(uint8_t mpu9250_instance, enum Rotation rotation);
     static AP_Compass_Backend *probe_ICM20948_SPI(uint8_t mpu9250_instance,
