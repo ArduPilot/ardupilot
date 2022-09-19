@@ -459,11 +459,6 @@ void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
     const float min_ratio = notch.params.freq_min_ratio();
 
     const AP_Motors* motors = AP::motors();
-    if (motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
-        notch.set_inactive(true);
-    } else {
-        notch.set_inactive(false);
-    }
     const float motors_throttle = motors != nullptr ? MAX(0,motors->get_throttle_out()) : 0;
     float throttle_freq = ref_freq * MAX(min_ratio, sqrtf(motors_throttle / ref));
 
@@ -483,6 +478,13 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
     if (is_zero(ref)) {
         notch.update_freq_hz(ref_freq);
         return;
+    }
+
+    const AP_Motors* motors = AP::motors();
+    if (motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
+        notch.set_inactive(true);
+    } else {
+        notch.set_inactive(false);
     }
 
     switch (notch.params.tracking_mode()) {
