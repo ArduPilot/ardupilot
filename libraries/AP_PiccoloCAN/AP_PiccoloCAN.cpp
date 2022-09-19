@@ -208,7 +208,7 @@ void AP_PiccoloCAN::loop()
 
         uint16_t servoCmdRateMs = 1000 / _srv_hz;
 #if HAL_EFI_CURRAWONG_ECU_ENABLED
-        _ecu_hz = constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX);
+        _ecu_hz.set(constrain_int16(_ecu_hz, PICCOLO_MSG_RATE_HZ_MIN, PICCOLO_MSG_RATE_HZ_MAX));
 
         uint16_t ecuCmdRateMs = 1000 / _ecu_hz;
 #endif
