@@ -7,6 +7,24 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_UPDATE_DT 0.02     // update rate in seconds.  update() should be called at this rate
 
+// get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
+// returns true on success
+bool AP_Mount_Backend::get_attitude_euler(float& roll_deg, float& pitch_deg, float& yaw_bf_deg)
+{
+    // by default re-use get_attitude_quaternion and convert to Euler angles
+    Quaternion att_quat;
+    if (!get_attitude_quaternion(att_quat)) {
+        return false;
+    }
+
+    float roll_rad, pitch_rad, yaw_rad;
+    att_quat.to_euler(roll_rad, pitch_rad, yaw_rad);
+    roll_deg = degrees(roll_rad);
+    pitch_deg = degrees(pitch_rad);
+    yaw_bf_deg = degrees(yaw_rad);
+    return true;
+}
+
 // set angle target in degrees
 // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
 void AP_Mount_Backend::set_angle_target(float roll_deg, float pitch_deg, float yaw_deg, bool yaw_is_earth_frame)
