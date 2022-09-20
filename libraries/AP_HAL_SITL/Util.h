@@ -41,6 +41,7 @@ public:
     uint64_t get_hw_rtc() const override;
     void set_hw_rtc(uint64_t time_utc_usec) override { /* fail silently */ }
 
+    const char *get_board_name() const override { return "SITL"; }
 
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
