@@ -547,6 +547,7 @@ singleton AP_Mount method set_mode void uint8_t 0 UINT8_MAX MAV_MOUNT_MODE'enum 
 singleton AP_Mount method set_angle_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
+singleton AP_Mount method get_attitude_euler boolean uint8_t 0 UINT8_MAX float'Null float'Null float'Null
 
 singleton AP_Logger rename logger
 singleton AP_Logger manual write AP_Logger_Write
