@@ -27,7 +27,7 @@ void Copter::init_ardupilot()
 #endif
 
     // init cargo gripper
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     g2.gripper.init();
 #endif
 

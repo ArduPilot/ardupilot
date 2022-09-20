@@ -13,7 +13,6 @@
 //#define BEACON_ENABLED        DISABLED            // disable beacon support
 //#define SPRAYER_ENABLED       DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define WINCH_ENABLED         DISABLED            // disable winch support
-//#define GRIPPER_ENABLED       DISABLED            // disable gripper support
 //#define STATS_ENABLED         DISABLED            // disable statistics support
 //#define MODE_ACRO_ENABLED     DISABLED            // disable acrobatic mode support
 //#define MODE_AUTO_ENABLED     DISABLED            // disable auto mode support
