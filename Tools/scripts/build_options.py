@@ -113,7 +113,7 @@ BUILD_OPTIONS = [
     Feature('VTOL Frame', 'Y6', 'AP_MOTORS_FRAME_Y6_ENABLED', 'Y6', 0, None),
     Feature('VTOL Frame', 'OCTAQUAD', 'AP_MOTORS_FRAME_OCTAQUAD_ENABLED', 'OCTAQUAD', 0, None),
 
-    Feature('Payload', 'GRIPPER', 'GRIPPER_ENABLED', 'Enable Gripper', 0, None),
+    Feature('Payload', 'GRIPPER', 'AP_GRIPPER_ENABLED', 'Enable Gripper', 0, None),
     Feature('Payload', 'SPRAYER', 'HAL_SPRAYER_ENABLED', 'Enable Sprayer', 0, None),
     Feature('Payload', 'LANDING_GEAR', 'LANDING_GEAR_ENABLED', 'Enable Landing Gear', 0, None),
     Feature('Payload', 'WINCH', 'WINCH_ENABLED', 'Enable Winch', 0, None),

@@ -119,7 +119,7 @@ class ExtractFeatures(object):
             ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
             ('HAL_LANDING_DEEPSTALL_ENABLED', r'AP_Landing_Deepstall::terminate\b',),
 
-            ('GRIPPER_ENABLED', r'AP_Gripper::init\b',),
+            ('AP_GRIPPER_ENABLED', r'AP_Gripper::init\b',),
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
             ('LANDING_GEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('WINCH_ENABLED', 'AP_Winch::AP_Winch',),
