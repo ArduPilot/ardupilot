@@ -118,16 +118,16 @@ public:
     // only use with small angles.  I.e. length of v should less than 0.17 radians (i.e. 10 degrees)
     void        rotate_fast(const Vector3<T> &v);
 
-    // get euler roll angle
+    // get euler roll angle in radians
     T       get_euler_roll() const;
 
-    // get euler pitch angle
+    // get euler pitch angle in radians
     T       get_euler_pitch() const;
 
-    // get euler yaw angle
+    // get euler yaw angle in radians
     T       get_euler_yaw() const;
 
-    // create eulers from a quaternion
+    // create eulers (in radians) from a quaternion
     void        to_euler(float &roll, float &pitch, float &yaw) const;
     void        to_euler(double &roll, double &pitch, double &yaw) const;
 
