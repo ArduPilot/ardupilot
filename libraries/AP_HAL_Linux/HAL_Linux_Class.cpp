@@ -63,7 +63,7 @@ static UtilRPI utilInstance;
 static Util utilInstance;
 #endif
 
-// 5 serial ports on Linux
+// 9 serial ports on Linux
 static UARTDriver uartADriver(true);
 static UARTDriver uartCDriver(false);
 static UARTDriver uartDDriver(false);
@@ -275,18 +275,30 @@ HAL_Linux::HAL_Linux() :
 
 void _usage(void)
 {
-    printf("Usage: -A uartAPath -B uartBPath -C uartCPath -D uartDPath -E uartEPath -F uartFPath -G uartGpath -H uartHpath -I uartIpath -J uartJpath\n");
+    printf("Usage: --serial0 serial0Path --serial1 serial2Path \n");
     printf("Options:\n");
-    printf("\tserial:\n");
-    printf("                    -A /dev/ttyO4\n");
-    printf("\t                  -B /dev/ttyS1\n");
+    printf("\tserial (0 through 9 available):\n");
+    printf("\t                  --serial0 /dev/ttyO4\n");
+    printf("\t                  --serial3 /dev/ttyS1\n");
+    printf("\tlegacy UART options still work, their mappings are:\n");
+    printf("\t                  -A/--uartA is SERIAL0\n");
+    printf("\t                  -B/--uartB is SERIAL3\n");
+    printf("\t                  -C/--uartC is SERIAL1\n");
+    printf("\t                  -D/--uartD is SERIAL2\n");
+    printf("\t                  -E/--uartE is SERIAL4\n");
+    printf("\t                  -F/--uartF is SERIAL5\n");
+    printf("\t                  -G/--uartG is SERIAL6\n");
+    printf("\t                  -H/--uartH is SERIAL7\n");
+    printf("\t                  -I/--uartI is SERIAL8\n");
+    printf("\t                  -J/--uartJ is SERIAL9\n");
     printf("\tnetworking tcp:\n");
-    printf("\t                  -C tcp:192.168.2.15:1243:wait\n");
-    printf("\t                  -A tcp:11.0.0.2:5678\n");
-    printf("\t                  -A udp:11.0.0.2:14550\n");
+    printf("\t                  --serial1 tcp:192.168.2.15:1243:wait\n");
+    printf("\t                  --serial0 tcp:11.0.0.2:5678\n");
+    printf("\t                  --serial0 udp:11.0.0.2:14550\n");
+    printf("\t                  --serial0 udp:11.0.0.2:14550\n");
     printf("\tnetworking UDP:\n");
-    printf("\t                  -A udp:11.0.0.255:14550:bcast\n");
-    printf("\t                  -A udpin:0.0.0.0:14550\n");
+    printf("\t                  --serial0 udp:11.0.0.255:14550:bcast\n");
+    printf("\t                  --serial0 udpin:0.0.0.0:14550\n");
     printf("\tcustom log path:\n");
     printf("\t                  --log-directory /var/APM/logs\n");
     printf("\t                  -l /var/APM/logs\n");
@@ -315,15 +327,25 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
     int opt;
     const struct GetOptLong::option options[] = {
         {"uartA",         true,  0, 'A'},
+        {"serial0",       true,  0, 'A'},
         {"uartB",         true,  0, 'B'},
+        {"serial3",       true,  0, 'B'},
         {"uartC",         true,  0, 'C'},
+        {"serial1",       true,  0, 'C'},
         {"uartD",         true,  0, 'D'},
+        {"serial2",       true,  0, 'D'},
         {"uartE",         true,  0, 'E'},
+        {"serial4",       true,  0, 'E'},
         {"uartF",         true,  0, 'F'},
+        {"serial5",       true,  0, 'F'},
         {"uartG",         true,  0, 'G'},
+        {"serial6",       true,  0, 'G'},
         {"uartH",         true,  0, 'H'},
+        {"serial7",       true,  0, 'H'},
         {"uartI",         true,  0, 'I'},
+        {"serial8",       true,  0, 'I'},
         {"uartJ",         true,  0, 'J'},
+        {"serial9",       true,  0, 'J'},
         {"log-directory",       true,  0, 'l'},
         {"terrain-directory",   true,  0, 't'},
         {"storage-directory",   true,  0, 's'},
@@ -334,7 +356,7 @@ void HAL_Linux::run(int argc, char* const argv[], Callbacks* callbacks) const
         {0, false, 0, 0}
     };
 
-    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:l:t:s:he:SM:c:",
+    GetOptLong gopt(argc, argv, "A:B:C:D:E:F:G:H:I:J:l:t:s:he:SM:c:",
                     options);
 
     /*
