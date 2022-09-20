@@ -8,6 +8,9 @@
  */
 
 #include "AP_Gripper_EPM.h"
+
+#if AP_GRIPPER_EPM_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <GCS_MAVLink/GCS.h>
@@ -142,3 +145,5 @@ bool AP_Gripper_EPM::grabbed() const
     return (config.state == AP_Gripper::STATE_GRABBED ||
             config.state == AP_Gripper::STATE_GRABBING);
 }
+
+#endif  // AP_GRIPPER_EPM_ENABLED
