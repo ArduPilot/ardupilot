@@ -6356,6 +6356,7 @@ class AutoTestCopter(AutoTest):
             self.reboot_sitl()
             tstart = self.get_sim_time()
             self.change_mode('LOITER')
+            self.wait_ekf_happy()
             while True:
                 if self.armed():
                     break
@@ -6379,7 +6380,6 @@ class AutoTestCopter(AutoTest):
                               0,
                               0,
                               0)
-                self.wait_heartbeat()
             self.takeoff(15, mode='LOITER')
             self.progress("Poking vehicle; should avoid")
 
