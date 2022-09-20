@@ -49,6 +49,10 @@ public:
     // returns true if this mount can control its pan (required for multicopters)
     virtual bool has_pan_control() const = 0;
 
+    // get mount's current attitude in euler angles in degrees.  yaw angle is in body-frame
+    // returns true on success
+    bool get_attitude_euler(float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
+
     // get mount's mode
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
