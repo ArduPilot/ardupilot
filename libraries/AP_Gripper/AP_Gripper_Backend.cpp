@@ -1,7 +1,8 @@
 #include "AP_Gripper_Backend.h"
-#include <AP_Math/AP_Math.h>
 
-extern const AP_HAL::HAL& hal;
+#if AP_GRIPPER_ENABLED
+
+#include <AP_Math/AP_Math.h>
 
 void AP_Gripper_Backend::init()
 {
@@ -20,3 +21,5 @@ void AP_Gripper_Backend::update()
         grab();
     }
 }
+
+#endif  // AP_GRIPPER_ENABLED

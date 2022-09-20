@@ -1,4 +1,7 @@
 #include <AP_Gripper/AP_Gripper_Servo.h>
+
+#if AP_GRIPPER_SERVO_ENABLED
+
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -115,3 +118,5 @@ bool AP_Gripper_Servo::valid() const
     }
     return true;
 }
+
+#endif  // AP_GRIPPER_SERVO_ENABLED

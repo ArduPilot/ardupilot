@@ -17,6 +17,8 @@
 
 #include <AP_Gripper/AP_Gripper.h>
 
+#if AP_GRIPPER_ENABLED
+
 class AP_Gripper_Backend {
 public:
     AP_Gripper_Backend(struct AP_Gripper::Backend_Config &_config) :
@@ -55,3 +57,5 @@ protected:
 
     struct AP_Gripper::Backend_Config &config;
 };
+
+#endif  // AP_GRIPPER_ENABLED
