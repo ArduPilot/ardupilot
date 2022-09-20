@@ -109,11 +109,7 @@ void AP_BattMonitor_SMBus_Generic::timer()
         return;
     }
 
-    // read current (A)
-    if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
-        _state.current_amps = -(float)((int16_t)data) * 0.001f;
-        _state.last_time_micros = tnow;
-    }
+    read_current();
 
     read_full_charge_capacity();
 

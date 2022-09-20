@@ -3,7 +3,11 @@
 #include <AP_HAL/AP_HAL.h>
 
 // Specific to Rotoye Batmon
-#define BATTMONITOR_SMBUS_TEMP_EXT 0x48
+#define BATTMONITOR_SMBUS_BOARD_TEMP 0x08
+#define BATTMONITOR_SMBUS_TEMP_EXTERNAL_1 0x48
+#define BATTMONITOR_SMBUS_TEMP_EXTERNAL_2 0x49
+#define BATTMONITOR_BATMON_DECI_CURRENT 0x41
+
 
 // return the maximum of the internal and external temperature sensors
 void AP_BattMonitor_SMBus_Rotoye::read_temp(void) {
@@ -24,4 +28,20 @@ void AP_BattMonitor_SMBus_Rotoye::read_temp(void) {
 
     _state.temperature_time = AP_HAL::millis();
     _state.temperature = KELVIN_TO_C(0.1f * float(MAX(t_int, t_ext)));
+}
+
+void AP_BattMonitor_SMBus_Rotoye::read_current(void) {
+    uint16_t data;
+    // Read current in mA for existing BATMONs according to SBS spec
+    if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
+        _state.current_amps = -(float)((int16_t)data) * 0.001f;
+        _state.last_time_micros = AP_HAL::micros();
+    }
+    // Read current in dA for newer BATMON firmware (>v5.09)
+    if (read_word(BATTMONITOR_BATMON_DECI_CURRENT, data)) {
+        if (data != 0xFFFF){ // backward compatibility for older BATMON versions
+            _state.current_amps = -(float)((int16_t)data) * 0.1f;
+            _state.last_time_micros = AP_HAL::micros();
+        }
+    }
 }

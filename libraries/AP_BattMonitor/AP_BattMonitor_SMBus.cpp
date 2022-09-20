@@ -120,6 +120,15 @@ void AP_BattMonitor_SMBus::read_temp(void)
     _state.temperature = KELVIN_TO_C(0.1f * data);
 }
 
+void AP_BattMonitor_SMBus::read_current(void)
+{
+    uint16_t data;
+    if (read_word(BATTMONITOR_SMBUS_CURRENT, data)) {
+        _state.current_amps = -(float)((int16_t)data) * 0.001f;
+        _state.last_time_micros = AP_HAL::micros();
+    }
+}
+
 // reads the serial number if it's not already known
 // returns if the serial number was already known
 void AP_BattMonitor_SMBus::read_serial_number(void)
