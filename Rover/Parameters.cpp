@@ -583,7 +583,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("MIS_DONE_BEHAVE", 38, ParametersG2, mis_done_behave, 0),
 
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     // @Group: GRIP_
     // @Path: ../libraries/AP_Gripper/AP_Gripper.cpp
     AP_SUBGROUPINFO(gripper, "GRIP_", 39, ParametersG2, AP_Gripper),
