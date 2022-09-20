@@ -3998,7 +3998,10 @@ void GCS_MAVLINK::send_banner()
                   fwver.os_name, fwver.os_hash_str);
     }
 
-    // send system ID if we can
+    // send board name
+    send_text(MAV_SEVERITY_INFO, "%s", hal.util->get_board_name());
+
+    // send serial number as plain text
     char sysid[50];
     if (hal.util->get_system_id(sysid)) {
         send_text(MAV_SEVERITY_INFO, "%s", sysid);
