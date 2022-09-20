@@ -275,6 +275,16 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         if (!_logger_backend->Write_VER()) {
             return;
         }
+        stage = Stage::BOARD_NAME;
+        FALLTHROUGH;
+    }
+    case Stage::BOARD_NAME: {
+        const char *board_name = hal.util->get_board_name();
+        if (board_name != nullptr) {
+            if (! _logger_backend->Write_Message(board_name)) {
+                return; // call me again
+            }
+        }
         stage = Stage::SYSTEM_ID;
         FALLTHROUGH;
     }

@@ -33,6 +33,7 @@ private:
         FIRMWARE_STRING = 0,
         GIT_VERSIONS,
         VER,  // i.e. the "VER" message
+        BOARD_NAME,
         SYSTEM_ID,
         PARAM_SPACE_USED,
         RC_PROTOCOL
