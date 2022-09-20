@@ -515,7 +515,9 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::FENCE:
     case AUX_FUNC::GPS_DISABLE:
     case AUX_FUNC::GPS_DISABLE_YAW:
+#if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
+#endif
     case AUX_FUNC::KILL_IMU1:
     case AUX_FUNC::KILL_IMU2:
     case AUX_FUNC::MISSION_RESET:
@@ -855,6 +857,7 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
 #endif // HAL_SPRAYER_ENABLED
 }
 
+#if AP_GRIPPER_ENABLED
 void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
 {
     AP_Gripper *gripper = AP::gripper();
@@ -874,6 +877,7 @@ void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
         break;
     }
 }
+#endif  // AP_GRIPPER_ENABLED
 
 void RC_Channel::do_aux_function_lost_vehicle_sound(const AuxSwitchPos ch_flag)
 {
@@ -978,9 +982,11 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         do_aux_function_fence(ch_flag);
         break;
 
+#if AP_GRIPPER_ENABLED
     case AUX_FUNC::GRIPPER:
         do_aux_function_gripper(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::RC_OVERRIDE_ENABLE:
         // Allow or disallow RC_Override
