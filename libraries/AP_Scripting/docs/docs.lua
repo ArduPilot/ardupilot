@@ -662,6 +662,12 @@ function Location_ud:get_vector_from_origin_NEU() end
 function Location_ud:offset_bearing(bearing_deg, distance) end
 
 -- desc
+---@param bearing_deg number
+---@param pitch_deg number
+---@param distance number
+function Location_ud:offset_bearing_and_pitch(bearing_deg, pitch_deg, distance) end
+
+-- desc
 ---@param ofs_north number
 ---@param ofs_east number
 function Location_ud:offset(ofs_north, ofs_east) end

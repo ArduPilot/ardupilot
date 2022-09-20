@@ -13,6 +13,7 @@ userdata Location field loiter_xtrack boolean read write
 userdata Location method get_distance float Location
 userdata Location method offset void float'skip_check float'skip_check
 userdata Location method offset_bearing void float'skip_check float'skip_check
+userdata Location method offset_bearing_and_pitch void float'skip_check float'skip_check float'skip_check
 userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
