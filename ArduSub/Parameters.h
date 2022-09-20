@@ -320,7 +320,7 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-#if GRIPPER_ENABLED
+#if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
 
