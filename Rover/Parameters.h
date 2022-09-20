@@ -370,7 +370,7 @@ public:
     AC_Sprayer sprayer;
 #endif
 
-#if GRIPPER_ENABLED
+#if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
 
