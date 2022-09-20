@@ -824,6 +824,12 @@ function mount:set_mode(instance, mode) end
 ---@return integer
 function mount:get_mode(instance) end
 
+-- desc
+---@param instance integer
+---@return number|nil
+---@return number|nil
+---@return number|nil
+function mount:get_attitude_euler(instance, roll_deg, pitch_deg, yaw_bf_deg) end
 
 -- desc
 ---@class motors
