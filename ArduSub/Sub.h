@@ -87,7 +87,8 @@
 #include <AP_RPM/AP_RPM.h>
 #endif
 
-#if GRIPPER_ENABLED == ENABLED
+#include <AP_Gripper/AP_Gripper_config.h>
+#if AP_GRIPPER_ENABLED
 #include <AP_Gripper/AP_Gripper.h>             // gripper stuff
 #endif
 
