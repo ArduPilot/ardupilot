@@ -175,12 +175,6 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// gripper - enabled only on larger firmwares
-#ifndef GRIPPER_ENABLED
-# define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
 // Parachute release
 #ifndef PARACHUTE
 # define PARACHUTE HAL_PARACHUTE_ENABLED
