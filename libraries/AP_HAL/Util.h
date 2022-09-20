@@ -113,6 +113,9 @@ public:
     // overwrite bootloader (probably with one from ROMFS)
     virtual FlashBootloader flash_bootloader() { return FlashBootloader::NOT_AVAILABLE; }
 
+    // get board name:
+    virtual const char *get_board_name() const = 0;
+
     /*
       get system identifier (eg. serial number)
       return false if a system identifier is not available
@@ -120,8 +123,8 @@ public:
       Buf should be filled with a printable string and must be null
       terminated
      */
-    virtual bool get_system_id(char buf[50]) { return false; }
-    virtual bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) { return false; }
+    virtual bool get_system_id(char buf[50]) = 0;
+    virtual bool get_system_id_unformatted(uint8_t buf[], uint8_t &len)  = 0;
 
     /**
        return commandline arguments, if available
