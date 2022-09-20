@@ -1978,7 +1978,7 @@ bool ModeAuto::verify_payload_place()
     case PayloadPlaceStateType_Releasing_Start:
         // Reinitialise vertical position controller to remove discontinuity due to touch down of payload
         pos_control->init_z_controller_no_descent();
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
         if (g2.gripper.valid()) {
             gcs().send_text(MAV_SEVERITY_INFO, "PayloadPlace: Releasing the gripper");
             g2.gripper.release();
@@ -1995,7 +1995,7 @@ bool ModeAuto::verify_payload_place()
         nav_payload_place.state = PayloadPlaceStateType_Releasing;
         FALLTHROUGH;
     case PayloadPlaceStateType_Releasing:
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
         if (g2.gripper.valid() && !g2.gripper.released()) {
             return false;
         }
