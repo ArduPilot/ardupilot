@@ -22,10 +22,13 @@
 #include "AP_InertialSensor_RST.h"
 #include "AP_InertialSensor_BMI055.h"
 #include "AP_InertialSensor_BMI088.h"
+#include "AP_InertialSensor_SCHA63T.h"
 #include "AP_InertialSensor_Invensensev2.h"
 #include "AP_InertialSensor_ADIS1647x.h"
 #include "AP_InertialSensor_ExternalAHRS.h"
 #include "AP_InertialSensor_Invensensev3.h"
+
+static bool fReset = false;
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -820,6 +823,12 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
+	if (fReset == false)
+	{
+        palSetLine(HAL_GPIO_PIN_RESET);
+		fReset = true;
+	}
+
     // remember the sample rate
     _loop_rate = loop_rate;
     _loop_delta_t = 1.0f / loop_rate;

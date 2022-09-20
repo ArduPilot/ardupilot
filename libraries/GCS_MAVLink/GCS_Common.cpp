@@ -3612,7 +3612,7 @@ void GCS_MAVLINK::send_banner()
     // mark the firmware version in the tlog
     const AP_FWVersion &fwver = AP::fwversion();
 
-    send_text(MAV_SEVERITY_INFO, "%s", fwver.fw_string);
+    send_text(MAV_SEVERITY_INFO, "%s %s", fwver.fw_string, "(JFB100 V1.0.0)");
 
     if (fwver.middleware_name && fwver.os_name) {
         send_text(MAV_SEVERITY_INFO, "%s: %s %s: %s",

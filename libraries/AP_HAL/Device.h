@@ -105,6 +105,9 @@ public:
     virtual bool transfer(const uint8_t *send, uint32_t send_len,
                           uint8_t *recv, uint32_t recv_len) = 0;
 
+    virtual bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                             uint32_t len) = 0;
+
     /**
      * Wrapper function over #transfer() to read recv_len registers, starting
      * by first_reg, into the array pointed by recv. The read flag passed to
@@ -117,6 +120,11 @@ public:
     {
         first_reg |= _read_flag;
         return transfer(&first_reg, 1, recv, recv_len);
+    }
+
+    bool read_registers_fullduplex(uint8_t* send, uint8_t *recv, uint32_t len)
+    {
+        return transfer_fullduplex(send, recv, len);
     }
 
     /**
@@ -132,6 +140,11 @@ public:
             set_checked_register(reg, val);
         }
         return transfer(buf, sizeof(buf), nullptr, 0);
+    }
+
+    bool write_register_fullduplex(uint8_t* send, uint8_t *recv, uint32_t len)
+    {
+        return transfer_fullduplex(send, recv, len);
     }
 
     /**

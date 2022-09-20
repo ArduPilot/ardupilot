@@ -538,9 +538,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
         
-        accel = Vector3f(int16_val(data, 1),
-                         int16_val(data, 0),
-                         -int16_val(data, 2));
+        accel = Vector3f(int16_val(data, 0),
+                         int16_val(data, 1),
+                         int16_val(data, 2));
         accel *= _accel_scale;
 
         int16_t t2 = int16_val(data, 3);
@@ -553,9 +553,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         }
         float temp = t2 * temp_sensitivity + temp_zero;
         
-        gyro = Vector3f(int16_val(data, 5),
-                        int16_val(data, 4),
-                        -int16_val(data, 6));
+        gyro = Vector3f(int16_val(data, 4),
+                        int16_val(data, 5),
+                        int16_val(data, 6));
         gyro *= _gyro_scale;
 
         _rotate_and_correct_accel(_accel_instance, accel);
@@ -601,9 +601,9 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
 
         if (_accum.gyro_count % _gyro_to_accel_sample_ratio == 0) {
             // accel data is at 4kHz or 1kHz
-            Vector3f a(int16_val(data, 1),
-                       int16_val(data, 0),
-                       -int16_val(data, 2));
+            Vector3f a(int16_val(data, 0),
+                       int16_val(data, 1),
+                       int16_val(data, 2));
             if (fabsf(a.x) > unscaled_clip_limit ||
                 fabsf(a.y) > unscaled_clip_limit ||
                 fabsf(a.z) > unscaled_clip_limit) {
@@ -629,9 +629,9 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
 
         _accum.gyro_count++;
 
-        Vector3f g(int16_val(data, 5),
-                   int16_val(data, 4),
-                   -int16_val(data, 6));
+        Vector3f g(int16_val(data, 4),
+                   int16_val(data, 5),
+                   int16_val(data, 6));
 
         Vector3f g2 = g * _gyro_scale;
         _notify_new_gyro_sensor_rate_sample(_gyro_instance, g2);
@@ -911,7 +911,7 @@ bool AP_InertialSensor_Invensense::_check_whoami(void)
     case MPU_WHOAMI_MPU9255:
         _mpu_type = Invensense_MPU9250;
         return true;
-    case MPU_WHOAMI_20608D:    
+    case MPU_WHOAMI_20608D:
     case MPU_WHOAMI_20608G:
         _mpu_type = Invensense_ICM20608;
         return true;

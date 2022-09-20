@@ -365,6 +365,8 @@ private:
     static AP_Vehicle *_singleton;
 
     bool done_safety_init;
+
+    void timer_update();
 };
 
 namespace AP {

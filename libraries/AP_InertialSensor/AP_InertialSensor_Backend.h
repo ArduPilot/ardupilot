@@ -123,6 +123,7 @@ public:
         DEVTYPE_INS_ICM42605 = 0x35,
         DEVTYPE_INS_ICM40605 = 0x36,
         DEVTYPE_INS_IIM42652 = 0x37,
+        DEVTYPE_INS_SCHA63T  = 0x38,
     };
 
 protected:
