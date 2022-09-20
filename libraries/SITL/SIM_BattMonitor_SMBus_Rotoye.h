@@ -15,7 +15,7 @@ namespace SITL {
 
 class SMBusBattRotoyeDevReg : public SMBusBattGenericDevReg {
 public:
-    static const uint8_t TEMP_EXT = 0x07;
+    static const uint8_t TEMP_EXT = 0x48;
 };
 
 class Rotoye : public SIM_BattMonitor_SMBus_Generic
