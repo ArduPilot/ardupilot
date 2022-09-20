@@ -58,6 +58,8 @@ public:
      */
     enum safety_state safety_switch_state(void) override;
 
+    const char *get_board_name() const override { return CHIBIOS_BOARD_NAME; }
+
     // get system ID as a string
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
