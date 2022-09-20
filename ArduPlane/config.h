@@ -238,12 +238,6 @@
 #define PARACHUTE HAL_PARACHUTE_ENABLED
 #endif
 
-//////////////////////////////////////////////////////////////////////////////
-// Payload Gripper
-#ifndef GRIPPER_ENABLED
-  #define GRIPPER_ENABLED !HAL_MINIMIZE_FEATURES
-#endif
-
 #ifndef STATS_ENABLED
  # define STATS_ENABLED ENABLED
 #endif
