@@ -29,6 +29,7 @@ bool AP_Mission::start_command_do_aux_function(const AP_Mission::Mission_Command
     return true;
 }
 
+#if AP_GRIPPER_ENABLED
 bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd)
 {
     AP_Gripper *gripper = AP::gripper();
@@ -56,6 +57,7 @@ bool AP_Mission::start_command_do_gripper(const AP_Mission::Mission_Command& cmd
         return false;
     }
 }
+#endif  // AP_GRIPPER_ENABLED
 
 bool AP_Mission::start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd)
 {
