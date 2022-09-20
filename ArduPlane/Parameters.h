@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
+#include <AP_Gripper/AP_Gripper.h>
 
 // Global parameter class.
 //
@@ -513,7 +514,7 @@ public:
     // home reset altitude threshold
     AP_Int8 home_reset_threshold;
 
-#if GRIPPER_ENABLED == ENABLED
+#if AP_GRIPPER_ENABLED
     // Payload Gripper
     AP_Gripper gripper;
 #endif
