@@ -214,29 +214,24 @@ Util::FlashBootloader Util::flash_bootloader()
  */
 
 
+const char *Util::get_board_name() const
+{
+    return "esp32-buzz";
+}
+
 bool Util::get_system_id(char buf[50])
 {
-    //uint8_t serialid[12];
-    char board_name[14] = "esp32-buzz   ";
-
-    uint8_t base_mac_addr[6] = {0};
-    esp_err_t ret = esp_efuse_mac_get_custom(base_mac_addr);
-    if (ret != ESP_OK) {
-        ret = esp_efuse_mac_get_default(base_mac_addr);
+    uint8_t base_mac_addr[6] {};
+    if (esp_efuse_mac_get_custom(base_mac_addr) != ESP_OK) {
+        esp_efuse_mac_get_default(base_mac_addr);
     }
 
-    char board_mac[20] = "                   ";
-    snprintf(board_mac,20, "%x %x %x %x %x %x",
+    snprintf(buf, ARRAY_SIZE(buf), "%x %x %x %x %x %x",
              base_mac_addr[0], base_mac_addr[1], base_mac_addr[2], base_mac_addr[3], base_mac_addr[4], base_mac_addr[5]);
 
-    // null terminate both
-    board_name[13] = 0;
-    board_mac[19] = 0;
+    // null terminate
+    buf[19] = 0;
 
-    // tack strings togehter
-    snprintf(buf, 40, "%s %s", board_name, board_mac);
-    // and null terminate that too..
-    buf[39] = 0;
     return true;
 }
 
