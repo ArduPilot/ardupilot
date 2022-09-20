@@ -69,6 +69,8 @@ public:
 
     uint32_t available_memory(void) override;
 
+    const char *get_board_name() const override { return HAL_LINUX_BOARD_NAME; }
+
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
