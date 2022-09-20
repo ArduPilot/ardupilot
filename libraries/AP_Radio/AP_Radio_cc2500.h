@@ -223,6 +223,8 @@ private:
 
     // check for double binding
     void check_double_bind(void);
+
+    bool get_system_id(char buf[50]);
 };
 
 

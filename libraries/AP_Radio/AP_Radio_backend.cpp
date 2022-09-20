@@ -19,6 +19,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Radio_backend.h"
 
+extern const AP_HAL::HAL& hal;
+
 AP_Radio_backend::AP_Radio_backend(AP_Radio &_radio) :
     radio(_radio)
 {

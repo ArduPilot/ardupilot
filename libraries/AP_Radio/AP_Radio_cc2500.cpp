@@ -331,6 +331,31 @@ bool AP_Radio_cc2500::probe(void)
     return true;
 }
 
+
+/*
+  get_system_id returns a unique string for a board.  Changing this
+  will change the CRC used to prevent double-bind of a controller
+ */
+bool AP_Radio_cc2500::get_system_id(char buf[50])
+{
+    uint8_t serialid[12];
+    uint8_t len = 12;
+    hal.util->get_system_id_unformatted(serialid, len);
+
+    char board_name[14];
+    strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 13);
+    board_name[13] = 0;
+
+    // this format is chosen to match the format used by HAL_PX4
+    hal.util->snprintf(buf, 40, "%s %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
+             board_name,
+             (unsigned)serialid[3], (unsigned)serialid[2], (unsigned)serialid[1], (unsigned)serialid[0],
+             (unsigned)serialid[7], (unsigned)serialid[6], (unsigned)serialid[5], (unsigned)serialid[4],
+             (unsigned)serialid[11], (unsigned)serialid[10], (unsigned)serialid[9],(unsigned)serialid[8]);
+    buf[39] = 0;
+    return true;
+}
+
 /*
   initialise the radio
  */
@@ -366,7 +391,7 @@ void AP_Radio_cc2500::radio_init(void)
 
     // fill in rxid for use in double bind prevention
     char sysid[50] {};
-    hal.util->get_system_id(sysid);
+    get_system_id(sysid);
     uint16_t sysid_crc = calc_crc((const uint8_t *)sysid, strnlen(sysid, sizeof(sysid)));
     if (sysid_crc == 0) {
         sysid_crc = 1;
