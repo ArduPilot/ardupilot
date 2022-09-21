@@ -111,6 +111,7 @@ char AP_Tramp::handle_response(void)
 
             // update the vtx
             AP_VideoTX& vtx = AP::vtx();
+            bool update_pending = vtx.have_params_changed();
             vtx.set_frequency_mhz(freq);
 
             AP_VideoTX::VideoBand band;
@@ -128,7 +129,10 @@ char AP_Tramp::handle_response(void)
             }
 
             // make sure the configured values now reflect reality
-            vtx.set_defaults();
+            // if they do then announce if there were changes
+            if (!vtx.set_defaults() && update_pending && !vtx.have_params_changed()) {
+                vtx.announce_vtx_settings();
+            }
 
             debug("device config: freq: %u, power: %u, pitmode: %u",
                 unsigned(freq), unsigned(power), unsigned(pit_mode));
