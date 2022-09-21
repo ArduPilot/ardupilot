@@ -37,6 +37,7 @@ void Rover::failsafe_check()
         if (arming.is_armed()) {
             // disarm motors
             arming.disarm(AP_Arming::Method::CPUFAILSAFE);
+            gcs().send_text(MAV_SEVERITY_ERROR, "CPU Failsafe");
         }
     }
 }
