@@ -277,19 +277,14 @@ class AutoTestSub(AutoTest):
 
     def GripperMission(self):
         '''Test gripper mission items'''
-        try:
-            self.get_parameter("GRIP_ENABLE", timeout=5)
-        except NotAchievedException:
-            self.progress("Skipping; Gripper not enabled in config?")
-            return
-
         self.load_mission("sub-gripper-mission.txt")
-        self.change_mode('LOITER')
+        self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_statustext("Gripper Grabbed", timeout=60)
         self.wait_statustext("Gripper Released", timeout=60)
+        self.disarm_vehicle()
 
     def SET_POSITION_TARGET_GLOBAL_INT(self):
         '''Move vehicle using SET_POSITION_TARGET_GLOBAL_INT'''
