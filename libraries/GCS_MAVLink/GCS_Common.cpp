@@ -2211,20 +2211,24 @@ void GCS::update_send()
         if (rally != nullptr) {
             _missionitemprotocol_rally = new MissionItemProtocol_Rally(*rally);
         }
+#if AP_FENCE_ENABLED
         AC_Fence *fence = AP::fence();
         if (fence != nullptr) {
             _missionitemprotocol_fence = new MissionItemProtocol_Fence(*fence);
         }
     }
+#endif
     if (_missionitemprotocol_waypoints != nullptr) {
         _missionitemprotocol_waypoints->update();
     }
     if (_missionitemprotocol_rally != nullptr) {
         _missionitemprotocol_rally->update();
     }
+#if AP_FENCE_ENABLED
     if (_missionitemprotocol_fence != nullptr) {
         _missionitemprotocol_fence->update();
     }
+#endif
 #endif // HAL_BUILD_AP_PERIPH
     // round-robin the GCS_MAVLINK backend that gets to go first so
     // one backend doesn't monopolise all of the time allowed for sending
@@ -5030,11 +5034,13 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_RALLY);
         ret = true;
         break;
+#if AP_FENCE_ENABLED
     case MSG_NEXT_MISSION_REQUEST_FENCE:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_FENCE);
         ret = true;
         break;
+#endif
     default:
         ret = true;
         break;
