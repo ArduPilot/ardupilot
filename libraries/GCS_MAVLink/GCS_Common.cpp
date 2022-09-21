@@ -559,8 +559,10 @@ MissionItemProtocol *GCS::get_prot_for_mission_type(const MAV_MISSION_TYPE missi
     switch (mission_type) {
     case MAV_MISSION_TYPE_MISSION:
         return _missionitemprotocol_waypoints;
+#if HAL_RALLY_ENABLED
     case MAV_MISSION_TYPE_RALLY:
         return _missionitemprotocol_rally;
+#endif
 #if AP_FENCE_ENABLED
     case MAV_MISSION_TYPE_FENCE:
         return _missionitemprotocol_fence;
@@ -5029,11 +5031,13 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_MISSION);
         ret = true;
         break;
+#if HAL_RALLY_ENABLED
     case MSG_NEXT_MISSION_REQUEST_RALLY:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_RALLY);
         ret = true;
         break;
+#endif
 #if AP_FENCE_ENABLED
     case MSG_NEXT_MISSION_REQUEST_FENCE:
         CHECK_PAYLOAD_SIZE(MISSION_REQUEST);

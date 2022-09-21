@@ -215,10 +215,12 @@ bool AP_Filesystem_Mission::check_file_name(const char *name, enum MAV_MISSION_T
         mtype = MAV_MISSION_TYPE_MISSION;
         return true;
     }
+#if AP_FENCE_ENABLED
     if (strcmp(name, "fence.dat") == 0) {
         mtype = MAV_MISSION_TYPE_FENCE;
         return true;
     }
+#endif
     if (strcmp(name, "rally.dat") == 0) {
         mtype = MAV_MISSION_TYPE_RALLY;
         return true;
