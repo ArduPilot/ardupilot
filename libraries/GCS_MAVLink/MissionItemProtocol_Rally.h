@@ -2,6 +2,8 @@
 
 #include "MissionItemProtocol.h"
 
+#if HAL_RALLY_ENABLED
+
 class MissionItemProtocol_Rally : public MissionItemProtocol {
 public:
     MissionItemProtocol_Rally(class AP_Rally &_rally) :
@@ -41,3 +43,5 @@ private:
     static MAV_MISSION_RESULT convert_MISSION_ITEM_INT_to_RallyLocation(const mavlink_mission_item_int_t &cmd, class RallyLocation &ret) WARN_IF_UNUSED;
 
 };
+
+#endif
