@@ -1147,6 +1147,7 @@ bool AP_Arming::can_checks(bool report)
                 case AP_CANManager::Driver_Type_Scripting:
                 case AP_CANManager::Driver_Type_Scripting2:
                 case AP_CANManager::Driver_Type_Benewake:
+                case AP_CANManager::Driver_Type_MR72:
                     break;
             }
         }
