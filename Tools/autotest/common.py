@@ -9636,6 +9636,15 @@ Also, ignores heartbeats not from our target system'''
 
         self.install_message_hook_context(check_terrain_requests)
 
+    def install_messageprinter_handlers_context(self, messages):
+        '''monitor incoming messages, print them out'''
+        def check_messages(mav, m):
+            if m.get_type() not in messages:
+                return
+            self.progress(self.dump_message_verbose(m))
+
+        self.install_message_hook_context(check_messages)
+
     def SetpointGlobalPos(self, timeout=100):
         """Test set position message in guided mode."""
         # Disable heading and yaw test on rover type
