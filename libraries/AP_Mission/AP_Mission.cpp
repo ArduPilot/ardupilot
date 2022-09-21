@@ -54,6 +54,9 @@ void AP_Mission::init()
     // command list will be cleared if they do not match
     check_eeprom_version();
 
+    // initialize the jump tracking array
+    init_jump_tracking();
+
     // If Mission Clear bit is set then it should clear the mission, otherwise retain the mission.
     if (AP_MISSION_MASK_MISSION_CLEAR & _options) {
         gcs().send_text(MAV_SEVERITY_INFO, "Clearing Mission");
