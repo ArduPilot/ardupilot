@@ -3,11 +3,6 @@ echo "---------- $0 start ----------"
 set -e
 set -x
 
-if [ $EUID == 0 ]; then
-    echo "Please do not run this script as root; don't sudo it!"
-    exit 1
-fi
-
 OPT="/opt"
 # Ardupilot Tools
 ARDUPILOT_TOOLS="Tools/autotest"
@@ -29,7 +24,7 @@ while getopts "yq" opt; do
     esac
 done
 
-APT_GET="sudo apt-get"
+APT_GET="apt-get"
 if $ASSUME_YES; then
     APT_GET="$APT_GET --assume-yes"
 fi
@@ -114,7 +109,7 @@ if [ "$ARM_PKG_CONFIG_NOT_PRESENT" -eq 1 ]; then
     $APT_GET install pkg-config
     if [ -f /usr/share/pkg-config-crosswrapper ]; then
         # We are on non-Ubuntu so simulate effect of installing pkg-config-arm-linux-gnueabihf.
-        sudo ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
+        ln -sf /usr/share/pkg-config-crosswrapper /usr/bin/arm-linux-gnueabihf-pkg-config
     else
         echo "Warning: unable to link to pkg-config-crosswrapper"
     fi
@@ -165,17 +160,17 @@ function install_arm_none_eabi_toolchain() {
                     heading "Installing toolchain for STM32 Boards"
                     echo "Installing toolchain for STM32 Boards"
                     echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
                     echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    tar xjf gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
                     echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
+                    rm gcc-arm-none-eabi-10-2020-q4-major-x86_64-linux.tar.bz2
                 )
             fi
             echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
             echo "Done!";;
 
         aarch64)
@@ -185,17 +180,17 @@ function install_arm_none_eabi_toolchain() {
                     heading "Installing toolchain for STM32 Boards"
                     echo "Installing toolchain for STM32 Boards"
                     echo "Downloading from ArduPilot server"
-                    sudo wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    wget --progress=dot:giga https://firmware.ardupilot.org/Tools/STM32-tools/gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
                     echo "Installing..."
-                    sudo chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
-                    sudo tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    chmod -R 777 gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    tar xjf gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
                     echo "... Cleaning"
-                    sudo rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
+                    rm gcc-arm-none-eabi-10-2020-q4-major-aarch64-linux.tar.bz2
                 )
             fi
             echo "Registering STM32 Toolchain for ccache"
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
-            sudo ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
+            ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-g++
+            ln -s -f $CCACHE_PATH /usr/lib/ccache/arm-none-eabi-gcc
             echo "Done!";;
     esac
 }
@@ -214,7 +209,7 @@ function maybe_prompt_user() {
 }
 
 heading "Add user to dialout group to allow managing serial ports"
-sudo usermod -a -G dialout $USER
+usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
