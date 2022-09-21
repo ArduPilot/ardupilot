@@ -786,18 +786,18 @@ void RC_Channel::do_aux_function_runcam_osd_control(const AuxSwitchPos ch_flag)
 #endif
 }
 
+#if AP_FENCE_ENABLED
 // enable or disable the fence
 void RC_Channel::do_aux_function_fence(const AuxSwitchPos ch_flag)
 {
-#if AP_FENCE_ENABLED
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
         return;
     }
 
     fence->enable(ch_flag == AuxSwitchPos::HIGH);
-#endif
 }
+#endif
 
 void RC_Channel::do_aux_function_clear_wp(const AuxSwitchPos ch_flag)
 {
@@ -841,9 +841,9 @@ void RC_Channel::do_aux_function_generator(const AuxSwitchPos ch_flag)
 }
 #endif
 
+#if HAL_SPRAYER_ENABLED
 void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
 {
-#if HAL_SPRAYER_ENABLED
     AC_Sprayer *sprayer = AP::sprayer();
     if (sprayer == nullptr) {
         return;
@@ -852,8 +852,8 @@ void RC_Channel::do_aux_function_sprayer(const AuxSwitchPos ch_flag)
     sprayer->run(ch_flag == AuxSwitchPos::HIGH);
     // if we are disarmed the pilot must want to test the pump
     sprayer->test_pump((ch_flag == AuxSwitchPos::HIGH) && !hal.util->get_soft_armed());
-#endif // HAL_SPRAYER_ENABLED
 }
+#endif // HAL_SPRAYER_ENABLED
 
 void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
 {
@@ -968,15 +968,11 @@ bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFun
 bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos ch_flag)
 {
     switch(ch_option) {
-#if AP_CAMERA_ENABLED
-    case AUX_FUNC::CAMERA_TRIGGER:
-        do_aux_function_camera_trigger(ch_flag);
-        break;
-#endif
-
+#if AP_FENCE_ENABLED
     case AUX_FUNC::FENCE:
         do_aux_function_fence(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::GRIPPER:
         do_aux_function_gripper(ch_flag);
@@ -1039,9 +1035,11 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 #endif
 
+#if HAL_SPRAYER_ENABLED
     case AUX_FUNC::SPRAYER:
         do_aux_function_sprayer(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::LOST_VEHICLE_SOUND:
         do_aux_function_lost_vehicle_sound(ch_flag);
@@ -1091,8 +1089,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         AP::gps().set_force_disable_yaw(ch_flag == AuxSwitchPos::HIGH);
         break;
 
-    case AUX_FUNC::DISABLE_AIRSPEED_USE: {
 #if AP_AIRSPEED_ENABLED
+    case AUX_FUNC::DISABLE_AIRSPEED_USE: {
         AP_Airspeed *airspeed = AP::airspeed();
         if (airspeed == nullptr) {
             break;
@@ -1107,9 +1105,9 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             airspeed->force_disable_use(false);
             break;
         }
-#endif
         break;
     }
+#endif
 
     case AUX_FUNC::MOTOR_ESTOP:
         switch (ch_flag) {
@@ -1127,16 +1125,16 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
-    case AUX_FUNC::VISODOM_ALIGN:
 #if HAL_VISUALODOM_ENABLED
+    case AUX_FUNC::VISODOM_ALIGN:
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP_VisualOdom *visual_odom = AP::visualodom();
             if (visual_odom != nullptr) {
                 visual_odom->align_sensor_to_vehicle();
             }
         }
-#endif
         break;
+#endif
 
     case AUX_FUNC::EKF_POS_SOURCE:
         switch (ch_flag) {
@@ -1155,8 +1153,8 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
-    case AUX_FUNC::OPTFLOW_CAL: {
 #if AP_OPTICALFLOW_ENABLED
+    case AUX_FUNC::OPTFLOW_CAL: {
         AP_OpticalFlow *optflow = AP::opticalflow();
         if (optflow == nullptr) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "OptFlow Cal: failed sensor not enabled");
@@ -1167,9 +1165,9 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         } else {
             optflow->stop_calibration();
         }
-#endif
         break;
     }
+#endif
 
 #if !HAL_MINIMIZE_FEATURES
     case AUX_FUNC::KILL_IMU1:
@@ -1181,8 +1179,12 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         break;
 #endif // HAL_MINIMIZE_FEATURES
 
-    case AUX_FUNC::CAM_MODE_TOGGLE: {
 #if AP_CAMERA_ENABLED
+    case AUX_FUNC::CAMERA_TRIGGER:
+        do_aux_function_camera_trigger(ch_flag);
+        break;
+
+    case AUX_FUNC::CAM_MODE_TOGGLE: {
         // Momentary switch to for cycling camera modes
         AP_Camera *camera = AP_Camera::get_singleton();
         if (camera == nullptr) {
@@ -1199,12 +1201,12 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
             camera->cam_mode_toggle();
             break;
         }
-#endif
         break;
     }
+#endif
 
-    case AUX_FUNC::RETRACT_MOUNT1: {
 #if HAL_MOUNT_ENABLED
+    case AUX_FUNC::RETRACT_MOUNT1: {
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
             break;
@@ -1220,20 +1222,18 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
                 mount->set_mode_to_default(0);
                 break;
         }
-#endif
         break;
     }
 
     case AUX_FUNC::MOUNT_LOCK: {
-#if HAL_MOUNT_ENABLED
         AP_Mount *mount = AP::mount();
         if (mount == nullptr) {
             break;
         }
         mount->set_yaw_lock(ch_flag == AuxSwitchPos::HIGH);
-#endif
         break;
     }
+#endif
 
     case AUX_FUNC::LOG_PAUSE: {
         AP_Logger *logger = AP_Logger::get_singleton();
@@ -1280,18 +1280,18 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         AP::ahrs().request_yaw_reset();
         break;
 
+#if HAL_TORQEEDO_ENABLED
     // clear torqeedo error
     case AUX_FUNC::TORQEEDO_CLEAR_ERR: {
-#if HAL_TORQEEDO_ENABLED
         if (ch_flag == AuxSwitchPos::HIGH) {
             AP_Torqeedo *torqeedo = AP_Torqeedo::get_singleton();
             if (torqeedo != nullptr) {
                 torqeedo->clear_motor_error();
             }
         }
-#endif
         break;
     }
+#endif
 
     // do nothing for these functions
     case AUX_FUNC::MOUNT1_ROLL:
