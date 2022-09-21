@@ -615,14 +615,6 @@
 // Fence, Rally and Terrain and AC_Avoidance defaults
 //
 
-#ifndef AC_RALLY
- #define AC_RALLY   ENABLED
-#endif
-
-#if AP_TERRAIN_AVAILABLE && !AC_RALLY
- #error Terrain relies on Rally which is disabled
-#endif
-
 #ifndef AC_AVOID_ENABLED
  #define AC_AVOID_ENABLED   ENABLED
 #endif

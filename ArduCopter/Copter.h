@@ -500,7 +500,7 @@ private:
 #endif
 
     // Rally library
-#if AC_RALLY == ENABLED
+#if HAL_RALLY_ENABLED
     AP_Rally_Copter rally;
 #endif
 
