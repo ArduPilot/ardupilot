@@ -95,10 +95,6 @@
 #include <AC_Avoidance/AC_Avoid.h>           // Stop at fence library
 #endif
 
-#if AC_RALLY == ENABLED
-#include <AP_Rally/AP_Rally.h>           // Rally point library
-#endif
-
 #include <AP_Camera/AP_Camera.h>          // Photo or video camera
 
 #if AP_SCRIPTING_ENABLED
@@ -348,7 +344,7 @@ private:
 #endif
 
     // Rally library
-#if AC_RALLY == ENABLED
+#if HAL_RALLY_ENABLED
     AP_Rally rally;
 #endif
 
