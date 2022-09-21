@@ -74,7 +74,7 @@ protected:
     // reads the temperature word from the battery
     virtual void read_temp(void);
 
-    // reads the temperature word from the battery
+    // reads the current word from the battery
     virtual void read_current(void);
 
     // reads the serial number if it's not already known

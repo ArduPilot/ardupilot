@@ -6,7 +6,7 @@
 #define BATTMONITOR_SMBUS_BOARD_TEMP 0x08       // Temperature of BATMON PCB
 #define BATTMONITOR_SMBUS_TEMP_EXTERNAL_1 0x48  // Temperature of first external thermistor
 #define BATTMONITOR_SMBUS_TEMP_EXTERNAL_2 0x49  // Temperature of second external thermistor
-#define BATTMONITOR_BATMON_DECI_CURRENT 0x41    // Current drained in deciCurrent (int16)
+#define BATTMONITOR_BATMON_DECI_CURRENT 0x41    // Current drained in deci-Ampere (int16)
 
 
 // return the maximum of the internal and external temperature sensors
