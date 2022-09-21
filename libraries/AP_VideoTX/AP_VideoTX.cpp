@@ -515,7 +515,7 @@ void AP_VideoTX::change_power(int8_t position)
     debug("looking for pos %d power level %d from %d", position, level, num_active_levels);
     uint16_t power = 0;
     for (uint8_t i = 0, j = 0; i < num_active_levels; i++, j++) {
-        while (_power_levels[j].active == PowerActive::Inactive && j < VTX_MAX_POWER_LEVELS-1) {
+        while (j < VTX_MAX_POWER_LEVELS-1 && _power_levels[j].active == PowerActive::Inactive) {
             j++;
         }
         if (i == level) {
