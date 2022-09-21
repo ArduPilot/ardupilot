@@ -214,7 +214,3 @@
     MASK_LOG_CAMERA | \
     MASK_LOG_MOTBATT
 #endif
-
-#ifndef AC_RALLY
-#define AC_RALLY   DISABLED
-#endif
