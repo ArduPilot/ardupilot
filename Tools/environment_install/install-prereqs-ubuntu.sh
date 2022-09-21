@@ -209,7 +209,7 @@ function maybe_prompt_user() {
 }
 
 heading "Add user to dialout group to allow managing serial ports"
-usermod -a -G dialout $USER
+usermod -a -G dialout root
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
