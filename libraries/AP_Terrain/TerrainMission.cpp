@@ -115,6 +115,7 @@ void AP_Terrain::update_mission_data(void)
 #endif  // AP_MISSION_ENABLED
 }
 
+#if HAL_RALLY_ENABLED
 /*
   check that we have fetched all rally terrain data
  */
@@ -171,5 +172,6 @@ void AP_Terrain::update_rally_data(void)
         next_rally_index++;
     }
 }
+#endif
 
 #endif // AP_TERRAIN_AVAILABLE
