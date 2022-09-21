@@ -1,8 +1,10 @@
 #pragma once
 
-#include "MissionItemProtocol.h"
+#include <AP_Rally/AP_Rally.h>
 
 #if HAL_RALLY_ENABLED
+
+#include "MissionItemProtocol.h"
 
 class MissionItemProtocol_Rally : public MissionItemProtocol {
 public:
@@ -44,4 +46,4 @@ private:
 
 };
 
-#endif
+#endif  // HAL_RALLY_ENABLED
