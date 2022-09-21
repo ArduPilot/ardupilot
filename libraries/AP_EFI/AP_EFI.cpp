@@ -23,6 +23,7 @@
 #include "AP_EFI_DroneCAN.h"
 #include "AP_EFI_Currawong_ECU.h"
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
 #include <AP_CANManager/AP_CANManager.h>
