@@ -155,7 +155,7 @@ void AC_WPNav::wp_and_spline_init(float speed_cms, Vector3f stopping_point)
     _wp_accel_cmss.set_and_save_ifchanged((_wp_accel_cmss <= 0) ? WPNAV_ACCELERATION : wp_accel_cmss);
     
     // check _wp_radius_cm is reasonable
-    _wp_radius_cm.set_and_save_ifchanged(MAX(_wp_radius_cm, WPNAV_WP_RADIUS_MIN));
+    _wp_radius_cm.set_and_save_ifchanged(MAX(_wp_radius_cm.get(), WPNAV_WP_RADIUS_MIN));
 
     // check _wp_speed
     _wp_speed_cms.set_and_save_ifchanged(MAX(_wp_speed_cms, WPNAV_WP_SPEED_MIN));
@@ -504,7 +504,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
     if (!_this_leg_is_spline) {
         // update target position, velocity and acceleration
         target_pos = _origin;
-        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm, _scurve_accel_corner, _flags.fast_waypoint, _track_scalar_dt * vel_scaler_dt * dt, target_pos, target_vel, target_accel);
+        s_finished = _scurve_this_leg.advance_target_along_track(_scurve_prev_leg, _scurve_next_leg, _wp_radius_cm.get(), _scurve_accel_corner, _flags.fast_waypoint, _track_scalar_dt * vel_scaler_dt * dt, target_pos, target_vel, target_accel);
     } else {
         // splinetarget_vel
         target_vel = curr_target_vel;
@@ -539,7 +539,7 @@ bool AC_WPNav::advance_wp_target_along_track(float dt)
             } else {
                 // regular waypoints also require the copter to be within the waypoint radius
                 const Vector3f dist_to_dest = curr_pos - _destination;
-                if (dist_to_dest.length_squared() <= sq(_wp_radius_cm)) {
+                if (dist_to_dest.length_squared() <= sq(_wp_radius_cm.get())) {
                     _flags.reached_destination = true;
                 }
             }

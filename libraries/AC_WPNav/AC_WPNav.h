@@ -144,11 +144,11 @@ public:
 
     // reached_wp_destination_xy - true if within RADIUS_CM of waypoint in x/y
     bool reached_wp_destination_xy() const {
-        return get_wp_distance_to_destination() < _wp_radius_cm;
+        return get_wp_distance_to_destination() < _wp_radius_cm.get();
     }
 
     // get wp_radius parameter value in cm
-    float get_wp_radius_cm() const { return _wp_radius_cm; }
+    float get_wp_radius_cm() const { return _wp_radius_cm.get(); }
 
     /// update_wpnav - run the wp controller - should be called at 100hz or higher
     virtual bool update_wpnav();
