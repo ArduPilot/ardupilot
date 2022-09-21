@@ -345,8 +345,10 @@ void AP_Terrain::update(void)
     // check for pending mission data
     update_mission_data();
 
+#if HAL_RALLY_ENABLED
     // check for pending rally data
     update_rally_data();
+#endif
 
     // update tiles surrounding our current location:
     if (pos_valid) {
