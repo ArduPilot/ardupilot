@@ -186,11 +186,12 @@ public:
 
     // FFT support access
 #if HAL_WITH_DSP
-    const Vector3f     &get_raw_gyro(void) const { return _gyro_raw[_primary_gyro]; }
+    const Vector3f& get_gyro_for_fft(void) const { return _gyro_for_fft[_primary_gyro]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t instance, uint8_t axis) { return _gyro_window[instance][axis]; }
     FloatBuffer&  get_raw_gyro_window(uint8_t axis) { return get_raw_gyro_window(_primary_gyro, axis); }
     uint16_t get_raw_gyro_rate_hz() const { return get_raw_gyro_rate_hz(_primary_gyro); }
     uint16_t get_raw_gyro_rate_hz(uint8_t instance) const { return _gyro_raw_sample_rates[_primary_gyro]; }
+    bool has_fft_notch() const;
 #endif
     bool set_gyro_window_size(uint16_t size);
     // get accel offsets in m/s/s
@@ -525,9 +526,14 @@ private:
     Vector3f _gyro_filtered[INS_MAX_INSTANCES];
 #if HAL_WITH_DSP
     // Thread-safe public version of _last_raw_gyro
-    Vector3f _gyro_raw[INS_MAX_INSTANCES];
+    Vector3f _gyro_for_fft[INS_MAX_INSTANCES];
+    Vector3f _last_gyro_for_fft[INS_MAX_INSTANCES];
     FloatBuffer _gyro_window[INS_MAX_INSTANCES][XYZ_AXIS_COUNT];
     uint16_t _gyro_window_size;
+    // capture a gyro window after the filters
+    LowPassFilter2pVector3f _post_filter_gyro_filter[INS_MAX_INSTANCES];
+    bool _post_filter_fft;
+    uint8_t _fft_window_phase;
 #endif
     bool _new_accel_data[INS_MAX_INSTANCES];
     bool _new_gyro_data[INS_MAX_INSTANCES];
