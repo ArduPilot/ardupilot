@@ -107,30 +107,33 @@ void GCS_MAVLINK_Copter::send_position_target_global_int()
         return;
     }
 
+    const Vector3f& vel_target = copter.pos_control->get_vel_target_cms();
+    const Vector3f& acc_target = copter.pos_control->get_accel_target_cmss();
+    const float& yaw_target = copter.pos_control->get_yaw_cd();
+    const float& yaw_rate_target = copter.pos_control->get_yaw_rate_cds();
+
     // convert altitude frame to AMSL (this may use the terrain database)
     if (!target.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
         return;
     }
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
+        POSITION_TARGET_TYPEMASK_LAST_BYTE, // accept everything
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
         target.alt * 0.01f, // altitude is sent as a float
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
-        0.0f, // yaw
-        0.0f); // yaw_rate
+        vel_target.x * 0.01f, // vx
+        vel_target.y * 0.01f, // vy
+        vel_target.z * -0.01f, // vz
+        acc_target.x * 0.01f, // afx
+        acc_target.y * 0.01f, // afy
+        acc_target.z * -0.01f, // afz
+        ToRad(yaw_target * 0.01f), // yaw
+        ToRad(yaw_rate_target * 0.01f)); // yaw_rate
 }
 
 void GCS_MAVLINK_Copter::send_position_target_local_ned()
