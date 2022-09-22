@@ -1728,7 +1728,7 @@ class AutoTestPlane(AutoTest):
         self.set_parameters({
             "ARSPD_OPTIONS": 15,
             "ARSPD_USE": 1,
-            "SIM_WIND_SPD": 10,
+            "SIM_WIND_SPD": 7,
             "SIM_WIND_DIR": 0,
             "ARSPD_WIND_MAX": 15,
         })
