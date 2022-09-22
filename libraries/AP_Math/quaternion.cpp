@@ -534,6 +534,8 @@ void QuaternionT<T>::from_axis_angle_fast(const Vector3<T> &axis, T theta)
     q4 = axis.z * st2;
 }
 
+// create a quaternion by integrating an angular velocity over some time_delta, which is 
+// assumed to be small
 template <typename T>
 void QuaternionT<T>::from_angular_velocity(const Vector3<T>& angular_velocity, float time_delta)
 {
