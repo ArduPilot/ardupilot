@@ -305,6 +305,9 @@ public:
     void send_extended_sys_state() const;
     void send_local_position() const;
     void send_vfr_hud();
+//OW
+    void send_frsky_passthrough_array();
+//OWEND
     void send_vibration() const;
     void send_gimbal_device_attitude_status() const;
     void send_named_float(const char *name, float value) const;

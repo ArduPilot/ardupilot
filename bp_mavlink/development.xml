@@ -22,5 +22,13 @@
       <field type="uint8_t" name="mission_type" enum="MAV_MISSION_TYPE">Mission type.</field>
       <field type="uint32_t" name="checksum">CRC32 checksum of current plan for specified type.</field>
     </message>
+    <!-- //OW -->
+    <message id="236" name="FRSKY_PASSTHROUGH_ARRAY">
+      <description>Frsky SPort passthrough container.</description>
+      <field type="uint32_t" name="time_boot_ms" units="ms">Timestamp (time since system boot).</field>
+      <field type="uint8_t" name="count">Number of passthrough packets in this message.</field>
+      <field type="uint8_t[240]" name="packet_buf">Passthrough packet buf. A packet has 6 bytes: uint16_t id + uint32_t data. The array has space for 40 packets.</field>
+    </message>
+    <!-- //OWEND -->
   </messages>
 </mavlink>
