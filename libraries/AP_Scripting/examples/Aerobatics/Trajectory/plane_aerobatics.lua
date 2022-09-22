@@ -215,6 +215,30 @@ local function PI_controller(kP,kI,iMax)
    return self
 end
 
+local function speed_controller(kP_param,kI_param, kFF_roll_param, kFF_pitch_param, Imax)
+   local self = {}
+   local kFF_roll = kFF_roll_param
+   local kFF_pitch = kFF_pitch_param
+   local PI = PI_controller(kP_param:get(), kI_param:get(), Imax)
+
+   function self.update(target)
+      local current_speed = ahrs:get_velocity_NED():length()
+      local throttle = PI.update(target, current_speed)
+      throttle = throttle + math.sin(ahrs:get_pitch())*kFF_pitch:get()
+      throttle = throttle + math.abs(math.sin(ahrs:get_roll()))*kFF_roll:get()
+      return throttle
+   end
+
+   function self.reset()
+      PI.reset(0)
+      local temp_throttle = self.update(ahrs:get_velocity_NED():length())
+      local current_throttle = SRV_Channels:get_output_scaled(k_throttle)
+      PI.reset(current_throttle-temp_throttle)
+   end
+
+   return self
+end
+
 local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
    local self = {}
    local kP = kP_param
@@ -241,7 +265,7 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
 end
 
 local height_PI = height_controller(HGT_P, HGT_I, HGT_KE_BIAS, 20.0)
-local speed_PI = PI_controller(SPD_P:get(), SPD_I:get(), 100.0)
+local speed_PI = speed_controller(SPD_P, SPD_I, HGT_KE_BIAS, THR_PIT_FF, 100.0)
 
 
 function euler_rate_ef_to_bf(rrate, prate, yrate, roll, pitch, yaw)
@@ -289,219 +313,6 @@ function recover_alt()
        local target_pitch = height_PI.update(initial_height)
        local pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
        return target_pitch, pitch_rate, yaw_rate
-end
-
---  start of trick routines---------------------------------------------------------------------------------
-function do_axial_roll(arg1, arg2)
-   -- constant roll rate axial roll, arg1 roll rate, arg2 is number of rolls
-   if not running then
-      running = true
-      repeat_count = arg2 -1
-      roll_stage = 0
-      height_PI.reset()
-      gcs:send_text(0, string.format("Starting roll"))
-   end
-   local roll_rate = arg1
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
-   if roll_stage == 0 then
-      if roll_deg > 45 then
-         roll_stage = 1
-      end
-   elseif roll_stage == 1 then
-      if roll_deg > -5 and roll_deg < 5 then
-         -- we're done with a roll
-         gcs:send_text(0, string.format("Finished roll r=%.1f p=%.1f", roll_deg, pitch_deg))
-         if repeat_count > 0 then
-            roll_stage = 0
-            repeat_count = repeat_count - 1
-         else
-         running = false
-         vehicle:nav_script_time_done(last_id)
-         roll_stage = 2
-         return
-         end
-      end
-   end
-   if roll_stage < 2 then
-      throttle = throttle_controller()
-      target_pitch = height_PI.update(initial_height)
-      pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
-      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
-   end
-end
-
-local loop_stage = 0
-local target_vel
-
-function do_loop(arg1, arg2)
-   -- do one loop with controllable pitch rate arg1 is pitch rate, arg2 number of loops, 0 indicates 1/2 cuban8 reversal
-   if not running then
-      running = true
-      loop_stage = 0 
-      repeat_count = arg2 -1  
-      target_vel = ahrs:get_velocity_NED():length()
-      if arg2 ~=0 then
-        gcs:send_text(0, string.format("Starting loop"))
-      else
-        gcs:send_text(0, string.format("Starting immelman"))
-      end
-   end
-
-   local throttle = throttle_controller()
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
-   local vel = ahrs:get_velocity_NED():length()
-   local pitch_rate = arg1
-   local pitch_rate = pitch_rate * (1+ 2*((vel/target_vel)-1)) --increase/decrease rate based on velocity to round loop
-   pitch_rate = constrain(pitch_rate,.5 * arg1, 3 * arg1)
-   
-   if loop_stage == 0 then
-      if pitch_deg > 60 then
-         loop_stage = 1
-      end
-   elseif loop_stage == 1 then
-      if (math.abs(roll_deg) < 90 and pitch_deg > -5 and pitch_deg < 5 and repeat_count >= 0) then 
-         -- we're done with loop
-         gcs:send_text(0, string.format("Finished loop p=%.1f", pitch_deg))
-         loop_stage = 2  --now recover stage
-         height_PI.reset()
-      elseif (math.abs(roll_deg) > 90 and pitch_deg > -5 and pitch_deg < 5 and repeat_count < 0) then
-         gcs:send_text(0, string.format("Finished immelman p=%.1f", pitch_deg)) 
-         loop_stage = 2  --now recover stage
-         height_PI.reset()
-      end
-   elseif loop_stage == 2 then
-         -- recover alt if above or below start and terminate
-    if math.abs(ahrs:get_position():alt()*0.01 - initial_height) > 3 then
-       throttle, pitch_rate, yaw_rate = recover_alt()
-    elseif repeat_count > 0 then
-    loop_stage = 0
-    repeat_count = repeat_count - 1
-    else 
-       running = false
-       --gcs:send_text(0, string.format("Recovered entry alt"))
-       vehicle:nav_script_time_done(last_id)
-       return
-    end
-  end
-  throttle = throttle_controller()
-  if loop_stage == 2 or loop_stage == 0 then 
-     level_type = 0
-  else
-     level_type = 1
-  end
-  if math.abs(pitch_deg) > 85 and  math.abs(pitch_deg) < 95 then
-     roll_rate = 0
-  else
-     roll_rate = earth_frame_wings_level(level_type)
-  end
-   vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, 0)
-end
-
-local rolling_circle_stage = 0
-local rolling_circle_yaw = 0
-local rolling_circle_last_ms = 0
-
-function do_rolling_circle(arg1, arg2)
-   -- constant roll rate circle roll, arg1 radius of circle, positive to right, neg to left, arg2 is number of rolls to do
-   if not running then
-      running = true
-      rolling_circle_stage = 0
-      rolling_circle_yaw_deg = 0
-      rolling_circle_last_ms = millis()
-      height_PI.reset()
-      gcs:send_text(0, string.format("Starting rolling circle"))
-   end
-   local yaw_rate_dps = arg1
-   local roll_rate_dps = arg2
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
-   local yaw_deg = math.deg(ahrs:get_yaw())
-   local now_ms = millis()
-   local dt = (now_ms - rolling_circle_last_ms):tofloat() * 0.001
-   rolling_circle_last_ms = now_ms
-
-   rolling_circle_yaw_deg = rolling_circle_yaw_deg + yaw_rate_dps * dt
-
-   if rolling_circle_stage == 0 then
-      if math.abs(rolling_circle_yaw_deg) > 10.0 then
-         rolling_circle_stage = 1
-      end
-   elseif rolling_circle_stage == 1 then
-      if math.abs(rolling_circle_yaw_deg) >= 360.0 then
-         running = false
-         -- we're done
-         gcs:send_text(0, string.format("Finished rollcircle r=%.1f p=%.1f", roll_deg, pitch_deg))
-         vehicle:nav_script_time_done(last_id)
-         rolling_circle_stage = 2
-         return
-      end
-   end
-   if rolling_circle_stage < 2 then
-      target_pitch = height_PI.update(initial_height)
-      vel = ahrs:get_velocity_NED()
-      pitch_rate, yaw_rate = pitch_controller(target_pitch, wrap_360(rolling_circle_yaw_deg+initial_yaw_deg), PITCH_TCONST:get())
-      throttle = throttle_controller()
-      throttle = constrain(throttle, 0, 100.0)
-      vehicle:set_target_throttle_rate_rpy(throttle, roll_rate_dps, pitch_rate, yaw_rate)
-   end
-end
-
-local knife_edge_ms = 0
-function do_knife_edge(arg1,arg2)
-  -- arg1 is angle +/-180, duration is arg2
-    local now = millis():tofloat() * 0.001
-    if not running then
-        running = true
-        height_PI.reset()
-        knife_edge_s = now
-        gcs:send_text(0, string.format("%d Knife edge", arg1))
-    end
-    local i=0
-    if (now - knife_edge_s) < arg2 then
-        local roll_deg = math.deg(ahrs:get_roll())
-        local roll_angle_error = (arg1 - roll_deg)
-        if math.abs(roll_angle_error) > 180 then
-         if roll_angle_error > 0 then
-           roll_angle_error = roll_angle_error - 360
-         else 
-           roll_angle_error= roll_angle_error +360
-         end 
-        end
-        roll_rate = roll_angle_error/RLL2SRV_TCONST:get()
-        target_pitch = height_PI.update(initial_height)
-        pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
-        throttle = throttle_controller()
-        vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
-    else
-        gcs:send_text(0, string.format("Finished Knife edge", arg1))
-        vehicle:nav_script_time_done(last_id)
-    return
-    end
-end
-
--- fly level for a time..allows full altitude recovery after trick
-function do_pause(arg1,arg2)
-    -- arg1 is time of pause in sec, arg2 is unused
-    local now = millis():tofloat() * 0.001
-    if not running then
-        running = true
-        height_PI.reset()
-        knife_edge_s = now
-        gcs:send_text(0, string.format("%dsec Pause", arg1))
-    end
-    local i=0
-    if (now - knife_edge_s) < arg1 then
-        roll_rate = earth_frame_wings_level(0)
-        target_pitch = height_PI.update(initial_height)
-        pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
-        throttle = throttle_controller()
-        vehicle:set_target_throttle_rate_rpy(throttle, roll_rate, pitch_rate, yaw_rate)
-    else
-        vehicle:nav_script_time_done(last_id)
-    return
-    end
 end
 
 function get_wp_location(i)
@@ -565,8 +376,24 @@ end
 
 function path_rolling_circle(t, radius, num_rolls)
    --t = t*math.pi*2
-   local vec = makeVector3f(math.sin(2*math.pi*t), 1.0-math.cos(2*math.pi*t), 0)
-   return vec:scale(radius), t*num_rolls*2*math.pi
+   local vec = Vector3f()
+   if radius < 0.0 then
+      vec = makeVector3f(math.sin(2*math.pi*t), -1.0+math.cos(2*math.pi*t), 0)
+   else
+      vec = makeVector3f(math.sin(2*math.pi*t), 1.0-math.cos(2*math.pi*t), 0)
+   end
+   return vec:scale(math.abs(radius)), t*num_rolls*2*math.pi
+end
+
+function path_banked_circle(t, radius, bank_angle)
+   --t = t*math.pi*2
+   local vec = Vector3f()
+   if radius < 0.0 then
+      vec = makeVector3f(math.sin(2*math.pi*t), -1.0+math.cos(2*math.pi*t), 0)
+   else
+      vec = makeVector3f(math.sin(2*math.pi*t), 1.0-math.cos(2*math.pi*t), 0)
+   end
+   return vec:scale(math.abs(radius)), math.deg(bank_angle)
 end
 
 function test_height_control(t, length, unused)
@@ -593,19 +420,21 @@ function test_lane_change(t, length, unused)
    end
 end
 
-function axial_roll_path(t, length, unused)
-   return makeVector3f(t*length, 0.0, 0.0), 4*math.pi*t
+function path_straight_roll(t, length, num_rolls)
+
+   local vec = makeVector3f(t*length, 0.0, 0.0)
+   return vec, t*num_rolls*2*math.pi
 end
+
 
 --todo: change y coordinate to z for vertical box
 --function aerobatic_box(t, l, w, r):
 function horizontal_aerobatic_box(t, arg1, arg2)
    
    --gcs:send_text(0, string.format("t val: %f", t))
-
-   local l = 600
-   local w = 200
-   local r = 140
+   local r = math.min(arg1, arg2)/3.0
+   local l = arg1 - 2*r
+   local w = arg2 - 2*r
    local perim = 2*l + 2*w + 2*math.pi*r
    local pos
    if (t < 0.5*l/(perim)) then
@@ -866,9 +695,7 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
 
       height_PI.reset()
 
-      speed_PI.set_P(SPD_P:get())
-      speed_PI.set_I(SPD_I:get())
-      speed_PI.reset(math.max(SRV_Channels:get_output_scaled(k_throttle), TRIM_THROTTLE:get()))
+      speed_PI.reset()
 
       --path_var.positions[-1] is not used in initial runthrough
       path_var.positions_ef[0] = corrected_position_t0_ef
@@ -913,9 +740,8 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    local t = path_var.path_t
 
    if t > 1.0 then --done
-      running = false
       vehicle:nav_script_time_done(last_id)
-      return
+      return false
    end
 
    --where we aim to be on the path at this timestamp
@@ -1005,7 +831,7 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
 
    --logger.write("ACCO",'r,p,y', 'fff', orientation_rel_ef_with_roll_angle:get_euler_roll(), orientation_rel_ef_with_roll_angle:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_yaw())
    --logger.write("ACCQ",'q1,q2,q3,q4', 'ffff', orientation_rel_ef_with_roll_angle:q1(),orientation_rel_ef_with_roll_angle:q2(),orientation_rel_ef_with_roll_angle:q3(),orientation_rel_ef_with_roll_angle:q4() )
-   --logger.write("IORI",'r,p,y','fff',ahrs:get_roll(), ahrs:get_pitch(), ahrs:get_yaw())
+   logger.write("IORI",'r,p,y','fff',ahrs:get_roll(), ahrs:get_pitch(), ahrs:get_yaw())
    local roll_error = orientation_rel_ef_with_roll_angle*ahrs:get_quaternion():inverse()
    roll_error:normalize()
    local err_axis_ef, err_angle = to_axis_and_angle(roll_error)
@@ -1021,11 +847,21 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    --logger.write("CAV",'x,y,z','fff',angular_velocity_bf:x(),angular_velocity_bf:y(),angular_velocity_bf:z())
 
    local target_speed = target_groundspeed()--TRIM_ARSPD_CM:get()*0.01
-   throttle = speed_PI.update(target_speed, vel_length)
+   throttle = speed_PI.update(target_speed)
    throttle = constrain(throttle, 0, 100.0)
    vehicle:set_target_throttle_rate_rpy(throttle, angular_velocity_bf:x(), angular_velocity_bf:y(), angular_velocity_bf:z())
-
+   return true
 end
+
+command_table = {}
+command_table[1]={path_figure_eight, "Figure Eight"}
+command_table[2]={path_vertical_circle, "Loop"}
+command_table[3]={horizontal_aerobatic_box, "Horizontal Rectangle"}
+command_table[4]={path_climbing_circle, "Climbing Circle"}
+command_table[5]={vertical_aerobatic_box, "Vertical Box"}
+command_table[6]={path_banked_circle, "Banked Circle"}
+command_table[7]={path_straight_roll, "Axial Roll"}
+command_table[8]={path_rolling_circle, "Rolling Circle"}
 
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
@@ -1036,7 +872,7 @@ function update()
          last_id = id
          repeat_count = 0
          initial_yaw_deg = math.deg(ahrs:get_yaw())
-         gcs:send_text(0, string.format("initial yaw deg: %f", initial_yaw_deg ))
+         gcs:send_text(0, string.format("Starting %s!", command_table[cmd][2] ))
 
          initial_height = ahrs:get_position():alt()*0.01
          -- work out yaw between previous WP and next WP
@@ -1058,40 +894,10 @@ function update()
          wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
          initial_yaw_deg = wp_yaw_deg
       end
-      if cmd == 1 then
-         do_axial_roll(arg1, arg2)
-      elseif cmd == 2 then
-         do_loop(arg1, arg2)
-      elseif cmd == 3 then
-         do_rolling_circle(arg1, arg2)
-      elseif cmd ==4 then
-         do_knife_edge(arg1,arg2)
-      elseif cmd == 5 then
-         do_pause(arg1,arg2)
-      elseif cmd == 6 then
-         do_path(path_circle, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 7 then
-         do_path(path_figure_eight, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 8 then
-         do_path(path_vertical_circle, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 9 then
-         do_path(horizontal_aerobatic_box, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 10 then
-         do_path(path_climbing_circle, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 11 then
-         do_path(vertical_aerobatic_box, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 12 then
-         do_path(knife_edge_circle, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 13 then
-         do_path(path_straight_roll, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 14 then
-         do_path(path_rolling_circle   , initial_yaw_deg, arg1, arg2)
-      elseif cmd == 15 then
-         do_path(test_height_control, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 16 then
-         do_path(test_lane_change, initial_yaw_deg, arg1, arg2)
-      elseif cmd == 17 then
-         do_path(axial_roll_path, initial_yaw_deg, arg1, arg2)
+      local done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2)
+      if done then
+         gcs:send_text(0, string.format("Finishing %s!", command_table[cmd][2] ))
+         running = false
       end
    else
       running = false
