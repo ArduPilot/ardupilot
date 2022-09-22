@@ -146,6 +146,10 @@ public:
     // get lon1-lon2, wrapping at -180e7 to 180e7
     static int32_t diff_longitude(int32_t lon1, int32_t lon2);
 
+    // find the projection of point with lookahead on a line segment
+    // lookahead > 0
+    bool get_los_point(const Location &origin, const Location &destination, const float lookahead, Location &return_loc) const;
+
 private:
 
     // scaling factor from 1e-7 degrees to meters at equator
