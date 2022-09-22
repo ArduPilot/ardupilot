@@ -911,7 +911,7 @@ function update()
          save_parameters(arg1, arg2)
          done = true
       else 
-         local done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2)
+         done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2)
       end
       if done then
          vehicle:nav_script_time_done(last_id)
