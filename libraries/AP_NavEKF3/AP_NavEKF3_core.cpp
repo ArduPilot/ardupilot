@@ -1109,6 +1109,10 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
 
     if (!inhibitWindStates) {
         ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
+        if (!tasDataDelayed.allowFusion) {
+            // Allow wind states to recover faster when using sideslip fusion with a failed airspeed sesnor
+            windVelVar *= 10.0f;
+        }
         for (uint8_t i=12; i<=13; i++) processNoiseVariance[i] = windVelVar;
     }
 
