@@ -59,13 +59,11 @@ AP_GPS_NOVA::AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::GPS_State &_state,
     }
 }
 
-const char* const AP_GPS_NOVA::_initialisation_blob[6] {
+const char* const AP_GPS_NOVA::_initialisation_blob[4] {
     "\r\n\r\nunlogall\r\n", // cleanup enviroment
-    "log bestposb ontime 0.2 0 nohold\r\n", // get bestpos
-    "log bestvelb ontime 0.2 0 nohold\r\n", // get bestvel
-    "log psrdopb onchanged\r\n", // tersus
-    "log psrdopb ontime 0.2\r\n", // comnav
-    "log psrdopb\r\n" // poll message, as dop only changes when a sat is dropped/added to the visible list
+    "log bestposb ontime 0.2 0 nohold\r\n",
+    "log bestvelb ontime 0.2 0 nohold\r\n",
+    "log psrdopb ontime 0.2 0 nohold\r\n",
 };
 
 // Process all bytes available from the stream
@@ -210,7 +208,7 @@ AP_GPS_NOVA::process_message(void)
 
         state.num_sats = bestposu.svsused;
 
-        state.horizontal_accuracy = (float) ((bestposu.latsdev + bestposu.lngsdev)/2);
+        state.horizontal_accuracy =  norm(bestposu.latsdev, bestposu.lngsdev);
         state.vertical_accuracy = (float) bestposu.hgtsdev;
         state.have_horizontal_accuracy = true;
         state.have_vertical_accuracy = true;
