@@ -64,6 +64,9 @@ local roll_stage = 0
 local MIN_SPEED = 0.1
 local LOOKAHEAD = 1
 
+local arg3 = 0
+local arg4 = 0
+
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
    if v < vmin then
@@ -431,8 +434,11 @@ end
 --function aerobatic_box(t, l, w, r):
 function horizontal_aerobatic_box(t, arg1, arg2)
    
-   --gcs:send_text(0, string.format("t val: %f", t))
-   local r = math.min(arg1, arg2)/3.0
+   local r = math.abs(arg3)
+   if(arg3 <= 0.0) then
+      gcs:send_text(0, string.format("Invalid radius value of : %f, using default.", arg3))
+      r = math.min(arg1, arg2)/3.0
+   end
    local l = arg1 - 2*r
    local w = arg2 - 2*r
    local perim = 2*l + 2*w + 2*math.pi*r
@@ -740,7 +746,6 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    local t = path_var.path_t
 
    if t > 1.0 then --done
-      vehicle:nav_script_time_done(last_id)
       return false
    end
 
@@ -862,6 +867,12 @@ command_table[5]={vertical_aerobatic_box, "Vertical Box"}
 command_table[6]={path_banked_circle, "Banked Circle"}
 command_table[7]={path_straight_roll, "Axial Roll"}
 command_table[8]={path_rolling_circle, "Rolling Circle"}
+command_table[100]={save_parameters,"Reading parameters"}
+
+function save_parameters(arg1, arg2)
+   arg3 = arg1
+   arg4 = arg2
+end
 
 function update()
    id, cmd, arg1, arg2 = vehicle:nav_script_time()
@@ -894,8 +905,16 @@ function update()
          wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
          initial_yaw_deg = wp_yaw_deg
       end
-      local done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2)
+      local done = false
+      if(cmd == 100) then
+         --parameter node
+         save_parameters(arg1, arg2)
+         done = true
+      else 
+         local done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2)
+      end
       if done then
+         vehicle:nav_script_time_done(last_id)
          gcs:send_text(0, string.format("Finishing %s!", command_table[cmd][2] ))
          running = false
       end
