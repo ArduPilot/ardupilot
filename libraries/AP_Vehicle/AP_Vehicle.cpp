@@ -272,6 +272,12 @@ void AP_Vehicle::setup()
 
     custom_rotations.init();
 
+#if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
+    for (uint8_t i = 0; i<ESC_TELEM_MAX_ESCS; i++) {
+        esc_noise[i].set_cutoff_frequency(2);
+    }
+#endif
+
     gcs().send_text(MAV_SEVERITY_INFO, "ArduPilot Ready");
 }
 
@@ -383,6 +389,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if HAL_INS_ACCELCAL_ENABLED
     SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
+#endif
+#if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
+    SCHED_TASK(check_motor_noise,      5,     50, 252),
 #endif
     SCHED_TASK(update_arming,          1,     50, 253),
 };
@@ -738,6 +747,35 @@ void AP_Vehicle::one_Hz_update(void)
         }
 #endif
     }
+}
+
+void AP_Vehicle::check_motor_noise()
+{
+#if HAL_GYROFFT_ENABLED && HAL_WITH_ESC_TELEM
+    if (!hal.util->get_soft_armed() || !gyro_fft.check_esc_noise() || !gyro_fft.using_post_filter_samples() || ins.has_fft_notch()) {
+        return;
+    }
+
+    float esc_data[ESC_TELEM_MAX_ESCS];
+    const uint8_t numf = AP::esc_telem().get_motor_frequencies_hz(ESC_TELEM_MAX_ESCS, esc_data);
+    bool output_error = false;
+
+    for (uint8_t i = 0; i<numf; i++) {
+        if (is_zero(esc_data[i])) {
+            continue;
+        }
+        float energy = gyro_fft.has_noise_at_frequency_hz(esc_data[i]);
+        energy = esc_noise[i].apply(energy, 0.2f);
+        if (energy > 40.0f && AP_HAL::millis() - last_motor_noise_ms > 5000) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Noise %.fdB on motor %u at %.fHz", energy, i+1, esc_data[i]);
+            output_error = true;
+        }
+    }
+
+    if (output_error) {
+        last_motor_noise_ms = AP_HAL::millis();
+    }
+#endif
 }
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;

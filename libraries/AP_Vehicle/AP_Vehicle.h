@@ -57,6 +57,7 @@
 #include <AP_AIS/AP_AIS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
+#include <Filter/LowPassFilter.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -372,6 +373,9 @@ protected:
     // call the arming library's update function
     void update_arming();
 
+    // check for motor noise at a particular frequency
+    void check_motor_noise();
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 #if AP_SIM_ENABLED
@@ -405,6 +409,11 @@ private:
     uint32_t _last_notch_update_ms[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS]; // last time update_dynamic_notch() was run
 
     static AP_Vehicle *_singleton;
+
+#if HAL_GYROFFT_ENABLED && HAL_WITH_ESC_TELEM
+    LowPassFilterFloat esc_noise[ESC_TELEM_MAX_ESCS];
+    uint32_t last_motor_noise_ms;
+#endif
 
     bool done_safety_init;
 
