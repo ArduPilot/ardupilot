@@ -638,7 +638,10 @@ def _build_dynamic_sources(bld):
     if not bld.env.BOOTLOADER:
         bld(
             features='mavgen',
-            source='modules/mavlink/message_definitions/v1.0/all.xml',
+            # //OW
+            #source='modules/mavlink/message_definitions/v1.0/all.xml',
+            source='bp_mavlink/all.xml',
+            # //OWEND
             output_dir='libraries/GCS_MAVLink/include/mavlink/v2.0/',
             name='mavlink',
             # this below is not ideal, mavgen tool should set this, but that's not
