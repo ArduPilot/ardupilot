@@ -846,6 +846,18 @@ bool AP_InertialSensor::set_gyro_window_size(uint16_t size) {
     return true;
 }
 
+#if HAL_WITH_DSP
+bool AP_InertialSensor::has_fft_notch() const
+{
+    for (auto &notch : harmonic_notches) {
+        if (notch.params.enabled() && notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+            return true;
+        }
+    }
+    return false;
+}
+#endif
+
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
@@ -881,6 +893,33 @@ AP_InertialSensor::init(uint16_t loop_rate)
 #if HAL_WITH_DSP
     AP_GyroFFT* fft = AP::fft();
     bool fft_enabled = fft != nullptr && fft->enabled();
+    if (fft_enabled) {
+        _post_filter_fft = fft->using_post_filter_samples();
+    }
+
+    // calculate the position that the FFT window needs to be applied
+    // Use cases:
+    //  Gyro -> FFT window -> FFT Notch1/2 -> Non-FFT Notch2/1 -> LPF -> Filtered Gyro -- Phase 0
+    //  Gyro -> FFT window -> Non-FFT Notch1/2 -> LPF -> Filtered Gyro  -- Phase 0
+    //  Gyro -> Non-FFT Notch1 -> Filtered FFT Window -> FFT Notch2 -> LPF -> Filtered Gyro -- Phase 1
+    //  Gyro -> Non-FFT Notch1/2 -> Non-FFT Notch1/2 -> Filtered FFT Window -> LPF -> Filtered Gyro -- Phase 2
+    //  Gyro -> Non-FFT Notch1/2 -> Filtered FFT Window -> LPF -> Filtered Gyro -- Phase 1
+    //  Gyro -> Filtered FFT Window -> LPF -> Filtered Gyro -- Phase 0
+    //  Gyro -> FFT window -> LPF -> Filtered Gyro -- Phase 0
+    //  Gyro -> Notch1/2 -> LPF -> Filtered Gyro
+
+    if (_post_filter_fft) {
+        for (auto &notch : harmonic_notches) {
+            if (!notch.params.enabled()) {
+                continue;
+            }
+            // window must always come before any FFT notch
+            if (notch.params.tracking_mode() == HarmonicNotchDynamicMode::UpdateGyroFFT) {
+                break;
+            }
+            _fft_window_phase++;
+        }
+    }
 #else
     bool fft_enabled = false;
 #endif
