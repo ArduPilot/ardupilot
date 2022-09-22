@@ -83,6 +83,15 @@ const AP_Param::GroupInfo AR_WPNav::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("JERK", 10, AR_WPNav, _jerk_max, 0),
 
+
+    // @Param: LOOKAHEAD
+    // @DisplayName: LOS lookahead distance
+    // @Units: m
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("LOOKAHEAD", 11, AR_WPNav, _lookahead, 10),
+
     AP_GROUPEND
 };
 
@@ -199,13 +208,13 @@ void AR_WPNav::set_nudge_speed_max(float nudge_speed_max)
 
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav::set_desired_location(const struct Location& destination, Location next_destination)
+bool AR_WPNav::set_desired_location(const struct Location& destination, Location next_destination, bool oa_state)
 {
     // re-initialise if inactive, previous destination has been interrupted or different controller was used
     if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
-        if (!set_origin_and_destination_to_stopping_point()) {
-            return false;
-        }
+        // if (!set_origin_and_destination_to_stopping_point()) {
+        //     return false;
+        // }
         // clear scurves
         _scurve_prev_leg.init();
         _scurve_this_leg.init();
@@ -216,7 +225,9 @@ bool AR_WPNav::set_desired_location(const struct Location& destination, Location
     _scurve_prev_leg = _scurve_this_leg;
 
     // initialise some variables
-    _origin = _destination;
+    if (!oa_state) {
+        _origin = _destination;
+    }
     _destination = destination;
     _orig_and_dest_valid = true;
     _reached_destination = false;
@@ -342,13 +353,13 @@ bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destinati
 {
     // initialise if not active
     if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
-        if (!set_origin_and_destination_to_stopping_point()) {
-            return false;
-        }
+        // if (!set_origin_and_destination_to_stopping_point()) {
+        //     return false;
+        // }
     }
 
     // initialise some variables
-    _origin = _destination;
+    //_origin = _destination;
     _destination = destination;
     _orig_and_dest_valid = true;
     _reached_destination = false;

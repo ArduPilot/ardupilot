@@ -53,8 +53,14 @@ void AR_WPNav_OA::update(float dt)
 
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_active) {
+                Location new_pos;
+                if (current_loc.get_los_point(_origin_oabak, _destination_oabak, _lookahead, new_pos))
+                {
+                    _origin = new_pos;
+                }
+
                 // object avoidance has become inactive so reset target to original destination
-                if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                if (!AR_WPNav::set_desired_location(_destination_oabak, {}, true)) {
                     // this should never happen because we should have an EKF origin and the destination must be valid
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     stop_vehicle = true;
@@ -137,9 +143,9 @@ void AR_WPNav_OA::update(float dt)
 
 // set desired location and (optionally) next_destination
 // next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav_OA::set_desired_location(const struct Location& destination, Location next_destination)
+bool AR_WPNav_OA::set_desired_location(const struct Location& destination, Location next_destination, bool oa_state)
 {
-    const bool ret = AR_WPNav::set_desired_location(destination, next_destination);
+    const bool ret = AR_WPNav::set_desired_location(destination, next_destination, oa_state);
 
     if (ret) {
         // disable object avoidance, it will be re-enabled (if necessary) on next update

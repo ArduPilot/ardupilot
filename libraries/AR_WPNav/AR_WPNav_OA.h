@@ -13,7 +13,7 @@ public:
 
     // set desired location and (optionally) next_destination
     // next_destination should be provided if known to allow smooth cornering
-    bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
+    bool set_desired_location(const Location &destination, Location next_destination = Location(), bool oa_state = false) override WARN_IF_UNUSED;
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     bool reached_destination() const override;
