@@ -16,6 +16,7 @@
    Author: Francisco Ferreira (some code is copied from sitl_gps.cpp)
 
  */
+#define ALLOW_DOUBLE_MATH_FUNCTIONS
 
 #include "AP_NMEA_Output.h"
 
@@ -101,22 +102,25 @@ void AP_NMEA_Output::update()
 
     // format latitude
     char lat_string[13];
-    float deg = fabsf(loc.lat * 1.0e-7f);
+    double deg = fabs(loc.lat * 1.0e-7f);
+    double min_dec = ((fabs(loc.lat) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f; 
     snprintf(lat_string,
              sizeof(lat_string),
              "%02u%08.5f,%c",
              (unsigned) deg,
-             double((deg - int(deg)) * 60),
+             min_dec,
              loc.lat < 0 ? 'S' : 'N');
+
 
     // format longitude
     char lng_string[14];
-    deg = fabsf(loc.lng * 1.0e-7f);
+    deg = fabs(loc.lng * 1.0e-7f);
+    min_dec = ((fabs(loc.lng) - (unsigned)deg * 1.0e7)) * 60 * 1.e-7f; 
     snprintf(lng_string,
              sizeof(lng_string),
              "%03u%08.5f,%c",
              (unsigned) deg,
-             double((deg - int(deg)) * 60),
+             min_dec,
              loc.lng < 0 ? 'W' : 'E');
 
     // format GGA message
