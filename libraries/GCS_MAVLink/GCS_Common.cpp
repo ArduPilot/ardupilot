@@ -2912,6 +2912,8 @@ void GCS_MAVLINK::send_vfr_hud()
 // this is tentative, just demo
 // we probably want some timing, some packets do not need to be send so often
 // maybe we also want to make which packets are send dependent on which streams are enabled
+// or vice versa, modify the streams depending on whether frsky passthorugh is send
+// one also could make it dependent on which rate is higher
 
 void GCS_MAVLINK::send_frsky_passthrough_array()
 {
@@ -2941,7 +2943,7 @@ void GCS_MAVLINK::send_frsky_passthrough_array()
     pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x05, pt->calc_velandyaw(true, true)); // airspeed
     count++;
 
-    if (gcs().vehicle_initialised()) {
+    if (pt->is_available_ap_status()) {
         pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x01, pt->calc_ap_status());
         count++;
     }
@@ -2954,45 +2956,27 @@ void GCS_MAVLINK::send_frsky_passthrough_array()
 
     pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x03, pt->calc_batt(0));
     count++;
-    if (AP::battery().num_instances() > 1) {
+    if (pt->is_available_batt(1)) {
         pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x08, pt->calc_batt(1));
         count++;
     }
 
-    const AP_RPM* rpm = AP::rpm();
-    if ((rpm != nullptr) && (rpm->num_sensors() > 0)) {
+    if (pt->is_available_rpm()) {
         pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x0A, pt->calc_rpm());
         count++;
     }
 
-#if AP_TERRAIN_AVAILABLE
-    const AP_Terrain* terrain = AP::terrain();
-    if ((terrain != nullptr) && terrain->enabled()) {
+    if (pt->is_available_terrain()) {
         pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x0B, pt->calc_terrain());
         count++;
     }
-#endif
 
-#if !APM_BUILD_TYPE(APM_BUILD_Rover)
-    {
-    float a;
-    WITH_SEMAPHORE(AP::ahrs().get_semaphore());
-    if (AP::ahrs().airspeed_estimate_true(a)) {
-        // if we have an airspeed estimate then we have a valid wind estimate
+    if (pt->is_available_wind()) {
         pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x0C, pt->calc_wind());
         count++;
     }
-    }
-#else
-    const AP_WindVane* windvane = AP_WindVane::get_singleton();
-    if ((windvane != nullptr) && windvane->enabled()) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x0C, pt->calc_wind());
-        count++;
-    }
-#endif
 
-    const AP_Mission* mission = AP::mission();
-    if ((mission != nullptr) && (mission->get_current_nav_index() > 0)) {
+    if (pt->is_available_waypoint()) {
         pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::DIY_FIRST_ID + 0x0D, pt->calc_waypoint());
         count++;
     }

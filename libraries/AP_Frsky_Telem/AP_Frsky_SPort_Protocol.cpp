@@ -3,8 +3,6 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_HAL/utility/RingBuffer.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RPM/AP_RPM.h>
@@ -85,37 +83,47 @@ extern const AP_HAL::HAL& hal;
 AP_Frsky_SPort_Protocol *AP_Frsky_SPort_Protocol::singleton;
 
 
-uint32_t AP_Frsky_SPort_Protocol::calc_param(uint8_t* param_id)
+bool AP_Frsky_SPort_Protocol::is_available_batt(uint8_t instance)
 {
-    uint8_t _param_id = *param_id; // cache it because it gets changed inside the switch
-    uint32_t param_value = 0;
+    return AP::battery().num_instances() > instance;
+}
 
-    switch (_param_id) {
-    case NONE:
-    case FRAME_TYPE:
-        param_value = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
-        *param_id = BATT_CAPACITY_1;
-        break;
-    case BATT_CAPACITY_1:
-        param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(0)); // battery pack capacity in mAh
-        *param_id = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : TELEMETRY_FEATURES;
-        break;
-    case BATT_CAPACITY_2:
-        param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(1)); // battery pack capacity in mAh
-        *param_id = TELEMETRY_FEATURES;
-        break;
-    case TELEMETRY_FEATURES:
-#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
-        BIT_SET(param_value, PassthroughFeatures::BIDIR);
+bool AP_Frsky_SPort_Protocol::is_available_ap_status(void)
+{
+    return gcs().vehicle_initialised();
+}
+
+bool AP_Frsky_SPort_Protocol::is_available_rpm(void)
+{
+    const AP_RPM* rpm = AP::rpm();
+    return (rpm != nullptr) && (rpm->num_sensors() > 0);
+}
+
+bool AP_Frsky_SPort_Protocol::is_available_terrain(void)
+{
+#if AP_TERRAIN_AVAILABLE
+    const AP_Terrain* terrain = AP::terrain();
+    return (terrain != nullptr) && terrain->enabled();
 #endif
-#if AP_SCRIPTING_ENABLED
-        BIT_SET(param_value, PassthroughFeatures::SCRIPTING);
+    return false;
+}
+
+bool AP_Frsky_SPort_Protocol::is_available_wind(void)
+{
+#if !APM_BUILD_TYPE(APM_BUILD_Rover)
+    float a;
+    WITH_SEMAPHORE(AP::ahrs().get_semaphore());
+    return AP::ahrs().airspeed_estimate_true(a); // if we have an airspeed estimate then we have a valid wind estimate
+#else
+    const AP_WindVane* windvane = AP::windvane();
+    return (windvane != nullptr) && windvane->enabled();
 #endif
-        *param_id = FRAME_TYPE;
-        break;
-    }
-    //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
-    return (_param_id << PARAM_ID_OFFSET) | (param_value & PARAM_VALUE_LIMIT);
+}
+
+bool AP_Frsky_SPort_Protocol::is_available_waypoint(void)
+{
+    const AP_Mission* mission = AP::mission();
+    return (mission != nullptr) && (mission->get_current_nav_index() > 0);
 }
 
 
@@ -161,6 +169,52 @@ uint32_t AP_Frsky_SPort_Protocol::calc_gps_status(void)
 }
 
 
+uint32_t AP_Frsky_SPort_Protocol::calc_attiandrng(void)
+{
+    const RangeFinder *_rng = RangeFinder::get_singleton();
+
+    AP_AHRS &_ahrs = AP::ahrs();
+    // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
+    uint32_t attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
+    // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
+    attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
+    // rangefinder measurement in cm
+    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    return attiandrng;
+}
+
+
+uint32_t AP_Frsky_SPort_Protocol::calc_velandyaw(bool airspeed_enabled, bool send_airspeed)
+{
+    float vspd = get_vspeed_ms();
+    // vertical velocity in dm/s
+    uint32_t velandyaw = prep_number(roundf(vspd * 10), 2, 1);
+    float airspeed_m;       // m/s
+    float hspeed_m;         // m/s
+    bool airspeed_estimate_true;
+    AP_AHRS &_ahrs = AP::ahrs();
+    {
+        WITH_SEMAPHORE(_ahrs.get_semaphore());
+        hspeed_m = _ahrs.groundspeed(); // default is to use groundspeed
+        airspeed_estimate_true = AP::ahrs().airspeed_estimate_true(airspeed_m);
+    }
+    // airspeed estimate + airspeed option disabled (default) => send airspeed (we give priority to airspeed over groundspeed)
+    // airspeed estimate + airspeed option enabled => alternate airspeed/groundspeed, i.e send airspeed only when _passthrough.send_airspeed==true
+    if (airspeed_estimate_true && (!airspeed_enabled || send_airspeed)) {
+        hspeed_m = airspeed_m;
+    }
+    // horizontal velocity in dm/s
+    velandyaw |= prep_number(roundf(hspeed_m * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
+    // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
+    velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
+    // flag the airspeed bit if required
+    if (airspeed_estimate_true && airspeed_enabled && send_airspeed) {
+        velandyaw |= 1U<<VELANDYAW_ARSPD_OFFSET;
+    }
+    return velandyaw;
+}
+
+
 uint32_t AP_Frsky_SPort_Protocol::calc_batt(uint8_t instance)
 {
     const AP_BattMonitor &_battery = AP::battery();
@@ -181,7 +235,6 @@ uint32_t AP_Frsky_SPort_Protocol::calc_batt(uint8_t instance)
     batt |= ((consumed_mah < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(consumed_mah) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
     return batt;
 }
-
 
 
 uint32_t AP_Frsky_SPort_Protocol::calc_ap_status(void)
@@ -259,51 +312,6 @@ uint32_t AP_Frsky_SPort_Protocol::calc_home(void)
 }
 
 
-uint32_t AP_Frsky_SPort_Protocol::calc_velandyaw(bool airspeed_enabled, bool send_airspeed)
-{
-    float vspd = get_vspeed_ms();
-    // vertical velocity in dm/s
-    uint32_t velandyaw = prep_number(roundf(vspd * 10), 2, 1);
-    float airspeed_m;       // m/s
-    float hspeed_m;         // m/s
-    bool airspeed_estimate_true;
-    AP_AHRS &_ahrs = AP::ahrs();
-    {
-        WITH_SEMAPHORE(_ahrs.get_semaphore());
-        hspeed_m = _ahrs.groundspeed(); // default is to use groundspeed
-        airspeed_estimate_true = AP::ahrs().airspeed_estimate_true(airspeed_m);
-    }
-    // airspeed estimate + airspeed option disabled (default) => send airspeed (we give priority to airspeed over groundspeed)
-    // airspeed estimate + airspeed option enabled => alternate airspeed/groundspeed, i.e send airspeed only when _passthrough.send_airspeed==true
-    if (airspeed_estimate_true && (!airspeed_enabled || send_airspeed)) {
-        hspeed_m = airspeed_m;
-    }
-    // horizontal velocity in dm/s
-    velandyaw |= prep_number(roundf(hspeed_m * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
-    // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
-    // flag the airspeed bit if required
-    if (airspeed_estimate_true && airspeed_enabled && send_airspeed) {
-        velandyaw |= 1U<<VELANDYAW_ARSPD_OFFSET;
-    }
-    return velandyaw;
-}
-
-
-uint32_t AP_Frsky_SPort_Protocol::calc_attiandrng(void)
-{
-    const RangeFinder *_rng = RangeFinder::get_singleton();
-
-    AP_AHRS &_ahrs = AP::ahrs();
-    // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    uint32_t attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
-    // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
-    attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
-    // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
-    return attiandrng;
-}
-
 
 uint32_t AP_Frsky_SPort_Protocol::calc_rpm(void)
 {
@@ -311,6 +319,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_rpm(void)
     if (ap_rpm == nullptr) {
         return 0;
     }
+
     uint32_t value = 0;
     // we send: rpm_value*0.1 as 16 bits signed
     float rpm;
@@ -334,6 +343,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_terrain(void)
     if (terrain == nullptr || !terrain->enabled()) {
         return value;
     }
+
     float height_above_terrain;
     if (terrain->height_above_terrain(height_above_terrain, true)) {
         // vehicle height above terrain
@@ -384,6 +394,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_waypoint(void)
     if (mission == nullptr || vehicle == nullptr) {
         return 0U;
     }
+
     float wp_distance;
     if (!vehicle->get_wp_distance_m(wp_distance)) {
         return 0U;
@@ -399,6 +410,40 @@ uint32_t AP_Frsky_SPort_Protocol::calc_waypoint(void)
     // bearing encoded in 3 degrees increments
     value |= ((uint8_t)roundf(wrap_360(angle) * 0.333f)) << WP_BEARING_OFFSET;
     return value;
+}
+
+
+uint32_t AP_Frsky_SPort_Protocol::calc_param(uint8_t* param_id)
+{
+    uint8_t _param_id = *param_id; // cache it because it gets changed inside the switch
+    uint32_t param_value = 0;
+
+    switch (_param_id) {
+    case NONE:
+    case FRAME_TYPE:
+        param_value = gcs().frame_type(); // see MAV_TYPE in Mavlink definition file common.h
+        *param_id = BATT_CAPACITY_1;
+        break;
+    case BATT_CAPACITY_1:
+        param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(0)); // battery pack capacity in mAh
+        *param_id = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : TELEMETRY_FEATURES;
+        break;
+    case BATT_CAPACITY_2:
+        param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(1)); // battery pack capacity in mAh
+        *param_id = TELEMETRY_FEATURES;
+        break;
+    case TELEMETRY_FEATURES:
+#if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+        BIT_SET(param_value, PassthroughFeatures::BIDIR);
+#endif
+#if AP_SCRIPTING_ENABLED
+        BIT_SET(param_value, PassthroughFeatures::SCRIPTING);
+#endif
+        *param_id = FRAME_TYPE;
+        break;
+    }
+    //Reserve first 8 bits for param ID, use other 24 bits to store parameter value
+    return (_param_id << PARAM_ID_OFFSET) | (param_value & PARAM_VALUE_LIMIT);
 }
 
 

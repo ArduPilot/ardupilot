@@ -12,7 +12,8 @@ public:
         singleton = this;
     }
 
-    static AP_Frsky_SPort_Protocol *get_singleton(void) {
+    static AP_Frsky_SPort_Protocol *get_singleton(void)
+    {
         return singleton;
     }
 
@@ -27,28 +28,40 @@ public:
     };
 
     enum PassthroughFeatures : uint8_t {
-        BIDIR =                 0,
-        SCRIPTING =             1,
+        BIDIR =               0,
+        SCRIPTING =           1,
     };
 
     enum {
-        GPS_LONG_LATI_FIRST_ID    = 0x0800,
-        DIY_FIRST_ID              = 0x5000,
+        GPS_LONG_LATI_FIRST_ID = 0x0800,
+        DIY_FIRST_ID =           0x5000,
     };
+
+    //bool is_available_gps_latlng(void) { return true; }
+    //bool is_available_gps_status(void) { return true; }
+    //bool is_available_attiandrng(void) { return true; }
+    //bool is_available_velandyaw(void) { return true; }
+    bool is_available_batt(uint8_t instance);
+    bool is_available_ap_status(void);
+    //bool is_available_home(void) { return true; }
+    bool is_available_rpm(void);
+    bool is_available_terrain(void);
+    bool is_available_wind(void);
+    bool is_available_waypoint(void);
 
     uint32_t calc_gps_latlng(bool &send_latitude);
     uint32_t calc_gps_status(void);
+    uint32_t calc_attiandrng(void);
+    uint32_t calc_velandyaw(bool airspeed_enabled, bool send_airspeed);
     uint32_t calc_batt(uint8_t instance);
     uint32_t calc_ap_status(void);
     uint32_t calc_home(void);
-    uint32_t calc_attiandrng(void);
     uint32_t calc_rpm(void);
     uint32_t calc_terrain(void);
     uint32_t calc_wind(void);
     uint32_t calc_waypoint(void);
 
     uint32_t calc_param(uint8_t* param_id);
-    uint32_t calc_velandyaw(bool airspeed_enabled, bool send_airspeed);
 
     void pack_packet(uint8_t* buf, uint8_t count, uint16_t id, uint32_t data);
 
