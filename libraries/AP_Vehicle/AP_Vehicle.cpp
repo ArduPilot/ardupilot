@@ -631,14 +631,13 @@ void AP_Vehicle::publish_osd_info()
     nav_info.wp_number = mission->get_current_nav_index();
     osd->set_nav_info(nav_info);
 }
+#endif
 
 void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
 {
     roll = ahrs.roll;
     pitch = ahrs.pitch;
 }
-
-#endif
 
 #if HAL_INS_ACCELCAL_ENABLED
 

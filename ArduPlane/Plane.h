@@ -984,9 +984,7 @@ private:
 
     // ArduPlane.cpp
     void disarm_if_autoland_complete();
-# if OSD_ENABLED
     void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
-#endif
     float tecs_hgt_afe(void);
     void efi_update(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
