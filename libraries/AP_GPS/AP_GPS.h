@@ -24,6 +24,7 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <SITL/SIM_GPS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include "RTCM3_Parser.h"
 
 /**
    maximum number of GPS instances available on this platform. If more
@@ -704,6 +705,8 @@ private:
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
     } *rtcm_buffer;
 
+    RTCM3_Parser *rtcm3_parser;
+
     // re-assemble GPS_RTCM_DATA message
     void handle_gps_rtcm_data(const mavlink_message_t &msg);
     void handle_gps_inject(const mavlink_message_t &msg);
@@ -761,6 +764,7 @@ private:
 
     // logging support
     void Write_GPS(uint8_t instance);
+    void Write_RTCM(const uint8_t *data, uint16_t len);
 
 };
 

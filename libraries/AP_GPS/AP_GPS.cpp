@@ -1313,6 +1313,8 @@ void AP_GPS::inject_data(const uint8_t *data, uint16_t len)
     } else {
         inject_data(_inject_to, data, len);
     }
+
+    Write_RTCM(data, len);
 }
 
 void AP_GPS::inject_data(uint8_t instance, const uint8_t *data, uint16_t len)
@@ -1492,6 +1494,14 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     if (rtcm_buffer == nullptr) {
         rtcm_buffer = (struct rtcm_buffer *)calloc(1, sizeof(*rtcm_buffer));
         if (rtcm_buffer == nullptr) {
+            // nothing to do but discard the data
+            return;
+        }
+    }
+
+    if (rtcm3_parser == nullptr) {
+        rtcm3_parser = (RTCM3_Parser *)calloc(1, sizeof(*rtcm3_parser));
+        if (rtcm3_parser == nullptr) {
             // nothing to do but discard the data
             return;
         }
@@ -2182,6 +2192,26 @@ void AP_GPS::Write_GPS(uint8_t i)
         undulation    : undulation,
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
+}
+
+// Logging support:
+// Write an RTCM packet
+void AP_GPS::Write_RTCM(const uint8_t *data, uint16_t len)
+{
+    for (uint16_t i=0; i<len; i++) {
+        if (rtcm3_parser) {
+            if(rtcm3_parser->read(data[i])) {
+                const uint64_t time_us = AP_HAL::micros64();
+                const struct log_RTCM pkt {
+                    LOG_PACKET_HEADER_INIT(LOG_RTCM_MSG),
+                    time_us   : time_us,
+                    id        : rtcm3_parser->get_id(),
+                    len       : rtcm3_parser->get_found_len(),
+                };
+                AP::logger().WriteBlock(&pkt, sizeof(pkt));
+            }
+        }
+    }        
 }
 
 /*

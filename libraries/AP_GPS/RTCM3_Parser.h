@@ -20,6 +20,8 @@
 #include <stdint.h>
 
 #define RTCM3_MAX_PACKET_LEN 300
+#define RTCMv3_PREAMBLE 0xD3
+
 class RTCM3_Parser {
 public:
     // process one byte, return true if packet found
@@ -36,10 +38,11 @@ public:
 
     // return ID of found packet
     uint16_t get_id(void) const;
+
+    // return length of found packet
+    uint16_t get_found_len(void) const;
     
 private:
-    const uint8_t RTCMv3_PREAMBLE = 0xD3;
-
     // raw packet, we shouldn't need over 300 bytes for the MB configs we use
     uint8_t pkt[RTCM3_MAX_PACKET_LEN];
 

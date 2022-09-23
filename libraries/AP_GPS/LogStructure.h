@@ -11,7 +11,8 @@
     LOG_GPS_RAWS_MSG,                           \
     LOG_GPS_UBX1_MSG,                           \
     LOG_GPS_UBX2_MSG,                           \
-    LOG_IDS_FROM_GPS_SBP
+    LOG_IDS_FROM_GPS_SBP,                       \
+    LOG_RTCM_MSG                                
 
 
 // @LoggerMessage: GPS
@@ -198,6 +199,18 @@ struct PACKED log_GPS_RAWS {
     uint8_t trkStat;
 };
 
+// @LoggerMessage: RTCM
+// @Description: RTCM accuracy information
+// @Field: TimeUS: Time since system startup
+// @Field: id: RTCM message id
+// @Field: len: RTCM message length
+struct PACKED log_RTCM {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint16_t id;
+    uint16_t len;
+};
+
 #define LOG_STRUCTURE_FROM_GPS \
     { LOG_GPS_MSG, sizeof(log_GPS), \
       "GPS",  "QBBIHBcLLeffffB", "TimeUS,I,Status,GMS,GWk,NSats,HDop,Lat,Lng,Alt,Spd,GCrs,VZ,Yaw,U", "s#---SmDUmnhnh-", "F----0BGGB000--" , true }, \
@@ -213,4 +226,6 @@ struct PACKED log_GPS_RAWS {
       "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
       "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true }, \
+    { LOG_RTCM_MSG,  sizeof(log_RTCM), \
+      "RTCM",  "QHH", "TimeUS,id,len", "s--", "F--" , true }, \
     LOG_STRUCTURE_FROM_GPS_SBP
