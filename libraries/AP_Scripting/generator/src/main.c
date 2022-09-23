@@ -494,6 +494,7 @@ unsigned int parse_access_flags(struct type * type) {
         }
       }
     } else {
+      error(ERROR_UNKNOWN_KEYWORD, "Unknown access provided: %s", state.token);
       break;
     }
     next_token();
@@ -730,11 +731,11 @@ void handle_userdata_field(struct userdata *data) {
   char *attribute = strchr(token, '\'');
   if (attribute != NULL) {
     if (strcmp(attribute, keyword_attr_array) != 0) {
-      error(ERROR_USERDATA, "Unknown feild attribute %s for userdata %s feild %s", attribute, data->name, field_name);
+      error(ERROR_USERDATA, "Unknown field attribute %s for userdata %s field %s", attribute, data->name, field_name);
     }
     char * token = next_token();
     string_copy(&(field->array_len), token);
-    trace(TRACE_USERDATA, "userdata %s feild %s array length %s", data->name, field->name, field->array_len);
+    trace(TRACE_USERDATA, "userdata %s field %s array length %s", data->name, field->name, field->array_len);
   }
 
   parse_type(&(field->type), TYPE_RESTRICTION_NOT_NULLABLE, RANGE_CHECK_NONE);
@@ -2515,7 +2516,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
       struct userdata_field *field = node->fields;
       while(field) {
           if (field->array_len == NULL) {
-            // single value feild
+            // single value field
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get field\n");
               emit_docs_type(field->type, "---@return", "\n");
@@ -2527,7 +2528,7 @@ void emit_docs(struct userdata *node, int is_userdata, int emit_creation) {
               fprintf(docs, "function %s:%s(value) end\n\n", name, field->rename ? field->rename : field->name);
             }
           } else {
-            // array feild
+            // array field
             if (field->access_flags & ACCESS_FLAG_READ) {
               fprintf(docs, "-- get array field\n");
               fprintf(docs, "---@param index integer\n");

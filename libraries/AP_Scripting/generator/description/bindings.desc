@@ -373,8 +373,8 @@ userdata mavlink_mission_item_int_t field param1 float'skip_check read write
 userdata mavlink_mission_item_int_t field param2 float'skip_check read write
 userdata mavlink_mission_item_int_t field param3 float'skip_check read write
 userdata mavlink_mission_item_int_t field param4 float'skip_check read write
-userdata mavlink_mission_item_int_t field x int32_t read write'skip_check
-userdata mavlink_mission_item_int_t field y int32_t read write'skip_check
+userdata mavlink_mission_item_int_t field x int32_t'skip_check read write
+userdata mavlink_mission_item_int_t field y int32_t'skip_check read write
 userdata mavlink_mission_item_int_t field z float'skip_check read write
 userdata mavlink_mission_item_int_t field seq uint16_t read write 0 UINT16_MAX
 userdata mavlink_mission_item_int_t field command uint16_t read write 0 UINT16_MAX
@@ -487,7 +487,7 @@ include AP_HAL/AP_HAL.h
 
 userdata AP_HAL::CANFrame depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 userdata AP_HAL::CANFrame rename CANFrame
-userdata AP_HAL::CANFrame field id uint32_t read write'skip_check
+userdata AP_HAL::CANFrame field id uint32_t'skip_check read write
 userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t read write 0 UINT8_MAX
 userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
 userdata AP_HAL::CANFrame method isExtended boolean
