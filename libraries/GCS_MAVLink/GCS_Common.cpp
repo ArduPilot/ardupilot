@@ -56,10 +56,6 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 //OW
-#include <AP_Terrain/AP_Terrain.h>
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-#include <AP_WindVane/AP_WindVane.h>
-#endif
 #include <AP_Frsky_Telem/AP_Frsky_SPort_Protocol.h>
 //OWEND
 
