@@ -138,7 +138,7 @@ void ModeRTL::climb_start()
     }
 
     // hold current yaw during initial climb
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 }
 
 // rtl_return_start - initialise return to home
@@ -166,16 +166,6 @@ void ModeRTL::climb_return_run()
         return;
     }
 
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -186,14 +176,8 @@ void ModeRTL::climb_return_run()
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     _state_complete = wp_nav->reached_wp_destination();
@@ -207,10 +191,10 @@ void ModeRTL::loiterathome_start()
     _loiter_start_time = millis();
 
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
-    if (auto_yaw.default_mode(true) != AUTO_YAW_HOLD) {
-        auto_yaw.set_mode(AUTO_YAW_RESETTOARMEDYAW);
+    if (auto_yaw.default_mode(true) != AutoYaw::Mode::HOLD) {
+        auto_yaw.set_mode(AutoYaw::Mode::RESETTOARMEDYAW);
     } else {
-        auto_yaw.set_mode(AUTO_YAW_HOLD);
+        auto_yaw.set_mode(AutoYaw::Mode::HOLD);
     }
 }
 
@@ -224,16 +208,6 @@ void ModeRTL::loiterathome_run()
         return;
     }
 
-    // process pilot's yaw input
-    float target_yaw_rate = 0;
-    if (!copter.failsafe.radio && use_pilot_yaw()) {
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
-    }
-
     // set motors to full range
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
@@ -244,18 +218,12 @@ void ModeRTL::loiterathome_run()
     // run the vertical position controller and set output throttle
     pos_control->update_z_controller();
 
-    // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(wp_nav->get_thrust_vector(), target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(wp_nav->get_thrust_vector(), auto_yaw.yaw());
-    }
+    // call attitude controller with auto yaw
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     if ((millis() - _loiter_start_time) >= (uint32_t)g.rtl_loiter_time.get()) {
-        if (auto_yaw.mode() == AUTO_YAW_RESETTOARMEDYAW) {
+        if (auto_yaw.mode() == AutoYaw::Mode::RESETTOARMEDYAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
             if (abs(wrap_180_cd(ahrs.yaw_sensor-copter.initial_armed_bearing)) <= 200) {
                 _state_complete = true;
@@ -277,7 +245,7 @@ void ModeRTL::descent_start()
     pos_control->init_z_controller_stopping_point();
 
     // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
 #if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear
@@ -295,7 +263,6 @@ void ModeRTL::descent_start()
 void ModeRTL::descent_run()
 {
     Vector2f vel_correction;
-    float target_yaw_rate = 0.0f;
 
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
@@ -328,11 +295,6 @@ void ModeRTL::descent_run()
                 copter.ap.land_repo_active = true;
             }
         }
-
-        if (g.land_repositioning || use_pilot_yaw()) {
-            // get pilot's desired yaw rate
-            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        }
     }
 
     // set motors to full range
@@ -348,7 +310,7 @@ void ModeRTL::descent_run()
     pos_control->update_z_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), target_yaw_rate);
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've reached within 20cm of final altitude
     _state_complete = labs(rtl_path.descent_target.alt - copter.current_loc.alt) < 20;
@@ -375,7 +337,7 @@ void ModeRTL::land_start()
     }
 
     // initialise yaw
-    auto_yaw.set_mode(AUTO_YAW_HOLD);
+    auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
 #if LANDING_GEAR_ENABLED == ENABLED
     // optionally deploy landing gear

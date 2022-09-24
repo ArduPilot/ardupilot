@@ -233,17 +233,27 @@ public:
 
     public:
 
-        // yaw(): main product of AutoYaw; the heading:
-        float yaw();
+        // Autopilot Yaw Mode enumeration
+        enum class Mode {
+            HOLD =             0,  // hold zero yaw rate
+            LOOK_AT_NEXT_WP =  1,  // point towards next waypoint (no pilot input accepted)
+            ROI =              2,  // point towards a location held in roi (no pilot input accepted)
+            FIXED =            3,  // point towards a particular angle (no pilot input accepted)
+            LOOK_AHEAD =       4,  // point in the direction the copter is moving
+            RESETTOARMEDYAW =  5,  // point towards heading at time motors were armed
+            ANGLE_RATE =       6,  // turn at a specified rate from a starting angle
+            RATE =             7,  // turn at a specified rate (held in auto_yaw_rate)
+            CIRCLE =           8,  // use AC_Circle's provided yaw (used during Loiter-Turns commands)
+            PILOT_RATE =       9,  // target rate from pilot stick
+        };
 
         // mode(): current method of determining desired yaw:
-        autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
+        Mode mode() const { return _mode; }
         void set_mode_to_default(bool rtl);
-        void set_mode(autopilot_yaw_mode new_mode);
-        autopilot_yaw_mode default_mode(bool rtl) const;
+        void set_mode(Mode new_mode);
+        Mode default_mode(bool rtl) const;
 
-        // rate_cds(): desired yaw rate in centidegrees/second:
-        float rate_cds() const;
+
         void set_rate(float new_rate_cds);
 
         // set_roi(...): set a "look at" location:
@@ -256,17 +266,25 @@ public:
 
         void set_yaw_angle_rate(float yaw_angle_d, float yaw_rate_ds);
 
-        bool fixed_yaw_slew_finished() { return is_zero(_fixed_yaw_offset_cd); }
+        bool reached_fixed_yaw_target();
+
+        AC_AttitudeControl::HeadingCommand get_heading();
 
     private:
+
+        // yaw(): main product of AutoYaw; the heading:
+        float yaw();
+
+        // rate_cds(): desired yaw rate in centidegrees/second:
+        float rate_cds() const;
 
         float look_ahead_yaw();
         float roi_yaw() const;
 
         // auto flight mode's yaw mode
-        uint8_t _mode = AUTO_YAW_LOOK_AT_NEXT_WP;
+        Mode _mode = Mode::LOOK_AT_NEXT_WP;
 
-        // Yaw will point at this location if mode is set to AUTO_YAW_ROI
+        // Yaw will point at this location if mode is set to Mode::ROI
         Vector3f roi;
 
         // yaw used for YAW_FIXED yaw_mode
@@ -284,6 +302,7 @@ public:
         // turn rate (in cds) when auto_yaw_mode is set to AUTO_YAW_RATE
         float _yaw_angle_cd;
         float _yaw_rate_cds;
+        float _pilot_yaw_rate_cds;
     };
     static AutoYaw auto_yaw;
 
@@ -762,7 +781,6 @@ protected:
 private:
 
     // Circle
-    bool pilot_yaw_override = false; // true if pilot is overriding yaw
     bool speed_changing = false;     // true when the roll stick is being held to facilitate stopping at 0 rate
 };
 

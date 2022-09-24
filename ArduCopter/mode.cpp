@@ -636,7 +636,6 @@ void Mode::land_run_vertical_control(bool pause_descent)
 void Mode::land_run_horizontal_control()
 {
     Vector2f vel_correction;
-    float target_yaw_rate = 0;
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -670,12 +669,6 @@ void Mode::land_run_horizontal_control()
                 }
                 copter.ap.land_repo_active = true;
             }
-        }
-
-        // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
         }
     }
 
@@ -730,13 +723,8 @@ void Mode::land_run_horizontal_control()
     }
 
     // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(thrust_vector, target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
-    }
+    attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.get_heading());
+
 }
 
 // run normal or precision landing (if enabled)
@@ -763,7 +751,6 @@ void Mode::land_run_normal_or_precland(bool pause_descent)
 // The passed in location is expected to be NED and in m
 void Mode::precland_retry_position(const Vector3f &retry_pos)
 {
-    float target_yaw_rate = 0;
     if (!copter.failsafe.radio) {
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             AP::logger().Write_Event(LogEvent::LAND_CANCELLED_BY_PILOT);
@@ -790,11 +777,6 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
                 copter.ap.land_repo_active = true;
             }
         }
-
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
-        }
     }
 
     Vector3p retry_pos_NEU{retry_pos.x, retry_pos.y, retry_pos.z * -1.0f};
@@ -806,16 +788,9 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
     pos_control->update_xy_controller();
     pos_control->update_z_controller();
 
-    const Vector3f thrust_vector{pos_control->get_thrust_vector()};
-
     // call attitude controller
-    if (auto_yaw.mode() == AUTO_YAW_HOLD) {
-        // roll & pitch from waypoint controller, yaw rate from pilot
-        attitude_control->input_thrust_vector_rate_heading(thrust_vector, target_yaw_rate);
-    } else {
-        // roll, pitch from waypoint controller, yaw heading from auto_heading()
-        attitude_control->input_thrust_vector_heading(thrust_vector, auto_yaw.yaw());
-    }
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+
 }
 
 // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
