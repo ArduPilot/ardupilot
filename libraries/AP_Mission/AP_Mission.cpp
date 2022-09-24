@@ -1396,14 +1396,16 @@ MAV_MISSION_RESULT AP_Mission::mavlink_cmd_long_to_mission_cmd(const mavlink_com
 //  return true on success, false on failure
 bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& cmd, mavlink_mission_item_int_t& packet)
 {
-    // zero result:
-    packet = {};
-
     // command's position in mission list and mavlink id
     packet.seq = cmd.index;
     packet.command = cmd.id;
 
     // set defaults
+    packet.current = 0;     // 1 if we are passing back the mission command that is currently being executed
+    packet.param1 = 0;
+    packet.param2 = 0;
+    packet.param3 = 0;
+    packet.param4 = 0;
     packet.autocontinue = 1;
 
     // command specific conversions from mission command to mavlink packet
