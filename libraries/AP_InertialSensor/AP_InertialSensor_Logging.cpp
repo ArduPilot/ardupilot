@@ -135,7 +135,7 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 }
 
 // @LoggerMessage: FTN
-// @Description: Filter Tuning Messages
+// @Description: Filter Tuning Message - per motor
 // @Field: TimeUS: microseconds since system startup
 // @Field: I: instance
 // @Field: NDn: number of active dynamic harmonic notches
@@ -151,6 +151,13 @@ bool AP_InertialSensor::BatchSampler::Write_ISBD() const
 // @Field: NF10: dynamic harmonic notch centre frequency for motor 10
 // @Field: NF11: dynamic harmonic notch centre frequency for motor 11
 // @Field: NF12: dynamic harmonic notch centre frequency for motor 12
+
+// @LoggerMessage: FTNS
+// @Description: Filter Tuning Message
+// @Field: TimeUS: microseconds since system startup
+// @Field: I: instance
+// @Field: NF: dynamic harmonic notch centre frequency
+
 void AP_InertialSensor::write_notch_log_messages() const
 {
     for (auto &notch : harmonic_notches) {
@@ -159,13 +166,23 @@ void AP_InertialSensor::write_notch_log_messages() const
             continue;
         }
         const float* notches = notch.calculated_notch_freq_hz;
-        AP::logger().WriteStreaming(
-            "FTN", "TimeUS,I,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s#-zzzzzzzzzzzz", "F--------------", "QBBffffffffffff",
-            AP_HAL::micros64(),
-            i,
-            notch.num_calculated_notch_frequencies,
-            notches[0], notches[1], notches[2], notches[3],
-            notches[4], notches[5], notches[6], notches[7],
-            notches[8], notches[9], notches[10], notches[11]);
+        if (notch.num_calculated_notch_frequencies > 1) {
+            // log per motor center frequencies
+            AP::logger().WriteStreaming(
+                "FTN", "TimeUS,I,NDn,NF1,NF2,NF3,NF4,NF5,NF6,NF7,NF8,NF9,NF10,NF11,NF12", "s#-zzzzzzzzzzzz", "F--------------", "QBBffffffffffff",
+                AP_HAL::micros64(),
+                i,
+                notch.num_calculated_notch_frequencies,
+                notches[0], notches[1], notches[2], notches[3],
+                notches[4], notches[5], notches[6], notches[7],
+                notches[8], notches[9], notches[10], notches[11]);
+        } else {
+            // log single center frequency
+            AP::logger().WriteStreaming(
+                "FTNS", "TimeUS,I,NF", "s#z", "F--", "QBf",
+                AP_HAL::micros64(),
+                i,
+                notches[0]);
+        }
     }
 }
