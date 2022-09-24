@@ -21,6 +21,11 @@ FLASH_BOOTLOADER_LOAD_KB 128
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1
 
+# use last 2 pages for flash storage
+# H743 has 16 pages of 128k each
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
+
 # PA10 IO-debug-console
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
