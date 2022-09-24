@@ -100,6 +100,8 @@ brand_map = {
     'Pixhawk5X' : ('Pixhawk 5X', 'Holybro'),
     "AIRLink" : ("Sky-Drones Technologies", "AIRLink"),
     "SPRacingH7" : ("Seriously Pro Racing", "H7 Extreme"),
+    "SkystarsH7HD" : ("Skystars", "H743 HD"),
+    "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
 }
 
 class Firmware():
