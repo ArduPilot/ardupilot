@@ -139,12 +139,11 @@ void MissionItemProtocol::handle_mission_request_int(const GCS_MAVLINK &_link,
 
     mavlink_mission_item_int_t ret_packet{};
 
+    const MAV_MISSION_RESULT result_code = get_item(_link, msg, packet, ret_packet);
     ret_packet.target_system = msg.sysid;
     ret_packet.target_component = msg.compid;
     ret_packet.seq = packet.seq;
     ret_packet.mission_type = packet.mission_type;
-
-    const MAV_MISSION_RESULT result_code = get_item(_link, msg, packet, ret_packet);
 
     if (result_code != MAV_MISSION_ACCEPTED) {
         // send failure message
