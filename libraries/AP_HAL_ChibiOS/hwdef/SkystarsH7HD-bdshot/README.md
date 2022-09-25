@@ -32,11 +32,10 @@ receive pin for UARTn. The TX pin is the transmit pin for UARTn.
 
 ## RC Input
 
-RC input is configured on the R6 (UART6_RX) pin. It supports all serial RC
-protocols. For protocols requiring half-duplex serial to transmit
-telemetry (such as FPort) you should setup
-SERIAL6 as an RC input serial port, with half-duplex, pin-swap
-and inversion enabled.
+RC input is configured on the R1 (UART1_RX) pin in the DJI connector or via the R1/T1 (UART1) pads.
+It supports all serial RC protocols. For protocols requiring half-duplex serial to transmit
+telemetry (such as FPort) you should setup SERIAL1 with half-duplex and connect to T1 or use
+R1 with pin-swap. You also need to set inversion enabled if using FPort.
 
 ## OSD Support
 
@@ -76,6 +75,7 @@ The correct battery setting parameters are:
 ## Compass
 
 The Skystars H7 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+
 ## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
