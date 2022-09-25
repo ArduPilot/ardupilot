@@ -299,6 +299,8 @@ void _usage(void)
     printf("\tnetworking UDP:\n");
     printf("\t                  --serial0 udp:11.0.0.255:14550:bcast\n");
     printf("\t                  --serial0 udpin:0.0.0.0:14550\n");
+    printf("\tUnix Named Pipe / FIFO:\n");
+    printf("\t                  --serial0 fifo:/dev/socket/read_fifo:/dev/socket/write_fifo\n");
     printf("\tcustom log path:\n");
     printf("\t                  --log-directory /var/APM/logs\n");
     printf("\t                  -l /var/APM/logs\n");
@@ -478,6 +480,11 @@ void HAL_Linux::setup_signal_handlers() const
     sa.sa_handler = HAL_Linux::exit_signal_handler;
     sigaction(SIGTERM, &sa, NULL);
     sigaction(SIGINT, &sa, NULL);
+
+    struct sigaction sa_pipe = {};
+    sigemptyset(&sa_pipe.sa_mask);
+    sa_pipe.sa_handler = SIG_IGN; /* No-op SIGPIPE handler - handled by individual drivers */
+    sigaction(SIGPIPE, &sa_pipe, nullptr);
 }
 
 HAL_Linux hal_linux;

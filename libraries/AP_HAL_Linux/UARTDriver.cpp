@@ -21,6 +21,7 @@
 
 #include "ConsoleDevice.h"
 #include "TCPServerDevice.h"
+#include "FIFODevice.h"
 #include "UARTDevice.h"
 #include "UDPDevice.h"
 
@@ -125,6 +126,7 @@ void UARTDriver::_deallocate_buffers()
 /*
     Device path accepts the following syntaxes:
         - /dev/ttyO1
+        - fifo:/dev/socket/rx:/dev/socket/tx
         - tcp:*:1243:wait
         - udp:192.168.2.15:1243
 */
@@ -136,7 +138,8 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
         return AP_HAL::OwnPtr<SerialDevice>(new UARTDevice(arg));
     } else if (strncmp(arg, "tcp:", 4) != 0 &&
                strncmp(arg, "udp:", 4) != 0 &&
-               strncmp(arg, "udpin:", 6)) {
+               strncmp(arg, "udpin:", 6) != 0 &&
+               strncmp(arg, "fifo:", 5) != 0) {
         return nullptr;
     }
 
@@ -169,8 +172,9 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
         _flag = nullptr;
     }
 
-    _base_port = (uint16_t) atoi(port);
+    uint16_t base_port = (uint16_t) atoi(port);
     _ip = strdup(ip);
+    _port = strdup(port);
 
     /* Optional flag for TCP */
     if (flag != nullptr) {
@@ -185,17 +189,31 @@ AP_HAL::OwnPtr<SerialDevice> UARTDriver::_parseDevicePath(const char *arg)
         _packetise = true;
 #endif
         if (strcmp(protocol, "udp") == 0) {
-            device = new UDPDevice(_ip, _base_port, bcast, false);
+            device = new UDPDevice(_ip, base_port, bcast, false);
         } else {
             if (bcast) {
                 AP_HAL::panic("Can't combine udpin with bcast");
             }
-            device = new UDPDevice(_ip, _base_port, false, true);
+            device = new UDPDevice(_ip, base_port, false, true);
 
+        }
+    } else if(strcmp(protocol,"fifo") == 0) {
+        const char * rx_fifo = _ip;
+        const char * tx_fifo = _port;
+        if(stat(_ip, &st) != 0) {
+            AP_HAL::panic("stat() RX fifo %s failed", rx_fifo);
+        } else if( !S_ISFIFO(st.st_mode)) {
+            AP_HAL::panic("RX file %s is not a FIFO", rx_fifo);
+        } else if(stat(_port, &st) != 0) {
+            AP_HAL::panic("stat() TX fifo %s failed", tx_fifo);
+        } else if( !S_ISFIFO(st.st_mode)) {
+            AP_HAL::panic("TX file %s is not a FIFO", tx_fifo);
+        } else {
+            return AP_HAL::OwnPtr<SerialDevice>(new FIFODevice(rx_fifo, tx_fifo));
         }
     } else {
         bool wait = (_flag && strcmp(_flag, "wait") == 0);
-        device = new TCPServerDevice(_ip, _base_port, wait);
+        device = new TCPServerDevice(_ip, base_port, wait);
     }
 
     free(devstr);

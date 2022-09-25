@@ -58,9 +58,9 @@ private:
     AP_HAL::OwnPtr<SerialDevice> _device;
     bool _console;
     volatile bool _in_timer;
-    uint16_t _base_port;
     uint32_t _baudrate;
     char *_ip;
+    char *_port;
     char *_flag;
     bool _connected; // true if a client has connected
     bool _packetise; // true if writes should try to be on mavlink boundaries
