@@ -7659,6 +7659,11 @@ Also, ignores heartbeats not from our target system'''
                                     condition='MISSION_ITEM_INT.mission_type==%u' % mission_type)
             if m is None:
                 raise NotAchievedException("Did not receive MISSION_ITEM_INT")
+            if m.target_system != self.mav.source_system:
+                raise NotAchievedException("Wrong target system (want=%u got=%u)" %
+                                           (self.mav.source_system, m.target_system))
+            if m.target_component != self.mav.source_component:
+                raise NotAchievedException("Wrong target component")
             self.progress("Got (%s)" % str(m))
             if m.mission_type != mission_type:
                 raise NotAchievedException("Received waypoint of wrong type")
