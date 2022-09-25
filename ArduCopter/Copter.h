@@ -129,8 +129,9 @@
 
 #include <AP_Mount/AP_Mount.h>
 
-#include <AP_Camera/AP_Camera.h>
-
+#if CAMERA == ENABLED
+ # include <AP_Camera/AP_Camera.h>
+#endif
 #if HAL_BUTTON_ENABLED
  # include <AP_Button/AP_Button.h>
 #endif
@@ -148,7 +149,9 @@
 #if WINCH_ENABLED == ENABLED
  # include <AP_Winch/AP_Winch.h>
 #endif
-#include <AP_RPM/AP_RPM.h>
+#if RPM_ENABLED == ENABLED
+ #include <AP_RPM/AP_RPM.h>
+#endif
 
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
@@ -200,6 +203,7 @@ public:
     friend class ModeAcro;
     friend class ModeAcro_Heli;
     friend class ModeAltHold;
+    friend class ModeCustomAltHold;
     friend class ModeAuto;
     friend class ModeAutoTune;
     friend class ModeAvoidADSB;
@@ -299,7 +303,7 @@ private:
         bool reset_target;          // true if target should be reset because of change in surface being tracked
     } surface_tracking;
 
-#if AP_RPM_ENABLED
+#if RPM_ENABLED == ENABLED
     AP_RPM rpm_sensor;
 #endif
 
@@ -486,7 +490,7 @@ private:
     bool auto_trim_started = false;
 
     // Camera
-#if AP_CAMERA_ENABLED
+#if CAMERA == ENABLED
     AP_Camera camera{MASK_LOG_CAMERA};
 #endif
 
@@ -689,6 +693,7 @@ private:
     // Attitude.cpp
     void update_throttle_hover();
     float get_pilot_desired_climb_rate(float throttle_control);
+    float get_pilot_desired_climb_rate_custom_althold(float throttle_control);
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     void rotate_body_frame_to_NE(float &x, float &y);
@@ -944,6 +949,7 @@ private:
 #endif
 #endif
     ModeAltHold mode_althold;
+    ModeCustomAltHold mode_custom_althold;
 #if MODE_AUTO_ENABLED == ENABLED
     ModeAuto mode_auto;
 #endif

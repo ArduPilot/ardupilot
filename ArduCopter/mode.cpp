@@ -45,6 +45,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
             ret = &mode_althold;
             break;
 
+        case Mode::Number::CUSTOM_ALT_HOLD:
+            ret = &mode_custom_althold;
+            break;
+
 #if MODE_AUTO_ENABLED == ENABLED
         case Mode::Number::AUTO:
             ret = &mode_auto;
@@ -319,7 +323,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     fence.manual_recovery_start();
 #endif
 
-#if AP_CAMERA_ENABLED
+#if CAMERA == ENABLED
     camera.set_is_auto_mode(flightmode->mode_number() == Mode::Number::AUTO);
 #endif
 
@@ -986,6 +990,11 @@ float Mode::get_pilot_desired_yaw_rate(float yaw_in)
 float Mode::get_pilot_desired_climb_rate(float throttle_control)
 {
     return copter.get_pilot_desired_climb_rate(throttle_control);
+}
+
+float Mode::get_pilot_desired_climb_rate_custom_althold(float throttle_control)
+{
+    return copter.get_pilot_desired_climb_rate_custom_althold(throttle_control);
 }
 
 float Mode::get_non_takeoff_throttle()
