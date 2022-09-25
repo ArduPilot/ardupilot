@@ -599,7 +599,7 @@ bool AP_Mission::set_item(uint16_t index, mavlink_mission_item_int_t& src_packet
 
 bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet) const
 {
-    // setting ret_packet.command = -1  and/or returning false
+    // setting ret_packet.command = UINT16_MAX  and/or returning false
     //  means it contains invalid data after it leaves here.
 
     // this is the on-storage format
@@ -607,7 +607,7 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
 
     // can't handle request for anything bigger than the mission size...
     if (index >= num_commands()) {
-        ret_packet.command = -1;
+        ret_packet.command = UINT16_MAX;
         return false;
     }
 
@@ -620,12 +620,12 @@ bool AP_Mission::get_item(uint16_t index, mavlink_mission_item_int_t& ret_packet
 
     // retrieve mission from eeprom
     if (!read_cmd_from_storage(ret_packet.seq, cmd)) {
-        ret_packet.command = -1;
+        ret_packet.command = UINT16_MAX;
         return false;
     }
     // convert into mavlink-ish format for lua and friends.
     if (!mission_cmd_to_mavlink_int(cmd, ret_packet)) {
-        ret_packet.command = -1;
+        ret_packet.command = UINT16_MAX;
         return false;
     }
 
