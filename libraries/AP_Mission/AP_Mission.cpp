@@ -2291,7 +2291,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 {
     Mission_Command temp_cmd;
     tot_distance = 0.0f;
-    bool ret;
+    bool ret = false;  // reached end of loop without getting to a landing
 
     // back up jump tracking to reset after distance calculation
     jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
@@ -2306,14 +2306,12 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
             // get next command
             if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
                 // we got to the end of the mission
-                ret = false;
                 goto reset_do_jump_tracking;
             }
             if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT || is_landing_type_cmd(temp_cmd.id)) {
                 break;
             } else if (is_nav_cmd(temp_cmd) || temp_cmd.id == MAV_CMD_CONDITION_DELAY) {
                 // if we receive a nav command that we dont handle then give up as cant measure the distance e.g. MAV_CMD_NAV_LOITER_UNLIM
-                ret = false;
                 goto reset_do_jump_tracking;
             }
         }
@@ -2334,8 +2332,6 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
             goto reset_do_jump_tracking;
         }
     }
-    // reached end of loop without getting to a landing
-    ret = false;
 
 reset_do_jump_tracking:
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
