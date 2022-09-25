@@ -674,7 +674,9 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     // not really aux functions:
     case AUX_FUNC::LOWEHEISER_THROTTLE:
         break;
+#if HAL_ADSB_ENABLED
     case AUX_FUNC::AVOID_ADSB:
+#endif
     case AUX_FUNC::AVOID_PROXIMITY:
     case AUX_FUNC::FENCE:
     case AUX_FUNC::GPS_DISABLE:
@@ -1339,9 +1341,11 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
         do_aux_function_mission_reset(ch_flag);
         break;
 
+#if HAL_ADSB_ENABLED
     case AUX_FUNC::AVOID_ADSB:
         do_aux_function_avoid_adsb(ch_flag);
         break;
+#endif
 
     case AUX_FUNC::FFT_NOTCH_TUNE:
         do_aux_function_fft_notch_tune(ch_flag);
