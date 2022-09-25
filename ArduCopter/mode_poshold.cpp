@@ -115,6 +115,22 @@ void ModePosHold::run()
         init_wind_comp_estimate();
         break;
 
+    case AltHold_Landed_Ground_Idle:
+        loiter_nav->clear_pilot_desired_acceleration();
+        loiter_nav->init_target();
+        attitude_control->reset_yaw_target_and_rate();
+        init_wind_comp_estimate();
+        FALLTHROUGH;
+
+    case AltHold_Landed_Pre_Takeoff:
+        attitude_control->reset_rate_controller_I_terms_smoothly();
+        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
+
+        // set poshold state to pilot override
+        roll_mode = RPMode::PILOT_OVERRIDE;
+        pitch_mode = RPMode::PILOT_OVERRIDE;
+        break;
+
     case AltHold_Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
@@ -130,22 +146,6 @@ void ModePosHold::run()
         // init and update loiter although pilot is controlling lean angles
         loiter_nav->clear_pilot_desired_acceleration();
         loiter_nav->init_target();
-
-        // set poshold state to pilot override
-        roll_mode = RPMode::PILOT_OVERRIDE;
-        pitch_mode = RPMode::PILOT_OVERRIDE;
-        break;
-
-    case AltHold_Landed_Ground_Idle:
-        loiter_nav->clear_pilot_desired_acceleration();
-        loiter_nav->init_target();
-        attitude_control->reset_yaw_target_and_rate();
-        init_wind_comp_estimate();
-        FALLTHROUGH;
-
-    case AltHold_Landed_Pre_Takeoff:
-        attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_z_controller(0.0f);   // forces throttle output to decay to zero
 
         // set poshold state to pilot override
         roll_mode = RPMode::PILOT_OVERRIDE;
