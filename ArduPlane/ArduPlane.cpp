@@ -258,6 +258,11 @@ void Plane::update_logging25(void)
 #endif
     }
 
+    if (should_log(MASK_LOG_RC) || should_log(MASK_LOG_CTUN)) {
+        // Originally logged under RC, now included with CTUN as duplicated fields were removed from CTUN
+        Log_Write_AETR();
+    }
+
     if (should_log(MASK_LOG_NTUN)) {
         Log_Write_Nav_Tuning();
         Log_Write_Guided();
