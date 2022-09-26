@@ -579,6 +579,11 @@ void Copter::twentyfive_hz_logging()
         g2.arot.Log_Write_Autorotation();
     }
 #endif
+#if HAL_GYROFFT_ENABLED
+    if (should_log(MASK_LOG_FTN_FAST)) {
+        gyro_fft.write_log_messages();
+    }
+#endif
 }
 
 // three_hz_loop - 3.3hz loop
@@ -725,10 +730,10 @@ void Copter::update_altitude()
         Log_Write_Control_Tuning();
         if (!should_log(MASK_LOG_FTN_FAST)) {
             AP::ins().write_notch_log_messages();
-        }
 #if HAL_GYROFFT_ENABLED
-        gyro_fft.write_log_messages();
+            gyro_fft.write_log_messages();
 #endif
+        }
     }
 }
 
