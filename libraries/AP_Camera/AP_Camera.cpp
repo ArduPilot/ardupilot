@@ -10,6 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_Mount/AP_Mount.h>
 #include "AP_Camera_SoloGimbal.h"
 
 // ------------------------------
@@ -19,7 +20,7 @@ const AP_Param::GroupInfo AP_Camera::var_info[] = {
     // @Param: TRIGG_TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:Servo,1:Relay, 2:GoPro in Solo Gimbal
+    // @Values: 0:Servo,1:Relay, 2:GoPro in Solo Gimbal, 3:Mount (Siyi)
     // @User: Standard
     AP_GROUPINFO("TRIGG_TYPE",  0, AP_Camera, _trigger_type, 0),
 
@@ -158,6 +159,15 @@ void AP_Camera::trigger_pic()
         AP_Camera_SoloGimbal::gopro_shutter_toggle();
         break;
 #endif
+#if HAL_MOUNT_ENABLED
+    case CamTrigType::mount: {
+        AP_Mount* mount = AP::mount();
+        if (mount != nullptr) {
+            mount->take_picture(0);
+        }
+        break;
+    }
+#endif
     default:
         break;
     }
@@ -190,6 +200,7 @@ AP_Camera::trigger_pic_cleanup()
             break;
         }
         case CamTrigType::gopro:
+        case CamTrigType::mount:
             // nothing to do
             break;
         }
@@ -499,6 +510,69 @@ void AP_Camera::take_picture()
     GCS_MAVLINK::send_to_components(MAVLINK_MSG_ID_COMMAND_LONG, (char*)&cmd_msg, sizeof(cmd_msg));
 }
 
+// start/stop recording video.  returns true on success
+// start_recording should be true to start recording, false to stop recording
+bool AP_Camera::record_video(bool start_recording)
+{
+#if HAL_MOUNT_ENABLED
+    // only mount implements recording video
+    if (get_trigger_type() == CamTrigType::mount) {
+        AP_Mount* mount = AP::mount();
+        if (mount != nullptr) {
+            return mount->record_video(0, start_recording);
+        }
+    }
+#endif
+    return false;
+}
+
+// zoom in, out or hold.  returns true on success
+// zoom out = -1, hold = 0, zoom in = 1
+bool AP_Camera::set_zoom_step(int8_t zoom_step)
+{
+#if HAL_MOUNT_ENABLED
+    // only mount implements set_zoom_step
+    if (get_trigger_type() == CamTrigType::mount) {
+        AP_Mount* mount = AP::mount();
+        if (mount != nullptr) {
+            return mount->set_zoom_step(0, zoom_step);
+        }
+    }
+#endif
+    return false;
+}
+
+// focus in, out or hold.  returns true on success
+// focus in = -1, focus hold = 0, focus out = 1
+bool AP_Camera::set_manual_focus_step(int8_t focus_step)
+{
+#if HAL_MOUNT_ENABLED
+    // only mount implements set_manual_focus_step
+    if (get_trigger_type() == CamTrigType::mount) {
+        AP_Mount* mount = AP::mount();
+        if (mount != nullptr) {
+            return mount->set_manual_focus_step(0, focus_step);
+        }
+    }
+#endif
+    return false;
+}
+
+// auto focus.  returns true on success
+bool AP_Camera::set_auto_focus()
+{
+#if HAL_MOUNT_ENABLED
+    // only mount implements set_auto_focus
+    if (get_trigger_type() == CamTrigType::mount) {
+        AP_Mount* mount = AP::mount();
+        if (mount != nullptr) {
+            return mount->set_auto_focus(0);
+        }
+    }
+#endif
+    return false;
+}
+
 void AP_Camera::prep_mavlink_msg_camera_feedback(uint64_t timestamp_us)
 {
     const AP_AHRS &ahrs = AP::ahrs();
@@ -547,10 +621,11 @@ AP_Camera::CamTrigType AP_Camera::get_trigger_type(void)
         case CamTrigType::servo:
         case CamTrigType::relay:
         case CamTrigType::gopro:
+        case CamTrigType::mount:
             return (CamTrigType)type;
         default:
             return CamTrigType::servo;
-    }   
+    }
 }
 
 // singleton instance
