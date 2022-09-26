@@ -1,5 +1,7 @@
 #include "AP_Logger_Backend.h"
 
+#if HAL_LOGGING_ENABLED
+
 #include "LoggerMessageWriter.h"
 
 #include "AP_Common/AP_FWVersion.h"
@@ -736,3 +738,5 @@ bool AP_Logger_RateLimiter::should_log(uint8_t msgid, bool writev_streaming)
     }
     return ret;
 }
+
+#endif  // HAL_LOGGING_ENABLED

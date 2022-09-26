@@ -2,6 +2,8 @@
 
 #include "AP_Logger.h"
 
+#if HAL_LOGGING_ENABLED
+
 #include <AP_Common/Bitmask.h>
 
 class LoggerMessageWriter_DFLogStart;
@@ -258,3 +260,5 @@ private:
     void Write_AP_Logger_Stats_File(const struct df_stats &_stats);
     void validate_WritePrioritisedBlock(const void *pBuffer, uint16_t size);
 };
+
+#endif  // HAL_LOGGING_ENABLED

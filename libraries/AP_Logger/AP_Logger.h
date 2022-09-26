@@ -4,6 +4,7 @@
 #pragma once
 
 #include <AP_Filesystem/AP_Filesystem_config.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 1
@@ -232,6 +233,8 @@ enum class LogErrorCode : uint8_t {
 // GPS specific error coces
     GPS_GLITCH = 2,
 };
+
+#if HAL_LOGGING_ENABLED
 
 class AP_Logger
 {
@@ -643,3 +646,5 @@ private:
 namespace AP {
     AP_Logger &logger();
 };
+
+#endif  // HAL_LOGGING_ENABLED
