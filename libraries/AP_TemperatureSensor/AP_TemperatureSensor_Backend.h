@@ -17,6 +17,7 @@
 #include "AP_TemperatureSensor.h"
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
+#include <AP_HAL/Semaphores.h>
 
 class AP_TemperatureSensor_Backend
 {
@@ -31,15 +32,24 @@ public:
     virtual void update() = 0;
 
     // do we have a valid temperature reading?
-    bool healthy(void) const { return _state.healthy; }
+    virtual bool healthy(void) const;
 
     // logging functions
-    void Log_Write_TEMP(const uint64_t time_us) const;
+    void Log_Write_TEMP() const;
+
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+
 
 protected:
+
+    void set_temperature(const float temperature);
+
     AP_TemperatureSensor                            &_front;    // reference to front-end
     AP_TemperatureSensor::TemperatureSensor_State   &_state;    // reference to this instance's state (held in the front-end)
     AP_TemperatureSensor_Params                     &_params;   // reference to this instance's parameters (held in the front-end)
+
+private:
+    HAL_Semaphore _sem; // used to copy from backend to frontend
 };
 
 #endif // AP_TEMPERATURE_SENSOR_ENABLED
