@@ -51,5 +51,6 @@ PE11 BMI270_CS2 CS
 
 ## pull up VTX power so that it is enabled in bootloader
 PC5 VTX_PWR OUTPUT HIGH     # labelled as "Pit-1"
-PC2 VID_SELECT OUTPUT LOW   # labelled as "PIN-EN"
+# pull up PIN-EN so that Video 1 is selected by default
+PC2 VID_SELECT OUTPUT HIGH   # labelled as "PIN-EN"
 PD2 CAM_C OUTPUT LOW        # labelled as "CAM-C"
