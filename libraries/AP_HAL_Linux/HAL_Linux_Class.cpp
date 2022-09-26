@@ -170,7 +170,8 @@ static RCInput_SoloLink rcinDriver;
 static RCInput_Navio2 rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RST_ZYNQ
 static RCInput_RCProtocol rcinDriver{"/dev/ttyPS0", NULL};
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV || \
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
 // this is needed to allow for RC input using SERIALn_PROTOCOL=23. No fd is opened
 // in the linux driver and instead user needs to provide a uart via SERIALn_PROTOCOL
 static RCInput_RCProtocol rcinDriver{nullptr, nullptr};
