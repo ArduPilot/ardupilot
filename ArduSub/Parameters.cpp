@@ -746,6 +746,9 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("SERVO16_FUNCTION", 7);
     AP_Param::set_default_by_name("SCHED_LOOP_RATE", 200);
     AP_Param::set_default_by_name("SERVO16_REVERSED", 1);
+#else
+    AP_Param::set_default_by_name("SERVO9_FUNCTION", 59);
+    AP_Param::set_default_by_name("SERVO10_FUNCTION", 7);
 #endif
 }
 
