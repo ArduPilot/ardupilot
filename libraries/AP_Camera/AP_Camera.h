@@ -61,6 +61,21 @@ public:
 
     void take_picture();
 
+    // start/stop recording video
+    // start_recording should be true to start recording, false to stop recording
+    bool record_video(bool start_recording);
+
+    // zoom in, out or hold
+    // zoom out = -1, hold = 0, zoom in = 1
+    bool set_zoom_step(int8_t zoom_step);
+
+    // focus in, out or hold
+    // focus in = -1, focus hold = 0, focus out = 1
+    bool set_manual_focus_step(int8_t focus_step);
+
+    // auto focus
+    bool set_auto_focus();
+
     // Update - to be called periodically @at least 50Hz
     void update();
 
@@ -81,6 +96,7 @@ public:
         servo   = 0,
         relay   = 1,
         gopro   = 2,
+        mount   = 3,
     };
 
     AP_Camera::CamTrigType get_trigger_type(void);
