@@ -615,7 +615,7 @@ void AC_PosControl::update_xy_controller()
         init_xy_controller();
         if (has_good_timing()) {
             // call internal error because initialisation has not been done
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            gcs().send_text(MAV_SEVERITY_WARNING, "Bad loop slippage detected.");
         }
     }
     _last_update_xy_us = AP_HAL::micros64();
@@ -962,7 +962,7 @@ void AC_PosControl::update_z_controller()
         init_z_controller();
         if (has_good_timing()) {
             // call internal error because initialisation has not been done
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+            gcs().send_text(MAV_SEVERITY_WARNING, "Bad loop slippage detected.");
         }
     }
     _last_update_z_us = AP_HAL::micros64();
