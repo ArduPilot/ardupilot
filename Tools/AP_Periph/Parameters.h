@@ -99,7 +99,7 @@ public:
     AP_Int8 hardpoint_rate;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_HWESC
+#if defined(HAL_PERIPH_ENABLE_HWESC) || defined(HAL_PERIPH_ENABLE_ESC_APDHVPRO200)
     AP_Int8 esc_number;
 #endif
 

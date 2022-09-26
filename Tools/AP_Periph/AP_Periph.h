@@ -21,6 +21,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
+#include "AP_ESC_APDHVPro.h"
 
 #if HAL_GCS_ENABLED
 #include "GCS_MAVLink.h"
@@ -206,6 +207,11 @@ public:
     uint32_t efi_update_ms;
 #endif
     
+#ifdef HAL_PERIPH_ENABLE_ESC_APDHVPRO200
+    AP_ESC_APDHVPro APD_ESC_Telem;
+    void APD_ESC_Telem_update();
+#endif
+
 #ifdef HAL_PERIPH_ENABLE_RC_OUT
 #if HAL_WITH_ESC_TELEM
     AP_ESC_Telem esc_telem;
