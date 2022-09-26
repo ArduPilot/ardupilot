@@ -18,30 +18,44 @@
 #if AP_TEMPERATURE_SENSOR_ENABLED
 #include "AP_TemperatureSensor_Backend.h"
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 
 /*
-  base class constructor.
-  This incorporates initialisation as well.
+    base class constructor.
+    This incorporates initialisation as well.
 */
-AP_TemperatureSensor_Backend::AP_TemperatureSensor_Backend(AP_TemperatureSensor &front, AP_TemperatureSensor::TemperatureSensor_State &state,
-                                                           AP_TemperatureSensor_Params &params):
-        _front(front),
-        _state(state),
-        _params(params)
+AP_TemperatureSensor_Backend::AP_TemperatureSensor_Backend(AP_TemperatureSensor &front,
+                                                            AP_TemperatureSensor::TemperatureSensor_State &state,
+                                                            AP_TemperatureSensor_Params &params):
+    _front(front),
+    _state(state),
+    _params(params)
 {
 }
 
-void AP_TemperatureSensor_Backend::Log_Write_TEMP(uint64_t time_us) const
+// returns true if a temperature has been recently updated
+bool AP_TemperatureSensor_Backend::healthy(void) const
+{
+    return (_state.last_time_ms > 0) && (AP_HAL::millis() - _state.last_time_ms < 5000);
+}
+
+void AP_TemperatureSensor_Backend::Log_Write_TEMP() const
 {
     AP::logger().Write("TEMP",
-            "TimeUS," "Instance," "Temp", // labels
-            "s"           "#"     "O"    , // units
-            "F"           "-"     "0"    , // multipliers
-            "Q"           "B"     "f"    , // types
-            time_us, _state.instance, _state.temperature);
+            "TimeUS,"     "Instance,"       "Temp" , // labels
+            "s"               "#"           "O"    , // units
+            "F"               "-"           "0"    , // multipliers
+            "Q"               "B"           "f"    , // types
+     AP_HAL::micros64(), _state.instance, _state.temperature);
+}
+
+void AP_TemperatureSensor_Backend::set_temperature(const float temperature)
+{
+    {
+        WITH_SEMAPHORE(_sem);
+        _state.temperature = temperature;
+        _state.last_time_ms = AP_HAL::millis();
+    }
 }
 
 #endif // AP_TEMPERATURE_SENSOR_ENABLED

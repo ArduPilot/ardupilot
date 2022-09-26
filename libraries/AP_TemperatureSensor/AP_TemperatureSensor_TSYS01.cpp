@@ -1,11 +1,29 @@
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "AP_TemperatureSensor_TSYS01.h"
 
-#if AP_TEMPERATURE_SENSOR_TSYS01_ENABLE
+#if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
 #include <utility>
 #include <stdio.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
+
+#ifndef AP_TEMPERATURE_SENSOR_TSYS01_ENFORCE_KNOWN_VALID_I2C_ADDRESS
+#define AP_TEMPERATURE_SENSOR_TSYS01_ENFORCE_KNOWN_VALID_I2C_ADDRESS 1
+#endif
 
 extern const AP_HAL::HAL &hal;
 
@@ -18,14 +36,15 @@ void AP_TemperatureSensor_TSYS01::init()
 {
     constexpr char name[] = "TSYS01";
 
+#if AP_TEMPERATURE_SENSOR_TSYS01_ENFORCE_KNOWN_VALID_I2C_ADDRESS
     // I2C Address: Default to using TSYS01_ADDR_CSB0 & Check I2C Address is Correct
-    uint8_t addr = _params._i2c_address;
-    if ((addr != TSYS01_ADDR_CSB0) && (addr != TSYS01_ADDR_CSB1)) {
-        printf("%s, wrong I2C addr", name);
-        return;
+    if ((_params.bus_address != TSYS01_ADDR_CSB0) && (_params.bus_address != TSYS01_ADDR_CSB1)) {
+        printf("%s wrong I2C addr of 0x%2X, setting to 0x%2X", name, (unsigned)_params.bus_address.get(), (unsigned)TSYS01_ADDR_CSB0);
+        _params.bus_address.set(TSYS01_ADDR_CSB0);
     }
+#endif
 
-    _dev = std::move(hal.i2c_mgr->get_device(_params._i2c_bus, _params._i2c_address));
+    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
     if (!_dev) {
         printf("%s device is null!", name);
         return;
@@ -35,19 +54,20 @@ void AP_TemperatureSensor_TSYS01::init()
 
     _dev->set_retries(10);
 
-    if (!_reset()) {
+    // reset
+    if (!_dev->transfer(&TSYS01_CMD_RESET, 1, nullptr, 0)) {
         printf("%s reset failed", name);
         return;
     }
 
     hal.scheduler->delay(4);
 
-    if (!_read_prom()) {
+    if (!read_prom()) {
         printf("%s prom read failed", name);
         return;
     }
 
-    _convert();
+    start_next_sample();
 
     // lower retries for run
     _dev->set_retries(3);
@@ -56,11 +76,6 @@ void AP_TemperatureSensor_TSYS01::init()
     // Max conversion time is 9.04 ms
     _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_TSYS01::_timer, void));
-}
-
-bool AP_TemperatureSensor_TSYS01::_reset() const
-{
-    return _dev->transfer(&TSYS01_CMD_RESET, 1, nullptr, 0);
 }
 
 // Register map
@@ -73,67 +88,65 @@ bool AP_TemperatureSensor_TSYS01::_reset() const
 //      5       0xAA -> _k[0]
 //      6       0xAC -> unused
 //      7       0xAE -> unused
-bool AP_TemperatureSensor_TSYS01::_read_prom()
+bool AP_TemperatureSensor_TSYS01::read_prom()
 {
     bool success = false;
-    for (int i = 0; i < 5; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_k); i++) {
         // Read only the prom values that we use
-        _k[i] = _read_prom_word(5-i);
-        success |= _k[i] != 0;
+        _k[i] = read_prom_word(ARRAY_SIZE(_k)-i);
+        success |= (_k[i] != 0);
     }
     return success;
 }
 
 // Borrowed from MS Baro driver
-uint16_t AP_TemperatureSensor_TSYS01::_read_prom_word(uint8_t word) const
+uint16_t AP_TemperatureSensor_TSYS01::read_prom_word(const uint8_t word) const
 {
     const uint8_t reg = TSYS01_CMD_READ_PROM + (word << 1);
     uint8_t val[2];
     if (!_dev->transfer(&reg, 1, val, 2)) {
         return 0;
     }
-    return (val[0] << 8) | val[1];
+    return UINT16_VALUE(val[0], val[1]);
 }
 
-bool AP_TemperatureSensor_TSYS01::_convert() const
-{
-    return _dev->transfer(&TSYS01_CMD_CONVERT, 1, nullptr, 0);
-}
-
-uint32_t AP_TemperatureSensor_TSYS01::_read_adc() const
+uint32_t AP_TemperatureSensor_TSYS01::read_adc() const
 {
     uint8_t val[3];
     if (!_dev->transfer(&TSYS01_CMD_READ_ADC, 1, val, 3)) {
         return 0;
     }
-    return (val[0] << 16) | (val[1] << 8) | val[2];
+    return UINT32_VALUE(0,val[0],val[1],val[2]);
 }
 
 void AP_TemperatureSensor_TSYS01::_timer(void)
 {
-    const uint32_t adc = _read_adc();
-    _state.healthy = adc != 0;
+    const uint32_t adc = read_adc();
 
-    if (_state.healthy) {
-        _calculate(adc);
-    } else {
-        _state.temperature = 0;
+    if (adc != 0) {
+        const float temp = calculate(adc);
+        set_temperature(temp);
     }
 
-    //printf("\nTemperature: %.2lf C", _state.temperature;
-
-    _convert();
+    start_next_sample();
 }
 
-void AP_TemperatureSensor_TSYS01::_calculate(uint32_t adc)
+void AP_TemperatureSensor_TSYS01::start_next_sample()
+{
+    _dev->transfer(&TSYS01_CMD_CONVERT, 1, nullptr, 0);
+}
+
+float AP_TemperatureSensor_TSYS01::calculate(const uint32_t adc) const
 {
     const float adc16 = adc/256;
-    _state.temperature =
+    const float temperature =
         -2   * _k[4] * powf(10, -21) * powf(adc16, 4) +
         4    * _k[3] * powf(10, -16) * powf(adc16, 3) +
         -2   * _k[2] * powf(10, -11) * powf(adc16, 2) +
         1    * _k[1] * powf(10, -6)  * adc16 +
         -1.5 * _k[0] * powf(10, -2);
+
+    return temperature;
 }
 
-#endif // AP_TEMPERATURE_SENSOR_TSYS01_ENABLE
+#endif // AP_TEMPERATURE_SENSOR_TSYS01_ENABLED

@@ -42,16 +42,48 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[0], "1_", 10, AP_TemperatureSensor, AP_TemperatureSensor_Params),
 
-#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES > 1
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 2
     // @Group: 2_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[1], "2_", 11, AP_TemperatureSensor, AP_TemperatureSensor_Params),
 #endif
 
-#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES > 2
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 3
     // @Group: 3_
     // @Path: AP_TemperatureSensor_Params.cpp
     AP_SUBGROUPINFO(_params[2], "3_", 12, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 4
+    // @Group: 4_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[3], "4_", 13, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 5
+    // @Group: 5_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[4], "5_", 14, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+#endif
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 6
+    // @Group: 6_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[5], "6_", 15, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+#endif
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 7
+    // @Group: 7_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[6], "7_", 16, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+#endif
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 8
+    // @Group: 8_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[7], "8_", 17, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+#endif
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 9
+    // @Group: 9_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[8], "9_", 18, AP_TemperatureSensor, AP_TemperatureSensor_Params),
 #endif
 
     AP_GROUPEND
@@ -86,18 +118,19 @@ void AP_TemperatureSensor::init()
     for (uint8_t instance = 0; instance < AP_TEMPERATURE_SENSOR_MAX_INSTANCES; instance++) {
 
         switch (get_type(instance)) {
-#if AP_TEMPERATURE_SENSOR_TSYS01_ENABLE
-            case Type::TSYS01:
+#if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
+            case AP_TemperatureSensor::Type::TSYS01:
                 drivers[instance] = new AP_TemperatureSensor_TSYS01(*this, _state[instance], _params[instance]);
                 break;
 #endif
-            case Type::NONE:
+            case AP_TemperatureSensor::Type::NONE:
             default:
                 break;
         }
 
         // call init function for each backend
         if (drivers[instance] != nullptr) {
+            _state[instance].instance = instance;
             drivers[instance]->init();
             // _num_instances is actually the index for looping over instances
             // the user may have TEMP_TYPE=0 and TEMP2_TYPE=7, in which case
@@ -112,47 +145,47 @@ void AP_TemperatureSensor::init()
 void AP_TemperatureSensor::update()
 {
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (drivers[i] != nullptr && get_type(i) != Type::NONE) {
+        if (drivers[i] != nullptr && get_type(i) != AP_TemperatureSensor::Type::NONE) {
             drivers[i]->update();
 
 #if HAL_LOGGING_ENABLED
             const AP_Logger *logger = AP_Logger::get_singleton();
             if (logger != nullptr && _log_flag) {
-                const uint64_t time_us = AP_HAL::micros64();
-                drivers[i]->Log_Write_TEMP(time_us);
+                drivers[i]->Log_Write_TEMP();
             }
 #endif
         }
     }
 }
 
-AP_TemperatureSensor::Type AP_TemperatureSensor::get_type(uint8_t instance) const
+AP_TemperatureSensor::Type AP_TemperatureSensor::get_type(const uint8_t instance) const
 {
     if (instance >= AP_TEMPERATURE_SENSOR_MAX_INSTANCES) {
-        return Type::NONE;
+        return AP_TemperatureSensor::Type::NONE;
     }
-    return (Type)_params[instance]._type.get();
+    return (AP_TemperatureSensor::Type)_params[instance].type.get();
 }
 
 // returns true if there is a temperature reading
-bool AP_TemperatureSensor::temperature(float &temp, const uint8_t instance) const
+bool AP_TemperatureSensor::get_temperature(float &temp, const uint8_t instance) const
 {
-    if (instance >= AP_TEMPERATURE_SENSOR_MAX_INSTANCES || drivers[instance] == nullptr) {
+    if (!healthy(instance)) {
         return false;
     }
 
     temp = _state[instance].temperature;
+    return true;
+}
 
-    return drivers[instance]->healthy();
+bool AP_TemperatureSensor::healthy(const uint8_t instance) const
+{
+    return instance < _num_instances && drivers[instance] != nullptr && drivers[instance]->healthy();
 }
 
 namespace AP {
-
-AP_TemperatureSensor &temperature_sensor()
-{
+AP_TemperatureSensor &temperature_sensor() {
     return *AP_TemperatureSensor::get_singleton();
 }
-
 };
 
 #endif // AP_TEMPERATURE_SENSOR_ENABLED
