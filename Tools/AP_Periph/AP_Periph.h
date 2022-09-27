@@ -11,6 +11,7 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Proximity/AP_Proximity.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_MSP/AP_MSP.h>
 #include <AP_MSP/msp.h>
@@ -90,6 +91,7 @@ public:
     void can_airspeed_update();
     void can_rangefinder_update();
     void can_battery_update();
+    void can_proximity_update();
 
     void load_parameters();
     void prepare_reboot();
@@ -186,6 +188,10 @@ public:
 #ifdef HAL_PERIPH_ENABLE_RANGEFINDER
     RangeFinder rangefinder;
     uint32_t last_sample_ms;
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_PRX
+    AP_Proximity proximity;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
