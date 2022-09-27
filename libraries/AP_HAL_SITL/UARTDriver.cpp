@@ -157,6 +157,10 @@ void UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         free(s);
     }
 
+    if (_sim_serial_device != nullptr) {
+        _sim_serial_device->set_autopilot_baud(baud);
+    }
+
     if (hal.console != this) { // don't clear USB buffers (allows early startup messages to escape)
         _readbuffer.clear();
         _writebuffer.clear();
