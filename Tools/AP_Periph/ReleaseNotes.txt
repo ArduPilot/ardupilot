@@ -1,3 +1,10 @@
+Release 1.4.1 27th Sep 2022
+---------------------------
+
+This is a minor release with one bug fix:
+
+ - fixed compass diagnonal compensation for AP_Periph compasses
+
 Release 1.4.0 4th Sep 2022
 --------------------------
 
