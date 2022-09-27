@@ -9581,7 +9581,8 @@ Also, ignores heartbeats not from our target system'''
         if abs(m.x) < 10 or abs(m.y) < 10 or abs(m.z) < 10:
             raise NotAchievedException("Failed to get local home position: (got=%u, %u, %u)", m.x, m.y, m.z)
         else:
-            self.progress(f"Received local home position successfully: (got={m.x}, {m.y}, {m.z})")
+            self.progress("Received local home position successfully: (got=%f, %f, %f)" %
+                          (m.x, m.y, m.z))
 
         self.context_pop()
         self.reboot_sitl()
