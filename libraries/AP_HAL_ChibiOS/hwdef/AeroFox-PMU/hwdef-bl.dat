@@ -1,0 +1,3 @@
+include ../AeroFox-PMU/hwdef-bl.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.AeroFox_PMU"
