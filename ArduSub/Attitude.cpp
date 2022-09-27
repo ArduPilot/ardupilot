@@ -100,7 +100,7 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
     // ensure a reasonable deadzone
     g.throttle_deadzone = constrain_int16(g.throttle_deadzone, 0, 400);
 
-    uint16_t dead_zone = channel_throttle->get_dead_zone();
+    uint16_t dead_zone = channel_throttle->get_dead_zone() * gain;
     uint16_t center = (channel_throttle->get_radio_max() + channel_throttle->get_radio_min())/2;
     float throttle = throttle_control - center + 1000;
     if (abs(throttle) < dead_zone) {
