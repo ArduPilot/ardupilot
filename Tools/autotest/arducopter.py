@@ -7338,7 +7338,7 @@ class AutoTestCopter(AutoTest):
             ("USD1_v1", 11),
             ("leddarone", 12),
             ("maxsonarseriallv", 13),
-            ("nmea", 17),
+            ("nmea", 17, {"baud": 9600}),
             ("wasp", 18),
             ("benewake_tf02", 19),
             ("blping", 23),
@@ -7357,14 +7357,20 @@ class AutoTestCopter(AutoTest):
                                                          (1, '--uartF', 5),
                                                          (2, '--uartG', 6)]:
                 if len(do_drivers) > offs:
-                    (sim_name, rngfnd_param_value) = do_drivers[offs]
+                    if len(do_drivers[offs]) > 2:
+                        (sim_name, rngfnd_param_value, kwargs) = do_drivers[offs]
+                    else:
+                        (sim_name, rngfnd_param_value) = do_drivers[offs]
+                        kwargs = {}
                     command_line_args.append("%s=sim:%s" %
                                              (cmdline_argument, sim_name))
-                    serial_param_name = "SERIAL%u_PROTOCOL" % serial_num
-                    self.set_parameters({
-                        serial_param_name: 9, # rangefinder
+                    sets = {
+                        "SERIAL%u_PROTOCOL" % serial_num: 9, # rangefinder
                         "RNGFND%u_TYPE" % (offs+1): rngfnd_param_value,
-                    })
+                    }
+                    if "baud" in kwargs:
+                        sets["SERIAL%u_BAUD" % serial_num] = kwargs["baud"]
+                    self.set_parameters(sets)
             self.customise_SITL_commandline(command_line_args)
             self.fly_rangefinder_drivers_fly([x[0] for x in do_drivers])
             self.context_pop()
