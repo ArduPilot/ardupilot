@@ -105,11 +105,15 @@ void Sub::control_depth() {
     // Output the Z controller + pilot input to all motors.
     Vector3f earth_frame_rc_inputs = ahrs.get_rotation_body_to_ned() * Vector3f(-channel_forward->norm_input(), -channel_lateral->norm_input(), (2.0f*(-0.5f+channel_throttle->norm_input())));
     float target_climb_rate_cm_s = get_pilot_desired_climb_rate(500 + g.pilot_speed_up * earth_frame_rc_inputs.z);
-    target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, -get_pilot_speed_dn(), g.pilot_speed_up);
+
+    bool surfacing = ap.at_surface || pos_control.get_pos_target_z_cm() > g.surface_depth;
+    float upper_speed_limit = surfacing ? 0 : g.pilot_speed_up;
+    float lower_speed_limit = ap.at_bottom ? 0 : -get_pilot_speed_dn();
+    target_climb_rate_cm_s = constrain_float(target_climb_rate_cm_s, lower_speed_limit, upper_speed_limit);
     pos_control.set_pos_target_z_from_climb_rate_cm(target_climb_rate_cm_s);
 
-    if (ap.at_surface) {
-        pos_control.set_alt_target_with_slew(MIN(pos_control.get_pos_target_z_cm(), g.surface_depth - 1.0f)); // set target to 1 cm below surface level
+    if (surfacing) {
+        pos_control.set_alt_target_with_slew(MIN(pos_control.get_pos_target_z_cm(), g.surface_depth - 5.0f)); // set target to 5 cm below surface level
     } else if (ap.at_bottom) {
         pos_control.set_alt_target_with_slew(MAX(inertial_nav.get_altitude() + 10.0f, pos_control.get_pos_target_z_cm())); // set target to 10 cm above bottom
     }
@@ -117,7 +121,8 @@ void Sub::control_depth() {
     // Read the output of the z controller and rotate it so it always points up
     Vector3f throttle_vehicle_frame = ahrs.get_rotation_body_to_ned().transposed() * Vector3f(0, 0, motors.get_throttle_in_bidirectional());
     //TODO: scale throttle with the ammount of thrusters in the given direction
-    motors.set_throttle(throttle_vehicle_frame.z + channel_throttle->norm_input());
+    float raw_throttle_factor = (ahrs.get_rotation_body_to_ned() * Vector3f(0, 0, 1.0)).xy().length();
+    motors.set_throttle(throttle_vehicle_frame.z + raw_throttle_factor * channel_throttle->norm_input());
     motors.set_forward(-throttle_vehicle_frame.x + channel_forward->norm_input());
     motors.set_lateral(-throttle_vehicle_frame.y + channel_lateral->norm_input());
 }
