@@ -63,6 +63,10 @@ public:
         k_param_can_slcan_cport,
         k_param_temperature_sensor,
         k_param_esc_command_timeout_ms,
+        k_param_proximity,
+        k_param_proximity_baud,
+        k_param_proximity_port,
+        k_param_proximity_max_rate,
     };
 
     AP_Int16 format_version;
@@ -95,6 +99,13 @@ public:
     AP_Int8 rangefinder_port;
     AP_Int16 rangefinder_max_rate;
 #endif
+
+#ifdef HAL_PERIPH_ENABLE_PRX
+    AP_Int32 proximity_baud;
+    AP_Int8 proximity_port;
+    AP_Int16 proximity_max_rate;
+#endif
+
 
 #ifdef HAL_PERIPH_ENABLE_ADSB
     AP_Int32 adsb_baudrate;
