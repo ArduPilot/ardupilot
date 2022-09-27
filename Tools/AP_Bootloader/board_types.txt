@@ -179,6 +179,7 @@ AP_HW_PixSurveyA1                    1076
 AP_HW_AEROFOX_AIRSPEED               1077
 AP_HW_ATOMRCF405                     1078
 AP_HW_CUBEPILOT_CANMOD               1079
+AP_HW_AEROFOX_PMU                     1080
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
