@@ -222,7 +222,7 @@ uint32_t AP_Terrain::east_blocks(struct grid_block &block) const
     Location loc1, loc2;
     loc1.lat = block.lat_degrees*10*1000*1000L;
     loc1.lng = block.lon_degrees*10*1000*1000L;
-    loc2.lat = block.lat_degrees*10*1000*1000L;
+    loc2.lat = loc1.lat;
     loc2.lng = (block.lon_degrees+1)*10*1000*1000L;
 
     // shift another two blocks east to ensure room is available
