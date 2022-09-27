@@ -14,11 +14,15 @@ bool Sub::althold_init()
 
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
+    attitude_control.set_throttle_out(0.75, true, 100.0);
+    pos_control.init_z_controller();
     pos_control.set_max_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
     pos_control.set_correction_speed_accel_z(-get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-
+    attitude_control.relax_attitude_controllers();
     // initialise position and desired velocity
-    pos_control.init_z_controller_stopping_point();
+    float pos = stopping_distance();
+    float zero = 0;
+    pos_control.input_pos_vel_accel_z(pos, zero, zero);
 
     if(prev_control_mode != control_mode_t::STABILIZE) {
         last_roll = 0;
@@ -30,6 +34,13 @@ bool Sub::althold_init()
     return true;
 }
 
+
+float Sub::stopping_distance() {
+    const float curr_pos_z = inertial_nav.get_position().z;
+    float curr_vel_z = inertial_nav.get_velocity().z;
+    float distance = - (curr_vel_z * curr_vel_z) / (2 * g.pilot_accel_z);
+    return curr_pos_z  + distance;
+}
 
 void Sub::handle_attitude()
 {
@@ -86,9 +97,12 @@ void Sub::althold_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control.set_throttle_out(0.5,true,g.throttle_filt);
-        attitude_control.relax_attitude_controllers();
-        pos_control.relax_z_controller(motors.get_throttle_hover());
+        attitude_control.set_throttle_out(0.75,true,100.0);
+        pos_control.init_z_controller();
+        // initialise position and desired velocity
+        float pos = stopping_distance();
+        float zero = 0;
+        pos_control.input_pos_vel_accel_z(pos, zero, zero);
         last_roll = 0;
         last_pitch = 0;
         last_pilot_heading = ahrs.yaw_sensor;

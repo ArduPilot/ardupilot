@@ -631,6 +631,7 @@ private:
     bool get_wp_distance_m(float &distance) const override;
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
+    float stopping_distance();
 
     enum Failsafe_Action {
         Failsafe_Action_None    = 0,
