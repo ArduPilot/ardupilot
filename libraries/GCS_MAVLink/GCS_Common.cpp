@@ -5753,8 +5753,8 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 //OW
     case MSG_FRSKY_PASSTHROUGH_ARRAY:
-//        CHECK_PAYLOAD_SIZE(FRSKY_PASSTHROUGH_ARRAY);
-        CHECK_PAYLOAD_SIZE(TUNNEL);
+        CHECK_PAYLOAD_SIZE(FRSKY_PASSTHROUGH_ARRAY);
+        //CHECK_PAYLOAD_SIZE(TUNNEL);
         send_frsky_passthrough_array();
         break;
 //OWEND
