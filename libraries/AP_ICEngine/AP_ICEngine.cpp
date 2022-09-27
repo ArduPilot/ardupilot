@@ -271,6 +271,7 @@ void AP_ICEngine::update(void)
         if (!should_run) {
             state = ICE_OFF;
         } else if (now - starter_start_time_ms >= starter_time*1000) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Engine running");
             state = ICE_RUNNING;
         }
         break;
