@@ -180,8 +180,6 @@ public:
                                      mission_type);
     }
 
-    static const MAV_MISSION_TYPE supported_mission_types[3];
-
     // packetReceived is called on any successful decode of a mavlink message
     virtual void packetReceived(const mavlink_status_t &status,
                                 const mavlink_message_t &msg);
@@ -1074,11 +1072,12 @@ public:
                               ap_var_type param_type,
                               float param_value);
 
-    static class MissionItemProtocol_Waypoints *_missionitemprotocol_waypoints;
-    static class MissionItemProtocol_Rally *_missionitemprotocol_rally;
-#if AP_FENCE_ENABLED
-    static class MissionItemProtocol_Fence *_missionitemprotocol_fence;
-#endif
+    // an array of objects used to handle each of the different
+    // protocol types we support.  This is indexed by the enumeration
+    // MAV_MISSION_TYPE, taking advantage of the fact that fence,
+    // mission and rally have values 0, 1 and 2.  Indexing should be via
+    // get_prot_for_mission_type to do bounds checking.
+    static class MissionItemProtocol *missionitemprotocols[3];
     class MissionItemProtocol *get_prot_for_mission_type(const MAV_MISSION_TYPE mission_type) const;
     void try_send_queued_message_for_type(MAV_MISSION_TYPE type) const;
 
