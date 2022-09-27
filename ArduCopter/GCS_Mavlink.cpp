@@ -473,6 +473,11 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("ADSB",   9, GCS_MAVLINK_Parameters, streamRates[9],  0),
+
+//OW
+    AP_GROUPINFO("FRPT",    10, GCS_MAVLINK_Parameters, streamRates[10],  0),
+//OWEND
+
 AP_GROUPEND
 };
 
@@ -515,9 +520,6 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
-//OW
-    ,MSG_FRSKY_PASSTHROUGH_ARRAY
-//OWEND
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
@@ -549,6 +551,11 @@ static const ap_message STREAM_ADSB_msgs[] = {
     MSG_ADSB_VEHICLE,
     MSG_AIS_VESSEL,
 };
+//OW
+static const ap_message STREAM_FRSKYPASSTHROUGH_msgs[] = {
+    MSG_FRSKY_PASSTHROUGH_ARRAY
+};
+//OWEND
 
 const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_RAW_SENSORS),
@@ -560,6 +567,9 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_EXTRA3),
     MAV_STREAM_ENTRY(STREAM_ADSB),
     MAV_STREAM_ENTRY(STREAM_PARAMS),
+//OW
+    MAV_STREAM_ENTRY(STREAM_FRSKYPASSTHROUGH),
+//OWEND
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
 

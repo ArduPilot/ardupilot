@@ -2,6 +2,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+//OW
+#include "AP_Frsky_SPort_Protocol.h"
+//OWEND
 
 #ifndef HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 #define HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL 1
@@ -15,6 +18,10 @@ public:
         _port(port) { }
 
     virtual ~AP_Frsky_Backend()  {}
+
+//OW
+    AP_Frsky_SPort_Protocol* _protocol;
+//OWEND
 
     virtual bool init();
     virtual void send() = 0;
@@ -58,9 +65,6 @@ protected:
 
     void calc_nav_alt(void);
     void calc_gps_position(void);
-    bool calc_rpm(const uint8_t instance, int32_t &value) const;
-
-    float get_vspeed_ms(void);
 
     // methods to convert flight controller data to FrSky D or SPort format
     float format_gps(float dec);

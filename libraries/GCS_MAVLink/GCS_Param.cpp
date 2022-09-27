@@ -180,6 +180,11 @@ void GCS_MAVLINK::handle_request_data_stream(const mavlink_message_t &msg)
     case MAV_DATA_STREAM_EXTRA3:
         stream_id = STREAM_EXTRA3;
         break;
+//OW
+    case MAV_DATA_STREAM_FRSKYPASSTHROUGH:
+        stream_id = STREAM_FRSKYPASSTHROUGH;
+        break;
+//OWEND
     }
 
     if (stream_id == NUM_STREAMS) {

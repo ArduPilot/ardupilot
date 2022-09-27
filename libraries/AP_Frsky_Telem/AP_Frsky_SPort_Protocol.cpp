@@ -1,14 +1,15 @@
 #include "AP_Frsky_SPort_Protocol.h"
 
-#include <AP_AHRS/AP_AHRS.h>
+//#include <AP_AHRS/AP_AHRS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_Notify/AP_Notify.h>
-#include <AP_RangeFinder/AP_RangeFinder.h>
+//#include <AP_GPS/AP_GPS.h>
+//#include <AP_Notify/AP_Notify.h>
+//#include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Terrain/AP_Terrain.h>
-#include <AC_Fence/AC_Fence.h>
+//#include <AC_Fence/AC_Fence.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+//#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AP_WindVane/AP_WindVane.h>
@@ -85,7 +86,7 @@ AP_Frsky_SPort_Protocol *AP_Frsky_SPort_Protocol::singleton;
 
 bool AP_Frsky_SPort_Protocol::is_available_batt(uint8_t instance)
 {
-    return AP::battery().num_instances() > instance;
+    return (AP::battery().num_instances() > instance);
 }
 
 bool AP_Frsky_SPort_Protocol::is_available_ap_status(void)
@@ -93,10 +94,10 @@ bool AP_Frsky_SPort_Protocol::is_available_ap_status(void)
     return gcs().vehicle_initialised();
 }
 
-bool AP_Frsky_SPort_Protocol::is_available_rpm(void)
+bool AP_Frsky_SPort_Protocol::is_available_rpm(uint8_t instance)
 {
     const AP_RPM* rpm = AP::rpm();
-    return (rpm != nullptr) && (rpm->num_sensors() > 0);
+    return (rpm != nullptr) && (rpm->num_sensors() > instance);
 }
 
 bool AP_Frsky_SPort_Protocol::is_available_terrain(void)
@@ -157,14 +158,14 @@ uint32_t AP_Frsky_SPort_Protocol::calc_gps_status(void)
     // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
     uint32_t gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
-    gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
+    gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT) << GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
-    gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET;
+    gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f), 2, 1) << GPS_HDOP_OFFSET;
     // GPS receiver advanced status (0: no advanced fix, 1: GPS_OK_FIX_3D_DGPS, 2: GPS_OK_FIX_3D_RTK_FLOAT, 3: GPS_OK_FIX_3D_RTK_FIXED)
-    gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
+    gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0) << GPS_ADVSTATUS_OFFSET;
     // Altitude MSL in dm
     const Location &loc = gps.location();
-    gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET;
+    gps_status |= prep_number(roundf(loc.alt * 0.1f), 2, 2) << GPS_ALTMSL_OFFSET;
     return gps_status;
 }
 
@@ -177,9 +178,9 @@ uint32_t AP_Frsky_SPort_Protocol::calc_attiandrng(void)
     // roll from [-18000;18000] centidegrees to unsigned .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     uint32_t attiandrng = ((uint16_t)roundf((_ahrs.roll_sensor + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
-    attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
+    attiandrng |= ((uint16_t)roundf((_ahrs.pitch_sensor + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT) << ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
-    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+    attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1) << ATTIANDRNG_RNGFND_OFFSET;
     return attiandrng;
 }
 
@@ -204,12 +205,12 @@ uint32_t AP_Frsky_SPort_Protocol::calc_velandyaw(bool airspeed_enabled, bool sen
         hspeed_m = airspeed_m;
     }
     // horizontal velocity in dm/s
-    velandyaw |= prep_number(roundf(hspeed_m * 10), 2, 1)<<VELANDYAW_XYVEL_OFFSET;
+    velandyaw |= prep_number(roundf(hspeed_m * 10), 2, 1) << VELANDYAW_XYVEL_OFFSET;
     // yaw from [0;36000] centidegrees to .2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
-    velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT)<<VELANDYAW_YAW_OFFSET;
+    velandyaw |= ((uint16_t)roundf(_ahrs.yaw_sensor * 0.05f) & VELANDYAW_YAW_LIMIT) << VELANDYAW_YAW_OFFSET;
     // flag the airspeed bit if required
     if (airspeed_estimate_true && airspeed_enabled && send_airspeed) {
-        velandyaw |= 1U<<VELANDYAW_ARSPD_OFFSET;
+        velandyaw |= (1U << VELANDYAW_ARSPD_OFFSET);
     }
     return velandyaw;
 }
@@ -230,9 +231,9 @@ uint32_t AP_Frsky_SPort_Protocol::calc_batt(uint8_t instance)
     // battery voltage in decivolts, can have up to a 12S battery (4.25Vx12S = 51.0V)
     uint32_t batt = (((uint16_t)roundf(_battery.voltage(instance) * 10.0f)) & BATT_VOLTAGE_LIMIT);
     // battery current draw in deciamps
-    batt |= prep_number(roundf(current * 10.0f), 2, 1)<<BATT_CURRENT_OFFSET;
+    batt |= prep_number(roundf(current * 10.0f), 2, 1) << BATT_CURRENT_OFFSET;
     // battery current drawn since power on in mAh (limit to 32767 (0x7FFF) since value is stored on 15 bits)
-    batt |= ((consumed_mah < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(consumed_mah) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT)<<BATT_TOTALMAH_OFFSET;
+    batt |= ((consumed_mah < BATT_TOTALMAH_LIMIT) ? ((uint16_t)roundf(consumed_mah) & BATT_TOTALMAH_LIMIT) : BATT_TOTALMAH_LIMIT) << BATT_TOTALMAH_OFFSET;
     return batt;
 }
 
@@ -246,30 +247,30 @@ uint32_t AP_Frsky_SPort_Protocol::calc_ap_status(void)
 #endif
 
     // control/flight mode number (limit to 31 (0x1F) since the value is stored on 5 bits)
-    uint32_t ap_status = (uint8_t)((gcs().custom_mode()+1) & AP_CONTROL_MODE_LIMIT);
+    uint32_t ap_status = (uint8_t)((gcs().custom_mode() + 1) & AP_CONTROL_MODE_LIMIT);
     // simple/super simple modes flags
-    ap_status |= (uint8_t)(gcs().simple_input_active())<<AP_SIMPLE_OFFSET;
-    ap_status |= (uint8_t)(gcs().supersimple_input_active())<<AP_SSIMPLE_OFFSET;
+    ap_status |= (uint8_t)(gcs().simple_input_active()) << AP_SIMPLE_OFFSET;
+    ap_status |= (uint8_t)(gcs().supersimple_input_active()) << AP_SSIMPLE_OFFSET;
     // is_flying flag
     ap_status |= (uint8_t)(AP_Notify::flags.flying) << AP_FLYING_OFFSET;
     // armed flag
-    ap_status |= (uint8_t)(AP_Notify::flags.armed)<<AP_ARMED_OFFSET;
+    ap_status |= (uint8_t)(AP_Notify::flags.armed) << AP_ARMED_OFFSET;
     // battery failsafe flag
-    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery)<<AP_BATT_FS_OFFSET;
+    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery) << AP_BATT_FS_OFFSET;
     // bad ekf flag
-    ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad)<<AP_EKF_FS_OFFSET;
+    ap_status |= (uint8_t)(AP_Notify::flags.ekf_bad) << AP_EKF_FS_OFFSET;
     // generic failsafe
-    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery||AP_Notify::flags.failsafe_ekf||AP_Notify::flags.failsafe_gcs||AP_Notify::flags.failsafe_radio)<<AP_FS_OFFSET;
+    ap_status |= (uint8_t)(AP_Notify::flags.failsafe_battery||AP_Notify::flags.failsafe_ekf||AP_Notify::flags.failsafe_gcs||AP_Notify::flags.failsafe_radio) << AP_FS_OFFSET;
 #if AP_FENCE_ENABLED
     // fence status
     AC_Fence *fence = AP::fence();
     if (fence != nullptr) {
         ap_status |= (uint8_t)(fence->enabled() && fence->present()) << AP_FENCE_PRESENT_OFFSET;
-        ap_status |= (uint8_t)(fence->get_breaches()>0) << AP_FENCE_BREACH_OFFSET;
+        ap_status |= (uint8_t)(fence->get_breaches() > 0) << AP_FENCE_BREACH_OFFSET;
     }
 #endif
     // signed throttle [-100,100] scaled down to [-63,63] on 7 bits, MSB for sign + 6 bits for 0-63
-    ap_status |= prep_number(gcs().get_hud_throttle()*0.63, 2, 0)<<AP_THROTTLE_OFFSET;
+    ap_status |= prep_number(gcs().get_hud_throttle() * 0.63f, 2, 0) << AP_THROTTLE_OFFSET;
     // IMU temperature
     ap_status |= imu_temp << AP_IMU_TEMP_OFFSET;
     return ap_status;
@@ -297,7 +298,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_home(void)
             // distance between vehicle and home_loc in meters
             home = prep_number(roundf(home_loc.get_distance(loc)), 3, 2);
             // angle from front of vehicle to the direction of home_loc in 3 degree increments (just in case, limit to 127 (0x7F) since the value is stored on 7 bits)
-            home |= (((uint8_t)roundf(loc.get_bearing_to(home_loc) * 0.00333f)) & HOME_BEARING_LIMIT)<<HOME_BEARING_OFFSET;
+            home |= (((uint8_t)roundf(loc.get_bearing_to(home_loc) * 0.00333f)) & HOME_BEARING_LIMIT) << HOME_BEARING_OFFSET;
         }
         // altitude between vehicle and home_loc
         _relative_home_altitude = loc.alt;
@@ -307,10 +308,9 @@ uint32_t AP_Frsky_SPort_Protocol::calc_home(void)
         }
     }
     // altitude above home in decimeters
-    home |= prep_number(roundf(_relative_home_altitude * 0.1f), 3, 2)<<HOME_ALT_OFFSET;
+    home |= prep_number(roundf(_relative_home_altitude * 0.1f), 3, 2) << HOME_ALT_OFFSET;
     return home;
 }
-
 
 
 uint32_t AP_Frsky_SPort_Protocol::calc_rpm(void)
@@ -323,16 +323,32 @@ uint32_t AP_Frsky_SPort_Protocol::calc_rpm(void)
     uint32_t value = 0;
     // we send: rpm_value*0.1 as 16 bits signed
     float rpm;
-    // bits 0-15 for rpm 0
-    if (ap_rpm->get_rpm(0,rpm)) {
-        value |= (int16_t)roundf(rpm * 0.1);
+    // bits 0-15 for rpm instance 0
+    if (ap_rpm->get_rpm(0, rpm)) {
+        value |= (int16_t)roundf(rpm * 0.1f);
     }
-    // bits 16-31 for rpm 1
-    if (ap_rpm->get_rpm(1,rpm)) {
-        value |= (int16_t)roundf(rpm * 0.1) << 16;
+    // bits 16-31 for rpm instance 1
+    if (ap_rpm->get_rpm(1, rpm)) {
+        value |= (int16_t)roundf(rpm * 0.1f) << 16;
     }
     return value;
 }
+
+
+int32_t AP_Frsky_SPort_Protocol::calc_sensor_rpm(uint8_t instance)
+{
+    const AP_RPM* rpm = AP::rpm();
+    if (rpm == nullptr) {
+        return 0;
+    }
+
+    float rpm_value;
+    if (!rpm->get_rpm(instance, rpm_value)) {
+        return 0;
+    }
+    return (int32_t)roundf(rpm_value);
+}
+
 
 
 uint32_t AP_Frsky_SPort_Protocol::calc_terrain(void)
@@ -347,7 +363,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_terrain(void)
     float height_above_terrain;
     if (terrain->height_above_terrain(height_above_terrain, true)) {
         // vehicle height above terrain
-        value |= prep_number(roundf(height_above_terrain * 10), 3, 2);
+        value |= prep_number(roundf(height_above_terrain * 10.0f), 3, 2);
     }
     // terrain unhealthy flag
     value |= (uint8_t)(terrain->status() == AP_Terrain::TerrainStatus::TerrainStatusUnhealthy) << TERRAIN_UNHEALTHY_OFFSET;
@@ -368,7 +384,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_wind(void)
     // wind angle in 3 degree increments 0,360 (unsigned)
     uint32_t value = prep_number(roundf(wrap_360(degrees(atan2f(-v.y, -v.x))) * (1.0f/3.0f)), 2, 0);
     // wind speed in dm/s
-    value |= prep_number(roundf(v.length() * 10), 2, 1) << WIND_SPEED_OFFSET;
+    value |= prep_number(roundf(v.length() * 10.0f), 2, 1) << WIND_SPEED_OFFSET;
 #else
     const AP_WindVane* windvane = AP_WindVane::get_singleton();
     uint32_t value = 0;
@@ -376,11 +392,11 @@ uint32_t AP_Frsky_SPort_Protocol::calc_wind(void)
         // true wind angle in 3 degree increments 0,360 (unsigned)
         value = prep_number(roundf(wrap_360(degrees(windvane->get_true_wind_direction_rad())) * (1.0f/3.0f)), 2, 0);
         // true wind speed in dm/s
-        value |= prep_number(roundf(windvane->get_true_wind_speed() * 10), 2, 1) << WIND_SPEED_OFFSET;
+        value |= prep_number(roundf(windvane->get_true_wind_speed() * 10.0f), 2, 1) << WIND_SPEED_OFFSET;
         // apparent wind angle in 3 degree increments -180,180 (signed)
         value |= prep_number(roundf(degrees(windvane->get_apparent_wind_direction_rad()) * (1.0f/3.0f)), 2, 0);
         // apparent wind speed in dm/s
-        value |= prep_number(roundf(windvane->get_apparent_wind_speed() * 10), 2, 1) << WIND_APPARENT_SPEED_OFFSET;
+        value |= prep_number(roundf(windvane->get_apparent_wind_speed() * 10.0f), 2, 1) << WIND_APPARENT_SPEED_OFFSET;
     }
 #endif
     return value;
@@ -392,16 +408,16 @@ uint32_t AP_Frsky_SPort_Protocol::calc_waypoint(void)
     const AP_Mission *mission = AP::mission();
     const AP_Vehicle *vehicle = AP::vehicle();
     if (mission == nullptr || vehicle == nullptr) {
-        return 0U;
+        return 0;
     }
 
     float wp_distance;
     if (!vehicle->get_wp_distance_m(wp_distance)) {
-        return 0U;
+        return 0;
     }
     float angle;
     if (!vehicle->get_wp_bearing_deg(angle)) {
-        return 0U;
+        return 0;
     }
     // waypoint current nav index
     uint32_t value = MIN(mission->get_current_nav_index(), WP_NUMBER_LIMIT);
@@ -426,7 +442,7 @@ uint32_t AP_Frsky_SPort_Protocol::calc_param(uint8_t* param_id)
         break;
     case BATT_CAPACITY_1:
         param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(0)); // battery pack capacity in mAh
-        *param_id = AP::battery().num_instances() > 1 ? BATT_CAPACITY_2 : TELEMETRY_FEATURES;
+        *param_id = (AP::battery().num_instances() > 1) ? BATT_CAPACITY_2 : TELEMETRY_FEATURES;
         break;
     case BATT_CAPACITY_2:
         param_value = (uint32_t)roundf(AP::battery().pack_capacity_mah(1)); // battery pack capacity in mAh
@@ -472,68 +488,86 @@ float AP_Frsky_SPort_Protocol::get_vspeed_ms(void)
 }
 
 
+float AP_Frsky_SPort_Protocol::get_current_height_cm(void) // in centimeters above home
+{
+    Location loc;
+    float current_height = 0.0f;
+
+    AP_AHRS &_ahrs = AP::ahrs();
+    WITH_SEMAPHORE(_ahrs.get_semaphore());
+    if (_ahrs.get_location(loc)) {
+        current_height = loc.alt * 0.01f;
+        if (!loc.relative_alt) {
+            // loc.alt has home altitude added, remove it
+            current_height -= _ahrs.get_home().alt * 0.01f;
+        }
+    }
+    return current_height;
+}
+
+
 uint16_t AP_Frsky_SPort_Protocol::prep_number(int32_t number, uint8_t digits, uint8_t power)
 {
     uint16_t res = 0;
     uint32_t abs_number = abs(number);
 
     if ((digits == 2) && (power == 0)) { // number encoded on 7 bits, client side needs to know if expected range is 0,127 or -63,63
-        uint8_t max_value = number < 0 ? (0x1<<6)-1 : (0x1<<7)-1;
-        res = constrain_int16(abs_number,0,max_value);
+        uint8_t max_value = (number < 0) ? (1 << 6) - 1 : (1 << 7) - 1;
+        res = constrain_int16(abs_number, 0, max_value);
         if (number < 0) {   // if number is negative, add sign bit in front
-            res |= 1U<<6;
+            res |= (1 << 6);
         }
     } else if ((digits == 2) && (power == 1)) { // number encoded on 8 bits: 7 bits for digits + 1 for 10^power
         if (abs_number < 100) {
-            res = abs_number<<1;
+            res = (abs_number << 1);
         } else if (abs_number < 1270) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<1)|0x1;
+            res = ((uint8_t)roundf(abs_number * 0.1f) << 1) | 0x0001;
         } else { // transmit max possible value (0x7F x 10^1 = 1270)
-            res = 0xFF;
+            res = 0x00FF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<8;
+            res |= (1 << 8);
         }
     } else if ((digits == 2) && (power == 2)) { // number encoded on 9 bits: 7 bits for digits + 2 for 10^power
         if (abs_number < 100) {
-            res = abs_number<<2;
+            res = (abs_number << 2);
         } else if (abs_number < 1000) {
-            res = ((uint8_t)roundf(abs_number * 0.1f)<<2)|0x1;
+            res = ((uint8_t)roundf(abs_number * 0.1f) << 2) | 0x0001;
         } else if (abs_number < 10000) {
-            res = ((uint8_t)roundf(abs_number * 0.01f)<<2)|0x2;
+            res = ((uint8_t)roundf(abs_number * 0.01f) << 2) | 0x0002;
         } else if (abs_number < 127000) {
-            res = ((uint8_t)roundf(abs_number * 0.001f)<<2)|0x3;
+            res = ((uint8_t)roundf(abs_number * 0.001f) << 2) | 0x0003;
         } else { // transmit max possible value (0x7F x 10^3 = 127000)
-            res = 0x1FF;
+            res = 0x01FF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<9;
+            res |= (1 << 9);
         }
     } else if ((digits == 3) && (power == 1)) { // number encoded on 11 bits: 10 bits for digits + 1 for 10^power
         if (abs_number < 1000) {
-            res = abs_number<<1;
+            res = (abs_number << 1);
         } else if (abs_number < 10240) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<1)|0x1;
+            res = ((uint16_t)roundf(abs_number * 0.1f) << 1) | 0x0001;
         } else { // transmit max possible value (0x3FF x 10^1 = 10230)
-            res = 0x7FF;
+            res = 0x07FF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<11;
+            res |= (0x1 << 11);
         }
     } else if ((digits == 3) && (power == 2)) { // number encoded on 12 bits: 10 bits for digits + 2 for 10^power
         if (abs_number < 1000) {
-            res = abs_number<<2;
+            res = (abs_number << 2);
         } else if (abs_number < 10000) {
-            res = ((uint16_t)roundf(abs_number * 0.1f)<<2)|0x1;
+            res = ((uint16_t)roundf(abs_number * 0.1f) << 2) | 0x0001;
         } else if (abs_number < 100000) {
-            res = ((uint16_t)roundf(abs_number * 0.01f)<<2)|0x2;
+            res = ((uint16_t)roundf(abs_number * 0.01f) << 2) | 0x0002;
         } else if (abs_number < 1024000) {
-            res = ((uint16_t)roundf(abs_number * 0.001f)<<2)|0x3;
+            res = ((uint16_t)roundf(abs_number * 0.001f) << 2) | 0x0003;
         } else { // transmit max possible value (0x3FF x 10^3 = 1023000)
-            res = 0xFFF;
+            res = 0x0FFF;
         }
         if (number < 0) { // if number is negative, add sign bit in front
-            res |= 0x1<<12;
+            res |= (1 << 12);
         }
     }
     return res;

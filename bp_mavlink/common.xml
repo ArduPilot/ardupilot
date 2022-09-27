@@ -1980,6 +1980,11 @@
       <entry value="12" name="MAV_DATA_STREAM_EXTRA3">
         <description>Dependent on the autopilot</description>
       </entry>
+<!-- //OW -->
+      <entry value="13" name="MAV_DATA_STREAM_FRSKYPASSTHROUGH">
+        <description>Dependent on the autopilot</description>
+      </entry>
+<!-- //OWEND -->
     </enum>
     <enum name="MAV_ROI">
       <deprecated since="2018-01" replaced_by="MAV_CMD_DO_SET_ROI_*"/>
