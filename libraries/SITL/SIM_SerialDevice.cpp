@@ -64,6 +64,10 @@ ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size) const
 
 ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) const
 {
+    if (device_baud() != 0 && autopilot_baud != 0 && device_baud() != autopilot_baud) {
+        return -1;
+    }
+
     const ssize_t ret = to_autopilot->write((uint8_t*)buffer, size);
     // ::fprintf(stderr, "write to autopilot: (");
     // for (ssize_t i=0; i<ret; i++) {
@@ -79,6 +83,10 @@ ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) 
 
 ssize_t SerialDevice::read_from_device(char *buffer, const size_t size) const
 {
+    if (device_baud() != 0 && autopilot_baud != 0 && device_baud() != autopilot_baud) {
+        return -1;
+    }
+
     const ssize_t ret = to_autopilot->read((uint8_t*)buffer, size);
     return ret;
 }

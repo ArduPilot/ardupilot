@@ -32,10 +32,12 @@ public:
     // methods for autopilot to use to talk to device:
     ssize_t read_from_device(char *buffer, size_t size) const;
     ssize_t write_to_device(const char *buffer, size_t size) const;
+    void set_autopilot_baud(uint32_t baud) { autopilot_baud = baud; }
 
     // methods for simulated device to use:
     ssize_t read_from_autopilot(char *buffer, size_t size) const;
     virtual ssize_t write_to_autopilot(const char *buffer, size_t size) const;
+    virtual uint32_t device_baud() const { return 0; }  // 0 meaning unset
 
 protected:
 
@@ -45,6 +47,10 @@ protected:
     ByteBuffer *from_autopilot;
 
     bool init_sitl_pointer();
+
+private:
+
+    uint32_t autopilot_baud;
 };
 
 }
