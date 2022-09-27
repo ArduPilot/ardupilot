@@ -231,6 +231,10 @@ public:
         MOUNT_LOCK =         163, // Mount yaw lock vs follow
         LOG_PAUSE =          164, // Pauses logging if under logging rate control
         ARM_EMERGENCY_STOP = 165, // ARM on high, MOTOR_ESTOP on low
+        CAMERA_REC_VIDEO =   166, // start recording on high, stop recording on low
+        CAMERA_ZOOM =        167, // camera zoom high = zoom in, middle = hold, low = zoom out
+        CAMERA_MANUAL_FOCUS = 168,// camera manual focus.  high = long shot, middle = stop focus, low = close shot
+        CAMERA_AUTO_FOCUS =  169, // camera auto focus
 
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
@@ -322,6 +326,10 @@ protected:
     void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
+    bool do_aux_function_record_video(const AuxSwitchPos ch_flag);
+    bool do_aux_function_camera_zoom(const AuxSwitchPos ch_flag);
+    bool do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag);
+    bool do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag);
     void do_aux_function_runcam_control(const AuxSwitchPos ch_flag);
     void do_aux_function_runcam_osd_control(const AuxSwitchPos ch_flag);
     void do_aux_function_fence(const AuxSwitchPos ch_flag);
