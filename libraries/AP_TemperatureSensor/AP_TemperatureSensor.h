@@ -36,11 +36,13 @@
 // declare backend class
 class AP_TemperatureSensor_Backend;
 class AP_TemperatureSensor_TSYS01;
+class AP_TemperatureSensor_MCP9600;
 
 class AP_TemperatureSensor
 {
     friend class AP_TemperatureSensor_Backend;
     friend class AP_TemperatureSensor_TSYS01;
+    friend class AP_TemperatureSensor_MCP9600;
 
 public:
 
@@ -55,6 +57,7 @@ public:
     enum class Type : uint8_t {
         NONE                        = 0,
         TSYS01                      = 1,
+        MCP9600                     = 2,
     };
 
     // option to map to another system component
