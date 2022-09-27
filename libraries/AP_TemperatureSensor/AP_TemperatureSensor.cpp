@@ -17,6 +17,7 @@
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
 #include "AP_TemperatureSensor_TSYS01.h"
+#include "AP_TemperatureSensor_MCP9600.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -121,6 +122,11 @@ void AP_TemperatureSensor::init()
 #if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
             case AP_TemperatureSensor::Type::TSYS01:
                 drivers[instance] = new AP_TemperatureSensor_TSYS01(*this, _state[instance], _params[instance]);
+                break;
+#endif
+#if AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
+            case AP_TemperatureSensor::Type::MCP9600:
+                drivers[instance] = new AP_TemperatureSensor_MCP9600(*this, _state[instance], _params[instance]);
                 break;
 #endif
             case AP_TemperatureSensor::Type::NONE:
