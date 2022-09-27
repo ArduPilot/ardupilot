@@ -5932,6 +5932,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
             "RNGFND1_ORIENT" : 25,   # Set to downward facing
             "SERIAL7_PROTOCOL" : 9,  # Rangefinder on uartH
+            "SERIAL7_BAUD" : 9600,   # Rangefinder specific baudrate
 
             "RNGFND3_TYPE" : 2,      # MaxbotixI2C
             "RNGFND3_ADDR" : 112,    # 0x70 address from SIM_I2C.cpp
