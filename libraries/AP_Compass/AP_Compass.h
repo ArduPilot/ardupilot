@@ -213,11 +213,13 @@ public:
     const Vector3f &get_offsets(uint8_t i) const { return _get_state(Priority(i)).offset; }
     const Vector3f &get_offsets(void) const { return get_offsets(_first_usable); }
 
+#ifndef HAL_BUILD_AP_PERIPH
     const Vector3f &get_diagonals(uint8_t i) const { return _get_state(Priority(i)).diagonals; }
     const Vector3f &get_diagonals(void) const { return get_diagonals(_first_usable); }
 
     const Vector3f &get_offdiagonals(uint8_t i) const { return _get_state(Priority(i)).offdiagonals; }
     const Vector3f &get_offdiagonals(void) const { return get_offdiagonals(_first_usable); }
+#endif
 
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LEARN_INFLIGHT; }
@@ -481,8 +483,10 @@ private:
         Compass::Priority priority;
         AP_Int8     orientation;
         AP_Vector3f offset;
+#ifndef HAL_BUILD_AP_PERIPH
         AP_Vector3f diagonals;
         AP_Vector3f offdiagonals;
+#endif
         AP_Float    scale_factor;
 
         // device id detected at init.
