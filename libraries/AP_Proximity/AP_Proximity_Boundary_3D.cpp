@@ -238,7 +238,6 @@ bool AP_Proximity_Boundary_3D::get_distance(const Face &face, float &distance) c
     if (!face.valid()) {
         return false;
     }
-
     if (_distance_valid[face.layer][face.sector]) {
         distance = _distance[face.layer][face.sector];
         return true;
@@ -377,6 +376,23 @@ bool AP_Proximity_Boundary_3D::get_horizontal_object_angle_and_distance(uint8_t 
         distance = _filtered_distance[PROXIMITY_MIDDLE_LAYER][object_number].get();
         return true;
     }
+    return false;
+}
+
+// get an obstacle info for AP_Periph
+// returns false if no angle or distance could be returned for some reason
+bool AP_Proximity_Boundary_3D::get_obstacle_info(uint8_t obstacle_num, float &angle_deg, float &pitch_deg, float &distance) const
+{
+    // obstacle num is just "flattened layers, and sectors"
+    const uint8_t layer = obstacle_num / PROXIMITY_NUM_SECTORS;
+    const uint8_t sector = obstacle_num % PROXIMITY_NUM_SECTORS;
+    if (_distance_valid[layer][sector]) {
+        angle_deg = _angle[layer][sector];
+        pitch_deg = _pitch[layer][sector];
+        distance = _filtered_distance[layer][sector].get();
+        return true;
+    }
+
     return false;
 }
 

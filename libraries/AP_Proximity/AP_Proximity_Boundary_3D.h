@@ -121,6 +121,9 @@ public:
     uint8_t get_horizontal_object_count() const;
     bool get_horizontal_object_angle_and_distance(uint8_t object_number, float& angle_deg, float &distance) const;
 
+    // get obstacle info for AP_Periph
+    bool get_obstacle_info(uint8_t obstacle_num, float &angle_deg, float &pitch_deg, float &distance) const;
+
     // get number of layers
     uint8_t get_num_layers() const { return PROXIMITY_NUM_LAYERS; }
 
