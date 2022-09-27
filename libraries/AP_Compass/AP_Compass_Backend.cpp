@@ -74,8 +74,10 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     Compass::mag_state &state = _compass._state[Compass::StateIndex(i)];
 
     const Vector3f &offsets = state.offset.get();
+#ifndef HAL_BUILD_AP_PERIPH
     const Vector3f &diagonals = state.diagonals.get();
     const Vector3f &offdiagonals = state.offdiagonals.get();
+#endif
 
     // add in the basic offsets
     mag += offsets;
@@ -86,6 +88,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
         mag *= state.scale_factor;
     }
 
+#ifndef HAL_BUILD_AP_PERIPH
     // apply eliptical correction
     Matrix3f mat(
         diagonals.x, offdiagonals.x, offdiagonals.y,
@@ -94,6 +97,7 @@ void AP_Compass_Backend::correct_field(Vector3f &mag, uint8_t i)
     );
 
     mag = mat * mag;
+#endif
 
 #if COMPASS_MOT_ENABLED
     const Vector3f &mot = state.motor_compensation.get();
