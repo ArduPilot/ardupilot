@@ -202,7 +202,7 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(2)
         self.set_attitude(90, 0, 0)
         self.set_rc(Joystick.Lateral, 1900)
-        self.wait_altitude(altitude_min=-15, altitude_max=-14)
+        self.wait_altitude(altitude_min=-15, altitude_max=-14, timeout=60)
         self.set_rc(Joystick.Lateral, 1500)
 
         # got to depth, can we keep it?
@@ -215,10 +215,10 @@ class AutoTestSub(AutoTest):
         self.set_attitude(0, 0, 0)
         self.delay_sim_time(2)
         self.set_attitude(180, 0, 0)
-        self.watch_altitude_maintained()
+        self.watch_altitude_maintained(delta=1.0)
         self.delay_sim_time(5)
         self.set_attitude(0, 90, 0)
-        self.watch_altitude_maintained()
+        self.watch_altitude_maintained(delta=1.0)
         self.delay_sim_time(5)
         self.disarm_vehicle()
 
