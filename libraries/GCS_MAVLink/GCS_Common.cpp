@@ -2209,32 +2209,32 @@ void GCS::update_send()
         if (mission != nullptr) {
             _missionitemprotocol_waypoints = new MissionItemProtocol_Waypoints(*mission);
         }
-#if HAL_RALLY_ENABLED
+  #if HAL_RALLY_ENABLED
         AP_Rally *rally = AP::rally();
         if (rally != nullptr) {
             _missionitemprotocol_rally = new MissionItemProtocol_Rally(*rally);
         }
-#endif
-#if AP_FENCE_ENABLED
+  #endif
+  #if AP_FENCE_ENABLED
         AC_Fence *fence = AP::fence();
         if (fence != nullptr) {
             _missionitemprotocol_fence = new MissionItemProtocol_Fence(*fence);
         }
+  #endif
     }
-#endif
     if (_missionitemprotocol_waypoints != nullptr) {
         _missionitemprotocol_waypoints->update();
     }
-#if HAL_RALLY_ENABLED
+  #if HAL_RALLY_ENABLED
     if (_missionitemprotocol_rally != nullptr) {
         _missionitemprotocol_rally->update();
     }
-#endif
-#if AP_FENCE_ENABLED
+  #endif
+  #if AP_FENCE_ENABLED
     if (_missionitemprotocol_fence != nullptr) {
         _missionitemprotocol_fence->update();
     }
-#endif
+  #endif
 #endif // HAL_BUILD_AP_PERIPH
     // round-robin the GCS_MAVLINK backend that gets to go first so
     // one backend doesn't monopolise all of the time allowed for sending
