@@ -199,7 +199,8 @@ define CAN_APP_NODE_NAME "com.cubepilot.herepro"
 
 define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
 
-define COMPASS_CAL_ENABLED 1
+# disabled compass cal as it doesn't work for now
+# define COMPASS_CAL_ENABLED 1
 
 define HAL_ENABLE_SLCAN 1
 # passthrough CAN1
