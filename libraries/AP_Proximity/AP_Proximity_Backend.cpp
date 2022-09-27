@@ -29,6 +29,7 @@ AP_Proximity_Backend::AP_Proximity_Backend(AP_Proximity& _frontend, AP_Proximity
         state(_state),
         params(_params)
 {
+    _backend_type = (AP_Proximity::Type )_params.type.get();
 }
 
 static_assert(PROXIMITY_MAX_DIRECTION <= 8,
@@ -87,6 +88,7 @@ bool AP_Proximity_Backend::ignore_reading(float pitch, float yaw, float distance
 // returns true if database is ready to be pushed to and all cached data is ready
 bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matrix3f &body_to_ned)
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return false;
@@ -99,16 +101,19 @@ bool AP_Proximity_Backend::database_prepare_for_push(Vector3f &current_pos, Matr
     body_to_ned = AP::ahrs().get_rotation_body_to_ned();
 
     return true;
+#else
+    return false;
+#endif
 }
 
 // update Object Avoidance database with Earth-frame point
-void AP_Proximity_Backend::database_push(float angle, float distance)
+void AP_Proximity_Backend::database_push(float angle, float pitch, float distance)
 {
     Vector3f current_pos;
     Matrix3f body_to_ned;
 
     if (database_prepare_for_push(current_pos, body_to_ned)) {
-        database_push(angle, distance, AP_HAL::millis(), current_pos, body_to_ned);
+        database_push(angle, pitch, distance, AP_HAL::millis(), current_pos, body_to_ned);
     }
 }
 
@@ -116,6 +121,8 @@ void AP_Proximity_Backend::database_push(float angle, float distance)
 // pitch can be optionally provided if needed
 void AP_Proximity_Backend::database_push(float angle, float pitch, float distance, uint32_t timestamp_ms, const Vector3f &current_pos, const Matrix3f &body_to_ned)
 {
+
+#if !APM_BUILD_TYPE(APM_BUILD_AP_Periph)
     AP_OADatabase *oaDb = AP::oadatabase();
     if (oaDb == nullptr || !oaDb->healthy()) {
         return;
@@ -135,6 +142,7 @@ void AP_Proximity_Backend::database_push(float angle, float pitch, float distanc
     temp_pos.z = temp_pos.z * -1.0f;
 
     oaDb->queue_push(temp_pos, timestamp_ms, distance);
+#endif
 }
 
 #endif // HAL_PROXIMITY_ENABLED

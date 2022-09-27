@@ -8,7 +8,7 @@ const AP_Param::GroupInfo AP_Proximity_Params::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Proximity type
     // @Description: What type of proximity sensor is connected
-    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1
+    // @Values: 0:None,7:LightwareSF40c,2:MAVLink,3:TeraRangerTower,4:RangeFinder,5:RPLidarA2,6:TeraRangerTowerEvo,8:LightwareSF45B,10:SITL,12:AirSimSITL,13:CygbotD1, 14:DroneCAN
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",   1, AP_Proximity_Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -107,6 +107,14 @@ const AP_Param::GroupInfo AP_Proximity_Params::var_info[] = {
     // @Range: 0 500
     // @User: Advanced
     AP_GROUPINFO("_MAX", 17, AP_Proximity_Params, max_m, 0.0f),
+
+    // @Param: _ADDR
+    // @DisplayName: Bus address of sensor
+    // @Description: The bus address of the sensor, where applicable. Used for the I2C and DroneCAN sensors to allow for multiple sensors on different addresses.
+    // @Range: 0 127
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_ADDR", 25, AP_Proximity_Params, address, 0),
 
     AP_GROUPEND
 };
