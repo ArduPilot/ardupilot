@@ -590,6 +590,26 @@ void AP_GPS::send_blob_start(uint8_t instance)
     }
 #endif // AP_GPS_NMEA_ENABLED
 
+    // the following devices don't have init blobs:
+    switch (_type[instance]) {
+#if AP_GPS_SBF_ENABLED
+    case GPS_TYPE_SBF:
+#endif //AP_GPS_SBF_ENABLED
+#if AP_GPS_GSOF_ENABLED
+    case GPS_TYPE_GSOF:
+#endif //AP_GPS_GSOF_ENABLED
+#if AP_GPS_NOVA_ENABLED
+    case GPS_TYPE_NOVA:
+#endif //AP_GPS_NOVA_ENABLED
+#if HAL_SIM_GPS_ENABLED
+    case GPS_TYPE_SITL:
+#endif  // HAL_SIM_GPS_ENABLED
+        send_blob_start(instance, nullptr, 0);
+        return;
+    default:
+        break;
+    }
+
     // send combined initialisation blob, on the assumption that the
     // GPS units will parse what they need and ignore the data they
     // don't understand:
