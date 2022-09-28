@@ -2,6 +2,7 @@
 
 #include "GCS_Mavlink.h"
 
+#include <AP_RPM/AP_RPM_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
 MAV_TYPE GCS_Rover::frame_type() const
@@ -565,7 +566,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_MAG_CAL_PROGRESS,
     MSG_EKF_STATUS_REPORT,
     MSG_VIBRATION,
+#if AP_RPM_ENABLED
     MSG_RPM,
+#endif
     MSG_WHEEL_DISTANCE,
     MSG_ESC_TELEMETRY,
 };
