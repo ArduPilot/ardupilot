@@ -104,6 +104,28 @@ public:
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
 
+    //
+    // camera controls for gimbals that include a camera
+    //
+
+    // take a picture.  returns true on success
+    virtual bool take_picture() { return false; }
+
+    // start or stop video recording.  returns true on success
+    // set start_recording = true to start record, false to stop recording
+    virtual bool record_video(bool start_recording) { return false; }
+
+    // set camera zoom step.  returns true on success
+    // zoom out = -1, hold = 0, zoom in = 1
+    virtual bool set_zoom_step(int8_t zoom_step) { return false; }
+
+    // set focus in, out or hold.  returns true on success
+    // focus in = -1, focus hold = 0, focus out = 1
+    virtual bool set_manual_focus_step(int8_t focus_step) { return false; }
+
+    // auto focus.  returns true on success
+    virtual bool set_auto_focus() { return false; }
+
 protected:
 
     enum class MountTargetType {
