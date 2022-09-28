@@ -1,6 +1,7 @@
 #include "GCS_Mavlink.h"
 
 #include "Plane.h"
+#include <AP_RPM/AP_RPM_config.h>
 
 MAV_TYPE GCS_Plane::frame_type() const
 {
@@ -567,7 +568,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
     MSG_SIMSTATE,
     MSG_AHRS2,
+#if AP_RPM_ENABLED
     MSG_RPM,
+#endif
     MSG_AOA_SSA,
     MSG_PID_TUNING,
     MSG_LANDING,
