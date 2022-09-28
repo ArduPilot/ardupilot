@@ -64,7 +64,7 @@ ssize_t SerialDevice::read_from_autopilot(char *buffer, const size_t size) const
 
 ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) const
 {
-    if (device_baud() != 0 && autopilot_baud != 0 && device_baud() != autopilot_baud) {
+    if (!is_match_baud()) {
         return -1;
     }
 
@@ -83,7 +83,7 @@ ssize_t SerialDevice::write_to_autopilot(const char *buffer, const size_t size) 
 
 ssize_t SerialDevice::read_from_device(char *buffer, const size_t size) const
 {
-    if (device_baud() != 0 && autopilot_baud != 0 && device_baud() != autopilot_baud) {
+    if (!is_match_baud()) {
         return -1;
     }
 
@@ -94,4 +94,18 @@ ssize_t SerialDevice::write_to_device(const char *buffer, const size_t size) con
 {
     const ssize_t ret = from_autopilot->write((uint8_t*)buffer, size);
     return ret;
+}
+
+/**
+ * baudrates match
+ * 
+ * @retval true matched baudreate
+ * @retval false  unmatched baudreate
+ */
+bool SerialDevice::is_match_baud() const
+{
+    if (device_baud() != 0 && autopilot_baud != 0 && device_baud() != autopilot_baud) {
+        return false;
+    }
+    return true;
 }

@@ -50,6 +50,8 @@ protected:
 
 private:
 
+    bool is_match_baud(void) const;
+
     uint32_t autopilot_baud;
 };
 
