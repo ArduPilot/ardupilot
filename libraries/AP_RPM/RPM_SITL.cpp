@@ -13,14 +13,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <AP_HAL/AP_HAL.h>
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include "RPM_SITL.h"
 
-extern const AP_HAL::HAL& hal;
+#if AP_RPM_SIM_ENABLED
 
-/* 
+#include <AP_HAL/AP_HAL.h>
+
+/*
    open the sensor in constructor
 */
 AP_RPM_SITL::AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &_state) :
@@ -46,4 +45,4 @@ void AP_RPM_SITL::update(void)
 
 }
 
-#endif // CONFIG_HAL_BOARD
+#endif // AP_RPM_SIM_ENABLED
