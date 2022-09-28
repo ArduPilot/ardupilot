@@ -68,6 +68,8 @@ public:
 
     ssize_t write_to_autopilot(const char *p, size_t size) const override;
 
+    uint32_t device_baud() const override;  // 0 meaning unset
+
 private:
 
     uint8_t instance;
