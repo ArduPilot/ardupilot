@@ -437,6 +437,64 @@ void AP_Mount::set_roi_target(uint8_t instance, const Location &target_loc)
     }
 }
 
+//
+// camera controls for gimbals that include a camera
+//
+
+// take a picture.  returns true on success
+bool AP_Mount::take_picture(uint8_t instance)
+{
+    // call instance's take_picture
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->take_picture();
+}
+
+// start or stop video recording.  returns true on success
+// set start_recording = true to start record, false to stop recording
+bool AP_Mount::record_video(uint8_t instance, bool start_recording)
+{
+    // call instance's record_video
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->record_video(start_recording);
+}
+
+// set camera zoom step.  returns true on success
+// zoom out = -1, hold = 0, zoom in = 1
+bool AP_Mount::set_zoom_step(uint8_t instance, int8_t zoom_step)
+{
+    // call instance's set_zoom_step
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->set_zoom_step(zoom_step);
+}
+
+// set focus in, out or hold.  returns true on success
+// focus in = -1, focus hold = 0, focus out = 1
+bool AP_Mount::set_manual_focus_step(uint8_t instance, int8_t focus_step)
+{
+    // call instance's set_manual_focus_step
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->set_manual_focus_step(focus_step);
+}
+
+// auto focus.  returns true on success
+bool AP_Mount::set_auto_focus(uint8_t instance)
+{
+    // call instance's set_auto_focus
+    if (!check_instance(instance)) {
+        return false;
+    }
+    return _backends[instance]->set_auto_focus();
+}
+
+
 bool AP_Mount::check_primary() const
 {
     return check_instance(_primary);
