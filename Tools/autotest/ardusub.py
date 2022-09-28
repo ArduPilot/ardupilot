@@ -222,6 +222,39 @@ class AutoTestSub(AutoTest):
         self.delay_sim_time(5)
         self.disarm_vehicle()
 
+    def test_mode_changes(self, delta=0.2):
+        """Check if alternating between ALTHOLD, STABILIZE and POSHOLD affects altitude"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter("SIM_BUOYANCY", 0)
+        self.set_parameter("SIM_BARO_RND", 0)
+        self.change_mode('STABILIZE')
+        self.set_rc(Joystick.Throttle, 1350)
+        self.delay_sim_time(10)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(3)
+        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(2)
+        self.change_mode('POSHOLD')
+        self.delay_sim_time(2)
+        self.change_mode('STABILIZE')
+        self.delay_sim_time(2)
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(2)
+        self.change_mode('STABILIZE')
+        self.delay_sim_time(2)
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(2)
+        self.change_mode('MANUAL')
+        self.disarm_vehicle()
+        final_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        if abs(previous_altitude - final_altitude) > delta:
+            raise NotAchievedException(
+                "Changing modes affected depth with no throttle input!, started at {}, ended at {}"
+                .format(previous_altitude, final_altitude)
+            )
+
     def test_pos_hold(self):
         """Test POSHOLD mode"""
         self.wait_ready_to_arm()
@@ -453,6 +486,7 @@ class AutoTestSub(AutoTest):
 
             ("AltitudeHold", "Test altitude holde mode", self.test_alt_hold),
             ("PositionHold", "Test position hold mode", self.test_pos_hold),
+            ("ModeChanges", "Test if mode changes affect altitude", self.test_mode_changes),
 
             ("DiveMission",
              "Dive mission",
