@@ -1,6 +1,23 @@
 APM:Sub Release Notes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub 4.1.1 Beta1 13-October-2022
+
+ - Add digital output (including relay) support for Navigator boards
+ - Fix Position Hold "bounce back" issue
+ - Improve low gain control in Position Hold and Depth Hold modes
+ - Add Pixhawk defaults for lights and camera mount tilt
+ - Changed flow_of_control error to a gcs warning
+ - Always calibrate barometer if negative depth is detected
+ - Improve Depth hold behavior when surface/bottom is reached
+ - Fix issue where changing modes caused the ROV to dive
+ - Change default PILOT_VELZ_MAX to 1 m/s
+ - Tighten default Pitch stabilization parameters
+ - Set default EK3_SRC1_VELZ to None instead of GPS to fix Depth oscilations
+ - Set default parameters for a smoother Position Hold and Depth Hold operation
+ - Add support for CPU affinity in Linux boards
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub 4.1.0 6-June-2022
 
  - Fix agressive depth hold twitching introduced in beta7
