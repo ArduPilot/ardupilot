@@ -986,10 +986,10 @@ float Aircraft::get_local_updraft(const Vector3d &currentPos)
 
     #define MAX_THERMALS 10
 
-    float thermals_w[MAX_THERMALS];
-    float thermals_r[MAX_THERMALS];
-    float thermals_x[MAX_THERMALS];
-    float thermals_y[MAX_THERMALS];
+    float thermals_w[MAX_THERMALS] = {0};
+    float thermals_r[MAX_THERMALS] = {0};
+    float thermals_x[MAX_THERMALS] = {0};
+    float thermals_y[MAX_THERMALS] = {0};
 
     int n_thermals = 0;
 
