@@ -57,6 +57,24 @@ GPS::GPS(uint8_t _instance) :
 #endif
 }
 
+uint32_t GPS::device_baud() const
+{
+    switch ((Type)_sitl->gps_type[instance].get()) {
+        case Type::NOVA:
+            return 19200;
+        case Type::NONE:
+        case Type::UBLOX:
+        case Type::NMEA:
+        case Type::SBP:
+        case Type::SBP2:
+#if AP_SIM_GPS_FILE_ENABLED
+        case Type::FILE:
+#endif
+            return 0;  // 0 meaning unset
+    }
+    return 0;  // 0 meaning unset
+}
+
 /*
   write some bytes from the simulated GPS
  */
