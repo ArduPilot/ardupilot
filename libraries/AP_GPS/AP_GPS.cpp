@@ -693,6 +693,29 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     // all remaining drivers automatically cycle through baud rates to detect
     // the correct baud rate, and should have the selected baud broadcast
     dstate->auto_detected_baud = true;
+    const uint32_t now = AP_HAL::millis();
+
+    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
+        // try the next baud rate
+        // incrementing like this will skip the first element in array of bauds
+        // this is okay, and relied upon
+        dstate->current_baud++;
+        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+            dstate->current_baud = 0;
+        }
+        uint32_t baudrate = _baudrates[dstate->current_baud];
+        _port[instance]->begin(baudrate);
+        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        dstate->last_baud_change_ms = now;
+
+        if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+            send_blob_start(instance);
+        }
+    }
+
+    if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
+        send_blob_update(instance);
+    }
 
     switch (_type[instance]) {
 #if AP_GPS_SBF_ENABLED
@@ -716,30 +739,6 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 
     default:
         break;
-    }
-
-    const uint32_t now = AP_HAL::millis();
-
-    if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
-        // try the next baud rate
-        // incrementing like this will skip the first element in array of bauds
-        // this is okay, and relied upon
-        dstate->current_baud++;
-        if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-            dstate->current_baud = 0;
-        }
-        uint32_t baudrate = _baudrates[dstate->current_baud];
-        _port[instance]->begin(baudrate);
-        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-        dstate->last_baud_change_ms = now;
-
-        if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
-            send_blob_start(instance);
-        }
-    }
-
-    if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
-        send_blob_update(instance);
     }
 
     if (initblob_state[instance].remaining != 0) {
