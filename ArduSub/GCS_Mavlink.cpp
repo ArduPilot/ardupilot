@@ -1,6 +1,7 @@
 #include "Sub.h"
 
 #include "GCS_Mavlink.h"
+#include <AP_RPM/AP_RPM_config.h>
 
 MAV_TYPE GCS_Sub::frame_type() const
 {
