@@ -511,12 +511,17 @@ inline void SLCAN::CANIface::addByte(const uint8_t byte)
 
 void SLCAN::CANIface::update_slcan_port()
 {
+    const bool armed = hal.util->get_soft_armed();
     if (_set_by_sermgr) {
-        // Once we pick SerialManager path we hold on 
-        // to that until reboot
+        if (armed && _port != nullptr) {
+            // auto-disable when armed
+            _port->lock_port(0, 0);
+            _port = nullptr;
+            _set_by_sermgr = false;
+        }
         return;
     }
-    if (_port == nullptr) {
+    if (_port == nullptr && !armed) {
          _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
         if (_port != nullptr) {
             _port->lock_port(_serial_lock_key, _serial_lock_key);
