@@ -101,59 +101,6 @@ public:
     // parameters for example.
     void notify_no_such_mode(uint8_t mode_number);
 
-    /*
-      common parameters for fixed wing aircraft
-     */
-    struct FixedWing {
-        AP_Int8 throttle_min;
-        AP_Int8 throttle_max;
-        AP_Int8 throttle_slewrate;
-        AP_Int8 throttle_cruise;
-        AP_Int8 takeoff_throttle_max;
-        AP_Int16 airspeed_min;
-        AP_Int16 airspeed_max;
-        AP_Int32 airspeed_cruise_cm;
-        AP_Int32 min_gndspeed_cm;
-        AP_Int8  crash_detection_enable;
-        AP_Int16 roll_limit_cd;
-        AP_Int16 pitch_limit_max_cd;
-        AP_Int16 pitch_limit_min_cd;
-        AP_Int8  autotune_level;
-        AP_Int8  stall_prevention;
-        AP_Int16 loiter_radius;
-
-        struct Rangefinder_State {
-            bool in_range:1;
-            bool have_initial_reading:1;
-            bool in_use:1;
-            float initial_range;
-            float correction;
-            float initial_correction;
-            float last_stable_correction;
-            uint32_t last_correction_time_ms;
-            uint8_t in_range_count;
-            float height_estimate;
-            float last_distance;
-        };
-
-
-        // stages of flight
-        enum FlightStage {
-            FLIGHT_TAKEOFF       = 1,
-            FLIGHT_VTOL          = 2,
-            FLIGHT_NORMAL        = 3,
-            FLIGHT_LAND          = 4,
-            FLIGHT_ABORT_LAND    = 7
-        };
-    };
-
-    /*
-      common parameters for multicopters
-     */
-    struct MultiCopter {
-        AP_Int16 angle_max;
-    };
-
     void get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, uint8_t& num_tasks);
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
