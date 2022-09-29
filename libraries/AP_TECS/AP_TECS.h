@@ -20,13 +20,14 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_FixedWing.h>
+#include <Filter/DerivativeFilter.h>
 #include <Filter/AverageFilter.h>
 
 class AP_Landing;
 class AP_TECS {
 public:
-    AP_TECS(AP_AHRS &ahrs, const AP_Vehicle::FixedWing &parms, const AP_Landing &landing, const uint32_t log_bitmask)
+    AP_TECS(AP_AHRS &ahrs, const AP_FixedWing &parms, const AP_Landing &landing, const uint32_t log_bitmask)
         : _ahrs(ahrs)
         , aparm(parms)
         , _landing(landing)
@@ -46,7 +47,7 @@ public:
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
                                int32_t EAS_dem_cm,
-                               enum AP_Vehicle::FixedWing::FlightStage flight_stage,
+                               enum AP_FixedWing::FlightStage flight_stage,
                                float distance_beyond_land_wp,
                                int32_t ptchMinCO_cd,
                                int16_t throttle_nudge,
@@ -157,7 +158,7 @@ private:
     // reference to the AHRS object
     AP_AHRS &_ahrs;
 
-    const AP_Vehicle::FixedWing &aparm;
+    const AP_FixedWing &aparm;
 
     // reference to const AP_Landing to access it's params
     const AP_Landing &_landing;
@@ -316,7 +317,7 @@ private:
     uint32_t _underspeed_start_ms;
 
     // auto mode flightstage
-    enum AP_Vehicle::FixedWing::FlightStage _flight_stage;
+    enum AP_FixedWing::FlightStage _flight_stage;
 
     // pitch demand before limiting
     float _pitch_dem_unc;
