@@ -27,7 +27,7 @@
 
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <stdio.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define LOG_TAG "SLCAN"
 
