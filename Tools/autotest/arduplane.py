@@ -3393,22 +3393,6 @@ class AutoTestPlane(AutoTest):
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=6)
         attempt_fence_breached_disable(start_mode="FBWA", end_mode="FBWA", expected_mode="GUIDED", action=7)
 
-    def run_auxfunc(self,
-                    function,
-                    level,
-                    want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
-        self.run_cmd(
-            mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
-            function,  # p1
-            level,  # p2
-            0,  # p3
-            0,  # p4
-            0,  # p5
-            0,  # p6
-            0,  # p7
-            want_result=want_result
-        )
-
     def MAV_DO_AUX_FUNCTION(self):
         '''Test triggering Auxiliary Functions via mavlink'''
         self.context_collect('STATUSTEXT')
