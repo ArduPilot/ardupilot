@@ -30,7 +30,7 @@
 #endif
 
 #include <AP_Math/crc.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
 #include <AR_Motors/AP_MotorsUGV.h>
 #else
