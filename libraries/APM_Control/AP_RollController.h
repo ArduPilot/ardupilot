@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include "AP_AutoTune.h"
 #include <AP_Math/AP_Math.h>
 #include <AC_PID/AC_PID.h>
@@ -9,7 +8,7 @@
 class AP_RollController
 {
 public:
-    AP_RollController(const AP_Vehicle::FixedWing &parms);
+    AP_RollController(const AP_FixedWing &parms);
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_RollController);
@@ -50,7 +49,7 @@ public:
     void convert_pid();
 
 private:
-    const AP_Vehicle::FixedWing &aparm;
+    const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune *autotune;
     bool failed_autotune_alloc;

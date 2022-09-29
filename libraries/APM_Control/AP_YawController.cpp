@@ -20,6 +20,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_YawController.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -148,7 +150,7 @@ const AP_Param::GroupInfo AP_YawController::var_info[] = {
     AP_GROUPEND
 };
 
-AP_YawController::AP_YawController(const AP_Vehicle::FixedWing &parms)
+AP_YawController::AP_YawController(const AP_FixedWing &parms)
     : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);
