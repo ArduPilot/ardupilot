@@ -2,12 +2,13 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/I2CDevice.h>
 #endif
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_CustomRotations/AP_CustomRotations.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_Compass_SITL.h"
 #include "AP_Compass_AK8963.h"
