@@ -1,7 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_NavEKF2_core.h"
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 #include <AP_InternalError/AP_InternalError.h>
