@@ -212,7 +212,6 @@ void AP_EFI::log_status(void)
                        uint8_t(state.spark_plug_usage),
                        uint8_t(state.ecu_index));
 
-    for (uint8_t i = 0; i < ENGINE_MAX_CYLINDERS; i++) {
 // @LoggerMessage: ECYL
 // @Description: EFI per-cylinder information
 // @Field: TimeUS: Time since system startup
@@ -223,20 +222,19 @@ void AP_EFI::log_status(void)
 // @Field: EGT: Exhaust gas temperature
 // @Field: Lambda: Estimated lambda coefficient (dimensionless ratio)
 // @Field: IDX: Index of the publishing ECU
-        AP::logger().WriteStreaming("ECYL",
-                           "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,IDX",
-                           "s#dsOO--",
-                           "F-0C0000",
-                           "QBfffffB",
-                           AP_HAL::micros64(),
-                           i,
-                           state.cylinder_status[i].ignition_timing_deg,
-                           state.cylinder_status[i].injection_time_ms,
-                           state.cylinder_status[i].cylinder_head_temperature,
-                           state.cylinder_status[i].exhaust_gas_temperature,
-                           state.cylinder_status[i].lambda_coefficient,
-                           state.ecu_index);
-    }
+    AP::logger().WriteStreaming("ECYL",
+                                "TimeUS,Inst,IgnT,InjT,CHT,EGT,Lambda,IDX",
+                                "s#dsOO--",
+                                "F-0C0000",
+                                "QBfffffB",
+                                AP_HAL::micros64(),
+                                0,
+                                state.cylinder_status.ignition_timing_deg,
+                                state.cylinder_status.injection_time_ms,
+                                state.cylinder_status.cylinder_head_temperature,
+                                state.cylinder_status.exhaust_gas_temperature,
+                                state.cylinder_status.lambda_coefficient,
+                                state.ecu_index);
 }
 #endif // LOGGING_ENABLED
 
@@ -261,10 +259,10 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         state.atmospheric_pressure_kpa,
         state.intake_manifold_pressure_kpa,
         KELVIN_TO_C(state.intake_manifold_temperature),
-        KELVIN_TO_C(state.cylinder_status[0].cylinder_head_temperature),
-        state.cylinder_status[0].ignition_timing_deg,
-        state.cylinder_status[0].injection_time_ms,
-        0,  // exhaust gas temperature
+        KELVIN_TO_C(state.cylinder_status.cylinder_head_temperature),
+        state.cylinder_status.ignition_timing_deg,
+        state.cylinder_status.injection_time_ms,
+        state.cylinder_status.exhaust_gas_temperature,
         0,  // throttle out
         0,  // pressure/temperature compensation
         0  // ignition voltage (spark supply voltage)
@@ -285,7 +283,6 @@ void AP_EFI::handle_scripting(const EFI_State &efi_state)
     if (!backend || (Type(type.get()) != Type::SCRIPTING)) {
         return;
     }
-
     backend->handle_scripting(efi_state);
 }
 
