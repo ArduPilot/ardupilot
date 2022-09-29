@@ -4,7 +4,7 @@
 // for use in failsafe code.
 bool Plane::failsafe_in_landing_sequence() const
 {
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         return true;
     }
 #if HAL_QUADPLANE_ENABLED
@@ -238,7 +238,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             FALLTHROUGH;
 #endif // HAL_QUADPLANE_ENABLED
         case Failsafe_Action_Land: {
-            bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
+            bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland) {
                 already_landing = true;
@@ -259,7 +259,7 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             FALLTHROUGH;
         }
         case Failsafe_Action_RTL: {
-            bool already_landing = flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND;
+            bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
                 quadplane.in_vtol_land_sequence()) {

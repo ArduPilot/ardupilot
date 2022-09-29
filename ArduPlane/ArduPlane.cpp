@@ -479,7 +479,7 @@ void Plane::update_fly_forward(void)
     }
 #endif
 
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         ahrs.set_fly_forward(landing.is_flying_forward());
         return;
     }
@@ -490,15 +490,15 @@ void Plane::update_fly_forward(void)
 /*
   set the flight stage
  */
-void Plane::set_flight_stage(AP_Vehicle::FixedWing::FlightStage fs)
+void Plane::set_flight_stage(AP_FixedWing::FlightStage fs)
 {
     if (fs == flight_stage) {
         return;
     }
 
-    landing.handle_flight_stage_change(fs == AP_Vehicle::FixedWing::FLIGHT_LAND);
+    landing.handle_flight_stage_change(fs == AP_FixedWing::FlightStage::LAND);
 
-    if (fs == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+    if (fs == AP_FixedWing::FlightStage::ABORT_LANDING) {
         gcs().send_text(MAV_SEVERITY_NOTICE, "Landing aborted, climbing to %dm",
                         int(auto_state.takeoff_altitude_rel_cm/100));
     }
@@ -546,7 +546,8 @@ void Plane::update_alt()
     if (control_mode->does_auto_throttle() && !throttle_suppressed) {
 
         float distance_beyond_land_wp = 0;
-        if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND && current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
+        if (flight_stage == AP_FixedWing::FlightStage::LAND &&
+            current_loc.past_interval_finish_line(prev_WP_loc, next_WP_loc)) {
             distance_beyond_land_wp = current_loc.get_distance(next_WP_loc);
         }
 
@@ -580,49 +581,49 @@ void Plane::update_flight_stage(void)
         if (control_mode == &mode_auto) {
 #if HAL_QUADPLANE_ENABLED
             if (quadplane.in_vtol_auto()) {
-                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
+                set_flight_stage(AP_FixedWing::FlightStage::VTOL);
                 return;
             }
 #endif
             if (auto_state.takeoff_complete == false) {
-                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_TAKEOFF);
+                set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
                 return;
             } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
-                if (landing.is_commanded_go_around() || flight_stage == AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND) {
+                if (landing.is_commanded_go_around() || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
+                    set_flight_stage(AP_FixedWing::FlightStage::ABORT_LANDING);
                 } else if (landing.get_abort_throttle_enable() && get_throttle_input() >= 90 &&
                            landing.request_go_around()) {
                     gcs().send_text(MAV_SEVERITY_INFO,"Landing aborted via throttle");
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_ABORT_LAND);
+                    set_flight_stage(AP_FixedWing::FlightStage::ABORT_LANDING);
                 } else {
-                    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_LAND);
+                    set_flight_stage(AP_FixedWing::FlightStage::LAND);
                 }
                 return;
             }
 #if HAL_QUADPLANE_ENABLED
             if (quadplane.in_assisted_flight()) {
-                set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
+                set_flight_stage(AP_FixedWing::FlightStage::VTOL);
                 return;
             }
 #endif
-            set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
+            set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
         } else if (control_mode != &mode_takeoff) {
             // If not in AUTO then assume normal operation for normal TECS operation.
             // This prevents TECS from being stuck in the wrong stage if you switch from
             // AUTO to, say, FBWB during a landing, an aborted landing or takeoff.
-            set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
+            set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
         }
         return;
     }
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() ||
         quadplane.in_assisted_flight()) {
-        set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_VTOL);
+        set_flight_stage(AP_FixedWing::FlightStage::VTOL);
         return;
     }
 #endif
-    set_flight_stage(AP_Vehicle::FixedWing::FLIGHT_NORMAL);
+    set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
 }
 
 
@@ -662,7 +663,7 @@ float Plane::tecs_hgt_afe(void)
       coming.
     */
     float hgt_afe;
-    if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         hgt_afe = height_above_target();
         hgt_afe -= rangefinder_correction();
     } else {
