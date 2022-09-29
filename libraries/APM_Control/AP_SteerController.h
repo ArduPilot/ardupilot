@@ -1,7 +1,6 @@
 #pragma once
 
 #include <AP_Common/AP_Common.h>
-#include <AP_Vehicle/AP_Vehicle.h>
 #include <AC_PID/AP_PIDInfo.h>
 
 class AP_SteerController {
