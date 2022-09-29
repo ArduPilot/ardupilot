@@ -22,7 +22,7 @@
 
 #if AP_AIRSPEED_NMEA_ENABLED
 
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover) || APM_BUILD_TYPE(APM_BUILD_ArduSub) 
 
 #include "AP_Airspeed.h"
