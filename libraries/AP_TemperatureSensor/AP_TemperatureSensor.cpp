@@ -16,6 +16,15 @@
 #include "AP_TemperatureSensor.h"
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
+
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#ifndef AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
+#define AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED (!APM_BUILD_TYPE(APM_BUILD_ArduSub) && !AP_TEMPERATURE_SENSOR_ENABLED_BY_USER)
+#endif
+
+#if !AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
+
 #include "AP_TemperatureSensor_TSYS01.h"
 #include "AP_TemperatureSensor_MCP9600.h"
 
@@ -23,8 +32,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
-
-AP_TemperatureSensor *AP_TemperatureSensor::_singleton;
 
 const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
@@ -197,6 +204,22 @@ int32_t AP_TemperatureSensor::get_source_id(const uint8_t instance) const
 {
     return healthy(instance) ? _params[instance].source_id.get() : 0;
 }
+#else
+const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = { AP_GROUPEND };
+
+void AP_TemperatureSensor::init() { };
+void AP_TemperatureSensor::update() { };
+bool AP_TemperatureSensor::get_temperature(float &temp, const uint8_t instance) const { return false; };
+bool AP_TemperatureSensor::healthy(const uint8_t instance) const { return false; };
+AP_TemperatureSensor::Type AP_TemperatureSensor::get_type(const uint8_t instance) const { return AP_TemperatureSensor::Type::NONE; };
+AP_TemperatureSensor::Source AP_TemperatureSensor::get_source(const uint8_t instance) const { return AP_TemperatureSensor::Source::None; };
+int32_t AP_TemperatureSensor::get_source_id(const uint8_t instance) const { return false; };
+
+AP_TemperatureSensor::AP_TemperatureSensor() {}
+
+#endif // AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
+
+AP_TemperatureSensor *AP_TemperatureSensor::_singleton;
 
 namespace AP {
 AP_TemperatureSensor &temperature_sensor() {
