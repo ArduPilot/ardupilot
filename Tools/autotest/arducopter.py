@@ -6894,6 +6894,33 @@ class AutoTestCopter(AutoTest):
         self.change_mode('AUTO')
         self.wait_rtl_complete()
 
+    def WatchAlts(self):
+        '''Ensure we can monitor different altitudes'''
+        self.takeoff(30, mode='GUIDED')
+        self.delay_sim_time(5, reason='let altitude settle')
+
+        self.progress("Testing absolute altitudes")
+        absolute_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        self.progress("absolute_alt=%f" % absolute_alt)
+        epsilon = 4  # SIM_STATE and vehicle state can be off by a bit...
+        for source in ['GLOBAL_POSITION_INT.alt', 'SIM_STATE.alt', 'GPS_RAW_INT.alt']:
+            self.watch_altitude_maintained(
+                absolute_alt-epsilon,
+                absolute_alt+epsilon,
+                altitude_source=source
+            )
+
+        self.progress("Testing absolute altitudes")
+        relative_alt = self.get_altitude(relative=True)
+        for source in ['GLOBAL_POSITION_INT.relative_alt']:
+            self.watch_altitude_maintained(
+                relative_alt-epsilon,
+                relative_alt+epsilon,
+                altitude_source=source
+            )
+
+        self.do_RTL()
+
     def fly_rangefinder_drivers_fly(self, rangefinders):
         '''ensure rangefinder gives height-above-ground'''
         self.change_mode('GUIDED')
@@ -9053,6 +9080,7 @@ class AutoTestCopter(AutoTest):
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
+            self.WatchAlts,
         ])
         return ret
 

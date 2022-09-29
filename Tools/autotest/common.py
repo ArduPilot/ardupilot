@@ -5207,6 +5207,7 @@ class AutoTest(ABC):
                  target_sysid=None,
                  target_compid=None,
                  mav=None,
+                 quiet=False,
                  ):
         """Send a MAVLink command long."""
         if mav is None:
@@ -5219,18 +5220,19 @@ class AutoTest(ABC):
             command_name = mavutil.mavlink.enums["MAV_CMD"][command].name
         except KeyError:
             command_name = "UNKNOWN=%u" % command
-        self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
-                      (
-                          target_sysid,
-                          target_compid,
-                          command_name,
-                          p1,
-                          p2,
-                          p3,
-                          p4,
-                          p5,
-                          p6,
-                          p7))
+        if not quiet:
+            self.progress("Sending COMMAND_LONG to (%u,%u) (%s) (p1=%f p2=%f p3=%f p4=%f p5=%f p6=%f  p7=%f)" %
+                          (
+                              target_sysid,
+                              target_compid,
+                              command_name,
+                              p1,
+                              p2,
+                              p3,
+                              p4,
+                              p5,
+                              p6,
+                              p7))
         mav.mav.command_long_send(target_sysid,
                                   target_compid,
                                   command,
@@ -5709,12 +5711,19 @@ class AutoTest(ABC):
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time(drain_mav=False)
 
-    def get_altitude(self, relative=False, timeout=30):
+    def get_altitude(self, relative=False, timeout=30, altitude_source=None):
         '''returns vehicles altitude in metres, possibly relative-to-home'''
-        msg = self.assert_receive_message("GLOBAL_POSITION_INT", timeout=timeout)
-        if relative:
-            return msg.relative_alt / 1000.0  # mm -> m
-        return msg.alt / 1000.0  # mm -> m
+        if altitude_source is None:
+            if relative:
+                altitude_source = "GLOBAL_POSITION_INT.relative_alt"
+            else:
+                altitude_source = "GLOBAL_POSITION_INT.alt"
+        (msg, field) = altitude_source.split('.')
+        msg = self.poll_message(msg, quiet=True)
+        divisor = 1000.0  # mm is pretty common in mavlink
+        if altitude_source == "SIM_STATE.alt":
+            divisor = 1.0
+        return getattr(msg, field) / divisor
 
     def assert_altitude(self, alt, accuracy=1, **kwargs):
         got_alt = self.get_altitude(**kwargs)
@@ -5827,12 +5836,15 @@ class AutoTest(ABC):
             else:
                 return False
 
+        altitude_source = kwargs.get("altitude_source", None)
+
         self.wait_and_maintain(
             value_name="Altitude",
             target=altitude_min,
             current_value_getter=lambda: self.get_altitude(
                 relative=relative,
                 timeout=timeout,
+                altitude_source=altitude_source,
             ),
             accuracy=(altitude_max - altitude_min),
             validator=lambda value2, target2: validator(value2, target2),
@@ -5840,13 +5852,16 @@ class AutoTest(ABC):
             **kwargs
         )
 
-    def watch_altitude_maintained(self, altitude_min, altitude_max, minimum_duration=5, relative=True):
+    def watch_altitude_maintained(self, altitude_min, altitude_max, minimum_duration=5, relative=True, altitude_source=None):
         """Watch altitude is maintained or not between altitude_min and altitude_max during minimum_duration"""
-        return self.wait_altitude(altitude_min=altitude_min,
-                                  altitude_max=altitude_max,
-                                  relative=relative,
-                                  minimum_duration=minimum_duration,
-                                  timeout=minimum_duration + 1)
+        return self.wait_altitude(
+            altitude_min=altitude_min,
+            altitude_max=altitude_max,
+            relative=relative,
+            minimum_duration=minimum_duration,
+            timeout=minimum_duration + 1,
+            altitude_source=altitude_source,
+        )
 
     def wait_climbrate(self, speed_min, speed_max, timeout=30, **kwargs):
         """Wait for a given vertical rate."""
@@ -6041,6 +6056,7 @@ class AutoTest(ABC):
         self.validate_kwargs(kwargs, valid=frozenset([
             "called_function",
             "minimum_duration",
+            "altitude_source",
         ]))
 
         if print_diagnostics_as_target_not_range:
@@ -9284,7 +9300,7 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def send_poll_message(self, message_id, target_sysid=None, target_compid=None):
+    def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False):
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
@@ -9296,18 +9312,19 @@ Also, ignores heartbeats not from our target system'''
                       0,
                       0,
                       target_sysid=target_sysid,
-                      target_compid=target_compid)
+                      target_compid=target_compid,
+                      quiet=quiet)
 
-    def poll_message(self, message_id, timeout=10):
+    def poll_message(self, message_id, timeout=10, quiet=False):
         if type(message_id) == str:
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
-        self.send_poll_message(message_id)
+        self.send_poll_message(message_id, quiet=quiet)
         self.run_cmd_get_ack(
             mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
             mavutil.mavlink.MAV_RESULT_ACCEPTED,
             timeout,
-            quiet=False
+            quiet=quiet,
         )
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
