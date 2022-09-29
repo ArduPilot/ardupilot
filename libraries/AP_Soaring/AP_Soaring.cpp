@@ -166,7 +166,7 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     AP_GROUPEND
 };
 
-SoaringController::SoaringController(AP_TECS &tecs, const AP_Vehicle::FixedWing &parms) :
+SoaringController::SoaringController(AP_TECS &tecs, const AP_FixedWing &parms) :
     _tecs(tecs),
     _vario(parms,_polarParams),
     _speedToFly(_polarParams),

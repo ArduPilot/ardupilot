@@ -36,7 +36,7 @@ class SoaringController {
     Variometer _vario;
     SpeedToFly _speedToFly;
 
-    const AP_Vehicle::FixedWing &_aparm;
+    const AP_FixedWing &_aparm;
 
     // store aircraft location at last update
     Vector3f _prev_update_location;
@@ -81,7 +81,7 @@ protected:
     AP_Float soar_thermal_flap;
 
 public:
-    SoaringController(class AP_TECS &tecs, const AP_Vehicle::FixedWing &parms);
+    SoaringController(class AP_TECS &tecs, const AP_FixedWing &parms);
 
     enum class LoiterStatus {
         DISABLED,
