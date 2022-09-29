@@ -17,7 +17,6 @@
 
 #define EFI_MAX_INSTANCES 2
 #define EFI_MAX_BACKENDS 2
-#define ENGINE_MAX_CYLINDERS 1
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -197,6 +196,6 @@ struct EFI_State {
     Spark_Plug_Usage spark_plug_usage;
 
     // Status for each cylinder in the engine
-    Cylinder_Status cylinder_status[ENGINE_MAX_CYLINDERS];
+    Cylinder_Status cylinder_status;
 
 };

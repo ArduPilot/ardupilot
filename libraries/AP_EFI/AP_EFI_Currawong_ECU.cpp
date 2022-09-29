@@ -84,16 +84,13 @@ bool AP_EFI_Currawong_ECU::handle_message(AP_HAL::CANFrame &frame)
     } else if (decodeECU_TelemetrySlow0PacketStructure(&frame, &telemetry_slow0)) {
         internal_state.intake_manifold_pressure_kpa = telemetry_slow0.map;
         internal_state.atmospheric_pressure_kpa = telemetry_slow0.baro;
-        internal_state.cylinder_status[0].cylinder_head_temperature = C_TO_KELVIN(telemetry_slow0.cht);
+        internal_state.cylinder_status.cylinder_head_temperature = C_TO_KELVIN(telemetry_slow0.cht);
     } else if (decodeECU_TelemetrySlow1PacketStructure(&frame, &telemetry_slow1)) {
         internal_state.intake_manifold_temperature = C_TO_KELVIN(telemetry_slow1.mat);
         internal_state.fuel_pressure = telemetry_slow1.fuelPressure;
     } else if (decodeECU_TelemetrySlow2PacketStructure(&frame, &telemetry_slow2)) {
-        internal_state.cylinder_status[0].ignition_timing_deg = telemetry_slow2.ignAngle1;
-        if (ENGINE_MAX_CYLINDERS > 1) {
-            internal_state.cylinder_status[1].ignition_timing_deg = telemetry_slow2.ignAngle2;
-        }
-        
+        internal_state.cylinder_status.ignition_timing_deg = telemetry_slow2.ignAngle1;
+
         internal_state.fuel_consumption_rate_cm3pm = telemetry_slow2.flowRate / KG_PER_M3_TO_G_PER_CM3(get_ecu_fuel_density());
     } else {
         valid = false;

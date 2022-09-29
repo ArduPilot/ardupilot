@@ -154,7 +154,7 @@ void AP_EFI_DroneCAN::handle_status(const uavcan::equipment::ice::reciprocating:
     // assume max one cylinder status
     if (pkt.cylinder_status.size() > 0) {
         const auto &cs = pkt.cylinder_status[0];
-        auto &c = istate.cylinder_status[0];
+        auto &c = istate.cylinder_status;
         c.ignition_timing_deg = cs.ignition_timing_deg;
         c.injection_time_ms = cs.injection_time_ms;
         c.cylinder_head_temperature = cs.cylinder_head_temperature;
