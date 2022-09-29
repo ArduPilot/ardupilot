@@ -448,7 +448,7 @@ void Plane::set_offset_altitude_location(const Location &start_loc, const Locati
     }
 #endif
 
-    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+    if (flight_stage != AP_FixedWing::FlightStage::LAND) {
         // if we are within GLIDE_SLOPE_MIN meters of the target altitude
         // then reset the offset to not use a glide slope. This allows for
         // more accurate flight of missions where the aircraft may lose or
@@ -539,7 +539,7 @@ float Plane::mission_alt_offset(void)
 {
     float ret = g.alt_offset;
     if (control_mode == &mode_auto &&
-            (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND || auto_state.wp_is_land_approach)) {
+            (flight_stage == AP_FixedWing::FlightStage::LAND || auto_state.wp_is_land_approach)) {
         // when landing after an aborted landing due to too high glide
         // slope we use an offset from the last landing attempt
         ret += landing.alt_offset;
@@ -641,7 +641,7 @@ float Plane::rangefinder_correction(void)
     }
 
     // for now we only support the rangefinder for landing 
-    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND);
+    bool using_rangefinder = (g.rangefinder_landing && flight_stage == AP_FixedWing::FlightStage::LAND);
     if (!using_rangefinder) {
         return 0;
     }
@@ -657,7 +657,7 @@ void Plane::rangefinder_terrain_correction(float &height)
 {
 #if AP_TERRAIN_AVAILABLE
     if (!g.rangefinder_landing ||
-        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND ||
+        flight_stage != AP_FixedWing::FlightStage::LAND ||
         !terrain_enabled_in_current_mode()) {
         return;
     }
@@ -707,7 +707,7 @@ void Plane::rangefinder_height_update(void)
         } else {
             rangefinder_state.in_range = true;
             bool flightstage_good_for_rangefinder_landing = false;
-            if (flight_stage == AP_Vehicle::FixedWing::FLIGHT_LAND) {
+            if (flight_stage == AP_FixedWing::FlightStage::LAND) {
                 flightstage_good_for_rangefinder_landing = true;
             }
 #if HAL_QUADPLANE_ENABLED
