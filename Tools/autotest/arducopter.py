@@ -2616,20 +2616,17 @@ class AutoTestCopter(AutoTest):
         self.change_mode("GUIDED")
         self.wait_ready_to_arm()
 
-        self.progress("waiting for both EKF lanes to init")
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason='"both EKF lanes to init"')
 
         self.set_parameters({
             "SIM_GPS2_GLTCH_Z" : 0
             })
 
-        self.progress("waiting for EKF to do a position Z reset")
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="EKF to do a position Z reset")
 
         self.arm_vehicle()
         self.user_takeoff(alt_min=20)
-        m = self.mav.recv_match(type='GPS_RAW_INT', blocking=True)
-        gps_alt = m.alt*0.001
+        gps_alt = self.get_altitude(altitude_source='GPS_RAW_INT.alt')
         self.progress("Initial guided alt=%.1fm" % gps_alt)
 
         self.context_collect('STATUSTEXT')
@@ -2639,14 +2636,13 @@ class AutoTestCopter(AutoTest):
             })
         self.wait_statustext("EKF3 lane switch 1", timeout=10, check_context=True)
 
-        self.delay_sim_time(10)
-        m = self.mav.recv_match(type='GPS_RAW_INT', blocking=True)
-        gps_alt2 = m.alt*0.001
-        alt_change = gps_alt - gps_alt2
-        self.progress("GPS Alt change by %.1fm" % abs(alt_change))
+        self.watch_altitude_maintained(
+            altitude_min=gps_alt-2,
+            altitude_max=gps_alt+2,
+            altitude_source='GPS_RAW_INT.alt',
+            minimum_duration=10,
+        )
 
-        if abs(alt_change) > 2:
-            raise NotAchievedException("Altitude changed on lane switch %.1fm" % alt_change)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
