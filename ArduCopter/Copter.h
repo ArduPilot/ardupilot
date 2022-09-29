@@ -230,7 +230,7 @@ public:
 private:
 
     // key aircraft parameters passed to multiple libraries
-    AP_Vehicle::MultiCopter aparm;
+    AP_MultiCopter aparm;
 
     // Global parameters are all contained within the 'g' class.
     Parameters g;
