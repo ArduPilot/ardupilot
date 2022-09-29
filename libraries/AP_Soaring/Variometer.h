@@ -8,11 +8,11 @@ Manages the estimation of aircraft total energy, drag and vertical air velocity.
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <Filter/AverageFilter.h>
-#include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 
 class Variometer {
 
-    const AP_Vehicle::FixedWing &_aparm;
+    const AP_FixedWing &_aparm;
 
     // store time of last update
     uint64_t _prev_update_time;
@@ -53,7 +53,7 @@ public:
         AP_Float B;
     };
 
-    Variometer(const AP_Vehicle::FixedWing &parms, const PolarParams &polarParams);
+    Variometer(const AP_FixedWing &parms, const PolarParams &polarParams);
 
     float alt;
     float reading;
