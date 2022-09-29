@@ -32,9 +32,12 @@ extern const AP_HAL::HAL& hal;
 #include <AC_Sprayer/AC_Sprayer.h>
 #include <AP_Camera/AP_Camera.h>
 #include <AP_Camera/AP_RunCam.h>
+#include <AP_Compass/AP_Compass.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Gripper/AP_Gripper.h>
+#include <AP_GyroFFT/AP_GyroFFT.h>
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
@@ -46,10 +49,10 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mount/AP_Mount.h>
+#include <AP_Notify/AP_Notify.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
 const AP_Param::GroupInfo RC_Channel::var_info[] = {
