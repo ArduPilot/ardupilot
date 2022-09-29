@@ -255,6 +255,12 @@ bool NavEKF3_core::getPosD(float &posD) const
         posD = outputDataNew.position.z + posOffsetNED.z + 0.01f * (float)EKF_origin.alt - (float)ekfGpsRefHgt;
     }
 
+    // adjust posD for difference between our origin and the public_origin
+    Location local_origin;
+    if (getOriginLLH(local_origin)) {
+        posD += (public_origin.alt - local_origin.alt) * 0.01;
+    }
+
     // Return the current height solution status
     return filterStatus.flags.vert_pos;
 
