@@ -3400,6 +3400,22 @@ class AutoTest(ABC):
     def get_mission_count(self):
         return self.get_parameter("MIS_TOTAL")
 
+    def run_auxfunc(self,
+                    function,
+                    level,
+                    want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_AUX_FUNCTION,
+            function,  # p1
+            level,  # p2
+            0,  # p3
+            0,  # p4
+            0,  # p5
+            0,  # p6
+            0,  # p7
+            want_result=want_result
+        )
+
     def assert_mission_count(self, expected):
         count = self.get_mission_count()
         if count != expected:
