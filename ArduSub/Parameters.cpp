@@ -731,6 +731,11 @@ void Sub::load_parameters()
     AP_Param::set_default_by_name("BRD_RTC_TYPE", 3);
     AP_Param::set_default_by_name("BARO_PROBE_EXT", 768);
     AP_Param::set_default_by_name("PSC_JERK_Z", 50.0f);
+    AP_Param::set_default_by_name("WPNAV_SPEED", 100.0f);
+    AP_Param::set_default_by_name("PILOT_SPEED_UP", 100.0f);
+    AP_Param::set_default_by_name("PSC_JERK_Z", 50.0f);
+    AP_Param::set_default_by_name("PSC_VELXY_P", 6.0f);
+    AP_Param::set_default_by_name("EK3_SRC1_VELZ", 0);
 
     AP_Param::set_by_name("MNT_RC_IN_PAN", 7);
     AP_Param::set_by_name("MNT_RC_IN_TILT", 8);
