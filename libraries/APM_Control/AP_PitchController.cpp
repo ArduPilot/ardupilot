@@ -19,6 +19,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_PitchController.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Scheduler/AP_Scheduler.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -134,7 +136,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     AP_GROUPEND
 };
 
-AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
+AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
     : aparm(parms)
 {
     AP_Param::setup_object_defaults(this, var_info);
