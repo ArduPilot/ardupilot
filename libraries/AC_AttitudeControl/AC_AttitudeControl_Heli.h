@@ -32,7 +32,7 @@
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS_View &ahrs,
-                        const AP_Vehicle::MultiCopter &aparm,
+                        const AP_MultiCopter &aparm,
                         AP_MotorsHeli& motors,
                         float dt) :
         AC_AttitudeControl(ahrs, aparm, motors, dt),
