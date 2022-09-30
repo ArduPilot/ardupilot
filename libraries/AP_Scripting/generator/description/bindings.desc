@@ -470,6 +470,7 @@ userdata AP_HAL::CANFrame rename CANFrame
 userdata AP_HAL::CANFrame field id uint32_t read write 0U UINT32_MAX
 userdata AP_HAL::CANFrame field data'array int(ARRAY_SIZE(ud->data)) uint8_t read write 0 UINT8_MAX
 userdata AP_HAL::CANFrame field dlc uint8_t read write 0 int(ARRAY_SIZE(ud->data))
+userdata AP_HAL::CANFrame method id_signed int32_t
 userdata AP_HAL::CANFrame method isExtended boolean
 userdata AP_HAL::CANFrame method isRemoteTransmissionRequest boolean
 userdata AP_HAL::CANFrame method isErrorFrame boolean
@@ -557,6 +558,9 @@ userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check wri
 userdata EFI_State field throttle_position_percent uint8_t write 0 UINT8_MAX
 userdata EFI_State field ecu_index uint8_t write 0 UINT8_MAX
 userdata EFI_State field cylinder_status Cylinder_Status'skip_check write
+userdata EFI_State field ignition_voltage float'skip_check write
+userdata EFI_State field throttle_out float'skip_check write
+userdata EFI_State field pt_compensation float'skip_check write
 
 include AP_EFI/AP_EFI.h
 singleton AP_EFI depends AP_EFI_SCRIPTING_ENABLED == 1
