@@ -264,9 +264,9 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         state.cylinder_status.ignition_timing_deg,
         state.cylinder_status.injection_time_ms,
         state.cylinder_status.exhaust_gas_temperature,
-        0,  // throttle out
-        0,  // pressure/temperature compensation
-        0  // ignition voltage (spark supply voltage)
+        state.throttle_out,
+        state.pt_compensation,
+        state.ignition_voltage
         );
 }
 
