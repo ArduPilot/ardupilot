@@ -198,4 +198,12 @@ struct EFI_State {
     // Status for each cylinder in the engine
     Cylinder_Status cylinder_status;
 
+    // ignition voltage in Volts
+    float ignition_voltage;
+
+    // throttle output percentage
+    float throttle_out;
+
+    // PT compensation
+    float pt_compensation;
 };
