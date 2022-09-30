@@ -9,8 +9,7 @@ public:
     AP_BattMonitor_Params(void);
 
     /* Do not allow copies */
-    AP_BattMonitor_Params(const AP_BattMonitor_Params &other) = delete;
-    AP_BattMonitor_Params &operator=(const AP_BattMonitor_Params&) = delete;
+    CLASS_NO_COPY(AP_BattMonitor_Params);
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
     enum BattMonitor_LowVoltage_Source {

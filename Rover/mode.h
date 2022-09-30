@@ -33,8 +33,7 @@ public:
     Mode();
 
     // do not allow copying
-    Mode(const Mode &other) = delete;
-    Mode &operator=(const Mode&) = delete;
+    CLASS_NO_COPY(Mode);
 
     // enter this mode, returns false if we failed to enter
     bool enter();

@@ -23,8 +23,7 @@ public:
     };
 
     /* Do not allow copies */
-    PerfInfo(const PerfInfo &other) = delete;
-    PerfInfo &operator=(const PerfInfo&) = delete;
+    CLASS_NO_COPY(PerfInfo);
 
     void reset();
     void ignore_this_loop();

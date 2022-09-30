@@ -33,8 +33,7 @@ public:
     AP_RSSI();
 
     /* Do not allow copies */
-    AP_RSSI(const AP_RSSI &other) = delete;
-    AP_RSSI &operator=(const AP_RSSI&) = delete;
+    CLASS_NO_COPY(AP_RSSI);
 
     // destructor
     ~AP_RSSI(void);

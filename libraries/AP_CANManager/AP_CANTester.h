@@ -36,8 +36,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
     /* Do not allow copies */
-    CANTester(const CANTester &other) = delete;
-    CANTester &operator=(const CANTester&) = delete;
+    CLASS_NO_COPY(CANTester);
 
     void init(uint8_t driver_index, bool enable_filters) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;

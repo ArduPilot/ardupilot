@@ -54,8 +54,7 @@ public:
     AP_ADSB();
 
     /* Do not allow copies */
-    AP_ADSB(const AP_ADSB &other) = delete;
-    AP_ADSB &operator=(const AP_ADSB&) = delete;
+    CLASS_NO_COPY(AP_ADSB);
 
     // get singleton instance
     static AP_ADSB *get_singleton(void) {

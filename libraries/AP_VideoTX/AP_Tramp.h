@@ -49,8 +49,7 @@ public:
     ~AP_Tramp() {}
 
     /* Do not allow copies */
-    AP_Tramp(const AP_Tramp &other) = delete;
-    AP_Tramp &operator=(const AP_Tramp&) = delete;
+    CLASS_NO_COPY(AP_Tramp);
 
     static AP_Tramp *get_singleton(void) {
         return singleton;

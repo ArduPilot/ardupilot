@@ -79,8 +79,7 @@ public:
     AP_Scheduler();
 
     /* Do not allow copies */
-    AP_Scheduler(const AP_Scheduler &other) = delete;
-    AP_Scheduler &operator=(const AP_Scheduler&) = delete;
+    CLASS_NO_COPY(AP_Scheduler);
 
     static AP_Scheduler *get_singleton();
     static AP_Scheduler *_singleton;

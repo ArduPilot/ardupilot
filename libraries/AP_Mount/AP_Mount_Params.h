@@ -12,8 +12,7 @@ public:
     AP_Mount_Params(void);
 
     /* Do not allow copies */
-    AP_Mount_Params(const AP_Mount_Params &other) = delete;
-    AP_Mount_Params &operator=(const AP_Mount_Params&) = delete;
+    CLASS_NO_COPY(AP_Mount_Params);
 
     AP_Int8     type;               // mount type (see MountType enum)
     AP_Int8     default_mode;       // default mode on startup and when control is returned from autopilot

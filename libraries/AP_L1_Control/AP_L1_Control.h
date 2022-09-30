@@ -30,8 +30,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_L1_Control(const AP_L1_Control &other) = delete;
-    AP_L1_Control &operator=(const AP_L1_Control&) = delete;
+    CLASS_NO_COPY(AP_L1_Control);
 
     /* see AP_Navigation.h for the definitions and units of these
      * functions */

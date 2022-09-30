@@ -14,8 +14,7 @@ public:
     AP_Proximity_Params(void);
 
     /* Do not allow copies */
-    AP_Proximity_Params(const AP_Proximity_Params &other) = delete;
-    AP_Proximity_Params &operator=(const AP_Proximity_Params&) = delete;
+    CLASS_NO_COPY(AP_Proximity_Params);
 
     AP_Int8 type;                                       // type of sensor
     AP_Int8 orientation;                                // orientation (e.g. right-side-up or upside-down)

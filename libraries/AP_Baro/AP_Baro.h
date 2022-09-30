@@ -46,8 +46,7 @@ public:
     AP_Baro();
 
     /* Do not allow copies */
-    AP_Baro(const AP_Baro &other) = delete;
-    AP_Baro &operator=(const AP_Baro&) = delete;
+    CLASS_NO_COPY(AP_Baro);
 
     // get singleton
     static AP_Baro *get_singleton(void) {

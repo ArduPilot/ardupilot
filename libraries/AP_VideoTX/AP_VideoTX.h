@@ -25,8 +25,7 @@ public:
     ~AP_VideoTX();
 
     /* Do not allow copies */
-    AP_VideoTX(const AP_VideoTX &other) = delete;
-    AP_VideoTX &operator=(const AP_VideoTX&) = delete;
+    CLASS_NO_COPY(AP_VideoTX);
 
     // init - perform required initialisation
     bool init();

@@ -47,8 +47,7 @@ public:
     AP_BoardConfig();
 
     /* Do not allow copies */
-    AP_BoardConfig(const AP_BoardConfig &other) = delete;
-    AP_BoardConfig &operator=(const AP_BoardConfig&) = delete;
+    CLASS_NO_COPY(AP_BoardConfig);
 
     // singleton support
     static AP_BoardConfig *get_singleton(void) {

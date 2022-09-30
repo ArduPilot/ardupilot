@@ -32,8 +32,7 @@ public:
     AP_CANManager();
 
     /* Do not allow copies */
-    AP_CANManager(const AP_CANManager &other) = delete;
-    AP_CANManager &operator=(const AP_CANManager&) = delete;
+    CLASS_NO_COPY(AP_CANManager);
 
     static AP_CANManager* get_singleton()
     {

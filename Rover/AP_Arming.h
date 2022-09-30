@@ -13,8 +13,7 @@ public:
     AP_Arming_Rover() : AP_Arming() { }
 
     /* Do not allow copies */
-    AP_Arming_Rover(const AP_Arming_Rover &other) = delete;
-    AP_Arming_Rover &operator=(const AP_Arming_Rover&) = delete;
+    CLASS_NO_COPY(AP_Arming_Rover);
 
     bool pre_arm_checks(bool report) override;
     bool arm_checks(AP_Arming::Method method) override;

@@ -11,8 +11,7 @@ public:
     AP_YawController(const AP_Vehicle::FixedWing &parms);
 
     /* Do not allow copies */
-    AP_YawController(const AP_YawController &other) = delete;
-    AP_YawController &operator=(const AP_YawController&) = delete;
+    CLASS_NO_COPY(AP_YawController);
 
     // return true if rate control or damping is enabled
     bool enabled() const { return rate_control_enabled() || (_K_D > 0.0); } 

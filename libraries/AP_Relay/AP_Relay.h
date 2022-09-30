@@ -20,8 +20,7 @@ public:
     AP_Relay();
 
     /* Do not allow copies */
-    AP_Relay(const AP_Relay &other) = delete;
-    AP_Relay &operator=(const AP_Relay&) = delete;
+    CLASS_NO_COPY(AP_Relay);
 
     // setup the relay pin
     void        init();

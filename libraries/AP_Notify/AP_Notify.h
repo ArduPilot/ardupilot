@@ -44,8 +44,7 @@ public:
     AP_Notify();
 
     /* Do not allow copies */
-    AP_Notify(const AP_Notify &other) = delete;
-    AP_Notify &operator=(const AP_Notify&) = delete;
+    CLASS_NO_COPY(AP_Notify);
 
     // get singleton instance
     static AP_Notify *get_singleton(void) {

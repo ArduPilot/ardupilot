@@ -31,8 +31,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_Camera(const AP_Camera &other) = delete;
-    AP_Camera &operator=(const AP_Camera&) = delete;
+    CLASS_NO_COPY(AP_Camera);
 
     // get singleton instance
     static AP_Camera *get_singleton()

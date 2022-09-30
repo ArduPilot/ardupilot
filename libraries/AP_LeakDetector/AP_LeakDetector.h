@@ -17,8 +17,7 @@ public:
     AP_LeakDetector();
 
     /* Do not allow copies */
-    AP_LeakDetector(const AP_LeakDetector &other) = delete;
-    AP_LeakDetector &operator=(const AP_LeakDetector&) = delete;
+    CLASS_NO_COPY(AP_LeakDetector);
 
     struct LeakDetector_State {
         uint8_t instance;
