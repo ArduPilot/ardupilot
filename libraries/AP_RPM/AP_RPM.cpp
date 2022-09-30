@@ -258,6 +258,7 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
 {
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
         switch (_params[i].type) {
+#if AP_RPM_PIN_ENABLED
         case RPM_TYPE_PWM:
         case RPM_TYPE_PIN:
             if (_params[i].pin == -1) {
@@ -274,6 +275,7 @@ bool AP_RPM::arming_checks(size_t buflen, char *buffer) const
                 return false;
             }
             break;
+#endif
         }
     }
     return true;
