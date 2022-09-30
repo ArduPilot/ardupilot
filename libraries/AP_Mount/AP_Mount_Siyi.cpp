@@ -265,8 +265,10 @@ void AP_Mount_Siyi::read_incoming_packets()
             if (expected_crc == _parsed_msg.crc16) {
                 // successfully received a message, do something with it
                 process_packet();
+#if AP_MOUNT_SIYI_DEBUG
             } else {
                 debug("crc expected:%x got:%x", (unsigned)expected_crc, (unsigned)_parsed_msg.crc16);
+#endif
             }
             reset_parser = true;
             break;
@@ -283,15 +285,19 @@ void AP_Mount_Siyi::read_incoming_packets()
 // process successfully decoded packets held in the _parsed_msg structure
 void AP_Mount_Siyi::process_packet()
 {
+#if AP_MOUNT_SIYI_DEBUG
     // flag to warn of unexpected data buffer length
     bool unexpected_len = false;
+#endif
 
     // process packet depending upon command id
     switch ((SiyiCommandId)_parsed_msg.command_id) {
 
     case SiyiCommandId::ACQUIRE_FIRMWARE_VERSION: {
         if (_parsed_msg.data_bytes_received != 12) {
+#if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
+#endif
             break;
         }
         _got_firmware_version = true;
@@ -332,7 +338,9 @@ void AP_Mount_Siyi::process_packet()
 
     case SiyiCommandId::MANUAL_ZOOM_AND_AUTO_FOCUS: {
         if (_parsed_msg.data_bytes_received != 2) {
+#if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
+#endif
             break;
         }
         const float zoom_mult = UINT16_VALUE(_msg_buff[_msg_buff_data_start+1], _msg_buff[_msg_buff_data_start]) * 0.1;
@@ -372,7 +380,9 @@ void AP_Mount_Siyi::process_packet()
 
     case SiyiCommandId::ACQUIRE_GIMBAL_CONFIG_INFO: {
         if (_parsed_msg.data_bytes_received != 5) {
+#if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
+#endif
             break;
         }
         // update recording state and warn user of mismatch
@@ -389,7 +399,9 @@ void AP_Mount_Siyi::process_packet()
 
     case SiyiCommandId::FUNCTION_FEEDBACK_INFO: {
         if (_parsed_msg.data_bytes_received != 1) {
+#if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
+#endif
             break;
         }
         const uint8_t func_feedback_info = _msg_buff[_msg_buff_data_start];
@@ -422,7 +434,9 @@ void AP_Mount_Siyi::process_packet()
 
     case SiyiCommandId::ACQUIRE_GIMBAL_ATTITUDE: {
         if (_parsed_msg.data_bytes_received != 12) {
+#if AP_MOUNT_SIYI_DEBUG
             unexpected_len = true;
+#endif
             break;
         }
         _last_current_angle_rad_ms = AP_HAL::millis();
@@ -440,10 +454,12 @@ void AP_Mount_Siyi::process_packet()
         break;
     }
 
-    // handle unexpected data buffer lenth
+#if AP_MOUNT_SIYI_DEBUG
+    // handle unexpected data buffer length
     if (unexpected_len) {
         debug("CmdId:%u unexpected len:%u", (unsigned)_parsed_msg.command_id, (unsigned)_parsed_msg.data_bytes_received);
     }
+#endif
 }
 
 // methods to send commands to gimbal
