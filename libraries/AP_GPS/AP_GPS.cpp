@@ -221,7 +221,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _POS1_X
     // @DisplayName: Antenna X position offset
-    // @Description: X position of the first GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: X position of the first GPS antenna in body frame with the origin defined to be the center of control (center of gravity for aerial vehicles). Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -229,7 +229,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _POS1_Y
     // @DisplayName: Antenna Y position offset
-    // @Description: Y position of the first GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Y position of the first GPS antenna in body frame with the origin defined to be the center of control (center of gravity for aerial vehicles). Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -237,7 +237,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _POS1_Z
     // @DisplayName: Antenna Z position offset
-    // @Description: Z position of the first GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Z position of the first GPS antenna in body frame with the origin defined to be the center of control (center of gravity for aerial vehicles). Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -247,7 +247,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 #if GPS_MAX_RECEIVERS > 1
     // @Param: _POS2_X
     // @DisplayName: Antenna X position offset
-    // @Description: X position of the second GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: X position of the second GPS antenna in body frame with the origin defined to be the center of control (center of gravity for aerial vehicles). Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -255,7 +255,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _POS2_Y
     // @DisplayName: Antenna Y position offset
-    // @Description: Y position of the second GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Y position of the second GPS antenna in body frame with the origin defined to be the center of control (center of gravity for aerial vehicles). Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -263,7 +263,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
 
     // @Param: _POS2_Z
     // @DisplayName: Antenna Z position offset
-    // @Description: Z position of the second GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
+    // @Description: Z position of the second GPS antenna in body frame with the origin defined to be the center of control (center of gravity for aerial vehicles). Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
