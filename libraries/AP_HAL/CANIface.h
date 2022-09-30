@@ -67,6 +67,11 @@ struct AP_HAL::CANFrame {
         return (id == rhs.id) && (dlc == rhs.dlc) && (memcmp(data, rhs.data, dlc) == 0);
     }
 
+    // signed version of id, for use by scriping where uint32_t is expensive
+    int32_t id_signed(void) const {
+        return isExtended()? int32_t(id & MaskExtID) : int32_t(id & MaskStdID);
+    }
+
     bool isExtended()                  const
     {
         return id & FlagEFF;
