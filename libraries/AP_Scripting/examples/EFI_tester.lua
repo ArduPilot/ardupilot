@@ -18,9 +18,10 @@ function bind_add_param(name, idx, default_value)
    return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 1), 'could not add param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 2), 'could not add param table')
 
 local EFISIM_TYPE  = bind_add_param('TYPE', 1, 0)
+local EFISIM_RATE_HZ  = bind_add_param('RATE_HZ', 2, 100)
 
 function get_time_sec()
    return millis():tofloat() * 0.001
@@ -172,11 +173,57 @@ function send_SkyPower(driver)
    driver:write_frame(msg, 10000)
 end
 
+--[[
+   send HFE data. Called at 100Hz
+--]]
+function send_HFE(driver)
+
+   --local msg = CANFrame()
+   local t = get_time_sec()
+
+   local RPM = 1200 + math.floor(1000*math.sin(t))
+   rev_counter = rev_counter + (RPM/60.0)*0.01
+
+   -- fast telem
+   local msg = CANFrame()
+   local base_id = uint32_t(0x88000005)
+   msg:id(base_id | 0x00000)
+   put_u16(msg,1,RPM)
+   msg:dlc(8)
+   driver:write_frame(msg, 10000)
+
+   -- slow telem0
+   msg = CANFrame()
+   msg:id(base_id | 0x10000)
+   put_u16(msg,5,101324/2) -- air pressure
+   msg:dlc(8)
+   driver:write_frame(msg, 10000)
+
+   -- slow telem1
+   msg = CANFrame()
+   msg:id(base_id | 0x20000)
+   put_u8(msg,0,35) -- inlet air temp, signed, deg C
+   msg:dlc(8)
+   driver:write_frame(msg, 10000)
+
+   -- slow telem2
+   msg = CANFrame()
+   msg:id(base_id | 0x30000)
+   put_u8(msg,1,math.floor((67+128)/1.5)) -- MAT
+   put_u16(msg,6,173) -- fuel flow in grams/hr
+   msg:dlc(8)
+   driver:write_frame(msg, 10000)
+   
+
+end
+
 function update()
    if EFISIM_TYPE:get() == 1 then
       send_SkyPower(driver2)
+   elseif EFISIM_TYPE:get() == 2 then
+      send_HFE(driver2)
    end
-   return update, 10
+   return update, math.floor(1000/EFISIM_RATE_HZ:get())
 end
 
 gcs:send_text(0,string.format("EFISIM: loaded"))
