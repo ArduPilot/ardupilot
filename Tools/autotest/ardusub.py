@@ -112,10 +112,10 @@ class AutoTestSub(AutoTest):
         msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
         if msg is None:
             raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
-        pwm = 1000
-        if msg.relative_alt/1000.0 < -5.5:
+        pwm = 1300
+        if msg.relative_alt/1000.0 < -6.0:
             # need to g`o up, not down!
-            pwm = 2000
+            pwm = 1700
         self.set_rc(Joystick.Throttle, pwm)
         self.wait_altitude(altitude_min=-6, altitude_max=-5)
         self.set_rc(Joystick.Throttle, 1500)
