@@ -50,8 +50,7 @@ public:
     ~AP_Spektrum_Telem() override;
 
     /* Do not allow copies */
-    AP_Spektrum_Telem(const AP_Spektrum_Telem &other) = delete;
-    AP_Spektrum_Telem &operator=(const AP_Spektrum_Telem&) = delete;
+    CLASS_NO_COPY(AP_Spektrum_Telem);
 
     // init - perform required initialisation
     virtual bool init() override;

@@ -45,8 +45,7 @@ public:
                update_flight_stage_fn_t _update_flight_stage_fn);
 
     /* Do not allow copies */
-    AP_Landing(const AP_Landing &other) = delete;
-    AP_Landing &operator=(const AP_Landing&) = delete;
+    CLASS_NO_COPY(AP_Landing);
 
 
     // NOTE: make sure to update is_type_valid()

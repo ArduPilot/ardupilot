@@ -48,8 +48,7 @@ public:
     AP_ESC_Telem_Backend();
 
     /* Do not allow copies */
-    AP_ESC_Telem_Backend(const AP_ESC_Telem_Backend &other) = delete;
-    AP_ESC_Telem_Backend &operator=(const AP_ESC_Telem_Backend&) = delete;
+    CLASS_NO_COPY(AP_ESC_Telem_Backend);
 
 protected:
     // callback to update the rpm in the frontend, should be called by the driver when new data is available

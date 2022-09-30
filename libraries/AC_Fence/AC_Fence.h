@@ -44,8 +44,7 @@ public:
     AC_Fence();
 
     /* Do not allow copies */
-    AC_Fence(const AC_Fence &other) = delete;
-    AC_Fence &operator=(const AC_Fence&) = delete;
+    CLASS_NO_COPY(AC_Fence);
 
     void init() {
         _poly_loader.init();

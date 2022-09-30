@@ -29,8 +29,7 @@ public:
     AP_DEVO_Telem() {}
 
     /* Do not allow copies */
-    AP_DEVO_Telem(const AP_DEVO_Telem &other) = delete;
-    AP_DEVO_Telem &operator=(const AP_DEVO_Telem&) = delete;
+    CLASS_NO_COPY(AP_DEVO_Telem);
 
     void init();
 

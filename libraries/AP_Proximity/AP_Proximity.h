@@ -37,8 +37,8 @@ public:
 
     AP_Proximity();
 
-    AP_Proximity(const AP_Proximity &other) = delete;
-    AP_Proximity &operator=(const AP_Proximity) = delete;
+    /* Do not allow copies */
+    CLASS_NO_COPY(AP_Proximity);
 
     // Proximity driver types
     enum class Type {

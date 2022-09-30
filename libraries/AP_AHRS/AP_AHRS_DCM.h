@@ -44,8 +44,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_AHRS_DCM(const AP_AHRS_DCM &other) = delete;
-    AP_AHRS_DCM &operator=(const AP_AHRS_DCM&) = delete;
+    CLASS_NO_COPY(AP_AHRS_DCM);
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated

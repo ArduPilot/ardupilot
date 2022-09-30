@@ -50,8 +50,7 @@ public:
     AP_RunCam();
 
     // do not allow copies
-    AP_RunCam(const AP_RunCam &other) = delete;
-    AP_RunCam &operator=(const AP_RunCam &) = delete;
+    CLASS_NO_COPY(AP_RunCam);
 
     // get singleton instance
     static AP_RunCam *get_singleton() {

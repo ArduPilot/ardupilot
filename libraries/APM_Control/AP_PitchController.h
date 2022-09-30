@@ -12,8 +12,7 @@ public:
     AP_PitchController(const AP_Vehicle::FixedWing &parms);
 
     /* Do not allow copies */
-    AP_PitchController(const AP_PitchController &other) = delete;
-    AP_PitchController &operator=(const AP_PitchController&) = delete;
+    CLASS_NO_COPY(AP_PitchController);
 
     float get_rate_out(float desired_rate, float scaler);
     float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode);

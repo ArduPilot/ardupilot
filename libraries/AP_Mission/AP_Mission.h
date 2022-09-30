@@ -383,8 +383,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_Mission(const AP_Mission &other) = delete;
-    AP_Mission &operator=(const AP_Mission&) = delete;
+    CLASS_NO_COPY(AP_Mission);
 
     // mission state enumeration
     enum mission_state {

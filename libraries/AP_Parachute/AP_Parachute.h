@@ -49,8 +49,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_Parachute(const AP_Parachute &other) = delete;
-    AP_Parachute &operator=(const AP_Parachute&) = delete;
+    CLASS_NO_COPY(AP_Parachute);
 
     /// enabled - enable or disable parachute release
     void enabled(bool on_off);

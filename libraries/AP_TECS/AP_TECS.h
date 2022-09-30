@@ -36,8 +36,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_TECS(const AP_TECS &other) = delete;
-    AP_TECS &operator=(const AP_TECS&) = delete;
+    CLASS_NO_COPY(AP_TECS);
 
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state

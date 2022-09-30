@@ -27,8 +27,7 @@ public:
     AC_PrecLand();
 
     /* Do not allow copies */
-    AC_PrecLand(const AC_PrecLand &other) = delete;
-    AC_PrecLand &operator=(const AC_PrecLand&) = delete;
+    CLASS_NO_COPY(AC_PrecLand);
 
     // return singleton
     static AC_PrecLand *get_singleton() {

@@ -39,8 +39,7 @@ public:
     AP_KDECAN();
     
     /* Do not allow copies */
-    AP_KDECAN(const AP_KDECAN &other) = delete;
-    AP_KDECAN &operator=(const AP_KDECAN&) = delete;
+    CLASS_NO_COPY(AP_KDECAN);
 
     static const struct AP_Param::GroupInfo var_info[];
 

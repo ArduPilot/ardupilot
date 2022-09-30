@@ -34,8 +34,7 @@ public:
     AP_Scripting();
 
     /* Do not allow copies */
-    AP_Scripting(const AP_Scripting &other) = delete;
-    AP_Scripting &operator=(const AP_Scripting&) = delete;
+    CLASS_NO_COPY(AP_Scripting);
 
     void init(void);
 

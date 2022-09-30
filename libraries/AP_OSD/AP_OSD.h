@@ -460,8 +460,7 @@ public:
     AP_OSD();
 
     /* Do not allow copies */
-    AP_OSD(const AP_OSD &other) = delete;
-    AP_OSD &operator=(const AP_OSD&) = delete;
+    CLASS_NO_COPY(AP_OSD);
 
     // get singleton instance
     static AP_OSD *get_singleton()

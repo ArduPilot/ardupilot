@@ -73,8 +73,7 @@ public:
     };
 
     /* Do not allow copies */
-    AP_PiccoloCAN(const AP_PiccoloCAN &other) = delete;
-    AP_PiccoloCAN &operator=(const AP_PiccoloCAN&) = delete;
+    CLASS_NO_COPY(AP_PiccoloCAN);
 
     static const struct AP_Param::GroupInfo var_info[];
 

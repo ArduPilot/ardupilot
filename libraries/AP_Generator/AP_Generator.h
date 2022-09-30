@@ -28,8 +28,7 @@ public:
     AP_Generator();
 
     // Do not allow copies
-    AP_Generator(const AP_Generator &other) = delete;
-    AP_Generator &operator=(const AP_Generator&) = delete;
+    CLASS_NO_COPY(AP_Generator);
 
     static AP_Generator* get_singleton();
 

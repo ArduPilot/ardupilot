@@ -84,8 +84,7 @@ public:
     AP_InertialSensor();
 
     /* Do not allow copies */
-    AP_InertialSensor(const AP_InertialSensor &other) = delete;
-    AP_InertialSensor &operator=(const AP_InertialSensor&) = delete;
+    CLASS_NO_COPY(AP_InertialSensor);
 
     static AP_InertialSensor *get_singleton();
 

@@ -36,8 +36,7 @@ public:
     void update(void);
 
     /* Do not allow copies */
-    AP_TempCalibration(const AP_TempCalibration &other) = delete;
-    AP_TempCalibration &operator=(const AP_TempCalibration&) = delete;
+    CLASS_NO_COPY(AP_TempCalibration);
 
     enum {
         TC_DISABLED = 0,
