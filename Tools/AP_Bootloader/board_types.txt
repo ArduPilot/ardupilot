@@ -180,6 +180,8 @@ AP_HW_AEROFOX_AIRSPEED               1077
 AP_HW_ATOMRCF405                     1078
 AP_HW_CUBEPILOT_CANMOD               1079
 AP_HW_AEROFOX_PMU                     1080
+AP_HW_FlywooGOKU_F405-RX             1081
+AP_HW_FlywooGOKU_F405                1082
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
