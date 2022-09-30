@@ -24,8 +24,7 @@ public:
     ScriptingLED();
 
     /* Do not allow copies */
-    ScriptingLED(const AP_Notify &other) = delete;
-    ScriptingLED &operator=(const AP_Notify&) = delete;
+    CLASS_NO_COPY(ScriptingLED);
 
     // get singleton instance
     static ScriptingLED *get_singleton(void) {

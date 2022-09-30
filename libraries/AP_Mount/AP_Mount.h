@@ -71,8 +71,7 @@ public:
     AP_Mount();
 
     /* Do not allow copies */
-    AP_Mount(const AP_Mount &other) = delete;
-    AP_Mount &operator=(const AP_Mount&) = delete;
+    CLASS_NO_COPY(AP_Mount);
 
     // get singleton instance
     static AP_Mount *get_singleton() {

@@ -38,8 +38,7 @@ public:
     AC_Sprayer();
 
     /* Do not allow copies */
-    AC_Sprayer(const AC_Sprayer &other) = delete;
-    AC_Sprayer &operator=(const AC_Sprayer&) = delete;
+    CLASS_NO_COPY(AC_Sprayer);
 
     static AC_Sprayer *get_singleton();
     static AC_Sprayer *_singleton;

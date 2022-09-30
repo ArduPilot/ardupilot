@@ -119,8 +119,7 @@ public:
     AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handler_fn_t battery_failsafe_handler_fn, const int8_t *failsafe_priorities);
 
     /* Do not allow copies */
-    AP_BattMonitor(const AP_BattMonitor &other) = delete;
-    AP_BattMonitor &operator=(const AP_BattMonitor&) = delete;
+    CLASS_NO_COPY(AP_BattMonitor);
 
     static AP_BattMonitor *get_singleton() {
         return _singleton;

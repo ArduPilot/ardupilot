@@ -85,8 +85,7 @@ public:
     Compass();
 
     /* Do not allow copies */
-    Compass(const Compass &other) = delete;
-    Compass &operator=(const Compass&) = delete;
+    CLASS_NO_COPY(Compass);
 
     // get singleton instance
     static Compass *get_singleton() {

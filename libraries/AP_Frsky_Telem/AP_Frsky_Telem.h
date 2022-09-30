@@ -27,8 +27,7 @@ public:
     ~AP_Frsky_Telem();
 
     /* Do not allow copies */
-    AP_Frsky_Telem(const AP_Frsky_Telem &other) = delete;
-    AP_Frsky_Telem &operator=(const AP_Frsky_Telem&) = delete;
+    CLASS_NO_COPY(AP_Frsky_Telem);
 
     // init - perform required initialisation
     bool init(bool use_external_data=false);

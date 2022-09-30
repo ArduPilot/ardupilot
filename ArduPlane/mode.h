@@ -16,8 +16,7 @@ class Mode
 public:
 
     /* Do not allow copies */
-    Mode(const Mode &other) = delete;
-    Mode &operator=(const Mode&) = delete;
+    CLASS_NO_COPY(Mode);
 
     // Auto Pilot modes
     // ----------------

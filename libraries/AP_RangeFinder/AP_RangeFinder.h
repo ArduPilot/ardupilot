@@ -62,8 +62,7 @@ public:
     RangeFinder();
 
     /* Do not allow copies */
-    RangeFinder(const RangeFinder &other) = delete;
-    RangeFinder &operator=(const RangeFinder&) = delete;
+    CLASS_NO_COPY(RangeFinder);
 
     // RangeFinder driver types
     enum class Type {

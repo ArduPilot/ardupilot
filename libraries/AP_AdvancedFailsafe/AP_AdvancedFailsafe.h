@@ -47,8 +47,7 @@ public:
     };
 
     /* Do not allow copies */
-    AP_AdvancedFailsafe(const AP_AdvancedFailsafe &other) = delete;
-    AP_AdvancedFailsafe &operator=(const AP_AdvancedFailsafe&) = delete;
+    CLASS_NO_COPY(AP_AdvancedFailsafe);
 
     // Constructor
     AP_AdvancedFailsafe()

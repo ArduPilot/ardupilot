@@ -127,8 +127,7 @@ public:
     }
 
     /* Do not allow copies */
-    SIM(const SIM &other) = delete;
-    SIM &operator=(const SIM&) = delete;
+    CLASS_NO_COPY(SIM);
 
     static SIM *_singleton;
     static SIM *get_singleton() { return _singleton; }

@@ -92,8 +92,7 @@ public:
     AP_GPS();
 
     /* Do not allow copies */
-    AP_GPS(const AP_GPS &other) = delete;
-    AP_GPS &operator=(const AP_GPS&) = delete;
+    CLASS_NO_COPY(AP_GPS);
 
     static AP_GPS *get_singleton() {
         return _singleton;

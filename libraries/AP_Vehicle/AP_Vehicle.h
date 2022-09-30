@@ -70,8 +70,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_Vehicle(const AP_Vehicle &other) = delete;
-    AP_Vehicle &operator=(const AP_Vehicle&) = delete;
+    CLASS_NO_COPY(AP_Vehicle);
 
     static AP_Vehicle *get_singleton();
 

@@ -35,8 +35,7 @@ public:
     NavEKF3();
 
     /* Do not allow copies */
-    NavEKF3(const NavEKF3 &other) = delete;
-    NavEKF3 &operator=(const NavEKF3&) = delete;
+    CLASS_NO_COPY(NavEKF3);
 
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];

@@ -12,8 +12,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_SteerController(const AP_SteerController &other) = delete;
-    AP_SteerController &operator=(const AP_SteerController&) = delete;
+    CLASS_NO_COPY(AP_SteerController);
 
     /*
       return a steering servo output from -4500 to 4500 given a

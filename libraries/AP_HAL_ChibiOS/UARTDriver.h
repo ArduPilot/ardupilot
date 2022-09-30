@@ -33,8 +33,7 @@ public:
     UARTDriver(uint8_t serial_num);
 
     /* Do not allow copies */
-    UARTDriver(const UARTDriver &other) = delete;
-    UARTDriver &operator=(const UARTDriver&) = delete;
+    CLASS_NO_COPY(UARTDriver);
 
     void begin(uint32_t b) override;
     void begin_locked(uint32_t b, uint32_t write_key) override;

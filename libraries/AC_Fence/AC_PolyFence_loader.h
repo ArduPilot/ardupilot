@@ -49,8 +49,8 @@ public:
     AC_PolyFence_loader(AP_Int8 &total) :
         _total(total) {}
 
-    AC_PolyFence_loader(const AC_PolyFence_loader &other) = delete;
-    AC_PolyFence_loader &operator=(const AC_PolyFence_loader&) = delete;
+    /* Do not allow copies */
+    CLASS_NO_COPY(AC_PolyFence_loader);
 
     void init();
 

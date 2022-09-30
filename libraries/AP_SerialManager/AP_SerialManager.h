@@ -120,8 +120,7 @@ public:
     AP_SerialManager();
 
     /* Do not allow copies */
-    AP_SerialManager(const AP_SerialManager &other) = delete;
-    AP_SerialManager &operator=(const AP_SerialManager&) = delete;
+    CLASS_NO_COPY(AP_SerialManager);
 
     enum SerialProtocol {
         SerialProtocol_None = -1,

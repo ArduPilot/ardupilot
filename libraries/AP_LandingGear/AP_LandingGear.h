@@ -20,8 +20,7 @@ public:
     }
 
     /* Do not allow copies */
-    AP_LandingGear(const AP_LandingGear &other) = delete;
-    AP_LandingGear &operator=(const AP_LandingGear&) = delete;
+    CLASS_NO_COPY(AP_LandingGear);
     
     // get singleton instance
     static AP_LandingGear *get_singleton(void) {

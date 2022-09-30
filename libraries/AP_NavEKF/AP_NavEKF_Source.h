@@ -12,8 +12,7 @@ public:
     AP_NavEKF_Source();
 
     /* Do not allow copies */
-    AP_NavEKF_Source(const AP_NavEKF_Source &other) = delete;
-    AP_NavEKF_Source &operator=(const AP_NavEKF_Source&) = delete;
+    CLASS_NO_COPY(AP_NavEKF_Source);
 
     enum class SourceXY : uint8_t {
         NONE = 0,
