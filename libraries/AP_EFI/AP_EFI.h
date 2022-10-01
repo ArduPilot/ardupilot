@@ -95,8 +95,7 @@ public:
     void send_mavlink_status(mavlink_channel_t chan);
 
 #if AP_SCRIPTING_ENABLED
-    // Ingest EFI_State from scripting driver
-    void handle_scripting(const EFI_State &efi_state);
+    AP_EFI_Backend* get_backend(uint8_t idx) { return idx==0?backend:nullptr; }
 #endif
 
 protected:
