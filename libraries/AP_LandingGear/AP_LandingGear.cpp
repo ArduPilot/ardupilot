@@ -1,4 +1,7 @@
 #include "AP_LandingGear.h"
+
+#if AP_LANDINGGEAR_ENABLED
+
 #include <AP_Relay/AP_Relay.h>
 #include <AP_Math/AP_Math.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -8,6 +11,10 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <SITL/SITL.h>
+#endif
+
+#if defined(APM_BUILD_TYPE)
+//  - this is just here to encourage the build system to supply the "legacy build defines".  The actual dependecy is in the AP_LandingGear.h and AP_LandingGear_config.h headers
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -331,3 +338,5 @@ void AP_LandingGear::deploy_for_landing()
         deploy();
     }
 }
+
+#endif
