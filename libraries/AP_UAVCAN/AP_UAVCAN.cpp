@@ -352,7 +352,7 @@ void AP_UAVCAN::init(uint8_t driver_index, bool enable_filters)
 #if AP_RANGEFINDER_UAVCAN_ENABLED
     AP_RangeFinder_UAVCAN::subscribe_msgs(this);
 #endif
-#if HAL_EFI_ENABLED
+#if HAL_EFI_DRONECAN_ENABLED
     AP_EFI_DroneCAN::subscribe_msgs(this);
 #endif
 
