@@ -132,7 +132,7 @@ void Copter::init_ardupilot()
     init_precland();
 #endif
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // initialise landing gear position
     landinggear.init();
 #endif
