@@ -101,7 +101,7 @@ void Plane::init_ardupilot()
     camera_mount.init();
 #endif
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // initialise landing gear position
     g2.landing_gear.init();
 #endif
