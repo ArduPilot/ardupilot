@@ -3321,7 +3321,7 @@ bool QuadPlane::verify_vtol_land(void)
 #if AP_FENCE_ENABLED
             plane.fence.auto_disable_fence_for_landing();
 #endif
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
             plane.g2.landing_gear.deploy_for_landing();
 #endif
             last_land_final_agl = plane.relative_ground_altitude(plane.g.rangefinder_landing);
