@@ -225,4 +225,4 @@ BUILD_OPTIONS = [
     Feature('Payload', 'Camera', 'AP_CAMERA_ENABLED', 'Enable Camera Trigger support', 0, None),
 ]
 
-BUILD_OPTIONS.sort(key=lambda x: x.category)
+BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
