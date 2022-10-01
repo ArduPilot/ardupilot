@@ -277,18 +277,6 @@ void AP_EFI::get_state(EFI_State &_state)
     _state = state;
 }
 
-#if AP_EFI_SCRIPTING_ENABLED && AP_SCRIPTING_ENABLED
-
-void AP_EFI::handle_scripting(const EFI_State &efi_state)
-{
-    if (!backend || (Type(type.get()) != Type::SCRIPTING)) {
-        return;
-    }
-    backend->handle_scripting(efi_state);
-}
-
-#endif
-
 namespace AP {
 AP_EFI *EFI()
 {
