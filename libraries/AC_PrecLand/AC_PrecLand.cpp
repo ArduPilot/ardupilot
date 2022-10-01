@@ -39,15 +39,6 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
-    // @Param: YAW_ALIGN
-    // @DisplayName: Sensor yaw alignment
-    // @Description: Yaw angle from body x-axis to sensor x-axis.
-    // @Range: 0 36000
-    // @Increment: 10
-    // @User: Advanced
-    // @Units: cdeg
-    AP_GROUPINFO("YAW_ALIGN",    2, AC_PrecLand, _yaw_align, 0),
-
     // @Param: LAND_OFS_X
     // @DisplayName: Land offset forward
     // @Description: Desired landing position of the camera forward of the target in vehicle body frame
@@ -604,11 +595,6 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit_body)
     if (_backend->have_los_meas() && _backend->los_meas_time_ms() != _last_backend_los_meas_ms) {
         _last_backend_los_meas_ms = _backend->los_meas_time_ms();
         _backend->get_los_body(target_vec_unit_body);
-        if (!is_zero(_yaw_align)) {
-            // Apply sensor yaw alignment rotation
-            target_vec_unit_body.rotate_xy(radians(_yaw_align*0.01f));
-        }
-
 
         // rotate vector based on sensor oriention to get correct body frame vector
         if (_orient != ROTATION_PITCH_270) {
