@@ -373,12 +373,14 @@ for t in $CI_BUILD_TARGET; do
              --no-disable-all \
              --no-disable-none \
              --no-disable-in-turn \
+             --no-enable-in-turn \
              --board=CubeOrange \
              --build-targets=copter \
              --build-targets=plane
         echo "Checking all/none options in build_options.py work"
         time ./Tools/autotest/test_build_options.py \
              --no-disable-in-turn \
+             --no-enable-in-turn \
              --build-targets=copter \
              --build-targets=plane
         continue
