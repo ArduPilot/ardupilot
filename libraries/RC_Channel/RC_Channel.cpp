@@ -1148,6 +1148,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
 
+#if AP_LANDINGGEAR_ENABLED
     case AUX_FUNC::LANDING_GEAR: {
         AP_LandingGear *lg = AP_LandingGear::get_singleton();
         if (lg == nullptr) {
@@ -1166,6 +1167,7 @@ bool RC_Channel::do_aux_function(const aux_func_t ch_option, const AuxSwitchPos 
         }
         break;
     }
+#endif
 
     case AUX_FUNC::GPS_DISABLE:
         AP::gps().force_disable(ch_flag == AuxSwitchPos::HIGH);
