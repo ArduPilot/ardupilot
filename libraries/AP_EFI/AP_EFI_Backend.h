@@ -32,7 +32,7 @@ public:
     virtual void update() = 0;
 
 #if AP_SCRIPTING_ENABLED
-    virtual void handle_scripting(const EFI_State &efi_state) { return; }
+    virtual bool handle_scripting(const EFI_State &efi_state) { return false; }
 #endif
 
 protected:
