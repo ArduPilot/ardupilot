@@ -691,7 +691,7 @@ void Plane::set_servos_flaps(void)
     flaperon_update();
 }
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
 /*
   setup landing gear state
  */
@@ -711,7 +711,7 @@ void Plane::set_landing_gear(void)
     }
     gear.last_flight_stage = flight_stage;
 }
-#endif // LANDING_GEAR_ENABLED
+#endif // AP_LANDINGGEAR_ENABLED
 
 
 /*
@@ -879,7 +879,7 @@ void Plane::set_servos(void)
     // setup flap outputs
     set_servos_flaps();
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // setup landing gear output
     set_landing_gear();
 #endif
