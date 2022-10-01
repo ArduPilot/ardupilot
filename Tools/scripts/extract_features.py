@@ -122,7 +122,7 @@ class ExtractFeatures(object):
 
             ('AP_GRIPPER_ENABLED', r'AP_Gripper::init\b',),
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
-            ('LANDING_GEAR_ENABLED', r'AP_LandingGear::init\b',),
+            ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
             ('WINCH_ENABLED', 'AP_Winch::AP_Winch',),
 
             ('AP_VOLZ_ENABLED', r'AP_Volz_Protocol::init\b',),
