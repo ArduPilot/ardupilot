@@ -530,8 +530,9 @@ singleton AP_Mount method set_rate_target void uint8_t 0 UINT8_MAX float'skip_ch
 singleton AP_Mount method set_roi_target void uint8_t 0 UINT8_MAX Location
 
 -- ----EFI Library----
-include AP_EFI/AP_EFI_Scripting.h
-include AP_EFI/AP_EFI_State.h
+include AP_EFI/AP_EFI.h depends HAL_EFI_ENABLED
+include AP_EFI/AP_EFI_Scripting.h depends HAL_EFI_ENABLED
+include AP_EFI/AP_EFI_config.h
 
 userdata Cylinder_Status depends (AP_EFI_SCRIPTING_ENABLED == 1)
 userdata Cylinder_Status field ignition_timing_deg float'skip_check write
@@ -557,15 +558,17 @@ userdata EFI_State field fuel_consumption_rate_cm3pm float'skip_check write
 userdata EFI_State field estimated_consumed_fuel_volume_cm3 float'skip_check write
 userdata EFI_State field throttle_position_percent uint8_t write 0 UINT8_MAX
 userdata EFI_State field ecu_index uint8_t write 0 UINT8_MAX
-userdata EFI_State field cylinder_status Cylinder_Status'skip_check write
+userdata EFI_State field cylinder_status Cylinder_Status write
 userdata EFI_State field ignition_voltage float'skip_check write
 userdata EFI_State field throttle_out float'skip_check write
 userdata EFI_State field pt_compensation float'skip_check write
 
-include AP_EFI/AP_EFI.h
-singleton AP_EFI depends AP_EFI_SCRIPTING_ENABLED == 1
+ap_object AP_EFI_Backend depends (AP_EFI_SCRIPTING_ENABLED == 1)
+ap_object AP_EFI_Backend method handle_scripting boolean EFI_State
+
+singleton AP_EFI depends (AP_EFI_SCRIPTING_ENABLED == 1)
 singleton AP_EFI rename efi
-singleton AP_EFI method handle_scripting void EFI_State
+singleton AP_EFI method get_backend AP_EFI_Backend uint8_t 0 UINT8_MAX
 
 -- ----END EFI Library----
 
