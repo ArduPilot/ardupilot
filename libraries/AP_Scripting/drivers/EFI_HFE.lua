@@ -58,7 +58,13 @@ end
 local driver1 = CAN.get_device(25)
 
 if not driver1 then
-    gcs:send_text(0, string.format("EFI CAN Telemetry: Failed to load driver"))
+    gcs:send_text(0, string.format("EFI_HFE: Failed to load driver"))
+    return
+end
+
+local efi_backend = efi:get_backend(0)
+if not efi_backend then
+    gcs:send_text(0, string.format("EFI_HFE: Failed to find EFI scripting backend"))
     return
 end
 
@@ -220,7 +226,7 @@ local function engine_control(_driver)
        efi_state:last_updated_ms(millis())
 
         -- Set the EFI_State into the EFI scripting driver
-        efi:handle_scripting(efi_state)
+        efi_backend:handle_scripting(efi_state)
     end
 
     -- send throttle
