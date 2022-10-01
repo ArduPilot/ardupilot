@@ -2602,6 +2602,54 @@ class AutoTestCopter(AutoTest):
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
 
+    def GuidedEKFLaneChange(self):
+        '''test lane change with GPS diff on startup'''
+        self.set_parameters({
+            "EK3_SRC1_POSZ": 3,
+            "EK3_AFFINITY" : 1,
+            "GPS_TYPE2" : 1,
+            "SIM_GPS2_DISABLE" : 0,
+            "SIM_GPS2_GLTCH_Z" : -30
+            })
+        self.reboot_sitl()
+
+        self.change_mode("GUIDED")
+        self.wait_ready_to_arm()
+
+        self.progress("waiting for both EKF lanes to init")
+        self.delay_sim_time(10)
+
+        self.set_parameters({
+            "SIM_GPS2_GLTCH_Z" : 0
+            })
+
+        self.progress("waiting for EKF to do a position Z reset")
+        self.delay_sim_time(20)
+
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=20)
+        m = self.mav.recv_match(type='GPS_RAW_INT', blocking=True)
+        gps_alt = m.alt*0.001
+        self.progress("Initial guided alt=%.1fm" % gps_alt)
+
+        self.context_collect('STATUSTEXT')
+        self.progress("force a lane change")
+        self.set_parameters({
+            "INS_ACCOFFS_X" : 5
+            })
+        self.wait_statustext("EKF3 lane switch 1", timeout=10, check_context=True)
+
+        self.delay_sim_time(10)
+        m = self.mav.recv_match(type='GPS_RAW_INT', blocking=True)
+        gps_alt2 = m.alt*0.001
+        alt_change = gps_alt - gps_alt2
+        self.progress("GPS Alt change by %.1fm" % abs(alt_change))
+
+        if abs(alt_change) > 2:
+            raise NotAchievedException("Altitude changed on lane switch %.1fm" % alt_change)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def MotorFail(self, fail_servo=0, fail_mul=0.0, holdtime=30):
         """Test flight with reduced motor efficiency"""
 
@@ -9027,6 +9075,7 @@ class AutoTestCopter(AutoTest):
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
+            self.GuidedEKFLaneChange,
         ])
         return ret
 
