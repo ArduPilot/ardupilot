@@ -652,7 +652,7 @@ void ModeGuided::takeoff_run()
     auto_takeoff_run();
     if (auto_takeoff_complete && !takeoff_complete) {
         takeoff_complete = true;
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
 #endif
