@@ -62,11 +62,7 @@ if not driver1 then
     return
 end
 
-local efi_backend = efi:get_backend(0)
-if not efi_backend then
-    gcs:send_text(0, string.format("EFI_HFE: Failed to find EFI scripting backend"))
-    return
-end
+local efi_backend = nil
 
 -- Setup EFI Parameters
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 5), 'could not add EFI_HFE param table')
@@ -269,6 +265,13 @@ local engine1 = engine_control(driver1, 1)
 
 function update()
    now_s = get_time_sec()
+
+   if not efi_backend then
+      efi_backend = efi:get_backend(0)
+      if not efi_backend then
+         return
+      end
+   end
 
    -- Parse Driver Messages
    engine1.update_telemetry()
