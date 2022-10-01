@@ -247,7 +247,7 @@ void ModeRTL::descent_start()
     // initialise yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 #endif
@@ -339,7 +339,7 @@ void ModeRTL::land_start()
     // initialise yaw
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
 
-#if LANDING_GEAR_ENABLED == ENABLED
+#if AP_LANDINGGEAR_ENABLED
     // optionally deploy landing gear
     copter.landinggear.deploy_for_landing();
 #endif
