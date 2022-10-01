@@ -72,7 +72,9 @@ BUILD_OPTIONS = [
 
     Feature('ICE', 'ICE Engine', 'AP_ICENGINE_ENABLED', 'Enable Internal Combustion Engine support', 0, 'RPM'),
     Feature('ICE', 'EFI', 'HAL_EFI_ENABLED', 'Enable EFI Monitoring', 0, None),
-    Feature('ICE', 'EFI_NMPWU', 'HAL_EFI_NWPWU_ENABLED', 'Enable EFI NMPMU', 0, None),
+    Feature('ICE', 'EFI_NMPWU', 'HAL_EFI_NWPWU_ENABLED', 'Enable EFI NMPMU', 0, 'EFI'),
+    Feature('ICE', 'EFI_CURRAWONGECU', 'HAL_EFI_CURRAWONG_ECU_ENABLED', 'Enable EFI Currawong ECU', 0, 'EFI'),
+    Feature('ICE', 'EFI_DRONECAN', 'HAL_EFI_DRONECAN_ENABLED', 'Enable EFI DroneCAN', 0, 'EFI'),
     Feature('ICE', 'GENERATOR', 'HAL_GENERATOR_ENABLED', 'Enable Generator', 0, None),
 
     Feature('OSD', 'OSD', 'OSD_ENABLED', 'Enable OSD', 0, None),
