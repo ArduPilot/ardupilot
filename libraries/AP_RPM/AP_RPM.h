@@ -19,6 +19,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include "AP_RPM_Params.h"
+#include "AP_RPM_config.h"
 
 // Maximum number of RPM measurement instances available on this platform
 #define RPM_MAX_INSTANCES 2
