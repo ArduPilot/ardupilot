@@ -42,6 +42,16 @@ public:
     // handle mavlink messages
     virtual void handle_msg(const mavlink_message_t &msg) {}
 
+#if AP_SCRIPTING_ENABLED
+    // handle Lua obstacle messages
+    virtual bool set_distance_min_max(float min, float max) { return false; }
+    virtual bool handle_script_distance_msg(float dist_m, float azimuth_deg, float elevation_deg, bool push_to_boundary) { return false; }
+    virtual bool handle_script_3d_msg(Vector3f vec_to_obstacle, bool push_to_boundary) { return false; }
+#endif
+
+    // return the type of sensor
+    AP_Proximity::Type type() const { return (AP_Proximity::Type)params.type.get(); }
+
 protected:
 
     // set status and update valid_count
