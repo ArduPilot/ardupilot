@@ -169,14 +169,23 @@ singleton AP_Notify method handle_rgb void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_M
 singleton AP_Notify method handle_rgb_id void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
 
 include AP_Proximity/AP_Proximity.h
+include AP_Proximity/AP_Proximity_Backend.h
 
 singleton AP_Proximity depends HAL_PROXIMITY_ENABLED == 1
+ap_object AP_Proximity_Backend depends HAL_PROXIMITY_ENABLED == 1
+ap_object AP_Proximity_Backend method handle_script_distance_msg boolean float'skip_check float'skip_check float'skip_check boolean
+ap_object AP_Proximity_Backend method handle_script_3d_msg boolean Vector3f boolean
+ap_object AP_Proximity_Backend method type uint8_t
+ap_object AP_Proximity_Backend method set_distance_min_max boolean float'skip_check float'skip_check
+
 singleton AP_Proximity rename proximity
 singleton AP_Proximity method get_status uint8_t
 singleton AP_Proximity method num_sensors uint8_t
 singleton AP_Proximity method get_object_count uint8_t
 singleton AP_Proximity method get_closest_object boolean float'Null float'Null
 singleton AP_Proximity method get_object_angle_and_distance boolean uint8_t 0 UINT8_MAX float'Null float'Null
+singleton AP_Proximity method get_type uint8_t uint8_t 0 (ud->num_sensors()-1)
+singleton AP_Proximity method get_backend AP_Proximity_Backend uint8_t 0 (ud->num_sensors()-1)
 
 include AP_RangeFinder/AP_RangeFinder.h
 
