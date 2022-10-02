@@ -1,3 +1,44 @@
+Release 4.3.0beta2 3rd Oct 2022
+-------------------------------
+
+This is the second beta of the 4.3.0 stable release. Changes since
+beta1 are:
+
+ - fixes for VideoTX, fixing buffer overrun and tramp handling
+ - fixed spurious error about sending RPM when RPM disabled
+ - fixed an EKF3 lane switch issue that can cause incorrect height with dual GPS
+ - fixed mission cmd to mission int initialisation error
+ - fixed mission jump tracking init on startup
+ - fixed OSD view roll/pitch error for tailsitters
+ - added SkystarsH7HD-bdshot
+ - fixed SkystarsH7HD VTX control
+ - reduced memory usage on MatekF405-CAN board
+ - disable SLCAN when armed to reduce CPU load
+ - enable CAN battery mon on CUAV V6X by default
+ - added arming check for Q_M_SPIN_MIN value too high
+ - fixed reporting of RPM from harmonic notch
+ - improved handling of airspeed errors and airspeed auto disable
+ - fixed SERVO_AUTO_TRIM for multiple outputs of same type
+ - fixed auto baud rate detection on SBF/GSOF/NOVA GPS
+ - increased max board name length for mavlink statustext to 23
+ - fixed incorrect disable of notches for non-throttle notch
+ - added notch filter slew limit to reduce notch errors
+ - added ARMING_OPTIONS to control display of pre-arm errors
+ - several OSD fixes for params, font and resolution
+ - support PWM type transmission for CAN PWM output
+ - support Currawong ECU as EFI backend
+ - support lua scripts for EFI backends
+ - implement SkyPower and HFE CAN EFI lua scripts
+ - improved speed of log download with dataflash block backends
+ - disabled all GPS drivers except uBlox and NMEA on Pixhawk1-1M to save flash
+ - disabled all GPS drivers except uBlox on MatekF405-bdshot and omnibusf4pro-bdshot
+ - fixed FFT indexing bug
+ - added USART2 for AIRLink
+ - allow reset to default airspeed using mission item DO_CHANGE_SPEED
+
+Happy flying!
+
+
 Release 4.3.0beta1 13th Sep 2022
 --------------------------------
 
