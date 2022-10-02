@@ -6077,13 +6077,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 initial_position = self.offset_location_ne(target, -20, -2)
                 self.drive_to_location(initial_position)
                 self.change_mode(8) # DOCK mode
-                self.wait_distance_to_location(target, 0, 0.5, timeout=120)
+                max_delta = 1
+                self.wait_distance_to_location(target, 0, max_delta, timeout=180)
                 self.disarm_vehicle()
                 self.assert_receive_message('GLOBAL_POSITION_INT')
                 new_pos = self.mav.location()
                 delta = abs(self.get_distance(target, new_pos) - stopping_dist)
                 self.progress("Docked %f metres from stopping point" % delta)
-                max_delta = 0.5
                 if delta > max_delta:
                     raise NotAchievedException("Did not dock close enough to stopping point (%fm > %fm" % (delta, max_delta))
 
