@@ -292,7 +292,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
     }
 
     if (!new_flightmode->init(ignore_checks)) {
-        mode_change_failed(new_flightmode, "initialisation failed");
+        mode_change_failed(new_flightmode, "init failed");
         return false;
     }
 
