@@ -663,7 +663,7 @@ Vector3f SIM::convert_earth_frame(const Matrix3f &dcm, const Vector3f &gyro)
 
 // get the rangefinder reading for the desired rotation, returns -1 for no data
 float SIM::get_rangefinder(uint8_t instance) {
-    if (instance < RANGEFINDER_MAX_INSTANCES) {
+    if (instance < ARRAY_SIZE(state.rangefinder_m)) {
         return state.rangefinder_m[instance];
     }
     return -1;
