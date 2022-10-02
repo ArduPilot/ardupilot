@@ -3,6 +3,10 @@
 
 include ../Pixhawk1/hwdef.dat
 
+# only include UBLOX and NMEA GPS drivers
+define AP_GPS_NMEA_ENABLED 1
+include ../include/minimal_GPS.inc
+
 FLASH_SIZE_KB 1024
 define HAL_MINIMIZE_FEATURES 1
 undef STORAGE_FLASH_PAGE
