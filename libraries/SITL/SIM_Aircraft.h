@@ -205,7 +205,7 @@ protected:
     } scanner;
 
     // Rangefinder
-    float rangefinder_m[RANGEFINDER_MAX_INSTANCES];
+    float rangefinder_m[SITL_NUM_RANGEFINDERS];
 
     // Windvane apparent wind
     struct {
