@@ -2,6 +2,7 @@
 # Buzzer timer is required so becomes single tone
 
 include ../omnibusf4pro/hwdef.dat
+include ../include/minimal_GPS.inc
 
 undef PB0 PB1 PA3 PB4 PA2 PA1
 
