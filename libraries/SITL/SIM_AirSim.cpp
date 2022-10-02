@@ -334,7 +334,7 @@ void AirSim::recv_fdm(const sitl_input& input)
     }
 
     // Update Rangefinder data, max sensors limit as defined
-    uint8_t rng_sensor_count = MIN(state.rng.rng_distances.length, RANGEFINDER_MAX_INSTANCES);
+    uint8_t rng_sensor_count = MIN(state.rng.rng_distances.length, ARRAY_SIZE(rangefinder_m));
     for (uint8_t i=0; i<rng_sensor_count; i++) {
         rangefinder_m[i] = state.rng.rng_distances.data[i];
     }
