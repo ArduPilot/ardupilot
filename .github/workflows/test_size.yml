@@ -28,8 +28,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: 'master'
-          path: 'master'
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base_branch
           submodules: 'recursive'
       # Put ccache into github cache for faster build
       - name: Prepare ccache timestamp
@@ -42,14 +42,14 @@ jobs:
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on master
-      - name: Build master ${{matrix.config}} ${{ matrix.toolchain }}
+          restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on base branch
+      - name: Build ${{ github.event.pull_request.base.ref }} ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
           PATH="/github/home/.local/bin:$PATH"
-          cd master
+          cd base_branch
           ./waf configure --board ${{matrix.config}}
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
@@ -57,14 +57,14 @@ jobs:
           else
             ./waf
           fi
-          mkdir -p $GITHUB_WORKSPACE/master_bin
-          cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/master_bin/
+          mkdir -p $GITHUB_WORKSPACE/base_branch_bin
+          cp -r build/${{matrix.config}}/bin/* $GITHUB_WORKSPACE/base_branch_bin/
 
           # build a set of binaries without symbols so we can check if
           #  the binaries have changed.
-          echo [`date`] Building master with no versions
+          echo [`date`] Building ${{ github.event.pull_request.base.ref }} with no versions
 
-          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/master_bin_no_versions"
+          NO_VERSIONS_DIR="$GITHUB_WORKSPACE/base_branch_bin_no_versions"
           mkdir "$NO_VERSIONS_DIR"
 
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
@@ -75,7 +75,7 @@ jobs:
           fi
           cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
 
-          echo [`date`] Built master with no versions
+          echo [`date`] Built ${{ github.event.pull_request.base.ref }} with no versions
 
       - uses: actions/checkout@v2
         with:
@@ -92,8 +92,8 @@ jobs:
           git config user.email "ardupilot-ci@ardupilot.org"
           git config user.name "ArduPilot CI"
           git remote add ardupilot https://github.com/ArduPilot/ardupilot.git
-          git fetch --no-tags --prune --progress ardupilot master
-          git rebase ardupilot/master
+          git fetch --no-tags --prune --progress ardupilot ${{ github.event.pull_request.base.ref }}
+          git rebase ardupilot/${{ github.event.pull_request.base.ref }}
           git submodule update --init --recursive --depth=1
           ./waf configure --board ${{matrix.config}}
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
@@ -136,29 +136,29 @@ jobs:
             ls -l "$PLANE_BINARY"
           fi
 
-      - name: Full size compare with Master
+      - name: Full size compare with base branch
         shell: bash
         run: |
           cd pr/
           python3 -m pip install -U tabulate
-          Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/master_bin -s $GITHUB_WORKSPACE/pr_bin
+          Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
 
-      - name: Checksum compare with Master
+      - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
-          diff -r $GITHUB_WORKSPACE/master_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
+          diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.elf --exclude=*.apj || true
 
-      - name: elf_diff compare with Master
+      - name: elf_diff compare with ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
           python3 -m pip install -U weasyprint elf_diff anytree
           mkdir elf_diff
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/master_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
+             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
           else
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/master_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
-             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/master_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
+             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
+             python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
           fi
           zip -r elf_diff.zip elf_diff
 
