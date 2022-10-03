@@ -206,6 +206,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
+    const char *vehicle_str = SKETCH;
     _use_fg_view = true;
     char *autotest_dir = nullptr;
     _fg_address = "127.0.0.1";
@@ -337,6 +338,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if STORAGE_USE_FRAM
         {"set-storage-fram-enabled", true,   0, CMDLINE_SET_STORAGE_FRAM_ENABLED},
 #endif
+        {"vehicle",           true,   0, 'v'},
         {0, false, 0, 0}
     };
 
@@ -361,7 +363,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     bool wiping_storage = false;
 
-    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:",
+    GetOptLong gopt(argc, argv, "hwus:r:CI:P:SO:M:F:c:v:",
                     options);
     while (!is_replay && (opt = gopt.getoption()) != -1) {
         switch (opt) {
@@ -419,6 +421,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case 'F':
             _fg_address = gopt.optarg;
+            break;
+        case 'v':
+            vehicle_str = gopt.optarg;
             break;
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
@@ -590,20 +595,20 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         hal.set_wipe_storage(wiping_storage);
     }
 
-    fprintf(stdout, "Starting sketch '%s'\n", SKETCH);
+    fprintf(stdout, "Starting sketch '%s'\n", vehicle_str);
 
-    if (strcmp(SKETCH, "ArduCopter") == 0) {
+    if (strcmp(vehicle_str, "ArduCopter") == 0) {
         _vehicle = ArduCopter;
-    } else if (strcmp(SKETCH, "Rover") == 0) {
+    } else if (strcmp(vehicle_str, "Rover") == 0) {
         _vehicle = Rover;
         // set right default throttle for rover (allowing for reverse)
         pwm_input[2] = 1500;
-    } else if (strcmp(SKETCH, "ArduSub") == 0) {
+    } else if (strcmp(vehicle_str, "ArduSub") == 0) {
         _vehicle = ArduSub;
         for(uint8_t i = 0; i < 8; i++) {
             pwm_input[i] = 1500;
         }
-    } else if (strcmp(SKETCH, "Blimp") == 0) {
+    } else if (strcmp(vehicle_str, "Blimp") == 0) {
         _vehicle = Blimp;
         for(uint8_t i = 0; i < 8; i++) {
             pwm_input[i] = 1500;
