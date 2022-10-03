@@ -71,7 +71,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Param: KFF_THR2PTCH
     // @DisplayName: Throttle to Pitch Mix
     // @Description: Pitch up to add in proportion to throttle. 100% throttle will add this number of degrees to the pitch target.
-    // @Range: 0 5
+    // @Range: -5 5
     // @Increment: 0.01
     // @User: Advanced
     GSCALAR(kff_throttle_to_pitch,  "KFF_THR2PTCH",   0),
