@@ -308,6 +308,7 @@ void AP_TECS::update_50hz(void)
         _height_filter.dd_height = 0.0f;
         DT            = 0.02f; // when first starting TECS, use a
         // small time constant
+        _vdot_filter.reset();
     }
     _update_50hz_last_usec = now;
 
