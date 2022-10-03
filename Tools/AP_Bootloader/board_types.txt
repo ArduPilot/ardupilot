@@ -43,6 +43,7 @@ TARGET_HW_ARK_CAN_GPS                  81
 TARGET_HW_ARK_CAN_RTK_GPS              82
 TARGET_HW_FF_RTK_CAN_GPS               85
 TARGET_HW_ATL_MANTIS_EDU               97
+TARGET_HW_ARK_FMU_V6X                  57
 
 
 Reserved  PX4 [BL] FMU v5X.x           51
