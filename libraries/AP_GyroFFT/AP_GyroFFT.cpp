@@ -575,7 +575,7 @@ bool AP_GyroFFT::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len)
         return false;
     }
 
-    // make sure the frequency maxium is below Nyquist
+    // make sure the frequency maximum is below Nyquist
     if (_fft_max_hz > _fft_sampling_rate_hz * 0.5f) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FFT config MAXHZ %dHz > %dHz", _fft_max_hz.get(), _fft_sampling_rate_hz / 2);
         return false;
@@ -868,7 +868,7 @@ float AP_GyroFFT::calculate_weighted_freq_hz(const Vector3f& energy, const Vecto
 // @Description: FFT Filter Tuning
 // @Field: TimeUS: microseconds since system startup
 // @Field: PkAvg: peak noise frequency as an energy-weighted average of roll and pitch peak frequencies
-// @Field: BwAvg: bandwidth of weighted peak freqency where edges are determined by FFT_ATT_REF
+// @Field: BwAvg: bandwidth of weighted peak frequency where edges are determined by FFT_ATT_REF
 // @Field: SnX: signal-to-noise ratio on the roll axis
 // @Field: SnY: signal-to-noise ratio on the pitch axis
 // @Field: SnZ: signal-to-noise ratio on the yaw axis
@@ -917,7 +917,7 @@ void AP_GyroFFT::write_log_messages()
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: f:%.1f, fr:%.1f, b:%u, fd:%.1f",
                         _debug_state._center_freq_hz_filtered[FrequencyPeak::CENTER][_update_axis], _debug_state._center_freq_hz[_update_axis], _debug_max_bin, _debug_max_bin_freq);
         gcs().send_text(MAV_SEVERITY_WARNING, "FFT: bw:%.1f, e:%.1f, r:%.1f, snr:%.1f",
-                        _debug_state._center_bandwidth_hz_filtered[FrequencyPeak::CENTER][_update_axis], _debug_max_freq_bin, _ref_energy[_update_axis][_debug_max_bin], _debug_snr);
+                        _debug_state._center_bandwidth_hz_filtered[FrequencyPeak::CENTER][_update_axis], _debug_max_freq_bin, _ref_energy[_debug_max_bin][_update_axis], _debug_snr);
         _last_output_ms = now;
     }
 #endif
@@ -930,9 +930,9 @@ void AP_GyroFFT::write_log_messages()
 // @Field: PkX: noise frequency of the peak on roll
 // @Field: PkY: noise frequency of the peak on pitch
 // @Field: PkZ: noise frequency of the peak on yaw
-// @Field: BwX: bandwidth of the peak freqency on roll where edges are determined by FFT_ATT_REF
-// @Field: BwY: bandwidth of the peak freqency on pitch where edges are determined by FFT_ATT_REF
-// @Field: BwZ: bandwidth of the peak freqency on yaw where edges are determined by FFT_ATT_REF
+// @Field: BwX: bandwidth of the peak frequency on roll where edges are determined by FFT_ATT_REF
+// @Field: BwY: bandwidth of the peak frequency on pitch where edges are determined by FFT_ATT_REF
+// @Field: BwZ: bandwidth of the peak frequency on yaw where edges are determined by FFT_ATT_REF
 // @Field: EnX: power spectral density bin energy of the peak on roll
 // @Field: EnY: power spectral density bin energy of the peak on roll
 // @Field: EnZ: power spectral density bin energy of the peak on roll
@@ -1166,7 +1166,7 @@ bool AP_GyroFFT::get_weighted_frequency(FrequencyPeak peak, float& weighted_peak
 
     // calculate the SNR and center frequency energy
     const float max_energy = MAX(1.0f, _state->get_freq_bin(bin));
-    const float ref_energy = MAX(1.0f, _ref_energy[_update_axis][bin]);
+    const float ref_energy = MAX(1.0f, _ref_energy[bin][_update_axis]);
     snr = 10.f * (log10f(max_energy) - log10f(ref_energy));
 
     // if the bin energy is above the noise threshold then we have a signal
@@ -1226,13 +1226,13 @@ void AP_GyroFFT::update_ref_energy(uint16_t max_bin)
     // determine a PS noise reference at each of the possible center frequencies
     if (_noise_cycles == 0 && _noise_calibration_cycles[_update_axis] > 0) {
         for (uint16_t i = 1; i < _state->_bin_count; i++) {
-            _ref_energy[_update_axis][i] += _state->get_freq_bin(i);
+            _ref_energy[i][_update_axis] += _state->get_freq_bin(i);
         }
         if (--_noise_calibration_cycles[_update_axis] == 0) {
             for (uint16_t i = 1; i < _state->_bin_count; i++) {
                 const float cycles = (static_cast<float>(_window_size) / static_cast<float>(_samples_per_frame)) * 2;
                 // overall random noise is reduced by sqrt(N) when averaging periodigrams so adjust for that
-                _ref_energy[_update_axis][i] = (_ref_energy[_update_axis][i] / cycles) * sqrtf(cycles);
+                _ref_energy[i][_update_axis] = (_ref_energy[i][_update_axis] / cycles) * sqrtf(cycles);
             }
 
             WITH_SEMAPHORE(_sem);
