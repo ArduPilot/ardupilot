@@ -70,7 +70,7 @@ void AP_BoardLED2::update(void)
     bool led_a_used=false;
 
     // save trim and ESC calibration
-    if (AP_Notify::flags.save_trim || AP_Notify::flags.esc_calibration) {
+    if (AP_Notify::flags.esc_calibration) {
         switch(save_trim_counter) {
             case 0:
                 hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);

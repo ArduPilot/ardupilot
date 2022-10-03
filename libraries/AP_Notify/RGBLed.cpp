@@ -105,8 +105,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     }
 
     // save trim or any calibration pattern
-    if (AP_Notify::flags.save_trim ||
-        AP_Notify::flags.esc_calibration ||
+    if (AP_Notify::flags.esc_calibration ||
         AP_Notify::flags.compass_cal_running ||
         AP_Notify::flags.temp_cal_running) {
         return sequence_trim_or_esc;

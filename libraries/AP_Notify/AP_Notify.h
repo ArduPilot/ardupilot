@@ -94,7 +94,6 @@ public:
         bool flying;              // 0 = not flying, 1 = flying/driving/diving/tracking
         bool pre_arm_check;       // true if passing pre arm checks
         bool pre_arm_gps_check;   // true if passing pre arm gps checks
-        bool save_trim;           // true if gathering trim data
         bool esc_calibration;     // true if calibrating escs
         bool failsafe_radio;      // true if radio failsafe
         bool failsafe_battery;    // true if battery failsafe
