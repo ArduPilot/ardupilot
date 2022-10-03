@@ -115,9 +115,38 @@ If you have installed secure boot on a board then to revert to normal
 boot you would need to flash a new bootloader that does not have
 secure boot enabled. To do that you should replace
 Tools/bootloaders/BOARDNAME_bl.bin with the normal bootloader for your
-board then build and sign a firmware as above. Then ask the flight
-controller to flash the updated bootloader using the GCS interface and
-you will then be running a normal bootloader.
+board .
+
+Then using MAVproxy connect to the autopilot and execute the following commands to remove all
+public keys from the signed bootloader:
+
+```
+  module load SecureCommand
+  securecommand set private_keyfile my_private_key.dat
+  securecommand getsessionkey
+```
+This opens a secure command session using your private_key.dat file to allow the removal of all public keys from the bootloader using these commands:
+
+```
+  securecommand getpublickeys        will return the number of public keys...you will need this next
+  securecommand removepublickeys 0 X   where X is the number of public keys...this removes them
+```
+Re-run the 'getpublickeys' command again to verify that all keys have been removed.
+
+Now exit MAVProxy and build a firmware using the normal bootloader but still using the --signed-fw option:
+
+```
+   ./waf configure --board BOARDNAME --signed-fw
+   ./waf copter --upload   (or whatever vehicle you desire)
+```
+
+After loading the new firmware, connect to MAVProxy and run the command to flash, the new, non signing checking bootloader:
+
+```
+  flashbootloader
+```
+
+You may now use and run normal unsigned firmware, including the firmware just loaded.
 
 ## Supported Boards
 
