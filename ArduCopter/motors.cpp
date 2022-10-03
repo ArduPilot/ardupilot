@@ -2,7 +2,6 @@
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
-#define AUTO_TRIM_DELAY         100 // called at 10hz so 10 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 static uint32_t auto_disarm_begin;
@@ -37,8 +36,8 @@ void Copter::arm_motors_check()
     // full right
     if (yaw_in > 4000) {
 
-        // increase the arming counter to a maximum of 1 beyond the auto trim counter
-        if (arming_counter <= AUTO_TRIM_DELAY) {
+        // increase the arming counter to a maximum of 1 beyond the arm counter
+        if (arming_counter <= ARM_DELAY) {
             arming_counter++;
         }
 
@@ -48,15 +47,6 @@ void Copter::arm_motors_check()
             if (!arming.arm(AP_Arming::Method::RUDDER)) {
                 arming_counter = 0;
             }
-        }
-
-        // arm the motors and configure for flight
-        if (arming_counter == AUTO_TRIM_DELAY && motors->armed() && flightmode->mode_number() == Mode::Number::STABILIZE) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim start");
-            auto_trim_counter = 250;
-            auto_trim_started = false;
-            // ensure auto-disarm doesn't trigger immediately
-            auto_disarm_begin = millis();
         }
 
     // full left and rudder disarming is enabled
