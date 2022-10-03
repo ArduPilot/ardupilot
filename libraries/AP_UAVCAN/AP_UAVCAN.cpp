@@ -771,9 +771,6 @@ void AP_UAVCAN::notify_state_send()
     if (AP_Notify::flags.pre_arm_gps_check) {
         msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_PREARM_GPS;
     }
-    if (AP_Notify::flags.save_trim) {
-        msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_SAVE_TRIM;
-    }
     if (AP_Notify::flags.vehicle_lost) {
         msg.vehicle_state |= 1 << ardupilot::indication::NotifyState::VEHICLE_STATE_LOST;
     }
