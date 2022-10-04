@@ -10,3 +10,6 @@ include ../include/minimal_GPS.inc
 FLASH_SIZE_KB 1024
 define HAL_MINIMIZE_FEATURES 1
 undef STORAGE_FLASH_PAGE
+
+# produce this error if we are on a 2M board and using 1M firmware
+define BOARD_CHECK_F427_USE_2M "2M flash - use Pixhawk1 firmware"
