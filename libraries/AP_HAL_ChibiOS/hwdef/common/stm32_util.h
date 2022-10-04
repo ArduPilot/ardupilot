@@ -54,6 +54,11 @@ uint64_t stm32_get_utc_usec(void);
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
 
+/*
+  see if we should limit flash to 1M on devices with older revisions of STM32F427
+ */
+bool check_limit_flash_1M(void);
+
 // one-time programmable area
 #if defined(FLASH_OTP_BASE)
 #define OTP_BASE FLASH_OTP_BASE
