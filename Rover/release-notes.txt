@@ -1,5 +1,40 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta2 04-Oct-2022
+Changes from 4.3.0-beta1
+1) Autopilot specific fixes and enhancements
+    a) AIRLink autopilot supports UART2
+    b) CUAV V6X supports CAN battery monitor by default
+    c) MatekF405-CAN board uses less memory to fix compass calibration issues
+    d) Pixhawk1-1M only supports uBlox and NMEA GPSs to save flash space
+    e) SkystarsH7HD-bdshot (allows Bi-directional DShot)
+    f) SkystarsH7HD supports VTX power by default
+2) EFI support
+    a) Currawong ECU support (added as Electronic Fuel Injection driver)
+    b) Scripting support for EFI drivers (allows writing EFI drivers in Lua)
+    c) SkyPower and HFE CAN EFI drivers (via scripting)
+3) Safety features
+    a) Arming check that SPIN_MIN less than 0.3 and greater than SPIN_ARM
+    b) Arming option to disable itermittant display of pre-arm warnings (see ARMING_OPTIONS)
+4) Minor enhancements
+    a) Autopilot board names max length increased to 23 characters (was 13)
+    b) CAN actuators can report PWM equivalent values (eases debugging)
+    c) Log download speed improved for boards with "block" backends
+    d) Notch filter slew limit reduces chance of notch freq moving incorrectly 
+    e) SLCAN disabled when vehicle is armed to reduce CPU load
+5) Bug fixes
+    a) DO_JUMP mission command fixed if active command changed before changing to Auto mode
+    b) EKF3 altitude error fix when using dual GPSs and affinity enabled
+    c) FFT indexing bug fixed
+    d) Gimbal mount fix to default mode (see MNTx_DEFLT_MODE parameter)
+    e) MSP fix to report arm status to DJI FPV goggles
+    f) Notch fix for non-throttle notch (was being incorrectly disabled)
+    g) OSD fixes for params, font and resolution
+    h) RPM reporting from harmonic notch fixed
+    i) "Sending unknown message (50)" warning removed
+    j) SBF/GSOF/NOVA GPS auto detction of baud rate fixed
+    k) VideoTX fixes for buffer overruns and Tramp video transmitter support
+------------------------------------------------------------------
 Rover 4.3.0-beta1 14-Sep-2022
 Changes from 4.2.3
 1) Rover specific enhancements
