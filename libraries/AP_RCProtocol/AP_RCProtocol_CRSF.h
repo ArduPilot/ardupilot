@@ -35,7 +35,7 @@ public:
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_CRSF();
     void process_byte(uint8_t byte, uint32_t baudrate) override;
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
     void update(void) override;
     // support for CRSF v3
     bool change_baud_rate(uint32_t baudrate);

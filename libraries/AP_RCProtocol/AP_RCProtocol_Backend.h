@@ -19,6 +19,7 @@
 
 #include "AP_RCProtocol.h"
 #include <AP_HAL/utility/sparse-endian.h>
+#include "SoftSerial.h"
 
 class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
@@ -26,7 +27,7 @@ class AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_Backend() {}
-    virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
+    virtual void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     virtual void process_handshake(uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
@@ -106,6 +107,8 @@ protected:
         uint32_t ch7 : 11;
     } PACKED;
 
+    static SoftSerial ss_default;
+    static SoftSerial ss_inv_default;
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1, int16_t rx_link_quality=-1);
     AP_RCProtocol &frontend;
 

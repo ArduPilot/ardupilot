@@ -21,6 +21,9 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Logger/AP_Logger.h>
 
+SoftSerial AP_RCProtocol_Backend::ss_default{115200, SoftSerial::SERIAL_CONFIG_8N1};
+SoftSerial AP_RCProtocol_Backend::ss_inv_default{115200, SoftSerial::SERIAL_CONFIG_8N1};
+
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend),
     rc_input_count(0),

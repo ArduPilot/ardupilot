@@ -18,7 +18,6 @@
 #include "AP_RCProtocol.h"
 #include <AP_Math/AP_Math.h>
 #include "AP_RCProtocol_SRXL.h"
-#include "SoftSerial.h"
 
 #define SRXL2_MAX_CHANNELS 32U           /* Maximum number of channels from srxl2 datastream  */
 #define SRXL2_FRAMELEN_MAX   80U      /* maximum possible framelengh  */

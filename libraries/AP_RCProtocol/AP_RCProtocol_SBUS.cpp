@@ -157,7 +157,7 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
 /*
   process a SBUS input pulse of the given width
  */
-void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
+void AP_RCProtocol_SBUS::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
 {
     uint32_t w0 = width_s0;
     uint32_t w1 = width_s1;
@@ -167,7 +167,7 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
         saved_width = width_s1;
     }
     uint8_t b;
-    if (ss.process_pulse(w0, w1, b)) {
+    if (ss.process_pulse(w0, w1, pulse_id, b)) {
         _process_byte(ss.get_byte_timestamp_us(), b);
     }
 }

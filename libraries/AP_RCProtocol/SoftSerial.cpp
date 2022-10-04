@@ -43,12 +43,20 @@ SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :
   process a pulse made up of a width of values at high voltage
   followed by a width at low voltage
  */
-bool SoftSerial::process_pulse(uint32_t width_high, uint32_t width_low, uint8_t &byte)
+bool SoftSerial::process_pulse(const uint32_t &width_high, const uint32_t &width_low, const uint8_t &pulse_id, uint8_t &byte)
 {
+    if (pulse_id == state.last_pulse_id) {
+        // we have already processed this pulse, return last results
+        if (state.last_ret) {
+            byte = state.last_byte;
+        }
+        return state.last_ret;
+    }
     // convert to bit widths, allowing for a half bit error
     uint16_t bits_high = ((width_high+half_bit)*baudrate) / 1000000;
     uint16_t bits_low = ((width_low+half_bit)*baudrate) / 1000000;
 
+    state.last_pulse_id = pulse_id;
     byte_timestamp_us = timestamp_us;
     timestamp_us += (width_high + width_low);
 
@@ -102,14 +110,17 @@ bool SoftSerial::process_pulse(uint32_t width_high, uint32_t width_low, uint8_t 
             state.bit_ofs--;
             state.byte >>= 1;
         }
+        state.last_ret = true;
+        state.last_byte = byte;
         return true;
     }
+    state.last_ret = false;
     return false;
 
 reset:
     state.byte = 0;
     state.bit_ofs = 0;
-
+    state.last_ret = false;
     return false;
 }
 

@@ -39,7 +39,7 @@
 class AP_RCProtocol_SRXL : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 private:
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
@@ -62,5 +62,4 @@ private:
     uint16_t crc_fmu = 0U;                       /* CRC calculated over payload from srxl datastream on this machine */
     uint16_t crc_receiver = 0U;                  /* CRC extracted from srxl datastream  */
 
-    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };

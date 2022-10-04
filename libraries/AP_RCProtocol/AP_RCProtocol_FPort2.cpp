@@ -185,7 +185,7 @@ void AP_RCProtocol_FPort2::decode_downlink(const FPort2_Frame &frame)
 /*
   process a FPort2 input pulse of the given width
  */
-void AP_RCProtocol_FPort2::process_pulse(uint32_t width_s0, uint32_t width_s1)
+void AP_RCProtocol_FPort2::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
 {
     if (have_UART()) {
         // if we can use a UART we would much prefer to, as it allows
@@ -194,14 +194,18 @@ void AP_RCProtocol_FPort2::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
     uint32_t w0 = width_s0;
     uint32_t w1 = width_s1;
+    uint8_t b;
     if (inverted) {
         w0 = saved_width;
         w1 = width_s0;
         saved_width = width_s1;
-    }
-    uint8_t b;
-    if (ss.process_pulse(w0, w1, b)) {
-        _process_byte(ss.get_byte_timestamp_us(), b);
+        if (ss_inv_default.process_pulse(w0, w1, pulse_id, b)) {
+            _process_byte(ss_inv_default.get_byte_timestamp_us(), b);
+        }
+    } else {
+        if (ss_default.process_pulse(w0, w1, pulse_id, b)) {
+            _process_byte(ss_default.get_byte_timestamp_us(), b);
+        }
     }
 }
 

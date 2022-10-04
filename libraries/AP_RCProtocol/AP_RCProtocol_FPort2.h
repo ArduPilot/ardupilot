@@ -29,7 +29,7 @@ struct FPort2_Frame;
 class AP_RCProtocol_FPort2 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_FPort2(AP_RCProtocol &_frontend, bool inverted);
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
 private:
@@ -38,7 +38,6 @@ private:
     bool check_checksum(void);
 
     void _process_byte(uint32_t timestamp_us, uint8_t byte);
-    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
     uint32_t saved_width;
 
     struct {

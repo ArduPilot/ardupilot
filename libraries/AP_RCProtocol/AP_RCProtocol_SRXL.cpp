@@ -27,11 +27,11 @@
 // #define SUMD_DEBUG
 extern const AP_HAL::HAL& hal;
 
-void AP_RCProtocol_SRXL::process_pulse(uint32_t width_s0, uint32_t width_s1)
+void AP_RCProtocol_SRXL::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
 {
     uint8_t b;
-    if (ss.process_pulse(width_s0, width_s1, b)) {
-        _process_byte(ss.get_byte_timestamp_us(), b);
+    if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
+        _process_byte(ss_default.get_byte_timestamp_us(), b);
     }
 }
 

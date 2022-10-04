@@ -21,7 +21,7 @@
 class AP_RCProtocol_PPMSum : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_PPMSum(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
 private:
     // state of ppm decoder
     struct {

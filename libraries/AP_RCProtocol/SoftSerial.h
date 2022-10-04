@@ -14,8 +14,7 @@
  */
 
 #pragma once
-
-#include "AP_RCProtocol.h"
+#include <stdint.h>
 
 class SoftSerial {
 public:
@@ -26,7 +25,7 @@ public:
     };
 
     SoftSerial(uint32_t baudrate, enum serial_config config);
-    bool process_pulse(uint32_t width_s0, uint32_t width_s1, uint8_t &b);
+    bool process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id, uint8_t &b);
 
     // get timestamp of the last byte
     uint32_t get_byte_timestamp_us(void) const {
@@ -49,5 +48,8 @@ private:
     struct {
         uint32_t byte;
         uint16_t bit_ofs;
+        uint8_t last_pulse_id = 255;
+        uint8_t last_ret;
+        uint8_t last_byte;
     } state;
 };

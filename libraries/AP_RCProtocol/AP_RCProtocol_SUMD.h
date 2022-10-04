@@ -25,7 +25,7 @@
 class AP_RCProtocol_SUMD : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SUMD(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
 private:
@@ -66,5 +66,4 @@ private:
     bool		_crcOK	= false;
     uint32_t last_packet_us;
 
-    SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };

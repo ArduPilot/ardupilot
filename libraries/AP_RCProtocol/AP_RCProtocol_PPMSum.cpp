@@ -20,7 +20,7 @@
 /*
   process a PPM-sum pulse of the given width
  */
-void AP_RCProtocol_PPMSum::process_pulse(uint32_t width_s0, uint32_t width_s1)
+void AP_RCProtocol_PPMSum::process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id)
 {
     if (width_s0 == 0 || width_s1 == 0) {
         //invalid data: reset frame

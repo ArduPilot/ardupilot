@@ -23,7 +23,7 @@
 class AP_RCProtocol_SBUS : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool inverted, uint32_t configured_baud);
-    void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
 
 private:

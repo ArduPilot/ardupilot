@@ -172,6 +172,8 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
+
+    uint8_t pulse_id;
 };
 
 namespace AP {

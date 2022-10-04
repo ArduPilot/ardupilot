@@ -80,6 +80,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
+    pulse_id++;
 
 #ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
@@ -96,7 +97,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_pulse(width_s0, width_s1);
+        backend[_detected_protocol]->process_pulse(width_s0, width_s1, pulse_id);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
             _last_input_ms = now;
@@ -116,7 +117,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             }
             const uint32_t frame_count = backend[i]->get_rc_frame_count();
             const uint32_t input_count = backend[i]->get_rc_input_count();
-            backend[i]->process_pulse(width_s0, width_s1);
+            backend[i]->process_pulse(width_s0, width_s1, pulse_id);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
