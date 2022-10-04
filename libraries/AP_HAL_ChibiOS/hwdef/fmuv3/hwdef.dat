@@ -472,3 +472,6 @@ ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 # for users running fmuv3 on their Solo:
 define HAL_OREO_LED_ENABLED (BOARD_FLASH_SIZE > 1024)
 define HAL_SOLO_GIMBAL_ENABLED (HAL_MOUNT_ENABLED && BOARD_FLASH_SIZE > 1024)
+
+# produce this error if we are on a 1M board
+define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use fmuv2"
