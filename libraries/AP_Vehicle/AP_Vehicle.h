@@ -445,6 +445,10 @@ private:
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
 
+    // decimation for 1Hz update
+    uint8_t one_Hz_counter;
+    void one_Hz_update();
+
     bool likely_flying;         // true if vehicle is probably flying
     uint32_t _last_flying_ms;   // time when likely_flying last went true
     uint32_t _last_notch_update_ms[HAL_INS_NUM_HARMONIC_NOTCH_FILTERS]; // last time update_dynamic_notch() was run
@@ -452,6 +456,7 @@ private:
     static AP_Vehicle *_singleton;
 
     bool done_safety_init;
+
 
     uint32_t _last_internal_errors;  // backup of AP_InternalError::internal_errors bitmask
 
