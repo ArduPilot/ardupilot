@@ -135,10 +135,9 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 };
 
 AP_PitchController::AP_PitchController(const AP_Vehicle::FixedWing &parms)
-    : aparm(parms)
+    : AP_PitchRollController(parms, AP_AutoTune::AUTOTUNE_PITCH, "pitch")
 {
     AP_Param::setup_object_defaults(this, var_info);
-    rate_pid.set_slew_limit_scale(45);
 }
 
 /*
@@ -343,12 +342,6 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
     return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
 }
 
-void AP_PitchController::reset_I()
-{
-    _pid_info.I = 0;
-    rate_pid.reset_I();
-}
-
 /*
   convert from old to new PIDs
   this is a temporary conversion function during development
@@ -378,33 +371,4 @@ void AP_PitchController::convert_pid()
     rate_pid.kP().set_and_save_ifchanged(old_d);
     rate_pid.kD().set_and_save_ifchanged(0);
     rate_pid.kIMAX().set_and_save_ifchanged(old_imax/4500.0);
-}
-
-/*
-  start an autotune
- */
-void AP_PitchController::autotune_start(void)
-{
-    if (autotune == nullptr) {
-        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_PITCH, aparm, rate_pid);
-        if (autotune == nullptr) {
-            if (!failed_autotune_alloc) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed pitch allocation");
-            }
-            failed_autotune_alloc = true;
-        }
-    }
-    if (autotune != nullptr) {
-        autotune->start();
-    }
-}
-
-/*
-  restore autotune gains
- */
-void AP_PitchController::autotune_restore(void)
-{
-    if (autotune != nullptr) {
-        autotune->stop();
-    }
 }

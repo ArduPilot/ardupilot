@@ -119,10 +119,9 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
 // constructor
 AP_RollController::AP_RollController(const AP_Vehicle::FixedWing &parms)
-    : aparm(parms)
+    : AP_PitchRollController(parms, AP_AutoTune::AUTOTUNE_ROLL, "roll")
 {
     AP_Param::setup_object_defaults(this, var_info);
-    rate_pid.set_slew_limit_scale(45);
 }
 
 
@@ -245,7 +244,7 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
 
-void AP_RollController::reset_I()
+void AP_PitchRollController::reset_I()
 {
     _pid_info.I = 0;
     rate_pid.reset_I();
@@ -284,13 +283,13 @@ void AP_RollController::convert_pid()
 /*
   start an autotune
  */
-void AP_RollController::autotune_start(void)
+void AP_PitchRollController::autotune_start(void)
 {
     if (autotune == nullptr) {
-        autotune = new AP_AutoTune(gains, AP_AutoTune::AUTOTUNE_ROLL, aparm, rate_pid);
+        autotune = new AP_AutoTune(gains, autotune_axis, aparm, rate_pid);
         if (autotune == nullptr) {
             if (!failed_autotune_alloc) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed roll allocation");
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "AutoTune: failed %s allocation", axis_name);
             }
             failed_autotune_alloc = true;
         }
@@ -303,7 +302,7 @@ void AP_RollController::autotune_start(void)
 /*
   restore autotune gains
  */
-void AP_RollController::autotune_restore(void)
+void AP_PitchRollController::autotune_restore(void)
 {
     if (autotune != nullptr) {
         autotune->stop();
