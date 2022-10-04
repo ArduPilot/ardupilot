@@ -55,6 +55,9 @@ public:
     // The controllers are in charge of the throttle input, so this gives vehicle access/visibility to the output of those controllers
     float get_throttle_in_bidirectional() const { return constrain_float(2*(_throttle_in - 0.5f), -1.0f, 1.0f); }
 
+    // Sub assumes vehicles are neutrally buoyant
+    virtual float get_throttle_hover() const override { return 0.5f; }
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo        var_info[];
 
