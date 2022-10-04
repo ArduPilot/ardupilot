@@ -16,3 +16,6 @@ undef STORAGE_FLASH_PAGE
 
 # minimal drivers to reduce flash usage
 include ../include/minimal.inc
+
+# produce this error if we are on a 2M board and using 1M firmware
+define BOARD_CHECK_F427_USE_2M "2M flash - use fmuv3 firmware"
