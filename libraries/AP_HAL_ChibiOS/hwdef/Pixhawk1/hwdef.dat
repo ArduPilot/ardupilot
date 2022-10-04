@@ -33,3 +33,7 @@ COMPASS LSM303D SPI:lsm9ds0_am ROTATION_NONE
 
 # also probe for external compasses
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+
+# produce this error if we are on a 1M board
+undef BOARD_CHECK_F427_USE_1M
+define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use Pixhawk1-1M"
