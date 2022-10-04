@@ -314,6 +314,7 @@ class AutoTestSub(AutoTest):
         for value in [0.25, 0.75]:
             self.set_parameter("MOT_THST_HOVER", value)
             self.test_alt_hold()
+            self.test_mode_changes()
 
     def dive_manual(self):
         self.wait_ready_to_arm()
