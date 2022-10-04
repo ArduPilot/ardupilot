@@ -89,6 +89,7 @@ default_ports = ['/dev/serial/by-id/usb-Ardu*',
                  '/dev/serial/by-id/usb-*-BL_*',
                  '/dev/serial/by-id/usb-*_BL_*',
                  '/dev/serial/by-id/usb-Swift-Flyer*',
+                 '/dev/serial/by-id/usb-CubePilot*',
                  '/dev/tty.usbmodem*']
 
 if "cygwin" in _platform or is_WSL:
