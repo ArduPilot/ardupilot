@@ -245,6 +245,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "fmuv3-bootloader" ]; then
+        echo "Building fmuv3 bootloader"
+        $waf configure --board fmuv3 --bootloader
+        $waf clean
+        $waf bootloader
+        continue
+    fi
+    
     if [ "$t" == "stm32f7" ]; then
         echo "Building mRoX21-777/"
         $waf configure --Werror --board mRoX21-777

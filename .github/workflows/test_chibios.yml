@@ -23,6 +23,7 @@ jobs:
             periph-build,
             iofirmware,
             CubeOrange-bootloader,
+            fmuv3-bootloader,
             revo-bootloader,
             stm32h7-debug,
             fmuv3,
