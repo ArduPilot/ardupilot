@@ -1044,3 +1044,15 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)*v);
 }
 
+
+/*
+  32 bit random number generator for lua internals
+ */
+uint32_t lua_random32(void)
+{
+    static uint32_t m_z = 1234;
+    static uint32_t m_w = 76542;
+    m_z = 36969 * (m_z & 0xFFFFu) + (m_z >> 16);
+    m_w = 18000 * (m_w & 0xFFFFu) + (m_w >> 16);
+    return ((m_z << 16) + m_w);
+}
