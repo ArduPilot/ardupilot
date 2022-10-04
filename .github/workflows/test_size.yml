@@ -143,6 +143,14 @@ jobs:
           python3 -m pip install -U tabulate
           Tools/scripts/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin -s $GITHUB_WORKSPACE/pr_bin
 
+      - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
+        shell: bash
+        run: |
+          cd pr/
+          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/base_branch_bin/arduplane >features-base_branch.txt
+          Tools/scripts/extract_features.py $GITHUB_WORKSPACE/pr_bin/arduplane >features-pr.txt
+          diff -u features-base_branch.txt features-pr.txt || true
+
       - name: Checksum compare with ${{ github.event.pull_request.base.ref }}
         shell: bash
         run: |
