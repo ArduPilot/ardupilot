@@ -29,12 +29,12 @@ const mcu_des_t mcu_descriptions[] = {
 };
 
 const mcu_rev_t silicon_revs[] = {
-    {MCU_REV_STM32F4_REV_3, '3', false}, /* Revision 3 */
+    {MCU_REV_STM32F4_REV_3, '3'}, /* Revision 3 */
 
-    {MCU_REV_STM32F4_REV_A, 'A', true}, /* Revision A */
-    {MCU_REV_STM32F4_REV_Z, 'Z', true}, /* Revision Z */
-    {MCU_REV_STM32F4_REV_Y, 'Y', true}, /* Revision Y */
-    {MCU_REV_STM32F4_REV_1, '1', true}, /* Revision 1 */
+    {MCU_REV_STM32F4_REV_A, 'A'}, /* Revision A */
+    {MCU_REV_STM32F4_REV_Z, 'Z'}, /* Revision Z */
+    {MCU_REV_STM32F4_REV_Y, 'Y'}, /* Revision Y */
+    {MCU_REV_STM32F4_REV_1, '1'}, /* Revision 1 */
 };
 
 #endif // STM32F4
