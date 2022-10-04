@@ -51,7 +51,7 @@ def build_board(board):
     if args.signing_key is not None:
         print("Building secure bootloader")
         configure_args.append("--signed-fw")
-    if args.debug is not None:
+    if args.debug:
         print("Building with debug symbols")
         configure_args.append("--debug")
     if not run_program(["./waf", "configure"] + configure_args):
