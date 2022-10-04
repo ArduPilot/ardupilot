@@ -1421,53 +1421,6 @@ bool AP_InertialSensor::get_accel_health_all(void) const
     return (get_accel_count() > 0);
 }
 
-
-/*
-  calculate the trim_roll and trim_pitch. This is used for redoing the
-  trim without needing a full accel cal
- */
-bool AP_InertialSensor::calibrate_trim(Vector3f &trim_rad)
-{
-    Vector3f level_sample;
-
-    // exit immediately if calibration is already in progress
-    if (calibrating()) {
-        return false;
-    }
-
-    const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_loop_rate_hz()+0.5f);
-
-    // wait 100ms for ins filter to rise
-    for (uint8_t k=0; k<100/update_dt_milliseconds; k++) {
-        wait_for_sample();
-        update();
-        hal.scheduler->delay(update_dt_milliseconds);
-    }
-
-    uint32_t num_samples = 0;
-    while (num_samples < 400/update_dt_milliseconds) {
-        wait_for_sample();
-        // read samples from ins
-        update();
-        // capture sample
-        Vector3f samp;
-        samp = get_accel(0);
-        level_sample += samp;
-        if (!get_accel_health(0)) {
-            return false;
-        }
-        hal.scheduler->delay(update_dt_milliseconds);
-        num_samples++;
-    }
-    level_sample /= num_samples;
-
-    if (!_calculate_trim(level_sample, trim_rad)) {
-        return false;
-    }
-
-    return true;
-}
-
 /*
   check if the accelerometers are calibrated in 3D and that current number of accels matched number when calibrated
  */
@@ -2331,12 +2284,100 @@ bool AP_InertialSensor::get_primary_accel_cal_sample_avg(uint8_t sample_num, Vec
     return true;
 }
 
+#if HAL_GCS_ENABLED
+bool AP_InertialSensor::calibrate_gyros()
+{
+    init_gyro();
+    if (!gyro_calibrated_ok_all()) {
+        return false;
+    }
+    AP::ahrs().reset_gyro_drift();
+    return true;
+}
+
+/*
+  calculate the trim_roll and trim_pitch. This is used for redoing the
+  trim without needing a full accel cal
+ */
+MAV_RESULT AP_InertialSensor::calibrate_trim()
+{
+    // exit immediately if calibration is already in progress
+    if (calibrating()) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    // reject any time we've done a calibration recently
+    const uint32_t now = AP_HAL::millis();
+    if ((now - last_accel_cal_ms) < 5000) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    AP_AHRS &ahrs = AP::ahrs();
+    Vector3f trim_rad = ahrs.get_trim();
+
+    const uint8_t update_dt_milliseconds = (uint8_t)(1000.0f/get_loop_rate_hz()+0.5f);
+    Vector3f level_sample;
+    uint32_t num_samples = 0;
+
+    if (!calibrate_gyros()) {
+        goto failed;
+    }
+
+    _calibrating_accel = true;
+
+
+    // wait 100ms for ins filter to rise
+    for (uint8_t k=0; k<100/update_dt_milliseconds; k++) {
+        wait_for_sample();
+        update();
+        hal.scheduler->delay(update_dt_milliseconds);
+    }
+
+    while (num_samples < 400/update_dt_milliseconds) {
+        wait_for_sample();
+        // read samples from ins
+        update();
+        // capture sample
+        Vector3f samp;
+        samp = get_accel(0);
+        level_sample += samp;
+        if (!get_accel_health(0)) {
+            goto failed;
+        }
+        hal.scheduler->delay(update_dt_milliseconds);
+        num_samples++;
+    }
+    level_sample /= num_samples;
+
+    if (!_calculate_trim(level_sample, trim_rad)) {
+        goto failed;
+    }
+
+    // reset ahrs's trim to suggested values from calibration routine
+    gcs().send_text(MAV_SEVERITY_WARNING, "Doing call to set_trim");
+    ahrs.set_trim(trim_rad);
+    last_accel_cal_ms = AP_HAL::millis();
+    _calibrating_accel = false;
+    return MAV_RESULT_ACCEPTED;
+
+failed:
+    last_accel_cal_ms = AP_HAL::millis();
+    _calibrating_accel = false;
+    gcs().send_text(MAV_SEVERITY_WARNING, "It failed");
+    return MAV_RESULT_FAILED;
+}
+
 /*
   perform a simple 1D accel calibration, returning mavlink result code
  */
-#if HAL_GCS_ENABLED
 MAV_RESULT AP_InertialSensor::simple_accel_cal()
 {
+    const uint32_t now = AP_HAL::millis();
+    if ((now - last_accel_cal_ms) < 5000) {                                                                                   
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    last_accel_cal_ms = now;
+
     uint8_t num_accels = MIN(get_accel_count(), INS_MAX_INSTANCES);
     Vector3f last_average[INS_MAX_INSTANCES];
     Vector3f new_accel_offset[INS_MAX_INSTANCES];
@@ -2491,6 +2532,7 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
 
     // stop flashing leds
     AP_Notify::flags.initialising = false;
+    last_accel_cal_ms = AP_HAL::millis ();
 
     return result;
 }
