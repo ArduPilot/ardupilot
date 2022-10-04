@@ -36,7 +36,6 @@ bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords);
 
 uint32_t get_mcu_id(void);
 uint32_t get_mcu_desc(uint32_t len, uint8_t *buf);
-bool check_limit_flash_1M(void);
 
 uint32_t board_get_rtc_signature(void);
 void board_set_rtc_signature(uint32_t sig);
@@ -62,5 +61,4 @@ typedef struct mcu_des_t {
 typedef struct mcu_rev_t {
     uint16_t revid;
     char  rev;
-    bool limit_flash_size_1M;
 } mcu_rev_t;
