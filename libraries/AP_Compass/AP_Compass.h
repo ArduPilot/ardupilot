@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AP_Compass_config.h"
+
 #include <inttypes.h>
 
 #include <AP_Common/AP_Common.h>
@@ -133,8 +135,10 @@ public:
     /// @param  offsets             Offsets to the raw mag_ values in milligauss.
     ///
     void set_and_save_offsets(uint8_t i, const Vector3f &offsets);
+#if AP_COMPASS_DIAGONALS_ENABLED
     void set_and_save_diagonals(uint8_t i, const Vector3f &diagonals);
     void set_and_save_offdiagonals(uint8_t i, const Vector3f &diagonals);
+#endif
     void set_and_save_scale_factor(uint8_t i, float scale_factor);
     void set_and_save_orientation(uint8_t i, Rotation orientation);
 
