@@ -203,8 +203,10 @@ bool Compass::_accept_calibration(uint8_t i)
         float scale_factor = cal_report.scale_factor;
 
         set_and_save_offsets(i, ofs);
+#if AP_COMPASS_DIAGONALS_ENABLED
         set_and_save_diagonals(i,diag);
         set_and_save_offdiagonals(i,offdiag);
+#endif
         set_and_save_scale_factor(i,scale_factor);
 
         if (cal_report.check_orientation && _get_state(prio).external && _rotate_auto >= 2) {
@@ -542,10 +544,12 @@ MAV_RESULT Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
 
         Vector3f offsets = field - measurement;
         set_and_save_offsets(i, offsets);
+#if AP_COMPASS_DIAGONALS_ENABLED
         Vector3f one{1,1,1};
         set_and_save_diagonals(i, one);
         Vector3f zero{0,0,0};
         set_and_save_offdiagonals(i, zero);
+#endif
     }
 
     return MAV_RESULT_ACCEPTED;
