@@ -54,6 +54,8 @@ jobs:
             config: CubeOrange-ODID
           - gcc: 6
             config: signing
+          - gcc: 6
+            config: fmuv3-bootloader
         include:
           - config: stm32h7
             toolchain: chibios-py2
