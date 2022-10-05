@@ -2527,7 +2527,7 @@ void AP_Periph_FW::can_efi_update(void)
         // assume single set of cylinder status
         pkt.cylinder_status.len = 1;
         auto &c = pkt.cylinder_status.data[0];
-        const auto &state_c = state.cylinder_status[0];
+        const auto &state_c = state.cylinder_status;
         c.ignition_timing_deg = state_c.ignition_timing_deg;
         c.injection_time_ms = state_c.injection_time_ms;
         c.cylinder_head_temperature = state_c.cylinder_head_temperature;
