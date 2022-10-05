@@ -2299,28 +2299,25 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 bool AP_Param::count_embedded_param_defaults(uint16_t &count)
 {
     const volatile char *ptr = param_defaults_data.data;
-    uint16_t length = param_defaults_data.length;
+    int32_t length = param_defaults_data.length;
     count = 0;
     
-    while (length) {
+    while (length>0) {
         char line[100];
         char *pname;
         float value;
         bool read_only;
         uint16_t i;
-        uint16_t n = MIN(length, sizeof(line)-1);
+        uint16_t n = length;
         for (i=0;i<n;i++) {
             if (ptr[i] == '\n') {
                 break;
             }
         }
-        if (i == n) {
-            // no newline
-            break;
-        }
-        
-        memcpy(line, (void *)ptr, i);
-        line[i] = 0;
+
+        uint16_t linelen = MIN(i,sizeof(line)-1);
+        memcpy(line, (void *)ptr, linelen);
+        line[linelen] = 0;
 
         length -= i+1;
         ptr += i+1;
@@ -2367,28 +2364,26 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
     }
 
     const volatile char *ptr = param_defaults_data.data;
-    uint16_t length = param_defaults_data.length;
+    int32_t length = param_defaults_data.length;
     uint16_t idx = 0;
     
-    while (idx < num_defaults && length) {
+    while (idx < num_defaults && length > 0) {
         char line[100];
         char *pname;
         float value;
         bool read_only;
         uint16_t i;
-        uint16_t n = MIN(length, sizeof(line)-1);
+        uint16_t n = length;
         for (i=0;i<n;i++) {
             if (ptr[i] == '\n') {
                 break;
             }
         }
-        if (i == n) {
-            // no newline
-            break;
-        }
-        memcpy(line, (void*)ptr, i);
-        line[i] = 0;
-        
+
+        uint16_t linelen = MIN(i,sizeof(line)-1);
+        memcpy(line, (void *)ptr, linelen);
+        line[linelen] = 0;
+
         length -= i+1;
         ptr += i+1;
 
