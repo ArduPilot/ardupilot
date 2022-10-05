@@ -79,17 +79,33 @@ void AP_RCProtocol_ST24::process_pulse(const uint32_t &width_s0, const uint32_t 
 {
     uint8_t b;
     if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(b);
+        _process_byte(b, pulse_id);
     }
 }
 
-void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
+void AP_RCProtocol_ST24::_process_byte(uint8_t byte, uint8_t byte_id)
 {
+    if (get_sync_index() >= 0) {
+        _rxpacket = (const ReceiverFcPacket *)frontend.buffer_ptr(get_sync_index());
+    } else {
+        _rxpacket = nullptr;
+    }
+
+    if (_rxpacket == nullptr && _decode_state >= ST24_DECODE_STATE_GOT_STX2) {
+        // something really bad happened
+        _decode_state = ST24_DECODE_STATE_UNSYNCED;
+        set_sync_index(-1);
+        return;
+    }
     switch (_decode_state) {
     case ST24_DECODE_STATE_UNSYNCED:
         if (byte == ST24_STX1) {
             _decode_state = ST24_DECODE_STATE_GOT_STX1;
-
+            set_sync_index(frontend.push_byte(byte, byte_id));
+            if (get_sync_index() < 0) {
+                // buffer overflow
+                break;
+            }
         }
 
         break;
@@ -97,9 +113,15 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
     case ST24_DECODE_STATE_GOT_STX1:
         if (byte == ST24_STX2) {
             _decode_state = ST24_DECODE_STATE_GOT_STX2;
-
+            if (frontend.push_byte(byte, byte_id) < 0) {
+                // buffer overflow
+                _decode_state = ST24_DECODE_STATE_UNSYNCED;
+                set_sync_index(-1);
+                break;
+            }
         } else {
             _decode_state = ST24_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
         }
 
         break;
@@ -107,49 +129,64 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
     case ST24_DECODE_STATE_GOT_STX2:
 
         /* ensure no data overflow failure or hack is possible */
-        if (byte > 8 && (unsigned)byte <= sizeof(_rxpacket.length) + sizeof(_rxpacket.type) + sizeof(_rxpacket.st24_data)) {
-            _rxpacket.length = byte;
+        if (byte > 8 && (unsigned)byte <= sizeof(_rxpacket->length) + sizeof(_rxpacket->type) + sizeof(_rxpacket->st24_data)) {
+            if (frontend.push_byte(byte, byte_id) < 0) {
+                // buffer overflow
+                _decode_state = ST24_DECODE_STATE_UNSYNCED;
+                set_sync_index(-1);
+                break;
+            }
             _rxlen = 0;
             _decode_state = ST24_DECODE_STATE_GOT_LEN;
 
         } else {
             _decode_state = ST24_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
         }
 
         break;
 
     case ST24_DECODE_STATE_GOT_LEN:
-        _rxpacket.type = byte;
+        if (frontend.push_byte(byte, byte_id) < 0) {
+            // buffer overflow
+            _decode_state = ST24_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
+            break;
+        }
         _rxlen++;
         _decode_state = ST24_DECODE_STATE_GOT_TYPE;
         break;
 
     case ST24_DECODE_STATE_GOT_TYPE:
-        _rxpacket.st24_data[_rxlen - 1] = byte;
+        if (frontend.push_byte(byte, byte_id) < 0) {
+            // buffer overflow
+            _decode_state = ST24_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
+            break;
+        }
         _rxlen++;
-
-        if (_rxlen == (_rxpacket.length - 1)) {
+        if (_rxlen == (_rxpacket->length - 1)) {
             _decode_state = ST24_DECODE_STATE_GOT_DATA;
         }
 
         break;
 
     case ST24_DECODE_STATE_GOT_DATA:
-        _rxpacket.crc8 = byte;
+        crc8 = byte;
         _rxlen++;
 
         log_data(AP_RCProtocol::ST24, AP_HAL::micros(), (const uint8_t *)&_rxpacket, _rxlen+3);
 
-        if (st24_crc8((uint8_t *) & (_rxpacket.length), _rxlen) == _rxpacket.crc8) {
+        if (st24_crc8((uint8_t *) & (_rxpacket->length), _rxlen) == crc8) {
 
             /* decode the actual packet */
 
-            switch (_rxpacket.type) {
+            switch (_rxpacket->type) {
 
             case ST24_PACKET_TYPE_CHANNELDATA12: {
                 uint16_t values[12];
                 uint8_t num_values;
-                ChannelData12 *d = (ChannelData12 *)_rxpacket.st24_data;
+                const ChannelData12 *d = (const ChannelData12 *)_rxpacket->st24_data;
                 //TBD: add support for RSSI
                 // *rssi = d->rssi;
                 //*rx_count = d->packet_count;
@@ -179,7 +216,7 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
             case ST24_PACKET_TYPE_CHANNELDATA24: {
                 uint16_t values[24];
                 uint8_t num_values;
-                ChannelData24 *d = (ChannelData24 *)&_rxpacket.st24_data;
+                const ChannelData24 *d = (const ChannelData24 *)_rxpacket->st24_data;
 
                 //*rssi = d->rssi;
                 //*rx_count = d->packet_count;
@@ -222,14 +259,15 @@ void AP_RCProtocol_ST24::_process_byte(uint8_t byte)
         }
 
         _decode_state = ST24_DECODE_STATE_UNSYNCED;
+        set_sync_index(-1);
         break;
     }
 }
 
-void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_ST24::process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(byte);
+    _process_byte(byte, byte_id);
 }

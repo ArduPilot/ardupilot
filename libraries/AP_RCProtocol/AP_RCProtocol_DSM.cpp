@@ -53,7 +53,7 @@ void AP_RCProtocol_DSM::process_pulse(const uint32_t &width_s0, const uint32_t &
 {
     uint8_t b;
     if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(ss_default.get_byte_timestamp_us()/1000U, b);
+        _process_byte(ss_default.get_byte_timestamp_us()/1000U, b, pulse_id);
     }
 }
 
@@ -425,7 +425,7 @@ void AP_RCProtocol_DSM::update(void)
   parse one DSM byte, maintaining decoder state
  */
 bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16_t *values,
-                                       uint16_t *num_values, uint16_t max_channels)
+                                       uint16_t *num_values, uint16_t max_channels, uint8_t byte_id)
 {
     /* this is set by the decoding state machine and will default to false
 	 * once everything that was decodable has been decoded.
@@ -433,11 +433,12 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
 	bool decode_ret = false;
 
     /* overflow check */
-    if (byte_input.ofs == sizeof(byte_input.buf) / sizeof(byte_input.buf[0])) {
+    if (byte_input.ofs == get_frame_size()) {
         byte_input.ofs = 0;
         dsm_decode_state = DSM_DECODE_STATE_DESYNC;
         debug("DSM: RESET (BUF LIM)\n");
         reset_rc_frame_count();
+        set_sync_index(-1);
     }
 
     if (byte_input.ofs == DSM_FRAME_SIZE) {
@@ -445,6 +446,7 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
         dsm_decode_state = DSM_DECODE_STATE_DESYNC;
         debug("DSM: RESET (PACKET LIM)\n");
         reset_rc_frame_count();
+        set_sync_index(-1);
     }
 
 #ifdef DSM_DEBUG
@@ -462,7 +464,14 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
         if ((frame_time_ms - last_rx_time_ms) >= 5) {
             dsm_decode_state = DSM_DECODE_STATE_SYNC;
             byte_input.ofs = 0;
-            byte_input.buf[byte_input.ofs++] = b;
+            set_sync_index(frontend.push_byte(b, byte_id));
+            if (get_sync_index() < 0) {
+                // buffer overflow
+                dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+                set_sync_index(-1);
+                break;
+            }
+            byte_input.ofs++;
         }
         break;
 
@@ -470,12 +479,36 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
         if ((frame_time_ms - last_rx_time_ms) >= 5 && byte_input.ofs > 0) {
             byte_input.ofs = 0;
             dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+            set_sync_index(-1);
             break;
         }
-        byte_input.buf[byte_input.ofs++] = b;
+        if (byte_input.ofs == 0) {
+            set_sync_index(frontend.push_byte(b, byte_id));
+            if (get_sync_index() < 0) {
+                // buffer overflow
+                dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+                set_sync_index(-1);
+                break;
+            }
+        } else if (frontend.push_byte(b, byte_id) < 0) {
+            // something really bad happened, reset, we should never get here
+            dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+            set_sync_index(-1);
+            break;
+        }
+        byte_input.ofs++;
 
         /* decode whatever we got and expect */
         if (byte_input.ofs < DSM_FRAME_SIZE) {
+            break;
+        }
+
+        byte_input.buf = frontend.buffer_ptr(get_sync_index());
+        if (byte_input.buf == nullptr) {
+            // there is a bug, we shouldn't be getting here unless something is seriously wrong
+            debug("DSM: ERROR: byte_input.buf is nullptr\n");
+            dsm_decode_state = DSM_DECODE_STATE_DESYNC;
+            set_sync_index(-1);
             break;
         }
 
@@ -489,6 +522,7 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
 
         /* we consumed the partial frame, reset */
         byte_input.ofs = 0;
+        set_sync_index(-1);
 
         /* if decoding failed, set proto to desync */
         if (decode_ret == false) {
@@ -506,6 +540,7 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
 
     if (decode_ret) {
 		*num_values = chan_count;
+        set_sync_index(-1);
 	}
 
     last_rx_time_ms = frame_time_ms;
@@ -515,12 +550,12 @@ bool AP_RCProtocol_DSM::dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16
 }
 
 // support byte input
-void AP_RCProtocol_DSM::_process_byte(uint32_t timestamp_ms, uint8_t b)
+void AP_RCProtocol_DSM::_process_byte(uint32_t timestamp_ms, uint8_t b, uint8_t byte_id)
 {
     uint16_t v[AP_DSM_MAX_CHANNELS];
     uint16_t nchan;
     memcpy(v, last_values, sizeof(v));
-    if (dsm_parse_byte(timestamp_ms, b, v, &nchan, AP_DSM_MAX_CHANNELS)) {
+    if (dsm_parse_byte(timestamp_ms, b, v, &nchan, AP_DSM_MAX_CHANNELS, byte_id)) {
         memcpy(last_values, v, sizeof(v));
         if (nchan >= MIN_RCIN_CHANNELS) {
             add_input(nchan, last_values, false);
@@ -529,10 +564,10 @@ void AP_RCProtocol_DSM::_process_byte(uint32_t timestamp_ms, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_DSM::process_byte(uint8_t b, uint32_t baudrate, uint8_t byte_id)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::millis(), b);
+    _process_byte(AP_HAL::millis(), b, byte_id);
 }

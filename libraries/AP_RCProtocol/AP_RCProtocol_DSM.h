@@ -26,17 +26,17 @@ class AP_RCProtocol_DSM : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_DSM(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) override;
     void start_bind(void) override;
     void update(void) override;
-
+    size_t get_frame_size() const override { return 16; }
 private:
-    void _process_byte(uint32_t timestamp_ms, uint8_t byte);
+    void _process_byte(uint32_t timestamp_ms, uint8_t byte, uint8_t byte_id);
     void dsm_decode();
     bool dsm_decode_channel(uint16_t raw, unsigned shift, unsigned *channel, unsigned *value);
     void dsm_guess_format(bool reset, const uint8_t dsm_frame[16], unsigned frame_channels);
     bool dsm_parse_byte(uint32_t frame_time_ms, uint8_t b, uint16_t *values,
-                        uint16_t *num_values, uint16_t max_channels);
+                        uint16_t *num_values, uint16_t max_channels, uint8_t byte_id);
     bool dsm_decode(uint32_t frame_time_ms, const uint8_t dsm_frame[16],
                     uint16_t *values, uint16_t *num_values, uint16_t max_values);
 
@@ -62,7 +62,7 @@ private:
     uint16_t last_values[AP_DSM_MAX_CHANNELS];
 
     struct {
-        uint8_t buf[16];
+        const uint8_t *buf;
         uint8_t ofs;
     } byte_input;
 

@@ -210,7 +210,7 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 }
 
 // support byte input
-void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_SBUS::process_byte(uint8_t b, uint32_t baudrate, uint8_t byte_id)
 {
     // note that if we're here we're not actually using SoftSerial,
     // but it does record our configured baud rate:

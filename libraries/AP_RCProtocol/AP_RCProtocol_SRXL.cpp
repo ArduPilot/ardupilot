@@ -31,7 +31,7 @@ void AP_RCProtocol_SRXL::process_pulse(const uint32_t &width_s0, const uint32_t 
 {
     uint8_t b;
     if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(ss_default.get_byte_timestamp_us(), b);
+        _process_byte(ss_default.get_byte_timestamp_us(), b, pulse_id);
     }
 }
 
@@ -173,7 +173,7 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     return 0;
 }
 
-void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
+void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id)
 {
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
     /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
@@ -208,22 +208,27 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
     /*--------------------------------------------collect all data from stream and decode-------------------------------------------------------*/
     switch (decode_state) {
     case STATE_NEW:   /* buffer header byte and prepare for frame reception and decoding */
-        buffer[0U]=byte;
+        set_sync_index(frontend.push_byte(byte, byte_id));
+        if (get_sync_index() < 0) {
+            // buffer overflow
+            break;
+        }
+
         crc_fmu = crc_xmodem_update(0U,byte);
         buflen = 1U;
         decode_state_next = STATE_COLLECT;
         break;
 
     case STATE_COLLECT: /* receive all bytes. After reception decode frame and provide rc channel information to FMU   */
-        if (buflen >= frame_len_full) {
-            // a logic bug in the state machine, this shouldn't happen
+        if (buflen >= frame_len_full || frontend.push_byte(byte, byte_id) < 0) {
+            // a logic bug in the state machine, this shouldn't happen for first condition
+            set_sync_index(-1);
             decode_state = STATE_IDLE;
             buflen = 0;
             frame_len_full = 0;
             frame_header = SRXL_HEADER_NOT_IMPL;
             return;
         }
-        buffer[buflen] = byte;
         buflen++;
         /* CRC not over last 2 frame bytes as these bytes inhabitate the crc */
         if (buflen <= (frame_len_full-2)) {
@@ -231,6 +236,16 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
         }
         if (buflen == frame_len_full) {
             log_data(AP_RCProtocol::SRXL, timestamp_us, buffer, buflen);
+            buffer = frontend.buffer_ptr(get_sync_index());
+            if (buffer == nullptr) {
+                // there is a bug, we shouldn't be getting here unless something is seriously wrong
+                set_sync_index(-1);
+                decode_state = STATE_IDLE;
+                buflen = 0;
+                frame_len_full = 0;
+                frame_header = SRXL_HEADER_NOT_IMPL;
+                return;
+            }
             /* CRC check here */
             crc_receiver = ((uint16_t)buffer[buflen-2] << 8U) | ((uint16_t)buffer[buflen-1]);
              if (crc_receiver == crc_fmu) {
@@ -256,7 +271,8 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
                      break;
                  }
              }
-             decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
+            set_sync_index(-1);
+            decode_state_next = STATE_IDLE; /* frame data buffering and decoding finished --> statemachine not in use until new header drops is */
         } else {
             /* frame not completely received --> frame data buffering still ongoing  */
             decode_state_next = STATE_COLLECT;
@@ -274,10 +290,10 @@ void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
 /*
   process a byte provided by a uart
  */
-void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL::process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::micros(), byte);
+    _process_byte(AP_HAL::micros(), byte, byte_id);
 }

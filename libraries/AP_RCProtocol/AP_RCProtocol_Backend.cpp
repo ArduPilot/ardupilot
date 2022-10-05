@@ -146,3 +146,8 @@ void AP_RCProtocol_Backend::log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t 
     }
 #endif
 }
+
+void AP_RCProtocol_Backend::set_sync_index(int16_t idx)
+{
+    sync_index = idx;
+}

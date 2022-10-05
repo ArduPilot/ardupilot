@@ -40,15 +40,16 @@ class AP_RCProtocol_ST24 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_ST24(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) override;
 private:
-    void _process_byte(uint8_t byte);
+    void _process_byte(uint8_t byte, uint8_t byte_id);
     static uint8_t st24_crc8(uint8_t *ptr, uint8_t len);
     enum ST24_PACKET_TYPE {
         ST24_PACKET_TYPE_CHANNELDATA12 = 0,
         ST24_PACKET_TYPE_CHANNELDATA24,
         ST24_PACKET_TYPE_TRANSMITTERGPSDATA
     };
+    uint8_t	crc8;				///< crc8 checksum, calculated by st24_common_crc8 and including fields length, type and st24_data
 
 #pragma pack(push, 1)
     typedef struct {
@@ -56,8 +57,7 @@ private:
         uint8_t	header2;			///< 0x55 for a valid packet
         uint8_t	length;				///< length includes type, data, and crc = sizeof(type)+sizeof(data[payload_len])+sizeof(crc8)
         uint8_t	type;				///< from enum ST24_PACKET_TYPE
-        uint8_t	st24_data[ST24_DATA_LEN_MAX];
-        uint8_t	crc8;				///< crc8 checksum, calculated by st24_common_crc8 and including fields length, type and st24_data
+        const uint8_t	st24_data[ST24_DATA_LEN_MAX];
     } ReceiverFcPacket;
 
     /**
@@ -145,5 +145,7 @@ private:
     enum ST24_DECODE_STATE _decode_state = ST24_DECODE_STATE_UNSYNCED;
     uint8_t _rxlen;
 
-    ReceiverFcPacket _rxpacket;
+    const ReceiverFcPacket *_rxpacket;
+public:
+    size_t get_frame_size() const override { return sizeof(ReceiverFcPacket); }
 };

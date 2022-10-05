@@ -27,14 +27,15 @@ class AP_RCProtocol_IBUS : public AP_RCProtocol_Backend
 public:
     AP_RCProtocol_IBUS(AP_RCProtocol &_frontend);
     void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) override;
+    size_t get_frame_size() const override { return IBUS_FRAME_SIZE; }
 private:
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id);
     bool ibus_decode(const uint8_t frame[IBUS_FRAME_SIZE], uint16_t *values, bool *ibus_failsafe);
 
 
     struct {
-        uint8_t buf[IBUS_FRAME_SIZE];
+        const uint8_t *buf;
         uint8_t ofs;
         uint32_t last_byte_us;
     } byte_input;

@@ -125,7 +125,7 @@ extern "C"
 /// LOCAL HELPER FUNCTIONS ///
 
 // Compute SRXL CRC over packet buffer (assumes length is correctly set)
-static uint16_t srxlCrc16(uint8_t* packet)
+static uint16_t srxlCrc16(const uint8_t* packet)
 {
     uint16_t crc = 0;                // Seed with 0
     uint8_t length = packet[2] - 2;  // Exclude 2 CRC bytes at end of packet from the length
@@ -673,7 +673,7 @@ static void srxlSend(SrxlBus* pBus, SRXL_CMD srxlCmd, uint8_t replyID)
     @param  length:     Length in bytes of received packet data
     @return bool:       True if a valid packet was received, else false
 */
-bool srxlParsePacket(uint8_t busIndex, uint8_t* packet, uint8_t length)
+bool srxlParsePacket(uint8_t busIndex, const uint8_t* packet, uint8_t length)
 {
     // Validate parameters
     if(busIndex >= SRXL_NUM_OF_BUSES || !packet || length < 5 || length > SRXL_MAX_BUFFER_SIZE)

@@ -25,6 +25,14 @@
 #include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
+// #define FPORT_DEBUG
+#ifdef FPORT_DEBUG
+#include <stdio.h>
+# define debug(fmt, args...)	printf(fmt "\n", ##args)
+#else
+# define debug(fmt, args...)	do {} while(0)
+#endif
+
 
 #define FRAME_HEAD 0x7E
 #define FRAME_DLE  0x7D
@@ -50,29 +58,6 @@ extern const AP_HAL::HAL& hal;
 
 #define MAX_FPORT_CONSECUTIVE_FRAMES 2
 
-struct PACKED FPort_Frame {
-    uint8_t header; // 0x7E
-    uint8_t len;    // 0x19 for control, 0x08 for downlink
-    uint8_t type;
-    union {
-        struct PACKED {
-            uint8_t data[22]; // 16 11-bit channels
-            uint8_t flags;
-            uint8_t rssi;
-            uint8_t crc;
-            uint8_t end;
-        } control;
-        struct PACKED {
-            uint8_t prim;
-            uint16_t appid;
-            uint8_t data[4];
-            uint8_t crc;
-            uint8_t end;
-        } downlink;
-    };
-};
-
-static_assert(sizeof(FPort_Frame) == FPORT_CONTROL_FRAME_SIZE, "FPort_Frame incorrect size");
 
 // constructor
 AP_RCProtocol_FPort::AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool _inverted) :
@@ -81,7 +66,7 @@ AP_RCProtocol_FPort::AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool _inverte
 {}
 
 // decode a full FPort control frame
-void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
+void AP_RCProtocol_FPort::decode_control(const AP_RCProtocol_FPort::FPort_Frame &frame)
 {
     uint16_t values[MAX_CHANNELS];
 
@@ -98,7 +83,7 @@ void AP_RCProtocol_FPort::decode_control(const FPort_Frame &frame)
 /*
   decode a full FPort downlink frame
 */
-void AP_RCProtocol_FPort::decode_downlink(const FPort_Frame &frame)
+void AP_RCProtocol_FPort::decode_downlink(const AP_RCProtocol_FPort::FPort_Frame &frame)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
     switch (frame.downlink.prim) {
@@ -220,19 +205,27 @@ void AP_RCProtocol_FPort::process_pulse(const uint32_t &width_s0, const uint32_t
         w1 = width_s0;
         saved_width = width_s1;
         if (ss_inv_default.process_pulse(w0, w1, pulse_id, b)) {
-            _process_byte(ss_inv_default.get_byte_timestamp_us(), b);
+            _process_byte(ss_inv_default.get_byte_timestamp_us(), b, 0, false);
         }
     } else {
         if (ss_default.process_pulse(w0, w1, pulse_id, b)) {
-            _process_byte(ss_default.get_byte_timestamp_us(), b);
+            _process_byte(ss_default.get_byte_timestamp_us(), b, pulse_id, true);
         }
     }
 }
 
 // support byte input
-void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
+void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b, uint8_t byte_id, bool shared_buffer)
 {
     const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
+
+    if (!shared_buffer && byte_input.buf == nullptr) {
+        // allocate our own buffer
+        byte_input.buf = (uint8_t *)hal.util->malloc_type(FPORT_CONTROL_FRAME_SIZE, AP_HAL::Util::MEM_FAST);
+        if (byte_input.buf == nullptr) {
+            return;
+        }
+    }
 
     byte_input.last_byte_us = timestamp_us;
 
@@ -256,45 +249,77 @@ void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
         return;
     }
 
-    byte_input.buf[byte_input.ofs++] = b;
+    if (shared_buffer) {
+        if (byte_input.ofs == 0) {
+            set_sync_index(frontend.push_byte(b, byte_id));
+            debug("FPort: got sync byte 0x%02x, %d", b, byte_id);
+            if (get_sync_index() < 0) {
+                // buffer overflow
+                debug("FPort: overflow");
+                goto reset;
+            }
+        } else if (frontend.push_byte(b, byte_id) < 0) {
+            // something really bad happened, reset, we should never get here
+            debug("FPort: bad shared buffer behaviour while pushing");
+            goto reset;
+        }
+        byte_input.ofs++;
+    } else {
+        byte_input.buf[byte_input.ofs++] = b;
+    }
 
-    const FPort_Frame *frame = (const FPort_Frame *)&byte_input.buf[0];
+    if (shared_buffer) {
+        fport_frame = (const FPort_Frame *)frontend.buffer_ptr(get_sync_index());
+        if (fport_frame == nullptr) {
+            // there is a bug, we shouldn't be getting here unless something is seriously wrong
+            debug("FPort: bad shared buffer behaviour while framing");
+            goto reset;
+        }
+    } else {
+        fport_frame = (const FPort_Frame *)byte_input.buf;
+    }
 
     if (byte_input.ofs == 2) {
         // check for valid lengths
-        if (frame->len != FRAME_LEN_CONTROL &&
-            frame->len != FRAME_LEN_DOWNLINK) {
+        if (fport_frame->len != FRAME_LEN_CONTROL &&
+            fport_frame->len != FRAME_LEN_DOWNLINK) {
             // invalid, reset
+            debug("FPort: bad length %u", fport_frame->len);
             goto reset;
         }
     }
 
     if (byte_input.ofs == 3) {
         // check for valid lengths
-        if ((frame->type == FPORT_TYPE_CONTROL && frame->len != FRAME_LEN_CONTROL) ||
-            (frame->type == FPORT_TYPE_DOWNLINK && frame->len != FRAME_LEN_DOWNLINK)) {
+        if ((fport_frame->type == FPORT_TYPE_CONTROL && fport_frame->len != FRAME_LEN_CONTROL) ||
+            (fport_frame->type == FPORT_TYPE_DOWNLINK && fport_frame->len != FRAME_LEN_DOWNLINK)) {
+            debug("FPort: bad length %u for type %u", fport_frame->len, fport_frame->type);
             goto reset;
         }
-        if (frame->type != FPORT_TYPE_CONTROL && frame->type != FPORT_TYPE_DOWNLINK) {
+        if (fport_frame->type != FPORT_TYPE_CONTROL && fport_frame->type != FPORT_TYPE_DOWNLINK) {
             // invalid type
+            debug("FPort: bad type %u", fport_frame->type);
             goto reset;
         }
     }
 
-    if (frame->type == FPORT_TYPE_CONTROL && byte_input.ofs == FRAME_LEN_CONTROL + 4) {
-        log_data(AP_RCProtocol::FPORT, timestamp_us, byte_input.buf, byte_input.ofs);
+    if (fport_frame->type == FPORT_TYPE_CONTROL && byte_input.ofs == FRAME_LEN_CONTROL + 4) {
+        log_data(AP_RCProtocol::FPORT, timestamp_us, (const uint8_t*)fport_frame, byte_input.ofs);
         if (check_checksum()) {
-            decode_control(*frame);
+            decode_control(*fport_frame);
         }
+        debug("FPort: got control frame");
         goto reset;
-    } else if (frame->type == FPORT_TYPE_DOWNLINK && byte_input.ofs == FRAME_LEN_DOWNLINK + 4) {
-        log_data(AP_RCProtocol::FPORT, timestamp_us, byte_input.buf, byte_input.ofs);
+    } else if (fport_frame->type == FPORT_TYPE_DOWNLINK && byte_input.ofs == FRAME_LEN_DOWNLINK + 4) {
+        log_data(AP_RCProtocol::FPORT, timestamp_us, (const uint8_t*)fport_frame, byte_input.ofs);
         if (check_checksum()) {
-            decode_downlink(*frame);
+            decode_downlink(*fport_frame);
         }
+        debug("FPort: got downlink frame");
         goto reset;
     }
-    if (byte_input.ofs == sizeof(byte_input.buf)) {
+    if (byte_input.ofs == FPORT_CONTROL_FRAME_SIZE) {
+        debug("FPort: too long");
         goto reset;
     }
     return;
@@ -302,20 +327,26 @@ void AP_RCProtocol_FPort::_process_byte(uint32_t timestamp_us, uint8_t b)
 reset:
     byte_input.ofs = 0;
     byte_input.got_DLE = false;
+    if (shared_buffer) {
+        set_sync_index(-1);
+    }
 }
 
 // check checksum byte
 bool AP_RCProtocol_FPort::check_checksum(void)
 {
-    const uint8_t len = byte_input.buf[1]+2;
-    return crc_sum8(&byte_input.buf[1], len) == 0x00;
+    if (fport_frame == nullptr) {
+        return false;
+    }
+    const uint8_t len = ((const uint8_t*)fport_frame)[1]+2;
+    return crc_sum8(&((const uint8_t*)fport_frame)[1], len) == 0x00;
 }
 
 // support byte input
-void AP_RCProtocol_FPort::process_byte(uint8_t b, uint32_t baudrate)
+void AP_RCProtocol_FPort::process_byte(uint8_t b, uint32_t baudrate, uint8_t byte_id)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::micros(), b);
+    _process_byte(AP_HAL::micros(), b, byte_id, true);
 }

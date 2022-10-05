@@ -520,7 +520,7 @@ bool srxlInitBus(uint8_t busIndex, uint8_t uart, uint8_t baudSupported);
 bool srxlIsBusMaster(uint8_t busIndex);
 uint16_t srxlGetTimeoutCount_ms(uint8_t busIndex);
 uint8_t srxlGetDeviceID(uint8_t busIndex);
-bool srxlParsePacket(uint8_t busIndex, uint8_t *packet, uint8_t length);
+bool srxlParsePacket(uint8_t busIndex, const uint8_t *packet, uint8_t length);
 void srxlRun(uint8_t busIndex, int16_t timeoutDelta_ms);
 bool srxlEnterBind(uint8_t bindType, bool broadcast);
 bool srxlSetBindInfo(uint8_t bindType, uint64_t guid, uint32_t uid);

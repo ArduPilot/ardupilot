@@ -36,6 +36,14 @@ public:
     AP_RCProtocol() {}
     ~AP_RCProtocol();
     friend class AP_RCProtocol_Backend;
+    friend class AP_RCProtocol_SUMD;
+    friend class AP_RCProtocol_SRXL;
+    friend class AP_RCProtocol_SRXL2;
+    friend class AP_RCProtocol_ST24;
+    friend class AP_RCProtocol_IBUS;
+    friend class AP_RCProtocol_DSM;
+    friend class AP_RCProtocol_FPort;
+    friend class AP_RCProtocol_FPort2;
 
     enum rcprotocol_t {
         PPM        =  0,
@@ -153,6 +161,12 @@ private:
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
 
+    // ensure that buffer returned is read only
+    const uint8_t *buffer_ptr(size_t sync_ofs) const {
+        return &shared_buffer[sync_ofs];
+    }
+    int16_t push_byte(uint8_t b, uint8_t byte_index, size_t seek = 0);
+
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
@@ -173,7 +187,12 @@ private:
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
 
-    uint8_t pulse_id;
+    uint8_t data_id;
+    uint8_t shared_buffer_last_data_id = 0xFF;
+    uint8_t *shared_buffer;
+    size_t shared_buffer_fill_idx;
+    size_t shared_buffer_size;
+    int16_t oldest_sync_index;
 };
 
 namespace AP {

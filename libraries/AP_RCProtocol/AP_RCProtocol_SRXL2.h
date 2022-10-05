@@ -27,7 +27,7 @@ class AP_RCProtocol_SRXL2 : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_SRXL2();
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) override;
     void process_handshake(uint32_t baudrate) override;
     void start_bind(void) override;
     void update(void) override;
@@ -42,21 +42,21 @@ public:
     static void change_baud_rate(uint32_t baudrate);
     // configure the VTX from Spektrum data
     static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
-
+    size_t get_frame_size() const override { return SRXL2_FRAMELEN_MAX; }
 private:
 
     const uint8_t MAX_CHANNELS = MIN((uint8_t)SRXL_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
     static AP_RCProtocol_SRXL2* _singleton;
 
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id);
     void _send_on_uart(uint8_t* pBuffer, uint8_t length);
     void _change_baud_rate(uint32_t baudrate);
     void _capture_scaled_input(const uint8_t *values_p, bool in_failsafe, int16_t rssi);
     void _bootstrap(uint8_t device_id);
     bool is_bootstrapped() const { return _device_id != 0; }
 
-    uint8_t _buffer[SRXL2_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
+    const uint8_t *_buffer;       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t _buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
     uint32_t _last_run_ms;                    // last time the state machine was run
     uint16_t _channels[SRXL2_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */

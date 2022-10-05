@@ -54,6 +54,21 @@ void AP_RCProtocol::init()
 #endif
     backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
     backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
+
+    // do buffer requirements for each protocol
+    for (uint8_t i=0; i<AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            shared_buffer_size = MAX(shared_buffer_size, backend[i]->get_frame_size() * (requires_3_frames((AP_RCProtocol::rcprotocol_t)i)?3:1));
+        }
+    }
+
+    // allocate buffer
+    if (shared_buffer_size > 0) {
+        shared_buffer = new uint8_t[shared_buffer_size];
+        if (shared_buffer == nullptr) {
+            AP_HAL::panic("Failed to allocate RCProtocol shared_buffer buffer");
+        }
+    }
 }
 
 AP_RCProtocol::~AP_RCProtocol()
@@ -76,11 +91,47 @@ bool AP_RCProtocol::should_search(uint32_t now_ms) const
     return (now_ms - _last_input_ms >= 200);
 }
 
+int16_t AP_RCProtocol::push_byte(uint8_t b, uint8_t byte_id, size_t seek)
+{
+    // scan through all backends using shared buffer, for oldest sync index
+    oldest_sync_index = INT16_MAX; // start with max value
+    for (uint8_t i=0; i<AP_RCProtocol::NONE; i++) {
+        if (backend[i] != nullptr) {
+            if (backend[i]->get_sync_index() < oldest_sync_index && backend[i]->get_sync_index() >= 0) {
+                oldest_sync_index = backend[i]->get_sync_index();
+            }
+        }
+    }
+    if (oldest_sync_index > 0 && oldest_sync_index != INT16_MAX && oldest_sync_index < (int16_t)shared_buffer_fill_idx) {
+        // move shared_buffer to oldest sync index
+        memmove(shared_buffer, &shared_buffer[oldest_sync_index], shared_buffer_fill_idx - oldest_sync_index);
+        shared_buffer_fill_idx -= oldest_sync_index;
+        // move all sync indexes back
+        for (uint8_t i=0; i<AP_RCProtocol::NONE; i++) {
+            if (backend[i] != nullptr) {
+                if (backend[i]->get_sync_index() >= 1) {
+                    backend[i]->set_sync_index(backend[i]->get_sync_index() - oldest_sync_index);
+                }
+            }
+        }
+    }
+    shared_buffer_fill_idx += seek;
+    if (shared_buffer_fill_idx > shared_buffer_size) {
+        return -1;
+    }
+    // push byte to buffer
+    if (shared_buffer_last_data_id != byte_id) {
+        shared_buffer[shared_buffer_fill_idx++] = b;
+        shared_buffer_last_data_id = byte_id;
+    }
+    return shared_buffer_fill_idx-1;
+}
+
 void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
-    pulse_id++;
+    data_id++;
 
 #ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
@@ -97,7 +148,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_pulse(width_s0, width_s1, pulse_id);
+        backend[_detected_protocol]->process_pulse(width_s0, width_s1, data_id);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
             _last_input_ms = now;
@@ -117,7 +168,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             }
             const uint32_t frame_count = backend[i]->get_rc_frame_count();
             const uint32_t input_count = backend[i]->get_rc_input_count();
-            backend[i]->process_pulse(width_s0, width_s1, pulse_id);
+            backend[i]->process_pulse(width_s0, width_s1, data_id);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
@@ -165,7 +216,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
-
+    data_id++;
 #ifndef IOMCU_FW
     rc_protocols_mask = rc().enabled_protocols();
 #endif
@@ -182,7 +233,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
 
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_byte(byte, baudrate);
+        backend[_detected_protocol]->process_byte(byte, baudrate, data_id);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
             _last_input_ms = now;
@@ -198,7 +249,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
             }
             const uint32_t frame_count = backend[i]->get_rc_frame_count();
             const uint32_t input_count = backend[i]->get_rc_input_count();
-            backend[i]->process_byte(byte, baudrate);
+            backend[i]->process_byte(byte, baudrate, data_id);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {

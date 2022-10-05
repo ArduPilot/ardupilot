@@ -28,7 +28,7 @@ public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) {}
-    virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
+    virtual void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) {}
     virtual void process_handshake(uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
@@ -91,7 +91,17 @@ public:
     virtual bool is_rx_active() const {
         return true;
     }
-    
+
+    virtual size_t get_frame_size() const {
+        return 0;
+    }
+
+    virtual int16_t get_sync_index() const {
+        return sync_index;
+    }
+
+    virtual void set_sync_index(int16_t idx);
+
 protected:
     struct Channels11Bit_8Chan {
 #if __BYTE_ORDER != __LITTLE_ENDIAN
@@ -126,4 +136,5 @@ private:
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
+    int16_t sync_index = -1;
 };

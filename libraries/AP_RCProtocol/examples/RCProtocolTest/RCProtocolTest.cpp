@@ -185,7 +185,8 @@ static bool test_protocol(const char *name, uint32_t baudrate,
                           const uint16_t *values, uint8_t nvalues,
                           uint8_t repeats=1,
                           int8_t pause_at=0,
-                          bool inverted=false)
+                          bool inverted=false,
+                          bool test_pulse=true)
 {
     bool ret = true;
     rcprot = new AP_RCProtocol();
@@ -194,10 +195,12 @@ static bool test_protocol(const char *name, uint32_t baudrate,
     ret &= test_byte_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at);
     delete rcprot;
 
-    rcprot = new AP_RCProtocol();
-    rcprot->init();
-    ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at, inverted);
-    delete rcprot;
+    if (test_pulse) {
+        rcprot = new AP_RCProtocol();
+        rcprot->init();
+        ret &= test_pulse_protocol(name, baudrate, bytes, nbytes, values, nvalues, repeats, pause_at, inverted);
+        delete rcprot;
+    }
 
     return ret;
 }
@@ -208,6 +211,21 @@ void loop()
     const uint8_t srxl_bytes[] = { 0xa5, 0x03, 0x0c, 0x04, 0x2f, 0x6c, 0x10, 0xb4, 0x26,
                                    0x16, 0x34, 0x01, 0x04, 0x76, 0x1c, 0x40, 0xf5, 0x3b };
     const uint16_t srxl_output[] = { 1567, 1502, 1019, 1536, 1804, 2000, 1500 };
+
+    // // <0xA6><0xCD><0x1C><0x00><0x30><0x58, 0x0B, 0x00, 0x37, 0x06, 0x00, 0x00, 0xA0, 0x2A,
+    // // 0x00, 0x80, 0x04, 0x80, 0xFC, 0x7F, 0x54, 0xD5, 0xA0, 0x2A, 0xA0, 0x2A><CRC16>
+    // const uint8_t srxl2_bytes[] = { 0xa6, 0xcd, 0x1c, 0x00, 0x30, 0x58, 0x0b, 0x00, 0x37, 0x06, 0x00, 0x00, 0xa0, 0x2a,
+    //                                 0x00, 0x80, 0x04, 0x80, 0xfc, 0x7f, 0x54, 0xd5, 0xa0, 0x2a, 0xa0, 0x2a, 0xD3, 0x5D };
+    // /*
+    //     CH 1 = 0x2AA0 = 10912 (approx -100% on Spektrum transmitter)
+    //     CH 2 = 0x8000 = 32768 (center position)
+    //     CH 3 = 0x8004 = 32772 (1 tick above center at 14-bit resolution)
+    //     CH 5 = 0x7FFC = 32764 (1 tick below center at 14-bit resolution)
+    //     CH 6 = 0xD554 = 54612 (approx. 100% on Spektrum transmitter)
+    //     CH 10 = 0x2AA0 = 10912
+    //     CH 11 = 0x2AA0 = 10912
+    //     */
+    // const uint16_t srxl2_output[] = { 10912, 32768, 32772, 0, 32764, 54612, 0, 0, 0, 10912, 10912 };
 
     const uint8_t sbus_bytes[] = {0x0F, 0x4C, 0x1C, 0x5F, 0x32, 0x34, 0x38, 0xDD, 0x89,
                                   0x83, 0x0F, 0x7C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -341,6 +359,7 @@ void loop()
     const uint16_t fport2_24ch_output[] = {1495, 1495, 986, 1495, 982, 1495, 982, 982, 1495, 2006, 982, 1495, 1495, 1495, 1495, 1495, 1495, 1495};
 
     test_protocol("SRXL", 115200, srxl_bytes, sizeof(srxl_bytes), srxl_output, ARRAY_SIZE(srxl_output), 1);
+    // test_protocol("SRXL2", 115200, srxl2_bytes, sizeof(srxl2_bytes), srxl2_output, ARRAY_SIZE(srxl2_output), 1, 0, false, false);
     test_protocol("SUMD", 115200, sumd_bytes, sizeof(sumd_bytes), sumd_output, ARRAY_SIZE(sumd_output), 1);
     test_protocol("SUMD2", 115200, sumd_bytes2, sizeof(sumd_bytes2), sumd_output2, ARRAY_SIZE(sumd_output2), 1);
     test_protocol("SUMD3", 115200, sumd_bytes3, sizeof(sumd_bytes3), sumd_output3, ARRAY_SIZE(sumd_output3), 1);

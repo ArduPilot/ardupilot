@@ -26,10 +26,10 @@ class AP_RCProtocol_SUMD : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SUMD(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) override;
 
 private:
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id);
     static uint8_t sumd_crc8(uint8_t crc, uint8_t value);
 
 #pragma pack(push, 1)
@@ -38,13 +38,13 @@ private:
         uint8_t	status;							///< 0x01 valid and live SUMD data frame / 0x00 = SUMH / 0x81 = Failsafe
         uint8_t	length;							///< Channels
         uint8_t	sumd_data[(SUMD_MAX_CHANNELS+1) * 2];	///< ChannelData (High Byte/ Low Byte)
-        uint8_t	crc16_high;						///< High Byte of 16 Bit CRC
-        uint8_t	crc16_low;						///< Low Byte of 16 Bit CRC
-        uint8_t	telemetry;						///< Telemetry request
-        uint8_t	crc8;							///< SUMH CRC8
     } ReceiverFcPacketHoTT;
 #pragma pack(pop)
 
+    uint8_t	crc16_high;						///< High Byte of 16 Bit CRC
+    uint8_t	crc16_low;						///< Low Byte of 16 Bit CRC
+    uint8_t	telemetry;						///< Telemetry request
+    uint8_t	crc8;							///< SUMH CRC8
 
     enum SUMD_DECODE_STATE {
         SUMD_DECODE_STATE_UNSYNCED = 0,
@@ -59,11 +59,13 @@ private:
 
     enum SUMD_DECODE_STATE _decode_state = SUMD_DECODE_STATE_UNSYNCED;
     uint8_t _rxlen;
-    ReceiverFcPacketHoTT _rxpacket;
+    const ReceiverFcPacketHoTT *_rxpacket;
     uint8_t 	_crc8 	= 0x00;
     uint16_t 	_crc16  = 0x0000;
     bool 		_sumd	= true;
     bool		_crcOK	= false;
     uint32_t last_packet_us;
 
+public:
+    size_t get_frame_size() const override { return sizeof(ReceiverFcPacketHoTT); }
 };

@@ -75,14 +75,29 @@ void AP_RCProtocol_SUMD::process_pulse(const uint32_t &width_s0, const uint32_t 
 {
     uint8_t b;
     if (ss_default.process_pulse(width_s0, width_s1, pulse_id, b)) {
-        _process_byte(ss_default.get_byte_timestamp_us(), b);
+        _process_byte(ss_default.get_byte_timestamp_us(), b, pulse_id);
     }
 }
 
-void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
+void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id)
 {
     if (timestamp_us - last_packet_us > 5000U) {
         _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+        set_sync_index(-1);
+    }
+    if (get_sync_index() >= 0) {
+        _rxpacket = (const ReceiverFcPacketHoTT *)frontend.buffer_ptr(get_sync_index());
+    } else {
+        _rxpacket = nullptr;
+    }
+    if (_rxpacket == nullptr && _decode_state >= SUMD_DECODE_STATE_GOT_HEADER) {
+        // something really bad happened
+#ifdef SUMD_DEBUG
+        hal.console->printf(" SUMD bad shared buffer behaviour\n");
+#endif
+        _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+        set_sync_index(-1);
+        return;
     }
     switch (_decode_state) {
     case SUMD_DECODE_STATE_UNSYNCED:
@@ -90,7 +105,11 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         hal.console->printf(" SUMD_DECODE_STATE_UNSYNCED \n") ;
 #endif
         if (byte == SUMD_HEADER_ID) {
-            _rxpacket.header = byte;
+            set_sync_index(frontend.push_byte(byte, byte_id));
+            if (get_sync_index() < 0) {
+                // buffer overflow
+                break;
+            }
             _sumd = true;
             _rxlen = 0;
             _crc16 = 0x0000;
@@ -109,7 +128,12 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
     case SUMD_DECODE_STATE_GOT_HEADER:
         if (byte == SUMD_ID_SUMD || byte == SUMD_ID_SUMH) {
-            _rxpacket.status = byte;
+            if (frontend.push_byte(byte, byte_id) < 0) {
+                // buffer overflow
+                _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+                set_sync_index(-1);
+                break;
+            }
 
             if (byte == SUMD_ID_SUMH) {
                 _sumd = false;
@@ -130,14 +154,19 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
         } else {
             _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
         }
 
         break;
 
     case SUMD_DECODE_STATE_GOT_STATE:
         if (byte >= 2 && byte <= SUMD_MAX_CHANNELS) {
-            _rxpacket.length = byte;
-
+            if (frontend.push_byte(byte, byte_id) < 0) {
+                // buffer overflow
+                _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+                set_sync_index(-1);
+                break;
+            }
             if (_sumd) {
                 _crc16 = crc_xmodem_update(_crc16, byte);
 
@@ -154,12 +183,18 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
         } else {
             _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
         }
 
         break;
 
     case SUMD_DECODE_STATE_GOT_LEN:
-        _rxpacket.sumd_data[_rxlen] = byte;
+        if (frontend.push_byte(byte, byte_id) < 0) {
+            // buffer overflow
+            _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+            set_sync_index(-1);
+            break;
+        }
 
         if (_sumd) {
             _crc16 = crc_xmodem_update(_crc16, byte);
@@ -169,8 +204,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         }
 
         _rxlen++;
-
-        if (_rxlen <= ((_rxpacket.length * 2))) {
+        if (_rxlen <= ((_rxpacket->length * 2))) {
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_DATA[%d]: %x\n", _rxlen - 2, byte) ;
 #endif
@@ -187,7 +221,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         break;
 
     case SUMD_DECODE_STATE_GOT_DATA:
-        _rxpacket.crc16_high = byte;
+        crc16_high = byte;
 
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC16[1]: %x   [%x]\n", byte, ((_crc16 >> 8) & 0xff)) ;
@@ -203,7 +237,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         break;
 
     case SUMD_DECODE_STATE_GOT_CRC16_BYTE_1:
-        _rxpacket.crc16_low = byte;
+        crc16_low = byte;
 
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC16[2]: %x   [%x]\n", byte, (_crc16 & 0xff)) ;
@@ -214,7 +248,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         break;
 
     case SUMD_DECODE_STATE_GOT_CRC16_BYTE_2:
-        _rxpacket.telemetry = byte;
+        telemetry = byte;
 
 #ifdef SUMD_DEBUG
         hal.console->printf(" SUMD_DECODE_STATE_GOT_SUMH_TELEMETRY: %x\n", byte) ;
@@ -226,29 +260,29 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
     case SUMD_DECODE_STATE_GOT_CRC:
         if (_sumd) {
-            _rxpacket.crc16_low = byte;
+            crc16_low = byte;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC[2]: %x   [%x]\n\n", byte, (_crc16 & 0xff)) ;
 #endif
 
-            if (_crc16 == (uint16_t)(_rxpacket.crc16_high << 8) + _rxpacket.crc16_low) {
+            if (_crc16 == (uint16_t)(crc16_high << 8) + crc16_low) {
                 _crcOK = true;
             }
 
         } else {
-            _rxpacket.crc8 = byte;
+            crc8 = byte;
 
 #ifdef SUMD_DEBUG
             hal.console->printf(" SUMD_DECODE_STATE_GOT_CRC8_SUMH: %x   [%x]\n\n", byte, _crc8) ;
 #endif
 
-            if (_crc8 == _rxpacket.crc8) {
+            if (_crc8 == crc8) {
                 _crcOK = true;
             }
         }
 
-        log_data(AP_RCProtocol::SUMD, timestamp_us, _rxpacket.sumd_data, _rxlen);
+        log_data(AP_RCProtocol::SUMD, timestamp_us, _rxpacket->sumd_data, _rxlen);
 
         if (_crcOK) {
 #ifdef SUMD_DEBUG
@@ -275,60 +309,61 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             uint16_t values[SUMD_MAX_CHANNELS];
 
             /* received Channels */
-            if ((uint16_t)_rxpacket.length > SUMD_MAX_CHANNELS) {
-                _rxpacket.length = (uint8_t) SUMD_MAX_CHANNELS;
+            if ((uint16_t)_rxpacket->length > SUMD_MAX_CHANNELS) {
+                num_values = (uint8_t) SUMD_MAX_CHANNELS;
+            } else {
+                num_values = (uint8_t) _rxpacket->length;
             }
-
-            num_values = (uint16_t)_rxpacket.length;
 
             /* decode the actual packet */
             /* reorder first 4 channels */
 
             /* ch1 = roll -> sumd = ch2 */
-            values[0] = (uint16_t)((_rxpacket.sumd_data[1 * 2 + 1] << 8) | _rxpacket.sumd_data[1 * 2 + 2]) >> 3;
+            values[0] = (uint16_t)((_rxpacket->sumd_data[1 * 2] << 8) | _rxpacket->sumd_data[1 * 2 + 1]) >> 3;
             /* ch2 = pitch -> sumd = ch2 */
-            values[1] = (uint16_t)((_rxpacket.sumd_data[2 * 2 + 1] << 8) | _rxpacket.sumd_data[2 * 2 + 2]) >> 3;
+            values[1] = (uint16_t)((_rxpacket->sumd_data[2 * 2] << 8) | _rxpacket->sumd_data[2 * 2 + 1]) >> 3;
             /* ch3 = throttle -> sumd = ch2 */
-            values[2] = (uint16_t)((_rxpacket.sumd_data[0 * 2 + 1] << 8) | _rxpacket.sumd_data[0 * 2 + 2]) >> 3;
+            values[2] = (uint16_t)((_rxpacket->sumd_data[0 * 2] << 8) | _rxpacket->sumd_data[0 * 2 + 1]) >> 3;
             /* ch4 = yaw -> sumd = ch2 */
-            values[3] = (uint16_t)((_rxpacket.sumd_data[3 * 2 + 1] << 8) | _rxpacket.sumd_data[3 * 2 + 2]) >> 3;
+            values[3] = (uint16_t)((_rxpacket->sumd_data[3 * 2] << 8) | _rxpacket->sumd_data[3 * 2 + 1]) >> 3;
 
             /* we start at channel 5(index 4) */
             unsigned chan_index = 4;
 
-            for (i = 4; i < _rxpacket.length; i++) {
+            for (i = 4; i < num_values; i++) {
 #ifdef SUMD_DEBUG
-                hal.console->printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
-                                    ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,
-                                    ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3);
+                hal.console->printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket->sumd_data[i * 2], _rxpacket->sumd_data[i * 2 + 1],
+                                    ((_rxpacket->sumd_data[i * 2] << 8) | _rxpacket->sumd_data[i * 2 + 1]) >> 3,
+                                    ((_rxpacket->sumd_data[i * 2] << 8) | _rxpacket->sumd_data[i * 2 + 1]) >> 3);
 #endif
 
-                values[chan_index] = (uint16_t)((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3;
+                values[chan_index] = (uint16_t)((_rxpacket->sumd_data[i * 2] << 8) | _rxpacket->sumd_data[i * 2 + 1]) >> 3;
                 /* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
                 //channels[chan_index] = (uint16_t)(channels[chan_index] * SUMD_SCALE_FACTOR + .5f) + SUMD_SCALE_OFFSET;
 
                 chan_index++;
             }
-            if (_rxpacket.status == 0x01) {
+            if (_rxpacket->status == 0x01) {
                 add_input(num_values, values, false);
-            } else if (_rxpacket.status == 0x81) {
+            } else if (_rxpacket->status == 0x81) {
                 add_input(num_values, values, true);
             }
         } else {
 #ifdef SUMD_DEBUG
-            hal.console->printf(" CRC - fail 0x%X 0x%X\n", _crc16, (uint16_t)(_rxpacket.crc16_high << 8) + _rxpacket.crc16_low);
+            hal.console->printf(" CRC - fail 0x%X 0x%X\n", _crc16, (uint16_t)(crc16_high << 8) + crc16_low);
 #endif
         }
 
         _decode_state = SUMD_DECODE_STATE_UNSYNCED;
+        set_sync_index(-1);
         break;
     }
 }
 
-void AP_RCProtocol_SUMD::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SUMD::process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id)
 {
     if (baudrate != 115200) {
         return;
     }
-    _process_byte(AP_HAL::micros(), byte);
+    _process_byte(AP_HAL::micros(), byte, byte_id);
 }

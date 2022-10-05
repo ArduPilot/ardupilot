@@ -40,12 +40,13 @@ class AP_RCProtocol_SRXL : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) override;
-    void process_byte(uint8_t byte, uint32_t baudrate) override;
+    void process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id) override;
+    size_t get_frame_size() const override { return SRXL_FRAMELEN_MAX; }
 private:
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id);
     int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
-    uint8_t buffer[SRXL_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
+    const uint8_t *buffer;       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */
     uint8_t buflen;                          /* length in number of bytes of received srxl dataframe in buffer  */
     uint32_t last_data_us;                   /* timespan since last received data in us   */
     uint16_t channels[SRXL_MAX_CHANNELS] = {0};    /* buffer for extracted RC channel data as pulsewidth in microseconds */

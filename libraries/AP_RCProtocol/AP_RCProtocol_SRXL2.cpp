@@ -28,7 +28,7 @@
 #include "spm_srxl.h"
 
 extern const AP_HAL::HAL& hal;
-//#define SRXL2_DEBUG
+// #define SRXL2_DEBUG
 #ifdef SRXL2_DEBUG
 # define debug(fmt, args...)	hal.console->printf("SRXL2:" fmt "\n", ##args)
 #else
@@ -77,12 +77,13 @@ AP_RCProtocol_SRXL2::~AP_RCProtocol_SRXL2() {
     _singleton = nullptr;
 }
 
-void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
+void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte, uint8_t byte_id)
 {
     if (_decode_state == STATE_IDLE) {
         switch (byte) {
         case SPEKTRUM_SRXL_ID:
             _decode_state = STATE_NEW;
+            debug("New frame");
             break;
         default:
             _decode_state = STATE_IDLE;
@@ -95,13 +96,22 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
 
     switch (_decode_state) {
     case STATE_NEW:  // buffer header byte and prepare for frame reception and decoding
-        _buffer[0U]=byte;
+        set_sync_index(frontend.push_byte(byte, byte_id));
+        if (get_sync_index() < 0) {
+            // buffer overflow
+            break;
+        }
         _buflen = 1U;
         _decode_state_next = STATE_COLLECT;
         break;
 
     case STATE_COLLECT: // receive all bytes. After reception decode frame and provide rc channel information to FMU
-        _buffer[_buflen] = byte;
+        if (frontend.push_byte(byte, byte_id) < 0) {
+            set_sync_index(-1);
+            _decode_state = STATE_IDLE;
+            debug("Buffer overflow");
+            return;
+        }
         _buflen++;
 
         // need a header to get the length
@@ -109,27 +119,40 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
             return;
         }
 
+        _buffer = frontend.buffer_ptr(get_sync_index());
+        if (_buffer == nullptr) {
+            // there is a bug, we shouldn't be getting here unless something is seriously wrong
+            set_sync_index(-1);
+            _decode_state = STATE_IDLE;
+            debug("Shared buffer error");
+            return;
+        }
         // parse the length
         if (_buflen == SRXL2_HEADER_LEN) {
             _frame_len_full = _buffer[2];
             // check for garbage frame
             if (_frame_len_full > SRXL2_FRAMELEN_MAX) {
+                set_sync_index(-1);
                 _decode_state = STATE_IDLE;
                 _buflen = 0;
                 _frame_len_full = 0;
+                debug("Garbage frame");
             }
             return;
         }
 
         if (_buflen > _frame_len_full) {
             // a logic bug in the state machine, this shouldn't happen
+            set_sync_index(-1);
             _decode_state = STATE_IDLE;
             _buflen = 0;
             _frame_len_full = 0;
+            debug("Logic error");
             return;
         }
 
         if (_buflen == _frame_len_full) {
+            debug("Frame complete");
             log_data(AP_RCProtocol::SRXL2, timestamp_us, _buffer, _buflen);
             // we got a full frame but never handshaked before
             if (!is_bootstrapped()) {
@@ -138,6 +161,7 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
                     _last_handshake_ms = timestamp_us / 1000;
                 } else {
                     // not a handshake frame so reset without initializing the SRXL2 engine
+                    set_sync_index(-1);
                     _decode_state = STATE_IDLE;
                     _buflen = 0;
                     _frame_len_full = 0;
@@ -147,13 +171,19 @@ void AP_RCProtocol_SRXL2::_process_byte(uint32_t timestamp_us, uint8_t byte)
             // Try to parse SRXL packet -- this internally calls srxlRun() after packet is parsed and resets timeout
             if (srxlParsePacket(0, _buffer, _frame_len_full)) {
                 add_input(MAX_CHANNELS, _channels, _in_failsafe, _new_rssi);
+                // print debugs
+                // for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+                //     debug("Channel %d: %d", i, _channels[i]);
+                // }
             }
             _last_run_ms = AP_HAL::millis();
 
+            set_sync_index(-1);
             _decode_state_next = STATE_IDLE;
             _buflen = 0;
         } else {
             _decode_state_next = STATE_COLLECT;
+            debug("Collecting");
         }
         break;
 
@@ -245,13 +275,13 @@ void AP_RCProtocol_SRXL2::start_bind(void)
 }
 
 // process a byte provided by a uart
-void AP_RCProtocol_SRXL2::process_byte(uint8_t byte, uint32_t baudrate)
+void AP_RCProtocol_SRXL2::process_byte(uint8_t byte, uint32_t baudrate, uint8_t byte_id)
 {
     if (baudrate != 115200) {
         return;
     }
 
-    _process_byte(AP_HAL::micros(), byte);
+    _process_byte(AP_HAL::micros(), byte, byte_id);
 }
 
 // handshake
