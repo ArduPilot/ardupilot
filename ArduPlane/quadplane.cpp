@@ -1529,18 +1529,7 @@ void SLT_Transition::update()
         transition_start_ms = 0;
         transition_low_airspeed_ms = 0;
     }
-    
-    if (transition_state < TRANSITION_TIMER) {
-        // set a single loop pitch limit in TECS
-        if (plane.ahrs.groundspeed() < 3) {
-            // until we have some ground speed limit to zero pitch
-            plane.TECS_controller.set_pitch_max_limit(0);
-        } else {
-            plane.TECS_controller.set_pitch_max_limit(quadplane.transition_pitch_max);
-        }
-    } else if (transition_state < TRANSITION_DONE) {
-        plane.TECS_controller.set_pitch_max_limit((quadplane.transition_pitch_max+1)*2);
-    }
+
     if (transition_state < TRANSITION_DONE) {
         // during transition we ask TECS to use a synthetic
         // airspeed. Otherwise the pitch limits will throw off the
@@ -4230,6 +4219,38 @@ MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
     }
 
     return MAV_VTOL_STATE_UNDEFINED;
+}
+
+// Set FW roll and pitch limits and keep TECS informed
+void SLT_Transition::set_FW_roll_pitch(int32_t& nav_pitch_cd, int32_t& nav_roll_cd, bool& allow_stick_mixing)
+{
+    if (quadplane.in_vtol_mode() || quadplane.in_vtol_airbrake()) {
+        // not in FW flight
+        return;
+    }
+
+    if (transition_state == TRANSITION_DONE) {
+        // transition complete, nothing to do
+        return;
+    }
+
+    float max_pitch;
+    if (transition_state < TRANSITION_TIMER) {
+        if (plane.ahrs.groundspeed() < 3.0) {
+            // until we have some ground speed limit to zero pitch
+            max_pitch = 0.0;
+        } else {
+            max_pitch = quadplane.transition_pitch_max;
+        }
+    } else {
+        max_pitch = (quadplane.transition_pitch_max+1.0)*2.0;
+    }
+
+    // set a single loop pitch limit in TECS
+    plane.TECS_controller.set_pitch_max_limit(max_pitch);
+
+    // ensure pitch is constrained to limit
+    nav_pitch_cd = constrain_int32(nav_pitch_cd, -max_pitch*100.0, max_pitch*100.0);
 }
 
 /*
