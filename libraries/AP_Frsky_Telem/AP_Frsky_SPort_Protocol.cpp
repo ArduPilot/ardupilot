@@ -463,13 +463,6 @@ uint32_t AP_Frsky_SPort_Protocol::calc_param(uint8_t* param_id)
 }
 
 
-void AP_Frsky_SPort_Protocol::pack_packet(uint8_t* buf, uint8_t count, uint16_t id, uint32_t data)
-{
-    memcpy(&(buf[count*6]), &id, 2);
-    memcpy(&(buf[count*6 + 2]), &data, 4);
-}
-
-
 float AP_Frsky_SPort_Protocol::get_vspeed_ms(void)
 {
     {
@@ -571,6 +564,81 @@ uint16_t AP_Frsky_SPort_Protocol::prep_number(int32_t number, uint8_t digits, ui
         }
     }
     return res;
+}
+
+
+void AP_Frsky_SPort_Protocol::pack_packet(uint8_t* buf, uint8_t count, uint16_t id, uint32_t data)
+{
+    memcpy(&(buf[count*6]), &id, 2);
+    memcpy(&(buf[count*6 + 2]), &data, 4);
+}
+
+
+void AP_Frsky_SPort_Protocol::assemble_array(uint8_t* packet_buf, uint8_t* count, uint8_t count_max, uint32_t tnow_ms)
+{
+    *count = 0;
+
+    pack_packet(packet_buf, *count, FRSKY_ID_ATTITUDE_RANGE, calc_attiandrng());
+    (*count)++;
+
+    bool send_latitude = true;
+    pack_packet(packet_buf, *count, FRSKY_ID_GPS_LAT_LON, calc_gps_latlng(send_latitude)); // true -> lat
+    (*count)++;
+    pack_packet(packet_buf, *count, FRSKY_ID_GPS_LAT_LON, calc_gps_latlng(send_latitude)); // false -> lng
+    (*count)++;
+
+    pack_packet(packet_buf, *count, FRSKY_ID_VEL_YAW, calc_velandyaw(true, false)); // groundspeed
+    (*count)++;
+    pack_packet(packet_buf, *count, FRSKY_ID_VEL_YAW, calc_velandyaw(true, true)); // airspeed
+    (*count)++;
+
+    if (is_available_ap_status()) {
+        pack_packet(packet_buf, *count, FRSKY_ID_AP_STATUS, calc_ap_status());
+        (*count)++;
+    }
+
+    pack_packet(packet_buf, *count, FRSKY_ID_GPS_STATUS, calc_gps_status());
+    (*count)++;
+
+    pack_packet(packet_buf, *count, FRSKY_ID_HOME, calc_home());
+    (*count)++;
+
+    pack_packet(packet_buf, *count, FRSKY_ID_BATT_1, calc_batt(0));
+    (*count)++;
+    if (is_available_batt(1)) {
+        pack_packet(packet_buf, *count, FRSKY_ID_BATT_2, calc_batt(1));
+        (*count)++;
+    }
+
+    if (is_available_rpm()) {
+        pack_packet(packet_buf, *count, FRSKY_ID_RPM, calc_rpm());
+        (*count)++;
+    }
+
+    if (is_available_terrain()) {
+        pack_packet(packet_buf, *count, FRSKY_ID_TERRAIN, calc_terrain());
+        (*count)++;
+    }
+
+    if (is_available_wind()) {
+        pack_packet(packet_buf, *count, FRSKY_ID_WIND, calc_wind());
+        (*count)++;
+    }
+
+    if (is_available_waypoint()) {
+        pack_packet(packet_buf, *count, FRSKY_ID_WAYPOINT_V2, calc_waypoint());
+        (*count)++;
+    }
+
+    // TODO: we don't need to send it so often
+    static uint8_t param_id = PassthroughParam::NONE;
+
+    uint32_t param_data = calc_param(&param_id);
+    if (param_id == PassthroughParam::TELEMETRY_FEATURES) {
+        param_data = 0; // we don't have any telemetry features
+    }
+    pack_packet(packet_buf, *count, FRSKY_ID_PARAM, param_data);
+    (*count)++;
 }
 
 

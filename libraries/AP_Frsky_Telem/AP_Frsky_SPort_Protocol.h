@@ -86,6 +86,7 @@ public:
     uint32_t calc_param(uint8_t* param_id);
 
     void pack_packet(uint8_t* buf, uint8_t count, uint16_t id, uint32_t data);
+    void assemble_array(uint8_t* packet_buf, uint8_t* count, uint8_t count_max, uint32_t tnow_ms);
 
     float get_vspeed_ms(void);
     float get_current_height_cm(void);

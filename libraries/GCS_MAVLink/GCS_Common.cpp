@@ -2914,92 +2914,20 @@ void GCS_MAVLINK::send_vfr_hud()
 void GCS_MAVLINK::send_frsky_passthrough_array()
 {
     uint8_t count = 0;
-    uint8_t packet_buf[MAVLINK_MSG_FRSKY_PASSTHROUGH_ARRAY_FIELD_PACKET_BUF_LEN] = {0};
-    //uint8_t packet_buf[MAVLINK_MSG_TUNNEL_FIELD_PAYLOAD_LEN] = {0}; // max 21 packets!
+    uint8_t packet_buf[MAVLINK_MSG_FRSKY_PASSTHROUGH_ARRAY_FIELD_PACKET_BUF_LEN] = {0}; // max 40 packets!
 
-    // create it if not yet done
     AP_Frsky_SPort_Protocol* pt = AP::frsky_sport_protocol();
     if (pt == nullptr) return;
 
-    // assemble the buffer
+    pt->assemble_array(packet_buf, &count, 21, AP_HAL::millis());
 
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_ATTITUDE_RANGE, pt->calc_attiandrng());
-    count++;
-
-    bool send_latitude = true;
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_GPS_LAT_LON, pt->calc_gps_latlng(send_latitude)); // true -> lat
-    count++;
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_GPS_LAT_LON, pt->calc_gps_latlng(send_latitude)); // false -> lng
-    count++;
-
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_VEL_YAW, pt->calc_velandyaw(true, false)); // groundspeed
-    count++;
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_VEL_YAW, pt->calc_velandyaw(true, true)); // airspeed
-    count++;
-
-    if (pt->is_available_ap_status()) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_AP_STATUS, pt->calc_ap_status());
-        count++;
-    }
-
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_GPS_STATUS, pt->calc_gps_status());
-    count++;
-
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_HOME, pt->calc_home());
-    count++;
-
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_BATT_1, pt->calc_batt(0));
-    count++;
-    if (pt->is_available_batt(1)) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_BATT_2, pt->calc_batt(1));
-        count++;
-    }
-
-    if (pt->is_available_rpm()) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_RPM, pt->calc_rpm());
-        count++;
-    }
-
-    if (pt->is_available_terrain()) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_TERRAIN, pt->calc_terrain());
-        count++;
-    }
-
-    if (pt->is_available_wind()) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_WIND, pt->calc_wind());
-        count++;
-    }
-
-    if (pt->is_available_waypoint()) {
-        pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_WAYPOINT_V2, pt->calc_waypoint());
-        count++;
-    }
-
-    // TODO: we don't need to send it so often
-    static uint8_t param_id = AP_Frsky_SPort_Protocol::PassthroughParam::NONE;
-
-    uint32_t param_data = pt->calc_param(&param_id);
-    if (param_id == AP_Frsky_SPort_Protocol::PassthroughParam::TELEMETRY_FEATURES) {
-        param_data = 0; // we don't have any telemetry features
-    }
-    pt->pack_packet(packet_buf, count, AP_Frsky_SPort_Protocol::FRSKY_ID_PARAM, param_data);
-    count++;
-
-    // this are up to 15 packets, so really plenty of space :)
-    // send it out
+    if (count == 0) return;
 
     mavlink_msg_frsky_passthrough_array_send(
         chan,
         AP_HAL::millis(), // time since system boot
         count,
         packet_buf);
-/*
-    mavlink_msg_tunnel_send(
-        chan,
-        0, 0, // target_system, target_component
-        34567, // payload_type
-        count*6, // payload_length
-        packet_buf); */
 }
 //OWEND
 
