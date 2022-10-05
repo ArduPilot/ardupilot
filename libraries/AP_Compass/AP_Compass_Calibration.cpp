@@ -291,10 +291,18 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             continue;
         }
         const CompassCalibrator::Report cal_report = _calibrator[compass_id]->get_report();
-        if (cal_report.status == CompassCalibrator::Status::SUCCESS ||
-            cal_report.status == CompassCalibrator::Status::FAILED ||
-            cal_report.status == CompassCalibrator::Status::BAD_ORIENTATION) {
-
+        switch (cal_report.status) {
+        case CompassCalibrator::Status::NOT_STARTED:
+        case CompassCalibrator::Status::WAITING_TO_START:
+        case CompassCalibrator::Status::RUNNING_STEP_ONE:
+        case CompassCalibrator::Status::RUNNING_STEP_TWO:
+            // calibration has not finished ergo no report
+            next_cal_report_idx[chan] = compass_id;
+            continue;
+        case CompassCalibrator::Status::SUCCESS:
+        case CompassCalibrator::Status::FAILED:
+        case CompassCalibrator::Status::BAD_ORIENTATION:
+        case CompassCalibrator::Status::BAD_RADIUS:
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
                 return false;
@@ -317,8 +325,6 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
                 cal_report.orientation,
                 cal_report.scale_factor
             );
-        } else {
-            next_cal_report_idx[chan] = compass_id;
         }
     }
     return true;
