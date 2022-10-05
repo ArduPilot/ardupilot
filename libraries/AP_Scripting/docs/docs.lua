@@ -905,6 +905,28 @@ function RC_Channel_ud:norm_input() end
 ---@return number
 function RC_Channel_ud:norm_input_dz() end
 
+-- desc
+---@class winch
+winch = {}
+
+-- desc
+---@return number
+function winch:get_rate_max() end
+
+-- desc
+---@param param1 number
+function winch:set_desired_rate(param1) end
+
+-- desc
+---@param param1 number
+function winch:release_length(param1) end
+
+-- desc
+function winch:relax() end
+
+-- desc
+---@return boolean
+function winch:healthy() end
 
 -- desc
 ---@class mount
