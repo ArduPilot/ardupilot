@@ -138,9 +138,21 @@ void CompassCalibrator::new_sample(const Vector3f& sample)
 
 bool CompassCalibrator::failed() {
     WITH_SEMAPHORE(state_sem);
-    return (cal_state.status == Status::FAILED ||
-            cal_state.status == Status::BAD_ORIENTATION || 
-            cal_state.status == Status::BAD_RADIUS);
+    switch (cal_state.status) {
+    case Status::FAILED:
+    case Status::BAD_ORIENTATION:
+    case Status::BAD_RADIUS:
+        return true;
+    case Status::SUCCESS:
+    case Status::NOT_STARTED:
+    case Status::WAITING_TO_START:
+    case Status::RUNNING_STEP_ONE:
+    case Status::RUNNING_STEP_TWO:
+        return false;
+    }
+
+    // compiler guarantees we don't get here
+    return true;
 }
 
 
