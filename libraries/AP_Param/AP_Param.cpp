@@ -2298,37 +2298,41 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
  */
 bool AP_Param::count_embedded_param_defaults(uint16_t &count)
 {
-    const volatile char *ptr = param_defaults_data.data;
-    uint16_t length = param_defaults_data.length;
     count = 0;
-    
-    while (length) {
-        char line[100];
-        char *pname;
-        float value;
-        bool read_only;
-        uint16_t i;
-        uint16_t n = MIN(length, sizeof(line)-1);
-        for (i=0;i<n;i++) {
-            if (ptr[i] == '\n') {
-                break;
-            }
-        }
-        if (i == n) {
-            // no newline
-            break;
-        }
-        
-        memcpy(line, (void *)ptr, i);
-        line[i] = 0;
 
-        length -= i+1;
-        ptr += i+1;
-        
-        if (line[0] == '#' || line[0] == 0) {
+    char line[100];
+    uint8_t line_offset = 0;
+    bool in_comment = false;
+    for (auto i=0; i<param_defaults_data.length; i++) {
+        const char c = param_defaults_data.data[i];
+        if (c == '#') {
+            in_comment = true;
+            continue;
+        }
+        if (c != '\n') {
+            if (in_comment) {
+                // ignore any characters except lf while we're in a comment
+                continue;
+            }
+            if (line_offset >= sizeof(line)-1) {
+                // ignore any characters past the 99th on a line.  If
+                // we're not in a comment that's probably an error...
+                continue;
+            }
+            line[line_offset++] = c;
             continue;
         }
 
+        // carriage-return found...
+        line[line_offset] = '\0';
+
+        // reset state
+        line_offset = 0;
+        in_comment = false;
+
+        char *pname;
+        float value;
+        bool read_only;
         if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
@@ -2366,39 +2370,45 @@ void AP_Param::load_embedded_param_defaults(bool last_pass)
         return;
     }
 
-    const volatile char *ptr = param_defaults_data.data;
-    uint16_t length = param_defaults_data.length;
     uint16_t idx = 0;
-    
-    while (idx < num_defaults && length) {
-        char line[100];
+
+    char line[100];
+    uint8_t line_offset = 0;
+    bool in_comment = false;
+    for (auto i=0; i<param_defaults_data.length && idx < num_defaults; i++) {
+        const char c = param_defaults_data.data[i];
+        if (c == '#') {
+            in_comment = true;
+            continue;
+        }
+        if (c != '\n') {
+            if (in_comment) {
+                // ignore any characters except lf while we're in a comment
+                continue;
+            }
+            if (line_offset >= sizeof(line)-1) {
+                // ignore any characters past the 99th on a line.  If
+                // we're not in a comment that's probably an error...
+                continue;
+            }
+            line[line_offset++] = c;
+            continue;
+        }
+
+        // carriage-return found...
+        line[line_offset] = '\0';
+
+        // reset state
+        line_offset = 0;
+        in_comment = false;
+
         char *pname;
         float value;
         bool read_only;
-        uint16_t i;
-        uint16_t n = MIN(length, sizeof(line)-1);
-        for (i=0;i<n;i++) {
-            if (ptr[i] == '\n') {
-                break;
-            }
-        }
-        if (i == n) {
-            // no newline
-            break;
-        }
-        memcpy(line, (void*)ptr, i);
-        line[i] = 0;
-        
-        length -= i+1;
-        ptr += i+1;
-
-        if (line[0] == '#' || line[0] == 0) {
-            continue;
-        }
-        
         if (!parse_param_line(line, &pname, value, read_only)) {
             continue;
         }
+
         enum ap_var_type var_type;
         AP_Param *vp = find(pname, &var_type);
         if (!vp) {
