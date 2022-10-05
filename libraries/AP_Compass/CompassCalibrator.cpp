@@ -473,10 +473,10 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
 
             _status = status;
             return true;
-
-        default:
-            return false;
     };
+
+    // compiler guarantees we don't get here
+    return false;
 }
 
 bool CompassCalibrator::fit_acceptable() const
