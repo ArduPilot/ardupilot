@@ -272,7 +272,7 @@ void AP_RCProtocol_CRSF::update(void)
         for (uint8_t i = 0; i < n; i++) {
             int16_t b = _uart->read();
             if (b >= 0) {
-                process_byte(AP_HAL::micros(), uint8_t(b));
+                _process_byte(AP_HAL::micros(), uint8_t(b));
             }
         }
     }
