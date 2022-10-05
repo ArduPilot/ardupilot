@@ -1598,7 +1598,8 @@ public:
     // Throw types
     enum class ThrowType {
         Upward = 0,
-        Drop = 1
+        Drop = 1,
+        Frisbee = 2,
     };
 
     enum class PreThrowMotorState {
@@ -1634,6 +1635,7 @@ private:
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_velz;     // vertical velocity when free fall was detected
+    bool clockwise_start;           //direction of rotation when throw is detected
 };
 
 #if MODE_TURTLE_ENABLED == ENABLED

@@ -266,23 +266,42 @@ bool ModeThrow::throw_detected()
         changing_height = inertial_nav.get_velocity_z_up_cms() > THROW_VERTICAL_SPEED;
     }
 
-    // Check the vertical acceleraton is greater than 0.25g
+    // Check the vertical acceleration is greater than 0.25g
     bool free_falling = ahrs.get_accel_ef().z > -0.25 * GRAVITY_MSS;
+    
+    // Check if the drone is spinning at a speed greater than 2 rounds per second
+    bool frisbee_throw = fabsf(ahrs.get_gyro().z) > 2.0  * M_2PI;
 
     // Check if the accel length is < 1.0g indicating that any throw action is complete and the copter has been released
     bool no_throw_action = copter.ins.get_accel().length() < 1.0f * GRAVITY_MSS;
 
-    // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
-    bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
 
-    // Record time and vertical velocity when we detect the possible throw
+    bool possible_throw_detected = false;
+    switch ((ThrowType) g2.throw_type) {
+    case ThrowType::Frisbee :
+        // rotation speed and increasing height indicate a possible throw release
+        possible_throw_detected = (frisbee_throw && no_throw_action && changing_height);
+        break;
+    case ThrowType::Upward:
+    case ThrowType::Drop:
+        // High velocity or free-fall combined with increasing height indicate a possible air-drop or throw release
+        possible_throw_detected = ((free_falling || high_speed) && changing_height && no_throw_action);
+        break;
+    }
+
+    // Record time, rotation direction and vertical velocity when we detect the possible throw
     if (possible_throw_detected && ((AP_HAL::millis() - free_fall_start_ms) > 500)) {
         free_fall_start_ms = AP_HAL::millis();
         free_fall_start_velz = inertial_nav.get_velocity_z_up_cms();
+        clockwise_start = is_positive(ahrs.get_gyro().z);
     }
 
     // Once a possible throw condition has been detected, we check for 2.5 m/s of downwards velocity change in less than 0.5 seconds to confirm
     bool throw_condition_confirmed = ((AP_HAL::millis() - free_fall_start_ms < 500) && ((inertial_nav.get_velocity_z_up_cms() - free_fall_start_velz) < -250.0f));
+    // If the throw type is Frisbee, check for additional rotation conditions
+    if (g2.throw_type == ThrowType::Frisbee) {
+        throw_condition_confirmed = throw_condition_confirmed && frisbee_throw && (is_positive(ahrs.get_gyro().z) == clockwise_start);
+    }     
 
     // start motors and enter the control mode if we are in continuous freefall
     return throw_condition_confirmed;
