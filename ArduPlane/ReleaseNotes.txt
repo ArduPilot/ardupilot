@@ -1,3 +1,19 @@
+Release 4.3.0beta3 7th Oct 2022
+-------------------------------
+
+This is the third beta of the 4.3.0 stable release. Changes since
+beta1 are:
+
+ - fixed BRD_SAFETY_MASK for enabling outputs when safety on
+ - fixed persistence of mapping of CAN airspeed sensors to instances
+ - fixed precision of NMEA serial output function
+ - added report of "Engine Running" when using ICE
+ - fixed handling of defaults.parm files with lines over 100 chars
+ - fixed handling of defaults.parm files with no newline on last line
+ - fixed possible divide by zero when changing to GUIDED on quadplanes
+
+Happy flying!
+
 Release 4.3.0beta2 3rd Oct 2022
 -------------------------------
 
