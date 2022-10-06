@@ -11,47 +11,45 @@ local PARAM_TABLE_KEY = 70
 local PARAM_TABLE_PREFIX = 'AEROM_'
 assert(param:add_table(PARAM_TABLE_KEY, "AEROM_", 30), 'could not add param table')
 
--- this control script uses AERO_TRICK_ID to report the selected trick number from the scripting_rc_selection rc channel
-assert(param:add_param(PARAM_TABLE_KEY, 1,  'HGT_P', 1), 'could not add param4') -- height P gain
-assert(param:add_param(PARAM_TABLE_KEY, 2,  'HGT_I', 2), 'could not add param5') -- height I gain
-assert(param:add_param(PARAM_TABLE_KEY, 3,  'HGT_KE_ADD', 20), 'could not add param6') --height knife-edge addition for pitch
-assert(param:add_param(PARAM_TABLE_KEY, 4,  'THR_PIT_FF', 80), 'could not add param67') --throttle FF from pitch
-assert(param:add_param(PARAM_TABLE_KEY, 5,  'SPD_P', 5), 'could not add param8') -- speed P gain
-assert(param:add_param(PARAM_TABLE_KEY, 6,  'SPD_I', 25), 'could not add param9')  -- speed I gain
-
-function bind_param(name)
-   local p = Parameter()
-   assert(p:init(name), string.format('could not find %s parameter', name))
-   return p
-end
-
+-- add a parameter and bind it to a variable
 function bind_add_param(name, idx, default_value)
-   assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-   return bind_param(PARAM_TABLE_PREFIX .. name)
+    assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
+    return Parameter(PARAM_TABLE_PREFIX .. name)
 end
 
-local ERR_CORR_TC = bind_add_param('ERR_COR_TC', 7, 3)
-local ROLL_CORR_TC = bind_add_param('ROL_COR_TC', 8, 1)
+HGT_P = bind_add_param('HGT_P', 1, 1)
+HGT_I = bind_add_param('HGT_I', 2, 2)
+HGT_KE_BIAS = bind_add_param('HGT_KE_ADD', 3, 20)
+THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
+SPD_P = bind_add_param('SPD_P', 5, 5)
+SPD_I = bind_add_param('SPD_I', 6, 25)
+ERR_CORR_TC = bind_add_param('ERR_COR_TC', 7, 3)
+ROLL_CORR_TC = bind_add_param('ROL_COR_TC', 8, 0.25)
+AUTO_MIS = bind_add_param('AUTO_MIS', 9, 0)
+AUTO_RAD = bind_add_param('AUTO_RAD', 10, 40)
+TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
+ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
+ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 
 --local VEL_TC = bind_add_param('VEL_TC', 8, 3)
 
+function bind_add_param(name, idx, default_value)
+   assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
+   return Parameter(PARAM_TABLE_PREFIX .. name)
+end
 
-
+local NAV_TAKEOFF = 22
+local NAV_WAYPOINT = 16
+local NAV_SCRIPT_TIME = 42702
 
 local LOOP_RATE = 20
 DO_JUMP = 177
 k_throttle = 70
 
-local HGT_P = bind_param("AEROM_HGT_P") -- height P gain
-local HGT_I = bind_param("AEROM_HGT_I") -- height I gain
-local HGT_KE_BIAS = bind_param("AEROM_HGT_KE_ADD") -- height knifeedge addition for pitch
-local THR_PIT_FF = bind_param("AEROM_THR_PIT_FF") -- throttle FF from pitch
-local SPD_P = bind_param("AEROM_SPD_P") -- speed P gain
-local SPD_I = bind_param("AEROM_SPD_I") -- speed I gain
-local TRIM_THROTTLE = bind_param("TRIM_THROTTLE")
-local TRIM_ARSPD_CM = bind_param("TRIM_ARSPD_CM")
-local RLL2SRV_TCONST = bind_param("RLL2SRV_TCONST")
-local PITCH_TCONST = bind_param("PTCH2SRV_TCONST")
+local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
+local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
+local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
 
 local last_roll_err = 0.0
 local last_id = 0
@@ -63,9 +61,6 @@ local running = false
 local roll_stage = 0
 local MIN_SPEED = 0.1
 local LOOKAHEAD = 1
-
-local arg3 = 0
-local arg4 = 0
 
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
@@ -323,7 +318,7 @@ function get_wp_location(i)
    local loc = Location()
    loc:lat(m:x())
    loc:lng(m:y())
-   loc:relative_alt(false)
+   loc:relative_alt(true)
    loc:terrain_alt(false)
    loc:origin_alt(false)
    loc:alt(math.floor(m:z()*100))
@@ -340,50 +335,90 @@ function resolve_jump(i)
 end
 
 --------Trajectory definitions---------------------
-function path_circle(t, radius, unused)
+function path_circle(t, radius, arg2, arg3, arg4)
    t = t*math.pi*2
    local vec = makeVector3f(math.sin(t), 1.0-math.cos(t), 0)
    return vec:scale(radius), 0.0
 end
 
-function knife_edge_circle(t, radius, unused)
+function knife_edge_circle(t, radius, arg2, arg3, arg4)
    t = t*math.pi*2
    local vec = makeVector3f(math.sin(t), 1.0-math.cos(t), 0)
    return vec:scale(radius), math.pi/2
 end
 
-function path_climbing_circle(t, radius, height)
+function climbing_circle(t, radius, height, arg3, arg4)
    local angle = t*math.pi*2
    local vec = makeVector3f(radius*math.sin(angle), radius*(1.0-math.cos(angle)), -math.sin(0.5*angle)*height)
    return vec, 0.0
 end
 
---TODO: fix this to have initial tangent 0
-function path_figure_eight(t, radius)
-   t = t*math.pi*2
-   local vec = makeVector3f(math.sin(t), math.sin(t)*math.cos(t), 0)
-   return vec:scale(radius), 0.0
+function figure_eight(t, r, bank_angle, arg3, arg4)
+   local T = 3.0*math.pi*r + r*math.sqrt(2) + 2*r
+
+   local rsqr2 = r*math.sqrt(2)
+
+   local pos
+   local roll
+   if (t < rsqr2/T) then
+      pos = makeVector3f(T*t, 0.0, 0.0)
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0)/T) then
+      pos = makeVector3f(r*math.cos(T*t/r - math.sqrt(2) - math.pi/2)+rsqr2, r + r*math.sin(T*t/r - math.sqrt(2) - math.pi/2), 0)
+      roll = math.rad(bank_angle)
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r/4)/T) then
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0)
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + 3*r/4)/T) then
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0)
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r)/T) then
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0)
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0)/T) then
+      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4) - r*math.sqrt(2.0), r + r*math.sin(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4), 0)
+      roll = -math.rad(bank_angle)
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r/4.0)/T) then
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)), 0)
+      roll = 0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + 3*r/4.0)/T) then
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)), 0)
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r)/T) then
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)),  r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)), 0)
+      roll = 0.0
+   else
+      pos = makeVector3f(r*math.cos(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))+rsqr2, r + r*math.sin(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 )), 0)
+      roll = math.rad(bank_angle)
+   end
+   return pos, roll
+
 end
 
-function path_vertical_circle(t, radius, unused)
-   t = t*math.pi*2
+function loop(t, radius, bank_angle, arg3, arg4)
+   local num_loops = math.abs(arg3)
+   if(arg3 <= 0.0) then
+      num_loops = 1
+   end
+
+   t = num_loops*t*math.pi*2
    local vec = makeVector3f(math.sin(t), 0.0, -1.0 + math.cos(t))
-   return vec:scale(radius), 0.0
+   return vec:scale(radius), math.rad(bank_angle)
 end
 
-function path_straight_roll(t, length, num_rolls)
+function straight_roll(t, length, num_rolls, arg3, arg4)
 
    local vec = makeVector3f(t*length, 0.0, 0.0)
    return vec, t*num_rolls*2*math.pi
 end
 
-function straight_flight(t, length, bank_angle)
+function straight_flight(t, length, bank_angle, arg3, arg4)
    local pos = makeVector3f(t*length, 0, 0)
    local roll = math.rad(bank_angle)
    return pos, roll
 end
 
-function path_rolling_circle(t, radius, num_rolls)
+function rolling_circle(t, radius, num_rolls, arg3, arg4)
    --t = t*math.pi*2
    local vec = Vector3f()
    if radius < 0.0 then
@@ -394,7 +429,7 @@ function path_rolling_circle(t, radius, num_rolls)
    return vec:scale(math.abs(radius)), t*num_rolls*2*math.pi
 end
 
-function path_banked_circle(t, radius, bank_angle)
+function banked_circle(t, radius, bank_angle, arg3, arg4)
    --t = t*math.pi*2
    local vec = Vector3f()
    if radius < 0.0 then
@@ -405,7 +440,7 @@ function path_banked_circle(t, radius, bank_angle)
    return vec:scale(math.abs(radius)), math.deg(bank_angle)
 end
 
-function half_cuban_eight(t, r, unused)
+function half_cuban_eight(t, r, unused, arg3, arg4)
    local T = 3.0*math.pi*r/2.0 + 2*r*math.sqrt(2) + r
 
    local trsqr2 = 2*r*math.sqrt(2)
@@ -437,7 +472,7 @@ function half_cuban_eight(t, r, unused)
 
 end
 
-function cuban_eight(t, r, unused)
+function cuban_eight(t, r, unused, arg3, arg4)
    local T = 3.0*math.pi*r + r*math.sqrt(2) + 2*r
 
    local rsqr2 = r*math.sqrt(2)
@@ -479,7 +514,7 @@ function cuban_eight(t, r, unused)
 
 end
 
-function half_reverse_cuban_eight(t, r, unused)
+function half_reverse_cuban_eight(t, r, arg2, arg3, arg4)
    local T = 3.0*math.pi*r/2.0 + 2*r*math.sqrt(2) + r
 
    local trsqr2 = 2*r*math.sqrt(2)
@@ -513,8 +548,8 @@ function half_reverse_cuban_eight(t, r, unused)
 
 end
 
-function humpty_bump(t, r, h)
-   assert(h > 2*r)
+function humpty_bump(t, r, h, arg3, arg4)
+   assert(h >= 2*r)
    local T = 2*(math.pi*r + h - r)
    local l = h - 2*r 
    local pos
@@ -547,7 +582,27 @@ function humpty_bump(t, r, h)
    return pos, roll
 end
 
-function test_height_control(t, length, unused)
+function scale_figure_eight(t, r, bank_angle, arg3, arg4)
+   local T = 4*math.pi + 2
+   local pos
+   local roll
+   if (t < (math.pi/2)/T) then
+      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r  +r*math.sin(T*t - math.pi/2), 0)
+      roll = math.rad(bank_angle)
+   elseif (t < (5*math.pi/2)/T) then
+      pos = makeVector3f(2*r + r*math.cos(T*t + math.pi/2), r -r*math.sin(T*t + math.pi/2), 0)
+      roll = -math.rad(bank_angle)
+   elseif (t < (4*math.pi)/T) then
+      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r + r*math.sin(T*t - math.pi/2), 0)
+      roll = math.rad(bank_angle)
+   else
+      pos = makeVector3f(r*(T*t - 4*math.pi), 0, 0)
+      roll = 0
+   end
+   return pos, roll
+end
+
+function test_height_control(t, length, arg2, arg3, arg4)
    if t < 0.25 then
       return makeVector3f(t*length, 0.0, 0.0), 0.0
    elseif t < 0.5 then
@@ -559,7 +614,7 @@ function test_height_control(t, length, unused)
    end
 end
 
-function test_lane_change(t, length, unused)
+function test_lane_change(t, length, arg2, arg3, arg4)
    if t < 0.25 then
       return makeVector3f(t*length, 0.0, 0.0), 0.0
    elseif t < 0.5 then
@@ -571,7 +626,7 @@ function test_lane_change(t, length, unused)
    end
 end
 
-function path_straight_roll(t, length, num_rolls)
+function path_straight_roll(t, length, num_rolls, arg3, arg4)
 
    local vec = makeVector3f(t*length, 0.0, 0.0)
    return vec, t*num_rolls*2*math.pi
@@ -580,13 +635,14 @@ end
 
 --todo: change y coordinate to z for vertical box
 --function aerobatic_box(t, l, w, r):
-function horizontal_aerobatic_box(t, arg1, arg2)
+function horizontal_rectangle(t, arg1, arg2, arg3, arg4)
    
    local r = math.abs(arg3)
    if(arg3 <= 0.0) then
       gcs:send_text(0, string.format("Invalid radius value of : %f, using default.", arg3))
       r = math.min(arg1, arg2)/3.0
    end
+   local bank_angle = math.abs(arg4)
    local l = arg1 - 2*r
    local w = arg2 - 2*r
    local perim = 2*l + 2*w + 2*math.pi*r
@@ -611,15 +667,15 @@ function horizontal_aerobatic_box(t, arg1, arg2)
       pos = makeVector3f(-0.5*l + perim*t - (1.5*l + 2*math.pi*r + 2*w), 0.0, 0.0)
    end
 
-   return pos, 0.0
+   return pos, math.rad(bank_angle)
 end 
 
-function vertical_aerobatic_box(t, arg1, arg2)
+function vertical_aerobatic_box(t, arg1, arg2, arg3, arg4)
    
    --gcs:send_text(0, string.format("t val: %f", t))
    local q = Quaternion()
    q:from_euler(-math.rad(90), 0, 0)
-   local point, angle = horizontal_aerobatic_box(t, arg1, arg2)
+   local point, angle = horizontal_rectangle(t, arg1, arg2, arg3, arg4)
    q:earth_to_body(point)
    return point, angle
 end 
@@ -630,14 +686,14 @@ function target_groundspeed()
 end
 
 --Estimate the length of the path in metres
-function path_length(path_f, arg1, arg2)
+function path_length(path_f, arg1, arg2, arg3, arg4)
    local dt = 0.01
    local total = 0.0
    for i = 0, math.floor(1.0/dt) do
       local t = i*dt
       local t2 = t + dt
-      local v1 = path_f(t, arg1, arg2)
-      local v2 = path_f(t2, arg1, arg2)
+      local v1 = path_f(t, arg1, arg2, arg3, arg4)
+      local v2 = path_f(t2, arg1, arg2, arg3, arg4)
 
       local dv = v2-v1
       total = total + dv:length()
@@ -652,8 +708,8 @@ end
 --  arg1, arg2: arguments for path function
 --  orientation: maneuver frame orientation
 --returns: requested position in maneuver frame
-function rotate_path(path_f, t, arg1, arg2, orientation, offset)
-   point, angle = path_f(t, arg1, arg2)
+function rotate_path(path_f, t, arg1, arg2, arg3, arg4, orientation, offset)
+   point, angle = path_f(t, arg1, arg2, arg3, arg4)
    orientation:earth_to_body(point)
    --TODO: rotate angle?
    return point+offset, angle
@@ -772,6 +828,11 @@ function test_angular_rate()
    gcs:send_text(0, string.format("angular rate: %.1f %.1f %.1f", math.deg(angular_rate:x()), math.deg(angular_rate:y()), math.deg(angular_rate:z())))
 end
 
+--projects x onto the othogonal subspace of span(unit_v)
+function ortho_proj(x, unit_v)
+   local temp_x = unit_v:cross(x)
+   return unit_v:cross(temp_x)
+end
 --test_angular_rate()
 --test_axis_and_angle()
 -- function maneuver_to_body(vec)
@@ -808,14 +869,27 @@ end
 --    return ang_vel
 -- end
 
+-- log a pose from position and quaternion attitude
+function log_pose(logname, pos, quat)
+   logger.write(logname, 'px,py,pz,q1,q2,q3,q4,r,p,y','ffffffffff',
+                pos:x(),
+                pos:y(),
+                pos:z(),
+                quat:q1(),
+                quat:q2(),
+                quat:q3(),
+                quat:q4(),
+                math.deg(quat:get_euler_roll()),
+                math.deg(quat:get_euler_pitch()),
+                math.deg(quat:get_euler_yaw()))
+end
+
 local path_var = {}
 path_var.count = 0
-path_var.positions_ef = {}
-path_var.roll_angles_bf = {}
 path_var.initial_ori = Quaternion()
 path_var.initial_maneuver_to_earth = Quaternion()
 
-function do_path(path, initial_yaw_deg, arg1, arg2)
+function do_path(path, initial_yaw_deg, arg1, arg2, arg3, arg4)
 
    local now = millis():tofloat() * 0.001
 
@@ -824,14 +898,14 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
 
    if not running then
       running = true
-      path_var.length = path_length(path, arg1, arg2)
+      path_var.length = path_length(path, arg1, arg2, arg3, arg4)
 
       path_var.total_rate_rads_ef = makeVector3f(0.0, 0.0, 0.0)
       local speed = target_groundspeed()
 
       --assuming constant velocity
       path_var.total_time = path_var.length/speed
-      path_var.last_pos, last_angle = path(0.0, arg1, arg2) --position at t0
+      path_var.last_pos, last_angle = path(0.0, arg1, arg2, arg3, arg4) --position at t0
 
       --deliberately only want yaw component, because the maneuver should be performed relative to the earth, not relative to the initial orientation
       path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
@@ -841,8 +915,12 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
       path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
 
 
-      local corrected_position_t0_ef, angle_t0 = rotate_path(path, LOOKAHEAD*target_dt/path_var.total_time, arg1, arg2, path_var.initial_ori, path_var.initial_ef_pos)
-      local corrected_position_t1_ef, angle_t1 = rotate_path(path, 2*LOOKAHEAD*target_dt/path_var.total_time, arg1, arg2, path_var.initial_ori, path_var.initial_ef_pos)
+      local corrected_position_t0_ef, angle_t0 = rotate_path(path, LOOKAHEAD*target_dt/path_var.total_time,
+                                                             arg1, arg2, arg3, arg4,
+                                                             path_var.initial_ori, path_var.initial_ef_pos)
+      local corrected_position_t1_ef, angle_t1 = rotate_path(path, 2*LOOKAHEAD*target_dt/path_var.total_time,
+                                                             arg1, arg2, arg3, arg4,
+                                                             path_var.initial_ori, path_var.initial_ef_pos)
 
       path_var.start_pos = ahrs:get_position()
       path_var.path_int = path_var.start_pos:copy()
@@ -851,12 +929,6 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
 
       speed_PI.reset()
 
-      --path_var.positions[-1] is not used in initial runthrough
-      path_var.positions_ef[0] = corrected_position_t0_ef
-      path_var.positions_ef[1] = corrected_position_t1_ef
-
-      path_var.roll_angles_bf[0] = angle_t0
-      path_var.roll_angles_bf[1] = angle_t1
 
       path_var.accumulated_orientation_rel_ef = path_var.initial_ori
 
@@ -871,7 +943,7 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
 
       path_var.path_t = 0
       path_var.target_speed = speed
-
+      return true
    end
    
 
@@ -882,157 +954,337 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
 
    local actual_dt = now - path_var.last_time
 
-   path_var.average_dt = 0.98*path_var.average_dt + 0.02*actual_dt
+   --path_var.average_dt = 0.98*path_var.average_dt + 0.02*actual_dt
 
-   local scaled_dt = path_var.average_dt--*vel_length/path_var.target_speed
-   path_var.scaled_dt = scaled_dt
+   --local scaled_dt = path_var.average_dt--*vel_length/path_var.target_speed
+   --path_var.scaled_dt = scaled_dt
+
+   local local_n_dt = actual_dt/path_var.total_time
 
    path_var.last_time = now
-   path_var.path_t = path_var.path_t + scaled_dt/path_var.total_time
+   --path_var.path_t = path_var.path_t + scaled_dt/path_var.total_time
    
    --TODO: Fix this exit condition
-   local t = path_var.path_t
+   --local t = path_var.path_t
 
-   if t > 1.0 then --done
+   if path_var.path_t > 1.0 then --done
       return false
    end
 
-   --where we aim to be on the path at this timestamp
-   --rotate from maneuver frame to 'local' EF
-   local next_target_pos_ef, next_target_angle = rotate_path(path, path_var.path_t + LOOKAHEAD*path_var.average_dt/path_var.total_time, arg1, arg2, path_var.initial_ori, path_var.initial_ef_pos)
+   --[[
+      calculate positions and angles at previous, current and next time steps
+   --]]
 
    next_target_pos_ef = next_target_pos_ef
-   logger.write("TML", 't', 'f', path_var.path_t + LOOKAHEAD*path_var.average_dt/path_var.total_time)
-
-   path_var.positions_ef[-1] = path_var.positions_ef[0]:copy()
-   path_var.positions_ef[0] = path_var.positions_ef[1]:copy()
-   path_var.positions_ef[1] = next_target_pos_ef:copy()
-
-   --roll angle relative to maneuver position without rolling
-   path_var.roll_angles_bf[-1] = path_var.roll_angles_bf[0]
-   path_var.roll_angles_bf[0] = path_var.roll_angles_bf[1]
-   path_var.roll_angles_bf[1] = next_target_angle
+   local p0, r0 = rotate_path(path, path_var.path_t + 0*local_n_dt,
+                              arg1, arg2, arg3, arg4,
+                              path_var.initial_ori, path_var.initial_ef_pos)
+   local p1, r1 = rotate_path(path, path_var.path_t + 1*local_n_dt,
+                              arg1, arg2, arg3, arg4,
+                              path_var.initial_ori, path_var.initial_ef_pos)
+   local p2, r2 = rotate_path(path, path_var.path_t + 2*local_n_dt,
+                              arg1, arg2, arg3, arg4,
+                              path_var.initial_ori, path_var.initial_ef_pos)
 
    local current_measured_pos_ef = ahrs:get_relative_position_NED_origin()
 
-   -- local path_error = {}
-   -- path_error[-1] = (current_measured_pos - path_var.positions[-1]):length()
-   -- path_error[0] = (current_measured_pos - path_var.positions[0]):length() 
-   -- path_error[1] = (current_measured_pos - path_var.positions[1]):length()
+   --[[
+      get tangents to the path
+   --]]
+   local tangent1_ef = p1 - p0
+   local tangent2_ef = p2 - p1
+   local tv_unit = tangent2_ef:copy()
+   tv_unit:normalize()
 
-   -----------------------------------------------------------------------------------------------------------------------------
-   --TODO: Get the "time correction" logic working
-   -- local smallest_error_index = -1
-   -- for i = 0,1,1
-   -- do
-   --    if(path_error[i] < path_error[smallest_error_index]) then
-   --       smallest_error_index = i
-   --    end
-   -- end
+   --[[
+      use actual vehicle velocity to calculate how far along the
+      path we have progressed
+   --]]
+   local v = ahrs:get_velocity_NED()
+   local path_dist = v:dot(tv_unit)*actual_dt
+   if path_dist < 0 then
+      gcs:send_text(0, string.format("aborting"))
+      return false
+   end
+   local path_t_delta = constrain(path_dist/path_var.length, 0.2*local_n_dt, 4*local_n_dt)
+   path_var.path_t = path_var.path_t + path_t_delta
 
-   -- if(smallest_error_index == 1) then
-   --   path_var.positions[-1] = path_var.positions[0]
-   --   path_var.positions[0] = path_var.positions[1]
-   --   path_var.positions[1] = rotate_path(path, t + 2*dt, arg1, arg2, path_var.initial_ori)
-   -- end
+   --[[
+      recalculate the current path position and angle based on actual delta time
+   --]]
+   p2, r2 = rotate_path(path, path_var.path_t + path_t_delta,
+      arg1, arg2, arg3, arg4,
+      path_var.initial_ori, path_var.initial_ef_pos)
 
-   -- if(smallest_error_index == -1) then
-   --   path_var.positions[1] = path_var.positions[0] 
-   --   path_var.positions[0] = path_var.positions[-1]
-   --   path_var.positions[-1] = rotate_path(path, t - 2*dt, arg1, arg2, path_var.initial_ori)
-   -- end
+   -- tangents needs to be recalculated
+   tangent1_ef = p1 - p0
+   tangent2_ef = p2 - p1
+   tv_unit = tangent2_ef:copy()
+   tv_unit:normalize()
 
-   -- path_var.time_correction = path_var.time_correction + smallest_error_index*target_dt
-   ------------------------------------------------------------------------------------------------------------------------------
+   -- error in position versus current point on the path
+   local pos_error_ef = current_measured_pos_ef - p1
 
-   local position_error_ef = path_var.positions_ef[0]- current_measured_pos_ef
-   local path_loc = path_var.start_pos:copy()
-   path_loc:offset(path_var.positions_ef[0]:x() - path_var.initial_ef_pos:x(), path_var.positions_ef[0]:y() - path_var.initial_ef_pos:y())
-   path_loc:alt(path_loc:alt() - math.floor(path_var.positions_ef[0]:z()*100))
+   --[[
+      calculate a time correction. We first get the projection of
+      the position error onto the track. This tells us how far we
+      are ahead or behind on the track
+   --]]
+   local path_dist_err_m = tv_unit:dot(pos_error_ef)
 
-   logger.write("POSM",'x,y,z','fff',current_measured_pos_ef:x(),current_measured_pos_ef:y(),current_measured_pos_ef:z())
-   logger.write("POST",'x,y,z','fff',path_var.positions_ef[0]:x(),path_var.positions_ef[0]:y(),path_var.positions_ef[0]:z())
-   logger.write("PERR",'x,y,z,tc,Lat,Lng,Alt','ffffLLf',position_error_ef:x(),position_error_ef:y(),position_error_ef:z(), path_var.time_correction, path_loc:lat(), path_loc:lng(), path_loc:alt()*0.01)
-   logger.write("SPED", 'x,y,z,l', 'ffff', ahrs:get_velocity_NED():x(), ahrs:get_velocity_NED():y(), ahrs:get_velocity_NED():z(), ahrs:get_velocity_NED():length())
-   --velocity required to travel along trajectory
-   local trajectory_velocity_ef = (path_var.positions_ef[1] - path_var.positions_ef[-1]):scale(0.5/path_var.scaled_dt) --derivative from -dt to dt for more accuracy
-   local tangent1_ef = (path_var.positions_ef[0] - path_var.positions_ef[-1])
-   local tangent2_ef = (path_var.positions_ef[1] - path_var.positions_ef[0])
-   local path_rate_rads_ef = vectors_to_angular_rate(tangent1_ef, tangent2_ef, path_var.scaled_dt)
+   -- normalize against the total path length
+   local path_err_t = path_dist_err_m / path_var.length
 
-   local path_rate_rads_bf = path_rate_rads_ef:scale(math.deg(1))
-   path_var.accumulated_orientation_rel_ef:earth_to_body(path_rate_rads_bf)
-   logger.write("TANG",'x,y,z','fff',path_rate_rads_bf:x(), path_rate_rads_bf:y(), path_rate_rads_bf:z())
+   -- don't allow the path to go backwards in time, or faster than twice the actual rate
+   path_err_t = constrain(path_err_t, -0.9*path_t_delta, 2*path_t_delta)
 
+   -- correct time to bring us back into sync
+   path_var.path_t = path_var.path_t + TIME_CORR_P:get() * path_err_t
+
+   
+   --[[
+      calculation of error correction, calculating acceleration
+      needed to bring us back on the path, and body rates in pitch and
+      yaw to achieve those accelerations
+   --]]
+   
+   -- component of pos_err perpendicular to the current path tangent
+   local B = ortho_proj(pos_error_ef, tv_unit)
+
+   -- derivative of pos_err perpendicular to the current path tangent, assuming tangent is constant
+   local B_dot = ortho_proj(v, tv_unit)
+
+   -- gains for error correction.
+   local acc_err_ef = B:scale(ERR_CORR_P:get()) + B_dot:scale(ERR_CORR_D:get())
+
+   local acc_err_bf = ahrs:earth_to_body(acc_err_ef)
+
+   local TAS = constrain(ahrs:get_EAS2TAS()*ahrs:airspeed_estimate(), 3, 100)
+   local corr_rate_bf_y_rads = -acc_err_bf:z()/TAS
+   local corr_rate_bf_z_rads = acc_err_bf:y()/TAS
+
+   local cor_ang_vel_bf_rads = makeVector3f(0.0, corr_rate_bf_y_rads, corr_rate_bf_z_rads)
+   local cor_ang_vel_bf_dps = cor_ang_vel_bf_rads:scale(math.deg(1))
+
+
+   --[[
+      work out body frame path rate, this is based on two adjacent tangents on the path
+   --]]
+   local path_rate_ef_rads = vectors_to_angular_rate(tangent1_ef, tangent2_ef, actual_dt)
+   local path_rate_ef_dps = path_rate_ef_rads:scale(math.deg(1))
+   local path_rate_bf_dps = ahrs:earth_to_body(path_rate_ef_dps)
+
+   -- set the path roll rate
+   path_rate_bf_dps:x(math.deg(wrap_pi(r1 - r0)/actual_dt))
+
+
+   --[[
+      calculate body frame roll rate to achieved the desired roll
+      angle relative to the maneuver path
+   --]]
    local zero_roll_angle_delta = Quaternion()
-   zero_roll_angle_delta:from_angular_velocity(path_rate_rads_ef, path_var.scaled_dt)
+   zero_roll_angle_delta:from_angular_velocity(path_rate_ef_rads, actual_dt)
 
    path_var.accumulated_orientation_rel_ef = zero_roll_angle_delta*path_var.accumulated_orientation_rel_ef
    path_var.accumulated_orientation_rel_ef:normalize()
-
-   --velocity to correct error
-   local err_corr_tc = ERR_CORR_TC:get() --tested with 3.0 seconds
-   local err_velocity_ef = (path_var.positions_ef[0] - current_measured_pos_ef):scale(1.0/err_corr_tc)
-
-   local total_velocity_ef = trajectory_velocity_ef + err_velocity_ef
-   local curr_vel_ef = ahrs:get_velocity_NED()
-
-   local total_ang_vel_ef = vectors_to_angular_rate(curr_vel_ef, total_velocity_ef, 1.0)
-   local total_ang_vel_bf = ahrs:earth_to_body(total_ang_vel_ef)
-
+   
    local mf_axis = makeVector3f(1, 0, 0)
    path_var.accumulated_orientation_rel_ef:earth_to_body(mf_axis)
 
    local orientation_rel_mf_with_roll_angle = Quaternion()
-   orientation_rel_mf_with_roll_angle:from_axis_angle(mf_axis, path_var.roll_angles_bf[0])
+   orientation_rel_mf_with_roll_angle:from_axis_angle(mf_axis, r1)
    orientation_rel_ef_with_roll_angle = orientation_rel_mf_with_roll_angle*path_var.accumulated_orientation_rel_ef
 
-   --logger.write("ACCO",'r,p,y', 'fff', orientation_rel_ef_with_roll_angle:get_euler_roll(), orientation_rel_ef_with_roll_angle:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_yaw())
-   --logger.write("ACCQ",'q1,q2,q3,q4', 'ffff', orientation_rel_ef_with_roll_angle:q1(),orientation_rel_ef_with_roll_angle:q2(),orientation_rel_ef_with_roll_angle:q3(),orientation_rel_ef_with_roll_angle:q4() )
-   logger.write("IORI",'r,p,y','fff',ahrs:get_roll(), ahrs:get_pitch(), ahrs:get_yaw())
+   --[[
+      calculate the error correction for the roll versus the desired roll
+   --]]
    local roll_error = orientation_rel_ef_with_roll_angle*ahrs:get_quaternion():inverse()
    roll_error:normalize()
-   local err_axis_ef, err_angle = to_axis_and_angle(roll_error)
+   local err_axis_ef, err_angle_rad = to_axis_and_angle(roll_error)
    local time_const_roll = ROLL_CORR_TC:get()
-   local err_angle_rate_ef = err_axis_ef:scale(err_angle/time_const_roll)
+   local err_angle_rate_ef_rads = err_axis_ef:scale(err_angle_rad/time_const_roll)
+   local err_angle_rate_bf_dps = ahrs:earth_to_body(err_angle_rate_ef_rads):scale(math.deg(1))
+   -- zero any non-roll components
+   err_angle_rate_bf_dps:y(0)
+   err_angle_rate_bf_dps:z(0)
 
-   local err_angle_rate_bf = ahrs:earth_to_body(err_angle_rate_ef)
+   --[[
+      total angular rate is sum of path rate, correction rate and roll correction rate
+   --]]
+   local tot_ang_vel_bf_dps = path_rate_bf_dps + cor_ang_vel_bf_dps + err_angle_rate_bf_dps
 
-   local angular_velocity_bf = total_ang_vel_bf
-   angular_velocity_bf:x(err_angle_rate_bf:x())
-   angular_velocity_bf = angular_velocity_bf:scale(math.deg(1))
 
-   logger.write("CAV",'x,y,z','fff',angular_velocity_bf:x(),angular_velocity_bf:y(),angular_velocity_bf:z())
+   --[[
+      log POSM is pose-measured, POST is pose-track, POSB is pose-track without the roll
+   --]]
+   log_pose('POSM', current_measured_pos_ef, ahrs:get_quaternion())
+   log_pose('POST', p1, orientation_rel_ef_with_roll_angle)
 
+   logger.write('AETM', 'T,Terr','ff',
+                path_var.path_t,
+                path_err_t)
+
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz', 'ffffffffff',
+                cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
+                path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
+                err_angle_rate_bf_dps:x(),
+                tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
+
+   --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
+
+   --[[
+      run the throttle based speed controller
+   --]]
    local target_speed = target_groundspeed()--TRIM_ARSPD_CM:get()*0.01
    throttle = speed_PI.update(target_speed)
    throttle = constrain(throttle, 0, 100.0)
-   vehicle:set_target_throttle_rate_rpy(throttle, angular_velocity_bf:x(), angular_velocity_bf:y(), angular_velocity_bf:z())
+
+
+   vehicle:set_target_throttle_rate_rpy(throttle, tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
+   
    return true
 end
 
 command_table = {}
-command_table[1]={path_figure_eight, "Figure Eight"}
-command_table[2]={path_vertical_circle, "Loop"}
-command_table[3]={horizontal_aerobatic_box, "Horizontal Rectangle"}
-command_table[4]={path_climbing_circle, "Climbing Circle"}
+command_table[1]={figure_eight, "Figure Eight"}
+command_table[2]={loop, "Loop"}
+command_table[3]={horizontal_rectangle, "Horizontal Rectangle"}
+command_table[4]={climbing_circle, "Climbing Circle"}
 command_table[5]={vertical_aerobatic_box, "Vertical Box"}
-command_table[6]={path_banked_circle, "Banked Circle"}
-command_table[7]={path_straight_roll, "Axial Roll"}
-command_table[8]={path_rolling_circle, "Rolling Circle"}
+command_table[6]={banked_circle, "Banked Circle"}
+command_table[7]={straight_roll, "Axial Roll"}
+command_table[8]={rolling_circle, "Rolling Circle"}
 command_table[9]={half_cuban_eight, "Half Cuban Eight"}
 command_table[10]={half_reverse_cuban_eight, "Half Reverse Cuban Eight"}
 command_table[11]={cuban_eight, "Cuban Eight"}
 command_table[12]={humpty_bump, "Humpty Bump"}
 command_table[13]={straight_flight, "Straight Flight"}
-command_table[100]={save_parameters,"Reading parameters"}
+command_table[14]={scale_figure_eight, "Scale Figure Eight"}
 
-function save_parameters(arg1, arg2)
-   arg3 = arg1
-   arg4 = arg2
+-- get a location structure from a waypoint number
+function get_location(i)
+   local m = mission:get_item(i)
+   local loc = Location()
+   loc:lat(m:x())
+   loc:lng(m:y())
+   loc:relative_alt(true)
+   loc:terrain_alt(false)
+   loc:origin_alt(false)
+   loc:alt(math.floor(m:z()*100))
+   return loc
+end
+
+-- set wp location
+function wp_setloc(wp, loc)
+   wp:x(loc:lat())
+   wp:y(loc:lng())
+   wp:z(loc:alt()*0.01)
+end
+
+-- add a waypoint to the end of the mission
+function wp_add(loc,ctype,param1,param2)
+   local wp = mavlink_mission_item_int_t()
+   wp_setloc(wp,loc)
+   wp:command(ctype)
+   local seq = mission:num_commands()
+   wp:seq(seq)
+   wp:param1(param1)
+   wp:param2(param2)
+   wp:frame(3) -- global position, relative alt
+   mission:set_item(seq, wp)
+end
+
+-- add a NAV_SCRIPT_TIME waypoint to the end of the mission
+function wp_add_nav_script(cmdid,arg1,arg2,arg3,arg4)
+   local wp = mavlink_mission_item_int_t()
+   wp:command(NAV_SCRIPT_TIME)
+   local seq = mission:num_commands()
+   wp:seq(seq)
+   wp:param1(cmdid)
+   wp:param2(0) -- timeout
+   wp:param3(arg1)
+   wp:param4(arg2)
+   wp:x(arg3)
+   wp:y(arg4)
+   mission:set_item(seq, wp)
+end
+
+--[[
+   create auto mission 1
+--]]
+function create_auto_mission1()
+   local N = mission:num_commands()
+   if N ~= 4 then
+      gcs:send_text(0,string.format("Auto mission needs takeoff and 2 WPs (got %u)", N))
+      return
+   end
+   local takeoff_m = mission:get_item(1)
+   if takeoff_m:command() ~= NAV_TAKEOFF then
+      gcs:send_text(0,string.format("First WP needs to be takeoff"))
+      return
+   end
+   local wp1 = get_location(2)
+   local wp2 = get_location(3)
+
+   local wp_dist = wp1:get_distance(wp2)
+   local wp_bearing = math.deg(wp1:get_bearing(wp2))
+   local radius = AUTO_RAD:get()
+
+   gcs:send_text(0, string.format("WP Distance %.0fm bearing %.1fdeg", wp_dist, wp_bearing))
+
+   -- find mid-point, 25% and 75% points
+   local wp_mid = wp1:copy()
+   wp_mid:offset_bearing(wp_bearing, wp_dist*0.5)
+
+   local wp_25pct = wp1:copy()
+   wp_25pct:offset_bearing(wp_bearing, wp_dist*0.25)
+
+   local wp_75pct = wp1:copy()
+   wp_75pct:offset_bearing(wp_bearing, wp_dist*0.75)
+   
+   gcs:send_text(0,"Adding half cuban eight")
+   wp_add_nav_script(9, radius, 0, 0, 0)
+
+   gcs:send_text(0,"Adding loop")
+   wp_add(wp_mid, NAV_WAYPOINT, 0, 1)
+   wp_add_nav_script(2, radius, 0, 0, 0)
+
+   gcs:send_text(0,"Adding half reverse cuban eight")
+   wp_add(wp1, NAV_WAYPOINT, 0, 0)
+   wp_add_nav_script(10, radius, 0, 0, 0)
+
+   gcs:send_text(0,"Adding axial roll")
+   wp_add(wp_25pct, NAV_WAYPOINT, 0, 1)
+   wp_add_nav_script(7, wp_dist*0.5, 1, 0, 0)
+   
+   gcs:send_text(0,"Adding humpty bump")
+   wp_add(wp2, NAV_WAYPOINT, 0, 1)
+   wp_add_nav_script(12, radius*0.25, 0.5*radius, 0, 0)
+
+   gcs:send_text(0,"Adding cuban eight")
+   wp_add(wp_mid, NAV_WAYPOINT, 0, 0)
+   wp_add_nav_script(11, radius, 0, 0, 0)
+
+   wp_add(wp1, NAV_WAYPOINT, 0, 0)
+
+end
+
+function create_auto_mission()
+   if AUTO_MIS:get() == 1 then
+      create_auto_mission1()
+   else
+      gcs:send_text(0, string.format("Unknown auto mission", AUTO_MIS:get()))
+   end
 end
 
 function update()
+
+   -- check if we should create a mission
+   if AUTO_MIS:get() > 0 then
+      create_auto_mission()
+      AUTO_MIS:set_and_save(0)
+   end
+
    id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
    if id then
       if id ~= last_id then
@@ -1067,14 +1319,7 @@ function update()
          end
          initial_yaw_deg = wp_yaw_deg
       end
-      local done = false
-      if(cmd == 100) then
-         --parameter node
-         save_parameters(arg1, arg2)
-         done = true
-      else 
-         done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2)
-      end
+      local done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2, arg3, arg4)
       if done then
          vehicle:nav_script_time_done(last_id)
          gcs:send_text(0, string.format("Finishing %s!", command_table[cmd][2] ))
