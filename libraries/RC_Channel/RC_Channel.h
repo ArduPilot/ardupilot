@@ -6,6 +6,10 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
+#ifndef AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
+#define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 1
+#endif
+
 #define NUM_RC_CHANNELS 16
 
 /// @class	RC_Channel
@@ -288,7 +292,7 @@ public:
     // wrapper function around do_aux_function which allows us to log
     bool run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source);
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     const char *string_for_aux_function(AUX_FUNC function) const;
 #endif
     // pwm value under which we consider that Radio value is invalid
@@ -390,7 +394,7 @@ private:
     void read_mode_switch();
     bool debounce_completed(int8_t position);
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // Structure to lookup switch change announcements
     struct LookupTable{
        AUX_FUNC option;

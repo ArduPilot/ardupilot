@@ -551,7 +551,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     }
 }
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 
 const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::SAVE_WP,"SaveWaypoint"},
@@ -616,7 +616,7 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
      return nullptr;
 }
 
-#endif // HAL_MINIMIZE_FEATURES
+#endif // AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 
 /*
   read an aux channel. Return true if a switch has changed
@@ -646,7 +646,7 @@ bool RC_Channel::read_aux()
         return false;
     }
 
-#if !HAL_MINIMIZE_FEATURES
+#if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // announce the change to the GCS:
     const char *aux_string = string_for_aux_function(_option);
     if (aux_string != nullptr) {
