@@ -464,7 +464,7 @@ void AP_Airspeed::init()
             break;
         case TYPE_UAVCAN:
 #if AP_AIRSPEED_UAVCAN_ENABLED
-            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i);
+            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, uint32_t(param[i].bus_id.get()));
 #endif
             break;
         case TYPE_NMEA_WATER:
@@ -489,7 +489,30 @@ void AP_Airspeed::init()
             num_sensors = i+1;
         }
     }
+
+#if AP_AIRSPEED_UAVCAN_ENABLED
+    // we need a 2nd pass for DroneCAN sensors so we can match order by DEVID
+    // the 2nd pass accepts any devid
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (sensor[i] == nullptr && (enum airspeed_type)param[i].type.get() == TYPE_UAVCAN) {
+            sensor[i] = AP_Airspeed_UAVCAN::probe(*this, i, 0);
+            if (sensor[i] != nullptr) {
+                num_sensors = i+1;
+            }
+        }
+    }
+#endif // AP_AIRSPEED_UAVCAN_ENABLED
 #endif // HAL_AIRSPEED_PROBE_LIST
+
+    // set DEVID to zero for any sensors not found. This allows backends to order
+    // based on previous value of DEVID. This allows for swapping out sensors
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (sensor[i] == nullptr) {
+            // note we use set() not set_and_save() to allow a sensor to be temporarily
+            // removed for one boot without losing its slot
+            param[i].bus_id.set(0);
+        }
+    }
 }
 
 // read the airspeed sensor
