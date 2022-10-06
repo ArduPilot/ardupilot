@@ -99,10 +99,6 @@ class upload_fw(Task.Task):
         if not where_python or not "\Python\Python" in where_python or "python.exe" not in where_python:
             print(self.get_full_wsl2_error_msg("Windows python.exe not found"))
             return False
-        python_version = subprocess.check_output('python.exe --version', shell=True, text=True)
-        if "3.10." in python_version:
-            print(self.get_full_wsl2_error_msg("Your Windows %s version is not compatible" % python_version.strip()))
-            return False
         return True
 
     def get_full_wsl2_error_msg(self, error_msg):
