@@ -3473,6 +3473,8 @@ class AutoTestPlane(AutoTest):
             "quadplane-cl84": "falls out of sky instead of transitioning",
             "quadplane-tilttri": "falls out of sky instead of transitioning",
             "quadplane-tilttrivec": "loses attitude control and crashes",
+            "plane-ice" : "needs ICE control channel for ignition",
+            "quadplane-ice" : "needs ICE control channel for ignition",
         }
         for frame in sorted(vinfo_options["frames"].keys()):
             self.start_subtest("Testing frame (%s)" % str(frame))
