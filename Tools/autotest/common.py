@@ -2568,12 +2568,14 @@ class AutoTest(ABC):
                                    model=None,
                                    defaults_filepath=None,
                                    wipe=False,
-                                   set_streamrate_callback=None):
+                                   set_streamrate_callback=None,
+                                   binary=None):
         '''customisations could be "--uartF=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
         self.stop_SITL()
-        self.start_SITL(model=model,
+        self.start_SITL(binary=binary,
+                        model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
                         wipe=wipe)
@@ -3437,6 +3439,15 @@ class AutoTest(ABC):
         ret = sorted(glob.glob("logs/00*.BIN"))
         self.progress("log list: %s" % str(ret))
         return ret
+
+    def assert_parameter_values(self, parameters):
+        names = parameters.keys()
+        got = self.get_parameters(names)
+        for name in names:
+            if got[name] != parameters[name]:
+                raise NotAchievedException("parameter %s want=%f got=%f" %
+                                           (name, parameters[name], got[name]))
+            self.progress("%s has expected value %f" % (name, got[name]))
 
     def assert_parameter_value(self, parameter, required):
         got = self.get_parameter(parameter)
@@ -5070,6 +5081,14 @@ class AutoTest(ABC):
             except pexpect.TIMEOUT:
                 pass
         raise NotAchievedException("Failed to retrieve parameter (%s)" % name)
+
+    def get_parameters(self, some_list):
+        ret = {}
+
+        for n in some_list:
+            ret[n] = self.get_parameter(n)
+
+        return ret
 
     def context_get(self):
         """Get Saved parameters."""
@@ -7410,7 +7429,7 @@ Also, ignores heartbeats not from our target system'''
         util.pexpect_close(mavproxy)
         self._mavproxy = None
 
-    def start_SITL(self, **sitl_args):
+    def start_SITL(self, binary=None, **sitl_args):
         start_sitl_args = {
             "breakpoints": self.breakpoints,
             "disable_breakpoints": self.disable_breakpoints,
@@ -7432,7 +7451,9 @@ Also, ignores heartbeats not from our target system'''
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
             start_sitl_args["model"] = self.frame
         self.progress("Starting SITL", send_statustext=False)
-        self.sitl = util.start_SITL(self.binary, **start_sitl_args)
+        if binary is None:
+            binary = self.binary
+        self.sitl = util.start_SITL(binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
         self.sup_prog = []
         for sup_binary in self.sup_binaries:
@@ -12434,6 +12455,74 @@ switch value'''
 
         if ex is not None:
             raise ex
+
+    def write_content_to_filepath(self, content, filepath):
+        '''write biunary content to filepath'''
+        with open(filepath, "wb") as f:
+            if sys.version_info.major >= 3:
+                if type(content) != bytes:
+                    raise NotAchievedException("Want bytes to write_content_to_filepath")
+            f.write(content)
+            f.close()
+
+    def add_embedded_params_to_binary(self, binary, defaults):
+        sys.path.insert(1, os.path.join(self.rootdir(), 'Tools', 'scripts'))
+        import apj_tool
+
+        # copy binary
+        if getattr(self, "embedded_default_counter", None) is None:
+            self.embedded_default_counter = 0
+        self.embedded_default_counter += 1
+
+        new_filepath = binary + "-newdefaults-%u" % self.embedded_default_counter
+        shutil.copy(binary, new_filepath)
+
+        # create file for defaults
+        defaults_filepath = "embed-these-defaults.txt"
+        self.write_content_to_filepath(defaults.encode('utf-8'), defaults_filepath)
+
+        # do the needful
+        a = apj_tool.embedded_defaults(new_filepath)
+        if not a.find():
+            raise NotAchievedException("Did not find defaults")
+        a.set_file(defaults_filepath)
+        a.save()
+
+        return new_filepath
+
+    def sample_param_file_content(self):
+        '''returns an array of tuples, (param file content, dictionary of what
+        parameter values should be tested afterwards)'''
+        dashes = "-" * 150
+        return [
+            # multiple lines:
+            ("""SERIAL5_BAUD 1234
+SERIAL4_BAUD=4567
+""", {"SERIAL5_BAUD": 1234, "SERIAL4_BAUD": 4567}),
+
+            # line missing CR:
+            ("""SERIAL5_BAUD 6789""", {"SERIAL5_BAUD": 6789}),
+
+            # commented-out line:
+            ("""# SERIAL5_BAUD 6789""", {"SERIAL5_BAUD": 57}),
+
+            # very long comment line followed by more text:
+            ("""SERIAL4_BAUD 6789
+# awesome dashes: %s
+SERIAL5_BAUD 128
+""" % dashes, {"SERIAL4_BAUD": 6789, "SERIAL5_BAUD": 128}),
+
+        ]
+
+    def EmbeddedParamParser(self):
+        '''check parsing of embedded defaults file'''
+        # warning: don't try this test on Copter as it won't boot
+        # without the passed-in file (which we don't parse if there
+        # are embedded defaults)
+        for (content, param_values) in self.sample_param_file_content():
+            binary_with_defaults = self.add_embedded_params_to_binary(self.binary, content)
+            self.customise_SITL_commandline([], binary=binary_with_defaults)
+            self.assert_parameter_values(param_values)
 
     def tests(self):
         return [
