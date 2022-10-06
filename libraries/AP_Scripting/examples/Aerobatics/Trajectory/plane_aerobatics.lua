@@ -377,6 +377,12 @@ function path_straight_roll(t, length, num_rolls)
    return vec, t*num_rolls*2*math.pi
 end
 
+function straight_flight(t, length, bank_angle)
+   local pos = makeVector3f(t*length, 0, 0)
+   local roll = math.rad(bank_angle)
+   return pos, roll
+end
+
 function path_rolling_circle(t, radius, num_rolls)
    --t = t*math.pi*2
    local vec = Vector3f()
@@ -397,6 +403,148 @@ function path_banked_circle(t, radius, bank_angle)
       vec = makeVector3f(math.sin(2*math.pi*t), 1.0-math.cos(2*math.pi*t), 0)
    end
    return vec:scale(math.abs(radius)), math.deg(bank_angle)
+end
+
+function half_cuban_eight(t, r, unused)
+   local T = 3.0*math.pi*r/2.0 + 2*r*math.sqrt(2) + r
+
+   local trsqr2 = 2*r*math.sqrt(2)
+
+   local pos
+   local roll
+   if (t < trsqr2/T) then
+      pos = makeVector3f(T*t, 0.0, 0.0)
+      roll = 0.0
+   elseif (t < (trsqr2 + 5.0*math.pi*r/4.0)/T) then
+      pos = makeVector3f(r*math.cos(T*t/r - 2*math.sqrt(2) - math.pi/2)+trsqr2, 0, -r - r*math.sin(T*t/r - 2*math.sqrt(2) - math.pi/2))
+      roll = 0.0
+   elseif (t < (trsqr2 + 5.0*math.pi*r/4.0 + r/4)/T) then
+      pos = makeVector3f(3*r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = 0.0
+   elseif (t < (trsqr2 + 5.0*math.pi*r/4.0 + 3*r/4)/T) then
+      pos = makeVector3f(3*r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = (t - (trsqr2 + 5.0*math.pi*r/4.0 + r/4)/T)*2*math.pi*T/(r)
+   elseif (t < (trsqr2 + 5.0*math.pi*r/4.0 + r)/T) then
+      pos = makeVector3f(3*r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = math.pi
+   else
+      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + 2*math.sqrt(2) + 1 - math.pi/4), 0, -r  -r*math.sin(-T*t/r +5.0*math.pi/4.0 + 2*math.sqrt(2) + 1 - math.pi/4))
+      roll = math.pi
+      --roll = 0
+   end
+
+   return pos, roll
+
+end
+
+function cuban_eight(t, r, unused)
+   local T = 3.0*math.pi*r + r*math.sqrt(2) + 2*r
+
+   local rsqr2 = r*math.sqrt(2)
+
+   local pos
+   local roll
+   if (t < rsqr2/T) then
+      pos = makeVector3f(T*t, 0.0, 0.0)
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0)/T) then
+      pos = makeVector3f(r*math.cos(T*t/r - math.sqrt(2) - math.pi/2)+rsqr2, 0, -r - r*math.sin(T*t/r - math.sqrt(2) - math.pi/2))
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r/4)/T) then
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = 0.0
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + 3*r/4)/T) then
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = (t - (rsqr2 + 5.0*math.pi*r/4.0 + r/4)/T)*2*math.pi*T/(r)
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r)/T) then
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = math.pi
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0)/T) then
+      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4) - r*math.sqrt(2.0), 0, -r - r*math.sin(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4))
+      roll = math.pi
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r/4.0)/T) then
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)))
+      roll = math.pi
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + 3*r/4.0)/T) then
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)))
+      roll = math.pi +(t - (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r/4.0)/T)*2 *math.pi*T/(r)
+   elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r)/T) then
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)))
+      roll = 0.0
+   else
+      pos = makeVector3f(r*math.cos(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))+rsqr2, 0, -r - r*math.sin(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 )))
+      roll = 0.0
+   end
+   return pos, roll
+
+end
+
+function half_reverse_cuban_eight(t, r, unused)
+   local T = 3.0*math.pi*r/2.0 + 2*r*math.sqrt(2) + r
+
+   local trsqr2 = 2*r*math.sqrt(2)
+
+   local pos
+   local roll
+
+
+   if(t < (math.pi*r/4)/T) then
+      pos = makeVector3f(r*math.cos(-T*(1-t)/r +5.0*math.pi/4.0 + 2*math.sqrt(2) + 1 - math.pi/4), 0, -r  -r*math.sin(-T*(1-t)/r +5.0*math.pi/4.0 + 2*math.sqrt(2) + 1 - math.pi/4))
+      
+      roll = 0
+   elseif (t < (math.pi*r/4 + r/4)/T) then
+      pos = makeVector3f(3*r/math.sqrt(2) + (T*(1-t)/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*(1-t)/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = 0
+   elseif (t < (math.pi*r/4 + 3*r/4)/T) then
+      pos = makeVector3f(3*r/math.sqrt(2) + (T*(1-t)/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*(1-t)/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = (t - (math.pi*r/4 + r/4)/T)*2*math.pi*T/(r)
+   elseif (t < (math.pi*r/4 + r)/T) then
+      pos = makeVector3f(3*r/math.sqrt(2) + (T*(1-t)/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)), 0, -r  -r/math.sqrt(2) - (T*(1-t)/r - 5*math.pi/4 - 2*math.sqrt(2))*(-r*math.sqrt(2)))
+      roll = math.pi
+   elseif (t < (3*math.pi*r/2 + r) /T) then
+      pos = makeVector3f(r*math.cos(T*(1-t)/r - 2*math.sqrt(2) - math.pi/2)+trsqr2, 0, -r - r*math.sin(T*(1-t)/r - 2*math.sqrt(2) - math.pi/2))
+      roll = math.pi
+   else
+      pos = makeVector3f(T*(1-t), 0.0, 0.0)
+      roll = math.pi
+   end
+
+   return pos, roll
+
+end
+
+function humpty_bump(t, r, h)
+   assert(h > 2*r)
+   local T = 2*(math.pi*r + h - r)
+   local l = h - 2*r 
+   local pos
+   local roll
+   if (t < (math.pi*r/2)/T) then
+      pos = makeVector3f(r*math.cos(T*t/r - math.pi/2), 0, -r  -r*math.sin(T*t/r - math.pi/2))
+      roll = 0
+   elseif (t < (math.pi*r/2 + l/4)/T) then
+      pos = makeVector3f(r, 0, -r -(T*t - r*math.pi/2))
+      roll = 0
+   elseif (t < (math.pi*r/2 + 3*l/4)/T) then
+      pos = makeVector3f(r, 0, -r -(T*t - r*math.pi/2))
+      roll = (t - (math.pi*r/2 + l/4)/T)*2*math.pi*T/l
+   elseif (t < (math.pi*r/2 + l)/T) then
+      pos = makeVector3f(r, 0, -r -(T*t - r*math.pi/2))
+      roll = math.pi
+   elseif (t < (3*math.pi*r/2 + l)/T) then
+      pos = makeVector3f(2*r + r*math.cos(T*t/r - 3*math.pi/2 - l/r), 0, -r-l  +r*math.sin(T*t/r - 3*math.pi/2 - l/r))
+      roll = math.pi
+   elseif (t < (3*math.pi*r/2 + 2*l)/T) then
+      pos = makeVector3f(3*r,0, -r -l + (T*t - 3*r*math.pi/2.0 -l))
+      roll = math.pi
+   elseif (t < (2*math.pi*r + 2*l)/T) then
+      pos = makeVector3f(2*r + r*math.cos(T*t/r - 3*math.pi/2 -2*l/r),0, -r + math.sin(T*t/r - 3*math.pi/2 -2*l/r))
+      roll = math.pi
+   else
+      pos = makeVector3f(2*r -(T*t - 2*r*math.pi - 2*l), 0, 0)
+      roll = math.pi
+   end
+   return pos, roll
 end
 
 function test_height_control(t, length, unused)
@@ -802,14 +950,19 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    path_loc:offset(path_var.positions_ef[0]:x() - path_var.initial_ef_pos:x(), path_var.positions_ef[0]:y() - path_var.initial_ef_pos:y())
    path_loc:alt(path_loc:alt() - math.floor(path_var.positions_ef[0]:z()*100))
 
-   --logger.write("POSM",'x,y,z','fff',current_measured_pos_ef:x(),current_measured_pos_ef:y(),current_measured_pos_ef:z())
-   --logger.write("POSE",'x,y,z','fff',path_var.positions_ef[0]:x(),path_var.positions_ef[0]:y(),path_var.positions_ef[0]:z())
+   logger.write("POSM",'x,y,z','fff',current_measured_pos_ef:x(),current_measured_pos_ef:y(),current_measured_pos_ef:z())
+   logger.write("POST",'x,y,z','fff',path_var.positions_ef[0]:x(),path_var.positions_ef[0]:y(),path_var.positions_ef[0]:z())
    logger.write("PERR",'x,y,z,tc,Lat,Lng,Alt','ffffLLf',position_error_ef:x(),position_error_ef:y(),position_error_ef:z(), path_var.time_correction, path_loc:lat(), path_loc:lng(), path_loc:alt()*0.01)
+   logger.write("SPED", 'x,y,z,l', 'ffff', ahrs:get_velocity_NED():x(), ahrs:get_velocity_NED():y(), ahrs:get_velocity_NED():z(), ahrs:get_velocity_NED():length())
    --velocity required to travel along trajectory
    local trajectory_velocity_ef = (path_var.positions_ef[1] - path_var.positions_ef[-1]):scale(0.5/path_var.scaled_dt) --derivative from -dt to dt for more accuracy
    local tangent1_ef = (path_var.positions_ef[0] - path_var.positions_ef[-1])
    local tangent2_ef = (path_var.positions_ef[1] - path_var.positions_ef[0])
    local path_rate_rads_ef = vectors_to_angular_rate(tangent1_ef, tangent2_ef, path_var.scaled_dt)
+
+   local path_rate_rads_bf = path_rate_rads_ef:scale(math.deg(1))
+   path_var.accumulated_orientation_rel_ef:earth_to_body(path_rate_rads_bf)
+   logger.write("TANG",'x,y,z','fff',path_rate_rads_bf:x(), path_rate_rads_bf:y(), path_rate_rads_bf:z())
 
    local zero_roll_angle_delta = Quaternion()
    zero_roll_angle_delta:from_angular_velocity(path_rate_rads_ef, path_var.scaled_dt)
@@ -849,7 +1002,7 @@ function do_path(path, initial_yaw_deg, arg1, arg2)
    angular_velocity_bf:x(err_angle_rate_bf:x())
    angular_velocity_bf = angular_velocity_bf:scale(math.deg(1))
 
-   --logger.write("CAV",'x,y,z','fff',angular_velocity_bf:x(),angular_velocity_bf:y(),angular_velocity_bf:z())
+   logger.write("CAV",'x,y,z','fff',angular_velocity_bf:x(),angular_velocity_bf:y(),angular_velocity_bf:z())
 
    local target_speed = target_groundspeed()--TRIM_ARSPD_CM:get()*0.01
    throttle = speed_PI.update(target_speed)
@@ -867,6 +1020,11 @@ command_table[5]={vertical_aerobatic_box, "Vertical Box"}
 command_table[6]={path_banked_circle, "Banked Circle"}
 command_table[7]={path_straight_roll, "Axial Roll"}
 command_table[8]={path_rolling_circle, "Rolling Circle"}
+command_table[9]={half_cuban_eight, "Half Cuban Eight"}
+command_table[10]={half_reverse_cuban_eight, "Half Reverse Cuban Eight"}
+command_table[11]={cuban_eight, "Cuban Eight"}
+command_table[12]={humpty_bump, "Humpty Bump"}
+command_table[13]={straight_flight, "Straight Flight"}
 command_table[100]={save_parameters,"Reading parameters"}
 
 function save_parameters(arg1, arg2)
@@ -903,6 +1061,10 @@ function update()
              loc_next = get_wp_location(resolve_jump(i))
          end
          wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
+         if math.abs(wrap_180(initial_yaw_deg - wp_yaw_deg)) > 90 then
+            gcs:send_text(0, string.format("Doing turnaround!"))
+            wp_yaw_deg = wrap_180(wp_yaw_deg + 180)
+         end
          initial_yaw_deg = wp_yaw_deg
       end
       local done = false
