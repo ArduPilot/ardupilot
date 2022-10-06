@@ -1,0 +1,26 @@
+# hw definition file for processing by chibios_pins.py
+# JHEMCU GF16 by V-22
+# With F405 MCU, MPU6000 IMU and MAX7456 series OSD
+# Based on Mamba F405 hwdef from jeanphilippehell
+# thanks to betaflight for pin information (https://github.com/betaflight/unified-targets/blob/master/configs/default/JHEF-JHEF405PRO.config)
+# Board info https://github.com/jhemcu/FC-ESC-Firmware/tree/main/GF16-F405%26ESC
+
+include hwdef_pindef.dat
+
+define PRECISION_LANDING 0
+define OSD_ENABLED 1
+
+# --------------------- save flash ----------------------
+define HAL_BATTMON_SMBUS_ENABLE 0
+define HAL_BATTMON_FUEL_ENABLE 0
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+define HAL_GENERATOR_ENABLED 0
+define AC_OAPATHPLANNER_ENABLED 0
+define HAL_BARO_WIND_COMP_ENABLED 0
+define GRIPPER_ENABLED 0
+define HAL_HOTT_TELEM_ENABLED 0
+define HAL_NMEA_OUTPUT_ENABLED 0
+define HAL_BUTTON_ENABLED 0
+define HAL_OREO_LED_ENABLED 0
+define HAL_PICCOLO_CAN_ENABLE 0
