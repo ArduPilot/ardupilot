@@ -91,9 +91,7 @@ protected:
     }
 
     // set bus ID of this instance, for ARSPD_DEVID parameters
-    void set_bus_id(uint32_t id) {
-        frontend.param[instance].bus_id.set(int32_t(id));
-    }
+    void set_bus_id(uint32_t id);
 
     enum class DevType {
         SITL     = 0x01,
