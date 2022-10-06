@@ -4034,6 +4034,7 @@ class AutoTestPlane(AutoTest):
             self.GlideSlopeThresh,
             self.HIGH_LATENCY2,
             self.MidAirDisarmDisallowed,
+            self.EmbeddedParamParser,
         ])
         return ret
 
