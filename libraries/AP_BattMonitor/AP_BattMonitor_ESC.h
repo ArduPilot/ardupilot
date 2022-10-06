@@ -25,9 +25,7 @@ class AP_BattMonitor_ESC :public AP_BattMonitor_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-    AP_BattMonitor_ESC(AP_BattMonitor &mon, AP_BattMonitor::BattMonitor_State &mon_state, AP_BattMonitor_Params &params):
-        AP_BattMonitor_Backend(mon, mon_state, params)
-    {};
+    using AP_BattMonitor_Backend::AP_BattMonitor_Backend;
 
     virtual ~AP_BattMonitor_ESC(void) {};
 

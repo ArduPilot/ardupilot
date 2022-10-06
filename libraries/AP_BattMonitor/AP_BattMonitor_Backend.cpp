@@ -28,6 +28,8 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonit
         _state(mon_state),
         _params(params)
 {
+    // clear out the cell voltages
+    memset(&_state.cell_voltages, 0xFF, sizeof(AP_BattMonitor::cells));
 }
 
 // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument

@@ -214,6 +214,12 @@ AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handle
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+#ifdef HAL_BATT_MONITOR_DEFAULT
+    _params[0]._type.set_default(int8_t(HAL_BATT_MONITOR_DEFAULT));
+#endif
+
+    _highest_failsafe_priority = INT8_MAX;
+
     if (_singleton != nullptr) {
         AP_HAL::panic("AP_BattMonitor must be singleton");
     }
@@ -224,21 +230,29 @@ AP_BattMonitor::AP_BattMonitor(uint32_t log_battery_bit, battery_failsafe_handle
 void
 AP_BattMonitor::init()
 {
-    // check init has not been called before
-    if (_num_instances != 0) {
-        return;
-    }
-
-    _highest_failsafe_priority = INT8_MAX;
-
-#ifdef HAL_BATT_MONITOR_DEFAULT
-    _params[0]._type.set_default(int8_t(HAL_BATT_MONITOR_DEFAULT));
-#endif
 
     // create each instance
     for (uint8_t instance=0; instance<AP_BATT_MONITOR_MAX_INSTANCES; instance++) {
-        // clear out the cell voltages
-        memset(&state[instance].cell_voltages, 0xFF, sizeof(cells));
+
+        if (state[instance].configured_type == get_type(instance)) {
+            // already configured as correct type
+            // could be nullptr if allocation failed but only attempt allocation once
+            continue;
+        }
+
+        // reset state
+        if (backend_var_info[instance] != nullptr) {
+            backend_var_info[instance] = nullptr;
+            AP_Param::invalidate_count();
+        }
+        memset(&state[instance], 0, sizeof(BattMonitor_State));
+        state[instance].configured_type = get_type(instance);
+
+        // clear currenty allocated driver, if any
+        if (drivers[instance] != nullptr) {
+            delete drivers[instance];
+            drivers[instance] = nullptr;
+        }
 
         switch (get_type(instance)) {
             case Type::ANALOG_VOLTAGE_ONLY:
@@ -326,30 +340,30 @@ AP_BattMonitor::init()
 #endif
             case Type::NONE:
             default:
-                break;
+                continue;
         }
 
-    // if the backend has some local parameters then make those available in the tree
-    if (drivers[instance] && state[instance].var_info) {
-        backend_var_info[instance] = state[instance].var_info;
-        AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
-
-        // param count could have changed
-        AP_Param::invalidate_count();
-    }
-
-        // call init function for each backend
-        if (drivers[instance] != nullptr) {
-            drivers[instance]->init();
-            // _num_instances is actually the index for looping over instances
-            // the user may have BATT_MONITOR=0 and BATT2_MONITOR=7, in which case
-            // there will be a gap, but as we always check for drivers[instances] being nullptr
-            // this is safe
-            _num_instances = instance + 1;
-
-            // Convert the old analog & Bus parameters to the new dynamic parameter groups
-            convert_dynamic_param_groups(instance);
+        if (drivers[instance] == nullptr) {
+            // allocation failed
+            continue;
         }
+
+        // if the backend has some local parameters then make those available in the tree
+        if (state[instance].var_info) {
+            backend_var_info[instance] = state[instance].var_info;
+            AP_Param::load_object_from_eeprom(drivers[instance], backend_var_info[instance]);
+        }
+
+        drivers[instance]->init();
+        // _num_instances is actually the index for looping over instances
+        // the user may have BATT_MONITOR=0 and BATT2_MONITOR=7, in which case
+        // there will be a gap, but as we always check for drivers[instances] being nullptr
+        // this is safe
+        _num_instances = instance + 1;
+
+        // Convert the old analog & Bus parameters to the new dynamic parameter groups
+        convert_dynamic_param_groups(instance);
+
     }
 }
 
@@ -418,6 +432,11 @@ void AP_BattMonitor::read()
         logger->Write_Power();
     }
 #endif
+
+    // if disarmed allocate new monitors at runtime
+    if (!hal.util->get_soft_armed()) {
+        init();
+    }
 
     for (uint8_t i=0; i<_num_instances; i++) {
         if (drivers[i] != nullptr && get_type(i) != Type::NONE) {

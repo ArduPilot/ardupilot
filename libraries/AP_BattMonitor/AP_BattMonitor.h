@@ -150,6 +150,7 @@ public:
         bool        powerOffNotified;          // only send powering off notification once
         uint32_t    time_remaining;            // remaining battery time
         bool        has_time_remaining;        // time_remaining is only valid if this is true
+        Type        configured_type;           // type this instance is configured as
         const struct AP_Param::GroupInfo *var_info;
     };
 
