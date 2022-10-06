@@ -28,7 +28,7 @@ public:
 
     static void subscribe_msgs(AP_UAVCAN* ap_uavcan);
 
-    static AP_Airspeed_Backend* probe(AP_Airspeed &_fronted, uint8_t _instance);
+    static AP_Airspeed_Backend* probe(AP_Airspeed &_fronted, uint8_t _instance, uint32_t previous_devid);
 
 private:
 
