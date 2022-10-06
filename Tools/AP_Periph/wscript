@@ -28,6 +28,7 @@ def build(bld):
 
     if bld.env.AP_PERIPH_HEAVY:
         libraries = bld.ap_get_all_libraries()
+        libraries.extend(['AP_ADSB/sagetech-sdk'])
         bld.env.DEFINES += ['HAL_BOARD_AP_PERIPH_HEAVY']
     else:
         libraries = ['AP_Common',
