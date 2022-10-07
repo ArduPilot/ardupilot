@@ -559,7 +559,10 @@ void ModeAuto::payload_place_start()
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeAuto::use_pilot_yaw(void) const
 {
-    return (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool allow_yaw_option = (copter.g2.auto_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool rtl_allow_yaw = (_mode == SubMode::RTL) && copter.mode_rtl.use_pilot_yaw();
+    const bool landing = _mode == SubMode::LAND;
+    return allow_yaw_option || rtl_allow_yaw || landing;
 }
 
 bool ModeAuto::set_speed_xy(float speed_xy_cms)

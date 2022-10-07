@@ -834,7 +834,7 @@ void ModeGuided::pause_control_run()
     pos_control->update_z_controller();
 
     // call attitude controller
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    attitude_control->input_thrust_vector_rate_heading(pos_control->get_thrust_vector(), 0.0);
 }
 
 // posvelaccel_control_run - runs the guided position, velocity and acceleration controller

@@ -20,6 +20,9 @@ bool ModeCircle::init(bool ignore_checks)
     // initialise circle controller including setting the circle center based on vehicle speed
     copter.circle_nav->init();
 
+    // set auto yaw circle mode
+    auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
+
     return true;
 }
 
