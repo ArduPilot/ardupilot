@@ -473,6 +473,7 @@ bool AP_Arming::compass_checks(bool report)
 {
     Compass &_compass = AP::compass();
 
+#if COMPASS_CAL_ENABLED
     // check if compass is calibrating
     if (_compass.is_calibrating()) {
         check_failed(report, "Compass calibration running");
@@ -484,6 +485,7 @@ bool AP_Arming::compass_checks(bool report)
         check_failed(report, "Compass calibrated requires reboot");
         return false;
     }
+#endif
 
     if ((checks_to_perform) & ARMING_CHECK_ALL ||
         (checks_to_perform) & ARMING_CHECK_COMPASS) {
@@ -1094,7 +1096,7 @@ bool AP_Arming::proximity_checks(bool report) const
 
 bool AP_Arming::can_checks(bool report)
 {
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
+#if HAL_MAX_CAN_PROTOCOL_DRIVERS && HAL_CANMANAGER_ENABLED
     if (check_enabled(ARMING_CHECK_SYSTEM)) {
         char fail_msg[50] = {};
         (void)fail_msg; // might be left unused
