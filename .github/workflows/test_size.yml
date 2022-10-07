@@ -1,6 +1,6 @@
 name: test size
 
-on: [push, pull_request, workflow_dispatch]
+on: [pull_request]
 # paths:
 # - "*"
 # - "!README.md" <-- don't rebuild on doc change
