@@ -85,7 +85,7 @@ static struct instance_t {
     uint8_t index;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    ChibiOS::CANIface* iface;
+    AP_HAL::CANIface* iface;
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
     HALSITL::CANIface* iface;
 #endif
@@ -159,6 +159,9 @@ ChibiOS::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 HALSITL::CANIface* AP_Periph_FW::can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SLCAN
+SLCAN::CANIface AP_Periph_FW::slcan_interface;
+#endif
 
 /*
  * Node status variables
@@ -1516,6 +1519,20 @@ void AP_Periph_FW::can_start()
 #endif
         }
     }
+
+#ifdef HAL_PERIPH_ENABLE_SLCAN
+    const uint8_t slcan_selected_index = g.can_slcan_cport - 1;
+    if (slcan_selected_index < HAL_NUM_CAN_IFACES) {
+        slcan_interface.set_can_iface(can_iface_periph[slcan_selected_index]);
+        instances[slcan_selected_index].iface = (AP_HAL::CANIface*)&slcan_interface;
+
+        // ensure there's a serial port mapped to SLCAN
+        if (!periph.serial_manager.have_serial(AP_SerialManager::SerialProtocol_SLCAN, 0)) {
+            periph.serial_manager.set_protocol_and_baud(SERIALMANAGER_NUM_PORTS-1, AP_SerialManager::SerialProtocol_SLCAN, 1500000);
+        }
+    }
+#endif
+
     canardInit(&dronecan.canard, (uint8_t *)dronecan.canard_memory_pool, sizeof(dronecan.canard_memory_pool),
             onTransferReceived, shouldAcceptTransfer, NULL);
 

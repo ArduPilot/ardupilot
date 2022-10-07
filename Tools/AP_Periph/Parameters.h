@@ -60,6 +60,7 @@ public:
         k_param_efi_port,
         k_param_efi_baudrate,
         k_param_esc_telem_rate,
+        k_param_can_slcan_cport,
     };
 
     AP_Int16 format_version;
@@ -68,6 +69,10 @@ public:
     AP_Int32 can_baudrate[HAL_NUM_CAN_IFACES];
 #if HAL_NUM_CAN_IFACES >= 2
     AP_Enum<AP_CANManager::Driver_Type> can_protocol[HAL_NUM_CAN_IFACES];
+#endif
+
+#ifdef HAL_PERIPH_ENABLE_SLCAN
+    AP_Int8 can_slcan_cport;
 #endif
 
 #ifdef HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY

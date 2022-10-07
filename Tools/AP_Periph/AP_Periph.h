@@ -108,6 +108,10 @@ public:
     static HALSITL::CANIface* can_iface_periph[HAL_NUM_CAN_IFACES];
 #endif
 
+#ifdef HAL_PERIPH_ENABLE_SLCAN
+    static SLCAN::CANIface slcan_interface;
+#endif
+
     AP_SerialManager serial_manager;
 
 #if AP_STATS_ENABLED
