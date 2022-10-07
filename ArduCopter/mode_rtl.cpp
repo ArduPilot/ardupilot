@@ -546,7 +546,10 @@ int32_t ModeRTL::wp_bearing() const
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeRTL::use_pilot_yaw(void) const
 {
-    return (copter.g2.rtl_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool allow_yaw_option = (copter.g2.rtl_options.get() & uint32_t(Options::IgnorePilotYaw)) == 0;
+    const bool land_repositioning = g.land_repositioning && (_state == SubMode::FINAL_DESCENT);
+    const bool final_landing = _state == SubMode::LAND;
+    return allow_yaw_option || land_repositioning || final_landing;
 }
 
 #endif
