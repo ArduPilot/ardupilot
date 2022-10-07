@@ -139,9 +139,9 @@ uint32_t flash_func_sector_size(uint32_t sector)
     return stm32_flash_getpagesize(flash_base_page+sector);
 }
 
-bool flash_func_erase_sector(uint32_t sector)
+bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 {
-    if (!stm32_flash_ispageerased(flash_base_page+sector)) {
+    if (force_erase || !stm32_flash_ispageerased(flash_base_page+sector)) {
         return stm32_flash_erasepage(flash_base_page+sector);
     }
     return true;
