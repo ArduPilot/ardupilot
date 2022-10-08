@@ -86,6 +86,7 @@ public:
         OPTION_MAVLINK_NO_FORWARD = (1U<<10), // don't forward MAVLink data to or from this device
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
         OPTION_NOSTREAMOVERRIDE   = (1U<<12), // don't allow GCS to override streamrates
+        OPTION_NOMAVFTPCAPABILITY = (1U<<13), // don't set the MAVFtp capability for this serial
     };
 
     enum flow_control {
