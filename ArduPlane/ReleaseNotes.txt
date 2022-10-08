@@ -1,3 +1,97 @@
+Release 4.3.0 9th Oct 2022
+--------------------------
+
+The is the first 4.3.x stable release for plane. It is a major release
+with a lot of changes since 4.2.3.
+
+Changes since 4.3.0beta3:
+
+ - added 1M and 2M flash warning checks for for fmuv2, fmuv3 and Pixhawk1-1M firmwares
+ - added support for multi-byte i2c reads in scripting
+
+The change list from 4.2.3 stable is very long. Here are the main changes:
+
+ - fixed BRD_SAFETY_MASK for enabling outputs when safety on
+ - fixed persistence of mapping of CAN airspeed sensors to instances
+ - fixed precision of NMEA serial output function
+ - added report of "Engine Running" when using ICE
+ - fixed handling of defaults.parm files with lines over 100 chars
+ - fixed handling of defaults.parm files with no newline on last line
+ - fixed possible divide by zero when changing to GUIDED on quadplanes
+ - fixes for VideoTX, fixing buffer overrun and tramp handling
+ - fixed spurious error about sending RPM when RPM disabled
+ - fixed an EKF3 lane switch issue that can cause incorrect height with dual GPS
+ - fixed mission cmd to mission int initialisation error
+ - fixed mission jump tracking init on startup
+ - fixed OSD view roll/pitch error for tailsitters
+ - added SkystarsH7HD-bdshot
+ - fixed SkystarsH7HD VTX control
+ - reduced memory usage on MatekF405-CAN board
+ - disable SLCAN when armed to reduce CPU load
+ - enable CAN battery mon on CUAV V6X by default
+ - added arming check for Q_M_SPIN_MIN value too high
+ - fixed reporting of RPM from harmonic notch
+ - improved handling of airspeed errors and airspeed auto disable
+ - fixed SERVO_AUTO_TRIM for multiple outputs of same type
+ - fixed auto baud rate detection on SBF/GSOF/NOVA GPS
+ - increased max board name length for mavlink statustext to 23
+ - fixed incorrect disable of notches for non-throttle notch
+ - added notch filter slew limit to reduce notch errors
+ - added ARMING_OPTIONS to control display of pre-arm errors
+ - several OSD fixes for params, font and resolution
+ - support PWM type transmission for CAN PWM output
+ - support Currawong ECU as EFI backend
+ - support lua scripts for EFI backends
+ - implement SkyPower and HFE CAN EFI lua scripts
+ - improved speed of log download with dataflash block backends
+ - disabled all GPS drivers except uBlox and NMEA on Pixhawk1-1M to save flash
+ - disabled all GPS drivers except uBlox on MatekF405-bdshot and omnibusf4pro-bdshot
+ - fixed FFT indexing bug
+ - added USART2 for AIRLink
+ - allow reset to default airspeed using mission item DO_CHANGE_SPEED
+ - added new boards AtomRCF405, KakuteH7Mini-Nand, SkystarsH7HD
+ - added bi-directional dshot for several new boards
+ - EK3_GPS_VACC_MAX threshold to control when GPS altitude is used as alt source
+ - EKF ring buffer fix for slow sensor updates
+ - EKF3 source set change captured in replay logs
+ - numerous gimbal support improvements
+ - improved RemoteId support
+ - SecureBoot support with remote update of secure boot public keys
+ - crash_dump.bin file saved to SD Card on startup (includes details re cause of software failures)
+ - several new pre-arm checks (AHRS type, scripts, terrain)
+ - numerous scripting improvements
+ - fixed scripting restart leaking memory
+ - Benewake H30 radar support
+ - BMI270 IMU performance improvements
+ - Logging pause with auxiliary switch
+ - TeraRanger Neo rangefinder support
+ - support for both AMSL and ellipsoid height in most GPS drivers
+ - Custom controller support
+ - parameter defaults sent with param FTP and onboard logs
+ - Sim on Hardware allows simulator to run on autopilot
+ - added Q_LAND_ALTCHG parameter
+ - added climb before QRTL for safer QRTL from low altitudes
+ - added support for logging pre and post filtered FFT data
+ - support triple-notch harmonic notch filter
+ - support up to 32 actuators (with SERVO_32_ENABLE parameter)
+ - support EFI input over DroneCAN
+ - by default only run notch filter on first IMU
+ - added ESC_TLM_MAV_OFS parameter for mapping ESCs to MAVLink ESC telemetry
+ - added Q_NAVALT_MIN for quadplane takeoff
+ - added ICE redline governor
+ - added in-flight FFT notch tuning option
+ - added Sagetech ADSB support
+ - added INS_HNTCH_FM_RAT parameter for handling under-hover throttle
+ - improvements to filtering on ICM42xxx IMUs
+ - added option parameters to NAV_VTOL_LAND mission item for fixed wing approach
+
+Many thanks to the huge number of developers, testers and documenters
+who contributed to the 4.3.0 release!
+
+Special thanks to all the ArduPilot Parters who have worked closely
+with us on the 4.3.x development and testing, with many partners
+contributing suggestions or supporting particular features.
+
 Release 4.3.0beta3 7th Oct 2022
 -------------------------------
 
