@@ -665,6 +665,11 @@ private:
      */
     float get_scaled_wp_speed(float target_bearing_deg) const;
 
+    /*
+      setup scaling of roll and pitch angle P gains to match fixed wing gains
+     */
+    void setup_rp_fw_angle_gains(void);
+
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
