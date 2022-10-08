@@ -75,12 +75,11 @@ bool RCInput::new_input()
     if (!_init) {
         return false;
     }
+
     bool valid;
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        valid = _rcin_timestamp_last_signal != _last_read;
-        _last_read = _rcin_timestamp_last_signal;
-    }
+    WITH_SEMAPHORE(rcin_mutex);
+    valid = _rcin_timestamp_last_signal != _last_read;
+    _last_read = _rcin_timestamp_last_signal;
 
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (!_radio_init) {
@@ -107,11 +106,11 @@ uint16_t RCInput::read(uint8_t channel)
     if (!_init || (channel >= MIN(RC_INPUT_MAX_CHANNELS, _num_channels))) {
         return 0;
     }
+
     uint16_t v;
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        v = _rc_values[channel];
-    }
+    WITH_SEMAPHORE(rcin_mutex);
+    v = _rc_values[channel];
+
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio && channel == 0) {
         // hook to allow for update of radio on main thread, for mavlink sends
@@ -130,10 +129,10 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     if (len > RC_INPUT_MAX_CHANNELS) {
         len = RC_INPUT_MAX_CHANNELS;
     }
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        memcpy(periods, _rc_values, len*sizeof(periods[0]));
-    }
+
+    WITH_SEMAPHORE(rcin_mutex);
+    memcpy(periods, _rc_values, len*sizeof(periods[0]));
+
 #if HAL_RCINPUT_WITH_AP_RADIO
     if (radio) {
         // hook to allow for update of radio on main thread, for mavlink sends
@@ -214,18 +213,16 @@ void RCInput::_timer_tick(void)
 #endif
 
 #if HAL_WITH_IO_MCU
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        if (AP_BoardConfig::io_enabled() &&
-            iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
-            _rcin_timestamp_last_signal = last_iomcu_us;
-            _rcin_last_iomcu_ms = now;
+    WITH_SEMAPHORE(rcin_mutex);
+    if (AP_BoardConfig::io_enabled() &&
+        iomcu.check_rcinput(last_iomcu_us, _num_channels, _rc_values, RC_INPUT_MAX_CHANNELS)) {
+        _rcin_timestamp_last_signal = last_iomcu_us;
+        _rcin_last_iomcu_ms = now;
 #ifndef HAL_NO_UARTDRIVER
-            rc_protocol = iomcu.get_rc_protocol();
-            _rssi = iomcu.get_RSSI();
-            source = RCSource::IOMCU;
+        rc_protocol = iomcu.get_rc_protocol();
+        _rssi = iomcu.get_RSSI();
+        source = RCSource::IOMCU;
 #endif
-        }
     }
 #endif
 
@@ -247,11 +244,9 @@ void RCInput::_timer_tick(void)
 bool RCInput::rc_bind(int dsmMode)
 {
 #if HAL_WITH_IO_MCU
-    {
-        WITH_SEMAPHORE(rcin_mutex);
-        if (AP_BoardConfig::io_enabled()) {
-            iomcu.bind_dsm(dsmMode);
-        }
+    WITH_SEMAPHORE(rcin_mutex);
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.bind_dsm(dsmMode);
     }
 #endif
 
