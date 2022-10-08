@@ -6260,6 +6260,10 @@ uint64_t GCS_MAVLINK::capabilities() const
     if (!AP_BoardConfig::ftp_disabled()){  //if ftp disable board option is not set
         ret |= MAV_PROTOCOL_CAPABILITY_FTP;
     }
+
+    if (uartstate->option_enabled(AP_HAL::UARTDriver::OPTION_NOMAVFTPCAPABILITY)) { //unset ftp for this serial
+        ret &=~ MAV_PROTOCOL_CAPABILITY_FTP;
+    }
  
     return ret;
 }
