@@ -308,13 +308,6 @@ const AP_Param::GroupInfo AP_Airspeed::var_info[] = {
     AP_GROUPEND
 };
 
-/*
-  this scaling factor converts from the old system where we used a
-  0 to 4095 raw ADC value for 0-5V to the new system which gets the
-  voltage in volts directly from the ADC driver
- */
-#define SCALING_OLD_CALIBRATION 819 // 4095/5
-
 AP_Airspeed::AP_Airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -324,36 +317,6 @@ AP_Airspeed::AP_Airspeed()
     }
     _singleton = this;
 }
-
-// macro for use by HAL_INS_PROBE_LIST
-#define GET_I2C_DEVICE(bus, address) hal.i2c_mgr->get_device(bus, address)
-
-bool AP_Airspeed::add_backend(AP_Airspeed_Backend *backend)
-{
-    if (!backend) {
-        return false;
-    }
-    if (num_sensors >= AIRSPEED_MAX_SENSORS) {
-        AP_HAL::panic("Too many airspeed drivers");
-    }
-    const uint8_t i = num_sensors;
-    sensor[num_sensors++] = backend;
-    if (!sensor[i]->init()) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i+1);
-        delete sensor[i];
-        sensor[i] = nullptr;
-    }
-    return true;
-}
-
-/*
-  macro to add a backend with check for too many sensors
-  We don't try to start more than the maximum allowed
- */
-#define ADD_BACKEND(backend) \
-    do { add_backend(backend);     \
-    if (num_sensors == AIRSPEED_MAX_SENSORS) { return; } \
-    } while (0)
 
 void AP_Airspeed::init()
 {   
@@ -380,10 +343,6 @@ void AP_Airspeed::init()
     }
 #endif
 
-#ifdef HAL_AIRSPEED_PROBE_LIST
-    // load sensors via a list from hwdef.dat
-    HAL_AIRSPEED_PROBE_LIST;
-#else
     // look for sensors based on type parameters
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
 #if AP_AIRSPEED_AUTOCAL_ENABLE
@@ -503,7 +462,6 @@ void AP_Airspeed::init()
         }
     }
 #endif // AP_AIRSPEED_UAVCAN_ENABLED
-#endif // HAL_AIRSPEED_PROBE_LIST
 
     // set DEVID to zero for any sensors not found. This allows backends to order
     // based on previous value of DEVID. This allows for swapping out sensors
