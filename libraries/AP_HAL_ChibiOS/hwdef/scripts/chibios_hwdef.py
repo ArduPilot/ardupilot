@@ -108,7 +108,6 @@ build_flags = []
 imu_list = []
 compass_list = []
 baro_list = []
-airspeed_list = []
 
 all_lines = []
 
@@ -1580,37 +1579,6 @@ def write_BARO_config(f):
     if len(devlist) > 0:
         f.write('#define HAL_BARO_PROBE_LIST %s\n\n' % ';'.join(devlist))
 
-def write_AIRSPEED_config(f):
-    '''write airspeed config defines'''
-    global airspeed_list
-    devlist = []
-    seen = set()
-    idx = 0
-    for dev in airspeed_list:
-        if seen_str(dev) in seen:
-            error("Duplicate AIRSPEED: %s" % seen_str(dev))
-        seen.add(seen_str(dev))
-        driver = dev[0]
-        wrapper = ''
-        a = driver.split(':')
-        driver = a[0]
-        for i in range(1, len(dev)):
-            if dev[i].startswith("SPI:"):
-                dev[i] = parse_spi_device(dev[i])
-            elif dev[i].startswith("I2C:"):
-                (wrapper, dev[i]) = parse_i2c_device(dev[i])
-                if dev[i].startswith('hal.i2c_mgr'):
-                    dev[i] = 'std::move(%s)' % dev[i]
-        n = len(devlist)+1
-        devlist.append('HAL_AIRSPEED_PROBE%u' % n)
-        args = ['*this', str(idx)] + dev[1:]
-        f.write(
-            '#define HAL_AIRSPEED_PROBE%u %s ADD_BACKEND(AP_Airspeed_%s::probe(%s))\n'
-            % (n, wrapper, driver, ','.join(args)))
-        idx += 1
-    if len(devlist) > 0:
-        f.write('#define HAL_AIRSPEED_PROBE_LIST %s\n\n' % ';'.join(devlist))
-        
 def write_board_validate_macro(f):
     '''write board validation macro'''
     global config
@@ -2351,7 +2319,6 @@ def write_hwdef_header(outfilename):
     write_IMU_config(f)
     write_MAG_config(f)
     write_BARO_config(f)
-    write_AIRSPEED_config(f)
     write_board_validate_macro(f)
     add_apperiph_defaults(f)
     add_bootloader_defaults(f)
@@ -2639,7 +2606,7 @@ def valid_type(ptype, label):
 
 def process_line(line):
     '''process one line of pin definition file'''
-    global allpins, imu_list, compass_list, baro_list, airspeed_list
+    global allpins, imu_list, compass_list, baro_list
     global mcu_type, mcu_series, default_gpio
     all_lines.append(line)
     a = shlex.split(line, posix=False)
@@ -2721,7 +2688,7 @@ def process_line(line):
     elif a[0] == 'BARO':
         baro_list.append(a[1:])
     elif a[0] == 'AIRSPEED':
-        airspeed_list.append(a[1:])
+        error("AIRSPEED no longer supported")
     elif a[0] == 'ROMFS':
         romfs_add(a[1], a[2])
     elif a[0] == 'ROMFS_WILDCARD':
@@ -2757,7 +2724,7 @@ def process_line(line):
             if u == 'BARO':
                 baro_list = []
             if u == 'AIRSPEED':
-                airspeed_list = []
+                error("AIRSPEED no longer supported")
     elif a[0] == 'env':
         print("Adding environment %s" % ' '.join(a[1:]))
         if len(a[1:]) < 2:
