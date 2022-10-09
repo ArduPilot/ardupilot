@@ -230,25 +230,6 @@ void AP_Airspeed::init()
         return;
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
-    // cope with upgrade from old system
-    if (param[0].pin.load() && param[0].pin.get() != 65) {
-        param[0].type.set_default(TYPE_ANALOG);
-    }
-
-    // Switch to dedicated WIND_MAX param
-    // PARAMETER_CONVERSION - Added: Oct-2020
-    const float ahrs_max_wind = AP::ahrs().get_max_wind();
-    if (!_wind_max.configured() && is_positive(ahrs_max_wind)) {
-        _wind_max.set_and_save(ahrs_max_wind);
-
-        // Turn off _options to override the new default
-        if (!_options.configured()) {
-            _options.set_and_save(0);
-        }
-    }
-#endif
-
 #ifdef HAL_AIRSPEED_PROBE_LIST
     // load sensors via a list from hwdef.dat
     HAL_AIRSPEED_PROBE_LIST;
