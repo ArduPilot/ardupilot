@@ -224,7 +224,7 @@ void Copter::yaw_imbalance_check()
         const uint32_t now = millis();
         if (now - last_yaw_warn_ms > YAW_IMBALANCE_WARN_MS) {
             last_yaw_warn_ms = now;
-            gcs().send_text(MAV_SEVERITY_INFO, "Yaw Imbalance %0.0f%%", I *100);
+            gcs().send_text(MAV_SEVERITY_WARNING, "Yaw Imbalance %0.0f%%", I *100);
         }
     }
 }
