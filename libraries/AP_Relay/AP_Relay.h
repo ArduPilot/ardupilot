@@ -32,6 +32,11 @@ public:
     // de-activate the relay
     void        off(uint8_t instance) { set(instance, false); }
 
+    // get state of relay
+    uint8_t     get(uint8_t instance) const {
+        return instance < AP_RELAY_NUM_RELAYS ? _pin_states & (1U<<instance) : 0;
+    }
+    
     // see if the relay is enabled
     bool        enabled(uint8_t instance) { return instance < AP_RELAY_NUM_RELAYS && _pin[instance] != -1; }
 
