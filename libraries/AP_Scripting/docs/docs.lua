@@ -1649,6 +1649,11 @@ function relay:toggle(instance) end
 ---@return boolean
 function relay:enabled(instance) end
 
+-- return state of a relay
+---@param instance integer
+---@return uint8_t
+function relay:get(instance) end
+
 -- desc
 ---@param instance integer
 function relay:off(instance) end
