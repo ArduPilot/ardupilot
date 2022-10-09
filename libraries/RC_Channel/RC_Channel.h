@@ -559,6 +559,9 @@ public:
     // returns true if we have had a direct detach RC reciever, does not include overrides
     bool has_had_rc_receiver() const { return _has_had_rc_receiver; }
 
+    // returns true if we have had an override on any channel
+    bool has_had_rc_override() const { return _has_had_override; }
+
     /*
       get the RC input PWM value given a channel number.  Note that
       channel numbers start at 1, as this API is designed for use in
@@ -604,6 +607,7 @@ protected:
 
     void new_override_received() {
         has_new_overrides = true;
+        _has_had_override = true;
     }
 
 private:
@@ -614,6 +618,7 @@ private:
     uint32_t last_update_ms;
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC reciever, does not include overrides
+    bool _has_had_override; // true if we have had an override on any channel
 
     AP_Float _override_timeout;
     AP_Int32  _options;
