@@ -43,9 +43,6 @@ void SIMState::_sitl_setup(const char *home_str)
     _home_str = home_str;
 
     printf("Starting SITL input\n");
-
-    // find the barometer object if it exists
-    _barometer = AP_Baro::get_singleton();
 }
 
 
@@ -234,6 +231,9 @@ void SIMState::_simulator_servos(struct sitl_input &input)
     // output at chosen framerate
     uint32_t now = AP_HAL::micros();
     // last_update_usec = now;
+
+    // find the barometer object if it exists
+    const auto *_barometer = AP_Baro::get_singleton();
 
     float altitude = _barometer?_barometer->get_altitude():0;
     float wind_speed = 0;
