@@ -34,7 +34,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.3 1
     // @Increment: 0.01
     // @User: Advanced
-    AP_SUBGROUPINFO(_p_hs, "HS_", 2, AC_Autorotation, AC_P),
+    AP_SUBGROUPINFO(_p_hs, "HS_", 2, AC_Autorotation, AC_P_Basic),
 
     // @Param: HS_SET_PT
     // @DisplayName: Target Head Speed
@@ -105,7 +105,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @Range: 0.1 6.0
     // @Increment: 0.1
     // @User: Advanced
-    AP_SUBGROUPINFO(_p_fw_vel, "FW_V_", 10, AC_Autorotation, AC_P),
+    AP_SUBGROUPINFO(_p_fw_vel, "FW_V_", 10, AC_Autorotation, AC_P_Basic),
 
     // @Param: FW_V_FF
     // @DisplayName: Velocity (horizontal) feed forward

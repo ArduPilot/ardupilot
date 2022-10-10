@@ -7,7 +7,7 @@
 #include <AP_Motors/AP_MotorsHeli_RSC.h>
 #include <Filter/Filter.h>
 #include <Filter/LowPassFilter.h>
-#include <AC_PID/AC_P.h>
+#include <AC_PID/AC_P_Basic.h>
 
 
 class AC_Autorotation
@@ -74,8 +74,8 @@ private:
 
     //--------Parameter Values--------
     AP_Int8  _param_enable;
-    AC_P _p_hs;
-    AC_P _p_fw_vel;
+    AC_P_Basic _p_hs;
+    AC_P_Basic _p_fw_vel;
     AP_Int16 _param_head_speed_set_point;
     AP_Int16 _param_target_speed;
     AP_Float _param_col_entry_cutoff_freq;
