@@ -4,25 +4,21 @@
 #include <AP_Math/AP_Math.h>
 #include "AC_P.h"
 
-const AP_Param::GroupInfo AC_P::var_info[] = {
-    // @Param: P
-    // @DisplayName: PI Proportional Gain
-    // @Description: P Gain which produces an output value that is proportional to the current error value
-    AP_GROUPINFO("P",    0, AC_P, _kp, 0),
-    AP_GROUPEND
-};
-
-float AC_P::get_p(float error) const
+AC_P::AC_P(const float &initial_p, const AP_Float& accel_max_cds, const float sqrt_accel_min, const float sqrt_accel_max, const float dt) :
+    AC_P_Basic(initial_p),
+    _accel_max_cds(accel_max_cds),
+    _sqrt_accel_min(sqrt_accel_min),
+    _sqrt_accel_max(sqrt_accel_max),
+    _dt(dt)
 {
-    return (float)error * _kp;
+
 }
 
-void AC_P::load_gains()
+float AC_P::update(float error) const
 {
-    _kp.load();
-}
-
-void AC_P::save_gains()
-{
-    _kp.save();
+    const float accel_limit = get_accel_max_radss();
+    if (!_disable_sqrt_control && !is_zero(accel_limit)) {
+        return sqrt_controller(error, kP(), constrain_float(accel_limit * 0.5, _sqrt_accel_min, _sqrt_accel_max), _dt);
+    }
+    return constrain_float(kP() * error, -accel_limit, accel_limit);
 }
