@@ -50,22 +50,7 @@ public:
     AC_AttitudeControl( AP_AHRS_View &ahrs,
                         const AP_Vehicle::MultiCopter &aparm,
                         AP_Motors& motors,
-                        float dt) :
-        _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
-        _dt(dt),
-        _angle_boost(0),
-        _use_sqrt_controller(true),
-        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
-        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
-        _ahrs(ahrs),
-        _aparm(aparm),
-        _motors(motors)
-        {
-            _singleton = this;
-            AP_Param::setup_object_defaults(this, var_info);
-        }
+                        float dt);
 
     static AC_AttitudeControl *get_singleton(void) {
         return _singleton;
@@ -202,7 +187,11 @@ public:
 
     // Specifies whether the attitude controller should use the square root controller in the attitude correction.
     // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
-    void use_sqrt_controller(bool use_sqrt_cont) { _use_sqrt_controller = use_sqrt_cont; }
+    void use_sqrt_controller(bool use_sqrt_cont) {
+        _p_angle_roll.set_disable_sqrt_controller(!use_sqrt_cont);
+        _p_angle_pitch.set_disable_sqrt_controller(!use_sqrt_cont);
+        _p_angle_yaw.set_disable_sqrt_controller(!use_sqrt_cont);
+    }
 
     // Return 321-intrinsic euler angles in centidegrees representing the rotation from NED earth frame to the
     // attitude controller's target attitude.
@@ -474,10 +463,6 @@ protected:
     // This represents the throttle increase applied for tilt compensation.
     // Used only for logging.
     float               _angle_boost;
-
-    // Specifies whether the attitude controller should use the square root controller in the attitude correction.
-    // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
-    bool                _use_sqrt_controller;
 
     // Filtered Alt_Hold lean angle max - used to limit lean angle when throttle is saturated using Alt_Hold
     float               _althold_lean_angle_max = 0.0f;

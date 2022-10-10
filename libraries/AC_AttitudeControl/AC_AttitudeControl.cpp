@@ -151,6 +151,25 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     AP_GROUPEND
 };
 
+AC_AttitudeControl::AC_AttitudeControl( AP_AHRS_View &ahrs,
+                    const AP_Vehicle::MultiCopter &aparm,
+                    AP_Motors& motors,
+                    float dt) :
+        _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P, _accel_roll_max, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS, dt),
+        _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P, _accel_pitch_max, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS, dt),
+        _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P, _accel_yaw_max, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS, dt),
+        _dt(dt),
+        _angle_boost(0),
+        _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
+        _ahrs(ahrs),
+        _aparm(aparm),
+        _motors(motors)
+{
+    _singleton = this;
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // get the slew yaw rate limit in deg/s
 float AC_AttitudeControl::get_slew_yaw_max_degs() const
 {
@@ -986,28 +1005,7 @@ bool AC_AttitudeControl::ang_vel_to_euler_rate(const Vector3f& euler_rad, const 
 // Update rate_target_ang_vel using attitude_error_rot_vec_rad
 Vector3f AC_AttitudeControl::update_ang_vel_target_from_att_error(const Vector3f &attitude_error_rot_vec_rad)
 {
-    Vector3f rate_target_ang_vel;
-    // Compute the roll angular velocity demand from the roll angle error
-    if (_use_sqrt_controller && !is_zero(get_accel_roll_max_radss())) {
-        rate_target_ang_vel.x = sqrt_controller(attitude_error_rot_vec_rad.x, _p_angle_roll.kP(), constrain_float(get_accel_roll_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
-    } else {
-        rate_target_ang_vel.x = _p_angle_roll.kP() * attitude_error_rot_vec_rad.x;
-    }
-
-    // Compute the pitch angular velocity demand from the pitch angle error
-    if (_use_sqrt_controller && !is_zero(get_accel_pitch_max_radss())) {
-        rate_target_ang_vel.y = sqrt_controller(attitude_error_rot_vec_rad.y, _p_angle_pitch.kP(), constrain_float(get_accel_pitch_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS), _dt);
-    } else {
-        rate_target_ang_vel.y = _p_angle_pitch.kP() * attitude_error_rot_vec_rad.y;
-    }
-
-    // Compute the yaw angular velocity demand from the yaw angle error
-    if (_use_sqrt_controller && !is_zero(get_accel_yaw_max_radss())) {
-        rate_target_ang_vel.z = sqrt_controller(attitude_error_rot_vec_rad.z, _p_angle_yaw.kP(), constrain_float(get_accel_yaw_max_radss() / 2.0f, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS, AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS), _dt);
-    } else {
-        rate_target_ang_vel.z = _p_angle_yaw.kP() * attitude_error_rot_vec_rad.z;
-    }
-    return rate_target_ang_vel;
+    return Vector3f {_p_angle_roll.update(attitude_error_rot_vec_rad.x), _p_angle_pitch.update(attitude_error_rot_vec_rad.y), _p_angle_yaw.update(attitude_error_rot_vec_rad.z)};
 }
 
 // Enable or disable body-frame feed forward
