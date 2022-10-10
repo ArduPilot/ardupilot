@@ -6107,6 +6107,7 @@ class AutoTest(ABC):
                                 maximum,
                                 current_value_getter,
                                 validator=None,
+                                value_averager=None,
                                 timeout=30,
                                 print_diagnostics_as_target_not_range=False,
                                 **kwargs):
@@ -6165,28 +6166,45 @@ class AutoTest(ABC):
                          achieved_duration_bit)
                     )
                 else:
-                    self.progress(
-                        "%s=%0.2f (%s between %s and %s)%s" %
-                        (value_name,
-                         last_value,
-                         want_or_got,
-                         str(minimum),
-                         str(maximum),
-                         achieved_duration_bit)
-                    )
+                    if type(last_value) is float:
+                        self.progress(
+                            "%s=%0.2f (%s between %s and %s)%s" %
+                            (value_name,
+                             last_value,
+                             want_or_got,
+                             str(minimum),
+                             str(maximum),
+                             achieved_duration_bit)
+                        )
+                    else:
+                        self.progress(
+                            "%s=%s (%s between %s and %s)%s" %
+                            (value_name,
+                             last_value,
+                             want_or_got,
+                             str(minimum),
+                             str(maximum),
+                             achieved_duration_bit)
+                        )
                 last_print_time = self.get_sim_time_cached()
             if is_value_valid:
-                sum_of_achieved_values += last_value
-                count_of_achieved_values += 1.0
+                if value_averager is not None:
+                    average = value_averager.add_value(last_value)
+                else:
+                    sum_of_achieved_values += last_value
+                    count_of_achieved_values += 1.0
+                    average = sum_of_achieved_values / count_of_achieved_values
                 if achieving_duration_start is None:
                     achieving_duration_start = self.get_sim_time_cached()
                 if self.get_sim_time_cached() - achieving_duration_start >= minimum_duration:
-                    self.progress("Attained %s=%f" % (value_name, sum_of_achieved_values / count_of_achieved_values))
+                    self.progress("Attained %s=%s" % (value_name, average))
                     return True
             else:
                 achieving_duration_start = None
                 sum_of_achieved_values = 0.0
                 count_of_achieved_values = 0
+                if value_averager is not None:
+                    value_averager.reset()
         if print_diagnostics_as_target_not_range:
             raise AutoTestTimeoutException(
                 "Failed to attain %s want %s, reached %s" %
