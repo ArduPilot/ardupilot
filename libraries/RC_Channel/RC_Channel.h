@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/Bitmask.h>
 
 #ifndef AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 #define AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED 1
@@ -268,6 +269,9 @@ public:
         SCRIPTING_6 =        305,
         SCRIPTING_7 =        306,
         SCRIPTING_8 =        307,
+
+        // this must be higher than any aux function above
+        AUX_FUNCTION_MAX =   308,
     };
     typedef enum AUX_FUNC aux_func_t;
 
@@ -592,6 +596,11 @@ public:
     void calibrating(bool b) { gcs_is_calibrating = b; }
     bool calibrating() { return gcs_is_calibrating; }
 
+#if AP_SCRIPTING_ENABLED
+    // get last aux cached value for scripting. Returns false if never set, otherwise 0,1,2
+    bool get_aux_cached(RC_Channel::aux_func_t aux_fn, uint8_t &pos);
+#endif
+    
 protected:
 
     enum class Option {
@@ -635,6 +644,15 @@ private:
 
     // true if GCS is performing a RC calibration
     bool gcs_is_calibrating;
+
+#if AP_SCRIPTING_ENABLED
+    // bitmask of last aux function value, 2 bits per function
+    // value 0 means never set, otherwise level+1
+    HAL_Semaphore aux_cache_sem;
+    Bitmask<unsigned(RC_Channel::AUX_FUNC::AUX_FUNCTION_MAX)*2> aux_cached;
+
+    void set_aux_cached(RC_Channel::aux_func_t aux_fn, RC_Channel::AuxSwitchPos pos);
+#endif
 };
 
 RC_Channels &rc();
