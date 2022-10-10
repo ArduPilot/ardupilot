@@ -20,7 +20,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
-#include <AC_PID/AC_P.h>
+#include <AC_PID/AC_P_Basic.h>
 #include <AP_RTC/JitterCorrection.h>
 
 class AP_Follow
@@ -70,7 +70,7 @@ public:
     bool get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_ofs, Vector3f &vel_ned);
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
-    const AC_P& get_pos_p() const { return _p_pos; }
+    const AC_P_Basic& get_pos_p() const { return _p_pos; }
 
     //
     // yaw/heading related methods
@@ -127,7 +127,7 @@ private:
     AP_Vector3f _offset;            // offset from lead vehicle in meters
     AP_Int8     _yaw_behave;        // following vehicle's yaw/heading behaviour (see YAW_BEHAVE enum)
     AP_Int8     _alt_type;          // altitude source for follow mode
-    AC_P        _p_pos;             // position error P controller
+    AC_P_Basic  _p_pos;             // position error P controller
 
     // local variables
     bool _healthy;                  // true if we are receiving mavlink messages (regardless of whether they have target position info within them)

@@ -118,7 +118,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0.01 1.00
     // @Increment: 0.01
     // @User: Standard
-    AP_SUBGROUPINFO(_p_pos, "_POS_", 9, AP_Follow, AC_P),
+    AP_SUBGROUPINFO(_p_pos, "_POS_", 9, AP_Follow, AC_P_Basic),
 
 #if !(APM_BUILD_TYPE(APM_BUILD_Rover)) 
     // @Param: _ALT_TYPE
