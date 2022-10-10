@@ -1017,6 +1017,9 @@ void RC_Channel::do_aux_function_fft_notch_tune(const AuxSwitchPos ch_flag)
 
 bool RC_Channel::run_aux_function(aux_func_t ch_option, AuxSwitchPos pos, AuxFuncTriggerSource source)
 {
+#if AP_SCRIPTING_ENABLED
+    rc().set_aux_cached(ch_option, pos);
+#endif
     const bool ret = do_aux_function(ch_option, pos);
 
     // @LoggerMessage: AUXF
