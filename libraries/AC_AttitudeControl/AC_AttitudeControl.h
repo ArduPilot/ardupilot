@@ -376,6 +376,19 @@ public:
     // Sets the yaw rate shaping time constant
     void set_yaw_rate_tc(float input_tc) { _rate_y_tc = input_tc; }
 
+    // setup a one loop angle P scale multiplier. This replaces any previous scale applied
+    // so should only be used when only one source of scaling is needed
+    void set_angle_P_scale(const Vector3f &angle_P_scale) { _angle_P_scale = angle_P_scale; }
+
+    // setup a one loop angle P scale multiplier, multiplying by any
+    // previously applied scale from this loop. This allows for more
+    // than one type of scale factor to be applied for different
+    // purposes
+    void set_angle_P_scale_mult(const Vector3f &angle_P_scale) { _angle_P_scale *= angle_P_scale; }
+
+    // get the value of the angle P scale that was used in the last loop, for logging
+    const Vector3f &get_angle_P_scale_logging(void) const { return _angle_P_scale_used; }
+    
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -494,6 +507,12 @@ protected:
     // rate controller input smoothing time constant
     float               _rate_rp_tc;
     float               _rate_y_tc;
+
+    // angle P scaling vector for roll, pitch, yaw
+    Vector3f            _angle_P_scale{1,1,1};
+
+    // angle scale used for last loop, used for logging
+    Vector3f            _angle_P_scale_used;
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
