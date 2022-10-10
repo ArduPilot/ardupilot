@@ -160,6 +160,11 @@ define HAL_SPRAYER_ENABLED 0
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_features.inc
 
+# make sure MSP HD Goggle support remains
+undef HAL_WITH_MSP_DISPLAYPORT
+define HAL_WITH_MSP_DISPLAYPORT 1
+undef HAL_MSP_ENABLED
+define HAL_MSP_ENABLED 1
 
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
