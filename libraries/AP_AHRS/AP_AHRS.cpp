@@ -779,6 +779,7 @@ Vector3f AP_AHRS::wind_estimate(void) const
         if (_sitl) {
             const auto &fdm = _sitl->state;
             wind = fdm.wind_ef;
+            wind.rotate_xy(radians(180));
         }
         break;
 #endif
