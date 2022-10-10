@@ -245,7 +245,7 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
     // @Range: 1.000 10.000
     // @Increment: 0.1
     // @User: Standard
-    AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 6, AR_AttitudeControl, AC_P),
+    AP_SUBGROUPINFO(_steer_angle_p, "_STR_ANG_", 6, AR_AttitudeControl, AC_P_Basic),
 
     // @Param: _STR_ACC_MAX
     // @DisplayName: Steering control angular acceleration maximum

@@ -2,7 +2,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AC_PID/AC_PID.h>
-#include <AC_PID/AC_P.h>
+#include <AC_PID/AC_P_Basic.h>
 
 class AR_AttitudeControl {
 public:
@@ -78,7 +78,7 @@ public:
     float get_sail_out_from_heel(float desired_heel, float dt);
 
     // low level control accessors for reporting and logging
-    AC_P& get_steering_angle_p() { return _steer_angle_p; }
+    AC_P_Basic& get_steering_angle_p() { return _steer_angle_p; }
     AC_PID& get_steering_rate_pid() { return _steer_rate_pid; }
     AC_PID& get_pitch_to_throttle_pid() { return _pitch_to_throttle_pid; }
     AC_PID& get_sailboat_heel_pid() { return _sailboat_heel_pid; }
@@ -117,7 +117,7 @@ public:
 private:
 
     // parameters
-    AC_P     _steer_angle_p;        // steering angle controller
+    AC_P_Basic _steer_angle_p;        // steering angle controller
     AC_PID   _steer_rate_pid;       // steering rate controller
     AC_PID   _throttle_speed_pid;   // throttle speed controller
     AC_PID   _pitch_to_throttle_pid;// balancebot pitch controller
