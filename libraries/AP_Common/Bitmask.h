@@ -81,6 +81,15 @@ public:
         bits[word] &= ~(1U << ofs);
     }
 
+    // set given bitnumber to on/off
+    void setonoff(uint16_t bit, bool onoff) {
+        if (onoff) {
+            set(bit);
+        } else {
+            clear(bit);
+        }
+    }
+
     // clear all bits
     void clearall(void) {
         memset(bits, 0, numwords*sizeof(bits[0]));
