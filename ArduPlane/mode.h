@@ -224,9 +224,14 @@ public:
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
+    void set_radius_and_direction(const float radius, const bool direction_is_ccw);
+
 protected:
 
     bool _enter() override;
+
+private:
+    float active_radius_m;
 };
 
 class ModeCircle: public Mode

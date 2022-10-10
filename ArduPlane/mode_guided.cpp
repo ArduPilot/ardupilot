@@ -20,6 +20,9 @@ bool ModeGuided::_enter()
     }
 #endif
 
+    // set guided radius to WP_LOITER_RAD on mode change.
+    active_radius_m = 0;
+
     plane.set_guided_WP(loc);
     return true;
 }
@@ -39,8 +42,7 @@ void ModeGuided::update()
 
 void ModeGuided::navigate()
 {
-    // Zero indicates to use WP_LOITER_RAD
-    plane.update_loiter(0);
+    plane.update_loiter(active_radius_m);
 }
 
 bool ModeGuided::handle_guided_request(Location target_loc)
@@ -54,4 +56,11 @@ bool ModeGuided::handle_guided_request(Location target_loc)
     plane.set_guided_WP(target_loc);
 
     return true;
+}
+
+void ModeGuided::set_radius_and_direction(const float radius, const bool direction_is_ccw)
+{
+    // constrain to (uint16_t) range for update_loiter()
+    active_radius_m = constrain_int32(fabsf(radius), 0, UINT16_MAX);
+    plane.loiter.direction = direction_is_ccw ? -1 : 1;
 }
