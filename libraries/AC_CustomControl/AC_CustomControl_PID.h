@@ -3,7 +3,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
 #include <AC_PID/AC_PID.h>
-#include <AC_PID/AC_P.h>
+#include <AC_PID/AC_P_Basic.h>
 
 #include "AC_CustomControl_Backend.h"
 
@@ -28,9 +28,9 @@ protected:
     // put controller related variable here
 
     // angle P controller  objects
-    AC_P                _p_angle_roll2;
-    AC_P                _p_angle_pitch2;
-    AC_P                _p_angle_yaw2;
+    AC_P_Basic                _p_angle_roll2;
+    AC_P_Basic                _p_angle_pitch2;
+    AC_P_Basic                _p_angle_yaw2;
 
 	// rate PID controller  objects
     AC_PID _pid_atti_rate_roll;

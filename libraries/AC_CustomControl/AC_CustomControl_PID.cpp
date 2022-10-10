@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 12.000
     // @User: Standard
-    AP_SUBGROUPINFO(_p_angle_roll2, "ANG_RLL_", 1, AC_CustomControl_PID, AC_P),
+    AP_SUBGROUPINFO(_p_angle_roll2, "ANG_RLL_", 1, AC_CustomControl_PID, AC_P_Basic),
 
     // @Param: ANG_PIT_P
     // @DisplayName: Pitch axis angle controller P gain
@@ -18,7 +18,7 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 12.000
     // @User: Standard
-    AP_SUBGROUPINFO(_p_angle_pitch2, "ANG_PIT_", 2, AC_CustomControl_PID, AC_P),
+    AP_SUBGROUPINFO(_p_angle_pitch2, "ANG_PIT_", 2, AC_CustomControl_PID, AC_P_Basic),
 
     // @Param: ANG_YAW_P
     // @DisplayName: Yaw axis angle controller P gain
@@ -26,7 +26,7 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Range: 3.000 12.000
     // @Range{Sub}: 0.0 6.000
     // @User: Standard    
-    AP_SUBGROUPINFO(_p_angle_yaw2, "ANG_YAW_", 3, AC_CustomControl_PID, AC_P),
+    AP_SUBGROUPINFO(_p_angle_yaw2, "ANG_YAW_", 3, AC_CustomControl_PID, AC_P_Basic),
 
 
     // @Param: RAT_RLL_P
