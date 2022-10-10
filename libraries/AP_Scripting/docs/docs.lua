@@ -1296,6 +1296,11 @@ function rc:get_channel(chan_num) end
 ---@return boolean
 function rc:has_valid_input() end
 
+-- return cached level of aux function
+---@param aux_fn integer
+---@return integer|nil
+function rc:get_aux_cached(aux_fn) end
+
 -- desc
 ---@param aux_fun integer
 ---@param ch_flag integer
