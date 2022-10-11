@@ -419,12 +419,29 @@ void AP_ESC_Telem::update_telem_data(const uint8_t esc_index, const AP_ESC_Telem
 
     _have_data = true;
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // if it's ever been set externally ignore normal "internal" updates
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE_EXTERNAL) {
+        _temperature_is_external[esc_index] = true;
+        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
+    } else if ((data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) && !_temperature_is_external[esc_index]) {
+        _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE_EXTERNAL) {
+        _motor_temp_is_external[esc_index] = true;
+        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
+    } else if ((data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) && !_motor_temp_is_external[esc_index]) {
+        _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
+    }
+#else
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) {
         _telem_data[esc_index].temperature_cdeg = new_data.temperature_cdeg;
     }
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) {
         _telem_data[esc_index].motor_temp_cdeg = new_data.motor_temp_cdeg;
     }
+#endif
+
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE) {
         _telem_data[esc_index].voltage = new_data.voltage;
     }
