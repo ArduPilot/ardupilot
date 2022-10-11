@@ -14,27 +14,11 @@
  */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
-#ifdef AP_TEMPERATURE_SENSOR_ENABLED
-    #define AP_TEMPERATURE_SENSOR_ENABLED_BY_USER AP_TEMPERATURE_SENSOR_ENABLED
-#else
-    #define AP_TEMPERATURE_SENSOR_ENABLED_BY_USER 0
-    #define AP_TEMPERATURE_SENSOR_ENABLED (!HAL_MINIMIZE_FEATURES && BOARD_FLASH_SIZE > 1024)
-#endif
+#include "AP_TemperatureSensor_config.h"
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
+
 #include "AP_TemperatureSensor_Params.h"
-
-// maximum number of Temperature Sensors
-#ifndef AP_TEMPERATURE_SENSOR_MAX_INSTANCES
-#define AP_TEMPERATURE_SENSOR_MAX_INSTANCES             3
-#endif
-
-// first sensor is always the primary sensor
-#ifndef AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE
-#define AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE          0
-#endif
 
 // declare backend class
 class AP_TemperatureSensor_Backend;
@@ -56,30 +40,6 @@ public:
 
     static AP_TemperatureSensor *get_singleton() { return _singleton; }
 
-    // temperature sensor types
-    enum class Type : uint8_t {
-        NONE                        = 0,
-        TSYS01                      = 1,
-        MCP9600                     = 2,
-    };
-
-    // option to map to another system component
-    enum class Source : uint8_t {
-        None                        = 0,
-        ESC                         = 1,
-        Motor                       = 2,
-        Battery_Index               = 3,
-        Battery_ID_SerialNumber     = 4,
-    };
-
-    // The TemperatureSensor_State structure is filled in by the backend driver
-    struct TemperatureSensor_State {
-        const struct AP_Param::GroupInfo *var_info;
-        uint32_t    last_time_ms;              // time when the sensor was last read in milliseconds
-        float       temperature;               // temperature (deg C)
-        uint8_t     instance;                  // instance number
-    };
-
     // Return the number of temperature sensors instances
     uint8_t num_instances(void) const { return _num_instances; }
 
@@ -94,8 +54,8 @@ public:
     bool healthy(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
 
     // accessors to params
-    Type get_type(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
-    Source get_source(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
+    AP_TemperatureSensor_Params::Type get_type(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
+    AP_TemperatureSensor_Params::Source get_source(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
     int32_t get_source_id(const uint8_t instance = AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE) const;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -106,6 +66,14 @@ protected:
 
 private:
     static AP_TemperatureSensor *_singleton;
+
+    // The TemperatureSensor_State structure is filled in by the backend driver
+    struct TemperatureSensor_State {
+        const struct AP_Param::GroupInfo *var_info;
+        uint32_t    last_time_ms;              // time when the sensor was last read in milliseconds
+        float       temperature;               // temperature (deg C)
+        uint8_t     instance;                  // instance number
+    };
 
     TemperatureSensor_State _state[AP_TEMPERATURE_SENSOR_MAX_INSTANCES];
     AP_TemperatureSensor_Backend *drivers[AP_TEMPERATURE_SENSOR_MAX_INSTANCES];
