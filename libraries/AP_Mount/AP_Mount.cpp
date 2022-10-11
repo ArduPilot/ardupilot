@@ -20,7 +20,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
 
     // @Group: 1
     // @Path: AP_Mount_Params.cpp
-    AP_SUBGROUPINFO(_params[0], "1", 43, AP_Mount, AP_Mount_Params),
+    AP_SUBGROUPINFO(_params[0], "", 43, AP_Mount, AP_Mount_Params),
 
 #if AP_MOUNT_MAX_INSTANCES > 1
     // @Group: 2
