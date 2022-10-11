@@ -25,10 +25,26 @@ public:
 
     CLASS_NO_COPY(AP_TemperatureSensor_Params);
 
-    AP_Int8 type;                   // AP_TemperatureSensor::Type, 0=disabled, others see frontend enum TYPE
+    // temperature sensor types
+    enum class Type : uint8_t {
+        NONE                        = 0,
+        TSYS01                      = 1,
+        MCP9600                     = 2,
+    };
+
+    // option to map to another system component
+    enum class Source : uint8_t {
+        None                        = 0,
+        ESC                         = 1,
+        Motor                       = 2,
+        Battery_Index               = 3,
+        Battery_ID_SerialNumber     = 4,
+    };
+
+    AP_Enum<Type> type;             // 0=disabled, others see frontend enum TYPE
     AP_Int8 bus;                    // I2C bus number
     AP_Int8 bus_address;            // I2C address
     
-    AP_Int8 source;                 // AP_TemperatureSensor::Source, library mapping
+    AP_Enum<Source> source;         // library mapping
     AP_Int32 source_id;             // library instance mapping
 };

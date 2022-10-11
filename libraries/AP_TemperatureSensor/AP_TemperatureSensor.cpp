@@ -19,9 +19,8 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-#ifndef AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
-#define AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED (!APM_BUILD_TYPE(APM_BUILD_ArduSub) && !AP_TEMPERATURE_SENSOR_ENABLED_BY_USER)
-#endif
+#define AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED (!(APM_BUILD_TYPE(APM_BUILD_ArduSub) || (AP_TEMPERATURE_SENSOR_ENABLED == 1)))
+
 
 #if !AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
 
@@ -118,7 +117,7 @@ void AP_TemperatureSensor::init()
 
  // For Sub set the Default: Type to TSYS01 and I2C_ADDR of 0x77
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    AP_Param::set_default_by_name("TEMP1_TYPE", (int8_t)AP_TemperatureSensor::Type::TSYS01);
+    AP_Param::set_default_by_name("TEMP1_TYPE", (float)AP_TemperatureSensor_Params::Type::TSYS01);
     AP_Param::set_default_by_name("TEMP1_ADDR", TSYS01_ADDR_CSB0);
 #endif
 
@@ -127,16 +126,16 @@ void AP_TemperatureSensor::init()
 
         switch (get_type(instance)) {
 #if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
-            case AP_TemperatureSensor::Type::TSYS01:
+            case AP_TemperatureSensor_Params::Type::TSYS01:
                 drivers[instance] = new AP_TemperatureSensor_TSYS01(*this, _state[instance], _params[instance]);
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_MCP9600_ENABLED
-            case AP_TemperatureSensor::Type::MCP9600:
+            case AP_TemperatureSensor_Params::Type::MCP9600:
                 drivers[instance] = new AP_TemperatureSensor_MCP9600(*this, _state[instance], _params[instance]);
                 break;
 #endif
-            case AP_TemperatureSensor::Type::NONE:
+            case AP_TemperatureSensor_Params::Type::NONE:
             default:
                 break;
         }
@@ -158,7 +157,7 @@ void AP_TemperatureSensor::init()
 void AP_TemperatureSensor::update()
 {
     for (uint8_t i=0; i<_num_instances; i++) {
-        if (drivers[i] != nullptr && get_type(i) != AP_TemperatureSensor::Type::NONE) {
+        if (drivers[i] != nullptr && get_type(i) != AP_TemperatureSensor_Params::Type::NONE) {
             drivers[i]->update();
 
 #if HAL_LOGGING_ENABLED
@@ -171,12 +170,12 @@ void AP_TemperatureSensor::update()
     }
 }
 
-AP_TemperatureSensor::Type AP_TemperatureSensor::get_type(const uint8_t instance) const
+AP_TemperatureSensor_Params::Type AP_TemperatureSensor::get_type(const uint8_t instance) const
 {
     if (instance >= AP_TEMPERATURE_SENSOR_MAX_INSTANCES) {
-        return AP_TemperatureSensor::Type::NONE;
+        return AP_TemperatureSensor_Params::Type::NONE;
     }
-    return (AP_TemperatureSensor::Type)_params[instance].type.get();
+    return (AP_TemperatureSensor_Params::Type)_params[instance].type.get();
 }
 
 // returns true if there is a temperature reading
@@ -195,9 +194,9 @@ bool AP_TemperatureSensor::healthy(const uint8_t instance) const
     return instance < _num_instances && drivers[instance] != nullptr && drivers[instance]->healthy();
 }
 
-AP_TemperatureSensor::Source AP_TemperatureSensor::get_source(const uint8_t instance) const
+AP_TemperatureSensor_Params::Source AP_TemperatureSensor::get_source(const uint8_t instance) const
 {
-    return healthy(instance) ? (AP_TemperatureSensor::Source)_params[instance].source.get() : AP_TemperatureSensor::Source::None;
+    return healthy(instance) ? (AP_TemperatureSensor_Params::Source)_params[instance].source.get() : AP_TemperatureSensor_Params::Source::None;
 }
 
 int32_t AP_TemperatureSensor::get_source_id(const uint8_t instance) const
@@ -211,8 +210,8 @@ void AP_TemperatureSensor::init() { };
 void AP_TemperatureSensor::update() { };
 bool AP_TemperatureSensor::get_temperature(float &temp, const uint8_t instance) const { return false; };
 bool AP_TemperatureSensor::healthy(const uint8_t instance) const { return false; };
-AP_TemperatureSensor::Type AP_TemperatureSensor::get_type(const uint8_t instance) const { return AP_TemperatureSensor::Type::NONE; };
-AP_TemperatureSensor::Source AP_TemperatureSensor::get_source(const uint8_t instance) const { return AP_TemperatureSensor::Source::None; };
+AP_TemperatureSensor_Params::Type AP_TemperatureSensor::get_type(const uint8_t instance) const { return AP_TemperatureSensor_Params::Type::NONE; };
+AP_TemperatureSensor_Params::Source AP_TemperatureSensor::get_source(const uint8_t instance) const { return AP_TemperatureSensor_Params::Source::None; };
 int32_t AP_TemperatureSensor::get_source_id(const uint8_t instance) const { return false; };
 
 AP_TemperatureSensor::AP_TemperatureSensor() {}
