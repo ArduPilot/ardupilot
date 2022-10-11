@@ -18,10 +18,6 @@
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
 
-#ifndef AP_TEMPERATURE_SENSOR_TYPE_DEFAULT
-#define AP_TEMPERATURE_SENSOR_TYPE_DEFAULT 0
-#endif
-
 #ifndef AP_TEMPERATURE_SENSOR_I2C_ADDR_DEFAULT
 #define AP_TEMPERATURE_SENSOR_I2C_ADDR_DEFAULT 0
 #endif
@@ -34,10 +30,6 @@
 #define AP_TEMPERATURE_SENSOR_SOURCE_ID_DEFAULT -1
 #endif
 
-#ifndef AP_TEMPERATURE_SENSOR_SOURCE_DEFAULT
-#define AP_TEMPERATURE_SENSOR_SOURCE_DEFAULT (int8_t)AP_TemperatureSensor::Source::None
-#endif
-
 const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Param: TYPE
     // @DisplayName: Temperature Sensor Type
@@ -45,7 +37,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Values: 0:Disabled, 1:TSYS01, 2:MCP9600
     // @User: Standard
     // @RebootRequired: True
-    AP_GROUPINFO_FLAGS("TYPE", 1, AP_TemperatureSensor_Params, type, AP_TEMPERATURE_SENSOR_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1, AP_TemperatureSensor_Params, type, (float)Type::NONE, AP_PARAM_FLAG_ENABLE),
 
     // @Param: BUS
     // @DisplayName: Temperature sensor bus
@@ -68,7 +60,7 @@ const AP_Param::GroupInfo AP_TemperatureSensor_Params::var_info[] = {
     // @Description: Sensor Source is used to match up the source of the temperature data and populate the appropriate system-component. If 0 (None) then the data is only available via log.
     // @Values: 0: None, 1:ESC, 2:Motor, 3:Battery Index, 4:Battery ID/SerialNumber
     // @User: Standard
-    AP_GROUPINFO("SRC", 4, AP_TemperatureSensor_Params, source, AP_TEMPERATURE_SENSOR_SOURCE_DEFAULT),
+    AP_GROUPINFO("SRC", 4, AP_TemperatureSensor_Params, source, (float)Source::None),
 
     // @Param: SRC_ID
     // @DisplayName: Sensor Source Identification
