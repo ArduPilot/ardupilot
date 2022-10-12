@@ -162,11 +162,16 @@ private:
 
     void destroy_csp_object(AP_RCProtocol::rcprotocol_t protocol);
 
-    const uint16_t common_stream_protocols =(1 << (uint8_t)FPORT) |
+    const uint16_t common_stream_protocols =
+#ifdef IOMCU_FW
+                                            (1 << (uint8_t)FPORT) |
                                             (1 << (uint8_t)FPORT2) |
+#endif
                                             (1 << (uint8_t)IBUS) |
                                             (1 << (uint8_t)SRXL) |
+#ifndef IOMCU_FW
                                             (1 << (uint8_t)SRXL2) |
+#endif
                                             (1 << (uint8_t)ST24) |
                                             (1 << (uint8_t)SUMD);
 

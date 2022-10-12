@@ -37,8 +37,10 @@ extern const AP_HAL::HAL& hal;
 
 // common memory for backends using common stream type baud 115200 non inverted
 union csp_obj_t {
+#ifdef IOMCU_FW
     AP_RCProtocol_FPort fport;
     AP_RCProtocol_FPort2 fport2;
+#endif
     AP_RCProtocol_IBUS ibus;
     AP_RCProtocol_SRXL srxl;
 #ifndef IOMCU_FW
@@ -63,7 +65,10 @@ void AP_RCProtocol::init()
 #ifndef IOMCU_FW
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
+    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
+    backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
 #endif
+
 
     // find buffer size to allocate for common stream protocols
     for (uint8_t i=0; i<AP_RCProtocol::NONE; i++) {
@@ -88,6 +93,7 @@ AP_RCProtocol_Backend* AP_RCProtocol::get_csp_object(AP_RCProtocol::rcprotocol_t
     }
     // reassign union to correct type
     switch (protocol) {
+#ifdef IOMCU_FW
         case AP_RCProtocol::FPORT:
             if (curr_csp_protocol != protocol) {
                 new (&csp_obj.fport) AP_RCProtocol_FPort(*this, false);
@@ -100,6 +106,7 @@ AP_RCProtocol_Backend* AP_RCProtocol::get_csp_object(AP_RCProtocol::rcprotocol_t
                 curr_csp_protocol = protocol;
             }
             return (AP_RCProtocol_Backend*)&csp_obj.fport2;
+#endif
         case AP_RCProtocol::IBUS:
             if (curr_csp_protocol != protocol) {
                 new (&csp_obj.ibus) AP_RCProtocol_IBUS(*this);
@@ -147,12 +154,14 @@ void AP_RCProtocol::destroy_csp_object(AP_RCProtocol::rcprotocol_t protocol)
     // destroy obj
     curr_csp_protocol = AP_RCProtocol::NONE;
     switch (protocol) {
+#ifdef IOMCU_FW
         case AP_RCProtocol::FPORT:
             csp_obj.fport.~AP_RCProtocol_FPort();
             break;
         case AP_RCProtocol::FPORT2:
             csp_obj.fport2.~AP_RCProtocol_FPort2();
             break;
+#endif
         case AP_RCProtocol::IBUS:
             csp_obj.ibus.~AP_RCProtocol_IBUS();
             break;
