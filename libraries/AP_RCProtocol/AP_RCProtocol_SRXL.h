@@ -40,9 +40,11 @@ class AP_RCProtocol_SRXL : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_SRXL(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend) {}
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
+    void process_byte_with_delay(uint8_t byte, uint32_t baudrate, uint32_t delay_us) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
+    size_t get_max_frame_size() const override { return SRXL_FRAMELEN_MAX; }
 private:
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t delay_us = 0);
     int srxl_channels_get_v1v2(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     int srxl_channels_get_v5(uint16_t max_values, uint8_t *num_values, uint16_t *values, bool *failsafe_state);
     uint8_t buffer[SRXL_FRAMELEN_MAX];       /* buffer for raw srxl frame data in correct order --> buffer[0]=byte0  buffer[1]=byte1  */

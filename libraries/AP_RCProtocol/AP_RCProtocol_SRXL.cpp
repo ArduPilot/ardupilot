@@ -173,11 +173,22 @@ int AP_RCProtocol_SRXL::srxl_channels_get_v5(uint16_t max_values, uint8_t *num_v
     return 0;
 }
 
-void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte)
+void AP_RCProtocol_SRXL::process_byte_with_delay(uint8_t byte, uint32_t baudrate, uint32_t delay_us)
+{
+    _process_byte(AP_HAL::micros(), byte, delay_us);
+}
+
+void AP_RCProtocol_SRXL::_process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t delay_us)
 {
     /*----------------------------------------distinguish different srxl variants at the beginning of each frame---------------------------------------------- */
     /* Check if we have a new begin of a frame --> indicators: Time gap in datastream + SRXL header 0xA<VARIANT>*/
-    if ((timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US) {
+    bool have_frame_gap;
+    if (delay_us == 0) {
+        have_frame_gap = (timestamp_us - last_data_us) >= SRXL_MIN_FRAMESPACE_US;
+    } else {
+        have_frame_gap = (delay_us >= SRXL_MIN_FRAMESPACE_US);
+    }
+    if (have_frame_gap) {
         /* Now detect SRXL variant based on header */
         switch (byte) {
         case SRXL_HEADER_V1:

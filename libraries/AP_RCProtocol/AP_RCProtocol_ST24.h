@@ -148,4 +148,7 @@ private:
     ReceiverFcPacket _rxpacket;
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
+
+public:
+    size_t get_max_frame_size() const override { return ST24_MAX_FRAMELEN; }
 };

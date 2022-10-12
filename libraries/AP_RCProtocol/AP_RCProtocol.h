@@ -30,6 +30,7 @@
 #endif
 
 class AP_RCProtocol_Backend;
+class SoftSerial;
 
 class AP_RCProtocol {
 public:
@@ -152,6 +153,32 @@ private:
 
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
+
+    bool is_common_stream_protocol(rcprotocol_t protocol);
+
+    bool common_stream_protocol_detect(uint8_t b);
+
+    AP_RCProtocol_Backend* get_csp_object(AP_RCProtocol::rcprotocol_t protocol);
+
+    void destroy_csp_object(AP_RCProtocol::rcprotocol_t protocol);
+
+    const uint16_t common_stream_protocols =(1 << (uint8_t)FPORT) |
+                                            (1 << (uint8_t)FPORT2) |
+                                            (1 << (uint8_t)IBUS) |
+                                            (1 << (uint8_t)SRXL) |
+                                            (1 << (uint8_t)SRXL2) |
+                                            (1 << (uint8_t)ST24) |
+                                            (1 << (uint8_t)SUMD);
+
+    // buffer memory for backends on common stream protocol
+    uint8_t* csp_buffer;
+    size_t csp_buffer_size;
+    size_t csp_buffer_ofs;
+    rcprotocol_t curr_csp_protocol = NONE;
+    SoftSerial *csp_ss;
+    ssize_t csp_break_byte_idx;
+    uint32_t csp_break_byte_delay_us;
+    uint32_t csp_last_byte_us;
 
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;

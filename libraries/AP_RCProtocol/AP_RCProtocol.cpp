@@ -35,35 +35,165 @@
 
 extern const AP_HAL::HAL& hal;
 
+// common memory for backends using common stream type baud 115200 non inverted
+union csp_obj_t {
+    AP_RCProtocol_FPort fport;
+    AP_RCProtocol_FPort2 fport2;
+    AP_RCProtocol_IBUS ibus;
+    AP_RCProtocol_SRXL srxl;
+#ifndef IOMCU_FW
+    AP_RCProtocol_SRXL2 srxl2;
+#endif
+    AP_RCProtocol_ST24 st24;
+    AP_RCProtocol_SUMD sumd;
+    csp_obj_t() {}
+    ~csp_obj_t() {}
+} csp_obj;
+
 void AP_RCProtocol::init()
 {
+
+    csp_ss = new SoftSerial(115200, SoftSerial::SERIAL_CONFIG_8N1);
     backend[AP_RCProtocol::PPM] = new AP_RCProtocol_PPMSum(*this);
-    backend[AP_RCProtocol::IBUS] = new AP_RCProtocol_IBUS(*this);
     backend[AP_RCProtocol::SBUS] = new AP_RCProtocol_SBUS(*this, true, 100000);
 #if AP_RCPROTOCOL_FASTSBUS_ENABLED
     backend[AP_RCProtocol::FASTSBUS] = new AP_RCProtocol_SBUS(*this, true, 200000);
 #endif
     backend[AP_RCProtocol::DSM] = new AP_RCProtocol_DSM(*this);
-    backend[AP_RCProtocol::SUMD] = new AP_RCProtocol_SUMD(*this);
-    backend[AP_RCProtocol::SRXL] = new AP_RCProtocol_SRXL(*this);
 #ifndef IOMCU_FW
     backend[AP_RCProtocol::SBUS_NI] = new AP_RCProtocol_SBUS(*this, false, 100000);
-    backend[AP_RCProtocol::SRXL2] = new AP_RCProtocol_SRXL2(*this);
     backend[AP_RCProtocol::CRSF] = new AP_RCProtocol_CRSF(*this);
-    backend[AP_RCProtocol::FPORT2] = new AP_RCProtocol_FPort2(*this, true);
 #endif
-    backend[AP_RCProtocol::ST24] = new AP_RCProtocol_ST24(*this);
-    backend[AP_RCProtocol::FPORT] = new AP_RCProtocol_FPort(*this, true);
+
+    // find buffer size to allocate for common stream protocols
+    for (uint8_t i=0; i<AP_RCProtocol::NONE; i++) {
+        if (is_common_stream_protocol(rcprotocol_t(i)) && get_csp_object(rcprotocol_t(i)) != nullptr) {
+            size_t bsize = get_csp_object(rcprotocol_t(i))->get_max_frame_size() *(requires_3_frames(rcprotocol_t(i))?4:2);
+            if (bsize > csp_buffer_size) {
+                csp_buffer_size = bsize;
+            }
+        }
+    }
+    // initialise common stream protocol buffer
+    if (csp_buffer_size > 0) {
+        csp_buffer = new uint8_t[csp_buffer_size];
+    }
+}
+
+AP_RCProtocol_Backend* AP_RCProtocol::get_csp_object(AP_RCProtocol::rcprotocol_t protocol)
+{
+    // return if already allocated
+    if (curr_csp_protocol != protocol) {
+        destroy_csp_object(curr_csp_protocol);
+    }
+    // reassign union to correct type
+    switch (protocol) {
+        case AP_RCProtocol::FPORT:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.fport) AP_RCProtocol_FPort(*this, false);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.fport;
+        case AP_RCProtocol::FPORT2:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.fport2) AP_RCProtocol_FPort2(*this, false);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.fport2;
+        case AP_RCProtocol::IBUS:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.ibus) AP_RCProtocol_IBUS(*this);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.ibus;
+        case AP_RCProtocol::SRXL:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.srxl) AP_RCProtocol_SRXL(*this);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.srxl;
+#ifndef IOMCU_FW
+        case AP_RCProtocol::SRXL2:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.srxl2) AP_RCProtocol_SRXL2(*this);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.srxl2;
+#endif
+        case AP_RCProtocol::ST24:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.st24) AP_RCProtocol_ST24(*this);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.st24;
+        case AP_RCProtocol::SUMD:
+            if (curr_csp_protocol != protocol) {
+                new (&csp_obj.sumd) AP_RCProtocol_SUMD(*this);
+                curr_csp_protocol = protocol;
+            }
+            return (AP_RCProtocol_Backend*)&csp_obj.sumd;
+        default:
+            return nullptr;
+    }
+}
+
+
+void AP_RCProtocol::destroy_csp_object(AP_RCProtocol::rcprotocol_t protocol)
+{
+    if (curr_csp_protocol == AP_RCProtocol::NONE) {
+        // nothing to destroy
+        return;
+    }
+    // destroy obj
+    curr_csp_protocol = AP_RCProtocol::NONE;
+    switch (protocol) {
+        case AP_RCProtocol::FPORT:
+            csp_obj.fport.~AP_RCProtocol_FPort();
+            break;
+        case AP_RCProtocol::FPORT2:
+            csp_obj.fport2.~AP_RCProtocol_FPort2();
+            break;
+        case AP_RCProtocol::IBUS:
+            csp_obj.ibus.~AP_RCProtocol_IBUS();
+            break;
+        case AP_RCProtocol::SRXL:
+            csp_obj.srxl.~AP_RCProtocol_SRXL();
+            break;
+#ifndef IOMCU_FW
+        case AP_RCProtocol::SRXL2:
+            csp_obj.srxl2.~AP_RCProtocol_SRXL2();
+            break;
+#endif
+        case AP_RCProtocol::ST24:
+            csp_obj.st24.~AP_RCProtocol_ST24();
+            break;
+        case AP_RCProtocol::SUMD:
+            csp_obj.sumd.~AP_RCProtocol_SUMD();
+            break;
+        default:
+            break;
+    }
+    memset((void*)&csp_obj, 0, sizeof(csp_obj));
+    return;
 }
 
 AP_RCProtocol::~AP_RCProtocol()
 {
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
-        if (backend[i] != nullptr) {
+        if (backend[i] != nullptr && !is_common_stream_protocol(rcprotocol_t(i))) {
             delete backend[i];
             backend[i] = nullptr;
         }
     }
+    if (csp_buffer != nullptr) {
+        delete[] csp_buffer;
+        csp_buffer = nullptr;
+    }
+}
+
+bool AP_RCProtocol::is_common_stream_protocol(rcprotocol_t protocol)
+{
+    return (common_stream_protocols & (1U<<(uint8_t)protocol)) != 0;
 }
 
 bool AP_RCProtocol::should_search(uint32_t now_ms) const
@@ -104,6 +234,11 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
         return;
     }
 
+    if (is_common_stream_protocol((rcprotocol_t)_detected_protocol) && searching) {
+        // remove backend for current protocol
+        backend[curr_csp_protocol] = nullptr;
+    }
+
     // otherwise scan all protocols
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (_disabled_for_pulses & (1U << i)) {
@@ -132,6 +267,18 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
                 _last_input_ms = now;
                 _detected_with_bytes = false;
                 break;
+            }
+        }
+    }
+    uint8_t byte;
+    if (csp_ss->process_pulse(width_s0, width_s1, byte) && common_stream_protocol_detect(byte)) {
+        _detected_protocol = curr_csp_protocol;
+        _last_input_ms = now;
+        _detected_with_bytes = false;
+        backend[(uint8_t)curr_csp_protocol] = get_csp_object(curr_csp_protocol); // set backend
+        for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+            if (backend[j]) {
+                backend[j]->reset_rc_frame_count();
             }
         }
     }
@@ -189,6 +336,11 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         return true;
     }
 
+    if (is_common_stream_protocol((rcprotocol_t)_detected_protocol) && searching) {
+        // remove backend for current protocol
+        backend[curr_csp_protocol] = nullptr;
+    }
+
     // otherwise scan all protocols
     for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
         if (backend[i] != nullptr) {
@@ -214,8 +366,60 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
                 }
                 // stop decoding pulses to save CPU
                 hal.rcin->pulse_input_enable(false);
-                break;
+                return false;
             }
+        }
+    }
+    if (common_stream_protocol_detect(byte)) {
+        _detected_protocol = curr_csp_protocol;
+        _last_input_ms = now;
+        _detected_with_bytes = true;
+        backend[(uint8_t)curr_csp_protocol] = get_csp_object(curr_csp_protocol); // set backend
+        for (uint8_t j = 0; j < AP_RCProtocol::NONE; j++) {
+            if (backend[j]) {
+                backend[j]->reset_rc_frame_count();
+            }
+        }
+        // stop decoding pulses to save CPU
+        hal.rcin->pulse_input_enable(false);
+    }
+    return false;
+}
+
+bool AP_RCProtocol::common_stream_protocol_detect(uint8_t b)
+{
+    if (csp_buffer_ofs > csp_buffer_size) {
+        csp_buffer_ofs = 0;
+        csp_break_byte_idx = -1;
+    }
+    if (AP_HAL::micros() - csp_last_byte_us >= 2000) {
+        csp_break_byte_delay_us = AP_HAL::micros() - csp_last_byte_us;
+        csp_break_byte_idx = csp_buffer_ofs;
+    }
+    csp_last_byte_us = AP_HAL::micros();
+    csp_buffer[csp_buffer_ofs++] = b;
+
+    for (uint8_t i = 0; i < AP_RCProtocol::NONE; i++) {
+        if (is_common_stream_protocol((rcprotocol_t)i)) {
+            // bulk parse
+            AP_RCProtocol_Backend* csp_backend = get_csp_object((rcprotocol_t)i);
+            for (ssize_t j = 0; j < (ssize_t)csp_buffer_ofs; j++) {
+                if (j == csp_break_byte_idx) {
+                    csp_backend->process_byte_with_delay(csp_buffer[j], 115200, csp_break_byte_delay_us);
+                } else {
+                    csp_backend->process_byte_with_delay(csp_buffer[j], 115200, 1);
+                }
+            }
+            // how many frames detected so far
+            if (csp_backend->get_rc_frame_count() > 0) {
+                // we have detected a frame, so this is the protocol if not require 3 frames
+                if (!requires_3_frames(curr_csp_protocol)) {
+                    return true;
+                } else if (csp_backend->get_rc_frame_count() >= 3) {
+                    return true;
+                }
+            }
+
         }
     }
     return false;

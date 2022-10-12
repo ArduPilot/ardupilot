@@ -29,15 +29,17 @@ struct FPort_Frame;
 class AP_RCProtocol_FPort : public AP_RCProtocol_Backend {
 public:
     AP_RCProtocol_FPort(AP_RCProtocol &_frontend, bool inverted);
+    void process_byte_with_delay(uint8_t byte, uint32_t baudrate, uint32_t delay) override;
     void process_pulse(uint32_t width_s0, uint32_t width_s1) override;
     void process_byte(uint8_t byte, uint32_t baudrate) override;
+    size_t get_max_frame_size() const override { return FPORT_CONTROL_FRAME_SIZE; }
 
 private:
     void decode_control(const FPort_Frame &frame);
     void decode_downlink(const FPort_Frame &frame);
     bool check_checksum(void);
 
-    void _process_byte(uint32_t timestamp_us, uint8_t byte);
+    void _process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t delay = 0);
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
     uint32_t saved_width;
 

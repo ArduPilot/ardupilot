@@ -43,6 +43,7 @@ public:
     static void change_baud_rate(uint32_t baudrate);
     // configure the VTX from Spektrum data
     static void configure_vtx(uint8_t band, uint8_t channel, uint8_t power, uint8_t pitmode);
+    size_t get_max_frame_size() const override { return SRXL2_FRAMELEN_MAX; }
 
 private:
 

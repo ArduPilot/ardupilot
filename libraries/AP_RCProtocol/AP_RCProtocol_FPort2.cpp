@@ -205,11 +205,21 @@ void AP_RCProtocol_FPort2::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
 }
 
-// support byte input
-void AP_RCProtocol_FPort2::_process_byte(uint32_t timestamp_us, uint8_t b)
+void AP_RCProtocol_FPort2::process_byte_with_delay(uint8_t byte, uint32_t baudrate, uint32_t delay_us)
 {
-    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
+    _process_byte(AP_HAL::micros(), byte, delay_us);
+}
 
+// support byte input
+void AP_RCProtocol_FPort2::_process_byte(uint32_t timestamp_us, uint8_t b, uint32_t delay_us)
+{
+    bool have_frame_gap;
+
+    if (delay_us == 0) {
+        have_frame_gap = (timestamp_us - byte_input.last_byte_us >= 2000U);
+    } else {
+        have_frame_gap = (delay_us >= 2000U);
+    }
     byte_input.last_byte_us = timestamp_us;
 
     if (have_frame_gap) {

@@ -27,6 +27,9 @@ public:
     AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
+    virtual void process_byte_with_delay(uint8_t byte, uint32_t baudrate, uint32_t delay) {
+        process_byte(byte, baudrate);
+    }
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     virtual void process_handshake(uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
@@ -91,6 +94,9 @@ public:
         return true;
     }
     
+    virtual size_t get_max_frame_size() const {
+        return 0;
+    }
 protected:
     struct Channels11Bit_8Chan {
 #if __BYTE_ORDER != __LITTLE_ENDIAN

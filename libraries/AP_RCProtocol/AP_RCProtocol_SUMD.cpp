@@ -79,9 +79,20 @@ void AP_RCProtocol_SUMD::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
 }
 
-void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
+void AP_RCProtocol_SUMD::process_byte_with_delay(uint8_t byte, uint32_t baudrate, uint32_t delay_us)
 {
-    if (timestamp_us - last_packet_us > 5000U) {
+    _process_byte(AP_HAL::micros(), byte, delay_us);
+}
+
+void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte, uint32_t delay_us)
+{
+    bool have_frame_gap = false;
+    if (delay_us == 0) {
+        have_frame_gap = timestamp_us - last_packet_us > 5000U;
+    } else {
+        have_frame_gap = delay_us > 5000U;
+    }
+    if (have_frame_gap) {
         _decode_state = SUMD_DECODE_STATE_UNSYNCED;
     }
     switch (_decode_state) {
