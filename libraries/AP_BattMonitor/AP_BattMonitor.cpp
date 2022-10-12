@@ -644,10 +644,42 @@ bool AP_BattMonitor::get_temperature(float &temperature, const uint8_t instance)
         return false;
     } 
     
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    if (state[instance].temperature_external_use) {
+        temperature = state[instance].temperature_external;
+        return true;
+    }
+#endif
+
     temperature = state[instance].temperature;
 
     return drivers[instance]->has_temperature();
 }
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// return true when successfully setting a battery temperature from an external source by instance
+bool AP_BattMonitor::set_temperature(const float temperature, const uint8_t instance)
+{
+    if (instance >= AP_BATT_MONITOR_MAX_INSTANCES || drivers[instance] == nullptr) {
+        return false;
+    }
+    state[instance].temperature_external = temperature;
+    state[instance].temperature_external_use = true;
+    return true;
+}
+
+// return true when successfully setting a battery temperature from an external source by serial_number
+bool AP_BattMonitor::set_temperature_by_serial_number(const float temperature, const int32_t serial_number)
+{
+    bool success = false;
+    for (uint8_t i = 0; i < _num_instances; i++) {
+        if (drivers[i] != nullptr && get_serial_number(i) == serial_number) {
+            success |= set_temperature(temperature, i);
+        }
+    }
+    return success;
+}
+#endif // AP_TEMPERATURE_SENSOR_ENABLED
 
 // return true if cycle count can be provided and fills in cycles argument
 bool AP_BattMonitor::get_cycle_count(uint8_t instance, uint16_t &cycles) const
