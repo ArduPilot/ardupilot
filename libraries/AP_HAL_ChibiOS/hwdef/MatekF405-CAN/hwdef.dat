@@ -171,8 +171,6 @@ include ../include/minimize_features.inc
 define AP_BATTMON_SMBUS_ENABLE 0
 define HAL_PARACHUTE_ENABLED 0
 
-define HAL_WITH_DSP FALSE
-
 # reduce max size of embedded params for apj_tool.py
 define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 
