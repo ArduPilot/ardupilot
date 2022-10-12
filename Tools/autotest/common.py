@@ -9290,7 +9290,7 @@ Also, ignores heartbeats not from our target system'''
             # this assumes the streamrates have not been played with:
             self.test_rate("Resetting original rate using 0-value", 0, rate)
             self.test_rate("Disabling using -1-value", -1, 0)
-            self.test_rate("Resetting original rate", rate, rate)
+            self.test_rate("Resetting original rate", 0, rate)
 
             self.progress("try getting a message which is not ordinarily streamed out")
             rate = round(self.get_message_rate("CAMERA_FEEDBACK", 20))
@@ -9331,8 +9331,9 @@ Also, ignores heartbeats not from our target system'''
             self.print_exception_caught(e)
             ex = e
 
-        self.progress("Resetting CAMERA_FEEDBACK rate to zero")
-        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, -1)
+        self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
+        self.assert_message_rate_hz('CAMERA_FEEDBACK', 0)
 
         if ex is not None:
             raise ex
