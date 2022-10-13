@@ -20,6 +20,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Param/AP_Param.h>
 #include <StorageManager/StorageManager.h>
+#include <AP_Common/float16.h>
 
 // definitions
 #define AP_MISSION_EEPROM_VERSION           0x65AE  // version number stored in first four bytes of eeprom.  increment this by one when eeprom format is changed
@@ -222,8 +223,10 @@ public:
     struct PACKED nav_script_time_Command {
         uint8_t command;
         uint8_t timeout_s;
-        float arg1;
-        float arg2;
+        Float16_t arg1;
+        Float16_t arg2;
+        Float16_t arg3;
+        Float16_t arg4;
     };
 
     // Scripting NAV command (with verify)

@@ -1207,8 +1207,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_NAV_SCRIPT_TIME:
         cmd.content.nav_script_time.command = packet.param1;
         cmd.content.nav_script_time.timeout_s = packet.param2;
-        cmd.content.nav_script_time.arg1 = packet.param3;
-        cmd.content.nav_script_time.arg2 = packet.param4;
+        cmd.content.nav_script_time.arg1.set(packet.param3);
+        cmd.content.nav_script_time.arg2.set(packet.param4);
+        cmd.content.nav_script_time.arg3.set(packet.x);
+        cmd.content.nav_script_time.arg4.set(packet.y);
         break;
 
     case MAV_CMD_NAV_ATTITUDE_TIME:
@@ -1699,8 +1701,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_NAV_SCRIPT_TIME:
         packet.param1 = cmd.content.nav_script_time.command;
         packet.param2 = cmd.content.nav_script_time.timeout_s;
-        packet.param3 = cmd.content.nav_script_time.arg1;
-        packet.param4 = cmd.content.nav_script_time.arg2;
+        packet.param3 = cmd.content.nav_script_time.arg1.get();
+        packet.param4 = cmd.content.nav_script_time.arg2.get();
+        packet.x = cmd.content.nav_script_time.arg3.get();
+        packet.y = cmd.content.nav_script_time.arg4.get();
         break;
 
     case MAV_CMD_NAV_ATTITUDE_TIME:
