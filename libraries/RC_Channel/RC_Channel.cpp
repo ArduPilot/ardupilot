@@ -606,7 +606,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 };
 
 /* lookup the announcement for switch change */
-const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const     
+const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
 {
      for (const struct LookupTable &entry : lookuptable) {
         if (entry.option == function) {
@@ -614,6 +614,20 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
         }
      }
      return nullptr;
+}
+
+/* find string for postion */
+const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
+{
+    switch (pos) {
+        case AuxSwitchPos::HIGH:
+            return "HIGH";
+        case AuxSwitchPos::MIDDLE:
+            return "MIDDLE";
+        case AuxSwitchPos::LOW:
+            return "LOW";
+    }
+    return "";
 }
 
 #endif // AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
@@ -650,19 +664,7 @@ bool RC_Channel::read_aux()
     // announce the change to the GCS:
     const char *aux_string = string_for_aux_function(_option);
     if (aux_string != nullptr) {
-        const char *temp =  nullptr;
-        switch (new_position) {
-        case AuxSwitchPos::HIGH:
-            temp = "HIGH";           
-            break;
-        case AuxSwitchPos::MIDDLE:
-            temp = "MIDDLE";
-            break;
-        case AuxSwitchPos::LOW:
-            temp = "LOW";          
-            break;
-        }
-        gcs().send_text(MAV_SEVERITY_INFO, "%s %s", aux_string, temp);
+        gcs().send_text(MAV_SEVERITY_INFO, "RC%i: %s %s", ch_in+1, aux_string, string_for_aux_pos(new_position));
     }
 #endif
 
