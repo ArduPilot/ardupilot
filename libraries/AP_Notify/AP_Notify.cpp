@@ -177,7 +177,7 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @Param: BUZZ_PIN
     // @DisplayName: Buzzer pin
     // @Description: Enables to connect active buzzer to arbitrary pin. Requires 3-pin buzzer or additional MOSFET! Some the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
-    // @Values: 0:Disabled
+    // @Values: -1:Disabled
     // @User: Advanced
     AP_GROUPINFO("BUZZ_PIN", 5, AP_Notify, _buzzer_pin, HAL_BUZZER_PIN),
 
