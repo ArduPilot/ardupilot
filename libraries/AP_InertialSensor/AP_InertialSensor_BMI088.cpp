@@ -155,7 +155,7 @@ static const struct {
     uint8_t value;
 } accel_config[] = {
     { REGA_CONF, 0xAC },
-    // setup 24g range
+    // setup 24g range (16g for BMI085)
     { REGA_RANGE, 0x03 },
     // disable low-power mode
     { REGA_PWR_CONF, 0 },
@@ -207,10 +207,12 @@ bool AP_InertialSensor_BMI088::accel_init()
     switch (v) {
         case 0x1E:
             _accel_devtype = DEVTYPE_INS_BMI088;
+            accel_range = 24.0;
             hal.console->printf("BMI088: Found device\n");
             break;
         case 0x1F:
             _accel_devtype = DEVTYPE_INS_BMI085;
+            accel_range = 16.0;
             hal.console->printf("BMI085: Found device\n");
             break;
         default:
@@ -317,8 +319,8 @@ void AP_InertialSensor_BMI088::read_fifo_accel(void)
         _inc_accel_error_count(accel_instance);
         return;
     }
-    // assume configured for 24g range
-    const float scale = (1.0/32768.0) * GRAVITY_MSS * 24.0;
+    // use new accel_range depending on sensor type
+    const float scale = (1.0/32768.0) * GRAVITY_MSS * accel_range;
     const uint8_t *p = &data[0];
     while (fifo_length >= 7) {
         /*
