@@ -102,9 +102,9 @@ bool MAVLink_routing::check_and_forward(mavlink_channel_t in_channel, const mavl
     learn_route(in_channel, msg);
 
     // don't ever forward data from a private channel
-    if ((GCS_MAVLINK::is_private(in_channel))) {
-        return true;
-    }
+    //if ((GCS_MAVLINK::is_private(in_channel))) {
+    //    return true;
+    //}
 
     if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
         msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
