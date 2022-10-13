@@ -1205,8 +1205,8 @@ bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2
     const auto &c = mission.get_current_nav_cmd().content.nav_script_time;
     id = nav_scripting.id;
     cmd = c.command;
-    arg1 = c.arg1;
-    arg2 = c.arg2;
+    arg1 = c.arg1.get();
+    arg2 = c.arg2.get();
     return true;
 }
 
