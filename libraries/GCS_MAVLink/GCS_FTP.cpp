@@ -181,7 +181,7 @@ void GCS_MAVLINK::ftp_worker(void) {
     while (true) {
         bool skip_push_reply = false;
 
-        while (!ftp.requests->pop(request)) {
+        while (ftp.requests == nullptr || !ftp.requests->pop(request)) {
             // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
             hal.scheduler->delay(2);
         }
