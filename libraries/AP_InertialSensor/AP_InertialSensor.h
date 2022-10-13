@@ -59,6 +59,10 @@
 #define AP_SIM_INS_ENABLED AP_SIM_ENABLED
 #endif
 
+#ifndef AP_SIM_INS_FILE_ENABLED
+#define AP_SIM_INS_FILE_ENABLED AP_SIM_ENABLED
+#endif
+
 class AP_InertialSensor_Backend;
 class AuxiliaryBus;
 class AP_AHRS;
