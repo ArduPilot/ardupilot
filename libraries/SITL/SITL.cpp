@@ -525,7 +525,11 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @DisplayName: SIM-on_hardware Output Enable Mask
     // @Description: channels which are passed through to actual hardware when running on actual hardware
     AP_GROUPINFO("OH_MASK",     28, SIM, on_hardware_output_enable_mask, 0),
-
+#if AP_SIM_INS_FILE_ENABLED
+    // read and write IMU data to/from files
+    AP_GROUPINFO("GYR_FILE_RW", 29, SIM, gyro_file_rw, INSFileMode::INS_FILE_NONE),
+    AP_GROUPINFO("ACC_FILE_RW", 30, SIM, accel_file_rw, INSFileMode::INS_FILE_NONE),
+#endif
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     AP_SUBGROUPINFO(imu_tcal[0], "IMUT1_", 61, SIM, AP_InertialSensor::TCal),
