@@ -161,12 +161,16 @@ private:
     uint32_t _rate_ms;
     uint32_t _last_rate_ms;
     uint16_t _rate_counter;
+
 #if AP_GPS_DEBUG_LOGGING_ENABLED
-    struct {
+    // support raw GPS logging
+    static struct loginfo {
         int fd = -1;
-        ByteBuffer buf{32768};
-        bool io_registered;
-    } logging;
-    void logging_update(void);
+        ByteBuffer buf{16000};
+    } logging[2];
+    static bool log_thread_created;
+    static void logging_loop(void);
+    void logging_start(void);
 #endif
+
 };
