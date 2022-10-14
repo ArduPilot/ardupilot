@@ -506,6 +506,17 @@ public:
 
     // Master instance to use servos from with slave instances
     AP_Int8 ride_along_master;
+
+#if AP_SIM_INS_FILE_ENABLED
+    enum INSFileMode {
+        INS_FILE_NONE = 0,
+        INS_FILE_READ = 1,
+        INS_FILE_WRITE = 2,
+        INS_FILE_READ_STOP_ON_EOF = 3,
+    };
+    AP_Int8 gyro_file_rw;
+    AP_Int8 accel_file_rw;
+#endif
 };
 
 } // namespace SITL
