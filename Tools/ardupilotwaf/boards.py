@@ -114,6 +114,14 @@ class Board:
         else:
             cfg.msg("Enabled firmware ID checking", 'no', color='YELLOW')
 
+        if cfg.options.enable_gps_logging:
+            env.DEFINES.update(
+                AP_GPS_DEBUG_LOGGING_ENABLED=1,
+            )
+            cfg.msg("GPS Debug Logging", 'yes')
+        else:
+            cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
+
         # allow enable of custom controller for any board
         # enabled on sitl by default
         if (cfg.options.enable_custom_controller or self.get_name() == "sitl") and not cfg.options.no_gcs:
