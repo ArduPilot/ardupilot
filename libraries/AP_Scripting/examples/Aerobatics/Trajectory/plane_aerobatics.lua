@@ -1033,7 +1033,7 @@ function save_parameters(arg1, arg2)
 end
 
 function update()
-   id, cmd, arg1, arg2 = vehicle:nav_script_time()
+   id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
    if id then
       if id ~= last_id then
          -- we've started a new command
