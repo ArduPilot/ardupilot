@@ -411,13 +411,13 @@ bool Copter::nav_scripting_enable(uint8_t mode)
 }
 
 // lua scripts use this to retrieve the contents of the active command
-bool Copter::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+bool Copter::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
     if (flightmode != &mode_auto) {
         return false;
     }
 
-    return mode_auto.nav_script_time(id, cmd, arg1, arg2);
+    return mode_auto.nav_script_time(id, cmd, arg1, arg2, arg3, arg4);
 }
 
 // lua scripts use this to indicate when they have complete the command

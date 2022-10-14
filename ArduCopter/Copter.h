@@ -663,7 +663,7 @@ private:
     bool set_circle_rate(float rate_dps) override;
     bool set_desired_speed(float speed) override;
     bool nav_scripting_enable(uint8_t mode) override;
-    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
+    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
     // lua scripts use this to retrieve EKF failsafe state
     // returns true if the EKF failsafe has triggered
