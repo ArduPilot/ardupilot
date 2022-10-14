@@ -83,7 +83,7 @@ function update()
     end
   else
     -- activate_type 1: reset stage when disarmed or not in Auto executing NAV_SCRIPT_TIME command
-    auto_last_id, cmd, arg1, arg2 = vehicle:nav_script_time()
+    auto_last_id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
     if not arming:is_armed() or not auto_last_id then 
       stage = 0
       if (update_user and arming:is_armed()) then
