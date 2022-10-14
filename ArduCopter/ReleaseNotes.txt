@@ -1,5 +1,15 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Copter 4.3.0-beta3 14-Oct-2022
+Changes from 4.3.0-beta2
+1) Pixhawk1-1M, fmuv2, fmuv3 display warning if firmware mismatches board's flash size (1M and 2M)
+2) Scripting support for multi-byte i2c reads
+3) Bug fixes
+    a) Airspeed CAN sensor ordering fixed (ordering could change if using multiple airspeed sensors)
+    b) BRD_SAFETY_MASK fix for enabling outputs when safety is on
+    c) Defaults.parm file processing fixed when a line has >100 characters and/or no new line (developer only)
+    d) NMEA serial output precision fixed (was only accurate to 1m, now accurate to 1cm)
+------------------------------------------------------------------
 Copter 4.3.0-beta2 4-Oct-2022
 Changes from 4.3.0-beta1
 1) Autopilot specific fixes and enhancements
