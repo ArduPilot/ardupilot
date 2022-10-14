@@ -1618,7 +1618,7 @@ AP_Arming::Required AP_Arming::arming_required()
 {
 #if AP_OPENDRONEID_ENABLED
     // cannot be disabled if OpenDroneID is present
-    if (AP::opendroneid().enabled()) {
+    if (AP_OpenDroneID::get_singleton() != nullptr && AP::opendroneid().enabled()) {
         if (require != Required::YES_MIN_PWM && require != Required::YES_ZERO_PWM) {
             return Required::YES_MIN_PWM;
         }
