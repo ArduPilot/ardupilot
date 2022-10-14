@@ -1,0 +1,45 @@
+name: test scripting docs
+
+on:
+  push:
+    paths: # only run for scripting changes
+      - 'libraries/AP_Scripting/tests/docs_check.py'
+      - 'libraries/AP_Scripting/generator/**'
+
+  pull_request:
+    paths: # only run for scripting changes
+      - 'libraries/AP_Scripting/tests/docs_check.py'
+      - 'libraries/AP_Scripting/generator/**'
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-scripting-docs:
+    runs-on: ubuntu-20.04
+    container: ardupilot/ardupilot-dev-base:latest
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: copy docs
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          mv "libraries/AP_Scripting/docs/docs.lua" "libraries/AP_Scripting/docs/current_docs.lua"
+
+      - name: build sitl # we don't really need to build the full code, just trigger docs re-gen with --scripting-docs, timeout after 10 seconds
+        shell: bash
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf configure --board sitl
+          timeout 10 ./waf antennatracker --scripting-docs || code=$?; if [[ $code -ne 124 && $code -ne 0 ]]; then exit $code; fi
+
+      - name: run compare
+        run: |
+          PATH="/github/home/.local/bin:$PATH"
+          python ./libraries/AP_Scripting/tests/docs_check.py "./libraries/AP_Scripting/docs/docs.lua" "./libraries/AP_Scripting/docs/current_docs.lua"
