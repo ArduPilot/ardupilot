@@ -1128,7 +1128,7 @@ private:
 #if AP_SCRIPTING_ENABLED
     // support for NAV_SCRIPT_TIME mission command
     bool nav_scripting_active(void) const;
-    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2) override;
+    bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
     void nav_script_time_done(uint16_t id) override;
 
     // command throttle percentage and roll, pitch, yaw target

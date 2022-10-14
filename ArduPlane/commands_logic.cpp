@@ -1196,7 +1196,7 @@ bool Plane::nav_scripting_active(void) const
 }
 
 // support for NAV_SCRIPTING mission command
-bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
+bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
 {
     if (!nav_scripting_active()) {
         // not in NAV_SCRIPT_TIME
@@ -1207,6 +1207,8 @@ bool Plane::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2
     cmd = c.command;
     arg1 = c.arg1.get();
     arg2 = c.arg2.get();
+    arg3 = c.arg3;
+    arg4 = c.arg4;
     return true;
 }
 
