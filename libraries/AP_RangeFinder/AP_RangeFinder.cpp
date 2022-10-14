@@ -839,8 +839,10 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             continue;
         }
 
+        const char str[] = "Rangefinder ";
+
         if (drivers[i] == nullptr) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: Not Detected", i + 1);
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s%X: Not Detected", str, i + 1);
             return false;
         }
 
@@ -872,10 +874,10 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
 
         switch (drivers[i]->status()) {
         case Status::NoData:
-            hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: No Data", i + 1);
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s%X: No Data", str, i + 1);
             return false;
         case Status::NotConnected:
-            hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: Not Connected", i + 1);
+            hal.util->snprintf(failure_msg, failure_msg_len, "%s%X: Not Connected", str, i + 1);
             return false;
         case Status::OutOfRangeLow:
         case Status::OutOfRangeHigh:
