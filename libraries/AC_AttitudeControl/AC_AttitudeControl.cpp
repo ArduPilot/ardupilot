@@ -726,7 +726,6 @@ void AC_AttitudeControl::attitude_controller_run_quat()
         Quaternion attitude_target_update;
         attitude_target_update.from_axis_angle(Vector3f{_ang_vel_target.x * _dt, _ang_vel_target.y * _dt, _ang_vel_target.z * _dt});
         _attitude_target = _attitude_target * attitude_target_update;
-        _attitude_target.normalize();
     }
 
     // ensure Quaternion stay normalised
