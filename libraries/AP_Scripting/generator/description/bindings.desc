@@ -347,7 +347,7 @@ singleton AP_Param method add_table boolean uint8_t 0 200 string uint8_t 1 63
 singleton AP_Param method add_param boolean uint8_t 0 200 uint8_t 1 63 string float'skip_check
 
 include AP_Scripting/AP_Scripting_helpers.h
-userdata Parameter creation lua_new_Parameter
+userdata Parameter creation lua_new_Parameter 1
 userdata Parameter method init boolean string
 userdata Parameter method init_by_info boolean uint16_t 0 UINT16_MAX uint32_t'skip_check ap_var_type'enum AP_PARAM_INT8 AP_PARAM_FLOAT
 userdata Parameter method get boolean float'Null
@@ -438,7 +438,7 @@ include AP_HAL/I2CDevice.h
 ap_object AP_HAL::I2CDevice semaphore-pointer
 ap_object AP_HAL::I2CDevice method set_retries void uint8_t 0 20
 ap_object AP_HAL::I2CDevice method write_register boolean uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX
-ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers
+ap_object AP_HAL::I2CDevice manual read_registers AP_HAL__I2CDevice_read_registers 2
 ap_object AP_HAL::I2CDevice method set_address void uint8_t 0 UINT8_MAX
 
 
@@ -481,8 +481,8 @@ include AP_InertialSensor/AP_InertialSensor.h
 singleton AP_InertialSensor rename ins
 singleton AP_InertialSensor method get_temperature float uint8_t 0 INS_MAX_INSTANCES
 
-singleton CAN manual get_device lua_get_CAN_device
-singleton CAN manual get_device2 lua_get_CAN_device2
+singleton CAN manual get_device lua_get_CAN_device 1
+singleton CAN manual get_device2 lua_get_CAN_device2 1
 singleton CAN depends HAL_MAX_CAN_PROTOCOL_DRIVERS
 
 include AP_Scripting/AP_Scripting_CANSensor.h depends HAL_MAX_CAN_PROTOCOL_DRIVERS
@@ -606,15 +606,15 @@ singleton AP_EFI method get_backend AP_EFI_Backend uint8_t 0 UINT8_MAX
 -- ----END EFI Library----
 
 singleton AP_Logger rename logger
-singleton AP_Logger manual write AP_Logger_Write
+singleton AP_Logger manual write AP_Logger_Write 7
 
-singleton i2c manual get_device lua_get_i2c_device
+singleton i2c manual get_device lua_get_i2c_device 4
 
-global manual millis lua_millis
-global manual micros lua_micros
-global manual mission_receive lua_mission_receive
+global manual millis lua_millis 0
+global manual micros lua_micros 0
+global manual mission_receive lua_mission_receive 0
 
-userdata uint32_t creation lua_new_uint32_t
+userdata uint32_t creation lua_new_uint32_t 1
 userdata uint32_t manual_operator __add uint32_t___add
 userdata uint32_t manual_operator __sub uint32_t___sub
 userdata uint32_t manual_operator __mul uint32_t___mul
@@ -631,6 +631,6 @@ userdata uint32_t manual_operator __lt uint32_t___lt
 userdata uint32_t manual_operator __le uint32_t___le
 userdata uint32_t manual_operator __bnot uint32_t___bnot
 userdata uint32_t manual_operator __tostring uint32_t___tostring
-userdata uint32_t manual toint uint32_t_toint
-userdata uint32_t manual tofloat uint32_t_tofloat
+userdata uint32_t manual toint uint32_t_toint 0
+userdata uint32_t manual tofloat uint32_t_tofloat 0
 
