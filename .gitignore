@@ -92,6 +92,13 @@ logs/
 mav.log
 mav.log.raw
 mav.parm
+/defaults.parm
+/ArduCopter/defaults.parm
+/ArduPlane/defaults.parm
+/AntennaTracker/defaults.parm
+/ArduSub/defaults.parm
+/Blimp/defaults.parm
+/Rover/defaults.parm
 mk/PX4/ROMFS/default.parm
 module.mk
 serialsent.raw
