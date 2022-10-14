@@ -251,7 +251,7 @@ singleton AP_Vehicle method get_wp_distance_m boolean float'Null
 singleton AP_Vehicle method get_wp_bearing_deg boolean float'Null
 singleton AP_Vehicle method get_wp_crosstrack_error_m boolean float'Null
 singleton AP_Vehicle method get_pan_tilt_norm boolean float'Null float'Null
-singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null float'Null float'Null
+singleton AP_Vehicle method nav_script_time boolean uint16_t'Null uint8_t'Null float'Null float'Null int16_t'Null int16_t'Null
 singleton AP_Vehicle method nav_script_time_done void uint16_t 0 UINT16_MAX
 singleton AP_Vehicle method set_target_throttle_rate_rpy void float -100 100 float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method set_desired_turn_rate_and_speed boolean float'skip_check float'skip_check
