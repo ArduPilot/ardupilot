@@ -727,6 +727,14 @@ bool GCS_MAVLINK_Plane::set_home_to_current_location(bool _lock)
     if (_lock) {
         AP::ahrs().lock_home();
     }
+    if ((plane.control_mode == &plane.mode_rtl)
+#if HAL_QUADPLANE_ENABLED
+            || (plane.control_mode == &plane.mode_qrtl)
+#endif
+                                                        ) {
+        // if in RTL head to the updated home location
+        plane.control_mode->enter();
+    }
     return true;
 }
 bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
@@ -736,6 +744,14 @@ bool GCS_MAVLINK_Plane::set_home(const Location& loc, bool _lock)
     }
     if (_lock) {
         AP::ahrs().lock_home();
+    }
+    if ((plane.control_mode == &plane.mode_rtl)
+#if HAL_QUADPLANE_ENABLED
+            || (plane.control_mode == &plane.mode_qrtl)
+#endif
+                                                        ) {
+        // if in RTL head to the updated home location
+        plane.control_mode->enter();
     }
     return true;
 }
@@ -1061,40 +1077,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_long_packet(const mavlink_command_l
             }
         }
         return MAV_RESULT_FAILED;
-
-    case MAV_CMD_DO_SET_HOME: {
-        // param1 : use current (1=use current location, 0=use specified location)
-        // param5 : latitude
-        // param6 : longitude
-        // param7 : altitude (absolute)
-        if (is_equal(packet.param1,1.0f)) {
-            if (!plane.set_home_persistently(AP::gps().location())) {
-                return MAV_RESULT_FAILED;
-            }
-            AP::ahrs().lock_home();
-        } else {
-            // ensure param1 is zero
-            if (!is_zero(packet.param1)) {
-                return MAV_RESULT_FAILED;
-            }
-            Location new_home_loc;
-            if (!location_from_command_t(packet, MAV_FRAME_GLOBAL, new_home_loc)) {
-                return MAV_RESULT_DENIED;
-            }
-            if (!set_home(new_home_loc, true)) {
-                return MAV_RESULT_FAILED;
-            }
-        }
-        if ((plane.control_mode == &plane.mode_rtl)
-#if HAL_QUADPLANE_ENABLED
-                || (plane.control_mode == &plane.mode_qrtl)
-#endif
-                                                            ) {
-            // if in RTL head to the updated home location
-            plane.control_mode->enter();
-        }
-        return MAV_RESULT_ACCEPTED;
-    }
 
     case MAV_CMD_DO_AUTOTUNE_ENABLE:
         // param1 : enable/disable
