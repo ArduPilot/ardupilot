@@ -76,6 +76,9 @@ AP_GPS_GSOF::read(void)
     bool ret = false;
     while (port->available() > 0) {
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         ret |= parse(temp);
     }
 
