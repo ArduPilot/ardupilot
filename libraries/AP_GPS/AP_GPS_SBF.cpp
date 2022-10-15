@@ -86,6 +86,9 @@ AP_GPS_SBF::read(void)
     uint32_t available_bytes = port->available();
     for (uint32_t i = 0; i < available_bytes; i++) {
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         ret |= parse(temp);
     }
 
