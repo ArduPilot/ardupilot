@@ -874,7 +874,7 @@ void AP_Logger_File::start_new_log(void)
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 void AP_Logger_File::flush(void)
-#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
 {
     uint32_t tnow = AP_HAL::millis();
     while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {
