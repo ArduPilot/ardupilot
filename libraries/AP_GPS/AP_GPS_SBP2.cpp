@@ -103,6 +103,9 @@ AP_GPS_SBP2::_sbp_process()
     while (nleft > 0) {
         nleft--;
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         uint16_t crc;
 
         //This switch reads one character at a time,
