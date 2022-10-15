@@ -57,6 +57,9 @@ AP_GPS_ERB::read(void)
 
         // read the next byte
         data = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&data, 1);
+#endif
 
         reset:
         switch(_step) {
