@@ -18,6 +18,7 @@ public:
     float get_rate_demand();
     float get_coordination_gain() { return _roll_ff; }
     float get_angle_error_gain() { return 1.0f / MAX(gains.tau, 0.1f); }
+    float get_angle_error_tconst() { return MAX(gains.tau, 0.1f); }
 
     void reset_I();
 
