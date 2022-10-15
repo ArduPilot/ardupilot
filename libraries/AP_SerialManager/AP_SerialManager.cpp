@@ -543,7 +543,11 @@ void AP_SerialManager::init()
 
 #ifndef HAL_BUILD_AP_PERIPH
                 case SerialProtocol_RCIN:
-                    AP::RC().add_uart(uart);
+                    if (AP::RC().has_uart()) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Duplicate RCIN configured on SERIAL%u", i);
+                    } else {
+                        AP::RC().add_uart(uart);
+                    }
                     break;
 #endif
                     
