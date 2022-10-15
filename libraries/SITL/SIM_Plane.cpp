@@ -82,6 +82,11 @@ Plane::Plane(const char *frame_str) :
         thrust_scale *= 1.5;
     }
 
+    if (strstr(frame_str, "-3d")) {
+        aerobatic = true;
+        thrust_scale *= 1.5;
+    }
+    
     if (strstr(frame_str, "-ice")) {
         ice_engine = true;
     }
@@ -142,7 +147,7 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	//calculate aerodynamic torque
     float effective_airspeed = airspeed;
 
-    if (tailsitter) {
+    if (tailsitter || aerobatic) {
         /*
           tailsitters get airspeed from prop-wash
          */
@@ -321,7 +326,7 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
 
-    if (tailsitter) {
+    if (tailsitter || aerobatic) {
         /*
           tailsitters get 4x the control surfaces
          */
