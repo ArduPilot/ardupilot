@@ -54,12 +54,12 @@ bool AP_GPS_NMEA::read(void)
     numc = port->available();
     while (numc--) {
         char c = port->read();
-        if (_decode(c)) {
-            parsed = true;
-        }
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data((const uint8_t *)&c, 1);
 #endif
+        if (_decode(c)) {
+            parsed = true;
+        }
     }
     return parsed;
 }
