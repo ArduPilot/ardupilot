@@ -289,7 +289,9 @@ public:
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
+#if AP_MAVLINK_BATTERY2_ENABLED
     void send_battery2();
+#endif
 #if AP_OPTICALFLOW_ENABLED
     void send_opticalflow();
 #endif
