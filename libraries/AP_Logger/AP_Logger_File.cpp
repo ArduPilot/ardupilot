@@ -745,7 +745,7 @@ void AP_Logger_File::PrepForArming_start_logging()
         if (logging_started()) {
             break;
         }
-#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !defined(HAL_BUILD_AP_PERIPH)
+#if !APM_BUILD_TYPE(APM_BUILD_Replay) && !defined(HAL_BUILD_AP_PERIPH) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
         // keep the EKF ticking over
         AP::ahrs().update();
 #endif
