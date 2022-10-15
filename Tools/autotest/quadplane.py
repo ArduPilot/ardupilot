@@ -795,13 +795,16 @@ class AutoTestQuadPlane(AutoTest):
         '''Test ICE Engine support'''
         rc_engine_start_chan = 11
         self.set_parameters({
-            'SERVO13_FUNCTION': 67,  # ignition
-            'SERVO14_FUNCTION': 69,  # starter
-            'ICE_ENABLE': 1,
             'ICE_START_CHAN': rc_engine_start_chan,
-            'ICE_RPM_CHAN': 1,
-            'RPM1_TYPE': 10,
         })
+        model = "quadplane-ice"
+
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath(model),
+            wipe=False)
+
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.wait_rpm(1, 0, 0, minimum_duration=1)
@@ -831,13 +834,17 @@ class AutoTestQuadPlane(AutoTest):
         '''Test ICE Engine Mission support'''
         rc_engine_start_chan = 11
         self.set_parameters({
-            'SERVO13_FUNCTION': 67,  # ignition
-            'SERVO14_FUNCTION': 69,  # starter
-            'ICE_ENABLE': 1,
             'ICE_START_CHAN': rc_engine_start_chan,
-            'ICE_RPM_CHAN': 1,
-            'RPM1_TYPE': 10,
         })
+        model = "quadplane-ice"
+
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath(model),
+            wipe=False)
+
+        self.reboot_sitl()
         self.load_mission("mission.txt")
         self.wait_ready_to_arm()
         self.set_rc(rc_engine_start_chan, 2000)
