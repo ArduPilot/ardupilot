@@ -124,6 +124,7 @@ public:
 
     // add a UART for RCIN
     void add_uart(AP_HAL::UARTDriver* uart);
+    bool has_uart() const { return added.uart != nullptr; }
 
 #ifdef IOMCU_FW
     // set allowed RC protocols
