@@ -100,6 +100,9 @@ AP_GPS_SBP::_sbp_process()
 
     while (port->available() > 0) {
         uint8_t temp = port->read();
+#if AP_GPS_DEBUG_LOGGING_ENABLED
+        log_data(&temp, 1);
+#endif
         uint16_t crc;
 
 
