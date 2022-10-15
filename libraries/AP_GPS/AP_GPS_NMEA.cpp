@@ -389,7 +389,7 @@ bool AP_GPS_NMEA::_term_complete()
                         state.ground_speed = state.velocity.xy().length();
                         _last_3D_velocity_ms = now;
                     }
-                    if (is_equal(3.0f, _ksxt.fields[10])) {
+                    if (is_equal(3.0f, float(_ksxt.fields[10]))) {
                         // have good yaw (from RTK fixed moving baseline solution)
                         _last_yaw_ms = now;
                         state.gps_yaw = _ksxt.fields[4];
