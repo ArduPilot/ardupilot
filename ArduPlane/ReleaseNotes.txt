@@ -1,3 +1,18 @@
+Release 4.3.1beta1 15th Oct 2022
+--------------------------------
+
+This is a minor release with some important fixes:
+
+ - fixed build with gcc 11.3
+ - fixed random number generator in lua core
+ - scale VTOL angle P with airspeed in quadplane back-transiton
+ - added support for implementing AUX functions in lua scripts
+ - fixed BMI085 accel scaling
+ - fixed KSXT NMEA parsing affecting position resolution
+ - fixed race condition in TECS control leading to 'nod' in forward transiton
+
+Happy flying!
+
 Release 4.3.0 9th Oct 2022
 --------------------------
 
