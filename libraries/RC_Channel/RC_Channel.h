@@ -215,6 +215,7 @@ public:
         FW_AUTOTUNE =          107, // fixed wing auto tune
         QRTL =               108, // QRTL mode
         CUSTOM_CONTROLLER =  109,
+        KILL_IMU3 =          110, // disable third IMU (for IMU failure testing)
         // if you add something here, make sure to update the documentation of the parameter in RC_Channel.cpp!
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
