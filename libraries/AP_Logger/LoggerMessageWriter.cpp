@@ -25,7 +25,7 @@ void LoggerMessageWriter::reset()
 
 bool LoggerMessageWriter::out_of_time_for_writing_messages() const
 {
-#if HAL_SCHEDULER_ENABLED
+#if HAL_SCHEDULER_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     return AP::scheduler().time_available_usec() < MIN_LOOP_TIME_REMAINING_FOR_MESSAGE_WRITE_US;
 #else
     return false;
@@ -62,7 +62,7 @@ bool LoggerMessageWriter_DFLogStart::out_of_time_for_writing_messages() const
 {
     if (stage == Stage::FORMATS) {
         // write out the FMT messages as fast as we can
-#if HAL_SCHEDULER_ENABLED
+#if HAL_SCHEDULER_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
         return AP::scheduler().time_available_usec() == 0;
 #else
         return false;
