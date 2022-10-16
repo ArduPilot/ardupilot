@@ -326,10 +326,10 @@ int lua_get_i2c_device(lua_State *L) {
         return luaL_argerror(L, args, "too many arguments");
     }
 
-    const lua_Integer bus_in = get_integer(L, 1 + arg_offset, 0, 4, "bus out of range");
+    const lua_Integer bus_in = get_integer(L, 1 + arg_offset, 0, 4);
     const uint8_t bus = static_cast<uint8_t>(bus_in);
 
-    const lua_Integer address_in = get_integer(L, 2 + arg_offset, 0, 128, "address out of range");
+    const lua_Integer address_in = get_integer(L, 2 + arg_offset, 0, 128);
     const uint8_t address = static_cast<uint8_t>(address_in);
 
     // optional arguments, use the same defaults as the hal get_device function
@@ -384,12 +384,12 @@ int AP_HAL__I2CDevice_read_registers(lua_State *L) {
         return luaL_error(L, "Internal error, null pointer");
     }
 
-    const lua_Integer raw_first_reg = get_integer(L, 2, 0, UINT8_MAX, "argument out of range");
+    const lua_Integer raw_first_reg = get_integer(L, 2, 0, UINT8_MAX);
     const uint8_t first_reg = static_cast<uint8_t>(raw_first_reg);
 
     uint8_t recv_length = 1;
     if (multi_register) {
-        const lua_Integer raw_recv_length = get_integer(L, 3, 0, UINT8_MAX, "argument out of range");
+        const lua_Integer raw_recv_length = get_integer(L, 3, 0, UINT8_MAX);
         recv_length = static_cast<uint8_t>(raw_recv_length);
     }
 
@@ -423,7 +423,7 @@ int lua_get_CAN_device(lua_State *L) {
 
     binding_argcheck(L, 1 + arg_offset);
 
-    const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25, "argument out of range");
+    const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25);
     const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
 
     if (AP::scripting()->_CAN_dev == nullptr) {
@@ -446,7 +446,7 @@ int lua_get_CAN_device2(lua_State *L) {
 
     binding_argcheck(L, 1 + arg_offset);
 
-    const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25, "argument out of range");
+    const uint32_t raw_buffer_len = get_uint32(L, 1 + arg_offset, 1, 25);
     const uint32_t buffer_len = static_cast<uint32_t>(raw_buffer_len);
 
     if (AP::scripting()->_CAN_dev2 == nullptr) {
