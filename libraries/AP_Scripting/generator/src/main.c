@@ -1226,7 +1226,6 @@ void emit_userdata_allocators(void) {
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
     fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s));\n", node->name);
-    fprintf(source, "    memset(ud, 0, sizeof(%s));\n", node->name);
     fprintf(source, "    new (ud) %s();\n", node->name);
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->rename ? node->rename :  node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
@@ -1244,8 +1243,7 @@ void emit_ap_object_allocators(void) {
     start_dependency(source, node->dependency);
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
     fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
-    fprintf(source, "    void *ud = lua_newuserdata(L, sizeof(%s *));\n", node->name);
-    fprintf(source, "    memset(ud, 0, sizeof(%s *));\n", node->name); // FIXME: memset is a ridiculously large hammer here
+    fprintf(source, "    lua_newuserdata(L, sizeof(%s *));\n", node->name);
     fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
     fprintf(source, "    lua_setmetatable(L, -2);\n");
     fprintf(source, "    return 1;\n");
