@@ -1275,8 +1275,13 @@ void emit_ap_object_checkers(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "%s ** check_%s(lua_State *L, int arg) {\n", node->name, node->sanatized_name);
-    fprintf(source, "    void *data = luaL_checkudata(L, arg, \"%s\");\n", node->name);
-    fprintf(source, "    return (%s **)data;\n", node->name);
+    fprintf(source, "    %s ** data = (%s**)luaL_checkudata(L, arg, \"%s\");\n", node->name, node->name, node->name);
+    fprintf(source, "    %s * ud = *data;\n", node->name);
+    fprintf(source, "    if (ud == NULL) {\n");
+    fprintf(source, "        // This error will never return, so there is no danger of returning a NULL\n");
+    fprintf(source, "        luaL_error(L, \"Internal error, null pointer\");\n");
+    fprintf(source, "    }\n");
+    fprintf(source, "    return data;\n");
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -1821,9 +1826,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
     case UD_AP_OBJECT:
       // extract the userdata, it was a pointer, so we need to grab it
       fprintf(source, "    %s * ud = *check_%s(L, 1);\n", data->name, data->sanatized_name);
-      fprintf(source, "    if (ud == NULL) {\n");
-      fprintf(source, "        return luaL_error(L, \"Internal error, null pointer\");\n");
-      fprintf(source, "    }\n");
       break;
   }
 
@@ -2037,7 +2039,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
       fprintf(source, "        return 0;\n");
       fprintf(source, "    }\n");
       fprintf(source, "    new_%s(L);\n", method->return_type.data.ud.sanatized_name);
-      fprintf(source, "    *check_%s(L, -1) = data;\n", method->return_type.data.ud.sanatized_name);
+      fprintf(source, "    *(%s**)luaL_checkudata(L, -1, \"%s\") = data;\n", method->return_type.data.ud.name, method->return_type.data.ud.name);
       break;
     case TYPE_NONE:
     case TYPE_LITERAL:
