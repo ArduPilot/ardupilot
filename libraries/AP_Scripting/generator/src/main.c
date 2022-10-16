@@ -1283,6 +1283,26 @@ void emit_ap_object_checkers(void) {
   }
 }
 
+void emit_singleton_checkers(void) {
+  struct userdata * node = parsed_singletons;
+  while (node) {
+    if (!(node->flags & UD_FLAG_LITERAL) && (node->methods != NULL)) {
+      start_dependency(source, node->dependency);
+      fprintf(source, "%s * check_%s(lua_State *L) {\n", node->name, node->sanatized_name);
+      fprintf(source, "    %s * ud = %s::get_singleton();\n", node->name, node->name);
+      fprintf(source, "    if (ud == nullptr) {\n");
+      fprintf(source, "        // This error will never return, so there is no danger of returning a nullptr\n");
+      fprintf(source, "        not_supported_error(L, 1, \"%s\");\n", node->rename ? node->rename : node->name);
+      fprintf(source, "    }\n");
+      fprintf(source, "    return ud;\n");
+      fprintf(source, "}\n");
+      end_dependency(source, node->dependency);
+      fprintf(source, "\n");
+    }
+    node = node->next;
+  }
+}
+
 void emit_userdata_declarations(void) {
   struct userdata * node = parsed_userdata;
   while (node) {
@@ -1677,10 +1697,7 @@ void emit_singleton_field(const struct userdata *data, const struct userdata_fie
   // emit comments on expected arg/type
   if (!(data->flags & UD_FLAG_LITERAL)) {
       // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
-      fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return not_supported_error(L, %d, \"%s\");\n", 1, data->rename ? data->rename : data->name);
-      fprintf(source, "    }\n\n");
+      fprintf(source, "    %s * ud = check_%s(L);\n", data->name, data->sanatized_name);
   }
   const char *ud_name = (data->flags & UD_FLAG_LITERAL)?data->name:"ud";
   const char *ud_access = (data->flags & UD_FLAG_REFERENCE)?".":"->";
@@ -1761,7 +1778,6 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   start_dependency(source, data->dependency);
 
-  const char *access_name = data->rename ? data->rename : data->name;
   // bind ud early if it's a singleton, so that we can use it in the range checks
   fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, method->sanatized_name);
   // emit comments on expected arg/type
@@ -1769,10 +1785,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
 
   if ((data->ud_type == UD_SINGLETON) && !(data->flags & UD_FLAG_LITERAL)) {
       // fetch and check the singleton pointer
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", data->name, data->name);
-      fprintf(source, "    if (ud == nullptr) {\n");
-      fprintf(source, "        return not_supported_error(L, %d, \"%s\");\n", arg_count, access_name);
-      fprintf(source, "    }\n\n");
+      fprintf(source, "    %s * ud = check_%s(L);\n", data->name, data->sanatized_name);
   }
 
   // emit warning if configured
@@ -2779,7 +2792,7 @@ int main(int argc, char **argv) {
 
   emit_ap_object_checkers();
 
-
+  emit_singleton_checkers();
 
   emit_singleton_fields();
   emit_methods(parsed_singletons);
@@ -2824,6 +2837,16 @@ int main(int argc, char **argv) {
   fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
   fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
   fprintf(header, "int new_ap_object(lua_State *L, size_t size, const char * name);\n");
+
+  struct userdata * node = parsed_singletons;
+  while (node) {
+    if (!(node->flags & UD_FLAG_LITERAL) && (node->methods != NULL)) {
+      start_dependency(header, node->dependency);
+      fprintf(header, "%s * check_%s(lua_State *L);\n", node->name, node->sanatized_name);
+      end_dependency(header, node->dependency);
+    }
+    node = node->next;
+  }
 
   fclose(header);
   header = NULL;
