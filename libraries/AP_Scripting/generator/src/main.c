@@ -1242,11 +1242,7 @@ void emit_ap_object_allocators(void) {
   while (node) {
     start_dependency(source, node->dependency);
     fprintf(source, "int new_%s(lua_State *L) {\n", node->sanatized_name);
-    fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n"); // ensure we have sufficent stack to push the return
-    fprintf(source, "    lua_newuserdata(L, sizeof(%s *));\n", node->name);
-    fprintf(source, "    luaL_getmetatable(L, \"%s\");\n", node->name);
-    fprintf(source, "    lua_setmetatable(L, -2);\n");
-    fprintf(source, "    return 1;\n");
+    fprintf(source, "    return new_ap_object(L, sizeof(%s *), \"%s\");\n", node->name, node->name);
     fprintf(source, "}\n");
     end_dependency(source, node->dependency);
     fprintf(source, "\n");
@@ -2419,6 +2415,15 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    luaL_argcheck(L, (lua_unint32 >= min_val) && (lua_unint32 <= max_val), arg_num, \"out of range\");\n");
   fprintf(source, "    return lua_unint32;\n");
   fprintf(source, "}\n\n");
+
+  fprintf(source, "int new_ap_object(lua_State *L, size_t size, const char * name) {\n");
+  fprintf(source, "    luaL_checkstack(L, 2, \"Out of stack\");\n");
+  fprintf(source, "    lua_newuserdata(L, size);\n");
+  fprintf(source, "    luaL_getmetatable(L, name);\n");
+  fprintf(source, "    lua_setmetatable(L, -2);\n");
+  fprintf(source, "    return 1;\n");
+  fprintf(source, "}\n\n");
+
 }
 
 void emit_not_supported_helper(void) {
@@ -2851,6 +2856,7 @@ int main(int argc, char **argv) {
   fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
   fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
   fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
+  fprintf(header, "int new_ap_object(lua_State *L, size_t size, const char * name);\n");
 
   fclose(header);
   header = NULL;
