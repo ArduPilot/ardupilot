@@ -264,8 +264,9 @@ bool AP_Arming::barometer_checks(bool report)
 #endif
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_BARO)) {
-        if (!AP::baro().all_healthy()) {
-            check_failed(ARMING_CHECK_BARO, report, "Barometer not healthy");
+        char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
+        if (!AP::baro().arming_checks(sizeof(buffer), buffer)) {
+            check_failed(ARMING_CHECK_BARO, report, "Baro: %s", buffer);
             return false;
         }
     }
