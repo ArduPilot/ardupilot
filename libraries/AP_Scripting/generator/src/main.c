@@ -1312,7 +1312,7 @@ void emit_ap_object_declarations(void) {
 }
 
 #define NULLABLE_ARG_COUNT_BASE 5000
-void emit_checker(const struct type t, int arg_number, int skipped, const char *indentation, const char *name) {
+void emit_checker(const struct type t, int arg_number, int skipped, const char *indentation) {
   assert(indentation != NULL);
 
   if (arg_number > NULLABLE_ARG_COUNT_BASE) {
@@ -1464,7 +1464,7 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
             fprintf(source, "%sconst %s raw_data_%d = %s(L, %d);\n", indentation, type_name, arg_number, get_name, arg_number - skipped);
         } else {
           if ((forced_min != NULL) && (forced_max != NULL)) {
-            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d, MAX(%s, %s), MIN(%s, %s), \"%s out of range\");\n", indentation, type_name, arg_number, get_and_check_name, arg_number - skipped, t.range->low, forced_min,  t.range->high, forced_max, name);
+            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d, MAX(%s, %s), MIN(%s, %s));\n", indentation, type_name, arg_number, get_and_check_name, arg_number - skipped, t.range->low, forced_min,  t.range->high, forced_max);
           } else {
             char * cast_target = "";
 
@@ -1492,7 +1492,7 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
                 assert(t.range == NULL); // we should have caught this during the parse phase
                 break;
             }
-            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d, static_cast<%s>(%s), static_cast<%s>(%s), \"%s out of range\");\n", indentation, type_name, arg_number, get_and_check_name, arg_number - skipped, cast_target, t.range->low, cast_target, t.range->high, name);
+            fprintf(source, "%sconst %s raw_data_%d = %s(L, %d, static_cast<%s>(%s), static_cast<%s>(%s));\n", indentation, type_name, arg_number, get_and_check_name, arg_number - skipped, cast_target, t.range->low, cast_target, t.range->high);
 
           }
         }
@@ -1566,7 +1566,7 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
     index_string = "[index]";
     write_arg_number = 3;
 
-    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s, UINT8_MAX), \"index out of range\");\n",field->array_len);
+    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s, UINT8_MAX));\n",field->array_len);
     fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
 
     fprintf(source, "    switch(lua_gettop(L)-1) {\n");
@@ -1617,7 +1617,7 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
     fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ", field->name);
+    emit_checker(field->type, write_arg_number, 0, "            ");
     fprintf(source, "            ud->%s%s = data_%i;\n", field->name, index_string, write_arg_number);
     fprintf(source, "            return 0;\n");
     fprintf(source, "         }\n");
@@ -1665,7 +1665,7 @@ void emit_singleton_field(const struct userdata *data, const struct userdata_fie
     index_string = "[index]";
     write_arg_number = 3;
 
-    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s, UINT8_MAX), \"index out of range\");\n",field->array_len);
+    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s, UINT8_MAX));\n",field->array_len);
     fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
 
     fprintf(source, "    switch(lua_gettop(L)-1) {\n");
@@ -1716,7 +1716,7 @@ void emit_singleton_field(const struct userdata *data, const struct userdata_fie
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
     fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ", field->name);
+    emit_checker(field->type, write_arg_number, 0, "            ");
     fprintf(source, "            %s%s%s%s = data_%i;\n", ud_name, ud_access, field->name, index_string, write_arg_number);
     fprintf(source, "            return 0;\n");
     fprintf(source, "         }\n");
@@ -1856,7 +1856,7 @@ void emit_userdata_method(const struct userdata *data, const struct method *meth
   while (arg != NULL) {
     if (arg->type.type != TYPE_LITERAL) {
       // emit_checker will emit a nullable argument for us
-      emit_checker(arg->type, arg_count, skipped, "    ", "argument");
+      emit_checker(arg->type, arg_count, skipped, "    ");
       arg_count++;
     }
     if (//arg->type.type == TYPE_LITERAL ||
@@ -2404,21 +2404,21 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    return 0;\n");
   fprintf(source, "}\n\n");
 
-  fprintf(source, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val, const char* error_string) {\n");
+  fprintf(source, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val) {\n");
   fprintf(source, "    const lua_Integer lua_int = luaL_checkinteger(L, arg_num);\n");
-  fprintf(source, "    luaL_argcheck(L, (lua_int >= min_val) && (lua_int <= max_val), arg_num, error_string);\n");
+  fprintf(source, "    luaL_argcheck(L, (lua_int >= min_val) && (lua_int <= max_val), arg_num, \"out of range\");\n");
   fprintf(source, "    return lua_int;\n");
   fprintf(source, "}\n\n");
 
-  fprintf(source, "float get_number(lua_State *L, int arg_num, float min_val, float max_val, const char* error_string) {\n");
+  fprintf(source, "float get_number(lua_State *L, int arg_num, float min_val, float max_val) {\n");
   fprintf(source, "    const float lua_num = luaL_checknumber(L, arg_num);\n");
-  fprintf(source, "    luaL_argcheck(L, (lua_num >= min_val) && (lua_num <= max_val), arg_num, error_string);\n");
+  fprintf(source, "    luaL_argcheck(L, (lua_num >= min_val) && (lua_num <= max_val), arg_num, \"out of range\");\n");
   fprintf(source, "    return lua_num;\n");
   fprintf(source, "}\n\n");
 
-  fprintf(source, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val, const char* error_string) {\n");
+  fprintf(source, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val) {\n");
   fprintf(source, "    const uint32_t lua_unint32 = coerce_to_uint32_t(L, arg_num);\n");
-  fprintf(source, "    luaL_argcheck(L, (lua_unint32 >= min_val) && (lua_unint32 <= max_val), arg_num, error_string);\n");
+  fprintf(source, "    luaL_argcheck(L, (lua_unint32 >= min_val) && (lua_unint32 <= max_val), arg_num, \"out of range\");\n");
   fprintf(source, "    return lua_unint32;\n");
   fprintf(source, "}\n\n");
 }
@@ -2850,9 +2850,9 @@ int main(int argc, char **argv) {
   fprintf(header, "void load_generated_bindings(lua_State *L);\n");
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
   fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
-  fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val, const char* error_string);\n");
-  fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val, const char* error_string);\n");
-  fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val, const char* error_string);\n");
+  fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
+  fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
+  fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
 
   fclose(header);
   header = NULL;
