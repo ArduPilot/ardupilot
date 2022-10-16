@@ -168,17 +168,22 @@ int AP_Logger_Write(lua_State *L) {
         return luaL_argerror(L, args, "unknown format");
     }
 
-    luaL_Buffer buffer;
-    luaL_buffinit(L, &buffer);
+    lua_Alloc allocf = lua_getallocf(L, nullptr);
+    char *buffer = (char*)allocf(nullptr, nullptr, 0, msg_len);
+    if (buffer == nullptr) {
+        return luaL_error(L, "Buffer allocation failed");
+    }
 
     // add logging headers
-    const char header[2] = {(char)HEAD_BYTE1, (char)HEAD_BYTE2};
-    luaL_addlstring(&buffer, header, sizeof(header));
-    luaL_addlstring(&buffer, (char *)&f->msg_type, sizeof(f->msg_type));
+    uint8_t offset = 0;
+    buffer[offset++] = HEAD_BYTE1;
+    buffer[offset++] = HEAD_BYTE2;
+    buffer[offset++] = f->msg_type;
 
     // timestamp is always first value
     const uint64_t now = AP_HAL::micros64();
-    luaL_addlstring(&buffer, (char *)&now, sizeof(uint64_t));
+    memcpy(&buffer[offset], &now, sizeof(uint64_t));
+    offset += sizeof(uint64_t);
 
     for (uint8_t i=field_start; i<=args; i++) {
         uint8_t charlen = 0;
@@ -198,16 +203,29 @@ int AP_Logger_Write(lua_State *L) {
             case 'i':
             case 'L':
             case 'e': {
-                const lua_Integer tmp1 = luaL_checkinteger(L, arg_index);
-                luaL_argcheck(L, ((tmp1 >= INT32_MIN) && (tmp1 <= INT32_MAX)), arg_index, "argument out of range");
-                int32_t tmp = tmp1;
-                luaL_addlstring(&buffer, (char *)&tmp, sizeof(int32_t));
+                int isnum;
+                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                if (!isnum) {
+                    allocf(nullptr, buffer, 0, 0);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                const int32_t tmp = tmp1;
+                memcpy(&buffer[offset], &tmp, sizeof(int32_t));
+                offset += sizeof(int32_t);
                 break;
             }
             case 'f': {
-                float tmp = luaL_checknumber(L, arg_index);
-                luaL_argcheck(L, ((tmp >= -INFINITY) && (tmp <= INFINITY)), arg_index, "argument out of range");
-                luaL_addlstring(&buffer, (char *)&tmp, sizeof(float));
+                int isnum;
+                const lua_Number tmp1 = lua_tonumberx(L, arg_index, &isnum);
+                if (!isnum) {
+                    allocf(nullptr, buffer, 0, 0);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
+                const float tmp = tmp1;
+                memcpy(&buffer[offset], &tmp, sizeof(float));
+                offset += sizeof(float);
                 break;
             }
             case 'n': {
@@ -216,16 +234,41 @@ int AP_Logger_Write(lua_State *L) {
             }
             case 'M':
             case 'B': {
-                const lua_Integer tmp1 = luaL_checkinteger(L, arg_index);
-                luaL_argcheck(L, ((tmp1 >= 0) && (tmp1 <= UINT8_MAX)), arg_index, "argument out of range");
+                int isnum;
+                const lua_Integer tmp1 = lua_tointegerx(L, arg_index, &isnum);
+                if (!isnum || (tmp1 < 0) || (tmp1 > UINT8_MAX)) {
+                    allocf(nullptr, buffer, 0, 0);
+                    luaL_argerror(L, arg_index, "argument out of range");
+                    // no return
+                }
                 uint8_t tmp = static_cast<uint8_t>(tmp1);
-                luaL_addlstring(&buffer, (char *)&tmp, sizeof(uint8_t));
+                memcpy(&buffer[offset], &tmp, sizeof(uint8_t));
+                offset += sizeof(uint8_t);
                 break;
             }
             case 'I':
             case 'E': {
-                const uint32_t tmp = coerce_to_uint32_t(L, arg_index);
-                luaL_addlstring(&buffer, (char *)&tmp, sizeof(uint32_t));
+                uint32_t tmp;
+                void * ud = luaL_testudata(L, arg_index, "uint32_t");
+                if (ud != nullptr) {
+                    tmp = *static_cast<uint32_t *>(ud);
+                } else {
+                    int success;
+                    const lua_Integer v_int = lua_tointegerx(L, arg_index, &success);
+                    if (success) {
+                        tmp = v_int;
+                    } else {
+                        const lua_Number v_float = lua_tonumberx(L, arg_index, &success);
+                        if (!success || (v_float < 0) || (v_float > float(UINT32_MAX))) {
+                            allocf(nullptr, buffer, 0, 0);
+                            luaL_argerror(L, arg_index, "argument out of range");
+                            // no return
+                        }
+                        tmp = v_float;
+                    }
+                }
+                memcpy(&buffer[offset], &tmp, sizeof(uint32_t));
+                offset += sizeof(uint32_t);
                 break;
             }
             case 'N': {
@@ -237,28 +280,35 @@ int AP_Logger_Write(lua_State *L) {
                 break;
             }
             default: {
-                return luaL_error(L, "%c unsupported format",fmt_cat[arg_index-3]);
+                allocf(nullptr, buffer, 0, 0);
+                luaL_error(L, "%c unsupported format",fmt_cat[index]);
+                // no return
             }
         }
         if (charlen != 0) {
-            const char *tmp = luaL_checkstring(L, arg_index);
-            const size_t slen = strlen(tmp);
+            size_t slen;
+            const char *tmp = lua_tolstring(L, arg_index, &slen);
+            if (tmp == nullptr) {
+                allocf(nullptr, buffer, 0, 0);
+                luaL_argerror(L, arg_index, "argument out of range");
+                // no return
+            }
             if (slen > charlen) {
-                return luaL_error(L, "arg %i too long for %c format",arg_index,fmt_cat[arg_index-3]);
+                allocf(nullptr, buffer, 0, 0);
+                luaL_error(L, "arg %d too long for %c format",arg_index,fmt_cat[index]);
+                // no return
             }
-            char tstr[charlen];
-            memcpy(tstr, tmp, slen);
-            if (slen < charlen) {
-                memset(&tstr[slen], 0, charlen-slen);
-            }
-            luaL_addlstring(&buffer, tstr, charlen);
+            memcpy(&buffer[offset], tmp, slen);
+            memset(&buffer[offset+slen], 0, charlen-slen);
+            offset += charlen;
         }
     }
 
     AP_logger->Safe_Write_Emit_FMT(f);
 
-    luaL_pushresult(&buffer);
-    AP_logger->WriteBlock(buffer.b,msg_len);
+    AP_logger->WriteBlock(buffer,msg_len);
+
+    allocf(nullptr, buffer, 0, 0);
 
     return 0;
 }
