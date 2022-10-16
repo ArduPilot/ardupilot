@@ -79,6 +79,9 @@ public:
     // check if all baros are healthy - used for SYS_STATUS report
     bool all_healthy(void) const;
 
+    // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+    bool arming_checks(size_t buflen, char *buffer) const;
+
     // get primary sensor
     uint8_t get_primary(void) const { return _primary; }
 
@@ -205,6 +208,16 @@ public:
     void handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt);
 #endif
 
+    enum Options : uint16_t {
+        TreatMS5611AsMS5607     = (1U << 0U),
+    };
+
+    // check if an option is set
+    bool option_enabled(const Options option) const
+    {
+        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+    }
+
 private:
     // singleton
     static AP_Baro *_singleton;
@@ -298,6 +311,12 @@ private:
     void _probe_i2c_barometers(void);
     AP_Int8                            _filter_range;  // valid value range from mean value
     AP_Int32                           _baro_probe_ext;
+
+#ifndef HAL_BUILD_AP_PERIPH
+    AP_Float                           _alt_error_max;
+#endif
+
+    AP_Int16                           _options;
 
     // semaphore for API access from threads
     HAL_Semaphore                      _rsem;

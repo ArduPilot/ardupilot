@@ -53,6 +53,8 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #define INTERNAL_TEMPERATURE_CLAMP 35.0f
 
@@ -232,6 +234,25 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     AP_GROUPINFO("_FIELD_ELV", 22, AP_Baro, _field_elevation, 0),
 #endif
 #endif
+
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // @Param: _ALTERR_MAX
+    // @DisplayName: Altitude error maximum
+    // @Description: This is the maximum acceptable altitude discrepancy between GPS altitude and barometric presssure altitude calculated against a standard atmosphere for arming checks to pass. If you are getting an arming error due to this parameter then you may have a faulty or substituted barometer. A common issue is vendors replacing a MS5611 in a "Pixhawk" with a MS5607. If you have that issue then please see BARO_OPTIONS parameter to force the MS5611 to be treated as a MS5607. This check is disabled if the value is zero.
+    // @Units: m
+    // @Increment: 1
+    // @Range: 0 5000
+    // @User: Advanced
+    AP_GROUPINFO("_ALTERR_MAX", 23, AP_Baro, _alt_error_max, 2000),
+
+    // @Param: _OPTIONS
+    // @DisplayName: Barometer options
+    // @Description: Barometer options
+    // @Bitmask: 0:Treat MS5611 as MS5607
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, 0),
+#endif
+    
     AP_GROUPEND
 };
 
@@ -1049,6 +1070,34 @@ void AP_Baro::handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt)
     }
 }
 #endif  // AP_BARO_EXTERNALAHRS_ENABLED
+
+// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
+bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
+{
+    if (!all_healthy()) {
+        hal.util->snprintf(buffer, buflen, "not healthy");
+        return false;
+    }
+
+#if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    /*
+      check for a pressure altitude discrepancy between GPS alt and
+      baro alt this catches bad barometers, such as when a MS5607 has
+      been substituted for a MS5611
+     */
+    const auto &gps = AP::gps();
+    if (_alt_error_max > 0 && gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+        const float alt_amsl = gps.location().alt*0.01;
+        const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure());
+        const float error = fabsf(alt_amsl - alt_pressure);
+        if (error > _alt_error_max) {
+            hal.util->snprintf(buffer, buflen, "GPS alt error %.0fm (see BARO_ALTERR_MAX)", error);
+            return false;
+        }
+    }
+#endif
+    return true;
+}
 
 namespace AP {
 
