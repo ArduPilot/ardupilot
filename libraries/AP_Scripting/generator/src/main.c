@@ -1550,9 +1550,18 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
   }
 }
 
-void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
-  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
-  fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
+void emit_field(const struct userdata_field *field, const char* object_name, const char* object_access) {
+  // if there is only one access type there is no need to deal with multiple arguments in a switch
+  int use_switch = TRUE;
+  int args = 1;
+  char *indent = "            ";
+  if (((field->access_flags & ACCESS_FLAG_READ) == 0) || ((field->access_flags & ACCESS_FLAG_WRITE) == 0)) {
+    use_switch = FALSE;
+    indent = "    ";
+    if (field->access_flags & ACCESS_FLAG_WRITE) {
+      args = 2;
+    }
+  }
 
   char *index_string = "";
   int write_arg_number = 2;
@@ -1560,23 +1569,33 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
     index_string = "[index]";
     write_arg_number = 3;
 
-    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s, UINT8_MAX));\n",field->array_len);
+    if (!use_switch) {
+      fprintf(source, "    binding_argcheck(L, %d);\n",args+1);
+    }
+
+    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s-1, UINT8_MAX));\n",field->array_len);
     fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
 
-    fprintf(source, "    switch(lua_gettop(L)-1) {\n");
+    if (use_switch) {
+      fprintf(source, "    switch(lua_gettop(L)-1) {\n");
+    }
 
-  } else {
+  } else if (use_switch) {
     fprintf(source, "    switch(lua_gettop(L)) {\n");
+  } else {
+    fprintf(source, "    binding_argcheck(L, %d);\n",args);
   }
 
   if (field->access_flags & ACCESS_FLAG_READ) {
-    fprintf(source, "        case 1:\n");
+    if (use_switch) {
+      fprintf(source, "        case 1:\n");
+    }
     switch (field->type.type) {
       case TYPE_BOOLEAN:
-        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_FLOAT:
-        fprintf(source, "            lua_pushnumber(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushnumber(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_INT8_T:
       case TYPE_INT16_T:
@@ -1584,11 +1603,11 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
       case TYPE_UINT8_T:
       case TYPE_UINT16_T:
       case TYPE_ENUM:
-        fprintf(source, "            lua_pushinteger(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushinteger(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_UINT32_T:
-        fprintf(source, "            new_uint32_t(L);\n");
-        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = ud->%s%s;\n", field->name, index_string);
+        fprintf(source, "%snew_uint32_t(L);\n", indent);
+        fprintf(source, "%s*static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = %s%s%s%s;\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_NONE:
         error(ERROR_INTERNAL, "Can't access a NONE field");
@@ -1597,7 +1616,7 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         error(ERROR_INTERNAL, "Can't access a literal field");
         break;
       case TYPE_STRING:
-        fprintf(source, "            lua_pushstring(L, ud->%s%s);\n", field->name, index_string);
+        fprintf(source, "%slua_pushstring(L, %s%s%s%s);\n", indent, object_name, object_access, field->name, index_string);
         break;
       case TYPE_USERDATA:
         error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
@@ -1606,21 +1625,34 @@ void emit_userdata_field(const struct userdata *data, const struct userdata_fiel
         error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
         break;
     }
-    fprintf(source, "            return 1;\n");
+    fprintf(source, "%sreturn 1;\n", indent);
   }
 
   if (field->access_flags & ACCESS_FLAG_WRITE) {
-    fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ");
-    fprintf(source, "            ud->%s%s = data_%i;\n", field->name, index_string, write_arg_number);
-    fprintf(source, "            return 0;\n");
-    fprintf(source, "         }\n");
+    if (use_switch) {
+      fprintf(source, "        case 2: {\n");
+    }
+    emit_checker(field->type, write_arg_number, 0, indent);
+    fprintf(source, "%s%s%s%s%s = data_%i;\n", indent, object_name, object_access, field->name, index_string, write_arg_number);
+    fprintf(source, "%sreturn 0;\n", indent);
+    if (use_switch) {
+      fprintf(source, "         }\n");
+    }
   }
 
-  fprintf(source, "        default:\n");
-  fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
-  fprintf(source, "    }\n");
+  if (use_switch) {
+    fprintf(source, "        default:\n");
+    fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
+    fprintf(source, "    }\n");
+  }
+
   fprintf(source, "}\n\n");
+}
+
+void emit_userdata_field(const struct userdata *data, const struct userdata_field *field) {
+  fprintf(source, "static int %s_%s(lua_State *L) {\n", data->sanatized_name, field->name);
+  fprintf(source, "    %s *ud = check_%s(L, 1);\n", data->name, data->sanatized_name);
+  emit_field(field, "ud", "->");
 }
 
 void emit_userdata_fields() {
@@ -1653,73 +1685,8 @@ void emit_singleton_field(const struct userdata *data, const struct userdata_fie
   const char *ud_name = (data->flags & UD_FLAG_LITERAL)?data->name:"ud";
   const char *ud_access = (data->flags & UD_FLAG_REFERENCE)?".":"->";
 
-  char *index_string = "";
-  int write_arg_number = 2;
-  if (field->array_len != NULL) {
-    index_string = "[index]";
-    write_arg_number = 3;
+  emit_field(field, ud_name, ud_access);
 
-    fprintf(source, "\n    const lua_Integer raw_index = get_integer(L, 2, 0, MIN(%s, UINT8_MAX));\n",field->array_len);
-    fprintf(source, "    const uint8_t index = static_cast<uint8_t>(raw_index);\n\n");
-
-    fprintf(source, "    switch(lua_gettop(L)-1) {\n");
-
-  } else {
-    fprintf(source, "    switch(lua_gettop(L)) {\n");
-  }
-
-  if (field->access_flags & ACCESS_FLAG_READ) {
-    fprintf(source, "        case 1:\n");
-    switch (field->type.type) {
-      case TYPE_BOOLEAN:
-        fprintf(source, "            lua_pushinteger(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_FLOAT:
-        fprintf(source, "            lua_pushnumber(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_INT8_T:
-      case TYPE_INT16_T:
-      case TYPE_INT32_T:
-      case TYPE_UINT8_T:
-      case TYPE_UINT16_T:
-      case TYPE_ENUM:
-        fprintf(source, "            lua_pushinteger(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_UINT32_T:
-        fprintf(source, "            new_uint32_t(L);\n");
-        fprintf(source, "            *static_cast<uint32_t *>(luaL_checkudata(L, -1, \"uint32_t\")) = %s%s%s%s;\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_NONE:
-        error(ERROR_INTERNAL, "Can't access a NONE field");
-        break;
-      case TYPE_LITERAL:
-        error(ERROR_INTERNAL, "Can't access a literal field");
-        break;
-      case TYPE_STRING:
-        fprintf(source, "            lua_pushstring(L, %s%s%s%s);\n", ud_name, ud_access, field->name, index_string);
-        break;
-      case TYPE_USERDATA:
-        error(ERROR_USERDATA, "Userdata does not currently support access to userdata field's");
-        break;
-      case TYPE_AP_OBJECT: // FIXME: collapse the identical cases here, and use the type string function
-        error(ERROR_USERDATA, "AP_Object does not currently support access to userdata field's");
-        break;
-    }
-    fprintf(source, "            return 1;\n");
-  }
-
-  if (field->access_flags & ACCESS_FLAG_WRITE) {
-    fprintf(source, "        case 2: {\n");
-    emit_checker(field->type, write_arg_number, 0, "            ");
-    fprintf(source, "            %s%s%s%s = data_%i;\n", ud_name, ud_access, field->name, index_string, write_arg_number);
-    fprintf(source, "            return 0;\n");
-    fprintf(source, "         }\n");
-  }
-
-  fprintf(source, "        default:\n");
-  fprintf(source, "            return luaL_argerror(L, lua_gettop(L), \"too many arguments\");\n");
-  fprintf(source, "    }\n");
-  fprintf(source, "}\n\n");
 }
 
 void emit_singleton_fields() {
