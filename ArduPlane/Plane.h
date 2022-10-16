@@ -1204,6 +1204,9 @@ private:
     // mode reason for entering previous mode
     ModeReason previous_mode_reason = ModeReason::UNKNOWN;
 
+    // last target alt we passed to tecs
+    int32_t tecs_target_alt_cm;
+
 public:
     void failsafe_check(void);
 #if AP_SCRIPTING_ENABLED
