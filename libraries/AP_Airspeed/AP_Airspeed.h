@@ -1,28 +1,11 @@
 #pragma once
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_Airspeed_config.h"
+
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
-#include <AP_MSP/msp.h>
-
-#ifndef AP_AIRSPEED_ENABLED
-#define AP_AIRSPEED_ENABLED 1
-#endif
-
-#ifndef AP_AIRSPEED_MSP_ENABLED
-#define AP_AIRSPEED_MSP_ENABLED (AP_AIRSPEED_ENABLED && HAL_MSP_SENSORS_ENABLED)
-#endif
 
 class AP_Airspeed_Backend;
-
-#ifndef AIRSPEED_MAX_SENSORS
-#define AIRSPEED_MAX_SENSORS 2
-#endif
-
-#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
-#define AP_AIRSPEED_AUTOCAL_ENABLE AP_AIRSPEED_ENABLED
-#endif
 
 class Airspeed_Calibration {
 public:
@@ -125,6 +108,10 @@ public:
     // return time in ms of last update
     uint32_t last_update_ms(uint8_t i) const { return state[i].last_update_ms; }
     uint32_t last_update_ms(void) const { return last_update_ms(primary); }
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+    bool get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &temperature, float &humidity) const;
+#endif
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -231,6 +218,10 @@ private:
             int8_t param_use_backup;
             uint32_t last_warn_ms;
         } failures;
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+        uint32_t last_hygrometer_log_ms;
+#endif
     } state[AIRSPEED_MAX_SENSORS];
 
     bool calibration_enabled;

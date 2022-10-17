@@ -6,13 +6,19 @@
 #include <AP_UAVCAN/AP_UAVCAN.h>
 
 #include <uavcan/equipment/air_data/RawAirData.hpp>
-
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+#include <dronecan/sensors/hygrometer/Hygrometer.hpp>
+#endif
 extern const AP_HAL::HAL& hal;
 
 #define LOG_TAG "AirSpeed"
 
-// UAVCAN Frontend Registry Binder
+// Frontend Registry Binders
 UC_REGISTRY_BINDER(AirspeedCb, uavcan::equipment::air_data::RawAirData);
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+UC_REGISTRY_BINDER(HygrometerCb, dronecan::sensors::hygrometer::Hygrometer);
+#endif
 
 AP_Airspeed_UAVCAN::DetectedModules AP_Airspeed_UAVCAN::_detected_modules[];
 HAL_Semaphore AP_Airspeed_UAVCAN::_sem_registry;
@@ -35,8 +41,17 @@ void AP_Airspeed_UAVCAN::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 
     const int airspeed_listener_res = airspeed_listener->start(AirspeedCb(ap_uavcan, &handle_airspeed));
     if (airspeed_listener_res < 0) {
-        AP_HAL::panic("UAVCAN Airspeed subscriber start problem\n");
+        AP_HAL::panic("DroneCAN Airspeed subscriber error \n");
     }
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+    uavcan::Subscriber<dronecan::sensors::hygrometer::Hygrometer, HygrometerCb> *hygrometer_listener;
+    hygrometer_listener = new uavcan::Subscriber<dronecan::sensors::hygrometer::Hygrometer, HygrometerCb>(*node);
+    const int hygrometer_listener_res = hygrometer_listener->start(HygrometerCb(ap_uavcan, &handle_hygrometer));
+    if (hygrometer_listener_res < 0) {
+        AP_HAL::panic("DroneCAN Hygrometer subscriber error\n");
+    }
+#endif
 }
 
 AP_Airspeed_Backend* AP_Airspeed_UAVCAN::probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid)
@@ -131,6 +146,22 @@ void AP_Airspeed_UAVCAN::handle_airspeed(AP_UAVCAN* ap_uavcan, uint8_t node_id, 
     }
 }
 
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+void AP_Airspeed_UAVCAN::handle_hygrometer(AP_UAVCAN* ap_uavcan, uint8_t node_id, const HygrometerCb &cb)
+{
+    WITH_SEMAPHORE(_sem_registry);
+
+    AP_Airspeed_UAVCAN* driver = get_uavcan_backend(ap_uavcan, node_id);
+
+    if (driver != nullptr) {
+        WITH_SEMAPHORE(driver->_sem_airspeed);
+        driver->_hygrometer.temperature = KELVIN_TO_C(cb.msg->temperature);
+        driver->_hygrometer.humidity = cb.msg->humidity;
+        driver->_hygrometer.last_sample_ms = AP_HAL::millis();
+    }
+}
+#endif // AP_AIRSPEED_HYGROMETER_ENABLE
+
 bool AP_Airspeed_UAVCAN::init()
 {
     // always returns true
@@ -165,5 +196,22 @@ bool AP_Airspeed_UAVCAN::get_temperature(float &temperature)
 
     return true;
 }
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+/*
+  return hygrometer data if available
+ */
+bool AP_Airspeed_UAVCAN::get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity)
+{
+    if (_hygrometer.last_sample_ms == 0) {
+        return false;
+    }
+    WITH_SEMAPHORE(_sem_airspeed);
+    last_sample_ms = _hygrometer.last_sample_ms;
+    temperature = _hygrometer.temperature;
+    humidity = _hygrometer.humidity;
+    return true;
+}
+#endif // AP_AIRSPEED_HYGROMETER_ENABLE
 
 #endif // AP_AIRSPEED_UAVCAN_ENABLED
