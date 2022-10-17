@@ -275,6 +275,7 @@ singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANN
 singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t 0 UINT16_MAX uint16_t 0 UINT16_MAX
 singleton SRV_Channels method set_output_scaled void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -FLT_MAX FLT_MAX
 singleton SRV_Channels method get_output_pwm boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'Null
+singleton SRV_Channels method get_output_pwm_chan boolean uint8_t'skip_check uint16_t'Null
 singleton SRV_Channels method get_output_scaled float SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1
 singleton SRV_Channels method set_output_norm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 float -1 1
 singleton SRV_Channels method set_angle void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t 0 UINT16_MAX

@@ -3021,7 +3021,18 @@ bool AP_Param::add_param(uint8_t _key, uint8_t param_num, const char *pname, flo
         return false;
     }
 
-    auto &ginfo = const_cast<GroupInfo*>(info.group_info)[param_num];
+    // find first empty slot
+    auto *garray = const_cast<GroupInfo*>(&info.group_info[0]);
+    uint8_t pidx;
+    for (pidx=1; pidx <= _dynamic_table_sizes[i]; pidx++) {
+        if (garray[pidx].idx == 0xff || garray[pidx].idx == param_num) {
+            break;
+        }
+    }
+    if (pidx > _dynamic_table_sizes[i]) {
+        return false;
+    }
+    auto &ginfo = garray[pidx];
 
     if (ginfo.name == _empty_string) {
         // we don't allow name change while running

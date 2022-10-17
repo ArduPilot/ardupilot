@@ -707,6 +707,16 @@ bool SRV_Channels::get_output_pwm(SRV_Channel::Aux_servo_function_t function, ui
     return true;
 }
 
+// get pwm output for the specified channel
+bool SRV_Channels::get_output_pwm_chan(uint8_t chan, uint16_t &value)
+{
+    if (chan >= NUM_SERVO_CHANNELS) {
+        return false;
+    }
+    value = channels[chan].get_output_pwm();
+    return true;
+}
+
 // set output pwm to trim for the given function
 void SRV_Channels::set_output_to_trim(SRV_Channel::Aux_servo_function_t function)
 {
