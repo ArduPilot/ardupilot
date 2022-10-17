@@ -65,6 +65,7 @@ public:
     virtual bool is_autopilot() const { return false; }
     virtual bool has_user_takeoff(bool must_navigate) const { return false; }
     virtual bool in_guided_mode() const { return false; }
+    virtual bool is_rtl_mode() const { return false; }
     virtual bool logs_attitude() const { return false; }
     virtual bool allows_save_trim() const { return false; }
     virtual bool allows_autotune() const { return false; }
@@ -237,9 +238,9 @@ public:
 
         // mode(): current method of determining desired yaw:
         autopilot_yaw_mode mode() const { return (autopilot_yaw_mode)_mode; }
-        void set_mode_to_default(bool rtl);
+        void set_mode_to_default();
         void set_mode(autopilot_yaw_mode new_mode);
-        autopilot_yaw_mode default_mode(bool rtl) const;
+        autopilot_yaw_mode default_mode() const;
 
         // rate_cds(): desired yaw rate in centidegrees/second:
         float rate_cds() const;
@@ -1270,7 +1271,8 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
-
+    bool is_rtl_mode() const override { return true; }
+    
     bool requires_terrain_failsafe() const override { return true; }
 
     // for reporting to GCS
@@ -1377,6 +1379,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
+    bool is_rtl_mode() const override { return true; }
 
     void save_position();
     void exit() override;

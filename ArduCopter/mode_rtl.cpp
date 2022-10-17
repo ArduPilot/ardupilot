@@ -153,7 +153,7 @@ void ModeRTL::return_start()
     }
 
     // initialise yaw to point home (maybe)
-    auto_yaw.set_mode_to_default(true);
+    auto_yaw.set_mode_to_default();
 }
 
 // rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
@@ -207,7 +207,7 @@ void ModeRTL::loiterathome_start()
     _loiter_start_time = millis();
 
     // yaw back to initial take-off heading yaw unless pilot has already overridden yaw
-    if (auto_yaw.default_mode(true) != AUTO_YAW_HOLD) {
+    if (auto_yaw.default_mode() != AUTO_YAW_HOLD) {
         auto_yaw.set_mode(AUTO_YAW_RESETTOARMEDYAW);
     } else {
         auto_yaw.set_mode(AUTO_YAW_HOLD);

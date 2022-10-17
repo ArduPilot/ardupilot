@@ -22,7 +22,7 @@ bool ModeSmartRTL::init(bool ignore_checks)
         wp_nav->set_wp_destination(stopping_point.tofloat());
 
         // initialise yaw to obey user parameter
-        auto_yaw.set_mode_to_default(true);
+        auto_yaw.set_mode_to_default();
 
         // wait for cleanup of return path
         smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
