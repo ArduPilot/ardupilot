@@ -19,14 +19,14 @@ float Mode::AutoYaw::look_ahead_yaw()
     return _look_ahead_yaw;
 }
 
-void Mode::AutoYaw::set_mode_to_default(bool rtl)
+void Mode::AutoYaw::set_mode_to_default(Mode::Number mode)
 {
-    set_mode(default_mode(rtl));
+    set_mode(default_mode(mode));
 }
 
 // default_mode - returns auto_yaw.mode() based on WP_YAW_BEHAVIOR parameter
 // set rtl parameter to true if this is during an RTL
-autopilot_yaw_mode Mode::AutoYaw::default_mode(bool rtl) const
+autopilot_yaw_mode Mode::AutoYaw::default_mode(Number mode) const
 {
     switch (copter.g.wp_yaw_behavior) {
 
@@ -34,7 +34,7 @@ autopilot_yaw_mode Mode::AutoYaw::default_mode(bool rtl) const
         return AUTO_YAW_HOLD;
 
     case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
-        if (rtl) {
+        if ((mode == Mode::Number::RTL) || (mode == Mode::Number::SMART_RTL)) {
             return AUTO_YAW_HOLD;
         } else {
             return AUTO_YAW_LOOK_AT_NEXT_WP;
@@ -151,7 +151,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
     // if location is zero lat, lon and altitude turn off ROI
     if (roi_location.alt == 0 && roi_location.lat == 0 && roi_location.lng == 0) {
         // set auto yaw mode back to default assuming the active command is a waypoint command.  A more sophisticated method is required to ensure we return to the proper yaw control for the active command
-        auto_yaw.set_mode_to_default(false);
+        auto_yaw.set_mode_to_default(copter.flightmode->mode_number());
 #if HAL_MOUNT_ENABLED
         // switch off the camera tracking if enabled
         if (copter.camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {

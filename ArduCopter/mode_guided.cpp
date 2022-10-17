@@ -233,7 +233,7 @@ void ModeGuided::pva_control_start()
     pos_control->init_xy_controller();
 
     // initialise yaw
-    auto_yaw.set_mode_to_default(false);
+    auto_yaw.set_mode_to_default(Mode::Number::GUIDED);
 
     // initialise terrain alt
     guided_pos_terrain_alt = false;
