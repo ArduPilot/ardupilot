@@ -35,7 +35,8 @@ private:
         VER,  // i.e. the "VER" message
         SYSTEM_ID,
         PARAM_SPACE_USED,
-        RC_PROTOCOL
+        RC_PROTOCOL,
+        RC_OUTPUT,
     };
     Stage stage;
 };
