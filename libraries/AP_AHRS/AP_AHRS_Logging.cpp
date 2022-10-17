@@ -145,9 +145,10 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
 {
     const Vector3f &rate_targets = attitude_control.rate_bf_targets();
     const Vector3f &accel_target = pos_control.get_accel_target_cmss();
+    const auto timeus = AP_HAL::micros64();
     const struct log_Rate pkt_rate{
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
-        time_us         : AP_HAL::micros64(),
+        time_us         : timeus,
         control_roll    : degrees(rate_targets.x),
         roll            : degrees(get_gyro().x),
         roll_out        : motors.get_roll()+motors.get_roll_ff(),
@@ -162,4 +163,19 @@ void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl 
         accel_out       : motors.get_throttle()
     };
     AP::logger().WriteBlock(&pkt_rate, sizeof(pkt_rate));
+
+    /*
+      log P gain scale if not == 1.0
+     */
+    const Vector3f &scale = attitude_control.get_angle_P_scale_logging();
+    if (!is_equal(scale.x,1.0f) || !is_equal(scale.y,1.0f) || !is_equal(scale.z,1.0f)) {
+        const struct log_ATSC pkt_ATSC {
+            LOG_PACKET_HEADER_INIT(LOG_ATSC_MSG),
+            time_us  : timeus,
+            scaleP_x : scale.x,
+            scaleP_y : scale.y,
+            scaleP_z : scale.z,
+        };
+        AP::logger().WriteBlock(&pkt_ATSC, sizeof(pkt_ATSC));
+    }
 }
