@@ -2,6 +2,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
 
 class GCS_MAVLINK_Plane : public GCS_MAVLINK
 {
@@ -70,6 +71,11 @@ private:
     uint8_t high_latency_wind_speed() const override;
     uint8_t high_latency_wind_direction() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+    void send_hygrometer();
+    uint8_t last_hygrometer_send_idx;
+#endif
 
     MAV_VTOL_STATE vtol_state() const override;
     MAV_LANDED_STATE landed_state() const override;

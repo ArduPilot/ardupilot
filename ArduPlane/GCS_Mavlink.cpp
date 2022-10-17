@@ -2,6 +2,7 @@
 
 #include "Plane.h"
 #include <AP_RPM/AP_RPM_config.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
 
 MAV_TYPE GCS_Plane::frame_type() const
 {
@@ -417,11 +418,57 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
         break;
+
+    case MSG_HYGROMETER:
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+        CHECK_PAYLOAD_SIZE(HYGROMETER_SENSOR);
+        send_hygrometer();
+#endif
+        break;
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
     return true;
 }
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+void GCS_MAVLINK_Plane::send_hygrometer()
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, HYGROMETER_SENSOR)) {
+        return;
+    }
+
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr) {
+        return;
+    } 
+    const uint32_t now = AP_HAL::millis();
+
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        uint8_t idx = (i+last_hygrometer_send_idx+1) % AIRSPEED_MAX_SENSORS;
+        float temperature, humidity;
+        uint32_t last_sample_ms;
+        if (!airspeed->get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
+            continue;
+        }
+        if (now - last_sample_ms > 2000) {
+            // not updating, stop sending
+            continue;
+        }
+        if (!HAVE_PAYLOAD_SPACE(chan, HYGROMETER_SENSOR)) {
+            return;
+        }
+
+        mavlink_msg_hygrometer_sensor_send(
+            chan,
+            idx,
+            int16_t(temperature*100),
+            uint16_t(humidity*100));
+        last_hygrometer_send_idx = idx;
+    }
+}
+#endif // AP_AIRSPEED_HYGROMETER_ENABLE
 
 
 /*
@@ -576,6 +623,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_LANDING,
     MSG_ESC_TELEMETRY,
     MSG_EFI_STATUS,
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+    MSG_HYGROMETER,
+#endif
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
