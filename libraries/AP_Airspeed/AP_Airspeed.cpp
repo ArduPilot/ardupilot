@@ -726,7 +726,7 @@ void AP_Airspeed::Log_Airspeed()
 {
     const uint64_t now = AP_HAL::micros64();
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-        if (!enabled(i)) {
+        if (!enabled(i) || sensor[i] == nullptr) {
             continue;
         }
         float temperature;
@@ -749,6 +749,26 @@ void AP_Airspeed::Log_Airspeed()
             primary       : get_primary()
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+        struct {
+            uint32_t sample_ms;
+            float temperature;
+            float humidity;
+        } hygrometer;
+        if (sensor[i]->get_hygrometer(hygrometer.sample_ms, hygrometer.temperature, hygrometer.humidity) &&
+            hygrometer.sample_ms != state[i].last_hygrometer_log_ms) {
+            AP::logger().WriteStreaming("HYGR",
+                                        "TimeUS,Humidity,Temp",
+                                        "s%O",
+                                        "F--",
+                                        "Qff",
+                                        AP_HAL::micros64(),
+                                        hygrometer.humidity,
+                                        hygrometer.temperature);
+            state[i].last_hygrometer_log_ms = hygrometer.sample_ms;
+        }
+#endif
     }
 }
 
@@ -835,6 +855,16 @@ float AP_Airspeed::get_corrected_pressure(uint8_t i) const {
     }
     return state[i].corrected_pressure;
 }
+
+#if AP_AIRSPEED_HYGROMETER_ENABLE
+bool AP_Airspeed::get_hygrometer(uint8_t i, uint32_t &last_sample_ms, float &temperature, float &humidity) const
+{
+    if (!enabled(i) || sensor[i] == nullptr) {
+        return false;
+    }
+    return sensor[i]->get_hygrometer(last_sample_ms, temperature, humidity);
+}
+#endif // AP_AIRSPEED_HYGROMETER_ENABLE
 
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
