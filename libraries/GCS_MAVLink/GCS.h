@@ -27,6 +27,7 @@
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Mount/AP_Mount.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
 
 #include "ap_message.h"
 
