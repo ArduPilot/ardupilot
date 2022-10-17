@@ -8,7 +8,8 @@
     LOG_ATTITUDE_MSG, \
     LOG_ORGN_MSG, \
     LOG_POS_MSG, \
-    LOG_RATE_MSG
+    LOG_RATE_MSG, \
+    LOG_ATSC_MSG
 
 // @LoggerMessage: AHR2
 // @Description: Backup AHRS data
@@ -168,6 +169,20 @@ struct PACKED log_Video_Stabilisation {
     float Q4;
 };
 
+// @LoggerMessage: ATSC
+// @Description: Scale factors for attitude controller
+// @Field: TimeUS: Time since system startup
+// @Field: AngPScX: Angle P scale X
+// @Field: AngPScY: Angle P scale Y
+// @Field: AngPScZ: Angle P scale Z
+struct PACKED log_ATSC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float scaleP_x;
+    float scaleP_y;
+    float scaleP_z;
+};
+
 
 #define LOG_STRUCTURE_FROM_AHRS \
     { LOG_AHR2_MSG, sizeof(log_AHRS), \
@@ -182,6 +197,8 @@ struct PACKED log_Video_Stabilisation {
         "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
     { LOG_RATE_MSG, sizeof(log_Rate), \
         "RATE", "Qffffffffffff",  "TimeUS,RDes,R,ROut,PDes,P,POut,YDes,Y,YOut,ADes,A,AOut", "skk-kk-kk-oo-", "F?????????BB-" , true }, \
+    { LOG_ATSC_MSG, sizeof(log_ATSC), \
+        "ATSC", "Qfff",  "TimeUS,AngPScX,AngPScY,AngPScZ", "s---", "F000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo????", "F000000????" },
 
