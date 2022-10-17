@@ -295,7 +295,7 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         stage = Stage::RC_PROTOCOL;
         FALLTHROUGH;
 
-    case Stage::RC_PROTOCOL:
+    case Stage::RC_PROTOCOL: {
         const char *prot = hal.rcin->protocol();
         if (prot == nullptr) {
             prot = "None";
@@ -303,6 +303,18 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         if (! _logger_backend->Write_MessageF("RC Protocol: %s", prot)) {
             return; // call me again
         }
+        stage = Stage::RC_OUTPUT;
+        FALLTHROUGH;
+    }
+    case Stage::RC_OUTPUT: {
+        char banner_msg[50];
+        if (hal.rcout->get_output_mode_banner(banner_msg, sizeof(banner_msg))) {
+            if (!_logger_backend->Write_Message(banner_msg)) {
+                return; // call me again
+            }
+        }
+        break;
+    }
     }
 
     _finished = true;  // all done!
