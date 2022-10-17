@@ -673,9 +673,13 @@ void Mode::land_run_horizontal_control()
         }
 
         // get pilot's desired yaw rate
-        target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
-        if (!is_zero(target_yaw_rate)) {
-            auto_yaw.set_mode(AUTO_YAW_HOLD);
+        target_yaw_rate = 0;
+        if (!copter.failsafe.radio && use_pilot_yaw()) {
+            // get pilot's desired yaw rate
+            target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz());
+            if (!is_zero(target_yaw_rate)) {
+                auto_yaw.set_mode(AUTO_YAW_HOLD);
+            }
         }
     }
 
