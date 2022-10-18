@@ -1,9 +1,24 @@
 name: test rover
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on: 
+  push:
+    paths-ignore: # ignore vehicle only changes not for rover
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'ArduCopter/**'
+
+  pull_request:
+    paths-ignore: # ignore vehicle only changes not for rover
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'ArduCopter/**'
+
+  workflow_dispatch:
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
