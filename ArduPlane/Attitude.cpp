@@ -607,6 +607,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     int16_t rudder_in = rudder_input();
 
     int16_t commanded_rudder;
+    bool using_rate_controller = false;
 
     // Received an external msg that guides yaw in the last 3 seconds?
     if (control_mode->is_guided_mode() &&
@@ -618,6 +619,7 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
         const float rudd_expo = rudder_in_expo(true);
         const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
         commanded_rudder = yawController.get_rate_out(yaw_rate,  speed_scaler, false);
+        using_rate_controller = true;
     } else {
         if (control_mode == &mode_stabilize && rudder_in != 0) {
             disable_integrator = true;
@@ -631,6 +633,13 @@ void Plane::calc_nav_yaw_coordinated(float speed_scaler)
     }
 
     steering_control.rudder = constrain_int16(commanded_rudder, -4500, 4500);
+
+    if (!using_rate_controller) {
+        /*
+          When not running the yaw rate controller, we need to reset the rate
+        */
+        yawController.reset_rate_PID();
+    }
 }
 
 /*
