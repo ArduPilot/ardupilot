@@ -1,9 +1,27 @@
 name: test replay
 
-on: [push, pull_request, workflow_dispatch]
-# paths:
-# - "*"
-# - "!README.md" <-- don't rebuild on doc change
+on: 
+  push:
+    paths-ignore: # ignore vehicle only changes
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'ArduCopter/**'
+
+  pull_request:
+    paths-ignore: # ignore vehicle only changes
+      - 'AntennaTracker/**'
+      - 'ArduPlane/**'
+      - 'ArduSub/**'
+      - 'Rover/**'
+      - 'Blimp/**'
+      - 'ArduCopter/**'
+
+  workflow_dispatch:
+
+
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
