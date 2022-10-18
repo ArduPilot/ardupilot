@@ -846,29 +846,26 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_DO_CHANGE_SPEED:
+    {
         // param1 : Speed type (0 or 1=Ground Speed, 2=Climb Speed, 3=Descent Speed)
         // param2 : new speed in m/s
         // param3 : unused
         // param4 : unused
-        if (packet.param2 > 0.0f) {
-            if (packet.param1 > 2.9f) { // 3 = speed down
-                if (copter.flightmode->set_speed_down(packet.param2 * 100.0f)) {
-                    return MAV_RESULT_ACCEPTED;
-                }
-                return MAV_RESULT_FAILED;
-            } else if (packet.param1 > 1.9f) { // 2 = speed up
-                if (copter.flightmode->set_speed_up(packet.param2 * 100.0f)) {
-                    return MAV_RESULT_ACCEPTED;
-                }
-                return MAV_RESULT_FAILED;
-            } else {
-                if (copter.flightmode->set_speed_xy(packet.param2 * 100.0f)) {
-                    return MAV_RESULT_ACCEPTED;
-                }
-                return MAV_RESULT_FAILED;
-            }
+        if (packet.param2 <= 0.0f) {
+            return MAV_RESULT_DENIED;
         }
-        return MAV_RESULT_FAILED;
+
+        bool success = false;
+
+        if (packet.param1 > 2.9f) { // 3 = speed down
+            success = copter.flightmode->set_speed_down(packet.param2 * 100.0f);
+        } else if (packet.param1 > 1.9f) { // 2 = speed up
+            success = copter.flightmode->set_speed_up(packet.param2 * 100.0f);
+        } else {
+            success = copter.flightmode->set_speed_xy(packet.param2 * 100.0f);
+        }
+        return success ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+    }
 
 #if MODE_AUTO_ENABLED == ENABLED
     case MAV_CMD_MISSION_START:
