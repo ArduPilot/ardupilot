@@ -193,7 +193,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
-    // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff and final landing approach.
+    // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff while below 5 meters and during the flare portion of a final landing approach.
     // @Units: deg
     // @Range: 0 45
     // @Increment: 1
