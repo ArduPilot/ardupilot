@@ -119,6 +119,8 @@ IMU Invensense SPI:mpu6000 ROTATION_YAW_90
 
 # one baro
 BARO BMP280 SPI:bmp280
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_BMP280_ENABLED 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
