@@ -71,3 +71,6 @@ define HAL_SPRAYER_ENABLED 0
 define AP_BATTMON_SMBUS_ENABLE 0
 define AP_OPTICALFLOW_ENABLED 0
 define AP_ICENGINE_ENABLED 0
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc
