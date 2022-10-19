@@ -573,7 +573,7 @@ public:
     ToyMode toy_mode;
 #endif
 
-#if AP_OPTICALFLOW_ENABLED
+#if MODE_FLOWHOLD_ENABLED
     // we need a pointer to the mode for the G2 table
     void *mode_flowhold_ptr;
 #endif
