@@ -2110,7 +2110,10 @@ class AutoTestCopter(AutoTest):
             })
 
     def OpticalFlow(self):
-        '''test optical low works'''
+        '''test optical flow works'''
+
+        self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, False, False, False, verbose=True)
+
         self.start_subtest("Make sure no crash if no rangefinder")
         self.set_parameter("SIM_FLOW_ENABLE", 1)
         self.set_parameter("FLOW_TYPE", 10)
@@ -2118,6 +2121,9 @@ class AutoTestCopter(AutoTest):
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
 
         self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, True, True, True, verbose=True)
+
         self.change_mode('LOITER')
         self.delay_sim_time(5)
         self.wait_statustext("Need Position Estimate", timeout=300)
