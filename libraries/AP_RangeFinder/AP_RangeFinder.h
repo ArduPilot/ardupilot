@@ -223,8 +223,6 @@ private:
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
-    void convert_params(void);
-
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
