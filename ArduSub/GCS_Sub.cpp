@@ -56,17 +56,6 @@ void GCS_Sub::update_vehicle_sensor_status_flags()
         control_sensors_health |= MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE;
     }
 
-#if AP_OPTICALFLOW_ENABLED
-    const AP_OpticalFlow *optflow = AP::opticalflow();
-    if (optflow && optflow->enabled()) {
-        control_sensors_present |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-        control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-    if (optflow && optflow->healthy()) {
-        control_sensors_health |= MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW;
-    }
-#endif
-
 #if AP_TERRAIN_AVAILABLE
     switch (sub.terrain.status()) {
     case AP_Terrain::TerrainStatusDisabled:
