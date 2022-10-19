@@ -198,3 +198,6 @@ define HAL_BARO_WIND_COMP_ENABLED 0
 define AP_GRIPPER_ENABLED 0
 define AP_OPTICALFLOW_ENABLED 0
 define AP_ICENGINE_ENABLED 0
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc
