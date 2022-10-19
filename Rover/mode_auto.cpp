@@ -889,8 +889,8 @@ void ModeAuto::do_nav_script_time(const AP_Mission::Mission_Command& cmd)
         nav_scripting.start_ms = millis();
         nav_scripting.command = cmd.content.nav_script_time.command;
         nav_scripting.timeout_s = cmd.content.nav_script_time.timeout_s;
-        nav_scripting.arg1 = cmd.content.nav_script_time.arg1;
-        nav_scripting.arg2 = cmd.content.nav_script_time.arg2;
+        nav_scripting.arg1 = cmd.content.nav_script_time.arg1.get();
+        nav_scripting.arg2 = cmd.content.nav_script_time.arg2.get();
     } else {
         // for safety we set nav_scripting to done to protect against the mission getting stuck
         nav_scripting.done = true;
