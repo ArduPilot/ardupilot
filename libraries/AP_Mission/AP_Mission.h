@@ -52,6 +52,8 @@
 #define AP_MISSION_MAX_WP_HISTORY           7       // The maximum number of previous wp commands that will be stored from the active missions history
 #define LAST_WP_PASSED (AP_MISSION_MAX_WP_HISTORY-2)
 
+union PackedContent;
+
 /// @class    AP_Mission
 /// @brief    Object managing Mission
 class AP_Mission
@@ -219,14 +221,23 @@ public:
         float p3;
     };
 
-    // Scripting NAV command (with verify)
+    // Scripting NAV command old version of storage format
+    struct PACKED nav_script_time_Command_tag0 {
+        uint8_t command;
+        uint8_t timeout_s;
+        float arg1;
+        float arg2;
+    };
+
+    // Scripting NAV command, new version of storage format
     struct PACKED nav_script_time_Command {
         uint8_t command;
         uint8_t timeout_s;
         Float16_t arg1;
         Float16_t arg2;
-        Float16_t arg3;
-        Float16_t arg4;
+        // last 2 arguments need to be integers due to MISSION_ITEM_INT encoding
+        int16_t arg3;
+        int16_t arg4;
     };
 
     // Scripting NAV command (with verify)
@@ -782,6 +793,12 @@ private:
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
+
+    /*
+      handle format conversion of storage format to allow us to update
+      format to take advantage of new packing
+     */
+    void format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const;
 };
 
 namespace AP

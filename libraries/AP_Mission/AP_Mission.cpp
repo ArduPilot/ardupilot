@@ -717,10 +717,11 @@ bool AP_Mission::read_cmd_from_storage(uint16_t index, Mission_Command& cmd) con
     PackedContent packed_content {};
 
     const uint8_t b1 = _storage.read_byte(pos_in_storage);
-    if (b1 == 0) {
+    if (b1 == 0 || b1 == 1) {
         cmd.id = _storage.read_uint16(pos_in_storage+1);
         cmd.p1 = _storage.read_uint16(pos_in_storage+3);
         _storage.read_block(packed_content.bytes, pos_in_storage+5, 10);
+        format_conversion(b1, cmd, packed_content);
     } else {
         cmd.id = b1;
         cmd.p1 = _storage.read_uint16(pos_in_storage+1);
@@ -825,12 +826,21 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
     uint16_t pos_in_storage = 4 + (index * AP_MISSION_EEPROM_COMMAND_SIZE);
 
     if (cmd.id < 256) {
+        // for commands below 256 we store up to 12 bytes
         _storage.write_byte(pos_in_storage, cmd.id);
         _storage.write_uint16(pos_in_storage+1, cmd.p1);
         _storage.write_block(pos_in_storage+3, packed.bytes, 12);
     } else {
-        // if the command ID is above 256 we store a 0 followed by the 16 bit command ID
-        _storage.write_byte(pos_in_storage, 0);
+        // if the command ID is above 256 we store a tag byte followed
+        // by the 16 bit command ID. The tag byte is 1 for commands
+        // where we have changed the storage format (see
+        // format_conversion), 0 otherwise
+        uint8_t tag_byte = 0;
+        // currently the only converted structure is NAV_SCRIPT_TIME
+        if (cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
+            tag_byte = 1;
+        }
+        _storage.write_byte(pos_in_storage, tag_byte);
         _storage.write_uint16(pos_in_storage+1, cmd.id);
         _storage.write_uint16(pos_in_storage+3, cmd.p1);
         _storage.write_block(pos_in_storage+5, packed.bytes, 10);
@@ -913,8 +923,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     // command specific conversions from mavlink packet to mission command
     switch (cmd.id) {
 
-    case 0:
-        // this is reserved for storing 16 bit command IDs
+    case 0 ... 1:
+        // these are reserved for storing 16 bit command IDs
         return MAV_MISSION_INVALID;
 
     case MAV_CMD_NAV_WAYPOINT: {                        // MAV ID: 16
@@ -1209,8 +1219,8 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.nav_script_time.timeout_s = packet.param2;
         cmd.content.nav_script_time.arg1.set(packet.param3);
         cmd.content.nav_script_time.arg2.set(packet.param4);
-        cmd.content.nav_script_time.arg3.set(packet.x);
-        cmd.content.nav_script_time.arg4.set(packet.y);
+        cmd.content.nav_script_time.arg3 = int16_t(packet.x);
+        cmd.content.nav_script_time.arg4 = int16_t(packet.y);
         break;
 
     case MAV_CMD_NAV_ATTITUDE_TIME:
@@ -1703,8 +1713,8 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.nav_script_time.timeout_s;
         packet.param3 = cmd.content.nav_script_time.arg1.get();
         packet.param4 = cmd.content.nav_script_time.arg2.get();
-        packet.x = cmd.content.nav_script_time.arg3.get();
-        packet.y = cmd.content.nav_script_time.arg4.get();
+        packet.x = cmd.content.nav_script_time.arg3;
+        packet.y = cmd.content.nav_script_time.arg4;
         break;
 
     case MAV_CMD_NAV_ATTITUDE_TIME:
@@ -2622,6 +2632,28 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
 
     // if we got this far then mission rewind position was successfully calculated
     return true;
+}
+
+/*
+  handle format conversion of storage format to allow us to update
+  format to take advantage of new packing. This is particularly useful
+  for conversion to Float16 to get extra parameter space
+*/
+void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const
+{
+    // currently only one conversion needed, more can be added
+    if (tag_byte == 0 && cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
+        struct nav_script_time_Command_tag0 old_fmt;
+        struct nav_script_time_Command new_fmt;
+        memcpy((void*)&old_fmt, packed_content.bytes, sizeof(old_fmt));
+        new_fmt.command = old_fmt.command;
+        new_fmt.timeout_s = old_fmt.timeout_s;
+        new_fmt.arg1.set(old_fmt.arg1);
+        new_fmt.arg2.set(old_fmt.arg2);
+        new_fmt.arg3 = 0;
+        new_fmt.arg4 = 0;
+        memcpy(packed_content.bytes, (void*)&new_fmt, sizeof(new_fmt));
+    }
 }
 
 // singleton instance
