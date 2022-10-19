@@ -221,6 +221,7 @@ public:
         float p3;
     };
 
+#if AP_SCRIPTING_ENABLED
     // Scripting NAV command old version of storage format
     struct PACKED nav_script_time_Command_tag0 {
         uint8_t command;
@@ -239,6 +240,7 @@ public:
         int16_t arg3;
         int16_t arg4;
     };
+#endif
 
     // Scripting NAV command (with verify)
     struct PACKED nav_attitude_time_Command {
@@ -329,8 +331,10 @@ public:
         // do scripting
         scripting_Command scripting;
 
+#if AP_SCRIPTING_ENABLED
         // nav scripting
         nav_script_time_Command nav_script_time;
+#endif
 
         // nav attitude time
         nav_attitude_time_Command nav_attitude_time;
