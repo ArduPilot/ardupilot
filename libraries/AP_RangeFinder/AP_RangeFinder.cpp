@@ -176,88 +176,6 @@ RangeFinder::RangeFinder()
     _singleton = this;
 }
 
-void RangeFinder::convert_params(void) {
-    if (params[0].type.configured()) {
-        // _params[0]._type will always be configured after conversion is done the first time
-        // or the user has set a type in a defaults.parm file or via apj tool
-        return;
-    }
-
-    struct ConversionTable {
-        uint8_t old_element;
-        uint8_t new_index;
-        uint8_t instance;
-    };
-
-    const struct ConversionTable conversionTable[] = {
-        // PARAMETER_CONVERSION - Added: Feb-2019
-            // rangefinder 1
-            {0, 0, 0}, //0, TYPE 1
-            {1, 1, 0}, //1, PIN 1
-            {2, 2, 0}, //2, SCALING 1
-            {3, 3, 0}, //3, OFFSET 1
-            {4, 4, 0}, //4, FUNCTION 1
-            {5, 5, 0}, //5, MIN_CM 1
-            {6, 6, 0}, //6, MAX_CM 1
-            {7, 7, 0}, //7, STOP_PIN 1
-            {9, 8, 0}, //9, RMETRIC 1
-            {10, 9, 0}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {11, 10, 0}, //11, GNDCLEAR 1
-            {23, 11, 0}, //23, ADDR 1
-            {49, 12, 0}, //49, POS 1
-            {53, 13, 0}, //53, ORIENT 1
-
-            // rangefinder 2
-            {12, 0, 1}, //12, TYPE 2
-            {13, 1, 1}, //13, PIN 2
-            {14, 2, 1}, //14, SCALING 2
-            {15, 3, 1}, //15, OFFSET 2
-            {16, 4, 1}, //16, FUNCTION 2
-            {17, 5, 1}, //17, MIN_CM 2
-            {18, 6, 1}, //18, MAX_CM 2
-            {19, 7, 1}, //19, STOP_PIN 2
-            {21, 8, 1}, //21, RMETRIC 2
-            {10, 9, 1}, //10, PWRRNG 1 (previously existed only once for all sensors)
-            {22, 10, 1}, //22, GNDCLEAR 2
-            {24, 11, 1}, //24, ADDR 2
-            {50, 12, 1}, //50, POS 2
-            {54, 13, 1}, //54, ORIENT 2
-    };
-
-    char param_name[17] = {0};
-    AP_Param::ConversionInfo info;
-    info.new_name = param_name;
-
-#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    info.old_key = 71;
-#elif APM_BUILD_COPTER_OR_HELI
-    info.old_key = 53;
-#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    info.old_key = 35;
-#elif APM_BUILD_TYPE(APM_BUILD_Rover)
-    info.old_key = 197;
-#else
-    params[0].type.save(true);
-    return; // no conversion is supported on this platform
-#endif
-
-    for (uint8_t i = 0; i < ARRAY_SIZE(conversionTable); i++) {
-        uint8_t param_instance = conversionTable[i].instance + 1;
-        uint8_t destination_index = conversionTable[i].new_index;
-
-        info.old_group_element = conversionTable[i].old_element;
-        info.type = (ap_var_type)AP_RangeFinder_Params::var_info[destination_index].type;
-
-        hal.util->snprintf(param_name, sizeof(param_name), "RNGFND%X_%s", param_instance, AP_RangeFinder_Params::var_info[destination_index].name);
-        param_name[sizeof(param_name)-1] = '\0';
-
-        AP_Param::convert_old_parameter(&info, 1.0f, 0);
-    }
-
-    // force _params[0]._type into storage to flag that conversion has been done
-    params[0].type.save(true);
-}
-
 /*
   initialise the RangeFinder class. We do detection of attached range
   finders here. For now we won't allow for hot-plugging of
@@ -270,8 +188,6 @@ void RangeFinder::init(enum Rotation orientation_default)
         return;
     }
     init_done = true;
-
-    convert_params();
 
     // set orientation defaults
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
