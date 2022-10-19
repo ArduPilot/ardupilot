@@ -235,7 +235,7 @@ public:
         int16_t roll_deg;
         int8_t pitch_deg;
         int16_t yaw_deg;
-        float climb_rate;
+        int16_t climb_rate;
     };
 
     // MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW support
