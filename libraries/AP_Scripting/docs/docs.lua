@@ -758,6 +758,14 @@ function Location_ud:lat() end
 ---@param value integer
 function Location_ud:lat(value) end
 
+-- get altitude frame
+---@return integer
+---| '0' # ABSOLUTE
+---| '1' # ABOVE_HOME
+---| '2' # ABOVE_ORIGIN
+---| '3' # ABOVE_TERRAIN
+function Location_ud:get_alt_frame() end
+
 -- desc
 ---@param desired_frame integer
 ---| '0' # ABSOLUTE
