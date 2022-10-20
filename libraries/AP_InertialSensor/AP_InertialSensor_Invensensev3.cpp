@@ -578,6 +578,9 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
     register_write(INV3REG_ACCEL_CONFIG0, odr_config);
 
     // setup anti-alias filters for gyro at 1/4 ODR, notch left at default
+    // The defaults for 42605 and 42609 are different to the 42688, make sure AAF and notch are enabled on all
+    uint8_t aaf_enable = register_read_bank(1, INV3REG_GYRO_CONFIG_STATIC2);
+    register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC2, aaf_enable & ~0x03);
     register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC3, aaf_delt);   // GYRO_AAF_DELT
     register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC4, (aaf_deltsqr & 0xFF)); // GYRO_AAF_DELTSQR
     register_write_bank(1, INV3REG_GYRO_CONFIG_STATIC5, ((aaf_bitshift<<4) & 0xF0) | ((aaf_deltsqr>>8) & 0x0F)); // GYRO_AAF_BITSHIFT | GYRO_AAF_DELTSQR
