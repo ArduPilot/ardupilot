@@ -555,6 +555,10 @@ singleton AP::motors() method get_pitch float
 singleton AP::motors() method get_pitch_ff float
 singleton AP::motors() method get_yaw float
 singleton AP::motors() method get_yaw_ff float
+singleton AP::motors() method get_throttle float
+singleton AP::motors() method get_forward float
+singleton AP::motors() method get_lateral float
+singleton AP::motors() method get_spool_state uint8_t
 
 include AP_Common/AP_FWVersion.h
 singleton AP::fwversion() literal
