@@ -99,6 +99,9 @@ uint16_t SRV_Channel::pwm_from_range(float scaled_value) const
 // convert a -angle_max..angle_max to a pwm
 uint16_t SRV_Channel::pwm_from_angle(float scaled_value) const
 {
+    if (high_out == 0) {
+        return servo_trim;
+    }
     if (reversed) {
         scaled_value = -scaled_value;
     }
