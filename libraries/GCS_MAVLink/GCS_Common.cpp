@@ -3791,10 +3791,12 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP_Notify::handle_led_control(msg);
         break;
 
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
         break;
+#endif
 
 #if HAL_RALLY_ENABLED
     case MAVLINK_MSG_ID_RALLY_POINT:
