@@ -26,7 +26,7 @@ public:
     RGBLed(uint8_t led_off, uint8_t led_bright, uint8_t led_medium, uint8_t led_dim);
 
     // set_rgb - set color as a combination of red, green and blue levels from 0 ~ 15
-    virtual void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
+    void set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
     // update - updates led according to timed_updated.  Should be
     // called at 50Hz
@@ -37,7 +37,7 @@ public:
 
     // RGB control
     // give RGB and flash rate, used with scripting
-    virtual void rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz) override;
+    void rgb_control(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz) override;
 
 protected:
     // methods implemented in hardware specific classes

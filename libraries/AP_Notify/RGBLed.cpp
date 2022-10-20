@@ -241,21 +241,13 @@ void RGBLed::handle_led_control(const mavlink_message_t &msg)
 
     _led_override.start_ms = AP_HAL::millis();
 
+    uint8_t rate_hz = 0;
     switch (packet.custom_len) {
-    case 3:
-        _led_override.rate_hz = 0;
-        _led_override.r = packet.custom_bytes[0];
-        _led_override.g = packet.custom_bytes[1];
-        _led_override.b = packet.custom_bytes[2];
-        break;
     case 4:
-        _led_override.rate_hz = packet.custom_bytes[3];
-        _led_override.r = packet.custom_bytes[0];
-        _led_override.g = packet.custom_bytes[1];
-        _led_override.b = packet.custom_bytes[2];
-        break;
-    default:
-        // not understood
+        rate_hz = packet.custom_bytes[3];
+        FALLTHROUGH;
+    case 3:
+        rgb_control(packet.custom_bytes[0], packet.custom_bytes[1], packet.custom_bytes[2], rate_hz);
         break;
     }
 }
