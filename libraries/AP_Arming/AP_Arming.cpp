@@ -875,10 +875,12 @@ bool AP_Arming::servo_checks(bool report) const
             const SRV_Channel::Aux_servo_function_t ch_function = c->get_function();
 
             // motors, e-stoppable functions, neopixels and ProfiLEDs may be digital outputs and thus can be disabled
+            // scripting can use its functions as labels for LED setup
             const bool disabled_ok = SRV_Channel::is_motor(ch_function) ||
                                      SRV_Channel::should_e_stop(ch_function) ||
                                      (ch_function >= SRV_Channel::k_LED_neopixel1 && ch_function <= SRV_Channel::k_LED_neopixel4) ||
-                                     (ch_function >= SRV_Channel::k_ProfiLED_1 && ch_function <= SRV_Channel::k_ProfiLED_Clock);
+                                     (ch_function >= SRV_Channel::k_ProfiLED_1 && ch_function <= SRV_Channel::k_ProfiLED_Clock) ||
+                                     (ch_function >= SRV_Channel::k_scripting1 && ch_function <= SRV_Channel::k_scripting16);
 
             // for all other functions raise a pre-arm failure
             if (!disabled_ok) {
