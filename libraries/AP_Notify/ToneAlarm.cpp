@@ -449,26 +449,25 @@ void AP_ToneAlarm::update()
 }
 
 
+#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
 /*
  *  handle a PLAY_TUNE message
  */
-void AP_ToneAlarm::handle_play_tune(const mavlink_message_t &msg)
+void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
 {
     // decode mavlink message
     mavlink_play_tune_t packet;
 
     mavlink_msg_play_tune_decode(&msg, &packet);
 
-    WITH_SEMAPHORE(_sem);
-
-    _mml_player.stop();
-
+    char _tone_buf[AP_NOTIFY_TONEALARM_TONE_BUF_SIZE] {};  // ~100 bytes
     strncpy(_tone_buf, packet.tune, MIN(sizeof(packet.tune), sizeof(_tone_buf)-1));
-    _tone_buf[sizeof(_tone_buf)-1] = 0;
     uint8_t len = strlen(_tone_buf);
     uint8_t len2 = strnlen(packet.tune2, sizeof(packet.tune2));
     len2 = MIN((sizeof(_tone_buf)-1)-len, len2);
-    strncpy(_tone_buf+len, packet.tune2, len2);
+    memcpy(_tone_buf+len, packet.tune2, len2);  // not strncpy to avoid truncation warning
     _tone_buf[sizeof(_tone_buf)-1] = 0;
-    _mml_player.play(_tone_buf);
+
+    play_tune(_tone_buf);
 }
+#endif
