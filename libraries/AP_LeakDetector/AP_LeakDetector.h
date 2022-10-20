@@ -45,7 +45,12 @@ private:
     bool _status; // Current status, true if leak detected, false if all sensors dry
     uint32_t _last_detect_ms;
 
-    AP_Int8 _type[LEAKDETECTOR_MAX_INSTANCES]; // Analog, Digital, Mavlink
+    enum _signal_types {
+        DISABLED=-1,
+        ANALOG=0,
+        DIGITAL=1
+    };
+    AP_Int8 _type[LEAKDETECTOR_MAX_INSTANCES]; // Signal type configured at the input pin (analog, digital, disabled)
     AP_Int8 _pin[LEAKDETECTOR_MAX_INSTANCES]; // Pin that detector is connected to
     AP_Int8 _default_reading[LEAKDETECTOR_MAX_INSTANCES]; // Default reading when leak detector is dry
 };
