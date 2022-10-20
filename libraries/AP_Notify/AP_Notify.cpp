@@ -442,16 +442,6 @@ void AP_Notify::handle_rgb_id(uint8_t r, uint8_t g, uint8_t b, uint8_t id)
     }
 }
 
-// handle a PLAY_TUNE message
-void AP_Notify::handle_play_tune(const mavlink_message_t &msg)
-{
-    for (uint8_t i = 0; i < _num_devices; i++) {
-        if (_devices[i] != nullptr) {
-            _devices[i]->handle_play_tune(msg);
-        }
-    }
-}
-
 void AP_Notify::play_tune(const char *tune)
 {
     for (uint8_t i = 0; i < _num_devices; i++) {
