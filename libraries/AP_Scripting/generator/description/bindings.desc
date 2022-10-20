@@ -18,9 +18,9 @@ userdata Location method get_vector_from_origin_NEU boolean Vector3f'Null
 userdata Location method get_bearing float Location
 userdata Location method get_distance_NED Vector3f Location
 userdata Location method get_distance_NE Vector2f Location
+userdata Location method get_alt_frame uint8_t
 userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 userdata Location method copy Location
-
 
 include AP_AHRS/AP_AHRS.h
 
