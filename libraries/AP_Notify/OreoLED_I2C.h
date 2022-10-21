@@ -41,8 +41,10 @@ public:
     // called at 50Hz
     void update() override;
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     // handle a LED_CONTROL message, by default device ignore message
     void handle_led_control(const mavlink_message_t &msg) override;
+#endif
 
 private:
     enum oreoled_pattern {
