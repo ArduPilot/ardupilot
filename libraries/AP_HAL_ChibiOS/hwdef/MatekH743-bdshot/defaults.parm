@@ -1,0 +1,3 @@
+#setup SERIAL7 (UART6 RX) for RC input
+SERIAL7_PROTOCOL 23
+
