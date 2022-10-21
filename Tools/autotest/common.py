@@ -2816,6 +2816,7 @@ class AutoTest(ABC):
                 this = mav.recv(1000000)
             except Exception:
                 mav.autoreconnect = old_autoreconnect
+                self.unpause_SITL()
                 raise
             if len(this) == 0:
                 break
@@ -2855,6 +2856,7 @@ class AutoTest(ABC):
                 receive_result = mav.recv_msg()
             except Exception:
                 mav.autoreconnect = True
+                self.unpause_SITL()
                 raise
             if receive_result is None:
                 break
