@@ -570,22 +570,6 @@ bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 #endif
 }
 
-void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
-                                        const mavlink_message_t &msg)
-{
-#if HAL_ADSB_ENABLED
-    if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
-        // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
-        copter.avoidance_adsb.handle_msg(msg);
-    }
-#endif
-#if MODE_FOLLOW_ENABLED == ENABLED
-    // pass message to follow library
-    copter.g2.follow.handle_msg(msg);
-#endif
-    GCS_MAVLINK::packetReceived(status, msg);
-}
-
 bool GCS_MAVLINK_Copter::params_ready() const
 {
     if (AP_BoardConfig::in_config_error()) {
@@ -1406,7 +1390,27 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
         copter.g2.toy_mode.handle_message(msg);
         break;
 #endif
-        
+
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
+#if HAL_ADSB_ENABLED
+        if (copter.g2.dev_options.get() & DevOptionADSBMAVLink) {
+            // optional handling of GLOBAL_POSITION_INT as a MAVLink based avoidance source
+            copter.avoidance_adsb.handle_msg(msg);
+        }
+#endif
+#if MODE_FOLLOW_ENABLED == ENABLED
+        // pass message to follow library
+        copter.g2.follow.handle_msg(msg);
+#endif
+        break;
+
+#if MODE_FOLLOW_ENABLED == ENABLED
+    case MAVLINK_MSG_ID_FOLLOW_TARGET:
+        // pass message to follow library
+        copter.g2.follow.handle_msg(msg);
+        break;
+#endif
+
     default:
         handle_common_message(msg);
         break;
