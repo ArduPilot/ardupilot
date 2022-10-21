@@ -3,6 +3,7 @@
 #include "Plane.h"
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
+#include <AP_EFI/AP_EFI_config.h>
 
 MAV_TYPE GCS_Plane::frame_type() const
 {
@@ -621,7 +622,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_PID_TUNING,
     MSG_LANDING,
     MSG_ESC_TELEMETRY,
+#if HAL_EFI_ENABLED
     MSG_EFI_STATUS,
+#endif
 #if AP_AIRSPEED_HYGROMETER_ENABLE
     MSG_HYGROMETER,
 #endif
