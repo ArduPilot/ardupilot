@@ -4,6 +4,7 @@
 
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
+#include <AP_EFI/AP_EFI_config.h>
 
 MAV_TYPE GCS_Rover::frame_type() const
 {
@@ -571,6 +572,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
 #endif
     MSG_WHEEL_DISTANCE,
     MSG_ESC_TELEMETRY,
+#if HAL_EFI_ENABLED
+    MSG_EFI_STATUS,
+#endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
