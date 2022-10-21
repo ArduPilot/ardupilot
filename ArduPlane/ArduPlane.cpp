@@ -277,13 +277,7 @@ void Plane::update_logging25(void)
 #if ADVANCED_FAILSAFE == ENABLED
 void Plane::afs_fs_check(void)
 {
-    // perform AFS failsafe checks
-#if AP_FENCE_ENABLED
-    const bool fence_breached = fence.get_breaches() != 0;
-#else
-    const bool fence_breached = false;
-#endif
-    afs.check(fence_breached, failsafe.AFS_last_valid_rc_ms);
+    afs.check(failsafe.AFS_last_valid_rc_ms);
 }
 #endif
 
