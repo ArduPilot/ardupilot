@@ -561,6 +561,7 @@ void OreoLED_I2C::send_sync(void)
 
 
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
 // Handle an LED_CONTROL mavlink message
 void OreoLED_I2C::handle_led_control(const mavlink_message_t &msg)
 {
@@ -645,6 +646,7 @@ void OreoLED_I2C::handle_led_control(const mavlink_message_t &msg)
     }
     _pattern_override = packet.pattern;
 }
+#endif
 
 OreoLED_I2C::oreo_state::oreo_state()
 {

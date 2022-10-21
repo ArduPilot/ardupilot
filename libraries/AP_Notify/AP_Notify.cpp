@@ -412,6 +412,7 @@ void AP_Notify::update(void)
     memset(&AP_Notify::events, 0, sizeof(AP_Notify::events));
 }
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
 // handle a LED_CONTROL message
 void AP_Notify::handle_led_control(const mavlink_message_t &msg)
 {
@@ -421,6 +422,7 @@ void AP_Notify::handle_led_control(const mavlink_message_t &msg)
         }
     }
 }
+#endif
 
 // handle RGB from Scripting or AP_Periph
 void AP_Notify::handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz)
