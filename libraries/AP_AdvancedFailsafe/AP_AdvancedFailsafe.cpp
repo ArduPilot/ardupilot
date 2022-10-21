@@ -306,11 +306,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
 
     // if we are not terminating or if there is a separate terminate
     // pin configured then toggle the heartbeat pin at 10Hz
-    if (_heartbeat_pin != -1 && (_terminate_pin != -1 || !_terminate)) {
-        _heartbeat_pin_value = !_heartbeat_pin_value;
-        hal.gpio->pinMode(_heartbeat_pin, HAL_GPIO_OUTPUT);
-        hal.gpio->write(_heartbeat_pin, _heartbeat_pin_value);
-    }    
+    heartbeat();
 
     // set the terminate pin
     if (_terminate_pin != -1) {
