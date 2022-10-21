@@ -201,6 +201,8 @@ protected:
     bool generator_checks(bool report) const;
 
     bool opendroneid_checks(bool display_failure);
+    
+    bool serial_protocol_checks(bool display_failure);
 
     virtual bool system_checks(bool report);
 
