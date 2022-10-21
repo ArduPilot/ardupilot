@@ -14,8 +14,10 @@ public:
     // called at 50Hz
     virtual void update() = 0;
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     // handle a LED_CONTROL message, by default device ignore message
     virtual void handle_led_control(const mavlink_message_t &msg) {}
+#endif
 
     // play a MML tune
     virtual void play_tune(const char *tune) {}

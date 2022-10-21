@@ -151,8 +151,10 @@ public:
     /// update - allow updates of leds that cannot be updated during a timed interrupt
     void update(void);
 
+#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     // handle a LED_CONTROL message
     static void handle_led_control(const mavlink_message_t &msg);
+#endif
 
     // handle RGB from Scripting or AP_Periph
     static void handle_rgb(uint8_t r, uint8_t g, uint8_t b, uint8_t rate_hz = 0);
