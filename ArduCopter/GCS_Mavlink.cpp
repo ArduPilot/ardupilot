@@ -2,6 +2,7 @@
 
 #include "GCS_Mavlink.h"
 #include <AP_RPM/AP_RPM_config.h>
+#include <AP_EFI/AP_EFI_config.h>
 
 MAV_TYPE GCS_Copter::frame_type() const
 {
@@ -541,6 +542,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_ESC_TELEMETRY,
     MSG_GENERATOR_STATUS,
     MSG_WINCH_STATUS,
+#if HAL_EFI_ENABLED
+    MSG_EFI_STATUS,
+#endif
 };
 static const ap_message STREAM_PARAMS_msgs[] = {
     MSG_NEXT_PARAM
