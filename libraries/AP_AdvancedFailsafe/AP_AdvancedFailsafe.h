@@ -72,7 +72,7 @@ public:
     bool enabled() { return _enable; }
 
     // check that everything is OK
-    void check(bool geofence_breached, uint32_t last_valid_rc_ms);
+    void check(uint32_t last_valid_rc_ms);
 
     // generate heartbeat msgs, so external failsafe boards are happy
     // during sensor calibration
