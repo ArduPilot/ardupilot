@@ -1060,6 +1060,14 @@ function motors:get_interlock() end
 ---@return number
 function motors:get_lateral() end
 
+-- set external limit flags for each axis to prevent integrator windup
+---@param roll boolean
+---@param pitch boolean
+---@param yaw boolean
+---@param throttle_lower boolean
+---@param throttle_upper boolean
+function motors:set_external_limits(roll, pitch, yaw, throttle_lower, throttle_upper) end
+
 -- get forward motor output
 ---@return number
 function motors:get_forward() end
