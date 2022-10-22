@@ -226,7 +226,6 @@ void AP_InertialSensor_Invensense::start()
         gdev = DEVTYPE_INS_ICM20602;
         adev = DEVTYPE_INS_ICM20602;
         _enable_offset_checking = true;
-        _disable_temp_fifo_check = true;
         break;
     case Invensense_ICM20601:
         gdev = DEVTYPE_INS_ICM20601;
@@ -547,7 +546,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         accel *= _accel_scale;
 
         int16_t t2 = int16_val(data, 3);
-        if (!_disable_temp_fifo_check && !_check_raw_temp(t2)) {
+        if (!_check_raw_temp(t2)) {
             if (!hal.scheduler->in_expected_delay()) {
                 debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
             }
@@ -592,7 +591,7 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
 
         // use temperatue to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
-        if (!_disable_temp_fifo_check && !_check_raw_temp(t2)) {
+        if (!_check_raw_temp(t2)) {
             if (!hal.scheduler->in_expected_delay()) {
                 debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
             }
