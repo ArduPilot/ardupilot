@@ -169,9 +169,6 @@ private:
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 
-    // disable temperature based fifo check
-    bool _disable_temp_fifo_check;
-
     /*
       accumulators for sensor_rate sampling
       See description in _accumulate_sensor_rate_sampling()
