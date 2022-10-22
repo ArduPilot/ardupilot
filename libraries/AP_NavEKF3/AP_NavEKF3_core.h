@@ -138,7 +138,10 @@ public:
     // If false returned, do not use for flight control
     bool getPosNE(Vector2f &posNE) const;
 
-    // Write the last calculated D position relative to the reference point (m).
+    // get position D from local origin
+    bool getPosD_local(float &posD) const;
+
+    // Write the last calculated D position relative to the public origin
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
     bool getPosD(float &posD) const;
