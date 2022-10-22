@@ -405,6 +405,9 @@ void Rover::update_logging2(void)
 
     if (should_log(MASK_LOG_IMU)) {
         AP::ins().Write_Vibration();
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.write_log_messages();
+#endif
     }
 }
 
