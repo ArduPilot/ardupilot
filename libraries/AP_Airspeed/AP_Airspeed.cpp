@@ -724,6 +724,13 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt)
 }
 #endif 
 
+// @LoggerMessage: HYGR
+// @Description: Hygrometer data
+// @Field: TimeUS: Time since system startup
+// @Field: Id: sensor ID
+// @Field: Humidity: percentage humidity
+// @Field: Temp: temperature in degrees C
+
 void AP_Airspeed::Log_Airspeed()
 {
     const uint64_t now = AP_HAL::micros64();
@@ -761,11 +768,12 @@ void AP_Airspeed::Log_Airspeed()
         if (sensor[i]->get_hygrometer(hygrometer.sample_ms, hygrometer.temperature, hygrometer.humidity) &&
             hygrometer.sample_ms != state[i].last_hygrometer_log_ms) {
             AP::logger().WriteStreaming("HYGR",
-                                        "TimeUS,Humidity,Temp",
-                                        "s%O",
-                                        "F--",
-                                        "Qff",
+                                        "TimeUS,Id,Humidity,Temp",
+                                        "s#%O",
+                                        "F---",
+                                        "QBff",
                                         AP_HAL::micros64(),
+                                        i,
                                         hygrometer.humidity,
                                         hygrometer.temperature);
             state[i].last_hygrometer_log_ms = hygrometer.sample_ms;
