@@ -197,6 +197,26 @@ void Plane::startup_ground(void)
 }
 
 
+#if AP_FENCE_ENABLED
+/*
+  return true if a mode reason is an automatic mode change due to
+  landing sequencing.
+ */
+static bool mode_reason_is_landing_sequence(const ModeReason reason)
+{
+    switch (reason) {
+    case ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND:
+    case ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL:
+    case ModeReason::QRTL_INSTEAD_OF_RTL:
+    case ModeReason::QLAND_INSTEAD_OF_RTL:
+        return true;
+    default:
+        break;
+    }
+    return false;
+}
+#endif // AP_FENCE_ENABLED
+
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 {
 
@@ -251,7 +271,7 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
         fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
         fence.get_breaches() &&
         in_fence_recovery() &&
-        reason != ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) {
+        !mode_reason_is_landing_sequence(reason)) {
         gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, in fence recovery", new_mode.name());
         AP_Notify::events.user_mode_change_failed = 1;
         return false;
