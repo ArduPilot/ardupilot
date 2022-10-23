@@ -1,5 +1,5 @@
-Release 4.3.1beta1 15th Oct 2022
---------------------------------
+Release 4.3.1 24th Oct 2022
+---------------------------
 
 This is a minor release with some important fixes:
 
@@ -12,6 +12,8 @@ This is a minor release with some important fixes:
  - fixed race condition in TECS control leading to 'nod' in forward transiton
  - allow for expansion of notch filters to fix notch of fwd motors in quadplanes
  - added logging of TECS target alt
+ - fixed EKF3 altitude discrepancy with GPS or baro alt change on startup
+ - allow auto mode sequencing to land in a fence breach
 
 Happy flying!
 
