@@ -844,5 +844,19 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 
     copter.ap.in_arming_delay = false;
 
+    // Change to flight mode SW flight mode
+    if (rc().has_had_rc_receiver()) {
+        RC_Channel *flightchan = rc().channel(copter.g.flight_mode_chan.get() - 1);
+        int16_t pwm = flightchan->get_radio_in();
+        int8_t position = -1;
+        if      (pwm < 1231) position = 0;
+        else if (pwm < 1361) position = 1;
+        else if (pwm < 1491) position = 2;
+        else if (pwm < 1621) position = 3;
+        else if (pwm < 1750) position = 4;
+        else position = 5;
+        copter.set_mode((Mode::Number)copter.flight_modes[position].get(), ModeReason::STARTUP);
+    }
+
     return true;
 }
