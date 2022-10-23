@@ -31,6 +31,6 @@
 [submodule "modules/DroneCAN/dronecan_dsdlc"]
 	path = modules/DroneCAN/dronecan_dsdlc
 	url = https://github.com/DroneCAN/dronecan_dsdlc
-[submodule "modules/DroneCAN/libcanard"]
+[submodule "modules/libcanard"]
 	path = modules/DroneCAN/libcanard
 	url = https://github.com/DroneCAN/libcanard
