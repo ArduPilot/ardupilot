@@ -246,8 +246,12 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
 
 #if AP_FENCE_ENABLED
     // may not be allowed to change mode if recovering from fence breach
-    if (hal.util->get_soft_armed() && fence.enabled() && fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
-                                            fence.get_breaches() && in_fence_recovery()) {
+    if (hal.util->get_soft_armed() &&
+        fence.enabled() &&
+        fence.option_enabled(AC_Fence::OPTIONS::DISABLE_MODE_CHANGE) &&
+        fence.get_breaches() &&
+        in_fence_recovery() &&
+        reason != ModeReason::RTL_COMPLETE_SWITCHING_TO_FIXEDWING_AUTOLAND) {
         gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, in fence recovery", new_mode.name());
         AP_Notify::events.user_mode_change_failed = 1;
         return false;
