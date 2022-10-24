@@ -131,6 +131,10 @@ public:
 
     //Run through the list of seen node ids for verification
     void verify_nodes();
+
+    bool get_node_seen_and_healthy(uint8_t node_id) const {
+        return node_seen_mask.get(node_id) & node_healthy_mask.get(node_id);
+    }
 };
 
 #endif
