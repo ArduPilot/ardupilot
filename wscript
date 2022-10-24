@@ -779,6 +779,8 @@ def build(bld):
 
     if bld.get_board().with_can:
         bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['uavcan']
+    if bld.env.AP_PERIPH:
+        bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['dronecan']
 
     _build_cmd_tweaks(bld)
 
