@@ -1,5 +1,16 @@
 Rover Release Notes:
 ------------------------------------------------------------------
+Rover 4.3.0-beta3 24-Oct-2022
+Changes from 4.3.0-beta3
+1) Scripting supports implementing AUX functions
+2) Bug fixes
+    a) BMI085 accel scaling fixed
+    b) Build with gcc 11.3 fixed (developer only)
+    c) EKF3 alt discrepancy if GPS or baro alt changed soon after startup fixed
+    d) Harmonic Notch and ESC telem fix when motor outputs are non-contiguous
+    e) NMEA GPS's KSXT message parsing fixed (affected position accuracy)
+    f) Scripting random number generator fix
+------------------------------------------------------------------
 Rover 4.3.0-beta3 14-Oct-2022
 Changes from 4.3.0-beta2
 1) Pixhawk1-1M, fmuv2, fmuv3 display warning if firmware mismatches board's flash size (1M and 2M)
