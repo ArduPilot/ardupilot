@@ -28,6 +28,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <dronecan_msgs.h>
+#include "AP_UAVCAN_Serial.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
@@ -424,11 +425,6 @@ static void handle_param_executeopcode(CanardInstance* ins, CanardRxTransfer* tr
 );
 }
 
-static void canard_broadcast(uint64_t data_type_signature,
-                                uint16_t data_type_id,
-                                uint8_t priority,
-                                const void* payload,
-                                uint16_t payload_len);
 static void processTx(void);
 static void processRx(void);
 
@@ -915,6 +911,98 @@ static void can_safety_button_update(void)
 }
 #endif // HAL_GPIO_PIN_SAFE_BUTTON
 
+// handle Serial Tunnel request
+#if AP_SERIAL_EXTENSION_ENABLED
+static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    uavcan_tunnel_Broadcast msg;
+    if (uavcan_tunnel_Broadcast_decode(transfer, &msg)) {
+        return;
+    }
+    uint8_t num_uavcan_phys = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_UAVCAN);
+
+#ifdef HAL_PERIPH_ENABLE_GPS
+    // this might be a passthrough request for GPS
+    if (msg.protocol.protocol == UAVCAN_TUNNEL_PROTOCOL_GPS) {
+        for (uint8_t i = 0; i < num_uavcan_phys; i++) {
+            AP_UAVCAN_Serial *uavcan_serial = static_cast<AP_UAVCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, msg.channel_id));
+            if (uavcan_serial == nullptr) {
+                continue;
+            }
+            if (uavcan_serial->get_target_node_id() == -1) {
+                // free uavcan serial found, use it
+                uavcan_serial->set_target_node_id(transfer->source_node_id);
+                // also set passthrough with GPS1
+                AP_HAL::UARTDriver *uart1, *uart2;
+                uint32_t baud1, baud2;
+                uint8_t timeout_ms;
+                if (AP::serialmanager().get_passthru(uart1, uart2, timeout_ms, baud1, baud2)) {
+                    // passthru already in use
+                    return;
+                }
+
+                uint8_t gps_index = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_GPS, 0);
+                uint8_t uavcan_serial_index = uavcan_serial->get_channel_id() + AP_HAL::HAL::num_serial;
+                AP::serialmanager().serial_state(uavcan_serial_index).set_protocol(AP_SerialManager::SerialProtocol_Passthru);
+                // set passthru
+                // activate passthru
+                ap_var_type var_type;
+                uint16_t flags;
+                AP_Param* param = AP_Param::find("SERIAL_PASS1", &var_type, &flags);
+                if (param == nullptr) {
+                    return;
+                }
+                param->set_float(gps_index, var_type);
+                param = AP_Param::find("SERIAL_PASS2", &var_type, &flags);
+                if (param == nullptr) {
+                    return;
+                }
+                param->set_float(uavcan_serial_index, var_type);
+                param = AP_Param::find("SERIAL_PASSTIMO", &var_type, &flags);
+                if (param == nullptr) {
+                    return;
+                }
+                param->set_float(0, var_type);
+                // finally handle tunnel call
+                if (uavcan_serial->handle_tunnel_broadcast(*ins, *transfer, msg)) {
+                    // we handled the tunnel call
+                    return;
+                }
+            }
+        }
+    }
+#endif
+
+    // look for a matching node
+    for (uint8_t i=0; i<num_uavcan_phys; i++) {
+        AP_UAVCAN_Serial *uavcan_serial = static_cast<AP_UAVCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, i));
+        if (uavcan_serial == nullptr) {
+            continue;
+        }
+        if (uavcan_serial->get_target_node_id() == -1) {
+            can_printf("UAVCAN Serial: Auto assigning target node id %d for port %d", transfer->source_node_id, i);
+            uavcan_serial->set_target_node_id(transfer->source_node_id);
+        }
+        if (uavcan_serial->handle_tunnel_broadcast(*ins, *transfer, msg)) {
+            return;
+        }
+    }
+}
+
+static void handle_serialconfig(CanardInstance* ins, CanardRxTransfer* transfer)
+{
+    uavcan_tunnel_SerialConfig msg;
+    if (uavcan_tunnel_SerialConfig_decode(transfer, &msg)) {
+        return;
+    }
+    AP_UAVCAN_Serial *uavcan_serial = static_cast<AP_UAVCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, msg.channel_id));
+    if (uavcan_serial == nullptr) {
+        return;
+    }
+    uavcan_serial->set_usb_baud(msg.baud);
+}
+#endif
+
 /**
  * This callback is invoked by the library when a new message or request or response is received.
  */
@@ -1014,6 +1102,14 @@ static void onTransferReceived(CanardInstance* ins,
         handle_notify_state(ins, transfer);
         break;
 #endif
+#if AP_SERIAL_EXTENSION_ENABLED
+    case UAVCAN_TUNNEL_BROADCAST_ID:
+        handle_tunnel_broadcast(ins, transfer);
+        break;
+    case UAVCAN_TUNNEL_SERIALCONFIG_ID:
+        handle_serialconfig(ins, transfer);
+        break;
+#endif
     }
 }
 
@@ -1106,6 +1202,14 @@ static bool shouldAcceptTransfer(const CanardInstance* ins,
         *out_data_type_signature = ARDUPILOT_INDICATION_NOTIFYSTATE_SIGNATURE;
         return true;
 #endif
+#if AP_SERIAL_EXTENSION_ENABLED
+    case UAVCAN_TUNNEL_BROADCAST_ID:
+        *out_data_type_signature = UAVCAN_TUNNEL_BROADCAST_SIGNATURE;
+        return true;
+    case UAVCAN_TUNNEL_SERIALCONFIG_ID:
+        *out_data_type_signature = UAVCAN_TUNNEL_SERIALCONFIG_SIGNATURE;
+        return true;
+#endif
     default:
         break;
     }
@@ -1156,43 +1260,41 @@ static uint8_t* get_tid_ptr(uint32_t transfer_desc)
     return &tid_map_ptr->next->tid;
 }
 
-static void canard_broadcast(uint64_t data_type_signature,
-                                uint16_t data_type_id,
-                                uint8_t priority,
-                                const void* payload,
-                                uint16_t payload_len)
+int16_t canard_broadcast(uint64_t data_type_signature,
+                        uint16_t data_type_id,
+                        uint8_t priority,
+                        const void* payload,
+                        uint16_t payload_len)
 {
     if (canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
-        return;
+        return -1;
     }
 
     uint8_t *tid_ptr = get_tid_ptr(MAKE_TRANSFER_DESCRIPTOR(data_type_signature, data_type_id, 0, CANARD_BROADCAST_NODE_ID));
     if (tid_ptr == nullptr) {
-        return;
+        return -1;
     }
-#if DEBUG_PKTS
-    const int16_t res = 
-#endif
-    canardBroadcast(&dronecan.canard,
-                    data_type_signature,
-                    data_type_id,
-                    tid_ptr,
-                    priority,
-                    payload,
-                    payload_len
+    const int16_t res =  canardBroadcast(&dronecan.canard,
+                                        data_type_signature,
+                                        data_type_id,
+                                        tid_ptr,
+                                        priority,
+                                        payload,
+                                        payload_len
 #if CANARD_MULTI_IFACE
-                    , IFACE_ALL // send over all ifaces
+                                        , IFACE_ALL // send over all ifaces
 #endif
 #if HAL_CANFD_SUPPORTED
-                    , periph.canfdout()
+                                        , periph.canfdout()
 #endif
-                    );
+                                        );
 
 #if DEBUG_PKTS
     if (res < 0) {
         can_printf("Tx error %d\n", res);
     }
 #endif
+    return res;
 }
 
 static void processTx(void)
@@ -1545,7 +1647,7 @@ void AP_Periph_FW::can_start()
 
         // ensure there's a serial port mapped to SLCAN
         if (!periph.serial_manager.have_serial(AP_SerialManager::SerialProtocol_SLCAN, 0)) {
-            periph.serial_manager.set_protocol_and_baud(SERIALMANAGER_NUM_PORTS-1, AP_SerialManager::SerialProtocol_SLCAN, 1500000);
+            periph.serial_manager.set_protocol_and_baud(SERIALMANAGER_NUM_UART_PORTS-1, AP_SerialManager::SerialProtocol_SLCAN, 1500000);
         }
     }
 #endif
