@@ -459,10 +459,6 @@ def setup_canmgr_build(cfg):
     else:
         env.DEFINES += ['UAVCAN_SUPPORT_CANFD=0']
 
-
-    env.INCLUDES += [
-        cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath(),
-        ]
     cfg.get_board().with_can = True
 
 def load_env_vars(env):
