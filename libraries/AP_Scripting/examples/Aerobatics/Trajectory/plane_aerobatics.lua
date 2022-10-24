@@ -265,6 +265,16 @@ end
 local height_PI = height_controller(HGT_P, HGT_I, HGT_KE_BIAS, 20.0)
 local speed_PI = speed_controller(SPD_P, SPD_I, HGT_KE_BIAS, THR_PIT_FF, 100.0)
 
+function sgn(x)
+   local eps = 0.000001
+   if (x > eps) then
+      return 1.0
+   elseif x < eps then
+      return -1.0
+   else
+      return 0.0
+   end
+end
 
 function euler_rate_ef_to_bf(rrate, prate, yrate, roll, pitch, yaw)
 
@@ -335,17 +345,6 @@ function resolve_jump(i)
 end
 
 --------Trajectory definitions---------------------
-function path_circle(t, radius, arg2, arg3, arg4)
-   t = t*math.pi*2
-   local vec = makeVector3f(math.sin(t), 1.0-math.cos(t), 0)
-   return vec:scale(radius), 0.0
-end
-
-function knife_edge_circle(t, radius, arg2, arg3, arg4)
-   t = t*math.pi*2
-   local vec = makeVector3f(math.sin(t), 1.0-math.cos(t), 0)
-   return vec:scale(radius), math.pi/2
-end
 
 function climbing_circle(t, radius, height, arg3, arg4)
    local angle = t*math.pi*2
@@ -354,41 +353,45 @@ function climbing_circle(t, radius, height, arg3, arg4)
 end
 
 function figure_eight(t, r, bank_angle, arg3, arg4)
+
+   local r_sign = sgn(r)
+   assert(math.abs(r_sign) > 0.1)
+   local r = math.abs(r)
+
    local T = 3.0*math.pi*r + r*math.sqrt(2) + 2*r
 
    local rsqr2 = r*math.sqrt(2)
-
    local pos
    local roll
    if (t < rsqr2/T) then
       pos = makeVector3f(T*t, 0.0, 0.0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0)/T) then
-      pos = makeVector3f(r*math.cos(T*t/r - math.sqrt(2) - math.pi/2)+rsqr2, r + r*math.sin(T*t/r - math.sqrt(2) - math.pi/2), 0)
+      pos = makeVector3f(r*math.cos(T*t/r - math.sqrt(2) - math.pi/2)+rsqr2, r_sign*(r + r*math.sin(T*t/r - math.sqrt(2) - math.pi/2)), 0)
       roll = math.rad(bank_angle)
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r/4)/T) then
-      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0)
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + 3*r/4)/T) then
-      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0)
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r)/T) then
-      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), 0)
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0)/T) then
-      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4) - r*math.sqrt(2.0), r + r*math.sin(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4), 0)
+      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4) - r*math.sqrt(2.0), r_sign*(r + r*math.sin(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4)), 0)
       roll = -math.rad(bank_angle)
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r/4.0)/T) then
-      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)), 0)
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
       roll = 0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + 3*r/4.0)/T) then
-      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)), 0)
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r)/T) then
-      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)),  r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2)), 0)
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)),  r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
       roll = 0.0
    else
-      pos = makeVector3f(r*math.cos(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))+rsqr2, r + r*math.sin(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 )), 0)
+      pos = makeVector3f(r*math.cos(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))+rsqr2, r_sign*(r + r*math.sin(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))), 0)
       roll = math.rad(bank_angle)
    end
    return pos, roll
@@ -583,17 +586,21 @@ function humpty_bump(t, r, h, arg3, arg4)
 end
 
 function scale_figure_eight(t, r, bank_angle, arg3, arg4)
+   local r_sign = sgn(r)
+   assert(math.abs(r_sign) > 0.1)
+   local r = math.abs(r)
+   
    local T = 4*math.pi + 2
    local pos
    local roll
    if (t < (math.pi/2)/T) then
-      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r  +r*math.sin(T*t - math.pi/2), 0)
+      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r_sign*(r  +r*math.sin(T*t - math.pi/2)), 0)
       roll = math.rad(bank_angle)
    elseif (t < (5*math.pi/2)/T) then
-      pos = makeVector3f(2*r + r*math.cos(T*t + math.pi/2), r -r*math.sin(T*t + math.pi/2), 0)
+      pos = makeVector3f(2*r + r*math.cos(T*t + math.pi/2), r_sign*(r -r*math.sin(T*t + math.pi/2)), 0)
       roll = -math.rad(bank_angle)
    elseif (t < (4*math.pi)/T) then
-      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r + r*math.sin(T*t - math.pi/2), 0)
+      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r_sign*(r + r*math.sin(T*t - math.pi/2)), 0)
       roll = math.rad(bank_angle)
    else
       pos = makeVector3f(r*(T*t - 4*math.pi), 0, 0)
@@ -635,34 +642,35 @@ end
 
 --todo: change y coordinate to z for vertical box
 --function aerobatic_box(t, l, w, r):
-function horizontal_rectangle(t, arg1, arg2, arg3, arg4)
+function horizontal_rectangle(t, total_length, total_width, r, arg4)
    
-   local r = math.abs(arg3)
-   if(arg3 <= 0.0) then
-      gcs:send_text(0, string.format("Invalid radius value of : %f, using default.", arg3))
-      r = math.min(arg1, arg2)/3.0
-   end
+   local r_sign = sgn(r)
+   assert(math.abs(r_sign) > 0.1)
+   local r = math.abs(r)
+   gcs:send_text(0,string.format("rect %f %f", r_sign, r))
+
+
    local bank_angle = math.abs(arg4)
-   local l = arg1 - 2*r
-   local w = arg2 - 2*r
+   local l = total_length - 2*r
+   local w = total_width - 2*r
    local perim = 2*l + 2*w + 2*math.pi*r
    local pos
    if (t < 0.5*l/(perim)) then
       pos = makeVector3f(perim*t, 0.0, 0.0)
    elseif (t < (0.5*l + 0.5*math.pi*r)/perim) then
-      pos = makeVector3f(0.5*l + r*math.sin((perim*t - 0.5*l)/r), r*(1 - math.cos((perim*t - 0.5*l)/r)), 0.0)
+      pos = makeVector3f(0.5*l + r*math.sin((perim*t - 0.5*l)/r), r_sign*(r*(1 - math.cos((perim*t - 0.5*l)/r))), 0.0)
    elseif (t < (0.5*l + 0.5*math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l + r, r + (perim*t - (0.5*l + 0.5*math.pi*r)), 0.0)
+      pos = makeVector3f(0.5*l + r, r_sign*(r + (perim*t - (0.5*l + 0.5*math.pi*r))), 0.0)
    elseif(t < (0.5*l + math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l + r + r*(-1 + math.cos((perim*t - (0.5*l + 0.5*math.pi*r + w))/r)), r + w + r*(math.sin((perim*t - (0.5*l + 0.5*math.pi*r + w))/r)), 0.0)
+      pos = makeVector3f(0.5*l + r + r*(-1 + math.cos((perim*t - (0.5*l + 0.5*math.pi*r + w))/r)), r_sign*(r + w + r*(math.sin((perim*t - (0.5*l + 0.5*math.pi*r + w))/r))), 0.0)
    elseif(t < (1.5*l + math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l - (perim*t - (0.5*l + math.pi*r + w)), 2*r + w, 0.0)
+      pos = makeVector3f(0.5*l - (perim*t - (0.5*l + math.pi*r + w)), r_sign*(2*r + w), 0.0)
    elseif(t < (1.5*l + 1.5*math.pi*r + w)/perim) then
-      pos = makeVector3f(-0.5*l + r*(-math.sin((perim*t - (1.5*l + math.pi*r + w))/r)), 2*r + w + r*(-1 + math.cos((perim*t - (1.5*l + math.pi*r + w))/r)), 0.0)
+      pos = makeVector3f(-0.5*l + r*(-math.sin((perim*t - (1.5*l + math.pi*r + w))/r)), r_sign*(2*r + w + r*(-1 + math.cos((perim*t - (1.5*l + math.pi*r + w))/r))), 0.0)
    elseif(t < (1.5*l + 1.5*math.pi*r + 2*w)/perim) then
-      pos = makeVector3f(-0.5*l -r, w + r - (perim*t - (1.5*l + 1.5*math.pi*r + w)), 0.0)
+      pos = makeVector3f(-0.5*l -r, r_sign*(w + r - (perim*t - (1.5*l + 1.5*math.pi*r + w))), 0.0)
    elseif(t < (1.5*l + 2*math.pi*r + 2*w)/perim) then
-      pos = makeVector3f(-0.5*l -r + r*(1 - math.cos((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r)), r + r*(-math.sin((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r)), 0.0)
+      pos = makeVector3f(-0.5*l -r + r*(1 - math.cos((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r)), r_sign*(r + r*(-math.sin((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r))), 0.0)
    else
       pos = makeVector3f(-0.5*l + perim*t - (1.5*l + 2*math.pi*r + 2*w), 0.0, 0.0)
    end
@@ -670,12 +678,12 @@ function horizontal_rectangle(t, arg1, arg2, arg3, arg4)
    return pos, math.rad(bank_angle)
 end 
 
-function vertical_aerobatic_box(t, arg1, arg2, arg3, arg4)
+function vertical_aerobatic_box(t, total_length, total_width, r, arg4)
    
    --gcs:send_text(0, string.format("t val: %f", t))
    local q = Quaternion()
    q:from_euler(-math.rad(90), 0, 0)
-   local point, angle = horizontal_rectangle(t, arg1, arg2, arg3, arg4)
+   local point, angle = horizontal_rectangle(t, total_length, total_width, math.abs(r), arg4)
    q:earth_to_body(point)
    return point, angle
 end 
