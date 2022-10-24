@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "HAL.h"
+#include <AP_SerialManager/AP_SerialManager.h>
 
 namespace AP_HAL {
 
@@ -20,7 +21,11 @@ AP_HAL::UARTDriver* AP_HAL::HAL::serial(uint8_t sernum) const
     const uint8_t mapping[] = { 0, 2, 3, 1, 4, 5, 6, 7, 8, 9 };
     static_assert(sizeof(mapping) == num_serial, "num_serial must match mapping");
     if (sernum >= num_serial) {
+#if AP_SERIAL_EXTENSION_ENABLED
+        return AP::serialmanager().get_ext_uart(sernum - num_serial);
+#else
         return nullptr;
+#endif
     }
     return uart_array[mapping[sernum]];
 }
