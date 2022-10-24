@@ -70,6 +70,7 @@ def build(bld):
                      ]
     bld.ap_stlib(
         name= 'AP_Periph_libs',
+        dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Periph',
         ap_libraries= libraries,
         use='dronecan',
@@ -79,8 +80,8 @@ def build(bld):
     )
 
     # build external libcanard library
-    bld.stlib(source=['../../modules/DroneCAN/libcanard/canard.c'] +
-                     bld.bldnode.ant_glob('modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'),
+    bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
+              name='libcanard',
               use='dronecan',
               target='libcanard')
 
