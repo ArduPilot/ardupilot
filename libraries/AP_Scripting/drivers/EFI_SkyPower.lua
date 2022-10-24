@@ -80,6 +80,7 @@ local EFI_SP_GEN_FN     = bind_add_param('GEN_FN',     7, 0)    -- generator con
 local EFI_SP_MIN_RPM    = bind_add_param('MIN_RPM',    8, 0)    -- min RPM, for engine restart
 
 if EFI_SP_ENABLE:get() == 0 then
+   gcs:send_text(0, string.format("EFISP: disabled"))
    return
 end
 
@@ -100,6 +101,10 @@ end
 
 
 local now_s = get_time_sec()
+
+function C_TO_KELVIN(temp)
+   return temp + 273.15
+end
 
 --[[
    EFI Engine Object
@@ -149,10 +154,9 @@ local function engine_control(_driver, _idx)
 
     -- Temperature Data Structure
     local temps = {}
-    temps.egt1 = 0.0        -- Engine Gas Temperature: Sensor 1
-    temps.egt2 = 0.0        -- Engine Gas Temperature: Sensor 2
-    temps.cht1 = 0.0        -- Cylinder Head Temperature: Sensor 1
-    temps.cht2 = 0.0        -- Cylinder Head Temperature: Sensor 2
+    temps.egt = 0.0        -- Exhaust Gas Temperature
+    temps.cht = 0.0        -- Cylinder Head Temperature
+    temps.imt = 0.0        -- intake manifold temperature
 
     -- read telemetry packets
     function self.update_telemetry()
@@ -166,7 +170,7 @@ local function engine_control(_driver, _idx)
             end
 
             -- All Frame IDs for this EFI Engine are in the 11-bit address space
-            if not frame:isExtended() then
+            if frame:isExtended() then
                 self.handle_EFI_packet(frame, _idx)
             end
         end
@@ -186,44 +190,35 @@ local function engine_control(_driver, _idx)
           throttle_angle = get_uint16(frame, 4) * 0.1
           last_rpm_t = get_time_sec()
        elseif id == 0x101 then
-          air_pressure = get_uint16(frame, 4)
+          current_load = get_uint16(frame, 0) * 0.1
+          target_load = get_uint16(frame, 2) * 0.1
+          inj_time = get_uint16(frame, 4)
+          inj_ang = get_uint16(frame, 6) * 0.1
        elseif id == 0x102 then
-          inj_ang = get_uint16(frame, 2) * 0.1
-          inj_time = get_uint16(frame, 4) * 0.1
+          -- unused fields
        elseif id == 0x104 then
           supply_voltage = get_uint16(frame, 0) * 0.1
-       elseif id == 0x105 then
-          temps.cht1 = get_uint16(frame, 0) * 0.1
-          temps.egt1 = get_uint16(frame, 4) * 0.1
-       elseif id == 0x10A then
-          target_load = get_uint16(frame, 6) * 0.1
-       elseif id == 0x10C then
-          temps.cht2 = get_uint16(frame, 4) * 0.1
-          temps.egt2 = get_uint16(frame, 6) * 0.1
-       elseif id == 0x10D then
-          current_load = get_uint16(frame, 2) * 0.1
-       elseif id == 0x10F then
-          fuel_consumption_lph = get_uint16(frame,4)*0.1
+          ecu_temp = get_uint16(frame, 2) * 0.1
+          air_pressure = get_uint16(frame, 4)
+          fuel_consumption_lph = get_uint16(frame,6)*0.001
           if last_fuel_s > 0 then
              local dt = now_s - last_fuel_s
              local fuel_lps = fuel_consumption_lph / 3600.0
              fuel_total_l = fuel_total_l + fuel_lps * dt
           end
           last_fuel_s = now_s
-       elseif id == 0x113 then
-          gen.amps = get_uint16(frame, 2) * 0.01
-       elseif id == 0x114 then
-          gen.rpm = get_uint16(frame, 0)
-       elseif id == 0x115 then
-          gen.batt_current = get_uint16(frame, 4) * 0.01
+       elseif id == 0x105 then
+          temps.cht = get_uint16(frame, 0) * 0.1
+          temps.imt = get_uint16(frame, 2) * 0.1
+          temps.egt = get_uint16(frame, 4) * 0.1
        end
     end
 
     -- Build and set the EFI_State that is passed into the EFI Scripting backend
     function self.set_EFI_State()
        -- Cylinder_Status
-       cylinder_state:cylinder_head_temperature(0.5 * (temps.cht1 + temps.cht2))
-       cylinder_state:exhaust_gas_temperature(0.5 * (temps.egt1 + temps.egt2))
+       cylinder_state:cylinder_head_temperature(C_TO_KELVIN(temps.cht))
+       cylinder_state:exhaust_gas_temperature(C_TO_KELVIN(temps.egt))
        cylinder_state:ignition_timing_deg(ignition_angle)
        cylinder_state:injection_time_ms(inj_time*0.001)
 
@@ -235,6 +230,7 @@ local function engine_control(_driver, _idx)
        efi_state:throttle_position_percent(math.floor(throttle_angle*100.0/90.0+0.5))
        efi_state:atmospheric_pressure_kpa(air_pressure*0.1)
        efi_state:ignition_voltage(supply_voltage)
+       efi_state:intake_manifold_temperature(C_TO_KELVIN(temps.imt))
 
        -- copy cylinder_state to efi_state
        efi_state:cylinder_status(cylinder_state)
