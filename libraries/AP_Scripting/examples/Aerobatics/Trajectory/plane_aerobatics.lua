@@ -573,7 +573,7 @@ function humpty_bump(t, r, h, arg3, arg4)
       pos = makeVector3f(3*r,0, -r -l + (T*t - 3*r*math.pi/2.0 -l))
       roll = math.pi
    elseif (t < (2*math.pi*r + 2*l)/T) then
-      pos = makeVector3f(2*r + r*math.cos(T*t/r - 3*math.pi/2 -2*l/r),0, -r + math.sin(T*t/r - 3*math.pi/2 -2*l/r))
+      pos = makeVector3f(2*r + r*math.cos(T*t/r - 3*math.pi/2 -2*l/r),0, -r + r*math.sin(T*t/r - 3*math.pi/2 -2*l/r))
       roll = math.pi
    else
       pos = makeVector3f(2*r -(T*t - 2*r*math.pi - 2*l), 0, 0)
