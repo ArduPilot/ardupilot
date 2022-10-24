@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
@@ -314,6 +315,13 @@ void NavEKF2_core::FuseOptFlow()
             Vector3F posOffsetEarth = prevTnb.mul_transpose(posOffsetBody);
             range -= posOffsetEarth.z / prevTnb.c.z;
         }
+
+        // override with user specified height (if given, for rover)
+#if APM_BUILD_TYPE(APM_BUILD_Rover)
+        if (ofDataDelayed.heightOverride > 0) {
+            range = ofDataDelayed.heightOverride;
+        }
+#endif
 
         // calculate relative velocity in sensor frame including the relative motion due to rotation
         relVelSensor = prevTnb*stateStruct.velocity + ofDataDelayed.bodyRadXYZ % posOffsetBody;
