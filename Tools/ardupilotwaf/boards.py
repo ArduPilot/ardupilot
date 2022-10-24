@@ -423,9 +423,6 @@ class Board:
                 UAVCAN_NULLPTR = 'nullptr'
             )
 
-            env.INCLUDES += [
-                cfg.srcnode.find_dir('modules/uavcan/libuavcan/include').abspath()
-            ]
 
         if cfg.options.build_dates:
             env.build_dates = True
