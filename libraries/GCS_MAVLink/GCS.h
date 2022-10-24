@@ -716,7 +716,7 @@ protected:
 
 private:
 
-    const AP_SerialManager::UARTState *uartstate;
+    const AP_SerialManager::SerialState *uartstate;
 
     // last time we got a non-zero RSSI from RADIO_STATUS
     static struct LastRadioStatus {
@@ -1200,9 +1200,6 @@ public:
         return link->vfr_hud_throttle();
     }
 
-    // update uart pass-thru
-    void update_passthru();
-
     void get_sensor_status_flags(uint32_t &present, uint32_t &enabled, uint32_t &health);
     virtual bool vehicle_initialised() const { return true; }
 
@@ -1272,24 +1269,6 @@ private:
 
     // true if update_send has ever been called:
     bool update_send_has_been_called;
-
-    // handle passthru between two UARTs
-    struct {
-        bool enabled;
-        bool timer_installed;
-        AP_HAL::UARTDriver *port1;
-        AP_HAL::UARTDriver *port2;
-        uint32_t start_ms;
-        uint32_t last_ms;
-        uint32_t last_port1_data_ms;
-        uint32_t baud1;
-        uint32_t baud2;
-        uint8_t timeout_s;
-        HAL_Semaphore sem;
-    } _passthru;
-
-    // timer called to implement pass-thru
-    void passthru_timer();
 
     // this contains the index of the GCS_MAVLINK backend we will
     // first call update_send on.  It is incremented each time

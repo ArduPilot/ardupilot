@@ -2372,7 +2372,7 @@ void GCS::update_receive(void)
         chan(i)->update_receive();
     }
     // also update UART pass-thru, if enabled
-    update_passthru();
+    AP::serialmanager().update_passthru();
 }
 
 void GCS::send_mission_item_reached_message(uint16_t mission_index)
@@ -6239,134 +6239,6 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
     }
 
     return false;
-}
-
-/*
-  update UART pass-thru, if enabled
- */
-void GCS::update_passthru(void)
-{
-#if APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-    // examples don't have AP::serialmanager
-    return;
-#endif
-
-    WITH_SEMAPHORE(_passthru.sem);
-    uint32_t now = AP_HAL::millis();
-    uint32_t baud1, baud2;
-    bool enabled = AP::serialmanager().get_passthru(_passthru.port1, _passthru.port2, _passthru.timeout_s,
-                                                    baud1, baud2);
-    if (enabled && !_passthru.enabled) {
-        _passthru.start_ms = now;
-        _passthru.last_ms = 0;
-        _passthru.enabled = true;
-        _passthru.last_port1_data_ms = now;
-        _passthru.baud1 = baud1;
-        _passthru.baud2 = baud2;
-        gcs().send_text(MAV_SEVERITY_INFO, "Passthru enabled");
-        if (!_passthru.timer_installed) {
-            _passthru.timer_installed = true;
-            hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&GCS::passthru_timer, void));
-        }
-    } else if (!enabled && _passthru.enabled) {
-        _passthru.enabled = false;
-        _passthru.port1->lock_port(0, 0);
-        _passthru.port2->lock_port(0, 0);
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
-            _passthru.port1->end();
-            _passthru.port1->begin(baud1);
-        }
-        if (_passthru.baud2 != baud2) {
-            _passthru.port2->end();
-            _passthru.port2->begin(baud2);
-        }
-        gcs().send_text(MAV_SEVERITY_INFO, "Passthru disabled");
-    } else if (enabled &&
-               _passthru.timeout_s &&
-               now - _passthru.last_port1_data_ms > uint32_t(_passthru.timeout_s)*1000U) {
-        // timed out, disable
-        _passthru.enabled = false;
-        _passthru.port1->lock_port(0, 0);
-        _passthru.port2->lock_port(0, 0);
-        AP::serialmanager().disable_passthru();
-        // Restore original baudrates
-        if (_passthru.baud1 != baud1) {
-            _passthru.port1->end();
-            _passthru.port1->begin(baud1);
-        }
-        if (_passthru.baud2 != baud2) {
-            _passthru.port2->end();
-            _passthru.port2->begin(baud2);
-        }
-        gcs().send_text(MAV_SEVERITY_INFO, "Passthru timed out");
-    }
-}
-
-/*
-  called at 1kHz to handle pass-thru between SERIA0_PASSTHRU port and hal.console
- */
-void GCS::passthru_timer(void)
-{
-    WITH_SEMAPHORE(_passthru.sem);
-
-    if (!_passthru.enabled) {
-        // it has been disabled after starting
-        return;
-    }
-    if (_passthru.start_ms != 0) {
-        uint32_t now = AP_HAL::millis();
-        if (now - _passthru.start_ms < 1000) {
-            // delay for 1s so the reply for the SERIAL0_PASSTHRU param set can be seen by GCS
-            return;
-        }
-        _passthru.start_ms = 0;
-        _passthru.port1->begin(_passthru.baud1);
-        _passthru.port2->begin(_passthru.baud2);
-    }
-
-    // while pass-thru is enabled lock both ports. They remain
-    // locked until disabled again, or reboot
-    const uint32_t lock_key = 0x3256AB9F;
-    _passthru.port1->lock_port(lock_key, lock_key);
-    _passthru.port2->lock_port(lock_key, lock_key);
-
-    // Check for requested Baud rates over USB
-    uint32_t baud = _passthru.port1->get_usb_baud();
-    if (_passthru.baud2 != baud && baud != 0) {
-        _passthru.baud2 = baud;
-        _passthru.port2->end();
-        _passthru.port2->begin_locked(baud, lock_key);
-    }
-
-    baud = _passthru.port2->get_usb_baud();
-    if (_passthru.baud1 != baud && baud != 0) {
-        _passthru.baud1 = baud;
-        _passthru.port1->end();
-        _passthru.port1->begin_locked(baud, lock_key);
-    }
-
-    int16_t b;
-    uint8_t buf[64];
-    uint8_t nbytes = 0;
-
-    // read from port1, and write to port2
-    while (nbytes < sizeof(buf) && (b = _passthru.port1->read_locked(lock_key)) >= 0) {
-        buf[nbytes++] = b;
-    }
-    if (nbytes > 0) {
-        _passthru.last_port1_data_ms = AP_HAL::millis();
-        _passthru.port2->write_locked(buf, nbytes, lock_key);
-    }
-
-    // read from port2, and write to port1
-    nbytes = 0;
-    while (nbytes < sizeof(buf) && (b = _passthru.port2->read_locked(lock_key)) >= 0) {
-        buf[nbytes++] = b;
-    }
-    if (nbytes > 0) {
-        _passthru.port1->write_locked(buf, nbytes, lock_key);
-    }
 }
 
 bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME coordinate_frame, Location::AltFrame &frame)
