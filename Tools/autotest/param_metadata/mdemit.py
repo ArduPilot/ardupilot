@@ -13,7 +13,7 @@ sub_blacklist = ['AVOID_', 'CIRCLE_', 'FLOW', 'MIS_', 'PRX', 'RALLY_', 'RCMAP_',
 
 # Parameter groups with redundant information (ie RCn_, SERVOn_)
 # We can keep the documentation concise by only documenting these once
-nparams = ['RCn_', 'SERVOn_', 'SRn_', 'BTNn_']
+nparams = ['RCn_', 'SERVOn_', 'SRn_', 'BTNn_', 'INS_TCALn_', 'BATTn_', 'BAROn_GND_', 'BAROn_WCF_', 'CAN_Dn_', 'CAN_Dn_KDE_', 'CAN_Dn_PC_', 'CAN_Dn_UC_','CAN_Dn_TST_', 'CAN_Pn_', 'RNGFNDn_']
 
 class MDEmit(Emit):
 
