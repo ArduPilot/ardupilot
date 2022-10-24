@@ -262,7 +262,7 @@ void AP_EFI::send_mavlink_status(mavlink_channel_t chan)
         KELVIN_TO_C(state.cylinder_status.cylinder_head_temperature),
         state.cylinder_status.ignition_timing_deg,
         state.cylinder_status.injection_time_ms,
-        state.cylinder_status.exhaust_gas_temperature,
+        KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature),
         state.throttle_out,
         state.pt_compensation,
         state.ignition_voltage
