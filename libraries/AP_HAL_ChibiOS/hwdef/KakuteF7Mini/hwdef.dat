@@ -168,8 +168,4 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_MOUNT_ENABLED 0
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
-define AP_OPTICALFLOW_ENABLED 0
-define AP_ICENGINE_ENABLED 0
+include ../include/save_some_flash.inc
