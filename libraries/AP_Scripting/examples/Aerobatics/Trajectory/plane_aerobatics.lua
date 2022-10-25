@@ -31,36 +31,32 @@ TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
 ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
 ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 
---local VEL_TC = bind_add_param('VEL_TC', 8, 3)
+--[[
+   Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
+--]]
+-- 2nd param table for tricks on a switch
+local PARAM_TABLE_KEY2 = 71
+local PARAM_TABLE_PREFIX2 = "TRIK"
+assert(param:add_table(PARAM_TABLE_KEY2, PARAM_TABLE_PREFIX2, 63), 'could not add param table2')
 
-function bind_add_param(name, idx, default_value)
-   assert(param:add_param(PARAM_TABLE_KEY, idx, name, default_value), string.format('could not add param %s', name))
-   return Parameter(PARAM_TABLE_PREFIX .. name)
+-- add a parameter and bind it to a variable in table2
+function bind_add_param2(name, idx, default_value)
+    assert(param:add_param(PARAM_TABLE_KEY2, idx, name, default_value), string.format('could not add param %s', name))
+    return Parameter(PARAM_TABLE_PREFIX2 .. name)
 end
 
-local NAV_TAKEOFF = 22
-local NAV_WAYPOINT = 16
-local NAV_SCRIPT_TIME = 42702
+local TRIK_ENABLE = bind_add_param2("_ENABLE", 1, 0)
+local TRICKS = nil
+local TRIK_SEL_FN = nil
+local TRIK_ACT_FN = nil
+local TRIK_COUNT  = nil
 
-local LOOP_RATE = 20
-DO_JUMP = 177
-k_throttle = 70
-
-local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
-local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
-local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
-local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
-
-local last_roll_err = 0.0
-local last_id = 0
-local initial_yaw_deg = 0
-local wp_yaw_deg = 0
-local initial_height = 0
-local repeat_count = 0
-local running = false
-local roll_stage = 0
-local MIN_SPEED = 0.1
-local LOOKAHEAD = 1
+local function TrickDef(id, arg1, arg2, arg3, arg4)
+   local self = {}
+   self.id = id
+   self.args = {arg1, arg2, arg3, arg4}
+   return self
+end
 
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
@@ -72,6 +68,51 @@ function constrain(v, vmin, vmax)
    end
    return v
 end
+
+if TRIK_ENABLE:get() > 0 then
+   TRIK_SEL_FN = bind_add_param2("_SEL_FN", 2, 301)
+   TRIK_ACT_FN = bind_add_param2("_ACT_FN", 3, 300)
+   TRIK_COUNT  = bind_add_param2("_COUNT",  4, 3)
+   TRICKS = {}
+
+   -- setup parameters for tricks
+   local count = math.floor(constrain(TRIK_COUNT:get(),1,11))
+   for i = 1, count do
+      local k = 5*i
+      local prefix = string.format("%u", i)
+      TRICKS[i] = TrickDef(bind_add_param2(prefix .. "_ID",   k+0, i),
+                           bind_add_param2(prefix .. "_ARG1", k+1, 30),
+                           bind_add_param2(prefix .. "_ARG2", k+2, 0),
+                           bind_add_param2(prefix .. "_ARG3", k+3, 0),
+                           bind_add_param2(prefix .. "_ARG4", k+4, 0))
+   end
+   gcs:send_text(0, string.format("Enabled %u aerobatic tricks", TRIK_COUNT:get()))
+end
+
+local NAV_TAKEOFF = 22
+local NAV_WAYPOINT = 16
+local NAV_SCRIPT_TIME = 42702
+
+local MODE_AUTO = 10
+
+local LOOP_RATE = 20
+local DO_JUMP = 177
+local k_throttle = 70
+
+local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
+local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
+local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
+local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
+
+local last_roll_err = 0.0
+local last_id = 0
+local initial_yaw_deg = 0
+local wp_yaw_deg = 0
+local initial_height = 0
+local current_task = nil
+local roll_stage = 0
+local MIN_SPEED = 0.1
+local LOOKAHEAD = 1
 
 -- roll angle error 180 wrap to cope with errors while in inverted segments
 function roll_angle_error_wrap(roll_angle_error)
@@ -318,9 +359,9 @@ end
 
 -- recover entry altitude
 function recover_alt()
-       local target_pitch = height_PI.update(initial_height)
-       local pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
-       return target_pitch, pitch_rate, yaw_rate
+   local target_pitch = height_PI.update(initial_height)
+   local pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
+   return target_pitch, pitch_rate, yaw_rate
 end
 
 function get_wp_location(i)
@@ -897,15 +938,20 @@ path_var.count = 0
 path_var.initial_ori = Quaternion()
 path_var.initial_maneuver_to_earth = Quaternion()
 
-function do_path(path, initial_yaw_deg, arg1, arg2, arg3, arg4)
-
+function do_path()
    local now = millis():tofloat() * 0.001
 
    path_var.count = path_var.count + 1
    local target_dt = 1.0/LOOP_RATE
+   local path = current_task.fn
+   local arg1 = current_task.args[1]
+   local arg2 = current_task.args[2]
+   local arg3 = current_task.args[3]
+   local arg4 = current_task.args[4]
 
-   if not running then
-      running = true
+   if not current_task.started then
+      local initial_yaw_deg = current_task.initial_yaw_deg
+      current_task.started = true
       path_var.length = path_length(path, arg1, arg2, arg3, arg4)
 
       path_var.total_rate_rads_ef = makeVector3f(0.0, 0.0, 0.0)
@@ -1153,21 +1199,31 @@ function do_path(path, initial_yaw_deg, arg1, arg2, arg3, arg4)
    return true
 end
 
+--[[
+   an object defining a path
+--]]
+function PathFunction(fn, name)
+   local self = {}
+   self.fn = fn
+   self.name = name
+   return self
+end
+
 command_table = {}
-command_table[1]={figure_eight, "Figure Eight"}
-command_table[2]={loop, "Loop"}
-command_table[3]={horizontal_rectangle, "Horizontal Rectangle"}
-command_table[4]={climbing_circle, "Climbing Circle"}
-command_table[5]={vertical_aerobatic_box, "Vertical Box"}
-command_table[6]={banked_circle, "Banked Circle"}
-command_table[7]={straight_roll, "Axial Roll"}
-command_table[8]={rolling_circle, "Rolling Circle"}
-command_table[9]={half_cuban_eight, "Half Cuban Eight"}
-command_table[10]={half_reverse_cuban_eight, "Half Reverse Cuban Eight"}
-command_table[11]={cuban_eight, "Cuban Eight"}
-command_table[12]={humpty_bump, "Humpty Bump"}
-command_table[13]={straight_flight, "Straight Flight"}
-command_table[14]={scale_figure_eight, "Scale Figure Eight"}
+command_table[1] = PathFunction(figure_eight, "Figure Eight")
+command_table[2] = PathFunction(loop, "Loop")
+command_table[3] = PathFunction(horizontal_rectangle, "Horizontal Rectangle")
+command_table[4] = PathFunction(climbing_circle, "Climbing Circle")
+command_table[5] = PathFunction(vertical_aerobatic_box, "Vertical Box")
+command_table[6] = PathFunction(banked_circle, "Banked Circle")
+command_table[7] = PathFunction(straight_roll, "Axial Roll")
+command_table[8] = PathFunction(rolling_circle, "Rolling Circle")
+command_table[9] = PathFunction(half_cuban_eight, "Half Cuban Eight")
+command_table[10]= PathFunction(half_reverse_cuban_eight, "Half Reverse Cuban Eight")
+command_table[11]= PathFunction(cuban_eight, "Cuban Eight")
+command_table[12]= PathFunction(humpty_bump, "Humpty Bump")
+command_table[13]= PathFunction(straight_flight, "Straight Flight")
+command_table[14]= PathFunction(scale_figure_eight, "Scale Figure Eight")
 
 -- get a location structure from a waypoint number
 function get_location(i)
@@ -1285,6 +1341,149 @@ function create_auto_mission()
    end
 end
 
+function PathTask(fn, name, id, initial_yaw_deg, arg1, arg2, arg3, arg4)
+   self = {}
+   self.fn = fn
+   self.name = name
+   self.id = id
+   self.initial_yaw_deg = initial_yaw_deg
+   self.args = { arg1, arg2, arg3, arg4 }
+   self.started = false
+   return self
+end
+
+-- see if an auto mission item needs to be run
+function check_auto_mission()
+   id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
+   if not id then
+      return
+   end
+   if id ~= last_id then
+      -- we've started a new command
+      current_task = nil
+      last_id = id
+      initial_yaw_deg = math.deg(ahrs:get_yaw())
+      gcs:send_text(0, string.format("Starting %s!", command_table[cmd].name ))
+
+      initial_height = ahrs:get_position():alt()*0.01
+      -- work out yaw between previous WP and next WP
+      local cnum = mission:get_current_nav_index()
+      -- find previous nav waypoint
+      local loc_prev = get_wp_location(cnum-1)
+      local loc_next = get_wp_location(cnum+1)
+      local i= cnum-1
+      while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
+         i = i-1
+         loc_prev = get_wp_location(i)
+      end
+      -- find next nav waypoint
+      i = cnum+1
+      while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
+         i = i+1
+         loc_next = get_wp_location(resolve_jump(i))
+      end
+      wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
+      if math.abs(wrap_180(initial_yaw_deg - wp_yaw_deg)) > 90 then
+         gcs:send_text(0, string.format("Doing turnaround!"))
+         wp_yaw_deg = wrap_180(wp_yaw_deg + 180)
+      end
+      initial_yaw_deg = wp_yaw_deg
+      current_task = PathTask(command_table[cmd].fn, command_table[cmd].name,
+                              id, initial_yaw_deg, arg1, arg2, arg3, arg4)
+   end
+end
+
+local last_trick_action_state = 0
+local trick_sel_chan = nil
+local last_trick_selection = nil
+
+--[[
+   get selected trick. Trick numbers are 1 .. TRIK_COUNT. A value of 0 is invalid
+--]]
+function get_trick_selection()
+   if trick_sel_chan == nil then
+      trick_sel_chan = rc:find_channel_for_option(TRIK_SEL_FN:get())
+      if trick_sel_chan == nil then
+         return 0
+      end
+   end
+   -- get trick selection based on selection channel input and number of tricks
+   local i = math.floor(TRIK_COUNT:get() * constrain(0.5*(trick_sel_chan:norm_input_ignore_trim()+1),0,0.999)+1)
+   if TRICKS[i] == nil then
+      return 0
+   end
+   return i
+end
+
+--[[
+   check for running a trick
+--]]
+function check_trick()
+   local selection = get_trick_selection()
+   local action = rc:get_aux_cached(TRIK_ACT_FN:get())
+   if action == 0 and current_task ~= nil then
+      gcs:send_text(0,string.format("Trick aborted"))
+      current_task = nil
+      last_trick_selection = nil
+      -- use invalid mode to disable script control
+      vehicle:nav_scripting_enable(255)
+      return
+   end
+   if selection == 0 then
+      return
+   end
+   if action == 1 and selection ~= last_trick_selection then
+      local id = TRICKS[selection].id:get()
+      if command_table[id] ~= nil then
+         local cmd = command_table[id]
+         gcs:send_text(0, string.format("Trick %u selected (%s)", selection, cmd.name))
+         last_trick_selection = selection
+         return
+      end
+   end
+   if current_task ~= nil then
+      -- let the task finish
+      return
+   end
+   if action ~= last_trick_action_state then
+      last_trick_selection = selection
+      last_trick_action_state = action
+      if selection == 0 then
+         gcs:send_text(0, string.format("No trick selected"))
+         return
+      end
+      local id = TRICKS[selection].id:get()
+      if command_table[id] == nil then
+         gcs:send_text(0, string.format("Invalid trick ID %u", id))
+         return
+      end
+      local cmd = command_table[id]
+      if action == 1 then
+         gcs:send_text(0, string.format("Trick %u selected (%s)", selection, cmd.name))
+      end
+      if action == 2 then
+         last_trick_selection = nil
+         local current_mode = vehicle:get_mode()
+         if not vehicle:nav_scripting_enable(current_mode) then
+            gcs:send_text(0, string.format("Tricks not available in mode"))
+            return
+         end
+         gcs:send_text(0, string.format("Trick %u started (%s)", selection, cmd.name))
+         local initial_yaw_deg = math.deg(ahrs:get_yaw())
+         initial_height = ahrs:get_position():alt()*0.01
+         current_task = PathTask(cmd.fn,
+                                 cmd.name,
+                                 nil,
+                                 initial_yaw_deg,
+                                 TRICKS[selection].args[1]:get(),
+                                 TRICKS[selection].args[2]:get(),
+                                 TRICKS[selection].args[3]:get(),
+                                 TRICKS[selection].args[4]:get())
+      end
+   end
+
+end
+
 function update()
 
    -- check if we should create a mission
@@ -1293,49 +1492,24 @@ function update()
       AUTO_MIS:set_and_save(0)
    end
 
-   id, cmd, arg1, arg2, arg3, arg4 = vehicle:nav_script_time()
-   if id then
-      if id ~= last_id then
-         -- we've started a new command
-         running = false
-         last_id = id
-         repeat_count = 0
-         initial_yaw_deg = math.deg(ahrs:get_yaw())
-         gcs:send_text(0, string.format("Starting %s!", command_table[cmd][2] ))
-
-         initial_height = ahrs:get_position():alt()*0.01
-         -- work out yaw between previous WP and next WP
-         local cnum = mission:get_current_nav_index()
-         -- find previous nav waypoint
-         local loc_prev = get_wp_location(cnum-1)
-         local loc_next = get_wp_location(cnum+1)
-         local i= cnum-1
-         while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
-             i = i-1
-             loc_prev = get_wp_location(i)   
-         end
-         -- find next nav waypoint
-         i = cnum+1
-         while get_wp_location(i):lat() == 0 and get_wp_location(i):lng() == 0 do
-             i = i+1
-             loc_next = get_wp_location(resolve_jump(i))
-         end
-         wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
-         if math.abs(wrap_180(initial_yaw_deg - wp_yaw_deg)) > 90 then
-            gcs:send_text(0, string.format("Doing turnaround!"))
-            wp_yaw_deg = wrap_180(wp_yaw_deg + 180)
-         end
-         initial_yaw_deg = wp_yaw_deg
-      end
-      local done = not do_path(command_table[cmd][1], initial_yaw_deg, arg1, arg2, arg3, arg4)
-      if done then
-         vehicle:nav_script_time_done(last_id)
-         gcs:send_text(0, string.format("Finishing %s!", command_table[cmd][2] ))
-         running = false
-      end
-   else
-      running = false
+   check_auto_mission()
+   if TRICKS ~= nil and vehicle:get_mode() ~= MODE_AUTO then
+      check_trick()
    end
+
+   if current_task ~= nil then
+      if not do_path() then
+         gcs:send_text(0, string.format("Finishing %s!", current_task.name))
+         if current_task.id ~= nil then
+            vehicle:nav_script_time_done(current_task.id)
+         else
+            -- use invalid mode to disable script control
+            vehicle:nav_scripting_enable(255)
+         end
+         current_task = nil
+      end
+   end
+   
    return update, 1000.0/LOOP_RATE
 end
 
