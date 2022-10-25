@@ -4,7 +4,7 @@
 
 #define AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL           0
 #define AP_BATTMONITOR_ANALOG_GPIO_BUS_EXTERNAL           1
-#define AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR               0x49 //PCA9537
+#define AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR               0x70 //PCAL9538APWJ
 #define AP_BATTMONITOR_ANALOG_GPIO_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
 
 class AP_BattMonitor_Analog_GPIO : public AP_BattMonitor_Analog {

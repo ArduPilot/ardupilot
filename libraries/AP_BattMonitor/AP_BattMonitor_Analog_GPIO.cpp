@@ -14,6 +14,9 @@ AP_BattMonitor_Analog_GPIO::AP_BattMonitor_Analog_GPIO(AP_BattMonitor &mon,
 void AP_BattMonitor_Analog_GPIO::init(void) {
     if (_dev) {
         _dev->register_periodic_callback(500000, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_Analog_GPIO::timer, void));
+
+        // May also need to set IO Expander configuration here with the correct
+        // input pins and output pins
     }
     AP_BattMonitor_Analog::init();
 }
@@ -30,11 +33,13 @@ void AP_BattMonitor_Analog_GPIO::timer() {
     return;
   }
 
-  bool new_is_using_battery = (bool)((buf & 0x04) == 0);
-  if(!_is_using_battery && new_is_using_battery) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Using battery power");
-  } else if (_is_using_battery && !new_is_using_battery) {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Using tether power");
+  bool new_is_using_battery = (bool)((buf & 0x02) == 0); // Bit 1 of register 0 is FET_EN_TETHER.
+  if(_is_using_battery ^ new_is_using_battery) {
+    if (new_is_using_battery) {
+      gcs().send_text(MAV_SEVERITY_CRITICAL, "Using battery power");
+    } else {
+      gcs().send_text(MAV_SEVERITY_CRITICAL, "Using tether power");
+    }
   }
 
   //The state of the battery discharging is on GPIO 0
