@@ -705,7 +705,7 @@ void Sub::load_parameters()
 
     convert_old_parameters();
 
-    AP_Param::set_default_by_name("BRD_SAFETYENABLE", 0);
+    AP_Param::set_default_by_name("BRD_SAFETY_DEFLT", 0);
     AP_Param::set_default_by_name("ARMING_CHECK",
             AP_Arming::ARMING_CHECK_RC |
             AP_Arming::ARMING_CHECK_VOLTAGE |
