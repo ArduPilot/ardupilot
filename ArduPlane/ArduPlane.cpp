@@ -536,6 +536,13 @@ void Plane::update_alt()
 
     update_flight_stage();
 
+#if AP_SCRIPTING_ENABLED
+    if (plane.nav_scripting.enabled) {
+        // don't call TECS while we are in a trick
+        return;
+    }
+#endif
+
     if (control_mode->does_auto_throttle() && !throttle_suppressed) {
 
         float distance_beyond_land_wp = 0;
