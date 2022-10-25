@@ -41,11 +41,6 @@ public:
 
 
     // tuning accessors
-    void kP(float v) { rate_pid.kP().set(v); }
-    void kI(float v) { rate_pid.kI().set(v); }
-    void kD(float v) { rate_pid.kD().set(v); }
-    void kFF(float v) {rate_pid.ff().set(v); }
-
     AP_Float &kP(void) { return rate_pid.kP(); }
     AP_Float &kI(void) { return rate_pid.kI(); }
     AP_Float &kD(void) { return rate_pid.kD(); }
