@@ -152,6 +152,8 @@ public:
      */
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
 
+    bool is_usb() const override { return sdef.is_usb; }
+
 private:
     const SerialDef &sdef;
     bool rx_dma_enabled;

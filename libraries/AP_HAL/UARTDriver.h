@@ -160,4 +160,7 @@ public:
 
     // disable TX/RX pins for unusued uart
     virtual void disable_rxtx(void) const {}
+
+    // return true if this is a USB COM port
+    virtual bool is_usb() const { return false; }
 };
