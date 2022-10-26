@@ -100,6 +100,9 @@ public:
 
     AP_Camera::CamTrigType get_trigger_type(void);
 
+    // send camera feedback message to all components
+    static void send_camera_feedback(uint8_t cam_idx, uint16_t img_idx, const Location& loc);
+
 private:
 
     static AP_Camera *_singleton;

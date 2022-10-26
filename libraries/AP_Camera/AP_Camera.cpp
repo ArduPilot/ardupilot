@@ -630,6 +630,35 @@ AP_Camera::CamTrigType AP_Camera::get_trigger_type(void)
     }
 }
 
+// send camera feedback message to all components
+void AP_Camera::send_camera_feedback(uint8_t cam_idx, uint16_t img_idx, const Location& loc)
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    int32_t alt_amsl_cm = 0;
+    IGNORE_RETURN(loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_amsl_cm));
+
+    int32_t alt_rel_cm = 0;
+    IGNORE_RETURN(loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_rel_cm));
+
+    // prepare camera feedback message
+    mavlink_camera_feedback_t mav_camera_feedback = {};
+    mav_camera_feedback.time_usec = AP_HAL::micros64();
+    mav_camera_feedback.cam_idx = cam_idx;
+    mav_camera_feedback.img_idx = img_idx;
+    mav_camera_feedback.lat = loc.lat;
+    mav_camera_feedback.lng = loc.lng;
+    mav_camera_feedback.alt_msl = alt_amsl_cm * 0.01;
+    mav_camera_feedback.alt_rel = alt_rel_cm * 0.01;
+    mav_camera_feedback.roll = degrees(ahrs.roll);
+    mav_camera_feedback.pitch = degrees(ahrs.pitch);
+    mav_camera_feedback.yaw = degrees(ahrs.yaw);
+    mav_camera_feedback.flags = CAMERA_FEEDBACK_PHOTO;
+
+    // send to all components
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_CAMERA_FEEDBACK, (const char*)&mav_camera_feedback);
+}
+
 // singleton instance
 AP_Camera *AP_Camera::_singleton;
 
