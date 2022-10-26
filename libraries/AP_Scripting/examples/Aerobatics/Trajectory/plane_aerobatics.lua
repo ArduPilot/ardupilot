@@ -653,10 +653,6 @@ function path_composer(_subpaths)
       start_time[i] = total_time
       end_time[i] = total_time + proportions[i]
       total_time = total_time + proportions[i]
-      gcs:send_text(0,string.format("sp[%d]: rpy=(%.1f,%.1f,%.1f)", i,
-                                    start_orientation[i]:get_euler_roll(),
-                                    math.deg(start_orientation[i]:get_euler_pitch()),
-                                    start_orientation[i]:get_euler_yaw()))
    end
 
    -- return position and angle for the composed path at time t
