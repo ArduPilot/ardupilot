@@ -408,33 +408,38 @@ function figure_eight(t, r, bank_angle, arg3, arg4)
       pos = makeVector3f(T*t, 0.0, 0.0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0)/T) then
-      pos = makeVector3f(r*math.cos(T*t/r - math.sqrt(2) - math.pi/2)+rsqr2, r_sign*(r + r*math.sin(T*t/r - math.sqrt(2) - math.pi/2)), 0)
+      pos = makeVector3f(r*math.cos(T*t/r - math.sqrt(2) - math.pi/2)+rsqr2, (r + r*math.sin(T*t/r - math.sqrt(2) - math.pi/2)), 0)
       roll = math.rad(bank_angle)
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r/4)/T) then
-      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), (r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + 3*r/4)/T) then
-      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), (r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r)/T) then
-      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
+      pos = makeVector3f(r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2)), (r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2))*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0)/T) then
-      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4) - r*math.sqrt(2.0), r_sign*(r + r*math.sin(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4)), 0)
+      pos = makeVector3f(r*math.cos(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4) - r*math.sqrt(2.0), (r + r*math.sin(-T*t/r +5.0*math.pi/4.0 + math.sqrt(2) + 1 - math.pi/4)), 0)
       roll = -math.rad(bank_angle)
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r/4.0)/T) then
-      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), (r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
       roll = 0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + 3*r/4.0)/T) then
-      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)), (r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
       roll = 0.0
    elseif (t < (rsqr2 + 5.0*math.pi*r/4.0 + r + 3*math.pi*r/2.0 + r)/T) then
-      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)),  r_sign*(r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
+      pos = makeVector3f(-r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2)*(r*math.sqrt(2)),  (r  +r/math.sqrt(2) + (T*t/r - 5*math.pi/4 - math.sqrt(2) - 1 - 3*math.pi/2.0 )*(-r*math.sqrt(2))), 0)
       roll = 0.0
    else
-      pos = makeVector3f(r*math.cos(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))+rsqr2, r_sign*(r + r*math.sin(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))), 0)
+      pos = makeVector3f(r*math.cos(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))+rsqr2, (r + r*math.sin(T*t/r - (6*math.pi/4.0 + math.sqrt(2) +2 ))), 0)
       roll = math.rad(bank_angle)
    end
+
+   if r_sign == -1 then
+      pos:y(-pos:y())
+   end
+
    return pos, roll
 
 end
@@ -463,7 +468,6 @@ function straight_flight(t, length, bank_angle, arg3, arg4)
 end
 
 function rolling_circle(t, radius, num_rolls, arg3, arg4)
-   --t = t*math.pi*2
    local vec = Vector3f()
    if radius < 0.0 then
       vec = makeVector3f(math.sin(2*math.pi*t), -1.0+math.cos(2*math.pi*t), 0)
@@ -473,15 +477,14 @@ function rolling_circle(t, radius, num_rolls, arg3, arg4)
    return vec:scale(math.abs(radius)), t*num_rolls*2*math.pi
 end
 
-function banked_circle(t, radius, bank_angle, arg3, arg4)
-   --t = t*math.pi*2
+function banked_circle(t, radius, bank_angle, height, arg4)
    local vec = Vector3f()
-   if radius < 0.0 then
-      vec = makeVector3f(math.sin(2*math.pi*t), -1.0+math.cos(2*math.pi*t), 0)
-   else
-      vec = makeVector3f(math.sin(2*math.pi*t), 1.0-math.cos(2*math.pi*t), 0)
+   local rad = math.abs(radius)
+   vec = makeVector3f(rad*math.sin(2*math.pi*t), -rad*(-1.0+math.cos(2*math.pi*t)), -height*t)
+   if radius < 0 then
+      vec:y(-vec:y())
    end
-   return vec:scale(math.abs(radius)), math.deg(bank_angle)
+   return vec, bank_angle
 end
 
 function half_cuban_eight(t, r, unused, arg3, arg4)
@@ -635,18 +638,23 @@ function scale_figure_eight(t, r, bank_angle, arg3, arg4)
    local pos
    local roll
    if (t < (math.pi/2)/T) then
-      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r_sign*(r  +r*math.sin(T*t - math.pi/2)), 0)
+      pos = makeVector3f(r*math.cos(T*t - math.pi/2), (r  +r*math.sin(T*t - math.pi/2)), 0)
       roll = math.rad(bank_angle)
    elseif (t < (5*math.pi/2)/T) then
-      pos = makeVector3f(2*r + r*math.cos(T*t + math.pi/2), r_sign*(r -r*math.sin(T*t + math.pi/2)), 0)
+      pos = makeVector3f(2*r + r*math.cos(T*t + math.pi/2), (r -r*math.sin(T*t + math.pi/2)), 0)
       roll = -math.rad(bank_angle)
    elseif (t < (4*math.pi)/T) then
-      pos = makeVector3f(r*math.cos(T*t - math.pi/2), r_sign*(r + r*math.sin(T*t - math.pi/2)), 0)
+      pos = makeVector3f(r*math.cos(T*t - math.pi/2), (r + r*math.sin(T*t - math.pi/2)), 0)
       roll = math.rad(bank_angle)
    else
       pos = makeVector3f(r*(T*t - 4*math.pi), 0, 0)
       roll = 0
    end
+
+   if r_sign == -1 then
+      pos:y(-pos:y())
+   end
+
    return pos, roll
 end
 
@@ -683,15 +691,13 @@ end
 
 --todo: change y coordinate to z for vertical box
 --function aerobatic_box(t, l, w, r):
-function horizontal_rectangle(t, total_length, total_width, r, arg4)
+function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
    
    local r_sign = sgn(r)
    assert(math.abs(r_sign) > 0.1)
    local r = math.abs(r)
-   gcs:send_text(0,string.format("rect %f %f", r_sign, r))
 
-
-   local bank_angle = math.abs(arg4)
+   local bank_angle = math.abs(bank_angle)
    local l = total_length - 2*r
    local w = total_width - 2*r
    local perim = 2*l + 2*w + 2*math.pi*r
@@ -699,21 +705,25 @@ function horizontal_rectangle(t, total_length, total_width, r, arg4)
    if (t < 0.5*l/(perim)) then
       pos = makeVector3f(perim*t, 0.0, 0.0)
    elseif (t < (0.5*l + 0.5*math.pi*r)/perim) then
-      pos = makeVector3f(0.5*l + r*math.sin((perim*t - 0.5*l)/r), r_sign*(r*(1 - math.cos((perim*t - 0.5*l)/r))), 0.0)
+      pos = makeVector3f(0.5*l + r*math.sin((perim*t - 0.5*l)/r), (r*(1 - math.cos((perim*t - 0.5*l)/r))), 0.0)
    elseif (t < (0.5*l + 0.5*math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l + r, r_sign*(r + (perim*t - (0.5*l + 0.5*math.pi*r))), 0.0)
+      pos = makeVector3f(0.5*l + r, (r + (perim*t - (0.5*l + 0.5*math.pi*r))), 0.0)
    elseif(t < (0.5*l + math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l + r + r*(-1 + math.cos((perim*t - (0.5*l + 0.5*math.pi*r + w))/r)), r_sign*(r + w + r*(math.sin((perim*t - (0.5*l + 0.5*math.pi*r + w))/r))), 0.0)
+      pos = makeVector3f(0.5*l + r + r*(-1 + math.cos((perim*t - (0.5*l + 0.5*math.pi*r + w))/r)), (r + w + r*(math.sin((perim*t - (0.5*l + 0.5*math.pi*r + w))/r))), 0.0)
    elseif(t < (1.5*l + math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l - (perim*t - (0.5*l + math.pi*r + w)), r_sign*(2*r + w), 0.0)
+      pos = makeVector3f(0.5*l - (perim*t - (0.5*l + math.pi*r + w)), (2*r + w), 0.0)
    elseif(t < (1.5*l + 1.5*math.pi*r + w)/perim) then
-      pos = makeVector3f(-0.5*l + r*(-math.sin((perim*t - (1.5*l + math.pi*r + w))/r)), r_sign*(2*r + w + r*(-1 + math.cos((perim*t - (1.5*l + math.pi*r + w))/r))), 0.0)
+      pos = makeVector3f(-0.5*l + r*(-math.sin((perim*t - (1.5*l + math.pi*r + w))/r)), (2*r + w + r*(-1 + math.cos((perim*t - (1.5*l + math.pi*r + w))/r))), 0.0)
    elseif(t < (1.5*l + 1.5*math.pi*r + 2*w)/perim) then
-      pos = makeVector3f(-0.5*l -r, r_sign*(w + r - (perim*t - (1.5*l + 1.5*math.pi*r + w))), 0.0)
+      pos = makeVector3f(-0.5*l -r, (w + r - (perim*t - (1.5*l + 1.5*math.pi*r + w))), 0.0)
    elseif(t < (1.5*l + 2*math.pi*r + 2*w)/perim) then
-      pos = makeVector3f(-0.5*l -r + r*(1 - math.cos((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r)), r_sign*(r + r*(-math.sin((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r))), 0.0)
+      pos = makeVector3f(-0.5*l -r + r*(1 - math.cos((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r)), (r + r*(-math.sin((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r))), 0.0)
    else
       pos = makeVector3f(-0.5*l + perim*t - (1.5*l + 2*math.pi*r + 2*w), 0.0, 0.0)
+   end
+
+   if r_sign == -1 then
+      pos:y(-pos:y())
    end
 
    return pos, math.rad(bank_angle)
@@ -931,6 +941,14 @@ function log_pose(logname, pos, quat)
                 math.deg(quat:get_euler_roll()),
                 math.deg(quat:get_euler_pitch()),
                 math.deg(quat:get_euler_yaw()))
+end
+
+--[[
+   check if a number is Nan.
+--]]
+function isNaN(value)
+   -- NaN is lua is not equal to itself
+   return value ~= value
 end
 
 local path_var = {}
@@ -1193,6 +1211,10 @@ function do_path()
    throttle = speed_PI.update(target_speed)
    throttle = constrain(throttle, 0, 100.0)
 
+   if isNaN(throttle) or isNaN(tot_ang_vel_bf_dps:x()) or isNaN(tot_ang_vel_bf_dps:y()) or isNaN(tot_ang_vel_bf_dps:z()) then
+      gcs:send_text(0,string.format("Path NaN - aborting"))
+      return false
+   end
 
    vehicle:set_target_throttle_rate_rpy(throttle, tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
    
