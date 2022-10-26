@@ -1187,9 +1187,9 @@ AP_Logger::log_write_fmt *AP_Logger::msg_fmt_for_name(const char *name, const ch
     memcpy((char*)ls_strings.format, f->fmt, MIN(sizeof(ls_strings.format), strlen(f->fmt)));
     memcpy((char*)ls_strings.labels, f->labels, MIN(sizeof(ls_strings.labels), strlen(f->labels)));
     if (f->units != nullptr) {
-        memcpy((char*)ls_strings.units, f->units, MIN(sizeof(ls.units), strlen(f->units)));
+        memcpy((char*)ls_strings.units, f->units, MIN(sizeof(ls_strings.units), strlen(f->units)));
     } else {
-        memset((char*)ls_strings.units, '?', MIN(sizeof(ls.format), strlen(f->fmt)));
+        memset((char*)ls_strings.units, '?', MIN(sizeof(ls_strings.format), strlen(f->fmt)));
     }
     if (f->mults != nullptr) {
         memcpy((char*)ls_strings.multipliers, f->mults, MIN(sizeof(ls_strings.multipliers), strlen(f->mults)));
