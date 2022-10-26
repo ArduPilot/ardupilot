@@ -59,6 +59,8 @@ public:
     uint8_t get_channel_id() { return _channel_id; }
     uint32_t get_usb_baud() const override { return baudrate; }
     uint32_t set_usb_baud(uint32_t baud) { return baudrate = baud; }
+    static AP_SerialManager::SerialProtocol tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol);
+
 private:
     int _channel_id;
     uint8_t _protocol;

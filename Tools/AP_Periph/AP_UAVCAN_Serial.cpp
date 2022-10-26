@@ -113,6 +113,20 @@ void AP_UAVCAN_Serial::send_data()
     }
 }
 
+AP_SerialManager::SerialProtocol AP_UAVCAN_Serial::tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol)
+{
+    switch (tunnel_protocol) {
+    case UAVCAN_TUNNEL_PROTOCOL_MAVLINK:
+        return AP_SerialManager::SerialProtocol_MAVLink;
+    case UAVCAN_TUNNEL_PROTOCOL_MAVLINK2:
+        return AP_SerialManager::SerialProtocol_MAVLink2;
+    case UAVCAN_TUNNEL_PROTOCOL_GPS_GENERIC:
+        return AP_SerialManager::SerialProtocol_GPS;
+    }
+    return AP_SerialManager::SerialProtocol_None;
+}
+
+
 bool AP_UAVCAN_Serial::handle_tunnel_broadcast(CanardInstance &ins, CanardRxTransfer &transfer, const uavcan_tunnel_Broadcast &msg)
 {
     if (_target_node_id == -1 || transfer.source_node_id != _target_node_id) {

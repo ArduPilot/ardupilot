@@ -921,9 +921,9 @@ static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* trans
     }
     uint8_t num_uavcan_phys = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_UAVCAN);
 
-#ifdef HAL_PERIPH_ENABLE_GPS
     // this might be a passthrough request for GPS
-    if (msg.protocol.protocol == UAVCAN_TUNNEL_PROTOCOL_GPS) {
+    AP_SerialManager::SerialProtocol protocol = AP_UAVCAN_Serial::tunnel_protocol_to_ap_protocol(msg.protocol.protocol);
+    if (protocol != AP_SerialManager::SerialProtocol_None) {
         for (uint8_t i = 0; i < num_uavcan_phys; i++) {
             AP_UAVCAN_Serial *uavcan_serial = static_cast<AP_UAVCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, msg.channel_id));
             if (uavcan_serial == nullptr) {
@@ -941,7 +941,11 @@ static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* trans
                     return;
                 }
 
-                uint8_t gps_index = AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_GPS, 0);
+                int8_t passthru_index = AP::serialmanager().find_portnum(protocol, msg.channel_id);
+                if (passthru_index == -1) {
+                    // invalid port
+                    break;
+                }
                 uint8_t uavcan_serial_index = uavcan_serial->get_channel_id() + AP_HAL::HAL::num_serial;
                 AP::serialmanager().serial_state(uavcan_serial_index).set_protocol(AP_SerialManager::SerialProtocol_Passthru);
                 // set passthru
@@ -952,7 +956,7 @@ static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* trans
                 if (param == nullptr) {
                     return;
                 }
-                param->set_float(gps_index, var_type);
+                param->set_float(passthru_index, var_type);
                 param = AP_Param::find("SERIAL_PASS2", &var_type, &flags);
                 if (param == nullptr) {
                     return;
@@ -971,7 +975,6 @@ static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* trans
             }
         }
     }
-#endif
 
     // look for a matching node
     for (uint8_t i=0; i<num_uavcan_phys; i++) {
