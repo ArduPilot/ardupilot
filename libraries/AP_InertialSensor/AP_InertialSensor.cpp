@@ -1015,6 +1015,8 @@ AP_InertialSensor::detect_backends(void)
         probe_count++; \
 } while (0)
 
+#define ADD_BACKEND_INSTANCE(x, instance) if (instance == _backend_count) { ADD_BACKEND(x); }
+
 // support for adding IMUs conditioned on board type
 #define BOARD_MATCH(board_type) AP_BoardConfig::get_board_type()==AP_BoardConfig::board_type
 #define ADD_BACKEND_BOARD_MATCH(board_match, x) do { if (board_match) { ADD_BACKEND(x); } } while(0)
