@@ -472,40 +472,6 @@ function half_reverse_cuban_eight(t, r, arg2, arg3, arg4)
 
 end
 
-function humpty_bump(t, r, h, arg3, arg4)
-   assert(h >= 2*r)
-   local T = 2*(math.pi*r + h - r)
-   local l = h - 2*r 
-   local pos
-   local roll
-   if (t < (math.pi*r/2)/T) then
-      pos = makeVector3f(r*math.cos(T*t/r - math.pi/2), 0, -r  -r*math.sin(T*t/r - math.pi/2))
-      roll = 0
-   elseif (t < (math.pi*r/2 + l/4)/T) then
-      pos = makeVector3f(r, 0, -r -(T*t - r*math.pi/2))
-      roll = 0
-   elseif (t < (math.pi*r/2 + 3*l/4)/T) then
-      pos = makeVector3f(r, 0, -r -(T*t - r*math.pi/2))
-      roll = (t - (math.pi*r/2 + l/4)/T)*2*math.pi*T/l
-   elseif (t < (math.pi*r/2 + l)/T) then
-      pos = makeVector3f(r, 0, -r -(T*t - r*math.pi/2))
-      roll = math.pi
-   elseif (t < (3*math.pi*r/2 + l)/T) then
-      pos = makeVector3f(2*r + r*math.cos(T*t/r - 3*math.pi/2 - l/r), 0, -r-l  +r*math.sin(T*t/r - 3*math.pi/2 - l/r))
-      roll = math.pi
-   elseif (t < (3*math.pi*r/2 + 2*l)/T) then
-      pos = makeVector3f(3*r,0, -r -l + (T*t - 3*r*math.pi/2.0 -l))
-      roll = math.pi
-   elseif (t < (2*math.pi*r + 2*l)/T) then
-      pos = makeVector3f(2*r + r*math.cos(T*t/r - 3*math.pi/2 -2*l/r),0, -r + r*math.sin(T*t/r - 3*math.pi/2 -2*l/r))
-      roll = math.pi
-   else
-      pos = makeVector3f(2*r -(T*t - 2*r*math.pi - 2*l), 0, 0)
-      roll = math.pi
-   end
-   return pos, roll
-end
-
 function scale_figure_eight(t, r, bank_angle, arg3, arg4)
    local r_sign = sgn(r)
    assert(math.abs(r_sign) > 0.1)
@@ -622,14 +588,14 @@ function path_vertical_arc(_radius, _angle)
    local angle = _angle
    function self.get_pos(t)
       local t2ang = t * math.rad(angle)
-      return makeVector3f(radius*math.sin(t2ang), 0, -radius*(1.0 - math.cos(t2ang)))
+      return makeVector3f(math.abs(radius)*math.sin(t2ang), 0, -radius*(1.0 - math.cos(t2ang)))
    end
    function self.get_length()
-      return radius * 2 * math.pi * angle / 360.0
+      return math.abs(radius) * 2 * math.pi * angle / 360.0
    end
    function self.get_final_orientation()
       local q = Quaternion()
-      q:from_axis_angle(makeVector3f(0,1,0), math.rad(angle))
+      q:from_axis_angle(makeVector3f(0,1,0), sgn(radius)*math.rad(angle))
       return q
    end
    return self
@@ -673,9 +639,11 @@ function path_composer(_subpaths)
       start_orientation[i] = orientation
       start_pos[i] = pos
       start_angle[i] = angle
+      local spos = subpaths[i][1].get_pos(1.0)
+      orientation:earth_to_body(spos)
+      pos = pos + spos
       orientation = orientation * subpaths[i][1].get_final_orientation()
       angle = angle + subpaths[i][2].get_roll(1.0)
-      pos = start_pos[i] + subpaths[i][1].get_pos(1.0)
    end
 
    -- work out the proportion of the total time we will spend in each sub path
@@ -685,6 +653,10 @@ function path_composer(_subpaths)
       start_time[i] = total_time
       end_time[i] = total_time + proportions[i]
       total_time = total_time + proportions[i]
+      gcs:send_text(0,string.format("sp[%d]: rpy=(%.1f,%.1f,%.1f)", i,
+                                    start_orientation[i]:get_euler_roll(),
+                                    math.deg(start_orientation[i]:get_euler_pitch()),
+                                    start_orientation[i]:get_euler_yaw()))
    end
 
    -- return position and angle for the composed path at time t
@@ -708,8 +680,25 @@ function immelmann_turn(t, r, roll_rate, arg3, arg4)
    if t == 0 then
       local speed = path_var.target_speed
       path_var.composer = path_composer({
-            { path_vertical_arc(r, 180),          roll_angle(0) },
+            { path_vertical_arc(r, 180),            roll_angle(0) },
             { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function humpty_bump(t, r, h, arg3, arg4)
+   assert(h >= 2*r)
+   if t == 0 then
+      path_var.composer = path_composer({
+            { path_vertical_arc(r, 90),          roll_angle(0) },
+            { path_straight((h-2*r)/3),          roll_angle(0) },
+            { path_straight((h-2*r)/3),          roll_angle(180) },
+            { path_straight((h-2*r)/3),          roll_angle(0) },
+            { path_vertical_arc(-r, 180),        roll_angle(0) },
+            { path_straight(h-2*r),              roll_angle(0) },
+            { path_vertical_arc(-r, 90),         roll_angle(0) },
+            { path_straight(2*r),                roll_angle(0) },
       })
    end
    return path_var.composer.run(t)
