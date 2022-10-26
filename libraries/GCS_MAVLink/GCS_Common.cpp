@@ -1518,12 +1518,12 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
         // the routing code has indicated we should not handle this packet locally
         return;
     }
+#if HAL_MOUNT_ENABLED    
     if (msg.msgid == MAVLINK_MSG_ID_GLOBAL_POSITION_INT) {
-#if HAL_MOUNT_ENABLED
         // allow mounts to see the location of other vehicles
         handle_mount_message(msg);
-#endif
     }
+#endif    
     if (!accept_packet(status, msg)) {
         // e.g. enforce-sysid says we shouldn't look at this packet
         return;
