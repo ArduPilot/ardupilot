@@ -508,8 +508,7 @@ void Plane::stabilize()
     if (control_mode == &mode_training) {
         stabilize_training(speed_scaler);
 #if AP_SCRIPTING_ENABLED
-    } else if ((control_mode == &mode_auto &&
-               mission.get_current_nav_cmd().id == MAV_CMD_NAV_SCRIPT_TIME) || (nav_scripting.enabled && nav_scripting.current_ms > 0)) {
+    } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
         const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler);
         const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
@@ -518,9 +517,6 @@ void Plane::stabilize()
         if (yawController.rate_control_enabled()) {
             const float rudder = yawController.get_rate_out(nav_scripting.yaw_rate_dps, speed_scaler, false);
             steering_control.rudder = rudder;
-        }
-        if (AP_HAL::millis() - nav_scripting.current_ms > 50) { //set_target_throttle_rate_rpy has not been called from script in last 50ms
-            nav_scripting.current_ms = 0;
         }
 #endif
     } else if (control_mode == &mode_acro) {
