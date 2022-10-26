@@ -582,8 +582,12 @@ function vertical_aerobatic_box(t, total_length, total_width, r, arg4)
 end 
 ---------------------------------------------------
 
+--[[
+   target speed is taken as max of target airspeed and current 3D
+   velocity at the start of the maneuver
+--]]
 function target_groundspeed()
-   return ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01
+   return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
 end
 
 --Estimate the length of the path in metres
@@ -969,8 +973,7 @@ function do_path()
    --[[
       run the throttle based speed controller
    --]]
-   local target_speed = target_groundspeed()--TRIM_ARSPD_CM:get()*0.01
-   throttle = speed_PI.update(target_speed)
+   throttle = speed_PI.update(path_var.target_speed)
    throttle = constrain(throttle, 0, 100.0)
 
    if isNaN(throttle) or isNaN(tot_ang_vel_bf_dps:x()) or isNaN(tot_ang_vel_bf_dps:y()) or isNaN(tot_ang_vel_bf_dps:z()) then
