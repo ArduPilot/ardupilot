@@ -29,7 +29,7 @@ void ModeLoiter::update()
     }
 
 #if AP_SCRIPTING_ENABLED
-    if (plane.nav_scripting.enabled) {
+    if (plane.nav_scripting_active()) {
         // while a trick is running we reset altitude
         plane.set_target_altitude_current();
         plane.next_WP_loc.set_alt_cm(plane.target_altitude.amsl_cm, Location::AltFrame::ABSOLUTE);
@@ -100,7 +100,7 @@ void ModeLoiter::navigate()
     }
 
 #if AP_SCRIPTING_ENABLED
-    if (plane.nav_scripting.enabled) {
+    if (plane.nav_scripting_active()) {
         // don't try to navigate while running trick
         return;
     }
