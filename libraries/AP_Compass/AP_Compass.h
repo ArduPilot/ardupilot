@@ -72,10 +72,6 @@
 
 #define MAX_CONNECTED_MAGS (COMPASS_MAX_UNREG_DEV+COMPASS_MAX_INSTANCES)
 
-#ifndef AP_SIM_COMPASS_ENABLED
-#define AP_SIM_COMPASS_ENABLED AP_SIM_ENABLED
-#endif
-
 #include "CompassCalibrator.h"
 
 class CompassLearn;
@@ -347,11 +343,11 @@ public:
                                  float lat_deg, float lon_deg,
                                  bool force_use=false);
 
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
     void handle_msp(const MSP::msp_compass_data_message_t &pkt);
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_COMPASS_EXTERNALAHRS_ENABLED
     void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt);
 #endif
 
@@ -602,7 +598,7 @@ private:
 
     bool _cal_thread_started;
 
-#if HAL_MSP_COMPASS_ENABLED
+#if AP_COMPASS_MSP_ENABLED
     uint8_t msp_instance_mask;
 #endif
     bool init_done;
