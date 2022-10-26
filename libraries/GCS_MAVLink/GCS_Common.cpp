@@ -781,10 +781,10 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
     // use the state of the transmit buffer in the radio to
     // control the stream rate, giving us adaptive software
     // flow control
-    if (packet.txbuf < 20 && stream_slowdown_ms < 2000) {
+    if (packet.txbuf < 20 && stream_slowdown_ms < MAX_STREAM_SLOWDOWN_MS) {
         // we are very low on space - slow down a lot
         stream_slowdown_ms += 60;
-    } else if (packet.txbuf < 50 && stream_slowdown_ms < 2000) {
+    } else if (packet.txbuf < 50 && stream_slowdown_ms < MAX_STREAM_SLOWDOWN_MS) {
         // we are a bit low on space, slow down slightly
         stream_slowdown_ms += 20;
     } else if (packet.txbuf > 95 && stream_slowdown_ms > 200) {

@@ -110,7 +110,10 @@ void GCS_MAVLINK::send_ftp_replies(void)
         return;
     }
 
-    for (uint8_t i = 0; i < 20; i++) {
+    uint8_t count = 20;
+    count *= float(MAX_STREAM_SLOWDOWN_MS - stream_slowdown_ms)/MAX_STREAM_SLOWDOWN_MS;
+
+    for (uint8_t i = 0; i < count; i++) {
         if (!HAVE_PAYLOAD_SPACE(chan, FILE_TRANSFER_PROTOCOL)) {
             return;
         }
