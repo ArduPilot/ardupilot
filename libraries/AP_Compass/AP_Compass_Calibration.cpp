@@ -455,6 +455,10 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_long_t &packet)
  */
 bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
 {
+    // get corrected field
+    field = get_field(instance);
+
+#if AP_COMPASS_DIAGONALS_ENABLED
     // form eliptical correction matrix and invert it. This is
     // needed to remove the effects of the eliptical correction
     // when calculating new offsets
@@ -469,11 +473,9 @@ bool Compass::get_uncorrected_field(uint8_t instance, Vector3f &field) const
         return false;
     }
 
-    // get corrected field
-    field = get_field(instance);
-
     // remove impact of diagonals and off-diagonals
     field = mat * field;
+#endif
 
     // remove impact of offsets
     field -= get_offsets(instance);
