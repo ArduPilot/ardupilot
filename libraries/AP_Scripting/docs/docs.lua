@@ -963,6 +963,18 @@ function winch:relax() end
 ---@return boolean
 function winch:healthy() end
 
+
+-- desc
+---@class camera
+camera = {}
+
+-- desc
+---@param param1 integer
+---@param param2 integer
+---@param param3 Location_ud
+function camera:send_camera_feedback(param1, param2, param3) end
+
+
 -- desc
 ---@class mount
 mount = {}
