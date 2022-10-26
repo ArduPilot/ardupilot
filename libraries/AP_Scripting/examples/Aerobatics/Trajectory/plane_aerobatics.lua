@@ -614,6 +614,7 @@ end
 --  orientation: maneuver frame orientation
 --returns: requested position in maneuver frame
 function rotate_path(path_f, t, arg1, arg2, arg3, arg4, orientation, offset)
+   t = constrain(t, 0, 1)
    point, angle = path_f(t, arg1, arg2, arg3, arg4)
    orientation:earth_to_body(point)
    --TODO: rotate angle?
@@ -805,7 +806,7 @@ function do_path()
 
    path_var.last_time = now
 
-   if path_var.path_t > 1.0 then --done
+   if path_var.path_t + 2*local_n_dt > 1.0 then
       return false
    end
 
@@ -850,9 +851,10 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   p2, r2 = rotate_path(path, path_var.path_t + path_t_delta,
-      arg1, arg2, arg3, arg4,
-      path_var.initial_ori, path_var.initial_ef_pos)
+   p2, r2 = rotate_path(path,
+                        constrain(path_var.path_t + path_t_delta, 0, 1),
+                        arg1, arg2, arg3, arg4,
+                        path_var.initial_ori, path_var.initial_ef_pos)
 
    -- tangents needs to be recalculated
    tangent1_ef = p1 - p0
