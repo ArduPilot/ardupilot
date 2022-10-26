@@ -38,6 +38,7 @@ TERRAIN_SPACING = Parameter("TERRAIN_SPACING")
 local user_update_interval_ms = 10000   -- send user updates every 10 sec
 local last_user_update_ms = 0           -- system time that update was last sent to user
 local last_rc_switch_pos = 0            -- last known rc switch position.  Used to detect change in RC switch position
+local last_image_idx = 1000             -- id of last image taken (increments)
 
 -- helper functions
 function wrap_360(angle_deg)
@@ -177,8 +178,12 @@ function update()
     local dist_interp_m = interpolate(0, dist_increment_m, 0, prev_test_loc:alt() * 0.01 - prev_terrain_amsl_m, test_loc:alt() * 0.01 - terrain_amsl_m)
     local poi_loc = prev_test_loc:copy()
     poi_loc:offset_bearing_and_pitch(mount_yaw_ef_deg, mount_pitch_deg, dist_interp_m)
-    local poi_terr_asml_m = terrain:height_amsl(poi_loc, true) 
-    gcs:send_text(6, string.format("POI %.7f, %.7f, %.2f (asml)", poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
+    local poi_terr_asml_m = terrain:height_amsl(poi_loc, true)
+    gcs:send_text(6, string.format("POI %u %.7f, %.7f, %.2f (asml)", last_image_idx, poi_loc:lat()/10000000.0, poi_loc:lng()/10000000.0, poi_loc:alt() * 0.01))
+
+    -- send camera feedback message to GCS
+    camera:send_camera_feedback(0, last_image_idx, poi_loc)
+    last_image_idx = last_image_idx + 1
   end
 
   return update, UPDATE_INTERVAL_MS
