@@ -103,6 +103,8 @@ local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
 local last_id = 0
 local current_task = nil
 
+local path_var = {}
+
 function wrap_360(angle)
    local res = math.fmod(angle, 360.0)
     if res < 0 then
@@ -579,8 +581,141 @@ function vertical_aerobatic_box(t, total_length, total_width, r, arg4)
    local point, angle = horizontal_rectangle(t, total_length, total_width, math.abs(r), arg4)
    q:earth_to_body(point)
    return point, angle
-end 
----------------------------------------------------
+end
+
+--[[
+  roll component that goes through a fixed total angle at a fixed roll rate
+--]]
+function roll_angle(_angle)
+   local self = {}
+   local angle = _angle
+   function self.get_roll(t)
+      return angle * t
+   end
+   return self
+end
+
+--[[
+   path component that does a straight horizontal line
+--]]
+function path_straight(_distance)
+   local self = {}
+   local distance = _distance
+   function self.get_pos(t)
+      return makeVector3f(distance*t, 0, 0)
+   end
+   function self.get_length()
+      return distance
+   end
+   function self.get_final_orientation()
+      return Quaternion()
+   end
+   return self
+end
+
+--[[
+   path component that does a vertical arc over a given angle
+--]]
+function path_vertical_arc(_radius, _angle)
+   local self = {}
+   local radius = _radius
+   local angle = _angle
+   function self.get_pos(t)
+      local t2ang = t * math.rad(angle)
+      return makeVector3f(radius*math.sin(t2ang), 0, -radius*(1.0 - math.cos(t2ang)))
+   end
+   function self.get_length()
+      return radius * 2 * math.pi * angle / 360.0
+   end
+   function self.get_final_orientation()
+      local q = Quaternion()
+      q:from_axis_angle(makeVector3f(0,1,0), math.rad(angle))
+      return q
+   end
+   return self
+end
+
+--Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
+function makeVector3f(x, y, z)
+   local vec = Vector3f()
+   vec:x(x)
+   vec:y(y)
+   vec:z(z)
+   return vec
+end
+
+
+--[[
+   componse multuple sub-paths together
+--]]
+function path_composer(_subpaths)
+   local self = {}
+   local subpaths = _subpaths
+   local lengths = {}
+   local proportions = {}
+   local start_time = {}
+   local end_time = {}
+   local start_orientation = {}
+   local start_pos = {}
+   local start_angle = {}
+   local total_length = 0
+   local num_sub_paths = #subpaths
+
+   local orientation = Quaternion()
+   local pos = makeVector3f(0,0,0)
+   local angle = 0
+
+   for i = 1, num_sub_paths do
+      lengths[i] = subpaths[i][1].get_length()
+      total_length = total_length + lengths[i]
+
+      -- accumulate orientation, position and angle
+      start_orientation[i] = orientation
+      start_pos[i] = pos
+      start_angle[i] = angle
+      orientation = orientation * subpaths[i][1].get_final_orientation()
+      angle = angle + subpaths[i][2].get_roll(1.0)
+      pos = start_pos[i] + subpaths[i][1].get_pos(1.0)
+   end
+
+   -- work out the proportion of the total time we will spend in each sub path
+   local total_time = 0
+   for i = 1, num_sub_paths do
+      proportions[i] = lengths[i] / total_length
+      start_time[i] = total_time
+      end_time[i] = total_time + proportions[i]
+      total_time = total_time + proportions[i]
+   end
+
+   -- return position and angle for the composed path at time t
+   function self.run(t)
+      -- work out which subpath we are in
+      local i = 1
+      while t >= end_time[i] and i < num_sub_paths do
+         i = i + 1
+      end
+      local subpath_t = (t - start_time[i]) / proportions[i]
+      pos   = subpaths[i][1].get_pos(subpath_t)
+      angle = subpaths[i][2].get_roll(subpath_t)
+      start_orientation[i]:earth_to_body(pos)
+      return pos + start_pos[i], math.rad(angle + start_angle[i])
+   end
+
+   return self
+end
+
+function immelmann_turn(t, r, roll_rate, arg3, arg4)
+   if t == 0 then
+      local speed = path_var.target_speed
+      path_var.composer = path_composer({
+            { path_vertical_arc(r, 180),          roll_angle(0) },
+            { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+   ---------------------------------------------------
 
 --[[
    target speed is taken as max of target airspeed and current 3D
@@ -639,15 +774,6 @@ function calc_lowpass_alpha_dt(dt, cutoff_freq)
       return 1.0
    end
    return drc
-end
-
---Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
-function makeVector3f(x, y, z)
-   local vec = Vector3f()
-   vec:x(x)
-   vec:y(y)
-   vec:z(z)
-   return vec
 end
 
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
@@ -732,7 +858,6 @@ function isNaN(value)
    return value ~= value
 end
 
-local path_var = {}
 path_var.count = 0
 path_var.initial_ori = Quaternion()
 path_var.initial_maneuver_to_earth = Quaternion()
@@ -751,10 +876,13 @@ function do_path()
    if not current_task.started then
       local initial_yaw_deg = current_task.initial_yaw_deg
       current_task.started = true
+
+      local speed = target_groundspeed()
+      path_var.target_speed = speed
+
       path_var.length = path_length(path, arg1, arg2, arg3, arg4)
 
       path_var.total_rate_rads_ef = makeVector3f(0.0, 0.0, 0.0)
-      local speed = target_groundspeed()
 
       --assuming constant velocity
       path_var.total_time = path_var.length/speed
@@ -793,7 +921,6 @@ function do_path()
       path_var.scaled_dt = target_dt
 
       path_var.path_t = 0
-      path_var.target_speed = speed
       return true
    end
    
@@ -1013,6 +1140,7 @@ command_table[11]= PathFunction(cuban_eight, "Cuban Eight")
 command_table[12]= PathFunction(humpty_bump, "Humpty Bump")
 command_table[13]= PathFunction(straight_flight, "Straight Flight")
 command_table[14]= PathFunction(scale_figure_eight, "Scale Figure Eight")
+command_table[15]= PathFunction(immelmann_turn, "Immelmann Turn")
 
 -- get a location structure from a waypoint number
 function get_location(i)
