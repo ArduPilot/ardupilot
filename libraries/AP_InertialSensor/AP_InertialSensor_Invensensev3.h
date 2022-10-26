@@ -38,6 +38,7 @@ public:
         ICM40605,
         IIM42652,
         ICM42670,
+        ICM45686
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -54,6 +55,7 @@ private:
 
     void set_filter_and_scaling(void);
     void set_filter_and_scaling_icm42670(void);
+    void set_filter_and_scaling_icm456xy(void);
     void fifo_reset();
 
     /* Read samples from FIFO */
@@ -65,7 +67,9 @@ private:
 
     uint8_t register_read_bank(uint8_t bank, uint8_t reg);
     void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
-    
+    uint8_t register_read_bank_icm456xy(uint16_t bank_addr, uint16_t reg);
+    void register_write_bank_icm456xy(uint16_t bank_addr, uint16_t reg, uint8_t val);
+
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
 
     // instance numbers of accel and gyro data
