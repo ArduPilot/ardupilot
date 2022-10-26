@@ -704,7 +704,44 @@ function humpty_bump(t, r, h, arg3, arg4)
    return path_var.composer.run(t)
 end
 
-   ---------------------------------------------------
+function split_s(t, r, roll_rate, arg3, arg4)
+   if t == 0 then
+      local speed = path_var.target_speed
+      path_var.composer = path_composer({
+            { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+            { path_vertical_arc(-r, 180),           roll_angle(0) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function upline_45(t, r, height_gain, arg3, arg4)
+   if t == 0 then
+      local h = height_gain - 2*r*math.sin(math.rad(45))
+      assert(h >= 0)
+      path_var.composer = path_composer({
+            { path_vertical_arc(r, 45),  roll_angle(0) },
+            { path_straight(h),          roll_angle(0) },
+            { path_vertical_arc(-r, 45), roll_angle(0) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function downline_45(t, r, height_loss, arg3, arg4)
+   if t == 0 then
+      local h = height_loss - 2*r*math.sin(math.rad(45))
+      assert(h >= 0)
+      path_var.composer = path_composer({
+            { path_vertical_arc(-r, 45),  roll_angle(0) },
+            { path_straight(h),           roll_angle(0) },
+            { path_vertical_arc(r, 45),   roll_angle(0) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+---------------------------------------------------
 
 --[[
    target speed is taken as max of target airspeed and current 3D
@@ -1130,6 +1167,9 @@ command_table[12]= PathFunction(humpty_bump, "Humpty Bump")
 command_table[13]= PathFunction(straight_flight, "Straight Flight")
 command_table[14]= PathFunction(scale_figure_eight, "Scale Figure Eight")
 command_table[15]= PathFunction(immelmann_turn, "Immelmann Turn")
+command_table[16]= PathFunction(split_s, "Split-S")
+command_table[17]= PathFunction(upline_45, "Upline-45")
+command_table[18]= PathFunction(downline_45, "Downline-45")
 
 -- get a location structure from a waypoint number
 function get_location(i)
