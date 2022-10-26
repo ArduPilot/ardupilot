@@ -889,7 +889,7 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
     external.set_and_save_ifchanged(state.external);
     orientation.set_and_save_ifchanged(state.orientation);
     offset.set_and_save_ifchanged(state.offset);
-#ifndef HAL_BUILD_AP_PERIPH
+#if AP_COMPASS_DIAGONALS_ENABLED
     diagonals.set_and_save_ifchanged(state.diagonals);
     offdiagonals.set_and_save_ifchanged(state.offdiagonals);
 #endif
