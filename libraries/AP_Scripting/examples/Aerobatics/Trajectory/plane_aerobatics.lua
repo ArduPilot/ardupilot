@@ -1,9 +1,8 @@
---[[ perform simple aerobatic manoeuvres in AUTO mode
-cmd = 1: axial rolls, arg1 = roll rate dps, arg2 = number of rolls
-cmd = 2: loops or 180deg return, arg1 = pitch rate dps, arg2 = number of loops, if zero do a 1/2 cuban8-like return
-cmd = 3: rolling circle, arg1 = radius, arg2 = number of rolls
-cmd = 4: knife edge at any angle, arg1 = roll angle to hold, arg2 = duration
-cmd = 5: pause, holding heading and alt to allow stabilization after a move, arg1 = duration in seconds
+--[[
+   trajectory tracking aerobatic control
+   See README.md for usage
+   Written by Matthew Hampsey, Andy Palmer and Andrew Tridgell, with controller
+   assistance from Paul Riseborough, testing by Henry Wurzburg
 ]]--
 
 -- setup param block for aerobatics, reserving 30 params beginning with AERO_
@@ -99,45 +98,10 @@ local LOOP_RATE = 20
 local DO_JUMP = 177
 local k_throttle = 70
 
-local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
 local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
-local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
-local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
 
-local last_roll_err = 0.0
 local last_id = 0
-local initial_yaw_deg = 0
-local wp_yaw_deg = 0
-local initial_height = 0
 local current_task = nil
-local roll_stage = 0
-local MIN_SPEED = 0.1
-local LOOKAHEAD = 1
-
--- roll angle error 180 wrap to cope with errors while in inverted segments
-function roll_angle_error_wrap(roll_angle_error)
-   if math.abs(roll_angle_error) > 180 then
-    if roll_angle_error > 0 then
-       roll_angle_error = roll_angle_error - 360
-    else 
-       roll_angle_error= roll_angle_error +360
-    end 
-   end
-   return roll_angle_error
-end
-    
---roll controller to keep wings level in earth frame. if arg is 0 then level is at only 0 deg, otherwise its at 180/-180 roll also for loops
-function earth_frame_wings_level(arg)
-   local roll_deg = math.deg(ahrs:get_roll())
-   local roll_angle_error = 0.0
-   if (roll_deg > 90 or roll_deg < -90) and arg ~= 0 then
-    roll_angle_error = 180 - roll_deg
-   else
-    roll_angle_error = - roll_deg
-   end
-   return roll_angle_error_wrap(roll_angle_error)/(RLL2SRV_TCONST:get())
-end
-
 
 function wrap_360(angle)
    local res = math.fmod(angle, 360.0)
@@ -165,22 +129,6 @@ function wrap_2pi(angle)
    local angle_deg = math.deg(angle)
    local angle_wrapped = wrap_360(angle_deg)
    return math.rad(angle_wrapped)
-end
-
-function euler_rad_ef_to_bf(roll, pitch, yaw, ef_roll_rate, ef_pitch_rate, ef_yaw_rate)
-   local sr = math.sin(roll)
-   local cr = math.cos(roll)
-   local sp = math.sin(pitch)
-   local cp = math.cos(pitch)
-   local sy = math.sin(yaw)
-   local cy = math.cos(yaw)
-
-   local bf_roll_rate = ef_roll_rate + -sp*ef_yaw_rate
-   local bf_pitch_rate = cr*ef_pitch_rate + sr*cp*ef_yaw_rate
-   local bf_yaw_rate = -sr*ef_pitch_rate + cr*cp*ef_yaw_rate
-
-   return makeVector3f(bf_roll_rate, bf_pitch_rate, bf_yaw_rate)
-
 end
 
 -- a PI controller implemented as a Lua object
@@ -278,32 +226,6 @@ local function speed_controller(kP_param,kI_param, kFF_roll_param, kFF_pitch_par
    return self
 end
 
-local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
-   local self = {}
-   local kP = kP_param
-   local kI = kI_param
-   local KnifeEdge = KnifeEdge_param
-   local PI = PI_controller(kP:get(), kI:get(), Imax)
-
-   function self.update(target)
-      local target_pitch = PI.update(target, ahrs:get_position():alt()*0.01)
-      local roll_rad = ahrs:get_roll()
-      local ke_add = math.abs(math.sin(roll_rad)) * KnifeEdge:get()
-      target_pitch = target_pitch + ke_add
-      PI.log("HPI", ke_add)
-      return target_pitch
-   end
-
-   function self.reset()
-      PI.reset(math.max(math.deg(ahrs:get_pitch()), 3.0))
-      PI.set_P(kP:get())
-      PI.set_I(kI:get())
-   end
-
-   return self
-end
-
-local height_PI = height_controller(HGT_P, HGT_I, HGT_KE_BIAS, 20.0)
 local speed_PI = speed_controller(SPD_P, SPD_I, HGT_KE_BIAS, THR_PIT_FF, 100.0)
 
 function sgn(x)
@@ -315,53 +237,6 @@ function sgn(x)
    else
       return 0.0
    end
-end
-
-function euler_rate_ef_to_bf(rrate, prate, yrate, roll, pitch, yaw)
-
-   local sr = math.sin(roll)
-   local cr = math.cos(roll)
-   local sp = math.sin(pitch)
-   local cp = math.cos(pitch)
-   local sy = math.sin(yaw)
-   local cy = math.cos(yaw)
-   
-   local bf_roll_rate = rrate -sp*yrate
-   local bf_pitch_rate = cr*prate + sr*cp*yrate
-   local bf_yaw_rate = -sr*prate + cr*cp*yrate
-
-   return makeVector3f(bf_roll_rate, bf_pitch_rate, bf_yaw_rate)
-end
-
--- a controller to target a zero pitch angle and zero heading change, used in a roll
--- output is a body frame pitch rate, with convergence over time tconst in seconds
-function pitch_controller(target_pitch_deg, target_yaw_deg, tconst)
-   local roll_deg = math.deg(ahrs:get_roll())
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local yaw_deg = math.deg(ahrs:get_yaw())
-
-   -- get earth frame pitch and yaw rates
-   local ef_pitch_rate = (target_pitch_deg - pitch_deg) / tconst
-   local ef_yaw_rate = wrap_180(target_yaw_deg - yaw_deg) / tconst
-
-   local bf_pitch_rate = math.sin(math.rad(roll_deg)) * ef_yaw_rate + math.cos(math.rad(roll_deg)) * ef_pitch_rate
-   local bf_yaw_rate   = math.cos(math.rad(roll_deg)) * ef_yaw_rate - math.sin(math.rad(roll_deg)) * ef_pitch_rate
-   return bf_pitch_rate, bf_yaw_rate
-end
-
--- a controller for throttle to account for pitch
-function throttle_controller()
-   local pitch_rad = ahrs:get_pitch()
-   local thr_ff = THR_PIT_FF:get()
-   local throttle = TRIM_THROTTLE:get() + math.sin(pitch_rad) * thr_ff
-   return constrain(throttle, 0, 100.0)
-end
-
--- recover entry altitude
-function recover_alt()
-   local target_pitch = height_PI.update(initial_height)
-   local pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())
-   return target_pitch, pitch_rate, yaw_rate
 end
 
 function get_wp_location(i)
@@ -658,37 +533,6 @@ function scale_figure_eight(t, r, bank_angle, arg3, arg4)
    return pos, roll
 end
 
-function test_height_control(t, length, arg2, arg3, arg4)
-   if t < 0.25 then
-      return makeVector3f(t*length, 0.0, 0.0), 0.0
-   elseif t < 0.5 then
-      return makeVector3f(t*length, 0.0, -10.0), 0.0
-   elseif t < 0.75 then
-      return makeVector3f(t*length, 0.0, -20.0), 0.0
-   else
-      return makeVector3f(t*length, 0.0, -30.0), 0.0
-   end
-end
-
-function test_lane_change(t, length, arg2, arg3, arg4)
-   if t < 0.25 then
-      return makeVector3f(t*length, 0.0, 0.0), 0.0
-   elseif t < 0.5 then
-      return makeVector3f(t*length, 10.0, 0.0), 0.0
-   elseif t < 0.75 then
-      return makeVector3f(t*length, 20.0, 0.0), 0.0
-   else
-      return makeVector3f(t*length, 30.0, 0.0), 0.0
-   end
-end
-
-function path_straight_roll(t, length, num_rolls, arg3, arg4)
-
-   local vec = makeVector3f(t*length, 0.0, 0.0)
-   return vec, t*num_rolls*2*math.pi
-end
-
-
 --todo: change y coordinate to z for vertical box
 --function aerobatic_box(t, l, w, r):
 function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
@@ -730,8 +574,6 @@ function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
 end 
 
 function vertical_aerobatic_box(t, total_length, total_width, r, arg4)
-   
-   --gcs:send_text(0, string.format("t val: %f", t))
    local q = Quaternion()
    q:from_euler(-math.rad(90), 0, 0)
    local point, angle = horizontal_rectangle(t, total_length, total_width, math.abs(r), arg4)
@@ -856,77 +698,11 @@ function to_axis_and_angle(quat)
    return axis_angle:scale(1.0/angle), angle
 end
 
-function test_axis_and_angle()
-   local quat = Quaternion()
-   quat:q1(1.0)
-   local axis, angle = to_axis_and_angle(quat)
-   gcs:send_text(0, string.format("axis angle test: %f %f %f %f", axis:x(), axis:y(), axis:z(), angle))
-
-   local quat2 = Quaternion()
-   quat2:q1(math.cos(math.pi/4))
-   quat2:q2(0)
-   quat2:q3(0)
-   quat2:q4(math.sin(math.pi/4))
-   local axis2, angle2 = to_axis_and_angle(quat2)
-   gcs:send_text(0, string.format("axis angle test2: %f %f %f %f", axis2:x(), axis2:y(), axis2:z(), angle2))
-
-   local quat3 = Quaternion()
-   quat3:q1(math.cos(math.pi/2))
-   quat3:q2(0)
-   quat3:q3(math.sin(math.pi/2))
-   quat3:q4(0)
-   local axis3, angle3 = to_axis_and_angle(quat3)
-   gcs:send_text(0, string.format("axis angle test3: %f %f %f %f", axis3:x(), axis3:y(), axis3:z(), angle3))
-end
-
---Just used this to test the above function, can probably delete now.
-function test_angular_rate()
-   local vector1 = makeVector3f(1.0, 0.0, 0.0)
-   local vector2 = makeVector3f(1.0, 1.0, 0.0)
-   local angular_rate = vectors_to_angular_rate(vector1, vector2, 1.0)
-   gcs:send_text(0, string.format("angular rate: %.1f %.1f %.1f", math.deg(angular_rate:x()), math.deg(angular_rate:y()), math.deg(angular_rate:z())))
-end
-
 --projects x onto the othogonal subspace of span(unit_v)
 function ortho_proj(x, unit_v)
    local temp_x = unit_v:cross(x)
    return unit_v:cross(temp_x)
 end
---test_angular_rate()
---test_axis_and_angle()
--- function maneuver_to_body(vec)
---    path_var.initial_maneuver_to_earth:earth_to_body(vec)
---    vec = ahrs:earth_to_body(vec)
-   
---    return vec
--- end
-
---returns body frame angular rate as Vec3f
--- function path_proportional_error_correction(current_pos_ef, target_pos_ef, forward_velocity, target_velocity_ef)
-   
---    if forward_velocity <= MIN_SPEED then
---       return makeVector3f(0.0, 0.0, 0.0)
---    end
-   
---    --time over which to correct position error
---    local time_const_pos_to_vel = POS_TC:get()
---    --time over which to achieve desired velocity
---    local time_const_vel_to_acc = VEL_TC:get()
---    local pos_err_ef = target_pos_ef - current_pos_ef
-
---    local correction_vel_ef = pos_err_ef:scale(1.0/time_const_pos_to_vel)
---    correction_vel_ef = correction_vel_ef:scale(forward_velocity)
-
---    local curr_vel_ef = ahrs:get_velocity_NED()
-
---    local vel_error_ef = correction_vel_ef - curr_vel_ef
-
---    local acc_err_bf = ahrs:earth_to_body(vel_error_ef):scale(1.0/time_const_vel_to_acc)
-
---    local ang_vel = makeVector3f(0, -acc_err_bf:z()/forward_velocity, acc_err_bf:y()/forward_velocity)
-
---    return ang_vel
--- end
 
 -- log a pose from position and quaternion attitude
 function log_pose(logname, pos, quat)
@@ -987,17 +763,15 @@ function do_path()
       path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
 
 
-      local corrected_position_t0_ef, angle_t0 = rotate_path(path, LOOKAHEAD*target_dt/path_var.total_time,
+      local corrected_position_t0_ef, angle_t0 = rotate_path(path, target_dt/path_var.total_time,
                                                              arg1, arg2, arg3, arg4,
                                                              path_var.initial_ori, path_var.initial_ef_pos)
-      local corrected_position_t1_ef, angle_t1 = rotate_path(path, 2*LOOKAHEAD*target_dt/path_var.total_time,
+      local corrected_position_t1_ef, angle_t1 = rotate_path(path, 2*target_dt/path_var.total_time,
                                                              arg1, arg2, arg3, arg4,
                                                              path_var.initial_ori, path_var.initial_ef_pos)
 
       path_var.start_pos = ahrs:get_position()
       path_var.path_int = path_var.start_pos:copy()
-
-      height_PI.reset()
 
       speed_PI.reset()
 
@@ -1019,25 +793,13 @@ function do_path()
    end
    
 
-   --TODO: dt taken from actual loop rate or just desired loop rate?
-   --local dt = now - path_var.last_time
-   --local dt = target_dt
    local vel_length = ahrs:get_velocity_NED():length()
 
    local actual_dt = now - path_var.last_time
 
-   --path_var.average_dt = 0.98*path_var.average_dt + 0.02*actual_dt
-
-   --local scaled_dt = path_var.average_dt--*vel_length/path_var.target_speed
-   --path_var.scaled_dt = scaled_dt
-
    local local_n_dt = actual_dt/path_var.total_time
 
    path_var.last_time = now
-   --path_var.path_t = path_var.path_t + scaled_dt/path_var.total_time
-   
-   --TODO: Fix this exit condition
-   --local t = path_var.path_t
 
    if path_var.path_t > 1.0 then --done
       return false
@@ -1384,10 +1146,9 @@ function check_auto_mission()
       -- we've started a new command
       current_task = nil
       last_id = id
-      initial_yaw_deg = math.deg(ahrs:get_yaw())
+      local initial_yaw_deg = math.deg(ahrs:get_yaw())
       gcs:send_text(0, string.format("Starting %s!", command_table[cmd].name ))
 
-      initial_height = ahrs:get_position():alt()*0.01
       -- work out yaw between previous WP and next WP
       local cnum = mission:get_current_nav_index()
       -- find previous nav waypoint
@@ -1404,7 +1165,7 @@ function check_auto_mission()
          i = i+1
          loc_next = get_wp_location(resolve_jump(i))
       end
-      wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
+      local wp_yaw_deg = math.deg(loc_prev:get_bearing(loc_next))
       if math.abs(wrap_180(initial_yaw_deg - wp_yaw_deg)) > 90 then
          gcs:send_text(0, string.format("Doing turnaround!"))
          wp_yaw_deg = wrap_180(wp_yaw_deg + 180)
@@ -1492,7 +1253,6 @@ function check_trick()
          end
          gcs:send_text(0, string.format("Trick %u started (%s)", selection, cmd.name))
          local initial_yaw_deg = math.deg(ahrs:get_yaw())
-         initial_height = ahrs:get_position():alt()*0.01
          current_task = PathTask(cmd.fn,
                                  cmd.name,
                                  nil,
