@@ -130,7 +130,7 @@ int AP_Logger_Write(lua_State *L) {
     struct AP_Logger::log_write_fmt *f;
     if (!have_units) {
         // ask for a mesage type
-        f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true);
+        f = AP_logger->msg_fmt_for_name(name, label_cat, nullptr, nullptr, fmt_cat, true, true);
 
     } else {
         // read in units and multiplers strings
@@ -153,7 +153,7 @@ int AP_Logger_Write(lua_State *L) {
         strcat(multipliers_cat,multipliers);
 
         // ask for a mesage type
-        f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true);
+        f = AP_logger->msg_fmt_for_name(name, label_cat, units_cat, multipliers_cat, fmt_cat, true, true);
     }
 
     if (f == nullptr) {
