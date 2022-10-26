@@ -29,7 +29,7 @@ void ModeCruise::update()
     }
 
 #if AP_SCRIPTING_ENABLED
-    if (plane.nav_scripting.enabled) {
+    if (plane.nav_scripting_active()) {
         // while a trick is running unlock heading and zero altitude offset
         locked_heading = false;
         lock_timer_ms = 0;
@@ -53,7 +53,7 @@ void ModeCruise::update()
 void ModeCruise::navigate()
 {
 #if AP_SCRIPTING_ENABLED
-    if (plane.nav_scripting.enabled) {
+    if (plane.nav_scripting_active()) {
         // don't try to navigate while running trick
         return;
     }
