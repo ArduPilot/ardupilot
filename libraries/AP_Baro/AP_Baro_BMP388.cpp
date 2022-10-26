@@ -17,6 +17,7 @@
 #if AP_BARO_BMP388_ENABLED
 
 #include <utility>
+#include <AP_Math/AP_Math.h>
 
 extern const AP_HAL::HAL &hal;
 
