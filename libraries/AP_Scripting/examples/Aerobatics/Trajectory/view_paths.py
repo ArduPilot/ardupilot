@@ -39,6 +39,8 @@ def view_path(viewer, path, color):
         dist = math.sqrt(dx**2+dy**2+dz**2)+0.001
         if dist <= 0:
             continue
+        if math.isnan(p1.q[0]) or math.isnan(p1.q[1]) or math.isnan(p1.q[2]) or math.isnan(p1.q[3]):
+            continue
         pname = 'p%u' % i
         viewer.append_box('root', pname, (dist, 0.1, 0.002), frame=(p1.pos,qtuple(p1.q)))
         viewer.set_material('root', pname, color_rgba=color)
