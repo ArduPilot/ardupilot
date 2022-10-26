@@ -27,6 +27,7 @@ parameters (described below).
 | 12 | Humpty Bump              | radius | height     |           |            | Yes        |
 | 13 | Straight Flight          | length | bank angle |           |            | No         |
 | 14 | Scale Figure Eight       | radius | bank angle |           |            | No         |
+| 15 | Immelmann Turn           | radius | roll rate  |           |            | Yes         |
 
 The "Turnaround" column indicates if the manoeuvre results in a course
 reversal, which impacts how it is used in AUTO missions.
