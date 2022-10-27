@@ -2932,6 +2932,12 @@ def add_apperiph_defaults(f):
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
 #endif
+
+// MSP parsing is off by default in AP_Periph:
+#ifndef HAL_MSP_ENABLED
+#define HAL_MSP_ENABLED 0
+#endif
+
 ''')
 
 def add_bootloader_defaults(f):
