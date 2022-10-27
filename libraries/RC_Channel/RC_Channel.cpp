@@ -492,6 +492,7 @@ void RC_Channel::init_aux_function(const aux_func_t ch_option, const AuxSwitchPo
     case AUX_FUNC::GENERATOR: // don't turn generator on or off initially
     case AUX_FUNC::EKF_POS_SOURCE:
     case AUX_FUNC::TORQEEDO_CLEAR_ERR:
+    case AUX_FUNC::RELOCATE_MISSION:
     case AUX_FUNC::SCRIPTING_1:
     case AUX_FUNC::SCRIPTING_2:
     case AUX_FUNC::SCRIPTING_3:
@@ -599,6 +600,11 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
     { AUX_FUNC::FFT_NOTCH_TUNE, "FFT Notch Tuning"},
     { AUX_FUNC::MOUNT_LOCK, "MountLock"},
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
+#ifdef RELOCATE_MISSION_ENABLED
+   #if RELOCATE_MISSION_ENABLED == 1
+    { AUX_FUNC::RELOCATE_MISSION,"Relocate Mission"},
+   #endif
+#endif
     { AUX_FUNC::CAMERA_REC_VIDEO, "Camera Record Video"},
     { AUX_FUNC::CAMERA_ZOOM, "Camera Zoom"},
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
