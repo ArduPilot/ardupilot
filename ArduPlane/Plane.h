@@ -672,6 +672,9 @@ private:
         // Direction for loiter. 1 for clockwise, -1 for counter-clockwise
         int8_t direction;
 
+        // Loiter radius in meters
+        uint16_t radius;
+
         // when loitering and an altitude is involved, this flag is true when it has been reached at least once
         bool reached_target_alt;
 
@@ -1020,7 +1023,7 @@ private:
     float mode_auto_target_airspeed_cm();
     void calc_gndspeed_undershoot();
     void update_loiter(uint16_t radius);
-    void update_loiter_update_nav(uint16_t radius);
+    void update_loiter_update_nav();
     void update_cruise();
     void update_fbwb_speed_height(void);
     void setup_turn_angle(void);
