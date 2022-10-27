@@ -263,30 +263,23 @@ function resolve_jump(i)
    return i
 end
 
---------Trajectory definitions---------------------
-
-function climbing_circle(t, radius, height, arg3, arg4)
-   local angle = t*math.pi*2
-   local vec = makeVector3f(radius*math.sin(angle), radius*(1.0-math.cos(angle)), -math.sin(0.5*angle)*height)
-   return vec, 0.0
+--[[
+   Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
+--]]
+function makeVector3f(x, y, z)
+   local vec = Vector3f()
+   vec:x(x)
+   vec:y(y)
+   vec:z(z)
+   return vec
 end
 
-function loop(t, radius, bank_angle, arg3, arg4)
-   local num_loops = math.abs(arg3)
-   if(arg3 <= 0.0) then
-      num_loops = 1
-   end
 
-   t = num_loops*t*math.pi*2
-   local vec = makeVector3f(math.sin(t), 0.0, -1.0 + math.cos(t))
-   return vec:scale(radius), math.rad(bank_angle)
-end
 
-function straight_roll(t, length, num_rolls, arg3, arg4)
-
-   local vec = makeVector3f(t*length, 0.0, 0.0)
-   return vec, t*num_rolls*2*math.pi
-end
+--[[
+   trajectory building blocks. We have two types of building blocks,
+   roll blocks and path blocks. These are combined to give composite paths
+--]]
 
 --[[
   roll component that goes through a fixed total angle at a fixed roll rate
@@ -412,18 +405,8 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
    return self
 end
 
---Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
-function makeVector3f(x, y, z)
-   local vec = Vector3f()
-   vec:x(x)
-   vec:y(y)
-   vec:z(z)
-   return vec
-end
-
-
 --[[
-   componse multuple sub-paths together
+   componse multiple sub-paths together to create a full trajectory
 --]]
 function path_composer(_subpaths)
    local self = {}
@@ -492,6 +475,40 @@ function path_composer(_subpaths)
    end
 
    return self
+end
+
+--[[
+   composed trajectories, does as individual aerobatic maneuvers
+--]]
+
+function climbing_circle(t, radius, height, bank_angle, arg4)
+   if t == 0 then
+      local speed = path_var.target_speed
+      path_var.composer = path_composer({
+            { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function loop(t, radius, bank_angle, arg3, arg4)
+   if t == 0 then
+      local speed = path_var.target_speed
+      path_var.composer = path_composer({
+            { path_vertical_arc(radius, 360), roll_angle_entry_exit(bank_angle) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function straight_roll(t, length, num_rolls, arg3, arg4)
+   if t == 0 then
+      local speed = path_var.target_speed
+      path_var.composer = path_composer({
+            { path_straight(length), roll_angle(num_rolls*360) },
+      })
+   end
+   return path_var.composer.run(t)
 end
 
 function immelmann_turn(t, r, roll_rate, arg3, arg4)
@@ -780,26 +797,6 @@ function rotate_path(path_f, t, arg1, arg2, arg3, arg4, orientation, offset)
    return point+offset, angle, speed
 end
 
---args:
---  dt: sample time
---  cutoff_freq: cutoff frequency for low pass filter, in Hz
---returns: alpha value required to implement LP filter
-function calc_lowpass_alpha_dt(dt, cutoff_freq)
-   if dt <= 0.0 or cutoff_freq <= 0.0 then
-      return 1.0
-   end
-   
-   local rc = 1.0/(2.0*3.14159265*cutoff_freq)
-   local drc = dt/(dt+rc)
-   if drc < 0.0 then
-      return 0.0
-   end
-   if drc > 1.0 then
-      return 1.0
-   end
-   return drc
-end
-
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
 --If vec1 and vec2 are already parallel, returns a zero vector and zero angle
 --Note that the rotation will not be unique.
@@ -842,12 +839,12 @@ function vectors_to_angular_rate_w_roll(vector1, vector2, time_constant, roll)
    return axis:scale(angular_velocity)
 end
 
+-- convert a quaternion to axis angle form
 function to_axis_and_angle(quat)
-
    local axis_angle = Vector3f()
    quat:to_axis_angle(axis_angle)
    angle = axis_angle:length() 
-   if(angle < 0.00001) then
+   if angle < 0.00001 then
       return makeVector3f(1.0, 0.0, 0.0), 0.0
    end
    return axis_angle:scale(1.0/angle), angle
