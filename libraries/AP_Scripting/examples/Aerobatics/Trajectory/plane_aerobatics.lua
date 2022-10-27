@@ -320,6 +320,47 @@ function roll_angle_entry_exit(_angle)
 end
 
 --[[
+   roll component that banks to _angle over AEROM_ENTRY_RATE
+   degrees/s, then holds that angle
+--]]
+function roll_angle_entry(_angle)
+   local self = {}
+   local angle = _angle
+   local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
+   
+   function self.get_roll(t, time_s)
+      local entry_t = entry_s / time_s
+      if entry_t > 0.5 then
+         entry_t = 0.5
+      end
+      if t < entry_t then
+         return angle * t / entry_t
+      end
+      return angle
+   end
+   return self
+end
+
+--[[
+   roll component that holds angle until the end of the subpath, then
+   rolls back to 0 at the AEROM_ENTRY_RATE
+--]]
+function roll_angle_exit(_angle)
+   local self = {}
+   local angle = _angle
+   local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
+   
+   function self.get_roll(t, time_s)
+      local entry_t = entry_s / time_s
+      if t < 1.0 - entry_t then
+         return 0
+      end
+      return ((t - (1.0 - entry_t)) / entry_t) * angle
+   end
+   return self
+end
+
+--[[
    path component that does a straight horizontal line
 --]]
 function path_straight(_distance)
@@ -426,7 +467,7 @@ function path_composer(_subpaths)
    local orientation = Quaternion()
    local pos = makeVector3f(0,0,0)
    local angle = 0
-   local speed = path_var.target_speed
+   local speed = target_groundspeed()
 
    for i = 1, num_sub_paths do
       lengths[i] = subpaths[i][1].get_length()
@@ -445,7 +486,7 @@ function path_composer(_subpaths)
       start_speed[i] = speed
       end_speed[i] = subpaths[i][3]
       if end_speed[i] == nil then
-         end_speed[i] = path_var.target_speed
+         end_speed[i] = target_groundspeed()
       end
       speed = end_speed[i]
    end
@@ -474,6 +515,12 @@ function path_composer(_subpaths)
       return pos + start_pos[i], math.rad(angle + start_angle[i]), speed
    end
 
+   function self.get_length()
+      return total_length
+   end
+
+   gcs:send_text(0,"composer created")
+   assert(self.run)
    return self
 end
 
@@ -481,51 +528,35 @@ end
    composed trajectories, does as individual aerobatic maneuvers
 --]]
 
-function climbing_circle(t, radius, height, bank_angle, arg4)
-   if t == 0 then
-      local speed = path_var.target_speed
-      path_var.composer = path_composer({
-            { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
-      })
-   end
-   return path_var.composer.run(t)
+function climbing_circle(radius, height, bank_angle, arg4)
+   return path_composer({
+         { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
+   })
 end
 
-function loop(t, radius, bank_angle, arg3, arg4)
-   if t == 0 then
-      local speed = path_var.target_speed
-      path_var.composer = path_composer({
-            { path_vertical_arc(radius, 360), roll_angle_entry_exit(bank_angle) },
-      })
-   end
-   return path_var.composer.run(t)
+function loop(radius, bank_angle, arg3, arg4)
+   return path_composer({
+         { path_vertical_arc(radius, 360), roll_angle_entry_exit(bank_angle) },
+   })
 end
 
-function straight_roll(t, length, num_rolls, arg3, arg4)
-   if t == 0 then
-      local speed = path_var.target_speed
-      path_var.composer = path_composer({
-            { path_straight(length), roll_angle(num_rolls*360) },
-      })
-   end
-   return path_var.composer.run(t)
+function straight_roll(length, num_rolls, arg3, arg4)
+   return path_composer({
+         { path_straight(length), roll_angle(num_rolls*360) },
+   })
 end
 
-function immelmann_turn(t, r, roll_rate, arg3, arg4)
-   if t == 0 then
-      local speed = path_var.target_speed
-      path_var.composer = path_composer({
-            { path_vertical_arc(r, 180),            roll_angle(0) },
-            { path_straight(speed*180.0/roll_rate), roll_angle(180) },
-      })
-   end
-   return path_var.composer.run(t)
+function immelmann_turn(r, roll_rate, arg3, arg4)
+   local speed = path_var.target_speed
+   return path_composer({
+         { path_vertical_arc(r, 180),            roll_angle(0) },
+         { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+   })
 end
 
-function humpty_bump(t, r, h, arg3, arg4)
+function humpty_bump(r, h, arg3, arg4)
    assert(h >= 2*r)
-   if t == 0 then
-      path_var.composer = path_composer({
+   return path_composer({
             { path_vertical_arc(r, 90),          roll_angle(0) },
             { path_straight((h-2*r)/3),          roll_angle(0) },
             { path_straight((h-2*r)/3),          roll_angle(180) },
@@ -534,116 +565,89 @@ function humpty_bump(t, r, h, arg3, arg4)
             { path_straight(h-2*r),              roll_angle(0) },
             { path_vertical_arc(-r, 90),         roll_angle(0) },
             { path_straight(2*r),                roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+   })
 end
 
-function split_s(t, r, roll_rate, arg3, arg4)
-   if t == 0 then
-      local speed = path_var.target_speed
-      path_var.composer = path_composer({
-            { path_straight(speed*180.0/roll_rate), roll_angle(180) },
-            { path_vertical_arc(-r, 180),           roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function split_s(r, roll_rate, arg3, arg4)
+   local speed = path_var.target_speed
+   return path_composer({
+         { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+         { path_vertical_arc(-r, 180),           roll_angle(0) },
+   })
 end
 
-function upline_45(t, r, height_gain, arg3, arg4)
-   if t == 0 then
-      local h = (height_gain - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
-      assert(h >= 0)
-      path_var.composer = path_composer({
-            { path_vertical_arc(r, 45),  roll_angle(0) },
-            { path_straight(h),          roll_angle(0) },
-            { path_vertical_arc(-r, 45), roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function upline_45(r, height_gain, arg3, arg4)
+   local h = (height_gain - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
+   assert(h >= 0)
+   return path_composer({
+         { path_vertical_arc(r, 45),  roll_angle(0) },
+         { path_straight(h),          roll_angle(0) },
+         { path_vertical_arc(-r, 45), roll_angle(0) },
+   })
 end
 
-function downline_45(t, r, height_loss, arg3, arg4)
-   if t == 0 then
-      local h = (height_loss - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
-
-      assert(h >= 0)
-      path_var.composer = path_composer({
-            { path_vertical_arc(-r, 45),  roll_angle(0) },
-            { path_straight(h),           roll_angle(0) },
-            { path_vertical_arc(r, 45),   roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function downline_45(r, height_loss, arg3, arg4)
+   local h = (height_loss - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
+   assert(h >= 0)
+   return path_composer({
+         { path_vertical_arc(-r, 45),  roll_angle(0) },
+         { path_straight(h),           roll_angle(0) },
+         { path_vertical_arc(r, 45),   roll_angle(0) },
+   })
 end
 
-function rolling_circle(t, radius, num_rolls, arg3, arg4)
-   if t == 0 then
-      path_var.composer = path_composer({
-            { path_horizontal_arc(radius, 360), roll_angle(360*num_rolls) },
-      })
-   end
-   return path_var.composer.run(t)
+function rolling_circle(radius, num_rolls, arg3, arg4)
+   return path_composer({
+         { path_horizontal_arc(radius, 360), roll_angle(360*num_rolls) },
+   })
 end
 
-function straight_flight(t, length, bank_angle, arg3, arg4)
-   if t == 0 then
-      local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
-      local entry_dist = path_var.target_speed * entry_s
-      if length < 2*entry_dist then
-         entry_dist = length*0.5
-      end
-      path_var.composer = path_composer({
-            { path_straight(entry_dist),            roll_angle(bank_angle) },
-            { path_straight(length - 2*entry_dist), roll_angle(0) },
-            { path_straight(entry_dist),            roll_angle(-bank_angle) },
-      })
+function straight_flight(length, bank_angle, arg3, arg4)
+   local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
+   local entry_dist = path_var.target_speed * entry_s
+   if length < 2*entry_dist then
+      entry_dist = length*0.5
    end
-   return path_var.composer.run(t)
+   return path_composer({
+         { path_straight(entry_dist),            roll_angle(bank_angle) },
+         { path_straight(length - 2*entry_dist), roll_angle(0) },
+         { path_straight(entry_dist),            roll_angle(-bank_angle) },
+   })
 end
 
-function banked_circle(t, radius, bank_angle, height, arg4)
-   if t == 0 then
-      local circumference = 2 * radius * math.pi
-      local circle_s = circumference / path_var.target_speed
-      local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
-      local entry_angle = (entry_s / circle_s) * 360.0
-      if entry_angle > 180 then
-         entry_angle = 180
-      end
-      path_var.composer = path_composer({
-            { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
-      })
+function banked_circle(radius, bank_angle, height, arg4)
+   local circumference = 2 * radius * math.pi
+   local circle_s = circumference / path_var.target_speed
+   local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
+   local entry_angle = (entry_s / circle_s) * 360.0
+   if entry_angle > 180 then
+      entry_angle = 180
    end
-   return path_var.composer.run(t)
+   return path_composer({
+         { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
+   })
 end
 
-function scale_figure_eight(t, r, bank_angle, arg3, arg4)
-   if t == 0 then
-      path_var.composer = path_composer({
-            { path_straight(r),             roll_angle(0) },
-            { path_horizontal_arc(r,  90),  roll_angle_entry_exit(bank_angle) },
-            { path_horizontal_arc(-r, 360), roll_angle_entry_exit(-bank_angle) },
-            { path_horizontal_arc(r,  270), roll_angle_entry_exit(bank_angle) },
-            { path_straight(3*r),           roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function scale_figure_eight(r, bank_angle, arg3, arg4)
+   return path_composer({
+         { path_straight(r),             roll_angle(0) },
+         { path_horizontal_arc(r,  90),  roll_angle_entry_exit(bank_angle) },
+         { path_horizontal_arc(-r, 360), roll_angle_entry_exit(-bank_angle) },
+         { path_horizontal_arc(r,  270), roll_angle_entry_exit(bank_angle) },
+         { path_straight(3*r),           roll_angle(0) },
+   })
 end
 
-function figure_eight(t, r, bank_angle, arg3, arg4)
-   if t == 0 then
-      local rabs = math.abs(r)
-      path_var.composer = path_composer({
-            { path_straight(rabs*math.sqrt(2)), roll_angle(0) },
-            { path_horizontal_arc(r,  225),    roll_angle_entry_exit(bank_angle) },
-            { path_straight(2*rabs),           roll_angle(0) },
-            { path_horizontal_arc(-r,  270),   roll_angle_entry_exit(-bank_angle) },
-            { path_straight(2*rabs),           roll_angle(0) },
-            { path_horizontal_arc(r,    45),   roll_angle_entry_exit(bank_angle) },
-      })
-   end
-   return path_var.composer.run(t)
+function figure_eight(r, bank_angle, arg3, arg4)
+   local rabs = math.abs(r)
+   return path_composer({
+         { path_straight(rabs*math.sqrt(2)), roll_angle(0) },
+         { path_horizontal_arc(r,  225),     roll_angle_entry_exit(bank_angle) },
+         { path_straight(2*rabs),            roll_angle(0) },
+         { path_horizontal_arc(-r,  270),    roll_angle_entry_exit(-bank_angle) },
+         { path_straight(2*rabs),            roll_angle(0) },
+         { path_horizontal_arc(r,    45),    roll_angle_entry_exit(bank_angle) },
+   })
 end
 
 
@@ -651,109 +655,89 @@ end
    stall turn is not really correct, as we don't fully stall. Needs to be
    reworked
 --]]
-function stall_turn(t, radius, height, direction, min_speed)
-   if t == 0 then
-      local h = height - radius
-      assert(h >= 0)
-      path_var.composer = path_composer({
-            { path_vertical_arc(radius, 90),          roll_angle(0) },
-            { path_straight(h),                       roll_angle(0), min_speed },
-            { path_horizontal_arc(5*direction, 180),  roll_angle(0), min_speed },
-            { path_straight(h),                       roll_angle(0) },
-            { path_vertical_arc(radius, 90),          roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function stall_turn(radius, height, direction, min_speed)
+   local h = height - radius
+   assert(h >= 0)
+   return path_composer({
+         { path_vertical_arc(radius, 90),          roll_angle(0) },
+         { path_straight(h),                       roll_angle(0), min_speed },
+         { path_horizontal_arc(5*direction, 180),  roll_angle(0), min_speed },
+         { path_straight(h),                       roll_angle(0) },
+         { path_vertical_arc(radius, 90),          roll_angle(0) },
+   })
 end
 
-function half_cuban_eight(t, r, arg2, arg3, arg4)
-   if t == 0 then
-      local rabs = math.abs(r)
-      path_var.composer = path_composer({
-            { path_straight(2*rabs*math.sqrt(2)), roll_angle(0) },
-            { path_vertical_arc(r,  225),  roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(180) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_vertical_arc(-r, 45),   roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function half_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return path_composer({
+         { path_straight(2*rabs*math.sqrt(2)), roll_angle(0) },
+         { path_vertical_arc(r,  225),  roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 45),   roll_angle(0) },
+   })
 end
 
-function cuban_eight(t, r, arg2, arg3, arg4)
-   if t == 0 then
-      local rabs = math.abs(r)
-      path_var.composer = path_composer({
-            { path_straight(rabs*math.sqrt(2)), roll_angle(0) },
-            { path_vertical_arc(r,  225),  roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(180) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_vertical_arc(-r, 270),  roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(180) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_vertical_arc(r, 45),    roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return path_composer({
+         { path_straight(rabs*math.sqrt(2)), roll_angle(0) },
+         { path_vertical_arc(r,  225),  roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 270),  roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(r, 45),    roll_angle(0) },
+   })
 end
 
-function half_reverse_cuban_eight(t, r, arg2, arg3, arg4)
-   if t == 0 then
-      local rabs = math.abs(r)
-      path_var.composer = path_composer({
-            { path_vertical_arc(r,  45),   roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_straight(2*rabs/3),     roll_angle(180) },
-            { path_straight(2*rabs/3),     roll_angle(0) },
-            { path_vertical_arc(-r, 225),  roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+function half_reverse_cuban_eight(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   return path_composer({
+         { path_vertical_arc(r,  45),   roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_straight(2*rabs/3),     roll_angle(180) },
+         { path_straight(2*rabs/3),     roll_angle(0) },
+         { path_vertical_arc(-r, 225),  roll_angle(0) },
+   })
 end
 
-function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
-   if t == 0 then
-      local l = total_length - 2*r
-      local w = total_width - 2*r
+function horizontal_rectangle(total_length, total_width, r, bank_angle)
+   local l = total_length - 2*r
+   local w = total_width - 2*r
       
-      path_var.composer = path_composer({
-            { path_straight(0.5*l),     roll_angle(0) },
-            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle)},
-            { path_straight(w),     roll_angle(0) },
-            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
-            { path_straight(l),     roll_angle(0) },
-            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
-            { path_straight(w),     roll_angle(0) },
-            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
-            { path_straight(0.5*l),     roll_angle(0) },
-      })
-   end
-   return path_var.composer.run(t)
+   return path_composer({
+         { path_straight(0.5*l),        roll_angle(0) },
+         { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle)},
+         { path_straight(w),            roll_angle(0) },
+         { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
+         { path_straight(l),            roll_angle(0) },
+         { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
+         { path_straight(w),            roll_angle(0) },
+         { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
+         { path_straight(0.5*l),        roll_angle(0) },
+   })
 end
 
-function vertical_aerobatic_box(t, total_length, total_width, r, bank_angle)
-   if t == 0 then
-      local l = total_length - 2*r
-      local w = total_width - 2*r
+function vertical_aerobatic_box(total_length, total_width, r, bank_angle)
+   local l = total_length - 2*r
+   local w = total_width - 2*r
       
-      --TODO: this doesn't seem to work for roll_angle_entry_exit?
-      path_var.composer = path_composer({
-            { path_straight(0.5*l),     roll_angle(0) },
-            { path_vertical_arc(r, 90),   roll_angle(0)},
-            { path_straight(w),     roll_angle(0) },
-            { path_vertical_arc(r, 90),   roll_angle(0) },
-            { path_straight(l),     roll_angle(0) },
-            { path_vertical_arc(r, 90),   roll_angle(0)},
-            { path_straight(w),     roll_angle(0) },
-            { path_vertical_arc(r, 90),   roll_angle(0)},
-            { path_straight(0.5*l),     roll_angle(0) },
-      })
-      
-   end
-   return path_var.composer.run(t)
+   return path_composer({
+         { path_straight(0.5*l),       roll_angle_entry(bank_angle) },
+         { path_vertical_arc(r, 90),   roll_angle(0) },
+         { path_straight(w),           roll_angle(0) },
+         { path_vertical_arc(r, 90),   roll_angle(0) },
+         { path_straight(l),           roll_angle(0) },
+         { path_vertical_arc(r, 90),   roll_angle(0) },
+         { path_straight(w),           roll_angle(0) },
+         { path_vertical_arc(r, 90),   roll_angle(0) },
+         { path_straight(0.5*l),       roll_angle_exit(-bank_angle) },
+   })
 end
 
 ---------------------------------------------------
@@ -766,32 +750,15 @@ function target_groundspeed()
    return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
 end
 
---Estimate the length of the path in metres
-function path_length(path_f, arg1, arg2, arg3, arg4)
-   local dt = 0.01
-   local total = 0.0
-   for i = 0, math.floor(1.0/dt) do
-      local t = i*dt
-      local t2 = t + dt
-      local v1 = path_f(t, arg1, arg2, arg3, arg4)
-      local v2 = path_f(t2, arg1, arg2, arg3, arg4)
-
-      local dv = v2-v1
-      total = total + dv:length()
-   end
-   return total
-end
-
-
---args: 
+--args:
 --  path_f: path function returning position 
 --  t: normalised [0, 1] time
 --  arg1, arg2: arguments for path function
 --  orientation: maneuver frame orientation
 --returns: requested position, angle and speed in maneuver frame
-function rotate_path(path_f, t, arg1, arg2, arg3, arg4, orientation, offset)
+function rotate_path(path_f, t, orientation, offset)
    t = constrain(t, 0, 1)
-   point, angle, speed = path_f(t, arg1, arg2, arg3, arg4)
+   point, angle, speed = path_f.run(t)
    orientation:earth_to_body(point)
    --TODO: rotate angle?
    return point+offset, angle, speed
@@ -889,10 +856,6 @@ function do_path()
    path_var.count = path_var.count + 1
    local target_dt = 1.0/LOOP_RATE
    local path = current_task.fn
-   local arg1 = current_task.args[1]
-   local arg2 = current_task.args[2]
-   local arg3 = current_task.args[3]
-   local arg4 = current_task.args[4]
 
    if not current_task.started then
       local initial_yaw_deg = current_task.initial_yaw_deg
@@ -901,13 +864,13 @@ function do_path()
       local speed = target_groundspeed()
       path_var.target_speed = speed
 
-      path_var.length = path_length(path, arg1, arg2, arg3, arg4)
+      path_var.length = path.get_length()
 
       path_var.total_rate_rads_ef = makeVector3f(0.0, 0.0, 0.0)
 
       --assuming constant velocity
       path_var.total_time = path_var.length/speed
-      path_var.last_pos, last_angle = path(0.0, arg1, arg2, arg3, arg4) --position at t0
+      path_var.last_pos, last_angle = path.run(0) --position at t0
 
       --deliberately only want yaw component, because the maneuver should be performed relative to the earth, not relative to the initial orientation
       path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
@@ -918,10 +881,8 @@ function do_path()
 
 
       local corrected_position_t0_ef, angle_t0, s0 = rotate_path(path, target_dt/path_var.total_time,
-                                                                 arg1, arg2, arg3, arg4,
                                                                  path_var.initial_ori, path_var.initial_ef_pos)
       local corrected_position_t1_ef, angle_t1, s0 = rotate_path(path, 2*target_dt/path_var.total_time,
-                                                                 arg1, arg2, arg3, arg4,
                                                                  path_var.initial_ori, path_var.initial_ef_pos)
 
       path_var.start_pos = ahrs:get_position()
@@ -964,13 +925,10 @@ function do_path()
 
    next_target_pos_ef = next_target_pos_ef
    local p0, r0, s0 = rotate_path(path, path_var.path_t + 0*local_n_dt,
-                              arg1, arg2, arg3, arg4,
                               path_var.initial_ori, path_var.initial_ef_pos)
    local p1, r1, s1 = rotate_path(path, path_var.path_t + 1*local_n_dt,
-                              arg1, arg2, arg3, arg4,
                               path_var.initial_ori, path_var.initial_ef_pos)
    local p2, r2, s2 = rotate_path(path, path_var.path_t + 2*local_n_dt,
-                              arg1, arg2, arg3, arg4,
                               path_var.initial_ori, path_var.initial_ef_pos)
 
    local current_measured_pos_ef = ahrs:get_relative_position_NED_origin()
@@ -1001,7 +959,6 @@ function do_path()
    --]]
    p2, r2, s2 = rotate_path(path,
                             constrain(path_var.path_t + path_t_delta, 0, 1),
-                            arg1, arg2, arg3, arg4,
                             path_var.initial_ori, path_var.initial_ef_pos)
 
    -- tangents needs to be recalculated
@@ -1299,11 +1256,11 @@ end
 
 function PathTask(fn, name, id, initial_yaw_deg, arg1, arg2, arg3, arg4)
    self = {}
-   self.fn = fn
+   self.fn = fn(arg1, arg2, arg3, arg4)
+   assert(self.fn.run)
    self.name = name
    self.id = id
    self.initial_yaw_deg = initial_yaw_deg
-   self.args = { arg1, arg2, arg3, arg4 }
    self.started = false
    return self
 end
