@@ -344,16 +344,6 @@ function straight_flight(t, length, bank_angle, arg3, arg4)
    return pos, roll
 end
 
-function rolling_circle(t, radius, num_rolls, arg3, arg4)
-   local vec = Vector3f()
-   if radius < 0.0 then
-      vec = makeVector3f(math.sin(2*math.pi*t), -1.0+math.cos(2*math.pi*t), 0)
-   else
-      vec = makeVector3f(math.sin(2*math.pi*t), 1.0-math.cos(2*math.pi*t), 0)
-   end
-   return vec:scale(math.abs(radius)), t*num_rolls*2*math.pi
-end
-
 function banked_circle(t, radius, bank_angle, height, arg4)
    local vec = Vector3f()
    local rad = math.abs(radius)
@@ -601,6 +591,28 @@ function path_vertical_arc(_radius, _angle)
    return self
 end
 
+--[[
+   path component that does a horizontal arc over a given angle
+--]]
+function path_horizontal_arc(_radius, _angle)
+   local self = {}
+   local radius = _radius
+   local angle = _angle
+   function self.get_pos(t)
+      local t2ang = t * math.rad(angle)
+      return makeVector3f(math.abs(radius)*math.sin(t2ang), radius*(1.0 - math.cos(t2ang)), 0)
+   end
+   function self.get_length()
+      return math.abs(radius) * 2 * math.pi * angle / 360.0
+   end
+   function self.get_final_orientation()
+      local q = Quaternion()
+      q:from_axis_angle(makeVector3f(0,0,1), sgn(radius)*math.rad(angle))
+      return q
+   end
+   return self
+end
+
 --Wrapper to construct a Vector3f{x, y, z} from (x, y, z)
 function makeVector3f(x, y, z)
    local vec = Vector3f()
@@ -624,12 +636,15 @@ function path_composer(_subpaths)
    local start_orientation = {}
    local start_pos = {}
    local start_angle = {}
+   local end_speed = {}
+   local start_speed = {}
    local total_length = 0
    local num_sub_paths = #subpaths
 
    local orientation = Quaternion()
    local pos = makeVector3f(0,0,0)
    local angle = 0
+   local speed = path_var.target_speed
 
    for i = 1, num_sub_paths do
       lengths[i] = subpaths[i][1].get_length()
@@ -644,6 +659,13 @@ function path_composer(_subpaths)
       pos = pos + spos
       orientation = orientation * subpaths[i][1].get_final_orientation()
       angle = angle + subpaths[i][2].get_roll(1.0)
+
+      start_speed[i] = speed
+      end_speed[i] = subpaths[i][3]
+      if end_speed[i] == nil then
+         end_speed[i] = path_var.target_speed
+      end
+      speed = end_speed[i]
    end
 
    -- work out the proportion of the total time we will spend in each sub path
@@ -666,7 +688,8 @@ function path_composer(_subpaths)
       pos   = subpaths[i][1].get_pos(subpath_t)
       angle = subpaths[i][2].get_roll(subpath_t)
       start_orientation[i]:earth_to_body(pos)
-      return pos + start_pos[i], math.rad(angle + start_angle[i])
+      local speed = start_speed[i] + subpath_t * (end_speed[i] - start_speed[i])
+      return pos + start_pos[i], math.rad(angle + start_angle[i]), speed
    end
 
    return self
@@ -737,6 +760,34 @@ function downline_45(t, r, height_loss, arg3, arg4)
    return path_var.composer.run(t)
 end
 
+function rolling_circle(t, radius, num_rolls, arg3, arg4)
+   if t == 0 then
+      path_var.composer = path_composer({
+            { path_horizontal_arc(radius, 360), roll_angle(360*num_rolls) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+--[[
+   stall turn is not really correct, as we don't fully stall. Needs to be
+   reworked
+--]]
+function stall_turn(t, radius, height, direction, min_speed)
+   if t == 0 then
+      local h = height - radius
+      assert(h >= 0)
+      path_var.composer = path_composer({
+            { path_vertical_arc(radius, 90),          roll_angle(0) },
+            { path_straight(h),                       roll_angle(0), min_speed },
+            { path_horizontal_arc(5*direction, 180),  roll_angle(0), min_speed },
+            { path_straight(h),                       roll_angle(0) },
+            { path_vertical_arc(radius, 90),          roll_angle(0) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
 ---------------------------------------------------
 
 --[[
@@ -769,13 +820,13 @@ end
 --  t: normalised [0, 1] time
 --  arg1, arg2: arguments for path function
 --  orientation: maneuver frame orientation
---returns: requested position in maneuver frame
+--returns: requested position, angle and speed in maneuver frame
 function rotate_path(path_f, t, arg1, arg2, arg3, arg4, orientation, offset)
    t = constrain(t, 0, 1)
-   point, angle = path_f(t, arg1, arg2, arg3, arg4)
+   point, angle, speed = path_f(t, arg1, arg2, arg3, arg4)
    orientation:earth_to_body(point)
    --TODO: rotate angle?
-   return point+offset, angle
+   return point+offset, angle, speed
 end
 
 --args:
@@ -918,12 +969,12 @@ function do_path()
       path_var.initial_ef_pos = ahrs:get_relative_position_NED_origin()
 
 
-      local corrected_position_t0_ef, angle_t0 = rotate_path(path, target_dt/path_var.total_time,
-                                                             arg1, arg2, arg3, arg4,
-                                                             path_var.initial_ori, path_var.initial_ef_pos)
-      local corrected_position_t1_ef, angle_t1 = rotate_path(path, 2*target_dt/path_var.total_time,
-                                                             arg1, arg2, arg3, arg4,
-                                                             path_var.initial_ori, path_var.initial_ef_pos)
+      local corrected_position_t0_ef, angle_t0, s0 = rotate_path(path, target_dt/path_var.total_time,
+                                                                 arg1, arg2, arg3, arg4,
+                                                                 path_var.initial_ori, path_var.initial_ef_pos)
+      local corrected_position_t1_ef, angle_t1, s0 = rotate_path(path, 2*target_dt/path_var.total_time,
+                                                                 arg1, arg2, arg3, arg4,
+                                                                 path_var.initial_ori, path_var.initial_ef_pos)
 
       path_var.start_pos = ahrs:get_position()
       path_var.path_int = path_var.start_pos:copy()
@@ -964,13 +1015,13 @@ function do_path()
    --]]
 
    next_target_pos_ef = next_target_pos_ef
-   local p0, r0 = rotate_path(path, path_var.path_t + 0*local_n_dt,
+   local p0, r0, s0 = rotate_path(path, path_var.path_t + 0*local_n_dt,
                               arg1, arg2, arg3, arg4,
                               path_var.initial_ori, path_var.initial_ef_pos)
-   local p1, r1 = rotate_path(path, path_var.path_t + 1*local_n_dt,
+   local p1, r1, s1 = rotate_path(path, path_var.path_t + 1*local_n_dt,
                               arg1, arg2, arg3, arg4,
                               path_var.initial_ori, path_var.initial_ef_pos)
-   local p2, r2 = rotate_path(path, path_var.path_t + 2*local_n_dt,
+   local p2, r2, s2 = rotate_path(path, path_var.path_t + 2*local_n_dt,
                               arg1, arg2, arg3, arg4,
                               path_var.initial_ori, path_var.initial_ef_pos)
 
@@ -1000,10 +1051,10 @@ function do_path()
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   p2, r2 = rotate_path(path,
-                        constrain(path_var.path_t + path_t_delta, 0, 1),
-                        arg1, arg2, arg3, arg4,
-                        path_var.initial_ori, path_var.initial_ef_pos)
+   p2, r2, s2 = rotate_path(path,
+                            constrain(path_var.path_t + path_t_delta, 0, 1),
+                            arg1, arg2, arg3, arg4,
+                            path_var.initial_ori, path_var.initial_ef_pos)
 
    -- tangents needs to be recalculated
    tangent1_ef = p1 - p0
@@ -1124,7 +1175,10 @@ function do_path()
    --[[
       run the throttle based speed controller
    --]]
-   throttle = speed_PI.update(path_var.target_speed)
+   if s1 == nil then
+      s1 = path_var.target_speed
+   end
+   throttle = speed_PI.update(s1)
    throttle = constrain(throttle, 0, 100.0)
 
    if isNaN(throttle) or isNaN(tot_ang_vel_bf_dps:x()) or isNaN(tot_ang_vel_bf_dps:y()) or isNaN(tot_ang_vel_bf_dps:z()) then
@@ -1166,6 +1220,7 @@ command_table[15]= PathFunction(immelmann_turn, "Immelmann Turn")
 command_table[16]= PathFunction(split_s, "Split-S")
 command_table[17]= PathFunction(upline_45, "Upline-45")
 command_table[18]= PathFunction(downline_45, "Downline-45")
+command_table[19]= PathFunction(stall_turn, "Stall Turn")
 
 -- get a location structure from a waypoint number
 function get_location(i)
