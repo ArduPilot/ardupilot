@@ -1234,6 +1234,21 @@ void UARTDriver::_rx_timer_tick(void)
         chEvtSignal(_wait.thread_ctx, EVT_DATA);
     }
     _in_rx_timer = false;
+
+    // write to passthrough
+    if (_passthrough_port) {
+        WITH_SEMAPHORE(_passthrough_sem);
+        ByteBuffer::IoVec vec[2];
+        const uint16_t n_vec = _readbuf.peekiovec(vec, 2);
+        size_t ret;
+        for (uint16_t i=0; i<n_vec; i++) {
+            ret = _passthrough_port->write(vec[i].data, vec[i].len);    
+            _readbuf.advance(ret);
+            if (ret != vec[i].len) {
+                break;
+            }
+        }
+    }
 }
 
 // regular serial read
@@ -1286,6 +1301,28 @@ void UARTDriver::_tx_timer_tick(void)
 {
     if (!_tx_initialised) {
         return;
+    }
+
+    // read from passthrough if set and put it on the port
+    if (_passthrough_port) {
+        WITH_SEMAPHORE(_passthrough_sem);
+        // check baudrate
+        if (_baudrate != _passthrough_port->get_usb_baud() &&
+            _passthrough_port->get_usb_baud() != 0 &&
+            !sdef.is_usb) {
+            // baudrate changed, restart the port
+            end();
+            begin_locked(_passthrough_port->get_usb_baud(), passthrough_lock_key);
+        }
+        ByteBuffer::IoVec vec[2];
+        const auto n_vec = _writebuf.reserve(vec, _writebuf.space());
+        for (int i = 0; i < n_vec; i++) {
+            const auto ret = _passthrough_port->read(vec[i].data, vec[i].len);
+            _writebuf.commit(ret);
+            if (ret != vec[i].len) {
+                break;
+            }
+        }
     }
 
     _in_tx_timer = true;
@@ -1827,6 +1864,22 @@ void UARTDriver::disable_rxtx(void) const
     if (atx_line) {
         palSetLineMode(atx_line, PAL_MODE_INPUT);
     }
+}
+
+// set passthrough port
+void UARTDriver::set_passthrough(AP_HAL::UARTDriver *port)
+{
+    WITH_SEMAPHORE(_passthrough_sem);
+    if (port == nullptr) {
+        lock_write_key = 0;
+        lock_read_key = 0;
+        _passthrough_port = nullptr;
+        return;
+    }
+
+    _passthrough_port = port;
+    lock_write_key = passthrough_lock_key;
+    lock_read_key = passthrough_lock_key;
 }
 
 #endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
