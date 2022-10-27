@@ -18,7 +18,7 @@ end
 
 HGT_P = bind_add_param('HGT_P', 1, 1)
 HGT_I = bind_add_param('HGT_I', 2, 2)
-HGT_KE_BIAS = bind_add_param('HGT_KE_ADD', 3, 20)
+HGT_KE_BIAS = bind_add_param('HGT_KE_ADD', 3, 20) -- unused
 THR_PIT_FF = bind_add_param('THR_PIT_FF', 4, 80)
 SPD_P = bind_add_param('SPD_P', 5, 5)
 SPD_I = bind_add_param('SPD_I', 6, 25)
@@ -30,6 +30,7 @@ TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
 ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
 ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
+AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -205,23 +206,22 @@ local function PI_controller(kP,kI,iMax)
    return self
 end
 
-local function speed_controller(kP_param,kI_param, kFF_roll_param, kFF_pitch_param, Imax)
+local function speed_controller(kP_param,kI_param, kFF_pitch_param, Imax)
    local self = {}
-   local kFF_roll = kFF_roll_param
    local kFF_pitch = kFF_pitch_param
    local PI = PI_controller(kP_param:get(), kI_param:get(), Imax)
 
-   function self.update(target)
+   function self.update(target, anticipated_pitch_rad)
       local current_speed = ahrs:get_velocity_NED():length()
       local throttle = PI.update(target, current_speed)
-      throttle = throttle + math.sin(ahrs:get_pitch())*kFF_pitch:get()
-      throttle = throttle + math.abs(math.sin(ahrs:get_roll()))*kFF_roll:get()
-      return throttle
+      local FF = math.sin(anticipated_pitch_rad)*kFF_pitch:get()
+      PI.log("AESP", FF)
+      return throttle + FF
    end
 
    function self.reset()
       PI.reset(0)
-      local temp_throttle = self.update(ahrs:get_velocity_NED():length())
+      local temp_throttle = self.update(ahrs:get_velocity_NED():length(), 0)
       local current_throttle = SRV_Channels:get_output_scaled(k_throttle)
       PI.reset(current_throttle-temp_throttle)
    end
@@ -229,7 +229,7 @@ local function speed_controller(kP_param,kI_param, kFF_roll_param, kFF_pitch_par
    return self
 end
 
-local speed_PI = speed_controller(SPD_P, SPD_I, HGT_KE_BIAS, THR_PIT_FF, 100.0)
+local speed_PI = speed_controller(SPD_P, SPD_I, THR_PIT_FF, 100.0)
 
 function sgn(x)
    local eps = 0.000001
@@ -1128,7 +1128,17 @@ function do_path()
    if s1 == nil then
       s1 = path_var.target_speed
    end
-   throttle = speed_PI.update(s1)
+
+   --[[
+      get the anticipated pitch at the throttle lookahead time
+      we use the maximum of the current path pitch and the anticipated pitch
+   --]]
+   local qchange = Quaternion()
+   qchange:from_angular_velocity(path_rate_ef_rads, AEROM_THR_LKAHD:get())
+   local qnew = qchange * orientation_rel_ef_with_roll_angle
+   local anticipated_pitch_rad = math.max(qnew:get_euler_pitch(), orientation_rel_ef_with_roll_angle:get_euler_pitch())
+
+   throttle = speed_PI.update(s1, anticipated_pitch_rad)
    throttle = constrain(throttle, 0, 100.0)
 
    if isNaN(throttle) or isNaN(tot_ang_vel_bf_dps:x()) or isNaN(tot_ang_vel_bf_dps:y()) or isNaN(tot_ang_vel_bf_dps:z()) then
