@@ -29,6 +29,7 @@ AUTO_RAD = bind_add_param('AUTO_RAD', 10, 40)
 TIME_CORR_P = bind_add_param('TIME_COR_P', 11, 1.0)
 ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
 ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
+AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -338,22 +339,6 @@ function straight_roll(t, length, num_rolls, arg3, arg4)
    return vec, t*num_rolls*2*math.pi
 end
 
-function straight_flight(t, length, bank_angle, arg3, arg4)
-   local pos = makeVector3f(t*length, 0, 0)
-   local roll = math.rad(bank_angle)
-   return pos, roll
-end
-
-function banked_circle(t, radius, bank_angle, height, arg4)
-   local vec = Vector3f()
-   local rad = math.abs(radius)
-   vec = makeVector3f(rad*math.sin(2*math.pi*t), -rad*(-1.0+math.cos(2*math.pi*t)), -height*t)
-   if radius < 0 then
-      vec:y(-vec:y())
-   end
-   return vec, bank_angle
-end
-
 function half_cuban_eight(t, r, unused, arg3, arg4)
    local T = 3.0*math.pi*r/2.0 + 2*r*math.sqrt(2) + r
 
@@ -462,35 +447,6 @@ function half_reverse_cuban_eight(t, r, arg2, arg3, arg4)
 
 end
 
-function scale_figure_eight(t, r, bank_angle, arg3, arg4)
-   local r_sign = sgn(r)
-   assert(math.abs(r_sign) > 0.1)
-   local r = math.abs(r)
-   
-   local T = 4*math.pi + 2
-   local pos
-   local roll
-   if (t < (math.pi/2)/T) then
-      pos = makeVector3f(r*math.cos(T*t - math.pi/2), (r  +r*math.sin(T*t - math.pi/2)), 0)
-      roll = math.rad(bank_angle)
-   elseif (t < (5*math.pi/2)/T) then
-      pos = makeVector3f(2*r + r*math.cos(T*t + math.pi/2), (r -r*math.sin(T*t + math.pi/2)), 0)
-      roll = -math.rad(bank_angle)
-   elseif (t < (4*math.pi)/T) then
-      pos = makeVector3f(r*math.cos(T*t - math.pi/2), (r + r*math.sin(T*t - math.pi/2)), 0)
-      roll = math.rad(bank_angle)
-   else
-      pos = makeVector3f(r*(T*t - 4*math.pi), 0, 0)
-      roll = 0
-   end
-
-   if r_sign == -1 then
-      pos:y(-pos:y())
-   end
-
-   return pos, roll
-end
-
 --todo: change y coordinate to z for vertical box
 --function aerobatic_box(t, l, w, r):
 function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
@@ -552,6 +508,29 @@ function roll_angle(_angle)
 end
 
 --[[
+   roll component that banks to _angle over AEROM_ENTRY_RATE
+   degrees/s, then holds that angle, then banks back to zero at
+   AEROM_ENTRY_RATE degrees/s
+--]]
+function roll_angle_entry_exit(_angle)
+   local self = {}
+   local angle = _angle
+   local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
+
+   function self.get_roll(t, time_s)
+      local entry_t = entry_s / time_s
+      if t < entry_t then
+         return angle * t / entry_t
+      end
+      if t < 1.0 - entry_t then
+         return angle
+      end
+      return (1.0 - ((t - (1.0 - entry_t)) / entry_t)) * angle
+   end
+   return self
+end
+
+--[[
    path component that does a straight horizontal line
 --]]
 function path_straight(_distance)
@@ -592,18 +571,42 @@ function path_vertical_arc(_radius, _angle)
 end
 
 --[[
+ integrate a function, assuming fn takes a time t from 0 to 1
+--]]
+function integrate_length(fn)
+   local total = 0.0
+   local p = fn(0)
+   for i = 1, 100 do
+      local t = i*0.01
+      local p2 = fn(t)
+      local dv = p2 - p
+      total = total + dv:length()
+      p = p2
+   end
+   return total
+end
+
+--[[
    path component that does a horizontal arc over a given angle
 --]]
-function path_horizontal_arc(_radius, _angle)
+function path_horizontal_arc(_radius, _angle, _height_gain)
    local self = {}
    local radius = _radius
    local angle = _angle
+   local height_gain = _height_gain
+   if height_gain == nil then
+      height_gain = 0
+   end
    function self.get_pos(t)
       local t2ang = t * math.rad(angle)
-      return makeVector3f(math.abs(radius)*math.sin(t2ang), radius*(1.0 - math.cos(t2ang)), 0)
+      return makeVector3f(math.abs(radius)*math.sin(t2ang), radius*(1.0 - math.cos(t2ang)), -height_gain*t)
    end
    function self.get_length()
-      return math.abs(radius) * 2 * math.pi * angle / 360.0
+      if _height_gain == 0 then
+         return math.abs(radius) * 2 * math.pi * angle / 360.0
+      end
+      -- otherwise integrate to get path length
+      return integrate_length(self.get_pos)
    end
    function self.get_final_orientation()
       local q = Quaternion()
@@ -658,7 +661,7 @@ function path_composer(_subpaths)
       orientation:earth_to_body(spos)
       pos = pos + spos
       orientation = orientation * subpaths[i][1].get_final_orientation()
-      angle = angle + subpaths[i][2].get_roll(1.0)
+      angle = angle + subpaths[i][2].get_roll(1.0, lengths[i]/speed)
 
       start_speed[i] = speed
       end_speed[i] = subpaths[i][3]
@@ -685,10 +688,11 @@ function path_composer(_subpaths)
          i = i + 1
       end
       local subpath_t = (t - start_time[i]) / proportions[i]
-      pos   = subpaths[i][1].get_pos(subpath_t)
-      angle = subpaths[i][2].get_roll(subpath_t)
-      start_orientation[i]:earth_to_body(pos)
       local speed = start_speed[i] + subpath_t * (end_speed[i] - start_speed[i])
+      pos   = subpaths[i][1].get_pos(subpath_t)
+      angle = subpaths[i][2].get_roll(subpath_t, lengths[i]/speed)
+      logger.write("SUBA", "i,t,st,time_s,ang", "Bffff", i, t, subpath_t, lengths[i]/speed, angle)
+      start_orientation[i]:earth_to_body(pos)
       return pos + start_pos[i], math.rad(angle + start_angle[i]), speed
    end
 
@@ -768,6 +772,52 @@ function rolling_circle(t, radius, num_rolls, arg3, arg4)
    end
    return path_var.composer.run(t)
 end
+
+function straight_flight(t, length, bank_angle, arg3, arg4)
+   if t == 0 then
+      local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
+      local entry_dist = path_var.target_speed * entry_s
+      if length < 2*entry_dist then
+         entry_dist = length*0.5
+      end
+      path_var.composer = path_composer({
+            { path_straight(entry_dist),            roll_angle(bank_angle) },
+            { path_straight(length - 2*entry_dist), roll_angle(0) },
+            { path_straight(entry_dist),            roll_angle(-bank_angle) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function banked_circle(t, radius, bank_angle, height, arg4)
+   if t == 0 then
+      local circumference = 2 * radius * math.pi
+      local circle_s = circumference / path_var.target_speed
+      local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
+      local entry_angle = (entry_s / circle_s) * 360.0
+      if entry_angle > 180 then
+         entry_angle = 180
+      end
+      path_var.composer = path_composer({
+            { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function scale_figure_eight(t, r, bank_angle, arg3, arg4)
+   if t == 0 then
+      path_var.composer = path_composer({
+            { path_straight(r),             roll_angle(0) },
+            { path_horizontal_arc(r,  90),  roll_angle_entry_exit(bank_angle) },
+            { path_horizontal_arc(-r, 360), roll_angle_entry_exit(-bank_angle) },
+            { path_horizontal_arc(r,  270), roll_angle_entry_exit(bank_angle) },
+            { path_straight(3*r),           roll_angle(0) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
 
 --[[
    stall turn is not really correct, as we don't fully stall. Needs to be
