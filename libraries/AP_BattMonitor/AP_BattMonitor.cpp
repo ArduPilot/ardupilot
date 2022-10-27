@@ -173,9 +173,12 @@ AP_BattMonitor::init()
                                                                  hal.i2c_mgr->get_device(_params[instance]._i2c_bus, AP_BATTMONITOR_SMBUS_I2C_ADDR,
                                                                                          100000, true, 20));
 		break;
-            case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO:
+            case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV2:
+            case AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3:
+
                 drivers[instance] = new AP_BattMonitor_Analog_GPIO(*this, state[instance], _params[instance],
-                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL, AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR,
+                                                                  hal.i2c_mgr->get_device(AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL,
+                                                                                          AP_BattMonitor_Analog_GPIO::get_I2C_addr(_params[instance].type()),
                                                                                             100000, true, 20));
                 break;
             case AP_BattMonitor_Params::BattMonitor_TYPE_NONE:

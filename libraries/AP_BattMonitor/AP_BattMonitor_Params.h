@@ -28,7 +28,8 @@ public:
         BattMonitor_TYPE_SUI3                       = 13,
         BattMonitor_TYPE_SUI6                       = 14,
         BattMonitor_TYPE_NeoDesign                  = 15,
-        BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO = 16,
+        BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV2 = 16,
+        BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3 = 17
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)

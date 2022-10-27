@@ -9,6 +9,12 @@ AP_BattMonitor_Analog_GPIO::AP_BattMonitor_Analog_GPIO(AP_BattMonitor &mon,
                                                        AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
     : AP_BattMonitor_Analog(mon, mon_state, params), _dev(std::move(dev)) {
   _state.on_tether_power = false;
+
+  if(params._type == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV2)
+    _use_tether_mask = AP_BATTMONITOR_FET_EN_TETHER_REV2;
+
+  else if(params._type == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3)
+    _use_tether_mask = AP_BATTMONITOR_FET_EN_TETHER_REV3;
 }
 
 void AP_BattMonitor_Analog_GPIO::init(void) {
@@ -33,7 +39,7 @@ void AP_BattMonitor_Analog_GPIO::timer() {
     return;
   }
 
-  bool new_is_using_battery = (bool)((buf & 0x02) == 0); // Bit 1 of register 0 is FET_EN_TETHER.
+  bool new_is_using_battery = (bool)((buf & _use_tether_mask) == 0); // Bit 1 of register 0 is FET_EN_TETHER.
   if(_is_using_battery ^ new_is_using_battery) {
     if (new_is_using_battery) {
       gcs().send_text(MAV_SEVERITY_CRITICAL, "Using battery power");
@@ -47,8 +53,18 @@ void AP_BattMonitor_Analog_GPIO::timer() {
   _state.on_tether_power = !_is_using_battery;
 }
 
+uint8_t AP_BattMonitor_Analog_GPIO::get_I2C_addr(const AP_BattMonitor_Params::BattMonitor_Type type)
+{
+  if(type == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV2)
+    return AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR_REV2;
+  else if(type == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3)
+    return AP_BATTMONITOR_ANALOG_GPIO_I2C_ADDR_REV3;
+  else
+    return 0x00;
+}
+
 /// return true if battery provides current info
 bool AP_BattMonitor_Analog_GPIO::has_current() const
 {
-    return (_params.type() == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO);
+    return (_params.type() == AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV2 || AP_BattMonitor_Params::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3);
 }
