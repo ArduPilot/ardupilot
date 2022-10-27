@@ -30,7 +30,8 @@ parameters (described below).
 | 15 | Immelmann Turn           | radius | roll rate   |           |            | Yes        |
 | 16 | Split-S                  | radius | roll rate   |           |            | Yes        |
 | 17 | Upline-45                | radius | height gain |           |            | No         |
-| 17 | Downline-45              | radius | height loss |           |            | No         |
+| 18 | Downline-45              | radius | height loss |           |            | No         |
+| 19 | Stall Turn               | radius | height      | direction |            | Yes        |
 
 The "Turnaround" column indicates if the manoeuvre results in a course
 reversal, which impacts how it is used in AUTO missions.
