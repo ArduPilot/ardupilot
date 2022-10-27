@@ -11,27 +11,27 @@ The following table gives the available manoeuvres. Each manoeuvre has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
 parameters (described below).
 
-| ID | Name                     | Arg1   | Arg2        | Arg3      | Arg4       | Turnaround |
-| -- | ------------------------ | ------ | ----------  | -------   | ---------- | ---------- |
-| 1  | Figure Eight             | radius | bank angle  |           |            | No         |
-| 2  | Loop                     | radius | bank angle  | num loops |            | No         |
-| 3  | Horizontal Rectangle     | length | width       | radius    | bank angle | No         |
-| 4  | Climbing Circle          | radius | height      |           |            | No         |
-| 5  | vertical Box             | length | height      | radius    |            | No         |
-| 6  | Banked Circle            | radius | bank angle  | height    |            | No         |
-| 7  | Straight Roll            | length | num rolls   |           |            | No         |
-| 8  | Rolling Circle           | radius | num rolls   |           |            | No         |
-| 9  | Half Cuban Eight         | radius |             |           |            | Yes        |
-| 10 | Half Reverse Cuban Eight | radius |             |           |            | Yes        |
-| 11 | Cuban Eight              | radius |             |           |            | No         |
-| 12 | Humpty Bump              | radius | height      |           |            | Yes        |
-| 13 | Straight Flight          | length | bank angle  |           |            | No         |
-| 14 | Scale Figure Eight       | radius | bank angle  |           |            | No         |
-| 15 | Immelmann Turn           | radius | roll rate   |           |            | Yes        |
-| 16 | Split-S                  | radius | roll rate   |           |            | Yes        |
-| 17 | Upline-45                | radius | height gain |           |            | No         |
-| 18 | Downline-45              | radius | height loss |           |            | No         |
-| 19 | Stall Turn               | radius | height      | direction |            | Yes        |
+| ID | Name                     | Arg1   | Arg2        | Arg3       | Arg4       | Turnaround |
+| -- | ------------------------ | ------ | ----------  | -------    | ---------- | ---------- |
+| 1  | Figure Eight             | radius | bank angle  |            |            | No         |
+| 2  | Loop                     | radius | bank angle  | num loops  |            | No         |
+| 3  | Horizontal Rectangle     | length | width       | radius     | bank angle | No         |
+| 4  | Climbing Circle          | radius | height      | bank angle |            | No         |
+| 5  | vertical Box             | length | height      | radius     |            | No         |
+| 6  | Banked Circle            | radius | bank angle  | height     |            | No         |
+| 7  | Straight Roll            | length | num rolls   |            |            | No         |
+| 8  | Rolling Circle           | radius | num rolls   |            |            | No         |
+| 9  | Half Cuban Eight         | radius |             |            |            | Yes        |
+| 10 | Half Reverse Cuban Eight | radius |             |            |            | Yes        |
+| 11 | Cuban Eight              | radius |             |            |            | No         |
+| 12 | Humpty Bump              | radius | height      |            |            | Yes        |
+| 13 | Straight Flight          | length | bank angle  |            |            | No         |
+| 14 | Scale Figure Eight       | radius | bank angle  |            |            | No         |
+| 15 | Immelmann Turn           | radius | roll rate   |            |            | Yes        |
+| 16 | Split-S                  | radius | roll rate   |            |            | Yes        |
+| 17 | Upline-45                | radius | height gain |            |            | No         |
+| 18 | Downline-45              | radius | height loss |            |            | No         |
+| 19 | Stall Turn               | radius | height      | direction  |            | Yes        |
 
 The "Turnaround" column indicates if the manoeuvre results in a course
 reversal, which impacts how it is used in AUTO missions.
