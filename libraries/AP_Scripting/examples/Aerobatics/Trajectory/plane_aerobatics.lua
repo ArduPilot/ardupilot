@@ -535,7 +535,7 @@ end
 
 function upline_45(t, r, height_gain, arg3, arg4)
    if t == 0 then
-      local h = height_gain - 2*r*math.sin(math.rad(45))
+      local h = (height_gain - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
       assert(h >= 0)
       path_var.composer = path_composer({
             { path_vertical_arc(r, 45),  roll_angle(0) },
@@ -548,7 +548,8 @@ end
 
 function downline_45(t, r, height_loss, arg3, arg4)
    if t == 0 then
-      local h = height_loss - 2*r*math.sin(math.rad(45))
+      local h = (height_loss - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
+
       assert(h >= 0)
       path_var.composer = path_composer({
             { path_vertical_arc(-r, 45),  roll_angle(0) },
