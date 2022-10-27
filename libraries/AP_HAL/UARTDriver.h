@@ -163,4 +163,6 @@ public:
 
     // return true if this is a USB COM port
     virtual bool is_usb() const { return false; }
+    // set passthrough port
+    virtual void set_passthrough(AP_HAL::UARTDriver *pass) {}
 };
