@@ -312,6 +312,12 @@ AP_Airspeed::AP_Airspeed()
 {
     AP_Param::setup_object_defaults(this, var_info);
 
+#if defined(HAL_BUILD_AP_PERIPH) && (HAL_AIRSPEED_BUS_DEFAULT != 0)
+    // bus is not in the table to save flash on periph, this means that it does not load the default in the setup call above.
+    // it will be 0 in that case, if default is not set here manually.
+    param[0].bus.set_default(HAL_AIRSPEED_BUS_DEFAULT);
+#endif
+
     if (_singleton != nullptr) {
         AP_HAL::panic("AP_Airspeed must be singleton");
     }
