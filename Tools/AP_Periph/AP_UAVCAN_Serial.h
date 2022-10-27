@@ -2,7 +2,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
-#if AP_SERIAL_EXTENSION_ENABLED
+#if AP_SERIAL_EXTENSION_ENABLED || HAL_ENABLE_SERIAL_TUNNEL
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <canard.h>
 #include <dronecan_msgs.h>
@@ -53,10 +53,8 @@ public:
     size_t write(const uint8_t *buffer, size_t size) override;
     bool handle_tunnel_broadcast(CanardInstance &ins, CanardRxTransfer &transfer, const uavcan_tunnel_Broadcast &msg);
 
-    int8_t get_target_node_id() { return _target_node_id; }
-    void set_target_node_id(int8_t target_node_id) { _target_node_id = target_node_id; }
-
     uint8_t get_channel_id() { return _channel_id; }
+    void set_channel_id(uint8_t channel_id) {  _channel_id = channel_id; }
     uint32_t get_usb_baud() const override { return baudrate; }
     uint32_t set_usb_baud(uint32_t baud) { return baudrate = baud; }
     static AP_SerialManager::SerialProtocol tunnel_protocol_to_ap_protocol(uint8_t tunnel_protocol);
@@ -65,7 +63,6 @@ private:
     int _channel_id;
     uint8_t _protocol;
 
-    int8_t _target_node_id = -1;
     bool _initialized = false;
     bool _connected = false; // true if a client has connected
 

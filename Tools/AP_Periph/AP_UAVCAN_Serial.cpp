@@ -19,7 +19,7 @@
 #include "AP_Periph.h"
 #include "AP_UAVCAN_Serial.h"
 
-#if AP_SERIAL_EXTENSION_ENABLED
+#if AP_SERIAL_EXTENSION_ENABLED || HAL_ENABLE_SERIAL_TUNNEL
 #ifndef HAL_UART_MIN_TX_SIZE
 #define HAL_UART_MIN_TX_SIZE 512
 #endif
@@ -129,9 +129,6 @@ AP_SerialManager::SerialProtocol AP_UAVCAN_Serial::tunnel_protocol_to_ap_protoco
 
 bool AP_UAVCAN_Serial::handle_tunnel_broadcast(CanardInstance &ins, CanardRxTransfer &transfer, const uavcan_tunnel_Broadcast &msg)
 {
-    if (_target_node_id == -1 || transfer.source_node_id != _target_node_id) {
-        return false;
-    }
     // is this message targeted at us
     if (_channel_id != msg.channel_id) {
         // we are already connected to a different channel

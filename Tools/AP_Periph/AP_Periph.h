@@ -23,6 +23,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
+#include "AP_UAVCAN_Serial.h"
 
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -316,6 +317,15 @@ public:
 
     static bool no_iface_finished_dna;
     static constexpr auto can_printf = ::can_printf;
+
+    // UAVCAN Serial for passthrough
+#if HAL_ENABLE_SERIAL_TUNNEL
+    AP_UAVCAN_Serial *uavcan_serial[SERIALMANAGER_NUM_UART_PORTS];
+#endif
+
+#if HAL_CANARD_BROADCAST_THREAD_SAFE
+    HAL_Semaphore broadcast_sem;
+#endif
 };
 
 namespace AP

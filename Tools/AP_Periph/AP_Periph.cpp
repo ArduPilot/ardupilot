@@ -472,6 +472,31 @@ void AP_Periph_FW::update()
 #if AP_SERIAL_EXTENSION_ENABLED
     AP::serialmanager().update_passthru();
 #endif
+#if HAL_ENABLE_SERIAL_TUNNEL
+    // loop through serial ids
+    for (uint8_t i=0; i<SERIALMANAGER_NUM_UART_PORTS; i++) {
+        if (hal.serial(i) == nullptr) {
+            continue;
+        }
+        if (g.serial_chan_id[i] != -1) {
+            if (uavcan_serial[i] == nullptr) {
+                uavcan_serial[i] = new AP_UAVCAN_Serial(i);
+                if (uavcan_serial[i] == nullptr) {
+                    // we have run out of memory
+                    break;
+                }
+                uavcan_serial[i]->begin(0); // baudrate doesn't matter
+                // set passthrough port
+                hal.serial(i)->set_passthrough(uavcan_serial[i]);
+                can_printf("UART[%d] is passed through to UAVCAN Tunnel[%d]", i, g.serial_chan_id[i]);
+            }
+            uavcan_serial[i]->set_channel_id(g.serial_chan_id[i]);
+        } else {
+            // stop passthrough port
+            hal.serial(i)->set_passthrough(nullptr);
+        }
+    }
+#endif
 }
 
 #ifdef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
