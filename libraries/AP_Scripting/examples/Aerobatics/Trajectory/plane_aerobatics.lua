@@ -288,54 +288,6 @@ function straight_roll(t, length, num_rolls, arg3, arg4)
    return vec, t*num_rolls*2*math.pi
 end
 
---todo: change y coordinate to z for vertical box
---function aerobatic_box(t, l, w, r):
-function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
-   
-   local r_sign = sgn(r)
-   assert(math.abs(r_sign) > 0.1)
-   local r = math.abs(r)
-
-   local bank_angle = math.abs(bank_angle)
-   local l = total_length - 2*r
-   local w = total_width - 2*r
-   local perim = 2*l + 2*w + 2*math.pi*r
-   local pos
-   if (t < 0.5*l/(perim)) then
-      pos = makeVector3f(perim*t, 0.0, 0.0)
-   elseif (t < (0.5*l + 0.5*math.pi*r)/perim) then
-      pos = makeVector3f(0.5*l + r*math.sin((perim*t - 0.5*l)/r), (r*(1 - math.cos((perim*t - 0.5*l)/r))), 0.0)
-   elseif (t < (0.5*l + 0.5*math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l + r, (r + (perim*t - (0.5*l + 0.5*math.pi*r))), 0.0)
-   elseif(t < (0.5*l + math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l + r + r*(-1 + math.cos((perim*t - (0.5*l + 0.5*math.pi*r + w))/r)), (r + w + r*(math.sin((perim*t - (0.5*l + 0.5*math.pi*r + w))/r))), 0.0)
-   elseif(t < (1.5*l + math.pi*r + w)/perim) then
-      pos = makeVector3f(0.5*l - (perim*t - (0.5*l + math.pi*r + w)), (2*r + w), 0.0)
-   elseif(t < (1.5*l + 1.5*math.pi*r + w)/perim) then
-      pos = makeVector3f(-0.5*l + r*(-math.sin((perim*t - (1.5*l + math.pi*r + w))/r)), (2*r + w + r*(-1 + math.cos((perim*t - (1.5*l + math.pi*r + w))/r))), 0.0)
-   elseif(t < (1.5*l + 1.5*math.pi*r + 2*w)/perim) then
-      pos = makeVector3f(-0.5*l -r, (w + r - (perim*t - (1.5*l + 1.5*math.pi*r + w))), 0.0)
-   elseif(t < (1.5*l + 2*math.pi*r + 2*w)/perim) then
-      pos = makeVector3f(-0.5*l -r + r*(1 - math.cos((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r)), (r + r*(-math.sin((perim*t - (1.5*l + 1.5*math.pi*r + 2*w))/r))), 0.0)
-   else
-      pos = makeVector3f(-0.5*l + perim*t - (1.5*l + 2*math.pi*r + 2*w), 0.0, 0.0)
-   end
-
-   if r_sign == -1 then
-      pos:y(-pos:y())
-   end
-
-   return pos, math.rad(bank_angle)
-end 
-
-function vertical_aerobatic_box(t, total_length, total_width, r, arg4)
-   local q = Quaternion()
-   q:from_euler(-math.rad(90), 0, 0)
-   local point, angle = horizontal_rectangle(t, total_length, total_width, math.abs(r), arg4)
-   q:earth_to_body(point)
-   return point, angle
-end
-
 --[[
   roll component that goes through a fixed total angle at a fixed roll rate
 --]]
@@ -357,9 +309,12 @@ function roll_angle_entry_exit(_angle)
    local self = {}
    local angle = _angle
    local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
-
+   
    function self.get_roll(t, time_s)
       local entry_t = entry_s / time_s
+      if entry_t > 0.5 then
+         entry_t = 0.5
+      end
       if t < entry_t then
          return angle * t / entry_t
       end
@@ -737,6 +692,48 @@ function half_reverse_cuban_eight(t, r, arg2, arg3, arg4)
             { path_straight(2*rabs/3),     roll_angle(0) },
             { path_vertical_arc(-r, 225),  roll_angle(0) },
       })
+   end
+   return path_var.composer.run(t)
+end
+
+function horizontal_rectangle(t, total_length, total_width, r, bank_angle)
+   if t == 0 then
+      local l = total_length - 2*r
+      local w = total_width - 2*r
+      
+      path_var.composer = path_composer({
+            { path_straight(0.5*l),     roll_angle(0) },
+            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle)},
+            { path_straight(w),     roll_angle(0) },
+            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
+            { path_straight(l),     roll_angle(0) },
+            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
+            { path_straight(w),     roll_angle(0) },
+            { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle) },
+            { path_straight(0.5*l),     roll_angle(0) },
+      })
+   end
+   return path_var.composer.run(t)
+end
+
+function vertical_aerobatic_box(t, total_length, total_width, r, bank_angle)
+   if t == 0 then
+      local l = total_length - 2*r
+      local w = total_width - 2*r
+      
+      --TODO: this doesn't seem to work for roll_angle_entry_exit?
+      path_var.composer = path_composer({
+            { path_straight(0.5*l),     roll_angle(0) },
+            { path_vertical_arc(r, 90),   roll_angle(0)},
+            { path_straight(w),     roll_angle(0) },
+            { path_vertical_arc(r, 90),   roll_angle(0) },
+            { path_straight(l),     roll_angle(0) },
+            { path_vertical_arc(r, 90),   roll_angle(0)},
+            { path_straight(w),     roll_angle(0) },
+            { path_vertical_arc(r, 90),   roll_angle(0)},
+            { path_straight(0.5*l),     roll_angle(0) },
+      })
+      
    end
    return path_var.composer.run(t)
 end
