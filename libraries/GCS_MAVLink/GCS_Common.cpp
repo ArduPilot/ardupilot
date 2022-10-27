@@ -792,11 +792,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg, bool log_rad
         stream_slowdown_ms -= 40;
     } else if (packet.txbuf > 90 && stream_slowdown_ms != 0) {
         // the buffer has enough space, speed up a bit
-        if (stream_slowdown_ms > 20) {
-            stream_slowdown_ms -= 20;
-        } else {
-            stream_slowdown_ms = 0;
-        }
+        stream_slowdown_ms -= 20;
     }
 
 #if GCS_DEBUG_SEND_MESSAGE_TIMINGS
@@ -3790,19 +3786,15 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         handle_statustext(msg);
         break;
 
-#if AP_NOTIFY_MAVLINK_LED_CONTROL_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_LED_CONTROL:
         // send message to Notify
         AP_Notify::handle_led_control(msg);
         break;
-#endif
 
-#if AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED
     case MAVLINK_MSG_ID_PLAY_TUNE:
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
         break;
-#endif
 
 #if HAL_RALLY_ENABLED
     case MAVLINK_MSG_ID_RALLY_POINT:
@@ -3927,8 +3919,16 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP_CheckFirmware::handle_msg(chan, msg);
         break;
 #endif
-    }
 
+    case MAVLINK_MSG_ID_EFI_STATUS:		//Acecore
+    	handle_EFI_message(msg);
+    	break;
+    }
+}
+
+void GCS_MAVLINK::handle_EFI_message(const mavlink_message_t &msg)		//Acecore
+{
+	mavlink_msg_efi_status_decode(&msg, &efi_data);
 }
 
 void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
@@ -6436,3 +6436,64 @@ MAV_RESULT GCS_MAVLINK::handle_control_high_latency(const mavlink_command_long_t
     return MAV_RESULT_ACCEPTED;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+float GCS::get_EFI_state(uint8_t index, uint8_t channel)		//Acecore
+{
+	GCS_MAVLINK *GSC_MAVLINK_class = chan(channel);
+
+	switch(index)
+	{
+	case 0:
+		return GSC_MAVLINK_class->efi_data.ecu_index;
+		break;
+	case 1:
+		return GSC_MAVLINK_class->efi_data.rpm;
+		break;
+	case 2:
+		return GSC_MAVLINK_class->efi_data.fuel_consumed;
+		break;
+	case 3:
+		return GSC_MAVLINK_class->efi_data.fuel_flow;
+		break;
+	case 4:
+		return GSC_MAVLINK_class->efi_data.engine_load;
+		break;
+	case 5:
+		return GSC_MAVLINK_class->efi_data.throttle_position;
+		break;
+	case 6:
+		return GSC_MAVLINK_class->efi_data.spark_dwell_time;
+		break;
+	case 7:
+		return GSC_MAVLINK_class->efi_data.barometric_pressure;
+		break;
+	case 8:
+		return GSC_MAVLINK_class->efi_data.intake_manifold_pressure;
+		break;
+	case 9:
+		return GSC_MAVLINK_class->efi_data.intake_manifold_temperature;
+		break;
+	case 10:
+		return GSC_MAVLINK_class->efi_data.cylinder_head_temperature;
+		break;
+	case 11:
+		return GSC_MAVLINK_class->efi_data.ignition_timing;
+		break;
+	case 12:
+		return GSC_MAVLINK_class->efi_data.injection_time;
+		break;
+	case 13:
+		return GSC_MAVLINK_class->efi_data.exhaust_gas_temperature;
+		break;
+	case 14:
+		return GSC_MAVLINK_class->efi_data.throttle_out;
+		break;
+	case 15:
+		return GSC_MAVLINK_class->efi_data.pt_compensation;
+		break;
+	case 16:
+		return GSC_MAVLINK_class->efi_data.ignition_voltage;
+		break;
+	}
+	return 0.0;
+}

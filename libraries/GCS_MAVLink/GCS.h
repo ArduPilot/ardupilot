@@ -409,8 +409,11 @@ public:
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
-protected:
+    void handle_EFI_message(const mavlink_message_t &msg);		//Acecore
 
+    __mavlink_efi_status_t efi_data;		//Acecore
+
+protected:
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
                                                         Location::AltFrame &frame);
 
@@ -650,7 +653,6 @@ protected:
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:
-
     const AP_SerialManager::UARTState *uartstate;
 
     // last time we got a non-zero RSSI from RADIO_STATUS
@@ -1138,6 +1140,8 @@ public:
     void enable_high_latency_connections(bool enabled);
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
+    float get_EFI_state(uint8_t index, uint8_t channel);		//Acecore
+
 protected:
 
     virtual uint8_t sysid_this_mav() const = 0;
@@ -1155,7 +1159,6 @@ protected:
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
 private:
-
     static GCS *_singleton;
 
     void create_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
