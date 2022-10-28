@@ -282,10 +282,23 @@ end
 --]]
 
 --[[
+  all roll components inherit from RollComponent
+--]]
+function RollComponent()
+   local self = {}
+   self.name = nil
+   function self.get_roll(t)
+      return 0
+   end
+   return self
+end
+
+--[[
   roll component that goes through a fixed total angle at a fixed roll rate
 --]]
 function roll_angle(_angle)
-   local self = {}
+   local self = RollComponent()
+   self.name = "roll_angle"
    local angle = _angle
    function self.get_roll(t)
       return angle * t
@@ -299,7 +312,8 @@ end
    AEROM_ENTRY_RATE degrees/s
 --]]
 function roll_angle_entry_exit(_angle)
-   local self = {}
+   local self = RollComponent()
+   self.name = "roll_angle_entry_exit"
    local angle = _angle
    local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
    
@@ -314,6 +328,9 @@ function roll_angle_entry_exit(_angle)
       if t < 1.0 - entry_t then
          return angle
       end
+      if angle == 0 then
+         return 0
+      end
       return (1.0 - ((t - (1.0 - entry_t)) / entry_t)) * angle
    end
    return self
@@ -324,7 +341,8 @@ end
    degrees/s, then holds that angle
 --]]
 function roll_angle_entry(_angle)
-   local self = {}
+   local self = RollComponent()
+   self.name = "roll_angle_entry"
    local angle = _angle
    local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
    
@@ -347,6 +365,7 @@ end
 --]]
 function roll_angle_exit(_angle)
    local self = {}
+   self.name = "roll_angle_exit"
    local angle = _angle
    local entry_s = math.abs(angle) / AEROM_ENTRY_RATE:get()
    
@@ -361,16 +380,16 @@ function roll_angle_exit(_angle)
 end
 
 --[[
-   path component that does a straight horizontal line
+  all path components inherit from PathComponent
 --]]
-function path_straight(_distance)
+function PathComponent()
    local self = {}
-   local distance = _distance
+   self.name = nil
    function self.get_pos(t)
-      return makeVector3f(distance*t, 0, 0)
+      return makeVector3f(0, 0, 0)
    end
    function self.get_length()
-      return distance
+      return 0
    end
    function self.get_final_orientation()
       return Quaternion()
@@ -379,14 +398,31 @@ function path_straight(_distance)
 end
 
 --[[
+   path component that does a straight horizontal line
+--]]
+function path_straight(_distance)
+   local self = PathComponent()
+   self.name = "path_straight"
+   local distance = _distance
+   function self.get_pos(t)
+      return makeVector3f(distance*t, 0, 0)
+   end
+   function self.get_length()
+      return distance
+   end
+   return self
+end
+
+--[[
    path component that does a vertical arc over a given angle
 --]]
 function path_vertical_arc(_radius, _angle)
-   local self = {}
+   local self = PathComponent()
+   self.name = "path_vertical_arc"
    local radius = _radius
    local angle = _angle
    function self.get_pos(t)
-      local t2ang = t * math.rad(angle)
+      local t2ang = wrap_2pi(t * math.rad(angle))
       return makeVector3f(math.abs(radius)*math.sin(t2ang), 0, -radius*(1.0 - math.cos(t2ang)))
    end
    function self.get_length()
@@ -394,7 +430,7 @@ function path_vertical_arc(_radius, _angle)
    end
    function self.get_final_orientation()
       local q = Quaternion()
-      q:from_axis_angle(makeVector3f(0,1,0), sgn(radius)*math.rad(angle))
+      q:from_axis_angle(makeVector3f(0,1,0), sgn(radius)*math.rad(wrap_180(angle)))
       return q
    end
    return self
@@ -420,7 +456,8 @@ end
    path component that does a horizontal arc over a given angle
 --]]
 function path_horizontal_arc(_radius, _angle, _height_gain)
-   local self = {}
+   local self = PathComponent()
+   self.name = "path_horizontal_arc"
    local radius = _radius
    local angle = _angle
    local height_gain = _height_gain
@@ -447,10 +484,39 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
 end
 
 --[[
+   a Path has the methods of both RollComponent and
+   PathComponent allowing for a complete description of a subpath
+--]]
+function Path(_path_component, _roll_component)
+   local self = {}
+   self.name = string.format("%s|%s", _path_component.name, _roll_component.name)
+   local path_component = _path_component
+   local roll_component = _roll_component
+   function self.get_roll(t, time_s)
+      return roll_component.get_roll(t, time_s)
+   end
+   function self.get_pos(t)
+      return path_component.get_pos(t)
+   end
+   function self.get_speed(t)
+      return nil
+   end
+   function self.get_length()
+      return path_component.get_length()
+   end
+   function self.get_final_orientation()
+      return path_component.get_final_orientation()
+   end
+   return self
+end
+
+
+--[[
    componse multiple sub-paths together to create a full trajectory
 --]]
-function path_composer(_subpaths)
+function path_composer(_name, _subpaths)
    local self = {}
+   self.name = _name
    local subpaths = _subpaths
    local lengths = {}
    local proportions = {}
@@ -463,6 +529,7 @@ function path_composer(_subpaths)
    local start_speed = {}
    local total_length = 0
    local num_sub_paths = #subpaths
+   local last_subpath_t = { -1, 0, 0 }
 
    local orientation = Quaternion()
    local pos = makeVector3f(0,0,0)
@@ -470,26 +537,32 @@ function path_composer(_subpaths)
    local speed = target_groundspeed()
 
    for i = 1, num_sub_paths do
-      lengths[i] = subpaths[i][1].get_length()
+      lengths[i] = subpaths[i].get_length()
       total_length = total_length + lengths[i]
 
       -- accumulate orientation, position and angle
       start_orientation[i] = orientation
       start_pos[i] = pos
       start_angle[i] = angle
-      local spos = subpaths[i][1].get_pos(1.0)
+      local spos = subpaths[i].get_pos(1.0)
       orientation:earth_to_body(spos)
       pos = pos + spos
-      orientation = orientation * subpaths[i][1].get_final_orientation()
-      angle = angle + subpaths[i][2].get_roll(1.0, lengths[i]/speed)
+      orientation = orientation * subpaths[i].get_final_orientation()
+      angle = angle + subpaths[i].get_roll(1.0, lengths[i]/speed)
 
       start_speed[i] = speed
-      end_speed[i] = subpaths[i][3]
+      end_speed[i] = subpaths[i].get_speed(1.0)
       if end_speed[i] == nil then
          end_speed[i] = target_groundspeed()
       end
       speed = end_speed[i]
    end
+
+   -- get our final orientation, including roll
+   local final_orientation = orientation
+   local q = Quaternion()
+   q:from_axis_angle(makeVector3f(1,0,0), math.rad(wrap_180(angle)))
+   final_orientation = q * final_orientation
 
    -- work out the proportion of the total time we will spend in each sub path
    local total_time = 0
@@ -500,28 +573,65 @@ function path_composer(_subpaths)
       total_time = total_time + proportions[i]
    end
 
-   -- return position and angle for the composed path at time t
-   function self.run(t)
-      -- work out which subpath we are in
+   function self.get_subpath_t(t)
+      if last_subpath_t[1] == t then
+         -- use cached value
+         return last_subpath_t[2], last_subpath_t[3]
+      end
       local i = 1
       while t >= end_time[i] and i < num_sub_paths do
          i = i + 1
       end
       local subpath_t = (t - start_time[i]) / proportions[i]
-      local speed = start_speed[i] + subpath_t * (end_speed[i] - start_speed[i])
-      pos   = subpaths[i][1].get_pos(subpath_t)
-      angle = subpaths[i][2].get_roll(subpath_t, lengths[i]/speed)
+      last_subpath_t = { t, subpath_t, i }
+      return subpath_t, i
+   end
+
+   -- return position at time t
+   function self.get_pos(t)
+      local subpath_t, i = self.get_subpath_t(t)
+      pos   = subpaths[i].get_pos(subpath_t)
       start_orientation[i]:earth_to_body(pos)
-      return pos + start_pos[i], math.rad(angle + start_angle[i]), speed
+      return pos + start_pos[i]
+   end
+
+   -- return angle for the composed path at time t
+   function self.get_roll(t, time_s)
+      local subpath_t, i = self.get_subpath_t(t)
+      local speed = self.get_speed(t)
+      if speed == nil then
+         speed = target_groundspeed()
+      end
+      angle = subpaths[i].get_roll(subpath_t, lengths[i]/speed)
+      return angle + start_angle[i]
+   end
+
+   -- return speed for the composed path at time t
+   function self.get_speed(t)
+      local subpath_t, i = self.get_subpath_t(t)
+      return start_speed[i] + subpath_t * (end_speed[i] - start_speed[i])
    end
 
    function self.get_length()
       return total_length
    end
 
-   gcs:send_text(0,"composer created")
-   assert(self.run)
+   function self.get_final_orientation()
+      return final_orientation
+   end
+
    return self
+end
+
+--[[
+   make a list of Path() objects from a list of PathComponent, RollComponent pairs
+--]]
+function make_paths(name, paths)
+   local p = {}
+   for i = 1, #paths do
+      p[i] = Path(paths[i][1], paths[i][2])
+   end
+   return path_composer(name, p)
 end
 
 --[[
@@ -529,26 +639,29 @@ end
 --]]
 
 function climbing_circle(radius, height, bank_angle, arg4)
-   return path_composer({
+   return make_paths("climbing_circle", {
          { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
    })
 end
 
-function loop(radius, bank_angle, arg3, arg4)
-   return path_composer({
-         { path_vertical_arc(radius, 360), roll_angle_entry_exit(bank_angle) },
+function loop(radius, bank_angle, num_loops, arg4)
+   if not num_loops then
+      num_loops = 1
+   end
+   return make_paths("loop", {
+         { path_vertical_arc(radius, 360*num_loops), roll_angle_entry_exit(bank_angle) },
    })
 end
 
 function straight_roll(length, num_rolls, arg3, arg4)
-   return path_composer({
+   return make_paths("straight_roll", {
          { path_straight(length), roll_angle(num_rolls*360) },
    })
 end
 
 function immelmann_turn(r, roll_rate, arg3, arg4)
    local speed = path_var.target_speed
-   return path_composer({
+   return make_paths("immelmann_turn", {
          { path_vertical_arc(r, 180),            roll_angle(0) },
          { path_straight(speed*180.0/roll_rate), roll_angle(180) },
    })
@@ -556,7 +669,7 @@ end
 
 function humpty_bump(r, h, arg3, arg4)
    assert(h >= 2*r)
-   return path_composer({
+   return make_paths("humpty_bump", {
             { path_vertical_arc(r, 90),          roll_angle(0) },
             { path_straight((h-2*r)/3),          roll_angle(0) },
             { path_straight((h-2*r)/3),          roll_angle(180) },
@@ -570,7 +683,7 @@ end
 
 function split_s(r, roll_rate, arg3, arg4)
    local speed = path_var.target_speed
-   return path_composer({
+   return make_paths("split_s", {
          { path_straight(speed*180.0/roll_rate), roll_angle(180) },
          { path_vertical_arc(-r, 180),           roll_angle(0) },
    })
@@ -579,7 +692,7 @@ end
 function upline_45(r, height_gain, arg3, arg4)
    local h = (height_gain - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
    assert(h >= 0)
-   return path_composer({
+   return make_paths("upline_45", {
          { path_vertical_arc(r, 45),  roll_angle(0) },
          { path_straight(h),          roll_angle(0) },
          { path_vertical_arc(-r, 45), roll_angle(0) },
@@ -589,7 +702,7 @@ end
 function downline_45(r, height_loss, arg3, arg4)
    local h = (height_loss - 2*r*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
    assert(h >= 0)
-   return path_composer({
+   return make_paths("downline_45", {
          { path_vertical_arc(-r, 45),  roll_angle(0) },
          { path_straight(h),           roll_angle(0) },
          { path_vertical_arc(r, 45),   roll_angle(0) },
@@ -597,7 +710,7 @@ function downline_45(r, height_loss, arg3, arg4)
 end
 
 function rolling_circle(radius, num_rolls, arg3, arg4)
-   return path_composer({
+   return make_paths("rolling_circle", {
          { path_horizontal_arc(radius, 360), roll_angle(360*num_rolls) },
    })
 end
@@ -608,7 +721,7 @@ function straight_flight(length, bank_angle, arg3, arg4)
    if length < 2*entry_dist then
       entry_dist = length*0.5
    end
-   return path_composer({
+   return make_paths("straight_flight", {
          { path_straight(entry_dist),            roll_angle(bank_angle) },
          { path_straight(length - 2*entry_dist), roll_angle(0) },
          { path_straight(entry_dist),            roll_angle(-bank_angle) },
@@ -623,13 +736,13 @@ function banked_circle(radius, bank_angle, height, arg4)
    if entry_angle > 180 then
       entry_angle = 180
    end
-   return path_composer({
+   return make_paths("banked_circle", {
          { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
    })
 end
 
 function scale_figure_eight(r, bank_angle, arg3, arg4)
-   return path_composer({
+   return make_paths("scale_figure_eight", {
          { path_straight(r),             roll_angle(0) },
          { path_horizontal_arc(r,  90),  roll_angle_entry_exit(bank_angle) },
          { path_horizontal_arc(-r, 360), roll_angle_entry_exit(-bank_angle) },
@@ -640,7 +753,7 @@ end
 
 function figure_eight(r, bank_angle, arg3, arg4)
    local rabs = math.abs(r)
-   return path_composer({
+   return make_paths("figure_eight", {
          { path_straight(rabs*math.sqrt(2)), roll_angle(0) },
          { path_horizontal_arc(r,  225),     roll_angle_entry_exit(bank_angle) },
          { path_straight(2*rabs),            roll_angle(0) },
@@ -658,7 +771,7 @@ end
 function stall_turn(radius, height, direction, min_speed)
    local h = height - radius
    assert(h >= 0)
-   return path_composer({
+   return make_paths("stall_turn", {
          { path_vertical_arc(radius, 90),          roll_angle(0) },
          { path_straight(h),                       roll_angle(0), min_speed },
          { path_horizontal_arc(5*direction, 180),  roll_angle(0), min_speed },
@@ -669,7 +782,7 @@ end
 
 function half_cuban_eight(r, arg2, arg3, arg4)
    local rabs = math.abs(r)
-   return path_composer({
+   return make_paths("half_cuban_eight", {
          { path_straight(2*rabs*math.sqrt(2)), roll_angle(0) },
          { path_vertical_arc(r,  225),  roll_angle(0) },
          { path_straight(2*rabs/3),     roll_angle(0) },
@@ -681,7 +794,7 @@ end
 
 function cuban_eight(r, arg2, arg3, arg4)
    local rabs = math.abs(r)
-   return path_composer({
+   return make_paths("cuban_eight", {
          { path_straight(rabs*math.sqrt(2)), roll_angle(0) },
          { path_vertical_arc(r,  225),  roll_angle(0) },
          { path_straight(2*rabs/3),     roll_angle(0) },
@@ -697,7 +810,7 @@ end
 
 function half_reverse_cuban_eight(r, arg2, arg3, arg4)
    local rabs = math.abs(r)
-   return path_composer({
+   return make_paths("half_reverse_cuban_eight", {
          { path_vertical_arc(r,  45),   roll_angle(0) },
          { path_straight(2*rabs/3),     roll_angle(0) },
          { path_straight(2*rabs/3),     roll_angle(180) },
@@ -710,7 +823,7 @@ function horizontal_rectangle(total_length, total_width, r, bank_angle)
    local l = total_length - 2*r
    local w = total_width - 2*r
       
-   return path_composer({
+   return make_paths("horizontal_rectangle", {
          { path_straight(0.5*l),        roll_angle(0) },
          { path_horizontal_arc(r, 90),  roll_angle_entry_exit(bank_angle)},
          { path_straight(w),            roll_angle(0) },
@@ -727,7 +840,7 @@ function vertical_aerobatic_box(total_length, total_width, r, bank_angle)
    local l = total_length - 2*r
    local w = total_width - 2*r
       
-   return path_composer({
+   return make_paths("vertical_aerobatic_box", {
          { path_straight(0.5*l),       roll_angle_entry(bank_angle) },
          { path_vertical_arc(r, 90),   roll_angle(0) },
          { path_straight(w),           roll_angle(0) },
@@ -737,6 +850,21 @@ function vertical_aerobatic_box(total_length, total_width, r, bank_angle)
          { path_straight(w),           roll_angle(0) },
          { path_vertical_arc(r, 90),   roll_angle(0) },
          { path_straight(0.5*l),       roll_angle_exit(-bank_angle) },
+   })
+end
+
+function test_all_paths()
+   return path_composer("test_all_paths", {
+         half_cuban_eight(30),
+         straight_roll(100, 0),
+         cuban_eight(30),
+         straight_roll(100, 0),
+         cuban_eight(30),
+         straight_roll(100, 0),
+         loop(30, 0, 1),
+         straight_roll(100, 0),
+         climbing_circle(100, 30, 0),
+         loop(60, 0, 1),
    })
 end
 
@@ -758,10 +886,11 @@ end
 --returns: requested position, angle and speed in maneuver frame
 function rotate_path(path_f, t, orientation, offset)
    t = constrain(t, 0, 1)
-   point, angle, speed = path_f.run(t)
+   point = path_f.get_pos(t)
+   angle = path_f.get_roll(t)
+   speed = path_f.get_speed(t)
    orientation:earth_to_body(point)
-   --TODO: rotate angle?
-   return point+offset, angle, speed
+   return point+offset, math.rad(angle), speed
 end
 
 --Given vec1, vec2, returns an (rotation axis, angle) tuple that rotates vec1 to be parallel to vec2
@@ -846,6 +975,14 @@ function isNaN(value)
    return value ~= value
 end
 
+function Vec3IsNaN(v)
+   return isNaN(v:x()) or isNaN(v:y()) or isNaN(v:z())
+end
+
+function qIsNaN(q)
+   return isNaN(q:q1()) or isNaN(q:q2()) or isNaN(q:q3()) or isNaN(q:q4())
+end
+
 path_var.count = 0
 path_var.initial_ori = Quaternion()
 path_var.initial_maneuver_to_earth = Quaternion()
@@ -870,7 +1007,7 @@ function do_path()
 
       --assuming constant velocity
       path_var.total_time = path_var.length/speed
-      path_var.last_pos, last_angle = path.run(0) --position at t0
+      path_var.last_pos = path.get_pos(0) --position at t0
 
       --deliberately only want yaw component, because the maneuver should be performed relative to the earth, not relative to the initial orientation
       path_var.initial_ori:from_euler(0, 0, math.rad(initial_yaw_deg))
@@ -938,7 +1075,12 @@ function do_path()
    --]]
    local tangent1_ef = p1 - p0
    local tangent2_ef = p2 - p1
+
    local tv_unit = tangent2_ef:copy()
+   if tv_unit:length() < 0.00001 then
+      gcs:send_text(0, string.format("path not advancing"))
+      return false
+   end
    tv_unit:normalize()
 
    --[[
@@ -948,7 +1090,7 @@ function do_path()
    local v = ahrs:get_velocity_NED()
    local path_dist = v:dot(tv_unit)*actual_dt
    if path_dist < 0 then
-      gcs:send_text(0, string.format("aborting"))
+      gcs:send_text(0, string.format("aborting %.2f", path_dist))
       return false
    end
    local path_t_delta = constrain(path_dist/path_var.length, 0.2*local_n_dt, 4*local_n_dt)
@@ -1009,6 +1151,9 @@ function do_path()
    local corr_rate_bf_z_rads = acc_err_bf:y()/TAS
 
    local cor_ang_vel_bf_rads = makeVector3f(0.0, corr_rate_bf_y_rads, corr_rate_bf_z_rads)
+   if Vec3IsNaN(cor_ang_vel_bf_rads) then
+      cor_ang_vel_bf_rads = makeVector3f(0,0,0)
+   end
    local cor_ang_vel_bf_dps = cor_ang_vel_bf_rads:scale(math.deg(1))
 
 
@@ -1016,6 +1161,10 @@ function do_path()
       work out body frame path rate, this is based on two adjacent tangents on the path
    --]]
    local path_rate_ef_rads = vectors_to_angular_rate(tangent1_ef, tangent2_ef, actual_dt)
+   if Vec3IsNaN(path_rate_ef_rads) then
+      gcs:send_text(0,string.format("path_rate_ef_rads: NaN"))
+      path_rate_ef_rads = makeVector3f(0,0,0)
+   end
    local path_rate_ef_dps = path_rate_ef_rads:scale(math.deg(1))
    local path_rate_bf_dps = ahrs:earth_to_body(path_rate_ef_dps)
 
@@ -1096,7 +1245,7 @@ function do_path()
    throttle = speed_PI.update(s1, anticipated_pitch_rad)
    throttle = constrain(throttle, 0, 100.0)
 
-   if isNaN(throttle) or isNaN(tot_ang_vel_bf_dps:x()) or isNaN(tot_ang_vel_bf_dps:y()) or isNaN(tot_ang_vel_bf_dps:z()) then
+   if isNaN(throttle) or Vec3IsNaN(tot_ang_vel_bf_dps) then
       gcs:send_text(0,string.format("Path NaN - aborting"))
       return false
    end
@@ -1136,7 +1285,7 @@ command_table[16]= PathFunction(split_s, "Split-S")
 command_table[17]= PathFunction(upline_45, "Upline-45")
 command_table[18]= PathFunction(downline_45, "Downline-45")
 command_table[19]= PathFunction(stall_turn, "Stall Turn")
--- command_table[100] = PathFunction(clubman_schedule, "Clubman Schedule")
+command_table[200] = PathFunction(test_all_paths, "Test Suite")
 
 -- get a location structure from a waypoint number
 function get_location(i)
@@ -1257,7 +1406,6 @@ end
 function PathTask(fn, name, id, initial_yaw_deg, arg1, arg2, arg3, arg4)
    self = {}
    self.fn = fn(arg1, arg2, arg3, arg4)
-   assert(self.fn.run)
    self.name = name
    self.id = id
    self.initial_yaw_deg = initial_yaw_deg
