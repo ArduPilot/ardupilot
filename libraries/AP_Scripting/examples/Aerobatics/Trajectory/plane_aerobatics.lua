@@ -31,6 +31,7 @@ ERR_CORR_P = bind_add_param('ERR_COR_P', 12, 2.0)
 ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
+AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -374,6 +375,9 @@ function roll_angle_exit(_angle)
       if t < 1.0 - entry_t then
          return 0
       end
+      if angle == 0 then
+         return 0
+      end
       return ((t - (1.0 - entry_t)) / entry_t) * angle
    end
    return self
@@ -535,6 +539,7 @@ function path_composer(_name, _subpaths)
    local pos = makeVector3f(0,0,0)
    local angle = 0
    local speed = target_groundspeed()
+   local highest_i = 0
 
    for i = 1, num_sub_paths do
       lengths[i] = subpaths[i].get_length()
@@ -584,6 +589,12 @@ function path_composer(_name, _subpaths)
       end
       local subpath_t = (t - start_time[i]) / proportions[i]
       last_subpath_t = { t, subpath_t, i }
+      if i > highest_i and t < 1.0 and t > 0 then
+         highest_i = i
+         if AEROM_DEBUG:get() > 0 then
+            gcs:send_text(0, string.format("starting %s[%d] %s", self.name, i, subpaths[i].name))
+         end
+      end
       return subpath_t, i
    end
 
@@ -660,7 +671,7 @@ function straight_roll(length, num_rolls, arg3, arg4)
 end
 
 function immelmann_turn(r, roll_rate, arg3, arg4)
-   local speed = path_var.target_speed
+   local speed = target_groundspeed()
    return make_paths("immelmann_turn", {
          { path_vertical_arc(r, 180),            roll_angle(0) },
          { path_straight(speed*180.0/roll_rate), roll_angle(180) },
@@ -682,7 +693,7 @@ function humpty_bump(r, h, arg3, arg4)
 end
 
 function split_s(r, roll_rate, arg3, arg4)
-   local speed = path_var.target_speed
+   local speed = target_groundspeed()
    return make_paths("split_s", {
          { path_straight(speed*180.0/roll_rate), roll_angle(180) },
          { path_vertical_arc(-r, 180),           roll_angle(0) },
@@ -716,26 +727,12 @@ function rolling_circle(radius, num_rolls, arg3, arg4)
 end
 
 function straight_flight(length, bank_angle, arg3, arg4)
-   local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
-   local entry_dist = path_var.target_speed * entry_s
-   if length < 2*entry_dist then
-      entry_dist = length*0.5
-   end
    return make_paths("straight_flight", {
-         { path_straight(entry_dist),            roll_angle(bank_angle) },
-         { path_straight(length - 2*entry_dist), roll_angle(0) },
-         { path_straight(entry_dist),            roll_angle(-bank_angle) },
+         { path_straight(length), roll_angle_entry_exit(bank_angle) },
    })
 end
 
 function banked_circle(radius, bank_angle, height, arg4)
-   local circumference = 2 * radius * math.pi
-   local circle_s = circumference / path_var.target_speed
-   local entry_s = bank_angle / AEROM_ENTRY_RATE:get()
-   local entry_angle = (entry_s / circle_s) * 360.0
-   if entry_angle > 180 then
-      entry_angle = 180
-   end
    return make_paths("banked_circle", {
          { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
    })
@@ -855,16 +852,37 @@ end
 
 function test_all_paths()
    return path_composer("test_all_paths", {
-         half_cuban_eight(30),
-         straight_roll(100, 0),
-         cuban_eight(30),
-         straight_roll(100, 0),
-         cuban_eight(30),
-         straight_roll(100, 0),
+         figure_eight(100, 45),
+         straight_roll(20, 0),
          loop(30, 0, 1),
-         straight_roll(100, 0),
-         climbing_circle(100, 30, 0),
-         loop(60, 0, 1),
+         straight_roll(20, 0),
+         horizontal_rectangle(100, 100, 20, 45),
+         straight_roll(20, 0),
+         climbing_circle(100, 20, 45),
+         straight_roll(20, 0),
+         vertical_aerobatic_box(100, 100, 20, 0),
+         straight_roll(20, 0),
+         banked_circle(100, 45, 20, 0),
+         straight_roll(20, 0),
+         rolling_circle(100, 2, 0, 0),
+         straight_roll(20, 0),
+         half_cuban_eight(30),
+         straight_roll(20, 0),
+         half_reverse_cuban_eight(30),
+         straight_roll(20, 0),
+         cuban_eight(30),
+         straight_roll(20, 0),
+         humpty_bump(30, 100),
+         straight_flight(100, 45),
+         scale_figure_eight(100, 45),
+         straight_roll(20, 0),
+         immelmann_turn(30, 60),
+         straight_roll(20, 0),
+         split_s(30, 60),
+         straight_roll(20, 0),
+         upline_45(20, 50),
+         straight_roll(20, 0),
+         downline_45(20, 50),
    })
 end
 
@@ -1078,8 +1096,7 @@ function do_path()
 
    local tv_unit = tangent2_ef:copy()
    if tv_unit:length() < 0.00001 then
-      gcs:send_text(0, string.format("path not advancing"))
-      return false
+      gcs:send_text(0, string.format("path not advancing %f", tv_unit:length()))
    end
    tv_unit:normalize()
 
