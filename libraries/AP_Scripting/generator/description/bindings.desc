@@ -634,3 +634,7 @@ userdata uint32_t manual_operator __tostring uint32_t___tostring
 userdata uint32_t manual toint uint32_t_toint 0
 userdata uint32_t manual tofloat uint32_t_tofloat 0
 
+include AP_EFI/AP_EFI_MAV.h
+
+singleton AP_EFI_MAV rename efi_mav
+singleton AP_EFI_MAV method get_EFI_state float uint8_t 0 16

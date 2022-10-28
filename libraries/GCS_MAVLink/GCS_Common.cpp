@@ -55,6 +55,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
+#include <AP_EFI/AP_EFI_MAV.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -3927,6 +3928,10 @@ void GCS_MAVLINK::handle_common_message(const mavlink_message_t &msg)
         AP_CheckFirmware::handle_msg(chan, msg);
         break;
 #endif
+
+    case MAVLINK_MSG_ID_EFI_STATUS:
+        AP::EFI_MAV().handle_EFI_message(msg);
+        break;
     }
 
 }
