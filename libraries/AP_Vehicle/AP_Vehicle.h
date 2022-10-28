@@ -57,7 +57,7 @@
 #include <AP_AIS/AP_AIS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
-#include <AP_EFI/AP_EFI_MAV.h>		//Acecore
+#include <AP_EFI/AP_EFI_MAV.h>
 
 class AP_Vehicle : public AP_HAL::HAL::Callbacks {
 
@@ -432,7 +432,7 @@ protected:
     SITL::SIM sitl;
 #endif
 
-    AP_EFI_MAV efi_mav;		//Acecore
+    AP_EFI_MAV efi_mav;
 
 private:
 

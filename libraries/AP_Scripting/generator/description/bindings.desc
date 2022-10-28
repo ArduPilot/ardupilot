@@ -638,4 +638,3 @@ include AP_EFI/AP_EFI_MAV.h
 
 singleton AP_EFI_MAV rename efi_mav
 singleton AP_EFI_MAV method get_EFI_state float uint8_t 0 16
--- Acecore
