@@ -50,6 +50,7 @@
 #include <AP_Mount/AP_Mount.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
