@@ -24,6 +24,7 @@
 
 #if AP_TERRAIN_AVAILABLE
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 
 extern const AP_HAL::HAL& hal;
