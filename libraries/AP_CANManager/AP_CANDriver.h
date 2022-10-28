@@ -19,7 +19,6 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 class AP_CANManager;
 class AP_CANDriver
