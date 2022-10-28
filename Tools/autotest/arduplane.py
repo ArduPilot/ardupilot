@@ -1166,6 +1166,144 @@ class AutoTestPlane(AutoTest):
             raise NotAchievedException("Fence not enabled after RC fail")
         self.do_fence_disable() # Ensure the fence is disabled after test
 
+    def RelocateMission(self):
+        '''Test Relocation of a Mission shape'''
+        filename = "plane-CMAC-elbow.txt"
+        self.context_push()
+        ex = None
+        relocate_ch = 16
+        try:
+            self.load_mission(filename)
+            if self.mavproxy is not None:
+                self.mavproxy.send("wp list\n") # to see the Mission if --map is on
+            self.set_parameter("RC%u_OPTION" % relocate_ch, 93) # Aux_Switch RELOCATE_MISSION = 93
+            self.set_parameter("MIS_RESTART", 1) # to relocate at restart if selected via Aux_Switch
+            self.set_parameter("RTL_AUTOLAND", 1)
+            self.set_rc(relocate_ch, 1000)
+            self.wait_statustext("Relocate Mission LOW", timeout=30)
+            self.set_current_waypoint(1)
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.homeloc = self.mav.location()
+            self.wait_statustext("waypoint #3", timeout=200)
+            self.change_mode('FBWB')
+            self.delay_sim_time(5)
+            self.progress("restart Mission without relocation")
+            self.change_mode('AUTO')
+            self.wait_statustext("waypoint #4", timeout=200)
+            turnpoint = self.mav.location()
+            turnpoint.lat = -35.35701391
+            turnpoint.lng = 149.16458522
+            self.wait_location(turnpoint,
+                               accuracy=50,
+                               target_altitude=None,
+                               height_accuracy=None,
+                               timeout=10)
+            self.wait_statustext("waypoint #7", timeout=200)
+            endpoint = self.mav.location()
+            endpoint.lat = -35.36317929
+            endpoint.lng = 149.16524304
+            self.wait_location(endpoint,
+                               accuracy=200,
+                               target_altitude=None,
+                               height_accuracy=None,
+                               timeout=100)
+            self.wait_statustext("Auto disarmed", timeout=200)
+
+            self.set_rc(relocate_ch, 1500)
+            self.wait_statustext("Relocate Mission MIDDLE", timeout=30)
+            self.set_current_waypoint(1)
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.homeloc = self.mav.location()
+            self.arm_vehicle()
+            self.wait_statustext("waypoint #2", timeout=100)
+            self.wait_heading(315, accuracy=5, timeout=60)
+            self.change_mode('FBWB')
+            self.delay_sim_time(15)
+            self.progress("restart Mission with translation only")
+            self.change_mode('AUTO')
+            self.wait_statustext("waypoint #4", timeout=200)
+            turnpoint = self.mav.location()
+            turnpoint.lat = -35.35503068
+            turnpoint.lng = 149.16224767
+            self.wait_location(turnpoint,
+                               accuracy=50,
+                               target_altitude=None,
+                               height_accuracy=None,
+                               timeout=10)
+            self.delay_sim_time(10)
+
+            self.change_mode('FBWB')
+            self.set_rc(2, 1700) # go down a little
+            self.wait_altitude(altitude_min=25, altitude_max=30, relative=True, timeout=50)
+            self.set_rc(2, 1500)
+            self.progress("restart Mission at lower altitude -> should result in nominal WP altitude")
+            self.change_mode('AUTO')
+            self.wait_altitude(altitude_min=50, altitude_max=55, relative=True, timeout=50)
+            self.wait_heading(100, accuracy=5, timeout=60) # for shortening the way home
+
+            self.change_mode('FBWB')
+            self.set_rc(2, 1300) # climb a little
+            self.wait_altitude(altitude_min=70, altitude_max=75, relative=True, timeout=50)
+            self.set_rc(2, 1500)
+            self.progress("restart Mission at higher altitude -> should result in positive altitude adaption")
+            self.change_mode('AUTO')
+            self.wait_statustext("waypoint #3", timeout=300)
+            self.wait_altitude(altitude_min=67, altitude_max=73, relative=True, timeout=10)
+            if self.mavproxy is not None:
+                self.mavproxy.send("land\n")
+            self.wait_statustext("waypoint #7", timeout=300)
+            self.wait_location(endpoint,
+                               accuracy=200,
+                               target_altitude=None,
+                               height_accuracy=None,
+                               timeout=300)
+            self.wait_statustext("Auto disarmed", timeout=300)
+
+            self.set_rc(relocate_ch, 2000)
+            self.wait_statustext("Relocate Mission HIGH", timeout=30)
+            self.set_current_waypoint(1)
+            self.wait_ready_to_arm()
+            self.homeloc = self.mav.location()
+            self.change_mode('AUTO') # no relocation while in security distance to homepoint
+            self.arm_vehicle()
+            self.wait_statustext("waypoint #3", timeout=100)
+            self.wait_heading(110, accuracy=1, timeout=60)
+            self.wait_heading(90, accuracy=1, timeout=60)
+            self.change_mode('FBWB')
+            self.progress("restart Mission with translation & rotation")
+            self.change_mode('AUTO') # relocation on restart of Mission
+            self.wait_statustext("waypoint #3", timeout=100)
+            self.delay_sim_time(3)
+            self.change_mode('FBWB')
+            self.set_parameter("MIS_RESTART", 0)
+            self.delay_sim_time(10)
+            self.change_mode('AUTO') # resume on restart of Mission -> no relocation
+            self.wait_statustext("waypoint #4", timeout=300)
+            turnpoint = self.mav.location()
+            turnpoint.lat = -35.35997464
+            turnpoint.lng = 149.16493743
+            self.wait_location(turnpoint,
+                               accuracy=50,
+                               target_altitude=None,
+                               height_accuracy=None,
+                               timeout=10)
+            self.wait_statustext("waypoint #7", timeout=500)
+            self.wait_location(endpoint,
+                               accuracy=200,
+                               target_altitude=None,
+                               height_accuracy=None,
+                               timeout=100)
+            self.wait_statustext("Auto disarmed", timeout=300)
+        except Exception as e:
+            self.print_exception_caught(e)
+            ex = e
+        self.context_pop()
+        if ex is not None:
+            raise ex
+
     def TestGripperMission(self):
         '''Test Gripper mission items'''
         self.context_push()
@@ -3973,6 +4111,7 @@ class AutoTestPlane(AutoTest):
             self.DO_REPOSITION,
             self.GuidedRequest,
             self.MainFlight,
+            self.RelocateMission,
             self.TestGripperMission,
             self.Parachute,
             self.ParachuteSinkRate,
