@@ -4,6 +4,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include "AP_DAL.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 AP_DAL_Beacon::AP_DAL_Beacon()
 {
