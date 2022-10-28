@@ -43,6 +43,8 @@
 #include <AP_HAL/utility/packetise.h>
 #endif
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
