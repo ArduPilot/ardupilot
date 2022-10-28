@@ -1,6 +1,7 @@
 #include "AP_Common/AP_FWVersion.h"
 #include "LoggerMessageWriter.h"
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #define FORCE_VERSION_H_INCLUDE
 #include "ap_version.h"

@@ -13,6 +13,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Rally/AP_Rally.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 AP_Logger *AP_Logger::_singleton;
 
