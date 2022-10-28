@@ -162,7 +162,6 @@ class ap_library_check_headers(Task.Task):
     dispatched_headers = set()
     whitelist = (
         'libraries/AP_Vehicle/AP_Vehicle_Type.h',
-        'libraries/AP_Camera/AP_RunCam.h',
         'libraries/AP_Common/AP_FWVersionDefine.h',
         'libraries/AP_Scripting/lua_generated_bindings.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
