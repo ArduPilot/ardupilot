@@ -323,13 +323,16 @@ function roll_angle_entry_exit(_angle)
       if entry_t > 0.5 then
          entry_t = 0.5
       end
+      if t <= 0 then
+         return 0
+      end
       if t < entry_t then
          return angle * t / entry_t
       end
       if t < 1.0 - entry_t then
          return angle
       end
-      if angle == 0 then
+      if angle == 0 or t >= 1.0 then
          return 0
       end
       return (1.0 - ((t - (1.0 - entry_t)) / entry_t)) * angle
@@ -473,11 +476,10 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
       return makeVector3f(math.abs(radius)*math.sin(t2ang), radius*(1.0 - math.cos(t2ang)), -height_gain*t)
    end
    function self.get_length()
-      if _height_gain == 0 then
-         return math.abs(radius) * 2 * math.pi * angle / 360.0
-      end
-      -- otherwise integrate to get path length
-      return integrate_length(self.get_pos)
+      local circumference = 2 * math.pi * math.abs(radius)
+      local full_circle_height_gain = height_gain * 360.0 / math.abs(angle)
+      local helix_length = math.sqrt(full_circle_height_gain*full_circle_height_gain + circumference*circumference)
+      return helix_length * math.abs(angle) / 360.0
    end
    function self.get_final_orientation()
       local q = Quaternion()
@@ -729,12 +731,6 @@ end
 function straight_flight(length, bank_angle, arg3, arg4)
    return make_paths("straight_flight", {
          { path_straight(length), roll_angle_entry_exit(bank_angle) },
-   })
-end
-
-function banked_circle(radius, bank_angle, height, arg4)
-   return make_paths("banked_circle", {
-         { path_horizontal_arc(radius, 360, height), roll_angle_entry_exit(bank_angle) },
    })
 end
 
@@ -1030,8 +1026,6 @@ function test_all_paths()
          climbing_circle(100, 20, 45),
          straight_roll(20, 0),
          vertical_aerobatic_box(100, 100, 20, 0),
-         straight_roll(20, 0),
-         banked_circle(100, 45, 20, 0),
          straight_roll(20, 0),
          rolling_circle(100, 2, 0, 0),
          straight_roll(20, 0),
@@ -1457,7 +1451,7 @@ command_table[2] = PathFunction(loop, "Loop")
 command_table[3] = PathFunction(horizontal_rectangle, "Horizontal Rectangle")
 command_table[4] = PathFunction(climbing_circle, "Climbing Circle")
 command_table[5] = PathFunction(vertical_aerobatic_box, "Vertical Box")
-command_table[6] = PathFunction(banked_circle, "Banked Circle")
+-- 6 was banked circle
 command_table[7] = PathFunction(straight_roll, "Axial Roll")
 command_table[8] = PathFunction(rolling_circle, "Rolling Circle")
 command_table[9] = PathFunction(half_cuban_eight, "Half Cuban Eight")
