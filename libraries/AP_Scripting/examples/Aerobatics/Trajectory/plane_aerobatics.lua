@@ -100,11 +100,13 @@ local MODE_AUTO = 10
 local LOOP_RATE = 20
 local DO_JUMP = 177
 local k_throttle = 70
+local NAME_FLOAT_RATE = 2
 
 local TRIM_ARSPD_CM = Parameter("TRIM_ARSPD_CM")
 
 local last_id = 0
 local current_task = nil
+local last_named_float_t = 0
 
 local path_var = {}
 
@@ -1431,7 +1433,12 @@ function do_path()
    end
 
    vehicle:set_target_throttle_rate_rpy(throttle, tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
-   
+
+   if now - last_named_float_t > 1.0 / NAME_FLOAT_RATE then
+      last_named_float_t = now
+      gcs:send_named_float("PERR", pos_error_ef:length())
+   end
+
    return true
 end
 
