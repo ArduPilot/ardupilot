@@ -13,20 +13,21 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
+      - uses: cygwin/cygwin-install-action@master
+        with:
+          packages: install cygwin32-gcc-g++ python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git libexpat procps gettext
       - name: Install cygwin
         env:
           HOME: ${{ runner.workspace }}/ardupilot
         run: |
-          choco install cygwin --params "/InstallDir:C:\Cygwin /NoStartMenu /NoAdmin"
-          choco install cygwin32-gcc-g++ python37 python37-future python37-lxml python37-pip python37-setuptools python37-wheel git libexpat procps gettext --source cygwin
-          C:\Cygwin\bin\bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
-          C:\Cygwin\bin\bash --login -c "python -m pip install empy pexpect"
-          C:\Cygwin\bin\bash --login -c "python -m pip install dronecan --upgrade"
+          bash --login -c "ln -sf /usr/bin/python3.7 /usr/bin/python && ln -sf /usr/bin/pip3.7 /usr/bin/pip"
+          bash --login -c "python -m pip install empy pexpect"
+          bash --login -c "python -m pip install dronecan --upgrade"
       - name: Build SITL
         env:
           HOME: ${{ runner.workspace }}/ardupilot
         run: |
-          C:\Cygwin\bin\bash --login -c "Tools/scripts/cygwin_build.sh"
+          bash --login -c "Tools/scripts/cygwin_build.sh"
 
       - name: Check build files
         id: check_files
