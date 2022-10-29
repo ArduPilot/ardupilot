@@ -1244,7 +1244,7 @@ function do_path()
    --]]
 
    next_target_pos_ef = next_target_pos_ef
-   local p0, r0, s0 = rotate_path(path, path_var.path_t + 0*local_n_dt,
+   local p0, r0, s0 = rotate_path(path, path_var.path_t,
                               path_var.initial_ori, path_var.initial_ef_pos)
    local p1, r1, s1 = rotate_path(path, path_var.path_t + 1*local_n_dt,
                               path_var.initial_ori, path_var.initial_ef_pos)
@@ -1276,14 +1276,18 @@ function do_path()
       return false
    end
    local path_t_delta = constrain(path_dist/path_var.length, 0.2*local_n_dt, 4*local_n_dt)
-   path_var.path_t = path_var.path_t + path_t_delta
 
    --[[
       recalculate the current path position and angle based on actual delta time
    --]]
-   p2, r2, s2 = rotate_path(path,
+   p1, r1, s1 = rotate_path(path,
                             constrain(path_var.path_t + path_t_delta, 0, 1),
                             path_var.initial_ori, path_var.initial_ef_pos)
+   p2, r2, s2 = rotate_path(path,
+                            constrain(path_var.path_t + 2*path_t_delta, 0, 1),
+                            path_var.initial_ori, path_var.initial_ef_pos)
+
+   path_var.path_t = path_var.path_t + path_t_delta
 
    -- tangents needs to be recalculated
    tangent1_ef = p1 - p0
