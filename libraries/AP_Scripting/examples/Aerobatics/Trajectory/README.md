@@ -18,7 +18,7 @@ parameters (described below).
 | 3  | Horizontal Rectangle     | length | width       | radius     | bank angle | No         |
 | 4  | Climbing Circle          | radius | height      | bank angle |            | No         |
 | 5  | vertical Box             | length | height      | radius     |            | No         |
-| 6  | Banked Circle            | radius | bank angle  | height     |            | No         |
+| 6  | Unused                   |        |             |            |            | No         |
 | 7  | Straight Roll            | length | num rolls   |            |            | No         |
 | 8  | Rolling Circle           | radius | num rolls   |            |            | No         |
 | 9  | Half Cuban Eight         | radius |             |            |            | Yes        |
