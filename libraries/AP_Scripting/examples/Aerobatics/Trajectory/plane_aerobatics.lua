@@ -403,6 +403,9 @@ function PathComponent()
    function self.get_final_orientation()
       return Quaternion()
    end
+   function self.get_roll_correction(t)
+      return 0
+   end
    return self
 end
 
@@ -488,6 +491,17 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
       q:from_axis_angle(makeVector3f(0,0,1), sgn(radius)*math.rad(angle))
       return q
    end
+
+   --[[
+      roll correction for the rotation caused by height gain
+   --]]
+   function self.get_roll_correction(t)
+      if height_gain == 0 then
+         return 0
+      end
+      local gamma=math.atan(height_gain*(angle/360)/(2*math.pi*radius))
+      return -t*360*math.sin(gamma)
+   end
    return self
 end
 
@@ -501,7 +515,7 @@ function Path(_path_component, _roll_component)
    local path_component = _path_component
    local roll_component = _roll_component
    function self.get_roll(t, time_s)
-      return wrap_180(roll_component.get_roll(t, time_s))
+      return wrap_180(roll_component.get_roll(t, time_s) + path_component.get_roll_correction(t))
    end
    function self.get_pos(t)
       return path_component.get_pos(t)
