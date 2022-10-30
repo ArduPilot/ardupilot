@@ -1,6 +1,6 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
-Copter 4.3.0-beta4 24-Oct-2022
+Copter 4.3.0 31-Oct-2022 / 4.3.0-beta4 24-Oct-2022
 Changes from 4.3.0-beta3
 1) Scripting supports implementing AUX functions
 2) Bug fixes
