@@ -86,6 +86,7 @@ brand_map = {
     'OmnibusNanoV6' : ('Omnibus Nano V6', 'Airbot'),
     'OmnibusNanoV6-bdshot' : ('Omnibus Nano V6', 'Airbot'),
     'speedybeef4' : ('SpeedyBee F4', 'SpeedyBee'),
+    'speedybeef4v3' : ('SpeedyBee F4 v3', 'SpeedyBee'),
     'QioTekZealotF427' : ('ZealotF427', 'QioTek'),
     'BeastH7' : ('Beast H7 55A AIO', 'iFlight'),
     'BeastH7v2' : ('Beast H7 v2 55A AIO', 'iFlight'),
