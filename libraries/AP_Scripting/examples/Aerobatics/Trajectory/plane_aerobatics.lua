@@ -558,23 +558,44 @@ function path_composer(_name, _subpaths)
    local angle = 0
    local speed = target_groundspeed()
    local highest_i = 0
+   local cache_i = -1
+   local cache_sp = nil
 
+   -- return the subpath with index i. Used to cope with two ways of calling path_composer
+   function self.subpath(i)
+      if i == cache_i then
+         return cache_sp
+      end
+      cache_i = i
+      local sp = subpaths[i]
+      if sp.name then
+         -- we are being called with a list of Path objects
+         cache_sp = sp
+      else
+         -- we are being called with a list function/argument tuples
+         local args = subpaths[i][2]
+         cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4])
+      end
+      return cache_sp
+   end
+   
    for i = 1, num_sub_paths do
-      lengths[i] = subpaths[i].get_length()
+      local sp = self.subpath(i)
+      lengths[i] = sp.get_length()
       total_length = total_length + lengths[i]
 
       -- accumulate orientation, position and angle
       start_orientation[i] = orientation
       start_pos[i] = pos
       start_angle[i] = angle
-      local spos = subpaths[i].get_pos(1.0)
+      local spos = sp.get_pos(1.0)
       orientation:earth_to_body(spos)
       pos = pos + spos
-      orientation = orientation * subpaths[i].get_final_orientation()
-      angle = angle + subpaths[i].get_roll(1.0, lengths[i]/speed)
+      orientation = orientation * sp.get_final_orientation()
+      angle = angle + sp.get_roll(1.0, lengths[i]/speed)
 
       start_speed[i] = speed
-      end_speed[i] = subpaths[i].get_speed(1.0)
+      end_speed[i] = sp.get_speed(1.0)
       if end_speed[i] == nil then
          end_speed[i] = target_groundspeed()
       end
@@ -607,10 +628,11 @@ function path_composer(_name, _subpaths)
       end
       local subpath_t = (t - start_time[i]) / proportions[i]
       last_subpath_t = { t, subpath_t, i }
+      local sp = self.subpath(i)
       if i > highest_i and t < 1.0 and t > 0 then
          highest_i = i
          if AEROM_DEBUG:get() > 0 then
-            gcs:send_text(0, string.format("starting %s[%d] %s", self.name, i, subpaths[i].name))
+            gcs:send_text(0, string.format("starting %s[%d] %s", self.name, i, sp.name))
          end
       end
       return subpath_t, i
@@ -619,7 +641,8 @@ function path_composer(_name, _subpaths)
    -- return position at time t
    function self.get_pos(t)
       local subpath_t, i = self.get_subpath_t(t)
-      pos   = subpaths[i].get_pos(subpath_t)
+      local sp = self.subpath(i)
+      pos   = sp.get_pos(subpath_t)
       start_orientation[i]:earth_to_body(pos)
       return pos + start_pos[i]
    end
@@ -631,7 +654,8 @@ function path_composer(_name, _subpaths)
       if speed == nil then
          speed = target_groundspeed()
       end
-      angle = subpaths[i].get_roll(subpath_t, lengths[i]/speed)
+      local sp = self.subpath(i)
+      angle = sp.get_roll(subpath_t, lengths[i]/speed)
       return angle + start_angle[i]
    end
 
@@ -651,6 +675,7 @@ function path_composer(_name, _subpaths)
 
    return self
 end
+
 
 --[[
    make a list of Path() objects from a list of PathComponent, RollComponent pairs
@@ -972,39 +997,39 @@ end
 --]]
 function nz_clubman()
    return path_composer("nz_clubman", {
-         straight_roll(20, 0),
-         procedure_turn(20, 45, 60),
-         straight_roll(150, 0),
-         half_reverse_cuban_eight(40),
-         straight_roll(150, 0),
-         cuban_eight(40),
-         straight_roll(80, 0),
-         half_reverse_cuban_eight(40),
-         straight_roll(140, 0),
-         half_reverse_cuban_eight(40),
-         straight_roll(120, 0),
-         half_reverse_cuban_eight(40),
-         straight_roll(40, 0),
-         two_point_roll(180),
-         straight_roll(40, 0),
-         half_reverse_cuban_eight(40),
-         straight_roll(20, 0),
-         upline_45(20, 120),
-         straight_roll(20, 0),
-         split_s(60, 90),
-         straight_roll(40, 0),
-         straight_roll(180, 1),
-         straight_flight(40, 0),
-         half_cuban_eight(40),
-         straight_roll(100, 0),
-         loop(40, 0, 2),
-         straight_roll(100, 0),
-         immelmann_turn(60, 90),
-         straight_roll(20, 0),
-         downline_45(20, 120),
-         straight_roll(20, 0),
-         half_cuban_eight(40),
-         straight_roll(100, 0),
+          { straight_roll,            { 20,  0 } },
+          { procedure_turn,           { 20, 45, 60 } },
+          { straight_roll,            { 150, 0 } },
+          { half_reverse_cuban_eight, { 40 } },
+          { straight_roll,            { 150, 0 } },
+          { cuban_eight,              { 40 } },
+          { straight_roll,            { 80, 0 } },
+          { half_reverse_cuban_eight, { 40 } },
+          { straight_roll,            { 140, 0 } },
+          { half_reverse_cuban_eight, { 40 } },
+          { straight_roll,            { 120, 0 } },
+          { half_reverse_cuban_eight, { 40 } },
+          { straight_roll,            { 40, 0 } },
+          { two_point_roll,           { 180 } },
+          { straight_roll,            { 40, 0 } },
+          { half_reverse_cuban_eight, { 40 } },
+          { straight_roll,            { 20, 0 } },
+          { upline_45,                { 20, 120 } },
+          { straight_roll,            { 20, 0 } },
+          { split_s,                  { 60, 90 } },
+          { straight_roll,            { 40, 0 } },
+          { straight_roll,            { 180, 1 } },
+          { straight_flight,          { 40, 0 } },
+          { half_cuban_eight,         { 40 } },
+          { straight_roll,            { 100, 0 } },
+          { loop,                     { 40, 0, 2 } },
+          { straight_roll,            { 100, 0 } },
+          { immelmann_turn,           { 60, 90 } },
+          { straight_roll,            { 20, 0 } },
+          { downline_45,              { 20, 120 } },
+          { straight_roll,            { 20, 0 } },
+          { half_cuban_eight,         { 40 } },
+          { straight_roll,            { 100, 0 } },
    })
 end
 
@@ -1013,55 +1038,54 @@ end
 --]]
 function f3a_p23()
    return path_composer("f3a_p23", {
-         straight_roll(40, 0),
-         p23_1(30, 200, 200),  -- top hat
-         straight_roll(40, 0),
-         p23_2(30, 200),       -- half sq
-         straight_roll(90, 0),
-         p23_3(30, 200),       -- humpty
-         straight_roll(50, 0),
-         p23_4(30, 200),       -- on corner
-         straight_roll(40, 0),
-         p23_5(30, 200),       -- 45 up
-         straight_roll(40, 0),
-         p23_6(30, 200),       -- 3 sided
-         straight_roll(20, 0),
-
+          { straight_roll, { 40,   0 } },
+          { p23_1,         { 30, 200, 200 } },  -- top hat
+          { straight_roll, { 40,   0 } },
+          { p23_2,         { 30, 200 } },       -- half sq
+          { straight_roll, { 90,   0 } },
+          { p23_3,         { 30, 200 } },       -- humpty
+          { straight_roll, { 50,   0 } },
+          { p23_4,         { 30, 200 } },       -- on corner
+          { straight_roll, { 40,   0 } },
+          { p23_5,         { 30, 200 } },       -- 45 up
+          { straight_roll, { 40,   0 } },
+          { p23_6,         { 30, 200 } },       -- 3 sided
+          { straight_roll, { 20,   0 } },
    })
 end
 
 
 function test_all_paths()
    return path_composer("test_all_paths", {
-         figure_eight(100, 45),
-         straight_roll(20, 0),
-         loop(30, 0, 1),
-         straight_roll(20, 0),
-         horizontal_rectangle(100, 100, 20, 45),
-         straight_roll(20, 0),
-         climbing_circle(100, 20, 45),
-         straight_roll(20, 0),
-         vertical_aerobatic_box(100, 100, 20, 0),
-         straight_roll(20, 0),
-         rolling_circle(100, 2, 0, 0),
-         straight_roll(20, 0),
-         half_cuban_eight(30),
-         straight_roll(20, 0),
-         half_reverse_cuban_eight(30),
-         straight_roll(20, 0),
-         cuban_eight(30),
-         straight_roll(20, 0),
-         humpty_bump(30, 100),
-         straight_flight(100, 45),
-         scale_figure_eight(100, 45),
-         straight_roll(20, 0),
-         immelmann_turn(30, 60),
-         straight_roll(20, 0),
-         split_s(30, 60),
-         straight_roll(20, 0),
-         upline_45(20, 50),
-         straight_roll(20, 0),
-         downline_45(20, 50),
+          { figure_eight,             { 100,  45 } },
+          { straight_roll,            { 20,    0 } },
+          { loop,                     { 30,    0,  1 } },
+          { straight_roll,            { 20,    0 } },
+          { horizontal_rectangle,     { 100, 100, 20, 45 } },
+          { straight_roll,            { 20,    0 } },
+          { climbing_circle,          { 100,  20, 45 } },
+          { straight_roll,            { 20,    0 } },
+          { vertical_aerobatic_box,   { 100, 100, 20,  0 } },
+          { straight_roll,            { 20,    0 } },
+          { rolling_circle,           { 100,   2,  0,  0 } },
+          { straight_roll,            { 20,    0 } },
+          { half_cuban_eight,         { 30,      } },
+          { straight_roll,            { 20,    0 } },
+          { half_reverse_cuban_eight, { 30,      } },
+          { straight_roll,            { 20,    0 } },
+          { cuban_eight,              { 30,      } },
+          { straight_roll,            { 20,    0 } },
+          { humpty_bump,              { 30,  100 } },
+          { straight_flight,          { 100,  45 } },
+          { scale_figure_eight,       { 100,  45 } },
+          { straight_roll,            { 20,    0 } },
+          { immelmann_turn,           { 30,   60 } },
+          { straight_roll,            { 20,    0 } },
+          { split_s,                  { 30,   60 } },
+          { straight_roll,            { 20,    0 } },
+          { upline_45,                { 20,   50 } },
+          { straight_roll,            { 20,    0 } },
+          { downline_45,              { 20,   50 } },
    })
 end
 
