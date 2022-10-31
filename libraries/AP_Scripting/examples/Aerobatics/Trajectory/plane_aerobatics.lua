@@ -709,7 +709,7 @@ function climbing_circle(radius, height, bank_angle, arg4)
 end
 
 function loop(radius, bank_angle, num_loops, arg4)
-   if not num_loops then
+   if not num_loops or num_loops <= 0 then
       num_loops = 1
    end
    return make_paths("loop", {
