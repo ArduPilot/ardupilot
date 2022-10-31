@@ -23,20 +23,20 @@
 
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_VideoTX/AP_VideoTX_config.h>
+#include "SoftSerial.h"
 
 class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
 
 public:
-    AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
-    virtual ~AP_RCProtocol_Backend() {}
-    virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
+    AP_RCProtocol_Backend(AP_RCProtocol &_frontend, const AP_RCProtocol::rcprotocol_t _protocol_type);
+    virtual ~AP_RCProtocol_Backend();
+    virtual void process_pulse(const uint32_t &width_s0, const uint32_t &width_s1, const uint8_t &pulse_id) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
     virtual void process_handshake(uint32_t baudrate) {}
     uint16_t read(uint8_t chan);
     void read(uint16_t *pwm, uint8_t n);
     bool new_input();
-    uint8_t num_channels() const;
 
     // support for receivers that have FC initiated bind support
     virtual void start_bind(void) {}
@@ -67,13 +67,6 @@ public:
         return frontend.rc_protocols_mask;
     }
 
-    // get RSSI
-    int16_t get_RSSI(void) const {
-        return rssi;
-    }
-    int16_t get_rx_link_quality(void) const {
-        return rx_link_quality;
-    }
     // get UART for RCIN, if available. This will return false if we
     // aren't getting the active RC input protocol via the uart
     AP_HAL::UARTDriver *get_UART(void) const {
@@ -116,6 +109,8 @@ protected:
         uint32_t ch7 : 11;
     } PACKED;
 
+    static SoftSerial ss_default;
+    static SoftSerial ss_inv_default;
     void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1, int16_t rx_link_quality=-1);
     AP_RCProtocol &frontend;
 
@@ -129,10 +124,7 @@ private:
     uint32_t last_rc_input_count;
     uint32_t rc_frame_count;
 
-    uint16_t _pwm_values[MAX_RCIN_CHANNELS];
-    uint8_t  _num_channels;
-    int16_t rssi = -1;
-    int16_t rx_link_quality = -1;
+    const AP_RCProtocol::rcprotocol_t protocol_type;
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED

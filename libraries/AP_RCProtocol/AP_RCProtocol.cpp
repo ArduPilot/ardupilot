@@ -109,6 +109,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
 {
     uint32_t now = AP_HAL::millis();
     bool searching = should_search(now);
+    pulse_id++;
 
 #if AP_RC_CHANNEL_ENABLED
     rc_protocols_mask = rc().enabled_protocols();
@@ -125,7 +126,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     }
     // first try current protocol
     if (_detected_protocol != AP_RCProtocol::NONE && !searching) {
-        backend[_detected_protocol]->process_pulse(width_s0, width_s1);
+        backend[_detected_protocol]->process_pulse(width_s0, width_s1, pulse_id);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
             _last_input_ms = now;
@@ -145,7 +146,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
             }
             const uint32_t frame_count = backend[i]->get_rc_frame_count();
             const uint32_t input_count = backend[i]->get_rc_input_count();
-            backend[i]->process_pulse(width_s0, width_s1);
+            backend[i]->process_pulse(width_s0, width_s1, pulse_id);
             const uint32_t frame_count2 = backend[i]->get_rc_frame_count();
             if (frame_count2 > frame_count) {
                 if (requires_3_frames((rcprotocol_t)i) && frame_count2 < 3) {
@@ -373,37 +374,51 @@ bool AP_RCProtocol::new_input()
 uint8_t AP_RCProtocol::num_channels()
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->num_channels();
+        return _num_channels;
     }
     return 0;
 }
 
 uint16_t AP_RCProtocol::read(uint8_t chan)
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->read(chan);
-    }
-    return 0;
+    return _pwm_values[chan];
 }
 
 void AP_RCProtocol::read(uint16_t *pwm, uint8_t n)
 {
-    if (_detected_protocol != AP_RCProtocol::NONE) {
-        backend[_detected_protocol]->read(pwm, n);
+    if (n >= MAX_RCIN_CHANNELS) {
+        n = MAX_RCIN_CHANNELS;
     }
+    memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
+}
+
+/*
+  provide input from a backend
+ */
+void AP_RCProtocol::add_input(enum rcprotocol_t protocol, uint8_t num_values, uint16_t *values, int16_t _rssi, int16_t _rx_link_quality)
+{
+    if (_detected_protocol != protocol) {
+        // we only accept new rc input from current detected protocol
+        return;
+    }
+    num_values = MIN(num_values, MAX_RCIN_CHANNELS);
+    _num_channels = num_values;
+    memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
+    rssi = _rssi;
+    rx_link_quality = _rx_link_quality;
 }
 
 int16_t AP_RCProtocol::get_RSSI(void) const
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->get_RSSI();
+        return rssi;
     }
     return -1;
 }
 int16_t AP_RCProtocol::get_rx_link_quality(void) const
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {
-        return backend[_detected_protocol]->get_rx_link_quality();
+        return rx_link_quality;
     }
     return -1;
 }

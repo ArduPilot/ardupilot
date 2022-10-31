@@ -197,6 +197,8 @@ private:
     // return true if a specific protocol is enabled
     bool protocol_enabled(enum rcprotocol_t protocol) const;
 
+    void add_input(enum rcprotocol_t protocol, uint8_t num_channels, uint16_t *values, int16_t rssi=-1, int16_t rx_link_quality=-1);
+
     enum rcprotocol_t _detected_protocol = NONE;
     uint16_t _disabled_for_pulses;
     bool _detected_with_bytes;
@@ -216,9 +218,12 @@ private:
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;
-
+    uint16_t _pwm_values[MAX_RCIN_CHANNELS];
+    uint8_t  _num_channels;
+    int16_t rssi = -1;
+    int16_t rx_link_quality = -1;
+    uint8_t pulse_id;
 #endif  // AP_RCPROTCOL_ENABLED
-
 };
 
 #if AP_RCPROTOCOL_ENABLED

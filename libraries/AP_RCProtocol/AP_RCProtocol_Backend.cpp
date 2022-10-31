@@ -34,12 +34,21 @@
 
 
 
-AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
+SoftSerial AP_RCProtocol_Backend::ss_default{115200, SoftSerial::SERIAL_CONFIG_8N1};
+SoftSerial AP_RCProtocol_Backend::ss_inv_default{115200, SoftSerial::SERIAL_CONFIG_8N1};
+
+AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend, const AP_RCProtocol::rcprotocol_t _protocol_type) :
     frontend(_frontend),
     rc_input_count(0),
     last_rc_input_count(0),
-    _num_channels(0)
+    protocol_type(_protocol_type)
 {}
+
+AP_RCProtocol_Backend::~AP_RCProtocol_Backend()
+{
+    ss_default.reset();
+    ss_inv_default.reset();
+}
 
 bool AP_RCProtocol_Backend::new_input()
 {
@@ -50,32 +59,9 @@ bool AP_RCProtocol_Backend::new_input()
     return ret;
 }
 
-uint8_t AP_RCProtocol_Backend::num_channels() const
-{
-    return _num_channels;
-}
-
-uint16_t AP_RCProtocol_Backend::read(uint8_t chan)
-{
-    return _pwm_values[chan];
-}
-
-void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
-{
-    if (n >= MAX_RCIN_CHANNELS) {
-        n = MAX_RCIN_CHANNELS;
-    }
-    memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
-}
-
-/*
-  provide input from a backend
- */
 void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool in_failsafe, int16_t _rssi, int16_t _rx_link_quality)
 {
-    num_values = MIN(num_values, MAX_RCIN_CHANNELS);
-    memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
-    _num_channels = num_values;
+    frontend.add_input(protocol_type, num_values, values, _rssi, _rx_link_quality);
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
 #if !AP_RC_CHANNEL_ENABLED
@@ -89,10 +75,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     if (!in_failsafe) {
         rc_input_count++;
     }
-    rssi = _rssi;
-    rx_link_quality = _rx_link_quality;
 }
-
 
 /*
   decode channels from the standard 11bit format (used by CRSF, SBUS, FPort and FPort2)

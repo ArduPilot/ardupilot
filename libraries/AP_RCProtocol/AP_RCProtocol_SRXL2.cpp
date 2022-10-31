@@ -41,7 +41,7 @@ extern const AP_HAL::HAL& hal;
 
 AP_RCProtocol_SRXL2* AP_RCProtocol_SRXL2::_singleton;
 
-AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend)
+AP_RCProtocol_SRXL2::AP_RCProtocol_SRXL2(AP_RCProtocol &_frontend) : AP_RCProtocol_Backend(_frontend, AP_RCProtocol::SRXL2)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     if (_singleton != nullptr) {
