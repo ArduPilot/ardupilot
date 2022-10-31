@@ -44,7 +44,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Analog::var_info[] = {
     AP_GROUPINFO("AMP_OFFSET", 5, AP_BattMonitor_Analog, _curr_amp_offset, AP_BATT_CURR_AMP_OFFSET_DEFAULT),
 
     // @Param: VLT_OFFSET
-    // @DisplayName: Volage offset
+    // @DisplayName: Voltage offset
     // @Description: Voltage offset on voltage pin. This allows for an offset due to a diode. This voltage is subtracted before the scaling is applied
     // @Units: V
     // @User: Advanced
