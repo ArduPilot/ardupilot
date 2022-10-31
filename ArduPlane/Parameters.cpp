@@ -554,8 +554,8 @@ const AP_Param::Info Plane::var_info[] = {
     
     // @Param: ACRO_LOCKING
     // @DisplayName: ACRO mode attitude locking
-    // @Description: Enable attitude locking when sticks are released
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: Enable attitude locking when sticks are released. If set to 2 then quaternion based locking is used if the yaw rate controller is enabled. Quaternion based locking will hold any attitude
+    // @Values: 0:Disabled,1:Enabled,2:Quaternion
     // @User: Standard
     GSCALAR(acro_locking,             "ACRO_LOCKING",     0),
 
