@@ -479,18 +479,18 @@ void AP_Periph_FW::update()
             continue;
         }
         if (g.serial_chan_id[i] != -1) {
-            if (uavcan_serial[i] == nullptr) {
-                uavcan_serial[i] = new AP_UAVCAN_Serial(i);
-                if (uavcan_serial[i] == nullptr) {
+            if (dronecan_serial[i] == nullptr) {
+                dronecan_serial[i] = new AP_DroneCAN_Serial(i);
+                if (dronecan_serial[i] == nullptr) {
                     // we have run out of memory
                     break;
                 }
-                uavcan_serial[i]->begin(0); // baudrate doesn't matter
+                dronecan_serial[i]->begin(0); // baudrate doesn't matter
                 // set passthrough port
-                hal.serial(i)->set_passthrough(uavcan_serial[i]);
-                can_printf("UART[%d] is passed through to UAVCAN Tunnel[%d]", i, g.serial_chan_id[i]);
+                hal.serial(i)->set_passthrough(dronecan_serial[i]);
+                can_printf("UART[%d] is passed through to Tunnel[%d]: Manual", i, g.serial_chan_id[i]);
             }
-            uavcan_serial[i]->set_channel_id(g.serial_chan_id[i]);
+            dronecan_serial[i]->set_channel_id(g.serial_chan_id[i]);
         } else {
             // stop passthrough port
             hal.serial(i)->set_passthrough(nullptr);

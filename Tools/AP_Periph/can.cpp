@@ -28,7 +28,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Common/AP_FWVersion.h>
 #include <dronecan_msgs.h>
-#include "AP_UAVCAN_Serial.h"
+#include "AP_DroneCAN_Serial.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <hal.h>
@@ -921,30 +921,30 @@ static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* trans
     }
 
     // this might be a passthrough request for GPS
-    AP_SerialManager::SerialProtocol protocol = AP_UAVCAN_Serial::tunnel_protocol_to_ap_protocol(msg.protocol.protocol);
+    AP_SerialManager::SerialProtocol protocol = AP_DroneCAN_Serial::tunnel_protocol_to_ap_protocol(msg.protocol.protocol);
     if (protocol != AP_SerialManager::SerialProtocol_None && periph.g.serial_auto_passthrough_select) {
         // find port with matching protocol
         int8_t instance = AP::serialmanager().find_portnum(protocol, 0);
         if (instance >= 0 && instance < SERIALMANAGER_NUM_UART_PORTS) {
             // set passthrough to this port
             periph.g.serial_chan_id[instance].set(msg.channel_id);
-            if (periph.uavcan_serial[instance] == nullptr) {
-                periph.uavcan_serial[instance] = new AP_UAVCAN_Serial(msg.channel_id);
-                if (periph.uavcan_serial[instance] == nullptr) {
+            if (periph.dronecan_serial[instance] == nullptr) {
+                periph.dronecan_serial[instance] = new AP_DroneCAN_Serial(msg.channel_id);
+                if (periph.dronecan_serial[instance] == nullptr) {
                     // we have run out of memory
                     return;
                 }
-                periph.uavcan_serial[instance]->begin(0); // baudrate doesn't matter
+                periph.dronecan_serial[instance]->begin(0); // baudrate doesn't matter
                 // set passthrough port
-                hal.serial(instance)->set_passthrough(periph.uavcan_serial[instance]);
-                can_printf("UART[%d] is passed through to UAVCAN Tunnel[%d]", instance, periph.g.serial_chan_id[instance].get());
+                hal.serial(instance)->set_passthrough(periph.dronecan_serial[instance]);
+                can_printf("UART[%d] is passed through to Tunnel[%d]: Auto", instance, periph.g.serial_chan_id[instance].get());
             }
         }
     }
 
     for (uint8_t i=0; i<SERIALMANAGER_NUM_UART_PORTS; i++) {
-        if (periph.uavcan_serial[i] != nullptr) {
-            if (periph.uavcan_serial[i]->handle_tunnel_broadcast(*ins, *transfer, msg)) {
+        if (periph.dronecan_serial[i] != nullptr) {
+            if (periph.dronecan_serial[i]->handle_tunnel_broadcast(*ins, *transfer, msg)) {
                 return;
             }
         }
@@ -952,13 +952,13 @@ static void handle_tunnel_broadcast(CanardInstance* ins, CanardRxTransfer* trans
 
     // look for a matching node
 #if AP_SERIAL_EXTENSION_ENABLED
-    uint8_t num_uavcan_phys = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_UAVCAN);
+    uint8_t num_uavcan_phys = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_DroneCAN);
     for (uint8_t i=0; i<num_uavcan_phys; i++) {
-        AP_UAVCAN_Serial *uavcan_serial = static_cast<AP_UAVCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, i));
-        if (uavcan_serial == nullptr) {
+        AP_DroneCAN_Serial *dronecan_serial = static_cast<AP_DroneCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_DroneCAN, i));
+        if (dronecan_serial == nullptr) {
             continue;
         }
-        if (uavcan_serial->handle_tunnel_broadcast(*ins, *transfer, msg)) {
+        if (dronecan_serial->handle_tunnel_broadcast(*ins, *transfer, msg)) {
             return;
         }
     }
@@ -972,16 +972,16 @@ static void handle_serialconfig(CanardInstance* ins, CanardRxTransfer* transfer)
         return;
     }
     for (uint8_t i=0; i<SERIALMANAGER_NUM_UART_PORTS; i++) {
-        if (periph.g.serial_chan_id[i] == msg.channel_id && periph.uavcan_serial[i] != nullptr) {
-            periph.uavcan_serial[i]->set_usb_baud(msg.baud);
+        if (periph.g.serial_chan_id[i] == msg.channel_id && periph.dronecan_serial[i] != nullptr) {
+            periph.dronecan_serial[i]->set_usb_baud(msg.baud);
         }
     }
 #if AP_SERIAL_EXTENSION_ENABLED
-    AP_UAVCAN_Serial *uavcan_serial = static_cast<AP_UAVCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, msg.channel_id));
-    if (uavcan_serial == nullptr) {
+    AP_DroneCAN_Serial *dronecan_serial = static_cast<AP_DroneCAN_Serial*>(AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_DroneCAN, msg.channel_id));
+    if (dronecan_serial == nullptr) {
         return;
     }
-    uavcan_serial->set_usb_baud(msg.baud);
+    dronecan_serial->set_usb_baud(msg.baud);
 #endif
 }
 #endif //HAL_ENABLE_SERIAL_TUNNEL

@@ -23,7 +23,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <AP_HAL/CANIface.h>
 #include <AP_Stats/AP_Stats.h>
-#include "AP_UAVCAN_Serial.h"
+#include "AP_DroneCAN_Serial.h"
 
 
 #include <AP_NMEA_Output/AP_NMEA_Output.h>
@@ -320,7 +320,7 @@ public:
 
     // UAVCAN Serial for passthrough
 #if HAL_ENABLE_SERIAL_TUNNEL
-    AP_UAVCAN_Serial *uavcan_serial[SERIALMANAGER_NUM_UART_PORTS];
+    AP_DroneCAN_Serial *dronecan_serial[SERIALMANAGER_NUM_UART_PORTS];
 #endif
 
 #if HAL_CANARD_BROADCAST_THREAD_SAFE
