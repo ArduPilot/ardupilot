@@ -15,83 +15,36 @@
 
 #include "AP_EFI_MAV.h"
 
-#include <GCS_MAVLink/GCS.h>
+AP_EFI_MAV::AP_EFI_MAV(AP_EFI &_frontend) :  AP_EFI_Backend(_frontend) {
+    //Nothing to do here
+}
 
-AP_EFI_MAV *AP_EFI_MAV::singleton;
-
-AP_EFI_MAV::AP_EFI_MAV() {
-    singleton = this;
+// Called from frontend to update with the readings received by handler
+void AP_EFI_MAV::update() {
+	//Nothing to do here
 }
 
 //Decode MavLink message
 void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg) {
-    mavlink_msg_efi_status_decode(&msg, &efi_data);
-}
+	mavlink_efi_status_t state;
+    mavlink_msg_efi_status_decode(&msg, &state);
 
-/*
- * Get EFI state data (depending on index number)
- * This method is available for LUA script
- */
-float AP_EFI_MAV::get_EFI_state(uint8_t index) {
-    switch(index) {
-    case 0:
-        return efi_data.ecu_index;
-        break;
-    case 1:
-        return efi_data.rpm;
-        break;
-    case 2:
-        return efi_data.fuel_consumed;
-        break;
-    case 3:
-        return efi_data.fuel_flow;
-        break;
-    case 4:
-        return efi_data.engine_load;
-        break;
-    case 5:
-        return efi_data.throttle_position;
-        break;
-    case 6:
-        return efi_data.spark_dwell_time;
-        break;
-    case 7:
-        return efi_data.barometric_pressure;
-        break;
-    case 8:
-        return efi_data.intake_manifold_pressure;
-        break;
-    case 9:
-        return efi_data.intake_manifold_temperature;
-        break;
-    case 10:
-        return efi_data.cylinder_head_temperature;
-        break;
-    case 11:
-        return efi_data.ignition_timing;
-        break;
-    case 12:
-        return efi_data.injection_time;
-        break;
-    case 13:
-        return efi_data.exhaust_gas_temperature;
-        break;
-    case 14:
-        return efi_data.throttle_out;
-        break;
-    case 15:
-        return efi_data.pt_compensation;
-        break;
-    case 16:
-        return efi_data.ignition_voltage;
-        break;
-    }
-    return 0.0;
-}
-
-namespace AP {
-AP_EFI_MAV &EFI_MAV()
-{
-    return *AP_EFI_MAV::get_singleton();
-}
+    internal_state.ecu_index = state.ecu_index;
+    //internal_state.??? = state.rpm;
+    //internal_state.??? = state.fuel_consumed;
+    //internal_state.??? = state.fuel_flow;
+    internal_state.engine_load_percent = state.engine_load;
+    internal_state.throttle_position_percent = state.throttle_position;
+    internal_state.spark_dwell_time_ms = state.spark_dwell_time;
+    //internal_state.??? = state.barometric_pressure;
+    internal_state.intake_manifold_pressure_kpa = state.intake_manifold_pressure;
+    internal_state.intake_manifold_temperature = state.intake_manifold_temperature;
+    internal_state.cylinder_status.cylinder_head_temperature = state.cylinder_head_temperature;
+    internal_state.cylinder_status.ignition_timing_deg = state.ignition_timing;
+    internal_state.cylinder_status.injection_time_ms = state.injection_time;
+    internal_state.cylinder_status.exhaust_gas_temperature = state.exhaust_gas_temperature;
+    internal_state.throttle_out = state.throttle_out;
+    internal_state.pt_compensation = state.pt_compensation;
+    //internal_state.??? = state.health;
+    internal_state.ignition_voltage = state.ignition_voltage;
 }

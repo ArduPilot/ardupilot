@@ -31,6 +31,8 @@ public:
     // Update the state structure
     virtual void update() = 0;
 
+    virtual void handle_EFI_message(const mavlink_message_t &msg);
+
 #if AP_SCRIPTING_ENABLED
     virtual bool handle_scripting(const EFI_State &efi_state) { return false; }
 #endif

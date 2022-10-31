@@ -51,4 +51,10 @@ float AP_EFI_Backend::get_ecu_fuel_density(void) const
 {
     return frontend.ecu_fuel_density;
 }
+
+void AP_EFI_Backend::handle_EFI_message(const mavlink_message_t &msg)
+{
+	//Do nothing
+}
+
 #endif // HAL_EFI_ENABLED

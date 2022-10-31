@@ -15,34 +15,16 @@
 
 #pragma once
 
-#include <AP_Common/AP_Common.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
-/*
- * This class is completely separate from the rest of this library.
- * This class is aimed at decoding incoming MavLink messages,
- * storing them and making them available for LUA script.
- */
+#include "AP_EFI.h"
+#include "AP_EFI_Backend.h"
 
-class AP_EFI_MAV {
+class AP_EFI_MAV : public AP_EFI_Backend {
 public:
-    AP_EFI_MAV();
+    AP_EFI_MAV(AP_EFI &_frontend);
 
-    static AP_EFI_MAV *get_singleton(void) {
-        return singleton;
-    }
+    void update() override;
 
-    void handle_EFI_message(const mavlink_message_t &msg);
-
-    float get_EFI_state(uint8_t index);
-
-private:
-    static AP_EFI_MAV *singleton;
-
-    //Stores incoming EFI data
-    __mavlink_efi_status_t efi_data;
-};
-
-namespace AP {
-    AP_EFI_MAV &EFI_MAV();
+    void handle_EFI_message(const mavlink_message_t &msg) override;
 };
