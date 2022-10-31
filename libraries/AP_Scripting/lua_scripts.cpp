@@ -462,8 +462,18 @@ void lua_scripts::run(void) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Lua: Couldn't allocate a lua state");
         return;
     }
+
+#ifndef HAL_CONSOLE_DISABLED
+    const int inital_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+#endif
+
     lua_atpanic(L, atpanic);
     load_generated_bindings(L);
+
+#ifndef HAL_CONSOLE_DISABLED
+    const int loaded_mem = lua_gc(L, LUA_GCCOUNT, 0) * 1024 + lua_gc(L, LUA_GCCOUNTB, 0);
+    DEV_PRINTF("Lua: State memory usage: %i + %i\n", inital_mem, loaded_mem - inital_mem);
+#endif
 
     // Scan the filesystem in an appropriate manner and autostart scripts
     // Skip those directores disabled with SCR_DIR_DISABLE param
