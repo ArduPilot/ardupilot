@@ -973,7 +973,7 @@ static void handle_serialconfig(CanardInstance* ins, CanardRxTransfer* transfer)
     }
     for (uint8_t i=0; i<SERIALMANAGER_NUM_UART_PORTS; i++) {
         if (periph.g.serial_chan_id[i] == msg.channel_id && periph.dronecan_serial[i] != nullptr) {
-            periph.dronecan_serial[i]->set_usb_baud(msg.baud);
+            periph.dronecan_serial[i]->set_passthrough_baud(msg.baud);
         }
     }
 #if AP_SERIAL_EXTENSION_ENABLED
@@ -981,7 +981,7 @@ static void handle_serialconfig(CanardInstance* ins, CanardRxTransfer* transfer)
     if (dronecan_serial == nullptr) {
         return;
     }
-    dronecan_serial->set_usb_baud(msg.baud);
+    dronecan_serial->set_passthrough_baud(msg.baud);
 #endif
 }
 #endif //HAL_ENABLE_SERIAL_TUNNEL
