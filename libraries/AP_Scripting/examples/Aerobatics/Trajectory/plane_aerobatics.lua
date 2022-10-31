@@ -1109,6 +1109,15 @@ function target_groundspeed()
    return math.max(ahrs:get_EAS2TAS()*TRIM_ARSPD_CM:get()*0.01, ahrs:get_velocity_NED():length())
 end
 
+--[[
+   get ground course from AHRS
+--]]
+function get_ground_course_deg()
+   local vned = ahrs:get_velocity_NED()
+   return wrap_180(math.deg(math.atan(vned:y(), vned:x())))
+end
+
+
 --args:
 --  path_f: path function returning position 
 --  t: normalised [0, 1] time
@@ -1664,7 +1673,7 @@ function check_auto_mission()
       -- we've started a new command
       current_task = nil
       last_id = id
-      local initial_yaw_deg = math.deg(ahrs:get_yaw())
+      local initial_yaw_deg = get_ground_course_deg()
       gcs:send_text(0, string.format("Starting %s!", command_table[cmd].name ))
 
       -- work out yaw between previous WP and next WP
@@ -1770,7 +1779,7 @@ function check_trick()
             return
          end
          gcs:send_text(0, string.format("Trick %u started (%s)", selection, cmd.name))
-         local initial_yaw_deg = math.deg(ahrs:get_yaw())
+         local initial_yaw_deg = get_ground_course_deg()
          current_task = PathTask(cmd.fn,
                                  cmd.name,
                                  nil,
