@@ -398,6 +398,7 @@ private:
         bool locked_pitch;
         float locked_roll_err;
         int32_t locked_pitch_cd;
+        Quaternion q;
     } acro_state;
 
     struct {
@@ -860,6 +861,7 @@ private:
     void stabilize_yaw(float speed_scaler);
     void stabilize_training(float speed_scaler);
     void stabilize_acro(float speed_scaler);
+    void stabilize_acro_quaternion(float speed_scaler);
     void calc_nav_yaw_coordinated(float speed_scaler);
     void calc_nav_yaw_course(void);
     void calc_nav_yaw_ground(void);
