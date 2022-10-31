@@ -395,10 +395,18 @@ void Plane::stabilize_training(float speed_scaler)
  */
 void Plane::stabilize_acro(float speed_scaler)
 {
+    if (g.acro_locking == 2 && g.acro_yaw_rate > 0 &&
+        yawController.rate_control_enabled()) {
+        // we can do 3D acro locking
+        stabilize_acro_quaternion(speed_scaler);
+        return;
+    }
     const float rexpo = roll_in_expo(true);
     const float pexpo = pitch_in_expo(true);
     float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
     float pitch_rate = (pexpo/SERVO_MAX) * g.acro_pitch_rate;
+
+    IGNORE_RETURN(plane.ahrs.get_quaternion(plane.acro_state.q));
 
     /*
       check for special roll handling near the pitch poles
@@ -472,6 +480,78 @@ void Plane::stabilize_acro(float speed_scaler)
 }
 
 /*
+  quaternion based acro stabilization with continuous locking. Enabled with ACRO_LOCKING=2
+ */
+void Plane::stabilize_acro_quaternion(float speed_scaler)
+{
+    auto &q = acro_state.q;
+    const float rexpo = roll_in_expo(true);
+    const float pexpo = pitch_in_expo(true);
+    const float yexpo = rudder_in_expo(true);
+
+    // get pilot desired rates
+    float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
+    float pitch_rate = (pexpo/SERVO_MAX) * g.acro_pitch_rate;
+    float yaw_rate = (yexpo/SERVO_MAX) * g.acro_yaw_rate;
+
+    // integrate target attitude
+    Vector3f r{ float(radians(roll_rate)), float(radians(pitch_rate)), float(radians(yaw_rate)) };
+    r *= G_Dt;
+    q.rotate_fast(r);
+    q.normalize();
+
+    // fill in target roll/pitch for GCS/logs
+    nav_roll_cd = degrees(q.get_euler_roll())*100;
+    nav_pitch_cd = degrees(q.get_euler_pitch())*100;
+
+    // get AHRS attitude
+    Quaternion ahrs_q;
+    IGNORE_RETURN(ahrs.get_quaternion(ahrs_q));
+
+    // zero target if not flying, no stick input and zero throttle
+    if (is_zero(get_throttle_input()) &&
+        !is_flying() &&
+        is_zero(roll_rate) &&
+        is_zero(pitch_rate) &&
+        is_zero(yaw_rate)) {
+        // cope with sitting on the ground with neutral sticks, no throttle
+        q = ahrs_q;
+    }
+
+    // get error in attitude
+    Quaternion error_quat = ahrs_q.inverse() * q;
+    Vector3f error_angle1;
+    error_quat.to_axis_angle(error_angle1);
+
+    // don't let too much error build up, limit to 0.2s
+    const float max_error_t = 0.2;
+    const float max_err_roll_rad  = radians(g.acro_roll_rate*max_error_t);
+    const float max_err_pitch_rad = radians(g.acro_pitch_rate*max_error_t);
+    const float max_err_yaw_rad   = radians(g.acro_yaw_rate*max_error_t);
+
+    Vector3f error_angle2 = error_angle1;
+    error_angle2.x = constrain_float(error_angle2.x, -max_err_roll_rad, max_err_roll_rad);
+    error_angle2.y = constrain_float(error_angle2.y, -max_err_pitch_rad, max_err_pitch_rad);
+    error_angle2.z = constrain_float(error_angle2.z, -max_err_yaw_rad, max_err_yaw_rad);
+
+    // correct target based on max error
+    q.rotate_fast(error_angle2 - error_angle1);
+    q.normalize();
+
+    // convert to desired body rates
+    error_angle2.x /= rollController.tau();
+    error_angle2.y /= pitchController.tau();
+    error_angle2.z /= pitchController.tau(); // no yaw tau parameter, use pitch
+
+    error_angle2 *= degrees(1.0);
+
+    // call to rate controllers
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  rollController.get_rate_out(error_angle2.x, speed_scaler));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(error_angle2.y, speed_scaler));
+    steering_control.steering = steering_control.rudder = yawController.get_rate_out(error_angle2.z,  speed_scaler, false);
+}
+
+/*
   main stabilization function for all 3 axes
  */
 void Plane::stabilize()
@@ -528,10 +608,10 @@ void Plane::stabilize()
 
         // we also stabilize using fixed wing surfaces
         if (plane.control_mode->mode_number() == Mode::Number::QACRO) {
-            plane.stabilize_acro(speed_scaler);
+            stabilize_acro(speed_scaler);
         } else {
-            plane.stabilize_roll(speed_scaler);
-            plane.stabilize_pitch(speed_scaler);
+            stabilize_roll(speed_scaler);
+            stabilize_pitch(speed_scaler);
         }
 #endif
     } else {
