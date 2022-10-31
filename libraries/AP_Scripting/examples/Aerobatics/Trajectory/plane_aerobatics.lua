@@ -584,20 +584,21 @@ function path_composer(_name, _subpaths)
       else
          -- we are being called with a list function/argument tuples
          local args = subpaths[i][2]
-         cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4])
+         cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4], start_pos[i], start_orientation[i])
       end
       return cache_sp
    end
    
    for i = 1, num_sub_paths do
-      local sp = self.subpath(i)
-      lengths[i] = sp.get_length()
-      total_length = total_length + lengths[i]
-
       -- accumulate orientation, position and angle
       start_orientation[i] = orientation
       start_pos[i] = pos
       start_angle[i] = angle
+
+      local sp = self.subpath(i)
+      lengths[i] = sp.get_length()
+      total_length = total_length + lengths[i]
+
       local spos = sp.get_pos(1.0)
       orientation:earth_to_body(spos)
       pos = pos + spos
@@ -720,6 +721,23 @@ end
 function straight_roll(length, num_rolls, arg3, arg4)
    return make_paths("straight_roll", {
          { path_straight(length), roll_angle(num_rolls*360) },
+   })
+end
+
+--[[
+
+   fly straight until we are distance meters from the composite path
+   origin in the maneuver frame along the X axis. If we are already
+   past that position then return immediately
+--]]
+function straight_align(distance, arg2, arg3, arg4, start_pos, start_orientation)
+   local d2 = distance - start_pos:x()
+   local v = makeVector3f(d2, 0, 0)
+   start_orientation:earth_to_body(v)
+   local len = math.max(v:x(),0.01)
+   gcs:send_text(0,string.format("straight_align: %.1f %.1f %.1f", distance, d2, len))
+   return make_paths("straight_align", {
+         { path_straight(len), roll_angle(0) },
    })
 end
 
