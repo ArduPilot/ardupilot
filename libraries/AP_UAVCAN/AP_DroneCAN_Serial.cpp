@@ -18,7 +18,8 @@
 #include <AP_HAL/AP_HAL.h>
 #if HAL_ENABLE_LIBUAVCAN_DRIVERS && AP_SERIAL_EXTENSION_ENABLED
 
-#include "AP_UAVCAN_Serial.h"
+#include <AP_Math/AP_Math.h>
+#include "AP_DroneCAN_Serial.h"
 #include "AP_UAVCAN.h"
 #include <uavcan/uavcan.hpp>
 #include <uavcan/tunnel/Broadcast.hpp>
@@ -42,12 +43,12 @@ static uavcan::Publisher<uavcan::tunnel::SerialConfig>* serial_config_pub[HAL_MA
 #define DEBUG 1
 
 #if DEBUG
-#define debug(fmt, args...) do { hal.console->printf("AP_UAVCAN_Serial: " fmt, ##args); } while (0)
+#define debug(fmt, args...) do { hal.console->printf("AP_DroneCAN_Serial: " fmt, ##args); } while (0)
 #else
 #define debug(fmt, args...)
 #endif
 
-void AP_UAVCAN_Serial::subscribe_msgs(AP_UAVCAN* ap_uavcan)
+void AP_DroneCAN_Serial::subscribe_msgs(AP_UAVCAN* ap_uavcan)
 {
     auto* node = ap_uavcan->get_node();
     if (node == nullptr) {
@@ -57,11 +58,11 @@ void AP_UAVCAN_Serial::subscribe_msgs(AP_UAVCAN* ap_uavcan)
     call_sub = new uavcan::Subscriber<uavcan::tunnel::Broadcast, BroadcastCb>(*node);
     const int call_sub_res = call_sub->start(BroadcastCb(ap_uavcan, &trampoline_handleBroadcast));
     if (call_sub_res < 0) {
-        AP_HAL::panic("UAVCAN Serial subscriber start problem, code: %d", call_sub_res);
+        AP_HAL::panic("DroneCAN Serial subscriber start problem, code: %d", call_sub_res);
     }
 }
 
-void AP_UAVCAN_Serial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
+void AP_DroneCAN_Serial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
     rxS = MAX(rxS, HAL_UART_MIN_RX_SIZE);
     txS = MAX(txS, HAL_UART_MIN_TX_SIZE);
@@ -78,13 +79,13 @@ void AP_UAVCAN_Serial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (broadcast_pub[i] == nullptr) {
             broadcast_pub[i] = new uavcan::Publisher<uavcan::tunnel::Broadcast>(*ap_uavcan->get_node());
             if (broadcast_pub[i] == nullptr) {
-                AP_BoardConfig::allocation_error("AP_UAVCAN_Serial: broadcast_pub[%d]", i);
+                AP_BoardConfig::allocation_error("AP_DroneCAN_Serial: broadcast_pub[%d]", i);
             }
         }
         if (serial_config_pub[i] == nullptr) {
             serial_config_pub[i] = new uavcan::Publisher<uavcan::tunnel::SerialConfig>(*ap_uavcan->get_node());
             if (serial_config_pub[i] == nullptr) {
-                AP_BoardConfig::allocation_error("AP_UAVCAN_Serial: serial_config_pub[%d]", i);
+                AP_BoardConfig::allocation_error("AP_DroneCAN_Serial: serial_config_pub[%d]", i);
             }
         }
     }
@@ -92,14 +93,14 @@ void AP_UAVCAN_Serial::begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _baudrate = b;
 }
 
-void AP_UAVCAN_Serial::end()
+void AP_DroneCAN_Serial::end()
 {
     _initialized = false;
     _readbuf.set_size(0);
     _writebuf.set_size(0);
 }
 
-int16_t AP_UAVCAN_Serial::read()
+int16_t AP_DroneCAN_Serial::read()
 {
     uint8_t c;
     if (_readbuf.read_byte(&c)) {
@@ -109,33 +110,33 @@ int16_t AP_UAVCAN_Serial::read()
     }
 }
 
-ssize_t AP_UAVCAN_Serial::read(uint8_t *buffer, uint16_t count)
+ssize_t AP_DroneCAN_Serial::read(uint8_t *buffer, uint16_t count)
 {
     return _readbuf.read(buffer, count);
 }
 
-size_t AP_UAVCAN_Serial::write(uint8_t c)
+size_t AP_DroneCAN_Serial::write(uint8_t c)
 {
     return _writebuf.write(&c, 1);
 }
 
-size_t AP_UAVCAN_Serial::write(const uint8_t *buffer, size_t size)
+size_t AP_DroneCAN_Serial::write(const uint8_t *buffer, size_t size)
 {
     return _writebuf.write(buffer, size);
 }
 
-void AP_UAVCAN_Serial::handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BroadcastCb& resp)
+void AP_DroneCAN_Serial::handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BroadcastCb& resp)
 {
     // finally consume the msg data
     _readbuf.write(resp.msg->buffer.begin(), resp.msg->buffer.size());
 }
 
-void AP_UAVCAN_Serial::trampoline_handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BroadcastCb& resp)
+void AP_DroneCAN_Serial::trampoline_handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t node_id, const BroadcastCb& resp)
 {
     // find maching serial driver with channel id
-    const uint8_t num_uavcan_serials = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_UAVCAN);
-    for (uint8_t i = 0; i < num_uavcan_serials; i++) {
-        AP_UAVCAN_Serial* serial = (AP_UAVCAN_Serial*)AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_UAVCAN, i);
+    const uint8_t num_dronecan_serials = AP::serialmanager().get_num_phy_serials(AP_SerialManager::SerialPhysical_DroneCAN);
+    for (uint8_t i = 0; i < num_dronecan_serials; i++) {
+        AP_DroneCAN_Serial* serial = (AP_DroneCAN_Serial*)AP::serialmanager().find_serial_by_phy(AP_SerialManager::SerialPhysical_DroneCAN, i);
         if (serial == nullptr) {
             continue;
         }
@@ -146,7 +147,7 @@ void AP_UAVCAN_Serial::trampoline_handleBroadcast(AP_UAVCAN* ap_uavcan, uint8_t 
     }
 }
 
-void AP_UAVCAN_Serial::uavcan_loop(AP_SerialManager::SerialProtocol protocol_id)
+void AP_DroneCAN_Serial::dronecan_loop(AP_SerialManager::SerialProtocol protocol_id)
 {
     if (!_initialized) {
         return;

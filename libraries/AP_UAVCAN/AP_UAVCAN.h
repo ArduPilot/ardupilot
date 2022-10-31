@@ -67,7 +67,7 @@ class ParamGetSetCb;
 class ParamExecuteOpcodeCb;
 class AP_PoolAllocator;
 class AP_UAVCAN_DNA_Server;
-class AP_UAVCAN_Serial;
+class AP_DroneCAN_Serial;
 
 #if AP_DRONECAN_HIMARK_SERVO_ENABLED
 class HimarkServoInfoCb;

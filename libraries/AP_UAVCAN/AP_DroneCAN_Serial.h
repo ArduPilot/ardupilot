@@ -12,12 +12,12 @@
 class AP_UAVCAN;
 class BroadcastCb;
 
-class AP_UAVCAN_Serial : public AP_HAL::UARTDriver {
+class AP_DroneCAN_Serial : public AP_HAL::UARTDriver {
     friend class AP_SerialManager;
 public:
 
     // set channel id
-    AP_UAVCAN_Serial(uint8_t channel_id) :
+    AP_DroneCAN_Serial(uint8_t channel_id) :
         _channel_id(channel_id)
     {}
 
@@ -68,7 +68,7 @@ public:
 
 private:
 
-    void uavcan_loop(AP_SerialManager::SerialProtocol protocol_id);
+    void dronecan_loop(AP_SerialManager::SerialProtocol protocol_id);
 
     int _channel_id;
 
