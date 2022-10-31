@@ -655,7 +655,7 @@ bool UARTDriver::tx_pending() { return _writebuf.available() > 0; }
 /*
     get the requested usb baudrate - 0 = none
 */
-uint32_t UARTDriver::get_usb_baud() const
+uint32_t UARTDriver::get_passthrough_baud() const
 {
 #if HAL_USE_SERIAL_USB
     if (sdef.is_usb) {
@@ -1307,12 +1307,12 @@ void UARTDriver::_tx_timer_tick(void)
     if (_passthrough_port) {
         WITH_SEMAPHORE(_passthrough_sem);
         // check baudrate
-        if (_baudrate != _passthrough_port->get_usb_baud() &&
-            _passthrough_port->get_usb_baud() != 0 &&
+        if (_baudrate != _passthrough_port->get_passthrough_baud() &&
+            _passthrough_port->get_passthrough_baud() != 0 &&
             !sdef.is_usb) {
             // baudrate changed, restart the port
             end();
-            begin_locked(_passthrough_port->get_usb_baud(), passthrough_lock_key);
+            begin_locked(_passthrough_port->get_passthrough_baud(), passthrough_lock_key);
         }
         ByteBuffer::IoVec vec[2];
         const auto n_vec = _writebuf.reserve(vec, _writebuf.space());

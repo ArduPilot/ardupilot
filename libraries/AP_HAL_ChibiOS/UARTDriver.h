@@ -43,7 +43,7 @@ public:
     bool is_initialized() override;
     void set_blocking_writes(bool blocking) override;
     bool tx_pending() override;
-    uint32_t get_usb_baud() const override;
+    uint32_t get_passthrough_baud() const override;
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
