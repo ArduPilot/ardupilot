@@ -489,6 +489,16 @@ function path_horizontal_arc(_radius, _angle, _height_gain)
    function self.get_final_orientation()
       local q = Quaternion()
       q:from_axis_angle(makeVector3f(0,0,1), sgn(radius)*math.rad(angle))
+      --[[
+         we also need to apply the roll correction to the final orientation
+      --]]
+      local rc = self.get_roll_correction(1.0)
+      if rc ~= 0 then
+         local q2 = Quaternion()
+         q2:from_axis_angle(makeVector3f(1,0,0), math.rad(-rc))
+         q = q * q2
+         q:normalize()
+      end
       return q
    end
 
