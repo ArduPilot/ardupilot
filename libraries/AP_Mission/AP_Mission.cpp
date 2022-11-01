@@ -2136,6 +2136,7 @@ uint16_t AP_Mission::get_landing_sequence_start()
         return 0;
     }
 
+    const Location::AltFrame current_loc_alt_frame = current_loc.get_alt_frame();
     uint16_t landing_start_index = 0;
     float min_distance = -1;
 
@@ -2150,7 +2151,16 @@ uint16_t AP_Mission::get_landing_sequence_start()
                 // command does not have a valid location and cannot get next valid
                 continue;
             }
-            float tmp_distance = tmp.content.location.get_distance(current_loc);
+
+            float tmp_distance;
+            if (current_loc_alt_frame == tmp.content.location.get_alt_frame() || tmp.content.location.change_alt_frame(current_loc_alt_frame)) {
+                // 3D distance - altitudes are able to be compared in the same frame
+                tmp_distance = tmp.content.location.get_distance_NED(current_loc).length();
+            } else {
+                // 2D distance - no altitude
+                tmp_distance = tmp.content.location.get_distance(current_loc);
+            }
+            
             if (min_distance < 0 || tmp_distance < min_distance) {
                 min_distance = tmp_distance;
                 landing_start_index = i;
