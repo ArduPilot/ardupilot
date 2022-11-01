@@ -47,6 +47,10 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...)  do {printf("MPU: " fmt "\n", ## args); } while(0)
 #endif
 
+#ifndef HAL_ENABLE_FAST_FIFO_RESET_ICM20602
+#define HAL_ENABLE_FAST_FIFO_RESET_ICM20602 false
+#endif
+
 /*
   EXT_SYNC allows for frame synchronisation with an external device
   such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
@@ -239,7 +243,7 @@ void AP_InertialSensor_Invensense::start()
         // ICM20602 has a bug where sometimes the data gets a huge offset
         // this seems to be fixed by doing a quick FIFO reset via USR_CTRL
         // reg
-        _enable_fast_fifo_reset = true;
+        _enable_fast_fifo_reset = HAL_ENABLE_FAST_FIFO_RESET_ICM20602;
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20601:
