@@ -25,7 +25,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
 #ifndef HAL_RUNCAM_ENABLED
-#define HAL_RUNCAM_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_RUNCAM_ENABLED 1
 #endif
 
 #if HAL_RUNCAM_ENABLED
