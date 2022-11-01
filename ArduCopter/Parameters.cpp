@@ -385,15 +385,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(land_detector_accel_lpf_cutoff, "LAND_DET_ACC_LPF", LAND_DETECTOR_ACCEL_LPF_CUTOFF_DEFAULT),
 
-    // @Param: LAND_DET_ACC_MAX
-    // @DisplayName: nuvehicle acceleration must be under 1m/s/s
-    // @Description: vehicle acceleration must be under 1m/s/s
-    // @Units: m/s/s
-    // @Range: 0.1 2
-    // @User: Advanced
-   GSCALAR(land_detector_accel_max, "LAND_DET_ACC_MAX", LAND_DETECTOR_ACCEL_MAX_DEFAULT),
-
- 
+   
     // @Param: ANGLE_MAX
     // @DisplayName: Angle Max
     // @Description: Maximum lean angle in all flight modes
