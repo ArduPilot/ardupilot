@@ -408,20 +408,20 @@
 //////////////////////////////////////////////////////////////////////////////
 // Landing Detector
 //
-#ifndef LAND_DETECTOR_TRIGGER_SEC
- # define LAND_DETECTOR_TRIGGER_SEC         1.0f    // number of seconds to detect a landing
+#ifndef LAND_DETECTOR_TRIGGER_SEC_DEFAULT
+ # define LAND_DETECTOR_TRIGGER_SEC_DEFAULT         1.0f    // number of seconds to detect a landing
 #endif
-#ifndef LAND_AIRMODE_DETECTOR_TRIGGER_SEC
- # define LAND_AIRMODE_DETECTOR_TRIGGER_SEC 3.0f    // number of seconds to detect a landing in air mode
+#ifndef LAND_AIRMODE_DETECTOR_TRIGGER_SEC_DEFAULT
+ # define LAND_AIRMODE_DETECTOR_TRIGGER_SEC_DEFAULT 3.0f    // number of seconds to detect a landing in air mode
 #endif
-#ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC
- # define LAND_DETECTOR_MAYBE_TRIGGER_SEC   0.2f    // number of seconds that means we might be landed (used to reset horizontal position targets to prevent tipping over)
+#ifndef LAND_DETECTOR_MAYBE_TRIGGER_SEC_DEFAULT
+ # define LAND_DETECTOR_MAYBE_TRIGGER_SEC_DEFAULT   0.2f    // number of seconds that means we might be landed (used to reset horizontal position targets to prevent tipping over)
 #endif
-#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF
-# define LAND_DETECTOR_ACCEL_LPF_CUTOFF     1.0f    // frequency cutoff of land detector accelerometer filter
+#ifndef LAND_DETECTOR_ACCEL_LPF_CUTOFF_DEFAULT
+# define LAND_DETECTOR_ACCEL_LPF_CUTOFF_DEFAULT     1.0f    // frequency cutoff of land detector accelerometer filter
 #endif
-#ifndef LAND_DETECTOR_ACCEL_MAX
-# define LAND_DETECTOR_ACCEL_MAX            1.0f    // vehicle acceleration must be under 1m/s/s
+#ifndef LAND_DETECTOR_ACCEL_MAX_DEFAULT
+# define LAND_DETECTOR_ACCEL_MAX_DEFAULT            1.0f    // vehicle acceleration must be under 1m/s/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
