@@ -379,6 +379,12 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_land_detector_trigger_sec,
+		k_param_land_detector_maybe_trigger_sec,
+		k_param_land_detector_accel_lpf_cutoff,
+		k_param_land_detector_accel_max,
+
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
@@ -455,7 +461,13 @@ public:
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
+	
+	AP_Float		land_detector_accel_lpf_cutoff;
+	AP_Float		land_detector_trigger_sec;
+	AP_Float		land_detector_maybe_trigger_sec;
+	AP_Float		land_detector_accel_max;
 
+    
 #if MODE_THROW_ENABLED == ENABLED
     AP_Enum<ModeThrow::PreThrowMotorState>         throw_motor_start;
 #endif
