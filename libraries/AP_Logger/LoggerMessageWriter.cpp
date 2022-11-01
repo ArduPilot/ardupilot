@@ -430,6 +430,7 @@ void LoggerMessageWriter_Write_Polyfence::process() {
 
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
+        _finished = true;
         return;
     }
 
