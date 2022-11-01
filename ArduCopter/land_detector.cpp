@@ -98,7 +98,7 @@ void Copter::update_land_detector()
 #endif
 
         // check that the airframe is not accelerating (not falling or braking after fast forward flight)
-        bool accel_stationary = (land_accel_ef_filter.get().length() <= g.land_detector_accel_max * land_detector_scalar);
+        bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX * land_detector_scalar);
 
         // check that vertical speed is within 1m/s of zero
         bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100 * land_detector_scalar;
