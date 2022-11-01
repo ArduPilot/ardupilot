@@ -399,6 +399,9 @@ private:
         float locked_roll_err;
         int32_t locked_pitch_cd;
         Quaternion q;
+        bool roll_active_last;
+        bool pitch_active_last;
+        bool yaw_active_last;
     } acro_state;
 
     struct {
