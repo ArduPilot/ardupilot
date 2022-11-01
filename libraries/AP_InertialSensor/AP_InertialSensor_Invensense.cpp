@@ -47,6 +47,10 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...)  do {printf("MPU: " fmt "\n", ## args); } while(0)
 #endif
 
+#ifndef HAL_ENABLE_FAST_FIFO_RESET_ICM20602
+#define HAL_ENABLE_FAST_FIFO_RESET_ICM20602 0
+#endif
+
 /*
   EXT_SYNC allows for frame synchronisation with an external device
   such as a camera. When enabled the LSB of AccelZ holds the FSYNC bit
@@ -239,7 +243,7 @@ void AP_InertialSensor_Invensense::start()
         // ICM20602 has a bug where sometimes the data gets a huge offset
         // this seems to be fixed by doing a quick FIFO reset via USR_CTRL
         // reg
-        _enable_fast_fifo_reset = true;
+        _enable_fast_fifo_reset = HAL_ENABLE_FAST_FIFO_RESET_ICM20602;
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20601:
@@ -449,6 +453,7 @@ bool AP_InertialSensor_Invensense::update() /* front end */
 
     _publish_temperature(_accel_instance, _temp_filtered);
 
+#if HAL_ENABLE_FAST_FIFO_RESET_ICM20602
     if (fast_reset_count) {
         // check if we have reported in the last 1 seconds or
         // fast_reset_count changed
@@ -470,7 +475,7 @@ bool AP_InertialSensor_Invensense::update() /* front end */
         }
 #endif
     }
-
+#endif
     return true;
 }
 
@@ -634,10 +639,13 @@ bool AP_InertialSensor_Invensense::_accumulate_sensor_rate_sampling(uint8_t *sam
         // use temperature to detect FIFO corruption
         int16_t t2 = int16_val(data, 3);
         if (!_check_raw_temp(t2)) {
+#if HAL_ENABLE_FAST_FIFO_RESET_ICM20602
             if (_enable_fast_fifo_reset) {
                 _fast_fifo_reset();
                 ret = false;
-            } else {
+            } else 
+#endif
+            {
                 if (!hal.scheduler->in_expected_delay()) {
                     debug("temp reset IMU[%u] %d %d", _accel_instance, _raw_temp, t2);
                 }
