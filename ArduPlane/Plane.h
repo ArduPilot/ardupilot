@@ -1192,6 +1192,12 @@ private:
         ENABLED_NO_PITCH_TARGET,
         ENABLED_PITCH_TARGET
     };
+    
+    enum class AutoTuneAxis {
+        ROLL  = 1U <<0,
+        PITCH = 1U <<1,
+        YAW   = 1U <<2,
+    };
 
     FlareMode flare_mode;
     bool throttle_at_zero(void) const;
