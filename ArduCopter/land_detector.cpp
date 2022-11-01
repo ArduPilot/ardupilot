@@ -63,7 +63,9 @@ void Copter::update_land_detector()
         land_detector_count = 0;
     } else {
 
-        float land_trigger_sec = LAND_DETECTOR_TRIGGER_SEC;
+       
+   float land_trigger_sec = g.land_detector_trigger_sec; //ADDED by franky
+// float land_trigger_sec = LAND_DETECTOR_TRIGGER_SEC;
 #if FRAME_CONFIG == HELI_FRAME
         // check for both manual collective modes and modes that use altitude hold. For manual collective (called throttle
         // because multi's use throttle), check that collective pitch is below land min collective position or throttle stick is zero.
@@ -96,7 +98,7 @@ void Copter::update_land_detector()
 #endif
 
         // check that the airframe is not accelerating (not falling or braking after fast forward flight)
-        bool accel_stationary = (land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX * land_detector_scalar);
+        bool accel_stationary = (land_accel_ef_filter.get().length() <= g.land_detector_accel_max * land_detector_scalar);
 
         // check that vertical speed is within 1m/s of zero
         bool descent_rate_low = fabsf(inertial_nav.get_velocity_z_up_cms()) < 100 * land_detector_scalar;
@@ -117,6 +119,12 @@ void Copter::update_land_detector()
                 land_detector_count++;
             } else {
                 set_land_complete(true);
+                //ONLY to check that the values have been taken into account (for debug)
+                gcs().send_text(MAV_SEVERITY_INFO, "land_detector_accel_lpf_cutoff %f",(double)g.land_detector_accel_lpf_cutoff);
+				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_trigger_sec %f",(double)g.land_detector_trigger_sec);
+				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_maybe_trigger_sec %f",(double)g.land_detector_maybe_trigger_sec);
+				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_accel_max %f",(double)g.land_detector_accel_max);
+
             }
         } else {
             // we've sensed movement up or down so reset land_detector
@@ -124,7 +132,7 @@ void Copter::update_land_detector()
         }
     }
 
-    set_land_complete_maybe(ap.land_complete || (land_detector_count >= LAND_DETECTOR_MAYBE_TRIGGER_SEC*scheduler.get_loop_rate_hz()));
+    set_land_complete_maybe(ap.land_complete || (land_detector_count >= g.land_detector_maybe_trigger_sec*scheduler.get_loop_rate_hz()));
 }
 
 // set land_complete flag and disarm motors if disarm-on-land is configured
