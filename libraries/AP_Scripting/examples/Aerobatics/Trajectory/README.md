@@ -5,11 +5,17 @@ allowing fixed wing aircraft to execute a number of aerobatic
 manoeuvres either in AUTO mission or by triggering using pilot commands
 using RC switches.
 
+As always, but particularly with scriped aerobatics, test in SITL until 
+you understand the function and behaviour of each manouver. You will need 
+an appropriate aircraft, and be ready to take manual control if necessary!
+
 ## Available Manoeuvres
 
 The following table gives the available manoeuvres. Each manoeuvre has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
-parameters (described below).
+parameters (described below). The "Turnaround" column indicates if the 
+manoeuvre results in a course reversal, which impacts how it is used in 
+AUTO missions.
 
 | ID | Name                     | Arg1   | Arg2        | Arg3       | Arg4       | Turnaround |
 | -- | ------------------------ | ------ | ----------  | -------    | ---------- | ---------- |
@@ -27,14 +33,35 @@ parameters (described below).
 | 12 | Humpty Bump              | radius | height      |            |            | Yes        |
 | 13 | Straight Flight          | length | bank angle  |            |            | No         |
 | 14 | Scale Figure Eight       | radius | bank angle  |            |            | No         |
-| 15 | Immelmann Turn           | radius | roll rate   |            |            | Yes        |
-| 16 | Split-S                  | radius | roll rate   |            |            | Yes        |
+| 15 | Immelmann Turn           | radius |             |            |            | Yes        |
+| 16 | Split-S                  | radius |             |            |            | Yes        |
 | 17 | Upline-45                | radius | height gain |            |            | No         |
 | 18 | Downline-45              | radius | height loss |            |            | No         |
 | 19 | Stall Turn               | radius | height      | direction  |            | Yes        |
+| 20 | Procedure Turn           | radius | bank angle  | step-out   |            | Yes        |
+| 21 | Derry Turn               | radius | bank angle  |            |            | No         |
+| 22 | Two Point Roll           | length |             |            |            | No         |
+| 23 | Half Climbing Circle     | radius | height      | bank angle |            | Yes         |
 
-The "Turnaround" column indicates if the manoeuvre results in a course
-reversal, which impacts how it is used in AUTO missions.
+Note: In the script you will find other (specialised) manouvers which do not appear in the 
+'command table'. These tend to be specialised manouvers which may expect an inverted entry or 
+finish inverted as well - so will not end well if started upright at a low altitude! These 
+manouvers are used in some of the schedules defined below. 
+
+## Available Schedules (pre-defined sequences of manouvers)
+
+The following table gives the available pre-defined schedules. Each schedule has
+an ID number which is used in the AUTO mission or in the TRIKn_ID
+parameters (described below).
+
+| ID  | Name                   
+| --  | ------------------------ 
+| 200 | Test Suite (dont fly!)   
+| 201 | NZ Clubman Schedule      
+| 202 | FAI F3A P-23 (left to right)             
+| 203 | FAI F3C Scale Example (left to right)   
+
+Note: ID's 202-203 are best flown with a mission start point 150m out from the pilot, with the prior and subsequent mission waypoints in a straight line with the model starting teh script flying down wind. ID 201 is best started in teh same manner, but the model positioned 100m out from the pilot.
 
 ## Loading the script
 
@@ -44,7 +71,7 @@ APM/SCRIPTS directory. You can use MAVFtp to do this.
 Then set
 
  - SCR_ENABLE = 1
- - SCR_HEAP_SIZE = 200000
+ - SCR_HEAP_SIZE = 250000
  - SCR_VM_I_COUNT = 200000
 
 You will need to refresh parameters after setting SCR_ENABLE. Then
