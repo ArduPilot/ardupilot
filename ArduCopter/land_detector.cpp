@@ -119,11 +119,6 @@ void Copter::update_land_detector()
                 land_detector_count++;
             } else {
                 set_land_complete(true);
-                //ONLY to check that the values have been taken into account (for debug)
-                gcs().send_text(MAV_SEVERITY_INFO, "land_detector_accel_lpf_cutoff %f",(double)g.land_detector_accel_lpf_cutoff);
-				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_trigger_sec %f",(double)g.land_detector_trigger_sec);
-				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_maybe_trigger_sec %f",(double)g.land_detector_maybe_trigger_sec);
-
             }
         } else {
             // we've sensed movement up or down so reset land_detector
