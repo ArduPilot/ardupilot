@@ -506,7 +506,7 @@ private:
 #endif
 
     // Crop Sprayer
-#if SPRAYER_ENABLED == ENABLED
+#if HAL_SPRAYER_ENABLED
     AC_Sprayer sprayer;
 #endif
 
