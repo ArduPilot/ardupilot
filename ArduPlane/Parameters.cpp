@@ -11,6 +11,9 @@
 #define GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&plane.v, {group_info : class::var_info} }
 #define GOBJECTN(v, pname, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## pname, (const void *)&plane.v, {group_info : class::var_info} }
 
+#define Q_GSCALAR(v, name, def) { plane.quadplane.v.vtype, name, Parameters::k_param_ ## v, &plane.quadplane.v, {def_value : def} }
+#define Q_GOBJECT(v, name, class) { AP_PARAM_GROUP, name, Parameters::k_param_ ## v, (const void *)&plane.quadplane.v, {group_info : class::var_info} }
+
 const AP_Param::Info Plane::var_info[] = {
     // @Param: FORMAT_VERSION
     // @DisplayName: Eeprom format version number
@@ -811,7 +814,48 @@ const AP_Param::Info Plane::var_info[] = {
       (const void *)&plane.quadplane.attitude_control,
       {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
 #endif
-
+#if HAL_V22T_ENABLED
+        Q_GOBJECT(input_manager, "IM_", AC_InputManager_Heli),
+        Q_GSCALAR(wp_yaw_behavior, "WP_YAW_BEHAVIOR", WP_YAW_BEHAVIOR_DEFAULT),
+        Q_GOBJECT(sprayer, "SPRAY_", AC_Sprayer),
+        Q_GSCALAR(gps_hdop_good, "GPS_HDOP_GOOD", GPS_HDOP_GOOD_DEFAULT),
+        Q_GSCALAR(poshold_brake_rate, "PHLD_BRAKE_RATE", POSHOLD_BRAKE_RATE_DEFAULT),
+        Q_GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE", POSHOLD_BRAKE_ANGLE_DEFAULT),
+        Q_GSCALAR(pilot_accel_z, "PILOT_ACCEL_Z", PILOT_ACCEL_Z_DEFAULT),
+        Q_GSCALAR(land_repositioning, "LAND_REPOSITION", LAND_REPOSITION_DEFAULT),
+        Q_GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH", FS_EKF_THRESHOLD_DEFAULT),
+        Q_GSCALAR(throttle_deadzone, "THR_DZ", THR_DZ_DEFAULT),
+        Q_GSCALAR(throttle_filt, "PILOT_THR_FILT", 0),
+        Q_GSCALAR(throttle_behavior, "PILOT_THR_BHV", 0),
+        Q_GSCALAR(pilot_takeoff_alt, "PILOT_TKOFF_ALT", PILOT_TKOFF_ALT_DEFAULT),
+        Q_GOBJECT(precland, "PLND_", AC_PrecLand),
+        Q_GSCALAR(disarm_delay, "DISARM_DELAY", AUTO_DISARMING_DELAY),
+        Q_GSCALAR(fs_crash_check, "FS_CRASH_CHECK", 1),
+        Q_GSCALAR(rtl_alt_type, "RTL_ALT_TYPE", 0),
+        Q_GOBJECT(circle_nav, "CIRCLE_", AC_Circle),
+        Q_GSCALAR(rtl_speed_cms, "RTL_SPEED", 0),
+        Q_GSCALAR(rtl_cone_slope, "RTL_CONE_SLOPE", RTL_CONE_SLOPE_DEFAULT),
+        Q_GSCALAR(frame_type, "FRAME_TYPE", HAL_FRAME_TYPE_DEFAULT),
+        Q_GSCALAR(super_simple, "SUPER_SIMPLE", 0),
+        Q_GSCALAR(rtl_altitude, "RTL_ALT", RTL_ALT),
+        Q_GSCALAR(rtl_loiter_time, "RTL_LOIT_TIME", RTL_LOITER_TIME),
+        Q_GSCALAR(rtl_alt_final, "RTL_ALT_FINAL", RTL_ALT_FINAL),
+        Q_GSCALAR(failsafe_throttle, "FS_THR_ENABLE", FS_THR_ENABLED_ALWAYS_RTL),
+        Q_GSCALAR(failsafe_throttle_value, "FS_THR_VALUE", FS_THR_VALUE_DEFAULT),
+        Q_GSCALAR(esc_calibrate, "ESC_CALIBRATION", 0),
+        Q_GSCALAR(radio_tuning, "TUNE", 0),
+        Q_GSCALAR(rc_speed, "RC_SPEED", RC_FAST_SPEED),
+        Q_GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISABLED),
+        Q_GSCALAR(simple_modes, "SIMPLE", 0),
+        Q_GSCALAR(flight_mode_chan, "FLTMODE_CH", CH_MODE_DEFAULT),
+        Q_GSCALAR(land_speed, "LAND_SPEED", LAND_SPEED),
+        Q_GSCALAR(land_speed_high, "LAND_SPEED_HIGH", 0),
+        Q_GSCALAR(acro_balance_roll, "ACRO_BAL_ROLL", ACRO_BALANCE_ROLL),
+        Q_GSCALAR(acro_balance_pitch, "ACRO_BAL_PITCH", ACRO_BALANCE_PITCH),
+        Q_GSCALAR(fs_ekf_action, "FS_EKF_ACTION", FS_EKF_ACTION_DEFAULT),
+        Q_GSCALAR(rtl_climb_min, "RTL_CLIMB_MIN", RTL_CLIMB_MIN_DEFAULT),
+        Q_GSCALAR(pilot_speed_up, "PILOT_SPEED_UP", PILOT_VELZ_MAX),
+#endif
     // @Group: RLL
     // @Path: ../libraries/APM_Control/AP_RollController.cpp
     GOBJECT(rollController,         "RLL",   AP_RollController),

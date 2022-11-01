@@ -6,6 +6,12 @@
 #define HAL_QUADPLANE_ENABLED 1
 #endif
 
+#ifndef HAL_V22T_ENABLED
+#define HAL_V22T_ENABLED 1
+#define HAL_V22T_ENABLED_TEST 0
+#define DEFAULT_FRAME_CLASS 6
+#endif
+
 #if HAL_QUADPLANE_ENABLED
 
 #include <AP_Motors/AP_Motors.h>
@@ -26,6 +32,17 @@
 #include "tailsitter.h"
 #include "tiltrotor.h"
 #include "transition.h"
+
+#if HAL_V22T_ENABLED
+#include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
+#include <AC_AttitudeControl/AC_AttitudeControl_Heli.h>         // Attitude control library for traditional helicopter
+#include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
+# include <AC_PrecLand/AC_PrecLand.h>
+#include <AC_WPNav/AC_Circle.h>             // circle navigation library
+//#include <AC_Avoidance/AP_OAPathPlanner.h>
+#define AC_AttitudeControl_t AC_AttitudeControl_Heli
+#define MOTOR_CLASS AP_MotorsHeli
+#endif
 
 /*
   QuadPlane specific functionality
@@ -656,6 +673,81 @@ private:
      */
     float get_scaled_wp_speed(float target_bearing_deg) const;
 
+private:
+#if HAL_V22T_ENABLED
+    AC_InputManager_Heli input_manager;
+    //AC_AttitudeControl_t* attitude_control;
+    //MOTOR_CLASS* motors;
+    //const struct AP_Param::GroupInfo* motors_var_info;
+    AP_Int8 wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
+    ////AP_LandingGear landinggear;
+    AC_Sprayer sprayer;
+    AP_Int16 gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
+    AP_Int16 poshold_brake_rate;         // PosHold flight mode's rotation rate during braking in deg/sec
+    AP_Int16 poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
+    //AP_Int16 pilot_accel_z;               // vertical acceleration the pilot may request
+    AP_Int8 land_repositioning;
+    AP_Float fs_ekf_thresh;
+    AP_Int16 throttle_deadzone;
+    AP_Float throttle_filt;
+    AP_Int16 throttle_behavior;
+    AP_Float pilot_takeoff_alt;
+    AC_PrecLand precland;
+    AP_Int8 disarm_delay;
+    AP_Int8 fs_crash_check;
+    AP_Int8 rtl_alt_type;
+    ////AC_Avoid avoid;
+    //AC_PosControl* pos_control;
+    AC_Circle* circle_nav;
+    //AC_Loiter* loiter_nav;
+    AP_Int16 rtl_speed_cms;
+    AP_Float rtl_cone_slope;
+    //AP_Int8 frame_type;
+    AP_Int8 super_simple;
+    AP_Int32 rtl_altitude;
+    AP_Int32 rtl_loiter_time;
+    AP_Int16 rtl_alt_final;
+    AP_Int8 failsafe_throttle;
+    AP_Int16 failsafe_throttle_value;
+    AP_Int8 esc_calibrate;
+    AP_Int8 radio_tuning;
+    //AP_Int16 rc_speed; // speed of fast RC Channels in Hz
+    AP_Int8 failsafe_gcs;               // ground station failsafe behavior
+    AP_Int8 simple_modes;
+    AP_Int8 flight_mode_chan;
+    AP_Int16 land_speed;
+    AP_Int16 land_speed_high;
+    AP_Float acro_balance_roll;
+    AP_Float acro_balance_pitch;
+    AP_Int8 fs_ekf_action;
+    AP_Int16 rtl_climb_min;              // rtl minimum climb in cm
+    AP_Int16 pilot_speed_up;    // maximum vertical ascending velocity the pilot may request
+    //AC_WPNav* wp_nav;
+
+    /*enum class FailsafeOption {
+        RC_CONTINUE_IF_AUTO = (1 << 0),   // 1
+        GCS_CONTINUE_IF_AUTO = (1 << 1),   // 2
+        RC_CONTINUE_IF_GUIDED = (1 << 2),   // 4
+        CONTINUE_IF_LANDING = (1 << 3),   // 8
+        GCS_CONTINUE_IF_PILOT_CONTROL = (1 << 4),   // 16
+        RELEASE_GRIPPER = (1 << 5),   // 32
+    };
+
+    void convert_tradheli_parameters(void) const;
+    void convert_lgr_parameters(void);
+    void convert_fs_options_params(void) const;*/
+    // heli.cpp
+    /*void heli_init();
+    void check_dynamic_flight(void);
+    bool should_use_landing_swash() const;
+    void update_heli_control_dynamics(void);
+    void heli_update_landing_swash();
+    float get_pilot_desired_rotor_speed() const;
+    void heli_update_rotor_speed_targets();
+    void heli_update_autorotation();
+    void heli_set_autorotation(bool autotrotation);
+    void update_collective_low_flag(int16_t throttle_control);*/
+#endif
 public:
     void motor_test_output();
     MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

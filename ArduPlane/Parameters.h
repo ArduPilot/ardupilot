@@ -352,6 +352,152 @@ public:
         k_param_gcs6,          // stream rates
         k_param_fence,         // vehicle fence
         k_param_acro_yaw_rate,
+
+        // V22T
+        k_param_v22t,
+        k_param_v_attitude_control,
+        k_param_epm_unused,
+        k_param_landinggear,
+        k_param_wp_yaw_behavior,
+        k_param_input_manager,
+        k_param_log_last_filenumber,
+        k_param_toy_yaw_rate,
+        k_param_throttle_accel_enabled,
+        k_param_acro_trainer,
+        k_param_pilot_speed_up,
+        k_param_circle_rate,
+        k_param_rangefinder_gain,
+        k_param_ch8_option_old,//!
+        k_param_arming_check_old,//!
+        k_param_sprayer,
+        k_param_angle_max,
+        k_param_gps_hdop_good,
+        k_param_angle_rate_max,
+        k_param_rc_feel_rp,//!
+        k_param_poshold_brake_rate,
+        k_param_poshold_brake_angle_max,
+        k_param_pilot_accel_z,
+        k_param_land_repositioning,
+        k_param_fs_ekf_thresh,
+        k_param_acro_rp_expo,//!
+        k_param_throttle_deadzone,
+        k_param_dcmcheck_thresh,
+        k_param_throttle_filt,
+        k_param_throttle_behavior,
+        k_param_pilot_takeoff_alt,
+        k_param_limits,
+        k_param_gpslock_limit,
+        k_param_geofence_limit,
+        k_param_altitude_limit,
+        k_param_gps_glitch,
+        k_param_baro_glitch,
+        k_param_precland,
+        //Heli
+        k_param_heli_servo_1,  // remove
+        k_param_heli_servo_2,       // remove
+        k_param_heli_servo_3,       // remove
+        k_param_heli_servo_4,       // remove
+        k_param_heli_pitch_ff,      // remove
+        k_param_heli_roll_ff,       // remove
+        k_param_heli_yaw_ff,        // remove
+        k_param_heli_stab_col_min,  // remove
+        k_param_heli_stab_col_max,  // remove
+        k_param_heli_servo_rsc,     // full! - remove
+        //misc2
+        k_param_motors,
+        k_param_disarm_delay,
+        k_param_fs_crash_check,
+        k_param_throw_motor_start,
+        k_param_rtl_alt_type,
+        k_param_avoid,
+        //Inertial Nav
+        k_param_inertial_nav,
+        k_param_wp_nav,//!
+        k_param_attitude_control,//!
+        k_param_pos_control,
+        k_param_circle_nav,
+        k_param_loiter_nav,
+        //Telemetry control
+        k_param_ch9_option_old,//!
+        k_param_ch10_option_old,
+        k_param_ch11_option_old,
+        k_param_ch12_option_old,
+        k_param_takeoff_trigger_dz_old,
+        //reserved for Solo until features merged with master
+        k_param_rtl_speed_cms,
+        k_param_fs_batt_curr_rtl,
+        k_param_rtl_cone_slope,
+        //Sensor parameters
+        k_param_rangefinder_enabled_old,
+        k_param_frame_type,
+        k_param_optflow_enabled,
+        k_param_ch7_option_old,
+        k_param_auto_slew_rate,
+        k_param_rangefinder_type_old,
+        k_param_super_simple,
+        k_param_axis_enabled,
+        k_param_copter_leds_mode,
+        //Navigation parameters
+        k_param_rtl_altitude,
+        k_param_rtl_loiter_time,
+        k_param_rtl_alt_final,
+        k_param_tilt_comp,
+        //Radio settings
+        k_param_failsafe_throttle,
+        k_param_throttle_fs_action,
+        k_param_failsafe_throttle_value,
+        k_param_throttle_trim,
+        k_param_esc_calibrate,
+        k_param_radio_tuning,
+        k_param_radio_tuning_high_old,
+        k_param_radio_tuning_low_old,
+        k_param_rc_speed,
+        k_param_failsafe_battery_enabled,//!
+        k_param_throttle_mid,//!
+        k_param_failsafe_gps_enabled,
+        k_param_failsafe_gcs,//!
+        // flight modes
+        k_param_simple_modes,
+        k_param_flight_mode_chan,
+        //Waypoint data
+        k_param_command_nav_index,
+        k_param_circle_radius,
+        k_param_waypoint_speed_max,
+        k_param_land_speed,
+        k_param_auto_velocity_z_min,
+        k_param_auto_velocity_z_max,
+        k_param_land_speed_high,
+        //PI/D
+        k_param_acro_rp_p,//!
+        k_param_axis_lock_p,
+        k_param_pid_rate_roll,//!
+        k_param_pid_rate_pitch,//!
+        k_param_pid_rate_yaw,//!
+        k_param_p_stabilize_roll,//!
+        k_param_p_stabilize_pitch,//!
+        k_param_p_stabilize_yaw,//!
+        k_param_p_pos_xy,//!
+        k_param_p_loiter_lon,
+        k_param_pid_loiter_rate_lat,
+        k_param_pid_loiter_rate_lon,    // remove
+        k_param_pid_nav_lat,        // remove
+        k_param_pid_nav_lon,        // remove
+        k_param_p_alt_hold,//!             // remove
+        k_param_p_vel_z,  //!              // remove
+        k_param_pid_optflow_roll,       // remove
+        k_param_pid_optflow_pitch,      // remove
+        k_param_acro_balance_roll_old,  // remove
+        k_param_acro_balance_pitch_old, // remove
+        k_param_pid_accel_z, //!             // remove
+        k_param_acro_balance_roll,
+        k_param_acro_balance_pitch,
+        k_param_acro_yaw_p, //!             // remove
+        k_param_autotune_axis_bitmask, // remove
+        k_param_autotune_aggressiveness, // remove
+        k_param_pi_vel_xy,    //!           // remove
+        k_param_fs_ekf_action,
+        k_param_rtl_climb_min,
+        k_param_autotune_min_d, // remove
     };
 
     AP_Int16 format_version;

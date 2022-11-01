@@ -53,6 +53,7 @@
 .project
 .settings/
 .tags
+.vs
 .tags_sorted_by_file
 .vagrant
 Tools/vagrant/*.log
