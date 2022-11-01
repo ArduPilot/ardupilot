@@ -17,3 +17,6 @@ define AP_GRIPPER_ENABLED 0
 
 # Sprayer isn't a vital feature for smaller boards
 define HAL_SPRAYER_ENABLED 0
+
+# RunCam control isn't available on smaller boards
+define HAL_RUNCAM_ENABLED 0
