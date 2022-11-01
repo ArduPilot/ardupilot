@@ -709,6 +709,12 @@ function climbing_circle(radius, height, bank_angle, arg4)
    })
 end
 
+function half_climbing_circle(radius, height, bank_angle, arg4)
+   return make_paths("half_climbing_circle", {
+         { path_horizontal_arc(radius, 180, height), roll_angle_entry_exit(bank_angle) },
+   })
+end
+
 function loop(radius, bank_angle, num_loops, arg4)
    if not num_loops or num_loops <= 0 then
       num_loops = 1
@@ -735,38 +741,38 @@ function straight_align(distance, arg2, arg3, arg4, start_pos, start_orientation
    local v = makeVector3f(d2, 0, 0)
    start_orientation:earth_to_body(v)
    local len = math.max(v:x(),0.01)
-   gcs:send_text(0,string.format("straight_align: %.1f %.1f %.1f", distance, d2, len))
    return make_paths("straight_align", {
          { path_straight(len), roll_angle(0) },
    })
 end
 
-function immelmann_turn(r, roll_rate, arg3, arg4)
-   local speed = target_groundspeed()
+function immelmann_turn(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
    return make_paths("immelmann_turn", {
-         { path_vertical_arc(r, 180),            roll_angle(0) },
-         { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+         { path_vertical_arc(r, 180),      roll_angle(0) },
+         { path_straight(rabs/3),          roll_angle(180) },
    })
 end
 
 function humpty_bump(r, h, arg3, arg4)
    assert(h >= 2*r)
+   local rabs = math.abs(r)
    return make_paths("humpty_bump", {
             { path_vertical_arc(r, 90),          roll_angle(0) },
-            { path_straight((h-2*r)/3),          roll_angle(0) },
-            { path_straight((h-2*r)/3),          roll_angle(180) },
-            { path_straight((h-2*r)/3),          roll_angle(0) },
+            { path_straight((h-2*rabs)/3),          roll_angle(0) },
+            { path_straight((h-2*rabs)/3),          roll_angle(180) },
+            { path_straight((h-2*rabs)/3),          roll_angle(0) },
             { path_vertical_arc(-r, 180),        roll_angle(0) },
-            { path_straight(h-2*r),              roll_angle(0) },
+            { path_straight(h-2*rabs),              roll_angle(0) },
             { path_vertical_arc(-r, 90),         roll_angle(0) },
-            { path_straight(2*r),                roll_angle(0) },
+            { path_straight(2*rabs),                roll_angle(0) },
    })
 end
 
-function split_s(r, roll_rate, arg3, arg4)
-   local speed = target_groundspeed()
+function split_s(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
    return make_paths("split_s", {
-         { path_straight(speed*180.0/roll_rate), roll_angle(180) },
+         { path_straight(rabs/3),                roll_angle(180) },
          { path_vertical_arc(-r, 180),           roll_angle(0) },
    })
 end
@@ -778,6 +784,16 @@ function upline_45(r, height_gain, arg3, arg4)
          { path_vertical_arc(r, 45),  roll_angle(0) },
          { path_straight(h),          roll_angle(0) },
          { path_vertical_arc(-r, 45), roll_angle(0) },
+   })
+end
+
+function upline_20(r, height_gain, arg3, arg4)
+   local h = (height_gain - 2*r*(1.0-math.cos(math.rad(20))))/math.sin(math.rad(20))
+   assert(h >= 0)
+   return make_paths("upline_45", {
+         { path_vertical_arc(r, 20),  roll_angle(0) },
+         { path_straight(h),          roll_angle(0) },
+         { path_vertical_arc(-r, 20), roll_angle(0) },
    })
 end
 
@@ -804,12 +820,13 @@ function straight_flight(length, bank_angle, arg3, arg4)
 end
 
 function scale_figure_eight(r, bank_angle, arg3, arg4)
+   local rabs = math.abs(r)
    return make_paths("scale_figure_eight", {
-         { path_straight(r),             roll_angle(0) },
+         { path_straight(rabs),             roll_angle(0) },
          { path_horizontal_arc(r,  90),  roll_angle_entry_exit(bank_angle) },
          { path_horizontal_arc(-r, 360), roll_angle_entry_exit(-bank_angle) },
          { path_horizontal_arc(r,  270), roll_angle_entry_exit(bank_angle) },
-         { path_straight(3*r),           roll_angle(0) },
+         { path_straight(3*rabs),           roll_angle(0) },
    })
 end
 
@@ -934,14 +951,21 @@ function procedure_turn(radius, bank_angle, step_out, arg4)
       })
 end
 
+function derry_turn(radius, bank_angle, arg3, arg4)
+   return make_paths("derry_turn", {
+            { path_horizontal_arc(radius,  90),     roll_angle_entry_exit(bank_angle) },
+            { path_horizontal_arc(-radius,  90),    roll_angle_entry_exit(-bank_angle) },
+      })
+end
+
 function p23_1(radius, height, width, arg4) -- top hat
    return make_paths("p23_1", {
             { path_vertical_arc(radius, 90),              roll_angle(0) },
             { path_straight((height-2*radius)*2/9),       roll_angle(0) },
             { path_straight((height-2*radius)*2/9),       roll_angle(90) },
-			{ path_straight((height-2*radius)/9),         roll_angle(0) },
-			{ path_straight((height-2*radius)*2/9),       roll_angle(90) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(0) },			
+            { path_straight((height-2*radius)/9),         roll_angle(0) },
+            { path_straight((height-2*radius)*2/9),       roll_angle(90) },
+            { path_straight((height-2*radius)*2/9),       roll_angle(0) },            
             { path_vertical_arc(-radius, 90),             roll_angle(0) },
             { path_straight((width-2*radius)/3),          roll_angle(0) },
             { path_straight((width-2*radius)/3),          roll_angle(180) },
@@ -949,10 +973,10 @@ function p23_1(radius, height, width, arg4) -- top hat
             { path_vertical_arc(-radius, 90),             roll_angle(0) },
             { path_straight((height-2*radius)*2/9),       roll_angle(0) },
             { path_straight((height-2*radius)*2/9),       roll_angle(90) },
-			{ path_straight((height-2*radius)/9),         roll_angle(0) },
-			{ path_straight((height-2*radius)*2/9),       roll_angle(90) },
-            { path_straight((height-2*radius)*2/9),       roll_angle(0) },			
-            { path_vertical_arc(radius, 90),              roll_angle(0) },						
+            { path_straight((height-2*radius)/9),         roll_angle(0) },
+            { path_straight((height-2*radius)*2/9),       roll_angle(90) },
+            { path_straight((height-2*radius)*2/9),       roll_angle(0) },            
+            { path_vertical_arc(radius, 90),              roll_angle(0) },                        
       })
 end
 
@@ -962,7 +986,7 @@ function p23_2(radius, height, arg3, arg4)  -- half square
             { path_straight((height-2*radius)/3),     roll_angle(0) },
             { path_straight((height-2*radius)/3),     roll_angle(180) },
             { path_straight((height-2*radius)/3),     roll_angle(0) },
-            { path_vertical_arc(-radius, 90),         roll_angle(0) },					
+            { path_vertical_arc(-radius, 90),         roll_angle(0) },                    
       })
 end
 
@@ -972,38 +996,38 @@ function p23_3(radius, height, arg3, arg4)   -- humpty
             { path_straight((height-2*radius)/8),     roll_angle(0) },
             { path_straight((height-2*radius)*6/8),   roll_angle(360) },
             { path_straight((height-2*radius)/8),     roll_angle(0) },
-            { path_vertical_arc(radius, 180),         roll_angle(0) },	
+            { path_vertical_arc(radius, 180),         roll_angle(0) },    
             { path_straight((height-2*radius)/3),     roll_angle(0) },
             { path_straight((height-2*radius)/3),     roll_angle(180) },
             { path_straight((height-2*radius)/3),     roll_angle(0) },
-            { path_vertical_arc(radius, 90),          roll_angle(0) },								
+            { path_vertical_arc(radius, 90),          roll_angle(0) },                                
       })
 end
 
 function p23_4(radius, height, arg3, arg4)   -- on corner  
-   local l = ((height - (2 * radius)) * math.sin(math.rad(45)))							 
+   local l = ((height - (2 * radius)) * math.sin(math.rad(45)))                             
    return make_paths("p23_4", {
             { path_vertical_arc(-radius, 45),          roll_angle(0) },
             { path_straight(l/3),                      roll_angle(0) },
             { path_straight(l/3),                      roll_angle(180) },
             { path_straight(l/3),                      roll_angle(0) },
-            { path_vertical_arc(-radius, 90),          roll_angle(0) },	
+            { path_vertical_arc(-radius, 90),          roll_angle(0) },    
             { path_straight(l/3),                      roll_angle(0) },
             { path_straight(l/3),                      roll_angle(180) },
             { path_straight(l/3),                      roll_angle(0) },
-            { path_vertical_arc(-radius, 45),          roll_angle(0) },								
+            { path_vertical_arc(-radius, 45),          roll_angle(0) },                                
       })
 end
 
 function p23_5(radius, height_gain, arg3, arg4)   -- 45 up - should be 1 1/2 snaps....
-												  -- 1 1/2 rolls not working
+                                                  -- 1 1/2 rolls not working
    local l = (height_gain - 2*radius*(1.0-math.cos(math.rad(45))))/math.sin(math.rad(45))
    return make_paths("p23_5", {
             { path_vertical_arc(-radius, 45),        roll_angle(0) },
             { path_straight(l/3),                    roll_angle(0) },
             { path_straight(l/3),                    roll_angle(540) },
             { path_straight(l/3),                    roll_angle(0) },
-            { path_vertical_arc(radius, 45),         roll_angle(0) },			
+            { path_vertical_arc(radius, 45),         roll_angle(0) },            
       })
 end
 
@@ -1014,48 +1038,54 @@ function p23_6(radius, height_gain, arg3, arg4)   -- 3 sided
             { path_straight(l),                    roll_angle(0) },
             { path_vertical_arc(-radius, 45),      roll_angle(0) },
             { path_straight(l),                    roll_angle(0) },
-            { path_vertical_arc(-radius, 45),      roll_angle(0) },			
+            { path_vertical_arc(-radius, 45),      roll_angle(0) },            
             { path_straight(l),                    roll_angle(0) },
-            { path_vertical_arc(-radius, 45),      roll_angle(0) },			
+            { path_vertical_arc(-radius, 45),      roll_angle(0) },            
       })
 end
 
 --[[
    NZ clubman schedule
 --]]
-function nz_clubman()
-   return path_composer("nz_clubman", {
+function nz_clubman()                               -- positioned for a flight line 100m out
+                                                    -- Script start point is ON CENTER, with the model heading DOWNWIND!
+   return path_composer("nz_clubman_l_r", {
+          --[[
           { straight_roll,            { 20,  0 } },
           { procedure_turn,           { 20, 45, 60 } },
           { straight_roll,            { 150, 0 } },
           { half_reverse_cuban_eight, { 40 } },
           { straight_roll,            { 150, 0 } },
+          --]]
+          { straight_roll,            { 150,   0 } },
+          { half_reverse_cuban_eight, { 60 } },
+          { straight_align,           { 1, 0 } },
           { cuban_eight,              { 40 } },
-          { straight_roll,            { 80, 0 } },
+          { straight_align,           { -100, 0 } },
           { half_reverse_cuban_eight, { 40 } },
-          { straight_roll,            { 140, 0 } },
+          { straight_align,           { 40, 0 } },
           { half_reverse_cuban_eight, { 40 } },
-          { straight_roll,            { 120, 0 } },
+          { straight_align,           { -150, 0 } },
           { half_reverse_cuban_eight, { 40 } },
-          { straight_roll,            { 40, 0 } },
+          { straight_align,           { -90, 0 } },
           { two_point_roll,           { 180 } },
-          { straight_roll,            { 40, 0 } },
+          { straight_align,           { 150, 0 } },
           { half_reverse_cuban_eight, { 40 } },
-          { straight_roll,            { 20, 0 } },
-          { upline_45,                { 20, 120 } },
-          { straight_roll,            { 20, 0 } },
-          { split_s,                  { 60, 90 } },
-          { straight_roll,            { 40, 0 } },
+          { straight_align,           { 52, 0 } },
+          { upline_45,                { 30, 120 } },
+          { straight_align,           { -180, 0 } },
+          { split_s,                  { 50, 90 } },
+          { straight_align,           { -90, 0 } },
           { straight_roll,            { 180, 1 } },
-          { straight_flight,          { 40, 0 } },
+          { straight_align,           { 150, 0 } },
           { half_cuban_eight,         { 40 } },
-          { straight_roll,            { 100, 0 } },
-          { loop,                     { 40, 0, 2 } },
-          { straight_roll,            { 100, 0 } },
-          { immelmann_turn,           { 60, 90 } },
-          { straight_roll,            { 20, 0 } },
-          { downline_45,              { 20, 120 } },
-          { straight_roll,            { 20, 0 } },
+          { straight_align,           { 1, 0 } },
+          { loop,                     { 60, 0, 2 } },
+          { straight_align,           { -180, 0 } },
+          { immelmann_turn,           { 50, 90 } },
+          { straight_align,           { -52, 0 } },
+          { downline_45,              { 30, 120 } },
+          { straight_align,           { 150, 0 } },
           { half_cuban_eight,         { 40 } },
           { straight_roll,            { 100, 0 } },
    })
@@ -1064,24 +1094,73 @@ end
 --[[
    F3A p23, preliminary schedule 2023
 --]]
-function f3a_p23()
-   return path_composer("f3a_p23", {
-          { straight_roll, { 40,   0 } },
-          { p23_1,         { 30, 200, 200 } },  -- top hat
-          { straight_roll, { 40,   0 } },
-          { p23_2,         { 30, 200 } },       -- half sq
-          { straight_roll, { 90,   0 } },
-          { p23_3,         { 30, 200 } },       -- humpty
-          { straight_roll, { 50,   0 } },
-          { p23_4,         { 30, 200 } },       -- on corner
-          { straight_roll, { 40,   0 } },
-          { p23_5,         { 30, 200 } },       -- 45 up
-          { straight_roll, { 40,   0 } },
-          { p23_6,         { 30, 200 } },       -- 3 sided
-          { straight_roll, { 20,   0 } },
+function f3a_p23_l_r()
+   return path_composer("f3a_p23_l_r", {            -- positioned for a flight line 150m out. Flight line 520m total length.
+                                                    -- Script start point is ON CENTER, with the model heading DOWNWIND!
+          { straight_roll,   { 150,   0 } },
+          { half_reverse_cuban_eight, { 60 } },
+          { straight_align,  { 130, 0 } },
+          { p23_1,           { 30, 200, 200 } },  -- top hat
+          { straight_align,  { -230, 0 } },
+          { p23_2,           { 30, 200 } },       -- half sq
+          { straight_align,  { 1, 0 } },
+          { p23_3,           { 30, 200 } },       -- humpty
+          { straight_align,  { 180, 0 } },
+          { p23_4,           { 30, 200 } },       -- on corner
+          { straight_align,  { 160, 0 } },
+          { p23_5,           { 30, 200 } },       -- 45 up
+          { straight_align,  { -100, 0 } },
+          { p23_6,           { 30, 200 } },       -- 3 sided
+          { straight_roll,   { 210, 0 } },
+
    })
 end
 
+--[[
+   F4C Scale Schedule Example
+--]]
+
+function f4c_example_l_r()                          -- positioned for a flight line nominally 150m out (some manouvers start 30m out)
+                                                    -- Script start point is ON CENTER @ 150m, with the model heading DOWNWIND ie flying Right to Left!
+   return path_composer("f4c_example", {    
+         { straight_roll,             { 180,   0 } },
+         { half_climbing_circle,      { -60, 0, -60 } },            -- come in close for the first two manouvers
+         { straight_roll,             { 20,   0 } },
+         { scale_figure_eight,        { -80, -30 } },                -- scale fig 8
+         { straight_roll,             { 180,   0 } },
+         { immelmann_turn,            { 50       } }, 
+         { straight_roll,             { 340,   0 } },
+         { climbing_circle,           { 80, -125, 30 } },            -- descending 360
+         { straight_roll,             { 40,   0 } },
+         { upline_20,                 { 50, 25 } },                  -- Climb up 25m to base height
+         { straight_roll,             { 100,   0 } },
+         { half_climbing_circle,      { 60, 0, 60 } },               -- Go back out to 150m
+         { straight_align,            { 1, 0 } },
+         { loop,                      { 50,    0, 1 } },             -- loop
+         { straight_align,            { -50, 0 } },
+         { half_reverse_cuban_eight,  { 50       } },
+         { straight_align,            { 1, 0 } },
+         { immelmann_turn,            { 50       } },                -- immelmann turn
+         { straight_align,            { -140, 0 } },
+         { split_s,                   { 50       } },
+         { straight_align,            { 1, 0 } },
+         { half_cuban_eight,          { 60       } },                -- half cuban eight
+         { straight_align,            { -180, 0 } },
+         { half_climbing_circle,      { 65, 0, 60 } },  
+         { straight_roll,             { 115,   0 } },         
+         { derry_turn,                { 65,   60 } },                -- derry turn
+         { straight_align,            { 180, 0 } },
+         --Path(path_horizontal_arc     (-50, 180, 0), roll_angle(60)),
+         { half_climbing_circle,      { -65, 0, -60 } },        
+         { straight_roll,             { 180,   0 } },
+         { climbing_circle,           { -80,    0, -30 } },         -- extend and retract gear - 360 circle
+         { straight_roll,             { 200,   0 } },
+         { half_climbing_circle,      { -65, 0, -60 } },
+         { straight_align,            { 200, 0 } },
+         --{ barrell_roll,            { 100, 200 } },               -- barrel roll - (radius, length)
+         { straight_roll,             { 20,    0 } },
+   })
+end
 
 function test_all_paths()
    return path_composer("test_all_paths", {
@@ -1114,6 +1193,29 @@ function test_all_paths()
           { upline_45,                { 20,   50 } },
           { straight_roll,            { 20,    0 } },
           { downline_45,              { 20,   50 } },
+          { straight_roll,            { 20,    0 } },
+          { procedure_turn,           { 40, 45, 20 } },
+          { straight_roll,            { 20,    0 } }, 
+          { two_point_roll,           { 100      } },
+          { straight_roll,            { 20,    0 } },
+          { derry_turn,               { 40,   60 } },
+          { straight_roll,            { 20,    0 } },
+          { half_climbing_circle,     { -65, 0, -60 } },
+          { straight_roll,            { 20,    0 } },
+          --[[
+          { p23_1,                    { 20, 150, 150 } }, 
+          { straight_roll,            { 20,    0 } },
+          { p23_2,                    { 20,  150 } },      
+          { straight_roll,            { 20,    0 } },
+          { p23_3,                    { 20,  150 } },      
+          { straight_roll,            { 20,    0 } },
+          { p23_4,                    { 20,  150 } },      
+          { straight_roll,            { 20,    0 } },
+          { p23_5,                    { 20,  150 } },   
+          { straight_roll,            { 20,    0 } },
+          { p23_6,                    { 20,  150 } },       -- now inverted :-)
+          { straight_roll,            { 20,    0 } },
+          --]]
    })
 end
 
@@ -1551,9 +1653,14 @@ command_table[16]= PathFunction(split_s, "Split-S")
 command_table[17]= PathFunction(upline_45, "Upline-45")
 command_table[18]= PathFunction(downline_45, "Downline-45")
 command_table[19]= PathFunction(stall_turn, "Stall Turn")
+command_table[20]= PathFunction(procedure_turn, "Procedure Turn")
+command_table[21]= PathFunction(derry_turn, "Derry Turn")
+command_table[22]= PathFunction(two_point_roll, "Two Point Roll")
+command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
-command_table[202] = PathFunction(f3a_p23, "FAI F3A P23")
+command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
+command_table[203] = PathFunction(f4c_example_l_r, "FAI F4C Example L to R")
 
 -- get a location structure from a waypoint number
 function get_location(i)
