@@ -14,3 +14,6 @@ define HAL_CRSF_TELEM_ENABLED 0
 
 # Gripper isn't a vital feature for smaller boards
 define AP_GRIPPER_ENABLED 0
+
+# Sprayer isn't a vital feature for smaller boards
+define HAL_SPRAYER_ENABLED 0
