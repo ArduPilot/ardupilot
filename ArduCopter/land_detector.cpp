@@ -123,7 +123,6 @@ void Copter::update_land_detector()
                 gcs().send_text(MAV_SEVERITY_INFO, "land_detector_accel_lpf_cutoff %f",(double)g.land_detector_accel_lpf_cutoff);
 				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_trigger_sec %f",(double)g.land_detector_trigger_sec);
 				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_maybe_trigger_sec %f",(double)g.land_detector_maybe_trigger_sec);
-				gcs().send_text(MAV_SEVERITY_INFO, "land_detector_accel_max %f",(double)g.land_detector_accel_max);
 
             }
         } else {
