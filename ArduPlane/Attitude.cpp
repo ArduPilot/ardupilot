@@ -493,6 +493,9 @@ void Plane::stabilize_acro_quaternion(float speed_scaler)
     float roll_rate = (rexpo/SERVO_MAX) * g.acro_roll_rate;
     float pitch_rate = (pexpo/SERVO_MAX) * g.acro_pitch_rate;
     float yaw_rate = (yexpo/SERVO_MAX) * g.acro_yaw_rate;
+    bool roll_active = !is_zero(roll_rate);
+    bool pitch_active = !is_zero(pitch_rate);
+    bool yaw_active = !is_zero(yaw_rate);
 
     // integrate target attitude
     Vector3f r{ float(radians(roll_rate)), float(radians(pitch_rate)), float(radians(yaw_rate)) };
@@ -525,30 +528,54 @@ void Plane::stabilize_acro_quaternion(float speed_scaler)
 
     // don't let too much error build up, limit to 0.2s
     const float max_error_t = 0.2;
-    const float max_err_roll_rad  = radians(g.acro_roll_rate*max_error_t);
-    const float max_err_pitch_rad = radians(g.acro_pitch_rate*max_error_t);
-    const float max_err_yaw_rad   = radians(g.acro_yaw_rate*max_error_t);
+    float max_err_roll_rad  = radians(g.acro_roll_rate*max_error_t);
+    float max_err_pitch_rad = radians(g.acro_pitch_rate*max_error_t);
+    float max_err_yaw_rad   = radians(g.acro_yaw_rate*max_error_t);
 
-    Vector3f error_angle2 = error_angle1;
-    error_angle2.x = constrain_float(error_angle2.x, -max_err_roll_rad, max_err_roll_rad);
-    error_angle2.y = constrain_float(error_angle2.y, -max_err_pitch_rad, max_err_pitch_rad);
-    error_angle2.z = constrain_float(error_angle2.z, -max_err_yaw_rad, max_err_yaw_rad);
+    if (!roll_active && acro_state.roll_active_last) {
+        max_err_roll_rad = 0;
+    }
+    if (!pitch_active && acro_state.pitch_active_last) {
+        max_err_pitch_rad = 0;
+    }
+    if (!yaw_active && acro_state.yaw_active_last) {
+        max_err_yaw_rad = 0;
+    }
+
+    Vector3f desired_rates = error_angle1;
+    desired_rates.x = constrain_float(desired_rates.x, -max_err_roll_rad, max_err_roll_rad);
+    desired_rates.y = constrain_float(desired_rates.y, -max_err_pitch_rad, max_err_pitch_rad);
+    desired_rates.z = constrain_float(desired_rates.z, -max_err_yaw_rad, max_err_yaw_rad);
 
     // correct target based on max error
-    q.rotate_fast(error_angle2 - error_angle1);
+    q.rotate_fast(desired_rates - error_angle1);
     q.normalize();
 
     // convert to desired body rates
-    error_angle2.x /= rollController.tau();
-    error_angle2.y /= pitchController.tau();
-    error_angle2.z /= pitchController.tau(); // no yaw tau parameter, use pitch
+    desired_rates.x /= rollController.tau();
+    desired_rates.y /= pitchController.tau();
+    desired_rates.z /= pitchController.tau(); // no yaw tau parameter, use pitch
 
-    error_angle2 *= degrees(1.0);
+    desired_rates *= degrees(1.0);
+
+    if (roll_active) {
+        desired_rates.x = roll_rate;
+    }
+    if (pitch_active) {
+        desired_rates.y = pitch_rate;
+    }
+    if (yaw_active) {
+        desired_rates.z = yaw_rate;
+    }
 
     // call to rate controllers
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  rollController.get_rate_out(error_angle2.x, speed_scaler));
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(error_angle2.y, speed_scaler));
-    steering_control.steering = steering_control.rudder = yawController.get_rate_out(error_angle2.z,  speed_scaler, false);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  rollController.get_rate_out(desired_rates.x, speed_scaler));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitchController.get_rate_out(desired_rates.y, speed_scaler));
+    steering_control.steering = steering_control.rudder = yawController.get_rate_out(desired_rates.z,  speed_scaler, false);
+
+    acro_state.roll_active_last = roll_active;
+    acro_state.pitch_active_last = pitch_active;
+    acro_state.yaw_active_last = yaw_active;
 }
 
 /*
