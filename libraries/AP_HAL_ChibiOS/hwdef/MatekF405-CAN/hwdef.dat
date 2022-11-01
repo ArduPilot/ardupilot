@@ -170,7 +170,6 @@ include ../include/minimize_features.inc
 
 define AP_BATTMON_SMBUS_ENABLE 0
 define HAL_PARACHUTE_ENABLED 0
-define HAL_SPRAYER_ENABLED 0
 
 define HAL_WITH_DSP FALSE
 
