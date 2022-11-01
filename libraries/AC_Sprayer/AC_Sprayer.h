@@ -26,7 +26,7 @@
 #define AC_SPRAYER_DEFAULT_SHUT_OFF_DELAY   1000    ///< shut-off delay in milli seconds.  This reduces the likelihood of constantly turning on/off the pump
 
 #ifndef HAL_SPRAYER_ENABLED
-#define HAL_SPRAYER_ENABLED !HAL_MINIMIZE_FEATURES
+#define HAL_SPRAYER_ENABLED 1
 #endif
 
 #if HAL_SPRAYER_ENABLED
