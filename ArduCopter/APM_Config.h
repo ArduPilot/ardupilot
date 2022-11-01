@@ -11,7 +11,6 @@
 //#define NAV_GUIDED            DISABLED            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define PRECISION_LANDING     DISABLED            // disable precision landing using companion computer or IRLock sensor
 //#define BEACON_ENABLED        DISABLED            // disable beacon support
-//#define SPRAYER_ENABLED       DISABLED            // disable the crop sprayer feature (two ESC controlled pumps the speed of which depends upon the vehicle's horizontal velocity)
 //#define WINCH_ENABLED         DISABLED            // disable winch support
 //#define STATS_ENABLED         DISABLED            // disable statistics support
 //#define MODE_ACRO_ENABLED     DISABLED            // disable acrobatic mode support
