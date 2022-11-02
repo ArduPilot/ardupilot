@@ -23,3 +23,6 @@ define HAL_RUNCAM_ENABLED 0
 
 # disable use of onboard FFT library:
 define HAL_GYROFFT_ENABLED 0
+
+# several notify backends are rare and not supported by default on smaller boards:
+define AP_NOTIFY_NCP5623_ENABLED 0
