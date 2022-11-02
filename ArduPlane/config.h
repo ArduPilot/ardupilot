@@ -283,3 +283,35 @@
 #ifndef THR_CTRL_LAND_THRESH
  #define THR_CTRL_LAND_THRESH 0.7
 #endif
+
+#if HAL_V22T_ENABLED
+# define WP_YAW_BEHAVIOR_DEFAULT       3
+# define GPS_HDOP_GOOD_DEFAULT         140     // minimum hdop that represents a good position.  used during pre-arm checks if fence is enabled
+# define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+# define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+# define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+# define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
+# define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
+# define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
+# define AUTO_DISARMING_DELAY  10
+# define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
+# define RTL_CONE_SLOPE_DEFAULT    3.0f    // slope of RTL cone (height / distance). 0 = No cone
+#define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
+# define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
+# define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
+# define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+#define FS_THR_ENABLED_ALWAYS_RTL                  1
+# define FS_THR_VALUE_DEFAULT             975
+# define RC_FAST_SPEED                        125
+#define FS_GCS_DISABLED                        0
+# define CH_MODE_DEFAULT   5
+# define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+#define ACRO_BALANCE_ROLL          1.0f
+#define ACRO_BALANCE_PITCH         1.0f
+# define FS_EKF_ACTION_DEFAULT         1  // EKF failsafe triggers land by default
+# define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+# define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#define FS_GCS_ENABLED_CONTINUE_MISSION        2
+#define FS_THR_ENABLED_CONTINUE_MISSION            2    // Removed in 4.0+, now use fs_options
+#define FS_GCS_ENABLED_ALWAYS_RTL              1
+#endif
