@@ -26,3 +26,6 @@ define HAL_GYROFFT_ENABLED 0
 
 # several notify backends are rare and not supported by default on smaller boards:
 define AP_NOTIFY_NCP5623_ENABLED 0
+
+# Soaring is off by defauult on of smaller boards.
+define HAL_SOARING_ENABLED 0
