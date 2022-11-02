@@ -748,6 +748,7 @@ def _load_pre_build(bld):
         brd.pre_build(bld)    
 
 def build(bld):
+    '''
     vehicle = bld.path.name
     bld.ap_stlib(
         name=vehicle + '_libs',
@@ -793,6 +794,7 @@ def build(bld):
         program_groups=['bin', 'plane'],
         use=vehicle + '_libs',
     )
+    '''
     config_hash = Utils.h_file(bld.bldnode.make_node('ap_config.h').abspath())
     bld.env.CCDEPS = config_hash
     bld.env.CXXDEPS = config_hash
