@@ -32,6 +32,7 @@ ERR_CORR_D = bind_add_param('ERR_COR_D', 13, 2.8)
 AEROM_ENTRY_RATE = bind_add_param('ENTRY_RATE', 14, 60)
 AEROM_THR_LKAHD = bind_add_param('THR_LKAHD', 15, 1)
 AEROM_DEBUG = bind_add_param('DEBUG', 16, 0)
+ACRO_ROLL_RATE = Parameter("ACRO_ROLL_RATE")
 
 --[[
    Aerobatic tricks on a switch support - allows for tricks to be initiated outside AUTO mode
@@ -570,6 +571,7 @@ function path_composer(_name, _subpaths)
    local highest_i = 0
    local cache_i = -1
    local cache_sp = nil
+   local message = nil
 
    -- return the subpath with index i. Used to cope with two ways of calling path_composer
    function self.subpath(i)
@@ -581,10 +583,12 @@ function path_composer(_name, _subpaths)
       if sp.name then
          -- we are being called with a list of Path objects
          cache_sp = sp
+         message = nil
       else
          -- we are being called with a list function/argument tuples
          local args = subpaths[i][2]
          cache_sp = subpaths[i][1](args[1], args[2], args[3], args[4], start_pos[i], start_orientation[i])
+         message = subpaths[i].message
       end
       return cache_sp
    end
@@ -642,6 +646,9 @@ function path_composer(_name, _subpaths)
       local sp = self.subpath(i)
       if i > highest_i and t < 1.0 and t > 0 then
          highest_i = i
+         if message ~= nil then
+            gcs:send_text(0, message)
+         end
          if AEROM_DEBUG:get() > 0 then
             gcs:send_text(0, string.format("starting %s[%d] %s", self.name, i, sp.name))
          end
@@ -751,6 +758,17 @@ function immelmann_turn(r, arg2, arg3, arg4)
    return make_paths("immelmann_turn", {
          { path_vertical_arc(r, 180),      roll_angle(0) },
          { path_straight(rabs/3),          roll_angle(180) },
+   })
+end
+
+-- immelmann with max roll rate
+function immelmann_turn_fast(r, arg2, arg3, arg4)
+   local rabs = math.abs(r)
+   local roll_time = 180.0 / ACRO_ROLL_RATE:get()
+   local roll_dist = target_groundspeed() * roll_time
+   return make_paths("immelmann_turn_fast", {
+         { path_vertical_arc(r, 180),      roll_angle(0) },
+         { path_straight(roll_dist),       roll_angle(180) },
    })
 end
 
@@ -1159,6 +1177,31 @@ function f4c_example_l_r()                          -- positioned for a flight l
          { straight_align,            { 200, 0 } },
          --{ barrell_roll,            { 100, 200 } },               -- barrel roll - (radius, length)
          { straight_roll,             { 20,    0 } },
+   })
+end
+
+--[[
+   simple air show
+--]]
+
+function air_show1()
+   return path_composer("AirShow", {
+         { loop,                      {  25, 0, 1 }},
+         { straight_align,            { 100, 0 } },
+         { half_reverse_cuban_eight,  {  25       }, message="HalfReverseCubanEight" },
+         { straight_align,            {  80 } },
+         { scale_figure_eight,        { -40, -30 },  message="ScaleFigureEight" },
+         { immelmann_turn,            {  30       }, message="Immelmann" },
+         { straight_align,            { -60, 0 } },
+         { straight_roll,             { 120, 2 },    message="Roll" },
+         { straight_align,            { 120, 0 } },
+         { split_s,                   {  30       }, message="Split-S"},
+         { straight_align,            {   0 } },
+         { rolling_circle,            { -50, 3},     message="RollingCircle" },
+         { straight_align,            { -50, 0 } },
+         { humpty_bump,               {  20, 60 },   message="HumptyBump" },
+         { straight_align,            {  80, 0 } },
+         { half_cuban_eight,          {  25       }, message="HalfCubanEight" },
    })
 end
 
@@ -1639,7 +1682,7 @@ command_table[2] = PathFunction(loop, "Loop")
 command_table[3] = PathFunction(horizontal_rectangle, "Horizontal Rectangle")
 command_table[4] = PathFunction(climbing_circle, "Climbing Circle")
 command_table[5] = PathFunction(vertical_aerobatic_box, "Vertical Box")
--- 6 was banked circle
+command_table[6] = PathFunction(immelmann_turn_fast, "Immelmann Fast")
 command_table[7] = PathFunction(straight_roll, "Axial Roll")
 command_table[8] = PathFunction(rolling_circle, "Rolling Circle")
 command_table[9] = PathFunction(half_cuban_eight, "Half Cuban Eight")
@@ -1661,6 +1704,7 @@ command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
 command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
 command_table[203] = PathFunction(f4c_example_l_r, "FAI F4C Example L to R")
+command_table[204] = PathFunction(air_show1, "AirShow")
 
 -- get a location structure from a waypoint number
 function get_location(i)
