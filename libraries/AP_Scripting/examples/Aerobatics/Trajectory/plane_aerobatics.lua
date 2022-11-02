@@ -615,6 +615,12 @@ function path_composer(_name, _subpaths)
          end_speed[i] = target_groundspeed()
       end
       speed = end_speed[i]
+
+      if sp.roll_ref ~= nil then
+         q = Quaternion()
+         q:from_axis_angle(makeVector3f(1,0,0), math.rad(sp.roll_ref))
+         orientation = orientation * q
+      end
    end
 
    -- get our final orientation, including roll
@@ -702,6 +708,9 @@ function make_paths(name, paths)
    local p = {}
    for i = 1, #paths do
       p[i] = Path(paths[i][1], paths[i][2])
+      if paths[i].roll_ref then
+         p[i].roll_ref = paths[i].roll_ref
+      end
    end
    return path_composer(name, p)
 end
@@ -784,6 +793,38 @@ function humpty_bump(r, h, arg3, arg4)
             { path_straight(h-2*rabs),              roll_angle(0) },
             { path_vertical_arc(-r, 90),         roll_angle(0) },
             { path_straight(2*rabs),                roll_angle(0) },
+   })
+end
+
+function crossbox_humpty(r, h, arg3, arg4)
+   assert(h >= 2*r)
+   local rabs = math.abs(r)
+   return make_paths("crossbox_humpty", {
+            { path_vertical_arc(r, 90),          roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(90),  roll_ref=90 },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_vertical_arc(-r, 180),        roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(-90), roll_ref=-90 },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_vertical_arc(-r, 90),         roll_angle(0) },
+   })
+end
+
+function laydown_humpty(r, h, arg3, arg4)
+   assert(h >= 2*r)
+   local rabs = math.abs(r)
+   return make_paths("laydown_humpty", {
+            { path_vertical_arc(r, 45),          roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(90),  roll_ref=90 },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_vertical_arc(-r, 180),        roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_straight((h-2*rabs)/3),       roll_angle(-90), roll_ref=-90 },
+            { path_straight((h-2*rabs)/3),       roll_angle(0) },
+            { path_vertical_arc(r, 45),          roll_angle(0) },
    })
 end
 
@@ -1895,6 +1936,8 @@ command_table[20]= PathFunction(procedure_turn, "Procedure Turn")
 command_table[21]= PathFunction(derry_turn, "Derry Turn")
 command_table[22]= PathFunction(two_point_roll, "Two Point Roll")
 command_table[23]= PathFunction(half_climbing_circle, "Half Climbing Circle")
+command_table[24]= PathFunction(crossbox_humpty, "Crossbox Humpty")
+command_table[25]= PathFunction(laydown_humpty, "Laydown Humpty")
 command_table[200] = PathFunction(test_all_paths, "Test Suite")
 command_table[201] = PathFunction(nz_clubman, "NZ Clubman")
 command_table[202] = PathFunction(f3a_p23_l_r, "FAI F3A P23 L to R")
