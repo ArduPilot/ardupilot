@@ -29,3 +29,6 @@ define AP_NOTIFY_NCP5623_ENABLED 0
 
 # Soaring is off by defauult on of smaller boards.
 define HAL_SOARING_ENABLED 0
+
+# HOTT telemetry is quite rare, so we don't include it on smaller boards
+define HAL_HOTT_TELEM_ENABLED 0
