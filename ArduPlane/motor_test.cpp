@@ -11,6 +11,7 @@
 
 // motor_test_output - checks for timeout and sends updates to motors objects
 #if HAL_QUADPLANE_ENABLED
+/*
 void QuadPlane::motor_test_output()
 {
     // exit immediately if the motor test is not running
@@ -73,7 +74,7 @@ void QuadPlane::motor_test_output()
         motor_test_stop();
     }
 }
-
+*/
 // mavlink_motor_test_start - start motor test - spin a single motor at a specified pwm
 //  returns MAV_RESULT_ACCEPTED on success, MAV_RESULT_FAILED on failure
 MAV_RESULT QuadPlane::mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,

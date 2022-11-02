@@ -192,7 +192,7 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     
 };
 
-Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
+Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsHeli_Dual*& _motors):quadplane(_quadplane),motors(_motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }

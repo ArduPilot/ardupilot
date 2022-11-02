@@ -89,7 +89,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
   Q_TILT_MASK to a non-zero value
  */
 
-Tiltrotor::Tiltrotor(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
+Tiltrotor::Tiltrotor(QuadPlane& _quadplane, AP_MotorsHeli_Dual*& _motors):quadplane(_quadplane),motors(_motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
