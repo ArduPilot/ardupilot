@@ -16,13 +16,13 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 
 class QuadPlane;
-class AP_MotorsMulticopter;
+class AP_MotorsHeli_Dual;
 // Transition empty base class
 class Transition
 {
 public:
 
-    Transition(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors) {};
+    Transition(QuadPlane& _quadplane, AP_MotorsHeli_Dual*& _motors):quadplane(_quadplane),motors(_motors) {};
 
     virtual void update() = 0;
 
@@ -60,7 +60,7 @@ protected:
 
     // refences for convenience
     QuadPlane& quadplane;
-    AP_MotorsMulticopter*& motors;
+    AP_MotorsHeli_Dual*& motors;
 
 };
 

@@ -19,7 +19,7 @@
 #include <AP_Motors/AP_MotorsTailsitter.h>
 
 class QuadPlane;
-class AP_MotorsMulticopter;
+class AP_MotorsHeli_Dual;
 class Tailsitter_Transition;
 class Tailsitter
 {
@@ -27,7 +27,7 @@ friend class QuadPlane;
 friend class Plane;
 public:
 
-    Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors);
+    Tailsitter(QuadPlane& _quadplane, AP_MotorsHeli_Dual*& _motors);
 
     bool enabled() const { return (enable > 0) && setup_complete;}
 
@@ -124,7 +124,7 @@ private:
 
     // refences for convenience
     QuadPlane& quadplane;
-    AP_MotorsMulticopter*& motors;
+    AP_MotorsHeli_Dual*& motors;
 
     // transition logic
     Tailsitter_Transition* transition;
@@ -138,7 +138,7 @@ class Tailsitter_Transition : public Transition
 friend class Tailsitter;
 public:
 
-    Tailsitter_Transition(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors, Tailsitter& _tailsitter):Transition(_quadplane, _motors), tailsitter(_tailsitter) {};
+    Tailsitter_Transition(QuadPlane& _quadplane, AP_MotorsHeli_Dual*& _motors, Tailsitter& _tailsitter):Transition(_quadplane, _motors), tailsitter(_tailsitter) {};
 
     void update() override;
 
