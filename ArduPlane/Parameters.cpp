@@ -809,10 +809,10 @@ const AP_Param::Info Plane::var_info[] = {
 
 #if HAL_QUADPLANE_ENABLED
     // @Group: Q_A_
-    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp
+    // @Path: ../libraries/AC_AttitudeControl/AC_AttitudeControl.cpp,../libraries/AC_AttitudeControl/AC_AttitudeControl_Heli.cpp
     { AP_PARAM_GROUP, "Q_A_", Parameters::k_param_q_attitude_control,
       (const void *)&plane.quadplane.attitude_control,
-      {group_info : AC_AttitudeControl_Multi::var_info}, AP_PARAM_FLAG_POINTER },
+      {group_info : AC_AttitudeControl_Heli::var_info}, AP_PARAM_FLAG_POINTER },
 #endif
 #if HAL_V22T_ENABLED
         Q_GOBJECT(input_manager, "IM_", AC_InputManager_Heli),

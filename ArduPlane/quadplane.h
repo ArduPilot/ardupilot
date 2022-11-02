@@ -16,7 +16,7 @@
 
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
-#include <AC_AttitudeControl/AC_AttitudeControl_Multi.h> // Attitude control library
+#include <AC_AttitudeControl/AC_AttitudeControl_Heli.h> // Attitude control library
 #include <AC_AttitudeControl/AC_CommandModel.h>
 #include <AP_InertialNav/AP_InertialNav.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
@@ -33,15 +33,17 @@
 #include "tiltrotor.h"
 #include "transition.h"
 
+
 #if HAL_V22T_ENABLED
 #include <AC_InputManager/AC_InputManager_Heli.h>   // Heli specific pilot input handling library
 #include <AC_AttitudeControl/AC_AttitudeControl_Heli.h>         // Attitude control library for traditional helicopter
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 # include <AC_PrecLand/AC_PrecLand.h>
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
+#include "AP_MotorsHeli_Dual.h"
 //#include <AC_Avoidance/AP_OAPathPlanner.h>
 #define AC_AttitudeControl_t AC_AttitudeControl_Heli
-#define MOTOR_CLASS AP_MotorsHeli
+#define MOTOR_CLASS AP_MotorsHeli_Dual
 #endif
 
 /*
@@ -196,10 +198,10 @@ private:
     AP_Enum<AP_Motors::motor_frame_type> frame_type;
 
     // Initialise motors to allow passing it to tailsitter in its constructor
-    AP_MotorsMulticopter *motors = nullptr;
+    AP_MotorsHeli_Dual *motors = nullptr;
     const struct AP_Param::GroupInfo *motors_var_info;
 
-    AC_AttitudeControl_Multi *attitude_control;
+    AC_AttitudeControl_Heli *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
     AC_Loiter *loiter_nav;
@@ -736,8 +738,8 @@ private:
     void convert_tradheli_parameters(void) const;
     void convert_lgr_parameters(void);
     void convert_fs_options_params(void) const;*/
-    // heli.cpp
-    /*void heli_init();
+    //heli.cpp
+    void heli_init();
     void check_dynamic_flight(void);
     bool should_use_landing_swash() const;
     void update_heli_control_dynamics(void);
@@ -746,7 +748,7 @@ private:
     void heli_update_rotor_speed_targets();
     void heli_update_autorotation();
     void heli_set_autorotation(bool autotrotation);
-    void update_collective_low_flag(int16_t throttle_control);*/
+    void update_collective_low_flag(int16_t throttle_control);
 #endif
 public:
     void motor_test_output();
