@@ -24,6 +24,7 @@
 
 const AP_Param::GroupInfo Tailsitter::var_info[] = {
 
+
     // @Param: ENABLE
     // @DisplayName: Enable Tailsitter
     // @Values: 0:Disable, 1:Enable, 2:Enable Always

@@ -314,4 +314,18 @@
 #define FS_GCS_ENABLED_CONTINUE_MISSION        2
 #define FS_THR_ENABLED_CONTINUE_MISSION            2    // Removed in 4.0+, now use fs_options
 #define FS_GCS_ENABLED_ALWAYS_RTL              1
+
+// helicopter
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if FRAME_CONFIG == HELI_FRAME
+#ifndef MODE_AUTOROTATE_ENABLED
+# define MODE_AUTOROTATE_ENABLED !HAL_MINIMIZE_FEATURES
+#endif
+#else
+# define MODE_AUTOROTATE_ENABLED DISABLED
+#endif
+#else
+# define MODE_AUTOROTATE_ENABLED DISABLED
+#endif
+
 #endif
