@@ -81,6 +81,7 @@ void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_manual, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_failsafe_limit(SRV_Channel::k_none, SRV_Channel::Limit::TRIM);
 
+/*
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available()) {
         // setup AP_Motors outputs for failsafe
@@ -88,7 +89,9 @@ void AP_AdvancedFailsafe_Plane::setup_IO_failsafe(void)
         hal.rcout->set_failsafe_pwm(mask, plane.quadplane.motors->get_pwm_output_min());
     }
 #endif
+*/
 }
+
 
 /*
   return an AFS_MODE for current control mode
