@@ -32,3 +32,6 @@ define HAL_SOARING_ENABLED 0
 
 # HOTT telemetry is quite rare, so we don't include it on smaller boards
 define HAL_HOTT_TELEM_ENABLED 0
+
+# smaller boards lose SIRF GPS support
+define AP_GPS_SIRF_ENABLED 0
