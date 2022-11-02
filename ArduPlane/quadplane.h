@@ -40,7 +40,7 @@
 #include <AC_Sprayer/AC_Sprayer.h>          // Crop sprayer library
 # include <AC_PrecLand/AC_PrecLand.h>
 #include <AC_WPNav/AC_Circle.h>             // circle navigation library
-#include "AP_MotorsHeli_Dual.h"
+#include <AP_Motors/AP_MotorsHeli_Dual.h>
 //#include <AC_Avoidance/AP_OAPathPlanner.h>
 #define AC_AttitudeControl_t AC_AttitudeControl_Heli
 #define MOTOR_CLASS AP_MotorsHeli_Dual
