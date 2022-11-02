@@ -170,7 +170,7 @@ jobs:
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
              python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/AP_Periph $GITHUB_WORKSPACE/base_branch_bin/AP_Periph $GITHUB_WORKSPACE/pr_bin/AP_Periph
-          else
+          elif [ "${{matrix.config}}" = "Durandal" ]
              python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/plane $GITHUB_WORKSPACE/base_branch_bin/arduplane $GITHUB_WORKSPACE/pr_bin/arduplane
              python3 -m elf_diff --bin_prefix=arm-none-eabi- --html_dir=elf_diff/copter $GITHUB_WORKSPACE/base_branch_bin/arducopter $GITHUB_WORKSPACE/pr_bin/arducopter
           fi
