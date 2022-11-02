@@ -615,7 +615,11 @@ int parse_type(struct type *type, const uint32_t restrictions, enum range_check_
   if (type->flags & TYPE_FLAGS_NO_RANGE_CHECK) {
     switch (type->type) {
       case TYPE_FLOAT:
+      case TYPE_INT8_T:
+      case TYPE_INT16_T:
       case TYPE_INT32_T:
+      case TYPE_UINT8_T:
+      case TYPE_UINT16_T:
       case TYPE_UINT32_T:
         break;
       default:
@@ -1439,10 +1443,26 @@ void emit_checker(const struct type t, int arg_number, int skipped, const char *
         get_and_check_name = "get_number";
         break;
       case TYPE_INT8_T:
+        type_name = (t.range == NULL)?"int8_t":"lua_Integer";
+        get_name = "get_int8_t";
+        get_and_check_name = "get_integer";
+        break;
       case TYPE_INT16_T:
-      case TYPE_INT32_T:
+        type_name = (t.range == NULL)?"int16_t":"lua_Integer";
+        get_name = "get_int16_t";
+        get_and_check_name = "get_integer";
+        break;
       case TYPE_UINT8_T:
+        type_name = (t.range == NULL)?"uint8_t":"lua_Integer";
+        get_name = "get_uint8_t";
+        get_and_check_name = "get_integer";
+        break;
       case TYPE_UINT16_T:
+        type_name = (t.range == NULL)?"uint16_t":"lua_Integer";
+        get_name = "get_uint16_t";
+        get_and_check_name = "get_integer";
+        break;
+      case TYPE_INT32_T:
       case TYPE_ENUM:
         type_name = "lua_Integer";
         get_name = "luaL_checkinteger";
@@ -2384,6 +2404,23 @@ void emit_argcheck_helper(void) {
   fprintf(source, "    return lua_int;\n");
   fprintf(source, "}\n\n");
 
+  fprintf(source, "// helpers for full range types\n");
+  fprintf(source, "int8_t get_int8_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<int8_t>(get_integer(L, arg_num, INT8_MIN, INT8_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "int16_t get_int16_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<int16_t>(get_integer(L, arg_num, INT16_MIN, INT16_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "uint8_t get_uint8_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<uint8_t>(get_integer(L, arg_num, 0, UINT8_MAX));\n");
+  fprintf(source, "}\n\n");
+
+  fprintf(source, "uint16_t get_uint16_t(lua_State *L, int arg_num) {\n");
+  fprintf(source, "    return static_cast<uint16_t>(get_integer(L, arg_num, 0, UINT16_MAX));\n");
+  fprintf(source, "}\n\n");
+
   fprintf(source, "float get_number(lua_State *L, int arg_num, float min_val, float max_val) {\n");
   fprintf(source, "    const float lua_num = luaL_checknumber(L, arg_num);\n");
   fprintf(source, "    luaL_argcheck(L, (lua_num >= min_val) && (lua_num <= max_val), arg_num, \"out of range\");\n");
@@ -2834,6 +2871,10 @@ int main(int argc, char **argv) {
   fprintf(header, "void load_generated_sandbox(lua_State *L);\n");
   fprintf(header, "int binding_argcheck(lua_State *L, int expected_arg_count);\n");
   fprintf(header, "lua_Integer get_integer(lua_State *L, int arg_num, lua_Integer min_val, lua_Integer max_val);\n");
+  fprintf(header, "int8_t get_int8_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "int16_t get_int16_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "uint8_t get_uint8_t(lua_State *L, int arg_num);\n");
+  fprintf(header, "uint16_t get_uint16_t(lua_State *L, int arg_num);\n");
   fprintf(header, "float get_number(lua_State *L, int arg_num, float min_val, float max_val);\n");
   fprintf(header, "uint32_t get_uint32(lua_State *L, int arg_num, uint32_t min_val, uint32_t max_val);\n");
   fprintf(header, "int new_ap_object(lua_State *L, size_t size, const char * name);\n");
