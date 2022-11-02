@@ -30,6 +30,15 @@ def build(bld):
             'AC_AutoTune',
             'AP_KDECAN',
             'AP_Follow',
+            #V22T
+            'AC_InputManager',
+            'AC_PrecLand',
+            'AC_Sprayer',
+            'AC_Autorotation',
+            'AP_IRLock',
+            'AP_SmartRTL',
+            'AP_WheelEncoder',
+            'AP_Winch',
         ],
     )
 
