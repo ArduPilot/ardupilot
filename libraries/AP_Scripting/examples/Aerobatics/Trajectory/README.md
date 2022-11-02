@@ -24,7 +24,7 @@ AUTO missions.
 | 3  | Horizontal Rectangle     | length | width       | radius     | bank angle | No         |
 | 4  | Climbing Circle          | radius | height      | bank angle |            | No         |
 | 5  | vertical Box             | length | height      | radius     |            | No         |
-| 6  | Unused                   |        |             |            |            | No         |
+| 6  | Immelmann (FastRoll)     | radius |             |            |            | Yes        |
 | 7  | Straight Roll            | length | num rolls   |            |            | No         |
 | 8  | Rolling Circle           | radius | num rolls   |            |            | No         |
 | 9  | Half Cuban Eight         | radius |             |            |            | Yes        |
@@ -54,12 +54,13 @@ The following table gives the available pre-defined schedules. Each schedule has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
 parameters (described below).
 
-| ID  | Name                   
-| --  | ------------------------ 
-| 200 | Test Suite (dont fly!)   
-| 201 | NZ Clubman Schedule      
-| 202 | FAI F3A P-23 (left to right)             
-| 203 | FAI F3C Scale Example (left to right)   
+| ID  | Name
+| --  | ------------------------
+| 200 | Test Suite (dont fly!)
+| 201 | NZ Clubman Schedule
+| 202 | FAI F3A P-23 (left to right)
+| 203 | FAI F3C Scale Example (left to right)
+| 204 | AirShow
 
 Note: ID's 202-203 are best flown with a mission start point 150m out from the pilot, with the prior and subsequent mission waypoints in a straight line with the model starting teh script flying down wind. ID 201 is best started in teh same manner, but the model positioned 100m out from the pilot.
 
