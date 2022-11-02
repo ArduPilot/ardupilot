@@ -67,11 +67,17 @@ jobs:
           NO_VERSIONS_DIR="$GITHUB_WORKSPACE/base_branch_bin_no_versions"
           mkdir "$NO_VERSIONS_DIR"
 
+          # export some environment variables designed to get
+          #            repeatable builds from the same source:
+          export CHIBIOS_GIT_VERSION="12345678"
+          export GIT_VERSION="abcdef"
+          export GIT_VERSION_INT="15"
+
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
              [ "${{matrix.config}}" = "f103-GPS" ]; then
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf AP_Periph
+            ./waf AP_Periph
           else
-            CHIBIOS_GIT_VERSION="12345678" GIT_VERSION="abcdef" GIT_VERSION_INT="15" ./waf
+            ./waf
           fi
           cp -r build/${{matrix.config}}/bin/* "$NO_VERSIONS_DIR"
 
