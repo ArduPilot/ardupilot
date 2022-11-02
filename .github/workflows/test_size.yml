@@ -22,6 +22,7 @@ jobs:
             Durandal,
             MatekF405,
             Pixhawk1-1M,
+            SkystarsH7HD-bdshot,
             Hitec-Airspeed,  # see special code for Periph below (3 places!)
             f103-GPS  # see special code for Periph below (3 places!)
         ]
