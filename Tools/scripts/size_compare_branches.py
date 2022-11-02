@@ -66,9 +66,13 @@ class SizeCompareBranches(object):
     def run_program(self, prefix, cmd_list, show_output=True, env=None):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(cmd_list, bufsize=1, stdin=None,
-                             stdout=subprocess.PIPE, close_fds=True,
-                             stderr=subprocess.STDOUT, env=env)
+        p = subprocess.Popen(
+            cmd_list,
+            stdin=None,
+            stdout=subprocess.PIPE,
+            close_fds=True,
+            stderr=subprocess.STDOUT,
+            env=env)
         output = ""
         while True:
             x = p.stdout.readline()
