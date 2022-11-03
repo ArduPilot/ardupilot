@@ -2,7 +2,8 @@
 #include "AP_BattMonitor_Analog.h"
 #include "AP_HAL/I2CDevice.h"
 
-#define AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL           0
+//#define AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL           0 // mRoControlZeroH7
+#define AP_BATTMONITOR_ANALOG_GPIO_BUS_INTERNAL           1   // pixracer
 #define AP_BATTMONITOR_ANALOG_GPIO_BUS_EXTERNAL           1
 #define AP_BATTMONITOR_ANALOG_GPIO_TIMEOUT_MICROS         5000000 // sensor becomes unhealthy if no successful readings for 5 seconds
 

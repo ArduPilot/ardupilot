@@ -551,13 +551,17 @@ bool AP_BattMonitor::reset_remaining(uint16_t battery_mask, float percentage)
 void AP_BattMonitor::set_batt_disco_en(bool enable, uint8_t instance)
 {
     if (instance < _num_instances && drivers[instance] != nullptr)
+    {
         drivers[instance]->set_batt_disco_en(enable);
+    }
 }
 
 void AP_BattMonitor::set_batt_kill(bool enable, uint8_t instance)
 {
     if (instance < _num_instances && drivers[instance] != nullptr)
+    {
         drivers[instance]->set_batt_kill(enable);
+    }
 }
 
 namespace AP {
