@@ -281,6 +281,12 @@ void AP_EFI::get_state(EFI_State &_state)
     _state = state;
 }
 
+void AP_EFI::handle_EFI_message(const mavlink_message_t &msg) {
+    if (backend) {
+        backend->handle_EFI_message(msg);
+    }
+}
+
 namespace AP {
 AP_EFI *EFI()
 {

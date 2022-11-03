@@ -14,19 +14,20 @@
  */
 
 #include "AP_EFI_MAV.h"
+#include <AP_MATH/definitions.h>
 
 AP_EFI_MAV::AP_EFI_MAV(AP_EFI &_frontend) :  AP_EFI_Backend(_frontend) {
     //Nothing to do here
 }
 
-// Called from frontend to update with the readings received by handler
+//Called from frontend to update with the readings received by handler
 void AP_EFI_MAV::update() {
-	//Nothing to do here
+    copy_to_frontend();
 }
 
 //Decode MavLink message
 void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg) {
-	mavlink_efi_status_t state;
+    mavlink_efi_status_t state;
     mavlink_msg_efi_status_decode(&msg, &state);
 
     internal_state.ecu_index = state.ecu_index;
@@ -38,11 +39,11 @@ void AP_EFI_MAV::handle_EFI_message(const mavlink_message_t &msg) {
     internal_state.spark_dwell_time_ms = state.spark_dwell_time;
     //internal_state.??? = state.barometric_pressure;
     internal_state.intake_manifold_pressure_kpa = state.intake_manifold_pressure;
-    internal_state.intake_manifold_temperature = state.intake_manifold_temperature;
-    internal_state.cylinder_status.cylinder_head_temperature = state.cylinder_head_temperature;
+    internal_state.intake_manifold_temperature = C_TO_KELVIN(state.intake_manifold_temperature);
+    internal_state.cylinder_status.cylinder_head_temperature = C_TO_KELVIN(state.cylinder_head_temperature);
     internal_state.cylinder_status.ignition_timing_deg = state.ignition_timing;
     internal_state.cylinder_status.injection_time_ms = state.injection_time;
-    internal_state.cylinder_status.exhaust_gas_temperature = state.exhaust_gas_temperature;
+    internal_state.cylinder_status.exhaust_gas_temperature = C_TO_KELVIN(state.exhaust_gas_temperature);
     internal_state.throttle_out = state.throttle_out;
     internal_state.pt_compensation = state.pt_compensation;
     //internal_state.??? = state.health;

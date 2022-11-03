@@ -98,9 +98,7 @@ public:
     AP_EFI_Backend* get_backend(uint8_t idx) { return idx==0?backend:nullptr; }
 #endif
 
-    AP_EFI_Backend *get_backend(void) {
-    	return backend;
-    }
+    void handle_EFI_message(const mavlink_message_t &msg);
 
 protected:
 

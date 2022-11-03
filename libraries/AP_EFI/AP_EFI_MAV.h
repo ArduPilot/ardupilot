@@ -16,6 +16,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#include <AP_Common/AP_Common.h>
 
 #include "AP_EFI.h"
 #include "AP_EFI_Backend.h"
