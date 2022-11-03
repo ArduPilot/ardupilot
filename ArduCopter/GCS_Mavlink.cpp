@@ -1276,13 +1276,17 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
 
         // send request
         if (!pos_ignore && !vel_ignore) {
-            copter.mode_guided.set_destination_posvelaccel(pos_vector, vel_vector, accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            if (!copter.mode_guided.set_destination_posvelaccel(pos_vector, vel_vector, accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative)) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "target violates fence");
+            }
         } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velaccel(vel_vector, accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (pos_ignore && vel_ignore && !acc_ignore) {
             copter.mode_guided.set_accel(accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            copter.mode_guided.set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative, false);
+            if (!copter.mode_guided.set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative, false)) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "target violates fence");
+            }
         } else {
             // input is not valid so stop
             copter.mode_guided.init(true);
@@ -1375,13 +1379,17 @@ void GCS_MAVLINK_Copter::handleMessage(const mavlink_message_t &msg)
                 copter.mode_guided.init(true);
                 break;
             }
-            copter.mode_guided.set_destination_posvel(pos_neu_cm, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds);
+            if (!copter.mode_guided.set_destination_posvel(pos_neu_cm, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds)) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "target violates fence");
+            }
         } else if (pos_ignore && !vel_ignore) {
             copter.mode_guided.set_velaccel(vel_vector, accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds);
         } else if (pos_ignore && vel_ignore && !acc_ignore) {
             copter.mode_guided.set_accel(accel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            copter.mode_guided.set_destination(loc, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds);
+            if (!copter.mode_guided.set_destination(loc, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds)) {
+                gcs().send_text(MAV_SEVERITY_NOTICE, "target violates fence");
+            }
         } else {
             // input is not valid so stop
             copter.mode_guided.init(true);
