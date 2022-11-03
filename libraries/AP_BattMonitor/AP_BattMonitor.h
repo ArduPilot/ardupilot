@@ -133,7 +133,7 @@ public:
     /// pack_capacity_mah - returns the capacity of the battery pack in mAh when the pack is full
     int32_t pack_capacity_mah(uint8_t instance) const;
     int32_t pack_capacity_mah() const { return pack_capacity_mah(AP_BATT_PRIMARY_INSTANCE); }
- 
+
     /// returns true if a battery failsafe has ever been triggered
     bool has_failsafed(void) const { return _has_triggered_failsafe; };
 
@@ -175,6 +175,9 @@ public:
     bool reset_remaining(uint16_t battery_mask, float percentage);
 
     bool on_tether_power(const uint8_t instance) const { return state[instance].on_tether_power; };
+
+    void set_batt_disco_en(bool enable, uint8_t instance = AP_BATT_PRIMARY_INSTANCE);
+    void set_batt_kill(bool enable, uint8_t instance = AP_BATT_PRIMARY_INSTANCE);
 
     static const struct AP_Param::GroupInfo var_info[];
 

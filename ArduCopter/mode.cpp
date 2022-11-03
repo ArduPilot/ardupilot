@@ -207,6 +207,35 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
         return true;
     }
 
+    // Just for test
+    for(uint8_t i = 0; i < AP::battery().num_instances(); i++) {
+        if (battery.get_type(i) == AP_BattMonitor_Params::BattMonitor_Type::BattMonitor_TYPE_ANALOG_VOLTAGE_AND_CURRENT_AND_GPIO_REV3) {
+            if(mode == Mode::Number::STABILIZE)
+            {
+                AP::battery().set_batt_disco_en(false, i);
+                AP::battery().set_batt_kill(false, i);
+            }
+
+            if(mode == Mode::Number::ALT_HOLD)
+            {
+                AP::battery().set_batt_disco_en(true, i);
+                AP::battery().set_batt_kill(false, i);
+            }
+
+            if(mode == Mode::Number::PLANCKTRACK)
+            {
+                AP::battery().set_batt_disco_en(false, i);
+                AP::battery().set_batt_kill(true, i);
+            }
+
+            if(mode == Mode::Number::PLANCKRTB)
+            {
+                AP::battery().set_batt_disco_en(true, i);
+                AP::battery().set_batt_kill(true, i);
+            }
+        }
+    }
+
     Mode *new_flightmode = mode_from_mode_num((Mode::Number)mode);
     if (new_flightmode == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
@@ -219,8 +248,8 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && 
-    !new_flightmode->has_manual_throttle() && 
+    if (!ignore_checks &&
+    !new_flightmode->has_manual_throttle() &&
     (motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_UP || motors->get_spool_state() == AP_Motors::SpoolState::SPOOLING_DOWN)) {
         #if MODE_AUTOROTATE_ENABLED == ENABLED
             //if the mode being exited is the autorotation mode allow mode change despite rotor not being at

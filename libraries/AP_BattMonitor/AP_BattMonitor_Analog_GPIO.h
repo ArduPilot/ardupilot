@@ -38,8 +38,8 @@ public:
     /// return the I2C device address
     static uint8_t get_I2C_addr(const AP_BattMonitor_Params::BattMonitor_Type type);
 
-    void set_batt_disco_en(bool enable);
-    void set_batt_kill(bool enable);
+    void set_batt_disco_en(bool enable) override;
+    void set_batt_kill(bool enable) override;
 
 private:
   AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
