@@ -1860,11 +1860,13 @@ function do_path()
                 path_var.path_t,
                 path_err_t)
 
-   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz', 'ffffffffff',
+   logger.write('AERT','Cx,Cy,Cz,Px,Py,Pz,Ex,Tx,Ty,Tz,Perr,Aerr', 'ffffffffffff',
                 cor_ang_vel_bf_dps:x(), cor_ang_vel_bf_dps:y(), cor_ang_vel_bf_dps:z(),
                 path_rate_bf_dps:x(), path_rate_bf_dps:y(), path_rate_bf_dps:z(),
                 err_angle_rate_bf_dps:x(),
-                tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z())
+                tot_ang_vel_bf_dps:x(), tot_ang_vel_bf_dps:y(), tot_ang_vel_bf_dps:z(),
+                pos_error_ef:length(),
+                wrap_180(math.deg(err_angle_rad)))
 
    --log_pose('POSB', p1, path_var.accumulated_orientation_rel_ef)
 
