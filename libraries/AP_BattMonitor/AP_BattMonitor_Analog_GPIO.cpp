@@ -27,8 +27,8 @@ void AP_BattMonitor_Analog_GPIO::init(void) {
         // Configuration register: 0x03
         // Inputs P0, P1, P2, P3, P6, P7
         // Outputs: P4, P5
-        // 11110011 = 0xF3
-        _dev->write_register(0x03, 0xF3);
+        // 11001111 = 0xCF
+        _dev->write_register(0x03, 0xCF);
     }
     AP_BattMonitor_Analog::init();
 }
