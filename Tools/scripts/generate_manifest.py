@@ -104,6 +104,7 @@ brand_map = {
     "SPRacingH7" : ("Seriously Pro Racing", "H7 Extreme"),
     "SkystarsH7HD" : ("Skystars", "H743 HD"),
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
+    "Elfin-Wingv1" : ("Elfin Wing v1", "ElfinK.L"),
 }
 
 class Firmware():
