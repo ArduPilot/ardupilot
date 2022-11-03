@@ -173,9 +173,9 @@ define AP_PARAM_MAX_EMBEDDED_PARAM 1024
 define HAL_WITH_DSP FALSE
 
 # save some flash
-define HAL_GENERATOR_ENABLED 0
-define AC_OAPATHPLANNER_ENABLED 0
-define PRECISION_LANDING 0
+include ../include/save_some_flash.inc
 define HAL_BARO_WIND_COMP_ENABLED 0
-define GRIPPER_ENABLED 0
-define AP_OPTICALFLOW_ENABLED 0
+define AP_GRIPPER_ENABLED 0
+
+# only include ublox GPS driver
+include ../include/minimal_GPS.inc
