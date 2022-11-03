@@ -211,8 +211,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if HAL_WITH_IO_MCU
     // @Param: IO_ENABLE
     // @DisplayName: Enable IO co-processor
-    // @Description: This allows for the IO co-processor on FMUv1 and FMUv2 to be disabled
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: This allows for the IO co-processor on boards with an IOMCU to be disabled. Setting to 2 will enable the IOMCU but not attempt to update firmware on startup
+    // @Values: 0:Disabled,1:Enabled,2:EnableNoFWUpdate
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IO_ENABLE", 10, AP_BoardConfig, state.io_enable, 1),
